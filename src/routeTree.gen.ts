@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppDiagnosticsRouteImport } from './routes/_app.diagnostics'
 import { Route as AppDevicesRouteImport } from './routes/_app.devices'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 
@@ -21,6 +22,11 @@ const AppRoute = AppRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDiagnosticsRoute = AppDiagnosticsRouteImport.update({
+  id: '/diagnostics',
+  path: '/diagnostics',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDevicesRoute = AppDevicesRouteImport.update({
@@ -38,10 +44,12 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/dashboard': typeof AppDashboardRoute
   '/devices': typeof AppDevicesRoute
+  '/diagnostics': typeof AppDiagnosticsRoute
 }
 export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/devices': typeof AppDevicesRoute
+  '/diagnostics': typeof AppDiagnosticsRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -49,14 +57,21 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/devices': typeof AppDevicesRoute
+  '/_app/diagnostics': typeof AppDiagnosticsRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/devices'
+  fullPaths: '/' | '/dashboard' | '/devices' | '/diagnostics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/dashboard' | '/devices' | '/'
-  id: '__root__' | '/_app' | '/_app/dashboard' | '/_app/devices' | '/_app/'
+  to: '/dashboard' | '/devices' | '/diagnostics' | '/'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/_app/dashboard'
+    | '/_app/devices'
+    | '/_app/diagnostics'
+    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -79,6 +94,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/diagnostics': {
+      id: '/_app/diagnostics'
+      path: '/diagnostics'
+      fullPath: '/diagnostics'
+      preLoaderRoute: typeof AppDiagnosticsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/devices': {
       id: '/_app/devices'
       path: '/devices'
@@ -99,12 +121,14 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppDevicesRoute: typeof AppDevicesRoute
+  AppDiagnosticsRoute: typeof AppDiagnosticsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppDevicesRoute: AppDevicesRoute,
+  AppDiagnosticsRoute: AppDiagnosticsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
