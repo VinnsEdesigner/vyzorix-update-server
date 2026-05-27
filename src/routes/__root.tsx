@@ -99,6 +99,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var m=window.matchMedia('(prefers-color-scheme: dark)');var a=function(){document.documentElement.classList.toggle('dark', m.matches);};a();m.addEventListener('change',a);}catch(e){}})();`,
+          }}
+        />
       </head>
       <body>
         {children}
