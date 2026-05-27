@@ -9,50 +9,204 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppUpdatesRouteImport } from './routes/_app.updates'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppDiagnosticsRouteImport } from './routes/_app.diagnostics'
+import { Route as AppDevicesRouteImport } from './routes/_app.devices'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 
-const IndexRoute = IndexRouteImport.update({
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUpdatesRoute = AppUpdatesRouteImport.update({
+  id: '/updates',
+  path: '/updates',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDiagnosticsRoute = AppDiagnosticsRouteImport.update({
+  id: '/diagnostics',
+  path: '/diagnostics',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDevicesRoute = AppDevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
+  '/login': typeof LoginRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/devices': typeof AppDevicesRoute
+  '/diagnostics': typeof AppDiagnosticsRoute
+  '/settings': typeof AppSettingsRoute
+  '/updates': typeof AppUpdatesRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/devices': typeof AppDevicesRoute
+  '/diagnostics': typeof AppDiagnosticsRoute
+  '/settings': typeof AppSettingsRoute
+  '/updates': typeof AppUpdatesRoute
+  '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/devices': typeof AppDevicesRoute
+  '/_app/diagnostics': typeof AppDiagnosticsRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/updates': typeof AppUpdatesRoute
+  '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/dashboard'
+    | '/devices'
+    | '/diagnostics'
+    | '/settings'
+    | '/updates'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/login'
+    | '/dashboard'
+    | '/devices'
+    | '/diagnostics'
+    | '/settings'
+    | '/updates'
+    | '/'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/login'
+    | '/_app/dashboard'
+    | '/_app/devices'
+    | '/_app/diagnostics'
+    | '/_app/settings'
+    | '/_app/updates'
+    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/updates': {
+      id: '/_app/updates'
+      path: '/updates'
+      fullPath: '/updates'
+      preLoaderRoute: typeof AppUpdatesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/diagnostics': {
+      id: '/_app/diagnostics'
+      path: '/diagnostics'
+      fullPath: '/diagnostics'
+      preLoaderRoute: typeof AppDiagnosticsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/devices': {
+      id: '/_app/devices'
+      path: '/devices'
+      fullPath: '/devices'
+      preLoaderRoute: typeof AppDevicesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
+interface AppRouteChildren {
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppDevicesRoute: typeof AppDevicesRoute
+  AppDiagnosticsRoute: typeof AppDiagnosticsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppUpdatesRoute: typeof AppUpdatesRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppDashboardRoute: AppDashboardRoute,
+  AppDevicesRoute: AppDevicesRoute,
+  AppDiagnosticsRoute: AppDiagnosticsRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppUpdatesRoute: AppUpdatesRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
