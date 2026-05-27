@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppDevicesRouteImport } from './routes/_app.devices'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 
 const AppRoute = AppRouteImport.update({
@@ -22,6 +23,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDevicesRoute = AppDevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -31,23 +37,26 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/dashboard': typeof AppDashboardRoute
+  '/devices': typeof AppDevicesRoute
 }
 export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
+  '/devices': typeof AppDevicesRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/devices': typeof AppDevicesRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard'
+  fullPaths: '/' | '/dashboard' | '/devices'
   fileRoutesByTo: FileRoutesByTo
-  to: '/dashboard' | '/'
-  id: '__root__' | '/_app' | '/_app/dashboard' | '/_app/'
+  to: '/dashboard' | '/devices' | '/'
+  id: '__root__' | '/_app' | '/_app/dashboard' | '/_app/devices' | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -70,6 +79,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/devices': {
+      id: '/_app/devices'
+      path: '/devices'
+      fullPath: '/devices'
+      preLoaderRoute: typeof AppDevicesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -82,11 +98,13 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
+  AppDevicesRoute: typeof AppDevicesRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
+  AppDevicesRoute: AppDevicesRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
