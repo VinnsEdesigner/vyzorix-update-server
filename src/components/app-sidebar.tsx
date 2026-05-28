@@ -6,6 +6,7 @@ import {
   PackageCheck,
   Settings,
   Shield,
+  Bell,
 } from "lucide-react";
 
 import {
@@ -25,6 +26,7 @@ const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Devices", url: "/devices", icon: Smartphone },
   { title: "Diagnostics", url: "/diagnostics", icon: Activity },
+  { title: "Alerts", url: "/alerts", icon: Bell },
   { title: "Updates", url: "/updates", icon: PackageCheck },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
