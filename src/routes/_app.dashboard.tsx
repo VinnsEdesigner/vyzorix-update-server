@@ -1,10 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Smartphone, Wifi, AlertTriangle, Activity, ThermometerSun, Cpu } from "lucide-react";
-import { mockDevices, mockAlerts } from "@/lib/mock-data";
+import { mockDevices } from "@/lib/mock-data";
 import { StatusBadge } from "@/components/status-badge";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
@@ -57,61 +55,32 @@ function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Fleet activity</CardTitle>
-            <CardDescription>Online devices and average risk score over 24h</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="t" stroke="var(--muted-foreground)" fontSize={11} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={11} />
-                  <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
-                  <Area type="monotone" dataKey="online" stroke="var(--primary)" fill="url(#g1)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="risk" stroke="var(--muted-foreground)" fill="transparent" strokeWidth={1.5} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>System alerts</CardTitle>
-            <CardDescription>Recent events across fleet</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-64 pr-3">
-              <ul className="space-y-3">
-                {mockAlerts.map((a) => (
-                  <li key={a.id} className="flex items-start gap-3 text-sm">
-                    <Badge
-                      variant={a.severity === "critical" ? "destructive" : a.severity === "warning" ? "secondary" : "outline"}
-                      className="mt-0.5 uppercase text-[10px]"
-                    >
-                      {a.severity}
-                    </Badge>
-                    <div className="flex-1">
-                      <p className="leading-snug">{a.message}</p>
-                      <p className="text-xs text-muted-foreground">{a.device} · {a.at}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Fleet activity</CardTitle>
+          <CardDescription>Online devices and average risk score over 24h</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={trend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="t" stroke="var(--muted-foreground)" fontSize={11} />
+                <YAxis stroke="var(--muted-foreground)" fontSize={11} />
+                <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }} />
+                <Area type="monotone" dataKey="online" stroke="var(--primary)" fill="url(#g1)" strokeWidth={2} />
+                <Area type="monotone" dataKey="risk" stroke="var(--muted-foreground)" fill="transparent" strokeWidth={1.5} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
