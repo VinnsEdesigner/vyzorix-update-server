@@ -13,6 +13,7 @@ const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/devices": "Devices",
   "/diagnostics": "Diagnostics",
+  "/alerts": "System alerts",
   "/updates": "Updates",
   "/settings": "Settings",
 };
