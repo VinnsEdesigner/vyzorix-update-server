@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertTriangle, AlertCircle, Info, Search } from "lucide-react";
-import { mockAlerts } from "@/lib/mock-data";
+import { getAlerts } from "@/lib/api/alerts";
+import type { Alert } from "@/lib/api/alerts";
 
 export const Route = createFileRoute("/_app/alerts")({
   head: () => ({ meta: [{ title: "System alerts — Vyzorix" }] }),
@@ -31,9 +32,29 @@ const severityIcon: Record<Severity, typeof AlertTriangle> = {
 function AlertsPage() {
   const [query, setQuery] = useState("");
   const [severity, setSeverity] = useState<"all" | Severity>("all");
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getAlerts();
+        setAlerts(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load alerts");
+        console.error("[v0] Error fetching alerts:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const filtered = useMemo(() => {
-    return mockAlerts.filter((a) => {
+    return alerts.filter((a) => {
       if (severity !== "all" && a.severity !== severity) return false;
       if (!query.trim()) return true;
       const q = query.toLowerCase();
@@ -42,15 +63,15 @@ function AlertsPage() {
         a.device.toLowerCase().includes(q)
       );
     });
-  }, [query, severity]);
+  }, [query, severity, alerts]);
 
   const counts = useMemo(
     () => ({
-      critical: mockAlerts.filter((a) => a.severity === "critical").length,
-      warning: mockAlerts.filter((a) => a.severity === "warning").length,
-      info: mockAlerts.filter((a) => a.severity === "info").length,
+      critical: alerts.filter((a) => a.severity === "critical").length,
+      warning: alerts.filter((a) => a.severity === "warning").length,
+      info: alerts.filter((a) => a.severity === "info").length,
     }),
-    [],
+    [alerts],
   );
 
   return (
@@ -102,9 +123,10 @@ function AlertsPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by device or message…"
                 className="pl-8"
+                disabled={loading}
               />
             </div>
-            <Select value={severity} onValueChange={(v) => setSeverity(v as typeof severity)}>
+            <Select value={severity} onValueChange={(v) => setSeverity(v as typeof severity)} disabled={loading}>
               <SelectTrigger className="sm:w-44">
                 <SelectValue placeholder="Severity" />
               </SelectTrigger>
@@ -115,15 +137,19 @@ function AlertsPage() {
                 <SelectItem value="info">Info</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => { setQuery(""); setSeverity("all"); }}>
+            <Button variant="outline" onClick={() => { setQuery(""); setSeverity("all"); }} disabled={loading}>
               Reset
             </Button>
           </div>
 
+          {error && (
+            <div className="text-sm text-destructive">Error: {error}</div>
+          )}
+
           <div>
             {filtered.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">
-                No alerts match your filters.
+                {loading ? "Loading alerts..." : "No alerts match your filters."}
               </p>
             ) : (
               filtered.map((a, i) => {

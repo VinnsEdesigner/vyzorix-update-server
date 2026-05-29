@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,7 +12,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
-import { formatUptime, mockDevices, type DeviceStatus } from "@/lib/mock-data";
+import { formatUptime, type DeviceStatus } from "@/lib/mock-data";
 import { Search, RefreshCw, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,6 +23,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { getDevices } from "@/lib/api/devices";
+import type { Device } from "@/lib/api/devices";
 
 export const Route = createFileRoute("/_app/devices")({
   head: () => ({ meta: [{ title: "Devices — Vyzorix" }] }),
@@ -32,14 +34,48 @@ export const Route = createFileRoute("/_app/devices")({
 function DevicesPage() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"all" | DeviceStatus>("all");
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getDevices();
+        setDevices(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load devices");
+        console.error("[v0] Error fetching devices:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const filtered = useMemo(() => {
-    return mockDevices.filter((d) => {
+    return devices.filter((d) => {
       const matchQ = q.length === 0 || `${d.name} ${d.id} ${d.model}`.toLowerCase().includes(q.toLowerCase());
       const matchS = status === "all" || d.status === status;
       return matchQ && matchS;
     });
-  }, [q, status]);
+  }, [q, status, devices]);
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      const data = await getDevices();
+      setDevices(data);
+      toast.success("Fleet refreshed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to refresh");
+      toast.error("Failed to refresh devices");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Card>
@@ -47,18 +83,18 @@ function DevicesPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <CardTitle>Device fleet</CardTitle>
-            <p className="text-sm text-muted-foreground">{filtered.length} of {mockDevices.length} devices</p>
+            <p className="text-sm text-muted-foreground">{filtered.length} of {devices.length} devices</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => toast.success("Fleet refreshed")}>
-            <RefreshCw className="h-4 w-4" /> Refresh
+          <Button variant="outline" size="sm" disabled={loading} onClick={handleRefresh}>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> {loading ? 'Refreshing...' : 'Refresh'}
           </Button>
         </div>
         <div className="flex flex-wrap gap-2">
           <div className="relative min-w-[200px] flex-1">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search id, name, model…" className="pl-8" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search id, name, model…" className="pl-8" disabled={loading} />
           </div>
-          <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
+          <Select value={status} onValueChange={(v) => setStatus(v as typeof status)} disabled={loading}>
             <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
@@ -71,6 +107,9 @@ function DevicesPage() {
         </div>
       </CardHeader>
       <CardContent>
+        {error && (
+          <div className="text-sm text-destructive mb-4">Error: {error}</div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
@@ -120,7 +159,7 @@ function DevicesPage() {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">No devices match the current filters.</TableCell>
+                <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">{loading ? "Loading devices..." : "No devices match the current filters."}</TableCell>
               </TableRow>
             )}
           </TableBody>
