@@ -15,7 +15,6 @@ import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppUpdatesRouteImport } from './routes/_app.updates'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppDiagnosticsRouteImport } from './routes/_app.diagnostics'
-import { Route as AppDevicesRouteImport } from './routes/_app.devices'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAlertsRouteImport } from './routes/_app.alerts'
 
@@ -48,11 +47,6 @@ const AppDiagnosticsRoute = AppDiagnosticsRouteImport.update({
   path: '/diagnostics',
   getParentRoute: () => AppRoute,
 } as any)
-const AppDevicesRoute = AppDevicesRouteImport.update({
-  id: '/devices',
-  path: '/devices',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -69,7 +63,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/alerts': typeof AppAlertsRoute
   '/dashboard': typeof AppDashboardRoute
-  '/devices': typeof AppDevicesRoute
   '/diagnostics': typeof AppDiagnosticsRoute
   '/settings': typeof AppSettingsRoute
   '/updates': typeof AppUpdatesRoute
@@ -78,7 +71,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/alerts': typeof AppAlertsRoute
   '/dashboard': typeof AppDashboardRoute
-  '/devices': typeof AppDevicesRoute
   '/diagnostics': typeof AppDiagnosticsRoute
   '/settings': typeof AppSettingsRoute
   '/updates': typeof AppUpdatesRoute
@@ -90,7 +82,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/alerts': typeof AppAlertsRoute
   '/_app/dashboard': typeof AppDashboardRoute
-  '/_app/devices': typeof AppDevicesRoute
   '/_app/diagnostics': typeof AppDiagnosticsRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/updates': typeof AppUpdatesRoute
@@ -103,7 +94,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/alerts'
     | '/dashboard'
-    | '/devices'
     | '/diagnostics'
     | '/settings'
     | '/updates'
@@ -112,7 +102,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/alerts'
     | '/dashboard'
-    | '/devices'
     | '/diagnostics'
     | '/settings'
     | '/updates'
@@ -123,7 +112,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/alerts'
     | '/_app/dashboard'
-    | '/_app/devices'
     | '/_app/diagnostics'
     | '/_app/settings'
     | '/_app/updates'
@@ -179,13 +167,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDiagnosticsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/devices': {
-      id: '/_app/devices'
-      path: '/devices'
-      fullPath: '/devices'
-      preLoaderRoute: typeof AppDevicesRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -206,7 +187,6 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppAlertsRoute: typeof AppAlertsRoute
   AppDashboardRoute: typeof AppDashboardRoute
-  AppDevicesRoute: typeof AppDevicesRoute
   AppDiagnosticsRoute: typeof AppDiagnosticsRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppUpdatesRoute: typeof AppUpdatesRoute
@@ -216,7 +196,6 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAlertsRoute: AppAlertsRoute,
   AppDashboardRoute: AppDashboardRoute,
-  AppDevicesRoute: AppDevicesRoute,
   AppDiagnosticsRoute: AppDiagnosticsRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppUpdatesRoute: AppUpdatesRoute,
