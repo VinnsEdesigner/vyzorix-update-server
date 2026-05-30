@@ -2,127 +2,110 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
-import { mockUpdateHistory, mockChangelog, mockDevices } from "@/lib/mock-data";
-import { CloudUpload, Download, Zap } from "lucide-react";
+import { Zap, Download } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+
+import { useVyzorixConfig } from "@/lib/vyzorix-config";
+import { dispatchCommand, getVersion, headApk } from "@/lib/vyzorix-api";
+import { formatBytes, shortHash } from "@/lib/format";
 
 export const Route = createFileRoute("/_app/updates")({
   head: () => ({ meta: [{ title: "Updates — Vyzorix" }] }),
   component: UpdatesPage,
 });
 
-const updateStates = ["DOWNLOADED", "INSTALLING", "AVAILABLE", "NOT_CHECKED", "SUCCESS", "AVAILABLE", "DOWNLOADING", "SUCCESS"] as const;
-
 function UpdatesPage() {
+  const { serverUrl, deviceId } = useVyzorixConfig();
+
+  const version = useQuery({
+    queryKey: ["vyzorix", "version", serverUrl],
+    queryFn: () => getVersion(serverUrl),
+    retry: false,
+  });
+
+  const apkSize = useQuery({
+    queryKey: ["vyzorix", "apk", serverUrl, version.data?.apk_filename],
+    queryFn: () => headApk(serverUrl, version.data!.apk_filename),
+    enabled: !!version.data?.apk_filename,
+    retry: false,
+  });
+
+  const v = version.data;
+  const apkUrl = v ? `${serverUrl.replace(/\/+$/, "")}/api/v1/apk/${v.apk_filename}` : "#";
+
+  const wake = async () => {
+    try {
+      const res = await dispatchCommand(serverUrl, deviceId, "WAKE_UP_UPDATER");
+      toast.success(`WAKE_UP_UPDATER → ${res.delivery}`, { description: `dispatch ${res.dispatchId}` });
+    } catch (e) {
+      toast.error("WAKE_UP_UPDATER failed", { description: e instanceof Error ? e.message : String(e) });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Current release</CardTitle>
-            <CardDescription>Served at <code className="text-xs">/api/v1/version</code></CardDescription>
+            <CardDescription>
+              Served from <code className="text-xs">{serverUrl}/api/v1/version</code>
+            </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-3">
-            <KV k="Version" v="2.2.0" />
-            <KV k="Version code" v="220" />
-            <KV k="Build" v="220" />
-            <KV k="Min SDK" v="26" />
-            <KV k="Size" v="12.4 MB" />
-            <KV k="Forced" v="No" />
-            <KV k="Released" v="2026-05-20" />
-            <KV k="Checksum" v="a93f…7b1c" />
-            <KV k="Channel" v="stable" />
+          <CardContent>
+            {version.isError ? (
+              <p className="text-sm text-muted-foreground">Failed to load version.json — {(version.error as Error).message}</p>
+            ) : version.isLoading || !v ? (
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-3">
+                <KV k="Version" v={v.version} />
+                <KV k="Version code" v={`${v.version_code}`} />
+                <KV k="APK file" v={v.apk_filename} />
+                <KV k="APK size (manifest)" v={formatBytes(v.apk_size_bytes)} />
+                <KV k="APK size (HEAD)" v={apkSize.data == null ? "—" : formatBytes(apkSize.data)} />
+                <KV k="SHA-256" v={shortHash(v.apk_sha256, 8, 8)} />
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Distribution</CardTitle>
-            <CardDescription>Fleet update adoption</CardDescription>
+            <CardTitle>Trigger update</CardTitle>
+            <CardDescription>For device {deviceId}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Adoption label="2.2.0" pct={62} />
-            <Adoption label="2.1.0" pct={25} />
-            <Adoption label="2.0.0" pct={13} />
-            <Button className="w-full" onClick={() => toast.success("WAKE_UP_UPDATER broadcast queued for fleet")}>
-              <Zap className="h-4 w-4" /> Wake updater on fleet
+            <Button className="w-full" onClick={wake} disabled={!v}>
+              <Zap className="h-4 w-4" /> Wake updater on device
             </Button>
+            <a href={apkUrl} target="_blank" rel="noreferrer" className="block">
+              <Button variant="outline" className="w-full" disabled={!v}>
+                <Download className="h-4 w-4" /> Download APK
+              </Button>
+            </a>
           </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Release history</CardTitle>
-            <CardDescription>Updated by GitHub Actions on tagged releases</CardDescription>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => toast.info("Triggered manual version.json regen")}>
-            <CloudUpload className="h-4 w-4" /> Regenerate version.json
-          </Button>
+        <CardHeader>
+          <CardTitle>Release notes</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Version</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Released</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead>Forced</TableHead>
-                <TableHead>Downloads</TableHead>
-                <TableHead className="w-[80px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockUpdateHistory.map((u) => (
-                <TableRow key={u.version}>
-                  <TableCell className="font-medium">{u.version}</TableCell>
-                  <TableCell className="font-mono text-xs">{u.versionCode}</TableCell>
-                  <TableCell>{u.releaseDate}</TableCell>
-                  <TableCell>{u.fileSize}</TableCell>
-                  <TableCell>{u.forced ? <Badge variant="destructive">Forced</Badge> : <Badge variant="outline">No</Badge>}</TableCell>
-                  <TableCell>{u.downloads}</TableCell>
-                  <TableCell><Button variant="ghost" size="sm"><Download className="h-4 w-4" /></Button></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {v ? (
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{v.release_notes}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">—</p>
+          )}
+          <div className="mt-4 flex items-center gap-2">
+            <Badge variant="outline">phase 1</Badge>
+            <Badge variant="outline">mock server</Badge>
+            <span className="text-xs text-muted-foreground">Per ADR-0009. Real server lands in Phase 1.5 with no Android changes.</span>
+          </div>
         </CardContent>
       </Card>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle className="text-base">Changelog (2.2.0)</CardTitle></CardHeader>
-          <CardContent>
-            <ul className="list-inside list-disc space-y-1.5 text-sm text-muted-foreground">
-              {mockChangelog.map((c, i) => <li key={i}>{c}</li>)}
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Per-device update state</CardTitle>
-            <CardDescription>Mock from TelemetryFrame update fields</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {mockDevices.slice(0, 6).map((d, i) => (
-              <div key={d.id} className="flex items-center justify-between gap-3 rounded-md border p-2.5 text-sm">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{d.name}</p>
-                  <p className="text-xs text-muted-foreground">app {d.appVersion}</p>
-                </div>
-                <Badge variant={updateStates[i] === "SUCCESS" ? "default" : updateStates[i] === "AVAILABLE" ? "secondary" : "outline"}>
-                  {updateStates[i]}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
@@ -131,19 +114,7 @@ function KV({ k, v }: { k: string; v: string }) {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{k}</p>
-      <p className="text-sm font-medium">{v}</p>
-    </div>
-  );
-}
-
-function Adoption({ label, pct }: { label: string; pct: number }) {
-  return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground">{pct}%</span>
-      </div>
-      <Progress value={pct} />
+      <p className="text-sm font-medium break-all">{v}</p>
     </div>
   );
 }
