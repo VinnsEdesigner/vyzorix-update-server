@@ -1,14 +1,19 @@
 import { Badge } from "@/components/ui/badge";
 
-export function ConnectionBadge({
-  state = "connected",
-}: {
-  state?: "connected" | "reconnecting" | "disconnected";
-}) {
-  const map = {
-    connected: { label: "WebSocket · connected", variant: "default" as const, dot: "bg-primary" },
-    reconnecting: { label: "WebSocket · reconnecting", variant: "secondary" as const, dot: "bg-yellow-500" },
-    disconnected: { label: "WebSocket · disconnected", variant: "destructive" as const, dot: "bg-destructive" },
+export type ConnectionState =
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "disconnected"
+  | "idle";
+
+export function ConnectionBadge({ state = "idle" }: { state?: ConnectionState }) {
+  const map: Record<ConnectionState, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dot: string }> = {
+    connected: { label: "WS · connected", variant: "default", dot: "bg-primary" },
+    connecting: { label: "WS · connecting", variant: "secondary", dot: "bg-yellow-500" },
+    reconnecting: { label: "WS · reconnecting", variant: "secondary", dot: "bg-yellow-500" },
+    disconnected: { label: "WS · disconnected", variant: "destructive", dot: "bg-destructive" },
+    idle: { label: "WS · idle", variant: "outline", dot: "bg-muted-foreground" },
   };
   const cfg = map[state];
   return (
