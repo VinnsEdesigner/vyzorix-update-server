@@ -4,6 +4,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { ConnectionBadge } from "@/components/connection-badge";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/sonner";
+import { useVyzorixConfig } from "@/lib/vyzorix-config";
+import { useDeviceStream } from "@/hooks/use-device-stream";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
@@ -11,7 +13,7 @@ export const Route = createFileRoute("/_app")({
 
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
-  "/devices": "Devices",
+  "/device": "Device",
   "/diagnostics": "Diagnostics",
   "/alerts": "System alerts",
   "/updates": "Updates",
@@ -21,6 +23,8 @@ const titles: Record<string, string> = {
 function AppLayout() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const title = titles[pathname] ?? "Vyzorix";
+  const { serverUrl, deviceId } = useVyzorixConfig();
+  const { state } = useDeviceStream(serverUrl, deviceId);
 
   return (
     <SidebarProvider>
@@ -31,7 +35,7 @@ function AppLayout() {
           <Separator orientation="vertical" className="mx-1 h-5" />
           <h1 className="text-sm font-semibold">{title}</h1>
           <div className="ml-auto flex items-center gap-2">
-            <ConnectionBadge state="connected" />
+            <ConnectionBadge state={state} />
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6">
