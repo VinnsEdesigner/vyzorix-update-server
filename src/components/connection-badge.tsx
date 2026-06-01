@@ -18,7 +18,7 @@ export function ConnectionBadge({ state = "idle" }: { state?: ConnectionState })
   const cfg = map[state];
   return (
     <Badge variant={cfg.variant} className="gap-1.5">
-      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot} ${state === "connected" ? "animate-pulse" : ""}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
       {cfg.label}
     </Badge>
   );
