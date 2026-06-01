@@ -3,42 +3,91 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 export const DEFAULT_SERVER_URL = "http://localhost:8080";
 export const DEFAULT_DEVICE_ID = "nokia-c22-primary";
 
-const SERVER_KEY = "vyzorix.serverUrl";
-const DEVICE_KEY = "vyzorix.deviceId";
+const STORAGE_KEY = "vyzorix.config.v2";
 
-type Config = {
+export interface Thresholds {
+  riskWarn: number;
+  riskCrit: number;
+  thermalWarn: number;
+  thermalCrit: number;
+  bufferWarn: number;
+}
+
+export interface Operator {
+  name: string;
+  role: "viewer" | "operator" | "super_admin";
+  email: string;
+}
+
+export interface VyzorixSettings {
   serverUrl: string;
   deviceId: string;
+  autoReconnect: boolean;
+  requestTimeoutMs: number;
+  logBufferLimit: number;
+  signalHistoryLimit: number;
+  strictHmac: boolean;
+  notificationsEnabled: boolean;
+  operator: Operator;
+  thresholds: Thresholds;
+}
+
+export const DEFAULT_SETTINGS: VyzorixSettings = {
+  serverUrl: DEFAULT_SERVER_URL,
+  deviceId: DEFAULT_DEVICE_ID,
+  autoReconnect: true,
+  requestTimeoutMs: 8000,
+  logBufferLimit: 500,
+  signalHistoryLimit: 240,
+  strictHmac: false,
+  notificationsEnabled: true,
+  operator: { name: "", role: "operator", email: "" },
+  thresholds: { riskWarn: 50, riskCrit: 75, thermalWarn: 45, thermalCrit: 55, bufferWarn: 50 },
+};
+
+function loadInitial(): VyzorixSettings {
+  if (typeof window === "undefined") return DEFAULT_SETTINGS;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_SETTINGS;
+    const parsed = JSON.parse(raw);
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsed,
+      operator: { ...DEFAULT_SETTINGS.operator, ...(parsed.operator ?? {}) },
+      thresholds: { ...DEFAULT_SETTINGS.thresholds, ...(parsed.thresholds ?? {}) },
+    } as VyzorixSettings;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+type Config = VyzorixSettings & {
   setServerUrl: (v: string) => void;
   setDeviceId: (v: string) => void;
+  update: (patch: Partial<VyzorixSettings>) => void;
+  reset: () => void;
 };
 
 const ConfigCtx = createContext<Config | null>(null);
 
 export function VyzorixConfigProvider({ children }: { children: ReactNode }) {
-  const [serverUrl, setServerUrlState] = useState(DEFAULT_SERVER_URL);
-  const [deviceId, setDeviceIdState] = useState(DEFAULT_DEVICE_ID);
+  // Lazy init: read localStorage BEFORE first paint so consumers never see defaults
+  // followed by a hydration swap (this was causing settings to "reset" visually
+  // when navigating between pages).
+  const [s, setS] = useState<VyzorixSettings>(loadInitial);
 
   useEffect(() => {
-    try {
-      const s = localStorage.getItem(SERVER_KEY);
-      const d = localStorage.getItem(DEVICE_KEY);
-      if (s) setServerUrlState(s);
-      if (d) setDeviceIdState(d);
-    } catch {}
-  }, []);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+  }, [s]);
 
-  const setServerUrl = (v: string) => {
-    setServerUrlState(v);
-    try { localStorage.setItem(SERVER_KEY, v); } catch {}
-  };
-  const setDeviceId = (v: string) => {
-    setDeviceIdState(v);
-    try { localStorage.setItem(DEVICE_KEY, v); } catch {}
-  };
+  const update = (patch: Partial<VyzorixSettings>) => setS((prev) => ({ ...prev, ...patch }));
+  const setServerUrl = (v: string) => update({ serverUrl: v });
+  const setDeviceId = (v: string) => update({ deviceId: v });
+  const reset = () => setS(DEFAULT_SETTINGS);
 
   return (
-    <ConfigCtx.Provider value={{ serverUrl, deviceId, setServerUrl, setDeviceId }}>
+    <ConfigCtx.Provider value={{ ...s, setServerUrl, setDeviceId, update, reset }}>
       {children}
     </ConfigCtx.Provider>
   );
