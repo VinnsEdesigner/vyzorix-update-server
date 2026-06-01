@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
-import { useDeviceStream } from "@/hooks/use-device-stream";
+import { useStream } from "@/lib/device-stream-context";
 import { useServerHealth } from "@/hooks/use-server-health";
 import { getDeviceStatus, getVersion } from "@/lib/vyzorix-api";
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
@@ -20,17 +20,22 @@ export const Route = createFileRoute("/_app/dashboard")({
 
 const tip = { background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 };
 
-function deriveHealth(online: boolean, riskScore?: number, thermal?: number): DeviceHealth {
+function deriveHealth(
+  online: boolean,
+  riskScore: number | undefined,
+  thermal: number | undefined,
+  th: { riskWarn: number; riskCrit: number; thermalWarn: number; thermalCrit: number },
+): DeviceHealth {
   if (!online) return "offline";
-  if ((riskScore ?? 0) >= 75 || (thermal ?? 0) >= 55) return "critical";
-  if ((riskScore ?? 0) >= 50 || (thermal ?? 0) >= 45) return "warning";
+  if ((riskScore ?? 0) >= th.riskCrit || (thermal ?? 0) >= th.thermalCrit) return "critical";
+  if ((riskScore ?? 0) >= th.riskWarn || (thermal ?? 0) >= th.thermalWarn) return "warning";
   return "online";
 }
 
 function DashboardPage() {
-  const { serverUrl, deviceId } = useVyzorixConfig();
+  const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
-  const stream = useDeviceStream(serverUrl, deviceId);
+  const stream = useStream();
   const t = stream.lastTelemetry;
 
   const status = useQuery({
@@ -49,7 +54,7 @@ function DashboardPage() {
   });
 
   const online = status.data?.online ?? (stream.state === "connected");
-  const deviceHealth = deriveHealth(online, t?.riskScore, t?.thermalTemp);
+  const deviceHealth = deriveHealth(online, t?.riskScore, t?.thermalTemp, thresholds);
 
   const riskSeries = stream.telemetryHistory.map((f, i) => ({ i, v: f.riskScore ?? 0 }));
   const thermalSeries = stream.telemetryHistory.map((f, i) => ({ i, v: f.thermalTemp ?? 0 }));
@@ -92,14 +97,14 @@ function DashboardPage() {
           </div>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-4">
-          <Metric icon={Activity} label="Risk score" value={t?.riskScore != null ? `${t.riskScore}` : "—"} hint={t?.riskScore != null ? (t.riskScore >= 75 ? "Critical — soft reboot predicted" : t.riskScore >= 50 ? "Investigate" : "Healthy") : "Awaiting telemetry"} />
-          <Metric icon={ThermometerSun} label="Thermal" value={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"} hint={t?.thermalTemp != null ? (t.thermalTemp >= 55 ? "THROTTLE_HEAVY" : t.thermalTemp >= 45 ? "THROTTLE_LIGHT" : "NONE") : "Awaiting telemetry"} />
+          <Metric icon={Activity} label="Risk score" value={t?.riskScore != null ? `${t.riskScore}` : "—"} hint={t?.riskScore != null ? (t.riskScore >= thresholds.riskCrit ? "Critical — soft reboot predicted" : t.riskScore >= thresholds.riskWarn ? "Investigate" : "Healthy") : "Awaiting signals"} />
+          <Metric icon={ThermometerSun} label="Thermal" value={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"} hint={t?.thermalTemp != null ? (t.thermalTemp >= thresholds.thermalCrit ? "THROTTLE_HEAVY" : t.thermalTemp >= thresholds.thermalWarn ? "THROTTLE_LIGHT" : "NONE") : "Awaiting signals"} />
           <Metric icon={Clock} label="Uptime" value={formatUptime(t?.uptime)} hint={`Last seen ${formatRelative(status.data?.lastSeen)}`} />
           <Metric icon={Volume2} label="Speaker" value={t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"} hint={t?.activeDevice ?? "—"} />
         </CardContent>
       </Card>
 
-      {/* Live charts */}
+      {/* Live signals */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
@@ -107,16 +112,16 @@ function DashboardPage() {
             <CardDescription>{stream.telemetryHistory.length} frames buffered</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartShell data={riskSeries} thresholds={[50, 75]} />
+            <ChartShell data={riskSeries} thresholds={[thresholds.riskWarn, thresholds.riskCrit]} />
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Thermal · live (°C)</CardTitle>
-            <CardDescription>From TelemetryFrame.thermalTemp</CardDescription>
+            <CardDescription>From DeviceSignal.thermalTemp</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartShell data={thermalSeries} thresholds={[45, 55]} />
+            <ChartShell data={thermalSeries} thresholds={[thresholds.thermalWarn, thresholds.thermalCrit]} />
           </CardContent>
         </Card>
       </div>
@@ -135,7 +140,7 @@ function DashboardPage() {
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><Cpu className="h-4 w-4" /> Capture buffer</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <Progress value={t?.bufferLevel ?? 0} />
-            <p className="text-xs text-muted-foreground">{t?.bufferLevel ?? 0}% fill · underrun threshold 50%</p>
+            <p className="text-xs text-muted-foreground">{t?.bufferLevel ?? 0}% fill · underrun threshold {thresholds.bufferWarn}%</p>
           </CardContent>
         </Card>
         <Card>
@@ -175,7 +180,7 @@ function KV({ k, v }: { k: string; v: string }) {
 
 function ChartShell({ data, thresholds }: { data: { i: number; v: number }[]; thresholds?: number[] }) {
   if (data.length === 0) {
-    return <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">Waiting for live telemetry…</div>;
+    return <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">Waiting for live signals…</div>;
   }
   return (
     <div className="h-48 w-full">
