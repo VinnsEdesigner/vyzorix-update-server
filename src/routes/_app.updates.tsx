@@ -2,9 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Download } from "lucide-react";
+import { Zap, Download, ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import { dispatchCommand, getVersion, headApk } from "@/lib/vyzorix-api";
@@ -48,14 +53,20 @@ function UpdatesPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Current release</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              Current release
+              {v ? <Badge variant="default">live · {v.version}</Badge> : <Badge variant="outline">loading</Badge>}
+            </CardTitle>
             <CardDescription>
-              Served from <code className="text-xs">{serverUrl}/api/v1/version</code>
+              Live manifest from <code className="text-xs">{serverUrl}/api/v1/version</code> — no cache, fetched on render
             </CardDescription>
           </CardHeader>
           <CardContent>
             {version.isError ? (
-              <p className="text-sm text-muted-foreground">Failed to load version.json — {(version.error as Error).message}</p>
+              <div className="space-y-2">
+                <p className="text-sm text-destructive">Failed to load version.json — {(version.error as Error).message}</p>
+                <p className="text-xs text-muted-foreground">Start the Go server with <code>go run ./cmd/mockserver</code>, or update the URL in Settings → Connection.</p>
+              </div>
             ) : version.isLoading || !v ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
             ) : (
@@ -64,7 +75,7 @@ function UpdatesPage() {
                 <KV k="Version code" v={`${v.version_code}`} />
                 <KV k="APK file" v={v.apk_filename} />
                 <KV k="APK size (manifest)" v={formatBytes(v.apk_size_bytes)} />
-                <KV k="APK size (HEAD)" v={apkSize.data == null ? "—" : formatBytes(apkSize.data)} />
+                <KV k="APK size (HEAD)" v={apkSize.isLoading ? "checking…" : apkSize.data == null ? "—" : formatBytes(apkSize.data)} />
                 <KV k="SHA-256" v={shortHash(v.apk_sha256, 8, 8)} />
               </div>
             )}
@@ -92,6 +103,7 @@ function UpdatesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Release notes</CardTitle>
+          <CardDescription>Pulled live from version.json on the update server</CardDescription>
         </CardHeader>
         <CardContent>
           {v ? (
@@ -104,6 +116,35 @@ function UpdatesPage() {
             <Badge variant="outline">mock server</Badge>
             <span className="text-xs text-muted-foreground">Per ADR-0009. Real server lands in Phase 1.5 with no Android changes.</span>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Reference: release update format</CardTitle>
+          <CardDescription>What a release entry should look like when the production update server is online</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <ChevronDown className="h-4 w-4" /> Show example release
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 space-y-3">
+              <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 font-mono text-xs">{`{
+  "version": "1.4.2",
+  "version_code": 142,
+  "apk_filename": "vyzorix-audiorouter-1.4.2.apk",
+  "apk_sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+  "apk_size_bytes": 18234567,
+  "release_notes": "• Fix VoIP route loss after Bluetooth disconnect on Nokia C22\\n• Reduce thermal mitigation false positives at 44°C\\n• Audio HAL recycle now persists ProjectionToken state\\n• Updater wake-up FCM payload now versioned (schema v3)"
+}`}</pre>
+              <p className="text-xs text-muted-foreground">
+                Live values you see above come from the same shape, just fetched from <code>{serverUrl}/api/v1/version</code>.
+              </p>
+            </CollapsibleContent>
+          </Collapsible>
         </CardContent>
       </Card>
     </div>
