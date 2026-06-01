@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import { getDeviceStatus, registerDevice } from "@/lib/vyzorix-api";
-import { useDeviceStream } from "@/hooks/use-device-stream";
+import { useStream } from "@/lib/device-stream-context";
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
 import { formatRelative, formatUptime, shortHash } from "@/lib/format";
 
@@ -20,8 +20,8 @@ export const Route = createFileRoute("/_app/device")({
 });
 
 function DevicePage() {
-  const { serverUrl, deviceId } = useVyzorixConfig();
-  const stream = useDeviceStream(serverUrl, deviceId);
+  const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
+  const stream = useStream();
   const t = stream.lastTelemetry;
 
   const status = useQuery({
@@ -35,9 +35,9 @@ function DevicePage() {
   const health: DeviceHealth =
     !status.data?.online && stream.state !== "connected"
       ? "offline"
-      : (t?.riskScore ?? 0) >= 75 || (t?.thermalTemp ?? 0) >= 55
+      : (t?.riskScore ?? 0) >= thresholds.riskCrit || (t?.thermalTemp ?? 0) >= thresholds.thermalCrit
       ? "critical"
-      : (t?.riskScore ?? 0) >= 50 || (t?.thermalTemp ?? 0) >= 45
+      : (t?.riskScore ?? 0) >= thresholds.riskWarn || (t?.thermalTemp ?? 0) >= thresholds.thermalWarn
       ? "warning"
       : "online";
 
@@ -81,11 +81,24 @@ function DevicePage() {
 
 function RegisterPanel() {
   const { serverUrl, deviceId } = useVyzorixConfig();
-  const [firebaseInstallId, setFid] = useState("dev-fid-" + Math.random().toString(36).slice(2, 10));
-  const [fcmToken, setFcm] = useState("dev-fcm-token-" + Math.random().toString(36).slice(2, 14));
-  const [appVersion, setAv] = useState("1.0.0-mock");
-  const [deviceClass, setDc] = useState("nokia_c22");
-  const [secret, setSecret] = useState<string | null>(null);
+  // Persist the registration form across navigations — previously a fresh
+  // random fid/token was generated every mount, which is why "nothing seemed
+  // to save".
+  const persist = (key: string, fallback: () => string) => {
+    const k = `vyzorix.register.${key}`;
+    const [v, setV] = useState<string>(() => {
+      try { return localStorage.getItem(k) ?? fallback(); } catch { return fallback(); }
+    });
+    useEffect(() => { try { localStorage.setItem(k, v); } catch {} }, [v, k]);
+    return [v, setV] as const;
+  };
+  const [firebaseInstallId, setFid] = persist("fid", () => "dev-fid-" + Math.random().toString(36).slice(2, 10));
+  const [fcmToken, setFcm] = persist("fcm", () => "dev-fcm-token-" + Math.random().toString(36).slice(2, 14));
+  const [appVersion, setAv] = persist("appVersion", () => "1.0.0-mock");
+  const [deviceClass, setDc] = persist("deviceClass", () => "nokia_c22");
+  const [secret, setSecret] = useState<string | null>(() => {
+    try { return localStorage.getItem(`vyzorix.register.secret.${deviceId}`); } catch { return null; }
+  });
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
@@ -93,6 +106,7 @@ function RegisterPanel() {
     try {
       const res = await registerDevice(serverUrl, { deviceId, firebaseInstallId, fcmToken, appVersion, deviceClass });
       setSecret(res.commandSecret);
+      try { localStorage.setItem(`vyzorix.register.secret.${deviceId}`, res.commandSecret); } catch {}
       toast.success("Device registered", { description: `command_secret ${shortHash(res.commandSecret)}` });
     } catch (e) {
       toast.error("Registration failed", { description: e instanceof Error ? e.message : String(e) });
