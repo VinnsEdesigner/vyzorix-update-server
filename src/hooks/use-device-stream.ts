@@ -18,8 +18,8 @@ export interface DeviceStreamState {
   error?: string;
 }
 
-const HISTORY_LIMIT = 120;
-const LOG_LIMIT = 200;
+const HISTORY_LIMIT = 240;
+const LOG_LIMIT = 500;
 
 export function useDeviceStream(serverUrl: string, deviceId: string, enabled: boolean = true): DeviceStreamState {
   const [state, setState] = useState<WsState>("idle");
