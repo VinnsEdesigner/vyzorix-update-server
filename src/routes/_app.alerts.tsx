@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertTriangle, AlertCircle, Info, Search } from "lucide-react";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
-import { useDeviceStream } from "@/hooks/use-device-stream";
+import { useStream } from "@/lib/device-stream-context";
 import type { TelemetryFrame } from "@/lib/vyzorix-api";
+import type { Thresholds } from "@/lib/vyzorix-config";
 
 export const Route = createFileRoute("/_app/alerts")({
   head: () => ({ meta: [{ title: "System alerts — Vyzorix" }] }),
@@ -31,21 +32,21 @@ const severityIcon: Record<Severity, typeof AlertTriangle> = {
   info: Info,
 };
 
-function deriveAlerts(history: TelemetryFrame[]): DerivedAlert[] {
+function deriveAlerts(history: TelemetryFrame[], th: Thresholds): DerivedAlert[] {
   const out: DerivedAlert[] = [];
   history.forEach((f, i) => {
     const at = typeof f.timestamp === "number" ? f.timestamp : Date.now() - (history.length - i) * 1000;
-    if ((f.riskScore ?? 0) >= 75) {
+    if ((f.riskScore ?? 0) >= th.riskCrit) {
       out.push({ id: `risk-${i}`, severity: "critical", message: `Risk score ${f.riskScore} — soft reboot predicted`, at });
-    } else if ((f.riskScore ?? 0) >= 50) {
+    } else if ((f.riskScore ?? 0) >= th.riskWarn) {
       out.push({ id: `risk-${i}`, severity: "warning", message: `Risk score ${f.riskScore} — elevated`, at });
     }
-    if ((f.thermalTemp ?? 0) >= 55) {
+    if ((f.thermalTemp ?? 0) >= th.thermalCrit) {
       out.push({ id: `thermal-${i}`, severity: "critical", message: `Thermal ${f.thermalTemp?.toFixed(1)}°C — THROTTLE_HEAVY`, at });
-    } else if ((f.thermalTemp ?? 0) >= 45) {
+    } else if ((f.thermalTemp ?? 0) >= th.thermalWarn) {
       out.push({ id: `thermal-${i}`, severity: "warning", message: `Thermal ${f.thermalTemp?.toFixed(1)}°C — THROTTLE_LIGHT`, at });
     }
-    if (f.bufferLevel != null && f.bufferLevel < 50) {
+    if (f.bufferLevel != null && f.bufferLevel < th.bufferWarn) {
       out.push({ id: `buf-${i}`, severity: "warning", message: `Buffer fill ${f.bufferLevel}% — approaching underrun`, at });
     }
     if (f.speakerOn === false) {
@@ -56,12 +57,12 @@ function deriveAlerts(history: TelemetryFrame[]): DerivedAlert[] {
 }
 
 function AlertsPage() {
-  const { serverUrl, deviceId } = useVyzorixConfig();
-  const stream = useDeviceStream(serverUrl, deviceId);
+  const { thresholds } = useVyzorixConfig();
+  const stream = useStream();
   const [query, setQuery] = useState("");
   const [severity, setSeverity] = useState<"all" | Severity>("all");
 
-  const alerts = useMemo(() => deriveAlerts(stream.telemetryHistory), [stream.telemetryHistory]);
+  const alerts = useMemo(() => deriveAlerts(stream.telemetryHistory, thresholds), [stream.telemetryHistory, thresholds]);
   const filtered = alerts.filter((a) => {
     if (severity !== "all" && a.severity !== severity) return false;
     if (!query.trim()) return true;
@@ -85,7 +86,7 @@ function AlertsPage() {
       <Card>
         <CardHeader>
           <CardTitle>System alerts</CardTitle>
-          <CardDescription>Derived from live TelemetryFrame thresholds · {alerts.length} total</CardDescription>
+          <CardDescription>Derived from live DeviceSignal thresholds · {alerts.length} total</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
