@@ -4,8 +4,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { ConnectionBadge } from "@/components/connection-badge";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/sonner";
-import { useVyzorixConfig } from "@/lib/vyzorix-config";
-import { useDeviceStream } from "@/hooks/use-device-stream";
+import { DeviceStreamProvider, useStream } from "@/lib/device-stream-context";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
@@ -21,13 +20,24 @@ const titles: Record<string, string> = {
 };
 
 function AppLayout() {
-  const pathname = useRouterState({ select: (r) => r.location.pathname });
-  const title = titles[pathname] ?? "Vyzorix";
-  const { serverUrl, deviceId } = useVyzorixConfig();
-  const { state } = useDeviceStream(serverUrl, deviceId);
-
   return (
     <SidebarProvider>
+      <DeviceStreamProvider>
+        <AppShell />
+      </DeviceStreamProvider>
+    </SidebarProvider>
+  );
+}
+
+function AppShell() {
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const title =
+    titles[pathname] ??
+    (pathname.startsWith("/settings") ? "Settings" : "Vyzorix");
+  const { state } = useStream();
+
+  return (
+    <>
       <AppSidebar />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -43,6 +53,6 @@ function AppLayout() {
         </main>
         <Toaster />
       </SidebarInset>
-    </SidebarProvider>
+    </>
   );
 }
