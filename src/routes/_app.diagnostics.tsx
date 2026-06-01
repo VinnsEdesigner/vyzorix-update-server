@@ -8,7 +8,7 @@ import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tool
 import { toast } from "sonner";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
-import { useDeviceStream } from "@/hooks/use-device-stream";
+import { useStream } from "@/lib/device-stream-context";
 import { COMMANDS, dispatchCommand } from "@/lib/vyzorix-api";
 import { formatRelative } from "@/lib/format";
 
@@ -20,8 +20,8 @@ export const Route = createFileRoute("/_app/diagnostics")({
 const tip = { background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 };
 
 function DiagnosticsPage() {
-  const { serverUrl, deviceId } = useVyzorixConfig();
-  const stream = useDeviceStream(serverUrl, deviceId);
+  const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
+  const stream = useStream();
   const [pending, setPending] = useState<string | null>(null);
 
   const send = async (cmd: string) => {
@@ -73,7 +73,7 @@ function DiagnosticsPage() {
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <Stat label="Connection" value={stream.state} />
             <Stat label="Frames buffered" value={`${stream.telemetryHistory.length}`} />
-            <Stat label="Last telemetry" value={formatRelative(stream.lastTelemetry?.timestamp ?? undefined)} />
+            <Stat label="Last signal" value={formatRelative(stream.lastTelemetry?.timestamp ?? undefined)} />
             <Stat label="Last error" value={stream.error ?? "—"} />
           </CardContent>
         </Card>
@@ -81,22 +81,25 @@ function DiagnosticsPage() {
 
       <Tabs defaultValue="charts">
         <TabsList>
-          <TabsTrigger value="charts">Live charts</TabsTrigger>
-          <TabsTrigger value="logs">Log terminal</TabsTrigger>
+          <TabsTrigger value="charts">Live signals</TabsTrigger>
+          <TabsTrigger value="logs">Log terminal ({stream.logs.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="charts" className="grid gap-4 lg:grid-cols-2">
-          <ChartCard title="Risk score" data={risk} thresholds={[50, 75]} />
-          <ChartCard title="Thermal (°C)" data={thermal} thresholds={[45, 55]} />
-          <ChartCard title="Buffer level (%)" data={buffer} thresholds={[50]} />
+          <ChartCard title="Risk score" data={risk} thresholds={[thresholds.riskWarn, thresholds.riskCrit]} />
+          <ChartCard title="Thermal (°C)" data={thermal} thresholds={[thresholds.thermalWarn, thresholds.thermalCrit]} />
+          <ChartCard title="Buffer level (%)" data={buffer} thresholds={[thresholds.bufferWarn]} />
           <ChartCard title="Audio mode" data={audioMode} />
         </TabsContent>
         <TabsContent value="logs">
           <Card>
-            <CardHeader><CardTitle className="text-base">Live WS frames</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Persistent frame log</CardTitle>
+              <CardDescription>Collected in the background since you opened the app. Rolling buffer of the last 500 entries.</CardDescription>
+            </CardHeader>
             <CardContent>
               <ScrollArea className="h-80 rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
                 {stream.logs.length === 0 ? (
-                  <p className="text-muted-foreground">No frames received yet.</p>
+                  <p className="text-muted-foreground">No frames received yet. The terminal will fill in the background even when this panel is closed.</p>
                 ) : (
                   stream.logs.slice().reverse().map((l, i) => (
                     <div key={i} className={l.level === "error" ? "text-destructive" : l.level === "warn" ? "text-yellow-600 dark:text-yellow-400" : ""}>
@@ -128,7 +131,7 @@ function ChartCard({ title, data, thresholds }: { title: string; data: { i: numb
       <CardHeader className="pb-2"><CardTitle className="text-base">{title}</CardTitle></CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">Waiting for telemetry…</div>
+          <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">Waiting for signals…</div>
         ) : (
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
