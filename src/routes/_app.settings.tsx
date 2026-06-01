@@ -24,7 +24,7 @@ function SettingsLayout() {
           return (
             <Link
               key={t.to}
-              to={t.to}
+              to={t.to as "/settings"}
               className={cn(
                 "rounded px-3 py-1.5 transition-colors",
                 active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
