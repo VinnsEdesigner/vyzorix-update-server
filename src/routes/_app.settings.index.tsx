@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Cable, ShieldCheck, SlidersHorizontal, Wrench } from "lucide-react";
+import { ArrowRight, Bell, Cable, Palette, ShieldCheck, SlidersHorizontal, Wrench } from "lucide-react";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import { useServerHealth } from "@/hooks/use-server-health";
 
@@ -27,6 +27,18 @@ const sections = [
     icon: SlidersHorizontal,
     title: "Thresholds",
     description: "Risk, thermal and buffer thresholds that drive alerts and the dashboard.",
+  },
+  {
+    to: "/settings/notifications",
+    icon: Bell,
+    title: "Notifications",
+    description: "Toast and browser-push behaviour for alerts and command results.",
+  },
+  {
+    to: "/settings/appearance",
+    icon: Palette,
+    title: "Appearance",
+    description: "Theme (system / light / dark) for this browser.",
   },
   {
     to: "/settings/advanced",
