@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
 import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
+import { Terminal } from "lucide-react";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import { useStream } from "@/lib/device-stream-context";
@@ -79,39 +79,22 @@ function DiagnosticsPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="charts">
-        <TabsList>
-          <TabsTrigger value="charts">Live signals</TabsTrigger>
-          <TabsTrigger value="logs">Log terminal ({stream.logs.length})</TabsTrigger>
-        </TabsList>
-        <TabsContent value="charts" className="grid gap-4 lg:grid-cols-2">
-          <ChartCard title="Risk score" data={risk} thresholds={[thresholds.riskWarn, thresholds.riskCrit]} />
-          <ChartCard title="Thermal (°C)" data={thermal} thresholds={[thresholds.thermalWarn, thresholds.thermalCrit]} />
-          <ChartCard title="Buffer level (%)" data={buffer} thresholds={[thresholds.bufferWarn]} />
-          <ChartCard title="Audio mode" data={audioMode} />
-        </TabsContent>
-        <TabsContent value="logs">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Persistent frame log</CardTitle>
-              <CardDescription>Collected in the background since you opened the app. Rolling buffer of the last 500 entries.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-80 rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
-                {stream.logs.length === 0 ? (
-                  <p className="text-muted-foreground">No frames received yet. The terminal will fill in the background even when this panel is closed.</p>
-                ) : (
-                  stream.logs.slice().reverse().map((l, i) => (
-                    <div key={i} className={l.level === "error" ? "text-destructive" : l.level === "warn" ? "text-yellow-600 dark:text-yellow-400" : ""}>
-                      [{new Date(l.t).toLocaleTimeString()}] {l.text}
-                    </div>
-                  ))
-                )}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ChartCard title="Risk score" data={risk} thresholds={[thresholds.riskWarn, thresholds.riskCrit]} />
+        <ChartCard title="Thermal (°C)" data={thermal} thresholds={[thresholds.thermalWarn, thresholds.thermalCrit]} />
+        <ChartCard title="Buffer level (%)" data={buffer} thresholds={[thresholds.bufferWarn]} />
+        <ChartCard title="Audio mode" data={audioMode} />
+      </div>
+
+      <Card>
+        <CardContent className="flex items-center justify-between gap-3 py-4 text-sm">
+          <div className="flex items-center gap-2">
+            <Terminal className="h-4 w-4 text-muted-foreground" />
+            <span>All service logs now stream into the docked log console at the bottom of every page.</span>
+          </div>
+          <Link to="/logs"><Button variant="outline" size="sm">Open full page logs</Button></Link>
+        </CardContent>
+      </Card>
     </div>
   );
 }
