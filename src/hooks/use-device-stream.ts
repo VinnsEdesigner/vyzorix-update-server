@@ -1,31 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { wsUrl } from "@/lib/vyzorix-config";
 import type { TelemetryFrame } from "@/lib/vyzorix-api";
+import { logger } from "@/lib/logger";
 
 export type WsState = "connecting" | "connected" | "reconnecting" | "disconnected" | "idle";
-
-export interface StreamLogEntry {
-  t: number;
-  level: "info" | "warn" | "error";
-  text: string;
-}
 
 export interface DeviceStreamState {
   state: WsState;
   lastTelemetry: TelemetryFrame | null;
   telemetryHistory: TelemetryFrame[];
-  logs: StreamLogEntry[];
   error?: string;
 }
 
 const HISTORY_LIMIT = 240;
-const LOG_LIMIT = 500;
 
 export function useDeviceStream(serverUrl: string, deviceId: string, enabled: boolean = true): DeviceStreamState {
   const [state, setState] = useState<WsState>("idle");
   const [lastTelemetry, setLast] = useState<TelemetryFrame | null>(null);
   const [history, setHistory] = useState<TelemetryFrame[]>([]);
-  const [logs, setLogs] = useState<StreamLogEntry[]>([]);
   const [error, setError] = useState<string | undefined>(undefined);
   const wsRef = useRef<WebSocket | null>(null);
   const retryRef = useRef(0);
@@ -38,20 +30,18 @@ export function useDeviceStream(serverUrl: string, deviceId: string, enabled: bo
     }
     stopRef.current = false;
 
-    const log = (level: StreamLogEntry["level"], text: string) =>
-      setLogs((prev) => [...prev.slice(-(LOG_LIMIT - 1)), { t: Date.now(), level, text }]);
-
     const connect = () => {
       const url = wsUrl(serverUrl, `/v1/device/${encodeURIComponent(deviceId)}/stream`);
       if (!url) return;
       setState(retryRef.current === 0 ? "connecting" : "reconnecting");
-      log("info", `WS connect → ${url}`);
+      logger.info("ws", `connect → ${url}`);
       let ws: WebSocket;
       try {
         ws = new WebSocket(url);
       } catch (e) {
         setError(String(e));
         setState("disconnected");
+        logger.error("ws", `construct failed · ${String(e)}`);
         scheduleRetry();
         return;
       }
@@ -61,7 +51,7 @@ export function useDeviceStream(serverUrl: string, deviceId: string, enabled: bo
         retryRef.current = 0;
         setState("connected");
         setError(undefined);
-        log("info", `WS open · device=${deviceId}`);
+        logger.info("ws", `open · device=${deviceId}`);
       };
       ws.onmessage = (ev) => {
         try {
@@ -69,23 +59,23 @@ export function useDeviceStream(serverUrl: string, deviceId: string, enabled: bo
           if (frame.type === "telemetry") {
             setLast(frame);
             setHistory((prev) => [...prev.slice(-(HISTORY_LIMIT - 1)), frame]);
-            log("info", `telemetry risk=${frame.riskScore ?? "-"} buf=${frame.bufferLevel ?? "-"} temp=${frame.thermalTemp ?? "-"}`);
+            logger.debug("ws", `telemetry risk=${frame.riskScore ?? "-"} buf=${frame.bufferLevel ?? "-"} temp=${frame.thermalTemp ?? "-"}`);
           } else if (frame.type === "command") {
-            log("info", `command echo · ${frame.command} (${frame.dispatchId})`);
+            logger.info("ws", `command echo · ${frame.command} (${String(frame.dispatchId).slice(0, 8)})`);
           } else if (frame.type === "ack") {
-            log("info", `ack · ${frame.dispatchId ?? ""} ${frame.status ?? ""}`);
+            logger.info("ws", `ack · ${String(frame.dispatchId ?? "").slice(0, 8)} ${frame.status ?? ""}`);
           } else {
-            log("info", `frame · ${ev.data.slice(0, 200)}`);
+            logger.debug("ws", `frame · ${String(ev.data).slice(0, 200)}`);
           }
         } catch {
-          log("warn", `non-JSON frame · ${String(ev.data).slice(0, 120)}`);
+          logger.warn("ws", `non-JSON frame · ${String(ev.data).slice(0, 120)}`);
         }
       };
       ws.onerror = () => {
-        log("error", "WS error");
+        logger.error("ws", "socket error");
       };
       ws.onclose = (ev) => {
-        log("warn", `WS closed code=${ev.code} reason=${ev.reason || "—"}`);
+        logger.warn("ws", `closed code=${ev.code} reason=${ev.reason || "—"}`);
         setState("disconnected");
         scheduleRetry();
       };
@@ -109,5 +99,5 @@ export function useDeviceStream(serverUrl: string, deviceId: string, enabled: bo
     };
   }, [serverUrl, deviceId, enabled]);
 
-  return { state, lastTelemetry, telemetryHistory: history, logs, error };
+  return { state, lastTelemetry, telemetryHistory: history, error };
 }

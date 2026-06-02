@@ -5,6 +5,7 @@ import { ConnectionBadge } from "@/components/connection-badge";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/sonner";
 import { DeviceStreamProvider, useStream } from "@/lib/device-stream-context";
+import { LogDock } from "@/components/logs/log-dock";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
@@ -16,6 +17,7 @@ const titles: Record<string, string> = {
   "/diagnostics": "Diagnostics",
   "/alerts": "System alerts",
   "/updates": "Updates",
+  "/logs": "Logs",
   "/settings": "Settings",
 };
 
@@ -50,6 +52,7 @@ function AppShell() {
         </header>
         <main className="flex-1 p-4 md:p-6">
           <Outlet />
+          <LogDock />
         </main>
         <Toaster />
       </SidebarInset>

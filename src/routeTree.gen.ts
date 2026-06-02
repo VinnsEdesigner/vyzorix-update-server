@@ -14,14 +14,17 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppUpdatesRouteImport } from './routes/_app.updates'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppLogsRouteImport } from './routes/_app.logs'
 import { Route as AppDiagnosticsRouteImport } from './routes/_app.diagnostics'
 import { Route as AppDeviceRouteImport } from './routes/_app.device'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppAlertsRouteImport } from './routes/_app.alerts'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app.settings.index'
-import { Route as AppSettingsConnectionRouteImport } from './routes/_app.settings.connection'
-import { Route as AppSettingsOperatorRouteImport } from './routes/_app.settings.operator'
 import { Route as AppSettingsThresholdsRouteImport } from './routes/_app.settings.thresholds'
+import { Route as AppSettingsOperatorRouteImport } from './routes/_app.settings.operator'
+import { Route as AppSettingsNotificationsRouteImport } from './routes/_app.settings.notifications'
+import { Route as AppSettingsConnectionRouteImport } from './routes/_app.settings.connection'
+import { Route as AppSettingsAppearanceRouteImport } from './routes/_app.settings.appearance'
 import { Route as AppSettingsAdvancedRouteImport } from './routes/_app.settings.advanced'
 
 const LoginRoute = LoginRouteImport.update({
@@ -46,6 +49,11 @@ const AppUpdatesRoute = AppUpdatesRouteImport.update({
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLogsRoute = AppLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDiagnosticsRoute = AppDiagnosticsRouteImport.update({
@@ -73,9 +81,9 @@ const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppSettingsRoute,
 } as any)
-const AppSettingsConnectionRoute = AppSettingsConnectionRouteImport.update({
-  id: '/connection',
-  path: '/connection',
+const AppSettingsThresholdsRoute = AppSettingsThresholdsRouteImport.update({
+  id: '/thresholds',
+  path: '/thresholds',
   getParentRoute: () => AppSettingsRoute,
 } as any)
 const AppSettingsOperatorRoute = AppSettingsOperatorRouteImport.update({
@@ -83,9 +91,20 @@ const AppSettingsOperatorRoute = AppSettingsOperatorRouteImport.update({
   path: '/operator',
   getParentRoute: () => AppSettingsRoute,
 } as any)
-const AppSettingsThresholdsRoute = AppSettingsThresholdsRouteImport.update({
-  id: '/thresholds',
-  path: '/thresholds',
+const AppSettingsNotificationsRoute =
+  AppSettingsNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AppSettingsRoute,
+  } as any)
+const AppSettingsConnectionRoute = AppSettingsConnectionRouteImport.update({
+  id: '/connection',
+  path: '/connection',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
+const AppSettingsAppearanceRoute = AppSettingsAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
   getParentRoute: () => AppSettingsRoute,
 } as any)
 const AppSettingsAdvancedRoute = AppSettingsAdvancedRouteImport.update({
@@ -101,12 +120,16 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/device': typeof AppDeviceRoute
   '/diagnostics': typeof AppDiagnosticsRoute
-  '/settings': typeof AppSettingsIndexRoute
+  '/logs': typeof AppLogsRoute
+  '/settings': typeof AppSettingsRouteWithChildren
+  '/updates': typeof AppUpdatesRoute
+  '/settings/advanced': typeof AppSettingsAdvancedRoute
+  '/settings/appearance': typeof AppSettingsAppearanceRoute
   '/settings/connection': typeof AppSettingsConnectionRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/settings/operator': typeof AppSettingsOperatorRoute
   '/settings/thresholds': typeof AppSettingsThresholdsRoute
-  '/settings/advanced': typeof AppSettingsAdvancedRoute
-  '/updates': typeof AppUpdatesRoute
+  '/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -114,13 +137,16 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/device': typeof AppDeviceRoute
   '/diagnostics': typeof AppDiagnosticsRoute
-  '/settings': typeof AppSettingsIndexRoute
-  '/settings/connection': typeof AppSettingsConnectionRoute
-  '/settings/operator': typeof AppSettingsOperatorRoute
-  '/settings/thresholds': typeof AppSettingsThresholdsRoute
-  '/settings/advanced': typeof AppSettingsAdvancedRoute
+  '/logs': typeof AppLogsRoute
   '/updates': typeof AppUpdatesRoute
   '/': typeof AppIndexRoute
+  '/settings/advanced': typeof AppSettingsAdvancedRoute
+  '/settings/appearance': typeof AppSettingsAppearanceRoute
+  '/settings/connection': typeof AppSettingsConnectionRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/settings/operator': typeof AppSettingsOperatorRoute
+  '/settings/thresholds': typeof AppSettingsThresholdsRoute
+  '/settings': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -130,14 +156,17 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/device': typeof AppDeviceRoute
   '/_app/diagnostics': typeof AppDiagnosticsRoute
+  '/_app/logs': typeof AppLogsRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
-  '/_app/settings/': typeof AppSettingsIndexRoute
-  '/_app/settings/connection': typeof AppSettingsConnectionRoute
-  '/_app/settings/operator': typeof AppSettingsOperatorRoute
-  '/_app/settings/thresholds': typeof AppSettingsThresholdsRoute
-  '/_app/settings/advanced': typeof AppSettingsAdvancedRoute
   '/_app/updates': typeof AppUpdatesRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/settings/advanced': typeof AppSettingsAdvancedRoute
+  '/_app/settings/appearance': typeof AppSettingsAppearanceRoute
+  '/_app/settings/connection': typeof AppSettingsConnectionRoute
+  '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/_app/settings/operator': typeof AppSettingsOperatorRoute
+  '/_app/settings/thresholds': typeof AppSettingsThresholdsRoute
+  '/_app/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -148,12 +177,16 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/device'
     | '/diagnostics'
+    | '/logs'
     | '/settings'
+    | '/updates'
+    | '/settings/advanced'
+    | '/settings/appearance'
     | '/settings/connection'
+    | '/settings/notifications'
     | '/settings/operator'
     | '/settings/thresholds'
-    | '/settings/advanced'
-    | '/updates'
+    | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -161,13 +194,16 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/device'
     | '/diagnostics'
-    | '/settings'
-    | '/settings/connection'
-    | '/settings/operator'
-    | '/settings/thresholds'
-    | '/settings/advanced'
+    | '/logs'
     | '/updates'
     | '/'
+    | '/settings/advanced'
+    | '/settings/appearance'
+    | '/settings/connection'
+    | '/settings/notifications'
+    | '/settings/operator'
+    | '/settings/thresholds'
+    | '/settings'
   id:
     | '__root__'
     | '/_app'
@@ -176,14 +212,17 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/device'
     | '/_app/diagnostics'
+    | '/_app/logs'
     | '/_app/settings'
-    | '/_app/settings/'
-    | '/_app/settings/connection'
-    | '/_app/settings/operator'
-    | '/_app/settings/thresholds'
-    | '/_app/settings/advanced'
     | '/_app/updates'
     | '/_app/'
+    | '/_app/settings/advanced'
+    | '/_app/settings/appearance'
+    | '/_app/settings/connection'
+    | '/_app/settings/notifications'
+    | '/_app/settings/operator'
+    | '/_app/settings/thresholds'
+    | '/_app/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -228,40 +267,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/settings/': {
-      id: '/_app/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof AppSettingsIndexRouteImport
-      parentRoute: typeof AppSettingsRoute
-    }
-    '/_app/settings/connection': {
-      id: '/_app/settings/connection'
-      path: '/connection'
-      fullPath: '/settings/connection'
-      preLoaderRoute: typeof AppSettingsConnectionRouteImport
-      parentRoute: typeof AppSettingsRoute
-    }
-    '/_app/settings/operator': {
-      id: '/_app/settings/operator'
-      path: '/operator'
-      fullPath: '/settings/operator'
-      preLoaderRoute: typeof AppSettingsOperatorRouteImport
-      parentRoute: typeof AppSettingsRoute
-    }
-    '/_app/settings/thresholds': {
-      id: '/_app/settings/thresholds'
-      path: '/thresholds'
-      fullPath: '/settings/thresholds'
-      preLoaderRoute: typeof AppSettingsThresholdsRouteImport
-      parentRoute: typeof AppSettingsRoute
-    }
-    '/_app/settings/advanced': {
-      id: '/_app/settings/advanced'
-      path: '/advanced'
-      fullPath: '/settings/advanced'
-      preLoaderRoute: typeof AppSettingsAdvancedRouteImport
-      parentRoute: typeof AppSettingsRoute
+    '/_app/logs': {
+      id: '/_app/logs'
+      path: '/logs'
+      fullPath: '/logs'
+      preLoaderRoute: typeof AppLogsRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/diagnostics': {
       id: '/_app/diagnostics'
@@ -291,32 +302,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAlertsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/': {
+      id: '/_app/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AppSettingsIndexRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/thresholds': {
+      id: '/_app/settings/thresholds'
+      path: '/thresholds'
+      fullPath: '/settings/thresholds'
+      preLoaderRoute: typeof AppSettingsThresholdsRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/operator': {
+      id: '/_app/settings/operator'
+      path: '/operator'
+      fullPath: '/settings/operator'
+      preLoaderRoute: typeof AppSettingsOperatorRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/notifications': {
+      id: '/_app/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AppSettingsNotificationsRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/connection': {
+      id: '/_app/settings/connection'
+      path: '/connection'
+      fullPath: '/settings/connection'
+      preLoaderRoute: typeof AppSettingsConnectionRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/appearance': {
+      id: '/_app/settings/appearance'
+      path: '/appearance'
+      fullPath: '/settings/appearance'
+      preLoaderRoute: typeof AppSettingsAppearanceRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/advanced': {
+      id: '/_app/settings/advanced'
+      path: '/advanced'
+      fullPath: '/settings/advanced'
+      preLoaderRoute: typeof AppSettingsAdvancedRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
   }
 }
 
 interface AppSettingsRouteChildren {
-  AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+  AppSettingsAdvancedRoute: typeof AppSettingsAdvancedRoute
+  AppSettingsAppearanceRoute: typeof AppSettingsAppearanceRoute
   AppSettingsConnectionRoute: typeof AppSettingsConnectionRoute
+  AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
   AppSettingsOperatorRoute: typeof AppSettingsOperatorRoute
   AppSettingsThresholdsRoute: typeof AppSettingsThresholdsRoute
-  AppSettingsAdvancedRoute: typeof AppSettingsAdvancedRoute
+  AppSettingsIndexRoute: typeof AppSettingsIndexRoute
 }
 
 const AppSettingsRouteChildren: AppSettingsRouteChildren = {
-  AppSettingsIndexRoute: AppSettingsIndexRoute,
+  AppSettingsAdvancedRoute: AppSettingsAdvancedRoute,
+  AppSettingsAppearanceRoute: AppSettingsAppearanceRoute,
   AppSettingsConnectionRoute: AppSettingsConnectionRoute,
+  AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
   AppSettingsOperatorRoute: AppSettingsOperatorRoute,
   AppSettingsThresholdsRoute: AppSettingsThresholdsRoute,
-  AppSettingsAdvancedRoute: AppSettingsAdvancedRoute,
+  AppSettingsIndexRoute: AppSettingsIndexRoute,
 }
 
-const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(AppSettingsRouteChildren)
+const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
+  AppSettingsRouteChildren,
+)
 
 interface AppRouteChildren {
   AppAlertsRoute: typeof AppAlertsRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDeviceRoute: typeof AppDeviceRoute
   AppDiagnosticsRoute: typeof AppDiagnosticsRoute
+  AppLogsRoute: typeof AppLogsRoute
   AppSettingsRoute: typeof AppSettingsRouteWithChildren
   AppUpdatesRoute: typeof AppUpdatesRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -327,6 +394,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppDeviceRoute: AppDeviceRoute,
   AppDiagnosticsRoute: AppDiagnosticsRoute,
+  AppLogsRoute: AppLogsRoute,
   AppSettingsRoute: AppSettingsRouteWithChildren,
   AppUpdatesRoute: AppUpdatesRoute,
   AppIndexRoute: AppIndexRoute,
@@ -341,13 +409,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

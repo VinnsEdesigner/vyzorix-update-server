@@ -2,6 +2,7 @@
 // All calls run from the browser. The mock server's WSS upgrader accepts any
 // origin; for REST you may need to allow CORS or run the dashboard locally
 // alongside the server.
+import { logger } from "@/lib/logger";
 
 export interface VersionManifest {
   version: string;
@@ -73,20 +74,43 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
 }
 
 export async function getHealth(serverUrl: string): Promise<{ ok: boolean }> {
-  const res = await fetch(join(serverUrl, "/healthz"), { method: "GET" });
-  return { ok: res.ok };
+  const t0 = Date.now();
+  try {
+    const res = await fetch(join(serverUrl, "/healthz"), { method: "GET" });
+    logger.debug("api", `GET /healthz · ${res.status} · ${Date.now() - t0}ms`);
+    return { ok: res.ok };
+  } catch (e) {
+    logger.warn("api", `GET /healthz · failed · ${e instanceof Error ? e.message : String(e)}`);
+    return { ok: false };
+  }
 }
 
 export async function getVersion(serverUrl: string): Promise<VersionManifest> {
-  const res = await fetch(join(serverUrl, "/api/v1/version"), { method: "GET" });
-  return jsonOrThrow<VersionManifest>(res);
+  const t0 = Date.now();
+  try {
+    const res = await fetch(join(serverUrl, "/api/v1/version"), { method: "GET" });
+    const body = await jsonOrThrow<VersionManifest>(res);
+    logger.info("update", `manifest v${body.version} (code ${body.version_code}) · ${Date.now() - t0}ms`);
+    return body;
+  } catch (e) {
+    logger.error("update", `version.json fetch failed · ${e instanceof Error ? e.message : String(e)}`);
+    throw e;
+  }
 }
 
 export async function headApk(serverUrl: string, filename: string): Promise<number | null> {
-  const res = await fetch(join(serverUrl, `/api/v1/apk/${filename}`), { method: "HEAD" });
-  if (!res.ok) return null;
-  const v = res.headers.get("content-length");
-  return v ? Number(v) : null;
+  try {
+    const res = await fetch(join(serverUrl, `/api/v1/apk/${filename}`), { method: "HEAD" });
+    if (!res.ok) {
+      logger.warn("update", `HEAD apk ${filename} · ${res.status}`);
+      return null;
+    }
+    const v = res.headers.get("content-length");
+    return v ? Number(v) : null;
+  } catch (e) {
+    logger.warn("update", `HEAD apk failed · ${e instanceof Error ? e.message : String(e)}`);
+    return null;
+  }
 }
 
 export async function getDeviceStatus(serverUrl: string, deviceId: string): Promise<DeviceStatus> {
@@ -95,12 +119,20 @@ export async function getDeviceStatus(serverUrl: string, deviceId: string): Prom
 }
 
 export async function registerDevice(serverUrl: string, payload: RegisterPayload): Promise<RegisterResponse> {
-  const res = await fetch(join(serverUrl, "/v1/device/register"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  return jsonOrThrow<RegisterResponse>(res);
+  logger.info("device", `register → ${payload.deviceId}`);
+  try {
+    const res = await fetch(join(serverUrl, "/v1/device/register"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const body = await jsonOrThrow<RegisterResponse>(res);
+    logger.info("device", `registered · serverTime=${new Date(body.serverTime).toISOString()}`);
+    return body;
+  } catch (e) {
+    logger.error("device", `register failed · ${e instanceof Error ? e.message : String(e)}`);
+    throw e;
+  }
 }
 
 // Mock server runs with -strict-hmac=false by default, so an empty signature
@@ -115,17 +147,25 @@ export async function dispatchCommand(
   const nonce = crypto.randomUUID().replace(/-/g, "");
   const timestamp = Date.now();
   const body = JSON.stringify({ command, args: args ?? {}, nonce, timestamp });
-  const res = await fetch(join(serverUrl, `/v1/device/${encodeURIComponent(deviceId)}/command`), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Vyzorix-Nonce": nonce,
-      "X-Vyzorix-Timestamp": String(timestamp),
-      "X-Vyzorix-Signature": "",
-    },
-    body,
-  });
-  return jsonOrThrow<CommandResponse>(res);
+  logger.info("command", `→ ${command}`, { nonce: nonce.slice(0, 8), deviceId });
+  try {
+    const res = await fetch(join(serverUrl, `/v1/device/${encodeURIComponent(deviceId)}/command`), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Vyzorix-Nonce": nonce,
+        "X-Vyzorix-Timestamp": String(timestamp),
+        "X-Vyzorix-Signature": "",
+      },
+      body,
+    });
+    const out = await jsonOrThrow<CommandResponse>(res);
+    logger.info("command", `← ${command} · ${out.delivery} · ${out.dispatchId.slice(0, 8)}`);
+    return out;
+  } catch (e) {
+    logger.error("command", `${command} failed · ${e instanceof Error ? e.message : String(e)}`);
+    throw e;
+  }
 }
 
 export const COMMANDS: { id: string; label: string; description: string; danger?: boolean }[] = [
