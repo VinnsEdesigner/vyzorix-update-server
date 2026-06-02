@@ -7,6 +7,7 @@ import {
   Settings,
   Shield,
   Bell,
+  Terminal,
 } from "lucide-react";
 
 import {
@@ -28,6 +29,7 @@ const navItems = [
   { title: "Diagnostics", url: "/diagnostics", icon: Activity },
   { title: "Alerts", url: "/alerts", icon: Bell },
   { title: "Updates", url: "/updates", icon: PackageCheck },
+  { title: "Logs", url: "/logs", icon: Terminal },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
