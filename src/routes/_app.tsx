@@ -50,7 +50,7 @@ function AppShell() {
             <ConnectionBadge state={state} />
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 pb-14 md:p-6 md:pb-14">
           <Outlet />
           <LogDock />
         </main>
