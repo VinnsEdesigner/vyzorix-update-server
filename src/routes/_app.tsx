@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ConnectionBadge } from "@/components/connection-badge";
@@ -6,8 +6,30 @@ import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/sonner";
 import { DeviceStreamProvider, useStream } from "@/lib/device-stream-context";
 import { LogDock } from "@/components/logs/log-dock";
+import { supabase } from "@/integrations/supabase/client";
+import { ensureAdminAccess } from "@/lib/admin.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app")({
+  ssr: false,
+  beforeLoad: async ({ location }) => {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      throw redirect({ to: "/login", search: { redirect: location.href } });
+    }
+    try {
+      const res = await ensureAdminAccess();
+      if (!res.allowed) {
+        await supabase.auth.signOut();
+        toast.error("This account is not authorized.");
+        throw redirect({ to: "/login" });
+      }
+    } catch (e) {
+      if (e && typeof e === "object" && "to" in e) throw e;
+      await supabase.auth.signOut();
+      throw redirect({ to: "/login" });
+    }
+  },
   component: AppLayout,
 });
 
