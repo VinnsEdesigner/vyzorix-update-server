@@ -60,7 +60,8 @@ This repository now includes the first production-oriented server entrypoint at 
 - Render health probes at `/health` and `/healthz`;
 - dashboard device inventory at `/v1/dashboard/devices`;
 - Docker and `render.yaml` deployment configuration with a `/data` persistent disk;
-- static dashboard serving from `VYZORIX_PUBLIC_DIR` with SPA fallback for mobile Chrome access.
+- static dashboard serving from `VYZORIX_PUBLIC_DIR` with SPA fallback for mobile Chrome access;
+- completed backend package folders from the update-server tree (`storage/`, `models/`, `hub/`, `controllers/`, `services/fcm/`, and `middleware/`) so future work can extend without reshuffling files.
 
 Run the real server locally:
 
@@ -69,7 +70,7 @@ go run .
 # listens on :3000 by default
 ```
 
-Render should set the secrets shown in `.env.example` (`TOKEN_SECRET`, `JWT_SECRET`, `FIREBASE_CREDENTIALS`, and `ALLOWED_ORIGINS`) and keep `DATABASE_URL=/data/vyzorix.db` so the registration/command state survives deploys.
+Render should set the secrets shown in `.env.example` (`TOKEN_SECRET`, `JWT_SECRET`, `FIREBASE_CREDENTIALS`, and `ALLOWED_ORIGINS`) and keep `DATABASE_URL=/data/vyzorix.db` so the registration/command state survives deploys. The dashboard stores `TOKEN_SECRET` locally as its dashboard token in Settings → Connection, which keeps mobile Chrome usable without a PC-side environment file.
 
 ## What this tree deliberately keeps separate
 

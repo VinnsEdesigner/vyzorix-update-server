@@ -9,7 +9,7 @@ import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tool
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import { useStream } from "@/lib/device-stream-context";
 import { useServerHealth } from "@/hooks/use-server-health";
-import { getDeviceStatus, getVersion } from "@/lib/vyzorix-api";
+import { getDashboardDevices, getDeviceStatus, getVersion } from "@/lib/vyzorix-api";
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
 import { formatRelative, formatUptime } from "@/lib/format";
 
@@ -33,7 +33,7 @@ function deriveHealth(
 }
 
 function DashboardPage() {
-  const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
+  const { serverUrl, deviceId, thresholds, dashboardToken } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
   const stream = useStream();
   const t = stream.lastTelemetry;
@@ -50,6 +50,14 @@ function DashboardPage() {
     queryKey: ["vyzorix", "version", serverUrl],
     queryFn: () => getVersion(serverUrl),
     enabled: health.data?.ok === true,
+    retry: false,
+  });
+
+  const devices = useQuery({
+    queryKey: ["vyzorix", "dashboard-devices", serverUrl, dashboardToken],
+    queryFn: () => getDashboardDevices(serverUrl, dashboardToken),
+    enabled: health.data?.ok === true,
+    refetchInterval: 15_000,
     retry: false,
   });
 
@@ -70,7 +78,7 @@ function DashboardPage() {
               <p className="font-medium">Cannot reach update server</p>
               <p className="text-muted-foreground">
                 Tried <code className="text-xs">{serverUrl}/healthz</code>. Start it with{" "}
-                <code className="text-xs">go run ./cmd/mockserver</code> or change the URL in Settings.
+                <code className="text-xs">go run .</code> or change the URL in Settings.
               </p>
             </div>
           </CardContent>
@@ -149,6 +157,7 @@ function DashboardPage() {
             <KV k="Latest version" v={version.data?.version ?? "—"} />
             <KV k="Version code" v={version.data?.version_code != null ? `${version.data.version_code}` : "—"} />
             <KV k="Health" v={health.data?.ok ? "ok" : "down"} />
+            <KV k="Fleet devices" v={devices.data ? `${devices.data.length}` : "—"} />
           </CardContent>
         </Card>
       </div>
