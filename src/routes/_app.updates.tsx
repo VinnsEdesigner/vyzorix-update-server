@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_app/updates")({
 });
 
 function UpdatesPage() {
-  const { serverUrl, deviceId } = useVyzorixConfig();
+  const { serverUrl, deviceId, dashboardToken } = useVyzorixConfig();
 
   const version = useQuery({
     queryKey: ["vyzorix", "version", serverUrl],
@@ -41,7 +41,7 @@ function UpdatesPage() {
 
   const wake = async () => {
     try {
-      const res = await dispatchCommand(serverUrl, deviceId, "WAKE_UP_UPDATER");
+      const res = await dispatchCommand(serverUrl, deviceId, "WAKE_UP_UPDATER", undefined, dashboardToken);
       toast.success(`WAKE_UP_UPDATER → ${res.delivery}`, { description: `dispatch ${res.dispatchId}` });
     } catch (e) {
       toast.error("WAKE_UP_UPDATER failed", { description: e instanceof Error ? e.message : String(e) });
@@ -65,7 +65,7 @@ function UpdatesPage() {
             {version.isError ? (
               <div className="space-y-2">
                 <p className="text-sm text-destructive">Failed to load version.json — {(version.error as Error).message}</p>
-                <p className="text-xs text-muted-foreground">Start the Go server with <code>go run ./cmd/mockserver</code>, or update the URL in Settings → Connection.</p>
+                <p className="text-xs text-muted-foreground">Start the Go server with <code>go run .</code>, or update the URL in Settings → Connection.</p>
               </div>
             ) : version.isLoading || !v ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
@@ -112,9 +112,9 @@ function UpdatesPage() {
             <p className="text-sm text-muted-foreground">—</p>
           )}
           <div className="mt-4 flex items-center gap-2">
-            <Badge variant="outline">phase 1</Badge>
-            <Badge variant="outline">mock server</Badge>
-            <span className="text-xs text-muted-foreground">Per ADR-0009. Real server lands in Phase 1.5 with no Android changes.</span>
+            <Badge variant="outline">phase 1.5</Badge>
+            <Badge variant="outline">real server</Badge>
+            <span className="text-xs text-muted-foreground">Render-backed server keeps the Android mock contract paths stable.</span>
           </div>
         </CardContent>
       </Card>

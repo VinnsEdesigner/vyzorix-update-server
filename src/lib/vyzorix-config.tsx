@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-export const DEFAULT_SERVER_URL = "http://localhost:8080";
+export const DEFAULT_SERVER_URL = "http://localhost:3000";
 export const DEFAULT_DEVICE_ID = "nokia-c22-primary";
 
 const STORAGE_KEY = "vyzorix.config.v2";
@@ -27,6 +27,7 @@ export interface VyzorixSettings {
   logBufferLimit: number;
   signalHistoryLimit: number;
   strictHmac: boolean;
+  dashboardToken: string;
   notificationsEnabled: boolean;
   operator: Operator;
   thresholds: Thresholds;
@@ -40,6 +41,7 @@ export const DEFAULT_SETTINGS: VyzorixSettings = {
   logBufferLimit: 500,
   signalHistoryLimit: 240,
   strictHmac: false,
+  dashboardToken: "",
   notificationsEnabled: true,
   operator: { name: "", role: "operator", email: "" },
   thresholds: { riskWarn: 50, riskCrit: 75, thermalWarn: 45, thermalCrit: 55, bufferWarn: 50 },
