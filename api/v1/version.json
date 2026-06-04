@@ -1,0 +1,8 @@
+{
+  "version": "0.0.0-dev",
+  "version_code": 0,
+  "apk_filename": "",
+  "apk_sha256": "",
+  "apk_size_bytes": 0,
+  "release_notes": "No production APK has been published yet. Replace this file from CI when the Android release artifact is ready."
+}
