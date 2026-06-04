@@ -30,3 +30,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Vyzorix real server runtime artifacts
+*.db
+*.db-*
+/data/*
+!/data/.gitkeep
+/bin/*
+!/bin/.gitkeep
+.env
