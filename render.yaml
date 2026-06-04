@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: vyzorix-update-server
+    env: docker
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /health
+    disk:
+      name: vyzorix-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        value: /data/vyzorix.db
+      - key: VYZORIX_API_DIR
+        value: /app/api/v1
+      - key: VYZORIX_BIN_DIR
+        value: /app/bin
+      - key: VYZORIX_PUBLIC_DIR
+        value: /app/public
+      - key: ENFORCE_HMAC
+        value: true
+      - key: TOKEN_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FIREBASE_CREDENTIALS
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false

@@ -49,8 +49,30 @@ Per [ADR-0009 (Phase 1 mock-first)](https://github.com/VinnsEdesigner/VyzorixAud
 - **Phase 2** — the dashboard (which already lives in the publication target's `src/`) wires up to the real server's `/v1/dashboard/*` endpoints.
 - **Phase 3** — hardening: key rotation, multi-device, audit logging, secret-store migration to KMS.
 
-## What this tree deliberately does NOT contain
 
-- The real production server — that arrives in Phase 1.5. See [`UPDATE_SERVER_ARCHITECTURE_SPEC.md`](https://github.com/VinnsEdesigner/VyzorixAudioRouter/blob/main/doc/UPDATE_SERVER_ARCHITECTURE_SPEC.md) for the target layout.
-- The dashboard — that's a sibling tree in the publication target, owned by Lovable / direct edits in the dashboard repo.
-- Persistent storage — the mock is in-memory by design.
+## Phase 1.5 real Render server
+
+This repository now includes the first production-oriented server entrypoint at the repo root (`main.go`). It keeps the Phase 1 mock server intact under `cmd/mockserver/`, but adds the Render deployable surface expected by `doc/VyzorixUpdate_RepoTree.md`:
+
+- persistent device registration and raw per-device `commandSecret` storage under `DATABASE_URL`;
+- REST endpoints compatible with the Android mock contract (`/v1/device/register`, `/v1/device/{id}/status`, `/v1/device/{id}/command`, `/api/v1/version`, `/api/v1/apk/{file}`);
+- WebSocket device streams at `/v1/device/{id}/stream`;
+- Render health probes at `/health` and `/healthz`;
+- dashboard device inventory at `/v1/dashboard/devices`;
+- Docker and `render.yaml` deployment configuration with a `/data` persistent disk;
+- static dashboard serving from `VYZORIX_PUBLIC_DIR` with SPA fallback for mobile Chrome access.
+
+Run the real server locally:
+
+```bash
+go run .
+# listens on :3000 by default
+```
+
+Render should set the secrets shown in `.env.example` (`TOKEN_SECRET`, `JWT_SECRET`, `FIREBASE_CREDENTIALS`, and `ALLOWED_ORIGINS`) and keep `DATABASE_URL=/data/vyzorix.db` so the registration/command state survives deploys.
+
+## What this tree deliberately keeps separate
+
+- The Phase 1 mock server remains isolated under `cmd/mockserver/` and stays in-memory by design.
+- The dashboard source remains under `src/`, owned by the publication target / Lovable workflow.
+- Release APKs are not committed directly; CI or `scripts/generate_version.sh` should populate `bin/` and `api/v1/version.json` for deployments.
