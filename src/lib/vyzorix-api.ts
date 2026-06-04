@@ -1,7 +1,6 @@
-// Real client for the Go mock server in cmd/mockserver.
-// All calls run from the browser. The mock server's WSS upgrader accepts any
-// origin; for REST you may need to allow CORS or run the dashboard locally
-// alongside the server.
+// Browser client for the Vyzorix Go update server. It targets the real
+// Render-backed Phase 1.5 server while keeping the same Android-facing paths
+// as the Phase 1 mock server.
 import { logger } from "@/lib/logger";
 
 export interface VersionManifest {
@@ -19,6 +18,10 @@ export interface DeviceStatus {
   lastSeen: number;
   appVersion: string;
   deviceClass: string;
+}
+
+export interface DashboardDevicesResponse {
+  devices: DeviceStatus[];
 }
 
 export interface RegisterPayload {
@@ -58,6 +61,10 @@ export interface TelemetryFrame {
 
 function join(base: string, path: string) {
   return base.replace(/\/+$/, "") + path;
+}
+
+function dashboardHeaders(token?: string): HeadersInit {
+  return token ? { Authorization: `Bearer ${token}`, "X-Vyzorix-Token": token } : {};
 }
 
 async function jsonOrThrow<T>(res: Response): Promise<T> {
@@ -118,6 +125,12 @@ export async function getDeviceStatus(serverUrl: string, deviceId: string): Prom
   return jsonOrThrow<DeviceStatus>(res);
 }
 
+export async function getDashboardDevices(serverUrl: string, dashboardToken?: string): Promise<DeviceStatus[]> {
+  const res = await fetch(join(serverUrl, "/v1/dashboard/devices"), { headers: dashboardHeaders(dashboardToken) });
+  const body = await jsonOrThrow<DashboardDevicesResponse>(res);
+  return body.devices;
+}
+
 export async function registerDevice(serverUrl: string, payload: RegisterPayload): Promise<RegisterResponse> {
   logger.info("device", `register → ${payload.deviceId}`);
   try {
@@ -135,14 +148,15 @@ export async function registerDevice(serverUrl: string, payload: RegisterPayload
   }
 }
 
-// Mock server runs with -strict-hmac=false by default, so an empty signature
-// is accepted. Real server signing happens on Android and on the future
-// production update server; the dashboard does not hold the per-device secret.
+// Development can run with ENFORCE_HMAC=false, so an empty device signature is
+// accepted. Production dashboard commands should carry TOKEN_SECRET through
+// Authorization/X-Vyzorix-Token; Android-originated requests still use per-device HMAC.
 export async function dispatchCommand(
   serverUrl: string,
   deviceId: string,
   command: string,
   args?: Record<string, unknown>,
+  dashboardToken?: string,
 ): Promise<CommandResponse> {
   const nonce = crypto.randomUUID().replace(/-/g, "");
   const timestamp = Date.now();
@@ -156,6 +170,7 @@ export async function dispatchCommand(
         "X-Vyzorix-Nonce": nonce,
         "X-Vyzorix-Timestamp": String(timestamp),
         "X-Vyzorix-Signature": "",
+        ...dashboardHeaders(dashboardToken),
       },
       body,
     });

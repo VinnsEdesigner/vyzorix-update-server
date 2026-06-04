@@ -39,8 +39,15 @@ func Open(path string) (*Store, error) {
 func (s *Store) Close() error                   { return nil }
 func (s *Store) Ping(ctx context.Context) error { _, err := s.exec(ctx, `SELECT 1;`); return err }
 func (s *Store) migrate(ctx context.Context) error {
-	_, err := s.exec(ctx, `PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS devices (id TEXT PRIMARY KEY, firebase_install_id TEXT NOT NULL, fcm_token TEXT, app_version TEXT, device_class TEXT, command_secret TEXT NOT NULL, online INTEGER NOT NULL DEFAULT 0, registered_at INTEGER NOT NULL, last_seen INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS telemetry (id INTEGER PRIMARY KEY AUTOINCREMENT, device_id TEXT NOT NULL, received_at INTEGER NOT NULL, payload TEXT NOT NULL, risk_score INTEGER, buffer_level INTEGER, thermal_temp REAL, FOREIGN KEY(device_id) REFERENCES devices(id) ON DELETE CASCADE); CREATE TABLE IF NOT EXISTS commands (dispatch_id TEXT PRIMARY KEY, device_id TEXT NOT NULL, command TEXT NOT NULL, args TEXT, delivery TEXT NOT NULL, created_at INTEGER NOT NULL, delivered_at INTEGER, FOREIGN KEY(device_id) REFERENCES devices(id) ON DELETE CASCADE); CREATE INDEX IF NOT EXISTS idx_telemetry_device_time ON telemetry(device_id, received_at DESC); CREATE INDEX IF NOT EXISTS idx_commands_device_time ON commands(device_id, created_at DESC);`)
-	return err
+	if _, err := s.exec(ctx, baseMigrationSQL()); err != nil {
+		return err
+	}
+	for _, stmt := range additiveMigrations() {
+		if _, err := s.exec(ctx, stmt); err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (models.Device, bool, error) {
@@ -119,6 +126,10 @@ func (s *Store) SaveTelemetry(ctx context.Context, id string, raw []byte, t mode
 }
 func (s *Store) SaveCommand(ctx context.Context, dispatchID, deviceID, command string, args []byte, delivery string) error {
 	return s.execOnly(ctx, fmt.Sprintf(`INSERT INTO commands(dispatch_id,device_id,command,args,delivery,created_at) VALUES(%s,%s,%s,%s,%s,%d);`, q(dispatchID), q(deviceID), q(command), q(string(args)), q(delivery), time.Now().UnixMilli()))
+}
+func (s *Store) MarkWake(ctx context.Context, dispatchID string, errText string) error {
+	wakeSent := 1
+	return s.execOnly(ctx, fmt.Sprintf(`UPDATE commands SET wake_sent=%d,wake_error=%s WHERE dispatch_id=%s;`, wakeSent, q(errText), q(dispatchID)))
 }
 func (s *Store) MarkDelivered(ctx context.Context, dispatchID string) error {
 	return s.execOnly(ctx, fmt.Sprintf(`UPDATE commands SET delivery='sent',delivered_at=%d WHERE dispatch_id=%s;`, time.Now().UnixMilli(), q(dispatchID)))

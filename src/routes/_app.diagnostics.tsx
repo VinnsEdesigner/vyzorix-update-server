@@ -20,14 +20,14 @@ export const Route = createFileRoute("/_app/diagnostics")({
 const tip = { background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 };
 
 function DiagnosticsPage() {
-  const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
+  const { serverUrl, deviceId, thresholds, dashboardToken } = useVyzorixConfig();
   const stream = useStream();
   const [pending, setPending] = useState<string | null>(null);
 
   const send = async (cmd: string) => {
     setPending(cmd);
     try {
-      const res = await dispatchCommand(serverUrl, deviceId, cmd);
+      const res = await dispatchCommand(serverUrl, deviceId, cmd, undefined, dashboardToken);
       toast.success(`${cmd} → ${res.delivery}`, { description: `dispatch ${res.dispatchId}` });
     } catch (e) {
       toast.error(`${cmd} failed`, { description: e instanceof Error ? e.message : String(e) });

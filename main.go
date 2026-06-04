@@ -10,6 +10,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix-update-server/config"
 	"github.com/VinnsEdesigner/vyzorix-update-server/controllers"
 	"github.com/VinnsEdesigner/vyzorix-update-server/hub"
+	"github.com/VinnsEdesigner/vyzorix-update-server/services/fcm"
 	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
 )
 
@@ -31,8 +32,13 @@ func main() {
 		os.Exit(1)
 	}
 	defer st.Close()
+	notifier, err := fcm.Init(log, cfg.FirebaseCreds)
+	if err != nil {
+		log.Error("fcm init failed", "err", err)
+		os.Exit(1)
+	}
 	h := hub.New(log, st)
-	srv := controllers.New(log, cfg, st, h)
+	srv := controllers.New(log, cfg, st, h, notifier)
 	addr := ":" + cfg.Port
 	log.Info("vyzorix real update server starting", "addr", addr, "db", cfg.DatabaseURL, "env", cfg.Env, "enforceHMAC", cfg.EnforceHMAC)
 	if err := http.ListenAndServe(addr, srv.Routes()); err != nil && err != http.ErrServerClosed {

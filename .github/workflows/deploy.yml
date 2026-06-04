@@ -1,0 +1,29 @@
+name: Deploy update server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate APK payloads
+        run: |
+          found=0
+          for apk in bin/*.apk; do
+            [ -e "$apk" ] || continue
+            found=1
+            ./scripts/validate_apk.sh "$apk"
+          done
+          if [ "$found" -eq 0 ]; then echo "No APK payloads to validate yet."; fi
+      - name: Trigger Render deploy
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+      - name: Confirm health after deploy hook
+        if: ${{ secrets.RENDER_SERVICE_URL != '' }}
+        run: |
+          sleep 30
+          curl -fsS "${{ secrets.RENDER_SERVICE_URL }}/health"

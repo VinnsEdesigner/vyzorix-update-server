@@ -15,6 +15,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix-update-server/hub"
 	"github.com/VinnsEdesigner/vyzorix-update-server/models"
 	"github.com/VinnsEdesigner/vyzorix-update-server/security"
+	"github.com/VinnsEdesigner/vyzorix-update-server/services/fcm"
 	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
 	"github.com/gorilla/websocket"
 )
@@ -24,12 +25,13 @@ type Server struct {
 	Config   config.Config
 	Store    *storage.Store
 	Hub      *hub.Hub
+	Notifier fcm.Notifier
 	HMAC     security.Verifier
 	Upgrader websocket.Upgrader
 }
 
-func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub) *Server {
-	s := &Server{Log: log, Config: cfg, Store: st, Hub: h}
+func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub, notifier fcm.Notifier) *Server {
+	s := &Server{Log: log, Config: cfg, Store: st, Hub: h, Notifier: notifier}
 	s.HMAC = security.Verifier{Window: cfg.HMACWindow, Nonces: security.NewNonceCache(cfg.HMACWindow), Secret: func(id string) (string, bool) { return st.Secret(context.Background(), id) }}
 	s.Upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return s.originAllowed(r.Header.Get("Origin")) }}
 	return s
@@ -217,6 +219,16 @@ func (s *Server) command(w http.ResponseWriter, r *http.Request, id string) {
 		delivery = "sent"
 	}
 	_ = s.Store.SaveCommand(r.Context(), frame.DispatchID, id, req.Command, req.Args, delivery)
+	if delivery == "queued" && s.Notifier != nil {
+		if d, found, err := s.Store.Device(r.Context(), id); err == nil && found {
+			if err := s.Notifier.SendSilentWake(r.Context(), fcm.SilentWake{Token: d.FCMToken, Command: req.Command, DispatchID: frame.DispatchID, DeviceID: id}); err != nil {
+				s.Log.Warn("fcm wake failed", "deviceId", id, "dispatchId", frame.DispatchID, "err", err)
+				_ = s.Store.MarkWake(r.Context(), frame.DispatchID, err.Error())
+			} else {
+				_ = s.Store.MarkWake(r.Context(), frame.DispatchID, "")
+			}
+		}
+	}
 	writeJSON(w, 202, models.CommandResponse{DispatchID: frame.DispatchID, Delivery: delivery, ServerTime: time.Now().UnixMilli()})
 }
 func (s *Server) stream(w http.ResponseWriter, r *http.Request, id string) {
