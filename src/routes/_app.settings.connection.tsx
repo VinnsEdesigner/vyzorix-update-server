@@ -23,6 +23,7 @@ function ConnectionSettings() {
   const [timeout, setTimeout] = useState<number>(cfg.requestTimeoutMs);
   const [autoReconnect, setAutoReconnect] = useState(cfg.autoReconnect);
   const [strictHmac, setStrictHmac] = useState(cfg.strictHmac);
+  const [dashboardToken, setDashboardToken] = useState(cfg.dashboardToken);
 
   const health = useServerHealth(cfg.serverUrl);
 
@@ -33,6 +34,7 @@ function ConnectionSettings() {
       requestTimeoutMs: Math.max(500, Math.min(60_000, timeout || 8000)),
       autoReconnect,
       strictHmac,
+      dashboardToken: dashboardToken.trim(),
     });
     toast.success("Connection settings saved");
   };
@@ -42,7 +44,7 @@ function ConnectionSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Update server</CardTitle>
-          <CardDescription>Base URL of the Go binary in <code className="text-xs">cmd/mockserver</code></CardDescription>
+          <CardDescription>Base URL of the Render-backed Go update server</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
@@ -86,6 +88,11 @@ function ConnectionSettings() {
               <Input id="timeout" type="number" min={500} max={60000} step={500} value={timeout}
                 onChange={(e) => setTimeout(Number(e.target.value))} />
             </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="dashboard-token">Dashboard token</Label>
+              <Input id="dashboard-token" type="password" value={dashboardToken} onChange={(e) => setDashboardToken(e.target.value)} placeholder="TOKEN_SECRET from Render" />
+              <p className="text-xs text-muted-foreground">Used as Authorization/X-Vyzorix-Token for production dashboard endpoints and commands.</p>
+            </div>
             <ToggleRow
               label="Auto-reconnect WebSocket"
               hint="Re-open the stream with exponential backoff after drops"
@@ -94,7 +101,7 @@ function ConnectionSettings() {
             />
             <ToggleRow
               label="Strict HMAC on commands"
-              hint="Require X-Vyzorix-Signature on every command. Match the mock server's -strict-hmac flag."
+              hint="Require X-Vyzorix-Signature on every command. Match the real server ENFORCE_HMAC setting."
               checked={strictHmac}
               onChange={setStrictHmac}
             />

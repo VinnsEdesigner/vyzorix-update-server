@@ -89,13 +89,13 @@ function SettingsOverview() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Mock server quick start</CardTitle>
+          <CardTitle className="text-base">Real server quick start</CardTitle>
           <CardDescription>From the repo root</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 font-mono text-xs">go run ./cmd/mockserver -addr=:8080 -data=./cmd/mockserver/testdata</pre>
+          <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 font-mono text-xs">go run .</pre>
           <div className="flex items-center gap-2 pt-1">
-            <Badge variant="outline">Phase 1</Badge>
+            <Badge variant="outline">Phase 1.5</Badge>
             <Badge variant="outline">single device</Badge>
             <Badge variant="outline">Nokia C22</Badge>
           </div>
