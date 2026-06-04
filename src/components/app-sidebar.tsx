@@ -1,4 +1,5 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Smartphone,
@@ -8,6 +9,7 @@ import {
   Shield,
   Bell,
   Terminal,
+  LogOut,
 } from "lucide-react";
 
 import {
@@ -22,6 +24,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -35,6 +40,18 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const navigate = useNavigate();
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out");
+    navigate({ to: "/login", replace: true });
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -69,9 +86,25 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="px-2 py-1.5 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-          version[development]
+        <div className="space-y-1 px-2 py-1.5 group-data-[collapsible=icon]:hidden">
+          {email && (
+            <p className="truncate text-xs text-muted-foreground" title={email}>
+              {email}
+            </p>
+          )}
+          <Button variant="ghost" size="sm" className="h-7 w-full justify-start gap-2 px-2 text-xs" onClick={signOut}>
+            <LogOut className="h-3.5 w-3.5" /> Sign out
+          </Button>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden h-8 w-8 group-data-[collapsible=icon]:flex"
+          onClick={signOut}
+          title="Sign out"
+        >
+          <LogOut className="h-4 w-4" />
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );
