@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
+
+	"firebase.google.com/go/v4/messaging"
 )
 
 type SilentWake struct {
@@ -24,11 +27,42 @@ func (c *Client) SendSilentWake(ctx context.Context, wake SilentWake) error {
 	if wake.Token == "" {
 		return fmt.Errorf("missing fcm token for device %s", wake.DeviceID)
 	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
+	client := c.Messaging()
+	if client == nil {
+		return fmt.Errorf("fcm client unavailable")
 	}
-	c.log.Info("fcm silent wake prepared", slog.String("projectId", c.projectID), slog.String("deviceId", wake.DeviceID), slog.String("command", wake.Command), slog.String("dispatchId", wake.DispatchID))
+
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	msg := &messaging.Message{
+		Token: wake.Token,
+		Android: &messaging.AndroidConfig{
+			Priority: "high",
+			TTL:      ptr24Hours(),
+			Data: map[string]string{
+				"action":      "WAKE_DAEMON",
+				"command":     wake.Command,
+				"dispatch_id": wake.DispatchID,
+			},
+		},
+		Data: map[string]string{
+			"action":      "WAKE_DAEMON",
+			"command":     wake.Command,
+			"dispatch_id": wake.DispatchID,
+		},
+	}
+
+	result, err := client.Send(ctx, msg)
+	if err != nil {
+		c.log.Warn("fcm send failed", "deviceId", wake.DeviceID, "dispatchId", wake.DispatchID, "err", err)
+		return fmt.Errorf("fcm send: %w", err)
+	}
+	c.log.Info("fcm silent wake sent", "deviceId", wake.DeviceID, "dispatchId", wake.DispatchID, "messageId", result)
 	return nil
+}
+
+func ptr24Hours() *time.Duration {
+	d := 24 * time.Hour
+	return &d
 }
