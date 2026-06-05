@@ -8,8 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Shield, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
+import { login, register, redirectToGoogleOAuth } from "@/lib/vyzorix-auth";
+import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import { logger } from "@/lib/logger";
 
 export const Route = createFileRoute("/login")({
@@ -22,18 +22,18 @@ type Mode = "signin" | "signup";
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { serverUrl } = useVyzorixConfig();
   const [mode, setMode] = useState<Mode>("signin");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
 
-  // If already signed in (e.g. came back from OAuth), bounce to dashboard.
+  // If already authenticated (e.g. token in localStorage), bounce to dashboard.
   useEffect(() => {
-    const sub = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate({ to: "/dashboard", replace: true });
-    });
-    return () => sub.data.subscription.unsubscribe();
+    const token = localStorage.getItem("vyz.auth.token");
+    if (token) navigate({ to: "/dashboard", replace: true });
   }, [navigate]);
 
   const submit = async (e: React.FormEvent) => {
@@ -41,18 +41,12 @@ function LoginPage() {
     setLoading(true);
     try {
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pw });
-        if (error) throw error;
+        await login(serverUrl, email.trim(), pw);
         logger.info("auth", "Password sign-in OK", { email: email.trim() });
       } else {
-        const { error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password: pw,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        logger.info("auth", "Sign-up submitted", { email: email.trim() });
-        toast.success("Account created. Signing in…");
+        await register(serverUrl, email.trim(), pw, name.trim());
+        logger.info("auth", "Operator registration OK", { email: email.trim(), name: name.trim() });
+        toast.success("Operator account created.");
       }
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
@@ -64,15 +58,13 @@ function LoginPage() {
     }
   };
 
-  const google = async () => {
+  const google = () => {
     setOauthLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + "/login",
-      });
-      if (result.error) throw result.error;
-      if (result.redirected) return;
-      navigate({ to: "/dashboard", replace: true });
+      // The Go server redirects to Google's OAuth consent screen.
+      // After approval, Google redirects back to the Go server's callback,
+      // which then redirects to the frontend /auth/callback page with the JWT.
+      redirectToGoogleOAuth(serverUrl, "/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Google sign-in failed";
       toast.error(msg);
@@ -89,7 +81,9 @@ function LoginPage() {
           </div>
           <CardTitle>Vyzorix Console</CardTitle>
           <CardDescription>
-            {mode === "signin" ? "Sign in to the update server control plane" : "Create the operator account"}
+            {mode === "signin"
+              ? "Sign in to the update server control plane"
+              : "Create the first operator account (becomes super_admin)"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -101,6 +95,12 @@ function LoginPage() {
             <Separator className="flex-1" />or<Separator className="flex-1" />
           </div>
           <form onSubmit={submit} className="space-y-3">
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Full name</Label>
+                <Input id="name" type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Vinns Designer" required />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -126,9 +126,9 @@ function LoginPage() {
           <p className="text-center text-xs text-muted-foreground">
             {mode === "signin" ? (
               <>
-                First time setting this up?{" "}
+                First time?{" "}
                 <button type="button" className="font-medium underline" onClick={() => setMode("signup")}>
-                  Create the admin account
+                  Create the operator account
                 </button>
               </>
             ) : (
@@ -138,7 +138,7 @@ function LoginPage() {
             )}
           </p>
           <p className="text-center text-[10px] text-muted-foreground">
-            Access is restricted to the allowlisted operator account.
+            Access is restricted to allowlisted operators only.
           </p>
         </CardContent>
       </Card>
