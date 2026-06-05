@@ -47,6 +47,15 @@ type Verifier struct {
 	Window time.Duration
 }
 
+func (v Verifier) ReadAndVerifyHTTP(r *http.Request) ([]byte, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	return body, v.Verify(r.Method, r.URL.RequestURI(), "", body, r.Header)
+}
+
 func (v Verifier) ReadAndVerify(r *http.Request, deviceID string) ([]byte, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
