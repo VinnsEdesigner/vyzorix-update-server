@@ -22,6 +22,7 @@ type Client struct {
 	Conn     *websocket.Conn
 	Send     chan models.CommandFrame
 	Hub      *Hub
+	log      *slog.Logger
 }
 
 // ReadPump pumps incoming messages from the WebSocket connection.
@@ -39,8 +40,8 @@ func (c *Client) ReadPump() {
 			Type string `json:"type"`
 		}
 		if err := json.Unmarshal(raw, &env); err != nil {
-			if c.Hub.log != nil {
-				c.Hub.log.Warn("bad ws frame", "deviceId", c.DeviceID, "err", err)
+			if c.log != nil {
+				c.log.Warn("bad ws frame", "deviceId", c.DeviceID, "err", err)
 			}
 			continue
 		}
@@ -52,13 +53,9 @@ func (c *Client) ReadPump() {
 					t.DeviceID = c.DeviceID
 				}
 				if c.Hub.store != nil {
-					if err := c.Hub.store.SaveTelemetry(context.Background(), c.DeviceID, raw, struct {
-						RiskScore  int
-						BufferLevel int
-						ThermalTemp float64
-					}{RiskScore: t.RiskScore, BufferLevel: t.BufferLevel, ThermalTemp: t.ThermalTemp}); err != nil {
-						if c.Hub.log != nil {
-							c.Hub.log.Warn("telemetry save failed", "deviceId", c.DeviceID, "err", err)
+					if err := c.Hub.store.SaveTelemetry(context.Background(), c.DeviceID, raw, t); err != nil {
+						if c.log != nil {
+							c.log.Warn("telemetry save failed", "deviceId", c.DeviceID, "err", err)
 						}
 					}
 				}

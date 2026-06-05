@@ -34,8 +34,8 @@ func TestInit_Disabled_EmptyCredentials(t *testing.T) {
 	if c.enabled {
 		t.Error("client.enabled should be false")
 	}
-	if c.projectID != "" {
-		t.Errorf("projectID should be empty, got %s", c.projectID)
+	if c.ProjectID() != "" {
+		t.Errorf("ProjectID() should be empty, got %s", c.ProjectID())
 	}
 }
 

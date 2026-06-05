@@ -33,14 +33,14 @@ func NewUpdaterController(log *slog.Logger, cfg config.Config, st *storage.Store
 // GET /api/v1/version
 func (s *UpdaterController) Version(c *gin.Context) {
 	s.log.Info("ota version request", "path", c.Request.URL.Path)
-	s.serveJSON(c, filepath.Join(s.Config.DataDir, "version.json"))
+	s.serveJSON(c, filepath.Join(s.config.DataDir, "version.json"))
 }
 
 // Changelog serves the release changelog.
 // GET /api/v1/changelog
 func (s *UpdaterController) Changelog(c *gin.Context) {
 	s.log.Info("ota changelog request", "path", c.Request.URL.Path)
-	s.serveJSON(c, filepath.Join(s.Config.DataDir, "changelog.json"))
+	s.serveJSON(c, filepath.Join(s.config.DataDir, "changelog.json"))
 }
 
 // APK serves APK files with optional Range support for resume.
@@ -81,7 +81,7 @@ func (s *UpdaterController) serveAPK(c *gin.Context, filename string) {
 		return
 	}
 
-	fpath := filepath.Join(s.Config.BinDir, filename)
+	fpath := filepath.Join(s.config.BinDir, filename)
 
 	if c.Request.Method == http.MethodGet {
 		c.Header("Content-Type", "application/vnd.android.package-archive")
@@ -106,7 +106,7 @@ func (s *UpdaterController) CheckUpdate(c *gin.Context) {
 	s.log.Info("update check", "version_code", versionCode)
 
 	var version models.VersionManifest
-	data, err := os.ReadFile(filepath.Join(s.Config.DataDir, "version.json"))
+	data, err := os.ReadFile(filepath.Join(s.config.DataDir, "version.json"))
 	if err != nil {
 		c.JSON(500, map[string]string{"error": "server_error", "message": "cannot read version file"})
 		return
