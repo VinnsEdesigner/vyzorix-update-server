@@ -63,7 +63,7 @@ function join(base: string, path: string) {
   return base.replace(/\/+$/, "") + path;
 }
 
-function dashboardHeaders(token?: string): HeadersInit {
+function dashboardHeaders(token?: string): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}`, "X-Vyzorix-Token": token } : {};
 }
 
