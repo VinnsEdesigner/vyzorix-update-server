@@ -28,6 +28,13 @@ type Config struct {
 	// Deployment URLs — used for OAuth redirect construction
 	BaseURL     string
 	FrontendURL string
+	// Email configuration (Resend)
+	ResendAPIKey  string
+	EmailFrom     string
+	EmailFromName string
+	// Security settings
+	EmailVerifyTokenExpiry time.Duration
+	PasswordResetTokenExpiry time.Duration
 }
 
 func Load() (Config, error) {
@@ -35,6 +42,20 @@ func Load() (Config, error) {
 	if v := os.Getenv("JWT_DURATION_HOURS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			jwtDuration = time.Duration(n) * time.Hour
+		}
+	}
+
+	// Token expiry defaults
+	emailVerifyExpiry := 24 * time.Hour
+	if v := os.Getenv("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			emailVerifyExpiry = time.Duration(n) * time.Hour
+		}
+	}
+	passwordResetExpiry := time.Hour
+	if v := os.Getenv("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			passwordResetExpiry = time.Duration(n) * time.Minute
 		}
 	}
 
@@ -55,6 +76,13 @@ func Load() (Config, error) {
 		GoogleOAuthClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
 		BaseURL:     get("BASE_URL", "http://localhost:3000"),
 		FrontendURL: get("FRONTEND_URL", "http://localhost:5173"),
+		// Email settings
+		ResendAPIKey:  os.Getenv("RESEND_API_KEY"),
+		EmailFrom:     get("EMAIL_FROM", "noreply@vyzorix.app"),
+		EmailFromName: get("EMAIL_FROM_NAME", "Vyzorix"),
+		// Security token expiry
+		EmailVerifyTokenExpiry:   emailVerifyExpiry,
+		PasswordResetTokenExpiry: passwordResetExpiry,
 	}
 	enforceDefault := strings.EqualFold(c.Env, "production")
 	c.EnforceHMAC = getBool("ENFORCE_HMAC", enforceDefault)
