@@ -3,7 +3,6 @@ package fcm
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"firebase.google.com/go/v4/messaging"

@@ -67,7 +67,7 @@ func (s *CommandController) SendCommand(c *gin.Context) {
 		return
 	}
 
-	s.log.Info("command received", "deviceId", id, "command", req.Command, "dispatchId", req.DispatchID)
+	s.log.Info("command received", "deviceId", id, "command", req.Command)
 
 	// Verify device exists
 	_, found, err := s.store.Device(c.Request.Context(), id)
@@ -93,16 +93,13 @@ func (s *CommandController) SendCommand(c *gin.Context) {
 
 	// Determine delivery method
 	delivery := "queued"
-	deliveryMethod := "ws"
 
 	// Try WebSocket first
 	if s.hub != nil && s.hub.Send(id, frame) {
 		delivery = "sent"
-		deliveryMethod = "ws"
 		s.log.Info("command sent via WebSocket", "deviceId", id, "dispatchId", frame.DispatchID)
 	} else {
 		// Fallback to FCM
-		deliveryMethod = "fcm"
 		s.log.Info("device offline, queuing for FCM wake", "deviceId", id, "dispatchId", frame.DispatchID)
 	}
 

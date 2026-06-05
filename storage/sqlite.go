@@ -115,13 +115,7 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 	return nil
 }
 
-func (s *Store) Register(ctx context.Context, req struct {
-	DeviceID          string
-	FirebaseInstallID string
-	FCMToken          string
-	AppVersion        string
-	DeviceClass       string
-}) (struct {
+func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struct {
 	ID                string
 	FirebaseInstallID string
 	FCMToken          string
@@ -167,6 +161,9 @@ func (s *Store) Register(ctx context.Context, req struct {
 				LastSeen          time.Time
 			}{}, false, err
 		}
+		var cmdSecret string
+		var regAt int64
+		_ = s.db.QueryRowContext(ctx, `SELECT command_secret, registered_at FROM devices WHERE id = ?`, req.DeviceID).Scan(&cmdSecret, &regAt)
 		return struct {
 			ID                string
 			FirebaseInstallID string
@@ -177,7 +174,7 @@ func (s *Store) Register(ctx context.Context, req struct {
 			Online            bool
 			RegisteredAt      time.Time
 			LastSeen          time.Time
-		}{ID: req.DeviceID, FirebaseInstallID: existingFID, FCMToken: req.FCMToken, AppVersion: req.AppVersion, DeviceClass: req.DeviceClass, LastSeen: now}, false, nil
+		}{ID: req.DeviceID, FirebaseInstallID: existingFID, FCMToken: req.FCMToken, AppVersion: req.AppVersion, DeviceClass: req.DeviceClass, CommandSecret: cmdSecret, Online: true, RegisteredAt: time.UnixMilli(regAt), LastSeen: now}, false, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return struct {

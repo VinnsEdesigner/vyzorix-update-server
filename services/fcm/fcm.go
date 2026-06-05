@@ -39,11 +39,19 @@ func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 	}
 	c.app = app
 	c.enabled = true
-	c.log.Info("fcm initialized", "app", app.ProjectID)
+	c.projects = getProjectID(rawCredentials)
+	c.log.Info("fcm initialized", "project", c.projects)
 	return c, nil
 }
 
 func (c *Client) Enabled() bool { return c != nil && c.enabled }
+
+func (c *Client) ProjectID() string {
+	if c == nil {
+		return ""
+	}
+	return c.projects
+}
 
 func (c *Client) Messaging() *messaging.Client {
 	if c == nil || c.app == nil {
