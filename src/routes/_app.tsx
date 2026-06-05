@@ -44,6 +44,7 @@ function AppShell() {
     titles[pathname] ??
     (pathname.startsWith("/settings") ? "Settings" : "Vyzorix");
   const { state } = useStream();
+  const isLogsPage = pathname === "/logs";
 
   return (
     <>
@@ -59,7 +60,7 @@ function AppShell() {
         </header>
         <main className="flex-1 p-4 pb-14 md:p-6 md:pb-14">
           <Outlet />
-          <LogDock />
+          {!isLogsPage && <LogDock />}
         </main>
         <Toaster />
       </SidebarInset>
