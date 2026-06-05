@@ -20,7 +20,7 @@ type Config struct {
 	JWTSecret      string
 	JWTDuration    time.Duration
 	AllowedOrigins []string
-	EnforceHMAC   bool
+	EnforceHMAC    bool
 	HMACWindow     time.Duration
 	// Google OAuth — required for Google sign-in
 	GoogleOAuthClientID     string
@@ -29,12 +29,6 @@ type Config struct {
 	BaseURL     string
 	FrontendURL string
 }
-
-func (c Config) EnforceHMAC() bool   { return c.EnforceHMAC }
-func (c Config) DataDir() string     { return c.DataDir }
-func (c Config) BinDir() string     { return c.BinDir }
-func (c Config) PublicDir() string  { return c.PublicDir }
-func (c Config) BaseURL() string    { return c.BaseURL }
 
 func Load() (Config, error) {
 	jwtDuration := 7 * 24 * time.Hour // default 7 days
@@ -81,8 +75,9 @@ func Load() (Config, error) {
 }
 
 func get(k, fallback string) string {
-	if v := strings.TrimSpace(os.Getenv(k)); v != "" {
-		return v
+	v := os.Getenv(k)
+	if v != "" {
+		return strings.TrimSpace(v)
 	}
 	return fallback
 }

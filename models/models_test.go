@@ -132,45 +132,34 @@ func TestSession_TokenHashOmitempty(t *testing.T) {
 func TestDevice_Fields(t *testing.T) {
 	now := time.Now()
 	d := Device{
-		ID:                 "device-001",
-		FirebaseInstallID:  "firebase-abc",
-		FCMToken:           "fcm-token",
-		AppVersion:         "1.0.0",
-		AppVersionCode:     1,
-		BuildFingerprint:   "test/fingerprint",
-		DeviceClass:        "phone",
-		CommandSecretHash: "hash123",
-		State:              StateOnline,
-		Online:             true,
-		RegisteredAt:       now,
-		LastSeen:           now,
+		ID:                "device-001",
+		FirebaseInstallID: "firebase-abc",
+		FCMToken:         "fcm-token",
+		AppVersion:       "1.0.0",
+		DeviceClass:      "phone",
+		CommandSecret:    "secret123",
+		Online:           true,
+		RegisteredAt:     now,
+		LastSeen:         now,
 	}
 
 	if d.ID != "device-001" {
 		t.Errorf("ID = %s, want device-001", d.ID)
 	}
-	if d.CommandSecretHash != "hash123" {
-		t.Errorf("CommandSecretHash = %s, want hash123", d.CommandSecretHash)
-	}
-	if d.State != StateOnline {
-		t.Errorf("State = %s, want ONLINE", d.State)
+	if d.CommandSecret != "secret123" {
+		t.Errorf("CommandSecret = %s, want secret123", d.CommandSecret)
 	}
 	if !d.Online {
 		t.Error("Online should be true")
 	}
-	if !d.IsActive() {
-		t.Error("Device should be active")
-	}
 }
 
-func TestDeviceRegistrationRequest_Fields(t *testing.T) {
-	req := DeviceRegistrationRequest{
+func TestRegisterRequest_Fields(t *testing.T) {
+	req := RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "fcm-token",
 		AppVersion:        "1.0.0",
-		AppVersionCode:    1,
-		BuildFingerprint:  "test/fingerprint",
 		DeviceClass:       "phone",
 	}
 
@@ -191,7 +180,7 @@ func TestDeviceRegistrationRequest_Fields(t *testing.T) {
 	}
 }
 
-func TestDeviceRegistrationRequest_JSONUnmarshal(t *testing.T) {
+func TestRegisterRequest_JSONUnmarshal(t *testing.T) {
 	data := []byte(`{
 		"deviceId": "device-002",
 		"firebaseInstallId": "firebase-xyz",
@@ -200,7 +189,7 @@ func TestDeviceRegistrationRequest_JSONUnmarshal(t *testing.T) {
 		"deviceClass": "tablet"
 	}`)
 
-	var req DeviceRegistrationRequest
+	var req RegisterRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
@@ -382,8 +371,8 @@ func TestLoginRequest_Fields(t *testing.T) {
 	}
 }
 
-func TestRegisterRequest_Fields(t *testing.T) {
-	req := RegisterRequest{
+func TestOperatorRegisterRequest_Fields(t *testing.T) {
+	req := OperatorRegisterRequest{
 		Email:    "new@example.com",
 		Password: "newpassword",
 		Name:     "New User",
