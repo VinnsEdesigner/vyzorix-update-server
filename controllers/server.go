@@ -60,14 +60,14 @@ func (s *Server) Engine() *gin.Engine {
 
 	// Auth routes (no JWT required for login/register; JWT required for /me and logout)
 	auth := r.Group("/v1/auth")
-	auth.GET("/google", s.authCtrl.GoogleLoginRedirect) // triggers OAuth redirect
-	auth.GET("/google/callback", s.authCtrl.GoogleCallback) // OAuth callback from Google
-	auth.POST("/login", s.authCtrl.Login)
-	auth.POST("/register", s.authCtrl.Register)
+	auth.GET("/google", s.jwtCtrl.GoogleLoginRedirect) // triggers OAuth redirect
+	auth.GET("/google/callback", s.jwtCtrl.GoogleCallback) // OAuth callback from Google
+	auth.POST("/login", s.jwtCtrl.Login)
+	auth.POST("/register", s.jwtCtrl.Register)
 	// /me and /logout require JWT — middleware applied inline
-	auth.GET("/me", JWTAuth(s.jwtCtrl, s.Store), s.authCtrl.Me)
-	auth.PATCH("/me", JWTAuth(s.jwtCtrl, s.Store), s.authCtrl.UpdateName)
-	auth.POST("/logout", JWTAuth(s.jwtCtrl, s.Store), s.authCtrl.Logout)
+	auth.GET("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Me)
+	auth.PATCH("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.UpdateName)
+	auth.POST("/logout", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Logout)
 
 	r.GET("/health", s.health)
 	r.GET("/healthz", s.health)
@@ -88,7 +88,7 @@ func (s *Server) Engine() *gin.Engine {
 	r.DELETE("/v1/device/:id", s.requireHMAC(), s.deleteDevice)
 
 	// Dashboard routes — protected by JWT
-	r.GET("/v1/dashboard/devices", JWTAuth(s.jwtCtrl, s.Store), s.dashboardDevices)
+	r.GET("/v1/dashboard/devices", JWTAuth(s.jwtCtrl.jwt, s.Store), s.dashboardDevices)
 
 	// WebSocket — HMAC or JWT
 	r.GET("/v1/device/:id/stream", s.stream)

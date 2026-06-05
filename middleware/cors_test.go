@@ -106,9 +106,9 @@ func TestCORSHandler_NoOrigin(t *testing.T) {
 
 	corsHandler(c)
 
-	// Should not set CORS header when no origin
-	if c.Writer.Header().Get("Access-Control-Allow-Origin") != "" {
-		t.Error("expected no Access-Control-Allow-Origin for same-origin request")
+	// When no Origin header is provided, the handler sets wildcard "*"
+	if c.Writer.Header().Get("Access-Control-Allow-Origin") != "*" {
+		t.Error("expected Access-Control-Allow-Origin to be * for no-origin request")
 	}
 }
 
@@ -229,52 +229,52 @@ func TestGetAllowedOrigin(t *testing.T) {
 		name           string
 		allowedOrigins []string
 		requestOrigin  string
-		expected       string
+		expected       bool
 	}{
 		{
 			"exact match",
 			[]string{"https://example.com"},
 			"https://example.com",
-			"https://example.com",
+			true,
 		},
 		{
 			"no match",
 			[]string{"https://example.com"},
 			"https://other.com",
-			"",
+			false,
 		},
 		{
 			"wildcard with request",
 			[]string{"*"},
 			"https://any.com",
-			"https://any.com",
+			true,
 		},
 		{
 			"empty request origin",
 			[]string{"https://example.com"},
 			"",
-			"",
+			true,
 		},
 		{
 			"wildcard priority match",
 			[]string{"https://exact.com", "*"},
 			"https://exact.com",
-			"https://exact.com",
+			true,
 		},
 		{
 			"wildcard no exact match",
 			[]string{"https://exact.com", "*"},
 			"https://other.com",
-			"https://other.com",
+			true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cors := CORS{AllowedOrigins: tt.allowedOrigins}
-			result := cors.getAllowedOrigin(tt.requestOrigin)
+			result := cors.allowed(tt.requestOrigin)
 			if result != tt.expected {
-				t.Errorf("getAllowedOrigin(%s) = %s, want %s", tt.requestOrigin, result, tt.expected)
+				t.Errorf("allowed(%s) = %v, want %v", tt.requestOrigin, result, tt.expected)
 			}
 		})
 	}

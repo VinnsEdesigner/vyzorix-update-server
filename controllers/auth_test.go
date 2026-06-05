@@ -51,7 +51,7 @@ func TestAuthController_LoginRequest_JSONUnmarshal(t *testing.T) {
 }
 
 func TestAuthController_RegisterRequest_JSON(t *testing.T) {
-	req := models.RegisterRequest{
+	req := models.OperatorRegisterRequest{
 		Email:    "new@example.com",
 		Password: "newpassword",
 		Name:     "New User",
