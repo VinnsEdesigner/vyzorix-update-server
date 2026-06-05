@@ -8,10 +8,10 @@ import (
 
 type CORS struct{ AllowedOrigins []string }
 
-func (c CORS) Handler() gin.HandlerFunc {
+func (co CORS) Handler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
-		if c.allowed(origin) {
+		if co.allowed(origin) {
 			if origin == "" {
 				origin = "*"
 			}
@@ -28,11 +28,11 @@ func (c CORS) Handler() gin.HandlerFunc {
 	}
 }
 
-func (c CORS) allowed(origin string) bool {
+func (co CORS) allowed(origin string) bool {
 	if origin == "" {
 		return true
 	}
-	for _, v := range c.AllowedOrigins {
+	for _, v := range co.AllowedOrigins {
 		if v == "*" || strings.EqualFold(v, origin) {
 			return true
 		}

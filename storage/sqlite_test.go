@@ -63,7 +63,7 @@ func TestRegister_newDevice(t *testing.T) {
 	defer store.Close()
 
 	ctx := context.Background()
-	d, isNew, err := store.Register(ctx, models.DeviceRegistrationRequest{
+	d, isNew, err := store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc123",
 		FCMToken:          "fcm-token-xyz",
@@ -79,8 +79,8 @@ func TestRegister_newDevice(t *testing.T) {
 	if d.ID != "device-001" {
 		t.Errorf("DeviceID = %s, want device-001", d.ID)
 	}
-	if d.CommandSecretHash == "" {
-		t.Error("CommandSecretHash should not be empty")
+	if d.CommandSecret == "" {
+		t.Error("CommandSecret should not be empty")
 	}
 }
 
@@ -93,7 +93,7 @@ func TestRegister_idempotent(t *testing.T) {
 	defer store.Close()
 
 	ctx := context.Background()
-	req := models.DeviceRegistrationRequest{
+	req := models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc123",
 		FCMToken:          "fcm-token-xyz",
@@ -121,9 +121,9 @@ func TestRegister_idempotent(t *testing.T) {
 	if d2.ID != d1.ID {
 		t.Errorf("DeviceID changed: %s != %s", d2.ID, d1.ID)
 	}
-	// CommandSecretHash must be preserved on re-registration
-	if d2.CommandSecretHash != d1.CommandSecretHash {
-		t.Errorf("CommandSecretHash changed on re-registration: %s != %s", d2.CommandSecretHash, d1.CommandSecretHash)
+	// CommandSecret must be preserved on re-registration
+	if d2.CommandSecret != d1.CommandSecret {
+		t.Errorf("CommandSecret changed on re-registration: %s != %s", d2.CommandSecret, d1.CommandSecret)
 	}
 }
 
@@ -138,7 +138,7 @@ func TestRegister_hijackDetection(t *testing.T) {
 	ctx := context.Background()
 
 	// Register device with firebase-1
-	_, _, err = store.Register(ctx, models.DeviceRegistrationRequest{
+	_, _, err = store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-1",
 		FCMToken:          "token1",
@@ -150,7 +150,7 @@ func TestRegister_hijackDetection(t *testing.T) {
 	}
 
 	// Try to re-register same device with different firebase ID (hijack attempt)
-	_, _, err = store.Register(ctx, models.DeviceRegistrationRequest{
+	_, _, err = store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-2", // Different!
 		FCMToken:          "token2",
@@ -176,7 +176,7 @@ func TestDevice(t *testing.T) {
 	ctx := context.Background()
 
 	// Register a device
-	_, _, err = store.Register(ctx, models.DeviceRegistrationRequest{
+	_, _, err = store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "token",
@@ -229,7 +229,7 @@ func TestSetOnline(t *testing.T) {
 	ctx := context.Background()
 
 	// Register device
-	_, _, err = store.Register(ctx, models.DeviceRegistrationRequest{
+	_, _, err = store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "token",
@@ -262,7 +262,7 @@ func TestTouch(t *testing.T) {
 	ctx := context.Background()
 
 	// Register device
-	_, _, err = store.Register(ctx, models.DeviceRegistrationRequest{
+	_, _, err = store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "token",
@@ -295,7 +295,7 @@ func TestSaveTelemetry(t *testing.T) {
 	ctx := context.Background()
 
 	// Register device
-	_, _, err = store.Register(ctx, models.DeviceRegistrationRequest{
+	_, _, err = store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "token",
@@ -329,7 +329,7 @@ func TestSaveCommand(t *testing.T) {
 	ctx := context.Background()
 
 	// Register device
-	_, _, err = store.Register(ctx, models.DeviceRegistrationRequest{
+	_, _, err = store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "token",
@@ -358,7 +358,7 @@ func TestMarkDelivered(t *testing.T) {
 	ctx := context.Background()
 
 	// Register device
-	_, _, err = store.Register(ctx, models.DeviceRegistrationRequest{
+	_, _, err = store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "token",
@@ -391,7 +391,7 @@ func TestSecret(t *testing.T) {
 	ctx := context.Background()
 
 	// Register device
-	d, _, err := store.Register(ctx, models.DeviceRegistrationRequest{
+	d, _, err := store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "token",
@@ -407,8 +407,8 @@ func TestSecret(t *testing.T) {
 	if !found {
 		t.Error("expected secret to be found")
 	}
-	if secret != d.CommandSecretHash {
-		t.Errorf("Secret = %s, want %s", secret, d.CommandSecretHash)
+	if secret != d.CommandSecret {
+		t.Errorf("Secret = %s, want %s", secret, d.CommandSecret)
 	}
 }
 
@@ -438,7 +438,7 @@ func TestUpdateFCM(t *testing.T) {
 	ctx := context.Background()
 
 	// Register device
-	_, _, err = store.Register(ctx, models.DeviceRegistrationRequest{
+	_, _, err = store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "old-token",
@@ -471,7 +471,7 @@ func TestDeleteDevice(t *testing.T) {
 	ctx := context.Background()
 
 	// Register device
-	_, _, err = store.Register(ctx, models.DeviceRegistrationRequest{
+	_, _, err = store.Register(ctx, models.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "token",

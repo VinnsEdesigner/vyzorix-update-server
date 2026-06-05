@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppUpdatesRouteImport } from './routes/_app.updates'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppLogsRouteImport } from './routes/_app.logs'
@@ -40,6 +41,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppUpdatesRoute = AppUpdatesRouteImport.update({
   id: '/updates',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/logs': typeof AppLogsRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/updates': typeof AppUpdatesRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/settings/advanced': typeof AppSettingsAdvancedRoute
   '/settings/appearance': typeof AppSettingsAppearanceRoute
   '/settings/connection': typeof AppSettingsConnectionRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/diagnostics': typeof AppDiagnosticsRoute
   '/logs': typeof AppLogsRoute
   '/updates': typeof AppUpdatesRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/': typeof AppIndexRoute
   '/settings/advanced': typeof AppSettingsAdvancedRoute
   '/settings/appearance': typeof AppSettingsAppearanceRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/_app/logs': typeof AppLogsRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
   '/_app/updates': typeof AppUpdatesRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/_app/': typeof AppIndexRoute
   '/_app/settings/advanced': typeof AppSettingsAdvancedRoute
   '/_app/settings/appearance': typeof AppSettingsAppearanceRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/logs'
     | '/settings'
     | '/updates'
+    | '/auth/callback'
     | '/settings/advanced'
     | '/settings/appearance'
     | '/settings/connection'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/diagnostics'
     | '/logs'
     | '/updates'
+    | '/auth/callback'
     | '/'
     | '/settings/advanced'
     | '/settings/appearance'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/_app/logs'
     | '/_app/settings'
     | '/_app/updates'
+    | '/auth/callback'
     | '/_app/'
     | '/_app/settings/advanced'
     | '/_app/settings/appearance'
@@ -228,6 +240,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/updates': {
       id: '/_app/updates'
@@ -405,7 +425,18 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

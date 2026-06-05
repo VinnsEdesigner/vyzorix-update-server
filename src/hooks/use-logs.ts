@@ -8,3 +8,6 @@ export function useLogs(): LogEntry[] {
     () => logger.snapshot(),
   );
 }
+
+export { logger, LOG_SOURCES, LOG_LEVELS };
+export type { LogEntry, LogLevel, LogSource };
