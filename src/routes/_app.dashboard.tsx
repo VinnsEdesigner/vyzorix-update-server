@@ -86,6 +86,22 @@ function DashboardPage() {
       ) : null}
 
       {/* Hero device card */}
+      {status.isLoading || health.isLoading ? (
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-2">
+                <div className="h-6 w-40 animate-pulse rounded-md bg-muted" />
+                <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
+              </div>
+              <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => <MetricSkeleton key={i} />)}
+          </CardContent>
+        </Card>
+      ) : (
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -111,8 +127,23 @@ function DashboardPage() {
           <Metric icon={Volume2} label="Speaker" value={t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"} hint={t?.activeDevice ?? "—"} />
         </CardContent>
       </Card>
+      )}
 
       {/* Live signals */}
+      {status.isLoading || health.isLoading ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {[0, 1].map(i => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <div className="h-4 w-32 animate-pulse rounded-md bg-muted" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-48 w-full animate-pulse rounded-md bg-muted" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
@@ -133,8 +164,21 @@ function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Route + capture summary */}
+      {status.isLoading || health.isLoading ? (
+        <div className="grid gap-4 lg:grid-cols-3">
+          {[0, 1, 2].map(i => (
+            <Card key={i}>
+              <CardHeader><div className="h-4 w-28 animate-pulse rounded-md bg-muted" /></CardHeader>
+              <CardContent className="space-y-2">
+                {Array.from({ length: 3 }).map((_, j) => <div key={j} className="h-3 w-full animate-pulse rounded bg-muted" />)}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><AudioLines className="h-4 w-4" /> Route state</CardTitle></CardHeader>
@@ -161,6 +205,7 @@ function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      )}
     </div>
   );
 }
