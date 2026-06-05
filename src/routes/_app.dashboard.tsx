@@ -12,6 +12,7 @@ import { useServerHealth } from "@/hooks/use-server-health";
 import { getDashboardDevices, getDeviceStatus, getVersion } from "@/lib/vyzorix-api";
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
 import { formatRelative, formatUptime } from "@/lib/format";
+import { MetricSkeleton } from "@/components/loading/page-skeleton";
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Vyzorix" }] }),
