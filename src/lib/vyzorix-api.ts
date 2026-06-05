@@ -157,21 +157,31 @@ export async function dispatchCommand(
   command: string,
   args?: Record<string, unknown>,
   dashboardToken?: string,
+  strictHmac?: boolean,
 ): Promise<CommandResponse> {
   const nonce = crypto.randomUUID().replace(/-/g, "");
   const timestamp = Date.now();
   const body = JSON.stringify({ command, args: args ?? {}, nonce, timestamp });
   logger.info("command", `→ ${command}`, { nonce: nonce.slice(0, 8), deviceId });
   try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-Vyzorix-Nonce": nonce,
+      "X-Vyzorix-Timestamp": String(timestamp),
+      ...dashboardHeaders(dashboardToken),
+    };
+    // strictHmac is a client-side dev toggle to simulate production HMAC enforcement.
+    // When true, the server validates X-Vyzorix-Signature (per-device HMAC).
+    // The actual signature is computed client-side using the device's command_secret,
+    // which is returned on registration. In production the Android daemon computes
+    // this server-side; here we set an empty signature and let the server decide
+    // whether to enforce based on its ENFORCE_HMAC setting.
+    if (strictHmac) {
+      headers["X-Vyzorix-Signature"] = "";
+    }
     const res = await fetch(join(serverUrl, `/v1/device/${encodeURIComponent(deviceId)}/command`), {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Vyzorix-Nonce": nonce,
-        "X-Vyzorix-Timestamp": String(timestamp),
-        "X-Vyzorix-Signature": "",
-        ...dashboardHeaders(dashboardToken),
-      },
+      headers,
       body,
     });
     const out = await jsonOrThrow<CommandResponse>(res);

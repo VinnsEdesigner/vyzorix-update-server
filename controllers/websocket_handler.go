@@ -1,4 +1,173 @@
 package controllers
 
-// WebSocket upgrade handling lives on Server.stream in server.go. The upgraded
-// gorilla connection is handed to hub.Client, which owns readPump/writePump.
+import (
+	"context"
+	"encoding/json"
+	"log/slog"
+	"net/http"
+
+	"github.com/VinnsEdesigner/vyzorix-update-server/config"
+	"github.com/VinnsEdesigner/vyzorix-update-server/hub"
+	"github.com/VinnsEdesigner/vyzorix-update-server/models"
+	"github.com/VinnsEdesigner/vyzorix-update-server/security"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+)
+
+// WebSocketHandler manages WebSocket upgrade and client lifecycle.
+type WebSocketHandler struct {
+	log      *slog.Logger
+	config   config.Config
+	hub      *hub.Hub
+	hmac     security.Verifier
+	upgrader websocket.Upgrader
+}
+
+func NewWebSocketHandler(
+	log *slog.Logger,
+	cfg config.Config,
+	h *hub.Hub,
+	hmac security.Verifier,
+) *WebSocketHandler {
+	return &WebSocketHandler{
+		log:      log,
+		config:   cfg,
+		hub:      h,
+		hmac:     hmac,
+		upgrader: websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }},
+	}
+}
+
+// HandleStream upgrades HTTP to WebSocket and registers the client.
+// GET /v1/device/:id/stream
+func (s *WebSocketHandler) HandleStream(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(400, map[string]string{"error": "bad_request", "message": "device id required"})
+		return
+	}
+
+	// HMAC verification for WebSocket upgrade if enforced
+	if s.config.EnforceHMAC {
+		body, err := s.hmac.ReadAndVerifyHTTP(c.Request)
+		if err != nil {
+			c.JSON(401, map[string]string{"error": "bad_hmac", "message": err.Error()})
+			return
+		}
+		_ = body // Body consumed for verification
+	}
+
+	// Perform WebSocket upgrade
+	conn, err := s.upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		s.log.Warn("websocket upgrade failed", "deviceId", id, "err", err)
+		return
+	}
+
+	// Register client with hub
+	client := &hub.Client{
+		DeviceID: id,
+		Conn:     conn,
+		Send:     make(chan models.CommandFrame, 32),
+		Hub:      s.hub,
+	}
+	s.hub.Register(client)
+
+	s.log.Info("device connected via websocket", "deviceId", id)
+
+	// Start pumps - ReadPump blocks, so run WritePump in goroutine
+	go client.WritePump()
+	client.ReadPump()
+}
+
+// BroadcastTelemetry sends telemetry data to all connected dashboard clients.
+func (s *WebSocketHandler) BroadcastTelemetry(raw []byte) {
+	s.hub.BroadcastTelemetry(raw)
+}
+
+// ClientCount returns the number of connected WebSocket clients.
+func (s *WebSocketHandler) ClientCount() int {
+	return len(s.hub.Clients())
+}
+
+// GetClient retrieves a specific client by device ID.
+func (s *WebSocketHandler) GetClient(deviceID string) *hub.Client {
+	return s.hub.GetClient(deviceID)
+}
+
+// DisconnectClient forcefully disconnects a client.
+func (s *WebSocketHandler) DisconnectClient(deviceID string) {
+	client := s.hub.GetClient(deviceID)
+	if client != nil {
+		client.Hub.Unregister(client)
+		_ = client.Conn.Close()
+	}
+}
+
+// HandleIncomingMessage processes incoming WebSocket messages from devices.
+func (s *WebSocketHandler) HandleIncomingMessage(client *hub.Client, raw []byte) error {
+	var env struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(raw, &env); err != nil {
+		s.log.Warn("bad ws frame", "deviceId", client.DeviceID, "err", err)
+		return err
+	}
+
+	switch env.Type {
+	case "telemetry":
+		return s.handleTelemetry(client, raw)
+	case "pong":
+		return s.handlePong(client)
+	case "status":
+		return s.handleStatus(client, raw)
+	default:
+		s.log.Warn("unknown ws message type", "deviceId", client.DeviceID, "type", env.Type)
+	}
+
+	return nil
+}
+
+// handleTelemetry processes telemetry frames from devices.
+func (s *WebSocketHandler) handleTelemetry(client *hub.Client, raw []byte) error {
+	var t models.TelemetryFrame
+	if err := json.Unmarshal(raw, &t); err != nil {
+		return err
+	}
+	t.Raw = raw
+	if t.DeviceID == "" {
+		t.DeviceID = client.DeviceID
+	}
+
+	// Save telemetry to store
+	if err := client.Hub.Store().SaveTelemetry(context.Background(), client.DeviceID, raw, t); err != nil {
+		s.log.Warn("telemetry save failed", "deviceId", client.DeviceID, "err", err)
+	}
+
+	// Broadcast to dashboard
+	client.Hub.BroadcastTelemetry(raw)
+
+	s.log.Debug("telemetry received", "deviceId", client.DeviceID, "riskScore", t.RiskScore)
+	return nil
+}
+
+// handlePong handles ping/pong heartbeat responses.
+func (s *WebSocketHandler) handlePong(client *hub.Client) error {
+	return client.Hub.Store().Touch(context.Background(), client.DeviceID)
+}
+
+// handleStatus processes status updates from devices.
+func (s *WebSocketHandler) handleStatus(client *hub.Client, raw []byte) error {
+	s.log.Info("status update", "deviceId", client.DeviceID)
+	return client.Hub.Store().Touch(context.Background(), client.DeviceID)
+}
+
+// SendToClient sends a command frame to a specific device.
+func (s *WebSocketHandler) SendToClient(deviceID string, frame models.CommandFrame) bool {
+	return s.hub.Send(deviceID, frame)
+}
+
+// IsOnline checks if a device is currently connected via WebSocket.
+func (s *WebSocketHandler) IsOnline(deviceID string) bool {
+	return s.hub.Online(deviceID)
+}
