@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+out/
+dist/
+build/
+
+# Test files
+*_test.go
+**/*_test.go
+*.test
+coverage.out
+
+# Development files
+.env
+.env.local
+.env.*.local
+*.log
+*.tmp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node (handled separately in multi-stage)
+node_modules/
+
+# Documentation (not needed in image)
+*.md
+docs/
+LICENSE
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+
+# Temporary files
+tmp/
+temp/
+*.bak
