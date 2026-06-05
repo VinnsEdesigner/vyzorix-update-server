@@ -25,7 +25,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { getStoredOperator, logout } from "@/lib/vyzorix-auth";
+import { DEFAULT_SERVER_URL } from "@/lib/vyzorix-config";
 import { toast } from "sonner";
 
 const navItems = [
@@ -38,17 +39,27 @@ const navItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
+const OPERATOR_UPDATE_EVENT = "vyz.operator.updated";
+
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
-  const [email, setEmail] = useState<string | null>(null);
+  const [operator, setOperator] = useState(getStoredOperator);
 
+  // Sync operator from localStorage and listen for name updates from settings
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    const sync = () => setOperator(getStoredOperator());
+    // Initial sync
+    sync();
+    // Listen for name updates from the operator settings page
+    window.addEventListener(OPERATOR_UPDATE_EVENT, sync);
+    return () => window.removeEventListener(OPERATOR_UPDATE_EVENT, sync);
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await logout(DEFAULT_SERVER_URL);
+    } catch {}
     toast.success("Signed out");
     navigate({ to: "/login", replace: true });
   };
@@ -87,9 +98,9 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <div className="space-y-1 px-2 py-1.5 group-data-[collapsible=icon]:hidden">
-          {email && (
-            <p className="truncate text-xs text-muted-foreground" title={email}>
-              {email}
+          {operator?.email && (
+            <p className="truncate text-xs text-muted-foreground" title={operator.email}>
+              {operator.email}
             </p>
           )}
           <Button variant="ghost" size="sm" className="h-7 w-full justify-start gap-2 px-2 text-xs" onClick={signOut}>

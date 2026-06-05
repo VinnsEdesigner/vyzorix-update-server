@@ -1,31 +1,33 @@
 package middleware
 
 import (
-	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CORS struct{ AllowedOrigins []string }
 
-func (c CORS) Wrap(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
+func (c CORS) Handler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
 		if c.allowed(origin) {
 			if origin == "" {
 				origin = "*"
 			}
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Vary", "Origin")
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			c.Writer.Header().Set("Vary", "Origin")
 		}
-		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PATCH, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Vyzorix-Nonce, X-Vyzorix-Timestamp, X-Vyzorix-Signature, X-Vyzorix-Token")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PATCH, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Vyzorix-Nonce, X-Vyzorix-Timestamp, X-Vyzorix-Signature, X-Vyzorix-Token")
+		if c.Request.Method == "OPTIONS" {
+			c.Writer.WriteHeader(204)
 			return
 		}
-		next.ServeHTTP(w, r)
-	})
+		c.Next()
+	}
 }
+
 func (c CORS) allowed(origin string) bool {
 	if origin == "" {
 		return true
@@ -36,4 +38,8 @@ func (c CORS) allowed(origin string) bool {
 		}
 	}
 	return false
+}
+
+func CORSHandler(origins []string) gin.HandlerFunc {
+	return CORS{AllowedOrigins: origins}.Handler()
 }
