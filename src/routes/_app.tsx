@@ -13,26 +13,8 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app")({
   ssr: false,
-  beforeLoad: async ({ location }) => {
-    // Check for JWT token in localStorage
-    const token = getToken();
-    if (!token) {
-      throw redirect({ to: "/login", search: { redirect: location.href } });
-    }
-    try {
-      // Validate token by fetching the operator profile from the Go server.
-      // The Go server lives at the same origin in production (same domain).
-      // In dev, the user configures the server URL in Settings → Connection.
-      // For now, use the configured server URL or fall back to the configured default.
-      await me(DEFAULT_SERVER_URL);
-    } catch (e) {
-      // Token invalid or server unreachable — clear and redirect
-      try { await logout(DEFAULT_SERVER_URL); } catch {}
-      const msg = e instanceof Error ? e.message : "Authentication failed";
-      logger.warn("auth", `Session invalid: ${msg}`);
-      throw redirect({ to: "/login", search: { redirect: location.href } });
-    }
-  },
+  // Auth temporarily disabled for local exploration. Re-enable by restoring the
+  // beforeLoad guard below once Google sign-in is configured.
   component: AppLayout,
 });
 
