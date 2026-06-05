@@ -4,6 +4,7 @@ export const DEFAULT_SERVER_URL = "http://localhost:3000";
 export const DEFAULT_DEVICE_ID = "nokia-c22-primary";
 
 const STORAGE_KEY = "vyzorix.config.v2";
+const OPERATOR_KEY = "vyz.auth.operator";
 
 export interface Thresholds {
   riskWarn: number;
@@ -82,6 +83,24 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
   }, [s]);
+
+  useEffect(() => {
+    const syncOperator = () => {
+      try {
+        const raw = localStorage.getItem(OPERATOR_KEY);
+        if (!raw) return;
+        const stored = JSON.parse(raw) as { id: string; email: string; name: string; role: string; createdAt: number };
+        setS((prev) => {
+          if (prev.operator.email === stored.email && prev.operator.name === stored.name && prev.operator.role === stored.role) {
+            return prev; // no change, skip re-render
+          }
+          return { ...prev, operator: { name: stored.name, role: stored.role as "viewer" | "operator" | "super_admin", email: stored.email } };
+        });
+      } catch {}
+    };
+    window.addEventListener("vyz.operator.updated", syncOperator);
+    return () => window.removeEventListener("vyz.operator.updated", syncOperator);
+  }, []);
 
   const update = (patch: Partial<VyzorixSettings>) => setS((prev) => ({ ...prev, ...patch }));
   const setServerUrl = (v: string) => update({ serverUrl: v });

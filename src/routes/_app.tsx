@@ -6,28 +6,31 @@ import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/sonner";
 import { DeviceStreamProvider, useStream } from "@/lib/device-stream-context";
 import { LogDock } from "@/components/logs/log-dock";
-import { supabase } from "@/integrations/supabase/client";
-import { ensureAdminAccess } from "@/lib/admin.functions";
+import { getToken, me, logout } from "@/lib/vyzorix-auth";
+import { DEFAULT_SERVER_URL } from "@/lib/vyzorix-config";
+import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app")({
   ssr: false,
   beforeLoad: async ({ location }) => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
+    // Check for JWT token in localStorage
+    const token = getToken();
+    if (!token) {
       throw redirect({ to: "/login", search: { redirect: location.href } });
     }
     try {
-      const res = await ensureAdminAccess();
-      if (!res.allowed) {
-        await supabase.auth.signOut();
-        toast.error("This account is not authorized.");
-        throw redirect({ to: "/login" });
-      }
+      // Validate token by fetching the operator profile from the Go server.
+      // The Go server lives at the same origin in production (same domain).
+      // In dev, the user configures the server URL in Settings → Connection.
+      // For now, use the configured server URL or fall back to the configured default.
+      await me(DEFAULT_SERVER_URL);
     } catch (e) {
-      if (e && typeof e === "object" && "to" in e) throw e;
-      await supabase.auth.signOut();
-      throw redirect({ to: "/login" });
+      // Token invalid or server unreachable — clear and redirect
+      try { await logout(DEFAULT_SERVER_URL); } catch {}
+      const msg = e instanceof Error ? e.message : "Authentication failed";
+      logger.warn("auth", `Session invalid: ${msg}`);
+      throw redirect({ to: "/login", search: { redirect: location.href } });
     }
   },
   component: AppLayout,

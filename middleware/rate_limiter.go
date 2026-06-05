@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"net/http"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type RateLimiter struct {
@@ -20,15 +21,18 @@ type bucket struct {
 func NewRateLimiter(capacity int, refill time.Duration) *RateLimiter {
 	return &RateLimiter{buckets: map[string]*bucket{}, Capacity: capacity, Refill: refill}
 }
-func (l *RateLimiter) Wrap(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !l.Allow(r.RemoteAddr) {
-			http.Error(w, "rate limited", http.StatusTooManyRequests)
+
+func (l *RateLimiter) Middleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !l.Allow(c.ClientIP()) {
+			c.JSON(429, map[string]string{"error": "rate_limited", "message": "too many requests"})
+			c.Abort()
 			return
 		}
-		next.ServeHTTP(w, r)
-	})
+		c.Next()
+	}
 }
+
 func (l *RateLimiter) Allow(key string) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
