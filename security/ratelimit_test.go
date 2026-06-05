@@ -183,19 +183,49 @@ func TestRateLimiter_MiddlewareCustomKey(t *testing.T) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	// Different user IDs should have separate limits
-	for userID := 1; userID <= 3; userID++ {
+	// Test with different user IDs - each should have its own limit
+	// User 1: 2 requests allowed
+	for i := 0; i < 2; i++ {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/test", nil)
-		req.Header.Set("X-User-ID", string(rune('0'+userID)))
+		req.Header.Set("X-User-ID", "user1")
 		router.ServeHTTP(w, req)
 
-		if userID <= 2 && w.Code != http.StatusOK {
-			t.Errorf("user %d: expected status 200, got %d", userID, w.Code)
+		if w.Code != http.StatusOK {
+			t.Errorf("user1 request %d: expected status 200, got %d", i+1, w.Code)
 		}
-		if userID == 3 && w.Code != http.StatusTooManyRequests {
-			t.Errorf("user 3: expected status 429, got %d", w.Code)
+	}
+
+	// User 1's 3rd request should be denied
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("X-User-ID", "user1")
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusTooManyRequests {
+		t.Errorf("user1 request 3: expected status 429, got %d", w.Code)
+	}
+
+	// User 2 should have its own quota (not affected by user1's limit)
+	for i := 0; i < 2; i++ {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/test", nil)
+		req.Header.Set("X-User-ID", "user2")
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("user2 request %d: expected status 200, got %d", i+1, w.Code)
 		}
+	}
+
+	// User 2's 3rd request should be denied
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/test", nil)
+	req.Header.Set("X-User-ID", "user2")
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusTooManyRequests {
+		t.Errorf("user2 request 3: expected status 429, got %d", w.Code)
 	}
 }
 
