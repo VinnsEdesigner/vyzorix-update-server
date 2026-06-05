@@ -1,5 +1,12 @@
 import { useSyncExternalStore } from "react";
-import { logger, type LogEntry } from "@/lib/logger";
+import {
+  logger,
+  LOG_SOURCES,
+  LOG_LEVELS,
+  type LogEntry,
+  type LogLevel,
+  type LogSource,
+} from "@/lib/logger";
 
 export function useLogs(): LogEntry[] {
   return useSyncExternalStore(
