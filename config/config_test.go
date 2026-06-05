@@ -163,9 +163,14 @@ func TestLoad_EmptyDatabaseURL(t *testing.T) {
 
 	defer clearEnvVars()
 
-	_, err := Load()
-	if err == nil {
-		t.Error("expected error for empty DATABASE_URL")
+	cfg, err := Load()
+	// Empty DATABASE_URL uses fallback default, no error
+	if err != nil {
+		t.Fatalf("Load() returned unexpected error: %v", err)
+	}
+	// Fallback default path should be used
+	if cfg.DatabaseURL != "./data/vyzorix.db" {
+		t.Errorf("DatabaseURL = %q, want ./data/vyzorix.db (fallback default)", cfg.DatabaseURL)
 	}
 }
 
