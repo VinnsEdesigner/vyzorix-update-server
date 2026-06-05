@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -84,7 +83,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 // Register creates the first operator in the system.
 // Subsequent registrations require a super_admin token.
 func (ac *AuthController) Register(c *gin.Context) {
-	var req models.RegisterRequest
+	var req models.OperatorRegisterRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "invalid JSON body"})
 		return
@@ -117,7 +116,7 @@ func (ac *AuthController) Register(c *gin.Context) {
 	} else {
 		// Subsequent registrations require a super_admin JWT
 		authOp := getOperatorFromContext(c)
-		if authOp == nil || authOp.Role != string(models.RoleSuperAdmin) {
+		if authOp == nil || authOp.Role != models.RoleSuperAdmin {
 			c.JSON(403, models.ErrorResponse{Error: "forbidden", Message: "only a super_admin can invite new operators"})
 			return
 		}
@@ -208,7 +207,7 @@ func (ac *AuthController) UpdateName(c *gin.Context) {
 func (ac *AuthController) Logout(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if !strings.HasPrefix(authHeader, "Bearer ") {
-		c.JSON(200, map[string]string{"ok": true})
+		c.JSON(200, map[string]any{"ok": true})
 		return
 	}
 	token := strings.TrimPrefix(authHeader, "Bearer ")
@@ -216,7 +215,7 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	defer cancel()
 	hash := security.HashToken(token)
 	_ = ac.store.DeleteSession(ctx, hash)
-	c.JSON(200, map[string]string{"ok": true})
+	c.JSON(200, map[string]any{"ok": true})
 }
 
 // GoogleLoginRedirect sends the browser to Google's OAuth consent screen.
@@ -247,7 +246,7 @@ func (ac *AuthController) GoogleLoginRedirect(c *gin.Context) {
 // GET /v1/auth/google/callback
 func (ac *AuthController) GoogleCallback(c *gin.Context) {
 	code := c.Query("code")
-	state := c.Query("state") // frontend URL to redirect back to
+	_ = c.Query("state") // frontend URL to redirect back to (reserved for future use)
 	if code == "" {
 		c.JSON(400, models.ErrorResponse{Error: "bad_callback", Message: "missing authorization code from Google"})
 		return
@@ -337,7 +336,7 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 	}
 
 	// Issue JWT
-	token, expiresAt, err := ac.jwt.Generate(op.ID, op.Email, op.Name, string(op.Role))
+	token, _, err := ac.jwt.Generate(op.ID, op.Email, op.Name, string(op.Role))
 	if err != nil {
 		ac.log.Warn("google callback: jwt failed", "err", err)
 		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
@@ -348,11 +347,6 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 	frontendURL := ac.config.FrontendURL
 	if frontendURL == "" {
 		frontendURL = "http://localhost:5173"
-	}
-	// Use state as redirect target if provided, otherwise default dashboard
-	redirectTarget := "/"
-	if state != "" {
-		redirectTarget = state
 	}
 	redirectURL := fmt.Sprintf("%s/auth/callback?token=%s&isNew=%t", frontendURL, url.QueryEscape(token), isNew)
 
@@ -406,7 +400,9 @@ func getOperatorFromContext(c *gin.Context) *models.Operator {
 
 func generateID() string {
 	b := make([]byte, 16)
-	_ = rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		return fmt.Sprintf("gen-%d", time.Now().UnixNano())
+	}
 	return hex.EncodeToString(b)
 }
 

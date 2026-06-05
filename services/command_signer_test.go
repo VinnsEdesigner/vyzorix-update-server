@@ -327,9 +327,9 @@ func TestCommandSigner_HashSecret(t *testing.T) {
 
 	hash := signer.HashSecret(secret)
 
-	// Hash should contain salt:hash format
-	if !strings.Contains(hash, ":") {
-		t.Error("HashSecret() should return salt:hash format")
+	// Hash should be bcrypt format (starts with $2a$, $2b$, etc.)
+	if !strings.HasPrefix(hash, "$2") {
+		t.Error("HashSecret() should return bcrypt hash format")
 	}
 
 	// Hash should be verifiable
