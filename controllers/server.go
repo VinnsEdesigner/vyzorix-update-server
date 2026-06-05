@@ -64,6 +64,11 @@ func (s *Server) Engine() *gin.Engine {
 	auth.GET("/google/callback", s.jwtCtrl.GoogleCallback) // OAuth callback from Google
 	auth.POST("/login", s.jwtCtrl.Login)
 	auth.POST("/register", s.jwtCtrl.Register)
+	// Email verification and password reset (no JWT required)
+	auth.POST("/verify-email", s.jwtCtrl.VerifyEmail)
+	auth.POST("/resend-verification", s.jwtCtrl.ResendVerification)
+	auth.POST("/forgot-password", s.jwtCtrl.ForgotPassword)
+	auth.POST("/reset-password", s.jwtCtrl.ResetPassword)
 	// /me and /logout require JWT — middleware applied inline
 	auth.GET("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Me)
 	auth.PATCH("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.UpdateName)

@@ -87,6 +87,8 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 			password_hash TEXT,
 			role TEXT NOT NULL DEFAULT 'operator',
 			google_id TEXT UNIQUE,
+			email_verified INTEGER NOT NULL DEFAULT 0,
+			verification_sent_at INTEGER,
 			created_at INTEGER NOT NULL,
 			updated_at INTEGER NOT NULL
 		)`); err != nil {
@@ -112,6 +114,46 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires ON auth_sessions(expires_at)`); err != nil {
 		return err
 	}
+	// Email verification tokens
+	if _, err := s.db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS email_verifications (
+			id TEXT PRIMARY KEY,
+			operator_id TEXT NOT NULL,
+			token_hash TEXT NOT NULL UNIQUE,
+			expires_at INTEGER NOT NULL,
+			created_at INTEGER NOT NULL,
+			FOREIGN KEY(operator_id) REFERENCES operators(id) ON DELETE CASCADE
+		)`); err != nil {
+		return err
+	}
+	if _, err := s.db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_email_verifications_operator ON email_verifications(operator_id)`); err != nil {
+		return err
+	}
+	if _, err := s.db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_email_verifications_token ON email_verifications(token_hash)`); err != nil {
+		return err
+	}
+	// Password reset tokens
+	if _, err := s.db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS password_reset_tokens (
+			id TEXT PRIMARY KEY,
+			operator_id TEXT NOT NULL,
+			token_hash TEXT NOT NULL UNIQUE,
+			expires_at INTEGER NOT NULL,
+			used_at INTEGER,
+			created_at INTEGER NOT NULL,
+			FOREIGN KEY(operator_id) REFERENCES operators(id) ON DELETE CASCADE
+		)`); err != nil {
+		return err
+	}
+	if _, err := s.db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_password_reset_operator ON password_reset_tokens(operator_id)`); err != nil {
+		return err
+	}
+	if _, err := s.db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_password_reset_token ON password_reset_tokens(token_hash)`); err != nil {
+		return err
+	}
+	// Additive migrations for new columns
+	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`) //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN verification_sent_at INTEGER`)             //nolint:errcheck
 	return nil
 }
 
@@ -454,20 +496,21 @@ func (s *Store) OperatorCount(ctx context.Context) (int, error) {
 // GetOperatorByEmail retrieves an operator by email address.
 func (s *Store) GetOperatorByEmail(ctx context.Context, email string) (*models.Operator, error) {
 	var r struct {
-		ID           string
-		Email        string
-		Name         string
-		PasswordHash []byte
-		Role         string
-		GoogleID     sql.NullString
-		CreatedAt    int64
-		UpdatedAt    int64
+		ID            string
+		Email         string
+		Name          string
+		PasswordHash  []byte
+		Role          string
+		GoogleID      sql.NullString
+		EmailVerified int
+		CreatedAt     int64
+		UpdatedAt     int64
 	}
 	err := s.db.QueryRowContext(ctx,
-		`SELECT id, email, name, password_hash, role, google_id, created_at, updated_at
+		`SELECT id, email, name, password_hash, role, google_id, COALESCE(email_verified, 0), created_at, updated_at
 		 FROM operators WHERE email = ?`,
 		email,
-	).Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.CreatedAt, &r.UpdatedAt)
+	).Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.EmailVerified, &r.CreatedAt, &r.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -475,14 +518,15 @@ func (s *Store) GetOperatorByEmail(ctx context.Context, email string) (*models.O
 		return nil, err
 	}
 	op := &models.Operator{
-		ID:           r.ID,
-		Email:        r.Email,
-		Name:         r.Name,
-		PasswordHash: string(r.PasswordHash),
-		Role:         models.OperatorRole(r.Role),
-		GoogleID:     r.GoogleID.String,
-		CreatedAt:    time.UnixMilli(r.CreatedAt).UTC(),
-		UpdatedAt:    time.UnixMilli(r.UpdatedAt).UTC(),
+		ID:            r.ID,
+		Email:         r.Email,
+		Name:          r.Name,
+		PasswordHash:  string(r.PasswordHash),
+		Role:          models.OperatorRole(r.Role),
+		GoogleID:      r.GoogleID.String,
+		EmailVerified: r.EmailVerified != 0,
+		CreatedAt:     time.UnixMilli(r.CreatedAt).UTC(),
+		UpdatedAt:     time.UnixMilli(r.UpdatedAt).UTC(),
 	}
 	return op, nil
 }
@@ -490,20 +534,21 @@ func (s *Store) GetOperatorByEmail(ctx context.Context, email string) (*models.O
 // GetOperatorByGoogleID retrieves an operator by Google OAuth subject ID.
 func (s *Store) GetOperatorByGoogleID(ctx context.Context, googleID string) (*models.Operator, error) {
 	var r struct {
-		ID           string
-		Email        string
-		Name         string
-		PasswordHash []byte
-		Role         string
-		GoogleID     string
-		CreatedAt    int64
-		UpdatedAt    int64
+		ID            string
+		Email         string
+		Name          string
+		PasswordHash  []byte
+		Role          string
+		GoogleID      string
+		EmailVerified int
+		CreatedAt     int64
+		UpdatedAt     int64
 	}
 	err := s.db.QueryRowContext(ctx,
-		`SELECT id, email, name, password_hash, role, google_id, created_at, updated_at
+		`SELECT id, email, name, password_hash, role, google_id, COALESCE(email_verified, 0), created_at, updated_at
 		 FROM operators WHERE google_id = ?`,
 		googleID,
-	).Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.CreatedAt, &r.UpdatedAt)
+	).Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.EmailVerified, &r.CreatedAt, &r.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -511,14 +556,52 @@ func (s *Store) GetOperatorByGoogleID(ctx context.Context, googleID string) (*mo
 		return nil, err
 	}
 	return &models.Operator{
-		ID:           r.ID,
-		Email:        r.Email,
-		Name:         r.Name,
-		PasswordHash: string(r.PasswordHash),
-		Role:         models.OperatorRole(r.Role),
-		GoogleID:     r.GoogleID,
-		CreatedAt:    time.UnixMilli(r.CreatedAt).UTC(),
-		UpdatedAt:    time.UnixMilli(r.UpdatedAt).UTC(),
+		ID:            r.ID,
+		Email:         r.Email,
+		Name:          r.Name,
+		PasswordHash:  string(r.PasswordHash),
+		Role:          models.OperatorRole(r.Role),
+		GoogleID:      r.GoogleID,
+		EmailVerified: r.EmailVerified != 0,
+		CreatedAt:     time.UnixMilli(r.CreatedAt).UTC(),
+		UpdatedAt:     time.UnixMilli(r.UpdatedAt).UTC(),
+	}, nil
+}
+
+// GetOperatorByID retrieves an operator by their ID.
+func (s *Store) GetOperatorByID(ctx context.Context, id string) (*models.Operator, error) {
+	var r struct {
+		ID            string
+		Email         string
+		Name          string
+		PasswordHash  []byte
+		Role          string
+		GoogleID      sql.NullString
+		EmailVerified int
+		CreatedAt     int64
+		UpdatedAt     int64
+	}
+	err := s.db.QueryRowContext(ctx,
+		`SELECT id, email, name, password_hash, role, google_id, COALESCE(email_verified, 0), created_at, updated_at
+		 FROM operators WHERE id = ?`,
+		id,
+	).Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.EmailVerified, &r.CreatedAt, &r.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &models.Operator{
+		ID:            r.ID,
+		Email:         r.Email,
+		Name:          r.Name,
+		PasswordHash:  string(r.PasswordHash),
+		Role:          models.OperatorRole(r.Role),
+		GoogleID:      r.GoogleID.String,
+		EmailVerified: r.EmailVerified != 0,
+		CreatedAt:     time.UnixMilli(r.CreatedAt).UTC(),
+		UpdatedAt:     time.UnixMilli(r.UpdatedAt).UTC(),
 	}, nil
 }
 
@@ -621,4 +704,195 @@ func (s *Store) DeleteExpiredSessions(ctx context.Context) error {
 func (s *Store) DeleteAllSessionsForOperator(ctx context.Context, operatorID string) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM auth_sessions WHERE operator_id = ?`, operatorID)
 	return err
+}
+
+// ─── Email Verification Tokens ─────────────────────────────────────────────────
+
+// EmailVerification represents a pending email verification token.
+type EmailVerification struct {
+	ID         string
+	OperatorID string
+	TokenHash  string
+	ExpiresAt  time.Time
+	CreatedAt  time.Time
+}
+
+// CreateEmailVerification inserts a new email verification token.
+func (s *Store) CreateEmailVerification(ctx context.Context, ev *EmailVerification) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO email_verifications(id, operator_id, token_hash, expires_at, created_at)
+		 VALUES(?, ?, ?, ?, ?)`,
+		ev.ID, ev.OperatorID, ev.TokenHash, ev.ExpiresAt.UnixMilli(), ev.CreatedAt.UnixMilli(),
+	)
+	return err
+}
+
+// GetEmailVerificationByTokenHash retrieves an email verification by its token hash.
+func (s *Store) GetEmailVerificationByTokenHash(ctx context.Context, tokenHash string) (*EmailVerification, error) {
+	var r struct {
+		ID         string
+		OperatorID string
+		TokenHash  string
+		ExpiresAt  int64
+		CreatedAt  int64
+	}
+	err := s.db.QueryRowContext(ctx,
+		`SELECT id, operator_id, token_hash, expires_at, created_at
+		 FROM email_verifications WHERE token_hash = ?`,
+		tokenHash,
+	).Scan(&r.ID, &r.OperatorID, &r.TokenHash, &r.ExpiresAt, &r.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &EmailVerification{
+		ID:         r.ID,
+		OperatorID: r.OperatorID,
+		TokenHash:  r.TokenHash,
+		ExpiresAt:  time.UnixMilli(r.ExpiresAt).UTC(),
+		CreatedAt:  time.UnixMilli(r.CreatedAt).UTC(),
+	}, nil
+}
+
+// DeleteEmailVerification removes an email verification by ID.
+func (s *Store) DeleteEmailVerification(ctx context.Context, id string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM email_verifications WHERE id = ?`, id)
+	return err
+}
+
+// DeleteEmailVerificationsByOperator removes all email verifications for an operator.
+func (s *Store) DeleteEmailVerificationsByOperator(ctx context.Context, operatorID string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM email_verifications WHERE operator_id = ?`, operatorID)
+	return err
+}
+
+// ─── Password Reset Tokens ─────────────────────────────────────────────────────
+
+// PasswordResetToken represents a pending password reset token.
+type PasswordResetToken struct {
+	ID         string
+	OperatorID string
+	TokenHash  string
+	ExpiresAt  time.Time
+	UsedAt     *time.Time
+	CreatedAt  time.Time
+}
+
+// CreatePasswordResetToken inserts a new password reset token.
+func (s *Store) CreatePasswordResetToken(ctx context.Context, prt *PasswordResetToken) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO password_reset_tokens(id, operator_id, token_hash, expires_at, used_at, created_at)
+		 VALUES(?, ?, ?, ?, ?, ?)`,
+		prt.ID, prt.OperatorID, prt.TokenHash, prt.ExpiresAt.UnixMilli(), nil, prt.CreatedAt.UnixMilli(),
+	)
+	return err
+}
+
+// GetPasswordResetTokenByHash retrieves a password reset token by its hash.
+func (s *Store) GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (*PasswordResetToken, error) {
+	var r struct {
+		ID         string
+		OperatorID string
+		TokenHash  string
+		ExpiresAt  int64
+		UsedAt     sql.NullInt64
+		CreatedAt  int64
+	}
+	err := s.db.QueryRowContext(ctx,
+		`SELECT id, operator_id, token_hash, expires_at, used_at, created_at
+		 FROM password_reset_tokens WHERE token_hash = ?`,
+		tokenHash,
+	).Scan(&r.ID, &r.OperatorID, &r.TokenHash, &r.ExpiresAt, &r.UsedAt, &r.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var usedAt *time.Time
+	if r.UsedAt.Valid {
+		t := time.UnixMilli(r.UsedAt.Int64).UTC()
+		usedAt = &t
+	}
+	return &PasswordResetToken{
+		ID:         r.ID,
+		OperatorID: r.OperatorID,
+		TokenHash:  r.TokenHash,
+		ExpiresAt:  time.UnixMilli(r.ExpiresAt).UTC(),
+		UsedAt:     usedAt,
+		CreatedAt:  time.UnixMilli(r.CreatedAt).UTC(),
+	}, nil
+}
+
+// MarkPasswordResetTokenUsed marks a password reset token as used.
+func (s *Store) MarkPasswordResetTokenUsed(ctx context.Context, id string) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE password_reset_tokens SET used_at = ? WHERE id = ?`,
+		time.Now().UTC().UnixMilli(), id,
+	)
+	return err
+}
+
+// DeletePasswordResetToken removes a password reset token by ID.
+func (s *Store) DeletePasswordResetToken(ctx context.Context, id string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM password_reset_tokens WHERE id = ?`, id)
+	return err
+}
+
+// DeletePasswordResetTokensByOperator removes all password reset tokens for an operator.
+func (s *Store) DeletePasswordResetTokensByOperator(ctx context.Context, operatorID string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM password_reset_tokens WHERE operator_id = ?`, operatorID)
+	return err
+}
+
+// GetOperatorEmailVerified returns whether an operator has verified their email.
+func (s *Store) GetOperatorEmailVerified(ctx context.Context, operatorID string) (bool, error) {
+	var verified int
+	err := s.db.QueryRowContext(ctx,
+		`SELECT email_verified FROM operators WHERE id = ?`,
+		operatorID,
+	).Scan(&verified)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, errors.New("operator not found")
+	}
+	return verified != 0, err
+}
+
+// SetOperatorEmailVerified marks an operator's email as verified.
+func (s *Store) SetOperatorEmailVerified(ctx context.Context, operatorID string, verified bool) error {
+	v := 0
+	if verified {
+		v = 1
+	}
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE operators SET email_verified = ?, updated_at = ? WHERE id = ?`,
+		v, time.Now().UTC().UnixMilli(), operatorID,
+	)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return errors.New("operator not found")
+	}
+	return nil
+}
+
+// UpdateOperatorPassword updates the password hash for an operator.
+func (s *Store) UpdateOperatorPassword(ctx context.Context, operatorID, passwordHash string) error {
+	now := time.Now().UTC()
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE operators SET password_hash = ?, updated_at = ? WHERE id = ?`,
+		passwordHash, now.UnixMilli(), operatorID,
+	)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return errors.New("operator not found")
+	}
+	return nil
 }
