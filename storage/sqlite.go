@@ -12,6 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"strings"
+
+	"github.com/VinnsEdesigner/vyzorix-update-server/models"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -342,11 +346,7 @@ func (s *Store) DeleteDevice(ctx context.Context, id string) error {
 	return err
 }
 
-func (s *Store) SaveTelemetry(ctx context.Context, id string, raw []byte, t struct {
-	RiskScore  int
-	BufferLevel int
-	ThermalTemp float64
-}) error {
+func (s *Store) SaveTelemetry(ctx context.Context, id string, raw []byte, t models.TelemetryFrame) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	tx, err := s.db.BeginTx(ctx, nil)
