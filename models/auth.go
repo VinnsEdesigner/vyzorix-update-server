@@ -62,7 +62,7 @@ type LoginRequest struct {
 
 // RegisterRequest is the payload for operator self-registration.
 // Only allowed when no operators exist in the system (bootstrap phase).
-type RegisterRequest struct {
+type OperatorRegisterRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Name     string `json:"name"`
@@ -90,7 +90,7 @@ type GoogleOAuthCallbackRequest struct {
 }
 
 // ErrorResponse is the standard error envelope for auth endpoints.
-type ErrorResponse struct {
+type AuthErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message,omitempty"`
 }
