@@ -147,7 +147,7 @@ func TestPasswordStrength(t *testing.T) {
 		{"Password1!", 3, 3},
 		{"MyVerySecureP@ssw0rd!", 4, 4},
 		{"abc", 0, 0},
-		{"ABC123!", 2, 2},
+		{"ABC123!", 1, 1}, // Only uppercase + special, no lowercase or length bonus
 	}
 
 	for _, tt := range tests {
@@ -192,7 +192,7 @@ func TestContainsLower(t *testing.T) {
 		{"password", true},
 		{"PASSWORD", false},
 		{"Password", true},
-		{"PASSWORD123", true},
+		{"PASSWORD123", false}, // No lowercase letters
 		{"123456!", false},
 		{"", false},
 	}
