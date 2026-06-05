@@ -24,19 +24,22 @@ import (
 // AuthController handles operator authentication: login, register, logout, me, Google OAuth.
 type AuthController struct {
 	log       *slog.Logger
-	config   config.Config
-	store    *storage.Store
-	jwt      *security.JWTManager
+	config    config.Config
+	store     *storage.Store
+	jwt       *security.JWTManager
+	googleVer *security.GoogleTokenVerifier
 }
 
 // NewAuthController creates a new auth controller.
 func NewAuthController(log *slog.Logger, cfg config.Config, store *storage.Store) *AuthController {
 	jwtManager := security.NewJWTManager(cfg.JWTSecret, cfg.JWTDuration, "vyzorix-update-server")
+	googleVer := security.NewGoogleTokenVerifier(cfg.GoogleOAuthClientID)
 	return &AuthController{
-		log:     log,
-		config:  cfg,
-		store:   store,
-		jwt:     jwtManager,
+		log:        log,
+		config:     cfg,
+		store:      store,
+		jwt:        jwtManager,
+		googleVer:  googleVer,
 	}
 }
 
@@ -276,26 +279,21 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Decode the ID token to get user info
-	// In production, verify the ID token signature with Google's public keys
-	var idToken struct {
-		Sub   string `json:"sub"`
-		Email string `json:"email"`
-		Name  string `json:"name"`
-	}
-	if err := decodeJWTPayload(tokenResp.IDToken, &idToken); err != nil {
-		ac.log.Warn("google callback: id_token decode failed", "err", err)
-		c.JSON(502, models.ErrorResponse{Error: "oauth_error", Message: "failed to decode identity token from Google"})
+	// Verify the ID token using Google's public keys (cryptographically secure)
+	googleClaims, err := ac.googleVer.Verify(tokenResp.IDToken)
+	if err != nil {
+		ac.log.Warn("google callback: ID token verification failed", "err", err)
+		c.JSON(502, models.ErrorResponse{Error: "oauth_error", Message: "invalid identity token from Google"})
 		return
 	}
 
-	if idToken.Email == "" {
+	if googleClaims.Email == "" {
 		c.JSON(400, models.ErrorResponse{Error: "oauth_error", Message: "Google did not return an email address"})
 		return
 	}
 
 	// Find or create the operator
-	op, err := ac.store.GetOperatorByGoogleID(ctx, idToken.Sub)
+	op, err := ac.store.GetOperatorByGoogleID(ctx, googleClaims.Sub)
 	if err != nil {
 		ac.log.Warn("google callback: db lookup failed", "err", err)
 		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
@@ -309,26 +307,26 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 		role := models.RoleOperator
 		if count == 0 {
 			role = models.RoleSuperAdmin
-			ac.log.Info("google callback: bootstrapping first operator", "email", idToken.Email)
+			ac.log.Info("google callback: bootstrapping first operator", "email", googleClaims.Email)
 		}
 		op = &models.Operator{
 			ID:        generateID(),
-			Email:     idToken.Email,
-			Name:      idToken.Name,
+			Email:     googleClaims.Email,
+			Name:      googleClaims.Name,
 			Role:      role,
-			GoogleID:  idToken.Sub,
+			GoogleID:  googleClaims.Sub,
 			CreatedAt: time.Now().UTC(),
 			UpdatedAt: time.Now().UTC(),
 		}
 		if err := ac.store.CreateOperator(ctx, op); err != nil {
-			ac.log.Warn("google callback: create operator failed", "email", idToken.Email, "err", err)
+			ac.log.Warn("google callback: create operator failed", "email", googleClaims.Email, "err", err)
 			c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
 			return
 		}
 		isNew = true
 	} else if op.GoogleID == "" {
 		// Existing operator linking their Google account
-		if err := ac.store.UpdateOperatorGoogleID(ctx, op.ID, idToken.Sub); err != nil {
+		if err := ac.store.UpdateOperatorGoogleID(ctx, op.ID, googleClaims.Sub); err != nil {
 			ac.log.Warn("google callback: link failed", "err", err)
 			c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
 			return
