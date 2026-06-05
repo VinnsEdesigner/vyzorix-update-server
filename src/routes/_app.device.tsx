@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -43,6 +44,29 @@ function DevicePage() {
 
   return (
     <div className="space-y-4">
+      {status.isLoading ? (
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-2">
+                <div className="h-5 w-48 animate-pulse rounded-md bg-muted" />
+                <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
+              </div>
+              <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="rounded-md border p-3">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="mt-2 h-5 w-24" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -71,6 +95,7 @@ function DevicePage() {
           )}
         </CardContent>
       </Card>
+      )}
 
       <Separator />
 

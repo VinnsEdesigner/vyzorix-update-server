@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/VinnsEdesigner/vyzorix-update-server/config"
 	"github.com/VinnsEdesigner/vyzorix-update-server/controllers"
@@ -32,17 +35,30 @@ func main() {
 		os.Exit(1)
 	}
 	defer st.Close()
+
 	notifier, err := fcm.Init(log, cfg.FirebaseCreds)
 	if err != nil {
 		log.Error("fcm init failed", "err", err)
 		os.Exit(1)
 	}
+
 	h := hub.New(log, st)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	go h.Run(ctx)
+
 	srv := controllers.New(log, cfg, st, h, notifier)
 	addr := ":" + cfg.Port
-	log.Info("vyzorix real update server starting", "addr", addr, "db", cfg.DatabaseURL, "env", cfg.Env, "enforceHMAC", cfg.EnforceHMAC)
-	if err := http.ListenAndServe(addr, srv.Routes()); err != nil && err != http.ErrServerClosed {
-		_, _ = fmt.Fprintf(os.Stderr, "server failed: %v\n", err)
-		os.Exit(1)
-	}
+	log.Info("vyzorix update server starting", "addr", addr, "db", cfg.DatabaseURL, "env", cfg.Env, "enforceHMAC", cfg.EnforceHMAC)
+
+	go func() {
+		if err := http.ListenAndServe(addr, srv.Routes()); err != nil && err != http.ErrServerClosed {
+			_, _ = fmt.Fprintf(os.Stderr, "server failed: %v\n", err)
+			os.Exit(1)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Info("server shutting down")
 }

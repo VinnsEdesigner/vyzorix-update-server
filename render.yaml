@@ -1,34 +1,82 @@
+# render.yaml — Vyzorix Update Server on Render
+#
+# Deployment: Connect this repo to Render, select this file, and deploy.
+#
+# Disk: /data is a mounted 1GB persistent volume. SQLite DB lives here.
+#       Without this, every redeploy would reset the database.
+#
+# Sleep prevention (Hobby plan): Render sleeps after 15–30 min of inactivity.
+# Set up a free UptimeRobot monitor → GET https://your-service.onrender.com/healthz
+# every 10 minutes to keep the container warm and reduce cold-start latency.
+#
+# Supabase auth: Managed by Lovable Cloud via env injection. No manual setup needed
+# on Lovable-hosted deployments. For manual Render deploys, add SUPABASE_URL,
+# SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVICE_ROLE_KEY as env vars.
+
 services:
   - type: web
     name: vyzorix-update-server
-    env: docker
+    env: go
+    region: oregon
     plan: starter
     autoDeploy: true
-    healthCheckPath: /health
+    healthCheckPath: /healthz
+
+    # Persistent disk for SQLite database
     disk:
       name: vyzorix-data
       mountPath: /data
       sizeGB: 1
+
     envVars:
+      # Go runtime version
+      - key: GOLANG_VERSION
+        value: "1.22"
+
+      # Application
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 3000
+        value: "3000"
+
+      # Database — on the mounted /data volume (persists across redeploys)
       - key: DATABASE_URL
         value: /data/vyzorix.db
+
+      # Paths — /data matches the mounted disk, /app/bin and /app/public are in the image
       - key: VYZORIX_API_DIR
-        value: /app/api/v1
+        value: /data
       - key: VYZORIX_BIN_DIR
         value: /app/bin
       - key: VYZORIX_PUBLIC_DIR
         value: /app/public
+
+      # Security
       - key: ENFORCE_HMAC
-        value: true
+        value: "true"
+      - key: HMAC_WINDOW_SECONDS
+        value: "300"
+      - key: ALLOWED_ORIGINS
+        value: "*"
+
+      # Dashboard secrets — generate with: openssl rand -hex 32
       - key: TOKEN_SECRET
         sync: false
       - key: JWT_SECRET
         sync: false
-      - key: FIREBASE_CREDENTIALS
+      - key: JWT_DURATION_HOURS
+        value: "168"
+
+      # Google OAuth for "Sign in with Google" (optional)
+      # Get credentials from: Google Cloud Console → APIs & Services → Credentials
+      # Authorised redirect URI: https://your-service.onrender.com/v1/auth/google/callback
+      - key: GOOGLE_OAUTH_CLIENT_ID
         sync: false
-      - key: ALLOWED_ORIGINS
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
         sync: false
+
+      # Deployment URLs — must be set correctly for Google OAuth redirects to work
+      - key: BASE_URL
+        value: "https://vyzorix-update-server.onrender.com"
+      - key: FRONTEND_URL
+        value: "https://your-lovable-app.loveliest.app"

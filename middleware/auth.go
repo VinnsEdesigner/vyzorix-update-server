@@ -1,18 +1,21 @@
 package middleware
 
-import "net/http"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 type Authenticator struct {
 	TokenSecret       string
 	DevelopmentBypass bool
 }
 
-func (a Authenticator) Dashboard(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if a.DevelopmentBypass || r.Header.Get("Authorization") == "Bearer "+a.TokenSecret || r.Header.Get("X-Vyzorix-Token") == a.TokenSecret {
-			next.ServeHTTP(w, r)
+func (a Authenticator) Middleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if a.DevelopmentBypass || c.GetHeader("Authorization") == "Bearer "+a.TokenSecret || c.GetHeader("X-Vyzorix-Token") == a.TokenSecret {
+			c.Next()
 			return
 		}
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-	})
+		c.JSON(401, map[string]string{"error": "unauthorized", "message": "invalid or missing dashboard token"})
+		c.Abort()
+	}
 }
