@@ -21,29 +21,38 @@ type Thresholds struct {
 	BufferCrit   int `json:"bufferCrit" db:"buffer_crit"`
 }
 
+// ClientSettings holds operator preferences that control dashboard behavior.
+type ClientSettings struct {
+	StrictHmac           bool `json:"strictHmac" db:"strict_hmac"`
+	AutoReconnect        bool `json:"autoReconnect" db:"auto_reconnect"`
+	NotificationsEnabled bool `json:"notificationsEnabled" db:"notifications_enabled"`
+}
+
 // Operator represents a human operator who can access the dashboard.
 type Operator struct {
-	ID            string       `json:"id"`
-	Email         string       `json:"email"`
-	Name          string       `json:"name"`
-	PasswordHash  string       `json:"-"` // Never exposed via JSON
-	Role          OperatorRole `json:"role"`
-	GoogleID      string       `json:"googleId,omitempty"`
-	EmailVerified bool         `json:"emailVerified,omitempty"`
-	Thresholds    Thresholds   `json:"thresholds,omitempty" db:"-"`
-	CreatedAt     time.Time    `json:"createdAt"`
-	UpdatedAt     time.Time    `json:"updatedAt"`
+	ID            string        `json:"id"`
+	Email         string        `json:"email"`
+	Name          string        `json:"name"`
+	PasswordHash  string        `json:"-"` // Never exposed via JSON
+	Role          OperatorRole  `json:"role"`
+	GoogleID      string        `json:"googleId,omitempty"`
+	EmailVerified bool          `json:"emailVerified,omitempty"`
+	Thresholds    Thresholds    `json:"thresholds,omitempty" db:"-"`
+	Client        ClientSettings `json:"client,omitempty" db:"-"`
+	CreatedAt     time.Time     `json:"createdAt"`
+	UpdatedAt     time.Time     `json:"updatedAt"`
 }
 
 // OperatorResponse is the safe JSON representation returned to clients.
 type OperatorResponse struct {
-	ID            string       `json:"id"`
-	Email         string       `json:"email"`
-	Name          string       `json:"name"`
-	Role          OperatorRole `json:"role"`
-	EmailVerified bool         `json:"emailVerified,omitempty"`
-	Thresholds    *Thresholds  `json:"thresholds,omitempty"`
-	CreatedAt     int64        `json:"createdAt"`
+	ID            string        `json:"id"`
+	Email         string        `json:"email"`
+	Name          string        `json:"name"`
+	Role          OperatorRole  `json:"role"`
+	EmailVerified bool          `json:"emailVerified,omitempty"`
+	Thresholds    *Thresholds   `json:"thresholds,omitempty"`
+	Client        *ClientSettings `json:"client,omitempty"`
+	CreatedAt     int64         `json:"createdAt"`
 }
 
 // ToResponse converts an Operator to its safe JSON representation.
@@ -55,6 +64,7 @@ func (o *Operator) ToResponse() OperatorResponse {
 		Role:          o.Role,
 		EmailVerified: o.EmailVerified,
 		Thresholds:    &o.Thresholds,
+		Client:        &o.Client,
 		CreatedAt:     o.CreatedAt.UnixMilli(),
 	}
 }
@@ -116,10 +126,12 @@ type UpdateNameRequest struct {
 	Name *string `json:"name,omitempty"`
 }
 
-// UpdateSettingsRequest is the payload for updating operator settings (name and thresholds).
+// UpdateSettingsRequest is the payload for updating operator settings (name, thresholds, and client preferences).
 type UpdateSettingsRequest struct {
-	Name       *string       `json:"name,omitempty"`
-	Thresholds *Thresholds   `json:"thresholds,omitempty"`
+	Name       *string         `json:"name,omitempty"`
+	Thresholds *Thresholds     `json:"thresholds,omitempty"`
+	Client     *ClientSettings `json:"client,omitempty"`
+	Reset      bool            `json:"reset,omitempty"` // Reset all settings to defaults
 }
 
 // VerifyEmailRequest is the payload for verifying an email address.
