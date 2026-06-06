@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,8 @@ function isValidServerUrl(url: string): boolean {
 
 function ConnectionSettings() {
   const cfg = useVyzorixConfig();
+  const cfgRef = useRef(cfg);
+  cfgRef.current = cfg;
   const [serverUrl, setServerUrl] = useState(cfg.serverUrl);
   const [serverUrlError, setServerUrlError] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState(cfg.deviceId);
@@ -45,11 +47,11 @@ function ConnectionSettings() {
   useEffect(() => {
     const loadFromServer = async () => {
       try {
-        const op = await me(cfg.serverUrl);
+        const op = await me(cfgRef.current.serverUrl);
         if (op.client) {
           setAutoReconnect(op.client.autoReconnect ?? true);
           setStrictHmac(op.client.strictHmac ?? false);
-          cfg.update({
+          cfgRef.current.update({
             autoReconnect: op.client.autoReconnect ?? true,
             strictHmac: op.client.strictHmac ?? false,
           });

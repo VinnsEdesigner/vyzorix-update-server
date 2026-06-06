@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -14,6 +14,10 @@ export const Route = createFileRoute("/_app/settings/notifications")({
 
 function NotificationsSettings() {
   const { notificationsEnabled, update, serverUrl } = useVyzorixConfig();
+  const serverUrlRef = useRef(serverUrl);
+  const updateRef = useRef(update);
+  serverUrlRef.current = serverUrl;
+  updateRef.current = update;
   const [enabled, setEnabled] = useState(notificationsEnabled);
   const [saving, setSaving] = useState(false);
 
@@ -21,10 +25,10 @@ function NotificationsSettings() {
   useEffect(() => {
     const loadFromServer = async () => {
       try {
-        const op = await me(serverUrl);
+        const op = await me(serverUrlRef.current);
         if (op.client) {
           setEnabled(op.client.notificationsEnabled ?? true);
-          update({ notificationsEnabled: op.client.notificationsEnabled ?? true });
+          updateRef.current({ notificationsEnabled: op.client.notificationsEnabled ?? true });
         }
       } catch {
         // Use local defaults
