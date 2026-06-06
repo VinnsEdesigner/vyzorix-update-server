@@ -141,17 +141,17 @@ function RegisterPanel() {
   const [appVersion, setAv] = useState(() => {
     const k = `vyzorix.register.appVersion`;
     try {
-      return localStorage.getItem(k) ?? "1.0.0-mock";
+      return localStorage.getItem(k) ?? "";
     } catch {
-      return "1.0.0-mock";
+      return "";
     }
   });
   const [deviceClass, setDc] = useState(() => {
     const k = `vyzorix.register.deviceClass`;
     try {
-      return localStorage.getItem(k) ?? "nokia_c22";
+      return localStorage.getItem(k) ?? "";
     } catch {
-      return "nokia_c22";
+      return "";
     }
   });
   const [secret, setSecret] = useState<string | null>(() => {
