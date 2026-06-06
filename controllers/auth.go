@@ -223,7 +223,7 @@ func (ac *AuthController) UpdateName(c *gin.Context) {
 	c.JSON(200, updated.ToResponse())
 }
 
-// UpdateSettings updates operator settings (name and thresholds).
+// UpdateSettings updates operator settings (name, thresholds, and client preferences).
 // PATCH /v1/auth/me/settings
 func (ac *AuthController) UpdateSettings(c *gin.Context) {
 	op := getOperatorFromContext(c)
@@ -240,6 +240,23 @@ func (ac *AuthController) UpdateSettings(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
+
+	// Reset all settings to defaults
+	if req.Reset {
+		if err := ac.store.ResetOperatorSettings(ctx, op.ID); err != nil {
+			ac.log.Warn("updateSettings: reset failed", "operatorID", op.ID, "err", err)
+			c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "reset failed"})
+			return
+		}
+		ac.log.Info("updateSettings: reset to defaults", "operatorID", op.ID)
+		updated, err := ac.store.GetOperatorByID(ctx, op.ID)
+		if err != nil || updated == nil {
+			c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "reset succeeded but fetch failed"})
+			return
+		}
+		c.JSON(200, updated.ToResponse())
+		return
+	}
 
 	// Update name if provided
 	if req.Name != nil {
@@ -259,6 +276,15 @@ func (ac *AuthController) UpdateSettings(c *gin.Context) {
 	if req.Thresholds != nil {
 		if err := ac.store.UpdateOperatorThresholds(ctx, op.ID, *req.Thresholds); err != nil {
 			ac.log.Warn("updateSettings: thresholds update failed", "operatorID", op.ID, "err", err)
+			c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "update failed"})
+			return
+		}
+	}
+
+	// Update client settings if provided
+	if req.Client != nil {
+		if err := ac.store.UpdateOperatorClientSettings(ctx, op.ID, *req.Client); err != nil {
+			ac.log.Warn("updateSettings: client settings update failed", "operatorID", op.ID, "err", err)
 			c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "update failed"})
 			return
 		}
