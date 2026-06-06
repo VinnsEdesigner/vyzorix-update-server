@@ -132,11 +132,15 @@ function DashboardPage() {
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                {status.data?.deviceClass ? formatDeviceClass(status.data.deviceClass) : "No Device"}
-                {deviceId && <span className="text-xs font-normal text-muted-foreground">· {deviceId}</span>}
+                {status.data?.deviceClass
+                  ? formatDeviceClass(status.data.deviceClass)
+                  : "No Device"}
+                {deviceId && (
+                  <span className="text-xs font-normal text-muted-foreground">· {deviceId}</span>
+                )}
               </CardTitle>
               <CardDescription>
-                {status.data?.appVersion ?? version.data?.version
+                {(status.data?.appVersion ?? version.data?.version)
                   ? `VyzorixAudioRouter daemon · ${status.data.appVersion ?? version.data?.version}`
                   : "Not connected to device"}
               </CardDescription>
