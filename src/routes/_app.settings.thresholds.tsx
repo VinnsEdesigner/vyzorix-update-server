@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,8 @@ export const Route = createFileRoute("/_app/settings/thresholds")({
 
 function ThresholdSettings() {
   const cfg = useVyzorixConfig();
+  const cfgRef = useRef(cfg);
+  cfgRef.current = cfg;
   const [t, setT] = useState<Thresholds>(cfg.thresholds);
   const [loading, setLoading] = useState(false);
 
@@ -24,10 +26,10 @@ function ThresholdSettings() {
   useEffect(() => {
     const loadFromServer = async () => {
       try {
-        const op = await me(cfg.serverUrl);
+        const op = await me(cfgRef.current.serverUrl);
         if (op.thresholds) {
           setT(op.thresholds);
-          cfg.update({ thresholds: op.thresholds });
+          cfgRef.current.update({ thresholds: op.thresholds });
         }
       } catch {
         // Use local defaults if server fetch fails
