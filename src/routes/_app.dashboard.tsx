@@ -132,13 +132,13 @@ function DashboardPage() {
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                {formatDeviceClass(status.data?.deviceClass)}{" "}
-                <span className="text-xs font-normal text-muted-foreground">· {deviceId}</span>
+                {status.data?.deviceClass ? formatDeviceClass(status.data.deviceClass) : "No Device"}
+                {deviceId && <span className="text-xs font-normal text-muted-foreground">· {deviceId}</span>}
               </CardTitle>
               <CardDescription>
-                VyzorixAudioRouter daemon ·{" "}
-                {status.data?.appVersion ?? version.data?.version ?? "unknown build"} ·{" "}
-                {status.data?.deviceClass ?? "unknown"}
+                {status.data?.appVersion ?? version.data?.version
+                  ? `VyzorixAudioRouter daemon · ${status.data.appVersion ?? version.data?.version}`
+                  : "Not connected to device"}
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -161,7 +161,7 @@ function DashboardPage() {
                     : t.riskScore >= thresholds.riskWarn
                       ? "Investigate"
                       : "Healthy"
-                  : "Awaiting signals"
+                  : "No data received"
               }
             />
             <Metric
@@ -175,7 +175,7 @@ function DashboardPage() {
                     : t.thermalTemp >= thresholds.thermalWarn
                       ? "THROTTLE_LIGHT"
                       : "NONE"
-                  : "Awaiting signals"
+                  : "No data received"
               }
             />
             <Metric
@@ -348,7 +348,7 @@ function ChartShell({
   if (data.length === 0) {
     return (
       <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
-        Waiting for live signals…
+        No data available
       </div>
     );
   }
