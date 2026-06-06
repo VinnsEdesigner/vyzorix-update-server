@@ -123,7 +123,20 @@ func (s *Server) Routes() http.Handler { return s.Engine() }
 func (s *Server) health(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 	defer cancel()
-	dbOk := s.Store.Ping(ctx) == nil
+
+	// Check database connectivity with a simple query
+	dbOk := false
+	var dbErr error
+	if err := s.Store.Ping(ctx); err == nil {
+		// Additional check: verify we can execute a query
+		if _, err := s.Store.Devices(ctx); err == nil {
+			dbOk = true
+		} else {
+			dbErr = err
+		}
+	} else {
+		dbErr = err
+	}
 
 	connectedDevices := 0
 	if s.Hub != nil {
@@ -135,14 +148,24 @@ func (s *Server) health(c *gin.Context) {
 		version = v
 	}
 
-	c.JSON(200, map[string]any{
-		"ok":                true,
+	status := 200
+	if !dbOk {
+		status = 503
+	}
+
+	response := map[string]any{
+		"ok":                dbOk,
 		"database":          map[bool]string{true: "ok", false: "down"}[dbOk],
 		"dbOk":              dbOk,
 		"serverTime":        time.Now().UnixMilli(),
 		"connectedDevices":  connectedDevices,
 		"version":           version,
-	})
+	}
+	if dbErr != nil {
+		response["dbError"] = dbErr.Error()
+	}
+
+	c.JSON(status, response)
 }
 
 func (s *Server) readVersion() (string, error) {
