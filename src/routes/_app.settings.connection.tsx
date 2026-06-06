@@ -69,7 +69,7 @@ function ConnectionSettings() {
 
     cfg.update({
       serverUrl: serverUrl.trim(),
-      deviceId: deviceId.trim() || DEFAULT_DEVICE_ID,
+      deviceId: deviceId.trim(),
       requestTimeoutMs: Math.max(500, Math.min(60_000, timeout || 8000)),
       autoReconnect,
       strictHmac,
@@ -119,7 +119,7 @@ function ConnectionSettings() {
         <CardHeader>
           <CardTitle>Target device</CardTitle>
           <CardDescription>
-            Single Nokia C22 — Phase 1 is deliberately scoped to one device
+            Device ID for the target Android device running VyzorixAudioRouter
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -129,7 +129,7 @@ function ConnectionSettings() {
               id="device"
               value={deviceId}
               onChange={(e) => setDeviceId(e.target.value)}
-              placeholder={DEFAULT_DEVICE_ID}
+              placeholder="Enter device ID"
             />
             <p className="text-xs text-muted-foreground">
               Must match the value the Android daemon registers with.
