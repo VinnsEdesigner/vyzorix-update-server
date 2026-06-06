@@ -23,14 +23,16 @@ import (
 )
 
 type Server struct {
-	Log       *slog.Logger
-	Config   config.Config
-	Store    *storage.Store
-	Hub      *hub.Hub
-	Notifier fcm.Notifier
-	HMAC     security.Verifier
-	Limiter  *middleware.RateLimiter
-	jwtCtrl  *AuthController
+	Log               *slog.Logger
+	Config           config.Config
+	Store            *storage.Store
+	Hub              *hub.Hub
+	Notifier         fcm.Notifier
+	HMAC             security.Verifier
+	Limiter          *middleware.RateLimiter
+	jwtCtrl          *AuthController
+	originValidator  *security.OriginValidator
+	upgrader         websocket.Upgrader
 }
 
 func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub, notifier fcm.Notifier) *Server {
@@ -42,11 +44,18 @@ func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub, not
 	}
 	s.Limiter = middleware.NewRateLimiter(100, time.Minute)
 	s.jwtCtrl = NewAuthController(log, cfg, st)
-	return s
-}
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+	// Initialize origin validator
+	s.originValidator = security.NewOriginValidator(cfg.AllowedOrigins)
+	s.originValidator.SetLogger(log)
+
+	// Initialize WebSocket upgrader with proper origin checking
+	s.upgrader = websocket.Upgrader{
+		CheckOrigin:     s.originValidator.CheckOrigin(),
+		HandshakeTimeout: 10 * time.Second,
+	}
+
+	return s
 }
 
 func (s *Server) Engine() *gin.Engine {
@@ -55,11 +64,22 @@ func (s *Server) Engine() *gin.Engine {
 	}
 	r := gin.New()
 	r.Use(gin.Recovery())
+	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.Logger(s.Log))
 	r.Use(middleware.CORSHandler(s.Config.AllowedOrigins))
 
+	// Security: limit request body size to prevent large payload attacks
+	r.Use(middleware.BodySizeLimit(middleware.DefaultBodySizeLimit))
+
+	// Multipart form limit (8MB for APK uploads)
+	r.MaxMultipartMemory = middleware.LargeBodySizeLimit
+
+	// Rate limit public endpoints to prevent abuse
+	public := r.Group("")
+	public.Use(s.Limiter.Middleware())
+	
 	// Auth routes (no JWT required for login/register; JWT required for /me and logout)
-	auth := r.Group("/v1/auth")
+	auth := public.Group("/v1/auth")
 	auth.GET("/google", s.jwtCtrl.GoogleLoginRedirect) // triggers OAuth redirect
 	auth.GET("/google/callback", s.jwtCtrl.GoogleCallback) // OAuth callback from Google
 	auth.POST("/login", s.jwtCtrl.Login)
@@ -74,20 +94,20 @@ func (s *Server) Engine() *gin.Engine {
 	auth.PATCH("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.UpdateName)
 	auth.POST("/logout", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Logout)
 
-	r.GET("/health", s.health)
-	r.GET("/healthz", s.health)
-	r.GET("/api/v1/version", s.version)
-	r.GET("/api/v1/changelog", s.changelog)
-	r.GET("/api/v1/apk/*name", s.apk)
-	r.GET("/bin/*name", s.bin)
+	public.GET("/health", s.health)
+	public.GET("/healthz", s.health)
+	public.GET("/api/v1/version", s.version)
+	public.GET("/api/v1/changelog", s.changelog)
+	public.GET("/api/v1/apk/*name", s.apk)
+	public.GET("/bin/*name", s.bin)
 
 	// Root path → native HTML landing page (no React needed)
 	// Explicit route so Gin doesn't need to resolve /*path wildcard for /
-	r.GET("/", s.dashboard)
+	public.GET("/", s.dashboard)
 
-	// Device routes
-	r.POST("/v1/device/register", s.register)
-	r.GET("/v1/device/:id/status", s.status)
+	// Device routes - rate limited for public endpoints
+	public.POST("/v1/device/register", s.register)
+	public.GET("/v1/device/:id/status", s.status)
 	r.PATCH("/v1/device/:id/fcm-token", s.requireHMAC(), s.fcmToken)
 	r.POST("/v1/device/:id/command", s.authorizeDashboardOrHMAC(), s.command)
 	r.DELETE("/v1/device/:id", s.requireHMAC(), s.deleteDevice)
@@ -109,7 +129,20 @@ func (s *Server) Routes() http.Handler { return s.Engine() }
 func (s *Server) health(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 	defer cancel()
-	dbOk := s.Store.Ping(ctx) == nil
+
+	// Check database connectivity with a simple query
+	dbOk := false
+	var dbErr error
+	if err := s.Store.Ping(ctx); err == nil {
+		// Additional check: verify we can execute a query
+		if _, err := s.Store.Devices(ctx); err == nil {
+			dbOk = true
+		} else {
+			dbErr = err
+		}
+	} else {
+		dbErr = err
+	}
 
 	connectedDevices := 0
 	if s.Hub != nil {
@@ -121,14 +154,24 @@ func (s *Server) health(c *gin.Context) {
 		version = v
 	}
 
-	c.JSON(200, map[string]any{
-		"ok":                true,
+	status := 200
+	if !dbOk {
+		status = 503
+	}
+
+	response := map[string]any{
+		"ok":                dbOk,
 		"database":          map[bool]string{true: "ok", false: "down"}[dbOk],
 		"dbOk":              dbOk,
 		"serverTime":        time.Now().UnixMilli(),
 		"connectedDevices":  connectedDevices,
 		"version":           version,
-	})
+	}
+	if dbErr != nil {
+		response["dbError"] = dbErr.Error()
+	}
+
+	c.JSON(status, response)
 }
 
 func (s *Server) readVersion() (string, error) {
@@ -283,7 +326,7 @@ func (s *Server) stream(c *gin.Context) {
 			return
 		}
 	}
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := s.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		s.Log.Warn("websocket upgrade failed", "err", err)
 		return

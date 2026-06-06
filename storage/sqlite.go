@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/VinnsEdesigner/vyzorix-update-server/models"
+	"golang.org/x/crypto/bcrypt"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -74,6 +75,11 @@ func (s *Store) migrate(ctx context.Context) error {
 	// Additive migrations
 	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN wake_sent INTEGER NOT NULL DEFAULT 0`) //nolint:errcheck
 	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN wake_error TEXT`)                   //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'`) //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN completed_at INTEGER`)               //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN result TEXT`)                      //nolint:errcheck
+	// Command secret hash column for audit/compliance
+	s.db.ExecContext(ctx, `ALTER TABLE devices ADD COLUMN command_secret_hash TEXT`)        //nolint:errcheck
 	return s.migrateAuth(ctx)
 }
 
@@ -154,6 +160,36 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 	// Additive migrations for new columns
 	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`) //nolint:errcheck
 	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN verification_sent_at INTEGER`)             //nolint:errcheck
+	return s.migrateSettings(ctx)
+}
+
+// migrateSettings creates the settings table for system configuration.
+func (s *Store) migrateSettings(ctx context.Context) error {
+	// Settings table for system configuration
+	if _, err := s.db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS settings (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL,
+			updated_at INTEGER NOT NULL
+		)
+	`); err != nil {
+		return err
+	}
+
+	// Set defaults if not exist (per COMMAND_SECURITY.md: 30-second HMAC window)
+	defaults := map[string]string{
+		"enforce_hmac":        "false",
+		"hmac_window_seconds": "30",
+		"rate_limit_capacity": "100",
+		"rate_limit_refill":   "60",
+	}
+
+	for key, value := range defaults {
+		s.db.ExecContext(ctx, `
+			INSERT OR IGNORE INTO settings(key, value, updated_at) VALUES(?, ?, ?)
+		`, key, value, time.Now().UTC().UnixMilli()) //nolint:errcheck
+	}
+
 	return nil
 }
 
@@ -245,8 +281,12 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 			LastSeen          time.Time
 		}{}, false, err
 	}
-	_, err = s.db.ExecContext(ctx, `INSERT INTO devices(id,firebase_install_id,fcm_token,app_version,device_class,command_secret,online,registered_at,last_seen) VALUES(?,?,?,?,?,?,0,?,?)`,
-		req.DeviceID, req.FirebaseInstallID, req.FCMToken, req.AppVersion, req.DeviceClass, secret, now.UnixMilli(), now.UnixMilli())
+	// Generate bcrypt hash of the secret for audit/compliance
+	hasher := NewSecretHash()
+	secretHash, _ := hasher.HashSecret(secret) // Error ignored - hash is optional
+
+	_, err = s.db.ExecContext(ctx, `INSERT INTO devices(id,firebase_install_id,fcm_token,app_version,device_class,command_secret,command_secret_hash,online,registered_at,last_seen) VALUES(?,?,?,?,?,?,?,0,?,?)`,
+		req.DeviceID, req.FirebaseInstallID, req.FCMToken, req.AppVersion, req.DeviceClass, secret, secretHash, now.UnixMilli(), now.UnixMilli())
 	if err != nil {
 		return struct {
 			ID                string
@@ -361,6 +401,82 @@ func (s *Store) Secret(ctx context.Context, id string) (string, bool) {
 	return d.CommandSecret, true
 }
 
+// SecretHash provides bcrypt hash utilities for command secrets.
+type SecretHash struct{}
+
+// NewSecretHash creates a new SecretHash utility.
+func NewSecretHash() *SecretHash { return &SecretHash{} }
+
+// HashSecret generates a bcrypt hash of the given secret for storage/audit.
+// The secret is used directly for HMAC verification; this hash is for compliance.
+func (h *SecretHash) HashSecret(secret string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+
+// VerifyHash checks if the secret matches the stored bcrypt hash.
+// Returns true if the secret matches the hash.
+func (h *SecretHash) VerifyHash(secret, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(secret))
+	return err == nil
+}
+
+// SetSecretHash stores the bcrypt hash of a device's command secret.
+func (s *Store) SetSecretHash(ctx context.Context, deviceID, hash string) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE devices SET command_secret_hash = ? WHERE id = ?`,
+		hash, deviceID,
+	)
+	return err
+}
+
+// GetSecretHash retrieves the bcrypt hash of a device's command secret.
+func (s *Store) GetSecretHash(ctx context.Context, deviceID string) (string, error) {
+	var hash string
+	err := s.db.QueryRowContext(ctx,
+		`SELECT command_secret_hash FROM devices WHERE id = ?`,
+		deviceID,
+	).Scan(&hash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return hash, err
+}
+
+// HashAllSecrets hashes all existing command secrets that don't have a hash.
+// This is a migration helper for existing databases.
+func (s *Store) HashAllSecrets(ctx context.Context) (int, error) {
+	hasher := NewSecretHash()
+	
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, command_secret FROM devices WHERE command_secret_hash IS NULL OR command_secret_hash = ''`,
+	)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		var id, secret string
+		if err := rows.Scan(&id, &secret); err != nil {
+			continue
+		}
+		hash, err := hasher.HashSecret(secret)
+		if err != nil {
+			continue
+		}
+		if err := s.SetSecretHash(ctx, id, hash); err != nil {
+			continue
+		}
+		count++
+	}
+	return count, rows.Err()
+}
+
 func (s *Store) SetOnline(ctx context.Context, id string, online bool) error {
 	v := 0
 	if online {
@@ -425,7 +541,77 @@ func (s *Store) MarkWake(ctx context.Context, dispatchID string, errText string)
 }
 
 func (s *Store) MarkDelivered(ctx context.Context, dispatchID string) error {
-	_, err := s.db.ExecContext(ctx, `UPDATE commands SET delivery='sent', delivered_at=? WHERE dispatch_id=?`, time.Now().UnixMilli(), dispatchID)
+	_, err := s.db.ExecContext(ctx, `UPDATE commands SET delivery='sent', delivered_at=?, status='sent' WHERE dispatch_id=?`, time.Now().UnixMilli(), dispatchID)
+	return err
+}
+
+// CommandStatus represents the status of a command dispatch.
+type CommandStatus struct {
+	DispatchID  string     `json:"dispatchId"`
+	DeviceID    string     `json:"deviceId"`
+	Command     string     `json:"command"`
+	Args        string     `json:"args,omitempty"`
+	Status      string     `json:"status"`
+	Delivery    string     `json:"delivery"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	DeliveredAt *time.Time `json:"deliveredAt,omitempty"`
+	CompletedAt *time.Time `json:"completedAt,omitempty"`
+	Result      string     `json:"result,omitempty"`
+	WakeError   string     `json:"wakeError,omitempty"`
+}
+
+// GetCommandStatus retrieves the status of a command dispatch.
+func (s *Store) GetCommandStatus(ctx context.Context, dispatchID string) (*CommandStatus, error) {
+	var cs CommandStatus
+	var deliveredAt, completedAt sql.NullInt64
+
+	err := s.db.QueryRowContext(ctx, `
+		SELECT dispatch_id, device_id, command, args, status, delivery,
+		       created_at, delivered_at, completed_at, result, wake_error
+		FROM commands WHERE dispatch_id = ?
+	`, dispatchID).Scan(
+		&cs.DispatchID, &cs.DeviceID, &cs.Command, &cs.Args,
+		&cs.Status, &cs.Delivery, &cs.CreatedAt,
+		&deliveredAt, &completedAt, &cs.Result, &cs.WakeError,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if deliveredAt.Valid {
+		t := time.UnixMilli(deliveredAt.Int64).UTC()
+		cs.DeliveredAt = &t
+	}
+	if completedAt.Valid {
+		t := time.UnixMilli(completedAt.Int64).UTC()
+		cs.CompletedAt = &t
+	}
+
+	return &cs, nil
+}
+
+// UpdateCommandStatus updates the status of a command.
+func (s *Store) UpdateCommandStatus(ctx context.Context, dispatchID, status string) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE commands SET status=? WHERE dispatch_id=?`, status, dispatchID)
+	return err
+}
+
+// MarkCommandCompleted marks a command as completed with result.
+func (s *Store) MarkCommandCompleted(ctx context.Context, dispatchID, result string) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE commands SET status='completed', completed_at=?, result=? WHERE dispatch_id=?`,
+		time.Now().UnixMilli(), result, dispatchID)
+	return err
+}
+
+// MarkCommandFailed marks a command as failed with error.
+func (s *Store) MarkCommandFailed(ctx context.Context, dispatchID, errMsg string) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE commands SET status='failed', completed_at=?, result=? WHERE dispatch_id=?`,
+		time.Now().UnixMilli(), errMsg, dispatchID)
 	return err
 }
 
@@ -447,6 +633,68 @@ func (s *Store) Devices(ctx context.Context) ([]struct {
 		return nil, err
 	}
 	defer rows.Close()
+	var out []struct {
+		ID                string
+		FirebaseInstallID string
+		FCMToken          string
+		AppVersion        string
+		DeviceClass       string
+		CommandSecret     string
+		Online            bool
+		RegisteredAt      time.Time
+		LastSeen          time.Time
+	}
+	for rows.Next() {
+		var r deviceRow
+		if err := rows.Scan(&r.ID, &r.FirebaseInstallID, &r.FCMToken, &r.AppVersion, &r.DeviceClass, &r.CommandSecret, &r.Online, &r.RegisteredAt, &r.LastSeen); err != nil {
+			return nil, err
+		}
+		out = append(out, rowToDevice(r))
+	}
+	return out, rows.Err()
+}
+
+// DevicesPaginated returns devices with cursor-based pagination.
+// The cursor is the lastSeen timestamp (in milliseconds) from the previous page.
+// Results are ordered by last_seen DESC.
+func (s *Store) DevicesPaginated(ctx context.Context, limit int, cursor int64) ([]struct {
+	ID                string
+	FirebaseInstallID string
+	FCMToken          string
+	AppVersion        string
+	DeviceClass       string
+	CommandSecret     string
+	Online            bool
+	RegisteredAt      time.Time
+	LastSeen          time.Time
+}, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var rows *sql.Rows
+	var err error
+
+	if cursor > 0 {
+		rows, err = s.db.QueryContext(ctx, `
+			SELECT id, firebase_install_id, fcm_token, app_version, device_class, command_secret, online, registered_at, last_seen 
+			FROM devices 
+			WHERE last_seen < ? 
+			ORDER BY last_seen DESC 
+			LIMIT ?
+		`, cursor, limit)
+	} else {
+		rows, err = s.db.QueryContext(ctx, `
+			SELECT id, firebase_install_id, fcm_token, app_version, device_class, command_secret, online, registered_at, last_seen 
+			FROM devices 
+			ORDER BY last_seen DESC 
+			LIMIT ?
+		`, limit)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
 	var out []struct {
 		ID                string
 		FirebaseInstallID string
@@ -895,4 +1143,64 @@ func (s *Store) UpdateOperatorPassword(ctx context.Context, operatorID, password
 		return errors.New("operator not found")
 	}
 	return nil
+}
+
+// ─── System Settings ─────────────────────────────────────────────────────────────
+
+// GetSetting retrieves a setting value by key.
+func (s *Store) GetSetting(ctx context.Context, key string) (string, error) {
+	var value string
+	err := s.db.QueryRowContext(ctx,
+		`SELECT value FROM settings WHERE key = ?`, key,
+	).Scan(&value)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return value, err
+}
+
+// SetSetting updates or inserts a setting value.
+func (s *Store) SetSetting(ctx context.Context, key, value string) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT OR REPLACE INTO settings(key, value, updated_at) VALUES(?, ?, ?)`,
+		key, value, time.Now().UTC().UnixMilli(),
+	)
+	return err
+}
+
+// GetEnforceHMAC returns whether HMAC enforcement is enabled.
+func (s *Store) GetEnforceHMAC(ctx context.Context) (bool, error) {
+	val, err := s.GetSetting(ctx, "enforce_hmac")
+	if err != nil || val == "" {
+		return false, err
+	}
+	return val == "true" || val == "1", nil
+}
+
+// SetEnforceHMAC updates the HMAC enforcement setting.
+func (s *Store) SetEnforceHMAC(ctx context.Context, enforce bool) error {
+	val := "false"
+	if enforce {
+		val = "true"
+	}
+	return s.SetSetting(ctx, "enforce_hmac", val)
+}
+
+// GetHMACWindowSeconds returns the HMAC timestamp window in seconds.
+func (s *Store) GetHMACWindowSeconds(ctx context.Context) (int, error) {
+	val, err := s.GetSetting(ctx, "hmac_window_seconds")
+	if err != nil || val == "" {
+		return 30, nil // default 30 seconds per COMMAND_SECURITY.md
+	}
+	var seconds int
+	_, err = fmt.Sscanf(val, "%d", &seconds)
+	if err != nil {
+		return 30, nil
+	}
+	return seconds, nil
+}
+
+// SetHMACWindowSeconds updates the HMAC timestamp window.
+func (s *Store) SetHMACWindowSeconds(ctx context.Context, seconds int) error {
+	return s.SetSetting(ctx, "hmac_window_seconds", fmt.Sprintf("%d", seconds))
 }

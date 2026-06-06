@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,43 +30,70 @@ function OperatorSettings() {
   // Name is editable — syncs to the Go server on every change
   const [name, setName] = useState(stored?.name ?? "");
   const [savingName, setSavingName] = useState(false);
+  const [lastSavedName, setLastSavedName] = useState(stored?.name ?? "");
 
   // Auto-save name after 1 second of no typing
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nameRef = useRef(name); // Keep ref in sync with latest name
+  nameRef.current = name;
 
+  // Sync from stored operator if it changes (e.g. after login)
   useEffect(() => {
-    // Sync from stored operator if it changed (e.g. after login)
     const op = getStoredOperator();
     if (op) {
       setName(op.name);
+      setLastSavedName(op.name); // Also update lastSavedName to match
       setEmail(op.email);
       setRole(op.role);
     }
   }, []);
 
-  useEffect(() => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    if (!stored) return;
+  // Debounced save function - reads fresh values from refs
+  const saveName = useCallback(async (nameToSave: string) => {
+    setSavingName(true);
+    try {
+      await updateName(DEFAULT_SERVER_URL, nameToSave.trim());
+      setLastSavedName(nameToSave.trim());
+      toast.success("Display name saved");
+    } catch (e) {
+      toast.error("Failed to save name", { description: e instanceof Error ? e.message : "try again" });
+    } finally {
+      setSavingName(false);
+    }
+  }, []);
 
-    // Only save if name actually changed from what we have stored
-    if (name.trim() && name.trim() !== stored.name) {
-      saveTimer.current = setTimeout(async () => {
-        setSavingName(true);
-        try {
-          const updated = await updateName(DEFAULT_SERVER_URL, name.trim());
-          toast.success("Display name saved");
-        } catch (e) {
-          toast.error("Failed to save name", { description: e instanceof Error ? e.message : "try again" });
-        } finally {
-          setSavingName(false);
-        }
-      }, 1000);
+  // Auto-save effect - properly handles race conditions
+  useEffect(() => {
+    // Clear any existing timer
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
     }
 
+    const trimmedName = name.trim();
+    
+    // Don't save if empty or unchanged from last saved
+    if (!trimmedName || trimmedName === lastSavedName) {
+      return;
+    }
+
+    // Debounce: save after 1 second of no typing
+    saveTimer.current = setTimeout(() => {
+      const currentName = nameRef.current.trim();
+      // Double-check before saving
+      if (currentName && currentName !== lastSavedName) {
+        saveName(currentName);
+      }
+    }, 1000);
+
+    // Cleanup on unmount or before next effect run
     return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+      }
     };
-  }, [name]);
+  }, [name, lastSavedName, saveName]);
 
   // Emit event so sidebar and other components see the updated name
   useEffect(() => {
@@ -78,6 +105,12 @@ function OperatorSettings() {
     cfg.update({ notificationsEnabled: notifications });
     toast.success("Notification settings saved");
   };
+
+  // Determine save status for UI
+  const trimmedName = name.trim();
+  const isSaving = savingName;
+  const isSaved = trimmedName === lastSavedName && trimmedName !== "";
+  const isUnsaved = trimmedName !== lastSavedName && !isSaving;
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -97,14 +130,14 @@ function OperatorSettings() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. J. Mokoena"
               />
-              {savingName && (
+              {isSaving && (
                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
               )}
             </div>
-            {name.trim() !== stored?.name && !savingName && (
+            {isUnsaved && (
               <p className="text-xs text-rose-500">Saving…</p>
             )}
-            {name.trim() === stored?.name && name.trim() !== "" && (
+            {isSaved && (
               <p className="text-xs text-muted-foreground">Saved</p>
             )}
           </div>

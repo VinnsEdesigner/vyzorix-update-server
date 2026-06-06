@@ -9,9 +9,8 @@
 # Set up a free UptimeRobot monitor → GET https://your-service.onrender.com/healthz
 # every 10 minutes to keep the container warm and reduce cold-start latency.
 #
-# Supabase auth: Managed by Lovable Cloud via env injection. No manual setup needed
-# on Lovable-hosted deployments. For manual Render deploys, add SUPABASE_URL,
-# SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVICE_ROLE_KEY as env vars.
+# Auth: JWT-based operator authentication with Google OAuth support.
+# Email: Resend API for verification and password reset (optional).
 
 services:
   - type: web
@@ -55,9 +54,9 @@ services:
       - key: ENFORCE_HMAC
         value: "true"
       - key: HMAC_WINDOW_SECONDS
-        value: "300"
+        value: "30"
       - key: ALLOWED_ORIGINS
-        value: "*"
+        value: "https://your-dashboard.example.com,http://localhost:5173"
 
       # Dashboard secrets — generate with: openssl rand -hex 32
       - key: TOKEN_SECRET
@@ -75,8 +74,21 @@ services:
       - key: GOOGLE_OAUTH_CLIENT_SECRET
         sync: false
 
-      # Deployment URLs — must be set correctly for Google OAuth redirects to work
+      # Email (Resend) — optional, for verification and password reset
+      # Get from: https://resend.com API Keys
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: "noreply@vyzorix.app"
+      - key: EMAIL_FROM_NAME
+        value: "Vyzorix"
+
+      # Firebase — for push notifications (optional)
+      - key: FIREBASE_CREDENTIALS
+        sync: false
+
+      # Deployment URLs — must be set correctly for OAuth redirects to work
       - key: BASE_URL
         value: "https://vyzorix-update-server.onrender.com"
       - key: FRONTEND_URL
-        value: "https://your-lovable-app.loveliest.app"
+        value: "https://your-frontend.onrender.com"
