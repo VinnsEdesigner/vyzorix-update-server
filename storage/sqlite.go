@@ -95,11 +95,11 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 			google_id TEXT UNIQUE,
 			email_verified INTEGER NOT NULL DEFAULT 0,
 			verification_sent_at INTEGER,
-			risk_warn INTEGER NOT NULL DEFAULT 70,
-			risk_crit INTEGER NOT NULL DEFAULT 90,
-			thermal_warn INTEGER NOT NULL DEFAULT 42,
-			thermal_crit INTEGER NOT NULL DEFAULT 45,
-			buffer_warn INTEGER NOT NULL DEFAULT 60,
+			risk_warn INTEGER NOT NULL DEFAULT 50,
+			risk_crit INTEGER NOT NULL DEFAULT 75,
+			thermal_warn INTEGER NOT NULL DEFAULT 45,
+			thermal_crit INTEGER NOT NULL DEFAULT 55,
+			buffer_warn INTEGER NOT NULL DEFAULT 50,
 			buffer_crit INTEGER NOT NULL DEFAULT 80,
 			strict_hmac INTEGER NOT NULL DEFAULT 0,
 			auto_reconnect INTEGER NOT NULL DEFAULT 1,
@@ -850,9 +850,9 @@ func (s *Store) GetOperatorByID(ctx context.Context, id string) (*models.Operato
 	}
 	err := s.db.QueryRowContext(ctx,
 		`SELECT id, email, name, password_hash, role, google_id, COALESCE(email_verified, 0),
-		        COALESCE(risk_warn, 70), COALESCE(risk_crit, 90),
-		        COALESCE(thermal_warn, 42), COALESCE(thermal_crit, 45),
-		        COALESCE(buffer_warn, 60), COALESCE(buffer_crit, 80),
+		        COALESCE(risk_warn, 50), COALESCE(risk_crit, 75),
+		        COALESCE(thermal_warn, 45), COALESCE(thermal_crit, 55),
+		        COALESCE(buffer_warn, 50), COALESCE(buffer_crit, 80),
 		        COALESCE(strict_hmac, 0), COALESCE(auto_reconnect, 1), COALESCE(notifications_enabled, 1),
 		        created_at, updated_at
 		 FROM operators WHERE id = ?`,
@@ -970,7 +970,7 @@ func (s *Store) ResetOperatorSettings(ctx context.Context, operatorID string) er
 	now := time.Now().UTC()
 	result, err := s.db.ExecContext(ctx,
 		`UPDATE operators SET
-			risk_warn=70, risk_crit=90, thermal_warn=42, thermal_crit=45, buffer_warn=60, buffer_crit=80,
+			risk_warn=50, risk_crit=75, thermal_warn=45, thermal_crit=55, buffer_warn=50, buffer_crit=80,
 			strict_hmac=0, auto_reconnect=1, notifications_enabled=1,
 			updated_at=?
 		 WHERE id=?`,
