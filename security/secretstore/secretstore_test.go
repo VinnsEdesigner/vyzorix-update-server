@@ -287,8 +287,12 @@ func TestSecretStore_ConcurrentAccess(t *testing.T) {
 		go func(idx int) {
 			deviceID := "device-concurrent"
 			secret := "secret-for-concurrent"
-			store.Set(deviceID, secret)
-			store.Get(deviceID)
+			if err := store.Set(deviceID, secret); err != nil {
+				t.Logf("Set error: %v", err)
+			}
+			if _, err := store.Get(deviceID); err != nil {
+				t.Logf("Get error: %v", err)
+			}
 			done <- true
 		}(i)
 	}

@@ -385,7 +385,7 @@ func TestReadAndVerifyHTTP_RequestBodyConsumed(t *testing.T) {
 	req.Header.Set("X-Vyzorix-Signature", sig)
 
 	// First call
-	v.ReadAndVerifyHTTP(req)
+	_, _ = v.ReadAndVerifyHTTP(req)
 
 	// Second call should also work (body is reset)
 	nonce = "nonce-2"
@@ -493,7 +493,8 @@ func TestVerifier_NilNonces(t *testing.T) {
 	}
 }
 
-// Helper for manual testing
+// _signRequest is exported for manual testing only.
+//nolint:unused
 func _signRequest(secretHex, method, path, body, nonce, ts string) string {
 	key, _ := hex.DecodeString(secretHex)
 	canonical := method + "\n" + path + "\n" + nonce + "\n" + ts + "\n"
