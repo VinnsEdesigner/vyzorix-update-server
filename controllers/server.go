@@ -116,7 +116,7 @@ func (s *Server) Engine() *gin.Engine {
 	public.POST("/v1/device/register", s.register)
 	public.GET("/v1/device/:id/status", s.status)
 	r.PATCH("/v1/device/:id/fcm-token", s.requireHMAC(), s.fcmToken)
-	r.POST("/v1/device/:id/command", s.authorizeDashboardOrHMAC(), s.command)
+	r.POST("/v1/device/:id/command", JWTAuth(s.jwtCtrl.jwt, s.Store), s.requireStrictHMAC(), s.command)
 	r.DELETE("/v1/device/:id", s.requireHMAC(), s.deleteDevice)
 
 	// Dashboard routes — protected by JWT
@@ -422,6 +422,32 @@ func (s *Server) requireHMAC() gin.HandlerFunc {
 			return
 		}
 		c.Set("hmac_body", body)
+		c.Next()
+	}
+}
+
+// requireStrictHMAC checks the operator's strictHmac setting and enforces HMAC
+// signature validation when enabled for that operator.
+func (s *Server) requireStrictHMAC() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		op := getOperatorFromContext(c)
+		if op == nil {
+			// No operator in context means JWT auth didn't run or failed
+			c.Next()
+			return
+		}
+		// If operator has strictHmac disabled, skip HMAC validation
+		if !op.Client.StrictHmac {
+			c.Next()
+			return
+		}
+		// Operator has strictHmac enabled — validate the signature
+		_, err := s.HMAC.ReadAndVerifyHTTP(c.Request)
+		if err != nil {
+			c.JSON(401, map[string]string{"error": "bad_hmac", "message": "strictHmac is enabled: " + err.Error()})
+			c.Abort()
+			return
+		}
 		c.Next()
 	}
 }

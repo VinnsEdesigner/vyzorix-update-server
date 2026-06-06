@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
-import { getStoredOperator, updateName } from "@/lib/vyzorix-auth";
+import { getStoredOperator, updateName, updateSettings, me, type ClientSettings } from "@/lib/vyzorix-auth";
 
 export const Route = createFileRoute("/_app/settings/operator")({
   ssr: false,
@@ -103,9 +103,20 @@ function OperatorSettings() {
     window.dispatchEvent(new Event("vyz.operator.updated"));
   }, [name, savingName]);
 
-  const saveNotifications = () => {
-    cfg.update({ notificationsEnabled: notifications });
-    toast.success("Notification settings saved");
+  const saveNotifications = async () => {
+    setSavingName(true);
+    try {
+      const client: ClientSettings = { notificationsEnabled: notifications };
+      await updateSettings(cfg.serverUrl, { client });
+      cfg.update({ notificationsEnabled: notifications });
+      toast.success("Notification settings saved to server");
+    } catch (e) {
+      toast.error("Failed to save", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setSavingName(false);
+    }
   };
 
   // Determine save status for UI

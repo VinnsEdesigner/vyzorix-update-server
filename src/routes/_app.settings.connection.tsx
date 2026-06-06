@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { DEFAULT_DEVICE_ID, DEFAULT_SERVER_URL, useVyzorixConfig } from "@/lib/vyzorix-config";
 import { useServerHealth } from "@/hooks/use-server-health";
+import { updateSettings, me, type ClientSettings } from "@/lib/vyzorix-auth";
 
 export const Route = createFileRoute("/_app/settings/connection")({
   component: ConnectionSettings,
@@ -36,12 +37,32 @@ function ConnectionSettings() {
   const [autoReconnect, setAutoReconnect] = useState(cfg.autoReconnect);
   const [strictHmac, setStrictHmac] = useState(cfg.strictHmac);
   const [dashboardToken, setDashboardToken] = useState(cfg.dashboardToken);
+  const [saving, setSaving] = useState(false);
 
   const health = useServerHealth(cfg.serverUrl);
 
+  // Load client settings from server on mount
+  useEffect(() => {
+    const loadFromServer = async () => {
+      try {
+        const op = await me(cfg.serverUrl);
+        if (op.client) {
+          setAutoReconnect(op.client.autoReconnect ?? true);
+          setStrictHmac(op.client.strictHmac ?? false);
+          cfg.update({
+            autoReconnect: op.client.autoReconnect ?? true,
+            strictHmac: op.client.strictHmac ?? false,
+          });
+        }
+      } catch {
+        // Use local defaults
+      }
+    };
+    loadFromServer();
+  }, []);
+
   const handleServerUrlChange = (value: string) => {
     setServerUrl(value);
-    // Clear error when user starts typing
     if (serverUrlError) setServerUrlError(null);
   };
 
@@ -61,21 +82,35 @@ function ConnectionSettings() {
     return true;
   };
 
-  const save = () => {
+  const save = async () => {
     if (!validateForm()) {
       toast.error("Please fix the server URL before saving");
       return;
     }
 
-    cfg.update({
-      serverUrl: serverUrl.trim(),
-      deviceId: deviceId.trim(),
-      requestTimeoutMs: Math.max(500, Math.min(60_000, timeout || 8000)),
-      autoReconnect,
-      strictHmac,
-      dashboardToken: dashboardToken.trim(),
-    });
-    toast.success("Connection settings saved");
+    setSaving(true);
+    try {
+      const client: ClientSettings = {
+        autoReconnect,
+        strictHmac,
+      };
+      await updateSettings(cfg.serverUrl, { client });
+      cfg.update({
+        serverUrl: serverUrl.trim(),
+        deviceId: deviceId.trim(),
+        requestTimeoutMs: Math.max(500, Math.min(60_000, timeout || 8000)),
+        autoReconnect,
+        strictHmac,
+        dashboardToken: dashboardToken.trim(),
+      });
+      toast.success("Connection settings saved to server");
+    } catch (e) {
+      toast.error("Failed to save settings", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -141,7 +176,7 @@ function ConnectionSettings() {
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Transport</CardTitle>
-          <CardDescription>How the dashboard talks to the server</CardDescription>
+          <CardDescription>How the dashboard talks to the server — saved to server, persists across devices</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -179,13 +214,15 @@ function ConnectionSettings() {
             />
             <ToggleRow
               label="Strict HMAC on commands"
-              hint="Require X-Vyzorix-Signature on every command. Match the real server ENFORCE_HMAC setting."
+              hint="When enabled, server requires HMAC signature on every command from this operator"
               checked={strictHmac}
               onChange={setStrictHmac}
             />
           </div>
           <div className="flex justify-end">
-            <Button onClick={save}>Save connection</Button>
+            <Button onClick={save} disabled={saving}>
+              {saving ? "Saving..." : "Save connection"}
+            </Button>
           </div>
         </CardContent>
       </Card>

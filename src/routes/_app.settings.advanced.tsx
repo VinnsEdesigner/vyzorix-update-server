@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 
-import { useVyzorixConfig } from "@/lib/vyzorix-config";
+import { useVyzorixConfig, DEFAULT_SETTINGS } from "@/lib/vyzorix-config";
+import { resetSettings } from "@/lib/vyzorix-auth";
 
 export const Route = createFileRoute("/_app/settings/advanced")({
   component: AdvancedSettings,
@@ -17,6 +18,7 @@ function AdvancedSettings() {
   const cfg = useVyzorixConfig();
   const [logLimit, setLogLimit] = useState(cfg.logBufferLimit);
   const [signalLimit, setSignalLimit] = useState(cfg.signalHistoryLimit);
+  const [resetting, setResetting] = useState(false);
 
   const canDanger = cfg.operator.role === "super_admin";
 
@@ -26,6 +28,36 @@ function AdvancedSettings() {
       signalHistoryLimit: Math.max(30, Math.min(2000, signalLimit || 240)),
     });
     toast.success("Advanced settings saved · refresh to apply buffer sizes");
+  };
+
+  const handleReset = async () => {
+    if (!canDanger) return;
+    setResetting(true);
+    try {
+      const op = await resetSettings(cfg.serverUrl);
+      // Update local config from server response
+      cfg.update({
+        thresholds: {
+          riskWarn: op.thresholds?.riskWarn ?? DEFAULT_SETTINGS.thresholds.riskWarn,
+          riskCrit: op.thresholds?.riskCrit ?? DEFAULT_SETTINGS.thresholds.riskCrit,
+          thermalWarn: op.thresholds?.thermalWarn ?? DEFAULT_SETTINGS.thresholds.thermalWarn,
+          thermalCrit: op.thresholds?.thermalCrit ?? DEFAULT_SETTINGS.thresholds.thermalCrit,
+          bufferWarn: op.thresholds?.bufferWarn ?? DEFAULT_SETTINGS.thresholds.bufferWarn,
+          bufferCrit: op.thresholds?.bufferCrit ?? DEFAULT_SETTINGS.thresholds.bufferCrit,
+        },
+        autoReconnect: op.client?.autoReconnect ?? true,
+        strictHmac: op.client?.strictHmac ?? false,
+        notificationsEnabled: op.client?.notificationsEnabled ?? true,
+      });
+      cfg.reset(); // Reset browser-only settings too
+      toast.success("All settings reset to defaults on server");
+    } catch (e) {
+      toast.error("Reset failed", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (
@@ -77,24 +109,21 @@ function AdvancedSettings() {
         <CardHeader>
           <CardTitle className="text-destructive">Danger zone</CardTitle>
           <CardDescription>
-            Reset every dashboard configuration to defaults. Does not touch the device or server.
+            Reset every server setting (thresholds, client preferences) to defaults. Requires super-admin.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
             {canDanger
-              ? "Super-admin role required and active."
+              ? "Super-admin role active — resets server-side operator settings."
               : "Switch to super-admin in Operator to enable."}
           </p>
           <Button
             variant="destructive"
-            disabled={!canDanger}
-            onClick={() => {
-              cfg.reset();
-              toast.info("All dashboard settings reset");
-            }}
+            disabled={!canDanger || resetting}
+            onClick={handleReset}
           >
-            Reset all settings
+            {resetting ? "Resetting..." : "Reset all settings"}
           </Button>
         </CardContent>
       </Card>

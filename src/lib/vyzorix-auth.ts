@@ -209,7 +209,7 @@ export async function me(serverUrl: string): Promise<Operator> {
 
 export async function updateSettings(
   serverUrl: string,
-  patch: { name?: string; thresholds?: Thresholds },
+  patch: { name?: string; thresholds?: Thresholds; client?: ClientSettings },
 ): Promise<Operator> {
   const token = getToken();
   if (!token) throw new Error("not authenticated");
@@ -222,6 +222,27 @@ export async function updateSettings(
   const out = await jsonOrThrow<Operator>(res);
   setStoredOperator(out);
   logger.info("auth", `← settings updated`);
+  return out;
+}
+
+export interface ClientSettings {
+  strictHmac?: boolean;
+  autoReconnect?: boolean;
+  notificationsEnabled?: boolean;
+}
+
+export async function resetSettings(serverUrl: string): Promise<Operator> {
+  const token = getToken();
+  if (!token) throw new Error("not authenticated");
+  logger.info("auth", `→ PATCH /v1/auth/me/settings (reset)`);
+  const res = await fetch(`${serverUrl}/v1/auth/me/settings`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ reset: true }),
+  });
+  const out = await jsonOrThrow<Operator>(res);
+  setStoredOperator(out);
+  logger.info("auth", `← settings reset to defaults`);
   return out;
 }
 
