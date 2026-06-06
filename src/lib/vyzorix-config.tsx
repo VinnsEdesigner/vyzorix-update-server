@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 export const DEFAULT_SERVER_URL = "http://localhost:3000";
-export const DEFAULT_DEVICE_ID = "nokia-c22-primary";
+// No default device - must be selected from registered devices or empty
+export const DEFAULT_DEVICE_ID = "";
 
 const STORAGE_KEY = "vyzorix.config.v2";
 const OPERATOR_KEY = "vyz.auth.operator";
