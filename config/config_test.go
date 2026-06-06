@@ -33,8 +33,8 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.JWTDuration != 7*24*time.Hour {
 		t.Errorf("JWTDuration = %v, want 7 days", cfg.JWTDuration)
 	}
-	if cfg.HMACWindow != 5*time.Minute {
-		t.Errorf("HMACWindow = %v, want 5m", cfg.HMACWindow)
+	if cfg.HMACWindow != 30*time.Second {
+		t.Errorf("HMACWindow = %v, want 30s (per COMMAND_SECURITY.md)", cfg.HMACWindow)
 	}
 }
 
