@@ -14,6 +14,34 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// UpgraderFactory creates and configures WebSocket upgraders with consistent settings.
+type UpgraderFactory struct {
+	originValidator *security.OriginValidator
+	handshakeTimeout time.Duration
+}
+
+// NewUpgraderFactory creates a new UpgraderFactory with the given origin validator.
+func NewUpgraderFactory(originValidator *security.OriginValidator) *UpgraderFactory {
+	return &UpgraderFactory{
+		originValidator: originValidator,
+		handshakeTimeout: 10 * time.Second,
+	}
+}
+
+// SetHandshakeTimeout sets the WebSocket handshake timeout.
+func (f *UpgraderFactory) SetHandshakeTimeout(timeout time.Duration) *UpgraderFactory {
+	f.handshakeTimeout = timeout
+	return f
+}
+
+// Create returns a configured websocket.Upgrader.
+func (f *UpgraderFactory) Create() websocket.Upgrader {
+	return websocket.Upgrader{
+		CheckOrigin:     f.originValidator.CheckOrigin(),
+		HandshakeTimeout: f.handshakeTimeout,
+	}
+}
+
 // WebSocketHandler manages WebSocket upgrade and client lifecycle.
 type WebSocketHandler struct {
 	log             *slog.Logger
@@ -56,16 +84,34 @@ func NewWebSocketHandlerWithValidator(
 	hmac security.Verifier,
 	originValidator *security.OriginValidator,
 ) *WebSocketHandler {
+	// Use the UpgraderFactory for consistent configuration
+	factory := NewUpgraderFactory(originValidator)
 	return &WebSocketHandler{
 		log:             log,
 		config:          cfg,
 		hub:             h,
 		hmac:            hmac,
 		originValidator: originValidator,
-		upgrader: websocket.Upgrader{
-			CheckOrigin:     originValidator.CheckOrigin(),
-			HandshakeTimeout: 10 * time.Second,
-		},
+		upgrader:        factory.Create(),
+	}
+}
+
+// NewWebSocketHandlerWithFactory creates a WebSocketHandler using a shared UpgraderFactory.
+// This ensures all WebSocket handlers use the same configuration.
+func NewWebSocketHandlerWithFactory(
+	log *slog.Logger,
+	cfg config.Config,
+	h *hub.Hub,
+	hmac security.Verifier,
+	factory *UpgraderFactory,
+) *WebSocketHandler {
+	return &WebSocketHandler{
+		log:             log,
+		config:          cfg,
+		hub:             h,
+		hmac:            hmac,
+		originValidator: factory.originValidator,
+		upgrader:        factory.Create(),
 	}
 }
 

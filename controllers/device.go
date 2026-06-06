@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix-update-server/config"
@@ -31,7 +32,6 @@ func NewDeviceController(log *slog.Logger, cfg config.Config, st *storage.Store,
 
 // Register handles device registration.
 // POST /v1/device/register
-// POST /api/v1/device/register (alternate path for compatibility)
 func (s *DeviceController) Register(c *gin.Context) {
 	var req models.RegisterRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
@@ -144,10 +144,44 @@ func (s *DeviceController) Delete(c *gin.Context) {
 	c.JSON(200, map[string]any{"deviceId": id, "deleted": true})
 }
 
-// List returns all registered devices.
-// GET /v1/dashboard/devices
+// List returns registered devices with cursor-based pagination and filtering.
+// GET /v1/dashboard/devices?limit=50&cursor=<lastSeenTimestamp>&online=<true|false|all>
+// Query params: 
+//   - limit: number of results (default 50, max 100)
+//   - cursor: lastSeen timestamp in ms for pagination
+//   - online: filter by online status ('true', 'false', or 'all' (default))
 func (s *DeviceController) List(c *gin.Context) {
-	devices, err := s.store.Devices(c.Request.Context())
+	// Parse pagination parameters
+	limit := 50
+	if l := c.Query("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limit = parsed
+			if limit > 100 {
+				limit = 100 // max limit
+			}
+		}
+	}
+
+	var cursor int64
+	if cur := c.Query("cursor"); cur != "" {
+		if parsed, err := strconv.ParseInt(cur, 10, 64); err == nil {
+			cursor = parsed
+		}
+	}
+
+	// Parse online filter
+	onlineFilter := c.Query("online")
+	var filterOnline *bool
+	if onlineFilter == "true" {
+		v := true
+		filterOnline = &v
+	} else if onlineFilter == "false" {
+		v := false
+		filterOnline = &v
+	}
+
+	// Fetch devices with pagination
+	devices, err := s.store.DevicesPaginated(c.Request.Context(), limit+1, cursor)
 	if err != nil {
 		c.JSON(500, map[string]string{"error": "list_failed", "message": err.Error()})
 		return
@@ -163,16 +197,34 @@ func (s *DeviceController) List(c *gin.Context) {
 
 	out := make([]deviceRow, 0, len(devices))
 	for _, d := range devices {
+		isOnline := s.isDeviceOnline(d.ID) || d.Online
+
+		// Apply online filter if specified
+		if filterOnline != nil && isOnline != *filterOnline {
+			continue
+		}
+
 		out = append(out, deviceRow{
 			DeviceID:    d.ID,
-			Online:      s.isDeviceOnline(d.ID) || d.Online,
+			Online:      isOnline,
 			LastSeen:    d.LastSeen.UnixMilli(),
 			AppVersion:  d.AppVersion,
 			DeviceClass: d.DeviceClass,
 		})
+
+		// Stop if we have enough results (before checking hasMore)
+		if len(out) >= limit {
+			break
+		}
 	}
 
-	c.JSON(200, map[string]any{"devices": out})
+	// Determine if there are more results
+	response := map[string]any{"devices": out}
+	if len(out) > 0 && len(out) == limit {
+		response["nextCursor"] = out[len(out)-1].LastSeen
+	}
+
+	c.JSON(200, response)
 }
 
 // isDeviceOnline checks if a device has an active WebSocket connection via the hub.

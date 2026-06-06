@@ -654,6 +654,68 @@ func (s *Store) Devices(ctx context.Context) ([]struct {
 	return out, rows.Err()
 }
 
+// DevicesPaginated returns devices with cursor-based pagination.
+// The cursor is the lastSeen timestamp (in milliseconds) from the previous page.
+// Results are ordered by last_seen DESC.
+func (s *Store) DevicesPaginated(ctx context.Context, limit int, cursor int64) ([]struct {
+	ID                string
+	FirebaseInstallID string
+	FCMToken          string
+	AppVersion        string
+	DeviceClass       string
+	CommandSecret     string
+	Online            bool
+	RegisteredAt      time.Time
+	LastSeen          time.Time
+}, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var rows *sql.Rows
+	var err error
+
+	if cursor > 0 {
+		rows, err = s.db.QueryContext(ctx, `
+			SELECT id, firebase_install_id, fcm_token, app_version, device_class, command_secret, online, registered_at, last_seen 
+			FROM devices 
+			WHERE last_seen < ? 
+			ORDER BY last_seen DESC 
+			LIMIT ?
+		`, cursor, limit)
+	} else {
+		rows, err = s.db.QueryContext(ctx, `
+			SELECT id, firebase_install_id, fcm_token, app_version, device_class, command_secret, online, registered_at, last_seen 
+			FROM devices 
+			ORDER BY last_seen DESC 
+			LIMIT ?
+		`, limit)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []struct {
+		ID                string
+		FirebaseInstallID string
+		FCMToken          string
+		AppVersion        string
+		DeviceClass       string
+		CommandSecret     string
+		Online            bool
+		RegisteredAt      time.Time
+		LastSeen          time.Time
+	}
+	for rows.Next() {
+		var r deviceRow
+		if err := rows.Scan(&r.ID, &r.FirebaseInstallID, &r.FCMToken, &r.AppVersion, &r.DeviceClass, &r.CommandSecret, &r.Online, &r.RegisteredAt, &r.LastSeen); err != nil {
+			return nil, err
+		}
+		out = append(out, rowToDevice(r))
+	}
+	return out, rows.Err()
+}
+
 func randomHex(n int) (string, error) {
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
