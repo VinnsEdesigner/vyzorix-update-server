@@ -2,7 +2,7 @@ name: PR Labels
 
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review, opened]
+    types: [opened, synchronize, ready_for_review]
   pull_request_target:
 
 jobs:
