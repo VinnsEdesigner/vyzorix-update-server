@@ -23,14 +23,16 @@ import (
 )
 
 type Server struct {
-	Log       *slog.Logger
-	Config   config.Config
-	Store    *storage.Store
-	Hub      *hub.Hub
-	Notifier fcm.Notifier
-	HMAC     security.Verifier
-	Limiter  *middleware.RateLimiter
-	jwtCtrl  *AuthController
+	Log               *slog.Logger
+	Config           config.Config
+	Store            *storage.Store
+	Hub              *hub.Hub
+	Notifier         fcm.Notifier
+	HMAC             security.Verifier
+	Limiter          *middleware.RateLimiter
+	jwtCtrl          *AuthController
+	originValidator  *security.OriginValidator
+	upgrader         websocket.Upgrader
 }
 
 func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub, notifier fcm.Notifier) *Server {
@@ -42,11 +44,18 @@ func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub, not
 	}
 	s.Limiter = middleware.NewRateLimiter(100, time.Minute)
 	s.jwtCtrl = NewAuthController(log, cfg, st)
-	return s
-}
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+	// Initialize origin validator
+	s.originValidator = security.NewOriginValidator(cfg.AllowedOrigins)
+	s.originValidator.SetLogger(log)
+
+	// Initialize WebSocket upgrader with proper origin checking
+	s.upgrader = websocket.Upgrader{
+		CheckOrigin:     s.originValidator.CheckOrigin(),
+		HandshakeTimeout: 10 * time.Second,
+	}
+
+	return s
 }
 
 func (s *Server) Engine() *gin.Engine {
@@ -283,7 +292,7 @@ func (s *Server) stream(c *gin.Context) {
 			return
 		}
 	}
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	conn, err := s.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		s.Log.Warn("websocket upgrade failed", "err", err)
 		return
