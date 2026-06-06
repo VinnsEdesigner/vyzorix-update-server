@@ -101,6 +101,9 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 			thermal_crit INTEGER NOT NULL DEFAULT 45,
 			buffer_warn INTEGER NOT NULL DEFAULT 60,
 			buffer_crit INTEGER NOT NULL DEFAULT 80,
+			strict_hmac INTEGER NOT NULL DEFAULT 0,
+			auto_reconnect INTEGER NOT NULL DEFAULT 1,
+			notifications_enabled INTEGER NOT NULL DEFAULT 1,
 			created_at INTEGER NOT NULL,
 			updated_at INTEGER NOT NULL
 		)`); err != nil {
@@ -826,32 +829,37 @@ func (s *Store) GetOperatorByGoogleID(ctx context.Context, googleID string) (*mo
 // GetOperatorByID retrieves an operator by their ID.
 func (s *Store) GetOperatorByID(ctx context.Context, id string) (*models.Operator, error) {
 	var r struct {
-		ID            string
-		Email         string
-		Name          string
-		PasswordHash  []byte
-		Role          string
-		GoogleID      sql.NullString
-		EmailVerified int
-		RiskWarn      int
-		RiskCrit      int
-		ThermalWarn   int
-		ThermalCrit   int
-		BufferWarn    int
-		BufferCrit    int
-		CreatedAt     int64
-		UpdatedAt     int64
+		ID                  string
+		Email               string
+		Name                string
+		PasswordHash        []byte
+		Role                string
+		GoogleID            sql.NullString
+		EmailVerified       int
+		RiskWarn            int
+		RiskCrit            int
+		ThermalWarn         int
+		ThermalCrit         int
+		BufferWarn          int
+		BufferCrit          int
+		StrictHmac          int
+		AutoReconnect       int
+		NotificationsEnabled int
+		CreatedAt           int64
+		UpdatedAt           int64
 	}
 	err := s.db.QueryRowContext(ctx,
 		`SELECT id, email, name, password_hash, role, google_id, COALESCE(email_verified, 0),
 		        COALESCE(risk_warn, 70), COALESCE(risk_crit, 90),
 		        COALESCE(thermal_warn, 42), COALESCE(thermal_crit, 45),
 		        COALESCE(buffer_warn, 60), COALESCE(buffer_crit, 80),
+		        COALESCE(strict_hmac, 0), COALESCE(auto_reconnect, 1), COALESCE(notifications_enabled, 1),
 		        created_at, updated_at
 		 FROM operators WHERE id = ?`,
 		id,
 	).Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.EmailVerified,
 		&r.RiskWarn, &r.RiskCrit, &r.ThermalWarn, &r.ThermalCrit, &r.BufferWarn, &r.BufferCrit,
+		&r.StrictHmac, &r.AutoReconnect, &r.NotificationsEnabled,
 		&r.CreatedAt, &r.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -874,6 +882,11 @@ func (s *Store) GetOperatorByID(ctx context.Context, id string) (*models.Operato
 			ThermalCrit: r.ThermalCrit,
 			BufferWarn:  r.BufferWarn,
 			BufferCrit:  r.BufferCrit,
+		},
+		Client: models.ClientSettings{
+			StrictHmac:           r.StrictHmac != 0,
+			AutoReconnect:        r.AutoReconnect != 0,
+			NotificationsEnabled: r.NotificationsEnabled != 0,
 		},
 		CreatedAt: time.UnixMilli(r.CreatedAt).UTC(),
 		UpdatedAt: time.UnixMilli(r.UpdatedAt).UTC(),
@@ -933,6 +946,51 @@ func (s *Store) UpdateOperatorThresholds(ctx context.Context, operatorID string,
 		return errors.New("operator not found")
 	}
 	return nil
+}
+
+// UpdateOperatorClientSettings updates the client preferences for an operator.
+func (s *Store) UpdateOperatorClientSettings(ctx context.Context, operatorID string, cs models.ClientSettings) error {
+	now := time.Now().UTC()
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE operators SET strict_hmac=?, auto_reconnect=?, notifications_enabled=?, updated_at=? WHERE id=?`,
+		boolToInt(cs.StrictHmac), boolToInt(cs.AutoReconnect), boolToInt(cs.NotificationsEnabled), now.UnixMilli(), operatorID,
+	)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return errors.New("operator not found")
+	}
+	return nil
+}
+
+// ResetOperatorSettings resets all settings (thresholds and client) to defaults for an operator.
+func (s *Store) ResetOperatorSettings(ctx context.Context, operatorID string) error {
+	now := time.Now().UTC()
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE operators SET
+			risk_warn=70, risk_crit=90, thermal_warn=42, thermal_crit=45, buffer_warn=60, buffer_crit=80,
+			strict_hmac=0, auto_reconnect=1, notifications_enabled=1,
+			updated_at=?
+		 WHERE id=?`,
+		now.UnixMilli(), operatorID,
+	)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return errors.New("operator not found")
+	}
+	return nil
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // CreateSession inserts a new auth session.

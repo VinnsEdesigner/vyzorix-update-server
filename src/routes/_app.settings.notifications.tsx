@@ -1,17 +1,55 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { updateSettings, me, type ClientSettings } from "@/lib/vyzorix-auth";
 
 export const Route = createFileRoute("/_app/settings/notifications")({
   component: NotificationsSettings,
 });
 
 function NotificationsSettings() {
-  const { notificationsEnabled, update } = useVyzorixConfig();
+  const { notificationsEnabled, update, serverUrl } = useVyzorixConfig();
+  const [enabled, setEnabled] = useState(notificationsEnabled);
+  const [saving, setSaving] = useState(false);
+
+  // Load from server on mount
+  useEffect(() => {
+    const loadFromServer = async () => {
+      try {
+        const op = await me(serverUrl);
+        if (op.client) {
+          setEnabled(op.client.notificationsEnabled ?? true);
+          update({ notificationsEnabled: op.client.notificationsEnabled ?? true });
+        }
+      } catch {
+        // Use local defaults
+      }
+    };
+    loadFromServer();
+  }, []);
+
+  const handleToggle = async (v: boolean) => {
+    setEnabled(v);
+    setSaving(true);
+    try {
+      const client: ClientSettings = { notificationsEnabled: v };
+      await updateSettings(serverUrl, { client });
+      update({ notificationsEnabled: v });
+      toast.success("Notification settings saved to server");
+    } catch (e) {
+      setEnabled(!v); // revert on error
+      toast.error("Failed to save", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const requestBrowser = async () => {
     if (!("Notification" in window)) {
@@ -26,14 +64,13 @@ function NotificationsSettings() {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Notifications</CardTitle>
-        <CardDescription>Alert sounds, browser pushes, and toast behaviour.</CardDescription>
+        <CardDescription>
+          Alert sounds, browser pushes, and toast behaviour. Saved to server — persists across devices.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Row label="Toast notifications" hint="In-app sonner toasts for command results and errors">
-          <Switch
-            checked={notificationsEnabled}
-            onCheckedChange={(v) => update({ notificationsEnabled: v })}
-          />
+          <Switch checked={enabled} onCheckedChange={handleToggle} disabled={saving} />
         </Row>
         <Row
           label="Browser notifications"
