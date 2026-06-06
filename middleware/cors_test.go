@@ -39,8 +39,9 @@ func TestCORS_AllowedOrigins(t *testing.T) {
 func TestCORS_EmptyOrigin(t *testing.T) {
 	cors := CORS{AllowedOrigins: []string{"https://example.com"}}
 
-	if !cors.allowed("") {
-		t.Error("empty origin should be allowed")
+	// Empty origin is now rejected for security - origin is required for CORS
+	if cors.allowed("") {
+		t.Error("empty origin should be rejected for security")
 	}
 }
 
@@ -106,9 +107,11 @@ func TestCORSHandler_NoOrigin(t *testing.T) {
 
 	corsHandler(c)
 
-	// When no Origin header is provided, the handler sets wildcard "*"
-	if c.Writer.Header().Get("Access-Control-Allow-Origin") != "*" {
-		t.Error("expected Access-Control-Allow-Origin to be * for no-origin request")
+	// When no Origin header is provided, the handler should not set CORS headers
+	// for security reasons (origin validation requires an origin)
+	allowOrigin := c.Writer.Header().Get("Access-Control-Allow-Origin")
+	if allowOrigin != "" {
+		t.Errorf("expected no Access-Control-Allow-Origin for no-origin request, got %s", allowOrigin)
 	}
 }
 
@@ -164,7 +167,7 @@ func TestCORSHandler_AllowedHeaders(t *testing.T) {
 	corsHandler(c)
 
 	headers := c.Writer.Header().Get("Access-Control-Allow-Headers")
-	expected := "Authorization, Content-Type, X-Vyzorix-Nonce, X-Vyzorix-Timestamp, X-Vyzorix-Signature, X-Vyzorix-Token"
+	expected := "Authorization, Content-Type, X-Request-ID, X-Vyzorix-Nonce, X-Vyzorix-Timestamp, X-Vyzorix-Signature, X-Vyzorix-Token"
 	if headers != expected {
 		t.Errorf("Access-Control-Allow-Headers = %s, want %s", headers, expected)
 	}
@@ -253,7 +256,7 @@ func TestGetAllowedOrigin(t *testing.T) {
 			"empty request origin",
 			[]string{"https://example.com"},
 			"",
-			true,
+			false, // Empty origin is now rejected for security
 		},
 		{
 			"wildcard priority match",
