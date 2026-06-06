@@ -21,6 +21,15 @@ import { useCallback } from "react";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
+export interface Thresholds {
+  riskWarn: number;
+  riskCrit: number;
+  thermalWarn: number;
+  thermalCrit: number;
+  bufferWarn: number;
+  bufferCrit: number;
+}
+
 export interface Operator {
   id: string;
   email: string;
@@ -28,6 +37,7 @@ export interface Operator {
   role: "viewer" | "operator" | "super_admin";
   createdAt: number;
   emailVerified?: boolean;
+  thresholds?: Thresholds;
 }
 
 export interface AuthResponse {
@@ -194,6 +204,24 @@ export async function me(serverUrl: string): Promise<Operator> {
   });
   const out = await jsonOrThrow<Operator>(res);
   setStoredOperator(out);
+  return out;
+}
+
+export async function updateSettings(
+  serverUrl: string,
+  patch: { name?: string; thresholds?: Thresholds },
+): Promise<Operator> {
+  const token = getToken();
+  if (!token) throw new Error("not authenticated");
+  logger.info("auth", `→ PATCH /v1/auth/me/settings`, patch);
+  const res = await fetch(`${serverUrl}/v1/auth/me/settings`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(patch),
+  });
+  const out = await jsonOrThrow<Operator>(res);
+  setStoredOperator(out);
+  logger.info("auth", `← settings updated`);
   return out;
 }
 

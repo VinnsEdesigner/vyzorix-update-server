@@ -92,6 +92,7 @@ func (s *Server) Engine() *gin.Engine {
 	// /me and /logout require JWT — middleware applied inline
 	auth.GET("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Me)
 	auth.PATCH("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.UpdateName)
+	auth.PATCH("/me/settings", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.UpdateSettings)
 	auth.POST("/logout", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Logout)
 
 	// Stricter rate limiting for sensitive auth endpoints (5 req/min to prevent brute force)

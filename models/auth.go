@@ -11,6 +11,16 @@ const (
 	RoleSuperAdmin OperatorRole = "super_admin"
 )
 
+// Thresholds define alert levels for device telemetry.
+type Thresholds struct {
+	RiskWarn     int `json:"riskWarn" db:"risk_warn"`
+	RiskCrit     int `json:"riskCrit" db:"risk_crit"`
+	ThermalWarn  int `json:"thermalWarn" db:"thermal_warn"`
+	ThermalCrit  int `json:"thermalCrit" db:"thermal_crit"`
+	BufferWarn   int `json:"bufferWarn" db:"buffer_warn"`
+	BufferCrit   int `json:"bufferCrit" db:"buffer_crit"`
+}
+
 // Operator represents a human operator who can access the dashboard.
 type Operator struct {
 	ID            string       `json:"id"`
@@ -20,6 +30,7 @@ type Operator struct {
 	Role          OperatorRole `json:"role"`
 	GoogleID      string       `json:"googleId,omitempty"`
 	EmailVerified bool         `json:"emailVerified,omitempty"`
+	Thresholds    Thresholds   `json:"thresholds,omitempty" db:"-"`
 	CreatedAt     time.Time    `json:"createdAt"`
 	UpdatedAt     time.Time    `json:"updatedAt"`
 }
@@ -31,6 +42,7 @@ type OperatorResponse struct {
 	Name          string       `json:"name"`
 	Role          OperatorRole `json:"role"`
 	EmailVerified bool         `json:"emailVerified,omitempty"`
+	Thresholds    *Thresholds  `json:"thresholds,omitempty"`
 	CreatedAt     int64        `json:"createdAt"`
 }
 
@@ -42,6 +54,7 @@ func (o *Operator) ToResponse() OperatorResponse {
 		Name:          o.Name,
 		Role:          o.Role,
 		EmailVerified: o.EmailVerified,
+		Thresholds:    &o.Thresholds,
 		CreatedAt:     o.CreatedAt.UnixMilli(),
 	}
 }
@@ -100,7 +113,13 @@ type AuthErrorResponse struct {
 
 // UpdateNameRequest is the payload for updating the operator's display name.
 type UpdateNameRequest struct {
-	Name string `json:"name"`
+	Name *string `json:"name,omitempty"`
+}
+
+// UpdateSettingsRequest is the payload for updating operator settings (name and thresholds).
+type UpdateSettingsRequest struct {
+	Name       *string       `json:"name,omitempty"`
+	Thresholds *Thresholds   `json:"thresholds,omitempty"`
 }
 
 // VerifyEmailRequest is the payload for verifying an email address.

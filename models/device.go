@@ -30,9 +30,17 @@ type RegisterResponse struct {
 }
 
 type DeviceStatus struct {
-	DeviceID    string `json:"deviceId"`
-	Online      bool   `json:"online"`
-	LastSeen    int64  `json:"lastSeen"`
-	AppVersion  string `json:"appVersion"`
-	DeviceClass string `json:"deviceClass"`
+	DeviceID          string `json:"deviceId"`
+	Online            bool   `json:"online"`
+	LastSeen          int64  `json:"lastSeen"`
+	AppVersion        string `json:"appVersion"`
+	DeviceClass       string `json:"deviceClass"`
+	FirebaseInstallID string `json:"firebaseInstallId,omitempty"`
+	FCMToken          string `json:"fcmToken,omitempty"`
+}
+
+// UpdateDeviceRequest is the payload for updating device fields.
+type UpdateDeviceRequest struct {
+	FCMToken   *string `json:"fcmToken,omitempty"`
+	AppVersion *string `json:"appVersion,omitempty"`
 }

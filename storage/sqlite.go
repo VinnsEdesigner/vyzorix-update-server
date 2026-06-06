@@ -95,6 +95,12 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 			google_id TEXT UNIQUE,
 			email_verified INTEGER NOT NULL DEFAULT 0,
 			verification_sent_at INTEGER,
+			risk_warn INTEGER NOT NULL DEFAULT 70,
+			risk_crit INTEGER NOT NULL DEFAULT 90,
+			thermal_warn INTEGER NOT NULL DEFAULT 42,
+			thermal_crit INTEGER NOT NULL DEFAULT 45,
+			buffer_warn INTEGER NOT NULL DEFAULT 60,
+			buffer_crit INTEGER NOT NULL DEFAULT 80,
 			created_at INTEGER NOT NULL,
 			updated_at INTEGER NOT NULL
 		)`); err != nil {
@@ -827,14 +833,26 @@ func (s *Store) GetOperatorByID(ctx context.Context, id string) (*models.Operato
 		Role          string
 		GoogleID      sql.NullString
 		EmailVerified int
+		RiskWarn      int
+		RiskCrit      int
+		ThermalWarn   int
+		ThermalCrit   int
+		BufferWarn    int
+		BufferCrit    int
 		CreatedAt     int64
 		UpdatedAt     int64
 	}
 	err := s.db.QueryRowContext(ctx,
-		`SELECT id, email, name, password_hash, role, google_id, COALESCE(email_verified, 0), created_at, updated_at
+		`SELECT id, email, name, password_hash, role, google_id, COALESCE(email_verified, 0),
+		        COALESCE(risk_warn, 70), COALESCE(risk_crit, 90),
+		        COALESCE(thermal_warn, 42), COALESCE(thermal_crit, 45),
+		        COALESCE(buffer_warn, 60), COALESCE(buffer_crit, 80),
+		        created_at, updated_at
 		 FROM operators WHERE id = ?`,
 		id,
-	).Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.EmailVerified, &r.CreatedAt, &r.UpdatedAt)
+	).Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.EmailVerified,
+		&r.RiskWarn, &r.RiskCrit, &r.ThermalWarn, &r.ThermalCrit, &r.BufferWarn, &r.BufferCrit,
+		&r.CreatedAt, &r.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -849,8 +867,16 @@ func (s *Store) GetOperatorByID(ctx context.Context, id string) (*models.Operato
 		Role:          models.OperatorRole(r.Role),
 		GoogleID:      r.GoogleID.String,
 		EmailVerified: r.EmailVerified != 0,
-		CreatedAt:     time.UnixMilli(r.CreatedAt).UTC(),
-		UpdatedAt:     time.UnixMilli(r.UpdatedAt).UTC(),
+		Thresholds: models.Thresholds{
+			RiskWarn:    r.RiskWarn,
+			RiskCrit:    r.RiskCrit,
+			ThermalWarn: r.ThermalWarn,
+			ThermalCrit: r.ThermalCrit,
+			BufferWarn:  r.BufferWarn,
+			BufferCrit:  r.BufferCrit,
+		},
+		CreatedAt: time.UnixMilli(r.CreatedAt).UTC(),
+		UpdatedAt: time.UnixMilli(r.UpdatedAt).UTC(),
 	}, nil
 }
 
@@ -881,6 +907,23 @@ func (s *Store) UpdateOperatorName(ctx context.Context, operatorID, name string)
 	result, err := s.db.ExecContext(ctx,
 		`UPDATE operators SET name = ?, updated_at = ? WHERE id = ?`,
 		strings.TrimSpace(name), now.UnixMilli(), operatorID,
+	)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return errors.New("operator not found")
+	}
+	return nil
+}
+
+// UpdateOperatorThresholds updates the alert thresholds for an operator.
+func (s *Store) UpdateOperatorThresholds(ctx context.Context, operatorID string, th models.Thresholds) error {
+	now := time.Now().UTC()
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE operators SET risk_warn=?, risk_crit=?, thermal_warn=?, thermal_crit=?, buffer_warn=?, buffer_crit=?, updated_at=? WHERE id=?`,
+		th.RiskWarn, th.RiskCrit, th.ThermalWarn, th.ThermalCrit, th.BufferWarn, th.BufferCrit, now.UnixMilli(), operatorID,
 	)
 	if err != nil {
 		return err
