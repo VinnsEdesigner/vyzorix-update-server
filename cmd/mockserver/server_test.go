@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -144,6 +145,9 @@ func TestWebSocketRoundTrip(t *testing.T) {
 	if !srv.store.dispatch("dev-ws", commandFrame{Type: "command", DispatchID: "d1", Command: "PING"}) {
 		t.Fatal("dispatch returned false; expected delivery via WSS")
 	}
+
+	// Wait for the dispatch to be delivered via WebSocket
+	time.Sleep(100 * time.Millisecond)
 
 	_, msg, err := c.ReadMessage()
 	if err != nil {
