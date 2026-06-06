@@ -60,6 +60,7 @@ func TestServer_RateLimiterExists(t *testing.T) {
 	})
 
 	// Verify the engine was created successfully
+	//nolint:staticcheck // SA5011: gin.New() never returns nil
 	if r == nil {
 		t.Error("Engine should not be nil")
 	}
