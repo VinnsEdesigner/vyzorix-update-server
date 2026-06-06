@@ -185,9 +185,10 @@ func (s *Store) migrateSettings(ctx context.Context) error {
 	}
 
 	for key, value := range defaults {
+		//nolint:errcheck // INSERT OR IGNORE is best-effort for default settings
 		s.db.ExecContext(ctx, `
 			INSERT OR IGNORE INTO settings(key, value, updated_at) VALUES(?, ?, ?)
-		`, key, value, time.Now().UTC().UnixMilli()) //nolint:errcheck
+		`, key, value, time.Now().UTC().UnixMilli())
 	}
 
 	return nil

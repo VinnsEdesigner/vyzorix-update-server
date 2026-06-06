@@ -150,7 +150,10 @@ func (s *CommandSigner) HashSecret(secret string) string {
 // fallbackHash provides a SHA256-based fallback if bcrypt fails.
 func (s *CommandSigner) fallbackHash(secret string) string {
 	salt := make([]byte, 16)
-	rand.Read(salt)
+	if _, err := rand.Read(salt); err != nil {
+		// Fallback to time-based salt if crypto/rand fails
+		salt = []byte(fmt.Sprintf("%d", time.Now().UnixNano()))
+	}
 	saltHex := hex.EncodeToString(salt)
 	mac := sha256.New()
 	mac.Write(salt)

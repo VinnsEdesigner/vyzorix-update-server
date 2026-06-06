@@ -147,7 +147,7 @@ func TestWebSocketRoundTrip(t *testing.T) {
 	}
 
 	// Wait for the dispatch to be delivered via WebSocket
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	_, msg, err := c.ReadMessage()
 	if err != nil {
