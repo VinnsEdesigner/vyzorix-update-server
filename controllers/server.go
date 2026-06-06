@@ -95,11 +95,10 @@ func (s *Server) Engine() *gin.Engine {
 	auth.POST("/logout", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Logout)
 
 	// Stricter rate limiting for sensitive auth endpoints (5 req/min to prevent brute force)
-	strictAuth := auth.Group("")
-	strictAuth.Use(s.AuthLimiter.Middleware())
-	strictAuth.POST("/login", s.jwtCtrl.Login)
-	strictAuth.POST("/register", s.jwtCtrl.Register)
-	strictAuth.POST("/forgot-password", s.jwtCtrl.ForgotPassword)
+	// Applied inline - both the general Limiter (100/min) AND AuthLimiter (5/min)
+	auth.POST("/login", s.AuthLimiter.Middleware(), s.jwtCtrl.Login)
+	auth.POST("/register", s.AuthLimiter.Middleware(), s.jwtCtrl.Register)
+	auth.POST("/forgot-password", s.AuthLimiter.Middleware(), s.jwtCtrl.ForgotPassword)
 
 	public.GET("/health", s.health)
 	public.GET("/healthz", s.health)
@@ -125,8 +124,11 @@ func (s *Server) Engine() *gin.Engine {
 	// WebSocket — HMAC or JWT
 	r.GET("/v1/device/:id/stream", s.stream)
 
-	// SPA fallback — must be last
-	r.GET("/*path", s.dashboard)
+	// SPA fallback — handle any non-API routes by serving the React app
+	// Use NoRoute to catch unmatched routes and serve the SPA
+	r.NoRoute(func(c *gin.Context) {
+		s.dashboard(c)
+	})
 
 	return r
 }
