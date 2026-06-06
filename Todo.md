@@ -38,11 +38,11 @@
 - [x] Remove duplicate `_UPDATED.md` files
 - [x] Updated doc/README.md with clean structure
 
-### Priority 5: Security Hardening (Optional)
-- [ ] Input sanitization on all endpoints
-- [ ] Request body size limits
-- [ ] SQL injection prevention review
-- [ ] XSS prevention
+### Priority 5: Security Hardening — COMPLETED
+- [x] Input sanitization on all endpoints (security/validate.go)
+- [x] Request body size limits (middleware/body_size.go)
+- [x] SQL injection prevention review (already using parameterized queries)
+- [x] XSS prevention (escapeHTML/stripHTML in utils.ts)
 
 ### Priority 6: Test the Full Flow
 - [ ] Register a new operator
