@@ -85,11 +85,13 @@ func (s *DeviceController) Status(c *gin.Context) {
 
 	online := s.isDeviceOnline(id) || d.Online
 	c.JSON(200, models.DeviceStatus{
-		DeviceID:    d.ID,
-		Online:      online,
-		LastSeen:    d.LastSeen.UnixMilli(),
-		AppVersion:  d.AppVersion,
-		DeviceClass: d.DeviceClass,
+		DeviceID:          d.ID,
+		Online:            online,
+		LastSeen:          d.LastSeen.UnixMilli(),
+		AppVersion:        d.AppVersion,
+		DeviceClass:       d.DeviceClass,
+		FirebaseInstallID: d.FirebaseInstallID,
+		FCMToken:          d.FCMToken,
 	})
 }
 
