@@ -100,9 +100,9 @@ func TestValidatePassword(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidatePassword(tt.pw)
+			err := ValidatePasswordLength(tt.pw)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidatePassword() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ValidatePasswordLength() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -114,9 +114,9 @@ func TestValidatePasswordMaxLength(t *testing.T) {
 		longPw[i] = 'a'
 	}
 
-	err := ValidatePassword(string(longPw))
+	err := ValidatePasswordLength(string(longPw))
 	if err == nil {
-		t.Error("ValidatePassword() should reject password exceeding max length")
+		t.Error("ValidatePasswordLength() should reject password exceeding max length")
 	}
 }
 

@@ -20,14 +20,18 @@ function SettingsLayout() {
     <div className="space-y-4">
       <nav className="flex flex-wrap gap-1 rounded-md border bg-card p-1 text-sm">
         {tabs.map((t) => {
-          const active = t.exact ? pathname === t.to : pathname === t.to || pathname.startsWith(t.to + "/");
+          const active = t.exact
+            ? pathname === t.to
+            : pathname === t.to || pathname.startsWith(t.to + "/");
           return (
             <Link
               key={t.to}
               to={t.to as "/settings"}
               className={cn(
                 "rounded px-3 py-1.5 transition-colors",
-                active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                active
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               {t.label}

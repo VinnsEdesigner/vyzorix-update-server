@@ -3,7 +3,10 @@ import { Badge } from "@/components/ui/badge";
 export type DeviceHealth = "online" | "offline" | "warning" | "critical";
 
 export function StatusBadge({ status }: { status: DeviceHealth }) {
-  const map: Record<DeviceHealth, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dot: string }> = {
+  const map: Record<
+    DeviceHealth,
+    { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dot: string }
+  > = {
     online: { label: "Online", variant: "default", dot: "bg-primary" },
     warning: { label: "Warning", variant: "secondary", dot: "bg-yellow-500" },
     critical: { label: "Critical", variant: "destructive", dot: "bg-destructive" },

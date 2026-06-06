@@ -4,16 +4,22 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 const localStorageMock = {
   store: {} as Record<string, string>,
   getItem: vi.fn((key: string) => localStorageMock.store[key] ?? null),
-  setItem: vi.fn((key: string, value: string) => { localStorageMock.store[key] = value; }),
-  removeItem: vi.fn((key: string) => { delete localStorageMock.store[key]; }),
-  clear: vi.fn(() => { localStorageMock.store = {}; }),
+  setItem: vi.fn((key: string, value: string) => {
+    localStorageMock.store[key] = value;
+  }),
+  removeItem: vi.fn((key: string) => {
+    delete localStorageMock.store[key];
+  }),
+  clear: vi.fn(() => {
+    localStorageMock.store = {};
+  }),
 };
 
 Object.defineProperty(globalThis, "localStorage", { value: localStorageMock });
 
 describe("URL Validation", () => {
   // Test the validation logic inline since we can't import React hooks
-  
+
   function isValidServerUrl(url: string): boolean {
     if (!url.trim()) return false;
     try {
@@ -76,9 +82,7 @@ describe("Device Class Formatting", () => {
   // Test the formatting logic
   function formatDeviceClass(deviceClass: string | undefined): string {
     if (!deviceClass) return "Unknown Device";
-    return deviceClass
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+    return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
   describe("formatDeviceClass", () => {
@@ -131,7 +135,7 @@ describe("Config Storage", () => {
   });
 
   const STORAGE_KEY = "vyz.config.test";
-  
+
   function saveConfig(config: Record<string, unknown>) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
   }
@@ -152,10 +156,10 @@ describe("Config Storage", () => {
       deviceId: "test-device",
       autoReconnect: true,
     };
-    
+
     saveConfig(config);
     const loaded = loadConfig();
-    
+
     expect(loaded).toEqual(config);
     expect(loaded?.serverUrl).toBe("http://localhost:3000");
   });
@@ -177,10 +181,10 @@ describe("Config Storage", () => {
       deviceId: "default-device",
       autoReconnect: true,
     };
-    
+
     const partial = { serverUrl: "http://custom:8080" };
     const merged = { ...defaults, ...partial };
-    
+
     expect(merged.serverUrl).toBe("http://custom:8080");
     expect(merged.deviceId).toBe("default-device");
     expect(merged.autoReconnect).toBe(true);
@@ -189,7 +193,7 @@ describe("Config Storage", () => {
 
 describe("Settings Persistence", () => {
   const OPERATOR_KEY = "vyz.auth.operator";
-  
+
   beforeEach(() => {
     localStorageMock.store = {};
   });
@@ -222,10 +226,10 @@ describe("Settings Persistence", () => {
       name: "Test User",
       role: "operator",
     };
-    
+
     saveOperator(operator);
     const retrieved = getStoredOperator();
-    
+
     expect(retrieved).toEqual(operator);
     expect(retrieved?.email).toBe("test@example.com");
   });
@@ -242,17 +246,17 @@ describe("Settings Persistence", () => {
       name: "",
       role: "operator",
     };
-    
+
     saveOperator(operator);
     const retrieved = getStoredOperator();
-    
+
     expect(retrieved?.name).toBe("");
   });
 });
 
 describe("API Route Verification", () => {
   // Verify all frontend API routes match backend expectations
-  
+
   describe("Auth API Routes (vyzorix-auth.ts)", () => {
     const authRoutes = [
       { method: "POST", path: "/v1/auth/login", auth: false },
@@ -264,12 +268,15 @@ describe("API Route Verification", () => {
       { method: "GET", path: "/v1/auth/google/callback", auth: false },
     ];
 
-    it.each(authRoutes)("auth route $method $path has correct auth requirement", ({ path, auth }) => {
-      // Routes that require auth should be protected
-      if (auth) {
-        expect(path).toMatch(/^\/v1\/auth\/(logout|me)/);
-      }
-    });
+    it.each(authRoutes)(
+      "auth route $method $path has correct auth requirement",
+      ({ path, auth }) => {
+        // Routes that require auth should be protected
+        if (auth) {
+          expect(path).toMatch(/^\/v1\/auth\/(logout|me)/);
+        }
+      },
+    );
   });
 
   describe("Device API Routes (vyzorix-api.ts)", () => {
@@ -413,31 +420,31 @@ describe("Alert Derivation Logic", () => {
   it("derives critical alert for high risk score", () => {
     const frames: TelemetryFrame[] = [{ riskScore: 80 }];
     const alerts = deriveAlerts(frames, thresholds);
-    expect(alerts.some(a => a.includes("critical") && a.includes("risk 80"))).toBe(true);
+    expect(alerts.some((a) => a.includes("critical") && a.includes("risk 80"))).toBe(true);
   });
 
   it("derives warning alert for elevated risk score", () => {
     const frames: TelemetryFrame[] = [{ riskScore: 60 }];
     const alerts = deriveAlerts(frames, thresholds);
-    expect(alerts.some(a => a.includes("warning") && a.includes("risk 60"))).toBe(true);
+    expect(alerts.some((a) => a.includes("warning") && a.includes("risk 60"))).toBe(true);
   });
 
   it("derives critical alert for high thermal", () => {
     const frames: TelemetryFrame[] = [{ thermalTemp: 58 }];
     const alerts = deriveAlerts(frames, thresholds);
-    expect(alerts.some(a => a.includes("critical") && a.includes("thermal 58"))).toBe(true);
+    expect(alerts.some((a) => a.includes("critical") && a.includes("thermal 58"))).toBe(true);
   });
 
   it("derives warning alert for low buffer", () => {
     const frames: TelemetryFrame[] = [{ bufferLevel: 30 }];
     const alerts = deriveAlerts(frames, thresholds);
-    expect(alerts.some(a => a.includes("warning") && a.includes("buffer 30%"))).toBe(true);
+    expect(alerts.some((a) => a.includes("warning") && a.includes("buffer 30%"))).toBe(true);
   });
 
   it("derives info alert for speaker off", () => {
     const frames: TelemetryFrame[] = [{ speakerOn: false, activeDevice: "unknown" }];
     const alerts = deriveAlerts(frames, thresholds);
-    expect(alerts.some(a => a.includes("info") && a.includes("speaker route lost"))).toBe(true);
+    expect(alerts.some((a) => a.includes("info") && a.includes("speaker route lost"))).toBe(true);
   });
 
   it("derives multiple alerts from single frame", () => {

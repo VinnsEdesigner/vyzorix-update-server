@@ -1,6 +1,6 @@
 /**
  * vyzorix-auth.test.ts - Tests for the authentication client
- * 
+ *
  * Tests the full auth flow:
  * 1. Register a new operator
  * 2. Login with email/password
@@ -44,9 +44,15 @@ global.fetch = mockFetch;
 const storage: Record<string, string> = {};
 vi.stubGlobal("localStorage", {
   getItem: (key: string) => storage[key] ?? null,
-  setItem: (key: string, value: string) => { storage[key] = value; },
-  removeItem: (key: string) => { delete storage[key]; },
-  clear: () => { Object.keys(storage).forEach(k => delete storage[k]); },
+  setItem: (key: string, value: string) => {
+    storage[key] = value;
+  },
+  removeItem: (key: string) => {
+    delete storage[key];
+  },
+  clear: () => {
+    Object.keys(storage).forEach((k) => delete storage[k]);
+  },
 });
 
 // Helper to create mock responses
@@ -71,7 +77,8 @@ const TEST_OPERATOR: Operator = {
 };
 
 const TEST_AUTH_RESPONSE: AuthResponse = {
-  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvaWQiOiJvcF8xMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20ifQ.test",
+  token:
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvaWQiOiJvcF8xMjMiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20ifQ.test",
   expiresAt: 1700086400000,
   operator: TEST_OPERATOR,
 };
@@ -97,7 +104,7 @@ describe("vyzorix-auth", () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: "test@example.com", password: "password123" }),
-        })
+        }),
       );
     });
 
@@ -106,10 +113,13 @@ describe("vyzorix-auth", () => {
         ok: false,
         status: 401,
         headers: new Headers({ "content-type": "application/json" }),
-        json: () => Promise.resolve({ error: "invalid_credentials", message: "Invalid email or password" }),
+        json: () =>
+          Promise.resolve({ error: "invalid_credentials", message: "Invalid email or password" }),
       } as unknown as Response);
 
-      await expect(login(TEST_SERVER, "test@example.com", "wrongpassword")).rejects.toThrow("Invalid email or password");
+      await expect(login(TEST_SERVER, "test@example.com", "wrongpassword")).rejects.toThrow(
+        "Invalid email or password",
+      );
     });
 
     it("should trim email whitespace", async () => {
@@ -121,14 +131,18 @@ describe("vyzorix-auth", () => {
         expect.any(String),
         expect.objectContaining({
           method: "POST",
-        })
+        }),
       );
     });
   });
 
   describe("register", () => {
     it("should register a new operator", async () => {
-      const newOperator = { ...TEST_OPERATOR, role: "super_admin" as const, email: "new@example.com" };
+      const newOperator = {
+        ...TEST_OPERATOR,
+        role: "super_admin" as const,
+        email: "new@example.com",
+      };
       const response = { ...TEST_AUTH_RESPONSE, operator: newOperator };
       mockFetch.mockResolvedValueOnce(createMockResponse(response));
 
@@ -146,7 +160,9 @@ describe("vyzorix-auth", () => {
         json: () => Promise.resolve({ error: "email_exists", message: "Email already registered" }),
       } as unknown as Response);
 
-      await expect(register(TEST_SERVER, "existing@example.com", "password123", "User")).rejects.toThrow("Email already registered");
+      await expect(
+        register(TEST_SERVER, "existing@example.com", "password123", "User"),
+      ).rejects.toThrow("Email already registered");
     });
 
     it("should throw error on weak password", async () => {
@@ -154,10 +170,16 @@ describe("vyzorix-auth", () => {
         ok: false,
         status: 400,
         headers: new Headers({ "content-type": "application/json" }),
-        json: () => Promise.resolve({ error: "weak_password", message: "Password must be at least 12 characters" }),
+        json: () =>
+          Promise.resolve({
+            error: "weak_password",
+            message: "Password must be at least 12 characters",
+          }),
       } as unknown as Response);
 
-      await expect(register(TEST_SERVER, "test@example.com", "short", "User")).rejects.toThrow("Password must be at least 12 characters");
+      await expect(register(TEST_SERVER, "test@example.com", "short", "User")).rejects.toThrow(
+        "Password must be at least 12 characters",
+      );
     });
   });
 
@@ -178,7 +200,7 @@ describe("vyzorix-auth", () => {
           headers: expect.objectContaining({
             Authorization: "Bearer test-token",
           }),
-        })
+        }),
       );
     });
 
@@ -213,7 +235,7 @@ describe("vyzorix-auth", () => {
           headers: expect.objectContaining({
             Authorization: "Bearer test-token",
           }),
-        })
+        }),
       );
     });
 
@@ -242,7 +264,11 @@ describe("vyzorix-auth", () => {
 
   describe("forgotPassword", () => {
     it("should request password reset", async () => {
-      mockFetch.mockResolvedValueOnce(createMockResponse({ message: "If that email exists, a password reset link has been sent." }));
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({
+          message: "If that email exists, a password reset link has been sent.",
+        }),
+      );
 
       const result = await forgotPassword(TEST_SERVER, "test@example.com");
 
@@ -252,12 +278,16 @@ describe("vyzorix-auth", () => {
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ email: "test@example.com" }),
-        })
+        }),
       );
     });
 
     it("should return success even for non-existent email (security)", async () => {
-      mockFetch.mockResolvedValueOnce(createMockResponse({ message: "If that email exists, a password reset link has been sent." }));
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({
+          message: "If that email exists, a password reset link has been sent.",
+        }),
+      );
 
       // Should not throw - server returns success for security reasons
       await expect(forgotPassword(TEST_SERVER, "nonexistent@example.com")).resolves.toBeDefined();
@@ -279,10 +309,13 @@ describe("vyzorix-auth", () => {
         ok: false,
         status: 400,
         headers: new Headers({ "content-type": "application/json" }),
-        json: () => Promise.resolve({ error: "invalid_token", message: "Reset token is invalid or expired" }),
+        json: () =>
+          Promise.resolve({ error: "invalid_token", message: "Reset token is invalid or expired" }),
       } as unknown as Response);
 
-      await expect(resetPassword(TEST_SERVER, "invalid-token", "newpassword")).rejects.toThrow("Reset token is invalid or expired");
+      await expect(resetPassword(TEST_SERVER, "invalid-token", "newpassword")).rejects.toThrow(
+        "Reset token is invalid or expired",
+      );
     });
   });
 
@@ -303,10 +336,13 @@ describe("vyzorix-auth", () => {
         ok: false,
         status: 400,
         headers: new Headers({ "content-type": "application/json" }),
-        json: () => Promise.resolve({ error: "invalid_token", message: "Verification token is invalid" }),
+        json: () =>
+          Promise.resolve({ error: "invalid_token", message: "Verification token is invalid" }),
       } as unknown as Response);
 
-      await expect(verifyEmail(TEST_SERVER, "invalid-token")).rejects.toThrow("Verification token is invalid");
+      await expect(verifyEmail(TEST_SERVER, "invalid-token")).rejects.toThrow(
+        "Verification token is invalid",
+      );
     });
   });
 
@@ -324,14 +360,16 @@ describe("vyzorix-auth", () => {
     it("should parse JWT token and extract operator info", () => {
       // Create a real-looking JWT with test payload
       const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-      const payload = btoa(JSON.stringify({
-        oid: "op_456",
-        email: "google@example.com",
-        name: "Google User",
-        role: "operator",
-        iat: 1700000000,
-        exp: 1700086400,
-      }));
+      const payload = btoa(
+        JSON.stringify({
+          oid: "op_456",
+          email: "google@example.com",
+          name: "Google User",
+          role: "operator",
+          iat: 1700000000,
+          exp: 1700086400,
+        }),
+      );
       const signature = "test-signature";
       const token = `${header}.${payload}.${signature}`;
 
@@ -361,11 +399,13 @@ describe("vyzorix-auth", () => {
 
     it("should handle missing name with email prefix", () => {
       const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-      const payload = btoa(JSON.stringify({
-        oid: "op_789",
-        email: "user@example.com",
-        // No name
-      }));
+      const payload = btoa(
+        JSON.stringify({
+          oid: "op_789",
+          email: "user@example.com",
+          // No name
+        }),
+      );
       const signature = "test-signature";
       const token = `${header}.${payload}.${signature}`;
 
