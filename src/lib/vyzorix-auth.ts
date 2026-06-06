@@ -38,6 +38,7 @@ export interface Operator {
   createdAt: number;
   emailVerified?: boolean;
   thresholds?: Thresholds;
+  client?: ClientSettings;
 }
 
 export interface AuthResponse {
