@@ -70,11 +70,16 @@ function dashboardHeaders(token?: string): Record<string, string> {
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   const text = await res.text();
   let body: unknown = text;
-  try { body = text ? JSON.parse(text) : null; } catch {}
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    // ignore parse error, use raw text
+  }
   if (!res.ok) {
-    const msg = typeof body === "object" && body && "message" in body
-      ? String((body as { message?: unknown }).message)
-      : res.statusText || `HTTP ${res.status}`;
+    const msg =
+      typeof body === "object" && body && "message" in body
+        ? String((body as { message?: unknown }).message)
+        : res.statusText || `HTTP ${res.status}`;
     throw new Error(msg);
   }
   return body as T;
@@ -97,10 +102,16 @@ export async function getVersion(serverUrl: string): Promise<VersionManifest> {
   try {
     const res = await fetch(join(serverUrl, "/api/v1/version"), { method: "GET" });
     const body = await jsonOrThrow<VersionManifest>(res);
-    logger.info("update", `manifest v${body.version} (code ${body.version_code}) · ${Date.now() - t0}ms`);
+    logger.info(
+      "update",
+      `manifest v${body.version} (code ${body.version_code}) · ${Date.now() - t0}ms`,
+    );
     return body;
   } catch (e) {
-    logger.error("update", `version.json fetch failed · ${e instanceof Error ? e.message : String(e)}`);
+    logger.error(
+      "update",
+      `version.json fetch failed · ${e instanceof Error ? e.message : String(e)}`,
+    );
     throw e;
   }
 }
@@ -125,13 +136,21 @@ export async function getDeviceStatus(serverUrl: string, deviceId: string): Prom
   return jsonOrThrow<DeviceStatus>(res);
 }
 
-export async function getDashboardDevices(serverUrl: string, dashboardToken?: string): Promise<DeviceStatus[]> {
-  const res = await fetch(join(serverUrl, "/v1/dashboard/devices"), { headers: dashboardHeaders(dashboardToken) });
+export async function getDashboardDevices(
+  serverUrl: string,
+  dashboardToken?: string,
+): Promise<DeviceStatus[]> {
+  const res = await fetch(join(serverUrl, "/v1/dashboard/devices"), {
+    headers: dashboardHeaders(dashboardToken),
+  });
   const body = await jsonOrThrow<DashboardDevicesResponse>(res);
   return body.devices;
 }
 
-export async function registerDevice(serverUrl: string, payload: RegisterPayload): Promise<RegisterResponse> {
+export async function registerDevice(
+  serverUrl: string,
+  payload: RegisterPayload,
+): Promise<RegisterResponse> {
   logger.info("device", `register → ${payload.deviceId}`);
   try {
     const res = await fetch(join(serverUrl, "/v1/device/register"), {
@@ -197,9 +216,23 @@ export const COMMANDS: { id: string; label: string; description: string; danger?
   { id: "FORCE_SPEAKER", label: "Force speaker", description: "Override route to builtin_speaker" },
   { id: "RESET_AUDIO_HAL", label: "Reset audio HAL", description: "Cycle the audio HAL pipeline" },
   { id: "TOGGLE_CAPTURE", label: "Toggle capture", description: "Restart playback capture engine" },
-  { id: "REINIT_PROJECTION", label: "Reinit projection", description: "Re-acquire MediaProjection token" },
+  {
+    id: "REINIT_PROJECTION",
+    label: "Reinit projection",
+    description: "Re-acquire MediaProjection token",
+  },
   { id: "REQUEST_STATUS", label: "Request status", description: "Force a telemetry frame now" },
   { id: "WAKE_UP_UPDATER", label: "Wake updater", description: "Trigger OTA version check" },
-  { id: "DUMP_FLIGHT_DATA", label: "Dump flight data", description: "Persist last-known-state to storage", danger: true },
-  { id: "ROTATE_KEYS", label: "Rotate keys", description: "Re-register and rotate command_secret", danger: true },
+  {
+    id: "DUMP_FLIGHT_DATA",
+    label: "Dump flight data",
+    description: "Persist last-known-state to storage",
+    danger: true,
+  },
+  {
+    id: "ROTATE_KEYS",
+    label: "Rotate keys",
+    description: "Re-register and rotate command_secret",
+    danger: true,
+  },
 ];

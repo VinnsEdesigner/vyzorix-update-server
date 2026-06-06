@@ -74,9 +74,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Vyzorix Console" },
-      { name: "description", content: "Vyzorix update server dashboard — monitor, command, and manage your Nokia C22 audio router fleet." },
+      {
+        name: "description",
+        content:
+          "Vyzorix update server dashboard — monitor, command, and manage your Nokia C22 audio router fleet.",
+      },
       { property: "og:title", content: "Vyzorix Console" },
-      { property: "og:description", content: "Update server control plane for VyzorixAudioRouter on Nokia C22." },
+      {
+        property: "og:description",
+        content: "Update server control plane for VyzorixAudioRouter on Nokia C22.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

@@ -59,7 +59,9 @@ export function AppSidebar() {
   const signOut = async () => {
     try {
       await logout(DEFAULT_SERVER_URL);
-    } catch {}
+    } catch {
+      // ignore logout error - sign out should still proceed
+    }
     toast.success("Signed out");
     navigate({ to: "/login", replace: true });
   };
@@ -103,7 +105,12 @@ export function AppSidebar() {
               {operator.email}
             </p>
           )}
-          <Button variant="ghost" size="sm" className="h-7 w-full justify-start gap-2 px-2 text-xs" onClick={signOut}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-full justify-start gap-2 px-2 text-xs"
+            onClick={signOut}
+          >
             <LogOut className="h-3.5 w-3.5" /> Sign out
           </Button>
         </div>

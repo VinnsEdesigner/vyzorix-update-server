@@ -2,9 +2,27 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Activity, ThermometerSun, Volume2, Wifi, Clock, ShieldAlert, Cpu, AudioLines } from "lucide-react";
+import {
+  Activity,
+  ThermometerSun,
+  Volume2,
+  Wifi,
+  Clock,
+  ShieldAlert,
+  Cpu,
+  AudioLines,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ReferenceLine,
+} from "recharts";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import { useStream } from "@/lib/device-stream-context";
@@ -19,7 +37,12 @@ export const Route = createFileRoute("/_app/dashboard")({
   component: DashboardPage,
 });
 
-const tip = { background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 };
+const tip = {
+  background: "var(--popover)",
+  border: "1px solid var(--border)",
+  borderRadius: 8,
+  fontSize: 12,
+};
 
 function deriveHealth(
   online: boolean,
@@ -62,7 +85,7 @@ function DashboardPage() {
     retry: false,
   });
 
-  const online = status.data?.online ?? (stream.state === "connected");
+  const online = status.data?.online ?? stream.state === "connected";
   const deviceHealth = deriveHealth(online, t?.riskScore, t?.thermalTemp, thresholds);
 
   const riskSeries = stream.telemetryHistory.map((f, i) => ({ i, v: f.riskScore ?? 0 }));
@@ -99,41 +122,82 @@ function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => <MetricSkeleton key={i} />)}
+            {Array.from({ length: 4 }).map((_, i) => (
+              <MetricSkeleton key={i} />
+            ))}
           </CardContent>
         </Card>
       ) : (
-      <Card>
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              {formatDeviceClass(status.data?.deviceClass)} <span className="text-xs font-normal text-muted-foreground">· {deviceId}</span>
-            </CardTitle>
-            <CardDescription>
-              VyzorixAudioRouter daemon · {status.data?.appVersion ?? version.data?.version ?? "unknown build"} · {status.data?.deviceClass ?? "unknown"}
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <StatusBadge status={deviceHealth} />
-            <Badge variant="outline" className="gap-1.5">
-              <Wifi className="h-3 w-3" />
-              {stream.state}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-4">
-          <Metric icon={Activity} label="Risk score" value={t?.riskScore != null ? `${t.riskScore}` : "—"} hint={t?.riskScore != null ? (t.riskScore >= thresholds.riskCrit ? "Critical — soft reboot predicted" : t.riskScore >= thresholds.riskWarn ? "Investigate" : "Healthy") : "Awaiting signals"} />
-          <Metric icon={ThermometerSun} label="Thermal" value={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"} hint={t?.thermalTemp != null ? (t.thermalTemp >= thresholds.thermalCrit ? "THROTTLE_HEAVY" : t.thermalTemp >= thresholds.thermalWarn ? "THROTTLE_LIGHT" : "NONE") : "Awaiting signals"} />
-          <Metric icon={Clock} label="Uptime" value={formatUptime(t?.uptime)} hint={`Last seen ${formatRelative(status.data?.lastSeen)}`} />
-          <Metric icon={Volume2} label="Speaker" value={t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"} hint={t?.activeDevice ?? "—"} />
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                {formatDeviceClass(status.data?.deviceClass)}{" "}
+                <span className="text-xs font-normal text-muted-foreground">· {deviceId}</span>
+              </CardTitle>
+              <CardDescription>
+                VyzorixAudioRouter daemon ·{" "}
+                {status.data?.appVersion ?? version.data?.version ?? "unknown build"} ·{" "}
+                {status.data?.deviceClass ?? "unknown"}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <StatusBadge status={deviceHealth} />
+              <Badge variant="outline" className="gap-1.5">
+                <Wifi className="h-3 w-3" />
+                {stream.state}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-4">
+            <Metric
+              icon={Activity}
+              label="Risk score"
+              value={t?.riskScore != null ? `${t.riskScore}` : "—"}
+              hint={
+                t?.riskScore != null
+                  ? t.riskScore >= thresholds.riskCrit
+                    ? "Critical — soft reboot predicted"
+                    : t.riskScore >= thresholds.riskWarn
+                      ? "Investigate"
+                      : "Healthy"
+                  : "Awaiting signals"
+              }
+            />
+            <Metric
+              icon={ThermometerSun}
+              label="Thermal"
+              value={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"}
+              hint={
+                t?.thermalTemp != null
+                  ? t.thermalTemp >= thresholds.thermalCrit
+                    ? "THROTTLE_HEAVY"
+                    : t.thermalTemp >= thresholds.thermalWarn
+                      ? "THROTTLE_LIGHT"
+                      : "NONE"
+                  : "Awaiting signals"
+              }
+            />
+            <Metric
+              icon={Clock}
+              label="Uptime"
+              value={formatUptime(t?.uptime)}
+              hint={`Last seen ${formatRelative(status.data?.lastSeen)}`}
+            />
+            <Metric
+              icon={Volume2}
+              label="Speaker"
+              value={t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"}
+              hint={t?.activeDevice ?? "—"}
+            />
+          </CardContent>
+        </Card>
       )}
 
       {/* Live signals */}
       {status.isLoading || health.isLoading ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          {[0, 1].map(i => (
+          {[0, 1].map((i) => (
             <Card key={i}>
               <CardHeader className="pb-2">
                 <div className="h-4 w-32 animate-pulse rounded-md bg-muted" />
@@ -145,73 +209,108 @@ function DashboardPage() {
           ))}
         </div>
       ) : (
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Risk score · live</CardTitle>
-            <CardDescription>{stream.telemetryHistory.length} frames buffered</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartShell data={riskSeries} thresholds={[thresholds.riskWarn, thresholds.riskCrit]} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Thermal · live (°C)</CardTitle>
-            <CardDescription>From DeviceSignal.thermalTemp</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartShell data={thermalSeries} thresholds={[thresholds.thermalWarn, thresholds.thermalCrit]} />
-          </CardContent>
-        </Card>
-      </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Risk score · live</CardTitle>
+              <CardDescription>{stream.telemetryHistory.length} frames buffered</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartShell
+                data={riskSeries}
+                thresholds={[thresholds.riskWarn, thresholds.riskCrit]}
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Thermal · live (°C)</CardTitle>
+              <CardDescription>From DeviceSignal.thermalTemp</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartShell
+                data={thermalSeries}
+                thresholds={[thresholds.thermalWarn, thresholds.thermalCrit]}
+              />
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Route + capture summary */}
       {status.isLoading || health.isLoading ? (
         <div className="grid gap-4 lg:grid-cols-3">
-          {[0, 1, 2].map(i => (
+          {[0, 1, 2].map((i) => (
             <Card key={i}>
-              <CardHeader><div className="h-4 w-28 animate-pulse rounded-md bg-muted" /></CardHeader>
+              <CardHeader>
+                <div className="h-4 w-28 animate-pulse rounded-md bg-muted" />
+              </CardHeader>
               <CardContent className="space-y-2">
-                {Array.from({ length: 3 }).map((_, j) => <div key={j} className="h-3 w-full animate-pulse rounded bg-muted" />)}
+                {Array.from({ length: 3 }).map((_, j) => (
+                  <div key={j} className="h-3 w-full animate-pulse rounded bg-muted" />
+                ))}
               </CardContent>
             </Card>
           ))}
         </div>
       ) : (
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><AudioLines className="h-4 w-4" /> Route state</CardTitle></CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <KV k="Active device" v={t?.activeDevice ?? "—"} />
-            <KV k="Audio mode" v={t?.audioMode != null ? `${t.audioMode}` : "—"} />
-            <KV k="Speaker" v={t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Cpu className="h-4 w-4" /> Capture buffer</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <Progress value={t?.bufferLevel ?? 0} />
-            <p className="text-xs text-muted-foreground">{t?.bufferLevel ?? 0}% fill · underrun threshold {thresholds.bufferWarn}%</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-base">Update server</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <KV k="Latest version" v={version.data?.version ?? "—"} />
-            <KV k="Version code" v={version.data?.version_code != null ? `${version.data.version_code}` : "—"} />
-            <KV k="Health" v={health.data?.ok ? "ok" : "down"} />
-            <KV k="Fleet devices" v={devices.data ? `${devices.data.length}` : "—"} />
-          </CardContent>
-        </Card>
-      </div>
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AudioLines className="h-4 w-4" /> Route state
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <KV k="Active device" v={t?.activeDevice ?? "—"} />
+              <KV k="Audio mode" v={t?.audioMode != null ? `${t.audioMode}` : "—"} />
+              <KV k="Speaker" v={t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Cpu className="h-4 w-4" /> Capture buffer
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Progress value={t?.bufferLevel ?? 0} />
+              <p className="text-xs text-muted-foreground">
+                {t?.bufferLevel ?? 0}% fill · underrun threshold {thresholds.bufferWarn}%
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Update server</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <KV k="Latest version" v={version.data?.version ?? "—"} />
+              <KV
+                k="Version code"
+                v={version.data?.version_code != null ? `${version.data.version_code}` : "—"}
+              />
+              <KV k="Health" v={health.data?.ok ? "ok" : "down"} />
+              <KV k="Fleet devices" v={devices.data ? `${devices.data.length}` : "—"} />
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
 }
 
-function Metric({ icon: Icon, label, value, hint }: { icon: typeof Activity; label: string; value: string; hint?: string }) {
+function Metric({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: typeof Activity;
+  label: string;
+  value: string;
+  hint?: string;
+}) {
   return (
     <div className="rounded-md border p-3">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -236,14 +335,22 @@ function KV({ k, v }: { k: string; v: string }) {
 // Format device class for display (e.g., "nokia_c22" -> "Nokia C22")
 function formatDeviceClass(deviceClass: string | undefined): string {
   if (!deviceClass) return "Unknown Device";
-  return deviceClass
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function ChartShell({ data, thresholds }: { data: { i: number; v: number }[]; thresholds?: number[] }) {
+function ChartShell({
+  data,
+  thresholds,
+}: {
+  data: { i: number; v: number }[];
+  thresholds?: number[];
+}) {
   if (data.length === 0) {
-    return <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">Waiting for live signals…</div>;
+    return (
+      <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
+        Waiting for live signals…
+      </div>
+    );
   }
   return (
     <div className="h-48 w-full">
@@ -256,7 +363,14 @@ function ChartShell({ data, thresholds }: { data: { i: number; v: number }[]; th
           {thresholds?.map((y) => (
             <ReferenceLine key={y} y={y} stroke="var(--muted-foreground)" strokeDasharray="3 3" />
           ))}
-          <Line type="monotone" dataKey="v" stroke="var(--primary)" dot={false} strokeWidth={2} isAnimationActive={false} />
+          <Line
+            type="monotone"
+            dataKey="v"
+            stroke="var(--primary)"
+            dot={false}
+            strokeWidth={2}
+            isAnimationActive={false}
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>

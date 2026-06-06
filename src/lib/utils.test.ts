@@ -25,7 +25,7 @@ describe("cn (class name merger)", () => {
   });
 
   it("handles clsx classValue objects", () => {
-    const result = cn({ "foo": true, "bar": false });
+    const result = cn({ foo: true, bar: false });
     expect(result).toBe("foo");
   });
 

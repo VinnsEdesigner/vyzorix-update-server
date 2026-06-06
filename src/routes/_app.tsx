@@ -40,9 +40,7 @@ function AppLayout() {
 
 function AppShell() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
-  const title =
-    titles[pathname] ??
-    (pathname.startsWith("/settings") ? "Settings" : "Vyzorix");
+  const title = titles[pathname] ?? (pathname.startsWith("/settings") ? "Settings" : "Vyzorix");
   const { state } = useStream();
   const isLogsPage = pathname === "/logs";
 

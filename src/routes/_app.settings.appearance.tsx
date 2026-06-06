@@ -21,11 +21,19 @@ function apply(theme: Theme) {
 
 function AppearanceSettings() {
   const [theme, setTheme] = useState<Theme>(() => {
-    try { return (localStorage.getItem(KEY) as Theme) || "system"; } catch { return "system"; }
+    try {
+      return (localStorage.getItem(KEY) as Theme) || "system";
+    } catch {
+      return "system";
+    }
   });
 
   useEffect(() => {
-    try { localStorage.setItem(KEY, theme); } catch {}
+    try {
+      localStorage.setItem(KEY, theme);
+    } catch {
+      // ignore storage error
+    }
     apply(theme);
   }, [theme]);
 
@@ -39,7 +47,13 @@ function AppearanceSettings() {
         <div className="space-y-2">
           <Label className="text-sm">Theme</Label>
           <div className="grid grid-cols-3 gap-2">
-            <ThemeBtn current={theme} value="system" label="System" icon={Monitor} onClick={setTheme} />
+            <ThemeBtn
+              current={theme}
+              value="system"
+              label="System"
+              icon={Monitor}
+              onClick={setTheme}
+            />
             <ThemeBtn current={theme} value="light" label="Light" icon={Sun} onClick={setTheme} />
             <ThemeBtn current={theme} value="dark" label="Dark" icon={Moon} onClick={setTheme} />
           </div>
@@ -49,9 +63,25 @@ function AppearanceSettings() {
   );
 }
 
-function ThemeBtn({ current, value, label, icon: Icon, onClick }: { current: Theme; value: Theme; label: string; icon: typeof Monitor; onClick: (v: Theme) => void }) {
+function ThemeBtn({
+  current,
+  value,
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  current: Theme;
+  value: Theme;
+  label: string;
+  icon: typeof Monitor;
+  onClick: (v: Theme) => void;
+}) {
   return (
-    <Button variant={current === value ? "default" : "outline"} className="h-20 flex-col gap-2" onClick={() => onClick(value)}>
+    <Button
+      variant={current === value ? "default" : "outline"}
+      className="h-20 flex-col gap-2"
+      onClick={() => onClick(value)}
+    >
       <Icon className="h-5 w-5" />
       <span className="text-xs">{label}</span>
     </Button>

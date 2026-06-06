@@ -5,11 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Zap, Download, ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import { dispatchCommand, getVersion, headApk } from "@/lib/vyzorix-api";
@@ -41,10 +37,20 @@ function UpdatesPage() {
 
   const wake = async () => {
     try {
-      const res = await dispatchCommand(serverUrl, deviceId, "WAKE_UP_UPDATER", undefined, dashboardToken);
-      toast.success(`WAKE_UP_UPDATER → ${res.delivery}`, { description: `dispatch ${res.dispatchId}` });
+      const res = await dispatchCommand(
+        serverUrl,
+        deviceId,
+        "WAKE_UP_UPDATER",
+        undefined,
+        dashboardToken,
+      );
+      toast.success(`WAKE_UP_UPDATER → ${res.delivery}`, {
+        description: `dispatch ${res.dispatchId}`,
+      });
     } catch (e) {
-      toast.error("WAKE_UP_UPDATER failed", { description: e instanceof Error ? e.message : String(e) });
+      toast.error("WAKE_UP_UPDATER failed", {
+        description: e instanceof Error ? e.message : String(e),
+      });
     }
   };
 
@@ -55,17 +61,27 @@ function UpdatesPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               Current release
-              {v ? <Badge variant="default">live · {v.version}</Badge> : <Badge variant="outline">loading</Badge>}
+              {v ? (
+                <Badge variant="default">live · {v.version}</Badge>
+              ) : (
+                <Badge variant="outline">loading</Badge>
+              )}
             </CardTitle>
             <CardDescription>
-              Live manifest from <code className="text-xs">{serverUrl}/api/v1/version</code> — no cache, fetched on render
+              Live manifest from <code className="text-xs">{serverUrl}/api/v1/version</code> — no
+              cache, fetched on render
             </CardDescription>
           </CardHeader>
           <CardContent>
             {version.isError ? (
               <div className="space-y-2">
-                <p className="text-sm text-destructive">Failed to load version.json — {(version.error as Error).message}</p>
-                <p className="text-xs text-muted-foreground">Start the Go server with <code>go run .</code>, or update the URL in Settings → Connection.</p>
+                <p className="text-sm text-destructive">
+                  Failed to load version.json — {(version.error as Error).message}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Start the Go server with <code>go run .</code>, or update the URL in Settings →
+                  Connection.
+                </p>
               </div>
             ) : version.isLoading || !v ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
@@ -75,7 +91,16 @@ function UpdatesPage() {
                 <KV k="Version code" v={`${v.version_code}`} />
                 <KV k="APK file" v={v.apk_filename} />
                 <KV k="APK size (manifest)" v={formatBytes(v.apk_size_bytes)} />
-                <KV k="APK size (HEAD)" v={apkSize.isLoading ? "checking…" : apkSize.data == null ? "—" : formatBytes(apkSize.data)} />
+                <KV
+                  k="APK size (HEAD)"
+                  v={
+                    apkSize.isLoading
+                      ? "checking…"
+                      : apkSize.data == null
+                        ? "—"
+                        : formatBytes(apkSize.data)
+                  }
+                />
                 <KV k="SHA-256" v={shortHash(v.apk_sha256, 8, 8)} />
               </div>
             )}
@@ -114,7 +139,9 @@ function UpdatesPage() {
           <div className="mt-4 flex items-center gap-2">
             <Badge variant="outline">phase 1.5</Badge>
             <Badge variant="outline">real server</Badge>
-            <span className="text-xs text-muted-foreground">Render-backed server keeps the Android mock contract paths stable.</span>
+            <span className="text-xs text-muted-foreground">
+              Render-backed server keeps the Android mock contract paths stable.
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -122,7 +149,9 @@ function UpdatesPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Reference: release update format</CardTitle>
-          <CardDescription>What a release entry should look like when the production update server is online</CardDescription>
+          <CardDescription>
+            What a release entry should look like when the production update server is online
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Collapsible>
@@ -141,7 +170,8 @@ function UpdatesPage() {
   "release_notes": "• Fix VoIP route loss after Bluetooth disconnect on Nokia C22\\n• Reduce thermal mitigation false positives at 44°C\\n• Audio HAL recycle now persists ProjectionToken state\\n• Updater wake-up FCM payload now versioned (schema v3)"
 }`}</pre>
               <p className="text-xs text-muted-foreground">
-                Live values you see above come from the same shape, just fetched from <code>{serverUrl}/api/v1/version</code>.
+                Live values you see above come from the same shape, just fetched from{" "}
+                <code>{serverUrl}/api/v1/version</code>.
               </p>
             </CollapsibleContent>
           </Collapsible>

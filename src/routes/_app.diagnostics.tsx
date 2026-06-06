@@ -2,7 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ReferenceLine,
+} from "recharts";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { Terminal } from "lucide-react";
@@ -17,7 +26,12 @@ export const Route = createFileRoute("/_app/diagnostics")({
   component: DiagnosticsPage,
 });
 
-const tip = { background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 };
+const tip = {
+  background: "var(--popover)",
+  border: "1px solid var(--border)",
+  borderRadius: 8,
+  fontSize: 12,
+};
 
 function DiagnosticsPage() {
   const { serverUrl, deviceId, thresholds, dashboardToken, strictHmac } = useVyzorixConfig();
@@ -27,7 +41,14 @@ function DiagnosticsPage() {
   const send = async (cmd: string) => {
     setPending(cmd);
     try {
-      const res = await dispatchCommand(serverUrl, deviceId, cmd, undefined, dashboardToken, strictHmac);
+      const res = await dispatchCommand(
+        serverUrl,
+        deviceId,
+        cmd,
+        undefined,
+        dashboardToken,
+        strictHmac,
+      );
       toast.success(`${cmd} → ${res.delivery}`, { description: `dispatch ${res.dispatchId}` });
     } catch (e) {
       toast.error(`${cmd} failed`, { description: e instanceof Error ? e.message : String(e) });
@@ -73,15 +94,26 @@ function DiagnosticsPage() {
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <Stat label="Connection" value={stream.state} />
             <Stat label="Frames buffered" value={`${stream.telemetryHistory.length}`} />
-            <Stat label="Last signal" value={formatRelative(stream.lastTelemetry?.timestamp ?? undefined)} />
+            <Stat
+              label="Last signal"
+              value={formatRelative(stream.lastTelemetry?.timestamp ?? undefined)}
+            />
             <Stat label="Last error" value={stream.error ?? "—"} />
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Risk score" data={risk} thresholds={[thresholds.riskWarn, thresholds.riskCrit]} />
-        <ChartCard title="Thermal (°C)" data={thermal} thresholds={[thresholds.thermalWarn, thresholds.thermalCrit]} />
+        <ChartCard
+          title="Risk score"
+          data={risk}
+          thresholds={[thresholds.riskWarn, thresholds.riskCrit]}
+        />
+        <ChartCard
+          title="Thermal (°C)"
+          data={thermal}
+          thresholds={[thresholds.thermalWarn, thresholds.thermalCrit]}
+        />
         <ChartCard title="Buffer level (%)" data={buffer} thresholds={[thresholds.bufferWarn]} />
         <ChartCard title="Audio mode" data={audioMode} />
       </div>
@@ -90,9 +122,15 @@ function DiagnosticsPage() {
         <CardContent className="flex items-center justify-between gap-3 py-4 text-sm">
           <div className="flex items-center gap-2">
             <Terminal className="h-4 w-4 text-muted-foreground" />
-            <span>All service logs now stream into the docked log console at the bottom of every page.</span>
+            <span>
+              All service logs now stream into the docked log console at the bottom of every page.
+            </span>
           </div>
-          <Link to="/logs"><Button variant="outline" size="sm">Open full page logs</Button></Link>
+          <Link to="/logs">
+            <Button variant="outline" size="sm">
+              Open full page logs
+            </Button>
+          </Link>
         </CardContent>
       </Card>
     </div>
@@ -108,13 +146,25 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ChartCard({ title, data, thresholds }: { title: string; data: { i: number; v: number }[]; thresholds?: number[] }) {
+function ChartCard({
+  title,
+  data,
+  thresholds,
+}: {
+  title: string;
+  data: { i: number; v: number }[];
+  thresholds?: number[];
+}) {
   return (
     <Card>
-      <CardHeader className="pb-2"><CardTitle className="text-base">{title}</CardTitle></CardHeader>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">Waiting for signals…</div>
+          <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
+            Waiting for signals…
+          </div>
         ) : (
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -124,9 +174,21 @@ function ChartCard({ title, data, thresholds }: { title: string; data: { i: numb
                 <YAxis stroke="var(--muted-foreground)" fontSize={10} />
                 <Tooltip contentStyle={tip} />
                 {thresholds?.map((y) => (
-                  <ReferenceLine key={y} y={y} stroke="var(--muted-foreground)" strokeDasharray="3 3" />
+                  <ReferenceLine
+                    key={y}
+                    y={y}
+                    stroke="var(--muted-foreground)"
+                    strokeDasharray="3 3"
+                  />
                 ))}
-                <Line type="monotone" dataKey="v" stroke="var(--primary)" dot={false} strokeWidth={2} isAnimationActive={false} />
+                <Line
+                  type="monotone"
+                  dataKey="v"
+                  stroke="var(--primary)"
+                  dot={false}
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>

@@ -72,7 +72,7 @@ describe("formatBytes", () => {
   });
 
   it("returns — for null", () => {
-    expect(formatBytes(null as any)).toBe("—");
+    expect(formatBytes(null as unknown as number)).toBe("—");
   });
 
   it("formats bytes", () => {

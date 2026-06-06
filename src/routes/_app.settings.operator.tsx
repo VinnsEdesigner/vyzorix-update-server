@@ -56,7 +56,9 @@ function OperatorSettings() {
       setLastSavedName(nameToSave.trim());
       toast.success("Display name saved");
     } catch (e) {
-      toast.error("Failed to save name", { description: e instanceof Error ? e.message : "try again" });
+      toast.error("Failed to save name", {
+        description: e instanceof Error ? e.message : "try again",
+      });
     } finally {
       setSavingName(false);
     }
@@ -71,7 +73,7 @@ function OperatorSettings() {
     }
 
     const trimmedName = name.trim();
-    
+
     // Don't save if empty or unchanged from last saved
     if (!trimmedName || trimmedName === lastSavedName) {
       return;
@@ -134,22 +136,27 @@ function OperatorSettings() {
                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
               )}
             </div>
-            {isUnsaved && (
-              <p className="text-xs text-rose-500">Saving…</p>
-            )}
-            {isSaved && (
-              <p className="text-xs text-muted-foreground">Saved</p>
-            )}
+            {isUnsaved && <p className="text-xs text-rose-500">Saving…</p>}
+            {isSaved && <p className="text-xs text-muted-foreground">Saved</p>}
           </div>
           <div className="space-y-1.5">
             <Label>Email</Label>
             <Input value={email} readOnly disabled className="bg-muted/50 cursor-not-allowed" />
-            <p className="text-xs text-muted-foreground">Set during registration. Cannot be changed.</p>
+            <p className="text-xs text-muted-foreground">
+              Set during registration. Cannot be changed.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label>Role</Label>
-            <Input value={role} readOnly disabled className="bg-muted/50 cursor-not-allowed capitalize" />
-            <p className="text-xs text-muted-foreground">Server-controlled. Promotions require a super_admin.</p>
+            <Input
+              value={role}
+              readOnly
+              disabled
+              className="bg-muted/50 cursor-not-allowed capitalize"
+            />
+            <p className="text-xs text-muted-foreground">
+              Server-controlled. Promotions require a super_admin.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -161,8 +168,14 @@ function OperatorSettings() {
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <RoleRow allowed={true} label="View dashboard, alerts, signals" />
-          <RoleRow allowed={role !== "viewer"} label="Dispatch FORCE_SPEAKER, RESET_AUDIO_HAL, REQUEST_STATUS" />
-          <RoleRow allowed={role === "super_admin"} label="DUMP_FLIGHT_DATA, ROTATE_KEYS, edit thresholds" />
+          <RoleRow
+            allowed={role !== "viewer"}
+            label="Dispatch FORCE_SPEAKER, RESET_AUDIO_HAL, REQUEST_STATUS"
+          />
+          <RoleRow
+            allowed={role === "super_admin"}
+            label="DUMP_FLIGHT_DATA, ROTATE_KEYS, edit thresholds"
+          />
           <RoleRow allowed={role === "super_admin"} label="Reset all dashboard configuration" />
         </CardContent>
       </Card>
@@ -176,7 +189,9 @@ function OperatorSettings() {
           <div className="flex items-start justify-between gap-3 rounded-md border p-3">
             <div>
               <p className="text-sm font-medium">Toast notifications on threshold breach</p>
-              <p className="text-xs text-muted-foreground">Pop a toast every time risk or thermal crosses the critical threshold</p>
+              <p className="text-xs text-muted-foreground">
+                Pop a toast every time risk or thermal crosses the critical threshold
+              </p>
             </div>
             <Switch checked={notifications} onCheckedChange={setNotifications} />
           </div>

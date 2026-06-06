@@ -84,9 +84,7 @@ function ResetPasswordPage() {
             <Lock className="h-5 w-5" />
           </div>
           <CardTitle>Set new password</CardTitle>
-          <CardDescription>
-            Enter your new password below.
-          </CardDescription>
+          <CardDescription>Enter your new password below.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {token ? (
@@ -103,9 +101,7 @@ function ResetPasswordPage() {
                   minLength={8}
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  At least 8 characters
-                </p>
+                <p className="text-xs text-muted-foreground">At least 8 characters</p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="confirm">Confirm password</Label>

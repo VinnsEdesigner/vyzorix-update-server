@@ -30,17 +30,33 @@ function NotificationsSettings() {
       </CardHeader>
       <CardContent className="space-y-4">
         <Row label="Toast notifications" hint="In-app sonner toasts for command results and errors">
-          <Switch checked={notificationsEnabled} onCheckedChange={(v) => update({ notificationsEnabled: v })} />
+          <Switch
+            checked={notificationsEnabled}
+            onCheckedChange={(v) => update({ notificationsEnabled: v })}
+          />
         </Row>
-        <Row label="Browser notifications" hint="Native OS pushes for critical alerts (requires permission)">
-          <Button variant="outline" size="sm" onClick={requestBrowser}>Request permission</Button>
+        <Row
+          label="Browser notifications"
+          hint="Native OS pushes for critical alerts (requires permission)"
+        >
+          <Button variant="outline" size="sm" onClick={requestBrowser}>
+            Request permission
+          </Button>
         </Row>
       </CardContent>
     </Card>
   );
 }
 
-function Row({ label, hint, children }: { label: string; hint: string; children: React.ReactNode }) {
+function Row({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-md border p-3">
       <div className="space-y-0.5">

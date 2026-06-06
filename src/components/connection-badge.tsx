@@ -1,14 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 
-export type ConnectionState =
-  | "connecting"
-  | "connected"
-  | "reconnecting"
-  | "disconnected"
-  | "idle";
+export type ConnectionState = "connecting" | "connected" | "reconnecting" | "disconnected" | "idle";
 
 export function ConnectionBadge({ state = "idle" }: { state?: ConnectionState }) {
-  const map: Record<ConnectionState, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dot: string }> = {
+  const map: Record<
+    ConnectionState,
+    { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dot: string }
+  > = {
     connected: { label: "WS · connected", variant: "default", dot: "bg-primary" },
     connecting: { label: "WS · connecting", variant: "secondary", dot: "bg-yellow-500" },
     reconnecting: { label: "WS · reconnecting", variant: "secondary", dot: "bg-yellow-500" },

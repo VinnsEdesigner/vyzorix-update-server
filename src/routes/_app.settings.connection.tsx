@@ -47,17 +47,17 @@ function ConnectionSettings() {
 
   const validateForm = (): boolean => {
     const trimmed = serverUrl.trim();
-    
+
     if (!trimmed) {
       setServerUrlError("Server URL is required");
       return false;
     }
-    
+
     if (!isValidServerUrl(trimmed)) {
       setServerUrlError("Invalid URL. Include http:// or https:// (e.g., http://localhost:3000)");
       return false;
     }
-    
+
     return true;
   };
 
@@ -66,7 +66,7 @@ function ConnectionSettings() {
       toast.error("Please fix the server URL before saving");
       return;
     }
-    
+
     cfg.update({
       serverUrl: serverUrl.trim(),
       deviceId: deviceId.trim() || DEFAULT_DEVICE_ID,
@@ -88,9 +88,9 @@ function ConnectionSettings() {
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="endpoint">Base URL</Label>
-            <Input 
-              id="endpoint" 
-              value={serverUrl} 
+            <Input
+              id="endpoint"
+              value={serverUrl}
               onChange={(e) => handleServerUrlChange(e.target.value)}
               placeholder={DEFAULT_SERVER_URL}
               className={serverUrlError ? "border-destructive" : ""}
@@ -98,13 +98,17 @@ function ConnectionSettings() {
             {serverUrlError ? (
               <p className="text-xs text-destructive">{serverUrlError}</p>
             ) : (
-              <p className="text-xs text-muted-foreground">REST + WSS endpoints are derived from this URL.</p>
+              <p className="text-xs text-muted-foreground">
+                REST + WSS endpoints are derived from this URL.
+              </p>
             )}
           </div>
           <Separator />
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Health check</span>
-            <Badge variant={health.data?.ok ? "default" : health.isError ? "destructive" : "secondary"}>
+            <Badge
+              variant={health.data?.ok ? "default" : health.isError ? "destructive" : "secondary"}
+            >
               {health.data?.ok ? "ok" : health.isError ? "down" : "checking"}
             </Badge>
           </div>
@@ -114,13 +118,22 @@ function ConnectionSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Target device</CardTitle>
-          <CardDescription>Single Nokia C22 — Phase 1 is deliberately scoped to one device</CardDescription>
+          <CardDescription>
+            Single Nokia C22 — Phase 1 is deliberately scoped to one device
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="device">deviceId</Label>
-            <Input id="device" value={deviceId} onChange={(e) => setDeviceId(e.target.value)} placeholder={DEFAULT_DEVICE_ID} />
-            <p className="text-xs text-muted-foreground">Must match the value the Android daemon registers with.</p>
+            <Input
+              id="device"
+              value={deviceId}
+              onChange={(e) => setDeviceId(e.target.value)}
+              placeholder={DEFAULT_DEVICE_ID}
+            />
+            <p className="text-xs text-muted-foreground">
+              Must match the value the Android daemon registers with.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -134,13 +147,29 @@ function ConnectionSettings() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="timeout">Request timeout (ms)</Label>
-              <Input id="timeout" type="number" min={500} max={60000} step={500} value={timeout}
-                onChange={(e) => setTimeout(Number(e.target.value))} />
+              <Input
+                id="timeout"
+                type="number"
+                min={500}
+                max={60000}
+                step={500}
+                value={timeout}
+                onChange={(e) => setTimeout(Number(e.target.value))}
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="dashboard-token">Dashboard token</Label>
-              <Input id="dashboard-token" type="password" value={dashboardToken} onChange={(e) => setDashboardToken(e.target.value)} placeholder="TOKEN_SECRET from Render" />
-              <p className="text-xs text-muted-foreground">Used as Authorization/X-Vyzorix-Token for production dashboard endpoints and commands.</p>
+              <Input
+                id="dashboard-token"
+                type="password"
+                value={dashboardToken}
+                onChange={(e) => setDashboardToken(e.target.value)}
+                placeholder="TOKEN_SECRET from Render"
+              />
+              <p className="text-xs text-muted-foreground">
+                Used as Authorization/X-Vyzorix-Token for production dashboard endpoints and
+                commands.
+              </p>
             </div>
             <ToggleRow
               label="Auto-reconnect WebSocket"
@@ -164,7 +193,17 @@ function ConnectionSettings() {
   );
 }
 
-function ToggleRow({ label, hint, checked, onChange }: { label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
+function ToggleRow({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <div className="flex items-start justify-between gap-3 rounded-md border p-3">
       <div className="space-y-0.5">
