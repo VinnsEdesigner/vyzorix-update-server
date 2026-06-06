@@ -101,8 +101,9 @@ func (ac *AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	// Validate password complexity
-	if err := security.ValidatePassword(req.Password, security.DefaultPasswordPolicy); err != nil {
+	// Validate password complexity using user-friendly policy
+	// This allows passwords without special characters (important for email passwords)
+	if err := security.ValidatePassword(req.Password, security.UserPasswordPolicy); err != nil {
 		ac.log.Warn("register: weak password", "email", req.Email)
 		c.JSON(400, models.ErrorResponse{Error: "bad_password", Message: err.Error()})
 		return
