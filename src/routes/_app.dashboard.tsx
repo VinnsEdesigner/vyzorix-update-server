@@ -141,7 +141,7 @@ function DashboardPage() {
               </CardTitle>
               <CardDescription>
                 {(status.data?.appVersion ?? version.data?.version)
-                  ? `VyzorixAudioRouter daemon · ${status.data.appVersion ?? version.data?.version}`
+                  ? `VyzorixAudioRouter daemon · ${status.data?.appVersion ?? version.data?.version}`
                   : "Not connected to device"}
               </CardDescription>
             </div>
