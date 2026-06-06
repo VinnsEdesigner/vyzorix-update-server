@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
-import { getDeviceStatus, registerDevice } from "@/lib/vyzorix-api";
+import { getDeviceStatus, registerDevice, type DeviceStatus } from "@/lib/vyzorix-api";
 import { useStream } from "@/lib/device-stream-context";
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
 import { formatRelative, formatUptime, shortHash } from "@/lib/format";
@@ -121,48 +121,20 @@ function DevicePage() {
 
       <Separator />
 
-      <RegisterPanel />
+      <RegisterPanel deviceStatus={status.data ?? null} />
     </div>
   );
 }
 
-function RegisterPanel() {
+function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }) {
   const { serverUrl, deviceId } = useVyzorixConfig();
-  // Persist the registration form across navigations — previously a fresh
-  // random fid/token was generated every mount, which is why "nothing seemed
-  // to save".
-  const [firebaseInstallId, setFid] = useState(() => {
-    const k = `vyzorix.register.fid`;
-    try {
-      return localStorage.getItem(k) ?? "";
-    } catch {
-      return "";
-    }
-  });
-  const [fcmToken, setFcm] = useState(() => {
-    const k = `vyzorix.register.fcm`;
-    try {
-      return localStorage.getItem(k) ?? "";
-    } catch {
-      return "";
-    }
-  });
-  const [appVersion, setAv] = useState(() => {
-    const k = `vyzorix.register.appVersion`;
-    try {
-      return localStorage.getItem(k) ?? "";
-    } catch {
-      return "";
-    }
-  });
-  const [deviceClass, setDc] = useState(() => {
-    const k = `vyzorix.register.deviceClass`;
-    try {
-      return localStorage.getItem(k) ?? "";
-    } catch {
-      return "";
-    }
-  });
+
+  // Load defaults from server status (persisted in DB) instead of localStorage.
+  // Only keep command_secret in localStorage since it's returned once on registration.
+  const [firebaseInstallId, setFid] = useState(deviceStatus?.firebaseInstallId ?? "");
+  const [fcmToken, setFcm] = useState(deviceStatus?.fcmToken ?? "");
+  const [appVersion, setAv] = useState(deviceStatus?.appVersion ?? "");
+  const [deviceClass, setDc] = useState(deviceStatus?.deviceClass ?? "");
   const [secret, setSecret] = useState<string | null>(() => {
     try {
       return localStorage.getItem(`vyzorix.register.secret.${deviceId}`);
@@ -171,6 +143,16 @@ function RegisterPanel() {
     }
   });
   const [busy, setBusy] = useState(false);
+
+  // Sync form fields when server status loads (e.g. after re-registration)
+  useEffect(() => {
+    if (deviceStatus) {
+      setFid(deviceStatus.firebaseInstallId ?? "");
+      setFcm(deviceStatus.fcmToken ?? "");
+      setAv(deviceStatus.appVersion ?? "");
+      setDc(deviceStatus.deviceClass ?? "");
+    }
+  }, [deviceStatus]);
 
   const submit = async () => {
     if (!deviceId.trim()) {
@@ -213,7 +195,8 @@ function RegisterPanel() {
       <CardHeader>
         <CardTitle className="text-base">Register device</CardTitle>
         <CardDescription>
-          POST /v1/device/register · idempotent on (deviceId, firebaseInstallId)
+          POST /v1/device/register · idempotent on (deviceId, firebaseInstallId) · fields
+          pre-filled from server when device is registered
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
