@@ -176,7 +176,9 @@ function ConnectionSettings() {
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Transport</CardTitle>
-          <CardDescription>How the dashboard talks to the server — saved to server, persists across devices</CardDescription>
+          <CardDescription>
+            How the dashboard talks to the server — saved to server, persists across devices
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
