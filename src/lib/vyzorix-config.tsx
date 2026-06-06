@@ -5,7 +5,16 @@ export const DEFAULT_SERVER_URL = "http://localhost:3000";
 export const DEFAULT_DEVICE_ID = "";
 
 const STORAGE_KEY = "vyzorix.config.v2";
-const OPERATOR_KEY = "vyz.auth.operator";
+
+// Settings that come from the server — do NOT persist to localStorage.
+const SERVER_KEYS = [
+  "autoReconnect",
+  "strictHmac",
+  "notificationsEnabled",
+  "thresholds",
+] as const;
+
+type ServerKey = (typeof SERVER_KEYS)[number];
 
 export interface Thresholds {
   riskWarn: number;
@@ -60,6 +69,7 @@ function loadInitial(): VyzorixSettings {
       ...DEFAULT_SETTINGS,
       ...parsed,
       operator: { ...DEFAULT_SETTINGS.operator, ...(parsed.operator ?? {}) },
+      // Server-backed settings fall back to defaults if not in localStorage
       thresholds: { ...DEFAULT_SETTINGS.thresholds, ...(parsed.thresholds ?? {}) },
     } as VyzorixSettings;
   } catch {
@@ -82,9 +92,18 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }) {
   // when navigating between pages).
   const [s, setS] = useState<VyzorixSettings>(loadInitial);
 
+  // Only persist browser-local settings to localStorage.
+  // Server-backed settings (thresholds, strictHmac, autoReconnect, notificationsEnabled)
+  // are loaded from the server on mount and should not pollute localStorage.
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+      const local: Partial<VyzorixSettings> = {};
+      for (const [k, v] of Object.entries(s)) {
+        if (!SERVER_KEYS.includes(k as ServerKey)) {
+          (local as Record<string, unknown>)[k] = v;
+        }
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
     } catch {
       // ignore storage error
     }
@@ -93,7 +112,7 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const syncOperator = () => {
       try {
-        const raw = localStorage.getItem(OPERATOR_KEY);
+        const raw = localStorage.getItem("vyz.auth.operator");
         if (!raw) return;
         const stored = JSON.parse(raw) as {
           id: string;
@@ -108,7 +127,7 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }) {
             prev.operator.name === stored.name &&
             prev.operator.role === stored.role
           ) {
-            return prev; // no change, skip re-render
+            return prev;
           }
           return {
             ...prev,
