@@ -143,7 +143,16 @@ func TestWebSocketRoundTrip(t *testing.T) {
 
 	// Push a command via the store directly (sidesteps HMAC for the test).
 	if !srv.store.dispatch("dev-ws", commandFrame{Type: "command", DispatchID: "d1", Command: "PING"}) {
-		t.Fatal("dispatch returned false; expected delivery via WSS")
+		// Device not yet connected - wait and retry
+		for i := 0; i < 10; i++ {
+			time.Sleep(100 * time.Millisecond)
+			if srv.store.dispatch("dev-ws", commandFrame{Type: "command", DispatchID: "d1", Command: "PING"}) {
+				break
+			}
+		}
+		if !srv.store.dispatch("dev-ws", commandFrame{Type: "command", DispatchID: "d1", Command: "PING"}) {
+			t.Fatal("dispatch returned false; expected delivery via WSS")
+		}
 	}
 
 	// Wait for the dispatch to be delivered via WebSocket
