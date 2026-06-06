@@ -30,6 +30,7 @@ type Server struct {
 	Notifier         fcm.Notifier
 	HMAC             security.Verifier
 	Limiter          *middleware.RateLimiter
+	AuthLimiter      *middleware.AuthRateLimiter // Stricter limits for auth endpoints
 	jwtCtrl          *AuthController
 	originValidator  *security.OriginValidator
 	upgrader         websocket.Upgrader
@@ -43,6 +44,7 @@ func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub, not
 		Secret: func(id string) (string, bool) { return st.Secret(context.Background(), id) },
 	}
 	s.Limiter = middleware.NewRateLimiter(100, time.Minute)
+	s.AuthLimiter = middleware.NewAuthRateLimiter(middleware.DefaultAuthRateLimits)
 	s.jwtCtrl = NewAuthController(log, cfg, st)
 
 	// Initialize origin validator
@@ -79,15 +81,16 @@ func (s *Server) Engine() *gin.Engine {
 	public.Use(s.Limiter.Middleware())
 	
 	// Auth routes (no JWT required for login/register; JWT required for /me and logout)
+	// Apply stricter rate limits for auth endpoints to prevent brute force attacks
 	auth := public.Group("/v1/auth")
 	auth.GET("/google", s.jwtCtrl.GoogleLoginRedirect) // triggers OAuth redirect
 	auth.GET("/google/callback", s.jwtCtrl.GoogleCallback) // OAuth callback from Google
-	auth.POST("/login", s.jwtCtrl.Login)
-	auth.POST("/register", s.jwtCtrl.Register)
+	auth.POST("/login", s.AuthLimiter.LoginMiddleware(), s.jwtCtrl.Login) // 10/min limit
+	auth.POST("/register", s.AuthLimiter.RegisterMiddleware(), s.jwtCtrl.Register) // 5/min limit
 	// Email verification and password reset (no JWT required)
 	auth.POST("/verify-email", s.jwtCtrl.VerifyEmail)
-	auth.POST("/resend-verification", s.jwtCtrl.ResendVerification)
-	auth.POST("/forgot-password", s.jwtCtrl.ForgotPassword)
+	auth.POST("/resend-verification", s.AuthLimiter.PasswordResetMiddleware(), s.jwtCtrl.ResendVerification) // 3/min limit
+	auth.POST("/forgot-password", s.AuthLimiter.PasswordResetMiddleware(), s.jwtCtrl.ForgotPassword) // 3/min limit
 	auth.POST("/reset-password", s.jwtCtrl.ResetPassword)
 	// /me and /logout require JWT — middleware applied inline
 	auth.GET("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Me)
