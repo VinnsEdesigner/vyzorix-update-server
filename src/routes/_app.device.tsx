@@ -20,6 +20,14 @@ export const Route = createFileRoute("/_app/device")({
   component: DevicePage,
 });
 
+// Format device class for display (e.g., "nokia_c22" -> "Nokia C22")
+function formatDeviceClass(deviceClass: string | undefined): string {
+  if (!deviceClass) return "Unknown Device";
+  return deviceClass
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function DevicePage() {
   const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
   const stream = useStream();
@@ -41,6 +49,8 @@ function DevicePage() {
       : (t?.riskScore ?? 0) >= thresholds.riskWarn || (t?.thermalTemp ?? 0) >= thresholds.thermalWarn
       ? "warning"
       : "online";
+
+  const deviceDisplayName = formatDeviceClass(status.data?.deviceClass);
 
   return (
     <div className="space-y-4">
@@ -70,7 +80,7 @@ function DevicePage() {
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <CardTitle>Nokia C22 — primary</CardTitle>
+            <CardTitle>{deviceDisplayName} — primary</CardTitle>
             <CardDescription>{deviceId}</CardDescription>
           </div>
           <StatusBadge status={health} />
