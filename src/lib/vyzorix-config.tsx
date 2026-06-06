@@ -13,6 +13,7 @@ export interface Thresholds {
   thermalWarn: number;
   thermalCrit: number;
   bufferWarn: number;
+  bufferCrit: number;
 }
 
 export interface Operator {
@@ -46,7 +47,7 @@ export const DEFAULT_SETTINGS: VyzorixSettings = {
   dashboardToken: "",
   notificationsEnabled: true,
   operator: { name: "", role: "operator", email: "" },
-  thresholds: { riskWarn: 50, riskCrit: 75, thermalWarn: 45, thermalCrit: 55, bufferWarn: 50 },
+  thresholds: { riskWarn: 50, riskCrit: 75, thermalWarn: 45, thermalCrit: 55, bufferWarn: 50, bufferCrit: 80 },
 };
 
 function loadInitial(): VyzorixSettings {
