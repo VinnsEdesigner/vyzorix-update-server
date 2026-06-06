@@ -65,7 +65,8 @@ function NotificationsSettings() {
       <CardHeader>
         <CardTitle className="text-base">Notifications</CardTitle>
         <CardDescription>
-          Alert sounds, browser pushes, and toast behaviour. Saved to server — persists across devices.
+          Alert sounds, browser pushes, and toast behaviour. Saved to server — persists across
+          devices.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
