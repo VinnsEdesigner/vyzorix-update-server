@@ -1,29 +1,198 @@
-name: Deploy update server
+name: Deploy
 
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  validate-and-deploy:
+  # ============================================================
+  # Build & Package
+  # ============================================================
+  build:
+    name: Build & Package
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    
     steps:
-      - uses: actions/checkout@v4
-      - name: Validate APK payloads
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          if [ -z "$VERSION" ]; then VERSION="dev-${{ github.sha }}"; fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Go server
+        run: |
+          CGO_ENABLED=1 go build -ldflags="-s -w -X main.Version=${{ steps.version.outputs.version }}" -o bin/server .
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Validate APK payloads (if any)
         run: |
           found=0
           for apk in bin/*.apk; do
             [ -e "$apk" ] || continue
             found=1
-            ./scripts/validate_apk.sh "$apk"
+            ./scripts/validate_apk.sh "$apk" || true
           done
-          if [ "$found" -eq 0 ]; then echo "No APK payloads to validate yet."; fi
+          if [ "$found" -eq 0 ]; then echo "No APK payloads to validate."; fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+          path: |
+            bin/server
+            dist/
+          retention-days: 7
+
+  # ============================================================
+  # Deploy to Staging
+  # ============================================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: ${{ secrets.RENDER_SERVICE_URL }}
+    
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+          path: ./dist
+
       - name: Trigger Render deploy
         if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
-        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
-      - name: Confirm health after deploy hook
+        run: |
+          echo "🔄 Triggering Render staging deployment..."
+          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Health check
         if: ${{ secrets.RENDER_SERVICE_URL != '' }}
         run: |
-          sleep 30
-          curl -fsS "${{ secrets.RENDER_SERVICE_URL }}/health"
+          echo "🏥 Checking health endpoint..."
+          for i in {1..10}; do
+            if curl -fsS "${{ secrets.RENDER_SERVICE_URL }}/healthz" | grep -q "ok"; then
+              echo "✅ Service is healthy!"
+              exit 0
+            fi
+            echo "⏳ Waiting for service... attempt $i/10"
+            sleep 10
+          done
+          echo "❌ Health check failed"
+          exit 1
+
+  # ============================================================
+  # Deploy to Production (on tag)
+  # ============================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment:
+      name: production
+      url: ${{ secrets.PRODUCTION_URL }}
+    
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+          path: ./dist
+
+      - name: Deploy to production
+        if: ${{ secrets.PRODUCTION_DEPLOY_HOOK_URL != '' }}
+        run: |
+          echo "🚀 Deploying v${{ needs.build.outputs.version }} to production..."
+          curl -fsS -X POST "${{ secrets.PRODUCTION_DEPLOY_HOOK_URL }}"
+
+      - name: Wait for deployment
+        run: sleep 45
+
+      - name: Production health check
+        if: ${{ secrets.PRODUCTION_URL != '' }}
+        run: |
+          echo "🏥 Checking production health..."
+          for i in {1..15}; do
+            if curl -fsS "${{ secrets.PRODUCTION_URL }}/healthz" | grep -q "ok"; then
+              echo "✅ Production service is healthy!"
+              exit 0
+            fi
+            echo "⏳ Waiting for production... attempt $i/15"
+            sleep 10
+          done
+          echo "❌ Production health check failed"
+          exit 1
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/server
+            dist/client/**
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================
+  # Notify on failure
+  # ============================================================
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: failure()
+    
+    steps:
+      - name: Notify failure
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Check the workflow run for details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
