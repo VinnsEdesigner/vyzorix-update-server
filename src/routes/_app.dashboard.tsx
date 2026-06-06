@@ -107,10 +107,10 @@ function DashboardPage() {
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              Nokia C22 <span className="text-xs font-normal text-muted-foreground">· {deviceId}</span>
+              {formatDeviceClass(status.data?.deviceClass)} <span className="text-xs font-normal text-muted-foreground">· {deviceId}</span>
             </CardTitle>
             <CardDescription>
-              VyzorixAudioRouter daemon · {status.data?.appVersion ?? version.data?.version ?? "unknown build"} · {status.data?.deviceClass ?? "nokia_c22"}
+              VyzorixAudioRouter daemon · {status.data?.appVersion ?? version.data?.version ?? "unknown build"} · {status.data?.deviceClass ?? "unknown"}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -231,6 +231,14 @@ function KV({ k, v }: { k: string; v: string }) {
       <span className="font-mono text-xs">{v}</span>
     </div>
   );
+}
+
+// Format device class for display (e.g., "nokia_c22" -> "Nokia C22")
+function formatDeviceClass(deviceClass: string | undefined): string {
+  if (!deviceClass) return "Unknown Device";
+  return deviceClass
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function ChartShell({ data, thresholds }: { data: { i: number; v: number }[]; thresholds?: number[] }) {
