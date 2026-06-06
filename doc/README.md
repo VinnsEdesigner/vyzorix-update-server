@@ -11,8 +11,7 @@
 | [README.md](../README.md) | Main project README |
 | [REPO_TREE.md](./REPO_TREE.md) | Complete repository structure |
 | [UPDATE_SERVER_ARCHITECTURE_SPEC.md](./UPDATE_SERVER_ARCHITECTURE_SPEC.md) | Server architecture deep-dive |
-| [Todo.md](../Todo.md) | Task tracking and priorities |
-
+|
 ---
 
 ## Documentation Categories
@@ -26,8 +25,6 @@
 
 ### Backend Documentation
 
-- [`BACKEND_BUG_FIXES.md`](./BACKEND_BUG_FIXES.md) - Bug fixes #2-15 implemented
-- [`FRONTEND_BUG_FIXES.md`](./FRONTEND_BUG_FIXES.md) - Frontend bug fixes FE-1 to FE-4
 - [`COMMAND_SECURITY.md`](./COMMAND_SECURITY.md) - HMAC command signing
 - [`FEATURES.md`](./FEATURES.md) - Feature list
 
@@ -61,11 +58,3 @@ These documents are from the Android repository and kept here for reference only
 - [adr/](./adr/) - Architecture Decision Records
 
 ---
-
-## Cleanup Notes (June 2026)
-
-Removed obsolete files:
-- `VyzorixUpdate_RepoTree.md` - superseded by `REPO_TREE.md`
-- `VyzorixAudioRouter_RepoTree.md` - belongs to Android repo
-- `DOC_8_REALTIME_C2_COMMUNICATION_AND_UPDATES_UPDATED.md` - duplicate
-- `FEATURES_UPDATED.md` - duplicate
