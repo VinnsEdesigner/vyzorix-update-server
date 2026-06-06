@@ -137,6 +137,14 @@ function LoginPage() {
               </button>
             )}
           </p>
+          {mode === "signin" && (
+            <p className="text-center text-xs text-muted-foreground">
+              Forgot your password?{" "}
+              <button type="button" className="font-medium underline" onClick={() => navigate({ to: "/forgot-password" })}>
+                Reset it
+              </button>
+            </p>
+          )}
           <p className="text-center text-[10px] text-muted-foreground">
             Access is restricted to allowlisted operators only.
           </p>
