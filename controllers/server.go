@@ -452,19 +452,6 @@ func (s *Server) requireStrictHMAC() gin.HandlerFunc {
 	}
 }
 
-func (s *Server) authorizeDashboardOrHMAC() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if s.Config.TokenSecret != "" {
-			auth := c.GetHeader("Authorization")
-			token := c.GetHeader("X-Vyzorix-Token")
-			if auth == "Bearer "+s.Config.TokenSecret || token == s.Config.TokenSecret {
-				c.Next()
-				return
-			}
-		}
-		c.Next()
-	}
-}
 
 // JWTAuth is a Gin middleware that validates the Bearer JWT and sets the operator in context.
 // Use this to protect dashboard routes.
