@@ -61,14 +61,18 @@ export function getToken(): string | null {
 function setToken(token: string): void {
   try {
     localStorage.setItem(TOKEN_KEY, token);
-  } catch {}
+  } catch {
+    // ignore storage error
+  }
 }
 
 function clearToken(): void {
   try {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(OPERATOR_KEY);
-  } catch {}
+  } catch {
+    // ignore storage error
+  }
 }
 
 export function getStoredOperator(): Operator | null {
@@ -83,7 +87,9 @@ export function getStoredOperator(): Operator | null {
 function setStoredOperator(op: Operator): void {
   try {
     localStorage.setItem(OPERATOR_KEY, JSON.stringify(op));
-  } catch {}
+  } catch {
+    // ignore storage error
+  }
 }
 
 // ─── Core API ─────────────────────────────────────────────────────────────────
@@ -104,7 +110,11 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
   throw new Error(`Expected JSON, got ${contentType}`);
 }
 
-export async function login(serverUrl: string, email: string, password: string): Promise<AuthResponse> {
+export async function login(
+  serverUrl: string,
+  email: string,
+  password: string,
+): Promise<AuthResponse> {
   logger.info("auth", `→ POST /v1/auth/login`, { email });
   const res = await fetch(`${serverUrl}/v1/auth/login`, {
     method: "POST",
@@ -118,7 +128,12 @@ export async function login(serverUrl: string, email: string, password: string):
   return out;
 }
 
-export async function register(serverUrl: string, email: string, password: string, name: string): Promise<AuthResponse> {
+export async function register(
+  serverUrl: string,
+  email: string,
+  password: string,
+  name: string,
+): Promise<AuthResponse> {
   logger.info("auth", `→ POST /v1/auth/register`, { email, name });
   const res = await fetch(`${serverUrl}/v1/auth/register`, {
     method: "POST",
@@ -196,7 +211,11 @@ export async function forgotPassword(serverUrl: string, email: string): Promise<
   return out;
 }
 
-export async function resetPassword(serverUrl: string, token: string, password: string): Promise<AuthResponse> {
+export async function resetPassword(
+  serverUrl: string,
+  token: string,
+  password: string,
+): Promise<AuthResponse> {
   logger.info("auth", `→ POST /v1/auth/reset-password`);
   const res = await fetch(`${serverUrl}/v1/auth/reset-password`, {
     method: "POST",
@@ -226,7 +245,10 @@ export async function verifyEmail(serverUrl: string, token: string): Promise<Aut
   return out;
 }
 
-export async function resendVerification(serverUrl: string, email: string): Promise<MessageResponse> {
+export async function resendVerification(
+  serverUrl: string,
+  email: string,
+): Promise<MessageResponse> {
   logger.info("auth", `→ POST /v1/auth/resend-verification`, { email });
   const res = await fetch(`${serverUrl}/v1/auth/resend-verification`, {
     method: "POST",
