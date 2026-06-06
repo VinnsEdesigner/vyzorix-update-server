@@ -55,6 +55,7 @@ func TestServer_RateLimiterExists(t *testing.T) {
 	})
 
 	// Route registration - handler is always valid
+	//nolint:staticcheck // SA5011: gin.Engine.GET is safe to call
 	_ = r.GET("/test", func(c *gin.Context) {
 		c.String(200, "ok")
 	})
