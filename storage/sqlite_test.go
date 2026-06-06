@@ -562,7 +562,7 @@ func TestGetOperatorByGoogleID(t *testing.T) {
 		GoogleID:     "google-123",
 	}
 
-	store.CreateOperator(ctx, op)
+	store.CreateOperator(ctx, op) //nolint:errcheck
 
 	got, err := store.GetOperatorByGoogleID(ctx, "google-123")
 	if err != nil {
@@ -592,7 +592,7 @@ func TestCreateSession(t *testing.T) {
 		PasswordHash: "hash",
 		Role:         models.RoleOperator,
 	}
-	store.CreateOperator(ctx, op)
+	store.CreateOperator(ctx, op) //nolint:errcheck
 
 	// Create session
 	sess := &models.Session{
@@ -635,7 +635,7 @@ func TestDeleteSession(t *testing.T) {
 		PasswordHash: "hash",
 		Role:         models.RoleOperator,
 	}
-	store.CreateOperator(ctx, op)
+	store.CreateOperator(ctx, op) //nolint:errcheck
 
 	sess := &models.Session{
 		ID:         "sess-001",
@@ -644,7 +644,7 @@ func TestDeleteSession(t *testing.T) {
 		ExpiresAt:  time.Now().Add(24 * time.Hour),
 		CreatedAt:  time.Now(),
 	}
-	store.CreateSession(ctx, sess)
+	store.CreateSession(ctx, sess) //nolint:errcheck
 
 	// Delete session
 	if err := store.DeleteSession(ctx, "hash123"); err != nil {
