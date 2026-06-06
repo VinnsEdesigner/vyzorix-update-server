@@ -40,7 +40,9 @@ function DiagnosticsPage() {
 
   const send = async (cmd: string) => {
     if (!deviceId.trim()) {
-      toast.error(`${cmd} failed`, { description: "No device registered — set deviceId in Settings → Connection" });
+      toast.error(`${cmd} failed`, {
+        description: "No device registered — set deviceId in Settings → Connection",
+      });
       return;
     }
     setPending(cmd);

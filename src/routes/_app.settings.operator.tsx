@@ -11,7 +11,13 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
-import { getStoredOperator, updateName, updateSettings, me, type ClientSettings } from "@/lib/vyzorix-auth";
+import {
+  getStoredOperator,
+  updateName,
+  updateSettings,
+  me,
+  type ClientSettings,
+} from "@/lib/vyzorix-auth";
 
 export const Route = createFileRoute("/_app/settings/operator")({
   ssr: false,
@@ -49,20 +55,23 @@ function OperatorSettings() {
   }, []);
 
   // Debounced save function - reads fresh values from refs
-  const saveName = useCallback(async (nameToSave: string) => {
-    setSavingName(true);
-    try {
-      await updateName(cfg.serverUrl, nameToSave.trim());
-      setLastSavedName(nameToSave.trim());
-      toast.success("Display name saved");
-    } catch (e) {
-      toast.error("Failed to save name", {
-        description: e instanceof Error ? e.message : "try again",
-      });
-    } finally {
-      setSavingName(false);
-    }
-  }, [cfg.serverUrl]);
+  const saveName = useCallback(
+    async (nameToSave: string) => {
+      setSavingName(true);
+      try {
+        await updateName(cfg.serverUrl, nameToSave.trim());
+        setLastSavedName(nameToSave.trim());
+        toast.success("Display name saved");
+      } catch (e) {
+        toast.error("Failed to save name", {
+          description: e instanceof Error ? e.message : "try again",
+        });
+      } finally {
+        setSavingName(false);
+      }
+    },
+    [cfg.serverUrl],
+  );
 
   // Auto-save effect - properly handles race conditions
   useEffect(() => {

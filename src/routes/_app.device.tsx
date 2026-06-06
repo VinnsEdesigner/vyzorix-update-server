@@ -156,7 +156,9 @@ function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }) 
 
   const submit = async () => {
     if (!deviceId.trim()) {
-      toast.error("Registration failed", { description: "deviceId is required — set it in Settings → Connection" });
+      toast.error("Registration failed", {
+        description: "deviceId is required — set it in Settings → Connection",
+      });
       return;
     }
     if (!firebaseInstallId.trim()) {
@@ -195,8 +197,8 @@ function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }) 
       <CardHeader>
         <CardTitle className="text-base">Register device</CardTitle>
         <CardDescription>
-          POST /v1/device/register · idempotent on (deviceId, firebaseInstallId) · fields
-          pre-filled from server when device is registered
+          POST /v1/device/register · idempotent on (deviceId, firebaseInstallId) · fields pre-filled
+          from server when device is registered
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

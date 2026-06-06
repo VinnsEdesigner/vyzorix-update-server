@@ -7,12 +7,7 @@ export const DEFAULT_DEVICE_ID = "";
 const STORAGE_KEY = "vyzorix.config.v2";
 
 // Settings that come from the server — do NOT persist to localStorage.
-const SERVER_KEYS = [
-  "autoReconnect",
-  "strictHmac",
-  "notificationsEnabled",
-  "thresholds",
-] as const;
+const SERVER_KEYS = ["autoReconnect", "strictHmac", "notificationsEnabled", "thresholds"] as const;
 
 type ServerKey = (typeof SERVER_KEYS)[number];
 
@@ -56,7 +51,14 @@ export const DEFAULT_SETTINGS: VyzorixSettings = {
   dashboardToken: "",
   notificationsEnabled: true,
   operator: { name: "", role: "operator", email: "" },
-  thresholds: { riskWarn: 50, riskCrit: 75, thermalWarn: 45, thermalCrit: 55, bufferWarn: 50, bufferCrit: 80 },
+  thresholds: {
+    riskWarn: 50,
+    riskCrit: 75,
+    thermalWarn: 45,
+    thermalCrit: 55,
+    bufferWarn: 50,
+    bufferCrit: 80,
+  },
 };
 
 function loadInitial(): VyzorixSettings {

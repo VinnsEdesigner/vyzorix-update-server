@@ -109,7 +109,8 @@ function AdvancedSettings() {
         <CardHeader>
           <CardTitle className="text-destructive">Danger zone</CardTitle>
           <CardDescription>
-            Reset every server setting (thresholds, client preferences) to defaults. Requires super-admin.
+            Reset every server setting (thresholds, client preferences) to defaults. Requires
+            super-admin,
           </CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-3">
@@ -118,11 +119,7 @@ function AdvancedSettings() {
               ? "Super-admin role active — resets server-side operator settings."
               : "Switch to super-admin in Operator to enable."}
           </p>
-          <Button
-            variant="destructive"
-            disabled={!canDanger || resetting}
-            onClick={handleReset}
-          >
+          <Button variant="destructive" disabled={!canDanger || resetting} onClick={handleReset}>
             {resetting ? "Resetting..." : "Reset all settings"}
           </Button>
         </CardContent>

@@ -63,7 +63,9 @@ function ThresholdSettings() {
           <CardTitle>Signal thresholds</CardTitle>
           <CardDescription>
             Drive the dashboard status badge, alerts page and chart reference lines.{" "}
-            {canEdit ? "Saved to server — persists across devices." : "Super admin role required to edit."}
+            {canEdit
+              ? "Saved to server — persists across devices."
+              : "Super admin role required to edit."}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
