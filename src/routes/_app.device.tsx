@@ -54,7 +54,16 @@ function DevicePage() {
 
   return (
     <div className="space-y-4">
-      {status.isLoading ? (
+      {!deviceId ? (
+        <Card>
+          <CardContent className="py-4">
+            <p className="text-sm text-muted-foreground">
+              No device configured. Set deviceId in Settings → Connection, then use the registration
+              panel below to register your device.
+            </p>
+          </CardContent>
+        </Card>
+      ) : status.isLoading ? (
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -164,14 +173,22 @@ function RegisterPanel() {
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
+    if (!deviceId.trim()) {
+      toast.error("Registration failed", { description: "deviceId is required — set it in Settings → Connection" });
+      return;
+    }
+    if (!firebaseInstallId.trim()) {
+      toast.error("Registration failed", { description: "firebaseInstallId is required" });
+      return;
+    }
     setBusy(true);
     try {
       const res = await registerDevice(serverUrl, {
         deviceId,
-        firebaseInstallId,
-        fcmToken,
-        appVersion,
-        deviceClass,
+        firebaseInstallId: firebaseInstallId.trim(),
+        fcmToken: fcmToken.trim(),
+        appVersion: appVersion.trim(),
+        deviceClass: deviceClass.trim(),
       });
       setSecret(res.commandSecret);
       try {

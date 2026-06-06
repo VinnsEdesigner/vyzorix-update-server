@@ -36,6 +36,10 @@ function UpdatesPage() {
   const apkUrl = v ? `${serverUrl.replace(/\/+$/, "")}/api/v1/apk/${v.apk_filename}` : "#";
 
   const wake = async () => {
+    if (!deviceId.trim()) {
+      toast.error("WAKE_UP_UPDATER failed", { description: "No device registered — set deviceId in Settings → Connection" });
+      return;
+    }
     try {
       const res = await dispatchCommand(
         serverUrl,
