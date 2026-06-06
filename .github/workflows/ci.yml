@@ -158,7 +158,7 @@ jobs:
         run: npm ci
 
       - name: Build Go server
-        run: go build -o bin/server ./...
+        run: go build -o bin/server .
 
       - name: Build frontend
         run: npm run build
