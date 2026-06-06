@@ -64,11 +64,16 @@ func (s *Server) Engine() *gin.Engine {
 	}
 	r := gin.New()
 	r.Use(gin.Recovery())
+	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.Logger(s.Log))
 	r.Use(middleware.CORSHandler(s.Config.AllowedOrigins))
 
+	// Rate limit public endpoints to prevent abuse
+	public := r.Group("")
+	public.Use(s.Limiter.Middleware())
+	
 	// Auth routes (no JWT required for login/register; JWT required for /me and logout)
-	auth := r.Group("/v1/auth")
+	auth := public.Group("/v1/auth")
 	auth.GET("/google", s.jwtCtrl.GoogleLoginRedirect) // triggers OAuth redirect
 	auth.GET("/google/callback", s.jwtCtrl.GoogleCallback) // OAuth callback from Google
 	auth.POST("/login", s.jwtCtrl.Login)
@@ -83,20 +88,20 @@ func (s *Server) Engine() *gin.Engine {
 	auth.PATCH("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.UpdateName)
 	auth.POST("/logout", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Logout)
 
-	r.GET("/health", s.health)
-	r.GET("/healthz", s.health)
-	r.GET("/api/v1/version", s.version)
-	r.GET("/api/v1/changelog", s.changelog)
-	r.GET("/api/v1/apk/*name", s.apk)
-	r.GET("/bin/*name", s.bin)
+	public.GET("/health", s.health)
+	public.GET("/healthz", s.health)
+	public.GET("/api/v1/version", s.version)
+	public.GET("/api/v1/changelog", s.changelog)
+	public.GET("/api/v1/apk/*name", s.apk)
+	public.GET("/bin/*name", s.bin)
 
 	// Root path → native HTML landing page (no React needed)
 	// Explicit route so Gin doesn't need to resolve /*path wildcard for /
-	r.GET("/", s.dashboard)
+	public.GET("/", s.dashboard)
 
-	// Device routes
-	r.POST("/v1/device/register", s.register)
-	r.GET("/v1/device/:id/status", s.status)
+	// Device routes - rate limited for public endpoints
+	public.POST("/v1/device/register", s.register)
+	public.GET("/v1/device/:id/status", s.status)
 	r.PATCH("/v1/device/:id/fcm-token", s.requireHMAC(), s.fcmToken)
 	r.POST("/v1/device/:id/command", s.authorizeDashboardOrHMAC(), s.command)
 	r.DELETE("/v1/device/:id", s.requireHMAC(), s.deleteDevice)
