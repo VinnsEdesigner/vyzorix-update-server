@@ -378,7 +378,7 @@ func BenchmarkGoogleTokenVerify(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		verifier.Verify(token)
+		verifier.Verify(token) //nolint:errcheck // benchmark only
 	}
 }
 
