@@ -81,7 +81,11 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }) {
   const [s, setS] = useState<VyzorixSettings>(loadInitial);
 
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    } catch {
+      // ignore storage error
+    }
   }, [s]);
 
   useEffect(() => {
@@ -89,14 +93,33 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }) {
       try {
         const raw = localStorage.getItem(OPERATOR_KEY);
         if (!raw) return;
-        const stored = JSON.parse(raw) as { id: string; email: string; name: string; role: string; createdAt: number };
+        const stored = JSON.parse(raw) as {
+          id: string;
+          email: string;
+          name: string;
+          role: string;
+          createdAt: number;
+        };
         setS((prev) => {
-          if (prev.operator.email === stored.email && prev.operator.name === stored.name && prev.operator.role === stored.role) {
+          if (
+            prev.operator.email === stored.email &&
+            prev.operator.name === stored.name &&
+            prev.operator.role === stored.role
+          ) {
             return prev; // no change, skip re-render
           }
-          return { ...prev, operator: { name: stored.name, role: stored.role as "viewer" | "operator" | "super_admin", email: stored.email } };
+          return {
+            ...prev,
+            operator: {
+              name: stored.name,
+              role: stored.role as "viewer" | "operator" | "super_admin",
+              email: stored.email,
+            },
+          };
         });
-      } catch {}
+      } catch {
+        // ignore parse/storage error
+      }
     };
     window.addEventListener("vyz.operator.updated", syncOperator);
     return () => window.removeEventListener("vyz.operator.updated", syncOperator);

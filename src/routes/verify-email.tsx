@@ -77,10 +77,18 @@ function VerifyEmailPage() {
           )}
           {status === "error" && (
             <div className="space-y-3">
-              <Button variant="outline" className="w-full" onClick={() => navigate({ to: "/login" })}>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate({ to: "/login" })}
+              >
                 Return to Login
               </Button>
-              <Button variant="ghost" className="w-full" onClick={() => navigate({ to: "/forgot-password" })}>
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => navigate({ to: "/forgot-password" })}
+              >
                 Request New Verification
               </Button>
             </div>
