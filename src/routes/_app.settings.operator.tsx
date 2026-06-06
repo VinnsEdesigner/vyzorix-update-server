@@ -10,7 +10,7 @@ import { ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-import { useVyzorixConfig, DEFAULT_SERVER_URL } from "@/lib/vyzorix-config";
+import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import { getStoredOperator, updateName } from "@/lib/vyzorix-auth";
 
 export const Route = createFileRoute("/_app/settings/operator")({
@@ -52,7 +52,7 @@ function OperatorSettings() {
   const saveName = useCallback(async (nameToSave: string) => {
     setSavingName(true);
     try {
-      await updateName(DEFAULT_SERVER_URL, nameToSave.trim());
+      await updateName(cfg.serverUrl, nameToSave.trim());
       setLastSavedName(nameToSave.trim());
       toast.success("Display name saved");
     } catch (e) {
@@ -62,7 +62,7 @@ function OperatorSettings() {
     } finally {
       setSavingName(false);
     }
-  }, []);
+  }, [cfg.serverUrl]);
 
   // Auto-save effect - properly handles race conditions
   useEffect(() => {
