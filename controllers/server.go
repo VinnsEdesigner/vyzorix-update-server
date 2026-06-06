@@ -30,6 +30,7 @@ type Server struct {
 	Notifier         fcm.Notifier
 	HMAC             security.Verifier
 	Limiter          *middleware.RateLimiter
+	AuthLimiter      *middleware.RateLimiter // Stricter rate limiter for auth endpoints
 	jwtCtrl          *AuthController
 	originValidator  *security.OriginValidator
 	upgrader         websocket.Upgrader
@@ -43,6 +44,8 @@ func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub, not
 		Secret: func(id string) (string, bool) { return st.Secret(context.Background(), id) },
 	}
 	s.Limiter = middleware.NewRateLimiter(100, time.Minute)
+	// Stricter rate limiter for auth endpoints: 5 requests per minute to prevent brute force
+	s.AuthLimiter = middleware.NewRateLimiter(5, time.Minute)
 	s.jwtCtrl = NewAuthController(log, cfg, st)
 
 	// Initialize origin validator
@@ -82,17 +85,21 @@ func (s *Server) Engine() *gin.Engine {
 	auth := public.Group("/v1/auth")
 	auth.GET("/google", s.jwtCtrl.GoogleLoginRedirect) // triggers OAuth redirect
 	auth.GET("/google/callback", s.jwtCtrl.GoogleCallback) // OAuth callback from Google
-	auth.POST("/login", s.jwtCtrl.Login)
-	auth.POST("/register", s.jwtCtrl.Register)
 	// Email verification and password reset (no JWT required)
 	auth.POST("/verify-email", s.jwtCtrl.VerifyEmail)
 	auth.POST("/resend-verification", s.jwtCtrl.ResendVerification)
-	auth.POST("/forgot-password", s.jwtCtrl.ForgotPassword)
 	auth.POST("/reset-password", s.jwtCtrl.ResetPassword)
 	// /me and /logout require JWT — middleware applied inline
 	auth.GET("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Me)
 	auth.PATCH("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.UpdateName)
 	auth.POST("/logout", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Logout)
+
+	// Stricter rate limiting for sensitive auth endpoints (5 req/min to prevent brute force)
+	strictAuth := auth.Group("")
+	strictAuth.Use(s.AuthLimiter.Middleware())
+	strictAuth.POST("/login", s.jwtCtrl.Login)
+	strictAuth.POST("/register", s.jwtCtrl.Register)
+	strictAuth.POST("/forgot-password", s.jwtCtrl.ForgotPassword)
 
 	public.GET("/health", s.health)
 	public.GET("/healthz", s.health)
