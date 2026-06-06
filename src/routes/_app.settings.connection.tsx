@@ -16,9 +16,21 @@ export const Route = createFileRoute("/_app/settings/connection")({
   component: ConnectionSettings,
 });
 
+// Validate URL has proper protocol
+function isValidServerUrl(url: string): boolean {
+  if (!url.trim()) return false;
+  try {
+    const u = new URL(url);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function ConnectionSettings() {
   const cfg = useVyzorixConfig();
   const [serverUrl, setServerUrl] = useState(cfg.serverUrl);
+  const [serverUrlError, setServerUrlError] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState(cfg.deviceId);
   const [timeout, setTimeout] = useState<number>(cfg.requestTimeoutMs);
   const [autoReconnect, setAutoReconnect] = useState(cfg.autoReconnect);
@@ -27,9 +39,36 @@ function ConnectionSettings() {
 
   const health = useServerHealth(cfg.serverUrl);
 
+  const handleServerUrlChange = (value: string) => {
+    setServerUrl(value);
+    // Clear error when user starts typing
+    if (serverUrlError) setServerUrlError(null);
+  };
+
+  const validateForm = (): boolean => {
+    const trimmed = serverUrl.trim();
+    
+    if (!trimmed) {
+      setServerUrlError("Server URL is required");
+      return false;
+    }
+    
+    if (!isValidServerUrl(trimmed)) {
+      setServerUrlError("Invalid URL. Include http:// or https:// (e.g., http://localhost:3000)");
+      return false;
+    }
+    
+    return true;
+  };
+
   const save = () => {
+    if (!validateForm()) {
+      toast.error("Please fix the server URL before saving");
+      return;
+    }
+    
     cfg.update({
-      serverUrl: serverUrl.trim() || DEFAULT_SERVER_URL,
+      serverUrl: serverUrl.trim(),
       deviceId: deviceId.trim() || DEFAULT_DEVICE_ID,
       requestTimeoutMs: Math.max(500, Math.min(60_000, timeout || 8000)),
       autoReconnect,
@@ -49,8 +88,18 @@ function ConnectionSettings() {
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="endpoint">Base URL</Label>
-            <Input id="endpoint" value={serverUrl} onChange={(e) => setServerUrl(e.target.value)} placeholder={DEFAULT_SERVER_URL} />
-            <p className="text-xs text-muted-foreground">REST + WSS endpoints are derived from this URL.</p>
+            <Input 
+              id="endpoint" 
+              value={serverUrl} 
+              onChange={(e) => handleServerUrlChange(e.target.value)}
+              placeholder={DEFAULT_SERVER_URL}
+              className={serverUrlError ? "border-destructive" : ""}
+            />
+            {serverUrlError ? (
+              <p className="text-xs text-destructive">{serverUrlError}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">REST + WSS endpoints are derived from this URL.</p>
+            )}
           </div>
           <Separator />
           <div className="flex items-center justify-between text-sm">
