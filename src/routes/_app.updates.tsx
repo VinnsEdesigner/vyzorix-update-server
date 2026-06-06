@@ -37,7 +37,9 @@ function UpdatesPage() {
 
   const wake = async () => {
     if (!deviceId.trim()) {
-      toast.error("WAKE_UP_UPDATER failed", { description: "No device registered — set deviceId in Settings → Connection" });
+      toast.error("WAKE_UP_UPDATER failed", {
+        description: "No device registered — set deviceId in Settings → Connection",
+      });
       return;
     }
     try {
