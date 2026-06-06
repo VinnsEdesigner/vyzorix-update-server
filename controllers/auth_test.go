@@ -131,9 +131,8 @@ func TestAuthController_ErrorResponse_JSON(t *testing.T) {
 func strPtr(s string) *string { return &s }
 
 func TestAuthController_UpdateNameRequest_JSON(t *testing.T) {
-	name := "Updated Name"
 	req := models.UpdateNameRequest{
-		Name: &name,
+		Name: strPtr("Updated Name"),
 	}
 
 	data, err := json.Marshal(req)
