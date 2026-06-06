@@ -1,0 +1,407 @@
+openapi: 3.0.3
+info:
+  title: Vyzorix Update Server API
+  description: |
+    REST API for the Vyzorix Update Server.
+    
+    ## Authentication
+    - Public endpoints: `/v1/auth/login`, `/v1/auth/register`, `/v1/auth/forgot-password`
+    - Protected endpoints: `/v1/auth/me`, `/v1/auth/logout` require JWT Bearer token
+    - Device endpoints: `/v1/device/*` require HMAC signature or dashboard token
+    
+    ## Rate Limits
+    - Auth endpoints: 10 login, 5 register, 3 password reset per minute per IP
+    - Device endpoints: 100 requests per minute
+  version: 1.0.0
+  contact:
+    name: VinnsEdesigner
+    url: https://github.com/VinnsEdesigner/vyzorix-update-server
+
+servers:
+  - url: https://vyzorix-update-server.onrender.com
+    description: Production server
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Authentication and operator management
+  - name: Device
+    description: Device registration and management
+  - name: Command
+    description: Device command dispatch
+  - name: Dashboard
+    description: Dashboard endpoints
+
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      tags: [Dashboard]
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+
+  /api/v1/version:
+    get:
+      summary: Get version manifest
+      tags: [Dashboard]
+      description: Returns the current version info for Android app updates
+      responses:
+        '200':
+          description: Version manifest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionManifest'
+
+  /v1/auth/login:
+    post:
+      summary: Login operator
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/register:
+    post:
+      summary: Register new operator
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Email already exists
+
+  /v1/auth/logout:
+    post:
+      summary: Logout operator
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logged out successfully
+
+  /v1/auth/me:
+    get:
+      summary: Get current operator
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current operator profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operator'
+
+  /v1/auth/forgot-password:
+    post:
+      summary: Request password reset
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Reset email sent (if email exists)
+
+  /v1/auth/reset-password:
+    post:
+      summary: Reset password with token
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /v1/device/register:
+    post:
+      summary: Register a device
+      tags: [Device]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceRegistration'
+      responses:
+        '201':
+          description: Device registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceRegisterResponse'
+
+  /v1/device/{deviceId}/status:
+    get:
+      summary: Get device status
+      tags: [Device]
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Device status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceStatus'
+
+  /v1/device/{deviceId}/command:
+    post:
+      summary: Dispatch command to device
+      tags: [Command]
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandRequest'
+      responses:
+        '200':
+          description: Command dispatched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+
+  /v1/dashboard/devices:
+    get:
+      summary: List all devices (dashboard)
+      tags: [Dashboard]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeviceStatus'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Operator:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [viewer, operator, super_admin]
+        emailVerified:
+          type: boolean
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        expiresAt:
+          type: integer
+          format: int64
+        operator:
+          $ref: '#/components/schemas/Operator'
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    RegisterRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+
+    DeviceRegistration:
+      type: object
+      required: [deviceId, firebaseInstallId, appVersion, deviceClass]
+      properties:
+        deviceId:
+          type: string
+        firebaseInstallId:
+          type: string
+        fcmToken:
+          type: string
+        appVersion:
+          type: string
+        deviceClass:
+          type: string
+
+    DeviceRegisterResponse:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        commandSecret:
+          type: string
+        registeredAt:
+          type: integer
+          format: int64
+        serverTime:
+          type: integer
+          format: int64
+
+    DeviceStatus:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        online:
+          type: boolean
+        lastSeen:
+          type: integer
+          format: int64
+        appVersion:
+          type: string
+        deviceClass:
+          type: string
+
+    CommandRequest:
+      type: object
+      required: [command]
+      properties:
+        command:
+          type: string
+          enum: [FORCE_SPEAKER, RESET_AUDIO_HAL, TOGGLE_CAPTURE, REINIT_PROJECTION, REQUEST_STATUS, WAKE_UP_UPDATER, DUMP_FLIGHT_DATA, ROTATE_KEYS]
+        args:
+          type: object
+
+    CommandResponse:
+      type: object
+      properties:
+        dispatchId:
+          type: string
+        delivery:
+          type: string
+          enum: [sent, queued]
+        serverTime:
+          type: integer
+          format: int64
+
+    VersionManifest:
+      type: object
+      properties:
+        version:
+          type: string
+        version_code:
+          type: integer
+        apk_filename:
+          type: string
+        apk_sha256:
+          type: string
+        apk_size_bytes:
+          type: integer
+        release_notes:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
