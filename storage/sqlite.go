@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/VinnsEdesigner/vyzorix-update-server/models"
+	"golang.org/x/crypto/bcrypt"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -77,6 +78,8 @@ func (s *Store) migrate(ctx context.Context) error {
 	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'`) //nolint:errcheck
 	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN completed_at INTEGER`)               //nolint:errcheck
 	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN result TEXT`)                      //nolint:errcheck
+	// Command secret hash column for audit/compliance
+	s.db.ExecContext(ctx, `ALTER TABLE devices ADD COLUMN command_secret_hash TEXT`)        //nolint:errcheck
 	return s.migrateAuth(ctx)
 }
 
@@ -278,8 +281,12 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 			LastSeen          time.Time
 		}{}, false, err
 	}
-	_, err = s.db.ExecContext(ctx, `INSERT INTO devices(id,firebase_install_id,fcm_token,app_version,device_class,command_secret,online,registered_at,last_seen) VALUES(?,?,?,?,?,?,0,?,?)`,
-		req.DeviceID, req.FirebaseInstallID, req.FCMToken, req.AppVersion, req.DeviceClass, secret, now.UnixMilli(), now.UnixMilli())
+	// Generate bcrypt hash of the secret for audit/compliance
+	hasher := NewSecretHash()
+	secretHash, _ := hasher.HashSecret(secret) // Error ignored - hash is optional
+
+	_, err = s.db.ExecContext(ctx, `INSERT INTO devices(id,firebase_install_id,fcm_token,app_version,device_class,command_secret,command_secret_hash,online,registered_at,last_seen) VALUES(?,?,?,?,?,?,?,0,?,?)`,
+		req.DeviceID, req.FirebaseInstallID, req.FCMToken, req.AppVersion, req.DeviceClass, secret, secretHash, now.UnixMilli(), now.UnixMilli())
 	if err != nil {
 		return struct {
 			ID                string
@@ -392,6 +399,82 @@ func (s *Store) Secret(ctx context.Context, id string) (string, bool) {
 		return "", false
 	}
 	return d.CommandSecret, true
+}
+
+// SecretHash provides bcrypt hash utilities for command secrets.
+type SecretHash struct{}
+
+// NewSecretHash creates a new SecretHash utility.
+func NewSecretHash() *SecretHash { return &SecretHash{} }
+
+// HashSecret generates a bcrypt hash of the given secret for storage/audit.
+// The secret is used directly for HMAC verification; this hash is for compliance.
+func (h *SecretHash) HashSecret(secret string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+
+// VerifyHash checks if the secret matches the stored bcrypt hash.
+// Returns true if the secret matches the hash.
+func (h *SecretHash) VerifyHash(secret, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(secret))
+	return err == nil
+}
+
+// SetSecretHash stores the bcrypt hash of a device's command secret.
+func (s *Store) SetSecretHash(ctx context.Context, deviceID, hash string) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE devices SET command_secret_hash = ? WHERE id = ?`,
+		hash, deviceID,
+	)
+	return err
+}
+
+// GetSecretHash retrieves the bcrypt hash of a device's command secret.
+func (s *Store) GetSecretHash(ctx context.Context, deviceID string) (string, error) {
+	var hash string
+	err := s.db.QueryRowContext(ctx,
+		`SELECT command_secret_hash FROM devices WHERE id = ?`,
+		deviceID,
+	).Scan(&hash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return hash, err
+}
+
+// HashAllSecrets hashes all existing command secrets that don't have a hash.
+// This is a migration helper for existing databases.
+func (s *Store) HashAllSecrets(ctx context.Context) (int, error) {
+	hasher := NewSecretHash()
+	
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, command_secret FROM devices WHERE command_secret_hash IS NULL OR command_secret_hash = ''`,
+	)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		var id, secret string
+		if err := rows.Scan(&id, &secret); err != nil {
+			continue
+		}
+		hash, err := hasher.HashSecret(secret)
+		if err != nil {
+			continue
+		}
+		if err := s.SetSecretHash(ctx, id, hash); err != nil {
+			continue
+		}
+		count++
+	}
+	return count, rows.Err()
 }
 
 func (s *Store) SetOnline(ctx context.Context, id string, online bool) error {
