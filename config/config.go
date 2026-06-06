@@ -22,6 +22,7 @@ type Config struct {
 	AllowedOrigins []string
 	EnforceHMAC    bool
 	HMACWindow     time.Duration
+	NonceCacheTTL  time.Duration
 	// Google OAuth — required for Google sign-in
 	GoogleOAuthClientID     string
 	GoogleOAuthClientSecret string
@@ -71,7 +72,8 @@ func Load() (Config, error) {
 		JWTSecret:      os.Getenv("JWT_SECRET"),
 		JWTDuration:    jwtDuration,
 		AllowedOrigins: splitCSV(get("ALLOWED_ORIGINS", "*")),
-		HMACWindow:     5 * time.Minute,
+		HMACWindow:     30 * time.Second, // Per COMMAND_SECURITY.md: 30-second window
+		NonceCacheTTL:  1 * time.Hour,
 		GoogleOAuthClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
 		GoogleOAuthClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
 		BaseURL:     get("BASE_URL", "http://localhost:3000"),

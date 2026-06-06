@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix-update-server/config"
+	"github.com/VinnsEdesigner/vyzorix-update-server/hub"
 	"github.com/VinnsEdesigner/vyzorix-update-server/models"
 	"github.com/VinnsEdesigner/vyzorix-update-server/security"
 	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
@@ -20,10 +21,12 @@ type DeviceController struct {
 	config config.Config
 	store  *storage.Store
 	hmac   security.Verifier
+	hub    *hub.Hub
 }
 
-func NewDeviceController(log *slog.Logger, cfg config.Config, st *storage.Store, hmac security.Verifier) *DeviceController {
-	return &DeviceController{log: log, config: cfg, store: st, hmac: hmac}
+// NewDeviceController creates a new DeviceController with hub integration.
+func NewDeviceController(log *slog.Logger, cfg config.Config, st *storage.Store, hmac security.Verifier, h *hub.Hub) *DeviceController {
+	return &DeviceController{log: log, config: cfg, store: st, hmac: hmac, hub: h}
 }
 
 // Register handles device registration.
@@ -172,11 +175,13 @@ func (s *DeviceController) List(c *gin.Context) {
 	c.JSON(200, map[string]any{"devices": out})
 }
 
-// isDeviceOnline checks if a device has an active WebSocket connection.
+// isDeviceOnline checks if a device has an active WebSocket connection via the hub.
 func (s *DeviceController) isDeviceOnline(deviceID string) bool {
-	// This would be implemented by checking the hub's active connections
-	// In a full implementation, this would integrate with the hub
-	return false
+	if s.hub == nil {
+		// Fallback to database state if hub not available
+		return false
+	}
+	return s.hub.Online(deviceID)
 }
 
 // Config returns the controller configuration.
@@ -184,3 +189,6 @@ func (s *DeviceController) Config() config.Config { return s.config }
 
 // Store returns the data store.
 func (s *DeviceController) Store() *storage.Store { return s.store }
+
+// Hub returns the WebSocket hub for device online status.
+func (s *DeviceController) Hub() *hub.Hub { return s.hub }

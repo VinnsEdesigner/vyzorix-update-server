@@ -74,6 +74,9 @@ func (s *Store) migrate(ctx context.Context) error {
 	// Additive migrations
 	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN wake_sent INTEGER NOT NULL DEFAULT 0`) //nolint:errcheck
 	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN wake_error TEXT`)                   //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'`) //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN completed_at INTEGER`)               //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN result TEXT`)                      //nolint:errcheck
 	return s.migrateAuth(ctx)
 }
 
@@ -154,6 +157,36 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 	// Additive migrations for new columns
 	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`) //nolint:errcheck
 	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN verification_sent_at INTEGER`)             //nolint:errcheck
+	return s.migrateSettings(ctx)
+}
+
+// migrateSettings creates the settings table for system configuration.
+func (s *Store) migrateSettings(ctx context.Context) error {
+	// Settings table for system configuration
+	if _, err := s.db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS settings (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL,
+			updated_at INTEGER NOT NULL
+		)
+	`); err != nil {
+		return err
+	}
+
+	// Set defaults if not exist (per COMMAND_SECURITY.md: 30-second HMAC window)
+	defaults := map[string]string{
+		"enforce_hmac":        "false",
+		"hmac_window_seconds": "30",
+		"rate_limit_capacity": "100",
+		"rate_limit_refill":   "60",
+	}
+
+	for key, value := range defaults {
+		s.db.ExecContext(ctx, `
+			INSERT OR IGNORE INTO settings(key, value, updated_at) VALUES(?, ?, ?)
+		`, key, value, time.Now().UTC().UnixMilli()) //nolint:errcheck
+	}
+
 	return nil
 }
 
@@ -425,7 +458,77 @@ func (s *Store) MarkWake(ctx context.Context, dispatchID string, errText string)
 }
 
 func (s *Store) MarkDelivered(ctx context.Context, dispatchID string) error {
-	_, err := s.db.ExecContext(ctx, `UPDATE commands SET delivery='sent', delivered_at=? WHERE dispatch_id=?`, time.Now().UnixMilli(), dispatchID)
+	_, err := s.db.ExecContext(ctx, `UPDATE commands SET delivery='sent', delivered_at=?, status='sent' WHERE dispatch_id=?`, time.Now().UnixMilli(), dispatchID)
+	return err
+}
+
+// CommandStatus represents the status of a command dispatch.
+type CommandStatus struct {
+	DispatchID  string     `json:"dispatchId"`
+	DeviceID    string     `json:"deviceId"`
+	Command     string     `json:"command"`
+	Args        string     `json:"args,omitempty"`
+	Status      string     `json:"status"`
+	Delivery    string     `json:"delivery"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	DeliveredAt *time.Time `json:"deliveredAt,omitempty"`
+	CompletedAt *time.Time `json:"completedAt,omitempty"`
+	Result      string     `json:"result,omitempty"`
+	WakeError   string     `json:"wakeError,omitempty"`
+}
+
+// GetCommandStatus retrieves the status of a command dispatch.
+func (s *Store) GetCommandStatus(ctx context.Context, dispatchID string) (*CommandStatus, error) {
+	var cs CommandStatus
+	var deliveredAt, completedAt sql.NullInt64
+
+	err := s.db.QueryRowContext(ctx, `
+		SELECT dispatch_id, device_id, command, args, status, delivery,
+		       created_at, delivered_at, completed_at, result, wake_error
+		FROM commands WHERE dispatch_id = ?
+	`, dispatchID).Scan(
+		&cs.DispatchID, &cs.DeviceID, &cs.Command, &cs.Args,
+		&cs.Status, &cs.Delivery, &cs.CreatedAt,
+		&deliveredAt, &completedAt, &cs.Result, &cs.WakeError,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if deliveredAt.Valid {
+		t := time.UnixMilli(deliveredAt.Int64).UTC()
+		cs.DeliveredAt = &t
+	}
+	if completedAt.Valid {
+		t := time.UnixMilli(completedAt.Int64).UTC()
+		cs.CompletedAt = &t
+	}
+
+	return &cs, nil
+}
+
+// UpdateCommandStatus updates the status of a command.
+func (s *Store) UpdateCommandStatus(ctx context.Context, dispatchID, status string) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE commands SET status=? WHERE dispatch_id=?`, status, dispatchID)
+	return err
+}
+
+// MarkCommandCompleted marks a command as completed with result.
+func (s *Store) MarkCommandCompleted(ctx context.Context, dispatchID, result string) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE commands SET status='completed', completed_at=?, result=? WHERE dispatch_id=?`,
+		time.Now().UnixMilli(), result, dispatchID)
+	return err
+}
+
+// MarkCommandFailed marks a command as failed with error.
+func (s *Store) MarkCommandFailed(ctx context.Context, dispatchID, errMsg string) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE commands SET status='failed', completed_at=?, result=? WHERE dispatch_id=?`,
+		time.Now().UnixMilli(), errMsg, dispatchID)
 	return err
 }
 
@@ -895,4 +998,64 @@ func (s *Store) UpdateOperatorPassword(ctx context.Context, operatorID, password
 		return errors.New("operator not found")
 	}
 	return nil
+}
+
+// ─── System Settings ─────────────────────────────────────────────────────────────
+
+// GetSetting retrieves a setting value by key.
+func (s *Store) GetSetting(ctx context.Context, key string) (string, error) {
+	var value string
+	err := s.db.QueryRowContext(ctx,
+		`SELECT value FROM settings WHERE key = ?`, key,
+	).Scan(&value)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return value, err
+}
+
+// SetSetting updates or inserts a setting value.
+func (s *Store) SetSetting(ctx context.Context, key, value string) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT OR REPLACE INTO settings(key, value, updated_at) VALUES(?, ?, ?)`,
+		key, value, time.Now().UTC().UnixMilli(),
+	)
+	return err
+}
+
+// GetEnforceHMAC returns whether HMAC enforcement is enabled.
+func (s *Store) GetEnforceHMAC(ctx context.Context) (bool, error) {
+	val, err := s.GetSetting(ctx, "enforce_hmac")
+	if err != nil || val == "" {
+		return false, err
+	}
+	return val == "true" || val == "1", nil
+}
+
+// SetEnforceHMAC updates the HMAC enforcement setting.
+func (s *Store) SetEnforceHMAC(ctx context.Context, enforce bool) error {
+	val := "false"
+	if enforce {
+		val = "true"
+	}
+	return s.SetSetting(ctx, "enforce_hmac", val)
+}
+
+// GetHMACWindowSeconds returns the HMAC timestamp window in seconds.
+func (s *Store) GetHMACWindowSeconds(ctx context.Context) (int, error) {
+	val, err := s.GetSetting(ctx, "hmac_window_seconds")
+	if err != nil || val == "" {
+		return 30, nil // default 30 seconds per COMMAND_SECURITY.md
+	}
+	var seconds int
+	_, err = fmt.Sscanf(val, "%d", &seconds)
+	if err != nil {
+		return 30, nil
+	}
+	return seconds, nil
+}
+
+// SetHMACWindowSeconds updates the HMAC timestamp window.
+func (s *Store) SetHMACWindowSeconds(ctx context.Context, seconds int) error {
+	return s.SetSetting(ctx, "hmac_window_seconds", fmt.Sprintf("%d", seconds))
 }
