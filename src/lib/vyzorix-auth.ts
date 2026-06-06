@@ -12,6 +12,8 @@
  *   - Protected calls → Authorization: Bearer <token> on every request
  *   - Logout → POST /v1/auth/logout (validates JWT, deletes session from DB)
  *   - Session check → GET /v1/auth/me (validates JWT, returns operator profile)
+ *   - Password reset → POST /v1/auth/forgot-password, POST /v1/auth/reset-password
+ *   - Email verification → POST /v1/auth/verify-email, POST /v1/auth/resend-verification
  */
 
 import { logger } from "@/lib/logger";
@@ -25,12 +27,17 @@ export interface Operator {
   name: string;
   role: "viewer" | "operator" | "super_admin";
   createdAt: number;
+  emailVerified?: boolean;
 }
 
 export interface AuthResponse {
   token: string;
   expiresAt: number;
   operator: Operator;
+}
+
+export interface MessageResponse {
+  message: string;
 }
 
 export interface ErrorResponse {
@@ -175,29 +182,72 @@ export async function me(serverUrl: string): Promise<Operator> {
   return out;
 }
 
+// ─── Password Reset ───────────────────────────────────────────────────────────
+
+export async function forgotPassword(serverUrl: string, email: string): Promise<MessageResponse> {
+  logger.info("auth", `→ POST /v1/auth/forgot-password`, { email });
+  const res = await fetch(`${serverUrl}/v1/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const out = await jsonOrThrow<MessageResponse>(res);
+  logger.info("auth", `← forgot-password OK`);
+  return out;
+}
+
+export async function resetPassword(serverUrl: string, token: string, password: string): Promise<AuthResponse> {
+  logger.info("auth", `→ POST /v1/auth/reset-password`);
+  const res = await fetch(`${serverUrl}/v1/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, password }),
+  });
+  const out = await jsonOrThrow<AuthResponse>(res);
+  setToken(out.token);
+  setStoredOperator(out.operator);
+  logger.info("auth", `← reset-password OK`);
+  return out;
+}
+
+// ─── Email Verification ────────────────────────────────────────────────────────
+
+export async function verifyEmail(serverUrl: string, token: string): Promise<AuthResponse> {
+  logger.info("auth", `→ POST /v1/auth/verify-email`);
+  const res = await fetch(`${serverUrl}/v1/auth/verify-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+  const out = await jsonOrThrow<AuthResponse>(res);
+  setToken(out.token);
+  setStoredOperator(out.operator);
+  logger.info("auth", `← verify-email OK`);
+  return out;
+}
+
+export async function resendVerification(serverUrl: string, email: string): Promise<MessageResponse> {
+  logger.info("auth", `→ POST /v1/auth/resend-verification`, { email });
+  const res = await fetch(`${serverUrl}/v1/auth/resend-verification`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const out = await jsonOrThrow<MessageResponse>(res);
+  logger.info("auth", `← resend-verification OK`);
+  return out;
+}
+
 // ─── Google OAuth redirect ─────────────────────────────────────────────────────
 
-/**
- * Initiates the Google OAuth flow by redirecting the browser to the Go server's
- * /v1/auth/google endpoint. The Go server redirects to Google's consent screen.
- * After the user approves, Google redirects back to /v1/auth/google/callback on
- * the Go server, which then redirects the browser to the frontend callback page
- * with the JWT token embedded in the URL.
- */
 export function redirectToGoogleOAuth(serverUrl: string, frontendCallbackPath = "/"): void {
   const target = `${serverUrl}/v1/auth/google?state=${encodeURIComponent(frontendCallbackPath)}`;
   logger.info("auth", `→ GET /v1/auth/google (OAuth redirect)`, { target });
   window.location.href = target;
 }
 
-/**
- * Processes the OAuth callback on the frontend.
- * Call this on the /auth/callback route when the URL contains ?token=...&isNew=...
- * It stores the token and returns the auth data.
- */
 export function handleOAuthCallback(token: string, isNew: string): AuthResponse | null {
   try {
-    // Decode the operator from the token's payload (we don't verify signature client-side)
     const parts = token.split(".");
     if (parts.length !== 3) return null;
     const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
@@ -207,6 +257,7 @@ export function handleOAuthCallback(token: string, isNew: string): AuthResponse 
       name: payload.name ?? payload.email?.split("@")[0] ?? "Operator",
       role: (payload.role as Operator["role"]) ?? "operator",
       createdAt: payload.iat ? payload.iat * 1000 : Date.now(),
+      emailVerified: true, // Google accounts are pre-verified
     };
     if (!operator.id || !operator.email) return null;
     setToken(token);
