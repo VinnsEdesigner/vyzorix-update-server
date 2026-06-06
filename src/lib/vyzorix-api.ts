@@ -18,6 +18,8 @@ export interface DeviceStatus {
   lastSeen: number;
   appVersion: string;
   deviceClass: string;
+  firebaseInstallId?: string;
+  fcmToken?: string;
 }
 
 export interface DashboardDevicesResponse {
