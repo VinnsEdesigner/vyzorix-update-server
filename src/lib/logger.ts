@@ -55,10 +55,7 @@ function schedulePersist() {
   persistTimer = setTimeout(() => {
     persistTimer = null;
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(buffer.slice(-PERSIST_LIMIT)),
-      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(buffer.slice(-PERSIST_LIMIT)));
     } catch {
       // quota / serialize fail — drop silently
     }
@@ -93,10 +90,18 @@ export const logger = {
     schedulePersist();
     emit();
   },
-  debug(source: LogSource, m: string, meta?: Record<string, unknown>) { this.log("debug", source, m, meta); },
-  info(source: LogSource, m: string, meta?: Record<string, unknown>) { this.log("info", source, m, meta); },
-  warn(source: LogSource, m: string, meta?: Record<string, unknown>) { this.log("warn", source, m, meta); },
-  error(source: LogSource, m: string, meta?: Record<string, unknown>) { this.log("error", source, m, meta); },
+  debug(source: LogSource, m: string, meta?: Record<string, unknown>) {
+    this.log("debug", source, m, meta);
+  },
+  info(source: LogSource, m: string, meta?: Record<string, unknown>) {
+    this.log("info", source, m, meta);
+  },
+  warn(source: LogSource, m: string, meta?: Record<string, unknown>) {
+    this.log("warn", source, m, meta);
+  },
+  error(source: LogSource, m: string, meta?: Record<string, unknown>) {
+    this.log("error", source, m, meta);
+  },
 };
 
 // Initial bootstrap line (only the first time after hydrate adds nothing).
@@ -104,5 +109,14 @@ if (buffer.length === 0) {
   logger.info("system", "Vyzorix dashboard initialized");
 }
 
-export const LOG_SOURCES: LogSource[] = ["system", "ws", "api", "command", "update", "device", "alert", "auth"];
+export const LOG_SOURCES: LogSource[] = [
+  "system",
+  "ws",
+  "api",
+  "command",
+  "update",
+  "device",
+  "alert",
+  "auth",
+];
 export const LOG_LEVELS: LogLevel[] = ["debug", "info", "warn", "error"];

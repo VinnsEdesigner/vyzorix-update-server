@@ -38,13 +38,31 @@ function AdvancedSettings() {
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Log retention (entries)</Label>
-            <Input type="number" min={50} max={5000} step={50} value={logLimit} onChange={(e) => setLogLimit(Number(e.target.value))} />
-            <p className="text-xs text-muted-foreground">Diagnostics terminal keeps the last N frames in a rolling buffer.</p>
+            <Input
+              type="number"
+              min={50}
+              max={5000}
+              step={50}
+              value={logLimit}
+              onChange={(e) => setLogLimit(Number(e.target.value))}
+            />
+            <p className="text-xs text-muted-foreground">
+              Diagnostics terminal keeps the last N frames in a rolling buffer.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label>Signal history (frames)</Label>
-            <Input type="number" min={30} max={2000} step={30} value={signalLimit} onChange={(e) => setSignalLimit(Number(e.target.value))} />
-            <p className="text-xs text-muted-foreground">How many recent signals power the live charts.</p>
+            <Input
+              type="number"
+              min={30}
+              max={2000}
+              step={30}
+              value={signalLimit}
+              onChange={(e) => setSignalLimit(Number(e.target.value))}
+            />
+            <p className="text-xs text-muted-foreground">
+              How many recent signals power the live charts.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -58,16 +76,23 @@ function AdvancedSettings() {
       <Card className="border-destructive/40">
         <CardHeader>
           <CardTitle className="text-destructive">Danger zone</CardTitle>
-          <CardDescription>Reset every dashboard configuration to defaults. Does not touch the device or server.</CardDescription>
+          <CardDescription>
+            Reset every dashboard configuration to defaults. Does not touch the device or server.
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
-            {canDanger ? "Super-admin role required and active." : "Switch to super-admin in Operator to enable."}
+            {canDanger
+              ? "Super-admin role required and active."
+              : "Switch to super-admin in Operator to enable."}
           </p>
           <Button
             variant="destructive"
             disabled={!canDanger}
-            onClick={() => { cfg.reset(); toast.info("All dashboard settings reset"); }}
+            onClick={() => {
+              cfg.reset();
+              toast.info("All dashboard settings reset");
+            }}
           >
             Reset all settings
           </Button>
