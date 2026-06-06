@@ -71,9 +71,14 @@ function ForgotPasswordPage() {
             <div className="space-y-4 text-center">
               <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
               <p className="text-sm text-muted-foreground">
-                If an account exists with that email, you'll receive password reset instructions shortly.
+                If an account exists with that email, you'll receive password reset instructions
+                shortly.
               </p>
-              <Button variant="outline" className="w-full" onClick={() => navigate({ to: "/login" })}>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate({ to: "/login" })}
+              >
                 Return to login
               </Button>
             </div>

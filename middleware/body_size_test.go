@@ -13,10 +13,11 @@ func TestBodySizeLimit(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	tests := []struct {
-		name       string
-		limit      int64
-		bodySize   int
-		wantStatus int
+		name          string
+		limit         int64
+		bodySize      int
+		contentLength int64 // 0 means use bodySize
+		wantStatus    int
 	}{
 		{
 			name:       "body within limit",
@@ -37,10 +38,11 @@ func TestBodySizeLimit(t *testing.T) {
 			wantStatus: http.StatusRequestEntityTooLarge,
 		},
 		{
-			name:       "Content-Length exceeds limit",
-			limit:      100,
-			bodySize:   50,
-			wantStatus: http.StatusRequestEntityTooLarge,
+			name:          "Content-Length exceeds limit",
+			limit:         100,
+			bodySize:      50,
+			contentLength: 150, // Content-Length > limit but body is smaller
+			wantStatus:    http.StatusRequestEntityTooLarge,
 		},
 	}
 
@@ -58,7 +60,12 @@ func TestBodySizeLimit(t *testing.T) {
 			}
 
 			req := httptest.NewRequest(http.MethodPost, "/test", bytes.NewReader(body))
-			req.ContentLength = int64(tt.bodySize)
+			// Use contentLength if specified, otherwise use bodySize
+			if tt.contentLength > 0 {
+				req.ContentLength = tt.contentLength
+			} else {
+				req.ContentLength = int64(tt.bodySize)
+			}
 			w := httptest.NewRecorder()
 
 			router.ServeHTTP(w, req)

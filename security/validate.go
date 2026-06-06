@@ -60,8 +60,8 @@ func ValidateName(name string) (string, error) {
 	return name, nil
 }
 
-// ValidatePassword validates password length
-func ValidatePassword(password string) error {
+// ValidatePasswordLength validates password length constraints
+func ValidatePasswordLength(password string) error {
 	if len(password) < MinPasswordLength {
 		return &ValidationError{Field: "password", Message: "password must be at least 8 characters"}
 	}

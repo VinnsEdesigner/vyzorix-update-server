@@ -1,6 +1,6 @@
 /**
  * use-auth.ts — React hooks for authentication
- * 
+ *
  * Provides authentication state and actions for the React app.
  */
 
@@ -73,7 +73,9 @@ export function useAuthActions(): AuthActions {
       logger.info("auth", "Session validated", { email: op.email });
       return true;
     } catch (err) {
-      logger.warn("auth", "Session validation failed", { error: err instanceof Error ? err.message : String(err) });
+      logger.warn("auth", "Session validation failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
       return false;
     }
   }, [serverUrl]);
@@ -83,7 +85,9 @@ export function useAuthActions(): AuthActions {
       const op = await me(serverUrl);
       return op;
     } catch (err) {
-      logger.warn("auth", "Failed to refresh operator", { error: err instanceof Error ? err.message : String(err) });
+      logger.warn("auth", "Failed to refresh operator", {
+        error: err instanceof Error ? err.message : String(err),
+      });
       return null;
     }
   }, [serverUrl]);
@@ -93,7 +97,9 @@ export function useAuthActions(): AuthActions {
       await logout(serverUrl);
       logger.info("auth", "Signed out");
     } catch (err) {
-      logger.warn("auth", "Sign out error", { error: err instanceof Error ? err.message : String(err) });
+      logger.warn("auth", "Sign out error", {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }, [serverUrl]);
 
@@ -102,7 +108,7 @@ export function useAuthActions(): AuthActions {
 
 /**
  * useAuthGuard hook - protects routes that require authentication
- * 
+ *
  * Returns loading state while checking auth, and a redirect function.
  */
 export function useAuthGuard() {
@@ -112,7 +118,7 @@ export function useAuthGuard() {
   const validate = useCallback(async (): Promise<boolean> => {
     // First check local state
     if (!getToken()) return false;
-    
+
     // Then validate with server
     return await checkAuth();
   }, [checkAuth]);

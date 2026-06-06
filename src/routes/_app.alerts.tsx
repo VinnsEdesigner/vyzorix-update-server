@@ -5,7 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AlertTriangle, AlertCircle, Info, Search } from "lucide-react";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
@@ -35,22 +41,53 @@ const severityIcon: Record<Severity, typeof AlertTriangle> = {
 function deriveAlerts(history: TelemetryFrame[], th: Thresholds): DerivedAlert[] {
   const out: DerivedAlert[] = [];
   history.forEach((f, i) => {
-    const at = typeof f.timestamp === "number" ? f.timestamp : Date.now() - (history.length - i) * 1000;
+    const at =
+      typeof f.timestamp === "number" ? f.timestamp : Date.now() - (history.length - i) * 1000;
     if ((f.riskScore ?? 0) >= th.riskCrit) {
-      out.push({ id: `risk-${i}`, severity: "critical", message: `Risk score ${f.riskScore} — soft reboot predicted`, at });
+      out.push({
+        id: `risk-${i}`,
+        severity: "critical",
+        message: `Risk score ${f.riskScore} — soft reboot predicted`,
+        at,
+      });
     } else if ((f.riskScore ?? 0) >= th.riskWarn) {
-      out.push({ id: `risk-${i}`, severity: "warning", message: `Risk score ${f.riskScore} — elevated`, at });
+      out.push({
+        id: `risk-${i}`,
+        severity: "warning",
+        message: `Risk score ${f.riskScore} — elevated`,
+        at,
+      });
     }
     if ((f.thermalTemp ?? 0) >= th.thermalCrit) {
-      out.push({ id: `thermal-${i}`, severity: "critical", message: `Thermal ${f.thermalTemp?.toFixed(1)}°C — THROTTLE_HEAVY`, at });
+      out.push({
+        id: `thermal-${i}`,
+        severity: "critical",
+        message: `Thermal ${f.thermalTemp?.toFixed(1)}°C — THROTTLE_HEAVY`,
+        at,
+      });
     } else if ((f.thermalTemp ?? 0) >= th.thermalWarn) {
-      out.push({ id: `thermal-${i}`, severity: "warning", message: `Thermal ${f.thermalTemp?.toFixed(1)}°C — THROTTLE_LIGHT`, at });
+      out.push({
+        id: `thermal-${i}`,
+        severity: "warning",
+        message: `Thermal ${f.thermalTemp?.toFixed(1)}°C — THROTTLE_LIGHT`,
+        at,
+      });
     }
     if (f.bufferLevel != null && f.bufferLevel < th.bufferWarn) {
-      out.push({ id: `buf-${i}`, severity: "warning", message: `Buffer fill ${f.bufferLevel}% — approaching underrun`, at });
+      out.push({
+        id: `buf-${i}`,
+        severity: "warning",
+        message: `Buffer fill ${f.bufferLevel}% — approaching underrun`,
+        at,
+      });
     }
     if (f.speakerOn === false) {
-      out.push({ id: `spk-${i}`, severity: "info", message: `Speaker route lost — active=${f.activeDevice ?? "unknown"}`, at });
+      out.push({
+        id: `spk-${i}`,
+        severity: "info",
+        message: `Speaker route lost — active=${f.activeDevice ?? "unknown"}`,
+        at,
+      });
     }
   });
   return out.slice(-100).reverse();
@@ -62,7 +99,10 @@ function AlertsPage() {
   const [query, setQuery] = useState("");
   const [severity, setSeverity] = useState<"all" | Severity>("all");
 
-  const alerts = useMemo(() => deriveAlerts(stream.telemetryHistory, thresholds), [stream.telemetryHistory, thresholds]);
+  const alerts = useMemo(
+    () => deriveAlerts(stream.telemetryHistory, thresholds),
+    [stream.telemetryHistory, thresholds],
+  );
   const filtered = alerts.filter((a) => {
     if (severity !== "all" && a.severity !== severity) return false;
     if (!query.trim()) return true;
@@ -78,24 +118,43 @@ function AlertsPage() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-3">
-        <SummaryCard label="Critical" count={counts.critical} hint="Requires immediate action" Icon={AlertCircle} />
-        <SummaryCard label="Warning" count={counts.warning} hint="Investigate when possible" Icon={AlertTriangle} />
+        <SummaryCard
+          label="Critical"
+          count={counts.critical}
+          hint="Requires immediate action"
+          Icon={AlertCircle}
+        />
+        <SummaryCard
+          label="Warning"
+          count={counts.warning}
+          hint="Investigate when possible"
+          Icon={AlertTriangle}
+        />
         <SummaryCard label="Info" count={counts.info} hint="Routine route events" Icon={Info} />
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>System alerts</CardTitle>
-          <CardDescription>Derived from live DeviceSignal thresholds · {alerts.length} total</CardDescription>
+          <CardDescription>
+            Derived from live DeviceSignal thresholds · {alerts.length} total
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search message…" className="pl-8" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search message…"
+                className="pl-8"
+              />
             </div>
             <Select value={severity} onValueChange={(v) => setSeverity(v as typeof severity)}>
-              <SelectTrigger className="sm:w-44"><SelectValue placeholder="Severity" /></SelectTrigger>
+              <SelectTrigger className="sm:w-44">
+                <SelectValue placeholder="Severity" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All severities</SelectItem>
                 <SelectItem value="critical">Critical</SelectItem>
@@ -103,13 +162,23 @@ function AlertsPage() {
                 <SelectItem value="info">Info</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => { setQuery(""); setSeverity("all"); }}>Reset</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setQuery("");
+                setSeverity("all");
+              }}
+            >
+              Reset
+            </Button>
           </div>
 
           <div>
             {filtered.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">
-                {alerts.length === 0 ? "No telemetry yet — waiting for the device." : "No alerts match your filters."}
+                {alerts.length === 0
+                  ? "No telemetry yet — waiting for the device."
+                  : "No alerts match your filters."}
               </p>
             ) : (
               filtered.map((a, i) => {
@@ -120,10 +189,18 @@ function AlertsPage() {
                       <Icon className="mt-0.5 h-4 w-4 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm leading-snug">{a.message}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(a.at).toLocaleTimeString()}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(a.at).toLocaleTimeString()}
+                        </p>
                       </div>
                       <Badge
-                        variant={a.severity === "critical" ? "destructive" : a.severity === "warning" ? "secondary" : "outline"}
+                        variant={
+                          a.severity === "critical"
+                            ? "destructive"
+                            : a.severity === "warning"
+                              ? "secondary"
+                              : "outline"
+                        }
                         className="uppercase text-[10px]"
                       >
                         {a.severity}
@@ -141,7 +218,17 @@ function AlertsPage() {
   );
 }
 
-function SummaryCard({ label, count, hint, Icon }: { label: string; count: number; hint: string; Icon: typeof AlertTriangle }) {
+function SummaryCard({
+  label,
+  count,
+  hint,
+  Icon,
+}: {
+  label: string;
+  count: number;
+  hint: string;
+  Icon: typeof AlertTriangle;
+}) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

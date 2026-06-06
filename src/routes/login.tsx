@@ -87,23 +87,46 @@ function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button type="button" variant="outline" className="w-full" onClick={google} disabled={oauthLoading || loading}>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={google}
+            disabled={oauthLoading || loading}
+          >
             {oauthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Continue with Google
           </Button>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Separator className="flex-1" />or<Separator className="flex-1" />
+            <Separator className="flex-1" />
+            or
+            <Separator className="flex-1" />
           </div>
           <form onSubmit={submit} className="space-y-3">
             {mode === "signup" && (
               <div className="space-y-1.5">
                 <Label htmlFor="name">Full name</Label>
-                <Input id="name" type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Vinns Designer" required />
+                <Input
+                  id="name"
+                  type="text"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Vinns Designer"
+                  required
+                />
               </div>
             )}
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pw">Password</Label>
@@ -127,12 +150,20 @@ function LoginPage() {
             {mode === "signin" ? (
               <>
                 First time?{" "}
-                <button type="button" className="font-medium underline" onClick={() => setMode("signup")}>
+                <button
+                  type="button"
+                  className="font-medium underline"
+                  onClick={() => setMode("signup")}
+                >
                   Create the operator account
                 </button>
               </>
             ) : (
-              <button type="button" className="font-medium underline" onClick={() => setMode("signin")}>
+              <button
+                type="button"
+                className="font-medium underline"
+                onClick={() => setMode("signin")}
+              >
                 Back to sign in
               </button>
             )}
@@ -140,7 +171,11 @@ function LoginPage() {
           {mode === "signin" && (
             <p className="text-center text-xs text-muted-foreground">
               Forgot your password?{" "}
-              <button type="button" className="font-medium underline" onClick={() => navigate({ to: "/forgot-password" })}>
+              <button
+                type="button"
+                className="font-medium underline"
+                onClick={() => navigate({ to: "/forgot-password" })}
+              >
                 Reset it
               </button>
             </p>

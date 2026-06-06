@@ -1,7 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Bell, Cable, Palette, ShieldCheck, SlidersHorizontal, Wrench } from "lucide-react";
+import {
+  ArrowRight,
+  Bell,
+  Cable,
+  Palette,
+  ShieldCheck,
+  SlidersHorizontal,
+  Wrench,
+} from "lucide-react";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import { useServerHealth } from "@/hooks/use-server-health";
 
@@ -93,7 +101,9 @@ function SettingsOverview() {
           <CardDescription>From the repo root</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 font-mono text-xs">go run .</pre>
+          <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 font-mono text-xs">
+            go run .
+          </pre>
           <div className="flex items-center gap-2 pt-1">
             <Badge variant="outline">Phase 1.5</Badge>
             <Badge variant="outline">single device</Badge>

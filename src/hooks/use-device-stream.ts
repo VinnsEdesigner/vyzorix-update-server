@@ -14,7 +14,11 @@ export interface DeviceStreamState {
 
 const HISTORY_LIMIT = 240;
 
-export function useDeviceStream(serverUrl: string, deviceId: string, enabled: boolean = true): DeviceStreamState {
+export function useDeviceStream(
+  serverUrl: string,
+  deviceId: string,
+  enabled: boolean = true,
+): DeviceStreamState {
   const [state, setState] = useState<WsState>("idle");
   const [lastTelemetry, setLast] = useState<TelemetryFrame | null>(null);
   const [history, setHistory] = useState<TelemetryFrame[]>([]);
@@ -59,11 +63,20 @@ export function useDeviceStream(serverUrl: string, deviceId: string, enabled: bo
           if (frame.type === "telemetry") {
             setLast(frame);
             setHistory((prev) => [...prev.slice(-(HISTORY_LIMIT - 1)), frame]);
-            logger.debug("ws", `telemetry risk=${frame.riskScore ?? "-"} buf=${frame.bufferLevel ?? "-"} temp=${frame.thermalTemp ?? "-"}`);
+            logger.debug(
+              "ws",
+              `telemetry risk=${frame.riskScore ?? "-"} buf=${frame.bufferLevel ?? "-"} temp=${frame.thermalTemp ?? "-"}`,
+            );
           } else if (frame.type === "command") {
-            logger.info("ws", `command echo · ${frame.command} (${String(frame.dispatchId).slice(0, 8)})`);
+            logger.info(
+              "ws",
+              `command echo · ${frame.command} (${String(frame.dispatchId).slice(0, 8)})`,
+            );
           } else if (frame.type === "ack") {
-            logger.info("ws", `ack · ${String(frame.dispatchId ?? "").slice(0, 8)} ${frame.status ?? ""}`);
+            logger.info(
+              "ws",
+              `ack · ${String(frame.dispatchId ?? "").slice(0, 8)} ${frame.status ?? ""}`,
+            );
           } else {
             logger.debug("ws", `frame · ${String(ev.data).slice(0, 200)}`);
           }
