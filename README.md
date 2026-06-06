@@ -308,8 +308,6 @@ docker run -p 3000:3000 \
 | [API Reference](./doc/UPDATE_SERVER.md) | All REST endpoints |
 | [Device Registration](./doc/DEVICE_REGISTRATION.md) | Device lifecycle |
 | [Command Security](./doc/COMMAND_SECURITY.md) | HMAC signing details |
-| [Frontend Bug Fixes](./doc/FRONTEND_BUG_FIXES.md) | Frontend fixes (FE-1 to FE-4) |
-| [Backend Bug Fixes](./doc/BACKEND_BUG_FIXES.md) | Backend fixes (#2-15) |
 | [Setup Guide](./SETUP-GUIDE.md) | Google OAuth, Resend, Render setup |
 
 ---
@@ -354,17 +352,7 @@ npm run lint                   # Lint
 npx vitest run                 # Run tests
 ```
 
----
 
-## 🤝 Contributing
-
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ---
 
