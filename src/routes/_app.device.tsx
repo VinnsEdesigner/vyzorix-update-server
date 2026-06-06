@@ -125,17 +125,17 @@ function RegisterPanel() {
   const [firebaseInstallId, setFid] = useState(() => {
     const k = `vyzorix.register.fid`;
     try {
-      return localStorage.getItem(k) ?? "dev-fid-" + Math.random().toString(36).slice(2, 10);
+      return localStorage.getItem(k) ?? "";
     } catch {
-      return "dev-fid-" + Math.random().toString(36).slice(2, 10);
+      return "";
     }
   });
   const [fcmToken, setFcm] = useState(() => {
     const k = `vyzorix.register.fcm`;
     try {
-      return localStorage.getItem(k) ?? "dev-fcm-token-" + Math.random().toString(36).slice(2, 14);
+      return localStorage.getItem(k) ?? "";
     } catch {
-      return "dev-fcm-token-" + Math.random().toString(36).slice(2, 14);
+      return "";
     }
   });
   const [appVersion, setAv] = useState(() => {
