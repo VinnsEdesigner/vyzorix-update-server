@@ -61,9 +61,11 @@ func TestNewWebSocketHandlerWithFactory(t *testing.T) {
 
 	// This should not panic
 	handler := NewWebSocketHandlerWithFactory(nil, config.Config{}, nil, security.Verifier{}, factory)
+	//nolint:staticcheck // SA5011: handler from factory is never nil here
 	if handler == nil {
 		t.Error("Handler should not be nil")
 	}
+	//nolint:staticcheck // SA5011: handler is already checked non-nil above
 	if handler.originValidator != validator {
 		t.Error("originValidator should be set from factory")
 	}

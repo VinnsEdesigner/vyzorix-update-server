@@ -494,7 +494,7 @@ func TestVerifier_NilNonces(t *testing.T) {
 }
 
 // Helper for manual testing
-func signRequest(secretHex, method, path, body, nonce, ts string) string {
+func _signRequest(secretHex, method, path, body, nonce, ts string) string {
 	key, _ := hex.DecodeString(secretHex)
 	canonical := method + "\n" + path + "\n" + nonce + "\n" + ts + "\n"
 	if body != "" {

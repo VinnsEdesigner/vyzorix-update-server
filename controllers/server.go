@@ -381,7 +381,7 @@ func (s *Server) dashboardDevices(c *gin.Context) {
 	c.JSON(200, map[string]any{"devices": out})
 }
 
-func (s *Server) dashboardAuth() gin.HandlerFunc {
+func (s *Server) _dashboardAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if s.Config.TokenSecret == "" && s.Config.Env != "production" {
 			c.Next()

@@ -148,7 +148,9 @@ func TestCommandController_HTTPResponse_Success(t *testing.T) {
 	data, _ := json.Marshal(resp)
 	w := httptest.NewRecorder()
 	w.WriteHeader(http.StatusCreated)
-	w.Write(data)
+	if _, err := w.Write(data); err != nil {
+		t.Logf("write error: %v", err)
+	}
 
 	if w.Code != http.StatusCreated {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusCreated)
@@ -164,7 +166,9 @@ func TestCommandController_HTTPResponse_Error(t *testing.T) {
 	data, _ := json.Marshal(resp)
 	w := httptest.NewRecorder()
 	w.WriteHeader(http.StatusNotFound)
-	w.Write(data)
+	if _, err := w.Write(data); err != nil {
+		t.Logf("write error: %v", err)
+	}
 
 	if w.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)

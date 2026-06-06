@@ -758,22 +758,19 @@ func postJSON(ctx context.Context, url string, body any, resp any) error {
 	return json.Unmarshal(rb, resp)
 }
 
-// decodeJWTPayload extracts the payload from a JWT without signature verification.
-// In production, fetch Google's public keys and verify the signature.
-// For Phase 1.5, we trust the token format and extract the claims directly.
-func decodeJWTPayload(token string, out any) error {
+func _decodeJWTPayload(token string, out any) error {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return fmt.Errorf("invalid JWT format")
 	}
-	payload, err := base64RawURLDecode(parts[1])
+	payload, err := _base64RawURLDecode(parts[1])
 	if err != nil {
 		return err
 	}
 	return json.Unmarshal(payload, out)
 }
 
-func base64RawURLDecode(s string) ([]byte, error) {
+func _base64RawURLDecode(s string) ([]byte, error) {
 	// Add padding if needed
 	switch len(s) % 4 {
 	case 2:
