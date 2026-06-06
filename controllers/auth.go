@@ -16,6 +16,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix-update-server/config"
 	"github.com/VinnsEdesigner/vyzorix-update-server/models"
 	"github.com/VinnsEdesigner/vyzorix-update-server/security"
+	"github.com/VinnsEdesigner/vyzorix-update-server/services"
 	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -23,20 +24,26 @@ import (
 
 // AuthController handles operator authentication: login, register, logout, me, Google OAuth.
 type AuthController struct {
-	log       *slog.Logger
-	config   config.Config
-	store    *storage.Store
-	jwt      *security.JWTManager
+	log        *slog.Logger
+	config     config.Config
+	store      *storage.Store
+	jwt        *security.JWTManager
+	googleVer  *security.GoogleTokenVerifier
+	emailSvc   *services.EmailService
 }
 
 // NewAuthController creates a new auth controller.
 func NewAuthController(log *slog.Logger, cfg config.Config, store *storage.Store) *AuthController {
 	jwtManager := security.NewJWTManager(cfg.JWTSecret, cfg.JWTDuration, "vyzorix-update-server")
+	googleVer := security.NewGoogleTokenVerifier(cfg.GoogleOAuthClientID)
+	emailSvc := services.NewEmailService()
 	return &AuthController{
-		log:     log,
-		config:  cfg,
-		store:   store,
-		jwt:     jwtManager,
+		log:       log,
+		config:    cfg,
+		store:     store,
+		jwt:       jwtManager,
+		googleVer: googleVer,
+		emailSvc:  emailSvc,
 	}
 }
 
@@ -93,8 +100,11 @@ func (ac *AuthController) Register(c *gin.Context) {
 		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "email, password, and name are required"})
 		return
 	}
-	if len(req.Password) < 8 {
-		c.JSON(400, models.ErrorResponse{Error: "bad_password", Message: "password must be at least 8 characters"})
+
+	// Validate password complexity
+	if err := security.ValidatePassword(req.Password, security.DefaultPasswordPolicy); err != nil {
+		ac.log.Warn("register: weak password", "email", req.Email)
+		c.JSON(400, models.ErrorResponse{Error: "bad_password", Message: err.Error()})
 		return
 	}
 
@@ -135,6 +145,7 @@ func (ac *AuthController) Register(c *gin.Context) {
 		Name:         strings.TrimSpace(req.Name),
 		PasswordHash: string(hash),
 		Role:         role,
+		EmailVerified: false, // Not verified until email verification completes
 		CreatedAt:    time.Now().UTC(),
 		UpdatedAt:    time.Now().UTC(),
 	}
@@ -149,8 +160,13 @@ func (ac *AuthController) Register(c *gin.Context) {
 		return
 	}
 
+	// Send verification email
+	ac.sendVerificationEmail(ctx, op)
+
 	ac.log.Info("register: operator created", "email", req.Email, "role", role)
-	ac.issueToken(c, ctx, op)
+	c.JSON(201, models.MessageResponse{
+		Message: "Registration successful. Please check your email to verify your account.",
+	})
 }
 
 // Me returns the operator profile for the authenticated caller.
@@ -276,26 +292,21 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Decode the ID token to get user info
-	// In production, verify the ID token signature with Google's public keys
-	var idToken struct {
-		Sub   string `json:"sub"`
-		Email string `json:"email"`
-		Name  string `json:"name"`
-	}
-	if err := decodeJWTPayload(tokenResp.IDToken, &idToken); err != nil {
-		ac.log.Warn("google callback: id_token decode failed", "err", err)
-		c.JSON(502, models.ErrorResponse{Error: "oauth_error", Message: "failed to decode identity token from Google"})
+	// Verify the ID token using Google's public keys (cryptographically secure)
+	googleClaims, err := ac.googleVer.Verify(tokenResp.IDToken)
+	if err != nil {
+		ac.log.Warn("google callback: ID token verification failed", "err", err)
+		c.JSON(502, models.ErrorResponse{Error: "oauth_error", Message: "invalid identity token from Google"})
 		return
 	}
 
-	if idToken.Email == "" {
+	if googleClaims.Email == "" {
 		c.JSON(400, models.ErrorResponse{Error: "oauth_error", Message: "Google did not return an email address"})
 		return
 	}
 
 	// Find or create the operator
-	op, err := ac.store.GetOperatorByGoogleID(ctx, idToken.Sub)
+	op, err := ac.store.GetOperatorByGoogleID(ctx, googleClaims.Sub)
 	if err != nil {
 		ac.log.Warn("google callback: db lookup failed", "err", err)
 		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
@@ -309,26 +320,26 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 		role := models.RoleOperator
 		if count == 0 {
 			role = models.RoleSuperAdmin
-			ac.log.Info("google callback: bootstrapping first operator", "email", idToken.Email)
+			ac.log.Info("google callback: bootstrapping first operator", "email", googleClaims.Email)
 		}
 		op = &models.Operator{
 			ID:        generateID(),
-			Email:     idToken.Email,
-			Name:      idToken.Name,
+			Email:     googleClaims.Email,
+			Name:      googleClaims.Name,
 			Role:      role,
-			GoogleID:  idToken.Sub,
+			GoogleID:  googleClaims.Sub,
 			CreatedAt: time.Now().UTC(),
 			UpdatedAt: time.Now().UTC(),
 		}
 		if err := ac.store.CreateOperator(ctx, op); err != nil {
-			ac.log.Warn("google callback: create operator failed", "email", idToken.Email, "err", err)
+			ac.log.Warn("google callback: create operator failed", "email", googleClaims.Email, "err", err)
 			c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
 			return
 		}
 		isNew = true
 	} else if op.GoogleID == "" {
 		// Existing operator linking their Google account
-		if err := ac.store.UpdateOperatorGoogleID(ctx, op.ID, idToken.Sub); err != nil {
+		if err := ac.store.UpdateOperatorGoogleID(ctx, op.ID, googleClaims.Sub); err != nil {
 			ac.log.Warn("google callback: link failed", "err", err)
 			c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
 			return
@@ -385,6 +396,319 @@ func (ac *AuthController) issueToken(c *gin.Context, ctx context.Context, op *mo
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────────
+
+// sendVerificationEmail creates a verification token and sends the verification email.
+func (ac *AuthController) sendVerificationEmail(ctx context.Context, op *models.Operator) {
+	if !ac.emailSvc.IsConfigured() {
+		ac.log.Warn("sendVerificationEmail: email service not configured, skipping", "email", op.Email)
+		return
+	}
+
+	// Generate verification token
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		ac.log.Warn("sendVerificationEmail: failed to generate token", "err", err)
+		return
+	}
+	token := hex.EncodeToString(tokenBytes)
+	tokenHash := security.HashToken(token) // Store hash in DB
+
+	// Create verification record
+	ev := &storage.EmailVerification{
+		ID:         generateID(),
+		OperatorID: op.ID,
+		TokenHash:  tokenHash,
+		ExpiresAt:  time.Now().UTC().Add(ac.config.EmailVerifyTokenExpiry),
+		CreatedAt:  time.Now().UTC(),
+	}
+
+	if err := ac.store.CreateEmailVerification(ctx, ev); err != nil {
+		ac.log.Warn("sendVerificationEmail: failed to store token", "err", err)
+		return
+	}
+
+	// Send email (async, don't block registration)
+	go func() {
+		if err := ac.emailSvc.SendVerificationEmail(context.Background(), op.Email, op.Name, token); err != nil {
+			ac.log.Error("sendVerificationEmail: failed to send email", "email", op.Email, "err", err)
+		} else {
+			ac.log.Info("sendVerificationEmail: sent", "email", op.Email)
+		}
+	}()
+}
+
+// VerifyEmail handles email verification requests.
+// POST /v1/auth/verify-email
+func (ac *AuthController) VerifyEmail(c *gin.Context) {
+	var req models.VerifyEmailRequest
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "invalid JSON body"})
+		return
+	}
+
+	token := strings.TrimSpace(req.Token)
+	if token == "" {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "token is required"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	// Find verification token
+	tokenHash := security.HashToken(token)
+	ev, err := ac.store.GetEmailVerificationByTokenHash(ctx, tokenHash)
+	if err != nil {
+		ac.log.Warn("verifyEmail: db error", "err", err)
+		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "verification failed"})
+		return
+	}
+
+	if ev == nil {
+		c.JSON(400, models.ErrorResponse{Error: "invalid_token", Message: "invalid or expired verification token"})
+		return
+	}
+
+	// Check if expired
+	if time.Now().UTC().After(ev.ExpiresAt) {
+		c.JSON(400, models.ErrorResponse{Error: "token_expired", Message: "verification token has expired"})
+		return
+	}
+
+	// Mark email as verified
+	if err := ac.store.SetOperatorEmailVerified(ctx, ev.OperatorID, true); err != nil {
+		ac.log.Warn("verifyEmail: failed to set verified", "err", err)
+		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "verification failed"})
+		return
+	}
+
+	// Delete the verification token (single use)
+	_ = ac.store.DeleteEmailVerification(ctx, ev.ID)
+
+	ac.log.Info("verifyEmail: success", "operatorID", ev.OperatorID)
+	c.JSON(200, models.EmailVerifiedResponse{Verified: true})
+}
+
+// ResendVerification resends the verification email.
+// POST /v1/auth/resend-verification
+func (ac *AuthController) ResendVerification(c *gin.Context) {
+	var req models.ResendVerificationRequest
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "invalid JSON body"})
+		return
+	}
+
+	email := strings.TrimSpace(strings.ToLower(req.Email))
+	if email == "" {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "email is required"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	// Find operator by email
+	op, err := ac.store.GetOperatorByEmail(ctx, email)
+	if err != nil {
+		ac.log.Warn("resendVerification: db error", "err", err)
+		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "request failed"})
+		return
+	}
+
+	// Always return success for security (don't reveal if email exists)
+	if op == nil {
+		ac.log.Info("resendVerification: email not found (silently)", "email", email)
+		c.JSON(200, models.MessageResponse{Message: "If that email exists, a verification email has been sent."})
+		return
+	}
+
+	// Check if already verified
+	if op.EmailVerified {
+		c.JSON(400, models.ErrorResponse{Error: "already_verified", Message: "this email is already verified"})
+		return
+	}
+
+	// Delete old verification tokens
+	_ = ac.store.DeleteEmailVerificationsByOperator(ctx, op.ID)
+
+	// Send new verification email
+	ac.sendVerificationEmail(ctx, op)
+
+	ac.log.Info("resendVerification: sent", "email", email)
+	c.JSON(200, models.MessageResponse{Message: "If that email exists, a verification email has been sent."})
+}
+
+// ForgotPassword handles password reset requests.
+// POST /v1/auth/forgot-password
+func (ac *AuthController) ForgotPassword(c *gin.Context) {
+	var req models.ForgotPasswordRequest
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "invalid JSON body"})
+		return
+	}
+
+	email := strings.TrimSpace(strings.ToLower(req.Email))
+	if email == "" {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "email is required"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	// Find operator by email
+	op, err := ac.store.GetOperatorByEmail(ctx, email)
+	if err != nil {
+		ac.log.Warn("forgotPassword: db error", "err", err)
+		// Still return success for security
+		c.JSON(200, models.MessageResponse{Message: "If that email exists, a password reset link has been sent."})
+		return
+	}
+
+	// Always return success for security (don't reveal if email exists)
+	if op == nil {
+		ac.log.Info("forgotPassword: email not found (silently)", "email", email)
+		c.JSON(200, models.MessageResponse{Message: "If that email exists, a password reset link has been sent."})
+		return
+	}
+
+	// Check if password-based account (Google-only accounts can't reset via email)
+	if op.PasswordHash == "" {
+		c.JSON(400, models.ErrorResponse{Error: "google_account", Message: "this account uses Google sign-in and cannot reset password via email"})
+		return
+	}
+
+	// Delete old reset tokens
+	_ = ac.store.DeletePasswordResetTokensByOperator(ctx, op.ID)
+
+	// Generate reset token
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		ac.log.Warn("forgotPassword: failed to generate token", "err", err)
+		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "request failed"})
+		return
+	}
+	token := hex.EncodeToString(tokenBytes)
+	tokenHash := security.HashToken(token)
+
+	prt := &storage.PasswordResetToken{
+		ID:         generateID(),
+		OperatorID: op.ID,
+		TokenHash:  tokenHash,
+		ExpiresAt:  time.Now().UTC().Add(ac.config.PasswordResetTokenExpiry),
+		CreatedAt:  time.Now().UTC(),
+	}
+
+	if err := ac.store.CreatePasswordResetToken(ctx, prt); err != nil {
+		ac.log.Warn("forgotPassword: failed to store token", "err", err)
+		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "request failed"})
+		return
+	}
+
+	// Send email (async)
+	go func() {
+		if err := ac.emailSvc.SendPasswordResetEmail(context.Background(), op.Email, op.Name, token); err != nil {
+			ac.log.Error("forgotPassword: failed to send email", "email", op.Email, "err", err)
+		} else {
+			ac.log.Info("forgotPassword: sent", "email", op.Email)
+		}
+	}()
+
+	c.JSON(200, models.MessageResponse{Message: "If that email exists, a password reset link has been sent."})
+}
+
+// ResetPassword handles password reset with a valid token.
+// POST /v1/auth/reset-password
+func (ac *AuthController) ResetPassword(c *gin.Context) {
+	var req models.ResetPasswordRequest
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "invalid JSON body"})
+		return
+	}
+
+	token := strings.TrimSpace(req.Token)
+	newPassword := req.NewPassword
+
+	if token == "" || newPassword == "" {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "token and newPassword are required"})
+		return
+	}
+
+	// Validate password complexity
+	if err := security.ValidatePassword(newPassword, security.DefaultPasswordPolicy); err != nil {
+		c.JSON(400, models.ErrorResponse{Error: "bad_password", Message: err.Error()})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	// Find reset token
+	tokenHash := security.HashToken(token)
+	prt, err := ac.store.GetPasswordResetTokenByHash(ctx, tokenHash)
+	if err != nil {
+		ac.log.Warn("resetPassword: db error", "err", err)
+		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "reset failed"})
+		return
+	}
+
+	if prt == nil {
+		c.JSON(400, models.ErrorResponse{Error: "invalid_token", Message: "invalid or expired reset token"})
+		return
+	}
+
+	// Check if expired
+	if time.Now().UTC().After(prt.ExpiresAt) {
+		c.JSON(400, models.ErrorResponse{Error: "token_expired", Message: "reset token has expired"})
+		return
+	}
+
+	// Check if already used
+	if prt.UsedAt != nil {
+		c.JSON(400, models.ErrorResponse{Error: "token_used", Message: "this reset token has already been used"})
+		return
+	}
+
+	// Get operator and update password
+	op, err := ac.store.GetOperatorByID(ctx, prt.OperatorID)
+	if err != nil || op == nil {
+		ac.log.Warn("resetPassword: operator not found", "operatorID", prt.OperatorID)
+		c.JSON(400, models.ErrorResponse{Error: "invalid_token", Message: "invalid reset token"})
+		return
+	}
+
+	// Hash new password
+	newHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		ac.log.Warn("resetPassword: bcrypt failed", "err", err)
+		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "reset failed"})
+		return
+	}
+
+	// Update operator password (need to add this method)
+	// For now, we'll use a direct approach via UpdateOperatorPassword
+	if err := ac.store.UpdateOperatorPassword(ctx, op.ID, string(newHash)); err != nil {
+		ac.log.Warn("resetPassword: update failed", "err", err)
+		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "reset failed"})
+		return
+	}
+
+	// Mark token as used
+	_ = ac.store.MarkPasswordResetTokenUsed(ctx, prt.ID)
+
+	// Delete all sessions (force logout)
+	_ = ac.store.DeleteAllSessionsForOperator(ctx, op.ID)
+
+	// Send confirmation email
+	go func() {
+		if err := ac.emailSvc.SendPasswordChangedEmail(context.Background(), op.Email, op.Name); err != nil {
+			ac.log.Error("resetPassword: failed to send confirmation email", "email", op.Email, "err", err)
+		}
+	}()
+
+	ac.log.Info("resetPassword: success", "operatorID", op.ID)
+	c.JSON(200, models.MessageResponse{Message: "Password reset successful. Please log in with your new password."})
+}
 
 func getOperatorFromContext(c *gin.Context) *models.Operator {
 	v, exists := c.Get("operator")
