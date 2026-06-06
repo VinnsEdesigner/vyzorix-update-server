@@ -68,6 +68,12 @@ func (s *Server) Engine() *gin.Engine {
 	r.Use(middleware.Logger(s.Log))
 	r.Use(middleware.CORSHandler(s.Config.AllowedOrigins))
 
+	// Security: limit request body size to prevent large payload attacks
+	r.Use(middleware.BodySizeLimit(middleware.DefaultBodySizeLimit))
+
+	// Multipart form limit (8MB for APK uploads)
+	r.MaxMultipartMemory = middleware.LargeBodySizeLimit
+
 	// Rate limit public endpoints to prevent abuse
 	public := r.Group("")
 	public.Use(s.Limiter.Middleware())
