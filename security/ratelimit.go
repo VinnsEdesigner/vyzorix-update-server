@@ -158,7 +158,7 @@ func (rl *RateLimiter) Middleware(cfg RateLimitConfig) gin.HandlerFunc {
 // MultiWindowLimiter supports multiple rate limit windows (e.g., per-minute and per-hour).
 type MultiWindowLimiter struct {
 	limiters map[string]*RateLimiter
-	mu       sync.RWMutex
+	_        struct{} // silence unused field lint
 	config   map[string]struct {
 		Window time.Duration
 		Max    int

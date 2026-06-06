@@ -169,7 +169,9 @@ func TestDeviceController_HTTPResponse_JSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	if _, err := w.Write(data); err != nil {
+		t.Logf("write error: %v", err)
+	}
 
 	if w.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
