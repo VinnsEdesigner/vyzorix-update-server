@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"net/http"
+	"time"
 
 	"github.com/VinnsEdesigner/vyzorix-update-server/config"
 	"github.com/VinnsEdesigner/vyzorix-update-server/hub"
@@ -14,13 +14,42 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// UpgraderFactory creates and configures WebSocket upgraders with consistent settings.
+type UpgraderFactory struct {
+	originValidator *security.OriginValidator
+	handshakeTimeout time.Duration
+}
+
+// NewUpgraderFactory creates a new UpgraderFactory with the given origin validator.
+func NewUpgraderFactory(originValidator *security.OriginValidator) *UpgraderFactory {
+	return &UpgraderFactory{
+		originValidator: originValidator,
+		handshakeTimeout: 10 * time.Second,
+	}
+}
+
+// SetHandshakeTimeout sets the WebSocket handshake timeout.
+func (f *UpgraderFactory) SetHandshakeTimeout(timeout time.Duration) *UpgraderFactory {
+	f.handshakeTimeout = timeout
+	return f
+}
+
+// Create returns a configured websocket.Upgrader.
+func (f *UpgraderFactory) Create() websocket.Upgrader {
+	return websocket.Upgrader{
+		CheckOrigin:     f.originValidator.CheckOrigin(),
+		HandshakeTimeout: f.handshakeTimeout,
+	}
+}
+
 // WebSocketHandler manages WebSocket upgrade and client lifecycle.
 type WebSocketHandler struct {
-	log      *slog.Logger
-	config   config.Config
-	hub      *hub.Hub
-	hmac     security.Verifier
-	upgrader websocket.Upgrader
+	log             *slog.Logger
+	config          config.Config
+	hub             *hub.Hub
+	hmac            security.Verifier
+	upgrader        websocket.Upgrader
+	originValidator *security.OriginValidator
 }
 
 func NewWebSocketHandler(
@@ -29,13 +58,66 @@ func NewWebSocketHandler(
 	h *hub.Hub,
 	hmac security.Verifier,
 ) *WebSocketHandler {
+	// Initialize origin validator
+	originValidator := security.NewOriginValidator(cfg.AllowedOrigins)
+	originValidator.SetLogger(log)
+
 	return &WebSocketHandler{
-		log:      log,
-		config:   cfg,
-		hub:      h,
-		hmac:     hmac,
-		upgrader: websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }},
+		log:             log,
+		config:          cfg,
+		hub:             h,
+		hmac:            hmac,
+		originValidator: originValidator,
+		upgrader: websocket.Upgrader{
+			CheckOrigin:     originValidator.CheckOrigin(),
+			HandshakeTimeout: 10 * time.Second,
+		},
 	}
+}
+
+// NewWebSocketHandlerWithValidator creates a WebSocketHandler with a pre-configured OriginValidator.
+// Use this when you need to share the same validator instance across handlers.
+func NewWebSocketHandlerWithValidator(
+	log *slog.Logger,
+	cfg config.Config,
+	h *hub.Hub,
+	hmac security.Verifier,
+	originValidator *security.OriginValidator,
+) *WebSocketHandler {
+	// Use the UpgraderFactory for consistent configuration
+	factory := NewUpgraderFactory(originValidator)
+	return &WebSocketHandler{
+		log:             log,
+		config:          cfg,
+		hub:             h,
+		hmac:            hmac,
+		originValidator: originValidator,
+		upgrader:        factory.Create(),
+	}
+}
+
+// NewWebSocketHandlerWithFactory creates a WebSocketHandler using a shared UpgraderFactory.
+// This ensures all WebSocket handlers use the same configuration.
+func NewWebSocketHandlerWithFactory(
+	log *slog.Logger,
+	cfg config.Config,
+	h *hub.Hub,
+	hmac security.Verifier,
+	factory *UpgraderFactory,
+) *WebSocketHandler {
+	return &WebSocketHandler{
+		log:             log,
+		config:          cfg,
+		hub:             h,
+		hmac:            hmac,
+		originValidator: factory.originValidator,
+		upgrader:        factory.Create(),
+	}
+}
+
+// OriginValidator returns the origin validator for external use.
+func (s *WebSocketHandler) OriginValidator() *security.OriginValidator {
+	return s.originValidator
 }
 
 // HandleStream upgrades HTTP to WebSocket and registers the client.
