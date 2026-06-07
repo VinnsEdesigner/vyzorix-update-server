@@ -1,6 +1,7 @@
 # ADR-0004: SQLCipher full-database encryption vs per-column encryption
 
 ## Status
+
 Accepted
 
 ## Context
@@ -30,11 +31,13 @@ Two design options:
 ### Per-column encryption (option B)
 
 Pros:
+
 - Cheaper at runtime — most queries don't touch encrypted columns and avoid crypto overhead.
 - Easier to debug — the SQLite file can be inspected with standard tools when you have the device.
 - Smaller key surface — only the sensitive blob needs key management.
 
 Cons (why rejected):
+
 - **The sensitive blob is referenced by foreign keys from non-sensitive tables.** Once you start joining, the "is this column sensitive?" boundary leaks. The forensic timeline references state snapshots; correlating which snapshot was current at a soft-reboot tells you about the device's internal state at the time of the crash. The "non-sensitive" telemetry is sensitive when joined with the state.
 - **Threat model drift.** Today the telemetry is "operational" and doesn't matter. If the project scales to multiple devices and someone forks the database off a device, that telemetry now identifies user behavior patterns. Future-proofing against this is cheap if done now.
 - **Cognitive load.** "Which columns are encrypted?" is a per-table decision that has to be re-evaluated every time the schema changes. SQLCipher is a one-time decision.
@@ -47,14 +50,17 @@ Considered briefly. Rejected because the C22 ships with no full-disk encryption 
 ## Consequences
 
 **Locked in:**
+
 - SQLCipher dependency in the device APK (~1.5 MB native code).
 - All Room queries go through the cipher. Acceptable performance on the C22's eMMC for our query volume (~hundreds of writes/min sustained, occasional bulk reads).
 - The DB passcode must be sealed by `KeystoreManager` (see DOC_7 §3.1). Loss of the passcode = data loss.
 
 **Closed off:**
+
 - Inspecting the SQLite file with `sqlite3` from the shell. Acceptable trade-off — the daemon exposes structured diagnostic exports via `DiagnosticCompression` which is the supported path for offline inspection.
 
 **Opened up:**
+
 - Uniform "encrypted at rest" guarantee for everything in `AppDatabase`. No per-column policy to audit.
 - Forensic export bundles (`CrashTraceStore` → diagnostic ZIP) can be transmitted over plain HTTPS without worrying about leaking sensitive joined state, because the database content is already wrapped.
 
