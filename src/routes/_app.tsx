@@ -9,13 +9,6 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import { Toaster } from "@/components/ui/sonner";
 import { DeviceStreamProvider, useStream } from "@/lib/device-stream-context";
 
-export const Route = createFileRoute("/_app")({
-  ssr: false,
-  // Auth temporarily disabled for local exploration. Re-enable by restoring the
-  // beforeLoad guard below once Google sign-in is configured.
-  component: AppLayout,
-});
-
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/device": "Device",
@@ -63,3 +56,10 @@ const AppShell = (): ReactElement => {
     </>
   );
 };
+
+export const Route = createFileRoute("/_app")({
+  ssr: false,
+  // Auth temporarily disabled for local exploration. Re-enable by restoring the
+  // beforeLoad guard below once Google sign-in is configured.
+  component: AppLayout,
+});
