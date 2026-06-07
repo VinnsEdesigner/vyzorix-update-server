@@ -9,12 +9,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { verifyEmail } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/verify-email")({
-  ssr: false,
-  head: () => ({ meta: [{ title: "Verify Email — Vyzorix" }] }),
-  component: VerifyEmailPage,
-});
-
 type Status = "loading" | "success" | "error";
 
 const VerifyEmailPage = (): ReactElement => {
@@ -100,3 +94,9 @@ const VerifyEmailPage = (): ReactElement => {
     </div>
   );
 };
+
+export const Route = createFileRoute("/verify-email")({
+  ssr: false,
+  head: () => ({ meta: [{ title: "Verify Email — Vyzorix" }] }),
+  component: VerifyEmailPage,
+});
