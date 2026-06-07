@@ -67,7 +67,6 @@ export function useAuth(): AuthState {
 export function useAuthActions(): AuthActions {
 // eslint-disable-next-line unused-imports/no-unused-vars
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-// eslint-disable-next-line unused-imports/no-unused-vars
   const { operator } = useAuth();
   const { serverUrl } = useVyzorixConfig();
 
@@ -121,18 +120,6 @@ export function useAuthActions(): AuthActions {
 // eslint-disable-next-line func-style
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 export function useAuthGuard() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -159,18 +146,7 @@ export function useAuthGuard() {
  */
 // eslint-disable-next-line func-style
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 export function useRequireAuth() {

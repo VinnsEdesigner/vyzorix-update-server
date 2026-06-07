@@ -140,9 +140,6 @@ describe("Config Storage", () => {
   // eslint-disable-next-line func-style
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
   function saveConfig(config: Record<string, unknown>) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
   }
@@ -214,9 +211,6 @@ describe("Settings Persistence", () => {
   }
 
   // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
   function saveOperator(op: Operator) {
