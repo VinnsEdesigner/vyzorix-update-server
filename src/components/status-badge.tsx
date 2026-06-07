@@ -1,9 +1,11 @@
+import type { ReactElement } from "react";
+
 import { Badge } from "@/components/ui/badge";
 
 export type DeviceHealth = "online" | "offline" | "warning" | "critical";
 
 // eslint-disable-next-line func-style
-export function StatusBadge({ status }: { status: DeviceHealth }): JSX.Element {
+export function StatusBadge({ status }: { status: DeviceHealth }): ReactElement {
   const map: Record<
     DeviceHealth,
     { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dot: string }

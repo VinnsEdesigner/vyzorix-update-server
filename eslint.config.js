@@ -99,7 +99,7 @@ export default tseslint.config(
       "no-bitwise": "error",
       "no-mixed-operators": "error",
       "no-multiple-empty-lines": ["error", { max: 1, maxBOF: 0, maxEOF: 0 }],
-      "no-nested-ternary": "warn",
+      "no-nested-ternary": "error",
       "no-trailing-spaces": "error",
       "object-curly-spacing": ["error", "always"],
       "one-var": ["error", "never"],
@@ -194,7 +194,7 @@ export default tseslint.config(
       "@typescript-eslint/consistent-indexed-object-style": "error",
       "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
       "@typescript-eslint/explicit-function-return-type": [
-        "warn",
+        "error",
         { allowExpressions: true, allowConciseArrowFunctionExpressionsStartingWithVoid: true },
       ],
       "@typescript-eslint/explicit-module-boundary-types": "off",
