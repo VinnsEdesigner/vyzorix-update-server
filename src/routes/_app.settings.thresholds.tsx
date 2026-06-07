@@ -25,7 +25,7 @@ function ThresholdSettings(): JSX.Element {
 
   // Load thresholds from server on mount
   useEffect(() => {
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const loadFromServer = async () => {
       try {
         const op = await me(cfgRef.current.serverUrl);
@@ -40,7 +40,7 @@ function ThresholdSettings(): JSX.Element {
     loadFromServer();
   }, []);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const save = async () => {
     setLoading(true);
     try {
@@ -56,7 +56,7 @@ function ThresholdSettings(): JSX.Element {
     }
   };
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const reset = () => {
     setT(DEFAULT_SETTINGS.thresholds);
     toast.info("Thresholds reset to defaults — save to persist");
@@ -126,8 +126,6 @@ function ThresholdSettings(): JSX.Element {
   );
 }
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 function NumField({
   label,

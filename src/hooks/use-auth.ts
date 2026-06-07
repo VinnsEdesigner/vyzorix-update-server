@@ -41,7 +41,7 @@ export function useAuth(): AuthState {
 
   // Update state when localStorage changes (for cross-tab sync)
   useEffect(() => {
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const handleStorage = () => {
       const token = getToken();
       const operator = getStoredOperator();
@@ -65,9 +65,7 @@ export function useAuth(): AuthState {
  */
 // eslint-disable-next-line func-style
 export function useAuthActions(): AuthActions {
-// eslint-disable-next-line unused-imports/no-unused-vars
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { operator } = useAuth();
+  const { operator: _operator } = useAuth();
   const { serverUrl } = useVyzorixConfig();
 
   const checkAuth = useCallback(async (): Promise<boolean> => {
@@ -117,9 +115,7 @@ export function useAuthActions(): AuthActions {
  *
  * Returns loading state while checking auth, and a redirect function.
  */
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
 // eslint-disable-next-line func-style
 export function useAuthGuard() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -130,7 +126,7 @@ export function useAuthGuard() {
     if (!getToken()) return false;
 
     // Then validate with server
-// eslint-disable-next-line no-return-await
+    // eslint-disable-next-line no-return-await
     return await checkAuth();
   }, [checkAuth]);
 
@@ -144,10 +140,7 @@ export function useAuthGuard() {
 /**
  * useRequireAuth hook - for components that need to wait for auth check
  */
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
 // eslint-disable-next-line func-style
 export function useRequireAuth() {
   const [state, setState] = useState<{
@@ -160,7 +153,7 @@ export function useRequireAuth() {
   const { checkAuth } = useAuthActions();
 
   useEffect(() => {
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const check = async () => {
       const isAuth = await checkAuth();
       setState({ isReady: true, isAuthenticated: isAuth });
