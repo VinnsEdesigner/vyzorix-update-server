@@ -13,7 +13,7 @@ import { VyzorixConfigProvider } from "@/lib/vyzorix-config";
 
 import appCss from "../styles.css?url";
 
-function NotFoundComponent(): ReactElement {
+const NotFoundComponent = (): ReactElement => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -33,9 +33,9 @@ function NotFoundComponent(): ReactElement {
       </div>
     </div>
   );
-}
+};
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }): ReactElement {
+const ErrorComponent = ({ error, reset }: { error: Error; reset: () => void }): ReactElement => {
   console.error(error);
   const router = useRouter();
 
@@ -68,7 +68,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }): 
       </div>
     </div>
   );
-}
+};
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -102,7 +102,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-function RootShell({ children }: { children: React.ReactNode }): ReactElement {
+const RootShell = ({ children }: { children: React.ReactNode }): ReactElement => {
   return (
     <html lang="en">
       <head>
@@ -119,9 +119,9 @@ function RootShell({ children }: { children: React.ReactNode }): ReactElement {
       </body>
     </html>
   );
-}
+};
 
-function RootComponent(): ReactElement {
+const RootComponent = (): ReactElement => {
   const { queryClient } = Route.useRouteContext();
 
   return (
@@ -132,4 +132,4 @@ function RootComponent(): ReactElement {
       </VyzorixConfigProvider>
     </QueryClientProvider>
   );
-}
+};

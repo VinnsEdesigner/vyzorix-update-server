@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 
 export type ConnectionState = "connecting" | "connected" | "reconnecting" | "disconnected" | "idle";
 
-export function ConnectionBadge({ state = "idle" }: { state?: ConnectionState }): ReactElement {
+export const ConnectionBadge = ({ state = "idle" }: { state?: ConnectionState }): ReactElement => {
   const map: Record<
     ConnectionState,
     { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dot: string }
@@ -22,4 +22,4 @@ export function ConnectionBadge({ state = "idle" }: { state?: ConnectionState })
       {cfg.label}
     </Badge>
   );
-}
+};

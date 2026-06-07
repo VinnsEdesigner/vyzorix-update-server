@@ -26,7 +26,7 @@ export interface AuthActions {
 /**
  * useAuth hook - provides authentication state
  */
-export function useAuth(): AuthState {
+export const useAuth = (): AuthState => {
   const [state, setState] = useState<AuthState>(() => {
     const token = getToken();
     const operator = getStoredOperator();
@@ -40,7 +40,7 @@ export function useAuth(): AuthState {
 
   // Update state when localStorage changes (for cross-tab sync)
   useEffect(() => {
-    const handleStorage = () => {
+    const handleStorage = (): void => {
       const token = getToken();
       const operator = getStoredOperator();
       setState({
@@ -56,12 +56,12 @@ export function useAuth(): AuthState {
   }, []);
 
   return state;
-}
+};
 
 /**
  * useAuthActions hook - provides authentication actions
  */
-export function useAuthActions(): AuthActions {
+export const useAuthActions = (): AuthActions => {
   const { operator: _operator } = useAuth();
   const { serverUrl } = useVyzorixConfig();
 
@@ -105,7 +105,7 @@ export function useAuthActions(): AuthActions {
   }, [serverUrl]);
 
   return { checkAuth, refreshOperator, signOut };
-}
+};
 
 /**
  * useAuthGuard hook - protects routes that require authentication
@@ -113,7 +113,7 @@ export function useAuthActions(): AuthActions {
  * Returns loading state while checking auth, and a redirect function.
  */
 
-export function useAuthGuard(): object {
+export const useAuthGuard = (): object => {
   const { isAuthenticated, isLoading } = useAuth();
   const { checkAuth } = useAuthActions();
 
@@ -130,13 +130,13 @@ export function useAuthGuard(): object {
     isLoading,
     validate,
   };
-}
+};
 
 /**
  * useRequireAuth hook - for components that need to wait for auth check
  */
 
-export function useRequireAuth(): { isReady: boolean; isAuthenticated: boolean } {
+export const useRequireAuth = (): { isReady: boolean; isAuthenticated: boolean } => {
   const [state, setState] = useState<{
     isReady: boolean;
     isAuthenticated: boolean;
@@ -147,7 +147,7 @@ export function useRequireAuth(): { isReady: boolean; isAuthenticated: boolean }
   const { checkAuth } = useAuthActions();
 
   useEffect(() => {
-    const check = async () => {
+    const check = async (): Promise<void> => {
       const isAuth = await checkAuth();
       setState({ isReady: true, isAuthenticated: isAuth });
     };
@@ -155,4 +155,4 @@ export function useRequireAuth(): { isReady: boolean; isAuthenticated: boolean }
   }, [checkAuth]);
 
   return state;
-}
+};
