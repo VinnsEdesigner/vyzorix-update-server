@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldAlert, Loader2 } from "lucide-react";
+import type { JSX } from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 
@@ -17,42 +18,43 @@ import {
 } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/_app/settings/operator")({
-  ssr: false,
-  component: OperatorSettings,
-});
+// eslint-disable-next-line func-style
+function RoleRow({ allowed, label }: { allowed: boolean; label: string }): JSX.Element {
+  return (
+    <div className="flex items-center justify-between rounded-md border p-2.5">
+      <span className={allowed ? "" : "text-muted-foreground"}>{label}</span>
+      <Badge variant={allowed ? "default" : "outline"}>{allowed ? "allowed" : "blocked"}</Badge>
+    </div>
+  );
+}
 
-const OperatorSettings = (): JSX.Element => {
+// eslint-disable-next-line func-style
+function OperatorSettings(): JSX.Element {
   const cfg = useVyzorixConfig();
   const stored = getStoredOperator();
 
-  // Email and role come from the database — read-only, pre-filled from stored operator
   const [email, setEmail] = useState(stored?.email ?? "");
   const [role, setRole] = useState(stored?.role ?? "operator");
   const [notifications, setNotifications] = useState(cfg.notificationsEnabled);
 
-  // Name is editable — syncs to the Go server on every change
   const [name, setName] = useState(stored?.name ?? "");
   const [savingName, setSavingName] = useState(false);
   const [lastSavedName, setLastSavedName] = useState(stored?.name ?? "");
 
-  // Auto-save name after 1 second of no typing
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const nameRef = useRef(name); // Keep ref in sync with latest name
+  const nameRef = useRef(name);
   nameRef.current = name;
 
-  // Sync from stored operator if it changes (e.g. after login)
   useEffect(() => {
     const op = getStoredOperator();
     if (op) {
       setName(op.name);
-      setLastSavedName(op.name); // Also update lastSavedName to match
+      setLastSavedName(op.name);
       setEmail(op.email);
       setRole(op.role);
     }
   }, []);
 
-  // Debounced save function - reads fresh values from refs
   const saveName = useCallback(
     async (nameToSave: string) => {
       setSavingName(true);
@@ -71,9 +73,7 @@ const OperatorSettings = (): JSX.Element => {
     [cfg.serverUrl],
   );
 
-  // Auto-save effect - properly handles race conditions
   useEffect(() => {
-    // Clear any existing timer
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
@@ -81,21 +81,17 @@ const OperatorSettings = (): JSX.Element => {
 
     const trimmedName = name.trim();
 
-    // Don't save if empty or unchanged from last saved
     if (!trimmedName || trimmedName === lastSavedName) {
       return;
     }
 
-    // Debounce: save after 1 second of no typing
     saveTimer.current = setTimeout(() => {
       const currentName = nameRef.current.trim();
-      // Double-check before saving
       if (currentName && currentName !== lastSavedName) {
         saveName(currentName);
       }
     }, 1000);
 
-    // Cleanup on unmount or before next effect run
     return () => {
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -104,14 +100,12 @@ const OperatorSettings = (): JSX.Element => {
     };
   }, [name, lastSavedName, saveName]);
 
-  // Emit event so sidebar and other components see the updated name
   useEffect(() => {
-    if (savingName) return; // don't fire while still saving
+    if (savingName) return;
     window.dispatchEvent(new Event("vyz.operator.updated"));
   }, [name, savingName]);
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  const saveNotifications = async () => {
+  const saveNotifications = async (): Promise<void> => {
     setSavingName(true);
     try {
       const client: ClientSettings = { notificationsEnabled: notifications };
@@ -127,7 +121,6 @@ const OperatorSettings = (): JSX.Element => {
     }
   };
 
-  // Determine save status for UI
   const trimmedName = name.trim();
   const isSaving = savingName;
   const isSaved = trimmedName === lastSavedName && trimmedName !== "";
@@ -229,13 +222,9 @@ const OperatorSettings = (): JSX.Element => {
       </Card>
     </div>
   );
-};
+}
 
-const RoleRow = ({ allowed, label }: { allowed: boolean; label: string }): JSX.Element => {
-  return (
-    <div className="flex items-center justify-between rounded-md border p-2.5">
-      <span className={allowed ? "" : "text-muted-foreground"}>{label}</span>
-      <Badge variant={allowed ? "default" : "outline"}>{allowed ? "allowed" : "blocked"}</Badge>
-    </div>
-  );
-};
+export const Route = createFileRoute("/_app/settings/operator")({
+  ssr: false,
+  component: OperatorSettings,
+});

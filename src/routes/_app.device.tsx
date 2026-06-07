@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, type ReactElement } from "react";
+import { useState, useEffect, type ReactElement, type JSX } from "react";
 import { toast } from "sonner";
 
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
@@ -15,19 +15,139 @@ import { formatRelative, formatUptime, shortHash } from "@/lib/format";
 import { getDeviceStatus, registerDevice, type DeviceStatus } from "@/lib/vyzorix-api";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/_app/device")({
-  head: () => ({ meta: [{ title: "Device — Vyzorix" }] }),
-  component: DevicePage,
-});
-
-// Format device class for display (e.g., "nokia_c22" -> "Nokia C22")
-
-const formatDeviceClass = (deviceClass: string | undefined): string => {
+// eslint-disable-next-line func-style
+function formatDeviceClass(deviceClass: string | undefined): string {
   if (!deviceClass) return "Unknown Device";
   return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-};
+}
 
-const DevicePage = (): JSX.Element => {
+// eslint-disable-next-line func-style
+function KV({ k, v }: { k: string; v: string }): ReactElement {
+  return (
+    <div className="rounded-md border p-3">
+      <p className="text-xs text-muted-foreground">{k}</p>
+      <p className="text-sm font-medium break-all">{v}</p>
+    </div>
+  );
+}
+
+// eslint-disable-next-line func-style
+function computeDeviceHealth(
+  online: boolean,
+  streamConnected: string,
+  riskScore: number | undefined,
+  thermal: number | undefined,
+  thresholds: { riskCrit: number; riskWarn: number; thermalCrit: number; thermalWarn: number },
+): DeviceHealth {
+  if (!online && streamConnected !== "connected") return "offline";
+  const risk = riskScore ?? 0;
+  const thermalVal = thermal ?? 0;
+  if (risk >= thresholds.riskCrit || thermalVal >= thresholds.thermalCrit) return "critical";
+  if (risk >= thresholds.riskWarn || thermalVal >= thresholds.thermalWarn) return "warning";
+  return "online";
+}
+
+// eslint-disable-next-line func-style
+function renderDeviceContent(
+  deviceId: string,
+  status: {
+    isLoading: boolean;
+    isError: boolean;
+    data?: { deviceClass?: string; appVersion?: string; online?: boolean; lastSeen?: Date };
+  },
+  deviceDisplayName: string,
+  health: DeviceHealth,
+  t?: { uptime?: number; riskScore?: number; thermalTemp?: number; bufferLevel?: number },
+): JSX.Element {
+  if (!deviceId) {
+    return (
+      <Card>
+        <CardContent className="py-4">
+          <p className="text-sm text-muted-foreground">
+            No device configured. Set deviceId in Settings → Connection, then use the registration
+            panel below to register your device.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+  if (status.isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-2">
+              <div className="h-5 w-48 animate-pulse rounded-md bg-muted" />
+              <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
+            </div>
+            <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="rounded-md border p-3">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="mt-2 h-5 w-24" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <Card>
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <CardTitle>{deviceDisplayName} — primary</CardTitle>
+          <CardDescription>{deviceId}</CardDescription>
+        </div>
+        <StatusBadge status={health} />
+      </CardHeader>
+      <CardContent>
+        {status.isError ? (
+          <p className="text-sm text-muted-foreground">
+            Device not registered yet. Use the registration panel below or run the Android daemon to
+            call <code className="text-xs">POST /v1/device/register</code>.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <KV k="App version" v={status.data?.appVersion ?? "—"} />
+            <KV k="Device class" v={status.data?.deviceClass ?? "—"} />
+            <KV k="Server says online" v={status.data?.online ? "yes" : "no"} />
+            <KV k="Last seen" v={formatRelative(status.data?.lastSeen)} />
+            <KV k="Uptime" v={formatUptime(t?.uptime)} />
+            <KV k="Risk score" v={t?.riskScore != null ? `${t.riskScore}` : "—"} />
+            <KV k="Thermal" v={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"} />
+            <KV k="Buffer fill" v={t?.bufferLevel != null ? `${t.bufferLevel}%` : "—"} />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// eslint-disable-next-line func-style
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}): ReactElement {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{label}</Label>
+      <Input value={value} onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+// eslint-disable-next-line func-style
+function DevicePage(): JSX.Element {
   const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
   const stream = useStream();
   const t = stream.lastTelemetry;
@@ -40,99 +160,29 @@ const DevicePage = (): JSX.Element => {
     retry: false,
   });
 
-  const health: DeviceHealth =
-    // eslint-disable-next-line no-nested-ternary
-    !status.data?.online && stream.state !== "connected"
-      ? "offline"
-      : // eslint-disable-next-line no-nested-ternary
-        (t?.riskScore ?? 0) >= thresholds.riskCrit ||
-          (t?.thermalTemp ?? 0) >= thresholds.thermalCrit
-        ? "critical"
-        : (t?.riskScore ?? 0) >= thresholds.riskWarn ||
-            (t?.thermalTemp ?? 0) >= thresholds.thermalWarn
-          ? "warning"
-          : "online";
+  const health: DeviceHealth = computeDeviceHealth(
+    Boolean(status.data?.online),
+    stream.state,
+    t?.riskScore,
+    t?.thermalTemp,
+    thresholds,
+  );
 
   const deviceDisplayName = formatDeviceClass(status.data?.deviceClass);
 
   return (
     <div className="space-y-4">
-      {/* eslint-disable-next-line no-nested-ternary */}
-      {!deviceId ? (
-        <Card>
-          <CardContent className="py-4">
-            <p className="text-sm text-muted-foreground">
-              No device configured. Set deviceId in Settings → Connection, then use the registration
-              panel below to register your device.
-            </p>
-          </CardContent>
-        </Card>
-      ) : status.isLoading ? (
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="space-y-2">
-                <div className="h-5 w-48 animate-pulse rounded-md bg-muted" />
-                <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
-              </div>
-              <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="rounded-md border p-3">
-                  <Skeleton className="h-3 w-16" />
-                  <Skeleton className="mt-2 h-5 w-24" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <CardTitle>{deviceDisplayName} — primary</CardTitle>
-              <CardDescription>{deviceId}</CardDescription>
-            </div>
-            <StatusBadge status={health} />
-          </CardHeader>
-          <CardContent>
-            {status.isError ? (
-              <p className="text-sm text-muted-foreground">
-                Device not registered yet. Use the registration panel below or run the Android
-                daemon to call <code className="text-xs">POST /v1/device/register</code>.
-              </p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <KV k="App version" v={status.data?.appVersion ?? "—"} />
-                <KV k="Device class" v={status.data?.deviceClass ?? "—"} />
-                <KV k="Server says online" v={status.data?.online ? "yes" : "no"} />
-                <KV k="Last seen" v={formatRelative(status.data?.lastSeen)} />
-                <KV k="Uptime" v={formatUptime(t?.uptime)} />
-                <KV k="Risk score" v={t?.riskScore != null ? `${t.riskScore}` : "—"} />
-                <KV
-                  k="Thermal"
-                  v={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"}
-                />
-                <KV k="Buffer fill" v={t?.bufferLevel != null ? `${t.bufferLevel}%` : "—"} />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {renderDeviceContent(deviceId, status, deviceDisplayName, health, t)}
       <Separator />
       <RegisterPanel deviceStatus={status.data ?? null} />
     </div>
   );
-};
+}
 
-const RegisterPanel = ({ deviceStatus }: { deviceStatus: DeviceStatus | null }): JSX.Element => {
+// eslint-disable-next-line func-style
+function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }): JSX.Element {
   const { serverUrl, deviceId } = useVyzorixConfig();
 
-  // Load defaults from server status (persisted in DB) instead of localStorage.
-  // Only keep command_secret in localStorage since it's returned once on registration.
   const [firebaseInstallId, setFid] = useState(deviceStatus?.firebaseInstallId ?? "");
   const [fcmToken, setFcm] = useState(deviceStatus?.fcmToken ?? "");
   const [appVersion, setAv] = useState(deviceStatus?.appVersion ?? "");
@@ -146,7 +196,6 @@ const RegisterPanel = ({ deviceStatus }: { deviceStatus: DeviceStatus | null }):
   });
   const [busy, setBusy] = useState(false);
 
-  // Sync form fields when server status loads (e.g. after re-registration)
   useEffect(() => {
     if (deviceStatus) {
       setFid(deviceStatus.firebaseInstallId ?? "");
@@ -156,8 +205,7 @@ const RegisterPanel = ({ deviceStatus }: { deviceStatus: DeviceStatus | null }):
     }
   }, [deviceStatus]);
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  const submit = async () => {
+  const submit = async (): Promise<void> => {
     if (!deviceId.trim()) {
       toast.error("Registration failed", {
         description: "deviceId is required — set it in Settings → Connection",
@@ -228,32 +276,9 @@ const RegisterPanel = ({ deviceStatus }: { deviceStatus: DeviceStatus | null }):
       </CardContent>
     </Card>
   );
-};
-
-// eslint-disable-next-line func-style
-function Field({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}): ReactElement {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-xs">{label}</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} />
-    </div>
-  );
 }
 
-// eslint-disable-next-line func-style
-function KV({ k, v }: { k: string; v: string }): ReactElement {
-  return (
-    <div className="rounded-md border p-3">
-      <p className="text-xs text-muted-foreground">{k}</p>
-      <p className="text-sm font-medium break-all">{v}</p>
-    </div>
-  );
-}
+export const Route = createFileRoute("/_app/device")({
+  head: () => ({ meta: [{ title: "Device — Vyzorix" }] }),
+  component: DevicePage,
+});
