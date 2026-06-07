@@ -15,13 +15,11 @@ import { formatRelative, formatUptime, shortHash } from "@/lib/format";
 import { getDeviceStatus, registerDevice, type DeviceStatus } from "@/lib/vyzorix-api";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-// eslint-disable-next-line func-style
 function formatDeviceClass(deviceClass: string | undefined): string {
   if (!deviceClass) return "Unknown Device";
   return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }): ReactElement {
   return (
     <div className="rounded-md border p-3">
@@ -31,7 +29,6 @@ function KV({ k, v }: { k: string; v: string }): ReactElement {
   );
 }
 
-// eslint-disable-next-line func-style
 function computeDeviceHealth(
   online: boolean,
   streamConnected: string,
@@ -47,7 +44,6 @@ function computeDeviceHealth(
   return "online";
 }
 
-// eslint-disable-next-line func-style
 function Field({
   label,
   value,
@@ -65,7 +61,6 @@ function Field({
   );
 }
 
-// eslint-disable-next-line func-style
 function DevicePage(): JSX.Element {
   const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
   const stream = useStream();
@@ -175,7 +170,6 @@ function DevicePage(): JSX.Element {
   );
 }
 
-// eslint-disable-next-line func-style
 function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }): JSX.Element {
   const { serverUrl, deviceId } = useVyzorixConfig();
 

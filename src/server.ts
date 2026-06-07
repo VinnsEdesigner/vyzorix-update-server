@@ -8,18 +8,14 @@ interface ServerEntry {
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 const getServerEntry = (): Promise<ServerEntry> => {
-  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-  if (!serverEntryPromise) {
-    serverEntryPromise = import("@tanstack/react-start/server-entry").then(
-      (m) => (m.default ?? m) as ServerEntry,
-    );
-  }
+  serverEntryPromise ??= import("@tanstack/react-start/server-entry").then(
+    (m) => (m.default ?? m) as ServerEntry,
+  );
   return serverEntryPromise;
 };
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
-// eslint-disable-next-line func-style
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";

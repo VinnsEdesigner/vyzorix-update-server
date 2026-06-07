@@ -16,7 +16,6 @@ const tabs: { to: string; label: string; exact?: boolean }[] = [
   { to: "/settings/advanced", label: "Advanced" },
 ];
 
-// eslint-disable-next-line func-style
 function SettingsLayout(): ReactElement {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   return (

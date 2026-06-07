@@ -16,7 +16,6 @@ import process from "node:process";
 //     and server (analytics IDs, public URLs). Define in .env with the
 //     VITE_ prefix. Never put secrets here — they ship to the browser.
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const getServerConfig = () => {
   return {
     nodeEnv: process.env.NODE_ENV,

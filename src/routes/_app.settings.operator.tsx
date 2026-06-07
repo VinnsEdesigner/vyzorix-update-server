@@ -18,7 +18,6 @@ import {
 } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-// eslint-disable-next-line func-style
 function RoleRow({ allowed, label }: { allowed: boolean; label: string }): JSX.Element {
   return (
     <div className="flex items-center justify-between rounded-md border p-2.5">
@@ -28,7 +27,6 @@ function RoleRow({ allowed, label }: { allowed: boolean; label: string }): JSX.E
   );
 }
 
-// eslint-disable-next-line func-style
 function OperatorSettings(): JSX.Element {
   const cfg = useVyzorixConfig();
   const stored = getStoredOperator();

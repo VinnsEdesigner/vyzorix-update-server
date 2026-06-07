@@ -21,7 +21,6 @@ export const Route = createFileRoute("/login")({
 
 type Mode = "signin" | "signup";
 
-// eslint-disable-next-line func-style
 function LoginPage(): ReactElement {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
@@ -38,7 +37,6 @@ function LoginPage(): ReactElement {
     if (token) navigate({ to: "/dashboard", replace: true });
   }, [navigate]);
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -61,7 +59,6 @@ function LoginPage(): ReactElement {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const google = () => {
     setOauthLoading(true);
     try {

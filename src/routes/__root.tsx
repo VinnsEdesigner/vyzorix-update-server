@@ -13,7 +13,6 @@ import { VyzorixConfigProvider } from "@/lib/vyzorix-config";
 
 import appCss from "../styles.css?url";
 
-// eslint-disable-next-line func-style
 function NotFoundComponent(): ReactElement {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -36,7 +35,6 @@ function NotFoundComponent(): ReactElement {
   );
 }
 
-// eslint-disable-next-line func-style
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }): ReactElement {
   console.error(error);
   const router = useRouter();
@@ -104,7 +102,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-// eslint-disable-next-line func-style
 function RootShell({ children }: { children: React.ReactNode }): ReactElement {
   return (
     <html lang="en">
@@ -124,7 +121,6 @@ function RootShell({ children }: { children: React.ReactNode }): ReactElement {
   );
 }
 
-// eslint-disable-next-line func-style
 function RootComponent(): ReactElement {
   const { queryClient } = Route.useRouteContext();
 

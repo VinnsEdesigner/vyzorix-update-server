@@ -32,13 +32,11 @@ const tip = {
   fontSize: 12,
 };
 
-// eslint-disable-next-line func-style
 function DiagnosticsPage(): ReactElement {
   const { serverUrl, deviceId, thresholds, dashboardToken, strictHmac } = useVyzorixConfig();
   const stream = useStream();
   const [pending, setPending] = useState<string | null>(null);
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const send = async (cmd: string) => {
     if (!deviceId.trim()) {
       toast.error(`${cmd} failed`, {
@@ -144,7 +142,6 @@ function DiagnosticsPage(): ReactElement {
   );
 }
 
-// eslint-disable-next-line func-style
 function Stat({ label, value }: { label: string; value: string }): ReactElement {
   return (
     <div className="rounded-md border p-3">
@@ -154,7 +151,6 @@ function Stat({ label, value }: { label: string; value: string }): ReactElement 
   );
 }
 
-// eslint-disable-next-line func-style
 function ChartCard({
   title,
   data,

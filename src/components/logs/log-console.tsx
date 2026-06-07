@@ -5,7 +5,6 @@ interface LogConsoleProps {
   className?: string;
 }
 
-// eslint-disable-next-line func-style
 export function LogConsole({ height = "h-64", className = "" }: LogConsoleProps): ReactElement {
   return (
     <div

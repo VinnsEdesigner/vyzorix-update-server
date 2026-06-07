@@ -14,7 +14,6 @@ export const Route = createFileRoute("/_app/settings/advanced")({
   component: AdvancedSettings,
 });
 
-// eslint-disable-next-line func-style
 function AdvancedSettings(): ReactElement {
   const cfg = useVyzorixConfig();
   const [logLimit, setLogLimit] = useState(cfg.logBufferLimit);
@@ -23,7 +22,6 @@ function AdvancedSettings(): ReactElement {
 
   const canDanger = cfg.operator.role === "super_admin";
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const save = () => {
     cfg.update({
       logBufferLimit: Math.max(50, Math.min(5000, logLimit || 500)),
@@ -32,7 +30,6 @@ function AdvancedSettings(): ReactElement {
     toast.success("Advanced settings saved · refresh to apply buffer sizes");
   };
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleReset = async () => {
     if (!canDanger) return;
     setResetting(true);
