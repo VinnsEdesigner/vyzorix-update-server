@@ -57,8 +57,8 @@ The OAuth consent screen is what users see when they click "Sign in with Google"
 6. On the **Scopes** page:
    - Click **Add or Remove Scopes**
    - Check these scopes:
-     - ✅ `../auth/userinfo.email` - View your email address
-     - ✅ `../auth/userinfo.profile` - View your profile info
+     - [OK] `../auth/userinfo.email` - View your email address
+     - [OK] `../auth/userinfo.profile` - View your profile info
    - Click **Update**
 7. Click **Save and Continue**
 8. On the **Test users** page (optional):
@@ -89,7 +89,7 @@ The OAuth consent screen is what users see when they click "Sign in with Google"
    http://localhost:3000/v1/auth/google/callback
    ```
 
-   > ⚠️ Important: The redirect URI must match exactly what your app expects. The path `/v1/auth/google/callback` is hardcoded.
+   > [WARN]️ Important: The redirect URI must match exactly what your app expects. The path `/v1/auth/google/callback` is hardcoded.
 
 7. Click **Create**
 8. A modal will appear with your credentials:
@@ -145,7 +145,7 @@ Resend is an email API service that makes it easy to send transactional emails (
    re_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ```
 
-   > ⚠️ Important: This is the only time you'll see this key. Copy it now!
+   > [WARN]️ Important: This is the only time you'll see this key. Copy it now!
 
 ### 2.3 Add a Domain (Recommended for Production)
 
@@ -303,21 +303,21 @@ All environment variables needed for production:
 
 | Variable | Example | Required | Description |
 |----------|---------|----------|-------------|
-| `JWT_SECRET` | `8f4e2b1a...` | ✅ Yes | Secret key for signing JWTs. Generate with `openssl rand -hex 32` |
+| `JWT_SECRET` | `8f4e2b1a...` | [OK] Yes | Secret key for signing JWTs. Generate with `openssl rand -hex 32` |
 | `JWT_DURATION_HOURS` | `168` | No | JWT expiry in hours. Default: `168` (7 days) |
 
 ### Google OAuth
 
 | Variable | Example | Required | Description |
 |----------|---------|----------|-------------|
-| `GOOGLE_OAUTH_CLIENT_ID` | `123456789-xxx.apps.googleusercontent.com` | ✅ Yes | From Google Cloud Console |
-| `GOOGLE_OAUTH_CLIENT_SECRET` | `GOCSPX-xxx` | ✅ Yes | From Google Cloud Console |
+| `GOOGLE_OAUTH_CLIENT_ID` | `123456789-xxx.apps.googleusercontent.com` | [OK] Yes | From Google Cloud Console |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | `GOCSPX-xxx` | [OK] Yes | From Google Cloud Console |
 
 ### Email (Resend)
 
 | Variable | Example | Required | Description |
 |----------|---------|----------|-------------|
-| `RESEND_API_KEY` | `re_xxx` | ✅ Yes | From Resend dashboard |
+| `RESEND_API_KEY` | `re_xxx` | [OK] Yes | From Resend dashboard |
 | `EMAIL_FROM` | `noreply@vyzorix.app` | No | Default: `noreply@vyzorix.app` |
 | `EMAIL_FROM_NAME` | `Vyzorix` | No | Default: `Vyzorix` |
 
@@ -332,7 +332,7 @@ All environment variables needed for production:
 
 | Variable | Example | Required | Description |
 |----------|---------|----------|-------------|
-| `BASE_URL` | `https://vyzorix-api.onrender.com` | ✅ Yes | Your deployment URL |
+| `BASE_URL` | `https://vyzorix-api.onrender.com` | [OK] Yes | Your deployment URL |
 | `FRONTEND_URL` | `https://vyzorix-app.onrender.com` | No | Your frontend URL |
 
 ### Database

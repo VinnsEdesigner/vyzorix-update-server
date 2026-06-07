@@ -5,13 +5,13 @@
 This document outlines the implementation plan for securing the Vyzorix Update Server authentication system. The focus is on **email-based verification** for new accounts, **password reset functionality** for account recovery, and **hardened security measures** to protect against common attacks.
 
 ### Current State
-- ✅ Google OAuth integration (complete with JWKS signature verification)
-- ✅ JWT-based session management
-- ✅ Password signup with bcrypt hashing
-- ❌ No email verification for new accounts
-- ❌ No password reset / forgot password flow
-- ❌ No rate limiting on auth endpoints
-- ❌ No password complexity requirements
+- [OK] Google OAuth integration (complete with JWKS signature verification)
+- [OK] JWT-based session management
+- [OK] Password signup with bcrypt hashing
+- [X] No email verification for new accounts
+- [X] No password reset / forgot password flow
+- [X] No rate limiting on auth endpoints
+- [X] No password complexity requirements
 
 ### Goals of This Feature
 1. Verify email ownership before activating new operator accounts
@@ -626,7 +626,7 @@ func (s *Store) DeleteEmailVerificationsByOperator(ctx context.Context, operator
             <a href="{{.resetURL}}" class="button">Reset Password</a>
         </p>
         <div class="warning">
-            <strong>⚠️ Security Notice:</strong> This link expires in {{.expiryMinutes}} minutes and can only be used once.
+            <strong>[WARN]️ Security Notice:</strong> This link expires in {{.expiryMinutes}} minutes and can only be used once.
         </div>
         <p>If you didn't request a password reset, please ignore this email. Your password won't be changed.</p>
         <div class="footer">

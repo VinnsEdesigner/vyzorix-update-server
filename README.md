@@ -26,51 +26,51 @@
 <!-- Title -->
 # Vyzorix Update Server
 
-### 🔌 Real-time Device Management & OTA Updates for VyzorixAudioRouter
+### :plug: Real-time Device Management & OTA Updates for VyzorixAudioRouter
 
 **A production-ready C2 server for managing Android device fleets with WebSocket telemetry, FCM push notifications, and secure command dispatch.**
 
 ---
 
-**[🚀 Quick Start](#-quick-start)** •
-**[🏗️ Architecture](#-architecture)** •
-**[📡 API Reference](#-api-reference)** •
-**[🧪 Testing](#-testing)** •
-**[📦 Deployment](#-deployment)** •
-**[📚 Documentation](#-documentation)**
+**[:rocket: Quick Start](#-quick-start)** •
+**[:construction:️ Architecture](#-architecture)** •
+**[:satellite: API Reference](#-api-reference)** •
+**[:test_tube: Testing](#-testing)** •
+**[:package: Deployment](#-deployment)** •
+**[:books: Documentation](#-documentation)**
 
 </div>
 
 ---
 
-## ✨ Features
+## :sparkles: Features
 
 ### Core Capabilities
 
 | Feature | Description |
 |:--------|:-------------|
-| 📡 **WebSocket Streaming** | Real-time telemetry from devices with auto-reconnect |
-| 📱 **OTA Updates** | Version manifest and APK distribution |
-| 🔒 **HMAC Commands** | SHA256-signed commands per device |
-| 🔔 **FCM Notifications** | Firebase Cloud Messaging integration |
-| 👥 **Operator Auth** | JWT + Google OAuth authentication |
-| 📊 **Dashboard API** | Device status, registration, management |
-| 🌐 **CORS Security** | Configurable origin validation |
-| 📈 **Rate Limiting** | Token-bucket per IP |
+| :satellite: **WebSocket Streaming** | Real-time telemetry from devices with auto-reconnect |
+| :phone: **OTA Updates** | Version manifest and APK distribution |
+| :lock: **HMAC Commands** | SHA256-signed commands per device |
+| :bell: **FCM Notifications** | Firebase Cloud Messaging integration |
+| :people: **Operator Auth** | JWT + Google OAuth authentication |
+| :chart: **Dashboard API** | Device status, registration, management |
+| :globe: **CORS Security** | Configurable origin validation |
+| :chart_up: **Rate Limiting** | Token-bucket per IP |
 
 ### Dashboard Pages
 
 | Page | Description |
 |:-----|:-------------|
-| 📊 **Dashboard** | Real-time device status, risk score, thermal metrics |
-| 📡 **Diagnostics** | Command panel with 8 device commands |
-| 🔔 **Alerts** | Threshold-based alert derivation |
-| 📦 **Updates** | Version manifest and APK download |
-| ⚙️ **Settings** | Connection, operator, thresholds, notifications |
+| :chart: **Dashboard** | Real-time device status, risk score, thermal metrics |
+| :satellite: **Diagnostics** | Command panel with 8 device commands |
+| :bell: **Alerts** | Threshold-based alert derivation |
+| :package: **Updates** | Version manifest and APK download |
+| :gear:️ **Settings** | Connection, operator, thresholds, notifications |
 
 ---
 
-## 🏗️ Architecture
+## :construction:️ Architecture
 
 ```
                            ╔═══════════════════════════════════════╗
@@ -136,7 +136,7 @@
 
 ---
 
-## 🚀 Quick Start
+## :rocket: Quick Start
 
 ### Prerequisites
 
@@ -200,7 +200,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 📡 API Reference
+## :satellite: API Reference
 
 ### Authentication Endpoints
 
@@ -246,7 +246,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🧪 Testing
+## :test_tube: Testing
 
 ### Run All Tests
 
@@ -268,13 +268,13 @@ cd src && npx vitest run --coverage
 
 | Suite | Status |
 |:------|:-------|
-| Go Tests (12 packages) | ✅ All passing |
-| Vitest Tests (79 tests) | ✅ All passing |
-| Build | ✅ Successful |
+| Go Tests (12 packages) | [OK] All passing |
+| Vitest Tests (79 tests) | [OK] All passing |
+| Build | [OK] Successful |
 
 ---
 
-## 📦 Deployment
+## :package: Deployment
 
 ### Render (Recommended)
 
@@ -299,7 +299,7 @@ docker run -p 3000:3000 \
 
 ---
 
-## 📚 Documentation
+## :books: Documentation
 
 | Document | Description |
 |:---------|:------------|
@@ -312,7 +312,7 @@ docker run -p 3000:3000 \
 
 ---
 
-## 🛠️ Development
+## :tools:️ Development
 
 ### Project Structure
 
@@ -356,13 +356,13 @@ npx vitest run                 # Run tests
 
 ---
 
-## 📄 License
+## :doc: License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## :pray: Acknowledgments
 
 - [Gin Web Framework](https://github.com/gin-gonic/gin)
 - [TanStack](https://tanstack.com/)

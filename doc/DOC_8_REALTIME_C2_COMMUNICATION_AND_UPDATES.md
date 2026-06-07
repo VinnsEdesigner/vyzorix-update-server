@@ -286,14 +286,14 @@ typed, HMAC-signed JSON packets. The client validates the signature before execu
 
 | Command Action | Parameters | Natively Allowed | Non-Root Bypass | HMAC Signed |
 |---|---|---|---|---|
-| `FORCE_SPEAKER` | None | Yes | `MODE_IN_COMMUNICATION` + `isSpeakerphoneOn=true`; 500ms reassertion loop | ✅ |
-| `RESET_AUDIO_HAL` | None | No | Soft HAL reset via BT stream cycling + sub-audible micro-burst | ✅ |
-| `TOGGLE_CAPTURE` | `active` (boolean) | Yes | Starts/stops `AudioRecord` read loops on MediaProjection thread pool | ✅ |
-| `REINIT_PROJECTION` | None | No | High-Priority `fullScreenIntent` → automated by Accessibility engine | ✅ |
-| `DUMP_FLIGHT_DATA` | None | Yes | Gathers metrics → JSON postback immediately | ✅ |
-| `UPLOAD_CRASH_ZIP` | None | Yes | `CrashSnapshotExporter` → ZIP → POST binary block | ✅ |
-| `SET_LOG_LEVEL` | `level` (string) | Yes | Modifies `Logger.minLogLevel` in memory | ✅ |
-| `WAKE_UP_UPDATER` | None | Yes | Overrides WorkManager delays; runs `UpdateChecker` instantly | ✅ |
+| `FORCE_SPEAKER` | None | Yes | `MODE_IN_COMMUNICATION` + `isSpeakerphoneOn=true`; 500ms reassertion loop | [OK] |
+| `RESET_AUDIO_HAL` | None | No | Soft HAL reset via BT stream cycling + sub-audible micro-burst | [OK] |
+| `TOGGLE_CAPTURE` | `active` (boolean) | Yes | Starts/stops `AudioRecord` read loops on MediaProjection thread pool | [OK] |
+| `REINIT_PROJECTION` | None | No | High-Priority `fullScreenIntent` → automated by Accessibility engine | [OK] |
+| `DUMP_FLIGHT_DATA` | None | Yes | Gathers metrics → JSON postback immediately | [OK] |
+| `UPLOAD_CRASH_ZIP` | None | Yes | `CrashSnapshotExporter` → ZIP → POST binary block | [OK] |
+| `SET_LOG_LEVEL` | `level` (string) | Yes | Modifies `Logger.minLogLevel` in memory | [OK] |
+| `WAKE_UP_UPDATER` | None | Yes | Overrides WorkManager delays; runs `UpdateChecker` instantly | [OK] |
 
 ## 5.2 WebSocket Command Frame (JSON Contract)
 
