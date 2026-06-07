@@ -40,9 +40,7 @@ const ToggleGroupItem = React.forwardRef<
       ref={ref}
       className={cn(
         toggleVariants({
-          // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
           variant: context.variant || variant,
-          // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
           size: context.size || size,
         }),
         className,

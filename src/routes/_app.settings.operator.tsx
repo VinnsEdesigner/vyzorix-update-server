@@ -22,7 +22,6 @@ export const Route = createFileRoute("/_app/settings/operator")({
   component: OperatorSettings,
 });
 
-// eslint-disable-next-line func-style
 function OperatorSettings() {
   const cfg = useVyzorixConfig();
   const stored = getStoredOperator();
@@ -111,7 +110,6 @@ function OperatorSettings() {
     window.dispatchEvent(new Event("vyz.operator.updated"));
   }, [name, savingName]);
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const saveNotifications = async () => {
     setSavingName(true);
     try {
@@ -232,7 +230,6 @@ function OperatorSettings() {
   );
 }
 
-// eslint-disable-next-line func-style
 function RoleRow({ allowed, label }: { allowed: boolean; label: string }) {
   return (
     <div className="flex items-center justify-between rounded-md border p-2.5">

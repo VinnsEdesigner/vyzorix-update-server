@@ -37,7 +37,6 @@ interface SidebarContextProps {
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 
-// eslint-disable-next-line func-style
 function useSidebar(): SidebarContextProps {
   const context = React.useContext(SidebarContext);
   if (!context) {
@@ -96,7 +95,6 @@ const SidebarProvider = React.forwardRef<
 
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
-      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
       const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === SIDEBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
           event.preventDefault();

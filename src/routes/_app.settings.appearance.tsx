@@ -13,7 +13,6 @@ export const Route = createFileRoute("/_app/settings/appearance")({
 type Theme = "system" | "light" | "dark";
 const KEY = "vyzorix.theme";
 
-// eslint-disable-next-line func-style
 function apply(theme: Theme): void {
   const root = document.documentElement;
   const sysDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -21,7 +20,6 @@ function apply(theme: Theme): void {
   root.classList.toggle("dark", dark);
 }
 
-// eslint-disable-next-line func-style
 function AppearanceSettings() {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
@@ -66,7 +64,6 @@ function AppearanceSettings() {
   );
 }
 
-// eslint-disable-next-line func-style
 function ThemeBtn({
   current,
   value,

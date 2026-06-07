@@ -62,7 +62,6 @@ export interface ErrorResponse {
 const TOKEN_KEY = "vyz.auth.token";
 const OPERATOR_KEY = "vyz.auth.operator";
 
-// eslint-disable-next-line func-style
 export function getToken(): string | null {
   try {
     return localStorage.getItem(TOKEN_KEY);
@@ -71,7 +70,6 @@ export function getToken(): string | null {
   }
 }
 
-// eslint-disable-next-line func-style
 function setToken(token: string): void {
   try {
     localStorage.setItem(TOKEN_KEY, token);
@@ -80,7 +78,6 @@ function setToken(token: string): void {
   }
 }
 
-// eslint-disable-next-line func-style
 function clearToken(): void {
   try {
     localStorage.removeItem(TOKEN_KEY);
@@ -90,7 +87,6 @@ function clearToken(): void {
   }
 }
 
-// eslint-disable-next-line func-style
 export function getStoredOperator(): Operator | null {
   try {
     const raw = localStorage.getItem(OPERATOR_KEY);
@@ -100,7 +96,6 @@ export function getStoredOperator(): Operator | null {
   }
 }
 
-// eslint-disable-next-line func-style
 function setStoredOperator(op: Operator): void {
   try {
     localStorage.setItem(OPERATOR_KEY, JSON.stringify(op));
@@ -111,7 +106,6 @@ function setStoredOperator(op: Operator): void {
 
 // ─── Core API ─────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line func-style
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   const contentType = res.headers.get("content-type") ?? "";
   if (!res.ok) {
@@ -128,7 +122,6 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
   throw new Error(`Expected JSON, got ${contentType}`);
 }
 
-// eslint-disable-next-line func-style
 export async function login(
   serverUrl: string,
   email: string,
@@ -147,7 +140,6 @@ export async function login(
   return out;
 }
 
-// eslint-disable-next-line func-style
 export async function register(
   serverUrl: string,
   email: string,
@@ -167,7 +159,6 @@ export async function register(
   return out;
 }
 
-// eslint-disable-next-line func-style
 export async function logout(serverUrl: string): Promise<void> {
   const token = getToken();
   if (!token) {
@@ -190,7 +181,6 @@ export async function logout(serverUrl: string): Promise<void> {
   }
 }
 
-// eslint-disable-next-line func-style
 export async function updateName(serverUrl: string, name: string): Promise<Operator> {
   const token = getToken();
   if (!token) throw new Error("not authenticated");
@@ -206,7 +196,6 @@ export async function updateName(serverUrl: string, name: string): Promise<Opera
   return out;
 }
 
-// eslint-disable-next-line func-style
 export async function me(serverUrl: string): Promise<Operator> {
   const token = getToken();
   if (!token) throw new Error("not authenticated");
@@ -220,7 +209,6 @@ export async function me(serverUrl: string): Promise<Operator> {
   return out;
 }
 
-// eslint-disable-next-line func-style
 export async function updateSettings(
   serverUrl: string,
   patch: { name?: string; thresholds?: Thresholds; client?: ClientSettings },
@@ -245,7 +233,6 @@ export interface ClientSettings {
   notificationsEnabled?: boolean;
 }
 
-// eslint-disable-next-line func-style
 export async function resetSettings(serverUrl: string): Promise<Operator> {
   const token = getToken();
   if (!token) throw new Error("not authenticated");
@@ -263,7 +250,6 @@ export async function resetSettings(serverUrl: string): Promise<Operator> {
 
 // ─── Password Reset ───────────────────────────────────────────────────────────
 
-// eslint-disable-next-line func-style
 export async function forgotPassword(serverUrl: string, email: string): Promise<MessageResponse> {
   logger.info("auth", `→ POST /v1/auth/forgot-password`, { email });
   const res = await fetch(`${serverUrl}/v1/auth/forgot-password`, {
@@ -276,7 +262,6 @@ export async function forgotPassword(serverUrl: string, email: string): Promise<
   return out;
 }
 
-// eslint-disable-next-line func-style
 export async function resetPassword(
   serverUrl: string,
   token: string,
@@ -297,7 +282,6 @@ export async function resetPassword(
 
 // ─── Email Verification ────────────────────────────────────────────────────────
 
-// eslint-disable-next-line func-style
 export async function verifyEmail(serverUrl: string, token: string): Promise<AuthResponse> {
   logger.info("auth", `→ POST /v1/auth/verify-email`);
   const res = await fetch(`${serverUrl}/v1/auth/verify-email`, {
@@ -312,7 +296,6 @@ export async function verifyEmail(serverUrl: string, token: string): Promise<Aut
   return out;
 }
 
-// eslint-disable-next-line func-style
 export async function resendVerification(
   serverUrl: string,
   email: string,
@@ -330,14 +313,12 @@ export async function resendVerification(
 
 // ─── Google OAuth redirect ─────────────────────────────────────────────────────
 
-// eslint-disable-next-line func-style
 export function redirectToGoogleOAuth(serverUrl: string, frontendCallbackPath = "/"): void {
   const target = `${serverUrl}/v1/auth/google?state=${encodeURIComponent(frontendCallbackPath)}`;
   logger.info("auth", `→ GET /v1/auth/google (OAuth redirect)`, { target });
   window.location.href = target;
 }
 
-// eslint-disable-next-line func-style
 export function handleOAuthCallback(token: string, _isNew: string): AuthResponse | null {
   try {
     const parts = token.split(".");
@@ -364,7 +345,6 @@ export function handleOAuthCallback(token: string, _isNew: string): AuthResponse
 
 // ─── Hooks ─────────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line func-style
 export function useAuth(): {
   token: string | null;
   operator: Operator | null;

@@ -24,7 +24,6 @@ export const Route = createFileRoute("/auth/callback")({
   component: OAuthCallbackPage,
 });
 
-// eslint-disable-next-line func-style
 function OAuthCallbackPage(): ReactElement {
   const navigate = useNavigate();
 
