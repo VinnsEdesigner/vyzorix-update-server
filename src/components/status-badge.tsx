@@ -2,7 +2,8 @@ import { Badge } from "@/components/ui/badge";
 
 export type DeviceHealth = "online" | "offline" | "warning" | "critical";
 
-export function StatusBadge({ status }: { status: DeviceHealth }) {
+// eslint-disable-next-line func-style
+export function StatusBadge({ status }: { status: DeviceHealth }): JSX.Element {
   const map: Record<
     DeviceHealth,
     { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dot: string }

@@ -13,11 +13,11 @@ import (
 type Hub struct {
 	log       *slog.Logger
 	store     *storage.Store
-	mu        sync.RWMutex
 	clients   map[string]*Client
 	register  chan *Client
 	unreg     chan *Client
 	broadcast chan []byte
+	mu        sync.RWMutex
 }
 
 // New creates a new Hub instance.
@@ -43,19 +43,25 @@ func (h *Hub) Run(ctx context.Context) {
 			h.mu.Lock()
 			if old := h.clients[c.DeviceID]; old != nil {
 				close(old.Send)
-				_ = old.Conn.Close()
+				if err := old.Conn.Close(); err != nil {
+					h.log.Warn("old conn close failed", "deviceId", c.DeviceID, "err", err)
+				}
 			}
 			c.log = h.log
 			h.clients[c.DeviceID] = c
 			h.mu.Unlock()
-			_ = h.store.SetOnline(context.Background(), c.DeviceID, true)
+			if err := h.store.SetOnline(context.Background(), c.DeviceID, true); err != nil {
+				h.log.Warn("set online failed", "deviceId", c.DeviceID, "err", err)
+			}
 			h.log.Info("device websocket online", "deviceId", c.DeviceID)
 		case c := <-h.unreg:
 			h.mu.Lock()
 			if h.clients[c.DeviceID] == c {
 				delete(h.clients, c.DeviceID)
 				close(c.Send)
-				_ = h.store.SetOnline(context.Background(), c.DeviceID, false)
+				if err := h.store.SetOnline(context.Background(), c.DeviceID, false); err != nil {
+					h.log.Warn("set offline failed", "deviceId", c.DeviceID, "err", err)
+				}
 			}
 			h.mu.Unlock()
 			h.log.Info("device websocket offline", "deviceId", c.DeviceID)
@@ -68,7 +74,7 @@ func (h *Hub) Run(ctx context.Context) {
 				}
 			}
 			h.mu.RUnlock()
-			_ = raw
+			_ = raw // prevent unused variable warning from channel receive
 		}
 	}
 }

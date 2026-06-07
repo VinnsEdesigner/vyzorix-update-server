@@ -23,12 +23,12 @@ The threat coverage table below assumes the **future-scaled** deployment, where 
 
 | Threat | TLS Coverage | HMAC Coverage |
 |---|---|---|
-| Network eavesdropping | ✅ | N/A |
-| Compromised Render server issues arbitrary commands | ❌ | ✅ |
-| Stolen dashboard JWT used to issue commands | ❌ | ✅ |
-| Captured WebSocket frame replayed later | ❌ | ✅ (nonce + timestamp window) |
-| MITM on WSS connection | ✅ (certificate pinning recommended) | N/A |
-| Physical device dump of command secret | ❌ | ✅ (secret encrypted via TokenEncryptor.kt) |
+| Network eavesdropping | [OK] | N/A |
+| Compromised Render server issues arbitrary commands | [X] | [OK] |
+| Stolen dashboard JWT used to issue commands | [X] | [OK] |
+| Captured WebSocket frame replayed later | [X] | [OK] (nonce + timestamp window) |
+| MITM on WSS connection | [OK] (certificate pinning recommended) | N/A |
+| Physical device dump of command secret | [X] | [OK] (secret encrypted via TokenEncryptor.kt) |
 
 **Explicitly out of scope** for the current deployment:
 - Physical access to the device by a sophisticated adversary (the C22's Unisoc TEE is itself unreliable — see DOC_7 §3.1).

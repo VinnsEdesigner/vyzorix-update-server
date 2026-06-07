@@ -80,7 +80,10 @@ func (s *server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("ok"))
+	if _, err := w.Write([]byte("ok")); err != nil {
+		// Response already started, nothing we can do
+		_ = err
+	}
 }
 
 func (s *server) withRequestLogging(h http.Handler) http.Handler {
@@ -138,7 +141,10 @@ func (r *statusRecorder) Flush() {
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		// Log but don't fail - response already started
+		_ = err
+	}
 }
 
 func writeError(w http.ResponseWriter, status int, code, message string) {

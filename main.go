@@ -25,16 +25,26 @@ func main() {
 		os.Exit(1)
 	}
 	if dir := filepath.Dir(cfg.DatabaseURL); dir != "." && dir != "" {
-		_ = os.MkdirAll(dir, 0o755)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			log.Error("failed to create database directory", "dir", dir, "err", err)
+		}
 	}
-	_ = os.MkdirAll(cfg.DataDir, 0o755)
-	_ = os.MkdirAll(cfg.BinDir, 0o755)
+	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
+		log.Error("failed to create data directory", "dir", cfg.DataDir, "err", err)
+	}
+	if err := os.MkdirAll(cfg.BinDir, 0o755); err != nil {
+		log.Error("failed to create bin directory", "dir", cfg.BinDir, "err", err)
+	}
 	st, err := storage.Open(cfg.DatabaseURL)
 	if err != nil {
 		log.Error("database init failed", "err", err)
 		os.Exit(1)
 	}
-	defer st.Close()
+	defer func() {
+		if closeErr := st.Close(); closeErr != nil {
+			log.Error("database close failed", "err", closeErr)
+		}
+	}()
 
 	notifier, err := fcm.Init(log, cfg.FirebaseCreds)
 	if err != nil {

@@ -17,9 +17,9 @@ import (
 )
 
 var (
-	ErrInvalidGoogleToken    = errors.New("invalid Google ID token")
-	ErrGoogleTokenExpired    = errors.New("Google ID token expired")
-	ErrGoogleTokenBadIssuer  = errors.New("Google ID token wrong issuer")
+	ErrInvalidGoogleToken     = errors.New("invalid Google ID token")
+	ErrGoogleTokenExpired     = errors.New("Google ID token expired")
+	ErrGoogleTokenBadIssuer   = errors.New("Google ID token wrong issuer")
 	ErrGoogleTokenBadAudience = errors.New("Google ID token wrong audience")
 )
 
@@ -31,13 +31,13 @@ var googleIssuers = []string{"https://accounts.google.com", "accounts.google.com
 
 // GoogleTokenVerifier verifies Google ID tokens using Google's public keys.
 type GoogleTokenVerifier struct {
-	client   *http.Client
-	jwksURL  string
-	keys     map[string]*rsa.PublicKey
-	keysMu   sync.RWMutex
 	lastFetch time.Time
-	cacheTTL  time.Duration
+	client    *http.Client
+	keys      map[string]*rsa.PublicKey
+	jwksURL   string
 	audience  string
+	cacheTTL  time.Duration
+	keysMu    sync.RWMutex
 }
 
 // NewGoogleTokenVerifier creates a new verifier for Google ID tokens.
@@ -106,16 +106,16 @@ func (v *GoogleTokenVerifier) Verify(token string) (*GoogleClaims, error) {
 
 // GoogleClaims represents the claims in a Google ID token.
 type GoogleClaims struct {
-	Iss    string `json:"iss"`    // Issuer
-	Azp    string `json:"azp"`    // Authorized party
-	Aud    string `json:"aud"`    // Audience
-	Sub    string `json:"sub"`    // Subject (Google user ID)
-	Email  string `json:"email"`  // Email
-	EmailVerified bool `json:"email_verified"`
-	Name   string `json:"name"`   // Full name
-	Picture string `json:"picture"`
-	Iat    int64  `json:"iat"`    // Issued at
-	Exp    int64  `json:"exp"`    // Expiration
+	Iss           string `json:"iss"`
+	Azp           string `json:"azp"`
+	Aud           string `json:"aud"`
+	Sub           string `json:"sub"`
+	Email         string `json:"email"`
+	Name          string `json:"name"`
+	Picture       string `json:"picture"`
+	Iat           int64  `json:"iat"`
+	Exp           int64  `json:"exp"`
+	EmailVerified bool   `json:"email_verified"`
 }
 
 // getKey retrieves the public key for the given key ID.
@@ -154,7 +154,7 @@ func (v *GoogleTokenVerifier) refreshKeys() error {
 	if err != nil {
 		return fmt.Errorf("failed to fetch JWKS: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("JWKS endpoint returned status %d", resp.StatusCode)
@@ -302,10 +302,13 @@ func GetGoogleUserInfo(ctx context.Context, accessToken string) (*GoogleUserInfo
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("userinfo endpoint returned status %d: failed to read body", resp.StatusCode)
+		}
 		return nil, fmt.Errorf("userinfo endpoint returned status %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -321,7 +324,7 @@ func GetGoogleUserInfo(ctx context.Context, accessToken string) (*GoogleUserInfo
 type GoogleUserInfo struct {
 	ID            string `json:"id"`
 	Email         string `json:"email"`
-	VerifiedEmail bool   `json:"verified_email"`
 	Name          string `json:"name"`
 	Picture       string `json:"picture"`
+	VerifiedEmail bool   `json:"verified_email"`
 }
