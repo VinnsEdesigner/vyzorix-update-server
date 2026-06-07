@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_app/settings/advanced")({
 });
 
 // eslint-disable-next-line func-style
-function AdvancedSettings(): JSX.Element {
+function AdvancedSettings(): ReactElement {
   const cfg = useVyzorixConfig();
   const [logLimit, setLogLimit] = useState(cfg.logBufferLimit);
   const [signalLimit, setSignalLimit] = useState(cfg.signalHistoryLimit);

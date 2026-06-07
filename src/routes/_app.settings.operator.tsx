@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ShieldAlert, Loader2 } from "lucide-react";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -233,7 +233,7 @@ function OperatorSettings(): JSX.Element {
 }
 
 // eslint-disable-next-line func-style
-function RoleRow({ allowed, label }: { allowed: boolean; label: string }) {
+function RoleRow({ allowed, label }: { allowed: boolean; label: string }): ReactElement {
   return (
     <div className="flex items-center justify-between rounded-md border p-2.5">
       <span className={allowed ? "" : "text-muted-foreground"}>{label}</span>

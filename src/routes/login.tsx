@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Shield, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/login")({
 type Mode = "signin" | "signup";
 
 // eslint-disable-next-line func-style
-function LoginPage(): JSX.Element {
+function LoginPage(): ReactElement {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
   const [mode, setMode] = useState<Mode>("signin");

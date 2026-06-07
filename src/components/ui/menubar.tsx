@@ -1,39 +1,40 @@
 import * as MenubarPrimitive from "@radix-ui/react-menubar";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import * as React from "react";
+import type { ReactElement } from "react";
 
 import { cn } from "@/lib/utils";
 
 // eslint-disable-next-line func-style
 function MenubarMenu({
   ...props
-}: React.ComponentProps<typeof MenubarPrimitive.Menu>): JSX.Element {
+}: React.ComponentProps<typeof MenubarPrimitive.Menu>): ReactElement {
   return <MenubarPrimitive.Menu {...props} />;
 }
 
 // eslint-disable-next-line func-style
 function MenubarGroup({
   ...props
-}: React.ComponentProps<typeof MenubarPrimitive.Group>): JSX.Element {
+}: React.ComponentProps<typeof MenubarPrimitive.Group>): ReactElement {
   return <MenubarPrimitive.Group {...props} />;
 }
 
 // eslint-disable-next-line func-style
 function MenubarPortal({
   ...props
-}: React.ComponentProps<typeof MenubarPrimitive.Portal>): JSX.Element {
+}: React.ComponentProps<typeof MenubarPrimitive.Portal>): ReactElement {
   return <MenubarPrimitive.Portal {...props} />;
 }
 
 // eslint-disable-next-line func-style
 function MenubarRadioGroup({
   ...props
-}: React.ComponentProps<typeof MenubarPrimitive.RadioGroup>): JSX.Element {
+}: React.ComponentProps<typeof MenubarPrimitive.RadioGroup>): ReactElement {
   return <MenubarPrimitive.RadioGroup {...props} />;
 }
 
 // eslint-disable-next-line func-style
-function MenubarSub({ ...props }: React.ComponentProps<typeof MenubarPrimitive.Sub>): JSX.Element {
+function MenubarSub({ ...props }: React.ComponentProps<typeof MenubarPrimitive.Sub>): ReactElement {
   return <MenubarPrimitive.Sub data-slot="menubar-sub" {...props} />;
 }
 

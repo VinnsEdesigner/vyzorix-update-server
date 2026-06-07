@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_app/settings/notifications")({
 });
 
 // eslint-disable-next-line func-style
-function NotificationsSettings(): JSX.Element {
+function NotificationsSettings(): ReactElement {
   const { notificationsEnabled, update, serverUrl } = useVyzorixConfig();
   const serverUrlRef = useRef(serverUrl);
   const updateRef = useRef(update);
@@ -104,7 +104,7 @@ function Row({
   label: string;
   hint: string;
   children: React.ReactNode;
-}) {
+}): ReactElement {
   return (
     <div className="flex items-center justify-between gap-4 rounded-md border p-3">
       <div className="space-y-0.5">

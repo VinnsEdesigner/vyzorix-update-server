@@ -364,7 +364,11 @@ export function handleOAuthCallback(token: string, _isNew: string): AuthResponse
 // ─── Hooks ─────────────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line func-style
-export function useAuth() {
+export function useAuth(): {
+  token: string | null;
+  operator: Operator | null;
+  isAuthenticated: boolean;
+} {
   const token = getToken();
   const operator = getStoredOperator();
 

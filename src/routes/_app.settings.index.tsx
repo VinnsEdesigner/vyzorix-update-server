@@ -8,6 +8,7 @@ import {
   SlidersHorizontal,
   Wrench,
 } from "lucide-react";
+import type { ReactElement } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,7 +75,7 @@ function SettingsOverview(): JSX.Element {
           <KV k="Device ID" v={deviceId} />
           <KV k="Operator" v={operator.name || "—"} />
           <KV k="Role" v={operator.role} />
-          // eslint-disable-next-line no-nested-ternary
+          {/* eslint-disable-next-line no-nested-ternary */}
           <KV k="Health" v={health.data?.ok ? "ok" : health.isError ? "down" : "checking"} />
         </CardContent>
       </Card>
@@ -119,7 +120,7 @@ function SettingsOverview(): JSX.Element {
 }
 
 // eslint-disable-next-line func-style
-function KV({ k, v }: { k: string; v: string }) {
+function KV({ k, v }: { k: string; v: string }): ReactElement {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{k}</p>

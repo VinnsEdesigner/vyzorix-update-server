@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, AlertCircle, Info, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,7 +95,7 @@ function deriveAlerts(history: TelemetryFrame[], th: Thresholds): DerivedAlert[]
 }
 
 // eslint-disable-next-line func-style
-function AlertsPage(): JSX.Element {
+function AlertsPage(): ReactElement {
   const { thresholds } = useVyzorixConfig();
   const stream = useStream();
   const [query, setQuery] = useState("");
@@ -232,7 +232,7 @@ function SummaryCard({
   count: number;
   hint: string;
   Icon: typeof AlertTriangle;
-}) {
+}): ReactElement {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
