@@ -4,7 +4,6 @@ import * as React from "react";
 import { ButtonProps, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
   <nav
@@ -33,7 +32,6 @@ type PaginationLinkProps = {
 } & Pick<ButtonProps, "size"> &
   React.ComponentProps<"a">;
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const PaginationLink = ({ className, isActive, size = "icon", ...props }: PaginationLinkProps) => (
   <a
@@ -53,8 +51,8 @@ PaginationLink.displayName = "PaginationLink";
 const PaginationPrevious = ({
   className,
   ...props
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 }: React.ComponentProps<typeof PaginationLink>) => (
   <PaginationLink
     aria-label="Go to previous page"
@@ -68,7 +66,6 @@ const PaginationPrevious = ({
 );
 PaginationPrevious.displayName = "PaginationPrevious";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const PaginationNext = ({ className, ...props }: React.ComponentProps<typeof PaginationLink>) => (
   <PaginationLink
@@ -83,7 +80,6 @@ const PaginationNext = ({ className, ...props }: React.ComponentProps<typeof Pag
 );
 PaginationNext.displayName = "PaginationNext";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const PaginationEllipsis = ({ className, ...props }: React.ComponentProps<"span">) => (
   <span

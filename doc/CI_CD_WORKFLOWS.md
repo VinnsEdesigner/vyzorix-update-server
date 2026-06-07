@@ -190,7 +190,7 @@ jobs:
 
 This is the critical workflow that connects the main codebase to the server repo. It runs after a release tag is pushed, downloads the signed and downloaded apk from artifacts , generates version.json, and pushes both to the server repository.
 
-```yaml ( the file needs to be corrected though, tye builds instead of downloading , it was just because of earlier structure but after, i felt it's just backward 😅)
+```yaml ( the file needs to be corrected though, tye builds instead of downloading , it was just because of earlier structure but after, i felt it's just backward )
 name: Push Update to Server Repo
 
 on:

@@ -37,7 +37,7 @@ let _supabaseAdmin: ReturnType<typeof createSupabaseAdminClient> | undefined;
 // Import like: import { supabaseAdmin } from "@/integrations/supabase/client.server";
 export const supabaseAdmin = new Proxy({} as ReturnType<typeof createSupabaseAdminClient>, {
   get(_, prop, receiver) {
-// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     if (!_supabaseAdmin) _supabaseAdmin = createSupabaseAdminClient();
     return Reflect.get(_supabaseAdmin, prop, receiver);
   },

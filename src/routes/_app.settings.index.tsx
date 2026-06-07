@@ -74,7 +74,7 @@ function SettingsOverview(): JSX.Element {
           <KV k="Device ID" v={deviceId} />
           <KV k="Operator" v={operator.name || "—"} />
           <KV k="Role" v={operator.role} />
-// eslint-disable-next-line no-nested-ternary
+          // eslint-disable-next-line no-nested-ternary
           <KV k="Health" v={health.data?.ok ? "ok" : health.isError ? "down" : "checking"} />
         </CardContent>
       </Card>
@@ -118,8 +118,6 @@ function SettingsOverview(): JSX.Element {
   );
 }
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }) {
   return (
