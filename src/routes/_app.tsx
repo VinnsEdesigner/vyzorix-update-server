@@ -26,7 +26,7 @@ const titles: Record<string, string> = {
   "/settings": "Settings",
 };
 
-function AppLayout(): ReactElement {
+const AppLayout = (): ReactElement => {
   return (
     <SidebarProvider>
       <DeviceStreamProvider>
@@ -34,9 +34,9 @@ function AppLayout(): ReactElement {
       </DeviceStreamProvider>
     </SidebarProvider>
   );
-}
+};
 
-function AppShell(): ReactElement {
+const AppShell = (): ReactElement => {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const title = titles[pathname] ?? (pathname.startsWith("/settings") ? "Settings" : "Vyzorix");
   const { state } = useStream();
@@ -62,4 +62,4 @@ function AppShell(): ReactElement {
       </SidebarInset>
     </>
   );
-}
+};
