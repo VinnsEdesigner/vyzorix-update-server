@@ -26,7 +26,6 @@ export interface AuthActions {
 /**
  * useAuth hook - provides authentication state
  */
-// eslint-disable-next-line func-style
 export function useAuth(): AuthState {
   const [state, setState] = useState<AuthState>(() => {
     const token = getToken();
@@ -41,7 +40,6 @@ export function useAuth(): AuthState {
 
   // Update state when localStorage changes (for cross-tab sync)
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const handleStorage = () => {
       const token = getToken();
       const operator = getStoredOperator();
@@ -63,7 +61,6 @@ export function useAuth(): AuthState {
 /**
  * useAuthActions hook - provides authentication actions
  */
-// eslint-disable-next-line func-style
 export function useAuthActions(): AuthActions {
   const { operator: _operator } = useAuth();
   const { serverUrl } = useVyzorixConfig();
@@ -116,7 +113,6 @@ export function useAuthActions(): AuthActions {
  * Returns loading state while checking auth, and a redirect function.
  */
 
-// eslint-disable-next-line func-style
 export function useAuthGuard(): object {
   const { isAuthenticated, isLoading } = useAuth();
   const { checkAuth } = useAuthActions();
@@ -126,7 +122,6 @@ export function useAuthGuard(): object {
     if (!getToken()) return false;
 
     // Then validate with server
-    // eslint-disable-next-line no-return-await
     return await checkAuth();
   }, [checkAuth]);
 
@@ -141,7 +136,6 @@ export function useAuthGuard(): object {
  * useRequireAuth hook - for components that need to wait for auth check
  */
 
-// eslint-disable-next-line func-style
 export function useRequireAuth(): { isReady: boolean; isAuthenticated: boolean } {
   const [state, setState] = useState<{
     isReady: boolean;
@@ -153,7 +147,6 @@ export function useRequireAuth(): { isReady: boolean; isAuthenticated: boolean }
   const { checkAuth } = useAuthActions();
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const check = async () => {
       const isAuth = await checkAuth();
       setState({ isReady: true, isAuthenticated: isAuth });
