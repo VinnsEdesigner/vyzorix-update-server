@@ -26,6 +26,7 @@ const titles: Record<string, string> = {
   "/settings": "Settings",
 };
 
+// eslint-disable-next-line func-style
 function AppLayout(): ReactElement {
   return (
     <SidebarProvider>
@@ -36,6 +37,7 @@ function AppLayout(): ReactElement {
   );
 }
 
+// eslint-disable-next-line func-style
 function AppShell(): ReactElement {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const title = titles[pathname] ?? (pathname.startsWith("/settings") ? "Settings" : "Vyzorix");

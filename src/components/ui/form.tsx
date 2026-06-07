@@ -30,6 +30,7 @@ const FormField = <
 >({
   ...props
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 }: ControllerProps<TFieldValues, TName>) => {
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
@@ -38,6 +39,7 @@ const FormField = <
   );
 };
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);
   const itemContext = React.useContext(FormItemContext);

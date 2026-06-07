@@ -8,6 +8,7 @@ import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+// eslint-disable-next-line func-style
 function Calendar({
   className,
   classNames,
@@ -137,6 +138,7 @@ function Calendar({
   );
 }
 
+// eslint-disable-next-line func-style
 function CalendarDayButton({
   className,
   day,

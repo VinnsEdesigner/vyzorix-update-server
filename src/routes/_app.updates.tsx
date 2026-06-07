@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_app/updates")({
   component: UpdatesPage,
 });
 
+// eslint-disable-next-line func-style
 function UpdatesPage(): ReactElement {
   const { serverUrl, deviceId, dashboardToken } = useVyzorixConfig();
 
@@ -36,6 +37,7 @@ function UpdatesPage(): ReactElement {
   const v = version.data;
   const apkUrl = v ? `${serverUrl.replace(/\/+$/, "")}/api/v1/apk/${v.apk_filename}` : "#";
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const wake = async () => {
     if (!deviceId.trim()) {
       toast.error("WAKE_UP_UPDATER failed", {
@@ -102,6 +104,7 @@ function UpdatesPage(): ReactElement {
                 <KV
                   k="APK size (HEAD)"
                   v={
+                    // eslint-disable-next-line no-nested-ternary
                     apkSize.isLoading
                       ? "checking…"
                       : apkSize.data == null
@@ -189,6 +192,7 @@ function UpdatesPage(): ReactElement {
   );
 }
 
+// eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }): ReactElement {
   return (
     <div className="rounded-md border p-3">

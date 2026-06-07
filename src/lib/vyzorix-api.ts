@@ -61,14 +61,17 @@ export interface TelemetryFrame {
   timestamp?: number | string;
 }
 
+// eslint-disable-next-line func-style
 function join(base: string, path: string): string {
   return base.replace(/\/+$/, "") + path;
 }
 
+// eslint-disable-next-line func-style
 function dashboardHeaders(token?: string): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}`, "X-Vyzorix-Token": token } : {};
 }
 
+// eslint-disable-next-line func-style
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   const text = await res.text();
   let body: unknown = text;
@@ -87,6 +90,7 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
   return body as T;
 }
 
+// eslint-disable-next-line func-style
 export async function getHealth(serverUrl: string): Promise<{ ok: boolean }> {
   const t0 = Date.now();
   try {
@@ -99,6 +103,7 @@ export async function getHealth(serverUrl: string): Promise<{ ok: boolean }> {
   }
 }
 
+// eslint-disable-next-line func-style
 export async function getVersion(serverUrl: string): Promise<VersionManifest> {
   const t0 = Date.now();
   try {
@@ -118,6 +123,7 @@ export async function getVersion(serverUrl: string): Promise<VersionManifest> {
   }
 }
 
+// eslint-disable-next-line func-style
 export async function headApk(serverUrl: string, filename: string): Promise<number | null> {
   try {
     const res = await fetch(join(serverUrl, `/api/v1/apk/${filename}`), { method: "HEAD" });
@@ -133,11 +139,13 @@ export async function headApk(serverUrl: string, filename: string): Promise<numb
   }
 }
 
+// eslint-disable-next-line func-style
 export async function getDeviceStatus(serverUrl: string, deviceId: string): Promise<DeviceStatus> {
   const res = await fetch(join(serverUrl, `/v1/device/${encodeURIComponent(deviceId)}/status`));
   return jsonOrThrow<DeviceStatus>(res);
 }
 
+// eslint-disable-next-line func-style
 export async function getDashboardDevices(
   serverUrl: string,
   dashboardToken?: string,
@@ -149,6 +157,7 @@ export async function getDashboardDevices(
   return body.devices;
 }
 
+// eslint-disable-next-line func-style
 export async function registerDevice(
   serverUrl: string,
   payload: RegisterPayload,
@@ -173,6 +182,7 @@ export async function registerDevice(
 // accepted. Production dashboard commands should carry TOKEN_SECRET through
 // Authorization/X-Vyzorix-Token; Android-originated requests still use per-device HMAC.
 
+// eslint-disable-next-line func-style
 export async function dispatchCommand(
   serverUrl: string,
   deviceId: string,

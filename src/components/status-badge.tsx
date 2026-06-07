@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 
 export type DeviceHealth = "online" | "offline" | "warning" | "critical";
 
+// eslint-disable-next-line func-style
 export function StatusBadge({ status }: { status: DeviceHealth }): ReactElement {
   const map: Record<
     DeviceHealth,

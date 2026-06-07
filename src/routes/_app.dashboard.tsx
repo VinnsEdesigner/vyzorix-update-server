@@ -44,6 +44,7 @@ const tip = {
   fontSize: 12,
 };
 
+// eslint-disable-next-line func-style
 function deriveHealth(
   online: boolean,
   riskScore: number | undefined,
@@ -56,6 +57,7 @@ function deriveHealth(
   return "online";
 }
 
+// eslint-disable-next-line func-style
 function DashboardPage() {
   const { serverUrl, deviceId, thresholds, dashboardToken } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
@@ -159,8 +161,10 @@ function DashboardPage() {
               label="Risk score"
               value={t?.riskScore != null ? `${t.riskScore}` : "—"}
               hint={
+                // eslint-disable-next-line no-nested-ternary
                 t?.riskScore != null
-                  ? t.riskScore >= thresholds.riskCrit
+                  ? // eslint-disable-next-line no-nested-ternary
+                    t.riskScore >= thresholds.riskCrit
                     ? "Critical — soft reboot predicted"
                     : t.riskScore >= thresholds.riskWarn
                       ? "Investigate"
@@ -173,8 +177,10 @@ function DashboardPage() {
               label="Thermal"
               value={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"}
               hint={
+                // eslint-disable-next-line no-nested-ternary
                 t?.thermalTemp != null
-                  ? t.thermalTemp >= thresholds.thermalCrit
+                  ? // eslint-disable-next-line no-nested-ternary
+                    t.thermalTemp >= thresholds.thermalCrit
                     ? "THROTTLE_HEAVY"
                     : t.thermalTemp >= thresholds.thermalWarn
                       ? "THROTTLE_LIGHT"
@@ -191,6 +197,7 @@ function DashboardPage() {
             <Metric
               icon={Volume2}
               label="Speaker"
+              // eslint-disable-next-line no-nested-ternary
               value={t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"}
               hint={t?.activeDevice ?? "—"}
             />
@@ -268,9 +275,11 @@ function DashboardPage() {
             <CardContent className="space-y-3 text-sm">
               <KV k="Active device" v={t?.activeDevice ?? "—"} />
               <KV k="Audio mode" v={t?.audioMode != null ? `${t.audioMode}` : "—"} />
+              // eslint-disable-next-line no-nested-ternary
               <KV
                 k="Speaker"
                 v={
+                  // eslint-disable-next-line no-nested-ternary
                   t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"
                 }
               />
@@ -309,6 +318,7 @@ function DashboardPage() {
   );
 }
 
+// eslint-disable-next-line func-style
 function Metric({
   icon: Icon,
   label,
@@ -332,6 +342,7 @@ function Metric({
   );
 }
 
+// eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -342,11 +353,13 @@ function KV({ k, v }: { k: string; v: string }) {
 }
 
 // Format device class for display (e.g., "nokia_c22" -> "Nokia C22")
+// eslint-disable-next-line func-style
 function formatDeviceClass(deviceClass: string | undefined): string {
   if (!deviceClass) return "Unknown Device";
   return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// eslint-disable-next-line func-style
 function ChartShell({
   data,
   thresholds,

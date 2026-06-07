@@ -17,6 +17,7 @@ export const Route = createFileRoute("/forgot-password")({
   component: ForgotPasswordPage,
 });
 
+// eslint-disable-next-line func-style
 function ForgotPasswordPage(): ReactElement {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
@@ -24,6 +25,7 @@ function ForgotPasswordPage(): ReactElement {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {

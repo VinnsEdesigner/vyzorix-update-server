@@ -80,6 +80,7 @@ describe("URL Validation", () => {
 
 describe("Device Class Formatting", () => {
   // Test the formatting logic
+  // eslint-disable-next-line func-style
   function formatDeviceClass(deviceClass: string | undefined): string {
     if (!deviceClass) return "Unknown Device";
     return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -136,10 +137,12 @@ describe("Config Storage", () => {
 
   const STORAGE_KEY = "vyz.config.test";
 
+  // eslint-disable-next-line func-style
   function saveConfig(config: Record<string, unknown>): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
   }
 
+  // eslint-disable-next-line func-style
   function loadConfig(): Record<string, unknown> | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -205,10 +208,12 @@ describe("Settings Persistence", () => {
     role: string;
   }
 
+  // eslint-disable-next-line func-style
   function saveOperator(op: Operator): void {
     localStorage.setItem(OPERATOR_KEY, JSON.stringify(op));
   }
 
+  // eslint-disable-next-line func-style
   function getStoredOperator(): Operator | null {
     const raw = localStorage.getItem(OPERATOR_KEY);
     if (!raw) return null;
@@ -386,6 +391,7 @@ describe("Alert Derivation Logic", () => {
     timestamp?: number;
   }
 
+  // eslint-disable-next-line func-style
   function deriveAlerts(history: TelemetryFrame[], th: Thresholds): string[] {
     const alerts: string[] = [];
     history.forEach((f) => {

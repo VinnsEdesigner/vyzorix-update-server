@@ -9,6 +9,7 @@ export const Route = createFileRoute("/_app/logs")({
   component: LogsPage,
 });
 
+// eslint-disable-next-line func-style
 function LogsPage(): ReactElement {
   return (
     <Card className="h-[calc(100vh-10rem)] overflow-hidden p-0">

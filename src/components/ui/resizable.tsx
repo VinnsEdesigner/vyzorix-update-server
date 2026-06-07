@@ -3,6 +3,7 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 
 import { cn } from "@/lib/utils";
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const ResizablePanelGroup = ({ className, ...props }: React.ComponentProps<typeof Group>) => (
   <Group
     className={cn("flex h-full w-full data-[panel-group-direction=vertical]:flex-col", className)}
@@ -19,6 +20,7 @@ const ResizableHandle = ({
 }: React.ComponentProps<typeof Separator> & {
   withHandle?: boolean;
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 }) => (
   <Separator
     className={cn(

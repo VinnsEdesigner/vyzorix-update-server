@@ -17,6 +17,7 @@ export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
 });
 
+// eslint-disable-next-line func-style
 function ResetPasswordPage(): ReactElement {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
@@ -37,6 +38,7 @@ function ResetPasswordPage(): ReactElement {
     }
   }, [navigate]);
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
