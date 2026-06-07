@@ -21,14 +21,13 @@ export const Route = createFileRoute("/_app/device")({
 });
 
 // Format device class for display (e.g., "nokia_c22" -> "Nokia C22")
-// eslint-disable-next-line func-style
-function formatDeviceClass(deviceClass: string | undefined): string {
+
+const formatDeviceClass = (deviceClass: string | undefined): string => {
   if (!deviceClass) return "Unknown Device";
   return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
+};
 
-// eslint-disable-next-line func-style
-function DevicePage() {
+const DevicePage = (): JSX.Element => {
   const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
   const stream = useStream();
   const t = stream.lastTelemetry;
@@ -127,10 +126,9 @@ function DevicePage() {
       <RegisterPanel deviceStatus={status.data ?? null} />
     </div>
   );
-}
+};
 
-// eslint-disable-next-line func-style
-function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }) {
+const RegisterPanel = ({ deviceStatus }: { deviceStatus: DeviceStatus | null }): JSX.Element => {
   const { serverUrl, deviceId } = useVyzorixConfig();
 
   // Load defaults from server status (persisted in DB) instead of localStorage.
@@ -230,7 +228,7 @@ function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }) 
       </CardContent>
     </Card>
   );
-}
+};
 
 // eslint-disable-next-line func-style
 function Field({
