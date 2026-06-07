@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 
 export type ConnectionState = "connecting" | "connected" | "reconnecting" | "disconnected" | "idle";
 
-// eslint-disable-next-line func-style
 export function ConnectionBadge({ state = "idle" }: { state?: ConnectionState }): ReactElement {
   const map: Record<
     ConnectionState,
