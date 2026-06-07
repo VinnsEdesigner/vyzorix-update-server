@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Zap, Download, ChevronDown } from "lucide-react";
+import type { ReactElement } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/_app/updates")({
 });
 
 // eslint-disable-next-line func-style
-function UpdatesPage(): JSX.Element {
+function UpdatesPage(): ReactElement {
   const { serverUrl, deviceId, dashboardToken } = useVyzorixConfig();
 
   const version = useQuery({
@@ -81,7 +82,7 @@ function UpdatesPage(): JSX.Element {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            // eslint-disable-next-line no-nested-ternary
+            {/* eslint-disable-next-line no-nested-ternary */}
             {version.isError ? (
               <div className="space-y-2">
                 <p className="text-sm text-destructive">
@@ -192,7 +193,7 @@ function UpdatesPage(): JSX.Element {
 }
 
 // eslint-disable-next-line func-style
-function KV({ k, v }: { k: string; v: string }) {
+function KV({ k, v }: { k: string; v: string }): ReactElement {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{k}</p>
