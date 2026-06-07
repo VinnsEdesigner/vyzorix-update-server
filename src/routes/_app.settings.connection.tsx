@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,7 @@ function isValidServerUrl(url: string): boolean {
 }
 
 // eslint-disable-next-line func-style
-function ConnectionSettings(): JSX.Element {
+function ConnectionSettings(): ReactElement {
   const cfg = useVyzorixConfig();
   const cfgRef = useRef(cfg);
   cfgRef.current = cfg;
@@ -256,7 +256,7 @@ function ToggleRow({
   hint: string;
   checked: boolean;
   onChange: (v: boolean) => void;
-}) {
+}): ReactElement {
   return (
     <div className="flex items-start justify-between gap-3 rounded-md border p-3">
       <div className="space-y-0.5">

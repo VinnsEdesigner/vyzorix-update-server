@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+  type ReactElement,
+} from "react";
 
 export const DEFAULT_SERVER_URL = "http://localhost:3000";
 // No default device - must be selected from registered devices or empty
@@ -90,7 +97,7 @@ type Config = VyzorixSettings & {
 const ConfigCtx = createContext<Config | null>(null);
 
 // eslint-disable-next-line func-style
-export function VyzorixConfigProvider({ children }: { children: ReactNode }): JSX.Element {
+export function VyzorixConfigProvider({ children }: { children: ReactNode }): ReactElement {
   // Lazy init: read localStorage BEFORE first paint so consumers never see defaults
   // followed by a hydration swap (this was causing settings to "reset" visually
   // when navigating between pages).
@@ -168,14 +175,14 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }): JS
 }
 
 // eslint-disable-next-line func-style
-export function useVyzorixConfig() {
+export function useVyzorixConfig(): Config {
   const ctx = useContext(ConfigCtx);
   if (!ctx) throw new Error("useVyzorixConfig must be used inside VyzorixConfigProvider");
   return ctx;
 }
 
 // eslint-disable-next-line func-style
-export function wsUrl(serverUrl: string, path: string) {
+export function wsUrl(serverUrl: string, path: string): string {
   try {
     const u = new URL(path, serverUrl);
     u.protocol = u.protocol === "https:" ? "wss:" : "ws:";

@@ -13,7 +13,7 @@
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import type { ReactElement, useEffect, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { handleOAuthCallback } from "@/lib/vyzorix-auth";
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/auth/callback")({
 });
 
 // eslint-disable-next-line func-style
-function OAuthCallbackPage(): JSX.Element {
+function OAuthCallbackPage(): ReactElement {
   const navigate = useNavigate();
 
   useEffect(() => {
