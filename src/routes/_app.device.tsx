@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
@@ -58,7 +58,7 @@ function DevicePage(): JSX.Element {
 
   return (
     <div className="space-y-4">
-      // eslint-disable-next-line no-nested-ternary
+      {/* eslint-disable-next-line no-nested-ternary */}
       {!deviceId ? (
         <Card>
           <CardContent className="py-4">
@@ -241,7 +241,7 @@ function Field({
   label: string;
   value: string;
   onChange: (v: string) => void;
-}) {
+}): ReactElement {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
@@ -251,7 +251,7 @@ function Field({
 }
 
 // eslint-disable-next-line func-style
-function KV({ k, v }: { k: string; v: string }) {
+function KV({ k, v }: { k: string; v: string }): ReactElement {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{k}</p>

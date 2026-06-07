@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_app/settings/thresholds")({
 });
 
 // eslint-disable-next-line func-style
-function ThresholdSettings(): JSX.Element {
+function ThresholdSettings(): ReactElement {
   const cfg = useVyzorixConfig();
   const cfgRef = useRef(cfg);
   cfgRef.current = cfg;
@@ -137,7 +137,7 @@ function NumField({
   value: number;
   onChange: (v: number) => void;
   disabled?: boolean;
-}) {
+}): ReactElement {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
