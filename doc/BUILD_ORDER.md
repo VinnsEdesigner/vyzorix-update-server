@@ -125,7 +125,7 @@ Each layer below has: scope, files compiled, files explicitly stubbed-only, what
 
 ---
 
-## Layer 2 — `core/audioengine` ✅ landed (PR #9)
+## Layer 2 — `core/audioengine` [OK] landed (PR #9)
 
 **Scope:** Native C++ ring buffer + JNI bridge. NO Kotlin audio pipeline yet — just the native side and its bridge. No services.
 
@@ -139,10 +139,10 @@ Each layer below has: scope, files compiled, files explicitly stubbed-only, what
 - `AudioPipelineController.kt` — exists in `services/audio/` (Layer 3+); for Layer 2 we only need the JNI surface to be callable.
 
 **Success criteria:**
-- ✅ `./gradlew :core:audioengine:externalNativeBuild` succeeds for `arm64-v8a`, `armeabi-v7a`, `x86_64`.
-- ✅ `thread_priority_guard.cpp` calls `sched_setscheduler` → `sched_getscheduler` + `sched_getparam` and surfaces `PRIORITY_RESULT_SILENT_FALLBACK` distinctly from `REAL_TIME`/`BEST_EFFORT`/`SYSCALL_FAILED`, per `NOKIA_C22_NOTES.md` §2.3 (Unisoc silent cgroup downgrade).
-- ✅ JVM-side Robolectric tests (13) verify the loader fallback path: every public bridge method returns the documented "unavailable" sentinel when `libaudioengine.so` cannot be loaded (the exact path Layer 6+'s `audio_fallback_bridge` will exercise on devices with no usable ABI).
-- ✅ Host-side C++ unit-test harness (17 tests, 291 assertions) exercises the algorithms against `g++` on the build host as a surrogate for the on-device sine-wave round-trip test. Covers ring-buffer round-trip + power-of-two enforcement + underrun/overrun counter bumps + wrap-around + saturating mixer + Q15 gain + stereo→mono downmix + linear resampler passthrough + 44.1→48 upsample + comfort-noise LFSR envelope + rolling-window latency mean + monotonic clock + clock-sync drift threshold + memory-guard alloc/free balance + watchdog ping.
+- [OK] `./gradlew :core:audioengine:externalNativeBuild` succeeds for `arm64-v8a`, `armeabi-v7a`, `x86_64`.
+- [OK] `thread_priority_guard.cpp` calls `sched_setscheduler` → `sched_getscheduler` + `sched_getparam` and surfaces `PRIORITY_RESULT_SILENT_FALLBACK` distinctly from `REAL_TIME`/`BEST_EFFORT`/`SYSCALL_FAILED`, per `NOKIA_C22_NOTES.md` §2.3 (Unisoc silent cgroup downgrade).
+- [OK] JVM-side Robolectric tests (13) verify the loader fallback path: every public bridge method returns the documented "unavailable" sentinel when `libaudioengine.so` cannot be loaded (the exact path Layer 6+'s `audio_fallback_bridge` will exercise on devices with no usable ABI).
+- [OK] Host-side C++ unit-test harness (17 tests, 291 assertions) exercises the algorithms against `g++` on the build host as a surrogate for the on-device sine-wave round-trip test. Covers ring-buffer round-trip + power-of-two enforcement + underrun/overrun counter bumps + wrap-around + saturating mixer + Q15 gain + stereo→mono downmix + linear resampler passthrough + 44.1→48 upsample + comfort-noise LFSR envelope + rolling-window latency mean + monotonic clock + clock-sync drift threshold + memory-guard alloc/free balance + watchdog ping.
 
 **On-device verification (Nokia C22) — pending the device:**
 - Sine wave round-trip test reports zero underruns at 48kHz mono (already proven on the host; needs reproducing on real silicon).
@@ -150,7 +150,7 @@ Each layer below has: scope, files compiled, files explicitly stubbed-only, what
 
 ---
 
-## Layer 3 — Minimum Viable Route War ✅ landed (PR #11)
+## Layer 3 — Minimum Viable Route War [OK] landed (PR #11)
 
 **Status:** Implementation merged. `:app` + `:core:services` Gradle modules are now in the build graph. The full Layer 3 surface (VoIP anchor + SpeakerForceEngine + AudioModeKeeper + RoutePersistenceDaemon + bootstrap accessibility wiring + BootReceiver) is implemented per the file list below; 36 Robolectric tests in `:core:services` + 1 in `:app` cover the new logic. **On-device acceptance on the Nokia C22 is still pending — see "On-device verification" below; this is THE Phase 1 go/no-go gate.**
 

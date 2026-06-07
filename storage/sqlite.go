@@ -23,9 +23,9 @@ import (
 var ErrHijack = errors.New("device_id already registered to a different firebaseInstallId")
 
 type Store struct {
-	mu   sync.Mutex
 	db   *sql.DB
 	path string
+	mu   sync.Mutex
 }
 
 func Open(path string) (*Store, error) {
@@ -41,7 +41,7 @@ func Open(path string) (*Store, error) {
 	s := &Store{db: db, path: path}
 	return s, s.migrate(context.Background())
 }
-func (s *Store) Close() error                  { return s.db.Close() }
+func (s *Store) Close() error                   { return s.db.Close() }
 func (s *Store) Ping(ctx context.Context) error { return s.db.PingContext(ctx) }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -73,13 +73,13 @@ func (s *Store) migrate(ctx context.Context) error {
 		return err
 	}
 	// Additive migrations
-	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN wake_sent INTEGER NOT NULL DEFAULT 0`) //nolint:errcheck
-	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN wake_error TEXT`)                   //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN wake_sent INTEGER NOT NULL DEFAULT 0`)   //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN wake_error TEXT`)                        //nolint:errcheck
 	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'`) //nolint:errcheck
-	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN completed_at INTEGER`)               //nolint:errcheck
-	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN result TEXT`)                      //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN completed_at INTEGER`)                   //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE commands ADD COLUMN result TEXT`)                            //nolint:errcheck
 	// Command secret hash column for audit/compliance
-	s.db.ExecContext(ctx, `ALTER TABLE devices ADD COLUMN command_secret_hash TEXT`)        //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE devices ADD COLUMN command_secret_hash TEXT`) //nolint:errcheck
 	return s.migrateAuth(ctx)
 }
 
@@ -168,7 +168,7 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 	}
 	// Additive migrations for new columns
 	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`) //nolint:errcheck
-	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN verification_sent_at INTEGER`)             //nolint:errcheck
+	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN verification_sent_at INTEGER`)              //nolint:errcheck
 	return s.migrateSettings(ctx)
 }
 
@@ -204,6 +204,8 @@ func (s *Store) migrateSettings(ctx context.Context) error {
 }
 
 func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struct {
+	RegisteredAt      time.Time
+	LastSeen          time.Time
 	ID                string
 	FirebaseInstallID string
 	FCMToken          string
@@ -211,8 +213,6 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 	DeviceClass       string
 	CommandSecret     string
 	Online            bool
-	RegisteredAt      time.Time
-	LastSeen          time.Time
 }, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -223,6 +223,8 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 	if err == nil {
 		if existingFID != req.FirebaseInstallID {
 			return struct {
+				RegisteredAt      time.Time
+				LastSeen          time.Time
 				ID                string
 				FirebaseInstallID string
 				FCMToken          string
@@ -230,14 +232,14 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 				DeviceClass       string
 				CommandSecret     string
 				Online            bool
-				RegisteredAt      time.Time
-				LastSeen          time.Time
 			}{}, false, ErrHijack
 		}
 		_, err = s.db.ExecContext(ctx, `UPDATE devices SET fcm_token=?, app_version=?, device_class=?, last_seen=? WHERE id=?`,
 			req.FCMToken, req.AppVersion, req.DeviceClass, now.UnixMilli(), req.DeviceID)
 		if err != nil {
 			return struct {
+				RegisteredAt      time.Time
+				LastSeen          time.Time
 				ID                string
 				FirebaseInstallID string
 				FCMToken          string
@@ -245,14 +247,17 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 				DeviceClass       string
 				CommandSecret     string
 				Online            bool
-				RegisteredAt      time.Time
-				LastSeen          time.Time
 			}{}, false, err
 		}
 		var cmdSecret string
 		var regAt int64
-		_ = s.db.QueryRowContext(ctx, `SELECT command_secret, registered_at FROM devices WHERE id = ?`, req.DeviceID).Scan(&cmdSecret, &regAt)
+		if err := s.db.QueryRowContext(ctx, `SELECT command_secret, registered_at FROM devices WHERE id = ?`, req.DeviceID).Scan(&cmdSecret, &regAt); err != nil {
+			// Non-fatal: fallback to zeros - device will still work
+			cmdSecret, regAt = "", 0
+		}
 		return struct {
+			RegisteredAt      time.Time
+			LastSeen          time.Time
 			ID                string
 			FirebaseInstallID string
 			FCMToken          string
@@ -260,12 +265,12 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 			DeviceClass       string
 			CommandSecret     string
 			Online            bool
-			RegisteredAt      time.Time
-			LastSeen          time.Time
 		}{ID: req.DeviceID, FirebaseInstallID: existingFID, FCMToken: req.FCMToken, AppVersion: req.AppVersion, DeviceClass: req.DeviceClass, CommandSecret: cmdSecret, Online: true, RegisteredAt: time.UnixMilli(regAt), LastSeen: now}, false, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return struct {
+			RegisteredAt      time.Time
+			LastSeen          time.Time
 			ID                string
 			FirebaseInstallID string
 			FCMToken          string
@@ -273,13 +278,13 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 			DeviceClass       string
 			CommandSecret     string
 			Online            bool
-			RegisteredAt      time.Time
-			LastSeen          time.Time
 		}{}, false, err
 	}
 	secret, err := randomHex(32)
 	if err != nil {
 		return struct {
+			RegisteredAt      time.Time
+			LastSeen          time.Time
 			ID                string
 			FirebaseInstallID string
 			FCMToken          string
@@ -287,18 +292,22 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 			DeviceClass       string
 			CommandSecret     string
 			Online            bool
-			RegisteredAt      time.Time
-			LastSeen          time.Time
 		}{}, false, err
 	}
 	// Generate bcrypt hash of the secret for audit/compliance
 	hasher := NewSecretHash()
-	secretHash, _ := hasher.HashSecret(secret) // Error ignored - hash is optional
+	secretHash, hashErr := hasher.HashSecret(secret)
+	if hashErr != nil {
+		// Log but don't fail - hash is optional for backwards compatibility
+		secretHash = ""
+	}
 
 	_, err = s.db.ExecContext(ctx, `INSERT INTO devices(id,firebase_install_id,fcm_token,app_version,device_class,command_secret,command_secret_hash,online,registered_at,last_seen) VALUES(?,?,?,?,?,?,?,0,?,?)`,
 		req.DeviceID, req.FirebaseInstallID, req.FCMToken, req.AppVersion, req.DeviceClass, secret, secretHash, now.UnixMilli(), now.UnixMilli())
 	if err != nil {
 		return struct {
+			RegisteredAt      time.Time
+			LastSeen          time.Time
 			ID                string
 			FirebaseInstallID string
 			FCMToken          string
@@ -306,11 +315,11 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 			DeviceClass       string
 			CommandSecret     string
 			Online            bool
-			RegisteredAt      time.Time
-			LastSeen          time.Time
 		}{}, false, err
 	}
 	return struct {
+		RegisteredAt      time.Time
+		LastSeen          time.Time
 		ID                string
 		FirebaseInstallID string
 		FCMToken          string
@@ -318,8 +327,6 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 		DeviceClass       string
 		CommandSecret     string
 		Online            bool
-		RegisteredAt      time.Time
-		LastSeen          time.Time
 	}{ID: req.DeviceID, FirebaseInstallID: req.FirebaseInstallID, FCMToken: req.FCMToken, AppVersion: req.AppVersion, DeviceClass: req.DeviceClass, CommandSecret: secret, RegisteredAt: now, LastSeen: now}, true, nil
 }
 
@@ -336,6 +343,8 @@ type deviceRow struct {
 }
 
 func rowToDevice(r deviceRow) struct {
+	RegisteredAt      time.Time
+	LastSeen          time.Time
 	ID                string
 	FirebaseInstallID string
 	FCMToken          string
@@ -343,10 +352,10 @@ func rowToDevice(r deviceRow) struct {
 	DeviceClass       string
 	CommandSecret     string
 	Online            bool
-	RegisteredAt      time.Time
-	LastSeen          time.Time
 } {
 	return struct {
+		RegisteredAt      time.Time
+		LastSeen          time.Time
 		ID                string
 		FirebaseInstallID string
 		FCMToken          string
@@ -354,12 +363,12 @@ func rowToDevice(r deviceRow) struct {
 		DeviceClass       string
 		CommandSecret     string
 		Online            bool
-		RegisteredAt      time.Time
-		LastSeen          time.Time
 	}{ID: r.ID, FirebaseInstallID: r.FirebaseInstallID, FCMToken: r.FCMToken, AppVersion: r.AppVersion, DeviceClass: r.DeviceClass, CommandSecret: r.CommandSecret, Online: r.Online != 0, RegisteredAt: time.UnixMilli(r.RegisteredAt).UTC(), LastSeen: time.UnixMilli(r.LastSeen).UTC()}
 }
 
 func (s *Store) Device(ctx context.Context, id string) (struct {
+	RegisteredAt      time.Time
+	LastSeen          time.Time
 	ID                string
 	FirebaseInstallID string
 	FCMToken          string
@@ -367,8 +376,6 @@ func (s *Store) Device(ctx context.Context, id string) (struct {
 	DeviceClass       string
 	CommandSecret     string
 	Online            bool
-	RegisteredAt      time.Time
-	LastSeen          time.Time
 }, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -376,6 +383,8 @@ func (s *Store) Device(ctx context.Context, id string) (struct {
 	err := s.db.QueryRowContext(ctx, `SELECT id, firebase_install_id, fcm_token, app_version, device_class, command_secret, online, registered_at, last_seen FROM devices WHERE id = ?`, id).Scan(&r.ID, &r.FirebaseInstallID, &r.FCMToken, &r.AppVersion, &r.DeviceClass, &r.CommandSecret, &r.Online, &r.RegisteredAt, &r.LastSeen)
 	if errors.Is(err, sql.ErrNoRows) {
 		return struct {
+			RegisteredAt      time.Time
+			LastSeen          time.Time
 			ID                string
 			FirebaseInstallID string
 			FCMToken          string
@@ -383,12 +392,12 @@ func (s *Store) Device(ctx context.Context, id string) (struct {
 			DeviceClass       string
 			CommandSecret     string
 			Online            bool
-			RegisteredAt      time.Time
-			LastSeen          time.Time
 		}{}, false, nil
 	}
 	if err != nil {
 		return struct {
+			RegisteredAt      time.Time
+			LastSeen          time.Time
 			ID                string
 			FirebaseInstallID string
 			FCMToken          string
@@ -396,8 +405,6 @@ func (s *Store) Device(ctx context.Context, id string) (struct {
 			DeviceClass       string
 			CommandSecret     string
 			Online            bool
-			RegisteredAt      time.Time
-			LastSeen          time.Time
 		}{}, false, err
 	}
 	return rowToDevice(r), true, nil
@@ -460,14 +467,14 @@ func (s *Store) GetSecretHash(ctx context.Context, deviceID string) (string, err
 // This is a migration helper for existing databases.
 func (s *Store) HashAllSecrets(ctx context.Context) (int, error) {
 	hasher := NewSecretHash()
-	
+
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT id, command_secret FROM devices WHERE command_secret_hash IS NULL OR command_secret_hash = ''`,
 	)
 	if err != nil {
 		return 0, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	count := 0
 	for rows.Next() {
@@ -626,6 +633,8 @@ func (s *Store) MarkCommandFailed(ctx context.Context, dispatchID, errMsg string
 }
 
 func (s *Store) Devices(ctx context.Context) ([]struct {
+	RegisteredAt      time.Time
+	LastSeen          time.Time
 	ID                string
 	FirebaseInstallID string
 	FCMToken          string
@@ -633,8 +642,6 @@ func (s *Store) Devices(ctx context.Context) ([]struct {
 	DeviceClass       string
 	CommandSecret     string
 	Online            bool
-	RegisteredAt      time.Time
-	LastSeen          time.Time
 }, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -642,8 +649,10 @@ func (s *Store) Devices(ctx context.Context) ([]struct {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 	var out []struct {
+		RegisteredAt      time.Time
+		LastSeen          time.Time
 		ID                string
 		FirebaseInstallID string
 		FCMToken          string
@@ -651,8 +660,6 @@ func (s *Store) Devices(ctx context.Context) ([]struct {
 		DeviceClass       string
 		CommandSecret     string
 		Online            bool
-		RegisteredAt      time.Time
-		LastSeen          time.Time
 	}
 	for rows.Next() {
 		var r deviceRow
@@ -668,6 +675,8 @@ func (s *Store) Devices(ctx context.Context) ([]struct {
 // The cursor is the lastSeen timestamp (in milliseconds) from the previous page.
 // Results are ordered by last_seen DESC.
 func (s *Store) DevicesPaginated(ctx context.Context, limit int, cursor int64) ([]struct {
+	RegisteredAt      time.Time
+	LastSeen          time.Time
 	ID                string
 	FirebaseInstallID string
 	FCMToken          string
@@ -675,8 +684,6 @@ func (s *Store) DevicesPaginated(ctx context.Context, limit int, cursor int64) (
 	DeviceClass       string
 	CommandSecret     string
 	Online            bool
-	RegisteredAt      time.Time
-	LastSeen          time.Time
 }, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -703,9 +710,11 @@ func (s *Store) DevicesPaginated(ctx context.Context, limit int, cursor int64) (
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer rows.Close() //nolint:errcheck
 
 	var out []struct {
+		RegisteredAt      time.Time
+		LastSeen          time.Time
 		ID                string
 		FirebaseInstallID string
 		FCMToken          string
@@ -713,8 +722,6 @@ func (s *Store) DevicesPaginated(ctx context.Context, limit int, cursor int64) (
 		DeviceClass       string
 		CommandSecret     string
 		Online            bool
-		RegisteredAt      time.Time
-		LastSeen          time.Time
 	}
 	for rows.Next() {
 		var r deviceRow
@@ -735,8 +742,8 @@ func randomHex(n int) (string, error) {
 }
 
 func NewDispatchID() string {
-	s, _ := randomHex(16)
-	if s == "" {
+	s, err := randomHex(16)
+	if err != nil || s == "" {
 		return fmt.Sprintf("dispatch-%d", time.Now().UnixNano())
 	}
 	return s
@@ -795,9 +802,9 @@ func (s *Store) GetOperatorByGoogleID(ctx context.Context, googleID string) (*mo
 		ID            string
 		Email         string
 		Name          string
-		PasswordHash  []byte
 		Role          string
 		GoogleID      string
+		PasswordHash  []byte
 		EmailVerified int
 		CreatedAt     int64
 		UpdatedAt     int64
@@ -829,24 +836,24 @@ func (s *Store) GetOperatorByGoogleID(ctx context.Context, googleID string) (*mo
 // GetOperatorByID retrieves an operator by their ID.
 func (s *Store) GetOperatorByID(ctx context.Context, id string) (*models.Operator, error) {
 	var r struct {
-		ID                  string
-		Email               string
-		Name                string
-		PasswordHash        []byte
-		Role                string
-		GoogleID            sql.NullString
-		EmailVerified       int
-		RiskWarn            int
-		RiskCrit            int
-		ThermalWarn         int
-		ThermalCrit         int
-		BufferWarn          int
-		BufferCrit          int
-		StrictHmac          int
-		AutoReconnect       int
+		ID                   string
+		Email                string
+		Name                 string
+		PasswordHash         []byte
+		Role                 string
+		GoogleID             sql.NullString
+		EmailVerified        int
+		RiskWarn             int
+		RiskCrit             int
+		ThermalWarn          int
+		ThermalCrit          int
+		BufferWarn           int
+		BufferCrit           int
+		StrictHmac           int
+		AutoReconnect        int
 		NotificationsEnabled int
-		CreatedAt           int64
-		UpdatedAt           int64
+		CreatedAt            int64
+		UpdatedAt            int64
 	}
 	err := s.db.QueryRowContext(ctx,
 		`SELECT id, email, name, password_hash, role, google_id, COALESCE(email_verified, 0),
@@ -924,7 +931,10 @@ func (s *Store) UpdateOperatorName(ctx context.Context, operatorID, name string)
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
 	if rows == 0 {
 		return errors.New("operator not found")
 	}
@@ -941,7 +951,10 @@ func (s *Store) UpdateOperatorThresholds(ctx context.Context, operatorID string,
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
 	if rows == 0 {
 		return errors.New("operator not found")
 	}
@@ -958,7 +971,10 @@ func (s *Store) UpdateOperatorClientSettings(ctx context.Context, operatorID str
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
 	if rows == 0 {
 		return errors.New("operator not found")
 	}
@@ -979,7 +995,10 @@ func (s *Store) ResetOperatorSettings(ctx context.Context, operatorID string) er
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
 	if rows == 0 {
 		return errors.New("operator not found")
 	}
@@ -1009,10 +1028,10 @@ func (s *Store) GetSessionByTokenHash(ctx context.Context, tokenHash string) (*m
 	var r struct {
 		ID         string
 		OperatorID string
-		ExpiresAt  int64
-		CreatedAt  int64
 		UserAgent  sql.NullString
 		IPAddress  sql.NullString
+		ExpiresAt  int64
+		CreatedAt  int64
 	}
 	err := s.db.QueryRowContext(ctx,
 		`SELECT id, operator_id, expires_at, created_at, user_agent, ip_address
@@ -1028,10 +1047,10 @@ func (s *Store) GetSessionByTokenHash(ctx context.Context, tokenHash string) (*m
 	return &models.Session{
 		ID:         r.ID,
 		OperatorID: r.OperatorID,
-		ExpiresAt: time.UnixMilli(r.ExpiresAt).UTC(),
-		CreatedAt: time.UnixMilli(r.CreatedAt).UTC(),
-		UserAgent: r.UserAgent.String,
-		IPAddress: r.IPAddress.String,
+		ExpiresAt:  time.UnixMilli(r.ExpiresAt).UTC(),
+		CreatedAt:  time.UnixMilli(r.CreatedAt).UTC(),
+		UserAgent:  r.UserAgent.String,
+		IPAddress:  r.IPAddress.String,
 	}, nil
 }
 
@@ -1060,11 +1079,11 @@ func (s *Store) DeleteAllSessionsForOperator(ctx context.Context, operatorID str
 
 // EmailVerification represents a pending email verification token.
 type EmailVerification struct {
+	ExpiresAt  time.Time
+	CreatedAt  time.Time
 	ID         string
 	OperatorID string
 	TokenHash  string
-	ExpiresAt  time.Time
-	CreatedAt  time.Time
 }
 
 // CreateEmailVerification inserts a new email verification token.
@@ -1122,12 +1141,12 @@ func (s *Store) DeleteEmailVerificationsByOperator(ctx context.Context, operator
 
 // PasswordResetToken represents a pending password reset token.
 type PasswordResetToken struct {
+	ExpiresAt  time.Time
+	CreatedAt  time.Time
+	UsedAt     *time.Time
 	ID         string
 	OperatorID string
 	TokenHash  string
-	ExpiresAt  time.Time
-	UsedAt     *time.Time
-	CreatedAt  time.Time
 }
 
 // CreatePasswordResetToken inserts a new password reset token.
@@ -1223,7 +1242,10 @@ func (s *Store) SetOperatorEmailVerified(ctx context.Context, operatorID string,
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
 	if rows == 0 {
 		return errors.New("operator not found")
 	}
@@ -1240,7 +1262,10 @@ func (s *Store) UpdateOperatorPassword(ctx context.Context, operatorID, password
 	if err != nil {
 		return err
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
 	if rows == 0 {
 		return errors.New("operator not found")
 	}

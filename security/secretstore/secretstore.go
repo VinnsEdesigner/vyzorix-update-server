@@ -17,10 +17,10 @@ import (
 // Per DEVICE_REGISTRATION.md §6.1: secrets stored in data/secrets/<deviceId>.bin
 // encrypted with AES-GCM using a master key from VYZORIX_SECRET_MASTER_KEY env.
 type SecretStore struct {
-	baseDir    string
-	masterKey  []byte
-	mu         sync.RWMutex
-	encryptor  *AESGCMEncryptor
+	encryptor *AESGCMEncryptor
+	baseDir   string
+	masterKey []byte
+	mu        sync.RWMutex
 }
 
 // NewSecretStore creates a new SecretStore.
@@ -31,7 +31,7 @@ func NewSecretStore(baseDir string, masterKeyBase64 string) (*SecretStore, error
 	if err != nil {
 		return nil, fmt.Errorf("invalid master key encoding: %w", err)
 	}
-	
+
 	if len(masterKey) != 32 {
 		return nil, fmt.Errorf("master key must be 32 bytes (256 bits), got %d", len(masterKey))
 	}
@@ -49,7 +49,7 @@ func NewSecretStore(baseDir string, masterKeyBase64 string) (*SecretStore, error
 	return &SecretStore{
 		baseDir:   baseDir,
 		masterKey: masterKey,
-		encryptor:  encryptor,
+		encryptor: encryptor,
 	}, nil
 }
 
@@ -134,7 +134,7 @@ func (s *SecretStore) secretPath(deviceID string) string {
 
 func (s *SecretStore) getSecret(deviceID string) (string, error) {
 	secretPath := s.secretPath(deviceID)
-	
+
 	encrypted, err := os.ReadFile(secretPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -164,8 +164,8 @@ var (
 
 // AESGCMEncryptor provides AES-GCM encryption/decryption.
 type AESGCMEncryptor struct {
-	key []byte
 	gcm cipher.AEAD
+	key []byte
 }
 
 // NewAESGCMEncryptor creates a new AES-GCM encryptor with the given 256-bit key.

@@ -19,10 +19,10 @@ import (
 // UpdaterController handles OTA distribution endpoints.
 // It serves version.json, changelog.json, and APK files with Range support.
 type UpdaterController struct {
-	log      *slog.Logger
-	config   config.Config
-	store    *storage.Store
 	notifier fcm.Notifier
+	log      *slog.Logger
+	store    *storage.Store
+	config   config.Config
 }
 
 func NewUpdaterController(log *slog.Logger, cfg config.Config, st *storage.Store, notifier fcm.Notifier) *UpdaterController {
@@ -118,7 +118,11 @@ func (s *UpdaterController) CheckUpdate(c *gin.Context) {
 
 	clientCode := 0
 	if versionCode != "" {
-		clientCode, _ = strconv.Atoi(versionCode)
+		var err error
+		clientCode, err = strconv.Atoi(versionCode)
+		if err != nil {
+			s.log.Warn("invalid client version code", "versionCode", versionCode, "err", err)
+		}
 	}
 
 	updateAvailable := version.VersionCode > clientCode
@@ -146,6 +150,6 @@ func (s *UpdaterController) DownloadProgress(c *gin.Context) {
 	c.JSON(200, map[string]any{"recorded": true})
 }
 
-func (s *UpdaterController) Config() config.Config { return s.config }
+func (s *UpdaterController) Config() config.Config  { return s.config }
 func (s *UpdaterController) Store() *storage.Store  { return s.store }
 func (s *UpdaterController) Notifier() fcm.Notifier { return s.notifier }

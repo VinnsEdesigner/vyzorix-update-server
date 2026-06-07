@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AlertTriangle, AlertCircle, Info, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -12,11 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle, AlertCircle, Info, Search } from "lucide-react";
-
-import { useVyzorixConfig } from "@/lib/vyzorix-config";
+import { Separator } from "@/components/ui/separator";
 import { useStream } from "@/lib/device-stream-context";
 import type { TelemetryFrame } from "@/lib/vyzorix-api";
+import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import type { Thresholds } from "@/lib/vyzorix-config";
 
 export const Route = createFileRoute("/_app/alerts")({
@@ -38,6 +38,7 @@ const severityIcon: Record<Severity, typeof AlertTriangle> = {
   info: Info,
 };
 
+// eslint-disable-next-line func-style
 function deriveAlerts(history: TelemetryFrame[], th: Thresholds): DerivedAlert[] {
   const out: DerivedAlert[] = [];
   history.forEach((f, i) => {
@@ -93,7 +94,8 @@ function deriveAlerts(history: TelemetryFrame[], th: Thresholds): DerivedAlert[]
   return out.slice(-100).reverse();
 }
 
-function AlertsPage() {
+// eslint-disable-next-line func-style
+function AlertsPage(): JSX.Element {
   const { thresholds } = useVyzorixConfig();
   const stream = useStream();
   const [query, setQuery] = useState("");
@@ -195,6 +197,7 @@ function AlertsPage() {
                       </div>
                       <Badge
                         variant={
+// eslint-disable-next-line no-nested-ternary
                           a.severity === "critical"
                             ? "destructive"
                             : a.severity === "warning"
@@ -218,6 +221,9 @@ function AlertsPage() {
   );
 }
 
+// eslint-disable-next-line func-style
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+// eslint-disable-next-line func-style
 function SummaryCard({
   label,
   count,
