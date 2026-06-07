@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
@@ -28,7 +28,7 @@ function formatDeviceClass(deviceClass: string | undefined): string {
 }
 
 // eslint-disable-next-line func-style
-function DevicePage(): JSX.Element {
+function DevicePage() {
   const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
   const stream = useStream();
   const t = stream.lastTelemetry;
@@ -58,7 +58,7 @@ function DevicePage(): JSX.Element {
 
   return (
     <div className="space-y-4">
-      // eslint-disable-next-line no-nested-ternary
+      {/* eslint-disable-next-line no-nested-ternary */}
       {!deviceId ? (
         <Card>
           <CardContent className="py-4">
@@ -130,7 +130,7 @@ function DevicePage(): JSX.Element {
 }
 
 // eslint-disable-next-line func-style
-function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }): JSX.Element {
+function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }) {
   const { serverUrl, deviceId } = useVyzorixConfig();
 
   // Load defaults from server status (persisted in DB) instead of localStorage.
@@ -241,7 +241,7 @@ function Field({
   label: string;
   value: string;
   onChange: (v: string) => void;
-}) {
+}): ReactElement {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
@@ -251,7 +251,7 @@ function Field({
 }
 
 // eslint-disable-next-line func-style
-function KV({ k, v }: { k: string; v: string }) {
+function KV({ k, v }: { k: string; v: string }): ReactElement {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{k}</p>
