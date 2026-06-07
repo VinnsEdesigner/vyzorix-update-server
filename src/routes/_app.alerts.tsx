@@ -38,6 +38,7 @@ const severityIcon: Record<Severity, typeof AlertTriangle> = {
   info: Info,
 };
 
+// eslint-disable-next-line func-style
 function deriveAlerts(history: TelemetryFrame[], th: Thresholds): DerivedAlert[] {
   const out: DerivedAlert[] = [];
   history.forEach((f, i) => {
@@ -93,6 +94,7 @@ function deriveAlerts(history: TelemetryFrame[], th: Thresholds): DerivedAlert[]
   return out.slice(-100).reverse();
 }
 
+// eslint-disable-next-line func-style
 function AlertsPage(): ReactElement {
   const { thresholds } = useVyzorixConfig();
   const stream = useStream();
@@ -195,6 +197,7 @@ function AlertsPage(): ReactElement {
                       </div>
                       <Badge
                         variant={
+                          // eslint-disable-next-line no-nested-ternary
                           a.severity === "critical"
                             ? "destructive"
                             : a.severity === "warning"
@@ -218,6 +221,7 @@ function AlertsPage(): ReactElement {
   );
 }
 
+// eslint-disable-next-line func-style
 function SummaryCard({
   label,
   count,

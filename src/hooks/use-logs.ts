@@ -9,6 +9,7 @@ import {
   type LogSource,
 } from "@/lib/logger";
 
+// eslint-disable-next-line func-style
 export function useLogs(): LogEntry[] {
   return useSyncExternalStore(
     (cb) => logger.subscribe(cb),

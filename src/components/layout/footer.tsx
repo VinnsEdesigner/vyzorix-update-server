@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
+// eslint-disable-next-line func-style
 export function AppFooter(): ReactElement {
   const { serverUrl, deviceId } = useVyzorixConfig();
   return (

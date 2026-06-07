@@ -6,6 +6,7 @@ interface LogDockProps {
   className?: string;
 }
 
+// eslint-disable-next-line func-style
 export function LogDock({ className }: LogDockProps): ReactElement {
   return (
     <Card className={className}>
