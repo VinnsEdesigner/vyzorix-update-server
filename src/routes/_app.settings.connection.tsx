@@ -13,10 +13,6 @@ import { useServerHealth } from "@/hooks/use-server-health";
 import { updateSettings, me, type ClientSettings } from "@/lib/vyzorix-auth";
 import { DEFAULT_SERVER_URL, useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/_app/settings/connection")({
-  component: ConnectionSettings,
-});
-
 // Validate URL has proper protocol
 const isValidServerUrl = (url: string): boolean => {
   if (!url.trim()) return false;
@@ -35,6 +31,28 @@ const getHealthStatus = (
   if (data?.ok) return { variant: "default", label: "ok" };
   if (isError) return { variant: "destructive", label: "down" };
   return { variant: "secondary", label: "checking" };
+};
+
+const ToggleRow = ({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}): ReactElement => {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-md border p-3">
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
 };
 
 const ConnectionSettings = (): ReactElement => {
@@ -241,24 +259,6 @@ const ConnectionSettings = (): ReactElement => {
   );
 };
 
-const ToggleRow = ({
-  label,
-  hint,
-  checked,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}): ReactElement => {
-  return (
-    <div className="flex items-start justify-between gap-3 rounded-md border p-3">
-      <div className="space-y-0.5">
-        <p className="text-sm font-medium">{label}</p>
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      </div>
-      <Switch checked={checked} onCheckedChange={onChange} />
-    </div>
-  );
-};
+export const Route = createFileRoute("/_app/settings/connection")({
+  component: ConnectionSettings,
+});
