@@ -6,7 +6,6 @@ import { createClient } from "@supabase/supabase-js";
 
 import type { Database } from "./types";
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const createSupabaseAdminClient = () => {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -37,7 +36,6 @@ let _supabaseAdmin: ReturnType<typeof createSupabaseAdminClient> | undefined;
 // Import like: import { supabaseAdmin } from "@/integrations/supabase/client.server";
 export const supabaseAdmin = new Proxy({} as ReturnType<typeof createSupabaseAdminClient>, {
   get(_, prop, receiver) {
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     if (!_supabaseAdmin) _supabaseAdmin = createSupabaseAdminClient();
     return Reflect.get(_supabaseAdmin, prop, receiver);
   },
