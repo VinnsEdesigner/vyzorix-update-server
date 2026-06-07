@@ -7,18 +7,15 @@ interface ServerEntry {
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line require-await
-// eslint-disable-next-line func-style
-async function getServerEntry(): Promise<ServerEntry> {
-// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+const getServerEntry = (): Promise<ServerEntry> => {
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
       (m) => (m.default ?? m) as ServerEntry,
     );
   }
   return serverEntryPromise;
-}
+};
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
@@ -41,7 +38,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 }
 
 export default {
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();

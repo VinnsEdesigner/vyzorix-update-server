@@ -338,10 +338,7 @@ export function redirectToGoogleOAuth(serverUrl: string, frontendCallbackPath = 
 }
 
 // eslint-disable-next-line func-style
-// eslint-disable-next-line unused-imports/no-unused-vars
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-// eslint-disable-next-line func-style
-export function handleOAuthCallback(token: string, isNew: string): AuthResponse | null {
+export function handleOAuthCallback(token: string, _isNew: string): AuthResponse | null {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
@@ -366,10 +363,6 @@ export function handleOAuthCallback(token: string, isNew: string): AuthResponse 
 
 // ─── Hooks ─────────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 export function useAuth() {
   const token = getToken();

@@ -111,7 +111,7 @@ function OperatorSettings(): JSX.Element {
     window.dispatchEvent(new Event("vyz.operator.updated"));
   }, [name, savingName]);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const saveNotifications = async () => {
     setSavingName(true);
     try {
@@ -232,8 +232,6 @@ function OperatorSettings(): JSX.Element {
   );
 }
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 function RoleRow({ allowed, label }: { allowed: boolean; label: string }) {
   return (

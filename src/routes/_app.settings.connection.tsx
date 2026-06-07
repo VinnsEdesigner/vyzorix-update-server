@@ -47,7 +47,7 @@ function ConnectionSettings(): JSX.Element {
 
   // Load client settings from server on mount
   useEffect(() => {
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const loadFromServer = async () => {
       try {
         const op = await me(cfgRef.current.serverUrl);
@@ -66,7 +66,7 @@ function ConnectionSettings(): JSX.Element {
     loadFromServer();
   }, []);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleServerUrlChange = (value: string) => {
     setServerUrl(value);
     if (serverUrlError) setServerUrlError(null);
@@ -88,7 +88,7 @@ function ConnectionSettings(): JSX.Element {
     return true;
   };
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const save = async () => {
     if (!validateForm()) {
       toast.error("Please fix the server URL before saving");
@@ -149,10 +149,10 @@ function ConnectionSettings(): JSX.Element {
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Health check</span>
             <Badge
-// eslint-disable-next-line no-nested-ternary
+              // eslint-disable-next-line no-nested-ternary
               variant={health.data?.ok ? "default" : health.isError ? "destructive" : "secondary"}
             >
-// eslint-disable-next-line no-nested-ternary
+              // eslint-disable-next-line no-nested-ternary
               {health.data?.ok ? "ok" : health.isError ? "down" : "checking"}
             </Badge>
           </div>
@@ -241,8 +241,6 @@ function ConnectionSettings(): JSX.Element {
   );
 }
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 function ToggleRow({
   label,

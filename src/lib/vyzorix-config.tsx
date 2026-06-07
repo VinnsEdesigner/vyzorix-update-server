@@ -114,7 +114,7 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }): JS
   }, [s]);
 
   useEffect(() => {
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const syncOperator = () => {
       try {
         const raw = localStorage.getItem("vyz.auth.operator");
@@ -151,13 +151,13 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }): JS
     return () => window.removeEventListener("vyz.operator.updated", syncOperator);
   }, []);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const update = (patch: Partial<VyzorixSettings>) => setS((prev) => ({ ...prev, ...patch }));
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const setServerUrl = (v: string) => update({ serverUrl: v });
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const setDeviceId = (v: string) => update({ deviceId: v });
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const reset = () => setS(DEFAULT_SETTINGS);
 
   return (
@@ -168,19 +168,12 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }): JS
 }
 
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
 export function useVyzorixConfig() {
   const ctx = useContext(ConfigCtx);
   if (!ctx) throw new Error("useVyzorixConfig must be used inside VyzorixConfigProvider");
   return ctx;
 }
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 export function wsUrl(serverUrl: string, path: string) {
   try {
