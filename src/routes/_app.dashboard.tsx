@@ -276,7 +276,13 @@ function DashboardPage(): JSX.Element {
               <KV k="Active device" v={t?.activeDevice ?? "—"} />
               <KV k="Audio mode" v={t?.audioMode != null ? `${t.audioMode}` : "—"} />
               // eslint-disable-next-line no-nested-ternary
-              <KV k="Speaker" v={t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"} />
+              <KV
+                k="Speaker"
+                v={
+                  // eslint-disable-next-line no-nested-ternary
+                  t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"
+                }
+              />
             </CardContent>
           </Card>
           <Card>
