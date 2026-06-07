@@ -58,7 +58,7 @@ function deriveHealth(
 }
 
 // eslint-disable-next-line func-style
-function DashboardPage(): JSX.Element {
+function DashboardPage() {
   const { serverUrl, deviceId, thresholds, dashboardToken } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
   const stream = useStream();
