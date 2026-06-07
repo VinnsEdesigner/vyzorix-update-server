@@ -24,7 +24,7 @@ export const Route = createFileRoute("/auth/callback")({
   component: OAuthCallbackPage,
 });
 
-function OAuthCallbackPage(): ReactElement {
+const OAuthCallbackPage = (): ReactElement => {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -64,4 +64,4 @@ function OAuthCallbackPage(): ReactElement {
       </div>
     </div>
   );
-}
+};

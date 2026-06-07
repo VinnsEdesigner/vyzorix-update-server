@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 
 export type DeviceHealth = "online" | "offline" | "warning" | "critical";
 
-export function StatusBadge({ status }: { status: DeviceHealth }): ReactElement {
+export const StatusBadge = ({ status }: { status: DeviceHealth }): ReactElement => {
   const map: Record<
     DeviceHealth,
     { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dot: string }
@@ -21,4 +21,4 @@ export function StatusBadge({ status }: { status: DeviceHealth }): ReactElement 
       {cfg.label}
     </Badge>
   );
-}
+};
