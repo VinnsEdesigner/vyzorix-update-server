@@ -126,7 +126,7 @@ jobs:
         run: npm run lint
 
       - name: Run TypeScript check
-        run: npx tsc --noEmit || true  # Skip TypeScript errors for now
+        run: npx tsc --noEmit
 
   # ============================================================
   # Build: All
