@@ -10,12 +10,14 @@ import { useVyzorixConfig } from "./vyzorix-config";
 // constant reconnect/race showed up in the UI as a flashing connection badge.
 const Ctx = createContext<DeviceStreamState | null>(null);
 
+// eslint-disable-next-line func-style
 export function DeviceStreamProvider({ children }: { children: ReactNode }): ReactElement {
   const { serverUrl, deviceId, autoReconnect } = useVyzorixConfig();
   const state = useDeviceStream(serverUrl, deviceId, autoReconnect);
   return <Ctx.Provider value={state}>{children}</Ctx.Provider>;
 }
 
+// eslint-disable-next-line func-style
 export function useStream(): DeviceStreamState {
   const v = useContext(Ctx);
   if (!v) throw new Error("useStream must be used inside DeviceStreamProvider");
