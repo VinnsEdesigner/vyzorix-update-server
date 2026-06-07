@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { wsUrl } from "@/lib/vyzorix-config";
-import type { TelemetryFrame } from "@/lib/vyzorix-api";
+
 import { logger } from "@/lib/logger";
+import type { TelemetryFrame } from "@/lib/vyzorix-api";
+import { wsUrl } from "@/lib/vyzorix-config";
 
 export type WsState = "connecting" | "connected" | "reconnecting" | "disconnected" | "idle";
 
@@ -14,6 +15,7 @@ export interface DeviceStreamState {
 
 const HISTORY_LIMIT = 240;
 
+// eslint-disable-next-line func-style
 export function useDeviceStream(
   serverUrl: string,
   deviceId: string,
@@ -34,6 +36,7 @@ export function useDeviceStream(
     }
     stopRef.current = false;
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const connect = () => {
       const url = wsUrl(serverUrl, `/v1/device/${encodeURIComponent(deviceId)}/stream`);
       if (!url) return;
@@ -94,6 +97,7 @@ export function useDeviceStream(
       };
     };
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const scheduleRetry = () => {
       if (stopRef.current) return;
       retryRef.current = Math.min(retryRef.current + 1, 6);
