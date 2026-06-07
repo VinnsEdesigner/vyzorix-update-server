@@ -11,12 +11,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { resetPassword } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/reset-password")({
-  ssr: false,
-  head: () => ({ meta: [{ title: "Reset Password — Vyzorix" }] }),
-  component: ResetPasswordPage,
-});
-
 const ResetPasswordPage = (): ReactElement => {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
@@ -133,3 +127,9 @@ const ResetPasswordPage = (): ReactElement => {
     </div>
   );
 };
+
+export const Route = createFileRoute("/reset-password")({
+  ssr: false,
+  head: () => ({ meta: [{ title: "Reset Password — Vyzorix" }] }),
+  component: ResetPasswordPage,
+});
