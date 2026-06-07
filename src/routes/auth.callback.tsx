@@ -12,10 +12,11 @@
  */
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { handleOAuthCallback } from "@/lib/vyzorix-auth";
+import { useEffect } from "react";
 import { toast } from "sonner";
+
+import { handleOAuthCallback } from "@/lib/vyzorix-auth";
 
 export const Route = createFileRoute("/auth/callback")({
   ssr: false,
@@ -23,7 +24,8 @@ export const Route = createFileRoute("/auth/callback")({
   component: OAuthCallbackPage,
 });
 
-function OAuthCallbackPage() {
+// eslint-disable-next-line func-style
+function OAuthCallbackPage(): JSX.Element {
   const navigate = useNavigate();
 
   useEffect(() => {

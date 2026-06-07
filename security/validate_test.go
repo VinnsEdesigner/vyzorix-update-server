@@ -17,7 +17,7 @@ func TestValidateEmail(t *testing.T) {
 		{"no at sign", "testexample.com", true},
 		{"no domain", "test@", true},
 		{"no local part", "@example.com", true},
-		{"spaces", " test@example.com ", false}, // trimmed
+		{"spaces", " test@example.com ", false},  // trimmed
 		{"uppercase", "Test@Example.COM", false}, // lowercased
 	}
 
@@ -169,14 +169,14 @@ func TestSanitizeString(t *testing.T) {
 	tests := []struct {
 		name   string
 		input  string
-		maxLen int
 		want   string
+		maxLen int
 	}{
-		{"no truncation", "hello", 10, "hello"},
-		{"with truncation", "hello world", 5, "hello"},
-		{"exact length", "hello", 5, "hello"},
-		{"empty string", "", 5, ""},
-		{"whitespace trimmed", "  hello  ", 10, "hello"},
+		{"no truncation", "hello", "hello", 10},
+		{"with truncation", "hello world", "hello", 5},
+		{"exact length", "hello", "hello", 5},
+		{"empty string", "", "", 5},
+		{"whitespace trimmed", "  hello  ", "hello", 10},
 	}
 
 	for _, tt := range tests {
