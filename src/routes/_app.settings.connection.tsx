@@ -149,11 +149,15 @@ function ConnectionSettings(): JSX.Element {
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Health check</span>
             <Badge
-              // eslint-disable-next-line no-nested-ternary
-              variant={health.data?.ok ? "default" : health.isError ? "destructive" : "secondary"}
+              variant={
+                // eslint-disable-next-line no-nested-ternary
+                health.data?.ok ? "default" : health.isError ? "destructive" : "secondary"
+              }
             >
-              // eslint-disable-next-line no-nested-ternary
-              {health.data?.ok ? "ok" : health.isError ? "down" : "checking"}
+              {
+                // eslint-disable-next-line no-nested-ternary
+                health.data?.ok ? "ok" : health.isError ? "down" : "checking"
+              }
             </Badge>
           </div>
         </CardContent>
