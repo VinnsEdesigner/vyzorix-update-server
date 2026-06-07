@@ -10,10 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { resetSettings } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig, DEFAULT_SETTINGS } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/_app/settings/advanced")({
-  component: AdvancedSettings,
-});
-
 const AdvancedSettings = (): ReactElement => {
   const cfg = useVyzorixConfig();
   const [logLimit, setLogLimit] = useState(cfg.logBufferLimit);
@@ -127,3 +123,7 @@ const AdvancedSettings = (): ReactElement => {
     </div>
   );
 };
+
+export const Route = createFileRoute("/_app/settings/advanced")({
+  component: AdvancedSettings,
+});
