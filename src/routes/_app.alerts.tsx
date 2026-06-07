@@ -197,7 +197,7 @@ function AlertsPage(): JSX.Element {
                       </div>
                       <Badge
                         variant={
-// eslint-disable-next-line no-nested-ternary
+                          // eslint-disable-next-line no-nested-ternary
                           a.severity === "critical"
                             ? "destructive"
                             : a.severity === "warning"
@@ -221,8 +221,6 @@ function AlertsPage(): JSX.Element {
   );
 }
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 function SummaryCard({
   label,

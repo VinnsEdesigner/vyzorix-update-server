@@ -26,51 +26,51 @@
 <!-- Title -->
 # Vyzorix Update Server
 
-### :plug: Real-time Device Management & OTA Updates for VyzorixAudioRouter
+### Real-time Device Management & OTA Updates for VyzorixAudioRouter
 
 **A production-ready C2 server for managing Android device fleets with WebSocket telemetry, FCM push notifications, and secure command dispatch.**
 
 ---
 
-**[:rocket: Quick Start](#-quick-start)** •
-**[:construction:️ Architecture](#-architecture)** •
-**[:satellite: API Reference](#-api-reference)** •
-**[:test_tube: Testing](#-testing)** •
-**[:package: Deployment](#-deployment)** •
-**[:books: Documentation](#-documentation)**
+**[Quick Start](#-quick-start)** •
+**[Architecture](#-architecture)** •
+**[API Reference](#-api-reference)** •
+**[Testing](#-testing)** •
+**[Deployment](#-deployment)** •
+**[Documentation](#-documentation)**
 
 </div>
 
 ---
 
-## :sparkles: Features
+## Features
 
 ### Core Capabilities
 
 | Feature | Description |
 |:--------|:-------------|
-| :satellite: **WebSocket Streaming** | Real-time telemetry from devices with auto-reconnect |
-| :phone: **OTA Updates** | Version manifest and APK distribution |
-| :lock: **HMAC Commands** | SHA256-signed commands per device |
-| :bell: **FCM Notifications** | Firebase Cloud Messaging integration |
-| :people: **Operator Auth** | JWT + Google OAuth authentication |
-| :chart: **Dashboard API** | Device status, registration, management |
-| :globe: **CORS Security** | Configurable origin validation |
-| :chart_up: **Rate Limiting** | Token-bucket per IP |
+| **WebSocket Streaming** | Real-time telemetry from devices with auto-reconnect |
+| **OTA Updates** | Version manifest and APK distribution |
+| **HMAC Commands** | SHA256-signed commands per device |
+| **FCM Notifications** | Firebase Cloud Messaging integration |
+| **Operator Auth** | JWT + Google OAuth authentication |
+| **Dashboard API** | Device status, registration, management |
+| **CORS Security** | Configurable origin validation |
+| **Rate Limiting** | Token-bucket per IP |
 
 ### Dashboard Pages
 
 | Page | Description |
 |:-----|:-------------|
-| :chart: **Dashboard** | Real-time device status, risk score, thermal metrics |
-| :satellite: **Diagnostics** | Command panel with 8 device commands |
-| :bell: **Alerts** | Threshold-based alert derivation |
-| :package: **Updates** | Version manifest and APK download |
-| :gear:️ **Settings** | Connection, operator, thresholds, notifications |
+| **Dashboard** | Real-time device status, risk score, thermal metrics |
+| **Diagnostics** | Command panel with 8 device commands |
+| **Alerts** | Threshold-based alert derivation |
+| **Updates** | Version manifest and APK download |
+| **Settings** | Connection, operator, thresholds, notifications |
 
 ---
 
-## :construction:️ Architecture
+## Architecture
 
 ```
                            ╔═══════════════════════════════════════╗
@@ -136,7 +136,7 @@
 
 ---
 
-## :rocket: Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -200,7 +200,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## :satellite: API Reference
+## API Reference
 
 ### Authentication Endpoints
 
@@ -246,7 +246,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## :test_tube: Testing
+## Testing
 
 ### Run All Tests
 
@@ -274,7 +274,7 @@ cd src && npx vitest run --coverage
 
 ---
 
-## :package: Deployment
+## Deployment
 
 ### Render (Recommended)
 
@@ -299,7 +299,7 @@ docker run -p 3000:3000 \
 
 ---
 
-## :books: Documentation
+## Documentation
 
 | Document | Description |
 |:---------|:------------|
@@ -312,7 +312,7 @@ docker run -p 3000:3000 \
 
 ---
 
-## :tools:️ Development
+## Development
 
 ### Project Structure
 
@@ -356,13 +356,13 @@ npx vitest run                 # Run tests
 
 ---
 
-## :doc: License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## :pray: Acknowledgments
+## Acknowledgments
 
 - [Gin Web Framework](https://github.com/gin-gonic/gin)
 - [TanStack](https://tanstack.com/)

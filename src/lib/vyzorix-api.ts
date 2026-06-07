@@ -62,8 +62,6 @@ export interface TelemetryFrame {
 }
 
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
 function join(base: string, path: string) {
   return base.replace(/\/+$/, "") + path;
 }

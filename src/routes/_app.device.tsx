@@ -42,11 +42,11 @@ function DevicePage(): JSX.Element {
   });
 
   const health: DeviceHealth =
-// eslint-disable-next-line no-nested-ternary
+    // eslint-disable-next-line no-nested-ternary
     !status.data?.online && stream.state !== "connected"
       ? "offline"
-// eslint-disable-next-line no-nested-ternary
-      : (t?.riskScore ?? 0) >= thresholds.riskCrit ||
+      : // eslint-disable-next-line no-nested-ternary
+        (t?.riskScore ?? 0) >= thresholds.riskCrit ||
           (t?.thermalTemp ?? 0) >= thresholds.thermalCrit
         ? "critical"
         : (t?.riskScore ?? 0) >= thresholds.riskWarn ||
@@ -58,7 +58,7 @@ function DevicePage(): JSX.Element {
 
   return (
     <div className="space-y-4">
-// eslint-disable-next-line no-nested-ternary
+      // eslint-disable-next-line no-nested-ternary
       {!deviceId ? (
         <Card>
           <CardContent className="py-4">
@@ -123,9 +123,7 @@ function DevicePage(): JSX.Element {
           </CardContent>
         </Card>
       )}
-
       <Separator />
-
       <RegisterPanel deviceStatus={status.data ?? null} />
     </div>
   );
@@ -160,7 +158,7 @@ function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }):
     }
   }, [deviceStatus]);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const submit = async () => {
     if (!deviceId.trim()) {
       toast.error("Registration failed", {
@@ -235,8 +233,6 @@ function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }):
 }
 
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
 function Field({
   label,
   value,
@@ -254,8 +250,6 @@ function Field({
   );
 }
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }) {
   return (
