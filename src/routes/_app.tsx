@@ -1,15 +1,12 @@
-import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+
 import { AppSidebar } from "@/components/app-sidebar";
 import { ConnectionBadge } from "@/components/connection-badge";
+import { LogDock } from "@/components/logs/log-dock";
 import { Separator } from "@/components/ui/separator";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { DeviceStreamProvider, useStream } from "@/lib/device-stream-context";
-import { LogDock } from "@/components/logs/log-dock";
-import { getToken, me, logout } from "@/lib/vyzorix-auth";
-import { DEFAULT_SERVER_URL } from "@/lib/vyzorix-config";
-import { logger } from "@/lib/logger";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app")({
   ssr: false,
@@ -28,7 +25,8 @@ const titles: Record<string, string> = {
   "/settings": "Settings",
 };
 
-function AppLayout() {
+// eslint-disable-next-line func-style
+function AppLayout(): JSX.Element {
   return (
     <SidebarProvider>
       <DeviceStreamProvider>
@@ -38,7 +36,8 @@ function AppLayout() {
   );
 }
 
-function AppShell() {
+// eslint-disable-next-line func-style
+function AppShell(): JSX.Element {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const title = titles[pathname] ?? (pathname.startsWith("/settings") ? "Settings" : "Vyzorix");
   const { state } = useStream();

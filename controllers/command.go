@@ -18,12 +18,12 @@ import (
 // CommandController receives manual C2 commands from the React dashboard.
 // It forwards commands to the WebSocket broker or uses FCM as fallback.
 type CommandController struct {
+	notifier fcm.Notifier
 	log      *slog.Logger
-	config   config.Config
 	store    *storage.Store
 	hub      *hub.Hub
-	notifier fcm.Notifier
 	hmac     security.Verifier
+	config   config.Config
 }
 
 func NewCommandController(
@@ -120,9 +120,13 @@ func (s *CommandController) SendCommand(c *gin.Context) {
 			}
 			if err := s.notifier.SendSilentWake(context.Background(), wake); err != nil {
 				s.log.Warn("fcm wake failed", "deviceId", id, "dispatchId", frame.DispatchID, "err", err)
-				_ = s.store.MarkWake(context.Background(), frame.DispatchID, err.Error())
+				if markErr := s.store.MarkWake(context.Background(), frame.DispatchID, err.Error()); markErr != nil {
+					s.log.Warn("mark wake failed", "dispatchId", frame.DispatchID, "err", markErr)
+				}
 			} else {
-				_ = s.store.MarkWake(context.Background(), frame.DispatchID, "")
+				if markErr := s.store.MarkWake(context.Background(), frame.DispatchID, ""); markErr != nil {
+					s.log.Warn("mark wake failed", "dispatchId", frame.DispatchID, "err", markErr)
+				}
 			}
 		}
 	}

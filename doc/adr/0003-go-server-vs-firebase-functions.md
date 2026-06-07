@@ -1,6 +1,7 @@
 # ADR-0003: Go server on Render instead of Firebase Functions
 
 ## Status
+
 Accepted
 
 ## Context
@@ -55,13 +56,16 @@ Considered. Rejected because:
 ## Consequences
 
 **Locked in:**
+
 - Render-specific behaviors (free tier sleep, dyno restart on deploys). UptimeRobot is wired to ping `/health` every 5 minutes to keep the dyno warm — documented in `UPDATE_SERVER.md`.
 - Go ecosystem for the server. Cross-language tooling between Kotlin (device) and Go (server) is acceptable.
 
 **Closed off:**
+
 - Firebase-native ecosystem benefits (Auth, Hosting, Crashlytics). We do not use these and we won't.
 
 **Opened up:**
+
 - Easy migration path off Render to any container host (Fly.io, Railway, a VPS we don't yet have) because the artifact is a single Go binary in a Docker image.
 - Mock server flavor for CI: a thin Go binary at `vyzorix-update-server/cmd/mockserver/` that implements just enough of the registration + command surface to support Phase 1 testing. See ADR-0009.
 

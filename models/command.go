@@ -4,20 +4,20 @@ import "encoding/json"
 
 type CommandRequest struct {
 	Command   string          `json:"command"`
-	Args      json.RawMessage `json:"args,omitempty"`
 	Nonce     string          `json:"nonce"`
-	Timestamp int64           `json:"timestamp"`
 	Signature string          `json:"signature,omitempty"`
+	Args      json.RawMessage `json:"args,omitempty"`
+	Timestamp int64           `json:"timestamp"`
 }
 
 type CommandFrame struct {
 	Type       string          `json:"type"`
 	DispatchID string          `json:"dispatchId"`
 	Command    string          `json:"command"`
-	Args       json.RawMessage `json:"args,omitempty"`
 	Nonce      string          `json:"nonce"`
-	Timestamp  int64           `json:"timestamp"`
 	Signature  string          `json:"signature,omitempty"`
+	Args       json.RawMessage `json:"args,omitempty"`
+	Timestamp  int64           `json:"timestamp"`
 }
 
 type CommandResponse struct {

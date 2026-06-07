@@ -3,7 +3,8 @@ interface LogConsoleProps {
   className?: string;
 }
 
-export function LogConsole({ height = "h-64", className = "" }: LogConsoleProps) {
+// eslint-disable-next-line func-style
+export function LogConsole({ height = "h-64", className = "" }: LogConsoleProps): JSX.Element {
   return (
     <div
       className={`${height} ${className} overflow-auto p-4 font-mono text-xs bg-black text-green-400`}
