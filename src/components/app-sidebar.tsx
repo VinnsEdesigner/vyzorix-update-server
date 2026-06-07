@@ -41,7 +41,6 @@ const navItems = [
 
 const OPERATOR_UPDATE_EVENT = "vyz.operator.updated";
 
-// eslint-disable-next-line func-style
 export function AppSidebar(): ReactElement {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
@@ -49,7 +48,6 @@ export function AppSidebar(): ReactElement {
 
   // Sync operator from localStorage and listen for name updates from settings
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const sync = () => setOperator(getStoredOperator());
     // Initial sync
     sync();
@@ -58,7 +56,6 @@ export function AppSidebar(): ReactElement {
     return () => window.removeEventListener(OPERATOR_UPDATE_EVENT, sync);
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const signOut = async () => {
     try {
       await logout(DEFAULT_SERVER_URL);
