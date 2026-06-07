@@ -8,15 +8,12 @@ import {
   SlidersHorizontal,
   Wrench,
 } from "lucide-react";
+import type { JSX } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useServerHealth } from "@/hooks/use-server-health";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
-
-export const Route = createFileRoute("/_app/settings/")({
-  component: SettingsOverview,
-});
 
 const sections = [
   {
@@ -57,7 +54,25 @@ const sections = [
   },
 ] as const;
 
-const SettingsOverview = (): JSX.Element => {
+// eslint-disable-next-line func-style
+function KV({ k, v }: { k: string; v: string }): JSX.Element {
+  return (
+    <div className="rounded-md border p-3">
+      <p className="text-xs text-muted-foreground">{k}</p>
+      <p className="text-sm font-medium break-all">{v}</p>
+    </div>
+  );
+}
+
+// eslint-disable-next-line func-style
+function getHealthStatus(health: { data?: { ok?: boolean }; isError: boolean }): string {
+  if (health.data?.ok) return "ok";
+  if (health.isError) return "down";
+  return "checking";
+}
+
+// eslint-disable-next-line func-style
+function SettingsOverview(): JSX.Element {
   const { serverUrl, deviceId, operator } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
 
@@ -73,8 +88,7 @@ const SettingsOverview = (): JSX.Element => {
           <KV k="Device ID" v={deviceId} />
           <KV k="Operator" v={operator.name || "—"} />
           <KV k="Role" v={operator.role} />
-          {/* eslint-disable-next-line no-nested-ternary */}
-          <KV k="Health" v={health.data?.ok ? "ok" : health.isError ? "down" : "checking"} />
+          <KV k="Health" v={getHealthStatus(health)} />
         </CardContent>
       </Card>
 
@@ -115,13 +129,8 @@ const SettingsOverview = (): JSX.Element => {
       </Card>
     </div>
   );
-};
+}
 
-const KV = ({ k, v }: { k: string; v: string }): JSX.Element => {
-  return (
-    <div className="rounded-md border p-3">
-      <p className="text-xs text-muted-foreground">{k}</p>
-      <p className="text-sm font-medium break-all">{v}</p>
-    </div>
-  );
-};
+export const Route = createFileRoute("/_app/settings/")({
+  component: SettingsOverview,
+});

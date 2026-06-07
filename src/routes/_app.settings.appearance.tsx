@@ -1,14 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Monitor, Moon, Sun } from "lucide-react";
+import type { JSX } from "react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-
-export const Route = createFileRoute("/_app/settings/appearance")({
-  component: AppearanceSettings,
-});
 
 type Theme = "system" | "light" | "dark";
 const KEY = "vyzorix.theme";
@@ -21,7 +18,34 @@ function apply(theme: Theme): void {
   root.classList.toggle("dark", dark);
 }
 
-const AppearanceSettings = (): JSX.Element => {
+// eslint-disable-next-line func-style
+function ThemeBtn({
+  current,
+  value,
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  current: Theme;
+  value: Theme;
+  label: string;
+  icon: typeof Monitor;
+  onClick: (v: Theme) => void;
+}): JSX.Element {
+  return (
+    <Button
+      variant={current === value ? "default" : "outline"}
+      className="h-20 flex-col gap-2"
+      onClick={() => onClick(value)}
+    >
+      <Icon className="h-5 w-5" />
+      <span className="text-xs">{label}</span>
+    </Button>
+  );
+}
+
+// eslint-disable-next-line func-style
+function AppearanceSettings(): JSX.Element {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
       return (localStorage.getItem(KEY) as Theme) || "system";
@@ -63,29 +87,8 @@ const AppearanceSettings = (): JSX.Element => {
       </CardContent>
     </Card>
   );
-};
+}
 
-const ThemeBtn = ({
-  current,
-  value,
-  label,
-  icon: Icon,
-  onClick,
-}: {
-  current: Theme;
-  value: Theme;
-  label: string;
-  icon: typeof Monitor;
-  onClick: (v: Theme) => void;
-}): JSX.Element => {
-  return (
-    <Button
-      variant={current === value ? "default" : "outline"}
-      className="h-20 flex-col gap-2"
-      onClick={() => onClick(value)}
-    >
-      <Icon className="h-5 w-5" />
-      <span className="text-xs">{label}</span>
-    </Button>
-  );
-};
+export const Route = createFileRoute("/_app/settings/appearance")({
+  component: AppearanceSettings,
+});
