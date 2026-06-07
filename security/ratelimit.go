@@ -11,11 +11,11 @@ import (
 
 // RateLimitConfig holds configuration for a rate limiter.
 type RateLimitConfig struct {
-	Window    time.Duration
-	MaxReq    int
 	KeyFunc   func(*gin.Context) string
 	OnLimit   func(*gin.Context)
-	SkipOnErr bool // If true, allow request if rate limit check fails
+	Window    time.Duration
+	MaxReq    int
+	SkipOnErr bool
 }
 
 // DefaultKeyFunc returns the client IP address as the rate limit key.
@@ -25,16 +25,16 @@ func DefaultKeyFunc(c *gin.Context) string {
 
 // RateLimiter manages request rate limiting.
 type RateLimiter struct {
-	mu     sync.RWMutex
 	bucket map[string]*tokenBucket
 	ttl    time.Duration
 	max    int
+	mu     sync.RWMutex
 }
 
 // tokenBucket represents a rate limit bucket for a specific key.
 type tokenBucket struct {
-	tokens    int
 	lastReset time.Time
+	tokens    int
 }
 
 // NewRateLimiter creates a new rate limiter with the given window and max requests.
@@ -166,7 +166,10 @@ type MultiWindowLimiter struct {
 }
 
 // NewMultiWindowLimiter creates a limiter with multiple windows.
-func NewMultiWindowLimiter(limits map[string]struct{ Window time.Duration; Max int }) *MultiWindowLimiter {
+func NewMultiWindowLimiter(limits map[string]struct {
+	Window time.Duration
+	Max    int
+}) *MultiWindowLimiter {
 	ml := &MultiWindowLimiter{
 		limiters: make(map[string]*RateLimiter),
 		config:   limits,

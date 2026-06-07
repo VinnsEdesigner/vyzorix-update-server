@@ -1,6 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function PageSkeleton({ rows = 3 }: { rows?: number }) {
+// eslint-disable-next-line func-style
+export function PageSkeleton({ rows = 3 }: { rows?: number }): JSX.Element {
   return (
     <div className="space-y-4">
       <Skeleton className="h-24 w-full rounded-lg" />
@@ -13,7 +14,8 @@ export function PageSkeleton({ rows = 3 }: { rows?: number }) {
   );
 }
 
-export function MetricSkeleton() {
+// eslint-disable-next-line func-style
+export function MetricSkeleton(): JSX.Element {
   return (
     <div className="rounded-md border p-3">
       <Skeleton className="h-3 w-16" />

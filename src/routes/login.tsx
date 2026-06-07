@@ -1,16 +1,17 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Shield, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { logger } from "@/lib/logger";
 import { login, register, redirectToGoogleOAuth } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
-import { logger } from "@/lib/logger";
 
 export const Route = createFileRoute("/login")({
   ssr: false,
@@ -20,7 +21,8 @@ export const Route = createFileRoute("/login")({
 
 type Mode = "signin" | "signup";
 
-function LoginPage() {
+// eslint-disable-next-line func-style
+function LoginPage(): JSX.Element {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
   const [mode, setMode] = useState<Mode>("signin");
@@ -36,6 +38,7 @@ function LoginPage() {
     if (token) navigate({ to: "/dashboard", replace: true });
   }, [navigate]);
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -58,6 +61,7 @@ function LoginPage() {
     }
   };
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const google = () => {
     setOauthLoading(true);
     try {

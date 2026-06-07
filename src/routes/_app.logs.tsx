@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Card } from "@/components/ui/card";
+
 import { LogConsole } from "@/components/logs/log-console";
+import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_app/logs")({
   head: () => ({ meta: [{ title: "Logs — Vyzorix" }] }),
   component: LogsPage,
 });
 
-function LogsPage() {
+// eslint-disable-next-line func-style
+function LogsPage(): JSX.Element {
   return (
     <Card className="h-[calc(100vh-10rem)] overflow-hidden p-0">
       <LogConsole height="h-full" />

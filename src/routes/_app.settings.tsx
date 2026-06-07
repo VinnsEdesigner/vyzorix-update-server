@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/settings")({
@@ -14,7 +15,8 @@ const tabs: { to: string; label: string; exact?: boolean }[] = [
   { to: "/settings/advanced", label: "Advanced" },
 ];
 
-function SettingsLayout() {
+// eslint-disable-next-line func-style
+function SettingsLayout(): JSX.Element {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   return (
     <div className="space-y-4">

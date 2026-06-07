@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Mail, Loader2, CheckCircle } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mail, Loader2, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { forgotPassword } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
@@ -16,13 +17,15 @@ export const Route = createFileRoute("/forgot-password")({
   component: ForgotPasswordPage,
 });
 
-function ForgotPasswordPage() {
+// eslint-disable-next-line func-style
+function ForgotPasswordPage(): JSX.Element {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {

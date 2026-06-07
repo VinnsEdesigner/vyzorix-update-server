@@ -9,6 +9,7 @@ This is a sizeable refactor. Grouping into 4 workstreams so you can approve the 
 Today `logs` only captures WebSocket frames inside `useDeviceStream`. I will lift logging into its own first-class system.
 
 **New: `src/lib/logger.ts`** — app-wide log bus.
+
 - `log.info/warn/error/debug(source, message, meta?)`
 - Sources (typed): `ws`, `api`, `command`, `update`, `device`, `alert`, `auth`, `system`
 - Ring buffer (configurable, default 1000) + `subscribe()` for React
@@ -18,6 +19,7 @@ Today `logs` only captures WebSocket frames inside `useDeviceStream`. I will lif
 **New: `src/lib/logs-context.tsx`** — React provider exposing `useLogs()` with live entries + filter helpers.
 
 **New: `src/components/logs/log-console.tsx`** — the redesigned panel:
+
 - Search input (substring match)
 - Filter chips: level (info/warn/error/debug) + source (ws/api/command/…)
 - Auto-scroll toggle, pause, clear, copy-all, export `.log`
@@ -36,6 +38,7 @@ Today `logs` only captures WebSocket frames inside `useDeviceStream`. I will lif
 ## 2. Page enrichment (what each page is missing to feel "pro")
 
 ### Dashboard
+
 - Header KPI row: Uptime, Risk (live + 60s avg), Thermal (live + peak), Buffer health
 - Status strip: WS state, last frame age, server version, command queue depth
 - Mini-sparkline charts (risk, thermal, buffer) next to KPIs
@@ -43,12 +46,14 @@ Today `logs` only captures WebSocket frames inside `useDeviceStream`. I will lif
 - "Active alerts" badge linking to /alerts
 
 ### Alerts
+
 - Severity grouping (Critical / Warning / Info) with counts
 - Acknowledge action (persisted to localStorage; ack hides from default view)
 - Filter by source + severity, search by message
 - "Mute threshold for 5 min" quick action per rule
 
 ### Updates
+
 - Current installed vs latest available diff card
 - Per-channel selector (stable / beta) if `version.json` exposes them
 - Last 5 update history entries (from logger source=`update`)
@@ -56,17 +61,20 @@ Today `logs` only captures WebSocket frames inside `useDeviceStream`. I will lif
 - APK size + checksum + signature presence indicators
 
 ### Diagnostics
+
 - 8 command tiles grouped by category (Audio / Projection / Recovery / System)
 - Per-command: last dispatch time, last ack status, cooldown countdown
 - Dry-run toggle (sends but flags `dryRun:true`)
 - Replaces inline terminal → uses the global LogDock
 
 ### Settings (already split — add the missing ones)
+
 - `/settings/notifications` — alert sound on/off, browser notifications toggle
 - `/settings/appearance` — theme (system/dark/light), density, accent
 - Index page becomes a clean grid of cards linking to each sub-page (already partly done)
 
 ### Device
+
 - Registration form already persists — add: "Test command secret" action (signs a no-op locally and shows the canonical string + HMAC for comparison with Go server)
 - Show full device metadata block (Android version, last seen, online flag) when registered
 
@@ -86,6 +94,7 @@ Today `logs` only captures WebSocket frames inside `useDeviceStream`. I will lif
 Your tree was written for a Vite+RR SPA. I'm translating to our TanStack Start layout — same intent, different filenames. Creating only what adds real value (skipping pure-stub files like `useAuth.ts` until auth is actually wired).
 
 **Will create:**
+
 - `src/components/layout/footer.tsx` — version, build target, API base URL
 - `src/components/dashboard/metrics-summary.tsx`
 - `src/components/dashboard/system-alerts.tsx` (mini feed used by Dashboard)
@@ -101,6 +110,7 @@ Your tree was written for a Vite+RR SPA. I'm translating to our TanStack Start l
 - `src/lib/format.ts` — already exists, will extend (hmac truncation, version diff)
 
 **Skipping (with reason):**
+
 - `LoginPage`, `useAuth`, `authService`, `AuthContext` — auth isn't enabled yet; creating empty stubs adds dead code. Will add when you ask for auth.
 - `Sidebar/Navbar` — already exist as `app-sidebar.tsx` + topbar in `_app.tsx`
 - `WebSocketContext/ThemeContext` — already covered by `device-stream-context.tsx` + next-themes

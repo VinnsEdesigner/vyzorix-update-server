@@ -37,7 +37,7 @@ func TestHealth_ResponseFields(t *testing.T) {
 func TestHealth_StatusCode(t *testing.T) {
 	// Test that health returns correct status codes
 	gin.SetMode(gin.TestMode)
-	
+
 	// When dbOk is true, status should be 200
 	// When dbOk is false, status should be 503
 	t.Log("Health status code logic verified")
@@ -45,13 +45,13 @@ func TestHealth_StatusCode(t *testing.T) {
 
 // Mock health response for documentation
 type healthResponse struct {
-	OK               bool   `json:"ok"`
 	Database         string `json:"database"`
-	DbOK             bool   `json:"dbOk"`
-	ServerTime       int64  `json:"serverTime"`
-	ConnectedDevices int    `json:"connectedDevices"`
 	Version          string `json:"version"`
 	DbError          string `json:"dbError,omitempty"`
+	ServerTime       int64  `json:"serverTime"`
+	ConnectedDevices int    `json:"connectedDevices"`
+	OK               bool   `json:"ok"`
+	DbOK             bool   `json:"dbOk"`
 }
 
 func TestHealth_ResponseJSON(t *testing.T) {

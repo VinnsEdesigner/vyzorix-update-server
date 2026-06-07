@@ -19,10 +19,10 @@ import (
 // It validates credentials, records active device statuses, and updates SQLite.
 type DeviceController struct {
 	log    *slog.Logger
-	config config.Config
 	store  *storage.Store
-	hmac   security.Verifier
 	hub    *hub.Hub
+	hmac   security.Verifier
+	config config.Config
 }
 
 // NewDeviceController creates a new DeviceController with hub integration.
@@ -123,7 +123,7 @@ func (s *DeviceController) UpdateFCMToken(c *gin.Context) {
 	}
 
 	c.JSON(200, map[string]any{
-		"deviceId":    id,
+		"deviceId":   id,
 		"serverTime": time.Now().UnixMilli(),
 	})
 }
@@ -148,7 +148,7 @@ func (s *DeviceController) Delete(c *gin.Context) {
 
 // List returns registered devices with cursor-based pagination and filtering.
 // GET /v1/dashboard/devices?limit=50&cursor=<lastSeenTimestamp>&online=<true|false|all>
-// Query params: 
+// Query params:
 //   - limit: number of results (default 50, max 100)
 //   - cursor: lastSeen timestamp in ms for pagination
 //   - online: filter by online status ('true', 'false', or 'all' (default))
@@ -191,10 +191,10 @@ func (s *DeviceController) List(c *gin.Context) {
 
 	type deviceRow struct {
 		DeviceID    string `json:"deviceId"`
-		Online      bool   `json:"online"`
-		LastSeen    int64  `json:"lastSeen"`
 		AppVersion  string `json:"appVersion"`
 		DeviceClass string `json:"deviceClass"`
+		LastSeen    int64  `json:"lastSeen"`
+		Online      bool   `json:"online"`
 	}
 
 	out := make([]deviceRow, 0, len(devices))

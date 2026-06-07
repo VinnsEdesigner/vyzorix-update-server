@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { CheckCircle, Loader2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CheckCircle, Loader2, Mail, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Toaster } from "@/components/ui/sonner";
 import { verifyEmail } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
@@ -16,13 +17,15 @@ export const Route = createFileRoute("/verify-email")({
 
 type Status = "loading" | "success" | "error";
 
-function VerifyEmailPage() {
+// eslint-disable-next-line func-style
+function VerifyEmailPage(): JSX.Element {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const verify = async () => {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("token");

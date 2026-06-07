@@ -7,8 +7,8 @@ import (
 )
 
 type CORS struct {
+	MaxAge         string
 	AllowedOrigins []string
-	MaxAge         string // Preflight cache duration
 }
 
 func (co CORS) Handler() gin.HandlerFunc {

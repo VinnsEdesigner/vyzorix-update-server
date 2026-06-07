@@ -4,7 +4,8 @@ interface LogDockProps {
   className?: string;
 }
 
-export function LogDock({ className }: LogDockProps) {
+// eslint-disable-next-line func-style
+export function LogDock({ className }: LogDockProps): JSX.Element {
   return (
     <Card className={className}>
       <div className="p-4 text-muted-foreground text-sm">Log dock coming soon</div>

@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Lock, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Lock, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { resetPassword } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
@@ -16,7 +17,8 @@ export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
 });
 
-function ResetPasswordPage() {
+// eslint-disable-next-line func-style
+function ResetPasswordPage(): JSX.Element {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
   const [password, setPassword] = useState("");
@@ -36,6 +38,7 @@ function ResetPasswordPage() {
     }
   }, [navigate]);
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 

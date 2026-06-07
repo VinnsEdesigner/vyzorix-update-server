@@ -24,12 +24,12 @@ import (
 
 // AuthController handles operator authentication: login, register, logout, me, Google OAuth.
 type AuthController struct {
-	log        *slog.Logger
-	config     config.Config
-	store      *storage.Store
-	jwt        *security.JWTManager
-	googleVer  *security.GoogleTokenVerifier
-	emailSvc   *services.EmailService
+	log       *slog.Logger
+	store     *storage.Store
+	jwt       *security.JWTManager
+	googleVer *security.GoogleTokenVerifier
+	emailSvc  *services.EmailService
+	config    config.Config
 }
 
 // NewAuthController creates a new auth controller.
@@ -140,14 +140,14 @@ func (ac *AuthController) Register(c *gin.Context) {
 	}
 
 	op := &models.Operator{
-		ID:           generateID(),
-		Email:        req.Email,
-		Name:         strings.TrimSpace(req.Name),
-		PasswordHash: string(hash),
-		Role:         role,
+		ID:            generateID(),
+		Email:         req.Email,
+		Name:          strings.TrimSpace(req.Name),
+		PasswordHash:  string(hash),
+		Role:          role,
 		EmailVerified: false, // Not verified until email verification completes
-		CreatedAt:    time.Now().UTC(),
-		UpdatedAt:    time.Now().UTC(),
+		CreatedAt:     time.Now().UTC(),
+		UpdatedAt:     time.Now().UTC(),
 	}
 
 	if err := ac.store.CreateOperator(ctx, op); err != nil {
@@ -312,7 +312,9 @@ func (ac *AuthController) Logout(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 	hash := security.HashToken(token)
-	_ = ac.store.DeleteSession(ctx, hash)
+	if err := ac.store.DeleteSession(ctx, hash); err != nil {
+		ac.log.Warn("logout: failed to delete session", "err", err)
+	}
 	c.JSON(200, map[string]any{"ok": true})
 }
 
@@ -364,9 +366,9 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 	}
 	var tokenResp struct {
 		AccessToken  string `json:"access_token"`
-		IDToken     string `json:"id_token"`
+		IDToken      string `json:"id_token"`
 		RefreshToken string `json:"refresh_token"`
-		ExpiresIn   int    `json:"expires_in"`
+		ExpiresIn    int    `json:"expires_in"`
 	}
 	if err := postJSON(ctx, tokenURL, tokenReq, &tokenResp); err != nil {
 		ac.log.Warn("google callback: token exchange failed", "err", err)
@@ -398,7 +400,10 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 	isNew := false
 	if op == nil {
 		// Check if this is the first operator (bootstrap)
-		count, _ := ac.store.OperatorCount(ctx)
+		count, err := ac.store.OperatorCount(ctx)
+		if err != nil {
+			ac.log.Warn("google callback: failed to count operators", "err", err)
+		}
 		role := models.RoleOperator
 		if count == 0 {
 			role = models.RoleSuperAdmin
@@ -565,7 +570,9 @@ func (ac *AuthController) VerifyEmail(c *gin.Context) {
 	}
 
 	// Delete the verification token (single use)
-	_ = ac.store.DeleteEmailVerification(ctx, ev.ID)
+	if err := ac.store.DeleteEmailVerification(ctx, ev.ID); err != nil {
+		ac.log.Warn("verifyEmail: failed to delete verification", "err", err)
+	}
 
 	ac.log.Info("verifyEmail: success", "operatorID", ev.OperatorID)
 	c.JSON(200, models.EmailVerifiedResponse{Verified: true})
@@ -611,7 +618,9 @@ func (ac *AuthController) ResendVerification(c *gin.Context) {
 	}
 
 	// Delete old verification tokens
-	_ = ac.store.DeleteEmailVerificationsByOperator(ctx, op.ID)
+	if err := ac.store.DeleteEmailVerificationsByOperator(ctx, op.ID); err != nil {
+		ac.log.Warn("resendVerification: failed to delete old verifications", "err", err)
+	}
 
 	// Send new verification email
 	ac.sendVerificationEmail(ctx, op)
@@ -661,7 +670,9 @@ func (ac *AuthController) ForgotPassword(c *gin.Context) {
 	}
 
 	// Delete old reset tokens
-	_ = ac.store.DeletePasswordResetTokensByOperator(ctx, op.ID)
+	if err := ac.store.DeletePasswordResetTokensByOperator(ctx, op.ID); err != nil {
+		ac.log.Warn("forgotPassword: failed to delete old tokens", "err", err)
+	}
 
 	// Generate reset token
 	tokenBytes := make([]byte, 32)
@@ -776,10 +787,14 @@ func (ac *AuthController) ResetPassword(c *gin.Context) {
 	}
 
 	// Mark token as used
-	_ = ac.store.MarkPasswordResetTokenUsed(ctx, prt.ID)
+	if err := ac.store.MarkPasswordResetTokenUsed(ctx, prt.ID); err != nil {
+		ac.log.Warn("resetPassword: failed to mark token used", "err", err)
+	}
 
 	// Delete all sessions (force logout)
-	_ = ac.store.DeleteAllSessionsForOperator(ctx, op.ID)
+	if err := ac.store.DeleteAllSessionsForOperator(ctx, op.ID); err != nil {
+		ac.log.Warn("resetPassword: failed to delete sessions", "err", err)
+	}
 
 	// Send confirmation email
 	go func() {
@@ -832,8 +847,11 @@ func postJSON(ctx context.Context, url string, body any, resp any) error {
 	if err != nil {
 		return err
 	}
-	defer httpResp.Body.Close()
-	rb, _ := io.ReadAll(httpResp.Body)
+	defer httpResp.Body.Close() //nolint:errcheck
+	rb, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
 	if httpResp.StatusCode >= 400 {
 		return fmt.Errorf("HTTP %d: %s", httpResp.StatusCode, string(rb))
 	}
@@ -843,6 +861,7 @@ func postJSON(ctx context.Context, url string, body any, resp any) error {
 // _decodeJWTPayload extracts the payload from a JWT without signature verification.
 // In production, fetch Google's public keys and verify the signature.
 // For Phase 1.5, we trust the token format and extract the claims directly.
+//
 //nolint:unused
 func _decodeJWTPayload(token string, out any) error {
 	parts := strings.Split(token, ".")

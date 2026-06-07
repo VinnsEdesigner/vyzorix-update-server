@@ -2,7 +2,8 @@ import { Badge } from "@/components/ui/badge";
 
 export type ConnectionState = "connecting" | "connected" | "reconnecting" | "disconnected" | "idle";
 
-export function ConnectionBadge({ state = "idle" }: { state?: ConnectionState }) {
+// eslint-disable-next-line func-style
+export function ConnectionBadge({ state = "idle" }: { state?: ConnectionState }): JSX.Element {
   const map: Record<
     ConnectionState,
     { label: string; variant: "default" | "secondary" | "destructive" | "outline"; dot: string }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { formatUptime, formatRelative, formatBytes, shortHash } from "./format";
 
 describe("formatUptime", () => {

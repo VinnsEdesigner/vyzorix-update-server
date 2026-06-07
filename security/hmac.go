@@ -17,9 +17,9 @@ import (
 var ErrMissing = errors.New("missing HMAC headers")
 
 type NonceCache struct {
-	mu     sync.Mutex
 	seen   map[string]time.Time
 	window time.Duration
+	mu     sync.Mutex
 }
 
 func NewNonceCache(window time.Duration) *NonceCache {

@@ -13,11 +13,11 @@ import (
 
 // EmailService handles sending emails via Resend API.
 type EmailService struct {
+	client    *http.Client
 	apiKey    string
 	fromEmail string
 	fromName  string
 	baseURL   string
-	client    *http.Client
 }
 
 // NewEmailService creates a new email service instance.
@@ -36,9 +36,9 @@ type EmailData struct {
 	Name         string
 	VerifyURL    string
 	ResetURL     string
+	TokenPreview string
 	ExpiryHours  int
 	ExpiryMins   int
-	TokenPreview string
 }
 
 // VerificationEmail sends a welcome email with email verification link.
@@ -72,9 +72,9 @@ func (s *EmailService) SendPasswordResetEmail(ctx context.Context, to, name, tok
 
 	// Parse template
 	html, err := s.parseTemplate(passwordResetEmailTemplate, EmailData{
-		Name:        name,
-		ResetURL:    resetURL,
-		ExpiryMins:  60,
+		Name:       name,
+		ResetURL:   resetURL,
+		ExpiryMins: 60,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to parse reset template: %w", err)
@@ -109,8 +109,8 @@ func (s *EmailService) send(ctx context.Context, to, subject, html string) error
 	}
 
 	payload := map[string]any{
-		"from": fmt.Sprintf("%s <%s>", s.fromName, s.fromEmail),
-		"to":   []string{to},
+		"from":    fmt.Sprintf("%s <%s>", s.fromName, s.fromEmail),
+		"to":      []string{to},
 		"subject": subject,
 		"html":    html,
 	}
@@ -132,7 +132,7 @@ func (s *EmailService) send(ctx context.Context, to, subject, html string) error
 	if err != nil {
 		return fmt.Errorf("failed to send email: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("resend API returned status %d", resp.StatusCode)

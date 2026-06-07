@@ -63,9 +63,14 @@ func (s *server) handleDeviceStream(w http.ResponseWriter, r *http.Request, devi
 	go func() {
 		defer close(stop)
 		conn.SetReadLimit(1 << 20) // 1 MiB
-		_ = conn.SetReadDeadline(time.Now().Add(wsReadTimeout))
+		if err := conn.SetReadDeadline(time.Now().Add(wsReadTimeout)); err != nil {
+			s.log.Warn("set read deadline failed", "err", err)
+		}
 		conn.SetPongHandler(func(string) error {
-			return conn.SetReadDeadline(time.Now().Add(wsReadTimeout))
+			if err := conn.SetReadDeadline(time.Now().Add(wsReadTimeout)); err != nil {
+				s.log.Warn("set read deadline failed", "err", err)
+			}
+			return nil
 		})
 		for {
 			_, data, err := conn.ReadMessage()
@@ -98,7 +103,10 @@ func (s *server) handleDeviceStream(w http.ResponseWriter, r *http.Request, devi
 				return
 			}
 		case <-ping.C:
-			_ = conn.SetWriteDeadline(time.Now().Add(wsWriteTimeout))
+			if err := conn.SetWriteDeadline(time.Now().Add(wsWriteTimeout)); err != nil {
+				s.log.Warn("set write deadline failed", "err", err)
+				continue
+			}
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				s.log.Warn("ws ping failed", "deviceId", deviceID, "err", err)
 				return

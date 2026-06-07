@@ -10,8 +10,8 @@ import (
 // OriginValidator validates WebSocket origins against an allowed list.
 type OriginValidator struct {
 	allowedOrigins map[string]bool
-	allowWildcard bool
-	log           *slog.Logger
+	log            *slog.Logger
+	allowWildcard  bool
 }
 
 // NewOriginValidator creates a validator with allowed origins from config.
