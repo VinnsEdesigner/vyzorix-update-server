@@ -315,12 +315,6 @@ function DashboardPage(): JSX.Element {
 // eslint-disable-next-line func-style
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
 function Metric({
   icon: Icon,
   label,
@@ -347,12 +341,6 @@ function Metric({
 // eslint-disable-next-line func-style
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -369,12 +357,6 @@ function formatDeviceClass(deviceClass: string | undefined): string {
   return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
