@@ -28,8 +28,6 @@ type CarouselContextProps = {
 
 const CarouselContext = React.createContext<CarouselContextProps | null>(null);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
 function useCarousel(): CarouselContextProps {
   const context = React.useContext(CarouselContext);
 

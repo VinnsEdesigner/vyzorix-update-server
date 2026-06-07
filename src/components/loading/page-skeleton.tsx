@@ -2,7 +2,6 @@ import type { ReactElement } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-// eslint-disable-next-line func-style
 export function PageSkeleton({ rows = 3 }: { rows?: number }): ReactElement {
   return (
     <div className="space-y-4">
@@ -16,7 +15,6 @@ export function PageSkeleton({ rows = 3 }: { rows?: number }): ReactElement {
   );
 }
 
-// eslint-disable-next-line func-style
 export function MetricSkeleton(): ReactElement {
   return (
     <div className="rounded-md border p-3">
