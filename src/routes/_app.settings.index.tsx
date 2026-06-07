@@ -54,7 +54,6 @@ const sections = [
   },
 ] as const;
 
-// eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }): JSX.Element {
   return (
     <div className="rounded-md border p-3">
@@ -64,14 +63,12 @@ function KV({ k, v }: { k: string; v: string }): JSX.Element {
   );
 }
 
-// eslint-disable-next-line func-style
 function getHealthStatus(health: { data?: { ok?: boolean }; isError: boolean }): string {
   if (health.data?.ok) return "ok";
   if (health.isError) return "down";
   return "checking";
 }
 
-// eslint-disable-next-line func-style
 function SettingsOverview(): JSX.Element {
   const { serverUrl, deviceId, operator } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);

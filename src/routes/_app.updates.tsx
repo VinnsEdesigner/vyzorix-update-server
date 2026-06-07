@@ -17,7 +17,6 @@ export const Route = createFileRoute("/_app/updates")({
   component: UpdatesPage,
 });
 
-// eslint-disable-next-line func-style
 function UpdatesPage(): ReactElement {
   const { serverUrl, deviceId, dashboardToken } = useVyzorixConfig();
 
@@ -37,7 +36,6 @@ function UpdatesPage(): ReactElement {
   const v = version.data;
   const apkUrl = v ? `${serverUrl.replace(/\/+$/, "")}/api/v1/apk/${v.apk_filename}` : "#";
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const wake = async () => {
     if (!deviceId.trim()) {
       toast.error("WAKE_UP_UPDATER failed", {
@@ -82,8 +80,7 @@ function UpdatesPage(): ReactElement {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* eslint-disable-next-line no-nested-ternary */}
-            {version.isError ? (
+            {version.isError && (
               <div className="space-y-2">
                 <p className="text-sm text-destructive">
                   Failed to load version.json — {(version.error as Error).message}
@@ -93,7 +90,8 @@ function UpdatesPage(): ReactElement {
                   Connection.
                 </p>
               </div>
-            ) : version.isLoading || !v ? (
+            )}
+            {version.isLoading || !v ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
             ) : (
               <div className="grid gap-3 sm:grid-cols-3">
@@ -103,14 +101,11 @@ function UpdatesPage(): ReactElement {
                 <KV k="APK size (manifest)" v={formatBytes(v.apk_size_bytes)} />
                 <KV
                   k="APK size (HEAD)"
-                  v={
-                    // eslint-disable-next-line no-nested-ternary
-                    apkSize.isLoading
-                      ? "checking…"
-                      : apkSize.data == null
-                        ? "—"
-                        : formatBytes(apkSize.data)
-                  }
+                  v={(() => {
+                    if (apkSize.isLoading) return "checking…";
+                    if (apkSize.data != null) return formatBytes(apkSize.data);
+                    return "—";
+                  })()}
                 />
                 <KV k="SHA-256" v={shortHash(v.apk_sha256, 8, 8)} />
               </div>
@@ -192,7 +187,6 @@ function UpdatesPage(): ReactElement {
   );
 }
 
-// eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }): ReactElement {
   return (
     <div className="rounded-md border p-3">
