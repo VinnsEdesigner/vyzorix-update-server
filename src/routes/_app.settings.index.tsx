@@ -8,7 +8,6 @@ import {
   SlidersHorizontal,
   Wrench,
 } from "lucide-react";
-import type { ReactElement } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,7 +58,7 @@ const sections = [
 ] as const;
 
 // eslint-disable-next-line func-style
-function SettingsOverview(): JSX.Element {
+function SettingsOverview() {
   const { serverUrl, deviceId, operator } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
 
@@ -120,7 +119,7 @@ function SettingsOverview(): JSX.Element {
 }
 
 // eslint-disable-next-line func-style
-function KV({ k, v }: { k: string; v: string }): ReactElement {
+function KV({ k, v }: { k: string; v: string }) {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{k}</p>
