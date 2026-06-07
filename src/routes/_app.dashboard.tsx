@@ -58,7 +58,7 @@ function deriveHealth(
 }
 
 // eslint-disable-next-line func-style
-function DashboardPage(): JSX.Element {
+function DashboardPage(): ReactElement {
   const { serverUrl, deviceId, thresholds, dashboardToken } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
   const stream = useStream();
@@ -329,7 +329,7 @@ function Metric({
   label: string;
   value: string;
   hint?: string;
-}) {
+}): ReactElement {
   return (
     <div className="rounded-md border p-3">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -343,7 +343,7 @@ function Metric({
 }
 
 // eslint-disable-next-line func-style
-function KV({ k, v }: { k: string; v: string }) {
+function KV({ k, v }: { k: string; v: string }): ReactElement {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-xs text-muted-foreground">{k}</span>
@@ -366,7 +366,7 @@ function ChartShell({
 }: {
   data: { i: number; v: number }[];
   thresholds?: number[];
-}) {
+}): ReactElement {
   if (data.length === 0) {
     return (
       <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
