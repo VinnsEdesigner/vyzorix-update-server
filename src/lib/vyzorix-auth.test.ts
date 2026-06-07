@@ -57,14 +57,14 @@ vi.stubGlobal("localStorage", {
 });
 
 // Helper to create mock responses
-function createMockResponse<T>(data: T, status = 200): Response {
+const createMockResponse = <T>(data: T, status = 200): Response => {
   return {
     ok: status >= 200 && status < 300,
     status,
     headers: new Headers({ "content-type": "application/json" }),
     json: () => Promise.resolve(data),
   } as unknown as Response;
-}
+};
 
 // Sample test data
 const TEST_SERVER = "http://localhost:3000";

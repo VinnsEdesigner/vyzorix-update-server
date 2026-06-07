@@ -16,7 +16,7 @@ const tabs: { to: string; label: string; exact?: boolean }[] = [
   { to: "/settings/advanced", label: "Advanced" },
 ];
 
-function SettingsLayout(): ReactElement {
+const SettingsLayout = (): ReactElement => {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   return (
     <div className="space-y-4">
@@ -44,4 +44,4 @@ function SettingsLayout(): ReactElement {
       <Outlet />
     </div>
   );
-}
+};

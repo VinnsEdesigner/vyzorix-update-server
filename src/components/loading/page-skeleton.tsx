@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function PageSkeleton({ rows = 3 }: { rows?: number }): ReactElement {
+export const PageSkeleton = ({ rows = 3 }: { rows?: number }): ReactElement => {
   return (
     <div className="space-y-4">
       <Skeleton className="h-24 w-full rounded-lg" />
@@ -13,9 +13,9 @@ export function PageSkeleton({ rows = 3 }: { rows?: number }): ReactElement {
       </div>
     </div>
   );
-}
+};
 
-export function MetricSkeleton(): ReactElement {
+export const MetricSkeleton = (): ReactElement => {
   return (
     <div className="rounded-md border p-3">
       <Skeleton className="h-3 w-16" />
@@ -23,4 +23,4 @@ export function MetricSkeleton(): ReactElement {
       <Skeleton className="mt-1 h-3 w-24" />
     </div>
   );
-}
+};

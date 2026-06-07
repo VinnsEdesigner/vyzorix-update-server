@@ -54,22 +54,22 @@ const sections = [
   },
 ] as const;
 
-function KV({ k, v }: { k: string; v: string }): JSX.Element {
+const KV = ({ k, v }: { k: string; v: string }): JSX.Element => {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{k}</p>
       <p className="text-sm font-medium break-all">{v}</p>
     </div>
   );
-}
+};
 
-function getHealthStatus(health: { data?: { ok?: boolean }; isError: boolean }): string {
+const getHealthStatus = (health: { data?: { ok?: boolean }; isError: boolean }): string => {
   if (health.data?.ok) return "ok";
   if (health.isError) return "down";
   return "checking";
-}
+};
 
-function SettingsOverview(): JSX.Element {
+const SettingsOverview = (): JSX.Element => {
   const { serverUrl, deviceId, operator } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
 
@@ -126,7 +126,7 @@ function SettingsOverview(): JSX.Element {
       </Card>
     </div>
   );
-}
+};
 
 export const Route = createFileRoute("/_app/settings/")({
   component: SettingsOverview,

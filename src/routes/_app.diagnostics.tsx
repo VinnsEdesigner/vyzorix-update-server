@@ -32,12 +32,12 @@ const tip = {
   fontSize: 12,
 };
 
-function DiagnosticsPage(): ReactElement {
+const DiagnosticsPage = (): ReactElement => {
   const { serverUrl, deviceId, thresholds, dashboardToken, strictHmac } = useVyzorixConfig();
   const stream = useStream();
   const [pending, setPending] = useState<string | null>(null);
 
-  const send = async (cmd: string) => {
+  const send = async (cmd: string): Promise<void> => {
     if (!deviceId.trim()) {
       toast.error(`${cmd} failed`, {
         description: "No device registered — set deviceId in Settings → Connection",
@@ -140,18 +140,18 @@ function DiagnosticsPage(): ReactElement {
       </Card>
     </div>
   );
-}
+};
 
-function Stat({ label, value }: { label: string; value: string }): ReactElement {
+const Stat = ({ label, value }: { label: string; value: string }): ReactElement => {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-sm font-medium break-all">{value}</p>
     </div>
   );
-}
+};
 
-function ChartCard({
+const ChartCard = ({
   title,
   data,
   thresholds,
@@ -159,7 +159,7 @@ function ChartCard({
   title: string;
   data: { i: number; v: number }[];
   thresholds?: number[];
-}): ReactElement {
+}): ReactElement => {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -201,4 +201,4 @@ function ChartCard({
       </CardContent>
     </Card>
   );
-}
+};

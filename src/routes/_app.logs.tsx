@@ -9,10 +9,10 @@ export const Route = createFileRoute("/_app/logs")({
   component: LogsPage,
 });
 
-function LogsPage(): ReactElement {
+const LogsPage = (): ReactElement => {
   return (
     <Card className="h-[calc(100vh-10rem)] overflow-hidden p-0">
       <LogConsole height="h-full" />
     </Card>
   );
-}
+};

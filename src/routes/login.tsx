@@ -21,7 +21,7 @@ export const Route = createFileRoute("/login")({
 
 type Mode = "signin" | "signup";
 
-function LoginPage(): ReactElement {
+const LoginPage = (): ReactElement => {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
   const [mode, setMode] = useState<Mode>("signin");
@@ -37,7 +37,7 @@ function LoginPage(): ReactElement {
     if (token) navigate({ to: "/dashboard", replace: true });
   }, [navigate]);
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -59,7 +59,7 @@ function LoginPage(): ReactElement {
     }
   };
 
-  const google = () => {
+  const google = (): void => {
     setOauthLoading(true);
     try {
       // The Go server redirects to Google's OAuth consent screen.
@@ -189,4 +189,4 @@ function LoginPage(): ReactElement {
       <Toaster />
     </div>
   );
-}
+};

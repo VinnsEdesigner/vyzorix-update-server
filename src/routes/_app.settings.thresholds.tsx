@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_app/settings/thresholds")({
   component: ThresholdSettings,
 });
 
-function ThresholdSettings(): ReactElement {
+const ThresholdSettings = (): ReactElement => {
   const cfg = useVyzorixConfig();
   const cfgRef = useRef(cfg);
   cfgRef.current = cfg;
@@ -24,7 +24,7 @@ function ThresholdSettings(): ReactElement {
 
   // Load thresholds from server on mount
   useEffect(() => {
-    const loadFromServer = async () => {
+    const loadFromServer = async (): Promise<void> => {
       try {
         const op = await me(cfgRef.current.serverUrl);
         if (op.thresholds) {
@@ -38,7 +38,7 @@ function ThresholdSettings(): ReactElement {
     loadFromServer();
   }, []);
 
-  const save = async () => {
+  const save = async (): Promise<void> => {
     setLoading(true);
     try {
       await updateSettings(cfg.serverUrl, { thresholds: t });
@@ -53,7 +53,7 @@ function ThresholdSettings(): ReactElement {
     }
   };
 
-  const reset = () => {
+  const reset = (): void => {
     setT(DEFAULT_SETTINGS.thresholds);
     toast.info("Thresholds reset to defaults — save to persist");
   };
@@ -120,9 +120,9 @@ function ThresholdSettings(): ReactElement {
       </div>
     </div>
   );
-}
+};
 
-function NumField({
+const NumField = ({
   label,
   value,
   onChange,
@@ -132,7 +132,7 @@ function NumField({
   value: number;
   onChange: (v: number) => void;
   disabled?: boolean;
-}): ReactElement {
+}): ReactElement => {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
@@ -144,4 +144,4 @@ function NumField({
       />
     </div>
   );
-}
+};

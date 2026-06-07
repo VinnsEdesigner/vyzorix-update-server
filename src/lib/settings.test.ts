@@ -80,10 +80,10 @@ describe("URL Validation", () => {
 
 describe("Device Class Formatting", () => {
   // Test the formatting logic
-  function formatDeviceClass(deviceClass: string | undefined): string {
+  const formatDeviceClass = (deviceClass: string | undefined): string => {
     if (!deviceClass) return "Unknown Device";
     return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  }
+  };
 
   describe("formatDeviceClass", () => {
     it("converts snake_case to Title Case", () => {
@@ -136,11 +136,11 @@ describe("Config Storage", () => {
 
   const STORAGE_KEY = "vyz.config.test";
 
-  function saveConfig(config: Record<string, unknown>): void {
+  const saveConfig = (config: Record<string, unknown>): void => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  }
+  };
 
-  function loadConfig(): Record<string, unknown> | null {
+  const loadConfig = (): Record<string, unknown> | null => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     try {
@@ -148,7 +148,7 @@ describe("Config Storage", () => {
     } catch {
       return null;
     }
-  }
+  };
 
   it("saves and loads config correctly", () => {
     const config = {
@@ -205,11 +205,11 @@ describe("Settings Persistence", () => {
     role: string;
   }
 
-  function saveOperator(op: Operator): void {
+  const saveOperator = (op: Operator): void => {
     localStorage.setItem(OPERATOR_KEY, JSON.stringify(op));
-  }
+  };
 
-  function getStoredOperator(): Operator | null {
+  const getStoredOperator = (): Operator | null => {
     const raw = localStorage.getItem(OPERATOR_KEY);
     if (!raw) return null;
     try {
@@ -217,7 +217,7 @@ describe("Settings Persistence", () => {
     } catch {
       return null;
     }
-  }
+  };
 
   it("saves and retrieves operator correctly", () => {
     const operator = {
@@ -386,7 +386,7 @@ describe("Alert Derivation Logic", () => {
     timestamp?: number;
   }
 
-  function deriveAlerts(history: TelemetryFrame[], th: Thresholds): string[] {
+  const deriveAlerts = (history: TelemetryFrame[], th: Thresholds): string[] => {
     const alerts: string[] = [];
     history.forEach((f) => {
       if ((f.riskScore ?? 0) >= th.riskCrit) {
@@ -407,7 +407,7 @@ describe("Alert Derivation Logic", () => {
       }
     });
     return alerts;
-  }
+  };
 
   const thresholds: Thresholds = {
     riskWarn: 50,

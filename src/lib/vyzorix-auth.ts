@@ -62,51 +62,51 @@ export interface ErrorResponse {
 const TOKEN_KEY = "vyz.auth.token";
 const OPERATOR_KEY = "vyz.auth.operator";
 
-export function getToken(): string | null {
+export const getToken = (): string | null => {
   try {
     return localStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
-}
+};
 
-function setToken(token: string): void {
+const setToken = (token: string): void => {
   try {
     localStorage.setItem(TOKEN_KEY, token);
   } catch {
     // ignore storage error
   }
-}
+};
 
-function clearToken(): void {
+const clearToken = (): void => {
   try {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(OPERATOR_KEY);
   } catch {
     // ignore storage error
   }
-}
+};
 
-export function getStoredOperator(): Operator | null {
+export const getStoredOperator = (): Operator | null => {
   try {
     const raw = localStorage.getItem(OPERATOR_KEY);
     return raw ? (JSON.parse(raw) as Operator) : null;
   } catch {
     return null;
   }
-}
+};
 
-function setStoredOperator(op: Operator): void {
+const setStoredOperator = (op: Operator): void => {
   try {
     localStorage.setItem(OPERATOR_KEY, JSON.stringify(op));
   } catch {
     // ignore storage error
   }
-}
+};
 
 // ─── Core API ─────────────────────────────────────────────────────────────────
 
-async function jsonOrThrow<T>(res: Response): Promise<T> {
+const jsonOrThrow = async <T>(res: Response): Promise<T> => {
   const contentType = res.headers.get("content-type") ?? "";
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
@@ -120,13 +120,13 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
     return (await res.json()) as T;
   }
   throw new Error(`Expected JSON, got ${contentType}`);
-}
+};
 
-export async function login(
+export const login = async (
   serverUrl: string,
   email: string,
   password: string,
-): Promise<AuthResponse> {
+): Promise<AuthResponse> => {
   logger.info("auth", `→ POST /v1/auth/login`, { email });
   const res = await fetch(`${serverUrl}/v1/auth/login`, {
     method: "POST",
@@ -138,14 +138,14 @@ export async function login(
   setStoredOperator(out.operator);
   logger.info("auth", `← login OK · ${out.operator.role} · ${out.operator.email}`);
   return out;
-}
+};
 
-export async function register(
+export const register = async (
   serverUrl: string,
   email: string,
   password: string,
   name: string,
-): Promise<AuthResponse> {
+): Promise<AuthResponse> => {
   logger.info("auth", `→ POST /v1/auth/register`, { email, name });
   const res = await fetch(`${serverUrl}/v1/auth/register`, {
     method: "POST",
@@ -157,9 +157,9 @@ export async function register(
   setStoredOperator(out.operator);
   logger.info("auth", `← register OK · ${out.operator.role} · ${out.operator.email}`);
   return out;
-}
+};
 
-export async function logout(serverUrl: string): Promise<void> {
+export const logout = async (serverUrl: string): Promise<void> => {
   const token = getToken();
   if (!token) {
     clearToken();
@@ -179,9 +179,9 @@ export async function logout(serverUrl: string): Promise<void> {
   } finally {
     clearToken();
   }
-}
+};
 
-export async function updateName(serverUrl: string, name: string): Promise<Operator> {
+export const updateName = async (serverUrl: string, name: string): Promise<Operator> => {
   const token = getToken();
   if (!token) throw new Error("not authenticated");
   logger.info("auth", `→ PATCH /v1/auth/me`, { name });
@@ -194,9 +194,9 @@ export async function updateName(serverUrl: string, name: string): Promise<Opera
   setStoredOperator(out);
   logger.info("auth", `← name updated → ${out.name}`);
   return out;
-}
+};
 
-export async function me(serverUrl: string): Promise<Operator> {
+export const me = async (serverUrl: string): Promise<Operator> => {
   const token = getToken();
   if (!token) throw new Error("not authenticated");
   logger.info("auth", `→ GET /v1/auth/me`);
@@ -207,12 +207,12 @@ export async function me(serverUrl: string): Promise<Operator> {
   const out = await jsonOrThrow<Operator>(res);
   setStoredOperator(out);
   return out;
-}
+};
 
-export async function updateSettings(
+export const updateSettings = async (
   serverUrl: string,
   patch: { name?: string; thresholds?: Thresholds; client?: ClientSettings },
-): Promise<Operator> {
+): Promise<Operator> => {
   const token = getToken();
   if (!token) throw new Error("not authenticated");
   logger.info("auth", `→ PATCH /v1/auth/me/settings`, patch);
@@ -225,7 +225,7 @@ export async function updateSettings(
   setStoredOperator(out);
   logger.info("auth", `← settings updated`);
   return out;
-}
+};
 
 export interface ClientSettings {
   strictHmac?: boolean;
@@ -233,7 +233,7 @@ export interface ClientSettings {
   notificationsEnabled?: boolean;
 }
 
-export async function resetSettings(serverUrl: string): Promise<Operator> {
+export const resetSettings = async (serverUrl: string): Promise<Operator> => {
   const token = getToken();
   if (!token) throw new Error("not authenticated");
   logger.info("auth", `→ PATCH /v1/auth/me/settings (reset)`);
@@ -246,11 +246,14 @@ export async function resetSettings(serverUrl: string): Promise<Operator> {
   setStoredOperator(out);
   logger.info("auth", `← settings reset to defaults`);
   return out;
-}
+};
 
 // ─── Password Reset ───────────────────────────────────────────────────────────
 
-export async function forgotPassword(serverUrl: string, email: string): Promise<MessageResponse> {
+export const forgotPassword = async (
+  serverUrl: string,
+  email: string,
+): Promise<MessageResponse> => {
   logger.info("auth", `→ POST /v1/auth/forgot-password`, { email });
   const res = await fetch(`${serverUrl}/v1/auth/forgot-password`, {
     method: "POST",
@@ -260,13 +263,13 @@ export async function forgotPassword(serverUrl: string, email: string): Promise<
   const out = await jsonOrThrow<MessageResponse>(res);
   logger.info("auth", `← forgot-password OK`);
   return out;
-}
+};
 
-export async function resetPassword(
+export const resetPassword = async (
   serverUrl: string,
   token: string,
   password: string,
-): Promise<AuthResponse> {
+): Promise<AuthResponse> => {
   logger.info("auth", `→ POST /v1/auth/reset-password`);
   const res = await fetch(`${serverUrl}/v1/auth/reset-password`, {
     method: "POST",
@@ -278,11 +281,11 @@ export async function resetPassword(
   setStoredOperator(out.operator);
   logger.info("auth", `← reset-password OK`);
   return out;
-}
+};
 
 // ─── Email Verification ────────────────────────────────────────────────────────
 
-export async function verifyEmail(serverUrl: string, token: string): Promise<AuthResponse> {
+export const verifyEmail = async (serverUrl: string, token: string): Promise<AuthResponse> => {
   logger.info("auth", `→ POST /v1/auth/verify-email`);
   const res = await fetch(`${serverUrl}/v1/auth/verify-email`, {
     method: "POST",
@@ -294,12 +297,12 @@ export async function verifyEmail(serverUrl: string, token: string): Promise<Aut
   setStoredOperator(out.operator);
   logger.info("auth", `← verify-email OK`);
   return out;
-}
+};
 
-export async function resendVerification(
+export const resendVerification = async (
   serverUrl: string,
   email: string,
-): Promise<MessageResponse> {
+): Promise<MessageResponse> => {
   logger.info("auth", `→ POST /v1/auth/resend-verification`, { email });
   const res = await fetch(`${serverUrl}/v1/auth/resend-verification`, {
     method: "POST",
@@ -309,17 +312,17 @@ export async function resendVerification(
   const out = await jsonOrThrow<MessageResponse>(res);
   logger.info("auth", `← resend-verification OK`);
   return out;
-}
+};
 
 // ─── Google OAuth redirect ─────────────────────────────────────────────────────
 
-export function redirectToGoogleOAuth(serverUrl: string, frontendCallbackPath = "/"): void {
+export const redirectToGoogleOAuth = (serverUrl: string, frontendCallbackPath = "/"): void => {
   const target = `${serverUrl}/v1/auth/google?state=${encodeURIComponent(frontendCallbackPath)}`;
   logger.info("auth", `→ GET /v1/auth/google (OAuth redirect)`, { target });
   window.location.href = target;
-}
+};
 
-export function handleOAuthCallback(token: string, _isNew: string): AuthResponse | null {
+export const handleOAuthCallback = (token: string, _isNew: string): AuthResponse | null => {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
@@ -341,15 +344,15 @@ export function handleOAuthCallback(token: string, _isNew: string): AuthResponse
   } catch {
     return null;
   }
-}
+};
 
 // ─── Hooks ─────────────────────────────────────────────────────────────────────
 
-export function useAuth(): {
+export const useAuth = (): {
   token: string | null;
   operator: Operator | null;
   isAuthenticated: boolean;
-} {
+} => {
   const token = getToken();
   const operator = getStoredOperator();
 
@@ -362,4 +365,4 @@ export function useAuth(): {
     operator,
     isAuthenticated: isAuthenticated(),
   };
-}
+};

@@ -9,13 +9,13 @@ import {
   type LogSource,
 } from "@/lib/logger";
 
-export function useLogs(): LogEntry[] {
+export const useLogs = (): LogEntry[] => {
   return useSyncExternalStore(
     (cb) => logger.subscribe(cb),
     () => logger.snapshot(),
     () => logger.snapshot(),
   );
-}
+};
 
 export { logger, LOG_SOURCES, LOG_LEVELS };
 export type { LogEntry, LogLevel, LogSource };

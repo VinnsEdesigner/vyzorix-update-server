@@ -41,14 +41,14 @@ const navItems = [
 
 const OPERATOR_UPDATE_EVENT = "vyz.operator.updated";
 
-export function AppSidebar(): ReactElement {
+export const AppSidebar = (): ReactElement => {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
   const [operator, setOperator] = useState(getStoredOperator);
 
   // Sync operator from localStorage and listen for name updates from settings
   useEffect(() => {
-    const sync = () => setOperator(getStoredOperator());
+    const sync = (): void => setOperator(getStoredOperator());
     // Initial sync
     sync();
     // Listen for name updates from the operator settings page
@@ -56,7 +56,7 @@ export function AppSidebar(): ReactElement {
     return () => window.removeEventListener(OPERATOR_UPDATE_EVENT, sync);
   }, []);
 
-  const signOut = async () => {
+  const signOut = async (): Promise<void> => {
     try {
       await logout(DEFAULT_SERVER_URL);
     } catch {
@@ -126,4 +126,4 @@ export function AppSidebar(): ReactElement {
       </SidebarFooter>
     </Sidebar>
   );
-}
+};

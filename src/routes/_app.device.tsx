@@ -15,36 +15,36 @@ import { formatRelative, formatUptime, shortHash } from "@/lib/format";
 import { getDeviceStatus, registerDevice, type DeviceStatus } from "@/lib/vyzorix-api";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-function formatDeviceClass(deviceClass: string | undefined): string {
+const formatDeviceClass = (deviceClass: string | undefined): string => {
   if (!deviceClass) return "Unknown Device";
   return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
+};
 
-function KV({ k, v }: { k: string; v: string }): ReactElement {
+const KV = ({ k, v }: { k: string; v: string }): ReactElement => {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{k}</p>
       <p className="text-sm font-medium break-all">{v}</p>
     </div>
   );
-}
+};
 
-function computeDeviceHealth(
+const computeDeviceHealth = (
   online: boolean,
   streamConnected: string,
   riskScore: number | undefined,
   thermal: number | undefined,
   thresholds: { riskCrit: number; riskWarn: number; thermalCrit: number; thermalWarn: number },
-): DeviceHealth {
+): DeviceHealth => {
   if (!online && streamConnected !== "connected") return "offline";
   const risk = riskScore ?? 0;
   const thermalVal = thermal ?? 0;
   if (risk >= thresholds.riskCrit || thermalVal >= thresholds.thermalCrit) return "critical";
   if (risk >= thresholds.riskWarn || thermalVal >= thresholds.thermalWarn) return "warning";
   return "online";
-}
+};
 
-function Field({
+const Field = ({
   label,
   value,
   onChange,
@@ -52,16 +52,16 @@ function Field({
   label: string;
   value: string;
   onChange: (v: string) => void;
-}): ReactElement {
+}): ReactElement => {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
       <Input value={value} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
-}
+};
 
-function DevicePage(): JSX.Element {
+const DevicePage = (): JSX.Element => {
   const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
   const stream = useStream();
   const t = stream.lastTelemetry;
@@ -168,9 +168,9 @@ function DevicePage(): JSX.Element {
       <RegisterPanel deviceStatus={status.data ?? null} />
     </div>
   );
-}
+};
 
-function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }): JSX.Element {
+const RegisterPanel = ({ deviceStatus }: { deviceStatus: DeviceStatus | null }): JSX.Element => {
   const { serverUrl, deviceId } = useVyzorixConfig();
 
   const [firebaseInstallId, setFid] = useState(deviceStatus?.firebaseInstallId ?? "");
@@ -266,7 +266,7 @@ function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }):
       </CardContent>
     </Card>
   );
-}
+};
 
 export const Route = createFileRoute("/_app/device")({
   head: () => ({ meta: [{ title: "Device — Vyzorix" }] }),

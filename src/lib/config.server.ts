@@ -16,7 +16,7 @@ import process from "node:process";
 //     and server (analytics IDs, public URLs). Define in .env with the
 //     VITE_ prefix. Never put secrets here — they ship to the browser.
 
-export const getServerConfig = () => {
+export const getServerConfig = (): { nodeEnv: string | undefined } => {
   return {
     nodeEnv: process.env.NODE_ENV,
     // Add server-only values here, e.g.:

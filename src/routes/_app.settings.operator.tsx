@@ -18,16 +18,16 @@ import {
 } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-function RoleRow({ allowed, label }: { allowed: boolean; label: string }): JSX.Element {
+const RoleRow = ({ allowed, label }: { allowed: boolean; label: string }): JSX.Element => {
   return (
     <div className="flex items-center justify-between rounded-md border p-2.5">
       <span className={allowed ? "" : "text-muted-foreground"}>{label}</span>
       <Badge variant={allowed ? "default" : "outline"}>{allowed ? "allowed" : "blocked"}</Badge>
     </div>
   );
-}
+};
 
-function OperatorSettings(): JSX.Element {
+const OperatorSettings = (): JSX.Element => {
   const cfg = useVyzorixConfig();
   const stored = getStoredOperator();
 
@@ -220,7 +220,7 @@ function OperatorSettings(): JSX.Element {
       </Card>
     </div>
   );
-}
+};
 
 export const Route = createFileRoute("/_app/settings/operator")({
   ssr: false,

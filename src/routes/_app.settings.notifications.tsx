@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_app/settings/notifications")({
   component: NotificationsSettings,
 });
 
-function NotificationsSettings(): ReactElement {
+const NotificationsSettings = (): ReactElement => {
   const { notificationsEnabled, update, serverUrl } = useVyzorixConfig();
   const serverUrlRef = useRef(serverUrl);
   const updateRef = useRef(update);
@@ -24,7 +24,7 @@ function NotificationsSettings(): ReactElement {
 
   // Load from server on mount
   useEffect(() => {
-    const loadFromServer = async () => {
+    const loadFromServer = async (): Promise<void> => {
       try {
         const op = await me(serverUrlRef.current);
         if (op.client) {
@@ -38,7 +38,7 @@ function NotificationsSettings(): ReactElement {
     loadFromServer();
   }, []);
 
-  const handleToggle = async (v: boolean) => {
+  const handleToggle = async (v: boolean): Promise<void> => {
     setEnabled(v);
     setSaving(true);
     try {
@@ -56,7 +56,7 @@ function NotificationsSettings(): ReactElement {
     }
   };
 
-  const requestBrowser = async () => {
+  const requestBrowser = async (): Promise<void> => {
     if (!("Notification" in window)) {
       toast.error("Browser notifications unsupported");
       return;
@@ -89,9 +89,9 @@ function NotificationsSettings(): ReactElement {
       </CardContent>
     </Card>
   );
-}
+};
 
-function Row({
+const Row = ({
   label,
   hint,
   children,
@@ -99,7 +99,7 @@ function Row({
   label: string;
   hint: string;
   children: React.ReactNode;
-}): ReactElement {
+}): ReactElement => {
   return (
     <div className="flex items-center justify-between gap-4 rounded-md border p-3">
       <div className="space-y-0.5">
@@ -109,4 +109,4 @@ function Row({
       {children}
     </div>
   );
-}
+};
