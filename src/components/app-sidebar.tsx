@@ -10,7 +10,7 @@ import {
   Terminal,
   LogOut,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ const navItems = [
 const OPERATOR_UPDATE_EVENT = "vyz.operator.updated";
 
 // eslint-disable-next-line func-style
-export function AppSidebar(): JSX.Element {
+export function AppSidebar(): ReactElement {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
   const [operator, setOperator] = useState(getStoredOperator);

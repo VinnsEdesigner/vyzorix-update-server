@@ -58,7 +58,7 @@ const sections = [
 ] as const;
 
 // eslint-disable-next-line func-style
-function SettingsOverview(): JSX.Element {
+function SettingsOverview() {
   const { serverUrl, deviceId, operator } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
 
@@ -74,7 +74,7 @@ function SettingsOverview(): JSX.Element {
           <KV k="Device ID" v={deviceId} />
           <KV k="Operator" v={operator.name || "—"} />
           <KV k="Role" v={operator.role} />
-          // eslint-disable-next-line no-nested-ternary
+          {/* eslint-disable-next-line no-nested-ternary */}
           <KV k="Health" v={health.data?.ok ? "ok" : health.isError ? "down" : "checking"} />
         </CardContent>
       </Card>

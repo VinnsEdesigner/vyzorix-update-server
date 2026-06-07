@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+import type { ReactElement } from "react";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { ConnectionBadge } from "@/components/connection-badge";
@@ -26,7 +27,7 @@ const titles: Record<string, string> = {
 };
 
 // eslint-disable-next-line func-style
-function AppLayout(): JSX.Element {
+function AppLayout(): ReactElement {
   return (
     <SidebarProvider>
       <DeviceStreamProvider>
@@ -37,7 +38,7 @@ function AppLayout(): JSX.Element {
 }
 
 // eslint-disable-next-line func-style
-function AppShell(): JSX.Element {
+function AppShell(): ReactElement {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const title = titles[pathname] ?? (pathname.startsWith("/settings") ? "Settings" : "Vyzorix");
   const { state } = useStream();

@@ -14,7 +14,7 @@ type Theme = "system" | "light" | "dark";
 const KEY = "vyzorix.theme";
 
 // eslint-disable-next-line func-style
-function apply(theme: Theme) {
+function apply(theme: Theme): void {
   const root = document.documentElement;
   const sysDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   const dark = theme === "dark" || (theme === "system" && sysDark);
@@ -22,7 +22,7 @@ function apply(theme: Theme) {
 }
 
 // eslint-disable-next-line func-style
-function AppearanceSettings(): JSX.Element {
+function AppearanceSettings() {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
       return (localStorage.getItem(KEY) as Theme) || "system";

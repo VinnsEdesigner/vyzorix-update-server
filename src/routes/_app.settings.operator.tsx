@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_app/settings/operator")({
 });
 
 // eslint-disable-next-line func-style
-function OperatorSettings(): JSX.Element {
+function OperatorSettings() {
   const cfg = useVyzorixConfig();
   const stored = getStoredOperator();
 

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Mail, Loader2, CheckCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/forgot-password")({
 });
 
 // eslint-disable-next-line func-style
-function ForgotPasswordPage(): JSX.Element {
+function ForgotPasswordPage(): ReactElement {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
   const [email, setEmail] = useState("");

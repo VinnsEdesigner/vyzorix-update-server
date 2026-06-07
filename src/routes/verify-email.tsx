@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CheckCircle, Loader2, AlertCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/verify-email")({
 type Status = "loading" | "success" | "error";
 
 // eslint-disable-next-line func-style
-function VerifyEmailPage(): JSX.Element {
+function VerifyEmailPage(): ReactElement {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
   const [status, setStatus] = useState<Status>("loading");
