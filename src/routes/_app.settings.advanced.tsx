@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_app/settings/advanced")({
   component: AdvancedSettings,
 });
 
-function AdvancedSettings(): ReactElement {
+const AdvancedSettings = (): ReactElement => {
   const cfg = useVyzorixConfig();
   const [logLimit, setLogLimit] = useState(cfg.logBufferLimit);
   const [signalLimit, setSignalLimit] = useState(cfg.signalHistoryLimit);
@@ -22,7 +22,7 @@ function AdvancedSettings(): ReactElement {
 
   const canDanger = cfg.operator.role === "super_admin";
 
-  const save = () => {
+  const save = (): void => {
     cfg.update({
       logBufferLimit: Math.max(50, Math.min(5000, logLimit || 500)),
       signalHistoryLimit: Math.max(30, Math.min(2000, signalLimit || 240)),
@@ -30,7 +30,7 @@ function AdvancedSettings(): ReactElement {
     toast.success("Advanced settings saved · refresh to apply buffer sizes");
   };
 
-  const handleReset = async () => {
+  const handleReset = async (): Promise<void> => {
     if (!canDanger) return;
     setResetting(true);
     try {
@@ -126,4 +126,4 @@ function AdvancedSettings(): ReactElement {
       </Card>
     </div>
   );
-}
+};

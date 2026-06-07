@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export function AppFooter(): ReactElement {
+export const AppFooter = (): ReactElement => {
   const { serverUrl, deviceId } = useVyzorixConfig();
   return (
     <footer className="border-t bg-background/95 px-4 py-2 text-[11px] text-muted-foreground">
@@ -18,4 +18,4 @@ export function AppFooter(): ReactElement {
       </div>
     </footer>
   );
-}
+};

@@ -68,7 +68,7 @@ export const DEFAULT_SETTINGS: VyzorixSettings = {
   },
 };
 
-function loadInitial(): VyzorixSettings {
+const loadInitial = (): VyzorixSettings => {
   if (typeof window === "undefined") return DEFAULT_SETTINGS;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -84,7 +84,7 @@ function loadInitial(): VyzorixSettings {
   } catch {
     return DEFAULT_SETTINGS;
   }
-}
+};
 
 type Config = VyzorixSettings & {
   setServerUrl: (v: string) => void;
@@ -95,7 +95,7 @@ type Config = VyzorixSettings & {
 
 const ConfigCtx = createContext<Config | null>(null);
 
-export function VyzorixConfigProvider({ children }: { children: ReactNode }): ReactElement {
+export const VyzorixConfigProvider = ({ children }: { children: ReactNode }): ReactElement => {
   // Lazy init: read localStorage BEFORE first paint so consumers never see defaults
   // followed by a hydration swap (this was causing settings to "reset" visually
   // when navigating between pages).
@@ -119,7 +119,7 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }): Re
   }, [s]);
 
   useEffect(() => {
-    const syncOperator = () => {
+    const syncOperator = (): void => {
       try {
         const raw = localStorage.getItem("vyz.auth.operator");
         if (!raw) return;
@@ -155,25 +155,25 @@ export function VyzorixConfigProvider({ children }: { children: ReactNode }): Re
     return () => window.removeEventListener("vyz.operator.updated", syncOperator);
   }, []);
 
-  const update = (patch: Partial<VyzorixSettings>) => setS((prev) => ({ ...prev, ...patch }));
-  const setServerUrl = (v: string) => update({ serverUrl: v });
-  const setDeviceId = (v: string) => update({ deviceId: v });
-  const reset = () => setS(DEFAULT_SETTINGS);
+  const update = (patch: Partial<VyzorixSettings>): void => setS((prev) => ({ ...prev, ...patch }));
+  const setServerUrl = (v: string): void => update({ serverUrl: v });
+  const setDeviceId = (v: string): void => update({ deviceId: v });
+  const reset = (): void => setS(DEFAULT_SETTINGS);
 
   return (
     <ConfigCtx.Provider value={{ ...s, setServerUrl, setDeviceId, update, reset }}>
       {children}
     </ConfigCtx.Provider>
   );
-}
+};
 
-export function useVyzorixConfig(): Config {
+export const useVyzorixConfig = (): Config => {
   const ctx = useContext(ConfigCtx);
   if (!ctx) throw new Error("useVyzorixConfig must be used inside VyzorixConfigProvider");
   return ctx;
-}
+};
 
-export function wsUrl(serverUrl: string, path: string): string {
+export const wsUrl = (serverUrl: string, path: string): string => {
   try {
     const u = new URL(path, serverUrl);
     u.protocol = u.protocol === "https:" ? "wss:" : "ws:";
@@ -181,4 +181,4 @@ export function wsUrl(serverUrl: string, path: string): string {
   } catch {
     return "";
   }
-}
+};

@@ -10,14 +10,14 @@ import { Label } from "@/components/ui/label";
 type Theme = "system" | "light" | "dark";
 const KEY = "vyzorix.theme";
 
-function apply(theme: Theme): void {
+const apply = (theme: Theme): void => {
   const root = document.documentElement;
   const sysDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   const dark = theme === "dark" || (theme === "system" && sysDark);
   root.classList.toggle("dark", dark);
-}
+};
 
-function ThemeBtn({
+const ThemeBtn = ({
   current,
   value,
   label,
@@ -29,7 +29,7 @@ function ThemeBtn({
   label: string;
   icon: typeof Monitor;
   onClick: (v: Theme) => void;
-}): JSX.Element {
+}): JSX.Element => {
   return (
     <Button
       variant={current === value ? "default" : "outline"}
@@ -40,9 +40,9 @@ function ThemeBtn({
       <span className="text-xs">{label}</span>
     </Button>
   );
-}
+};
 
-function AppearanceSettings(): JSX.Element {
+const AppearanceSettings = (): JSX.Element => {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
       return (localStorage.getItem(KEY) as Theme) || "system";
@@ -84,7 +84,7 @@ function AppearanceSettings(): JSX.Element {
       </CardContent>
     </Card>
   );
-}
+};
 
 export const Route = createFileRoute("/_app/settings/appearance")({
   component: AppearanceSettings,

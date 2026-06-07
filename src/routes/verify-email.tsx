@@ -17,14 +17,14 @@ export const Route = createFileRoute("/verify-email")({
 
 type Status = "loading" | "success" | "error";
 
-function VerifyEmailPage(): ReactElement {
+const VerifyEmailPage = (): ReactElement => {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
   const [status, setStatus] = useState<Status>("loading");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const verify = async () => {
+    const verify = async (): Promise<void> => {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("token");
 
@@ -99,4 +99,4 @@ function VerifyEmailPage(): ReactElement {
       <Toaster />
     </div>
   );
-}
+};
