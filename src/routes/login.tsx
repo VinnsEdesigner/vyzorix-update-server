@@ -13,12 +13,6 @@ import { logger } from "@/lib/logger";
 import { login, register, redirectToGoogleOAuth } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/login")({
-  ssr: false,
-  head: () => ({ meta: [{ title: "Sign in — Vyzorix" }] }),
-  component: LoginPage,
-});
-
 type Mode = "signin" | "signup";
 
 const LoginPage = (): ReactElement => {
@@ -190,3 +184,9 @@ const LoginPage = (): ReactElement => {
     </div>
   );
 };
+
+export const Route = createFileRoute("/login")({
+  ssr: false,
+  head: () => ({ meta: [{ title: "Sign in — Vyzorix" }] }),
+  component: LoginPage,
+});

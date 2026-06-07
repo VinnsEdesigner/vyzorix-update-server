@@ -70,38 +70,6 @@ const ErrorComponent = ({ error, reset }: { error: Error; reset: () => void }): 
   );
 };
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Vyzorix Console" },
-      {
-        name: "description",
-        content:
-          "Vyzorix update server dashboard — monitor, command, and manage your audio router fleet.",
-      },
-      { property: "og:title", content: "Vyzorix Console" },
-      {
-        property: "og:description",
-        content: "Update server control plane for VyzorixAudioRouter devices.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-    ],
-  }),
-  shellComponent: RootShell,
-  component: RootComponent,
-  notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent,
-});
-
 const RootShell = ({ children }: { children: React.ReactNode }): ReactElement => {
   return (
     <html lang="en">
@@ -133,3 +101,35 @@ const RootComponent = (): ReactElement => {
     </QueryClientProvider>
   );
 };
+
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { title: "Vyzorix Console" },
+      {
+        name: "description",
+        content:
+          "Vyzorix update server dashboard — monitor, command, and manage your audio router fleet.",
+      },
+      { property: "og:title", content: "Vyzorix Console" },
+      {
+        property: "og:description",
+        content: "Update server control plane for VyzorixAudioRouter devices.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
+    ],
+  }),
+  shellComponent: RootShell,
+  component: RootComponent,
+  notFoundComponent: NotFoundComponent,
+  errorComponent: ErrorComponent,
+});

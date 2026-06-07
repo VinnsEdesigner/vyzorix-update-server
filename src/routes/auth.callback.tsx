@@ -18,12 +18,6 @@ import { toast } from "sonner";
 
 import { handleOAuthCallback } from "@/lib/vyzorix-auth";
 
-export const Route = createFileRoute("/auth/callback")({
-  ssr: false,
-  head: () => ({ meta: [{ title: "Signing in — Vyzorix" }] }),
-  component: OAuthCallbackPage,
-});
-
 const OAuthCallbackPage = (): ReactElement => {
   const navigate = useNavigate();
 
@@ -65,3 +59,9 @@ const OAuthCallbackPage = (): ReactElement => {
     </div>
   );
 };
+
+export const Route = createFileRoute("/auth/callback")({
+  ssr: false,
+  head: () => ({ meta: [{ title: "Signing in — Vyzorix" }] }),
+  component: OAuthCallbackPage,
+});

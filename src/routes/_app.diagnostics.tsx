@@ -20,16 +20,72 @@ import { formatRelative } from "@/lib/format";
 import { COMMANDS, dispatchCommand } from "@/lib/vyzorix-api";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/_app/diagnostics")({
-  head: () => ({ meta: [{ title: "Diagnostics — Vyzorix" }] }),
-  component: DiagnosticsPage,
-});
-
 const tip = {
   background: "var(--popover)",
   border: "1px solid var(--border)",
   borderRadius: 8,
   fontSize: 12,
+};
+
+const Stat = ({ label, value }: { label: string; value: string }): ReactElement => {
+  return (
+    <div className="rounded-md border p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-sm font-medium break-all">{value}</p>
+    </div>
+  );
+};
+
+const ChartCard = ({
+  title,
+  data,
+  thresholds,
+}: {
+  title: string;
+  data: { i: number; v: number }[];
+  thresholds?: number[];
+}): ReactElement => {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {data.length === 0 ? (
+          <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
+            Waiting for signals…
+          </div>
+        ) : (
+          <div className="h-48 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="i" hide />
+                <YAxis stroke="var(--muted-foreground)" fontSize={10} />
+                <Tooltip contentStyle={tip} />
+                {thresholds?.map((y) => (
+                  <ReferenceLine
+                    key={y}
+                    y={y}
+                    stroke="var(--muted-foreground)"
+                    strokeDasharray="3 3"
+                  />
+                ))}
+                <Line
+                  type="monotone"
+                  dataKey="v"
+                  stroke="var(--primary)"
+                  dot={false}
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 };
 
 const DiagnosticsPage = (): ReactElement => {
@@ -142,63 +198,7 @@ const DiagnosticsPage = (): ReactElement => {
   );
 };
 
-const Stat = ({ label, value }: { label: string; value: string }): ReactElement => {
-  return (
-    <div className="rounded-md border p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium break-all">{value}</p>
-    </div>
-  );
-};
-
-const ChartCard = ({
-  title,
-  data,
-  thresholds,
-}: {
-  title: string;
-  data: { i: number; v: number }[];
-  thresholds?: number[];
-}): ReactElement => {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {data.length === 0 ? (
-          <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
-            Waiting for signals…
-          </div>
-        ) : (
-          <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="i" hide />
-                <YAxis stroke="var(--muted-foreground)" fontSize={10} />
-                <Tooltip contentStyle={tip} />
-                {thresholds?.map((y) => (
-                  <ReferenceLine
-                    key={y}
-                    y={y}
-                    stroke="var(--muted-foreground)"
-                    strokeDasharray="3 3"
-                  />
-                ))}
-                <Line
-                  type="monotone"
-                  dataKey="v"
-                  stroke="var(--primary)"
-                  dot={false}
-                  strokeWidth={2}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+export const Route = createFileRoute("/_app/diagnostics")({
+  head: () => ({ meta: [{ title: "Diagnostics — Vyzorix" }] }),
+  component: DiagnosticsPage,
+});

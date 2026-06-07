@@ -12,10 +12,14 @@ import { formatBytes, shortHash } from "@/lib/format";
 import { dispatchCommand, getVersion, headApk } from "@/lib/vyzorix-api";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/_app/updates")({
-  head: () => ({ meta: [{ title: "Updates — Vyzorix" }] }),
-  component: UpdatesPage,
-});
+const KV = ({ k, v }: { k: string; v: string }): ReactElement => {
+  return (
+    <div className="rounded-md border p-3">
+      <p className="text-xs text-muted-foreground">{k}</p>
+      <p className="text-sm font-medium break-all">{v}</p>
+    </div>
+  );
+};
 
 const UpdatesPage = (): ReactElement => {
   const { serverUrl, deviceId, dashboardToken } = useVyzorixConfig();
@@ -187,11 +191,7 @@ const UpdatesPage = (): ReactElement => {
   );
 };
 
-const KV = ({ k, v }: { k: string; v: string }): ReactElement => {
-  return (
-    <div className="rounded-md border p-3">
-      <p className="text-xs text-muted-foreground">{k}</p>
-      <p className="text-sm font-medium break-all">{v}</p>
-    </div>
-  );
-};
+export const Route = createFileRoute("/_app/updates")({
+  head: () => ({ meta: [{ title: "Updates — Vyzorix" }] }),
+  component: UpdatesPage,
+});

@@ -9,9 +9,25 @@ import { Switch } from "@/components/ui/switch";
 import { updateSettings, me, type ClientSettings } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/_app/settings/notifications")({
-  component: NotificationsSettings,
-});
+const Row = ({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint: string;
+  children: React.ReactNode;
+}): ReactElement => {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-md border p-3">
+      <div className="space-y-0.5">
+        <Label className="text-sm">{label}</Label>
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      </div>
+      {children}
+    </div>
+  );
+};
 
 const NotificationsSettings = (): ReactElement => {
   const { notificationsEnabled, update, serverUrl } = useVyzorixConfig();
@@ -91,22 +107,6 @@ const NotificationsSettings = (): ReactElement => {
   );
 };
 
-const Row = ({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint: string;
-  children: React.ReactNode;
-}): ReactElement => {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-md border p-3">
-      <div className="space-y-0.5">
-        <Label className="text-sm">{label}</Label>
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      </div>
-      {children}
-    </div>
-  );
-};
+export const Route = createFileRoute("/_app/settings/notifications")({
+  component: NotificationsSettings,
+});

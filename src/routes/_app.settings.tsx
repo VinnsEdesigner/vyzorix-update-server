@@ -3,11 +3,6 @@ import type { ReactElement } from "react";
 
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_app/settings")({
-  head: () => ({ meta: [{ title: "Settings — Vyzorix" }] }),
-  component: SettingsLayout,
-});
-
 const tabs: { to: string; label: string; exact?: boolean }[] = [
   { to: "/settings", label: "Overview", exact: true },
   { to: "/settings/connection", label: "Connection" },
@@ -45,3 +40,8 @@ const SettingsLayout = (): ReactElement => {
     </div>
   );
 };
+
+export const Route = createFileRoute("/_app/settings")({
+  head: () => ({ meta: [{ title: "Settings — Vyzorix" }] }),
+  component: SettingsLayout,
+});

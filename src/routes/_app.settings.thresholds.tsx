@@ -9,9 +9,29 @@ import { Label } from "@/components/ui/label";
 import { updateSettings, me } from "@/lib/vyzorix-auth";
 import { DEFAULT_SETTINGS, useVyzorixConfig, type Thresholds } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/_app/settings/thresholds")({
-  component: ThresholdSettings,
-});
+const NumField = ({
+  label,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  disabled?: boolean;
+}): ReactElement => {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{label}</Label>
+      <Input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        disabled={disabled}
+      />
+    </div>
+  );
+};
 
 const ThresholdSettings = (): ReactElement => {
   const cfg = useVyzorixConfig();
@@ -122,26 +142,6 @@ const ThresholdSettings = (): ReactElement => {
   );
 };
 
-const NumField = ({
-  label,
-  value,
-  onChange,
-  disabled,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  disabled?: boolean;
-}): ReactElement => {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-xs">{label}</Label>
-      <Input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        disabled={disabled}
-      />
-    </div>
-  );
-};
+export const Route = createFileRoute("/_app/settings/thresholds")({
+  component: ThresholdSettings,
+});
