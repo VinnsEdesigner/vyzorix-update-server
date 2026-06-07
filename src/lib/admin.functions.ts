@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
@@ -49,5 +50,5 @@ export const ensureAdminAccess = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error) throw new Error(error.message);
 
-    return { allowed: !!data, bootstrapped: false, email };
+    return { allowed: Boolean(data), bootstrapped: false, email };
   });

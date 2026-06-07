@@ -1,7 +1,9 @@
 import { Loader2 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
-export function Spinner({ className, size = 16 }: { className?: string; size?: number }) {
+// eslint-disable-next-line func-style
+export function Spinner({ className, size = 16 }: { className?: string; size?: number }): JSX.Element {
   return (
     <Loader2
       className={cn("animate-spin text-muted-foreground", className)}

@@ -1,6 +1,7 @@
 # ADR-0001: Why a custom WebSocket + FCM C2 stack instead of off-the-shelf
 
 ## Status
+
 Accepted
 
 ## Context
@@ -41,14 +42,17 @@ Commands are authenticated with HMAC-SHA256 over a per-device shared secret (`co
 ## Consequences
 
 **Locked in:**
+
 - Server-side complexity: we now need a Go server that maintains WSS connections AND forwards to FCM. See `UPDATE_SERVER_ARCHITECTURE_SPEC.md`.
 - Device-side complexity: HMAC validation, nonce cache, pending-result queue, projection-aware reconnect logic.
 - Shared-secret management: `DeviceSecretStore`, server-side `secretstore.SecretStore` (see `DEVICE_REGISTRATION.md` §6.1).
 
 **Closed off:**
+
 - Dropping the server entirely. We are committed to running infrastructure.
 
 **Opened up:**
+
 - Multi-device scaling: the architecture supports any number of devices without redesign. Even though the current use case is one device, the C2 stack is the infrastructure that lets this expand later without a rewrite.
 - Defense-in-depth security posture: even though the threat model is currently personal-deployment, the HMAC + nonce + per-device secret design is appropriate for adversarial environments. A future ADR will cover key rotation when that work is scheduled (Phase 3 hardening, not blocking the current build).
 

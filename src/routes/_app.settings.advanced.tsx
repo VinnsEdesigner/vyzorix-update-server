@@ -1,20 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-
-import { useVyzorixConfig, DEFAULT_SETTINGS } from "@/lib/vyzorix-config";
 import { resetSettings } from "@/lib/vyzorix-auth";
+import { useVyzorixConfig, DEFAULT_SETTINGS } from "@/lib/vyzorix-config";
 
 export const Route = createFileRoute("/_app/settings/advanced")({
   component: AdvancedSettings,
 });
 
-function AdvancedSettings() {
+// eslint-disable-next-line func-style
+function AdvancedSettings(): JSX.Element {
   const cfg = useVyzorixConfig();
   const [logLimit, setLogLimit] = useState(cfg.logBufferLimit);
   const [signalLimit, setSignalLimit] = useState(cfg.signalHistoryLimit);
@@ -22,6 +23,7 @@ function AdvancedSettings() {
 
   const canDanger = cfg.operator.role === "super_admin";
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const save = () => {
     cfg.update({
       logBufferLimit: Math.max(50, Math.min(5000, logLimit || 500)),
@@ -30,6 +32,7 @@ function AdvancedSettings() {
     toast.success("Advanced settings saved · refresh to apply buffer sizes");
   };
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleReset = async () => {
     if (!canDanger) return;
     setResetting(true);

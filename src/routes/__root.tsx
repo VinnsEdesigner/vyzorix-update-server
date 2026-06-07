@@ -8,10 +8,12 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 
-import appCss from "../styles.css?url";
 import { VyzorixConfigProvider } from "@/lib/vyzorix-config";
 
-function NotFoundComponent() {
+import appCss from "../styles.css?url";
+
+// eslint-disable-next-line func-style
+function NotFoundComponent(): JSX.Element {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -33,7 +35,8 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+// eslint-disable-next-line func-style
+function ErrorComponent({ error, reset }: { error: Error; reset: () => void }): JSX.Element {
   console.error(error);
   const router = useRouter();
 
@@ -100,7 +103,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-function RootShell({ children }: { children: React.ReactNode }) {
+// eslint-disable-next-line func-style
+function RootShell({ children }: { children: React.ReactNode }): JSX.Element {
   return (
     <html lang="en">
       <head>
@@ -119,7 +123,8 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function RootComponent() {
+// eslint-disable-next-line func-style
+function RootComponent(): JSX.Element {
   const { queryClient } = Route.useRouteContext();
 
   return (

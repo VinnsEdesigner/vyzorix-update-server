@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -20,16 +21,16 @@ var (
 type OperatorClaims struct {
 	jwt.RegisteredClaims
 	OperatorID string `json:"oid"`
-	Email     string `json:"email"`
-	Name      string `json:"name"`
-	Role      string `json:"role"`
+	Email      string `json:"email"`
+	Name       string `json:"name"`
+	Role       string `json:"role"`
 }
 
 // JWTManager handles signing and verifying JWT tokens for operator authentication.
 type JWTManager struct {
-	secret     []byte
-	expiry     time.Duration
-	issuer     string
+	issuer string
+	secret []byte
+	expiry time.Duration
 }
 
 // NewJWTManager creates a new JWT manager.
@@ -95,6 +96,9 @@ func HashToken(token string) string {
 // generateTokenID creates a cryptographically random token ID for the JWT jti claim.
 func generateTokenID() string {
 	b := make([]byte, 16)
-	_, _ = rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		// Fall back to time-based ID if crypto rand fails
+		return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("fallback-%d", time.Now().UnixNano())))
+	}
 	return base64.RawURLEncoding.EncodeToString(b)
 }

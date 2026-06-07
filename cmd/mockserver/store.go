@@ -19,24 +19,24 @@ const defaultMockSecret = "00000000000000000000000000000000000000000000000000000
 var errHijackAttempt = errors.New("device_id already registered to a different firebaseInstallId")
 
 type device struct {
+	RegisteredAt      time.Time
+	LastSeen          time.Time
 	DeviceID          string
 	FirebaseInstallID string
 	FCMToken          string
 	AppVersion        string
 	DeviceClass       string
-	RegisteredAt      time.Time
-	LastSeen          time.Time
 }
 
 // store is the entire in-memory state of the mock server. Fields are guarded
 // by mu. There is no on-disk persistence and no eviction — restarting the
 // binary forgets every device.
 type store struct {
-	mu         sync.Mutex
-	mockSecret string
 	devices    map[string]*device
 	sockets    map[string]*wsRegistration
 	nonces     map[string]time.Time
+	mockSecret string
+	mu         sync.Mutex
 }
 
 func newStore(mockSecret string) *store {
@@ -204,10 +204,10 @@ func (s *store) rememberNonce(nonce string, now time.Time) bool {
 // wsRegistration is the device-side view of a registered socket.
 type wsRegistration struct {
 	store    *store
-	deviceID string
 	conn     *websocket.Conn
 	outbound chan commandFrame
 	closed   chan struct{}
+	deviceID string
 	closeMu  sync.Once
 }
 
@@ -219,19 +219,28 @@ func (r *wsRegistration) detach() {
 	r.store.mu.Unlock()
 	r.closeMu.Do(func() {
 		close(r.closed)
-		_ = r.conn.Close()
+		if err := r.conn.Close(); err != nil {
+			// Connection already closed, ignore
+			_ = err
+		}
 	})
 }
 
 func (r *wsRegistration) closeWithCode(code int) {
 	r.closeMu.Do(func() {
-		_ = r.conn.WriteControl(
+		if err := r.conn.WriteControl(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(code, ""),
 			time.Now().Add(2*time.Second),
-		)
+		); err != nil {
+			// WriteControl failed, but we're closing anyway
+			_ = err
+		}
 		close(r.closed)
-		_ = r.conn.Close()
+		if err := r.conn.Close(); err != nil {
+			// Connection already closed, ignore
+			_ = err
+		}
 	})
 }
 

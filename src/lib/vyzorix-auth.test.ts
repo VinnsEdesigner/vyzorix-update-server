@@ -10,6 +10,7 @@
  */
 
 import { describe, expect, it, beforeEach, vi } from "vitest";
+
 import {
   login,
   register,
@@ -56,6 +57,7 @@ vi.stubGlobal("localStorage", {
 });
 
 // Helper to create mock responses
+// eslint-disable-next-line func-style
 function createMockResponse<T>(data: T, status = 200): Response {
   return {
     ok: status >= 200 && status < 300,

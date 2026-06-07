@@ -79,13 +79,13 @@ func TestVerifier_MissingHeaders(t *testing.T) {
 	}
 
 	tests := []struct {
-		name   string
 		header http.Header
+		name   string
 	}{
-		{"missing nonce", http.Header{"X-Vyzorix-Timestamp": {"123"}, "X-Vyzorix-Signature": {"sig"}}},
-		{"missing timestamp", http.Header{"X-Vyzorix-Nonce": {"n"}, "X-Vyzorix-Signature": {"sig"}}},
-		{"missing signature", http.Header{"X-Vyzorix-Nonce": {"n"}, "X-Vyzorix-Timestamp": {"123"}}},
-		{"all missing", http.Header{}},
+		{http.Header{"X-Vyzorix-Timestamp": {"123"}, "X-Vyzorix-Signature": {"sig"}}, "missing nonce"},
+		{http.Header{"X-Vyzorix-Nonce": {"n"}, "X-Vyzorix-Signature": {"sig"}}, "missing timestamp"},
+		{http.Header{"X-Vyzorix-Nonce": {"n"}, "X-Vyzorix-Timestamp": {"123"}}, "missing signature"},
+		{http.Header{}, "all missing"},
 	}
 
 	for _, tt := range tests {
@@ -494,6 +494,7 @@ func TestVerifier_NilNonces(t *testing.T) {
 }
 
 // _signRequest is exported for manual testing only.
+//
 //nolint:unused
 func _signRequest(secretHex, method, path, body, nonce, ts string) string {
 	key, _ := hex.DecodeString(secretHex)

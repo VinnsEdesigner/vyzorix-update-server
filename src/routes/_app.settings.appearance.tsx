@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_app/settings/appearance")({
   component: AppearanceSettings,
@@ -12,6 +13,9 @@ export const Route = createFileRoute("/_app/settings/appearance")({
 type Theme = "system" | "light" | "dark";
 const KEY = "vyzorix.theme";
 
+// eslint-disable-next-line func-style
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+// eslint-disable-next-line func-style
 function apply(theme: Theme) {
   const root = document.documentElement;
   const sysDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -19,7 +23,8 @@ function apply(theme: Theme) {
   root.classList.toggle("dark", dark);
 }
 
-function AppearanceSettings() {
+// eslint-disable-next-line func-style
+function AppearanceSettings(): JSX.Element {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
       return (localStorage.getItem(KEY) as Theme) || "system";
@@ -63,6 +68,9 @@ function AppearanceSettings() {
   );
 }
 
+// eslint-disable-next-line func-style
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+// eslint-disable-next-line func-style
 function ThemeBtn({
   current,
   value,

@@ -11,7 +11,7 @@ import (
 func TestBase64RawURLDecode(t *testing.T) {
 	// Test inputs - URL-safe base64 without padding (function adds padding internally)
 	// "a" -> YQ (4 chars, divisible by 4, no padding needed)
-	// "ab" -> YWI (4 chars, divisible by 4, no padding needed) 
+	// "ab" -> YWI (4 chars, divisible by 4, no padding needed)
 	// "abc" -> YWJj (4 chars, divisible by 4, no padding needed)
 	// "abcd" -> YWJjZA== (8 chars with padding)
 	// "Hello" -> SGVsbG8= (7 chars, needs 1 padding char)
@@ -88,11 +88,11 @@ func TestParseRSAPublicKey(t *testing.T) {
 	// This is a test RSA key pair for testing purposes
 	// Modulus (n) and exponent (e) in base64url format
 	// This is NOT a real Google key - just for testing parsing logic
-	
+
 	// Simple test with minimal values
-	nStr := base64.RawURLEncoding.EncodeToString([]byte{0x00, 0x80}) // Small modulus
+	nStr := base64.RawURLEncoding.EncodeToString([]byte{0x00, 0x80})       // Small modulus
 	eStr := base64.RawURLEncoding.EncodeToString([]byte{0x01, 0x00, 0x01}) // 65537 exponent
-	
+
 	key, err := parseRSAPublicKey(nStr, eStr)
 	if err != nil {
 		t.Fatalf("parseRSAPublicKey failed: %v", err)
@@ -106,16 +106,16 @@ func TestParseRSAPublicKey(t *testing.T) {
 func TestJWTPayloadExtraction(t *testing.T) {
 	// Create a fake JWT payload for testing structure
 	payload := map[string]interface{}{
-		"iss":    "https://accounts.google.com",
-		"azp":    "test-client-id",
-		"aud":    "test-client-id",
-		"sub":    "12345",
-		"email":  "test@example.com",
+		"iss":            "https://accounts.google.com",
+		"azp":            "test-client-id",
+		"aud":            "test-client-id",
+		"sub":            "12345",
+		"email":          "test@example.com",
 		"email_verified": true,
-		"name":   "Test User",
-		"picture": "https://example.com/pic.jpg",
-		"iat":    time.Now().Unix(),
-		"exp":    time.Now().Add(time.Hour).Unix(),
+		"name":           "Test User",
+		"picture":        "https://example.com/pic.jpg",
+		"iat":            time.Now().Unix(),
+		"exp":            time.Now().Add(time.Hour).Unix(),
 	}
 
 	payloadBytes, _ := json.Marshal(payload)
@@ -147,10 +147,10 @@ func TestVerifyClaimsLogic(t *testing.T) {
 	}
 
 	tests := []struct {
+		errType   error
 		name      string
 		claims    GoogleClaims
 		wantError bool
-		errType   error
 	}{
 		{
 			name: "valid claims",
@@ -352,7 +352,7 @@ func TestGoogleUserInfo(t *testing.T) {
 
 func BenchmarkGoogleTokenVerify(b *testing.B) {
 	verifier := NewGoogleTokenVerifier("test-audience")
-	
+
 	// Create a mock token for benchmarking
 	header := map[string]interface{}{
 		"alg": "RS256",
@@ -363,13 +363,13 @@ func BenchmarkGoogleTokenVerify(b *testing.B) {
 	encodedHeader := base64.RawURLEncoding.EncodeToString(headerBytes)
 
 	payload := map[string]interface{}{
-		"iss":    "https://accounts.google.com",
-		"azp":    "test-audience",
-		"aud":    "test-audience",
-		"sub":    "12345",
-		"email":  "test@example.com",
-		"iat":    time.Now().Unix(),
-		"exp":    time.Now().Add(time.Hour).Unix(),
+		"iss":   "https://accounts.google.com",
+		"azp":   "test-audience",
+		"aud":   "test-audience",
+		"sub":   "12345",
+		"email": "test@example.com",
+		"iat":   time.Now().Unix(),
+		"exp":   time.Now().Add(time.Hour).Unix(),
 	}
 	payloadBytes, _ := json.Marshal(payload)
 	encodedPayload := base64.RawURLEncoding.EncodeToString(payloadBytes)

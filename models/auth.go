@@ -6,19 +6,19 @@ import "time"
 type OperatorRole string
 
 const (
-	RoleViewer    OperatorRole = "viewer"
-	RoleOperator  OperatorRole = "operator"
+	RoleViewer     OperatorRole = "viewer"
+	RoleOperator   OperatorRole = "operator"
 	RoleSuperAdmin OperatorRole = "super_admin"
 )
 
 // Thresholds define alert levels for device telemetry.
 type Thresholds struct {
-	RiskWarn     int `json:"riskWarn" db:"risk_warn"`
-	RiskCrit     int `json:"riskCrit" db:"risk_crit"`
-	ThermalWarn  int `json:"thermalWarn" db:"thermal_warn"`
-	ThermalCrit  int `json:"thermalCrit" db:"thermal_crit"`
-	BufferWarn   int `json:"bufferWarn" db:"buffer_warn"`
-	BufferCrit   int `json:"bufferCrit" db:"buffer_crit"`
+	RiskWarn    int `json:"riskWarn" db:"risk_warn"`
+	RiskCrit    int `json:"riskCrit" db:"risk_crit"`
+	ThermalWarn int `json:"thermalWarn" db:"thermal_warn"`
+	ThermalCrit int `json:"thermalCrit" db:"thermal_crit"`
+	BufferWarn  int `json:"bufferWarn" db:"buffer_warn"`
+	BufferCrit  int `json:"bufferCrit" db:"buffer_crit"`
 }
 
 // ClientSettings holds operator preferences that control dashboard behavior.
@@ -30,29 +30,29 @@ type ClientSettings struct {
 
 // Operator represents a human operator who can access the dashboard.
 type Operator struct {
-	ID            string        `json:"id"`
-	Email         string        `json:"email"`
-	Name          string        `json:"name"`
-	PasswordHash  string        `json:"-"` // Never exposed via JSON
-	Role          OperatorRole  `json:"role"`
-	GoogleID      string        `json:"googleId,omitempty"`
-	EmailVerified bool          `json:"emailVerified,omitempty"`
-	Thresholds    Thresholds    `json:"thresholds,omitempty" db:"-"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+	ID            string         `json:"id"`
+	Email         string         `json:"email"`
+	Name          string         `json:"name"`
+	PasswordHash  string         `json:"-"`
+	Role          OperatorRole   `json:"role"`
+	GoogleID      string         `json:"googleId,omitempty"`
+	Thresholds    Thresholds     `json:"thresholds,omitempty" db:"-"`
 	Client        ClientSettings `json:"client,omitempty" db:"-"`
-	CreatedAt     time.Time     `json:"createdAt"`
-	UpdatedAt     time.Time     `json:"updatedAt"`
+	EmailVerified bool           `json:"emailVerified,omitempty"`
 }
 
 // OperatorResponse is the safe JSON representation returned to clients.
 type OperatorResponse struct {
-	ID            string        `json:"id"`
-	Email         string        `json:"email"`
-	Name          string        `json:"name"`
-	Role          OperatorRole  `json:"role"`
-	EmailVerified bool          `json:"emailVerified,omitempty"`
-	Thresholds    *Thresholds   `json:"thresholds,omitempty"`
+	Thresholds    *Thresholds     `json:"thresholds,omitempty"`
 	Client        *ClientSettings `json:"client,omitempty"`
-	CreatedAt     int64         `json:"createdAt"`
+	ID            string          `json:"id"`
+	Email         string          `json:"email"`
+	Name          string          `json:"name"`
+	Role          OperatorRole    `json:"role"`
+	CreatedAt     int64           `json:"createdAt"`
+	EmailVerified bool            `json:"emailVerified,omitempty"`
 }
 
 // ToResponse converts an Operator to its safe JSON representation.
@@ -96,9 +96,9 @@ type OperatorRegisterRequest struct {
 
 // AuthResponse is returned on successful login or registration.
 type AuthResponse struct {
-	Token     string            `json:"token"`
-	ExpiresAt int64             `json:"expiresAt"`
-	Operator  OperatorResponse  `json:"operator"`
+	Token     string           `json:"token"`
+	Operator  OperatorResponse `json:"operator"`
+	ExpiresAt int64            `json:"expiresAt"`
 }
 
 // GoogleOAuthURLRequest asks the server for the Google OAuth authorization URL.
@@ -162,6 +162,6 @@ type MessageResponse struct {
 
 // EmailVerifiedResponse is returned after successful email verification.
 type EmailVerifiedResponse struct {
-	Verified bool   `json:"verified"`
 	Email    string `json:"email,omitempty"`
+	Verified bool   `json:"verified"`
 }

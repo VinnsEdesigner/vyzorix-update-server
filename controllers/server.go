@@ -23,17 +23,17 @@ import (
 )
 
 type Server struct {
-	Log               *slog.Logger
-	Config           config.Config
-	Store            *storage.Store
-	Hub              *hub.Hub
-	Notifier         fcm.Notifier
-	HMAC             security.Verifier
-	Limiter          *middleware.RateLimiter
-	AuthLimiter      *middleware.RateLimiter // Stricter rate limiter for auth endpoints
-	jwtCtrl          *AuthController
-	originValidator  *security.OriginValidator
-	upgrader         websocket.Upgrader
+	Notifier        fcm.Notifier
+	Log             *slog.Logger
+	Store           *storage.Store
+	Hub             *hub.Hub
+	Limiter         *middleware.RateLimiter
+	AuthLimiter     *middleware.RateLimiter
+	jwtCtrl         *AuthController
+	originValidator *security.OriginValidator
+	upgrader        websocket.Upgrader
+	HMAC            security.Verifier
+	Config          config.Config
 }
 
 func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub, notifier fcm.Notifier) *Server {
@@ -54,7 +54,7 @@ func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub, not
 
 	// Initialize WebSocket upgrader with proper origin checking
 	s.upgrader = websocket.Upgrader{
-		CheckOrigin:     s.originValidator.CheckOrigin(),
+		CheckOrigin:      s.originValidator.CheckOrigin(),
 		HandshakeTimeout: 10 * time.Second,
 	}
 
@@ -80,10 +80,10 @@ func (s *Server) Engine() *gin.Engine {
 	// Rate limit public endpoints to prevent abuse
 	public := r.Group("")
 	public.Use(s.Limiter.Middleware())
-	
+
 	// Auth routes (no JWT required for login/register; JWT required for /me and logout)
 	auth := public.Group("/v1/auth")
-	auth.GET("/google", s.jwtCtrl.GoogleLoginRedirect) // triggers OAuth redirect
+	auth.GET("/google", s.jwtCtrl.GoogleLoginRedirect)     // triggers OAuth redirect
 	auth.GET("/google/callback", s.jwtCtrl.GoogleCallback) // OAuth callback from Google
 	// Email verification and password reset (no JWT required)
 	auth.POST("/verify-email", s.jwtCtrl.VerifyEmail)
@@ -170,12 +170,12 @@ func (s *Server) health(c *gin.Context) {
 	}
 
 	response := map[string]any{
-		"ok":                dbOk,
-		"database":          map[bool]string{true: "ok", false: "down"}[dbOk],
-		"dbOk":              dbOk,
-		"serverTime":        time.Now().UnixMilli(),
-		"connectedDevices":  connectedDevices,
-		"version":           version,
+		"ok":               dbOk,
+		"database":         map[bool]string{true: "ok", false: "down"}[dbOk],
+		"dbOk":             dbOk,
+		"serverTime":       time.Now().UnixMilli(),
+		"connectedDevices": connectedDevices,
+		"version":          version,
 	}
 	if dbErr != nil {
 		response["dbError"] = dbErr.Error()
@@ -198,8 +198,12 @@ func (s *Server) readVersion() (string, error) {
 	return v.Version, nil
 }
 
-func (s *Server) version(c *gin.Context)  { serveStaticFile(c, filepath.Join(s.Config.DataDir, "version.json"), "application/json; charset=utf-8") }
-func (s *Server) changelog(c *gin.Context) { serveStaticFile(c, filepath.Join(s.Config.DataDir, "changelog.json"), "application/json; charset=utf-8") }
+func (s *Server) version(c *gin.Context) {
+	serveStaticFile(c, filepath.Join(s.Config.DataDir, "version.json"), "application/json; charset=utf-8")
+}
+func (s *Server) changelog(c *gin.Context) {
+	serveStaticFile(c, filepath.Join(s.Config.DataDir, "changelog.json"), "application/json; charset=utf-8")
+}
 
 func (s *Server) apk(c *gin.Context) {
 	name := c.Param("name")
@@ -265,7 +269,9 @@ func (s *Server) status(c *gin.Context) {
 
 func (s *Server) fcmToken(c *gin.Context) {
 	id := c.Param("id")
-	var req struct{ FCMToken string `json:"fcmToken"` }
+	var req struct {
+		FCMToken string `json:"fcmToken"`
+	}
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 		c.JSON(400, map[string]string{"error": "bad_json", "message": err.Error()})
 		return
@@ -315,14 +321,20 @@ func (s *Server) command(c *gin.Context) {
 	if s.Hub.Send(id, frame) {
 		delivery = "sent"
 	}
-	_ = s.Store.SaveCommand(c.Request.Context(), frame.DispatchID, id, req.Command, req.Args, delivery)
+	if err := s.Store.SaveCommand(c.Request.Context(), frame.DispatchID, id, req.Command, req.Args, delivery); err != nil {
+		s.Log.Warn("save command failed", "dispatchId", frame.DispatchID, "err", err)
+	}
 	if delivery == "queued" && s.Notifier != nil {
 		if d, found, err := s.Store.Device(c.Request.Context(), id); err == nil && found {
 			if err := s.Notifier.SendSilentWake(c.Request.Context(), fcm.SilentWake{Token: d.FCMToken, Command: req.Command, DispatchID: frame.DispatchID, DeviceID: id}); err != nil {
 				s.Log.Warn("fcm wake failed", "deviceId", id, "dispatchId", frame.DispatchID, "err", err)
-				_ = s.Store.MarkWake(c.Request.Context(), frame.DispatchID, err.Error())
+				if markErr := s.Store.MarkWake(c.Request.Context(), frame.DispatchID, err.Error()); markErr != nil {
+					s.Log.Warn("mark wake failed", "dispatchId", frame.DispatchID, "err", markErr)
+				}
 			} else {
-				_ = s.Store.MarkWake(c.Request.Context(), frame.DispatchID, "")
+				if markErr := s.Store.MarkWake(c.Request.Context(), frame.DispatchID, ""); markErr != nil {
+					s.Log.Warn("mark wake failed", "dispatchId", frame.DispatchID, "err", markErr)
+				}
 			}
 		}
 	}
@@ -379,14 +391,20 @@ func (s *Server) dashboardDevices(c *gin.Context) {
 	}
 	type row struct {
 		DeviceID    string `json:"deviceId"`
-		Online      bool   `json:"online"`
-		LastSeen    int64  `json:"lastSeen"`
 		AppVersion  string `json:"appVersion"`
 		DeviceClass string `json:"deviceClass"`
+		LastSeen    int64  `json:"lastSeen"`
+		Online      bool   `json:"online"`
 	}
 	out := make([]row, 0, len(ds))
 	for _, d := range ds {
-		out = append(out, row{d.ID, s.Hub.Online(d.ID) || d.Online, d.LastSeen.UnixMilli(), d.AppVersion, d.DeviceClass})
+		out = append(out, row{
+			DeviceID:    d.ID,
+			Online:      s.Hub.Online(d.ID) || d.Online,
+			LastSeen:    d.LastSeen.UnixMilli(),
+			AppVersion:  d.AppVersion,
+			DeviceClass: d.DeviceClass,
+		})
 	}
 	c.JSON(200, map[string]any{"devices": out})
 }
@@ -451,7 +469,6 @@ func (s *Server) requireStrictHMAC() gin.HandlerFunc {
 		c.Next()
 	}
 }
-
 
 // JWTAuth is a Gin middleware that validates the Bearer JWT and sets the operator in context.
 // Use this to protect dashboard routes.

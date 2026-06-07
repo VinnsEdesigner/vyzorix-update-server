@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { cn, escapeHTML, stripHTML } from "./utils";
 
 describe("cn (class name merger)", () => {

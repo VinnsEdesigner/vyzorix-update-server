@@ -196,7 +196,7 @@ func TestCORSHandler_MultipleOrigins(t *testing.T) {
 	corsHandler := CORSHandler([]string{"https://app.example.com", "https://admin.example.com", "https://dev.example.com"})
 
 	tests := []struct {
-		origin string
+		origin  string
 		allowed bool
 	}{
 		{"https://app.example.com", true},
@@ -230,44 +230,44 @@ func TestCORSHandler_MultipleOrigins(t *testing.T) {
 func TestGetAllowedOrigin(t *testing.T) {
 	tests := []struct {
 		name           string
-		allowedOrigins []string
 		requestOrigin  string
+		allowedOrigins []string
 		expected       bool
 	}{
 		{
 			"exact match",
-			[]string{"https://example.com"},
 			"https://example.com",
+			[]string{"https://example.com"},
 			true,
 		},
 		{
 			"no match",
-			[]string{"https://example.com"},
 			"https://other.com",
+			[]string{"https://example.com"},
 			false,
 		},
 		{
 			"wildcard with request",
-			[]string{"*"},
 			"https://any.com",
+			[]string{"*"},
 			true,
 		},
 		{
 			"empty request origin",
-			[]string{"https://example.com"},
 			"",
-			false, // Empty origin is now rejected for security
+			[]string{"https://example.com"},
+			false,
 		},
 		{
 			"wildcard priority match",
-			[]string{"https://exact.com", "*"},
 			"https://exact.com",
+			[]string{"https://exact.com", "*"},
 			true,
 		},
 		{
 			"wildcard no exact match",
-			[]string{"https://exact.com", "*"},
 			"https://other.com",
+			[]string{"https://exact.com", "*"},
 			true,
 		},
 	}

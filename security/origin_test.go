@@ -10,8 +10,8 @@ import (
 func TestOriginValidator_Validate(t *testing.T) {
 	tests := []struct {
 		name       string
-		origins    []string
 		testOrigin string
+		origins    []string
 		want       bool
 	}{
 		// Empty origin tests (non-browser clients)
@@ -223,29 +223,29 @@ func TestOriginValidator_AllowedOrigins(t *testing.T) {
 
 func TestOriginValidator_IsWildcardAllowed(t *testing.T) {
 	tests := []struct {
-		name      string
-		origins   []string
-		wantWild  bool
+		name     string
+		origins  []string
+		wantWild bool
 	}{
 		{
-			name:      "wildcard present",
-			origins:   []string{"*"},
-			wantWild:  true,
+			name:     "wildcard present",
+			origins:  []string{"*"},
+			wantWild: true,
 		},
 		{
-			name:      "wildcard with others",
-			origins:   []string{"https://example.com", "*"},
-			wantWild:  true,
+			name:     "wildcard with others",
+			origins:  []string{"https://example.com", "*"},
+			wantWild: true,
 		},
 		{
-			name:      "no wildcard",
-			origins:   []string{"https://example.com"},
-			wantWild:  false,
+			name:     "no wildcard",
+			origins:  []string{"https://example.com"},
+			wantWild: false,
 		},
 		{
-			name:      "empty list",
-			origins:   []string{},
-			wantWild:  false,
+			name:     "empty list",
+			origins:  []string{},
+			wantWild: false,
 		},
 	}
 
@@ -261,11 +261,11 @@ func TestOriginValidator_IsWildcardAllowed(t *testing.T) {
 
 func TestOriginValidator_ValidateWithDetails(t *testing.T) {
 	tests := []struct {
-		name          string
-		origins       []string
-		testOrigin    string
-		wantValid     bool
-		wantReason    string
+		name       string
+		testOrigin string
+		wantReason string
+		origins    []string
+		wantValid  bool
 	}{
 		{
 			name:       "empty origin details",
@@ -322,8 +322,8 @@ func TestOriginValidator_ValidateWithDetails(t *testing.T) {
 func TestOriginValidator_Trimming(t *testing.T) {
 	tests := []struct {
 		name       string
-		origins    []string
 		testOrigin string
+		origins    []string
 		want       bool
 	}{
 		{

@@ -6,7 +6,7 @@ type ErrorResponse struct {
 }
 
 type OKResponse struct {
-	OK         bool   `json:"ok"`
 	Database   string `json:"database,omitempty"`
 	ServerTime int64  `json:"serverTime,omitempty"`
+	OK         bool   `json:"ok"`
 }
