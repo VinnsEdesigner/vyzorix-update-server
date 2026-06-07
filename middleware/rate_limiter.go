@@ -8,14 +8,14 @@ import (
 )
 
 type RateLimiter struct {
-	mu       sync.Mutex
 	buckets  map[string]*bucket
 	Capacity int
 	Refill   time.Duration
+	mu       sync.Mutex
 }
 type bucket struct {
-	tokens int
 	last   time.Time
+	tokens int
 }
 
 func NewRateLimiter(capacity int, refill time.Duration) *RateLimiter {

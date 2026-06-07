@@ -11,10 +11,10 @@ import (
 // args are required.
 type commandRequest struct {
 	Command   string          `json:"command"`
-	Args      json.RawMessage `json:"args,omitempty"`
 	Nonce     string          `json:"nonce"`
+	Signature string          `json:"signature,omitempty"`
+	Args      json.RawMessage `json:"args,omitempty"`
 	Timestamp int64           `json:"timestamp"`
-	Signature string          `json:"signature,omitempty"` // signed by server in real deployment
 }
 
 type commandResponse struct {
@@ -78,11 +78,11 @@ func (s *server) handleDeviceCommand(w http.ResponseWriter, r *http.Request, dev
 
 // commandFrame is the wire-format pushed to the device over WSS.
 type commandFrame struct {
-	Type       string          `json:"type"` // always "command"
+	Type       string          `json:"type"`
 	DispatchID string          `json:"dispatchId"`
 	Command    string          `json:"command"`
-	Args       json.RawMessage `json:"args,omitempty"`
 	Nonce      string          `json:"nonce"`
-	Timestamp  int64           `json:"timestamp"`
 	Signature  string          `json:"signature,omitempty"`
+	Args       json.RawMessage `json:"args,omitempty"`
+	Timestamp  int64           `json:"timestamp"`
 }

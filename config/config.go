@@ -9,33 +9,29 @@ import (
 )
 
 type Config struct {
-	Port           string
-	Env            string
-	DatabaseURL    string
-	DataDir        string
-	BinDir         string
-	PublicDir      string
-	FirebaseCreds  string
-	TokenSecret    string
-	JWTSecret      string
-	JWTDuration    time.Duration
-	AllowedOrigins []string
-	EnforceHMAC    bool
-	HMACWindow     time.Duration
-	NonceCacheTTL  time.Duration
-	// Google OAuth — required for Google sign-in
-	GoogleOAuthClientID     string
-	GoogleOAuthClientSecret string
-	// Deployment URLs — used for OAuth redirect construction
-	BaseURL     string
-	FrontendURL string
-	// Email configuration (Resend)
-	ResendAPIKey  string
-	EmailFrom     string
-	EmailFromName string
-	// Security settings
-	EmailVerifyTokenExpiry time.Duration
+	GoogleOAuthClientSecret  string
+	JWTSecret                string
+	DatabaseURL              string
+	DataDir                  string
+	BinDir                   string
+	PublicDir                string
+	FirebaseCreds            string
+	EmailFromName            string
+	EmailFrom                string
+	ResendAPIKey             string
+	Env                      string
+	FrontendURL              string
+	TokenSecret              string
+	BaseURL                  string
+	GoogleOAuthClientID      string
+	Port                     string
+	AllowedOrigins           []string
+	NonceCacheTTL            time.Duration
+	JWTDuration              time.Duration
+	HMACWindow               time.Duration
+	EmailVerifyTokenExpiry   time.Duration
 	PasswordResetTokenExpiry time.Duration
+	EnforceHMAC              bool
 }
 
 func Load() (Config, error) {
@@ -61,23 +57,23 @@ func Load() (Config, error) {
 	}
 
 	c := Config{
-		Port:           get("PORT", "3000"),
-		Env:            get("NODE_ENV", get("GO_ENV", "development")),
-		DatabaseURL:    get("DATABASE_URL", "./data/vyzorix.db"),
-		DataDir:        get("VYZORIX_API_DIR", "./data"),
-		BinDir:         get("VYZORIX_BIN_DIR", "./bin"),
-		PublicDir:      get("VYZORIX_PUBLIC_DIR", "./public"),
-		FirebaseCreds:  os.Getenv("FIREBASE_CREDENTIALS"),
-		TokenSecret:    os.Getenv("TOKEN_SECRET"),
-		JWTSecret:      os.Getenv("JWT_SECRET"),
-		JWTDuration:    jwtDuration,
-		AllowedOrigins: splitCSV(get("ALLOWED_ORIGINS", "*")),
-		HMACWindow:     30 * time.Second, // Per COMMAND_SECURITY.md: 30-second window
-		NonceCacheTTL:  1 * time.Hour,
+		Port:                    get("PORT", "3000"),
+		Env:                     get("NODE_ENV", get("GO_ENV", "development")),
+		DatabaseURL:             get("DATABASE_URL", "./data/vyzorix.db"),
+		DataDir:                 get("VYZORIX_API_DIR", "./data"),
+		BinDir:                  get("VYZORIX_BIN_DIR", "./bin"),
+		PublicDir:               get("VYZORIX_PUBLIC_DIR", "./public"),
+		FirebaseCreds:           os.Getenv("FIREBASE_CREDENTIALS"),
+		TokenSecret:             os.Getenv("TOKEN_SECRET"),
+		JWTSecret:               os.Getenv("JWT_SECRET"),
+		JWTDuration:             jwtDuration,
+		AllowedOrigins:          splitCSV(get("ALLOWED_ORIGINS", "*")),
+		HMACWindow:              30 * time.Second, // Per COMMAND_SECURITY.md: 30-second window
+		NonceCacheTTL:           1 * time.Hour,
 		GoogleOAuthClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
 		GoogleOAuthClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
-		BaseURL:     get("BASE_URL", "http://localhost:3000"),
-		FrontendURL: get("FRONTEND_URL", "http://localhost:5173"),
+		BaseURL:                 get("BASE_URL", "http://localhost:3000"),
+		FrontendURL:             get("FRONTEND_URL", "http://localhost:5173"),
 		// Email settings
 		ResendAPIKey:  os.Getenv("RESEND_API_KEY"),
 		EmailFrom:     get("EMAIL_FROM", "noreply@vyzorix.app"),
