@@ -1,6 +1,7 @@
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export function AppFooter() {
+// eslint-disable-next-line func-style
+export function AppFooter(): JSX.Element {
   const { serverUrl, deviceId } = useVyzorixConfig();
   return (
     <footer className="border-t bg-background/95 px-4 py-2 text-[11px] text-muted-foreground">

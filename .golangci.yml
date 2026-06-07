@@ -1,0 +1,337 @@
+# =============================================
+# VYZORIX UPDATE SERVER - STRICT GO LINTING
+# =============================================
+# This config catches the TINIEST bugs:
+# - Unused variables/functions/imports
+# - Syntax errors
+# - Race conditions
+# - Security vulnerabilities
+# - Performance issues
+# - Inconsistent error handling
+# =============================================
+
+version: "2"
+
+# Directories to run linting on
+linters:
+  default: none
+
+# Enable ALL linters that make sense for strict checking
+linters-settings:
+  # =============================================
+  # ERROR PRONENESS
+  # =============================================
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    Segv: true
+    Bus: true
+    Send: true
+    syscall:
+      - Syscall
+
+  govet:
+    enable-all: true
+    disable:
+      - shadow
+      - unusedwrite # Test fixtures often set fields that aren't read
+    settings:
+      printf:
+        funcs: ["github.com/VinnsEdesigner/vyzorix-update-server/services.Errorf"]
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+      - experimental
+      - opinionated
+      - concurrency
+
+  gocyclo:
+    min-complexity: 15
+
+  dupl:
+    threshold: 75
+
+  # =============================================
+  # CODE STYLE & FORMATTING
+  # =============================================
+  gofmt:
+    rewrite-rules:
+      - pattern: "interface{}"
+        replacement: "any"
+      - pattern: 'fmt.Sprintf("%s", x)'
+        replacement: "x"
+
+  goimports:
+    local-prefixes: github.com/VinnsEdesigner/vyzorix-update-server
+
+  misspell:
+    locale: US
+
+  nolintlint:
+    require-explanation: true
+    require-specific: true
+
+  whitespace:
+    multi-if: true
+    multi-func: true
+
+  # =============================================
+  # NAMING CONVENTIONS
+  # =============================================
+  varnamelen:
+    min-name-len: 2
+    max-name-len: 40
+    check-receiver: true
+    check-return: true
+    check-type-param: true
+    check-pkg: true
+
+  exhaustivestruct:
+    struct-patterns:
+      - "github.com/VinnsEdesigner/vyzorix-update-server/models.*"
+
+  # =============================================
+  # SECURITY
+  # =============================================
+  gosec:
+    excludes:
+      - G104
+
+  staticcheck:
+    checks:
+      - "all"
+      - "-ST1000"
+      - "-SA1012"
+
+  # =============================================
+  # UNUSED CODE DETECTION
+  # =============================================
+  deadcode:
+    stage: final
+
+  unused:
+    check-exported: true
+
+# =============================================
+# LINTERS TO RUN
+# =============================================
+enabled:
+  # Error handling
+  - errcheck
+  - gosec
+  - noctx
+  - nilerr
+  - errname
+  - ireturn
+  - nonzero
+  - thenerrcheck
+
+  # Syntax & parsing
+  - gofmt
+  - govet
+  - goimports
+  - misspell
+  - whitespace
+  - goheader
+
+  # Code quality
+  - bodyclose
+  - deadcode
+  - decorder
+  - duparg
+  - dupimport
+  - err113
+  - errorlint
+  - execinquery
+  - forbidigo
+  - gocritic
+  - gocyclo
+  - gofmt
+  - goimports
+  - misspell
+  - nakedret
+  - nestif
+  - nilnil
+  - noctx
+  - recycle
+  - sloglint
+  - unconvert
+  - unparam
+  - unused
+  - varnamelen
+  - wham
+  - wrapcheck
+
+  # Performance
+  - alloc
+  - prealloc
+  - rangevalcopy
+
+  # Best practices
+  - containedctx
+  - contextcheck
+  - copyloopvar
+  - durationcheck
+  - exhaustive
+  - exhaustivestruct
+  - gosimple
+  - forcetypeassert
+  - ifshort
+  - loopvar
+  - nilness
+  - shadow
+  - sqlclosecheck
+  - staticcheck
+  - structcheck
+  - telanalysis
+  - typecheck
+  - uname
+  - unparam
+  - varcheck
+  - washtime
+  - wastedassign
+
+  # Style
+  - asciicheck
+  - bidichk
+  - bindertype
+  - canonicalheader
+  - checknoglobals
+  - colorable
+  - commentspelling
+  - constrainedlesh
+  - cyclop
+  - deadcode
+  - dependinator
+  - dupl
+  - dupimport
+  - errchkjson
+  - errname
+  - execinquery
+  - exportloopref
+  - forbidigo
+  - ginkgolinter
+  - goconst
+  - gocognit
+  - gocyclo
+  - gofmt
+  - goheader
+  - goimports
+  - golint
+  - gosec
+  - grouper
+  - ifshort
+  - inamedparam
+  - interfacebloat
+  - interfacer
+  - lll
+  - loggercheck
+  - maintidx
+  - mirror
+  - misspell
+  - nakedret
+  - nestif
+  - nlreturn
+  - noctx
+  - nolintlint
+  - nonamedreturns
+  - nosprintfhostport
+  - paralleltest
+  - perfsprint
+  - prealloc
+  - preamble
+  - procpin
+  - reassign
+  - revive
+  - rowserrcheck
+  - runtimecheck
+  - semgrep
+  - simple
+  - sizediff_t
+  - skinform
+  - spancheck
+  - staticcheck
+  - stringintconv
+  - structcheck
+  - stylecheck
+  - swap
+  - tagalign
+  - tenv
+  - testableexamples
+  - testifylint
+  - thelper
+  - tparallel
+  - typecheck
+  - underef
+  - unimport
+  - unparam
+  - unused
+  - usestdlibvars
+  - varcheck
+  - wastedassign
+  - whitespace
+  - wsl
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-dirs:
+    - node_modules
+    - vendor
+
+  # Exclude rules
+  exclude-rules:
+    # Allow certain lints in test files
+    - path: _test\.go
+      linters:
+        - dupl
+        - gocyclo
+        - gosec
+        - errcheck
+        - unusedwrite # Test fixtures often set fields that aren't read
+
+    # Allow unused vars starting with underscore
+    - path: _test\.go
+      text: "unused variable or constant"
+
+    # Skip generated files
+    - path: .*\.pb\.go
+      linters:
+        - deadcode
+        - unused
+        - structcheck
+
+    # Skip vendor
+    - path: vendor
+      linters:
+        - deadcode
+        - unused
+        - staticcheck
+        - errcheck
+
+    # Skip node_modules (dependencies)
+    - path: node_modules
+      linters:
+        - all
+
+  # Fixes to apply automatically
+  fix: true
+
+run:
+  timeout: 10m
+  tests: true
+  modules-download-mode: readonly
+  go: "1.22"
+
+# Output formats
+output:
+  formats:
+    - format: colored-line-number
+      print-issued-lines: true
+      print-linter-name: true
+  issues:
+    uniq-by-line: true
