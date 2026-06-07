@@ -10,6 +10,7 @@ import {
   Cpu,
   AudioLines,
 } from "lucide-react";
+import type { JSX } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -32,11 +33,6 @@ import { formatRelative, formatUptime } from "@/lib/format";
 import { getDashboardDevices, getDeviceStatus, getVersion } from "@/lib/vyzorix-api";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
-export const Route = createFileRoute("/_app/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — Vyzorix" }] }),
-  component: DashboardPage,
-});
-
 const tip = {
   background: "var(--popover)",
   border: "1px solid var(--border)",
@@ -57,7 +53,116 @@ function deriveHealth(
   return "online";
 }
 
-const DashboardPage = (): JSX.Element => {
+// eslint-disable-next-line func-style
+function formatDeviceClass(deviceClass: string | undefined): string {
+  if (!deviceClass) return "Unknown Device";
+  return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// eslint-disable-next-line func-style
+function getRiskHint(
+  riskScore: number | undefined,
+  thresholds: { riskCrit: number; riskWarn: number },
+): string {
+  if (riskScore == null) return "No data received";
+  if (riskScore >= thresholds.riskCrit) return "Critical — soft reboot predicted";
+  if (riskScore >= thresholds.riskWarn) return "Investigate";
+  return "Healthy";
+}
+
+// eslint-disable-next-line func-style
+function getThermalHint(
+  thermalTemp: number | undefined,
+  thresholds: { thermalCrit: number; thermalWarn: number },
+): string {
+  if (thermalTemp == null) return "No data received";
+  if (thermalTemp >= thresholds.thermalCrit) return "THROTTLE_HEAVY";
+  if (thermalTemp >= thresholds.thermalWarn) return "THROTTLE_LIGHT";
+  return "NONE";
+}
+
+// eslint-disable-next-line func-style
+function getSpeakerValue(speakerOn: boolean | undefined | null): string {
+  if (speakerOn == null) return "—";
+  return speakerOn ? "FORCED" : "OFF";
+}
+
+// eslint-disable-next-line func-style
+function Metric({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: typeof Activity;
+  label: string;
+  value: string;
+  hint?: string;
+}): JSX.Element {
+  return (
+    <div className="rounded-md border p-3">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>{label}</span>
+        <Icon className="h-3.5 w-3.5" />
+      </div>
+      <p className="mt-1 text-xl font-semibold">{value}</p>
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+// eslint-disable-next-line func-style
+function KV({ k, v }: { k: string; v: string }): JSX.Element {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs text-muted-foreground">{k}</span>
+      <span className="font-mono text-xs">{v}</span>
+    </div>
+  );
+}
+
+// eslint-disable-next-line func-style
+function ChartShell({
+  data,
+  thresholds,
+}: {
+  data: { i: number; v: number }[];
+  thresholds?: number[];
+}): JSX.Element {
+  if (data.length === 0) {
+    return (
+      <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
+        No data available
+      </div>
+    );
+  }
+  return (
+    <div className="h-48 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis dataKey="i" hide />
+          <YAxis stroke="var(--muted-foreground)" fontSize={10} />
+          <Tooltip contentStyle={tip} />
+          {thresholds?.map((y) => (
+            <ReferenceLine key={y} y={y} stroke="var(--muted-foreground)" strokeDasharray="3 3" />
+          ))}
+          <Line
+            type="monotone"
+            dataKey="v"
+            stroke="var(--primary)"
+            dot={false}
+            strokeWidth={2}
+            isAnimationActive={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// eslint-disable-next-line func-style
+function DashboardPage(): JSX.Element {
   const { serverUrl, deviceId, thresholds, dashboardToken } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
   const stream = useStream();
@@ -159,33 +264,13 @@ const DashboardPage = (): JSX.Element => {
               icon={Activity}
               label="Risk score"
               value={t?.riskScore != null ? `${t.riskScore}` : "—"}
-              hint={
-                // eslint-disable-next-line no-nested-ternary
-                t?.riskScore != null
-                  ? // eslint-disable-next-line no-nested-ternary
-                    t.riskScore >= thresholds.riskCrit
-                    ? "Critical — soft reboot predicted"
-                    : t.riskScore >= thresholds.riskWarn
-                      ? "Investigate"
-                      : "Healthy"
-                  : "No data received"
-              }
+              hint={getRiskHint(t?.riskScore, thresholds)}
             />
             <Metric
               icon={ThermometerSun}
               label="Thermal"
               value={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"}
-              hint={
-                // eslint-disable-next-line no-nested-ternary
-                t?.thermalTemp != null
-                  ? // eslint-disable-next-line no-nested-ternary
-                    t.thermalTemp >= thresholds.thermalCrit
-                    ? "THROTTLE_HEAVY"
-                    : t.thermalTemp >= thresholds.thermalWarn
-                      ? "THROTTLE_LIGHT"
-                      : "NONE"
-                  : "No data received"
-              }
+              hint={getThermalHint(t?.thermalTemp, thresholds)}
             />
             <Metric
               icon={Clock}
@@ -196,8 +281,7 @@ const DashboardPage = (): JSX.Element => {
             <Metric
               icon={Volume2}
               label="Speaker"
-              // eslint-disable-next-line no-nested-ternary
-              value={t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"}
+              value={getSpeakerValue(t?.speakerOn)}
               hint={t?.activeDevice ?? "—"}
             />
           </CardContent>
@@ -274,14 +358,7 @@ const DashboardPage = (): JSX.Element => {
             <CardContent className="space-y-3 text-sm">
               <KV k="Active device" v={t?.activeDevice ?? "—"} />
               <KV k="Audio mode" v={t?.audioMode != null ? `${t.audioMode}` : "—"} />
-              // eslint-disable-next-line no-nested-ternary
-              <KV
-                k="Speaker"
-                v={
-                  // eslint-disable-next-line no-nested-ternary
-                  t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"
-                }
-              />
+              <KV k="Speaker" v={getSpeakerValue(t?.speakerOn)} />
             </CardContent>
           </Card>
           <Card>
@@ -315,81 +392,9 @@ const DashboardPage = (): JSX.Element => {
       )}
     </div>
   );
-};
+}
 
-const Metric = ({
-  icon: Icon,
-  label,
-  value,
-  hint,
-}: {
-  icon: typeof Activity;
-  label: string;
-  value: string;
-  hint?: string;
-}): JSX.Element => {
-  return (
-    <div className="rounded-md border p-3">
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
-        <Icon className="h-3.5 w-3.5" />
-      </div>
-      <p className="mt-1 text-xl font-semibold">{value}</p>
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  );
-};
-
-const KV = ({ k, v }: { k: string; v: string }): JSX.Element => {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-xs text-muted-foreground">{k}</span>
-      <span className="font-mono text-xs">{v}</span>
-    </div>
-  );
-};
-
-// Format device class for display (e.g., "nokia_c22" -> "Nokia C22")
-const formatDeviceClass = (deviceClass: string | undefined): string => {
-  if (!deviceClass) return "Unknown Device";
-  return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-};
-
-const ChartShell = ({
-  data,
-  thresholds,
-}: {
-  data: { i: number; v: number }[];
-  thresholds?: number[];
-}): JSX.Element => {
-  if (data.length === 0) {
-    return (
-      <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
-        No data available
-      </div>
-    );
-  }
-  return (
-    <div className="h-48 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis dataKey="i" hide />
-          <YAxis stroke="var(--muted-foreground)" fontSize={10} />
-          <Tooltip contentStyle={tip} />
-          {thresholds?.map((y) => (
-            <ReferenceLine key={y} y={y} stroke="var(--muted-foreground)" strokeDasharray="3 3" />
-          ))}
-          <Line
-            type="monotone"
-            dataKey="v"
-            stroke="var(--primary)"
-            dot={false}
-            strokeWidth={2}
-            isAnimationActive={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
+export const Route = createFileRoute("/_app/dashboard")({
+  head: () => ({ meta: [{ title: "Dashboard — Vyzorix" }] }),
+  component: DashboardPage,
+});
