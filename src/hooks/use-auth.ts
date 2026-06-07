@@ -117,7 +117,7 @@ export function useAuthActions(): AuthActions {
  */
 
 // eslint-disable-next-line func-style
-export function useAuthGuard() {
+export function useAuthGuard(): object {
   const { isAuthenticated, isLoading } = useAuth();
   const { checkAuth } = useAuthActions();
 
@@ -142,7 +142,7 @@ export function useAuthGuard() {
  */
 
 // eslint-disable-next-line func-style
-export function useRequireAuth() {
+export function useRequireAuth(): { isReady: boolean; isAuthenticated: boolean } {
   const [state, setState] = useState<{
     isReady: boolean;
     isAuthenticated: boolean;
