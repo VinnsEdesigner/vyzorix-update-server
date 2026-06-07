@@ -10,12 +10,6 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 // eslint-disable-next-line func-style
 // eslint-disable-next-line require-await
 // eslint-disable-next-line func-style
-// eslint-disable-next-line require-await
-// eslint-disable-next-line func-style
-// eslint-disable-next-line require-await
-// eslint-disable-next-line func-style
-// eslint-disable-next-line require-await
-// eslint-disable-next-line func-style
 async function getServerEntry(): Promise<ServerEntry> {
 // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (!serverEntryPromise) {

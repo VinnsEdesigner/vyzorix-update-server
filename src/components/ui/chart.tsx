@@ -26,12 +26,6 @@ const ChartContext = React.createContext<ChartContextProps | null>(null);
 // eslint-disable-next-line func-style
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
 function useChart() {
   const context = React.useContext(ChartContext);
 
@@ -72,12 +66,6 @@ const ChartContainer = React.forwardRef<
 });
 ChartContainer.displayName = "Chart";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
@@ -151,8 +139,6 @@ const ChartTooltipContent = React.forwardRef<
 
       const [item] = payload;
 // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       const key = `${labelKey || item?.dataKey || item?.name || "value"}`;
       const itemConfig = getPayloadConfigFromPayload(config, item, key);
       const value =
@@ -194,11 +180,8 @@ const ChartTooltipContent = React.forwardRef<
             .filter((item) => item.type !== "none")
             .map((item, index) => {
 // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
               const key = `${nameKey || item.name || item.dataKey || "value"}`;
               const itemConfig = getPayloadConfigFromPayload(config, item, key);
-// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
               const indicatorColor = color || item.payload.fill || item.color;
 
@@ -298,7 +281,6 @@ const ChartLegendContent = React.forwardRef<
         .filter((item) => item.type !== "none")
         .map((item) => {
 // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
           const key = `${nameKey || item.dataKey || "value"}`;
           const itemConfig = getPayloadConfigFromPayload(config, item, key);
 
@@ -329,12 +311,6 @@ const ChartLegendContent = React.forwardRef<
 ChartLegendContent.displayName = "ChartLegend";
 
 // Helper to extract item config from a payload.
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style

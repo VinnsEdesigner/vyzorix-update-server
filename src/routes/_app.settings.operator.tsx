@@ -235,12 +235,6 @@ function OperatorSettings(): JSX.Element {
 // eslint-disable-next-line func-style
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
 function RoleRow({ allowed, label }: { allowed: boolean; label: string }) {
   return (
     <div className="flex items-center justify-between rounded-md border p-2.5">
