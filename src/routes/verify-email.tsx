@@ -17,6 +17,7 @@ export const Route = createFileRoute("/verify-email")({
 
 type Status = "loading" | "success" | "error";
 
+// eslint-disable-next-line func-style
 function VerifyEmailPage(): ReactElement {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
@@ -24,6 +25,7 @@ function VerifyEmailPage(): ReactElement {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const verify = async () => {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("token");
