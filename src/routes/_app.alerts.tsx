@@ -38,7 +38,7 @@ const severityIcon: Record<Severity, typeof AlertTriangle> = {
   info: Info,
 };
 
-function deriveAlerts(history: TelemetryFrame[], th: Thresholds): DerivedAlert[] {
+const deriveAlerts = (history: TelemetryFrame[], th: Thresholds): DerivedAlert[] => {
   const out: DerivedAlert[] = [];
   history.forEach((f, i) => {
     const at =
@@ -91,9 +91,9 @@ function deriveAlerts(history: TelemetryFrame[], th: Thresholds): DerivedAlert[]
     }
   });
   return out.slice(-100).reverse();
-}
+};
 
-function AlertsPage(): ReactElement {
+const AlertsPage = (): ReactElement => {
   const { thresholds } = useVyzorixConfig();
   const stream = useStream();
   const [query, setQuery] = useState("");
@@ -217,9 +217,9 @@ function AlertsPage(): ReactElement {
       </Card>
     </div>
   );
-}
+};
 
-function SummaryCard({
+const SummaryCard = ({
   label,
   count,
   hint,
@@ -229,7 +229,7 @@ function SummaryCard({
   count: number;
   hint: string;
   Icon: typeof AlertTriangle;
-}): ReactElement {
+}): ReactElement => {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -242,4 +242,4 @@ function SummaryCard({
       </CardContent>
     </Card>
   );
-}
+};

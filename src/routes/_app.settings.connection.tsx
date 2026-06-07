@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_app/settings/connection")({
 });
 
 // Validate URL has proper protocol
-function isValidServerUrl(url: string): boolean {
+const isValidServerUrl = (url: string): boolean => {
   if (!url.trim()) return false;
   try {
     const u = new URL(url);
@@ -26,15 +26,18 @@ function isValidServerUrl(url: string): boolean {
   } catch {
     return false;
   }
-}
-
-const getHealthStatus = (data: { ok?: boolean } | undefined, isError: boolean) => {
-  if (data?.ok) return { variant: "default" as const, label: "ok" };
-  if (isError) return { variant: "destructive" as const, label: "down" };
-  return { variant: "secondary" as const, label: "checking" };
 };
 
-function ConnectionSettings(): ReactElement {
+const getHealthStatus = (
+  data: { ok?: boolean } | undefined,
+  isError: boolean,
+): { variant: "default" | "destructive" | "secondary"; label: string } => {
+  if (data?.ok) return { variant: "default", label: "ok" };
+  if (isError) return { variant: "destructive", label: "down" };
+  return { variant: "secondary", label: "checking" };
+};
+
+const ConnectionSettings = (): ReactElement => {
   const cfg = useVyzorixConfig();
   const cfgRef = useRef(cfg);
   cfgRef.current = cfg;
@@ -51,7 +54,7 @@ function ConnectionSettings(): ReactElement {
 
   // Load client settings from server on mount
   useEffect(() => {
-    const loadFromServer = async () => {
+    const loadFromServer = async (): Promise<void> => {
       try {
         const op = await me(cfgRef.current.serverUrl);
         if (op.client) {
@@ -69,7 +72,7 @@ function ConnectionSettings(): ReactElement {
     loadFromServer();
   }, []);
 
-  const handleServerUrlChange = (value: string) => {
+  const handleServerUrlChange = (value: string): void => {
     setServerUrl(value);
     if (serverUrlError) setServerUrlError(null);
   };
@@ -90,7 +93,7 @@ function ConnectionSettings(): ReactElement {
     return true;
   };
 
-  const save = async () => {
+  const save = async (): Promise<void> => {
     if (!validateForm()) {
       toast.error("Please fix the server URL before saving");
       return;
@@ -236,9 +239,9 @@ function ConnectionSettings(): ReactElement {
       </Card>
     </div>
   );
-}
+};
 
-function ToggleRow({
+const ToggleRow = ({
   label,
   hint,
   checked,
@@ -248,7 +251,7 @@ function ToggleRow({
   hint: string;
   checked: boolean;
   onChange: (v: boolean) => void;
-}): ReactElement {
+}): ReactElement => {
   return (
     <div className="flex items-start justify-between gap-3 rounded-md border p-3">
       <div className="space-y-0.5">
@@ -258,4 +261,4 @@ function ToggleRow({
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   );
-}
+};

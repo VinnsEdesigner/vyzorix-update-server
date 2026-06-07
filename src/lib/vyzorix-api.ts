@@ -61,15 +61,15 @@ export interface TelemetryFrame {
   timestamp?: number | string;
 }
 
-function join(base: string, path: string): string {
+const join = (base: string, path: string): string => {
   return base.replace(/\/+$/, "") + path;
-}
+};
 
-function dashboardHeaders(token?: string): Record<string, string> {
+const dashboardHeaders = (token?: string): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}`, "X-Vyzorix-Token": token } : {};
-}
+};
 
-async function jsonOrThrow<T>(res: Response): Promise<T> {
+const jsonOrThrow = async <T>(res: Response): Promise<T> => {
   const text = await res.text();
   let body: unknown = text;
   try {
@@ -85,9 +85,9 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
     throw new Error(msg);
   }
   return body as T;
-}
+};
 
-export async function getHealth(serverUrl: string): Promise<{ ok: boolean }> {
+export const getHealth = async (serverUrl: string): Promise<{ ok: boolean }> => {
   const t0 = Date.now();
   try {
     const res = await fetch(join(serverUrl, "/healthz"), { method: "GET" });
@@ -97,9 +97,9 @@ export async function getHealth(serverUrl: string): Promise<{ ok: boolean }> {
     logger.warn("api", `GET /healthz · failed · ${e instanceof Error ? e.message : String(e)}`);
     return { ok: false };
   }
-}
+};
 
-export async function getVersion(serverUrl: string): Promise<VersionManifest> {
+export const getVersion = async (serverUrl: string): Promise<VersionManifest> => {
   const t0 = Date.now();
   try {
     const res = await fetch(join(serverUrl, "/api/v1/version"), { method: "GET" });
@@ -116,9 +116,9 @@ export async function getVersion(serverUrl: string): Promise<VersionManifest> {
     );
     throw e;
   }
-}
+};
 
-export async function headApk(serverUrl: string, filename: string): Promise<number | null> {
+export const headApk = async (serverUrl: string, filename: string): Promise<number | null> => {
   try {
     const res = await fetch(join(serverUrl, `/api/v1/apk/${filename}`), { method: "HEAD" });
     if (!res.ok) {
@@ -131,28 +131,31 @@ export async function headApk(serverUrl: string, filename: string): Promise<numb
     logger.warn("update", `HEAD apk failed · ${e instanceof Error ? e.message : String(e)}`);
     return null;
   }
-}
+};
 
-export async function getDeviceStatus(serverUrl: string, deviceId: string): Promise<DeviceStatus> {
+export const getDeviceStatus = async (
+  serverUrl: string,
+  deviceId: string,
+): Promise<DeviceStatus> => {
   const res = await fetch(join(serverUrl, `/v1/device/${encodeURIComponent(deviceId)}/status`));
   return jsonOrThrow<DeviceStatus>(res);
-}
+};
 
-export async function getDashboardDevices(
+export const getDashboardDevices = async (
   serverUrl: string,
   dashboardToken?: string,
-): Promise<DeviceStatus[]> {
+): Promise<DeviceStatus[]> => {
   const res = await fetch(join(serverUrl, "/v1/dashboard/devices"), {
     headers: dashboardHeaders(dashboardToken),
   });
   const body = await jsonOrThrow<DashboardDevicesResponse>(res);
   return body.devices;
-}
+};
 
-export async function registerDevice(
+export const registerDevice = async (
   serverUrl: string,
   payload: RegisterPayload,
-): Promise<RegisterResponse> {
+): Promise<RegisterResponse> => {
   logger.info("device", `register → ${payload.deviceId}`);
   try {
     const res = await fetch(join(serverUrl, "/v1/device/register"), {
@@ -167,20 +170,20 @@ export async function registerDevice(
     logger.error("device", `register failed · ${e instanceof Error ? e.message : String(e)}`);
     throw e;
   }
-}
+};
 
 // Development can run with ENFORCE_HMAC=false, so an empty device signature is
 // accepted. Production dashboard commands should carry TOKEN_SECRET through
 // Authorization/X-Vyzorix-Token; Android-originated requests still use per-device HMAC.
 
-export async function dispatchCommand(
+export const dispatchCommand = async (
   serverUrl: string,
   deviceId: string,
   command: string,
   args?: Record<string, unknown>,
   dashboardToken?: string,
   strictHmac?: boolean,
-): Promise<CommandResponse> {
+): Promise<CommandResponse> => {
   const nonce = crypto.randomUUID().replace(/-/g, "");
   const timestamp = Date.now();
   const body = JSON.stringify({ command, args: args ?? {}, nonce, timestamp });
@@ -213,7 +216,7 @@ export async function dispatchCommand(
     logger.error("command", `${command} failed · ${e instanceof Error ? e.message : String(e)}`);
     throw e;
   }
-}
+};
 
 export const COMMANDS: { id: string; label: string; description: string; danger?: boolean }[] = [
   { id: "FORCE_SPEAKER", label: "Force speaker", description: "Override route to builtin_speaker" },

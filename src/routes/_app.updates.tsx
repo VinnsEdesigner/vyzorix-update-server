@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_app/updates")({
   component: UpdatesPage,
 });
 
-function UpdatesPage(): ReactElement {
+const UpdatesPage = (): ReactElement => {
   const { serverUrl, deviceId, dashboardToken } = useVyzorixConfig();
 
   const version = useQuery({
@@ -36,7 +36,7 @@ function UpdatesPage(): ReactElement {
   const v = version.data;
   const apkUrl = v ? `${serverUrl.replace(/\/+$/, "")}/api/v1/apk/${v.apk_filename}` : "#";
 
-  const wake = async () => {
+  const wake = async (): Promise<void> => {
     if (!deviceId.trim()) {
       toast.error("WAKE_UP_UPDATER failed", {
         description: "No device registered — set deviceId in Settings → Connection",
@@ -185,13 +185,13 @@ function UpdatesPage(): ReactElement {
       </Card>
     </div>
   );
-}
+};
 
-function KV({ k, v }: { k: string; v: string }): ReactElement {
+const KV = ({ k, v }: { k: string; v: string }): ReactElement => {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{k}</p>
       <p className="text-sm font-medium break-all">{v}</p>
     </div>
   );
-}
+};

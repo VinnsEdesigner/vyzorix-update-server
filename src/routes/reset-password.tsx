@@ -17,7 +17,7 @@ export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
 });
 
-function ResetPasswordPage(): ReactElement {
+const ResetPasswordPage = (): ReactElement => {
   const navigate = useNavigate();
   const { serverUrl } = useVyzorixConfig();
   const [password, setPassword] = useState("");
@@ -37,7 +37,7 @@ function ResetPasswordPage(): ReactElement {
     }
   }, [navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
 
     if (!token) {
@@ -132,4 +132,4 @@ function ResetPasswordPage(): ReactElement {
       <Toaster />
     </div>
   );
-}
+};

@@ -15,11 +15,11 @@ export interface DeviceStreamState {
 
 const HISTORY_LIMIT = 240;
 
-export function useDeviceStream(
+export const useDeviceStream = (
   serverUrl: string,
   deviceId: string,
   enabled: boolean = true,
-): DeviceStreamState {
+): DeviceStreamState => {
   const [state, setState] = useState<WsState>("idle");
   const [lastTelemetry, setLast] = useState<TelemetryFrame | null>(null);
   const [history, setHistory] = useState<TelemetryFrame[]>([]);
@@ -35,7 +35,7 @@ export function useDeviceStream(
     }
     stopRef.current = false;
 
-    const connect = () => {
+    const connect = (): void => {
       const url = wsUrl(serverUrl, `/v1/device/${encodeURIComponent(deviceId)}/stream`);
       if (!url) return;
       setState(retryRef.current === 0 ? "connecting" : "reconnecting");
@@ -95,7 +95,7 @@ export function useDeviceStream(
       };
     };
 
-    const scheduleRetry = () => {
+    const scheduleRetry = (): void => {
       if (stopRef.current) return;
       retryRef.current = Math.min(retryRef.current + 1, 6);
       const delay = Math.min(1000 * 2 ** retryRef.current, 15000);
@@ -114,4 +114,4 @@ export function useDeviceStream(
   }, [serverUrl, deviceId, enabled]);
 
   return { state, lastTelemetry, telemetryHistory: history, error };
-}
+};

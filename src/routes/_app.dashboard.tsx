@@ -40,49 +40,49 @@ const tip = {
   fontSize: 12,
 };
 
-function deriveHealth(
+const deriveHealth = (
   online: boolean,
   riskScore: number | undefined,
   thermal: number | undefined,
   th: { riskWarn: number; riskCrit: number; thermalWarn: number; thermalCrit: number },
-): DeviceHealth {
+): DeviceHealth => {
   if (!online) return "offline";
   if ((riskScore ?? 0) >= th.riskCrit || (thermal ?? 0) >= th.thermalCrit) return "critical";
   if ((riskScore ?? 0) >= th.riskWarn || (thermal ?? 0) >= th.thermalWarn) return "warning";
   return "online";
-}
+};
 
-function formatDeviceClass(deviceClass: string | undefined): string {
+const formatDeviceClass = (deviceClass: string | undefined): string => {
   if (!deviceClass) return "Unknown Device";
   return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
+};
 
-function getRiskHint(
+const getRiskHint = (
   riskScore: number | undefined,
   thresholds: { riskCrit: number; riskWarn: number },
-): string {
+): string => {
   if (riskScore == null) return "No data received";
   if (riskScore >= thresholds.riskCrit) return "Critical — soft reboot predicted";
   if (riskScore >= thresholds.riskWarn) return "Investigate";
   return "Healthy";
-}
+};
 
-function getThermalHint(
+const getThermalHint = (
   thermalTemp: number | undefined,
   thresholds: { thermalCrit: number; thermalWarn: number },
-): string {
+): string => {
   if (thermalTemp == null) return "No data received";
   if (thermalTemp >= thresholds.thermalCrit) return "THROTTLE_HEAVY";
   if (thermalTemp >= thresholds.thermalWarn) return "THROTTLE_LIGHT";
   return "NONE";
-}
+};
 
-function getSpeakerValue(speakerOn: boolean | undefined | null): string {
+const getSpeakerValue = (speakerOn: boolean | undefined | null): string => {
   if (speakerOn == null) return "—";
   return speakerOn ? "FORCED" : "OFF";
-}
+};
 
-function Metric({
+const Metric = ({
   icon: Icon,
   label,
   value,
@@ -92,7 +92,7 @@ function Metric({
   label: string;
   value: string;
   hint?: string;
-}): JSX.Element {
+}): JSX.Element => {
   return (
     <div className="rounded-md border p-3">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -103,24 +103,24 @@ function Metric({
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
-}
+};
 
-function KV({ k, v }: { k: string; v: string }): JSX.Element {
+const KV = ({ k, v }: { k: string; v: string }): JSX.Element => {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-xs text-muted-foreground">{k}</span>
       <span className="font-mono text-xs">{v}</span>
     </div>
   );
-}
+};
 
-function ChartShell({
+const ChartShell = ({
   data,
   thresholds,
 }: {
   data: { i: number; v: number }[];
   thresholds?: number[];
-}): JSX.Element {
+}): JSX.Element => {
   if (data.length === 0) {
     return (
       <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
@@ -151,9 +151,9 @@ function ChartShell({
       </ResponsiveContainer>
     </div>
   );
-}
+};
 
-function DashboardPage(): JSX.Element {
+const DashboardPage = (): JSX.Element => {
   const { serverUrl, deviceId, thresholds, dashboardToken } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
   const stream = useStream();
@@ -383,7 +383,7 @@ function DashboardPage(): JSX.Element {
       )}
     </div>
   );
-}
+};
 
 export const Route = createFileRoute("/_app/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Vyzorix" }] }),
