@@ -48,87 +48,6 @@ function computeDeviceHealth(
 }
 
 // eslint-disable-next-line func-style
-function renderDeviceContent(
-  deviceId: string,
-  status: {
-    isLoading: boolean;
-    isError: boolean;
-    data?: { deviceClass?: string; appVersion?: string; online?: boolean; lastSeen?: Date };
-  },
-  deviceDisplayName: string,
-  health: DeviceHealth,
-  t?: { uptime?: number; riskScore?: number; thermalTemp?: number; bufferLevel?: number },
-): JSX.Element {
-  if (!deviceId) {
-    return (
-      <Card>
-        <CardContent className="py-4">
-          <p className="text-sm text-muted-foreground">
-            No device configured. Set deviceId in Settings → Connection, then use the registration
-            panel below to register your device.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-  if (status.isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="space-y-2">
-              <div className="h-5 w-48 animate-pulse rounded-md bg-muted" />
-              <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
-            </div>
-            <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="rounded-md border p-3">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="mt-2 h-5 w-24" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-  return (
-    <Card>
-      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <CardTitle>{deviceDisplayName} — primary</CardTitle>
-          <CardDescription>{deviceId}</CardDescription>
-        </div>
-        <StatusBadge status={health} />
-      </CardHeader>
-      <CardContent>
-        {status.isError ? (
-          <p className="text-sm text-muted-foreground">
-            Device not registered yet. Use the registration panel below or run the Android daemon to
-            call <code className="text-xs">POST /v1/device/register</code>.
-          </p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KV k="App version" v={status.data?.appVersion ?? "—"} />
-            <KV k="Device class" v={status.data?.deviceClass ?? "—"} />
-            <KV k="Server says online" v={status.data?.online ? "yes" : "no"} />
-            <KV k="Last seen" v={formatRelative(status.data?.lastSeen)} />
-            <KV k="Uptime" v={formatUptime(t?.uptime)} />
-            <KV k="Risk score" v={t?.riskScore != null ? `${t.riskScore}` : "—"} />
-            <KV k="Thermal" v={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"} />
-            <KV k="Buffer fill" v={t?.bufferLevel != null ? `${t.bufferLevel}%` : "—"} />
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// eslint-disable-next-line func-style
 function Field({
   label,
   value,
@@ -170,9 +89,86 @@ function DevicePage(): JSX.Element {
 
   const deviceDisplayName = formatDeviceClass(status.data?.deviceClass);
 
+  // No device configured
+  if (!deviceId) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="py-4">
+            <p className="text-sm text-muted-foreground">
+              No device configured. Set deviceId in Settings → Connection, then use the registration
+              panel below to register your device.
+            </p>
+          </CardContent>
+        </Card>
+        <Separator />
+        <RegisterPanel deviceStatus={null} />
+      </div>
+    );
+  }
+
+  // Loading state
+  if (status.isLoading) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-2">
+                <div className="h-5 w-48 animate-pulse rounded-md bg-muted" />
+                <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
+              </div>
+              <div className="h-6 w-20 animate-pulse rounded-full bg-muted" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="rounded-md border p-3">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="mt-2 h-5 w-24" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        <Separator />
+        <RegisterPanel deviceStatus={null} />
+      </div>
+    );
+  }
+
+  // Loaded state
   return (
     <div className="space-y-4">
-      {renderDeviceContent(deviceId, status, deviceDisplayName, health, t)}
+      <Card>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle>{deviceDisplayName} — primary</CardTitle>
+            <CardDescription>{deviceId}</CardDescription>
+          </div>
+          <StatusBadge status={health} />
+        </CardHeader>
+        <CardContent>
+          {status.isError ? (
+            <p className="text-sm text-muted-foreground">
+              Device not registered yet. Use the registration panel below or run the Android daemon
+              to call <code className="text-xs">POST /v1/device/register</code>.
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <KV k="App version" v={status.data?.appVersion ?? "—"} />
+              <KV k="Device class" v={status.data?.deviceClass ?? "—"} />
+              <KV k="Server says online" v={status.data?.online ? "yes" : "no"} />
+              <KV k="Last seen" v={formatRelative(status.data?.lastSeen)} />
+              <KV k="Uptime" v={formatUptime(t?.uptime)} />
+              <KV k="Risk score" v={t?.riskScore != null ? `${t.riskScore}` : "—"} />
+              <KV k="Thermal" v={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"} />
+              <KV k="Buffer fill" v={t?.bufferLevel != null ? `${t.bufferLevel}%` : "—"} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
       <Separator />
       <RegisterPanel deviceStatus={status.data ?? null} />
     </div>
