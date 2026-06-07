@@ -25,7 +25,7 @@ function NotificationsSettings(): JSX.Element {
 
   // Load from server on mount
   useEffect(() => {
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const loadFromServer = async () => {
       try {
         const op = await me(serverUrlRef.current);
@@ -40,7 +40,7 @@ function NotificationsSettings(): JSX.Element {
     loadFromServer();
   }, []);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleToggle = async (v: boolean) => {
     setEnabled(v);
     setSaving(true);
@@ -59,7 +59,7 @@ function NotificationsSettings(): JSX.Element {
     }
   };
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const requestBrowser = async () => {
     if (!("Notification" in window)) {
       toast.error("Browser notifications unsupported");
@@ -95,8 +95,6 @@ function NotificationsSettings(): JSX.Element {
   );
 }
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 function Row({
   label,

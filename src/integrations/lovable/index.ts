@@ -13,7 +13,7 @@ interface SignInOptions {
 
 export const lovable = {
   auth: {
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     signInWithOAuth: async (
       provider: "google" | "apple" | "microsoft" | "lovable",
       opts?: SignInOptions,
