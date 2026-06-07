@@ -18,9 +18,6 @@ export function DeviceStreamProvider({ children }: { children: ReactNode }): JSX
 }
 
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
 export function useStream() {
   const v = useContext(Ctx);
   if (!v) throw new Error("useStream must be used inside DeviceStreamProvider");

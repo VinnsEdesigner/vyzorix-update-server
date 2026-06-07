@@ -25,7 +25,7 @@ function ForgotPasswordPage(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {

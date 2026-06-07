@@ -25,7 +25,7 @@ function VerifyEmailPage(): JSX.Element {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const verify = async () => {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("token");

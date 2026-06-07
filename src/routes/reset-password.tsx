@@ -38,7 +38,7 @@ function ResetPasswordPage(): JSX.Element {
     }
   }, [navigate]);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 

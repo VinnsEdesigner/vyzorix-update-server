@@ -161,10 +161,10 @@ function DashboardPage(): JSX.Element {
               label="Risk score"
               value={t?.riskScore != null ? `${t.riskScore}` : "—"}
               hint={
-// eslint-disable-next-line no-nested-ternary
+                // eslint-disable-next-line no-nested-ternary
                 t?.riskScore != null
-// eslint-disable-next-line no-nested-ternary
-                  ? t.riskScore >= thresholds.riskCrit
+                  ? // eslint-disable-next-line no-nested-ternary
+                    t.riskScore >= thresholds.riskCrit
                     ? "Critical — soft reboot predicted"
                     : t.riskScore >= thresholds.riskWarn
                       ? "Investigate"
@@ -177,10 +177,10 @@ function DashboardPage(): JSX.Element {
               label="Thermal"
               value={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"}
               hint={
-// eslint-disable-next-line no-nested-ternary
+                // eslint-disable-next-line no-nested-ternary
                 t?.thermalTemp != null
-// eslint-disable-next-line no-nested-ternary
-                  ? t.thermalTemp >= thresholds.thermalCrit
+                  ? // eslint-disable-next-line no-nested-ternary
+                    t.thermalTemp >= thresholds.thermalCrit
                     ? "THROTTLE_HEAVY"
                     : t.thermalTemp >= thresholds.thermalWarn
                       ? "THROTTLE_LIGHT"
@@ -197,7 +197,7 @@ function DashboardPage(): JSX.Element {
             <Metric
               icon={Volume2}
               label="Speaker"
-// eslint-disable-next-line no-nested-ternary
+              // eslint-disable-next-line no-nested-ternary
               value={t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"}
               hint={t?.activeDevice ?? "—"}
             />
@@ -275,7 +275,7 @@ function DashboardPage(): JSX.Element {
             <CardContent className="space-y-3 text-sm">
               <KV k="Active device" v={t?.activeDevice ?? "—"} />
               <KV k="Audio mode" v={t?.audioMode != null ? `${t.audioMode}` : "—"} />
-// eslint-disable-next-line no-nested-ternary
+              // eslint-disable-next-line no-nested-ternary
               <KV k="Speaker" v={t?.speakerOn == null ? "—" : t.speakerOn ? "FORCED" : "OFF"} />
             </CardContent>
           </Card>
@@ -313,8 +313,6 @@ function DashboardPage(): JSX.Element {
 }
 
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
 function Metric({
   icon: Icon,
   label,
@@ -339,8 +337,6 @@ function Metric({
 }
 
 // eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -357,8 +353,6 @@ function formatDeviceClass(deviceClass: string | undefined): string {
   return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 function ChartShell({
   data,

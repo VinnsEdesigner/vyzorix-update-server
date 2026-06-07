@@ -38,7 +38,7 @@ function LoginPage(): JSX.Element {
     if (token) navigate({ to: "/dashboard", replace: true });
   }, [navigate]);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -61,7 +61,7 @@ function LoginPage(): JSX.Element {
     }
   };
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const google = () => {
     setOauthLoading(true);
     try {

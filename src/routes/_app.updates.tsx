@@ -36,7 +36,7 @@ function UpdatesPage(): JSX.Element {
   const v = version.data;
   const apkUrl = v ? `${serverUrl.replace(/\/+$/, "")}/api/v1/apk/${v.apk_filename}` : "#";
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const wake = async () => {
     if (!deviceId.trim()) {
       toast.error("WAKE_UP_UPDATER failed", {
@@ -81,7 +81,7 @@ function UpdatesPage(): JSX.Element {
             </CardDescription>
           </CardHeader>
           <CardContent>
-// eslint-disable-next-line no-nested-ternary
+            // eslint-disable-next-line no-nested-ternary
             {version.isError ? (
               <div className="space-y-2">
                 <p className="text-sm text-destructive">
@@ -103,7 +103,7 @@ function UpdatesPage(): JSX.Element {
                 <KV
                   k="APK size (HEAD)"
                   v={
-// eslint-disable-next-line no-nested-ternary
+                    // eslint-disable-next-line no-nested-ternary
                     apkSize.isLoading
                       ? "checking…"
                       : apkSize.data == null
@@ -191,8 +191,6 @@ function UpdatesPage(): JSX.Element {
   );
 }
 
-// eslint-disable-next-line func-style
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }) {
   return (

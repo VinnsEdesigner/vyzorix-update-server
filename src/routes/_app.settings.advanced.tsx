@@ -23,7 +23,7 @@ function AdvancedSettings(): JSX.Element {
 
   const canDanger = cfg.operator.role === "super_admin";
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const save = () => {
     cfg.update({
       logBufferLimit: Math.max(50, Math.min(5000, logLimit || 500)),
@@ -32,7 +32,7 @@ function AdvancedSettings(): JSX.Element {
     toast.success("Advanced settings saved · refresh to apply buffer sizes");
   };
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleReset = async () => {
     if (!canDanger) return;
     setResetting(true);

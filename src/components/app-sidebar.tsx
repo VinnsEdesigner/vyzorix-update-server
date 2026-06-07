@@ -49,7 +49,7 @@ export function AppSidebar(): JSX.Element {
 
   // Sync operator from localStorage and listen for name updates from settings
   useEffect(() => {
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const sync = () => setOperator(getStoredOperator());
     // Initial sync
     sync();
@@ -58,7 +58,7 @@ export function AppSidebar(): JSX.Element {
     return () => window.removeEventListener(OPERATOR_UPDATE_EVENT, sync);
   }, []);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const signOut = async () => {
     try {
       await logout(DEFAULT_SERVER_URL);

@@ -3,7 +3,6 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 
 import { cn } from "@/lib/utils";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const ResizablePanelGroup = ({ className, ...props }: React.ComponentProps<typeof Group>) => (
   <Group
@@ -20,8 +19,8 @@ const ResizableHandle = ({
   ...props
 }: React.ComponentProps<typeof Separator> & {
   withHandle?: boolean;
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 }) => (
   <Separator
     className={cn(

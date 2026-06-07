@@ -67,13 +67,13 @@ const emit = (): void => {
 };
 
 export const logger = {
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   setLimit(n: number) {
     limit = Math.max(50, Math.min(n, 10000));
     if (buffer.length > limit) buffer = buffer.slice(-limit);
     emit();
   },
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   clear() {
     buffer = [];
     schedulePersist();
@@ -84,29 +84,29 @@ export const logger = {
   },
   subscribe(cb: () => void) {
     listeners.add(cb);
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     return () => listeners.delete(cb);
   },
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   log(level: LogLevel, source: LogSource, message: string, meta?: Record<string, unknown>) {
     const entry: LogEntry = { id: nextId++, t: Date.now(), level, source, message, meta };
     buffer = buffer.length >= limit ? [...buffer.slice(-(limit - 1)), entry] : [...buffer, entry];
     schedulePersist();
     emit();
   },
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   debug(source: LogSource, m: string, meta?: Record<string, unknown>) {
     this.log("debug", source, m, meta);
   },
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   info(source: LogSource, m: string, meta?: Record<string, unknown>) {
     this.log("info", source, m, meta);
   },
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   warn(source: LogSource, m: string, meta?: Record<string, unknown>) {
     this.log("warn", source, m, meta);
   },
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   error(source: LogSource, m: string, meta?: Record<string, unknown>) {
     this.log("error", source, m, meta);
   },

@@ -29,8 +29,8 @@ const FormField = <
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
   ...props
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 }: ControllerProps<TFieldValues, TName>) => {
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
@@ -39,7 +39,6 @@ const FormField = <
   );
 };
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);

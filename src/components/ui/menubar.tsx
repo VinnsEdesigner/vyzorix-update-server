@@ -5,22 +5,30 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 // eslint-disable-next-line func-style
-function MenubarMenu({ ...props }: React.ComponentProps<typeof MenubarPrimitive.Menu>): JSX.Element {
+function MenubarMenu({
+  ...props
+}: React.ComponentProps<typeof MenubarPrimitive.Menu>): JSX.Element {
   return <MenubarPrimitive.Menu {...props} />;
 }
 
 // eslint-disable-next-line func-style
-function MenubarGroup({ ...props }: React.ComponentProps<typeof MenubarPrimitive.Group>): JSX.Element {
+function MenubarGroup({
+  ...props
+}: React.ComponentProps<typeof MenubarPrimitive.Group>): JSX.Element {
   return <MenubarPrimitive.Group {...props} />;
 }
 
 // eslint-disable-next-line func-style
-function MenubarPortal({ ...props }: React.ComponentProps<typeof MenubarPrimitive.Portal>): JSX.Element {
+function MenubarPortal({
+  ...props
+}: React.ComponentProps<typeof MenubarPrimitive.Portal>): JSX.Element {
   return <MenubarPrimitive.Portal {...props} />;
 }
 
 // eslint-disable-next-line func-style
-function MenubarRadioGroup({ ...props }: React.ComponentProps<typeof MenubarPrimitive.RadioGroup>): JSX.Element {
+function MenubarRadioGroup({
+  ...props
+}: React.ComponentProps<typeof MenubarPrimitive.RadioGroup>): JSX.Element {
   return <MenubarPrimitive.RadioGroup {...props} />;
 }
 
@@ -204,7 +212,6 @@ const MenubarSeparator = React.forwardRef<
 ));
 MenubarSeparator.displayName = MenubarPrimitive.Separator.displayName;
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const MenubarShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
   return (
