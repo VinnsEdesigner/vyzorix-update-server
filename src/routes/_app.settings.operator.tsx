@@ -22,8 +22,7 @@ export const Route = createFileRoute("/_app/settings/operator")({
   component: OperatorSettings,
 });
 
-// eslint-disable-next-line func-style
-function OperatorSettings() {
+const OperatorSettings = (): JSX.Element => {
   const cfg = useVyzorixConfig();
   const stored = getStoredOperator();
 
@@ -230,14 +229,13 @@ function OperatorSettings() {
       </Card>
     </div>
   );
-}
+};
 
-// eslint-disable-next-line func-style
-function RoleRow({ allowed, label }: { allowed: boolean; label: string }) {
+const RoleRow = ({ allowed, label }: { allowed: boolean; label: string }): JSX.Element => {
   return (
     <div className="flex items-center justify-between rounded-md border p-2.5">
       <span className={allowed ? "" : "text-muted-foreground"}>{label}</span>
       <Badge variant={allowed ? "default" : "outline"}>{allowed ? "allowed" : "blocked"}</Badge>
     </div>
   );
-}
+};

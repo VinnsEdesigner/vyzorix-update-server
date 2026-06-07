@@ -57,8 +57,7 @@ const sections = [
   },
 ] as const;
 
-// eslint-disable-next-line func-style
-function SettingsOverview() {
+const SettingsOverview = (): JSX.Element => {
   const { serverUrl, deviceId, operator } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
 
@@ -116,14 +115,13 @@ function SettingsOverview() {
       </Card>
     </div>
   );
-}
+};
 
-// eslint-disable-next-line func-style
-function KV({ k, v }: { k: string; v: string }) {
+const KV = ({ k, v }: { k: string; v: string }): JSX.Element => {
   return (
     <div className="rounded-md border p-3">
       <p className="text-xs text-muted-foreground">{k}</p>
       <p className="text-sm font-medium break-all">{v}</p>
     </div>
   );
-}
+};

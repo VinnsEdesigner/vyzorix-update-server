@@ -57,8 +57,7 @@ function deriveHealth(
   return "online";
 }
 
-// eslint-disable-next-line func-style
-function DashboardPage() {
+const DashboardPage = (): JSX.Element => {
   const { serverUrl, deviceId, thresholds, dashboardToken } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
   const stream = useStream();
@@ -316,10 +315,9 @@ function DashboardPage() {
       )}
     </div>
   );
-}
+};
 
-// eslint-disable-next-line func-style
-function Metric({
+const Metric = ({
   icon: Icon,
   label,
   value,
@@ -329,7 +327,7 @@ function Metric({
   label: string;
   value: string;
   hint?: string;
-}) {
+}): JSX.Element => {
   return (
     <div className="rounded-md border p-3">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -340,33 +338,30 @@ function Metric({
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
-}
+};
 
-// eslint-disable-next-line func-style
-function KV({ k, v }: { k: string; v: string }) {
+const KV = ({ k, v }: { k: string; v: string }): JSX.Element => {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-xs text-muted-foreground">{k}</span>
       <span className="font-mono text-xs">{v}</span>
     </div>
   );
-}
+};
 
 // Format device class for display (e.g., "nokia_c22" -> "Nokia C22")
-// eslint-disable-next-line func-style
-function formatDeviceClass(deviceClass: string | undefined): string {
+const formatDeviceClass = (deviceClass: string | undefined): string => {
   if (!deviceClass) return "Unknown Device";
   return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
+};
 
-// eslint-disable-next-line func-style
-function ChartShell({
+const ChartShell = ({
   data,
   thresholds,
 }: {
   data: { i: number; v: number }[];
   thresholds?: number[];
-}) {
+}): JSX.Element => {
   if (data.length === 0) {
     return (
       <div className="flex h-48 items-center justify-center text-xs text-muted-foreground">
@@ -397,4 +392,4 @@ function ChartShell({
       </ResponsiveContainer>
     </div>
   );
-}
+};

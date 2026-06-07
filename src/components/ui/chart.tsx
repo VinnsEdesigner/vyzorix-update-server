@@ -23,7 +23,6 @@ interface ChartContextProps {
 
 const ChartContext = React.createContext<ChartContextProps | null>(null);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 // eslint-disable-next-line func-style
 function useChart(): ChartContextProps {
   const context = React.useContext(ChartContext);

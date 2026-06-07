@@ -21,8 +21,7 @@ function apply(theme: Theme): void {
   root.classList.toggle("dark", dark);
 }
 
-// eslint-disable-next-line func-style
-function AppearanceSettings() {
+const AppearanceSettings = (): JSX.Element => {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
       return (localStorage.getItem(KEY) as Theme) || "system";
@@ -64,10 +63,9 @@ function AppearanceSettings() {
       </CardContent>
     </Card>
   );
-}
+};
 
-// eslint-disable-next-line func-style
-function ThemeBtn({
+const ThemeBtn = ({
   current,
   value,
   label,
@@ -79,7 +77,7 @@ function ThemeBtn({
   label: string;
   icon: typeof Monitor;
   onClick: (v: Theme) => void;
-}) {
+}): JSX.Element => {
   return (
     <Button
       variant={current === value ? "default" : "outline"}
@@ -90,4 +88,4 @@ function ThemeBtn({
       <span className="text-xs">{label}</span>
     </Button>
   );
-}
+};
