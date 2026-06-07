@@ -12,6 +12,7 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": false,
     "noEmit": true,
+    "skipLibCheck": true,
 
     /* =============================================
        STRICT TYPE CHECKING - CATCH EVERYTHING

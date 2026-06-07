@@ -40,7 +40,6 @@ const tip = {
   fontSize: 12,
 };
 
-// eslint-disable-next-line func-style
 function deriveHealth(
   online: boolean,
   riskScore: number | undefined,
@@ -53,13 +52,11 @@ function deriveHealth(
   return "online";
 }
 
-// eslint-disable-next-line func-style
 function formatDeviceClass(deviceClass: string | undefined): string {
   if (!deviceClass) return "Unknown Device";
   return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// eslint-disable-next-line func-style
 function getRiskHint(
   riskScore: number | undefined,
   thresholds: { riskCrit: number; riskWarn: number },
@@ -70,7 +67,6 @@ function getRiskHint(
   return "Healthy";
 }
 
-// eslint-disable-next-line func-style
 function getThermalHint(
   thermalTemp: number | undefined,
   thresholds: { thermalCrit: number; thermalWarn: number },
@@ -81,13 +77,11 @@ function getThermalHint(
   return "NONE";
 }
 
-// eslint-disable-next-line func-style
 function getSpeakerValue(speakerOn: boolean | undefined | null): string {
   if (speakerOn == null) return "—";
   return speakerOn ? "FORCED" : "OFF";
 }
 
-// eslint-disable-next-line func-style
 function Metric({
   icon: Icon,
   label,
@@ -111,7 +105,6 @@ function Metric({
   );
 }
 
-// eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }): JSX.Element {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -121,7 +114,6 @@ function KV({ k, v }: { k: string; v: string }): JSX.Element {
   );
 }
 
-// eslint-disable-next-line func-style
 function ChartShell({
   data,
   thresholds,
@@ -161,7 +153,6 @@ function ChartShell({
   );
 }
 
-// eslint-disable-next-line func-style
 function DashboardPage(): JSX.Element {
   const { serverUrl, deviceId, thresholds, dashboardToken } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);

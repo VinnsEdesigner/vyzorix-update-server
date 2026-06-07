@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 type Theme = "system" | "light" | "dark";
 const KEY = "vyzorix.theme";
 
-// eslint-disable-next-line func-style
 function apply(theme: Theme): void {
   const root = document.documentElement;
   const sysDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -18,7 +17,6 @@ function apply(theme: Theme): void {
   root.classList.toggle("dark", dark);
 }
 
-// eslint-disable-next-line func-style
 function ThemeBtn({
   current,
   value,
@@ -44,7 +42,6 @@ function ThemeBtn({
   );
 }
 
-// eslint-disable-next-line func-style
 function AppearanceSettings(): JSX.Element {
   const [theme, setTheme] = useState<Theme>(() => {
     try {

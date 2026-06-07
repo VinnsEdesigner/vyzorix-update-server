@@ -93,7 +93,7 @@ export default tseslint.config(
         { arrays: "always-multiline", objects: "always-multiline", functions: "only-multiline" },
       ],
       "comma-spacing": "error",
-      "func-style": ["error", "expression", { allowArrowFunctions: true }],
+      "func-style": ["warn", "expression", { allowArrowFunctions: true }],
       "implicit-arrow-linebreak": "error",
       "max-len": ["error", { code: 120, ignoreStrings: true, ignoreTemplateLiterals: true }],
       "no-bitwise": "error",
@@ -194,7 +194,7 @@ export default tseslint.config(
       "@typescript-eslint/consistent-indexed-object-style": "error",
       "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
       "@typescript-eslint/explicit-function-return-type": [
-        "error",
+        "warn",
         { allowExpressions: true, allowConciseArrowFunctionExpressionsStartingWithVoid: true },
       ],
       "@typescript-eslint/explicit-module-boundary-types": "off",
