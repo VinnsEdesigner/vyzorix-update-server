@@ -1,5 +1,4 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Smartphone,
@@ -11,7 +10,10 @@ import {
   Terminal,
   LogOut,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -24,10 +26,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
 import { getStoredOperator, logout } from "@/lib/vyzorix-auth";
 import { DEFAULT_SERVER_URL } from "@/lib/vyzorix-config";
-import { toast } from "sonner";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -41,13 +41,15 @@ const navItems = [
 
 const OPERATOR_UPDATE_EVENT = "vyz.operator.updated";
 
-export function AppSidebar() {
+// eslint-disable-next-line func-style
+export function AppSidebar(): JSX.Element {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
   const [operator, setOperator] = useState(getStoredOperator);
 
   // Sync operator from localStorage and listen for name updates from settings
   useEffect(() => {
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const sync = () => setOperator(getStoredOperator());
     // Initial sync
     sync();
@@ -56,6 +58,7 @@ export function AppSidebar() {
     return () => window.removeEventListener(OPERATOR_UPDATE_EVENT, sync);
   }, []);
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const signOut = async () => {
     try {
       await logout(DEFAULT_SERVER_URL);

@@ -16,14 +16,14 @@ import (
 
 // UpgraderFactory creates and configures WebSocket upgraders with consistent settings.
 type UpgraderFactory struct {
-	originValidator *security.OriginValidator
+	originValidator  *security.OriginValidator
 	handshakeTimeout time.Duration
 }
 
 // NewUpgraderFactory creates a new UpgraderFactory with the given origin validator.
 func NewUpgraderFactory(originValidator *security.OriginValidator) *UpgraderFactory {
 	return &UpgraderFactory{
-		originValidator: originValidator,
+		originValidator:  originValidator,
 		handshakeTimeout: 10 * time.Second,
 	}
 }
@@ -37,7 +37,7 @@ func (f *UpgraderFactory) SetHandshakeTimeout(timeout time.Duration) *UpgraderFa
 // Create returns a configured websocket.Upgrader.
 func (f *UpgraderFactory) Create() websocket.Upgrader {
 	return websocket.Upgrader{
-		CheckOrigin:     f.originValidator.CheckOrigin(),
+		CheckOrigin:      f.originValidator.CheckOrigin(),
 		HandshakeTimeout: f.handshakeTimeout,
 	}
 }
@@ -45,11 +45,11 @@ func (f *UpgraderFactory) Create() websocket.Upgrader {
 // WebSocketHandler manages WebSocket upgrade and client lifecycle.
 type WebSocketHandler struct {
 	log             *slog.Logger
-	config          config.Config
 	hub             *hub.Hub
-	hmac            security.Verifier
-	upgrader        websocket.Upgrader
 	originValidator *security.OriginValidator
+	upgrader        websocket.Upgrader
+	hmac            security.Verifier
+	config          config.Config
 }
 
 func NewWebSocketHandler(
@@ -69,7 +69,7 @@ func NewWebSocketHandler(
 		hmac:            hmac,
 		originValidator: originValidator,
 		upgrader: websocket.Upgrader{
-			CheckOrigin:     originValidator.CheckOrigin(),
+			CheckOrigin:      originValidator.CheckOrigin(),
 			HandshakeTimeout: 10 * time.Second,
 		},
 	}
@@ -182,7 +182,9 @@ func (s *WebSocketHandler) DisconnectClient(deviceID string) {
 	client := s.hub.GetClient(deviceID)
 	if client != nil {
 		client.Hub.Unregister(client)
-		_ = client.Conn.Close()
+		if err := client.Conn.Close(); err != nil {
+			s.log.Warn("client close failed", "deviceId", deviceID, "err", err)
+		}
 	}
 }
 
