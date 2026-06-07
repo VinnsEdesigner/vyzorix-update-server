@@ -57,7 +57,6 @@ const sections = [
   },
 ] as const;
 
-// eslint-disable-next-line func-style
 function SettingsOverview() {
   const { serverUrl, deviceId, operator } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
@@ -118,7 +117,6 @@ function SettingsOverview() {
   );
 }
 
-// eslint-disable-next-line func-style
 function KV({ k, v }: { k: string; v: string }) {
   return (
     <div className="rounded-md border p-3">
