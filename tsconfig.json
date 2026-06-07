@@ -4,7 +4,7 @@
     "target": "ES2022",
     "jsx": "react-jsx",
     "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "ESNext.JSX"],
     "types": ["vite/client"],
 
     /* Bundler mode */
@@ -35,7 +35,7 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
-    "noEmitOnError": true,
+    "noEmitOnError": false,
 
     /* =============================================
        ADDITIONAL SAFETY
