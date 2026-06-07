@@ -342,7 +342,8 @@ export function handleOAuthCallback(token: string, _isNew: string): AuthResponse
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+    const payloadBase64 = parts[1]?.replace(/-/g, "+").replace(/_/g, "/") ?? "";
+    const payload = JSON.parse(atob(payloadBase64));
     const operator: Operator = {
       id: payload.oid ?? "",
       email: payload.email ?? "",
@@ -364,7 +365,11 @@ export function handleOAuthCallback(token: string, _isNew: string): AuthResponse
 // ─── Hooks ─────────────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line func-style
-export function useAuth() {
+export function useAuth(): {
+  token: string | null;
+  operator: Operator | null;
+  isAuthenticated: boolean;
+} {
   const token = getToken();
   const operator = getStoredOperator();
 
