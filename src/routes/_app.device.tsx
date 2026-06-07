@@ -28,7 +28,7 @@ function formatDeviceClass(deviceClass: string | undefined): string {
 }
 
 // eslint-disable-next-line func-style
-function DevicePage(): JSX.Element {
+function DevicePage() {
   const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
   const stream = useStream();
   const t = stream.lastTelemetry;
@@ -130,7 +130,7 @@ function DevicePage(): JSX.Element {
 }
 
 // eslint-disable-next-line func-style
-function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }): JSX.Element {
+function RegisterPanel({ deviceStatus }: { deviceStatus: DeviceStatus | null }) {
   const { serverUrl, deviceId } = useVyzorixConfig();
 
   // Load defaults from server status (persisted in DB) instead of localStorage.
