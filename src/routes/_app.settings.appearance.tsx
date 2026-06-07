@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Monitor, Moon, Sun } from "lucide-react";
-import { useEffect, useState, type ReactElement } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +22,7 @@ function apply(theme: Theme): void {
 }
 
 // eslint-disable-next-line func-style
-function AppearanceSettings(): ReactElement {
+function AppearanceSettings() {
   const [theme, setTheme] = useState<Theme>(() => {
     try {
       return (localStorage.getItem(KEY) as Theme) || "system";
@@ -79,7 +79,7 @@ function ThemeBtn({
   label: string;
   icon: typeof Monitor;
   onClick: (v: Theme) => void;
-}): void {
+}) {
   return (
     <Button
       variant={current === value ? "default" : "outline"}
