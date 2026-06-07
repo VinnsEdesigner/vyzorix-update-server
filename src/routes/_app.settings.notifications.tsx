@@ -13,7 +13,6 @@ export const Route = createFileRoute("/_app/settings/notifications")({
   component: NotificationsSettings,
 });
 
-// eslint-disable-next-line func-style
 function NotificationsSettings(): ReactElement {
   const { notificationsEnabled, update, serverUrl } = useVyzorixConfig();
   const serverUrlRef = useRef(serverUrl);
@@ -25,7 +24,6 @@ function NotificationsSettings(): ReactElement {
 
   // Load from server on mount
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const loadFromServer = async () => {
       try {
         const op = await me(serverUrlRef.current);
@@ -40,7 +38,6 @@ function NotificationsSettings(): ReactElement {
     loadFromServer();
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const handleToggle = async (v: boolean) => {
     setEnabled(v);
     setSaving(true);
@@ -59,7 +56,6 @@ function NotificationsSettings(): ReactElement {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const requestBrowser = async () => {
     if (!("Notification" in window)) {
       toast.error("Browser notifications unsupported");
@@ -95,7 +91,6 @@ function NotificationsSettings(): ReactElement {
   );
 }
 
-// eslint-disable-next-line func-style
 function Row({
   label,
   hint,
