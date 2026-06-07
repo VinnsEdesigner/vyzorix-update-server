@@ -10,16 +10,43 @@
     /* Bundler mode */
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": false,
+    "verbatimModuleSyntax": true,
     "noEmit": true,
 
-    /* Linting */
-    "skipLibCheck": true,
+    /* =============================================
+       STRICT TYPE CHECKING - CATCH EVERYTHING
+       ============================================= */
     "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+
+    /* =============================================
+       UNUSED CODE DETECTION
+       ============================================= */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noEmitOnError": true,
+
+    /* =============================================
+       ADDITIONAL SAFETY
+       ============================================= */
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
     "noUncheckedSideEffectImports": true,
+    "exactOptionalPropertyTypes": true,
+    "isolatedModules": true,
+
+    /* Paths */
     "paths": {
       "@/*": ["./src/*"]
     }

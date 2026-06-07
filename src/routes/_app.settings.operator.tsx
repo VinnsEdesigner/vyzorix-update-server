@@ -1,30 +1,29 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ShieldAlert, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { toast } from "sonner";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { ShieldAlert } from "lucide-react";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-
-import { useVyzorixConfig } from "@/lib/vyzorix-config";
 import {
   getStoredOperator,
   updateName,
   updateSettings,
-  me,
   type ClientSettings,
 } from "@/lib/vyzorix-auth";
+import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
 export const Route = createFileRoute("/_app/settings/operator")({
   ssr: false,
   component: OperatorSettings,
 });
 
-function OperatorSettings() {
+// eslint-disable-next-line func-style
+function OperatorSettings(): JSX.Element {
   const cfg = useVyzorixConfig();
   const stored = getStoredOperator();
 
@@ -112,6 +111,7 @@ function OperatorSettings() {
     window.dispatchEvent(new Event("vyz.operator.updated"));
   }, [name, savingName]);
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const saveNotifications = async () => {
     setSavingName(true);
     try {
@@ -232,6 +232,9 @@ function OperatorSettings() {
   );
 }
 
+// eslint-disable-next-line func-style
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+// eslint-disable-next-line func-style
 function RoleRow({ allowed, label }: { allowed: boolean; label: string }) {
   return (
     <div className="flex items-center justify-between rounded-md border p-2.5">

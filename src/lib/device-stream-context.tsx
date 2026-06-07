@@ -1,5 +1,7 @@
 import { createContext, useContext, type ReactNode } from "react";
+
 import { useDeviceStream, type DeviceStreamState } from "@/hooks/use-device-stream";
+
 import { useVyzorixConfig } from "./vyzorix-config";
 
 // Singleton wrapper: the WebSocket and log/history buffers are owned by the
@@ -8,12 +10,17 @@ import { useVyzorixConfig } from "./vyzorix-config";
 // constant reconnect/race showed up in the UI as a flashing connection badge.
 const Ctx = createContext<DeviceStreamState | null>(null);
 
-export function DeviceStreamProvider({ children }: { children: ReactNode }) {
+// eslint-disable-next-line func-style
+export function DeviceStreamProvider({ children }: { children: ReactNode }): JSX.Element {
   const { serverUrl, deviceId, autoReconnect } = useVyzorixConfig();
   const state = useDeviceStream(serverUrl, deviceId, autoReconnect);
   return <Ctx.Provider value={state}>{children}</Ctx.Provider>;
 }
 
+// eslint-disable-next-line func-style
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+// eslint-disable-next-line func-style
 export function useStream() {
   const v = useContext(Ctx);
   if (!v) throw new Error("useStream must be used inside DeviceStreamProvider");

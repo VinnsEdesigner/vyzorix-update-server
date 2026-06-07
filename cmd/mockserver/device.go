@@ -10,11 +10,11 @@ import (
 // registerRequest matches the body schema documented in DEVICE_REGISTRATION.md
 // §3 (POST /v1/device/register).
 type registerRequest struct {
-	DeviceID           string `json:"deviceId"`
-	FirebaseInstallID  string `json:"firebaseInstallId"`
-	FCMToken           string `json:"fcmToken"`
-	AppVersion         string `json:"appVersion"`
-	DeviceClass        string `json:"deviceClass"`
+	DeviceID          string `json:"deviceId"`
+	FirebaseInstallID string `json:"firebaseInstallId"`
+	FCMToken          string `json:"fcmToken"`
+	AppVersion        string `json:"appVersion"`
+	DeviceClass       string `json:"deviceClass"`
 }
 
 type registerResponse struct {
@@ -95,11 +95,10 @@ func (s *server) handleDeviceFCMToken(w http.ResponseWriter, r *http.Request, de
 
 type statusResponse struct {
 	DeviceID    string `json:"deviceId"`
-	Online      bool   `json:"online"`
-	LastSeen    int64  `json:"lastSeen"`
 	AppVersion  string `json:"appVersion"`
 	DeviceClass string `json:"deviceClass"`
-	// commandSecret is INTENTIONALLY OMITTED — see DEVICE_REGISTRATION.md §3.
+	LastSeen    int64  `json:"lastSeen"`
+	Online      bool   `json:"online"`
 }
 
 func (s *server) handleDeviceStatus(w http.ResponseWriter, r *http.Request, deviceID string) {

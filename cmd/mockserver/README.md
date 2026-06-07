@@ -12,6 +12,7 @@ go run ./cmd/mockserver \
 ```
 
 Flags:
+
 - `-addr` (default `:8080`) — listen address.
 - `-data` (default `./cmd/mockserver/testdata`) — directory holding `version.json` and the dummy APK.
 - `-log-level` (default `info`) — `debug` / `info` / `warn` / `error`.
@@ -24,11 +25,11 @@ State is purely in-memory. Restarting the binary forgets every device. This is i
 
 ### Layer 7 (OTA update — per `BUILD_ORDER.md` Layer 7 + `UPDATE_MECHANISM.md`)
 
-| Method | Path | Notes |
-|--------|------|-------|
-| `GET`  | `/api/v1/version`              | Serves `testdata/version.json` verbatim. |
-| `HEAD` | `/api/v1/apk/{filename}`       | Returns `Content-Length` only (used by the device for pre-download size check). |
-| `GET`  | `/api/v1/apk/{filename}`       | Serves the file from `testdata/`. Supports `Range` for resumable downloads. |
+| Method | Path                     | Notes                                                                           |
+| ------ | ------------------------ | ------------------------------------------------------------------------------- |
+| `GET`  | `/api/v1/version`        | Serves `testdata/version.json` verbatim.                                        |
+| `HEAD` | `/api/v1/apk/{filename}` | Returns `Content-Length` only (used by the device for pre-download size check). |
+| `GET`  | `/api/v1/apk/{filename}` | Serves the file from `testdata/`. Supports `Range` for resumable downloads.     |
 
 `version.json` schema (kept in lockstep with `UPDATE_MECHANISM.md`):
 
@@ -45,15 +46,15 @@ State is purely in-memory. Restarting the binary forgets every device. This is i
 
 ### Layer 8 (C2 stack — per `DEVICE_REGISTRATION.md` + `COMMAND_SECURITY.md`)
 
-| Method | Path | Auth | Notes |
-|--------|------|------|-------|
-| `POST` | `/v1/device/register`                | none | Body: `{deviceId, firebaseInstallId, fcmToken, appVersion, deviceClass}`. Returns `{deviceId, commandSecret, registeredAt}`. Idempotent on `(deviceId, firebaseInstallId)`. Returns `409` if the same `deviceId` arrives with a different `firebaseInstallId` (anti-hijack). |
-| `PATCH`| `/v1/device/{id}/fcm-token`          | HMAC | Body: `{fcmToken, nonce, timestamp}`. Updates the FCM token. |
-| `GET`  | `/v1/device/{id}/status`             | none in mock (real server cookie-auths) | Returns last known status frame. **Never returns `commandSecret`.** |
-| `DELETE`| `/v1/device/{id}`                   | HMAC | Force-closes any open WSS stream (with close code `4001`). |
-| `POST` | `/v1/device/{id}/command`            | HMAC | Body: `{command, args, nonce, timestamp, signature}`. Server forwards to the device over WSS if connected, else queues for the next FCM wake. Returns `{queued|sent, dispatchId}`. |
-| `WSS`  | `/v1/device/{id}/stream`             | HMAC handshake header | Bidirectional. Device sends `TelemetryFrame`; server sends `CommandFrame`. Pings every 30s. |
-| `GET`  | `/healthz`                           | none | `200 ok`. Mirrors what UptimeRobot will hit on the real server. |
+| Method   | Path                        | Auth                                    | Notes                                                                                                                                                                                                                                                                        |
+| -------- | --------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `POST`   | `/v1/device/register`       | none                                    | Body: `{deviceId, firebaseInstallId, fcmToken, appVersion, deviceClass}`. Returns `{deviceId, commandSecret, registeredAt}`. Idempotent on `(deviceId, firebaseInstallId)`. Returns `409` if the same `deviceId` arrives with a different `firebaseInstallId` (anti-hijack). |
+| `PATCH`  | `/v1/device/{id}/fcm-token` | HMAC                                    | Body: `{fcmToken, nonce, timestamp}`. Updates the FCM token.                                                                                                                                                                                                                 |
+| `GET`    | `/v1/device/{id}/status`    | none in mock (real server cookie-auths) | Returns last known status frame. **Never returns `commandSecret`.**                                                                                                                                                                                                          |
+| `DELETE` | `/v1/device/{id}`           | HMAC                                    | Force-closes any open WSS stream (with close code `4001`).                                                                                                                                                                                                                   |
+| `POST`   | `/v1/device/{id}/command`   | HMAC                                    | Body: `{command, args, nonce, timestamp, signature}`. Server forwards to the device over WSS if connected, else queues for the next FCM wake. Returns `{queued                                                                                                               | sent, dispatchId}`. |
+| `WSS`    | `/v1/device/{id}/stream`    | HMAC handshake header                   | Bidirectional. Device sends `TelemetryFrame`; server sends `CommandFrame`. Pings every 30s.                                                                                                                                                                                  |
+| `GET`    | `/healthz`                  | none                                    | `200 ok`. Mirrors what UptimeRobot will hit on the real server.                                                                                                                                                                                                              |
 
 ### HMAC scheme
 
