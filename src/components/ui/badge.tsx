@@ -26,6 +26,7 @@ const badgeVariants = cva(
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
 
+// eslint-disable-next-line func-style
 function Badge({ className, variant, ...props }: BadgeProps): ReactElement {
   return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
 }

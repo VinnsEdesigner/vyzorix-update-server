@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 
 import { cn } from "@/lib/utils";
 
+// eslint-disable-next-line func-style
 export function Spinner({
   className,
   size = 16,
