@@ -175,14 +175,14 @@ All commands are HMAC-SHA256 signed. See COMMAND_SECURITY.md for signing specifi
 
 | Command Action | Parameters | Natively Allowed | Non-Root Bypass | HMAC Signed |
 |----------------|------------|------------------|-----------------|-------------|
-| `FORCE_SPEAKER` | None | Yes | `MODE_IN_COMMUNICATION` + `isSpeakerphoneOn=true`; 500ms reassertion loop via AdaptiveSamplingController | ✅ |
-| `RESET_AUDIO_HAL` | None | No (direct shell blocked) | Soft HAL reset: cycles BT streams + sub-audible micro-burst under `USAGE_VOICE_COMMUNICATION` to force HAL re-probe | ✅ |
-| `TOGGLE_CAPTURE` | `active` (boolean) | Yes | Starts/stops `AudioRecord` read loops on active MediaProjection thread pool | ✅ |
-| `REINIT_PROJECTION` | None | No (background activity blocked) | High-Priority `fullScreenIntent` notification heads-up → immediately automated by Accessibility engine (<100ms) | ✅ |
-| `DUMP_FLIGHT_DATA` | None | Yes | Gathers local metrics → JSON → postback payload immediately | ✅ |
-| `UPLOAD_CRASH_ZIP` | None | Yes | `CrashSnapshotExporter` zips offline SQLite logs → securely POSTs binary block | ✅ |
-| `SET_LOG_LEVEL` | `level` (string) | Yes | Dynamically modifies `Logger.minLogLevel` in memory | ✅ |
-| `WAKE_UP_UPDATER` | None | Yes | Overrides WorkManager delays → runs `UpdateChecker` instantly | ✅ |
+| `FORCE_SPEAKER` | None | Yes | `MODE_IN_COMMUNICATION` + `isSpeakerphoneOn=true`; 500ms reassertion loop via AdaptiveSamplingController | [OK] |
+| `RESET_AUDIO_HAL` | None | No (direct shell blocked) | Soft HAL reset: cycles BT streams + sub-audible micro-burst under `USAGE_VOICE_COMMUNICATION` to force HAL re-probe | [OK] |
+| `TOGGLE_CAPTURE` | `active` (boolean) | Yes | Starts/stops `AudioRecord` read loops on active MediaProjection thread pool | [OK] |
+| `REINIT_PROJECTION` | None | No (background activity blocked) | High-Priority `fullScreenIntent` notification heads-up → immediately automated by Accessibility engine (<100ms) | [OK] |
+| `DUMP_FLIGHT_DATA` | None | Yes | Gathers local metrics → JSON → postback payload immediately | [OK] |
+| `UPLOAD_CRASH_ZIP` | None | Yes | `CrashSnapshotExporter` zips offline SQLite logs → securely POSTs binary block | [OK] |
+| `SET_LOG_LEVEL` | `level` (string) | Yes | Dynamically modifies `Logger.minLogLevel` in memory | [OK] |
+| `WAKE_UP_UPDATER` | None | Yes | Overrides WorkManager delays → runs `UpdateChecker` instantly | [OK] |
 
 ## 3.2 WebSocket Command Frame (JSON Contract)
 
