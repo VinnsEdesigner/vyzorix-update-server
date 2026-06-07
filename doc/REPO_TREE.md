@@ -361,6 +361,6 @@ vyzorix-update-server/doc/
 
 | Test Suite | Count | Status |
 |------------|-------|--------|
-| Go Tests | 12 packages | ✅ All passing |
-| Vitest Tests | 79 tests | ✅ All passing |
-| Build | - | ✅ Successful |
+| Go Tests | 12 packages | [OK] All passing |
+| Vitest Tests | 79 tests | [OK] All passing |
+| Build | - | [OK] Successful |
