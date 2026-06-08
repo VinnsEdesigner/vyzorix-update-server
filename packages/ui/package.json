@@ -8,9 +8,6 @@
     ".": "./src/index.ts",
     "./utils": "./src/lib/utils.ts"
   },
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-  },
   "devDependencies": {
     "typescript": "^5.0.0"
   },
