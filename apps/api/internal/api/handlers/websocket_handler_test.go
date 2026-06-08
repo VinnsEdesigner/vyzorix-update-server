@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/config"
-	"github.com/VinnsEdesigner/vyzorix-update-server/security"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/security"
 )
 
 func TestUpgraderFactory_Create(t *testing.T) {
