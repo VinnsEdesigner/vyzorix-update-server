@@ -16,24 +16,24 @@ export default defineConfig({
     server: {
       proxy: {
         // Proxy API and auth endpoints to Go backend for unified dev experience
-        '/v1': {
-          target: 'http://localhost:3000',
+        "/v1": {
+          target: "http://localhost:3000",
           changeOrigin: true,
         },
-        '/api': {
-          target: 'http://localhost:3000',
+        "/api": {
+          target: "http://localhost:3000",
           changeOrigin: true,
         },
-        '/health': {
-          target: 'http://localhost:3000',
+        "/health": {
+          target: "http://localhost:3000",
           changeOrigin: true,
         },
-        '/healthz': {
-          target: 'http://localhost:3000',
+        "/healthz": {
+          target: "http://localhost:3000",
           changeOrigin: true,
         },
-        '/bin': {
-          target: 'http://localhost:3000',
+        "/bin": {
+          target: "http://localhost:3000",
           changeOrigin: true,
         },
       },
