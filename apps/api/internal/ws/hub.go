@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
-	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
 )
 
 // Hub manages WebSocket connections and routes messages between devices and dashboard.

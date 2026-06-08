@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 )
 
 func TestDevicesPaginated_Basic(t *testing.T) {

@@ -6,10 +6,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/config"
-	"github.com/VinnsEdesigner/vyzorix-update-server/hub"
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
-	"github.com/VinnsEdesigner/vyzorix-update-server/security"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -48,7 +49,7 @@ type WebSocketHandler struct {
 	hub             *hub.Hub
 	originValidator *security.OriginValidator
 	upgrader        websocket.Upgrader
-	hmac            security.Verifier
+	hmac            hmac.Verifier
 	config          config.Config
 }
 
@@ -56,7 +57,7 @@ func NewWebSocketHandler(
 	log *slog.Logger,
 	cfg config.Config,
 	h *hub.Hub,
-	hmac security.Verifier,
+	hmac hmac.Verifier,
 ) *WebSocketHandler {
 	// Initialize origin validator
 	originValidator := security.NewOriginValidator(cfg.AllowedOrigins)
@@ -81,7 +82,7 @@ func NewWebSocketHandlerWithValidator(
 	log *slog.Logger,
 	cfg config.Config,
 	h *hub.Hub,
-	hmac security.Verifier,
+	hmac hmac.Verifier,
 	originValidator *security.OriginValidator,
 ) *WebSocketHandler {
 	// Use the UpgraderFactory for consistent configuration
@@ -102,7 +103,7 @@ func NewWebSocketHandlerWithFactory(
 	log *slog.Logger,
 	cfg config.Config,
 	h *hub.Hub,
-	hmac security.Verifier,
+	hmac hmac.Verifier,
 	factory *UpgraderFactory,
 ) *WebSocketHandler {
 	return &WebSocketHandler{
