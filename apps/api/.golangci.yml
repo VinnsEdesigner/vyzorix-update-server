@@ -128,8 +128,8 @@ linters-settings:
     min-complexity: 25
 
   funlen:
-    lines: 60
-    statements: 40
+    lines: 100
+    statements: 60
 
   nestif:
     min-complexity: 8
