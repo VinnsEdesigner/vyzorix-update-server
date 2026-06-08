@@ -19,6 +19,9 @@ concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   # ============================================================
   # Build & Package
@@ -48,31 +51,36 @@ jobs:
         with:
           go-version: "1.22"
           cache: true
+          cache-dependency-path: apps/api/go.sum
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: package-lock.json
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install frontend dependencies
-        run: npm ci
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build Go server
         run: |
-          CGO_ENABLED=1 go build -ldflags="-s -w -X main.Version=${{ steps.version.outputs.version }}" -o bin/server .
+          cd apps/api
+          go build -ldflags="-s -w -X main.Version=${{ steps.version.outputs.version }}" -o bin/server .
 
       - name: Build frontend
-        run: npm run build
+        run: pnpm --filter @vyzorix/web build
 
       - name: Validate APK payloads (if any)
         run: |
           found=0
-          for apk in bin/*.apk; do
+          for apk in apps/api/bin/*.apk; do
             [ -e "$apk" ] || continue
             found=1
-            ./scripts/validate_apk.sh "$apk" || true
+            ./apps/api/scripts/validate_apk.sh "$apk" || true
           done
           if [ "$found" -eq 0 ]; then echo "No APK payloads to validate."; fi
 
@@ -81,8 +89,8 @@ jobs:
         with:
           name: build-${{ github.sha }}
           path: |
-            bin/server
-            dist/
+            apps/api/bin/server
+            apps/web/dist/
           retention-days: 7
 
   # ============================================================
@@ -176,8 +184,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            bin/server
-            dist/**
+            apps/api/bin/server
+            apps/web/dist/**
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
