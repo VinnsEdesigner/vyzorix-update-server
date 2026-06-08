@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 )
 
 func TestStorage_UpdateOperatorClientSettings(t *testing.T) {

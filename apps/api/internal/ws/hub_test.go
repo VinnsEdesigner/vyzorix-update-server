@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 )
 
 func TestNew(t *testing.T) {

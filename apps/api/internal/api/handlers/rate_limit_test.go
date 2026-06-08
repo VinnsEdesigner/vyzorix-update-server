@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/gin-gonic/gin"
 )
 

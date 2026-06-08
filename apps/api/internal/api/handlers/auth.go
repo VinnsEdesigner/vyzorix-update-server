@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/config"
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
-	"github.com/VinnsEdesigner/vyzorix-update-server/security"
-	"github.com/VinnsEdesigner/vyzorix-update-server/services"
-	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )

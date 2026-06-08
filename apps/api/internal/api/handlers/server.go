@@ -11,13 +11,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/config"
-	"github.com/VinnsEdesigner/vyzorix-update-server/hub"
-	"github.com/VinnsEdesigner/vyzorix-update-server/middleware"
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
-	"github.com/VinnsEdesigner/vyzorix-update-server/security"
-	"github.com/VinnsEdesigner/vyzorix-update-server/services/fcm"
-	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/fcm"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
+	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -32,15 +33,15 @@ type Server struct {
 	jwtCtrl         *AuthController
 	originValidator *security.OriginValidator
 	upgrader        websocket.Upgrader
-	HMAC            security.Verifier
+	HMAC            hmac.Verifier
 	Config          config.Config
 }
 
 func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub, notifier fcm.Notifier) *Server {
 	s := &Server{Log: log, Config: cfg, Store: st, Hub: h, Notifier: notifier}
-	s.HMAC = security.Verifier{
+	s.HMAC = hmac.Verifier{
 		Window: cfg.HMACWindow,
-		Nonces: security.NewNonceCache(cfg.HMACWindow),
+		Nonces: hmac.NewNonceCache(cfg.HMACWindow),
 		Secret: func(id string) (string, bool) { return st.Secret(context.Background(), id) },
 	}
 	s.Limiter = middleware.NewRateLimiter(100, time.Minute)
@@ -431,7 +432,7 @@ func (s *Server) requireHMAC() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		body, err := s.HMAC.ReadAndVerifyHTTP(c.Request)
 		if err != nil {
-			if !s.Config.EnforceHMAC && errors.Is(err, security.ErrMissing) {
+			if !s.Config.EnforceHMAC && errors.Is(err, hmac.ErrMissing) {
 				c.Next()
 				return
 			}

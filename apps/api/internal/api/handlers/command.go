@@ -6,12 +6,12 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/config"
-	"github.com/VinnsEdesigner/vyzorix-update-server/hub"
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
-	"github.com/VinnsEdesigner/vyzorix-update-server/security"
-	"github.com/VinnsEdesigner/vyzorix-update-server/services/fcm"
-	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/fcm"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
+	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +22,7 @@ type CommandController struct {
 	log      *slog.Logger
 	store    *storage.Store
 	hub      *hub.Hub
-	hmac     security.Verifier
+	hmac     hmac.Verifier
 	config   config.Config
 }
 
@@ -32,7 +32,7 @@ func NewCommandController(
 	st *storage.Store,
 	h *hub.Hub,
 	notifier fcm.Notifier,
-	hmac security.Verifier,
+	hmac hmac.Verifier,
 ) *CommandController {
 	return &CommandController{
 		log:      log,

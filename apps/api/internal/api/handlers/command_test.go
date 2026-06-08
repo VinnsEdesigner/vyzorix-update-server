@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 )
 
 func TestCommandController_CommandRequest_JSON(t *testing.T) {
