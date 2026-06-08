@@ -92,9 +92,9 @@ func (c *Client) SendSilentWake(ctx context.Context, wake SilentWake) error {
 	result, err := client.Send(ctx, msg)
 	if err != nil {
 		// Log as warning, not error - FCM failures shouldn't crash the service
-		c.log.Warn("fcm send failed (graceful degradation)", 
-			"deviceId", wake.DeviceID, 
-			"dispatchId", wake.DispatchID, 
+		c.log.Warn("fcm send failed (graceful degradation)",
+			"deviceId", wake.DeviceID,
+			"dispatchId", wake.DispatchID,
 			"err", err)
 		return fmt.Errorf("fcm send: %w", err)
 	}

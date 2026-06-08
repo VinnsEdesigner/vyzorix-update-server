@@ -17,11 +17,11 @@ func (m *mockNotifier) SendSilentWake(ctx context.Context, wake SilentWake) erro
 
 func TestSafeNotifier_NilNotifier(t *testing.T) {
 	sn := &SafeNotifier{Notifier: nil}
-	
+
 	err := sn.SendSilentWake(context.Background(), SilentWake{
 		DeviceID: "test-device",
 	})
-	
+
 	if err != nil {
 		t.Errorf("SafeNotifier with nil notifier should return nil, got %v", err)
 	}
@@ -29,11 +29,11 @@ func TestSafeNotifier_NilNotifier(t *testing.T) {
 
 func TestSafeNotifier_DisabledError(t *testing.T) {
 	sn := &SafeNotifier{Notifier: &mockNotifier{err: ErrDisabled}}
-	
+
 	err := sn.SendSilentWake(context.Background(), SilentWake{
 		DeviceID: "test-device",
 	})
-	
+
 	if err != nil {
 		t.Errorf("SafeNotifier should swallow ErrDisabled, got %v", err)
 	}
@@ -41,11 +41,11 @@ func TestSafeNotifier_DisabledError(t *testing.T) {
 
 func TestSafeNotifier_OtherError(t *testing.T) {
 	sn := &SafeNotifier{Notifier: &mockNotifier{err: errors.New("network error")}}
-	
+
 	err := sn.SendSilentWake(context.Background(), SilentWake{
 		DeviceID: "test-device",
 	})
-	
+
 	// SafeNotifier should swallow all errors for graceful degradation
 	if err != nil {
 		t.Errorf("SafeNotifier should swallow errors, got %v", err)
@@ -54,11 +54,11 @@ func TestSafeNotifier_OtherError(t *testing.T) {
 
 func TestSafeNotifier_Success(t *testing.T) {
 	sn := &SafeNotifier{Notifier: &mockNotifier{err: nil}}
-	
+
 	err := sn.SendSilentWake(context.Background(), SilentWake{
 		DeviceID: "test-device",
 	})
-	
+
 	if err != nil {
 		t.Errorf("SafeNotifier should return nil on success, got %v", err)
 	}
