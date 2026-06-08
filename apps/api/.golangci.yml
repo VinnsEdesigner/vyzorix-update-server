@@ -1,14 +1,118 @@
 # =============================================
 # VYZORIX UPDATE SERVER - GO LINTING CONFIG
+# Aggressive Linters - Enterprise Grade
 # =============================================
 
-# Linters to run - essential linters only
+run:
+  timeout: 15m
+  tests: true
+  modules-download-mode: readonly
+  go: "1.24"
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new-from-rev: HEAD~1
+
+  exclude-files:
+    - ".*_test\\.go$"
+    - ".*_mock\\.go$"
+    - ".*_fake\\.go$"
+
+  exclude-dirs:
+    - vendor
+    - "\\.git"
+
+# =============================================
+# LINTERS - All aggressive linters enabled
+# =============================================
 linters:
   disable-all: true
   enable:
-    # Code quality (relaxed)
-    - unused
+    # Error handling (critical)
+    - errcheck
+    - errorlint
+    - err113
+    - errname
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - rowserrcheck
+    - sqlclosecheck
 
+    # Code quality
+    - unused
+    - staticcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - copyloopvar
+    - predeclared
+
+    # Style & formatting
+    - gofmt
+    - gofumpt
+    - goimports
+    # - goheader  # Disabled - config issues
+    - godot
+    - misspell
+    - revive
+    - stylecheck
+    - gci
+    - decorder
+
+    # Complexity
+    - gocyclo
+    - funlen
+    - nestif
+    - maintidx
+
+    # Security
+    - gosec
+    - bodyclose
+
+    # Best practices
+    - exhaustive
+    - exhaustruct
+    - iface
+    - importas
+    - noctx
+    - contextcheck
+    - containedctx
+    - asciicheck
+    - bidichk
+    - dupword
+
+    # Naming & conventions
+    - godox
+    - goprintffuncname
+    - errchkjson
+    - perfsprint
+
+    # Testing
+    - paralleltest
+    - testableexamples
+    - testpackage
+    - testifylint
+
+    # Performance
+    - prealloc
+    - mirror
+    - nakedret
+
+    # Imports
+    - depguard
+    - gomoddirectives
+    - gomodguard
+
+    # Logging
+    - loggercheck
+    - sloglint
+
+# =============================================
+# LINTER SETTINGS
+# =============================================
 linters-settings:
   errcheck:
     check-type-assertions: true
@@ -20,21 +124,60 @@ linters-settings:
       - shadow
       - unusedwrite
 
-issues:
-  exclude-use-default: true
-  max-issues-per-linter: 0
-  max-same-issues: 0
+  gocyclo:
+    min-complexity: 25
 
-run:
-  timeout: 10m
-  tests: true
-  modules-download-mode: readonly
-  go: "1.24"
-  skip-dirs:
-    - vendor
-  skip-files:
-    - ".*_test.go"
-  build-tags:
-    - ""
-  typecheck:
-    enabled: false
+  funlen:
+    lines: 60
+    statements: 40
+
+  nestif:
+    min-complexity: 8
+
+  goerr113:
+    disabled: false
+
+  errname:
+    disabled: false
+
+  godox:
+    check-type: true
+
+  revives:
+    rules:
+      - name: var-naming
+        disabled: true
+      - name: package-comments
+        disabled: true
+      - name: unexported-naming
+        disabled: true
+
+  stylecheck:
+    checks:
+      - "all"
+      - "-ST1000"
+
+  decorder:
+    disable-order: true
+
+  goimports:
+    local-prefixes: "github.com/VinnsEdesigner/vyzorix"
+
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/VinnsEdesigner/vyzorix)
+
+  paralleltest:
+    max-parallel: 4
+
+  exhaustive:
+    default-signifies-exhaustive: true
+
+  loggercheck:
+    disabled: false
+
+  gosec:
+    excludes:
+      - G104
