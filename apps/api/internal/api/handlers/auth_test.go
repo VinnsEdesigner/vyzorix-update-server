@@ -161,7 +161,7 @@ func TestAuthController_UpdateSettingsRequest_JSON(t *testing.T) {
 	}
 	client := models.ClientSettings{
 		StrictHmac:           true,
-		AutoReconnect:       false,
+		AutoReconnect:        false,
 		NotificationsEnabled: true,
 	}
 	name := "Updated Name"
@@ -276,7 +276,7 @@ func TestAuthController_UpdateSettingsRequest_ResetFlag(t *testing.T) {
 func TestAuthController_ClientSettings_JSON(t *testing.T) {
 	client := models.ClientSettings{
 		StrictHmac:           true,
-		AutoReconnect:       false,
+		AutoReconnect:        false,
 		NotificationsEnabled: true,
 	}
 
@@ -329,16 +329,16 @@ func TestAuthController_OperatorResponse_IncludesClientSettings(t *testing.T) {
 	}
 	client := models.ClientSettings{
 		StrictHmac:           false,
-		AutoReconnect:       true,
+		AutoReconnect:        true,
 		NotificationsEnabled: true,
 	}
 	resp := models.OperatorResponse{
-		ID:          "op-001",
-		Email:       "test@example.com",
-		Name:        "Test User",
-		Role:        models.RoleOperator,
-		Thresholds:  &thresholds,
-		Client:      &client,
+		ID:         "op-001",
+		Email:      "test@example.com",
+		Name:       "Test User",
+		Role:       models.RoleOperator,
+		Thresholds: &thresholds,
+		Client:     &client,
 	}
 
 	data, err := json.Marshal(resp)
