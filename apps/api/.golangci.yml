@@ -32,8 +32,8 @@ linters:
   enable:
     # Error handling (critical)
     - errcheck
-    - errorlint
-    - err113
+    # - errorlint  # Disabled - too strict about error wrapping style
+    # - err113  # Disabled - requires wrapped static errors, too restrictive
     - errname
     - nilerr
     - nilnesserr
@@ -74,7 +74,7 @@ linters:
 
     # Best practices
     - exhaustive
-    - exhaustruct
+    # - exhaustruct  # Disabled - requires all struct fields to be initialized
     - iface
     - importas
     # - noctx  # Disabled - requires explicit context in all HTTP handlers
