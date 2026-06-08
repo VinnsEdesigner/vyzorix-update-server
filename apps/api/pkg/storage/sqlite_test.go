@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/models"
 )
 
 func TestOpen_createsDatabase(t *testing.T) {
