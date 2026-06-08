@@ -445,12 +445,12 @@ func TestLoad_DefaultFrontendURL(t *testing.T) {
 
 func TestConfig_HelperMethods(t *testing.T) {
 	cfg := Config{
-		Env:        "test",
+		Env:         "test",
 		EnforceHMAC: true,
-		DataDir:    "/data",
-		BinDir:     "/bin",
-		PublicDir:  "/public",
-		BaseURL:    "https://example.com",
+		DataDir:     "/data",
+		BinDir:      "/bin",
+		PublicDir:   "/public",
+		BaseURL:     "https://example.com",
 	}
 
 	if !cfg.EnforceHMAC {

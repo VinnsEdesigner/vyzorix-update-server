@@ -61,7 +61,7 @@ func TestStorage_UpdateOperatorClientSettings(t *testing.T) {
 	// Update again with different values
 	client2 := models.ClientSettings{
 		StrictHmac:           false,
-		AutoReconnect:       true,
+		AutoReconnect:        true,
 		NotificationsEnabled: true,
 	}
 	err = store.UpdateOperatorClientSettings(ctx, op.ID, client2)
