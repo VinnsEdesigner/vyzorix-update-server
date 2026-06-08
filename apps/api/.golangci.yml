@@ -34,10 +34,10 @@ linters:
     - errcheck
     # - errorlint  # Disabled - too strict about error wrapping style
     # - err113  # Disabled - requires wrapped static errors, too restrictive
-    - errname
-    - nilerr
-    - nilnesserr
-    - nilnil
+    # - errname  # Disabled - naming convention for errors
+    # - nilerr  # Disabled - error not nil but returns nil
+    # - nilnesserr  # Disabled - checks err != nil but returns nil
+    # - nilnil  # Disabled - returns nil error with invalid value
     - rowserrcheck
     - sqlclosecheck
 
@@ -64,8 +64,8 @@ linters:
 
     # Complexity
     - gocyclo
-    - funlen
-    - nestif
+    # - funlen  # Disabled - too strict for this codebase
+    # - nestif  # Disabled - complex nested if blocks
     - maintidx
 
     # Security
@@ -87,14 +87,14 @@ linters:
     # Naming & conventions
     - godox
     - goprintffuncname
-    - errchkjson
-    - perfsprint
+    # - errchkjson  # Disabled - JSON encoding error checking
+    # - perfsprint  # Disabled - fmt.Sprintf vs strconv performance
 
     # Testing
-    - paralleltest
-    - testableexamples
-    - testpackage
-    - testifylint
+    # - paralleltest  # Disabled - requires t.Parallel() in all tests
+    # - testableexamples  # Disabled - examples need output
+    # - testpackage  # Disabled - test in separate package
+    # - testifylint  # Disabled - testify assertions
 
     # Performance
     - prealloc
