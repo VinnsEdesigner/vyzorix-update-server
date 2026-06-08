@@ -1,3 +1,4 @@
+// Package config provides configuration loading from environment variables.
 package config
 
 import (
@@ -8,6 +9,7 @@ import (
 	"time"
 )
 
+// Config holds all application configuration loaded from environment variables.
 type Config struct {
 	GoogleOAuthClientSecret  string
 	JWTSecret                string
@@ -34,6 +36,7 @@ type Config struct {
 	EnforceHMAC              bool
 }
 
+// Load reads configuration from environment variables and returns a Config struct.
 func Load() (Config, error) {
 	jwtDuration := 7 * 24 * time.Hour // default 7 days
 	if v := os.Getenv("JWT_DURATION_HOURS"); v != "" {
