@@ -11,12 +11,12 @@
 To implement these protection mechanisms across your development workspace without generating architectural debt, decouple your code into this specialized, scannable **11-file blueprint**:
 
 ```text
-myapp/
+vyzorix-update-server/
 ├── go.mod                         # Go dependency tracking module
 ├── main.go                        # Application bootstrapper, WAL engine connection lifecycle, and async daemons
 ├── config/
 │   └── env.go                     # Environment parsing configuration & secure "Read-and-Burn" variable cleaner
-├── database/
+├── storage/
 │   └── sqlite.go                  # SQLite WAL concurrency optimizer and connection pool limits
 └── security/
     ├── errors.go                  # Unified structural JSON security panic recovery outputs
@@ -64,7 +64,7 @@ Add the configuration link straight inside your application description manifest
 
 ---
 
-## 🛠️ FULL ENGINE SOURCE SPECS
+##  FULL ENGINE SOURCE SPECS
 
 ### 1. `config/env.go`
 
@@ -109,7 +109,7 @@ func getEnv(key, fallback string) string {
 
 ```
 
-### 2. `database/sqlite.go`
+### 2. `storage/sqlite.go`
 
 > **Play 6 Fix:** Locks connection pooling bounds (`MaxOpenConns = 1`) and forces **Write-Ahead Logging (WAL)**. Multiple reading allocations process synchronously, while a solitary writing thread mutates rows without creating database-is-locked panics.
 
