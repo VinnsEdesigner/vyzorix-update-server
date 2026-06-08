@@ -4,8 +4,6 @@
 # golangci-lint v2.x configuration
 # =============================================
 
-version: 2
-
 # Linters to run
 linters:
   disable-all: true
@@ -16,7 +14,6 @@ linters:
     - noctx
     - nilerr
     - errname
-    - ireturn
 
     # Syntax & parsing
     - gofmt
@@ -54,7 +51,6 @@ linters:
     # Style
     - asciicheck
     - bidichk
-    - canonicalheader
     - commentspelling
     - cyclop
     - dupl
@@ -65,16 +61,13 @@ linters:
     - goconst
     - gocognit
     - goheader
-    - golint
     - grouper
-    - interfacer
     - lll
     - maintidx
     - misspell
     - nlreturn
     - nolintlint
     - paralleltest
-    - prealloc
     - revive
     - stylecheck
     - testpackage
@@ -125,10 +118,6 @@ linters-settings:
     checks:
       - "all"
 
-  varnamelen:
-    min-name-len: 2
-    max-name-len: 40
-
 issues:
   exclude-use-default: false
   max-issues-per-linter: 0
@@ -142,10 +131,6 @@ issues:
         - gocyclo
         - gosec
         - errcheck
-
-    # Allow unused vars starting with underscore
-    - path: _test\.go
-      text: "unused variable or constant"
 
     # Skip generated files
     - path: .*\.pb\.go
