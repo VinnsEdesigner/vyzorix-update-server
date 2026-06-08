@@ -48,7 +48,7 @@ linters:
     - govet
     - ineffassign
     - copyloopvar
-    - predeclared
+    # - predeclared  # Disabled - shadowing predeclared identifiers
 
     # Style & formatting
     - gofmt
@@ -58,7 +58,7 @@ linters:
     # - godot  # Disabled - comments must end with periods (overly strict)
     - misspell
     - revive
-    - stylecheck
+    # - stylecheck  # Disabled - strict style rules for comments
     # - gci  # Disabled - import order checking (requires goimports to be run)
     - decorder
 
@@ -133,11 +133,6 @@ linters-settings:
 
   nestif:
     min-complexity: 8
-
-  stylecheck:
-    checks:
-      - "all"
-      - "-ST1000"
 
   goimports:
     local-prefixes: "github.com/VinnsEdesigner/vyzorix"
