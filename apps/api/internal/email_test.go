@@ -17,10 +17,10 @@ func TestEmailService_IsConfigured(t *testing.T) {
 	}()
 
 	tests := []struct {
-		name     string
-		apiKey   string
+		name      string
+		apiKey    string
 		fromEmail string
-		expected bool
+		expected  bool
 	}{
 		{"configured", "test-key", "test@example.com", true},
 		{"missing api key", "", "test@example.com", false},
