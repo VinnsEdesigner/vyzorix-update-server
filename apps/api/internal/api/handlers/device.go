@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/config"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/hub"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/models"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/security"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/storage"
+	"github.com/VinnsEdesigner/vyzorix-update-server/config"
+	"github.com/VinnsEdesigner/vyzorix-update-server/hub"
+	"github.com/VinnsEdesigner/vyzorix-update-server/models"
+	"github.com/VinnsEdesigner/vyzorix-update-server/security"
+	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
 	"github.com/gin-gonic/gin"
 )
 

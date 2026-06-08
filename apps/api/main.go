@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/config"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/controllers"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/hub"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/services/fcm"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/storage"
+	"github.com/VinnsEdesigner/vyzorix-update-server/config"
+	"github.com/VinnsEdesigner/vyzorix-update-server/controllers"
+	"github.com/VinnsEdesigner/vyzorix-update-server/hub"
+	"github.com/VinnsEdesigner/vyzorix-update-server/services/fcm"
+	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
 )
 
 func main() {
