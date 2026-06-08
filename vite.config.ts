@@ -12,4 +12,31 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    server: {
+      proxy: {
+        // Proxy API and auth endpoints to Go backend for unified dev experience
+        '/v1': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+        '/health': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+        '/healthz': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+        '/bin': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+        },
+      },
+    },
+  },
 });
