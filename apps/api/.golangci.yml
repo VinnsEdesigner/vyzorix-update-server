@@ -134,31 +134,10 @@ linters-settings:
   nestif:
     min-complexity: 8
 
-  goerr113:
-    disabled: false
-
-  errname:
-    disabled: false
-
-  godox:
-    check-type: true
-
-  revives:
-    rules:
-      - name: var-naming
-        disabled: true
-      - name: package-comments
-        disabled: true
-      - name: unexported-naming
-        disabled: true
-
   stylecheck:
     checks:
       - "all"
       - "-ST1000"
-
-  decorder:
-    disable-order: true
 
   goimports:
     local-prefixes: "github.com/VinnsEdesigner/vyzorix"
@@ -169,14 +148,8 @@ linters-settings:
       - default
       - prefix(github.com/VinnsEdesigner/vyzorix)
 
-  paralleltest:
-    max-parallel: 4
-
   exhaustive:
     default-signifies-exhaustive: true
-
-  loggercheck:
-    disabled: false
 
   gosec:
     excludes:
