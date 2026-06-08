@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/config"
-	"github.com/VinnsEdesigner/vyzorix-update-server/hub"
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
-	"github.com/VinnsEdesigner/vyzorix-update-server/security"
-	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
+	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,12 +21,12 @@ type DeviceController struct {
 	log    *slog.Logger
 	store  *storage.Store
 	hub    *hub.Hub
-	hmac   security.Verifier
+	hmac   hmac.Verifier
 	config config.Config
 }
 
 // NewDeviceController creates a new DeviceController with hub integration.
-func NewDeviceController(log *slog.Logger, cfg config.Config, st *storage.Store, hmac security.Verifier, h *hub.Hub) *DeviceController {
+func NewDeviceController(log *slog.Logger, cfg config.Config, st *storage.Store, hmac hmac.Verifier, h *hub.Hub) *DeviceController {
 	return &DeviceController{log: log, config: cfg, store: st, hmac: hmac, hub: h}
 }
 
