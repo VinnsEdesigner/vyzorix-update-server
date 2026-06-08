@@ -9,7 +9,7 @@
 
 ##  THE MAGIC SHIELD: HTTPONLY COOKIES
 
-When your Go backend sets an authentication cookie with the `HttpOnly` flag, the browser places that token into a locked cryptographic vault managed directly by the operating system's network layer. 🤖📱
+When your Go backend sets an authentication cookie with the `HttpOnly` flag, the browser places that token into a locked cryptographic vault managed directly by the operating system's network layer. 
 
 * **The Frontend Protection:** JavaScript execution contexts running inside the browser engine are completely blinded to it. If an XSS vector or malicious script tries to read `document.cookie`, it receives an empty string. No untrusted script can exfiltrate your session secrets.
 * **The Backend Automation:** Even though your frontend code cannot read or modify the token, the browser engine is hardwired to automatically attach that specific cookie to every single outbound HTTP network request destined for your backend domain root. 
@@ -476,11 +476,16 @@ COMMIT;
 ##  PART 3: ARCHITECTURAL FILE MAPPING
 
 ```text
-internal/
+vyzorix-update-server/
+├── config/
+│   └── env.go            #  Centralized environment & secret management
+├── storage/
+│   └── sqlite.go         # Handles WAL pool tuning & isolated driver storage
 └── security/
     ├── csrf.go           # Layer 2: Secure CSRF state generation & handshake validators
     ├── attestation.go    # Layer 3: Cloudflare Turnstile verification engine
     ├── middleware.go     # Layer 1 & 4: HttpOnly context handling & rate engines
+    ├── errors.go         # Centralized, uniform JSON error responders
     ├── router.go         # The Chain: Locks all four barriers sequentially onto handlers
     ├── uuid.go           # Engine: Generates time-ordered sequential UUIDv7 strings
     └── repository.go     # Layer 5 / DOA: Implements implicit ownership-constrained SQL queries
