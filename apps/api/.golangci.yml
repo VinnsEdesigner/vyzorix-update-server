@@ -1,8 +1,6 @@
 # =============================================
 # VYZORIX UPDATE SERVER - GO LINTING CONFIG
 # =============================================
-# golangci-lint v2.x configuration
-# =============================================
 
 # Linters to run
 linters:
@@ -43,7 +41,6 @@ linters:
     - durationcheck
     - exhaustive
     - gosimple
-    - nilness
     - sqlclosecheck
     - staticcheck
     - typecheck
@@ -51,7 +48,6 @@ linters:
     # Style
     - asciicheck
     - bidichk
-    - commentspelling
     - cyclop
     - dupl
     - exportloopref
