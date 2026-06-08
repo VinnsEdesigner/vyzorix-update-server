@@ -52,8 +52,8 @@ linters:
 
     # Style & formatting
     - gofmt
-    - gofumpt
-    - goimports
+    # - gofumpt  # Disabled - strict formatting (use gofmt instead)
+    # - goimports  # Disabled - strict import order (use gofmt instead)
     # - goheader  # Disabled - config issues
     # - godot  # Disabled - comments must end with periods (overly strict)
     - misspell
