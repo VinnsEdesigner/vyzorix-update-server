@@ -13,7 +13,6 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@vyzorix/tsconfig": "workspace:*",
     "typescript": "^5.0.0"
   },
   "peerDependencies": {
