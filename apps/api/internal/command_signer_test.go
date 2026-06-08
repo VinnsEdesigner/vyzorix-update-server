@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/models"
+	"github.com/VinnsEdesigner/vyzorix-update-server/models"
 )
 
 func TestCommandSigner_SignCommand(t *testing.T) {

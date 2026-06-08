@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/models"
+	"github.com/VinnsEdesigner/vyzorix-update-server/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
