@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/models"
+	"github.com/VinnsEdesigner/vyzorix-update-server/models"
 	"github.com/gorilla/websocket"
 )
 
