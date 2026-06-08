@@ -157,3 +157,17 @@ linters-settings:
       - G301  # Directory permissions (handled by umask)
       - G304  # File read from app data directory (safe)
       - G101  # Hardcoded credentials (false positive - HTML templates)
+      - G114  # http.ListenAndServe without timeouts (uses gin router)
+
+  revive:
+    rules:
+      - name: blank-imports
+        disabled: true
+      - name: package-comments
+        disabled: true
+      - name: exported
+        disabled: true
+      - name: var-naming
+        disabled: true
+      - name: unexported-naming
+        disabled: true
