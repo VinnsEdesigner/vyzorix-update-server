@@ -6,14 +6,6 @@
 linters:
   disable-all: true
   enable:
-    # Error handling - disable for now
-    # - errcheck
-    # - gosec
-
-    # Syntax & parsing - disable for now
-    # - gofmt
-    # - govet
-
     # Code quality (relaxed)
     - unused
 
@@ -38,3 +30,11 @@ run:
   tests: true
   modules-download-mode: readonly
   go: "1.24"
+  skip-dirs:
+    - vendor
+  skip-files:
+    - ".*_test.go"
+  build-tags:
+    - ""
+  typecheck:
+    enabled: false
