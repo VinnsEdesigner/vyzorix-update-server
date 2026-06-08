@@ -37,3 +37,15 @@ golang.org/x/text v0.14.0 // indirect
 google.golang.org/protobuf v1.33.0 // indirect
 gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+require firebase.google.com/go/v4 v4.20.0
+
+replace github.com/VinnsEdesigner/vyzorix/apps/api/config => ./pkg/config
+replace github.com/VinnsEdesigner/vyzorix/apps/api/controllers => ./internal/api/handlers
+replace github.com/VinnsEdesigner/vyzorix/apps/api/hub => ./internal/ws
+replace github.com/VinnsEdesigner/vyzorix/apps/api/models => ./pkg/models
+replace github.com/VinnsEdesigner/vyzorix/apps/api/middleware => ./internal/api/middleware
+replace github.com/VinnsEdesigner/vyzorix/apps/api/security => ./internal/auth
+replace github.com/VinnsEdesigner/vyzorix/apps/api/services => ./internal
+replace github.com/VinnsEdesigner/vyzorix/apps/api/services/fcm => ./internal/fcm
+replace github.com/VinnsEdesigner/vyzorix/apps/api/storage => ./pkg/storage
