@@ -1,6 +1,6 @@
 module github.com/VinnsEdesigner/vyzorix/apps/api
 
-go 1.25.8
+go 1.24
 
 require (
 	firebase.google.com/go/v4 v4.20.0
