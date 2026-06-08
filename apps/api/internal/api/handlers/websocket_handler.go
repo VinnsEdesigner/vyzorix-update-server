@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"time"
 
+	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )

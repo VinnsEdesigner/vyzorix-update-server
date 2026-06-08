@@ -12,7 +12,7 @@ import (
 func TestNew(t *testing.T) {
 	logger := slog.Default()
 	h := New(logger, nil)
-	
+
 	if h == nil {
 		t.Fatal("New() returned nil")
 	}
@@ -32,12 +32,12 @@ func TestNew(t *testing.T) {
 
 func TestHub_Send_noClient(t *testing.T) {
 	h := New(nil, nil)
-	
+
 	frame := models.CommandFrame{
 		Type:       "update",
 		DispatchID: "dispatch-001",
 	}
-	
+
 	// Should return false when no client connected
 	if h.Send("nonexistent-device", frame) {
 		t.Error("Send() should return false for nonexistent device")
@@ -46,7 +46,7 @@ func TestHub_Send_noClient(t *testing.T) {
 
 func TestHub_Online_noClient(t *testing.T) {
 	h := New(nil, nil)
-	
+
 	if h.Online("nonexistent") {
 		t.Error("Online() should return false for nonexistent device")
 	}
@@ -54,7 +54,7 @@ func TestHub_Online_noClient(t *testing.T) {
 
 func TestHub_ClientCount_empty(t *testing.T) {
 	h := New(nil, nil)
-	
+
 	if h.ClientCount() != 0 {
 		t.Errorf("ClientCount() = %d, want 0", h.ClientCount())
 	}
@@ -62,7 +62,7 @@ func TestHub_ClientCount_empty(t *testing.T) {
 
 func TestHub_Clients_empty(t *testing.T) {
 	h := New(nil, nil)
-	
+
 	clients := h.Clients()
 	if len(clients) != 0 {
 		t.Errorf("Clients() length = %d, want 0", len(clients))
@@ -71,7 +71,7 @@ func TestHub_Clients_empty(t *testing.T) {
 
 func TestHub_GetClient_noClient(t *testing.T) {
 	h := New(nil, nil)
-	
+
 	c := h.GetClient("nonexistent")
 	if c != nil {
 		t.Error("GetClient() should return nil for nonexistent device")
@@ -81,17 +81,17 @@ func TestHub_GetClient_noClient(t *testing.T) {
 func TestHub_Run_contextCancel(t *testing.T) {
 	logger := slog.Default()
 	h := New(logger, nil)
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
-	
+
 	// Run should return immediately when context is cancelled
 	done := make(chan struct{})
 	go func() {
 		h.Run(ctx)
 		close(done)
 	}()
-	
+
 	select {
 	case <-done:
 		// Success - Run returned when context was cancelled
@@ -106,7 +106,7 @@ func TestCommandFrame_Fields(t *testing.T) {
 		DispatchID: "dispatch-001",
 		Args:       []byte(`{"version":"2.0.0"}`),
 	}
-	
+
 	if frame.Type != "update" {
 		t.Errorf("Type = %s, want update", frame.Type)
 	}
@@ -122,7 +122,7 @@ func TestTelemetryFrame_Fields(t *testing.T) {
 		BufferLevel: 60,
 		ThermalTemp: 35.5,
 	}
-	
+
 	if frame.DeviceID != "device-001" {
 		t.Errorf("DeviceID = %s, want device-001", frame.DeviceID)
 	}
@@ -142,7 +142,7 @@ func TestClient_SendChannel(t *testing.T) {
 		DeviceID: "device-001",
 		Send:     make(chan models.CommandFrame, 5),
 	}
-	
+
 	// Should be able to send to channel
 	select {
 	case c.Send <- models.CommandFrame{Type: "test"}:
@@ -157,10 +157,10 @@ func TestClient_SendChannel_full(t *testing.T) {
 		DeviceID: "device-001",
 		Send:     make(chan models.CommandFrame, 1), // Buffer of 1
 	}
-	
+
 	// Fill the buffer
 	c.Send <- models.CommandFrame{Type: "first"}
-	
+
 	// This should block since buffer is full
 	select {
 	case c.Send <- models.CommandFrame{Type: "second"}:

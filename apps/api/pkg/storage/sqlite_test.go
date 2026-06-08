@@ -308,10 +308,10 @@ func TestSaveTelemetry(t *testing.T) {
 
 	// Save telemetry
 	frame := models.TelemetryFrame{
-		DeviceID:     "device-001",
-		RiskScore:    25,
-		BufferLevel:  60,
-		ThermalTemp:  35.5,
+		DeviceID:    "device-001",
+		RiskScore:   25,
+		BufferLevel: 60,
+		ThermalTemp: 35.5,
 	}
 	if err := store.SaveTelemetry(ctx, "device-001", []byte(`{"test":true}`), frame); err != nil {
 		t.Fatalf("SaveTelemetry() failed: %v", err)

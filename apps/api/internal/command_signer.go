@@ -95,7 +95,7 @@ func (s *CommandSigner) ValidateTimestamp(frame *models.CommandFrame, maxDriftMs
 	if maxDriftMs == 0 {
 		maxDriftMs = 30_000 // Default ±30 seconds
 	}
-	
+
 	// Timestamp is already Unix milliseconds
 	nowMs := time.Now().UnixMilli()
 	drift := nowMs - frame.Timestamp

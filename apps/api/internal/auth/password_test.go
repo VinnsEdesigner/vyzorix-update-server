@@ -16,7 +16,7 @@ func TestValidatePassword_Valid(t *testing.T) {
 		{"complex password default", "MyP@ssw0rd!2024", DefaultPasswordPolicy},
 		{"with special chars default", "Test@123Abc!", DefaultPasswordPolicy},
 		{"maximum length default", strings.Repeat("A", 100) + "a1!", DefaultPasswordPolicy},
-		
+
 		// UserPasswordPolicy tests (no special char required, min 12 chars)
 		{"minimum valid user", "Password1234", UserPasswordPolicy}, // exactly 12 chars
 		{"alphanumeric user", "MySecurePassword99", UserPasswordPolicy},
@@ -45,7 +45,7 @@ func TestValidatePassword_TooShort(t *testing.T) {
 		{"6 chars default", "Ab1!", DefaultPasswordPolicy},
 		{"empty default", "", DefaultPasswordPolicy},
 		{"7 chars user", "Pass1!", UserPasswordPolicy},
-		
+
 		// UserPasswordPolicy (12 char min)
 		{"11 chars user", "Password1!", UserPasswordPolicy}, // missing 1 char
 		{"8 chars user", "PassWord1", UserPasswordPolicy},   // too short
@@ -73,7 +73,7 @@ func TestValidatePassword_NoUppercase(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for missing uppercase (default policy)")
 	}
-	
+
 	// User policy also requires uppercase
 	err = ValidatePassword("password123456", UserPasswordPolicy)
 	if err == nil {
@@ -86,7 +86,7 @@ func TestValidatePassword_NoLowercase(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for missing lowercase (default policy)")
 	}
-	
+
 	err = ValidatePassword("PASSWORD1234", UserPasswordPolicy)
 	if err == nil {
 		t.Error("expected error for missing lowercase (user policy)")
@@ -98,7 +98,7 @@ func TestValidatePassword_NoDigit(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for missing digit (default policy)")
 	}
-	
+
 	err = ValidatePassword("Password!", UserPasswordPolicy)
 	if err == nil {
 		t.Error("expected error for missing digit (user policy)")
@@ -111,7 +111,7 @@ func TestValidatePassword_NoSpecial(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for missing special character (default policy)")
 	}
-	
+
 	// UserPasswordPolicy does NOT require special chars (but needs 12+ chars)
 	err = ValidatePassword("Password1234", UserPasswordPolicy) // 12 chars, no special
 	if err != nil {
@@ -125,7 +125,7 @@ func TestValidatePassword_TooLong(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for too long password (default policy)")
 	}
-	
+
 	err = ValidatePassword(longPassword, UserPasswordPolicy)
 	if err == nil {
 		t.Error("expected error for too long password (user policy)")
@@ -145,7 +145,7 @@ func TestValidatePassword_MultipleFailures(t *testing.T) {
 	if len(pe.Missing) < 4 {
 		t.Errorf("expected at least 4 failures, got %d: %v", len(pe.Missing), pe.Missing)
 	}
-	
+
 	// UserPasswordPolicy: short, no upper, no digit (but no special required)
 	err = ValidatePassword("short", UserPasswordPolicy)
 	if err == nil {
@@ -181,13 +181,13 @@ func TestValidatePassword_CustomPolicy(t *testing.T) {
 func TestUserPasswordPolicy_NoSpecialRequired(t *testing.T) {
 	// These should all pass with UserPasswordPolicy (12+ chars, mixed case, number)
 	validPasswords := []string{
-		"Password1234",      // basic alphanumeric, 12 chars
-		"MySecurePass99",    // longer alphanumeric
-		"MixedCase12345",    // mixed case + numbers
-		"Another12345678",  // different alphanumeric
-		"TestPassword99",    // 14 chars
+		"Password1234",    // basic alphanumeric, 12 chars
+		"MySecurePass99",  // longer alphanumeric
+		"MixedCase12345",  // mixed case + numbers
+		"Another12345678", // different alphanumeric
+		"TestPassword99",  // 14 chars
 	}
-	
+
 	for _, pwd := range validPasswords {
 		err := ValidatePassword(pwd, UserPasswordPolicy)
 		if err != nil {
@@ -202,15 +202,15 @@ func TestPasswordStrength(t *testing.T) {
 		minScore int
 		maxScore int
 	}{
-		{"short", 0, 0},             // < 8 chars
-		{"password", 1, 1},          // 8 chars, no other features
-		{"Password1!", 3, 3},        // 12 chars, mixed case, digit, special
+		{"short", 0, 0},                 // < 8 chars
+		{"password", 1, 1},              // 8 chars, no other features
+		{"Password1!", 3, 3},            // 12 chars, mixed case, digit, special
 		{"MyVerySecureP@ssw0rd!", 5, 5}, // 20+ chars, all features (5 points)
-		{"abc", 0, 0},               // too short
-		{"ABC123!", 1, 1},           // 7 chars, only uppercase + special
-		{"Password1234", 4, 4},      // 14 chars, mixed case, digit (no special)
+		{"abc", 0, 0},                   // too short
+		{"ABC123!", 1, 1},               // 7 chars, only uppercase + special
+		{"Password1234", 4, 4},          // 14 chars, mixed case, digit (no special)
 		{"MyVeryLongPassword16!", 5, 5}, // 16+ chars, all features (5 points)
-		{"LongPassword1234", 5, 5},   // 16 chars, all features (5 points)
+		{"LongPassword1234", 5, 5},      // 16 chars, all features (5 points)
 	}
 
 	for _, tt := range tests {

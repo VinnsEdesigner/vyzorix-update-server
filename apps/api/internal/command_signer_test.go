@@ -234,7 +234,7 @@ func TestCommandSigner_ValidateConnectHMAC(t *testing.T) {
 
 	// Compute HMAC manually for the CONNECT format
 	canonical := "CONNECT:" + deviceID + ":" + timestamp + ":" + nonce
-	
+
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(canonical))
 	expectedHmac := hex.EncodeToString(mac.Sum(nil))
@@ -504,13 +504,13 @@ func TestCommandSigner_HashVerification(t *testing.T) {
 
 	// Test that we can generate, hash, verify cycle
 	originalSecret := "my-super-secret-key-12345678901234567890123456789012"
-	
+
 	hash := signer.HashSecret(originalSecret)
-	
+
 	if !signer.VerifySecretHash(originalSecret, hash) {
 		t.Error("Hash should verify correctly")
 	}
-	
+
 	if signer.VerifySecretHash("wrong-secret", hash) {
 		t.Error("Wrong secret should not verify")
 	}

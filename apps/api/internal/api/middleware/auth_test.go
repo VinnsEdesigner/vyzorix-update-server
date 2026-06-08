@@ -228,9 +228,9 @@ func TestAuthenticator_CaseSensitiveToken(t *testing.T) {
 	handler := auth.Middleware()
 
 	tests := []struct {
-		name   string
-		token  string
-		valid  bool
+		name  string
+		token string
+		valid bool
 	}{
 		{"exact match", "SecretToken123", true},
 		{"lowercase", "secretToken123", false},

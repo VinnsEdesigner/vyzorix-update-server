@@ -134,13 +134,13 @@ func TestDevice_Fields(t *testing.T) {
 	d := Device{
 		ID:                "device-001",
 		FirebaseInstallID: "firebase-abc",
-		FCMToken:         "fcm-token",
-		AppVersion:       "1.0.0",
-		DeviceClass:      "phone",
-		CommandSecret:    "secret123",
-		Online:           true,
-		RegisteredAt:     now,
-		LastSeen:         now,
+		FCMToken:          "fcm-token",
+		AppVersion:        "1.0.0",
+		DeviceClass:       "phone",
+		CommandSecret:     "secret123",
+		Online:            true,
+		RegisteredAt:      now,
+		LastSeen:          now,
 	}
 
 	if d.ID != "device-001" {
@@ -391,7 +391,7 @@ func TestOperatorRegisterRequest_Fields(t *testing.T) {
 
 func TestAuthResponse_Fields(t *testing.T) {
 	resp := AuthResponse{
-		Token:    "jwt-token-here",
+		Token: "jwt-token-here",
 		Operator: OperatorResponse{
 			ID:    "op-001",
 			Email: "test@example.com",
