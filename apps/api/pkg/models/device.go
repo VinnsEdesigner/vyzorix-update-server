@@ -2,6 +2,7 @@ package models
 
 import "time"
 
+// Device represents a registered device in the system.
 type Device struct {
 	RegisteredAt      time.Time `json:"registeredAt" db:"registered_at"`
 	LastSeen          time.Time `json:"lastSeen" db:"last_seen"`
@@ -14,6 +15,7 @@ type Device struct {
 	Online            bool      `json:"online" db:"online"`
 }
 
+// RegisterRequest is the payload for device registration.
 type RegisterRequest struct {
 	DeviceID          string `json:"deviceId"`
 	FirebaseInstallID string `json:"firebaseInstallId"`
@@ -22,6 +24,7 @@ type RegisterRequest struct {
 	DeviceClass       string `json:"deviceClass"`
 }
 
+// RegisterResponse is returned after successful device registration.
 type RegisterResponse struct {
 	DeviceID      string `json:"deviceId"`
 	CommandSecret string `json:"commandSecret"`
@@ -29,6 +32,7 @@ type RegisterResponse struct {
 	ServerTime    int64  `json:"serverTime"`
 }
 
+// DeviceStatus represents the current status of a device.
 type DeviceStatus struct {
 	DeviceID          string `json:"deviceId"`
 	AppVersion        string `json:"appVersion"`

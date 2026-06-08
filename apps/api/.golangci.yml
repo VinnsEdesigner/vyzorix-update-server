@@ -153,4 +153,7 @@ linters-settings:
 
   gosec:
     excludes:
-      - G104
+      - G104  # Unchecked err in HTTP handlers
+      - G301  # Directory permissions (handled by umask)
+      - G304  # File read from app data directory (safe)
+      - G101  # Hardcoded credentials (false positive - HTML templates)

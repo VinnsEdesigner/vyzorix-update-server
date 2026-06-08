@@ -41,3 +41,4 @@ dist-ssr
 .env
 /db/*
 !/db/.gitkeep
+.turbo

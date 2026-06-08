@@ -5,11 +5,14 @@ import "time"
 // OperatorRole represents the role of an operator in the system.
 type OperatorRole string
 
-const (
-	RoleViewer     OperatorRole = "viewer"
-	RoleOperator   OperatorRole = "operator"
-	RoleSuperAdmin OperatorRole = "super_admin"
-)
+// RoleViewer is the default read-only role.
+const RoleViewer OperatorRole = "viewer"
+
+// RoleOperator can perform standard operations.
+const RoleOperator OperatorRole = "operator"
+
+// RoleSuperAdmin has full system access.
+const RoleSuperAdmin OperatorRole = "super_admin"
 
 // Thresholds define alert levels for device telemetry.
 type Thresholds struct {
@@ -115,7 +118,7 @@ type GoogleOAuthCallbackRequest struct {
 	State string `json:"state"`
 }
 
-// ErrorResponse is the standard error envelope for auth endpoints.
+// AuthErrorResponse is the standard error envelope for auth endpoints.
 type AuthErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message,omitempty"`

@@ -2,6 +2,7 @@ package models
 
 import "encoding/json"
 
+// TelemetryFrame represents a single telemetry data frame from a device.
 type TelemetryFrame struct {
 	Timestamp    any             `json:"timestamp,omitempty"`
 	Type         string          `json:"type"`
