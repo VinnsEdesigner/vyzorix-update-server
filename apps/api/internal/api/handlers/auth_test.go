@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/models"
 )
 
 func TestAuthController_LoginRequest_JSON(t *testing.T) {
