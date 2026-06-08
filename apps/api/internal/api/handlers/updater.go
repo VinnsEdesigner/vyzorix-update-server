@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/config"
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
-	"github.com/VinnsEdesigner/vyzorix-update-server/services/fcm"
-	"github.com/VinnsEdesigner/vyzorix-update-server/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/fcm"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
 	"github.com/gin-gonic/gin"
 )
 
