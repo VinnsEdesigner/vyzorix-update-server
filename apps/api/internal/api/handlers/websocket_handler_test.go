@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/config"
-	"github.com/VinnsEdesigner/vyzorix-update-server/security"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
 )
 
 func TestUpgraderFactory_Create(t *testing.T) {
@@ -60,7 +61,7 @@ func TestNewWebSocketHandlerWithFactory(t *testing.T) {
 	factory := NewUpgraderFactory(validator)
 
 	// This should not panic
-	handler := NewWebSocketHandlerWithFactory(nil, config.Config{}, nil, security.Verifier{}, factory)
+	handler := NewWebSocketHandlerWithFactory(nil, config.Config{}, nil, hmac.Verifier{}, factory)
 	//nolint:staticcheck // SA5011: handler from factory is never nil here
 	if handler == nil {
 		t.Error("Handler should not be nil")
