@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/VinnsEdesigner/vyzorix-update-server/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/models"
 )
 
 func TestSecretHash_HashAndVerify(t *testing.T) {
