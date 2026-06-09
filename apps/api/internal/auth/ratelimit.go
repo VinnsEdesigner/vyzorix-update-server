@@ -1,3 +1,4 @@
+// Package security provides authentication utilities.
 package security
 
 import (
@@ -38,11 +39,11 @@ type tokenBucket struct {
 }
 
 // NewRateLimiter creates a new rate limiter with the given window and max requests.
-func NewRateLimiter(window time.Duration, max int) *RateLimiter {
+func NewRateLimiter(window time.Duration, maxRequests int) *RateLimiter {
 	rl := &RateLimiter{
 		bucket: make(map[string]*tokenBucket),
 		ttl:    window,
-		max:    max,
+		max:    maxRequests,
 	}
 	// Start cleanup goroutine
 	go rl.cleanup()

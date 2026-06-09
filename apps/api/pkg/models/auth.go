@@ -89,7 +89,7 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-// RegisterRequest is the payload for operator self-registration.
+// OperatorRegisterRequest is the payload for operator self-registration.
 // Only allowed when no operators exist in the system (bootstrap phase).
 type OperatorRegisterRequest struct {
 	Email    string `json:"email"`
