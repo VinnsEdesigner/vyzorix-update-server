@@ -1,3 +1,4 @@
+// Package secretstore provides encrypted secret storage for devices.
 package secretstore
 
 import (
@@ -154,7 +155,7 @@ func (s *SecretStore) getSecret(deviceID string) (string, error) {
 // ErrNotFound indicates the requested secret does not exist.
 var ErrNotFound = errors.New("secret not found")
 
-// Errors
+// Errors.
 var (
 	ErrInvalidKey    = errors.New("invalid encryption key")
 	ErrDecryption    = errors.New("decryption failed")

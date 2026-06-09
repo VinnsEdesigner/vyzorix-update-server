@@ -1,3 +1,4 @@
+// Package security provides authentication utilities.
 package security
 
 import (
@@ -6,7 +7,7 @@ import (
 )
 
 const (
-	// Max lengths for common fields
+	// Max lengths for common fields.
 	MaxEmailLength    = 255
 	MaxNameLength     = 100
 	MaxPasswordLength = 128
@@ -16,10 +17,10 @@ const (
 	MaxTokenLength    = 1024
 )
 
-// Email regex pattern (RFC 5322 simplified)
+// Email regex pattern (RFC 5322 simplified).
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 
-// ValidationError represents a validation error
+// ValidationError represents a validation error.
 type ValidationError struct {
 	Field   string
 	Message string
@@ -29,7 +30,7 @@ func (e *ValidationError) Error() string {
 	return e.Field + ": " + e.Message
 }
 
-// ValidateEmail validates and sanitizes an email address
+// ValidateEmail validates and sanitizes an email address.
 func ValidateEmail(email string) (string, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
 
@@ -46,7 +47,7 @@ func ValidateEmail(email string) (string, error) {
 	return email, nil
 }
 
-// ValidateName validates and sanitizes a name
+// ValidateName validates and sanitizes a name.
 func ValidateName(name string) (string, error) {
 	name = strings.TrimSpace(name)
 
@@ -60,7 +61,7 @@ func ValidateName(name string) (string, error) {
 	return name, nil
 }
 
-// ValidatePasswordLength validates password length constraints
+// ValidatePasswordLength validates password length constraints.
 func ValidatePasswordLength(password string) error {
 	if len(password) < MinPasswordLength {
 		return &ValidationError{Field: "password", Message: "password must be at least 8 characters"}
@@ -71,7 +72,7 @@ func ValidatePasswordLength(password string) error {
 	return nil
 }
 
-// ValidateDeviceID validates and sanitizes a device ID
+// ValidateDeviceID validates and sanitizes a device ID.
 func ValidateDeviceID(id string) (string, error) {
 	id = strings.TrimSpace(id)
 
@@ -91,7 +92,7 @@ func ValidateDeviceID(id string) (string, error) {
 	return id, nil
 }
 
-// ValidateCommand validates a command string
+// ValidateCommand validates a command string.
 func ValidateCommand(cmd string) (string, error) {
 	cmd = strings.TrimSpace(cmd)
 
@@ -105,7 +106,7 @@ func ValidateCommand(cmd string) (string, error) {
 	return cmd, nil
 }
 
-// ValidateToken validates a token string
+// ValidateToken validates a token string.
 func ValidateToken(token string) (string, error) {
 	token = strings.TrimSpace(token)
 
@@ -119,7 +120,7 @@ func ValidateToken(token string) (string, error) {
 	return token, nil
 }
 
-// SanitizeString removes potentially dangerous characters
+// SanitizeString removes potentially dangerous characters.
 func SanitizeString(s string, maxLen int) string {
 	s = strings.TrimSpace(s)
 	if len(s) > maxLen {

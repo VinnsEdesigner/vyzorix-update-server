@@ -1,3 +1,4 @@
+// Package storage provides SQLite database operations.
 package storage
 
 import (
@@ -9,18 +10,21 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
-	"strings"
-
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 )
 
 var ErrHijack = errors.New("device_id already registered to a different firebaseInstallId")
+
+// ErrNotFound indicates the requested resource does not exist.
+var ErrNotFound = errors.New("not found")
 
 type Store struct {
 	db   *sql.DB
@@ -213,7 +217,8 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (struc
 	DeviceClass       string
 	CommandSecret     string
 	Online            bool
-}, bool, error) {
+}, bool, error,
+) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := time.Now().UTC()
@@ -376,7 +381,8 @@ func (s *Store) Device(ctx context.Context, id string) (struct {
 	DeviceClass       string
 	CommandSecret     string
 	Online            bool
-}, bool, error) {
+}, bool, error,
+) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var r deviceRow
@@ -592,7 +598,7 @@ func (s *Store) GetCommandStatus(ctx context.Context, dispatchID string) (*Comma
 		&deliveredAt, &completedAt, &cs.Result, &cs.WakeError,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -642,7 +648,8 @@ func (s *Store) Devices(ctx context.Context) ([]struct {
 	DeviceClass       string
 	CommandSecret     string
 	Online            bool
-}, error) {
+}, error,
+) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	rows, err := s.db.QueryContext(ctx, `SELECT id, firebase_install_id, fcm_token, app_version, device_class, command_secret, online, registered_at, last_seen FROM devices ORDER BY last_seen DESC`)
@@ -684,7 +691,8 @@ func (s *Store) DevicesPaginated(ctx context.Context, limit int, cursor int64) (
 	DeviceClass       string
 	CommandSecret     string
 	Online            bool
-}, error) {
+}, error,
+) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -777,7 +785,7 @@ func (s *Store) GetOperatorByEmail(ctx context.Context, email string) (*models.O
 		email,
 	).Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.EmailVerified, &r.CreatedAt, &r.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -815,7 +823,7 @@ func (s *Store) GetOperatorByGoogleID(ctx context.Context, googleID string) (*mo
 		googleID,
 	).Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.EmailVerified, &r.CreatedAt, &r.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -869,7 +877,7 @@ func (s *Store) GetOperatorByID(ctx context.Context, id string) (*models.Operato
 		&r.StrictHmac, &r.AutoReconnect, &r.NotificationsEnabled,
 		&r.CreatedAt, &r.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -1039,7 +1047,7 @@ func (s *Store) GetSessionByTokenHash(ctx context.Context, tokenHash string) (*m
 		tokenHash,
 	).Scan(&r.ID, &r.OperatorID, &r.ExpiresAt, &r.CreatedAt, &r.UserAgent, &r.IPAddress)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -1111,7 +1119,7 @@ func (s *Store) GetEmailVerificationByTokenHash(ctx context.Context, tokenHash s
 		tokenHash,
 	).Scan(&r.ID, &r.OperatorID, &r.TokenHash, &r.ExpiresAt, &r.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -1175,7 +1183,7 @@ func (s *Store) GetPasswordResetTokenByHash(ctx context.Context, tokenHash strin
 		tokenHash,
 	).Scan(&r.ID, &r.OperatorID, &r.TokenHash, &r.ExpiresAt, &r.UsedAt, &r.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -1316,18 +1324,21 @@ func (s *Store) SetEnforceHMAC(ctx context.Context, enforce bool) error {
 // GetHMACWindowSeconds returns the HMAC timestamp window in seconds.
 func (s *Store) GetHMACWindowSeconds(ctx context.Context) (int, error) {
 	val, err := s.GetSetting(ctx, "hmac_window_seconds")
-	if err != nil || val == "" {
+	if err != nil {
+		return 30, err
+	}
+	if val == "" {
 		return 30, nil // default 30 seconds per COMMAND_SECURITY.md
 	}
 	var seconds int
 	_, err = fmt.Sscanf(val, "%d", &seconds)
 	if err != nil {
-		return 30, nil
+		return 30, err
 	}
 	return seconds, nil
 }
 
 // SetHMACWindowSeconds updates the HMAC timestamp window.
 func (s *Store) SetHMACWindowSeconds(ctx context.Context, seconds int) error {
-	return s.SetSetting(ctx, "hmac_window_seconds", fmt.Sprintf("%d", seconds))
+	return s.SetSetting(ctx, "hmac_window_seconds", strconv.Itoa(seconds))
 }

@@ -1,3 +1,4 @@
+// Package controllers provides HTTP handlers.
 package controllers
 
 import (
@@ -5,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -866,7 +868,7 @@ func postJSON(ctx context.Context, url string, body any, resp any) error {
 func _decodeJWTPayload(token string, out any) error {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
-		return fmt.Errorf("invalid JWT format")
+		return errors.New("invalid JWT format")
 	}
 	payload, err := _base64RawURLDecode(parts[1])
 	if err != nil {

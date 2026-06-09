@@ -1,3 +1,4 @@
+// Package services provides business logic services.
 package services
 
 import (
@@ -5,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -47,21 +49,15 @@ func (s *CommandSigner) SignCommand(frame *models.CommandFrame, deviceID, secret
 }
 
 // BuildCanonicalString constructs the canonical message string for HMAC computation.
-// Format: {dispatchId}|{deviceId}|{command}|{timestamp_unix_ms}|{nonce}|{args}
+// Format: {dispatchId}|{deviceId}|{command}|{timestamp_unix_ms}|{nonce}|{args}.
 func BuildCanonicalString(frame *models.CommandFrame, deviceID, nonce string) string {
 	// Timestamp is already in Unix milliseconds (int64)
 	argsStr := string(frame.Args)
 	if argsStr == "" {
 		argsStr = "{}"
 	}
-	return fmt.Sprintf("%s|%s|%s|%d|%s|%s",
-		frame.DispatchID,
-		deviceID,
-		frame.Command,
-		frame.Timestamp,
-		nonce,
-		argsStr,
-	)
+	return frame.DispatchID + "|" + deviceID + "|" + frame.Command + "|" +
+		strconv.FormatInt(frame.Timestamp, 10) + "|" + nonce + "|" + argsStr
 }
 
 // ValidateCommandHMAC validates a command frame's HMAC signature.
@@ -72,14 +68,8 @@ func (s *CommandSigner) ValidateCommandHMAC(frame *models.CommandFrame, deviceID
 	if argsStr == "" {
 		argsStr = "{}"
 	}
-	canonical := fmt.Sprintf("%s|%s|%s|%d|%s|%s",
-		frame.DispatchID,
-		deviceID,
-		frame.Command,
-		frame.Timestamp,
-		frame.Nonce,
-		argsStr,
-	)
+	canonical := frame.DispatchID + "|" + deviceID + "|" + frame.Command + "|" +
+		strconv.FormatInt(frame.Timestamp, 10) + "|" + frame.Nonce + "|" + argsStr
 
 	// Compute expected HMAC
 	mac := hmac.New(sha256.New, []byte(secret))
@@ -108,7 +98,7 @@ func (s *CommandSigner) ValidateTimestamp(frame *models.CommandFrame, maxDriftMs
 // ValidateConnectHMAC validates WebSocket connection HMAC per DEVICE_REGISTRATION.md §4.1.
 // Format: HMAC over "CONNECT:<deviceId>:<timestamp>:<nonce>"
 func (s *CommandSigner) ValidateConnectHMAC(deviceID, timestamp, nonce, providedHmac, secret string) bool {
-	canonical := fmt.Sprintf("CONNECT:%s:%s:%s", deviceID, timestamp, nonce)
+	canonical := "CONNECT:" + deviceID + ":" + timestamp + ":" + nonce
 
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(canonical))
@@ -121,7 +111,7 @@ func (s *CommandSigner) ValidateConnectHMAC(deviceID, timestamp, nonce, provided
 func (s *CommandSigner) GenerateNonce() (string, error) {
 	nonceBytes := make([]byte, 16)
 	if _, err := rand.Read(nonceBytes); err != nil {
-		return "", fmt.Errorf("failed to generate nonce: %w", err)
+		return "", errors.New("failed to generate nonce")
 	}
 	return hex.EncodeToString(nonceBytes), nil
 }
@@ -152,7 +142,7 @@ func (s *CommandSigner) fallbackHash(secret string) string {
 	salt := make([]byte, 16)
 	if _, err := rand.Read(salt); err != nil {
 		// Fallback to time-based salt if crypto/rand fails
-		salt = []byte(fmt.Sprintf("%d", time.Now().UnixNano()))
+		salt = []byte(strconv.FormatInt(time.Now().UnixNano(), 10))
 	}
 	saltHex := hex.EncodeToString(salt)
 	mac := sha256.New()

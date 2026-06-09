@@ -1,3 +1,4 @@
+// Package fcm provides Firebase Cloud Messaging integration.
 package fcm
 
 import (
