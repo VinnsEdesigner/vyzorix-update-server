@@ -1,3 +1,4 @@
+// Package hub provides WebSocket functionality.
 package hub
 
 import (

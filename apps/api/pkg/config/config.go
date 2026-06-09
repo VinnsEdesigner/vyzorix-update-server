@@ -2,6 +2,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -95,10 +96,10 @@ func Load() (Config, error) {
 		c.HMACWindow = time.Duration(n) * time.Second
 	}
 	if strings.TrimSpace(c.DatabaseURL) == "" {
-		return c, fmt.Errorf("DATABASE_URL is required")
+		return c, errors.New("DATABASE_URL is required")
 	}
 	if c.Env == "production" && c.TokenSecret == "" {
-		return c, fmt.Errorf("TOKEN_SECRET is required in production")
+		return c, errors.New("TOKEN_SECRET is required in production")
 	}
 	return c, nil
 }

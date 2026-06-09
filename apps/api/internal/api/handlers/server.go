@@ -1,3 +1,4 @@
+// Package controllers provides HTTP handlers.
 package controllers
 
 import (
@@ -325,21 +326,31 @@ func (s *Server) command(c *gin.Context) {
 	if err := s.Store.SaveCommand(c.Request.Context(), frame.DispatchID, id, req.Command, req.Args, delivery); err != nil {
 		s.Log.Warn("save command failed", "dispatchId", frame.DispatchID, "err", err)
 	}
-	if delivery == "queued" && s.Notifier != nil {
-		if d, found, err := s.Store.Device(c.Request.Context(), id); err == nil && found {
-			if err := s.Notifier.SendSilentWake(c.Request.Context(), fcm.SilentWake{Token: d.FCMToken, Command: req.Command, DispatchID: frame.DispatchID, DeviceID: id}); err != nil {
-				s.Log.Warn("fcm wake failed", "deviceId", id, "dispatchId", frame.DispatchID, "err", err)
-				if markErr := s.Store.MarkWake(c.Request.Context(), frame.DispatchID, err.Error()); markErr != nil {
-					s.Log.Warn("mark wake failed", "dispatchId", frame.DispatchID, "err", markErr)
-				}
-			} else {
-				if markErr := s.Store.MarkWake(c.Request.Context(), frame.DispatchID, ""); markErr != nil {
-					s.Log.Warn("mark wake failed", "dispatchId", frame.DispatchID, "err", markErr)
-				}
-			}
-		}
+	if delivery == "queued" {
+		s.sendFCMWakeIfNeeded(id, req.Command, frame.DispatchID)
 	}
 	c.JSON(202, models.CommandResponse{DispatchID: frame.DispatchID, Delivery: delivery, ServerTime: time.Now().UnixMilli()})
+}
+
+// sendFCMWakeIfNeeded sends an FCM wake notification if notifier is configured.
+func (s *Server) sendFCMWakeIfNeeded(deviceID, command, dispatchID string) {
+	if s.Notifier == nil {
+		return
+	}
+	d, found, err := s.Store.Device(context.Background(), deviceID)
+	if err != nil || !found || d.FCMToken == "" {
+		return
+	}
+	if err := s.Notifier.SendSilentWake(context.Background(), fcm.SilentWake{Token: d.FCMToken, Command: command, DispatchID: dispatchID, DeviceID: deviceID}); err != nil {
+		s.Log.Warn("fcm wake failed", "deviceId", deviceID, "dispatchId", dispatchID, "err", err)
+		if markErr := s.Store.MarkWake(context.Background(), dispatchID, err.Error()); markErr != nil {
+			s.Log.Warn("mark wake failed", "dispatchId", dispatchID, "err", markErr)
+		}
+		return
+	}
+	if markErr := s.Store.MarkWake(context.Background(), dispatchID, ""); markErr != nil {
+		s.Log.Warn("mark wake failed", "dispatchId", dispatchID, "err", markErr)
+	}
 }
 
 func (s *Server) stream(c *gin.Context) {

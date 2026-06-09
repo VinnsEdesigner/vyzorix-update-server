@@ -1,9 +1,11 @@
+// Package services provides business logic services.
 package services
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -44,7 +46,7 @@ type EmailData struct {
 // VerificationEmail sends a welcome email with email verification link.
 func (s *EmailService) SendVerificationEmail(ctx context.Context, to, name, token string) error {
 	if s.apiKey == "" {
-		return fmt.Errorf("RESEND_API_KEY not configured")
+		return errors.New("RESEND_API_KEY not configured")
 	}
 
 	verifyURL := fmt.Sprintf("%s/auth/verify?token=%s", s.baseURL, token)
@@ -65,7 +67,7 @@ func (s *EmailService) SendVerificationEmail(ctx context.Context, to, name, toke
 // PasswordResetEmail sends a password reset email.
 func (s *EmailService) SendPasswordResetEmail(ctx context.Context, to, name, token string) error {
 	if s.apiKey == "" {
-		return fmt.Errorf("RESEND_API_KEY not configured")
+		return errors.New("RESEND_API_KEY not configured")
 	}
 
 	resetURL := fmt.Sprintf("%s/auth/reset-password?token=%s", s.baseURL, token)
@@ -86,7 +88,7 @@ func (s *EmailService) SendPasswordResetEmail(ctx context.Context, to, name, tok
 // PasswordChangedEmail sends a confirmation when password is changed.
 func (s *EmailService) SendPasswordChangedEmail(ctx context.Context, to, name string) error {
 	if s.apiKey == "" {
-		return fmt.Errorf("RESEND_API_KEY not configured")
+		return errors.New("RESEND_API_KEY not configured")
 	}
 
 	html, err := s.parseTemplate(passwordChangedEmailTemplate, EmailData{
