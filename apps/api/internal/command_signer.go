@@ -29,7 +29,7 @@ func NewCommandSigner() *CommandSigner {
 // Returns the nonce, HMAC hex string, and any error.
 //
 // Canonical string format (per COMMAND_SECURITY.md §3):
-// {dispatchId}|{deviceId}|{command}|{timestamp_unix_ms}|{nonce}|{args}
+// {dispatchId}|{deviceId}|{command}|{timestamp_unix_ms}|{nonce}|{args}.
 func (s *CommandSigner) SignCommand(frame *models.CommandFrame, deviceID, secret string) (nonce string, hmacHex string, err error) {
 	// Generate 16 random bytes → 32 hex chars
 	nonceBytes := make([]byte, 16)

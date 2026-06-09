@@ -9,7 +9,6 @@ import (
 
 	"firebase.google.com/go/v4/messaging"
 )
-
 var (
 	// ErrUnavailable indicates FCM service is temporarily unavailable.
 	ErrUnavailable = errors.New("fcm: temporarily unavailable")
