@@ -54,11 +54,11 @@ linters:
     - gofmt
     - gofumpt
     - goimports
-    # - godot  # Disabled - requires code formatting changes
+    - godot
     - misspell
     - revive
     - stylecheck
-    # - gci  # Disabled - requires code formatting changes
+    - gci
     - decorder
 
     # Complexity
