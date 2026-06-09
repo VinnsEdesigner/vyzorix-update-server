@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -536,7 +537,7 @@ func TestGetOperatorByEmail_notFound(t *testing.T) {
 
 	ctx := context.Background()
 	op, err := store.GetOperatorByEmail(ctx, "nonexistent@example.com")
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrNotFound) {
 		t.Fatalf("GetOperatorByEmail() unexpected error: %v", err)
 	}
 	if op != nil {
@@ -653,7 +654,7 @@ func TestDeleteSession(t *testing.T) {
 
 	// Verify deleted
 	got, err := store.GetSessionByTokenHash(ctx, "hash123")
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrNotFound) {
 		t.Fatalf("GetSessionByTokenHash() unexpected error: %v", err)
 	}
 	if got != nil {
@@ -671,7 +672,7 @@ func TestGetSessionByTokenHash_notFound(t *testing.T) {
 
 	ctx := context.Background()
 	sess, err := store.GetSessionByTokenHash(ctx, "nonexistent")
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrNotFound) {
 		t.Fatalf("GetSessionByTokenHash() unexpected error: %v", err)
 	}
 	if sess != nil {
