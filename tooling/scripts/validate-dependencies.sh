@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-echo "📦 Running dependency audit..."
+echo "[DEPENDENCY AUDITOR] Running dependency audit..."
 
 # Check for outdated Go dependencies
 echo "Checking Go dependencies..."
@@ -14,7 +14,7 @@ cd apps/api
 if command -v go &> /dev/null; then
     # Check for unused dependencies
     if go mod tidy 2>&1 | grep -q "unused"; then
-        echo "   ⚠️  Found unused Go dependencies - run 'go mod tidy'"
+        echo "   [WARNING] Found unused Go dependencies - run 'go mod tidy'"
     fi
     
     # Check for vulnerable dependencies (if govulncheck is available)
@@ -22,7 +22,7 @@ if command -v go &> /dev/null; then
         echo "   Running vulnerability scan..."
         govulncheck ./... 2>/dev/null || true
     else
-        echo "   ℹ️  govulncheck not installed - skipping vulnerability scan"
+        echo "   [INFO] govulncheck not installed - skipping vulnerability scan"
         echo "   Install with: go install golang.org/x/vuln/cmd/govulncheck@latest"
     fi
 fi
@@ -38,7 +38,7 @@ if command -v pnpm &> /dev/null; then
     # Check for security vulnerabilities
     if [[ -f "pnpm-lock.yaml" ]]; then
         # Audit only production dependencies
-        echo "   ℹ️  Run 'pnpm audit' for security audit"
+        echo "   [INFO] Run 'pnpm audit' for security audit"
     fi
 fi
 cd ../..
@@ -53,7 +53,7 @@ DEPRECATED=(
 
 for pkg in "${DEPRECATED[@]}"; do
     if grep -q "\"$pkg\"" apps/web/package.json 2>/dev/null; then
-        echo "   ⚠️  Found deprecated package: $pkg"
+        echo "   [WARNING] Found deprecated package: $pkg"
     fi
 done
 
@@ -63,13 +63,13 @@ if grep -q '"dev":' apps/web/package.json && \
    grep -q '"build":' apps/web/package.json && \
    grep -q '"lint":' apps/web/package.json && \
    grep -q '"typecheck":' apps/web/package.json; then
-    echo "   ✅ All required scripts are defined"
+    echo "   [OK] All required scripts are defined"
 else
-    echo "   ❌ ERROR: Missing required scripts in package.json"
+    echo "   [ERROR] Missing required scripts in package.json"
     exit 1
 fi
 
 echo ""
-echo "✅ Dependency audit complete!"
+echo "[OK] Dependency audit complete!"
 
 exit 0
