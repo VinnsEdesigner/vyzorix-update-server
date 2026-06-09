@@ -1,3 +1,4 @@
+// Package security provides authentication utilities.
 package security
 
 import (
@@ -18,15 +19,15 @@ import (
 
 var (
 	ErrInvalidGoogleToken     = errors.New("invalid Google ID token")
-	ErrGoogleTokenExpired     = errors.New("Google ID token expired")
-	ErrGoogleTokenBadIssuer   = errors.New("Google ID token wrong issuer")
-	ErrGoogleTokenBadAudience = errors.New("Google ID token wrong audience")
+	ErrGoogleTokenExpired     = errors.New("google ID token expired")
+	ErrGoogleTokenBadIssuer   = errors.New("google ID token wrong issuer")
+	ErrGoogleTokenBadAudience = errors.New("google ID token wrong audience")
 )
 
-// Google JWKS endpoint
+// Google JWKS endpoint.
 const googleJWKSURL = "https://www.googleapis.com/oauth2/v3/certs"
 
-// Google valid issuers
+// Google valid issuers.
 var googleIssuers = []string{"https://accounts.google.com", "accounts.google.com"}
 
 // GoogleTokenVerifier verifies Google ID tokens using Google's public keys.
@@ -150,7 +151,13 @@ func (v *GoogleTokenVerifier) getKey(kid string) (*rsa.PublicKey, error) {
 
 // refreshKeys fetches the JWKS from Google.
 func (v *GoogleTokenVerifier) refreshKeys() error {
-	resp, err := v.client.Get(v.jwksURL)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "GET", v.jwksURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create JWKS request: %w", err)
+	}
+	resp, err := v.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to fetch JWKS: %w", err)
 	}

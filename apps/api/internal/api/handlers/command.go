@@ -1,3 +1,4 @@
+// Package controllers provides HTTP handlers.
 package controllers
 
 import (
@@ -109,26 +110,8 @@ func (s *CommandController) SendCommand(c *gin.Context) {
 	}
 
 	// If device offline, trigger FCM wake
-	if delivery == "queued" && s.notifier != nil {
-		device, _, err := s.store.Device(c.Request.Context(), id)
-		if err == nil && device.FCMToken != "" {
-			wake := fcm.SilentWake{
-				Token:      device.FCMToken,
-				Command:    req.Command,
-				DispatchID: frame.DispatchID,
-				DeviceID:   id,
-			}
-			if err := s.notifier.SendSilentWake(context.Background(), wake); err != nil {
-				s.log.Warn("fcm wake failed", "deviceId", id, "dispatchId", frame.DispatchID, "err", err)
-				if markErr := s.store.MarkWake(context.Background(), frame.DispatchID, err.Error()); markErr != nil {
-					s.log.Warn("mark wake failed", "dispatchId", frame.DispatchID, "err", markErr)
-				}
-			} else {
-				if markErr := s.store.MarkWake(context.Background(), frame.DispatchID, ""); markErr != nil {
-					s.log.Warn("mark wake failed", "dispatchId", frame.DispatchID, "err", markErr)
-				}
-			}
-		}
+	if delivery == "queued" {
+		s.sendFCMWakeIfNeeded(id, req.Command, frame.DispatchID)
 	}
 
 	c.JSON(202, models.CommandResponse{
@@ -136,6 +119,33 @@ func (s *CommandController) SendCommand(c *gin.Context) {
 		Delivery:   delivery,
 		ServerTime: time.Now().UnixMilli(),
 	})
+}
+
+// sendFCMWakeIfNeeded sends an FCM wake notification if notifier is configured.
+func (s *CommandController) sendFCMWakeIfNeeded(deviceID, command, dispatchID string) {
+	if s.notifier == nil {
+		return
+	}
+	device, _, err := s.store.Device(context.Background(), deviceID)
+	if err != nil || device.FCMToken == "" {
+		return
+	}
+	wake := fcm.SilentWake{
+		Token:      device.FCMToken,
+		Command:    command,
+		DispatchID: dispatchID,
+		DeviceID:   deviceID,
+	}
+	if err := s.notifier.SendSilentWake(context.Background(), wake); err != nil {
+		s.log.Warn("fcm wake failed", "deviceId", deviceID, "dispatchId", dispatchID, "err", err)
+		if markErr := s.store.MarkWake(context.Background(), dispatchID, err.Error()); markErr != nil {
+			s.log.Warn("mark wake failed", "dispatchId", dispatchID, "err", markErr)
+		}
+		return
+	}
+	if markErr := s.store.MarkWake(context.Background(), dispatchID, ""); markErr != nil {
+		s.log.Warn("mark wake failed", "dispatchId", dispatchID, "err", markErr)
+	}
 }
 
 // GetCommandStatus retrieves the status of a command dispatch.
