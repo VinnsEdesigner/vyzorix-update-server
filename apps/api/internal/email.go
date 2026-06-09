@@ -43,7 +43,7 @@ type EmailData struct {
 	ExpiryMins   int
 }
 
-// VerificationEmail sends a welcome email with email verification link.
+// SendVerificationEmail sends a welcome email with email verification link.
 func (s *EmailService) SendVerificationEmail(ctx context.Context, to, name, token string) error {
 	if s.apiKey == "" {
 		return errors.New("RESEND_API_KEY not configured")
@@ -64,7 +64,7 @@ func (s *EmailService) SendVerificationEmail(ctx context.Context, to, name, toke
 	return s.send(ctx, to, "Verify your Vyzorix account", html)
 }
 
-// PasswordResetEmail sends a password reset email.
+// SendPasswordResetEmail sends a password reset email.
 func (s *EmailService) SendPasswordResetEmail(ctx context.Context, to, name, token string) error {
 	if s.apiKey == "" {
 		return errors.New("RESEND_API_KEY not configured")
@@ -85,7 +85,7 @@ func (s *EmailService) SendPasswordResetEmail(ctx context.Context, to, name, tok
 	return s.send(ctx, to, "Reset your Vyzorix password", html)
 }
 
-// PasswordChangedEmail sends a confirmation when password is changed.
+// SendPasswordChangedEmail sends a confirmation when password is changed.
 func (s *EmailService) SendPasswordChangedEmail(ctx context.Context, to, name string) error {
 	if s.apiKey == "" {
 		return errors.New("RESEND_API_KEY not configured")
