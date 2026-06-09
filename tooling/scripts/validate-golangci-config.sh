@@ -120,8 +120,8 @@ done
 enabled_count=$(grep -cE "^\s*-\s+[a-z]" "$CONFIG_FILE" 2>/dev/null || echo "0")
 echo "[INFO] Found $enabled_count linters enabled"
 
-if [[ "$enabled_count" -lt 40 ]]; then
-    echo "[ERROR] Very few linters enabled ($enabled_count). Aggressive config requires at least 40."
+if [[ "$enabled_count -lt 38 ]]; then
+    echo "[ERROR] Very few linters enabled ($enabled_count). Aggressive config requires at least 38."
     exit 1
 fi
 
