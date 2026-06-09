@@ -32,8 +32,6 @@ linters:
   enable:
     # Error handling (critical)
     - errcheck
-    # - errorlint  # Disabled - too strict, requires code restructuring
-    # - err113  # Disabled - too strict, requires code restructuring
     - errname
     - nilerr
     - nilnesserr
