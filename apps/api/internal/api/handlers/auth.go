@@ -321,7 +321,7 @@ func (ac *AuthController) Logout(c *gin.Context) {
 }
 
 // GoogleLoginRedirect sends the browser to Google's OAuth consent screen.
-// GET /v1/auth/google
+// GET /v1/auth/google.
 func (ac *AuthController) GoogleLoginRedirect(c *gin.Context) {
 	if ac.config.GoogleOAuthClientID == "" || ac.config.GoogleOAuthClientSecret == "" {
 		c.JSON(501, models.ErrorResponse{Error: "not_configured", Message: "Google OAuth is not configured on this server"})
