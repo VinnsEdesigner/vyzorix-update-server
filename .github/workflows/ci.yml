@@ -10,6 +10,25 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
+  # =============================================
+  # LINTER CONFIG GUARDIAN
+  # Prevents disabling critical linters
+  # =============================================
+  linter-config-guardian:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tooling/scripts/validate-golangci-config.sh
+            apps/api/.golangci.yml
+          sparse-checkout-cone-mode: false
+
+      - name: Validate linter config
+        run: |
+          chmod +x tooling/scripts/validate-golangci-config.sh
+          ./tooling/scripts/validate-golangci-config.sh
+
   lint:
     runs-on: ubuntu-latest
     steps:
