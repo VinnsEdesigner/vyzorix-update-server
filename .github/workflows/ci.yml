@@ -11,7 +11,7 @@ env:
 
 jobs:
   # =============================================
-  # LINTER CONFIG GUARDIAN
+  # LINTER CONFIG GUARDIANS
   # Prevents disabling critical linters
   # =============================================
   linter-config-guardian:
@@ -24,10 +24,26 @@ jobs:
             apps/api/.golangci.yml
           sparse-checkout-cone-mode: false
 
-      - name: Validate linter config
+      - name: Validate Go linter config
         run: |
           chmod +x tooling/scripts/validate-golangci-config.sh
           ./tooling/scripts/validate-golangci-config.sh
+
+  eslint-config-guardian:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tooling/scripts/validate-eslint-config.sh
+            apps/web/eslint.config.js
+            apps/web/package.json
+          sparse-checkout-cone-mode: false
+
+      - name: Validate ESLint config
+        run: |
+          chmod +x tooling/scripts/validate-eslint-config.sh
+          ./tooling/scripts/validate-eslint-config.sh
 
   lint:
     runs-on: ubuntu-latest
