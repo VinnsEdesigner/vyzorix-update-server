@@ -7,13 +7,14 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+
 	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
 	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 )
 
 // UpgraderFactory creates and configures WebSocket upgraders with consistent settings.
