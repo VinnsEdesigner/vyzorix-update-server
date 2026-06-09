@@ -14,13 +14,13 @@ These scripts act as **guardians** that run BEFORE linting to validate configura
 **Purpose:** Ensures critical Go linters remain enabled and the `.golangci.yml` is not weakened.
 
 **Checks:**
-- ✅ 8 critical linters are enabled (errcheck, unused, staticcheck, govet, gosec, bodyclose, revive, gofmt)
-- ✅ Critical linters are NOT commented out
-- ✅ At least 20 linters are enabled
+-  8 critical linters are enabled (errcheck, unused, staticcheck, govet, gosec, bodyclose, revive, gofmt)
+-  Critical linters are NOT commented out
+- At least 20 linters are enabled
 
 **What it prevents:**
 ```bash
-# ❌ THIS WILL FAIL CI:
+#  THIS WILL FAIL CI:
 # - errcheck  # Let me just disable this
 ```
 
@@ -30,9 +30,9 @@ These scripts act as **guardians** that run BEFORE linting to validate configura
 **Purpose:** Ensures critical ESLint rules remain configured and required packages are installed.
 
 **Checks:**
-- ✅ Critical rules are configured (no-unused-vars, react-hooks/exhaustive-deps, no-console)
-- ✅ Required packages are installed (eslint, react-hooks, import)
-- ✅ 'lint' script is defined in package.json
+- Critical rules are configured (no-unused-vars, react-hooks/exhaustive-deps, no-console)
+- Required packages are installed (eslint, react-hooks, import)
+- 'lint' script is defined in package.json
 
 ### 3. Security Validator
 **File:** `validate-security.sh`
@@ -40,12 +40,12 @@ These scripts act as **guardians** that run BEFORE linting to validate configura
 **Purpose:** Scans for common security vulnerabilities and hardcoded secrets.
 
 **Checks:**
-- ❌ Hardcoded passwords, API keys, tokens in code
-- ❌ SQL injection risks (fmt.Sprintf with SQL)
-- ❌ eval() usage in frontend code
-- ⚠️ innerHTML assignments (XSS risk)
-- ⚠️ Security TODO/FIXME comments
-- ⚠️ console.log in production code
+-  Hardcoded passwords, API keys, tokens in code
+-  SQL injection risks (fmt.Sprintf with SQL)
+-  eval() usage in frontend code
+-  innerHTML assignments (XSS risk)
+-  Security TODO/FIXME comments
+-  console.log in production code
 
 ### 4. Dependency Auditor
 **File:** `validate-dependencies.sh`
@@ -53,11 +53,11 @@ These scripts act as **guardians** that run BEFORE linting to validate configura
 **Purpose:** Ensures dependencies are properly maintained and audited.
 
 **Checks:**
-- ⚠️ Unused Go dependencies
-- ⚠️ Vulnerable dependencies (via govulncheck)
-- ⚠️ Outdated npm packages
-- ⚠️ Deprecated packages (moment, lodash, classnames)
-- ✅ Required npm scripts are defined
+-  Unused Go dependencies
+-  Vulnerable dependencies (via govulncheck)
+-  Outdated npm packages
+-  Deprecated packages (moment, lodash, classnames)
+- Required npm scripts are defined
 
 ### 5. Git Convention Validator
 **File:** `validate-git-conventions.sh`
@@ -65,8 +65,8 @@ These scripts act as **guardians** that run BEFORE linting to validate configura
 **Purpose:** Validates commit messages and branch names follow conventions.
 
 **Checks:**
-- ✅ Commit follows conventional commits format
-- ✅ Branch follows naming conventions (main, develop, feature/*, etc.)
+- Commit follows conventional commits format
+- Branch follows naming conventions (main, develop, feature/*, etc.)
 
 **Format:** `type(scope): description`
 - Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, opt
@@ -77,11 +77,11 @@ These scripts act as **guardians** that run BEFORE linting to validate configura
 **Purpose:** Ensures strict TypeScript practices are followed.
 
 **Checks:**
-- ⚠️ 'any' type usage (should use 'unknown')
-- ⚠️ Non-null assertions (!) usage
-- ⚠️ @ts-ignore/@ts-expect-error comments
-- ⚠️ TODO/FIXME comments count
-- ✅ Strict mode in tsconfig.json
+-  'any' type usage (should use 'unknown')
+-  Non-null assertions (!) usage
+-  @ts-ignore/@ts-expect-error comments
+- TODO/FIXME comments count
+- Strict mode in tsconfig.json
 
 ## Running Locally
 
