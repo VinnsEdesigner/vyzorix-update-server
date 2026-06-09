@@ -11,8 +11,8 @@ env:
 
 jobs:
   # =============================================
-  # LINTER CONFIG GUARDIANS
-  # Prevents disabling critical linters
+  # CONFIGURATION GUARDIANS
+  # Validates linter configs remain locked
   # =============================================
   linter-config-guardian:
     runs-on: ubuntu-latest
@@ -44,6 +44,59 @@ jobs:
         run: |
           chmod +x tooling/scripts/validate-eslint-config.sh
           ./tooling/scripts/validate-eslint-config.sh
+
+  # =============================================
+  # SECURITY VALIDATOR
+  # Scans for common security issues
+  # =============================================
+  security-validator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run security validation
+        run: |
+          chmod +x tooling/scripts/validate-security.sh
+          ./tooling/scripts/validate-security.sh
+
+  # =============================================
+  # DEPENDENCY AUDITOR
+  # Ensures dependencies are properly maintained
+  # =============================================
+  dependency-auditor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: null
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Run dependency audit
+        run: |
+          chmod +x tooling/scripts/validate-dependencies.sh
+          ./tooling/scripts/validate-dependencies.sh
+
+  # =============================================
+  # TYPESCRIPT STRICT VALIDATOR
+  # Ensures strict TypeScript practices
+  # =============================================
+  typescript-strict-validator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run TypeScript strict validation
+        run: |
+          chmod +x tooling/scripts/validate-typescript-strict.sh
+          ./tooling/scripts/validate-typescript-strict.sh
 
   lint:
     runs-on: ubuntu-latest
