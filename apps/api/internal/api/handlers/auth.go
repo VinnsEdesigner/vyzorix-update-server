@@ -226,7 +226,7 @@ func (ac *AuthController) UpdateName(c *gin.Context) {
 }
 
 // UpdateSettings updates operator settings (name, thresholds, and client preferences).
-// PATCH /v1/auth/me/settings
+// PATCH /v1/auth/me/settings.
 func (ac *AuthController) UpdateSettings(c *gin.Context) {
 	op := getOperatorFromContext(c)
 	if op == nil {
