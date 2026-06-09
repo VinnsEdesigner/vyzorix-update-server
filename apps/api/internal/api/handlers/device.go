@@ -32,7 +32,7 @@ func NewDeviceController(log *slog.Logger, cfg config.Config, st *storage.Store,
 }
 
 // Register handles device registration.
-// POST /v1/device/register
+// POST /v1/device/register.
 func (s *DeviceController) Register(c *gin.Context) {
 	var req models.RegisterRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
@@ -66,7 +66,7 @@ func (s *DeviceController) Register(c *gin.Context) {
 }
 
 // Status returns the current status of a device.
-// GET /v1/device/:id/status
+// GET /v1/device/:id/status.
 func (s *DeviceController) Status(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -97,7 +97,7 @@ func (s *DeviceController) Status(c *gin.Context) {
 }
 
 // UpdateFCMToken updates the FCM token for a device.
-// PATCH /v1/device/:id/fcm-token
+// PATCH /v1/device/:id/fcm-token.
 func (s *DeviceController) UpdateFCMToken(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -130,7 +130,7 @@ func (s *DeviceController) UpdateFCMToken(c *gin.Context) {
 }
 
 // Delete removes a device from the registry.
-// DELETE /v1/device/:id
+// DELETE /v1/device/:id.
 func (s *DeviceController) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
