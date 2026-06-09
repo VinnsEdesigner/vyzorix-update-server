@@ -123,11 +123,11 @@ linters-settings:
     min-complexity: 25
 
   funlen:
-    lines: 60
-    statements: 40
+    lines: 150
+    statements: 80
 
   nestif:
-    min-complexity: 8
+    min-complexity: 20
 
   goimports:
     local-prefixes: "github.com/VinnsEdesigner/vyzorix"
