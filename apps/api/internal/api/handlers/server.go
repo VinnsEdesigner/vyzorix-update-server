@@ -12,6 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/fcm"
@@ -20,8 +23,6 @@ import (
 	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 )
 
 type Server struct {
@@ -203,6 +204,7 @@ func (s *Server) readVersion() (string, error) {
 func (s *Server) version(c *gin.Context) {
 	serveStaticFile(c, filepath.Join(s.Config.DataDir, "version.json"), "application/json; charset=utf-8")
 }
+
 func (s *Server) changelog(c *gin.Context) {
 	serveStaticFile(c, filepath.Join(s.Config.DataDir, "changelog.json"), "application/json; charset=utf-8")
 }

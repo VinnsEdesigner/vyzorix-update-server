@@ -111,6 +111,7 @@ func get(k, fallback string) string {
 	}
 	return fallback
 }
+
 func getBool(k string, fallback bool) bool {
 	v := strings.TrimSpace(os.Getenv(k))
 	if v == "" {
@@ -122,6 +123,7 @@ func getBool(k string, fallback bool) bool {
 	}
 	return b
 }
+
 func splitCSV(v string) []string {
 	parts := strings.Split(v, ",")
 	out := make([]string, 0, len(parts))
