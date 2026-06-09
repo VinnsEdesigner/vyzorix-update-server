@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
 	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
-	"github.com/gin-gonic/gin"
 )
 
 // DeviceController handles device registration, status, and management.
