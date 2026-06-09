@@ -228,12 +228,6 @@ linters-settings:
         - version: ">=1.24"
           reason: "Go 1.24+ required for latest features"
 
-  importas:
-    alias:
-      - allowLeadingUnderscore: false
-        disabled: true  # Disable since we don't use strict aliasing
-        list: []
-
   loggercheck:
     # Allow common logger keys
     allowableKeys:
