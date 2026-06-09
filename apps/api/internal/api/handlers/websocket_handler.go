@@ -123,7 +123,7 @@ func (s *WebSocketHandler) OriginValidator() *security.OriginValidator {
 }
 
 // HandleStream upgrades HTTP to WebSocket and registers the client.
-// GET /v1/device/:id/stream
+// GET /v1/device/:id/stream.
 func (s *WebSocketHandler) HandleStream(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
