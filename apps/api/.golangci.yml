@@ -32,12 +32,12 @@ linters:
   enable:
     # Error handling (critical)
     - errcheck
-    # - errorlint  # Disabled - too strict about error wrapping style
-    # - err113  # Disabled - requires wrapped static errors, too restrictive
-    # - errname  # Disabled - naming convention for errors
-    # - nilerr  # Disabled - error not nil but returns nil
-    # - nilnesserr  # Disabled - checks err != nil but returns nil
-    # - nilnil  # Disabled - returns nil error with invalid value
+    - errorlint
+    - err113
+    - errname
+    - nilerr
+    - nilnesserr
+    - nilnil
     - rowserrcheck
     - sqlclosecheck
 
@@ -48,24 +48,23 @@ linters:
     - govet
     - ineffassign
     - copyloopvar
-    # - predeclared  # Disabled - shadowing predeclared identifiers
+    - predeclared
 
     # Style & formatting
     - gofmt
-    # - gofumpt  # Disabled - strict formatting (use gofmt instead)
-    # - goimports  # Disabled - strict import order (use gofmt instead)
-    # - goheader  # Disabled - config issues
-    # - godot  # Disabled - comments must end with periods (overly strict)
+    - gofumpt
+    - goimports
+    - godot
     - misspell
     - revive
-    # - stylecheck  # Disabled - strict style rules for comments
-    # - gci  # Disabled - import order checking (requires goimports to be run)
+    - stylecheck
+    - gci
     - decorder
 
     # Complexity
     - gocyclo
-    # - funlen  # Disabled - too strict for this codebase
-    # - nestif  # Disabled - complex nested if blocks
+    - funlen
+    - nestif
     - maintidx
 
     # Security
@@ -74,11 +73,11 @@ linters:
 
     # Best practices
     - exhaustive
-    # - exhaustruct  # Disabled - requires all struct fields to be initialized
+    - exhaustruct
     - iface
     - importas
-    # - noctx  # Disabled - requires explicit context in all HTTP handlers
-    # - contextcheck  # Disabled - too strict for this codebase
+    - noctx
+    - contextcheck
     - containedctx
     - asciicheck
     - bidichk
@@ -87,14 +86,14 @@ linters:
     # Naming & conventions
     - godox
     - goprintffuncname
-    # - errchkjson  # Disabled - JSON encoding error checking
-    # - perfsprint  # Disabled - fmt.Sprintf vs strconv performance
+    - errchkjson
+    - perfsprint
 
     # Testing
-    # - paralleltest  # Disabled - requires t.Parallel() in all tests
-    # - testableexamples  # Disabled - examples need output
-    # - testpackage  # Disabled - test in separate package
-    # - testifylint  # Disabled - testify assertions
+    - paralleltest
+    - testableexamples
+    - testpackage
+    - testifylint
 
     # Performance
     - prealloc
@@ -102,7 +101,7 @@ linters:
     - nakedret
 
     # Imports
-    # - depguard  # Disabled - requires explicit allow lists for internal packages
+    # - depguard  # Requires complex allowlist configuration
     - gomoddirectives
     - gomodguard
 
@@ -128,8 +127,8 @@ linters-settings:
     min-complexity: 25
 
   funlen:
-    lines: 200
-    statements: 100
+    lines: 60
+    statements: 40
 
   nestif:
     min-complexity: 8
@@ -166,3 +165,159 @@ linters-settings:
         disabled: true
       - name: unexported-naming
         disabled: true
+
+  depguard:
+    rules:
+      main:
+        allow:
+          - $gostd
+          - $local
+          - prefix(github.com/VinnsEdesigner/vyzorix/apps/api)
+      test:
+        allow:
+          - $gostd
+          - $local
+          - prefix(github.com/VinnsEdesigner/vyzorix/apps/api)
+          - github.com/stretchr/testify
+      scripts:
+        allow:
+          - $gostd
+          - $local
+          - prefix(github.com/VinnsEdesigner/vyzorix/apps/api)
+
+  errorlint:
+    errorf: true
+    errors: # which errors to check
+      - errors.New
+      - fmt.Errorf
+      - reflect.DeepEqual
+    funcs:
+      - errors.Is
+      - errors.As
+      - errors.New
+      - fmt.Errorf
+      - reflect.DeepEqual
+
+  errchkjson:
+    checkJSONMarshalerType: true
+    reportNoExportedType: true
+
+  perfsprint:
+    # Use faster alternatives
+    forbidStrconv: false
+    suggestStrconv: true
+
+  paralleltest:
+    # Warn about missing t.Parallel() in test files
+    requireExternalIntegration: false
+
+  testifylint:
+    # Enable all testify lint rules
+    disable-all: false
+
+  stylecheck:
+    checks:
+      - "ALL"
+    httpStatusCodeImport: false
+
+  gomodguard:
+    allowed:
+      go: "1.24"
+    blocked:
+      go versions:
+        - version: ">=1.24"
+          reason: "Go 1.24+ required for latest features"
+
+  importas:
+    alias:
+      - allowLeadingUnderscore: false
+        disabled: false
+        list:
+          - alias: hmac
+            prefix: github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto
+          - alias: controllers
+            prefix: github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers
+          - alias: hub
+            prefix: github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws
+          - alias: security
+            prefix: github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth
+          - alias: services
+            prefix: github.com/VinnsEdesigner/vyzorix/apps/api/internal
+
+  loggercheck:
+    # Allow common logger keys
+    allowableKeys:
+      - "caller"
+      - "error"
+      - "level"
+      - "msg"
+      - "time"
+      - "timestamp"
+      - "message"
+      - "err"
+      - "logger"
+    requireErrorKey: true
+
+  sloglint:
+    # Require structured logging
+    noRawLogger: true
+    noMixedArgs: true
+    kvPairsOnly: true
+
+  nilerr:
+    # Will report an error if there is an unchecked error return at the end of a function
+    require: true
+
+  nilnesserr:
+    # Will report an error if there is a path in the code where the error is nil but a return value is not nil
+    require: true
+
+  noctx:
+    # Check for context passing in HTTP handlers
+    checkReceiver: "^(ok|ctx)$"
+
+  contextcheck:
+    # Check that context is passed to all functions that need it
+    disabledFunctions:
+      - "fmt.Printf"
+      - "fmt.Sprintf"
+      - "log.Printf"
+      - "log.Fatalf"
+      - "testing.T.Fatal"
+      - "testing.T.Fatalf"
+    extraAllowedFunctions: []
+    extraForbiddenFunctions: []
+
+  godox:
+    keywords:
+      - TODO
+      - FIXME
+      - OPTIMIZE
+      - HACK
+      - BUG
+      - NOTE
+    requirePrefix: "TODO(author):"
+
+  exhaustruct:
+    # Require all struct fields to be initialized
+    ignore:
+      - "github.com/gin-gonic/gin.Context"
+      - "github.com/gin-gonic/gin.Request"
+      - "github.com/gin-gonic/gin.ResponseWriter"
+
+  testableexamples:
+    # Require examples to have expected output
+    style: "standalone"
+
+  testpackage:
+    # Require tests to be in a separate _test package
+    # Set to false since this project uses internal test packages
+    skipRegexp: ".*"
+
+  errname:
+    # Error names must be prefixed with Err and error types suffixed with Error
+    disabled: false
+
+  err113:
+    # Disallow error wrapping in the style of `fmt.Errorf("description: %w", err)`
+    disabled: false
