@@ -7,13 +7,14 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/fcm"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
 	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
-	"github.com/gin-gonic/gin"
 )
 
 // CommandController receives manual C2 commands from the React dashboard.
@@ -149,7 +150,7 @@ func (s *CommandController) sendFCMWakeIfNeeded(deviceID, command, dispatchID st
 }
 
 // GetCommandStatus retrieves the status of a command dispatch.
-// GET /v1/command/:dispatchId/status
+// GET /v1/command/:dispatchId/status.
 func (s *CommandController) GetCommandStatus(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {
@@ -166,7 +167,7 @@ func (s *CommandController) GetCommandStatus(c *gin.Context) {
 }
 
 // RetryCommand retries a failed command dispatch.
-// POST /v1/command/:dispatchId/retry
+// POST /v1/command/:dispatchId/retry.
 func (s *CommandController) RetryCommand(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {
@@ -182,7 +183,7 @@ func (s *CommandController) RetryCommand(c *gin.Context) {
 }
 
 // GetPendingCommands returns queued commands for a device.
-// GET /v1/device/:id/commands/pending
+// GET /v1/device/:id/commands/pending.
 func (s *CommandController) GetPendingCommands(c *gin.Context) {
 	deviceID := c.Param("id")
 	if deviceID == "" {
@@ -197,7 +198,7 @@ func (s *CommandController) GetPendingCommands(c *gin.Context) {
 }
 
 // CancelCommand cancels a pending command.
-// DELETE /v1/command/:dispatchId
+// DELETE /v1/command/:dispatchId.
 func (s *CommandController) CancelCommand(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {

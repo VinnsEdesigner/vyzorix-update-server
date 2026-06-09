@@ -11,8 +11,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 )
 
 // CommandSigner handles HMAC signing of commands per DEVICE_REGISTRATION.md §5

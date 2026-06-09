@@ -63,7 +63,7 @@ linters:
 
     # Complexity
     - gocyclo
-    # - funlen  # Disabled - too strict, functions need refactoring
+    - funlen
     - nestif
     - maintidx
 
