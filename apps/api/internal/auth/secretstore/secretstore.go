@@ -43,7 +43,6 @@ func NewSecretStore(baseDir string, masterKeyBase64 string) (*SecretStore, error
 	}
 
 	// Ensure base directory exists with proper permissions
-
 	if err := os.MkdirAll(baseDir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create secrets directory: %w", err)
 	}
@@ -79,7 +78,6 @@ func (s *SecretStore) Set(deviceID string, secret string) error {
 	}
 
 	secretPath := s.secretPath(deviceID)
-
 	if err := os.WriteFile(secretPath, encrypted, 0600); err != nil {
 		return fmt.Errorf("failed to write secret file: %w", err)
 	}
