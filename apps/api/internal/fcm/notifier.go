@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	// ErrUnavailable indicates FCM service is temporarily unavailable
+	// ErrUnavailable indicates FCM service is temporarily unavailable.
 	ErrUnavailable = errors.New("fcm: temporarily unavailable")
 )
 
