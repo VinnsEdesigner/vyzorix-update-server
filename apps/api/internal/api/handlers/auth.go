@@ -15,13 +15,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
+
 	services "github.com/VinnsEdesigner/vyzorix/apps/api/internal"
 	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
-	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // AuthController handles operator authentication: login, register, logout, me, Google OAuth.
@@ -345,7 +346,7 @@ func (ac *AuthController) GoogleLoginRedirect(c *gin.Context) {
 }
 
 // GoogleCallback handles the OAuth callback from Google.
-// GET /v1/auth/google/callback
+// GET /v1/auth/google/callback.
 func (ac *AuthController) GoogleCallback(c *gin.Context) {
 	code := c.Query("code")
 	_ = c.Query("state") // frontend URL to redirect back to (reserved for future use)
@@ -527,7 +528,7 @@ func (ac *AuthController) sendVerificationEmail(ctx context.Context, op *models.
 }
 
 // VerifyEmail handles email verification requests.
-// POST /v1/auth/verify-email
+// POST /v1/auth/verify-email.
 func (ac *AuthController) VerifyEmail(c *gin.Context) {
 	var req models.VerifyEmailRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
@@ -581,7 +582,7 @@ func (ac *AuthController) VerifyEmail(c *gin.Context) {
 }
 
 // ResendVerification resends the verification email.
-// POST /v1/auth/resend-verification
+// POST /v1/auth/resend-verification.
 func (ac *AuthController) ResendVerification(c *gin.Context) {
 	var req models.ResendVerificationRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
@@ -632,7 +633,7 @@ func (ac *AuthController) ResendVerification(c *gin.Context) {
 }
 
 // ForgotPassword handles password reset requests.
-// POST /v1/auth/forgot-password
+// POST /v1/auth/forgot-password.
 func (ac *AuthController) ForgotPassword(c *gin.Context) {
 	var req models.ForgotPasswordRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
@@ -713,7 +714,7 @@ func (ac *AuthController) ForgotPassword(c *gin.Context) {
 }
 
 // ResetPassword handles password reset with a valid token.
-// POST /v1/auth/reset-password
+// POST /v1/auth/reset-password.
 func (ac *AuthController) ResetPassword(c *gin.Context) {
 	var req models.ResetPasswordRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {

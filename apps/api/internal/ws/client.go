@@ -7,8 +7,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 	"github.com/gorilla/websocket"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 )
 
 const (
