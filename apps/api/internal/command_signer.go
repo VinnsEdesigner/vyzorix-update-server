@@ -96,7 +96,7 @@ func (s *CommandSigner) ValidateTimestamp(frame *models.CommandFrame, maxDriftMs
 }
 
 // ValidateConnectHMAC validates WebSocket connection HMAC per DEVICE_REGISTRATION.md §4.1.
-// Format: HMAC over "CONNECT:<deviceId>:<timestamp>:<nonce>"
+// Format: HMAC over "CONNECT:<deviceId>:<timestamp>:<nonce>".
 func (s *CommandSigner) ValidateConnectHMAC(deviceID, timestamp, nonce, providedHmac, secret string) bool {
 	canonical := "CONNECT:" + deviceID + ":" + timestamp + ":" + nonce
 
