@@ -12,7 +12,7 @@ env:
 jobs:
   # =============================================
   # CONFIGURATION GUARDIANS
-  # Validates linter configs remain locked
+  
   # =============================================
   linter-config-guardian:
     runs-on: ubuntu-latest
@@ -47,7 +47,7 @@ jobs:
 
   # =============================================
   # SECURITY VALIDATOR
-  # Scans for common security issues
+  
   # =============================================
   security-validator:
     runs-on: ubuntu-latest
@@ -61,7 +61,7 @@ jobs:
 
   # =============================================
   # DEPENDENCY AUDITOR
-  # Ensures dependencies are properly maintained
+  
   # =============================================
   dependency-auditor:
     runs-on: ubuntu-latest
@@ -86,7 +86,7 @@ jobs:
 
   # =============================================
   # TYPESCRIPT STRICT VALIDATOR
-  # Ensures strict TypeScript practices
+
   # =============================================
   typescript-strict-validator:
     runs-on: ubuntu-latest
