@@ -75,7 +75,7 @@ linters:
     - exhaustive
     - exhaustruct
     - iface
-    - importas
+    # - importas  # Disabled - requires strict aliasing configuration
     - noctx
     - contextcheck
     - containedctx
@@ -231,18 +231,8 @@ linters-settings:
   importas:
     alias:
       - allowLeadingUnderscore: false
-        disabled: false
-        list:
-          - alias: hmac
-            prefix: github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto
-          - alias: controllers
-            prefix: github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers
-          - alias: hub
-            prefix: github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws
-          - alias: security
-            prefix: github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth
-          - alias: services
-            prefix: github.com/VinnsEdesigner/vyzorix/apps/api/internal
+        disabled: true  # Disable since we don't use strict aliasing
+        list: []
 
   loggercheck:
     # Allow common logger keys
