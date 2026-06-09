@@ -107,11 +107,12 @@ for pattern in "${SUSPICIOUS_PATTERNS[@]}"; do
 done
 
 # Check minimum linter count (should have at least 40 enabled for aggressive config)
-enabled_count=$(grep -cE "^\s*-\s+[a-z]" "$CONFIG_FILE" 2>/dev/null || echo "0")
+enabled_count=$(grep -cE "^\s*-\s+[a-z]" "$CONFIG_FILE" || echo "0")
 echo "[INFO] Found $enabled_count linters enabled"
 
-if [[ "$enabled_count -lt 38 ]]; then
-    echo "[ERROR] Very few linters enabled ($enabled_count). Aggressive config requires at least 38."
+enabled_int=${enabled_count:-0}
+if [[ "$enabled_int" -lt 38 ]]; then
+    echo "[ERROR] Very few linters enabled ($enabled_int). Aggressive config requires at least 38."
     exit 1
 fi
 
