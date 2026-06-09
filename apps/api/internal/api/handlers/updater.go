@@ -31,21 +31,21 @@ func NewUpdaterController(log *slog.Logger, cfg config.Config, st *storage.Store
 }
 
 // Version serves the version manifest for OTA updates.
-// GET /api/v1/version
+// GET /api/v1/version.
 func (s *UpdaterController) Version(c *gin.Context) {
 	s.log.Info("ota version request", "path", c.Request.URL.Path)
 	s.serveJSON(c, filepath.Join(s.config.DataDir, "version.json"))
 }
 
 // Changelog serves the release changelog.
-// GET /api/v1/changelog
+// GET /api/v1/changelog.
 func (s *UpdaterController) Changelog(c *gin.Context) {
 	s.log.Info("ota changelog request", "path", c.Request.URL.Path)
 	s.serveJSON(c, filepath.Join(s.config.DataDir, "changelog.json"))
 }
 
 // APK serves APK files with optional Range support for resume.
-// GET /api/v1/apk/:filename
+// GET /api/v1/apk/:filename.
 func (s *UpdaterController) APK(c *gin.Context) {
 	filename := c.Param("filename")
 	if filename == "" {
@@ -57,7 +57,7 @@ func (s *UpdaterController) APK(c *gin.Context) {
 }
 
 // Bin serves binary artifacts (same as APK but different path prefix).
-// GET /bin/:filename
+// GET /bin/:filename.
 func (s *UpdaterController) Bin(c *gin.Context) {
 	filename := c.Param("filename")
 	if filename == "" {
@@ -101,7 +101,7 @@ func (s *UpdaterController) serveAPK(c *gin.Context, filename string) {
 }
 
 // CheckUpdate checks if an update is available for a device.
-// GET /api/v1/check-update?version_code=X
+// GET /api/v1/check-update?version_code=X.
 func (s *UpdaterController) CheckUpdate(c *gin.Context) {
 	versionCode := c.Query("version_code")
 	s.log.Info("update check", "version_code", versionCode)
@@ -134,7 +134,7 @@ func (s *UpdaterController) CheckUpdate(c *gin.Context) {
 }
 
 // DownloadProgress tracks download progress for analytics.
-// POST /api/v1/download-progress
+// POST /api/v1/download-progress.
 func (s *UpdaterController) DownloadProgress(c *gin.Context) {
 	var req struct {
 		DeviceID    string `json:"deviceId"`
