@@ -6,28 +6,28 @@
 
 ## Features
 
-### 🎯 Core Configuration
+###  Core Configuration
 - **Vite Configuration** (`defineViteConfig`) - Complete Vite setup with TanStack Start, React, Tailwind CSS, and SSR support
 - **API Client** (`createApiClient`) - Type-safe API client with authentication, error handling, and automatic token management
 - **Auth Client** (`createAuthClient`) - OAuth and JWT authentication flow management
 - **Environment Management** (`loadEnv`) - Zod-validated environment variables with type safety
 
-### 🎨 Code Quality
+###  Code Quality
 - **ESLint Configuration** - Comprehensive ESLint setup for TypeScript, React, and imports
 - **Prettier Configuration** - Standardized code formatting rules
 - **Vitest Configuration** - Test setup with coverage and utilities
 
-### 🎭 Styling
+###  Styling
 - **Tailwind CSS Preset** - Vyzorix brand colors, design system, and theme configuration
 - **Dark Mode Support** - Built-in dark mode theming
 
-### 🔧 Development Tools
+###  Development Tools
 - **Git Hooks** - Husky integration with lint-staged for pre-commit validation
 - **GitHub Actions Templates** - CI/CD workflows for testing, linting, and deployment
 - **VSCode Settings** - Recommended extensions and editor configuration
 - **Docker Compose** - Local development environment setup
 
-### 🚀 Deployment
+###  Deployment
 - **Multi-target Support** - Cloudflare Workers, Node.js, Static hosting, Docker
 - **CI/CD Templates** - GitHub Actions workflows for automated deployments
 
@@ -340,14 +340,7 @@ npx @vyzorix/config init --include vite,eslint,prettier,vitest
 npx @vyzorix/config init --target cloudflare
 ```
 
-## Contributing
-
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
 
 ## License
 
 MIT License - see LICENSE file for details.
-
----
-
-Built with ❤️ by VinnsEdesigner for the Vyzorix ecosystem
