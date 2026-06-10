@@ -117,6 +117,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         
+      - name: Build dependencies
+        run: pnpm run prelint
+        
       - name: Lint
         run: pnpm lint
         
@@ -141,6 +144,9 @@ jobs:
           
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        
+      - name: Build dependencies
+        run: pnpm run prelint
         
       - name: Test
         run: pnpm test
