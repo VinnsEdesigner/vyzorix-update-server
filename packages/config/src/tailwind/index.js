@@ -6,14 +6,14 @@ const defaultConfig = {
   colors: {
     // Primary - Rose-500 (MOST IMPORTANT BRAND COLOR)
     primary: {
-      DEFAULT: "oklch(0.65 0.22 16.439)",
+      DEFAULT: "oklch(0.645 0.246 16.439)",
       foreground: "oklch(0.985 0 0)",
       50: "oklch(0.95 0.03 16.439)",
       100: "oklch(0.90 0.06 16.439)",
       200: "oklch(0.85 0.09 16.439)",
       300: "oklch(0.78 0.14 16.439)",
       400: "oklch(0.71 0.18 16.439)",
-      500: "oklch(0.65 0.22 16.439)",
+      500: "oklch(0.645 0.246 16.439)",
       600: "oklch(0.60 0.20 16.439)",
       700: "oklch(0.55 0.18 16.439)",
       800: "oklch(0.50 0.16 16.439)",
@@ -73,7 +73,7 @@ const defaultConfig = {
     
     // Chart colors (Rose-based)
     chart: {
-      1: "oklch(0.65 0.22 16.439)",   // Rose-500
+      1: "oklch(0.645 0.246 16.439)",   // Rose-500
       2: "oklch(0.6 0.118 184.704)",
       3: "oklch(0.398 0.07 227.392)",
       4: "oklch(0.828 0.189 84.429)",
@@ -84,7 +84,7 @@ const defaultConfig = {
     sidebar: {
       DEFAULT: "oklch(0.984 0.003 247.858)",
       foreground: "oklch(0.129 0.042 264.695)",
-      primary: "oklch(0.65 0.22 16.439)",
+      primary: "oklch(0.645 0.246 16.439)",
       "primary-foreground": "oklch(0.985 0 0)",
       accent: "oklch(0.968 0.007 247.896)",
       "accent-foreground": "oklch(0.208 0.042 265.755)",
@@ -103,7 +103,7 @@ const defaultConfig = {
     "muted-foreground": "oklch(0.554 0.046 257.417)",
     border: "oklch(0.929 0.013 255.508)",
     input: "oklch(0.929 0.013 255.508)",
-    ring: "oklch(0.65 0.22 16.439)",
+    ring: "oklch(0.645 0.246 16.439)",
   },
   
   // Border radius
@@ -172,7 +172,7 @@ const darkMode = {
     "card-foreground": "oklch(0.984 0.003 247.858)",
     popover: "oklch(0.208 0.042 265.755)",
     "popover-foreground": "oklch(0.984 0.003 247.858)",
-    primary: "oklch(0.65 0.22 16.439)",
+    primary: "oklch(0.645 0.246 16.439)",
     "primary-foreground": "oklch(0.985 0 0)",
     secondary: "oklch(0.279 0.041 260.031)",
     "secondary-foreground": "oklch(0.984 0.003 247.858)",
@@ -184,18 +184,18 @@ const darkMode = {
     "destructive-foreground": "oklch(0.984 0.003 247.858)",
     border: "oklch(1 0 0 / 10%)",
     input: "oklch(1 0 0 / 15%)",
-    ring: "oklch(0.65 0.22 16.439)",
+    ring: "oklch(0.645 0.246 16.439)",
     chart: {
       1: "oklch(0.488 0.243 264.376)",
       2: "oklch(0.696 0.17 162.48)",
       3: "oklch(0.769 0.188 70.08)",
       4: "oklch(0.627 0.265 303.9)",
-      5: "oklch(0.65 0.22 16.439)",
+      5: "oklch(0.645 0.246 16.439)",
     },
     sidebar: {
       DEFAULT: "oklch(0.208 0.042 265.755)",
       foreground: "oklch(0.984 0.003 247.858)",
-      primary: "oklch(0.65 0.22 16.439)",
+      primary: "oklch(0.645 0.246 16.439)",
       "primary-foreground": "oklch(0.985 0 0)",
       accent: "oklch(0.279 0.041 260.031)",
       "accent-foreground": "oklch(0.984 0.003 247.858)",
