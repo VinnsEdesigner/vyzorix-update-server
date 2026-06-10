@@ -170,7 +170,8 @@ type MultiWindowLimiter struct {
 func NewMultiWindowLimiter(limits map[string]struct {
 	Window time.Duration
 	Max    int
-}) *MultiWindowLimiter {
+},
+) *MultiWindowLimiter {
 	ml := &MultiWindowLimiter{
 		limiters: make(map[string]*RateLimiter),
 		config:   limits,

@@ -191,7 +191,7 @@ export function createApiClient(config: ApiClientConfig) {
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
-        } catch (e) {
+        } catch (_e) {
           // Couldn't parse error response, use default message
         }
 
@@ -205,7 +205,7 @@ export function createApiClient(config: ApiClientConfig) {
       let responseData: T;
       try {
         responseData = await response.json();
-      } catch (e) {
+      } catch (_e) {
         responseData = {} as T; // Empty object for non-JSON responses
       }
 

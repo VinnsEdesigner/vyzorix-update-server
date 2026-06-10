@@ -2,8 +2,8 @@
 // Node.js server deployment configuration
 
 export interface NodeConfig {
-  routeRules?: Record<string, any>;
-  node?: Record<string, any>;
+  routeRules?: Record<string, Record<string, unknown>>;
+  node?: Record<string, unknown>;
 }
 
 export const nodePreset: NodeConfig = {
