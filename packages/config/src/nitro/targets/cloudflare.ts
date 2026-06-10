@@ -2,10 +2,10 @@
 // Cloudflare Workers deployment configuration
 
 export interface CloudflareConfig {
-  routeRules?: Record<string, any>;
-  wasm?: Record<string, any>;
-  externals?: Record<string, any>;
-  cfProperties?: Record<string, Function>;
+  routeRules?: Record<string, Record<string, unknown>>;
+  wasm?: Record<string, unknown>;
+  externals?: Record<string, unknown>;
+  cfProperties?: Record<string, (age: number) => Record<string, string>>;
 }
 
 export const cloudflarePreset: CloudflareConfig = {
@@ -44,7 +44,7 @@ export const cloudflarePreset: CloudflareConfig = {
   cfProperties: {
     asyncHeaders(age: number) {
       return {
-        "Cache-Ttl": age,
+        "Cache-Ttl": String(age),
         "CDN-Cache-Control": `public, max-age=${age}, s-maxage=${age}`,
       };
     },

@@ -85,7 +85,7 @@ export class AuthError extends Error {
  * Replaces @lovable.dev/cloud-auth-js functionality
  */
 export function createAuthClient(config: AuthClientConfig) {
-  const { backendUrl, callbackUrl, providers = [], storage = "localStorage", tokenKey = "vyzorix_token" } = config;
+  const { providers = [] } = config;
 
   // Validate configuration
   const configSchema = z.object({
@@ -161,7 +161,7 @@ export function createAuthClient(config: AuthClientConfig) {
           role: "operator",
         },
       };
-    } catch (e) {
+    } catch (_e) {
       storageAdapter.remove();
       return null;
     }
