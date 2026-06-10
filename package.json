@@ -10,7 +10,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",
-    "prelint": "pnpm --filter @vyzorix/config build",
+    "prelint": "pnpm --filter @vyzorix/config exec tsc --build --force",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean"
