@@ -1,0 +1,20 @@
+{
+  "name": "Vyzorix",
+  "version": "1.0.0",
+  "description": "Vyzorix configuration for VSCode",
+  "extensions": {
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "bradlc.vscode-tailwindcss",
+      "ms-vscode.vscode-typescript-next",
+      "ms-vscode.vscode-json",
+      "editorconfig.editorconfig",
+      "eamodio.gitlens",
+      "github.copilot",
+      "visualstudioexptteam.vscodeintellicode",
+      "ms-azuretools.vscode-docker"
+    ],
+    "unwantedRecommendations": []
+  }
+}

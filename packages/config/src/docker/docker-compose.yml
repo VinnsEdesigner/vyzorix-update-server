@@ -1,0 +1,74 @@
+# @vyzorix/config/docker - Docker Compose Template
+# Local development environment for Vyzorix
+
+services:
+  # Vyzorix API (Go backend)
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=/data/vyzorix.db
+      - JWT_SECRET=dev-jwt-secret-min-32-chars-change-in-production
+      - TOKEN_SECRET=dev-token-secret-change-in-production
+      - ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+    volumes:
+      - api-data:/data
+      - ../apps/api:/app
+      - /app/vendor  # Exclude vendor directory
+    command: go run .
+    networks:
+      - vyzorix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Vyzorix Web (React frontend)
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://api:3000
+      - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - VITE_AUTH_REDIRECT_URI=http://localhost:5173/auth/callback
+    volumes:
+      - ../apps/web:/app
+      - /app/node_modules  # Preserve node_modules
+      - /app/dist          # Exclude build output
+    command: pnpm dev --host
+    networks:
+      - vyzorix-network
+    depends_on:
+      - api
+
+  # Development tools (optional)
+  # db:
+  #   image: postgres:16-alpine
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     - POSTGRES_USER=vyzorix
+  #     - POSTGRES_PASSWORD=dev-password
+  #     - POSTGRES_DB=vyzorix_dev
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - vyzorix-network
+
+networks:
+  vyzorix-network:
+    driver: bridge
+
+volumes:
+  api-data:
+    driver: local

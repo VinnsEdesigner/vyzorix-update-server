@@ -1,42 +1,30 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, nitro (build-only using cloudflare as a default target),
-//     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
-//     error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+// @vyzorix/config - Vite configuration with TanStack Start, React, Tailwind
+import { defineViteConfig } from "@vyzorix/config/vite";
 
-export default defineConfig({
+export default defineViteConfig({
   tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
+    server: { entry: "src/server.ts" },
   },
-  vite: {
-    server: {
-      proxy: {
-        // Proxy API and auth endpoints to Go backend for unified dev experience
-        "/v1": {
-          target: "http://localhost:3000",
-          changeOrigin: true,
-        },
-        "/api": {
-          target: "http://localhost:3000",
-          changeOrigin: true,
-        },
-        "/health": {
-          target: "http://localhost:3000",
-          changeOrigin: true,
-        },
-        "/healthz": {
-          target: "http://localhost:3000",
-          changeOrigin: true,
-        },
-        "/bin": {
-          target: "http://localhost:3000",
-          changeOrigin: true,
-        },
-      },
+  proxy: {
+    "/v1": {
+      target: "http://localhost:3000",
+      changeOrigin: true,
+    },
+    "/api": {
+      target: "http://localhost:3000",
+      changeOrigin: true,
+    },
+    "/health": {
+      target: "http://localhost:3000",
+      changeOrigin: true,
+    },
+    "/healthz": {
+      target: "http://localhost:3000",
+      changeOrigin: true,
+    },
+    "/bin": {
+      target: "http://localhost:3000",
+      changeOrigin: true,
     },
   },
 });

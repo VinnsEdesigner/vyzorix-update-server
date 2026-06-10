@@ -2,6 +2,9 @@
 @source "../src";
 @import "tw-animate-css";
 
+// Use Vyzorix theme with Rose-500 as primary brand color
+@import "@vyzorix/config/tailwind/themes/rose-500";
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -12,6 +15,8 @@
  *
  * The :root and .dark blocks define the actual color values using oklch.
  * All colors MUST use oklch format.
+ *
+ * Rose-500 (oklch(0.65 0.22 16.439)) is the PRIMARY BRAND COLOR.
  *
  * To add a new semantic color:
  * 1. Add the variable to :root (light value) and .dark (dark value)
@@ -69,7 +74,7 @@
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.645 0.246 16.439);
+  --primary: oklch(0.65 0.22 16.439); /* Rose-500 - PRIMARY BRAND COLOR */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
@@ -81,20 +86,20 @@
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(0.929 0.013 255.508);
   --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.645 0.246 16.439);
-  --chart-1: oklch(0.646 0.222 41.116);
+  --ring: oklch(0.65 0.22 16.439); /* Rose-500 */
+  --chart-1: oklch(0.65 0.22 16.439); /* Rose-500 */
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.984 0.003 247.858);
   --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.645 0.246 16.439);
+  --sidebar-primary: oklch(0.65 0.22 16.439); /* Rose-500 */
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.968 0.007 247.896);
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.645 0.246 16.439);
+  --sidebar-ring: oklch(0.65 0.22 16.439); /* Rose-500 */
 }
 
 .dark {
@@ -104,7 +109,7 @@
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.645 0.246 16.439);
+  --primary: oklch(0.65 0.22 16.439); /* Rose-500 stays the same */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.279 0.041 260.031);
   --secondary-foreground: oklch(0.984 0.003 247.858);
@@ -116,15 +121,15 @@
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.645 0.246 16.439);
+  --ring: oklch(0.65 0.22 16.439); /* Rose-500 */
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --chart-5: oklch(0.65 0.22 16.439); /* Rose-500 */
   --sidebar: oklch(0.208 0.042 265.755);
   --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.645 0.246 16.439);
+  --sidebar-primary: oklch(0.65 0.22 16.439); /* Rose-500 */
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.279 0.041 260.031);
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);

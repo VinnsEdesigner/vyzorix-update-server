@@ -1,0 +1,38 @@
+// @vyzorix/config/typescript/base.json - Base TypeScript Configuration
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "incremental": true,
+    "composite": true,
+    "allowSyntheticDefaultImports": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@vyzorix/config": ["./packages/config/src"]
+    }
+  },
+  "include": ["src/**/*", "*.config.ts", "*.config.js"],
+  "exclude": ["node_modules", "dist", "build", ".next", "coverage"]
+}
