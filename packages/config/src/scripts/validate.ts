@@ -49,7 +49,7 @@ export async function validateConfig(): Promise<{ valid: boolean; errors: string
 }
 
 export async function validateSetup(): Promise<void> {
-  const { valid, errors, warnings } = await validateConfig();
+  const { errors, warnings } = await validateConfig();
   
   if (errors.length > 0) {
     console.error("\n❌ Validation failed:");

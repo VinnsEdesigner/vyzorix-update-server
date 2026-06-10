@@ -2,8 +2,8 @@
 // Static hosting deployment configuration
 
 export interface StaticConfig {
-  routeRules?: Record<string, any>;
-  prerender?: Record<string, any>;
+  routeRules?: Record<string, Record<string, unknown>>;
+  prerender?: Record<string, unknown>;
 }
 
 export const staticPreset: StaticConfig = {
