@@ -55,7 +55,7 @@ export function defineViteConfig(config: VyzorixViteConfig = {}): ViteUserConfig
     // Lazy load TanStack Start to avoid build errors if not installed
     try {
       // Dynamic import would be better but keeping it simple for now
-    } catch (e) {
+    } catch (_e) {
       // TanStack Start not available, skip
     }
   }
