@@ -1,0 +1,103 @@
+{
+  "name": "@vyzorix/config",
+  "version": "1.0.0",
+  "description": "Comprehensive configuration package for Vyzorix ecosystem projects",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./vite": {
+      "import": "./dist/vite/index.js",
+      "require": "./dist/vite/index.js",
+      "types": "./dist/vite/index.d.ts"
+    },
+    "./auth": {
+      "import": "./dist/auth/index.js",
+      "require": "./dist/auth/index.js",
+      "types": "./dist/auth/index.d.ts"
+    },
+    "./api": {
+      "import": "./dist/api/index.js",
+      "require": "./dist/api/index.js",
+      "types": "./dist/api/index.d.ts"
+    },
+    "./env": {
+      "import": "./dist/env/index.js",
+      "require": "./dist/env/index.js",
+      "types": "./dist/env/index.d.ts"
+    },
+    "./eslint": "./dist/eslint/index.js",
+    "./prettier": "./dist/prettier/index.js",
+    "./vitest": "./dist/vitest/index.js",
+    "./tailwind": "./dist/tailwind/index.js"
+  },
+  "bin": {
+    "vyzorix-config": "./dist/scripts/init.js"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "tsc --build --watch",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist",
+    "prepare": "pnpm build"
+  },
+  "keywords": [
+    "vyzorix",
+    "config",
+    "vite",
+    "react",
+    "tanstack",
+    "eslint",
+    "prettier",
+    "tailwind",
+    "typescript"
+  ],
+  "author": "VinnsEdesigner",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VinnsEdesigner/vyzorix-update-server"
+  },
+  "dependencies": {
+    "@tanstack/start": "^1.120.20",
+    "cac": "^6.7.14",
+    "inquirer": "^9.2.16",
+    "vite": "^7.3.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^22.16.5",
+    "@types/inquirer": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
+    "@vitejs/plugin-react": "^5.0.4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "prettier": "^3.7.3",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^6.0.2",
+    "vitest": "^4.1.8"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
