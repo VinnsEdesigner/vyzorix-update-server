@@ -74,7 +74,7 @@
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.65 0.22 16.439); /* Rose-500 - PRIMARY BRAND COLOR */
+  --primary: oklch(0.645 0.246 16.439); /* Original orange - PRIMARY BRAND COLOR */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
@@ -94,7 +94,7 @@
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.984 0.003 247.858);
   --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.65 0.22 16.439); /* Rose-500 */
+  --sidebar-primary: oklch(0.645 0.246 16.439); /* Original orange */
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.968 0.007 247.896);
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
@@ -109,7 +109,7 @@
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.65 0.22 16.439); /* Rose-500 stays the same */
+  --primary: oklch(0.645 0.246 16.439); /* Original orange stays the same */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.279 0.041 260.031);
   --secondary-foreground: oklch(0.984 0.003 247.858);
@@ -126,10 +126,10 @@
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.65 0.22 16.439); /* Rose-500 */
+  --chart-5: oklch(0.645 0.246 16.439); /* Original orange */
   --sidebar: oklch(0.208 0.042 265.755);
   --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.65 0.22 16.439); /* Rose-500 */
+  --sidebar-primary: oklch(0.645 0.246 16.439); /* Original orange */
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.279 0.041 260.031);
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
