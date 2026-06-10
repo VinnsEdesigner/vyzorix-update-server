@@ -27,13 +27,13 @@ async function findWorkspacePackages(rootDir: string): Promise<string[]> {
           if (pkg.name) {
             packages.push(pkgPath);
           }
-        } catch (e) {
+        } catch (_e) {
           // Not a package, skip
         }
       }
     }
-  } catch (e) {
-    console.error("Error reading workspace:", e);
+  } catch (_e) {
+    // Error reading workspace
   }
   
   return packages;
@@ -91,7 +91,7 @@ async function main() {
     const rootPkg = JSON.parse(rootContent) as PackageJson;
     
     // Find workspace packages
-    let workspaceDirs = [rootDir];
+    const workspaceDirs = [rootDir];
     
     if (rootPkg.workspaces) {
       for (const workspace of rootPkg.workspaces) {

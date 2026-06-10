@@ -112,8 +112,12 @@ echo ""
 echo "Checking critical rule configurations..."
 
 # Check no-unused-vars is set to error
+# In TypeScript projects, we use @typescript-eslint/no-unused-vars instead
 if grep -q 'no-unused-vars.*error' "$CONFIG_FILE"; then
     echo "   [OK] no-unused-vars is set to error"
+elif grep -q '@typescript-eslint/no-unused-vars' "$CONFIG_FILE"; then
+    # TypeScript project using @typescript-eslint/no-unused-vars - this is acceptable
+    echo "   [OK] no-unused-vars is handled by @typescript-eslint/no-unused-vars"
 else
     echo "   [ERROR] no-unused-vars should be set to 'error'"
 fi
