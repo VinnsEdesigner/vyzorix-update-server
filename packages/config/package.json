@@ -35,7 +35,8 @@
     "./eslint": "./dist/eslint/index.js",
     "./prettier": "./dist/prettier/index.js",
     "./vitest": "./dist/vitest/index.js",
-    "./tailwind": "./dist/tailwind/index.js"
+    "./tailwind": "./dist/tailwind/index.js",
+    "./tailwind/themes/rose-500": "./src/tailwind/themes/rose-500.css"
   },
   "bin": {
     "vyzorix-config": "./dist/scripts/init.js"
