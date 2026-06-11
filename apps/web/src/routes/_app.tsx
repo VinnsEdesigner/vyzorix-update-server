@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, redirect, Outlet, useRouterState } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -58,8 +58,13 @@ const AppShell = (): ReactElement => {
 };
 
 export const Route = createFileRoute("/_app")({
-  
-  // Auth temporarily disabled for local exploration. Re-enable by restoring the
-  // beforeLoad guard below once Google sign-in is configured.
+  beforeLoad: () => {
+    // Check for authentication token
+    const token = localStorage.getItem("vyz.auth.token");
+    if (!token) {
+      // Redirect to login if no token found
+      throw redirect({ to: "/login" });
+    }
+  },
   component: AppLayout,
 });
