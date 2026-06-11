@@ -128,11 +128,21 @@ func (s *Server) Engine() *gin.Engine {
 	// WebSocket — HMAC or JWT
 	r.GET("/v1/device/:id/stream", s.stream)
 
-	// SPA fallback — handle any non-API routes by serving the React app
-	// Use NoRoute to catch unmatched routes and serve the SPA
-	r.NoRoute(func(c *gin.Context) {
-		s.dashboard(c)
-	})
+	// SSR Proxy - if enabled, proxy HTML requests to Node.js SSR server
+	// This allows TanStack Start SSR to work with Go backend
+	ssrConfig := config.LoadSSRConfig()
+	if ssrConfig.EnableSSR {
+		r.Use(middleware.SSRProxy(s.Log, ssrConfig))
+	} else {
+		// Fallback: serve static HTML files (no SSR)
+		s.Log.Warn("SSR disabled - serving static HTML files only")
+		
+		// SPA fallback — handle any non-API routes by serving the React app
+		// Use NoRoute to catch unmatched routes and serve the SPA
+		r.NoRoute(func(c *gin.Context) {
+			s.dashboard(c)
+		})
+	}
 
 	return r
 }
