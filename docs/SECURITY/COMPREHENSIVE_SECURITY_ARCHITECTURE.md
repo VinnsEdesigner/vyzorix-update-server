@@ -1,4 +1,4 @@
-# Comprehensive Enterprise Security Architecture
+#  Security Architecture
 
 > **Purpose:** Complete mapping of all security layers  system
 > **Status:** Discussion Draft - Not Yet Implemented
