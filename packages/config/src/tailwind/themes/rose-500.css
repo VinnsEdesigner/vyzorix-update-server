@@ -1,9 +1,7 @@
-// @vyzorix/config/tailwind/themes/rose-500.ts - Rose-500 Primary Theme
-// Rose-500 is the PRIMARY BRAND COLOR for Vyzorix
-// This file exports a CSS string that can be imported directly by Tailwind v4
+/* @vyzorix/config/tailwind/themes/rose-500.css - Rose-500 Primary Theme */
+/* Rose-500 is the PRIMARY BRAND COLOR for Vyzorix */
+/* Import this file in your styles.css: @import "@vyzorix/config/tailwind/themes/rose-500"; */
 
-export const rose500ThemeCSS = `
-/* Rose-500 Theme - Primary Brand Color */
 :root {
   --radius: 0.625rem;
   
@@ -103,7 +101,3 @@ export const rose500ThemeCSS = `
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
-`;
-
-// Re-export as default for backwards compatibility
-export default rose500ThemeCSS;
