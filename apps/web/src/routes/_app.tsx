@@ -58,7 +58,7 @@ const AppShell = (): ReactElement => {
 };
 
 export const Route = createFileRoute("/_app")({
-  ssr: false,
+  
   // Auth temporarily disabled for local exploration. Re-enable by restoring the
   // beforeLoad guard below once Google sign-in is configured.
   component: AppLayout,
