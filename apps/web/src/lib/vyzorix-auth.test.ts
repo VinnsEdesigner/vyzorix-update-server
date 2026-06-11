@@ -39,7 +39,7 @@ vi.mock("@/lib/logger", () => ({
 
 // Mock fetch
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+global.fetch = mockFetch as unknown as typeof global.fetch;
 
 // Mock localStorage
 const storage: Record<string, string> = {};
