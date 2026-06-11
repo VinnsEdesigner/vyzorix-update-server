@@ -13,12 +13,15 @@ export PNPM_TELEMETRY=0
 # Install pnpm and dependencies
 cd /workspace/project/vyzorix-update-server
 pnpm install
+
+# Add SSR dependencies (needed for SSR server in production mode)
+pnpm add -w @tanstack/react-start-server vite h3 nitro
 ```
 
 ### 2. Install Go
 
 ```bash
-# Download and install Go
+# Download and install Go if not present
 export PATH=$PATH:/usr/local/go/bin
 
 # Verify Go installation
@@ -32,8 +35,11 @@ go version
 cd /workspace/project/vyzorix-update-server
 pnpm --filter @vyzorix/config run build
 
-# Build web app
+# Build web app (generates both client + SSR server entries)
 pnpm --filter @vyzorix/web run build
+
+# Copy assets to Go public directory
+cp -r apps/web/dist/client/* apps/api/public/
 
 # Build Go server
 export PATH=$PATH:/usr/local/go/bin
@@ -44,75 +50,96 @@ go build -o vyzorix-server .
 ### 4. Run the Server
 
 ```bash
-# Start Go server
 cd /workspace/project/vyzorix-update-server/apps/api
+
+# Start Go server (serves landing page and static assets)
 ./vyzorix-server
 
-# Server will be available at http://localhost:3000
+# Server available at http://localhost:3000
+# landing.html served at /
+# SPA fallback at /dashboard, /login, etc.
 ```
 
-## Development Mode
+## Development Mode (No SSR)
 
-### Run Vite Dev Server
+For faster iteration without SSR:
 
+```bash
+cd /workspace/project/vyzorix-update-server/apps/api
+./vyzorix-server
+```
+
+Then in another terminal, run Vite dev server:
 ```bash
 cd /workspace/project/vyzorix-update-server/apps/web
-pnpm run dev -- --ssr
-
-# Vite server will be available at http://localhost:5173
+pnpm run dev
 ```
 
-### Run Go Server
+Vite serves on http://localhost:5173 with HMR enabled.
 
-```bash
-cd /workspace/project/vyzorix-update-server/apps/api
-export SSR_ENABLED=false  # Disable SSR for development
-export VYZORIX_PUBLIC_DIR="./public"
-./vyzorix-server
+## Production Mode (With SSR)
+
+### Architecture
+
+```
+Browser → Go Server (port 3000)
+         ↓
+   /api/* → Go API handlers
+   /v1/* → Go API handlers  
+   /*    → Proxy to Node.js SSR server (port 3001)
+         ↓
+   Node.js SSR Server → Renders HTML with TanStack Start
 ```
 
-## Production Mode
+### Steps
 
-### Build for Production
-
+1. **Build web app** (if not already built):
 ```bash
-# Build web app
 cd /workspace/project/vyzorix-update-server/apps/web
 pnpm run build
-
-# Copy assets to Go public directory
 cp -r dist/client/* ../api/public/
-
-# Build Go server
-export PATH=$PATH:/usr/local/go/bin
-cd apps/api
-go build -o vyzorix-server .
 ```
 
-### Run Production Server
-
+2. **Start SSR server** (Terminal 1):
 ```bash
-# Start Node.js SSR server (in separate terminal)
 cd /workspace/project/vyzorix-update-server/apps/api
-npm install
-npm run prod
+npm install  # or pnpm install
+NODE_ENV=production node ssr-server.js
+```
 
-# Start Go server (in another terminal)
+3. **Start Go server with SSR enabled** (Terminal 2):
+```bash
+cd /workspace/project/vyzorix-update-server/apps/api
 export SSR_ENABLED=true
 export SSR_SERVER_URL=http://localhost:3001
 ./vyzorix-server
 ```
 
+4. **Access**: Open http://localhost:3000
+
 ## Environment Variables
 
-### Required Variables
+### Required for Go Server
 
 ```bash
-# Go server
-export VYZORIX_PUBLIC_DIR="./public"
+# Server configuration
 export PORT="3000"
+export VYZORIX_PUBLIC_DIR="./public"
+export DATABASE_URL="./data/vyzorix.db"
 
-# SSR (optional)
+# Security (generate with: openssl rand -hex 32)
+export TOKEN_SECRET="your-dashboard-token-secret-min-32-chars"
+export JWT_SECRET="your-jwt-secret-min-32-chars"
+export ALLOWED_ORIGINS="http://localhost:5173,http://localhost:3000"
+
+# URLs
+export BASE_URL="http://localhost:3000"
+export FRONTEND_URL="http://localhost:5173"
+```
+
+### Optional for SSR
+
+```bash
 export SSR_ENABLED=true
 export SSR_SERVER_URL=http://localhost:3001
 export SSR_PORT=3001
@@ -121,12 +148,29 @@ export SSR_PORT=3001
 ### Create .env File
 
 ```env
-# .env file
-VYZORIX_PUBLIC_DIR=./public
+# Server
 PORT=3000
-SSR_ENABLED=true
-SSR_SERVER_URL=http://localhost:3001
-SSR_PORT=3001
+NODE_ENV=development
+DATABASE_URL=./data/vyzorix.db
+VYZORIX_API_DIR=./data
+VYZORIX_BIN_DIR=./bin
+VYZORIX_PUBLIC_DIR=./public
+
+# Security
+TOKEN_SECRET=dev-dashboard-token-secret-replace-in-production-min32chars
+JWT_SECRET=dev-jwt-secret-replace-in-production-min32chars-longer
+JWT_DURATION_HOURS=168
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+ENFORCE_HMAC=false
+
+# URLs
+BASE_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:5173
+
+# SSR (optional - enable for full SSR)
+# SSR_ENABLED=true
+# SSR_SERVER_URL=http://localhost:3001
+# SSR_PORT=3001
 ```
 
 ## Troubleshooting
@@ -152,71 +196,26 @@ export PATH=$PATH:/usr/local/go/bin
 go version
 ```
 
-### Build Failures
+### SSR Server Not Starting
 
-**Solution:** Check for syntax errors and missing dependencies:
-
+**Solution:** Check that web app is built first:
 ```bash
-# Check Go syntax
-cd apps/api
-go build -o vyzorix-server .
-
-# Check web app
-cd apps/web
-pnpm run build
+cd apps/web && pnpm run build
+cp -r dist/client/* ../api/public/
 ```
 
-## Committing Changes
+### Empty Page After "Get Started"
 
-### Commit to GitHub
-
-```bash
-# Add all changes
-git add -A
-
-# Commit with message
-git commit -m "feat: add SSR support with Node.js and Go proxy"
-
-# Push to branch
-git push origin fix/vite-build-issues
-```
-
-### Create Pull Request
-
-```bash
-# Create PR from branch
-gh pr create --base main --head fix/vite-build-issues --title "feat: SSR support" --body "Added SSR with Node.js server and Go proxy"
-```
-
-## Project Structure
-
-```
-vyzorix-update-server/
-├── apps/
-│   ├── api/              # Go backend
-│   │   ├── ssr-server.js  # Node.js SSR server
-│   │   └── main.go        # Go server
-│   └── web/              # React frontend
-│       ├── src/           # Source code
-│       └── vite.config.ts # Vite config
-├── packages/
-│   └── config/           # Shared config
-└── AGENTS/
-    └── SETUP_GUIDE.md    # This file
-```
+1. Check browser console for errors
+2. Verify `/dashboard` route works: `curl http://localhost:3000/dashboard`
+3. If using SSR, ensure `SSR_ENABLED=true` is set on Go server
+4. Check SSR server logs for errors
 
 ## Key Files
 
-- `apps/api/ssr-server.js` - Node.js SSR server
+- `apps/api/ssr-server.js` - Node.js SSR server (H3/Nitro)
+- `apps/api/main.go` - Go server entry point
 - `apps/api/pkg/config/ssr.go` - SSR configuration
 - `apps/api/internal/api/middleware/ssr-proxy.go` - SSR proxy middleware
-- `SSR-SETUP.md` - SSR setup documentation
+- `apps/web/dist/server/server.js` - Pre-built SSR handler (generated by Vite)
 - `AGENTS/SETUP_GUIDE.md` - This file
-
-## Support
-
-For issues:
-1. Check logs first
-2. Verify all servers are running
-3. Test endpoints individually
-4. Check browser console and network tab
