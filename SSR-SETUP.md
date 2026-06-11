@@ -7,6 +7,75 @@ This guide explains how to set up Server-Side Rendering (SSR) for the Vyzorix Up
 1. **Development Mode**: Use Vite dev server with SSR
 2. **Production Mode**: Use Node.js SSR server with Go proxy
 
+## How TanStack Start Hydration Works
+
+### Proper Flow (With SSR)
+
+```
+Browser → SSR Server → Full HTML with content → Browser → Hydration → Interactive app
+```
+
+### Current Issue (Empty HTML)
+
+The current `index.html` is completely empty:
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vyzorix Update Server</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/assets/styles-DkrTJOXA.css" />
+    <script type="module" src="/assets/index-FkQN1YgO.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>
+```
+
+This empty HTML has no content for React to hydrate. The client JS loads but finds nothing to attach to.
+
+### The Solution
+
+For SSR to work properly, the HTML needs to contain the rendered content from the server:
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vyzorix Update Server</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/assets/styles-DkrTJOXA.css" />
+    <script type="module" src="/assets/index-FkQN1YgO.js"></script>
+  </head>
+  <body>
+    <!-- SSR Content Here -->
+    <div id="app">
+      <!-- Server-rendered HTML content -->
+      <main>
+        <p class="eyebrow">Vyzorix Phase 1.5</p>
+        <h1>Update server online</h1>
+        <p>REST, OTA, dashboard, and WebSocket endpoints are served by the Go backend.</p>
+        <nav>
+          <a href="/health">Health</a>
+          <a href="/api/v1/version">Version manifest</a>
+          <a href="/api/v1/changelog">Changelog</a>
+        </nav>
+      </main>
+    </div>
+  </body>
+</html>
+```
+
+The server should render the full HTML content, then the client JS hydrates it to make it interactive.
+
 ## Development Mode (Recommended)
 
 ### Quick Start
