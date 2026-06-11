@@ -9,10 +9,6 @@
     "prod": "NODE_ENV=production node ssr-server.js",
     "start": "node ssr-server.js"
   },
-  "dependencies": {
-    "@tanstack/react-start": "^1.167.50",
-    "express": "^4.19.2"
-  },
   "engines": {
     "node": ">=22.0.0"
   }
