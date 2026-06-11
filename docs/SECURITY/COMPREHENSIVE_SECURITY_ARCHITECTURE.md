@@ -25,15 +25,15 @@
 
 | Service | Feature | Your Status |
 |---------|---------|-------------|
-| **DDoS Protection** | Unlimited L3/L4/L7 protection |  Active |
-| **WAF** | OWASP ModSecurity Core Rule Set |  Active |
-| **CDN** | 200+ global PoPs, smart caching |  Active |
-| **TLS 1.3** | Latest encryption, automatic certs |  Active |
-| **Bot Management** | JavaScript detection, challenge pages |  Active |
-| **Turnstile** | CAPTCHA alternative (free tier) |  Active |
-| **Argo Smart Routing** | Intelligent traffic routing |  Active |
-| **Rate Limiting** | 10,000 free requests/month |  Partial |
-| **Firewall Rules** | 5 free rules |  Partial |
+| **DDoS Protection** | Unlimited L3/L4/L7 protection |  not yet|
+| **WAF** | OWASP ModSecurity Core Rule Set |  not yet |
+| **CDN** | 200+ global PoPs, smart caching |  not yet |
+| **TLS 1.3** | Latest encryption, automatic certs |  nit yet |
+| **Bot Management** | JavaScript detection, challenge pages |  not yet |
+| **Turnstile** | CAPTCHA alternative (free tier) |  not yet |
+| **Argo Smart Routing** | Intelligent traffic routing |  not yet |
+| **Rate Limiting** | 10,000 free requests/month |  not yet |
+| **Firewall Rules** | 5 free rules |  not yet |
 
 ### Cloudflare Configuration
 
