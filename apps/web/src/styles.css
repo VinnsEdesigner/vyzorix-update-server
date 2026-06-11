@@ -1,9 +1,6 @@
-@import "tailwindcss" source(none);
+@import "tailwindcss";
 @source "../src";
 @import "tw-animate-css";
-
-// Use Vyzorix theme with Rose-500 as primary brand color
-@import "@vyzorix/config/tailwind/themes/rose-500";
 
 @custom-variant dark (&:is(.dark *));
 
