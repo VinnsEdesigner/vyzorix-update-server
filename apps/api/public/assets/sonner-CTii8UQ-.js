@@ -1,0 +1,2 @@
+import{j as o}from"./index-CmMyRiGT.js";import{T as r}from"./index-Bvp0j4Mu.js";const e=({...t})=>o.jsx(r,{className:"toaster group",toastOptions:{classNames:{toast:"group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",description:"group-[.toast]:text-muted-foreground",actionButton:"group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",cancelButton:"group-[.toast]:bg-muted group-[.toast]:text-muted-foreground"}},...t});export{e as T};
+//# sourceMappingURL=sonner-CTii8UQ-.js.map

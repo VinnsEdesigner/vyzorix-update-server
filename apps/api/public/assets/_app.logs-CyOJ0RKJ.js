@@ -1,0 +1,2 @@
+import{j as e}from"./index-CmMyRiGT.js";import{C as s}from"./card-CpIkIqdU.js";import"./utils-Bllh_ec8.js";const t=({height:o="h-64",className:r=""})=>e.jsx("div",{className:`${o} ${r} overflow-auto p-4 font-mono text-xs bg-black text-green-400`,children:e.jsx("div",{className:"text-muted-foreground",children:"[console ready]"})}),c=()=>e.jsx(s,{className:"h-[calc(100vh-10rem)] overflow-hidden p-0",children:e.jsx(t,{height:"h-full"})});export{c as component};
+//# sourceMappingURL=_app.logs-CyOJ0RKJ.js.map

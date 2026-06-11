@@ -2,43 +2,22 @@
 
 ## Overview
 
+The SSR implementation has been completed with the following stack:
+- **H3/Nitro** - Already a TanStack Start dependency, replaces Express for lighter footprint
+- **TanStack Start SSR** - Native SSR support with hydration
+- **Vite** - Handles SSR in development, build in production
 
-((What's Missing
-SSR Content Rendering:
+## Architecture
 
-The Node.js SSR server needs to actually render HTML content Currently serves empty HTML (just <div id="app"></div>)
-Need to implement TanStack Start SSR rendering in ssr-server.js
-Vite Dev Server Testing:
-
-Vite dev server with SSR wasn't fully tested
-Need to verify it renders proper HTML content
-Current Issues
-Empty HTML Problem
-
-The login page shows empty white screen
-HTML has no content for React to hydrate
-SSR Server Implementation
-
-ssr-server.js created but needs SSR rendering logic
-Currently just a basic Express server
-Needs TanStack Start SSR integration
-What Needs to Be Done
-High Priority:
-
-Implement SSR rendering in apps/api/ssr-server.js
-Test Vite dev server with SSR mode
-Verify hydration works with proper HTML content
-Medium Priority:
-
-Add error handling to SSR proxy
-Add metrics/logging to SSR server
-Implement graceful degradation when SSR fails
-Files That Need Work
-apps/api/ssr-server.js - Needs TanStack Start SSR implementation
-apps/web/src/start.ts - May need SSR configuration
-apps/web/vite.config.ts - Verify SSR build configuration
-Recommendation
-Focus on implementing the SSR rendering in the Node.js server first, then test with both development and production modes. The current setup has all the infrastructure in place - it just needs the actual SSR rendering logic.))))))
+```
+Browser → Go Server (port 3000)
+         ↓
+   /api/* → Go API handlers
+   /v1/* → Go API handlers  
+   /*    → Proxy to Node.js SSR server (port 3001)
+         ↓
+   Node.js SSR Server (H3/Nitro) → Renders HTML with TanStack Start
+```
 
 
 
@@ -118,24 +97,35 @@ For SSR to work properly, the HTML needs to contain the rendered content from th
 
 The server should render the full HTML content, then the client JS hydrates it to make it interactive.
 
-## Development Mode (Recommended)
+## Development Mode (Recommended for Active Development)
 
 ### Quick Start
 
 ```bash
-# Start Vite dev server with SSR
-cd apps/web
-pnpm run dev -- --ssr
+# Terminal 1: Start the SSR dev server (proxies API to Go backend)
+cd apps/api
+npm run dev
+
+# Terminal 2: Start Go backend (if not already running)
+cd apps/api
+go run main.go
 ```
 
-The Vite server will start on `http://localhost:5173` with:
+The SSR server will start on `http://localhost:3001` with:
+- Vite's dev server with SSR rendering
 - Hot module replacement
-- SSR rendering
-- Fast refresh
+- API proxy to Go backend at localhost:3000
 
-### Configuration
+### Alternative: Standalone Vite Dev Mode
 
-No additional configuration needed - Vite handles everything automatically.
+For faster iteration without Go backend:
+
+```bash
+cd apps/web
+pnpm run dev
+```
+
+This runs Vite directly on port 5173 (API calls won't work without the Go backend).
 
 ## Production Mode
 
@@ -148,28 +138,37 @@ Browser → Go Server (port 3000)
    /v1/* → Go API handlers  
    /*    → Proxy to Node.js SSR server (port 3001)
          ↓
-   Node.js SSR Server → Renders HTML with TanStack Start
+   Node.js SSR Server (H3/Nitro) → Renders HTML with TanStack Start
 ```
 
 ### Setup
 
-#### 1. Install Node.js SSR Server
+#### 1. Build the Web App
+
+```bash
+cd apps/web
+pnpm run build
+```
+
+This creates `dist/client/` (static assets) and `dist/server/` (SSR entry).
+
+#### 2. Copy Static Assets to Go Public Directory
+
+```bash
+cp -r apps/web/dist/client/* apps/api/public/
+```
+
+#### 3. Install and Start SSR Server
 
 ```bash
 cd apps/api
 npm install
-```
-
-#### 2. Start Node.js SSR Server
-
-```bash
-cd apps/api
 npm run prod
 ```
 
 The SSR server will start on `http://localhost:3001`.
 
-#### 3. Enable SSR in Go Server
+#### 4. Enable SSR in Go Server
 
 Set environment variables:
 
@@ -186,7 +185,7 @@ SSR_SERVER_URL=http://localhost:3001
 SSR_PORT=3001
 ```
 
-#### 4. Start Go Server
+#### 5. Start Go Server
 
 ```bash
 cd apps/api
@@ -304,29 +303,31 @@ If you see an empty page:
 ### Development Build
 
 ```bash
-# Build web app for development
 cd apps/web
 pnpm run build
 
-# Copy to Go public directory
+# Copy static assets to Go public directory (for fallback when SSR is off)
 cp -r dist/client/* ../api/public/
 ```
 
 ### Production Build
 
 ```bash
-# Build web app for production
+# Build web app (generates both client + SSR server entries)
 cd apps/web
 pnpm run build
 
-# Build Node.js SSR server
-cd apps/api
-npm run build
-
 # Copy assets to Go public directory
-cp -r ../web/dist/client/assets/* public/
-cp ../web/dist/client/index.html public/
+cp -r dist/client/* ../api/public/
+
+# Install SSR server dependencies (if not already)
+cd ../api
+npm install
 ```
+
+The `vite build` command automatically generates:
+- `dist/client/` - Static assets (JS, CSS, HTML)
+- `dist/server/` - SSR server entry point for production
 
 ## Deployment
 
@@ -366,17 +367,18 @@ pm2 start pm2.config.js
 
 ### Development → Production
 
-1. Stop Vite dev server
-2. Build web app: `pnpm run build`
-3. Start Node.js SSR server: `npm run prod`
-4. Set `SSR_ENABLED=true`
-5. Restart Go server
+1. Stop SSR dev server
+2. Build web app: `cd apps/web && pnpm run build`
+3. Copy assets: `cp -r apps/web/dist/client/* apps/api/public/`
+4. Start SSR server: `cd apps/api && npm run prod`
+5. Set `SSR_ENABLED=true`
+6. Restart Go server
 
 ### Production → Development
 
 1. Set `SSR_ENABLED=false`
 2. Restart Go server
-3. Start Vite dev server: `pnpm run dev -- --ssr`
+3. Start SSR dev server: `cd apps/api && npm run dev`
 
 ## Best Practices
 
