@@ -161,3 +161,6 @@ linters-settings:
         disabled: true
       - name: unexported-naming
         disabled: true
+
+  fieldalignment:
+    disabled: true
