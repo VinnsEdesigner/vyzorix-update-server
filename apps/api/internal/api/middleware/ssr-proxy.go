@@ -15,16 +15,16 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
 )
 
-// SSRProxy creates a reverse proxy to the Node.js SSR server
+// SSRProxy creates a reverse proxy to the Node.js SSR server.
 func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig) gin.HandlerFunc {
 	if !ssrConfig.EnableSSR {
-		// If SSR is disabled, return a no-op middleware
+		// If SSR is disabled, return a no-op middleware.
 		return func(c *gin.Context) {
 			c.Next()
 		}
 	}
 
-	// Parse the SSR server URL
+	// Parse the SSR server URL.
 	ssrServerURL, err := url.Parse(ssrConfig.SSRServerURL)
 	if err != nil {
 		log.Error("invalid SSR server URL", "err", err, "url", ssrConfig.SSRServerURL)
@@ -42,7 +42,6 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig) gin.HandlerFunc {
 		// Set the target host
 		req.URL.Scheme = ssrServerURL.Scheme
 		req.URL.Host = ssrServerURL.Host
-		req.URL.Path = req.URL.Path
 
 		// Copy original director behavior
 		if originalDirector != nil {
@@ -58,9 +57,11 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig) gin.HandlerFunc {
 		// If SSR server returns an error, we could fall back to client-side rendering
 		// But for now, we'll just log it
 		if res.StatusCode >= 500 {
-			body, _ := io.ReadAll(res.Body)
-			res.Body = io.NopCloser(bytes.NewBuffer(body))
-			log.Error("SSR server error", "status", res.StatusCode, "path", res.Request.URL.Path, "body", string(body))
+			body, err := io.ReadAll(res.Body)
+			if err == nil {
+				res.Body = io.NopCloser(bytes.NewBuffer(body))
+				log.Error("SSR server error", "status", res.StatusCode, "path", res.Request.URL.Path, "body", string(body))
+			}
 		}
 
 		return nil
