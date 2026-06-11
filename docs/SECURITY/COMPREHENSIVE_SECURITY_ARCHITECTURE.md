@@ -28,7 +28,7 @@
 | **DDoS Protection** | Unlimited L3/L4/L7 protection |  not yet|
 | **WAF** | OWASP ModSecurity Core Rule Set |  not yet |
 | **CDN** | 200+ global PoPs, smart caching |  not yet |
-| **TLS 1.3** | Latest encryption, automatic certs |  nit yet |
+| **TLS 1.3** | Latest encryption, automatic certs |  not yet |
 | **Bot Management** | JavaScript detection, challenge pages |  not yet |
 | **Turnstile** | CAPTCHA alternative (free tier) |  not yet |
 | **Argo Smart Routing** | Intelligent traffic routing |  not yet |
@@ -68,7 +68,7 @@
 | Layer | Technology | Purpose | Your Current Status |
 |-------|-----------|---------|-------------------|
 | **WAF** | Cloudflare WAF (Free) | Filter malicious traffic, SQL injection, XSS at edge |  **Imp***not yet* |
-| **DDoS Protection** | Cloudflare DDoS (Free) | Absorb volumetric attacks (L3/L4/L7) |  **Implemented via Cloudflare** |
+| ***DDoS** | Cloudflare DDoS (Free) | Absorb volumetric attacks (L3/L4/L7) |  **not yet** |
 | **API Gateway** | Kong, AWS API Gateway, NGINX | Rate limiting, auth, routing |  Not Implemented (Render handles basic routing) |
 | **Load Balancer** | AWS ALB, Cloudflare | SSL termination, health checks |  Using Render default |
 | **CDN** | Cloudflare CDN (Free) | Static asset caching, DDoS mitigation, 200+ PoPs |  **not yet *** |
@@ -135,7 +135,7 @@
 | Header | Purpose | Your Current Status |
 |--------|---------|-------------------|
 | `X-Frame-Options: DENY` | Clickjacking prevention |  Not Implemented |
-| `X-Content-Type-Options: nosniff` | MIME sniffing prevention |  In golangci-lint |
+| `X-Content-Type-Options: nosniff` | MIME sniffing prevention | not yet  |
 | `X-XSS-Protection: 1; mode=block` | XSS filter (legacy browsers) |  Not Implemented |
 | `Content-Security-Policy` | Whitelist scripts, styles, frames |  Not Implemented |
 | `Strict-Transport-Security` | Force HTTPS for 6+ months |  Not Implemented |
@@ -150,17 +150,17 @@
 |-------|---------------|-------------------|
 | **Schema Validation** | Zod, Valibot, Yup |  not yet |
 | **SQL Parameterization** | All queries use `?` placeholders |  not yet|
-| **Output Encoding** | HTML escape, JSON encode |  Need audit |
+| **Output Encoding** | HTML escape, JSON encode |  not yet |
 | **Filename Sanitization** | Strip path traversal `../` |  Not Implemented |
 | **Email Validation** | Regex + disposable domain block |  Not Implemented |
 | **UUIDv7 IDs** | Replace auto-increment integers |  Not Implemented |
-| **Cloudflare Turnstile** | Bot detection, CAPTCHA alternative |  **Implemented** |
+| **Cloudflare Turnstile** | Bot detection, CAPTCHA alternative |  **not yet** |
 
 ### 2.4 Error Handling & Logging
 
 | Layer | Implementation | Your Current Status |
 |-------|---------------|-------------------|
-| **Panic Recovery** | Global middleware catching all panics |  In golangci-lint |
+| **Panic Recovery** | Global middleware catching all panics | partial In golangci-lint |
 | **Structured Errors** | JSON `{code, message}` only |  not yet|
 | **No Stack Traces** | Never expose in production |  not yet|
 | **Audit Logging** | Every mutation logged |  Not Implemented |
@@ -210,7 +210,7 @@
 |-------|---------------|-------------------|
 | **HttpOnly Cookies** | `http.SetCookie(w, &http.Cookie{HttpOnly: true})` |  jwt needs http cookies only|
 | **Secure Flag** | `Secure: true` (HTTPS only) |  not yet |
-| **SameSite** | `SameSite: Strict` or `Lax` |  Need to verify |
+| **SameSite** | `SameSite: Strict` or `Lax` |  Not yet |
 | **Session Expiry** | Short-lived tokens via http cookie |  JWT has expiry |
 | **Session Rotation** | Refresh token rotation |  Not Implemented |
 | **Concurrent Sessions** | Limit per account |  Not Implemented |
