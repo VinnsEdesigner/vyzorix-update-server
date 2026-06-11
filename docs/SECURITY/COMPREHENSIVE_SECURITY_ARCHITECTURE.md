@@ -1,6 +1,6 @@
 # Comprehensive Enterprise Security Architecture
 
-> **Purpose:** Complete mapping of all security layers required for a production-grade system
+> **Purpose:** Complete mapping of all security layers  system
 > **Status:** Discussion Draft - Not Yet Implemented
 > **Priority:** Critical
 
