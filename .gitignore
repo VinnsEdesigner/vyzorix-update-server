@@ -42,3 +42,4 @@ dist-ssr
 /db/*
 !/db/.gitkeep
 .turbo
+*.tsbuildinfo

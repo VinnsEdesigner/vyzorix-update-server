@@ -54,7 +54,7 @@ export interface VyzorixViteConfig {
  * });
  */
 export function defineViteConfig(config: VyzorixViteConfig = {}): ViteUserConfig {
-  const { tanstackStart: _tsConfig = {}, proxy = {}, vite: viteConfig = {}, plugins } = config;
+  const { proxy = {}, vite: viteConfig = {}, plugins } = config;
 
   // Build proxy configuration
   const proxyConfig: Record<string, { target: string; changeOrigin: boolean }> = {};
