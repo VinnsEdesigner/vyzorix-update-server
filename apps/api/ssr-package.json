@@ -1,0 +1,19 @@
+{
+  "name": "@vyzorix/ssr-server",
+  "version": "1.0.0",
+  "description": "SSR Server for TanStack Start - Production-ready Node.js server",
+  "type": "module",
+  "main": "ssr-server.js",
+  "scripts": {
+    "dev": "node ssr-server.js",
+    "prod": "NODE_ENV=production node ssr-server.js",
+    "start": "node ssr-server.js"
+  },
+  "dependencies": {
+    "@tanstack/react-start": "^1.167.50",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
