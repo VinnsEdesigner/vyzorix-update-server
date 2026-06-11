@@ -1,33 +1,33 @@
-// Package config provides SSR configuration
+// Package config provides SSR configuration.
 package config
 
 import "os"
 
-// SSRConfig holds SSR server configuration
-// This allows the Go server to proxy requests to the Node.js SSR server
+// SSRConfig holds SSR server configuration.
+// This allows the Go server to proxy requests to the Node.js SSR server.
 type SSRConfig struct {
-	// EnableSSR enables SSR mode
+	// EnableSSR enables SSR mode.
 	EnableSSR bool `json:"enableSsr" yaml:"enableSsr"`
 
-	// SSRServerURL is the URL of the Node.js SSR server
-	// Default: http://localhost:3001
+	// SSRServerURL is the URL of the Node.js SSR server.
+	// Default: http://localhost:3001.
 	SSRServerURL string `json:"ssrServerUrl" yaml:"ssrServerUrl"`
 
-	// SSRPort is the port the SSR server listens on
-	// Default: 3001
+	// SSRPort is the port the SSR server listens on.
+	// Default: 3001.
 	SSRPort string `json:"ssrPort" yaml:"ssrPort"`
 }
 
-// DefaultSSRConfig returns default SSR configuration
+// DefaultSSRConfig returns default SSR configuration.
 func DefaultSSRConfig() SSRConfig {
 	return SSRConfig{
-		EnableSSR:    false, // Disabled by default for safety
+		EnableSSR:    false, // Disabled by default for safety.
 		SSRServerURL: "http://localhost:3001",
 		SSRPort:      "3001",
 	}
 }
 
-// LoadSSRConfig loads SSR configuration from environment
+// LoadSSRConfig loads SSR configuration from environment.
 func LoadSSRConfig() SSRConfig {
 	config := DefaultSSRConfig()
 
