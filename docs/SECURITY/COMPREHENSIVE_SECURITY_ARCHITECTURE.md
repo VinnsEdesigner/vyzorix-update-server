@@ -67,11 +67,11 @@
 
 | Layer | Technology | Purpose | Your Current Status |
 |-------|-----------|---------|-------------------|
-| **WAF** | Cloudflare WAF (Free) | Filter malicious traffic, SQL injection, XSS at edge |  **Implemented via Cloudflare** |
+| **WAF** | Cloudflare WAF (Free) | Filter malicious traffic, SQL injection, XSS at edge |  **Imp***not yet* |
 | **DDoS Protection** | Cloudflare DDoS (Free) | Absorb volumetric attacks (L3/L4/L7) |  **Implemented via Cloudflare** |
 | **API Gateway** | Kong, AWS API Gateway, NGINX | Rate limiting, auth, routing |  Not Implemented (Render handles basic routing) |
 | **Load Balancer** | AWS ALB, Cloudflare | SSL termination, health checks |  Using Render default |
-| **CDN** | Cloudflare CDN (Free) | Static asset caching, DDoS mitigation, 200+ PoPs |  **Implemented via Cloudflare** |
+| **CDN** | Cloudflare CDN (Free) | Static asset caching, DDoS mitigation, 200+ PoPs |  **not yet *** |
 
 ### 1.2 Transport Security
 
@@ -148,8 +148,8 @@
 
 | Layer | Implementation | Your Current Status |
 |-------|---------------|-------------------|
-| **Schema Validation** | Zod, Valibot, Yup |  Partial (env only) |
-| **SQL Parameterization** | All queries use `?` placeholders |  Should verify |
+| **Schema Validation** | Zod, Valibot, Yup |  not yet |
+| **SQL Parameterization** | All queries use `?` placeholders |  not yet|
 | **Output Encoding** | HTML escape, JSON encode |  Need audit |
 | **Filename Sanitization** | Strip path traversal `../` |  Not Implemented |
 | **Email Validation** | Regex + disposable domain block |  Not Implemented |
@@ -161,8 +161,8 @@
 | Layer | Implementation | Your Current Status |
 |-------|---------------|-------------------|
 | **Panic Recovery** | Global middleware catching all panics |  In golangci-lint |
-| **Structured Errors** | JSON `{code, message}` only |  Should verify |
-| **No Stack Traces** | Never expose in production |  Need to verify |
+| **Structured Errors** | JSON `{code, message}` only |  not yet|
+| **No Stack Traces** | Never expose in production |  not yet|
 | **Audit Logging** | Every mutation logged |  Not Implemented |
 | **Log Redaction** | PII/sensitive data masked |  Not Implemented |
 
@@ -208,10 +208,10 @@
 
 | Layer | Implementation | Your Current Status |
 |-------|---------------|-------------------|
-| **HttpOnly Cookies** | `http.SetCookie(w, &http.Cookie{HttpOnly: true})` |  Should verify |
-| **Secure Flag** | `Secure: true` (HTTPS only) |  Need to verify |
+| **HttpOnly Cookies** | `http.SetCookie(w, &http.Cookie{HttpOnly: true})` |  jwt needs http cookies only|
+| **Secure Flag** | `Secure: true` (HTTPS only) |  not yet |
 | **SameSite** | `SameSite: Strict` or `Lax` |  Need to verify |
-| **Session Expiry** | Short-lived tokens |  JWT has expiry |
+| **Session Expiry** | Short-lived tokens via http cookie |  JWT has expiry |
 | **Session Rotation** | Refresh token rotation |  Not Implemented |
 | **Concurrent Sessions** | Limit per account |  Not Implemented |
 | **Logout Propagation** | Server-side revocation |  Not Implemented |
@@ -220,7 +220,7 @@
 
 | Layer | Implementation | Your Current Status |
 |-------|---------------|-------------------|
-| **JWT Signing** | Ed25519 or RS256 |  Using Ed25519 |
+| **JWT Signing** | Ed25519 or RS256 |  basic needs upgrade RS256|
 | **Token Revocation** | Redis/DB lookup |  Not Implemented |
 | **Refresh Token** | Separate long-lived token |  Not Implemented |
 | **Token Binding** | Bind to device/fingerprint |  Not Implemented |
@@ -231,9 +231,9 @@
 | Layer | Implementation | Your Current Status |
 |-------|---------------|-------------------|
 | **RBAC** | Role-based access control |  Basic roles exist |
-| **Ownership Check** | User owns resource |  DOA should verify |
+| **Ownership Check** | User owns resource |  NOT YET |
 | **Permission Matrix** | Capability-based |  Not Implemented |
-| **Resource Scoping** | Users see only their data |  DOA should verify |
+| **Resource Scoping** | Users see only their data |  not yet |
 
 ### 3.5 Advanced Auth (Enterprise)
 
@@ -245,7 +245,7 @@
 | **SAML** | Enterprise SSO |  Not Implemented |
 | **LDAP** | Corporate directory |  Not Implemented |
 | **mTLS** | Client certificates |  Not Implemented |
-| **Cloudflare Turnstile** | Bot detection for auth flows |  **Implemented** |
+| **Cloudflare Turnstile** | Bot detection for auth flows |  **not yet** |
 
 ---
 
@@ -267,15 +267,15 @@
 | **Vault** | HashiCorp Vault, AWS Secrets Manager |  Not Implemented |
 | **Secret Rotation** | Automated credential rotation |  Not Implemented |
 | **Env Var Cleanup** | "Read-and-burn" pattern |  Not Implemented |
-| **No Hardcoding** | All secrets in vault/env |  Need audit |
+| **No Hardcoding** | All secrets in vault/env |  not yet |
 
 ### 4.3 Database Security
 
 | Layer | Implementation | Your Current Status |
 |-------|---------------|-------------------|
-| **WAL Mode** | `PRAGMA journal_mode=WAL` |  Should verify |
+| **WAL Mode** | `PRAGMA journal_mode=WAL` |  basic |
 | **Connection Limits** | `SetMaxOpenConns(1)` |  In DEFENSE.md |
-| **Parameterized Queries** | All queries use `?` |  Should verify |
+| **Parameterized Queries** | All queries use `?` |  not yet |
 | **UUIDv7 IDs** | Replace auto-increment |  Not Implemented |
 | **Audit Logging** | Track all mutations |  Not Implemented |
 
@@ -325,7 +325,7 @@
 |-------|---------------|-------------------|
 | **SIEM** | Splunk, Datadog, Elastic |  Not Implemented |
 | **APM** | Datadog, New Relic |  Not Implemented |
-| **Uptime Monitoring** | Status page, alerts |  Render basic |
+| **Uptime Monitoring** | Status page, alerts |  Render basic or UptimeRobot |
 | **Anomaly Detection** | ML-based alerting |  Not Implemented |
 | **Real User Monitoring** | Session tracking |  Not Implemented |
 
@@ -378,7 +378,7 @@
 | Layer | Implementation | Your Current Status |
 |-------|---------------|-------------------|
 | **Tickle Pattern** | Empty push → mTLS pull |  Not Implemented |
-| **Signed Payloads** | Ed25519 command signing |  Implemented |
+| **Signed Payloads** | Ed25519 command signing |  not yet |
 | **Anti-Replay Nonce** | Timestamp + sequence |  Not Implemented |
 | **Intent Sanitization** | No Runtime.exec() |  Not Implemented |
 
@@ -390,40 +390,40 @@
 
 | Priority | Layer | Est. Effort | Status |
 |----------|-------|-------------|--------|
-| P0 | Security Headers Middleware | 2h |  |
-| P0 | Input Validation (Zod schema) | 4h |  Partial |
-| P0 | Rate Limiting | 4h |  Partial |
-| P0 | Panic Recovery + Error Sanitization | 2h |  In golangci |
-| P0 | HTTPS Enforcement (HSTS) | 1h |  |
+| P0 | Security Headers Middleware |  |  |
+| P0 | Input Validation (Zod schema) |  |  nit yetl |
+| P0 | Rate Limiting |  |  Partial |
+| P0 | Panic Recovery + Error Sanitization | |not yet  In golangci |
+| P0 | HTTPS Enforcement (HSTS) |  |  |
 
 ### High (Should Have - Internal Security)
 
 | Priority | Layer | Est. Effort | Status |
 |----------|-------|-------------|--------|
-| P1 | Argon2id Password Hashing | 4h |  Using bcrypt? |
-| P1 | DOA (Ownership Queries) | 8h |  Need audit |
-| P1 | Session Revocation | 4h |  |
-| P1 | UUIDv7 Migration | 8h |  |
-| P1 | Token Bucket Rate Limit | 4h |  Partial |
+| P1 | Argon2id Password Hashing |  |  Using bcrypt? |
+| P1 | DOA (Ownership Queries) |  |  not yet|
+| P1 | Session Revocation |  |  |
+| P1 | UUIDv7 Migration | |  |
+| P1 | Token Bucket Rate Limit |  |  Partial basic|
 
 ### Medium (Good Security Practice)
 
 | Priority | Layer | Est. Effort | Status |
 |----------|-------|-------------|--------|
-| P2 | CSP Header | 2h |  |
-| P2 | Audit Logging | 8h |  |
-| P2 | Backup Encryption | 4h |  |
-| P2 | User Enum Prevention | 2h |  |
-| P2 | MFA/TOTP | 16h |  |
+| P2 | CSP Header | |  |
+| P2 | Audit Logging | |  |
+| P2 | Backup Encryption ||  |
+| P2 | User Enum Prevention |  |  |
+| P2 | MFA/TOTP | 1h |  |
 
 ### Lower (Enterprise Features)
 
 | Priority | Layer | Est. Effort | Status |
 |----------|-------|-------------|--------|
-| P3 | OAuth/OIDC Integration | 24h |  Partial |
-| P3 | Secrets Vault (HashiCorp) | 16h |  |
-| P3 | Container Hardening | 8h |  |
-| P3 | SIEM Integration | 24h |  |
+| P3 | OAuth/OIDC Integration | |  Partial basic |
+| P3 | Secrets Vault (HashiCorp) | 1 |  |
+| P3 | Container Hardening |  |  |
+| P3 | SIEM Integration |  |  |
 
 ---
 
@@ -436,7 +436,7 @@
 - [ ] Implement Turnstile verification
 - [ ] Audit DOA implementation in all queries
 - [ ] Add HSTS header
-- [ ] Verify password hashing algorithm (Argon2id vs bcrypt)
+- [ ] Verify password hashing algorithm (Argon2id)
 - [ ] Check all queries use parameterization
 
 ### Next Sprint
@@ -446,16 +446,16 @@
 - [ ] Implement session revocation list
 - [ ] Add comprehensive audit logging
 - [ ] Verify rate limiting per session (not just IP)
-
+      OAuth/OIDC for Google/GitHub
+      Container security hardening
+      Penetration testing
 ### Future
 
 - [ ] MFA/TOTP implementation
-- [ ] OAuth/OIDC for Google/GitHub
+- [ ]
 - [ ] Secrets vault integration
-- [ ] Container security hardening
+- [ ] 
 - [ ] SIEM integration
-- [ ] Penetration testing
-
 ---
 
 
