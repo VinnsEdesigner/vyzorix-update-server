@@ -136,7 +136,7 @@ func (s *Server) Engine() *gin.Engine {
 	} else {
 		// Fallback: serve static HTML files (no SSR)
 		s.Log.Warn("SSR disabled - serving static HTML files only")
-		
+
 		// SPA fallback — handle any non-API routes by serving the React app
 		// Use NoRoute to catch unmatched routes and serve the SPA
 		r.NoRoute(func(c *gin.Context) {
