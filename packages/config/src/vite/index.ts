@@ -33,7 +33,7 @@ export interface VyzorixViteConfig {
 
 /**
  * Define Vyzorix Vite configuration with TanStack Start SSR support
- * Replaces @lovable.dev/vite-tanstack-config
+ *
  * 
  * @example
  * import { defineViteConfig } from "@vyzorix/config/vite";
