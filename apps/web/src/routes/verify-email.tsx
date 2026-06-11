@@ -96,7 +96,7 @@ const VerifyEmailPage = (): ReactElement => {
 };
 
 export const Route = createFileRoute("/verify-email")({
-  ssr: false,
+  
   head: () => ({ meta: [{ title: "Verify Email — Vyzorix" }] }),
   component: VerifyEmailPage,
 });
