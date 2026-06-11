@@ -186,7 +186,6 @@ const LoginPage = (): ReactElement => {
 };
 
 export const Route = createFileRoute("/login")({
-  
   head: () => ({ meta: [{ title: "Sign in — Vyzorix" }] }),
   component: LoginPage,
 });

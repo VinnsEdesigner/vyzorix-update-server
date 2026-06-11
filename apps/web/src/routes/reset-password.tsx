@@ -129,7 +129,6 @@ const ResetPasswordPage = (): ReactElement => {
 };
 
 export const Route = createFileRoute("/reset-password")({
-  
   head: () => ({ meta: [{ title: "Reset Password — Vyzorix" }] }),
   component: ResetPasswordPage,
 });
