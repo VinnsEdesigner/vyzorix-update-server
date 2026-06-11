@@ -61,7 +61,7 @@ const OAuthCallbackPage = (): ReactElement => {
 };
 
 export const Route = createFileRoute("/auth/callback")({
-  ssr: false,
+  
   head: () => ({ meta: [{ title: "Signing in — Vyzorix" }] }),
   component: OAuthCallbackPage,
 });
