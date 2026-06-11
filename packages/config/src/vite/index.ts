@@ -1,4 +1,4 @@
-// @vyzorix/config/vite - Vite configuration utilities
+// @vyzorix/config/vite - Vite configuration utilities for TanStack Start + React
 import { defineConfig, type UserConfig as ViteUserConfig } from "vite";
 
 /**
@@ -32,8 +32,26 @@ export interface VyzorixViteConfig {
 }
 
 /**
- * Define Vyzorix Vite configuration
+ * Define Vyzorix Vite configuration with TanStack Start SSR support
  * Replaces @lovable.dev/vite-tanstack-config
+ * 
+ * @example
+ * import { defineViteConfig } from "@vyzorix/config/vite";
+ * import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+ * import react from "@vitejs/plugin-react";
+ * import tsconfigPaths from "vite-tsconfig-paths";
+ * import tailwindcss from "@tailwindcss/vite";
+ * 
+ * export default defineViteConfig({
+ *   plugins: [
+ *     tanstackStart(),
+ *     tailwindcss(),
+ *     react(),
+ *     tsconfigPaths(),
+ *   ],
+ *   tanstackStart: { server: { entry: "src/server.ts" } },
+ *   proxy: { "/api": "http://localhost:3000" },
+ * });
  */
 export function defineViteConfig(config: VyzorixViteConfig = {}): ViteUserConfig {
   const { tanstackStart: _tsConfig = {}, proxy = {}, vite: viteConfig = {}, plugins } = config;
