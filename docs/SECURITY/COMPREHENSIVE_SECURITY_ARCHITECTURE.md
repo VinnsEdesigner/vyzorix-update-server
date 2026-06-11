@@ -458,14 +458,6 @@
 
 ---
 
-## Open Questions for Discussion
-
-1. **Hosting Platform**: Is Render providing enough security for your threat model?
-2. **Compliance**: Do you need GDPR/SOC2 compliance?
-3. **User Base**: Consumer app vs enterprise customers?
-4. **Data Sensitivity**: What level of PII are you handling?
-5. **Device Fleet**: Will you support Android with sensitive commands?
-6. **Threat Model**: What specific attackers are you defending against?
 
 ---
 
