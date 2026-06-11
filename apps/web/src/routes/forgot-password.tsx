@@ -105,7 +105,7 @@ const ForgotPasswordPage = (): ReactElement => {
 };
 
 export const Route = createFileRoute("/forgot-password")({
-  ssr: false,
+  
   head: () => ({ meta: [{ title: "Forgot Password — Vyzorix" }] }),
   component: ForgotPasswordPage,
 });

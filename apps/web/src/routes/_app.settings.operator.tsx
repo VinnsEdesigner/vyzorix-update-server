@@ -223,6 +223,6 @@ const OperatorSettings = (): JSX.Element => {
 };
 
 export const Route = createFileRoute("/_app/settings/operator")({
-  ssr: false,
+  
   component: OperatorSettings,
 });

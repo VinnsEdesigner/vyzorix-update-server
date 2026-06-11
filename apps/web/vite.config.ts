@@ -1,4 +1,4 @@
-// @vyzorix/config - Vite configuration with TanStack Start, React, Tailwind
+// @vyzorix/web - Vite configuration with TanStack Start, React, Tailwind
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
@@ -18,6 +18,7 @@ export default defineViteConfig({
   ],
   tanstackStart: {
     server: { entry: "src/server.ts" },
+    client: { entry: "src/entry-client.tsx" },
   },
   proxy: {
     "/v1": {
