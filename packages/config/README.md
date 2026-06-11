@@ -2,7 +2,7 @@
 
 > Comprehensive configuration package for Vyzorix ecosystem projects
 
-**@vyzorix/config** provides a unified configuration system for Vyzorix projects, replacing third-party solutions like Lovable with a custom, purpose-built configuration package.
+**@vyzorix/config** provides a unified configuration system for Vyzorix projects,.
 
 ## Features
 
