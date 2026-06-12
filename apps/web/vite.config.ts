@@ -18,7 +18,6 @@ export default defineViteConfig({
   ],
   tanstackStart: {
     server: { entry: "src/server.ts" },
-    client: { entry: "src/entry-client.tsx" },
   },
   proxy: {
     "/v1": {
