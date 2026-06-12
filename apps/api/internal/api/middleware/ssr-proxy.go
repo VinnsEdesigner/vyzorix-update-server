@@ -13,11 +13,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
 )
 
-// SSRProxy creates a reverse proxy to the Node.js SSR server.
-func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string) gin.HandlerFunc {
+// SSRProxy creates a reverse proxy to the Node.js SSR server with JWT validation.
+func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jwtSecret string) gin.HandlerFunc {
 	if !ssrConfig.EnableSSR {
 		return func(c *gin.Context) {
 			c.Next()
@@ -90,7 +91,38 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string) gi
 			return
 		}
 
-		log.Info("Proxying to SSR server", "path", path, "method", c.Request.Method)
+		// ============================================================
+		// SECURITY: Validate JWT before proxying protected routes
+		// ============================================================
+
+		// Public routes that don't require authentication
+		publicRoutes := []string{"/login", "/verify-email", "/forgot-password", "/reset-password", "/auth/callback"}
+		for _, public := range publicRoutes {
+			if strings.HasPrefix(path, public) {
+				log.Info("Proxying to SSR server (public route)", "path", path)
+				proxy.ServeHTTP(c.Writer, c.Request)
+				return
+			}
+		}
+
+		// For all other routes, validate JWT cookie
+		tokenCookie, err := c.Cookie("vyz.auth.token")
+		if err != nil || tokenCookie == "" {
+			log.Warn("SSR access denied - no JWT cookie", "path", path, "ip", c.ClientIP())
+			c.Redirect(http.StatusTemporaryRedirect, "/login")
+			return
+		}
+
+		// Validate JWT
+		jwtManager := auth.NewJWTManager(jwtSecret, 0, "")
+		claims, err := jwtManager.Verify(tokenCookie)
+		if err != nil {
+			log.Warn("SSR access denied - invalid JWT", "path", path, "ip", c.ClientIP(), "err", err)
+			c.Redirect(http.StatusTemporaryRedirect, "/login")
+			return
+		}
+
+		log.Info("SSR access granted", "path", path, "email", claims.Email)
 		proxy.ServeHTTP(c.Writer, c.Request)
 	}
 }
