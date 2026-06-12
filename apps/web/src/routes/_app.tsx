@@ -59,11 +59,11 @@ const AppShell = (): ReactElement => {
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: () => {
-    // Check for authentication token (guard against SSR where localStorage doesn't exist)
+    // Client-side only check - auth is enforced at Go server level via JWT cookie
+    // The Go SSR proxy validates JWT cookie before rendering any protected content
     if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
       const token = localStorage.getItem("vyz.auth.token");
       if (!token) {
-        // Redirect to login if no token found
         throw redirect({ to: "/login" });
       }
     }
