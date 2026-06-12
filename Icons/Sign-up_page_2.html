@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VyxoriX | Create Account</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Geist:wght@100;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..900&family=Space+Grotesk:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed-variant": "#314f00",
+                        "on-tertiary-container": "#436900",
+                        "on-primary-fixed": "#002022",
+                        "tertiary-container": "#9ff01a",
+                        "on-secondary-fixed-variant": "#74009f",
+                        "background": "#131314",
+                        "on-tertiary-fixed": "#112000",
+                        "on-secondary": "#520071",
+                        "error": "#ffb4ab",
+                        "surface-container-lowest": "#0e0e0f",
+                        "on-primary": "#00363a",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-highest": "#353436",
+                        "secondary-fixed-dim": "#ebb2ff",
+                        "inverse-on-surface": "#313031",
+                        "surface-container-high": "#2a2a2b",
+                        "on-surface": "#e5e2e3",
+                        "outline": "#849495",
+                        "inverse-surface": "#e5e2e3",
+                        "secondary": "#ebb2ff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "outline-variant": "#3b494b",
+                        "on-surface-variant": "#b9cacb",
+                        "surface-variant": "#353436",
+                        "tertiary-fixed": "#a8f928",
+                        "primary-container": "#00f0ff",
+                        "surface-dim": "#131314",
+                        "secondary-container": "#ce5dff",
+                        "on-secondary-container": "#480064",
+                        "surface-tint": "#00dbe9",
+                        "primary-fixed": "#7df4ff",
+                        "tertiary": "#e6ffc0",
+                        "on-error": "#690005",
+                        "secondary-fixed": "#f8d8ff",
+                        "primary": "#dbfcff",
+                        "tertiary-fixed-dim": "#8fdb00",
+                        "surface": "#131314",
+                        "on-background": "#e5e2e3",
+                        "surface-container": "#201f20",
+                        "inverse-primary": "#006970",
+                        "error-container": "#93000a",
+                        "on-primary-container": "#006970",
+                        "on-secondary-fixed": "#320047",
+                        "primary-fixed-dim": "#00dbe9",
+                        "surface-container-low": "#1c1b1c",
+                        "surface-bright": "#3a393a",
+                        "on-tertiary": "#203600",
+                        "brand-action": "#e11d48" /* Rose 600 */
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "margin-mobile": "20px",
+                        "margin-desktop": "40px",
+                        "stack-md": "12px",
+                        "base": "8px",
+                        "stack-sm": "4px",
+                        "stack-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "code-sm": ["JetBrains Mono"],
+                        "headline-md": ["Space Grotesk"],
+                        "headline-lg": ["Space Grotesk"],
+                        "headline-sm": ["Space Grotesk"],
+                        "body-md": ["Geist"],
+                        "body-lg": ["Geist"],
+                        "label-caps": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "code-sm": ["12px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-sm": ["20px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-caps": ["10px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #e11d48;
+            box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.1);
+        }
+        .bg-grid {
+            background-image: linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="bg-white text-surface-container-lowest font-body-md overflow-x-hidden min-h-screen flex flex-col">
+<!-- Top Navigation (Shell Invisible for Transactional Flow) -->
+<header class="w-full top-0 sticky z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+<div class="flex justify-between items-center px-margin-desktop py-stack-md max-w-7xl mx-auto w-full">
+<div class="font-headline-md text-headline-md font-bold tracking-tighter text-black">Vyzorix</div>
+<div class="flex items-center gap-base">
+<span class="text-on-surface-variant font-body-md">Already have an account?</span>
+<a class="text-brand-action font-semibold hover:underline" href="#">Log in</a>
+</div>
+</div>
+</header>
+<main class="flex-grow flex items-stretch">
+<!-- Visual Section (50%) -->
+<section class="hidden lg:flex w-1/2 relative overflow-hidden bg-gray-50 border-r border-gray-100">
+<div class="absolute inset-0 bg-grid opacity-40"></div>
+<img alt="VyzoriX" class="w-full h-full object-cover mix-blend-multiply opacity-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlEzWQdm5DSakspVE_Df8hhjaaBoecmGCZx7qXoU_uJwpHc5WakSP6Qtx9XLDP5xHwdhSVxn0tVSos1q7T1yv9yJwp8xP5p9tgNfzIMtZuscon1-bVtLVJiXsBdlP2y3ADE73UJlCwJsrVlYFZiLD-Pbs1Smbf9fXKDuotTndqbPn-tP8LuzPtBMf5_7O6x-2FvO-Gu3szpWi80fD3Q2tDLFnr-863fGv2LWSbPRW9IaPWiqr1DCFan9CIiIL22-8gwGEFOJiOu8-O"/>
+<div class="absolute bottom-margin-desktop left-margin-desktop max-w-md">
+<div class="p-stack-lg glass-panel rounded-xl shadow-sm border border-gray-100">
+<p class="font-headline-sm text-headline-sm text-black mb-stack-sm">.</p>
+<p class="text-on-surface-variant font-body-md">Become an Operator at Vyzorix.</p>
+</div>
+</div>
+</section>
+<!-- Form Section (50%) -->
+<section class="w-full lg:w-1/2 flex items-center justify-center p-margin-mobile md:p-margin-desktop">
+<div class="w-full max-w-md">
+<div class="mb-stack-lg">
+<h1 class="font-headline-lg text-headline-lg text-black mb-stack-sm">Create Account</h1>
+<p class="text-on-surface-variant font-body-lg">Initialize your enterprise profile to access the Vyzorix terminal architecture.</p>
+</div>
+<form class="space-y-stack-lg">
+<!-- Your Full Name -->
+<div class="space-y-stack-sm">
+<label class="block text-label-caps font-label-caps text-on-surface-variant uppercase tracking-widest">Full Name</label>
+<div class="relative group">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">person</span>
+<input class="w-full bg-gray-50 border-gray-200 text-black px-11 py-4 rounded-lg font-body-md transition-all" placeholder="Johnathan Doe" type="text"/>
+</div>
+</div>
+<!-- Email -->
+<div class="space-y-stack-sm">
+<label class="block text-label-caps font-label-caps text-on-surface-variant uppercase tracking-widest">Enterprise Email</label>
+<div class="relative group">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">corporate_fare</span>
+<input class="w-full bg-gray-50 border-gray-200 text-black px-11 py-4 rounded-lg font-body-md transition-all" placeholder="j.doe@enterprise.com" type="email"/>
+</div>
+</div>
+<!--Operator Username -->
+<div class="space-y-stack-sm">
+<label class="block text-label-caps font-label-caps text-on-surface-variant uppercase tracking-widest">Username</label>
+<div class="relative group">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">alternate_email</span>
+<input class="w-full bg-gray-50 border-gray-200 text-black px-11 py-4 rounded-lg font-body-md transition-all" placeholder="jdoe_admin" type="text"/>
+</div>
+</div>
+<!-- Password Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="space-y-stack-sm">
+<label class="block text-label-caps font-label-caps text-on-surface-variant uppercase tracking-widest">Password</label>
+<div class="relative group">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">lock</span>
+<input class="w-full bg-gray-50 border-gray-200 text-black px-11 py-4 rounded-lg font-body-md transition-all" placeholder="••••••••" type="password"/>
+</div>
+</div>
+<div class="space-y-stack-sm">
+<label class="block text-label-caps font-label-caps text-on-surface-variant uppercase tracking-widest">Confirm</label>
+<div class="relative group">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">shield_lock</span>
+<input class="w-full bg-gray-50 border-gray-200 text-black px-11 py-4 rounded-lg font-body-md transition-all" placeholder="••••••••" type="password"/>
+</div>
+</div>
+</div>
+<!-- Terms -->
+<div class="flex items-start gap-stack-md pt-base">
+<input class="mt-1 rounded border-gray-300 text-brand-action focus:ring-brand-action" id="terms" type="checkbox"/>
+<label class="text-on-surface-variant font-body-md leading-relaxed" for="terms">
+                            I agree to the <a class="text-black font-medium underline" href="#">Protocol Standards</a> and <a class="text-black font-medium underline" href="#">Privacy & Security Policies</a>.
+                        </label>
+</div>
+<!-- Primary Action -->
+<button class="w-full bg-brand-action text-white font-headline-sm py-4 rounded-lg shadow-lg shadow-rose-200 hover:bg-rose-700 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300" type="submit">
+                        Create Account
+                    </button>
+<!-- Secondary Options -->
+<div class="pt-stack-lg border-t border-gray-100 text-center">
+<p class="text-label-caps font-label-caps text-gray-400 mb-stack-md uppercase">SSO Options</p>
+<div class="flex gap-gutter justify-center">
+<button class="flex items-center gap-base px-stack-lg py-base border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" type="button">
+<span class="material-symbols-outlined text-black">key</span>
+<span class="font-body-md text-black">GitHub</span>
+</button>
+<button class="flex items-center gap-base px-stack-lg py-base border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors" type="button">
+<span class="material-symbols-outlined text-black">lock_open</span>
+<span class="font-body-md text-black">Google</span>
+</button>
+</div>
+</div>
+</form>
+</div>
+</section>
+</main>
+<footer class="w-full bg-gray-50 border-t border-gray-100">
+<div class="max-w-7xl mx-auto px-margin-desktop py-stack-lg flex flex-col md:flex-row justify-between items-center gap-gutter text-on-surface-variant font-code-sm text-code-sm">
+<div>© 2024 Vyzorix Command. All rights reserved. Terminal version 4.0.2</div>
+<div class="flex gap-gutter">
+<a class="hover:text-brand-action transition-colors" href="#">Protocol</a>
+<a class="hover:text-brand-action transition-colors" href="#">Privacy</a>
+<a class="hover:text-brand-action transition-colors" href="#">Security</a>
+<a class="hover:text-brand-action transition-colors" href="#">Contact</a>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interactions for form focus states and subtle hover effects
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.querySelector('.material-symbols-outlined').style.color = '#e11d48';
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.querySelector('.material-symbols-outlined').style.color = '#9ca3af';
+            });
+        });
+    </script>
+</body></html>
