@@ -59,11 +59,13 @@ const AppShell = (): ReactElement => {
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: () => {
-    // Check for authentication token
-    const token = localStorage.getItem("vyz.auth.token");
-    if (!token) {
-      // Redirect to login if no token found
-      throw redirect({ to: "/login" });
+    // Check for authentication token (guard against SSR where localStorage doesn't exist)
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      const token = localStorage.getItem("vyz.auth.token");
+      if (!token) {
+        // Redirect to login if no token found
+        throw redirect({ to: "/login" });
+      }
     }
   },
   component: AppLayout,
