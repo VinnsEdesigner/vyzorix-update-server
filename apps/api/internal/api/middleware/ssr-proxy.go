@@ -114,7 +114,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 		}
 
 		// Validate JWT
-		jwtManager := auth.NewJWTManager(jwtSecret, 0, "")
+		jwtManager := security.NewJWTManager(jwtSecret, 0, "")
 		claims, err := jwtManager.Verify(tokenCookie)
 		if err != nil {
 			log.Warn("SSR access denied - invalid JWT", "path", path, "ip", c.ClientIP(), "err", err)
