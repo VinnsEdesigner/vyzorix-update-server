@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Vyzorix | Verification</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..900&family=Space+Grotesk:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed-variant": "#314f00",
+                      "on-tertiary-container": "#436900",
+                      "on-primary-fixed": "#002022",
+                      "tertiary-container": "#9ff01a",
+                      "on-secondary-fixed-variant": "#74009f",
+                      "background": "#131314",
+                      "on-tertiary-fixed": "#112000",
+                      "on-secondary": "#520071",
+                      "error": "#ffb4ab",
+                      "surface-container-lowest": "#0e0e0f",
+                      "on-primary": "#00363a",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-highest": "#353436",
+                      "secondary-fixed-dim": "#ebb2ff",
+                      "inverse-on-surface": "#313031",
+                      "surface-container-high": "#2a2a2b",
+                      "on-surface": "#e5e2e3",
+                      "outline": "#849495",
+                      "inverse-surface": "#e5e2e3",
+                      "secondary": "#ebb2ff",
+                      "on-primary-fixed-variant": "#004f54",
+                      "outline-variant": "#3b494b",
+                      "on-surface-variant": "#b9cacb",
+                      "surface-variant": "#353436",
+                      "tertiary-fixed": "#a8f928",
+                      "primary-container": "#00f0ff",
+                      "surface-dim": "#131314",
+                      "secondary-container": "#ce5dff",
+                      "on-secondary-container": "#480064",
+                      "surface-tint": "#00dbe9",
+                      "primary-fixed": "#7df4ff",
+                      "tertiary": "#e6ffc0",
+                      "on-error": "#690005",
+                      "secondary-fixed": "#f8d8ff",
+                      "primary": "#dbfcff",
+                      "tertiary-fixed-dim": "#8fdb00",
+                      "surface": "#131314",
+                      "on-background": "#e5e2e3",
+                      "surface-container": "#201f20",
+                      "inverse-primary": "#006970",
+                      "error-container": "#93000a",
+                      "on-primary-container": "#006970",
+                      "on-secondary-fixed": "#320047",
+                      "primary-fixed-dim": "#00dbe9",
+                      "surface-container-low": "#1c1b1c",
+                      "surface-bright": "#3a393a",
+                      "on-tertiary": "#203600",
+                      "brand-rose": "#e11d48"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "margin-mobile": "20px",
+                      "margin-desktop": "40px",
+                      "stack-md": "12px",
+                      "base": "8px",
+                      "stack-sm": "4px",
+                      "stack-lg": "24px"
+              },
+              "fontFamily": {
+                      "code-sm": ["JetBrains Mono"],
+                      "headline-md": ["Space Grotesk"],
+                      "headline-lg": ["Space Grotesk"],
+                      "headline-sm": ["Space Grotesk"],
+                      "body-md": ["Geist"],
+                      "body-lg": ["Geist"],
+                      "label-caps": ["JetBrains Mono"]
+              },
+              "fontSize": {
+                      "code-sm": ["12px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                      "headline-md": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-sm": ["20px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-caps": ["10px", {"lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(19, 19, 20, 0.6);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+        }
+        .grid-overlay {
+            background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .rose-glow {
+            box-shadow: 0 0 20px rgba(225, 29, 72, 0.2);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md selection:bg-brand-rose selection:text-white min-h-screen flex flex-col">
+<!-- Grid Background -->
+<div class="fixed inset-0 grid-overlay pointer-events-none z-0"></div>
+<!-- Navigation suppressed per Shell Visibility Rule (Transactional Page) -->
+<nav class="w-full top-0 sticky z-50 bg-surface/60 backdrop-blur-xl border-b border-outline-variant/30 shadow-[0_0_15px_rgba(0,219,233,0.1)] flex justify-between items-center px-margin-desktop py-base max-w-full">
+<div class="font-headline-md text-headline-md font-bold tracking-tighter text-primary-fixed-dim">Vyzorix</div>
+<div class="flex items-center gap-stack-lg">
+<span class="font-code-sm text-code-sm text-on-surface-variant">Identity: Verified</span>
+</div>
+</nav>
+<main class="flex-grow flex items-center justify-center relative z-10 px-margin-mobile md:px-0 py-stack-lg">
+<div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 overflow-hidden rounded-xl border border-outline-variant/30 glass-panel shadow-2xl">
+<!-- Majestic Imagery Section -->
+<div class="relative min-h-[300px] md:min-h-[600px] overflow-hidden group">
+<img alt="White Wolf Identity" class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlEzWQdm5DSakspVE_Df8hhjaaBoecmGCZx7qXoU_uJwpHc5WakSP6Qtx9XLDP5xHwdhSVxn0tVSos1q7T1yv9yJwp8xP5p9tgNfzIMtZuscon1-bVtLVJiXsBdlP2y3ADE73UJlCwJsrVlYFZiLD-Pbs1Smbf9fXKDuotTndqbPn-tP8LuzPtBMf5_7O6x-2FvO-Gu3szpWi80fD3Q2tDLFnr-863fGv2LWSbPRW9IaPWiqr1DCFan9CIiIL22-8gwGEFOJiOu8-O"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent"></div>
+<!-- Overlay Identity -->
+<div class="absolute bottom-margin-desktop left-margin-desktop">
+<div class="flex items-center gap-base mb-stack-sm">
+<span class="w-2 h-2 rounded-full bg-brand-rose animate-pulse"></span>
+<span class="font-label-caps text-label-caps tracking-widest text-white/70"></span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-white">Integrity Assured.</h2>
+</div>
+</div>
+<!-- Content Section -->
+<div class="flex flex-col justify-center p-margin-desktop md:p-16 relative bg-surface-container-lowest/40 backdrop-blur-sm">
+<!-- Vyzorix Symbol -->
+<div class="mb-stack-lg flex items-center gap-base">
+<div class="w-10 h-10 border border-brand-rose/50 rounded flex items-center justify-center glass-panel">
+<span class="material-symbols-outlined text-brand-rose">verified_user</span>
+</div>
+<span class="font-headline-sm text-headline-sm tracking-tighter font-bold">Vyzorix</span>
+</div>
+<div class="space-y-stack-lg">
+<h1 class="font-headline-lg text-headline-lg text-on-surface leading-tight">
+                        Confirming your <br/><span class="text-brand-rose">identity</span>.
+                    </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-md">
+                        A verification link has been sent to your email. Please follow the instructions provided to finalize your access.
+                    </p>
+<div class="pt-base">
+<button class="w-full md:w-auto bg-brand-rose text-white font-headline-sm text-headline-sm px-10 py-4 rounded-lg rose-glow hover:bg-rose-700 active:scale-95 transition-all duration-300 flex items-center justify-center gap-stack-md group">
+<span>Verify Account</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+<!-- Secondary Options -->
+<div class="pt-stack-lg mt-stack-lg border-t border-outline-variant/20 flex flex-col gap-base">
+<p class="font-code-sm text-code-sm text-on-surface-variant">Didn't receive the email?</p>
+<div class="flex items-center gap-stack-lg">
+<button class="font-code-sm text-code-sm text-brand-rose hover:underline transition-all">You can Resend</button>
+<span class="text-outline-variant text-[10px]">|</span>
+<button class="font-code-sm text-code-sm text-on-surface-variant hover:text-on-surface transition-all"></button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Component from Shared JSON -->
+<footer class="w-full py-stack-lg mt-auto bg-surface-container-lowest/80 backdrop-blur-md border-t border-outline-variant/20 flex flex-col md:flex-row justify-between items-center px-margin-desktop gap-gutter relative z-10">
+<div class="font-headline-sm text-headline-sm text-on-surface">Vyzorix</div>
+<div class="flex gap-gutter">
+<a class="font-code-sm text-code-sm text-on-surface-variant hover:text-primary-fixed hover:underline decoration-primary-fixed-dim/50 cursor-pointer transition-opacity hover:opacity-80" href="#">Protocol</a>
+<a class="font-code-sm text-code-sm text-on-surface-variant hover:text-primary-fixed hover:underline decoration-primary-fixed-dim/50 cursor-pointer transition-opacity hover:opacity-80" href="#">Privacy</a>
+<a class="font-code-sm text-code-sm text-on-surface-variant hover:text-primary-fixed hover:underline decoration-primary-fixed-dim/50 cursor-pointer transition-opacity hover:opacity-80" href="#">Security</a>
+<a class="font-code-sm text-code-sm text-on-surface-variant hover:text-primary-fixed hover:underline decoration-primary-fixed-dim/50 cursor-pointer transition-opacity hover:opacity-80" href="#">Contact</a>
+</div>
+<div class="font-code-sm text-code-sm text-tertiary-fixed-dim">™ 2026 Vyzorix. All rights reserved</div>
+</footer>
+<script>
+        // Micro-interaction for the button
+        const btn = document.querySelector('button');
+        btn.addEventListener('mousemove', (e) => {
+            const rect = btn.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            btn.style.setProperty('--x', `${x}px`);
+            btn.style.setProperty('--y', `${y}px`);
+        });
+    </script>
+</body></html>
