@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Vyzorix | Init</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@100;300;400;700;900&amp;family=JetBrains+Mono:wght@300;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: "#000000",
+                            container: "#f5f5f5",
+                            "fixed-dim": "#1a1a1a"
+                        },
+                        surface: {
+                            DEFAULT: "#ffffff",
+                            "container-lowest": "#fafafa",
+                            variant: "#e0e0e0"
+                        },
+                        on: {
+                            surface: "#000000",
+                            "surface-variant": "#757575"
+                        },
+                        outline: {
+                            variant: "#d1d1d1"
+                        }
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Public Sans", "sans-serif"],
+                        display: ["Public Sans", "sans-serif"],
+                        body: ["Public Sans", "sans-serif"],
+                        code: ["JetBrains Mono", "monospace"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .horizontal-tension {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            min-height: 100vh;
+        }
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 0, 0, 0.03);
+            position: absolute;
+            z-index: 10;
+            pointer-events: none;
+            animation: scanline 8s linear infinite;
+        }
+        @keyframes scanline {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+        input:focus {
+            outline: none;
+            border-color: #000 !important;
+        }
+        .understated-nav {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary selection:text-white overflow-hidden" style="background-color: #ffffff;">
+<!-- Background Shader Layer -->
+<!-- Navigation Shell (Suppressed for focused journey, using only minimal branding) -->
+<main class="relative z-20 min-h-screen flex flex-col md:flex-row items-stretch">
+<!-- Left Wing: The 'INIT' Anchor -->
+<section class="flex-none w-full md:w-1/3 flex flex-col justify-center px-12 lg:px-24 border-r border-outline-variant/10">
+<h1 class="font-headline text-[12vw] lg:text-[15vw] font-black leading-[0.8] tracking-tighter text-black">INIT</h1>
+</section>
+<!-- Center Void: Horizontal Tension -->
+<!-- Right Wing: Form Cluster -->
+<section class="flex-none w-full md:w-1/3 backdrop-blur-sm border-outline-variant/20 flex flex-col justify-center px-12 lg:px-16">
+<div class="max-w-xs w-full ml-auto space-y-12">
+<div class="space-y-4">
+<button class="w-full py-4 bg-[#F3F4F6] flex items-center justify-center gap-3 font-code text-[10px] uppercase tracking-widest text-black hover:bg-black hover:text-white transition-all border-none">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.041-1.412-4.041-1.412-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path></svg>
+                        Continue with GitHub
+                    </button>
+<button class="w-full py-4 bg-[#F3F4F6] flex items-center justify-center gap-3 font-code text-[10px] uppercase tracking-widest text-black hover:bg-black hover:text-white transition-all border-none">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.733-.067-1.427-.187-2.093H12.48z"></path></svg>
+                        Continue with Google
+                    </button>
+</div>
+<div class="relative flex items-center py-4">
+<div class="flex-grow border-t border-black/10"></div>
+<span class="flex-none px-4 font-code text-[8px] text-black/40 uppercase">OR</span>
+<div class="flex-grow border-t border-black/10"></div>
+</div>
+<form class="space-y-8">
+<div>
+<label class="block font-code text-[9px] uppercase tracking-widest mb-2">Operator Username</label>
+<input class="w-full border-b border-black py-2 focus:border-[#e11d48] transition-colors bg-transparent" placeholder="" type="text"/>
+</div>
+<div>
+<label class="block font-code text-[9px] uppercase tracking-widest mb-2">Email</label>
+<input class="w-full border-b border-black py-2 focus:border-[#e11d48] transition-colors bg-transparent" placeholder="" type="email"/>
+</div>
+<div>
+<label class="block font-code text-[9px] uppercase tracking-widest mb-2">Password</label>
+<input class="w-full border-b border-black py-2 focus:border-[#e11d48] transition-colors bg-transparent" placeholder="" type="password"/>
+</div>
+<div class="pt-4 space-y-4">
+<button class="w-full py-4 bg-[#e11d48] text-white font-headline font-bold text-xs uppercase tracking-widest hover:opacity-90 transition-all" type="submit">Login</button>
+<a class="block text-center font-code text-[9px] uppercase tracking-widest text-black/60 hover:text-[#e11d48]" href="#">Forgot Password</a>
+</div>
+</form>
+</div>
+</section>
+</main>
+<script>
+        // Simple Micro-interaction for form inputs
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                document.body.style.backgroundColor = '#fafafa';
+            });
+            input.addEventListener('blur', () => {
+                document.body.style.backgroundColor = '#ffffff';
+            });
+        });
+
+        // Ambient Glitch Effect for the 'INIT' heading
+        const initHeader = document.querySelector('h1');
+        setInterval(() => {
+            if (Math.random() > 0.95) {
+                initHeader.style.opacity = '0.5';
+                initHeader.style.transform = `translateX(${Math.random() * 4 - 2}px)`;
+                setTimeout(() => {
+                    initHeader.style.opacity = '1';
+                    initHeader.style.transform = 'translateX(0)';
+                }, 50);
+            }
+        }, 200);
+    </script>
+</body></html>
