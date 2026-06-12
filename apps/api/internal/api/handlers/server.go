@@ -136,7 +136,7 @@ func (s *Server) Engine() *gin.Engine {
 	// This allows TanStack Start SSR to work with Go backend
 	ssrConfig := config.LoadSSRConfig()
 	if ssrConfig.EnableSSR {
-		r.Use(middleware.SSRProxy(s.Log, ssrConfig, s.Config.PublicDir))
+		r.Use(middleware.SSRProxy(s.Log, ssrConfig, s.Config.PublicDir, s.Config.JWTSecret))
 	} else {
 		// Fallback: serve static HTML files (no SSR)
 		s.Log.Warn("SSR disabled - serving static HTML files only")
