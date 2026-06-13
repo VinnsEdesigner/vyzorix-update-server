@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "@/components/ui/sonner";
 import { logger } from "@/lib/logger";
+import { getFullHydratedState } from "@/lib/server/state-injector";
 import { login, register, redirectToGoogleOAuth } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
@@ -25,10 +26,39 @@ const LoginPage = (): ReactElement => {
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
 
-  // If already authenticated (e.g. token in localStorage), bounce to dashboard.
+  /**
+   * SSR-aware authentication check
+   *
+   * This runs on mount and checks:
+   * 1. Server-injected state (SSR hydration) - fastest, no flash
+   * 2. API fallback - for client-side navigation without SSR state
+   *
+   * Matches Library's pattern for auth state checking
+   */
   useEffect(() => {
-    const token = localStorage.getItem("vyz.auth.token");
-    if (token) navigate({ to: "/dashboard", replace: true });
+    const checkAuth = async (): Promise<void> => {
+      // 1. Check server-injected state first (SSR hydration)
+      if (typeof window !== "undefined") {
+        const globalState = getFullHydratedState();
+        if (globalState?.isAuthenticated) {
+          // Server already validated - redirect immediately
+          navigate({ to: "/dashboard", replace: true });
+          return;
+        }
+      }
+
+      // 2. Fallback: Fetch from API (client-side navigation without SSR state)
+      try {
+        const res = await fetch("/v1/auth/me", { credentials: "include" });
+        if (res.ok) {
+          navigate({ to: "/dashboard", replace: true });
+        }
+      } catch {
+        // Not authenticated - stay on login page
+      }
+    };
+
+    checkAuth();
   }, [navigate]);
 
   const submit = async (e: React.FormEvent): Promise<void> => {

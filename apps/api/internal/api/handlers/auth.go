@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -29,7 +28,7 @@ import (
 type AuthController struct {
 	log       *slog.Logger
 	store     *storage.Store
-	jwt       *security.JWTManager
+	session   *security.SessionManager
 	googleVer *security.GoogleTokenVerifier
 	emailSvc  *services.EmailService
 	config    config.Config
@@ -37,20 +36,27 @@ type AuthController struct {
 
 // NewAuthController creates a new auth controller.
 func NewAuthController(log *slog.Logger, cfg config.Config, store *storage.Store) *AuthController {
-	jwtManager := security.NewJWTManager(cfg.JWTSecret, cfg.JWTDuration, "vyzorix-update-server")
 	googleVer := security.NewGoogleTokenVerifier(cfg.GoogleOAuthClientID)
 	emailSvc := services.NewEmailService()
+
+	// Initialize SessionManager - uses SESSION_SECRET, falls back to JWTSecret
+	sessionSecret := cfg.SessionSecret
+	if sessionSecret == "" {
+		sessionSecret = cfg.JWTSecret
+	}
+	sessionManager := security.NewSessionManager(sessionSecret)
+
 	return &AuthController{
 		log:       log,
 		config:    cfg,
 		store:     store,
-		jwt:       jwtManager,
+		session:   sessionManager,
 		googleVer: googleVer,
 		emailSvc:  emailSvc,
 	}
 }
 
-// Login authenticates an operator with email and password, returning a JWT.
+// Login authenticates an operator with email and password, setting an HttpOnly session cookie.
 func (ac *AuthController) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
@@ -87,7 +93,17 @@ func (ac *AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	ac.issueToken(c, ctx, op)
+	// Set HttpOnly session cookie
+	cookie, err := ac.session.CreateSessionCookieWithExpiry(op.ID, ac.config.SessionMaxAge)
+	if err != nil {
+		ac.log.Warn("login: failed to create session cookie", "err", err)
+		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
+		return
+	}
+	http.SetCookie(c.Writer, cookie)
+
+	// Return operator (no JWT token in body - using cookie instead)
+	c.JSON(200, op.ToResponse())
 }
 
 // Register creates the first operator in the system.
@@ -121,13 +137,13 @@ func (ac *AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	// Determine role: first operator gets super_admin, all others need a valid admin JWT
+	// Determine role: first operator gets super_admin, all others require super_admin auth
 	role := models.RoleOperator
 	if count == 0 {
 		role = models.RoleSuperAdmin
 		ac.log.Info("register: bootstrapping first operator", "email", req.Email)
 	} else {
-		// Subsequent registrations require a super_admin JWT
+		// Subsequent registrations require a super_admin session cookie
 		authOp := getOperatorFromContext(c)
 		if authOp == nil || authOp.Role != models.RoleSuperAdmin {
 			c.JSON(403, models.ErrorResponse{Error: "forbidden", Message: "only a super_admin can invite new operators"})
@@ -304,20 +320,11 @@ func (ac *AuthController) UpdateSettings(c *gin.Context) {
 	c.JSON(200, updated.ToResponse())
 }
 
-// Logout revokes the current session.
+// Logout clears the session cookie.
 func (ac *AuthController) Logout(c *gin.Context) {
-	authHeader := c.GetHeader("Authorization")
-	if !strings.HasPrefix(authHeader, "Bearer ") {
-		c.JSON(200, map[string]any{"ok": true})
-		return
-	}
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
-	defer cancel()
-	hash := security.HashToken(token)
-	if err := ac.store.DeleteSession(ctx, hash); err != nil {
-		ac.log.Warn("logout: failed to delete session", "err", err)
-	}
+	// Clear the session cookie
+	clearCookie := ac.session.ClearSessionCookie()
+	http.SetCookie(c.Writer, clearCookie)
 	c.JSON(200, map[string]any{"ok": true})
 }
 
@@ -349,7 +356,7 @@ func (ac *AuthController) GoogleLoginRedirect(c *gin.Context) {
 // GET /v1/auth/google/callback.
 func (ac *AuthController) GoogleCallback(c *gin.Context) {
 	code := c.Query("code")
-	_ = c.Query("state") // frontend URL to redirect back to (reserved for future use)
+	state := c.Query("state") // frontend URL to redirect back to
 	if code == "" {
 		c.JSON(400, models.ErrorResponse{Error: "bad_callback", Message: "missing authorization code from Google"})
 		return
@@ -436,53 +443,32 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 		}
 	}
 
-	// Issue JWT
-	token, _, err := ac.jwt.Generate(op.ID, op.Email, op.Name, string(op.Role))
+	// Set HttpOnly session cookie instead of exposing token in URL
+	cookie, err := ac.session.CreateSessionCookieWithExpiry(op.ID, ac.config.SessionMaxAge)
 	if err != nil {
-		ac.log.Warn("google callback: jwt failed", "err", err)
+		ac.log.Warn("google callback: failed to create session cookie", "err", err)
 		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
 		return
 	}
+	http.SetCookie(c.Writer, cookie)
 
-	// Redirect to frontend with token
+	// Redirect to frontend - cookie is set, no token in URL
 	frontendURL := ac.config.FrontendURL
 	if frontendURL == "" {
 		frontendURL = "http://localhost:5173"
 	}
-	redirectURL := fmt.Sprintf("%s/auth/callback?token=%s&isNew=%t", frontendURL, url.QueryEscape(token), isNew)
+
+	// Use state parameter if provided (frontend URL), otherwise default to dashboard
+	redirectTarget := frontendURL
+	if state != "" {
+		redirectTarget = state
+	}
+
+	// Redirect to dashboard with success indicator (no sensitive data in URL)
+	redirectURL := fmt.Sprintf("%s/dashboard?oauth=success&new=%t", redirectTarget, isNew)
 
 	ac.log.Info("google callback: login success", "email", op.Email, "role", op.Role)
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
-}
-
-// issueToken creates a session in the DB and responds with the JWT.
-func (ac *AuthController) issueToken(c *gin.Context, ctx context.Context, op *models.Operator) {
-	token, expiresAt, err := ac.jwt.Generate(op.ID, op.Email, op.Name, string(op.Role))
-	if err != nil {
-		ac.log.Warn("issueToken: jwt failed", "err", err)
-		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
-		return
-	}
-
-	sess := &models.Session{
-		ID:         generateID(),
-		OperatorID: op.ID,
-		TokenHash:  security.HashToken(token),
-		ExpiresAt:  expiresAt,
-		CreatedAt:  time.Now().UTC(),
-		UserAgent:  c.GetHeader("User-Agent"),
-		IPAddress:  c.ClientIP(),
-	}
-	if err := ac.store.CreateSession(ctx, sess); err != nil {
-		ac.log.Warn("issueToken: session create failed", "err", err)
-		// Non-fatal: token is still valid, session just won't be revokable
-	}
-
-	c.JSON(200, models.AuthResponse{
-		Token:     token,
-		ExpiresAt: expiresAt.UnixMilli(),
-		Operator:  op.ToResponse(),
-	})
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────────
@@ -859,36 +845,4 @@ func postJSON(ctx context.Context, url string, body any, resp any) error {
 		return fmt.Errorf("HTTP %d: %s", httpResp.StatusCode, string(rb))
 	}
 	return json.Unmarshal(rb, resp)
-}
-
-// _decodeJWTPayload extracts the payload from a JWT without signature verification.
-// In production, fetch Google's public keys and verify the signature.
-// For Phase 1.5, we trust the token format and extract the claims directly.
-//
-//nolint:unused
-func _decodeJWTPayload(token string, out any) error {
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
-		return errors.New("invalid JWT format")
-	}
-	payload, err := _base64RawURLDecode(parts[1])
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(payload, out)
-}
-
-//nolint:unused
-func _base64RawURLDecode(s string) ([]byte, error) {
-	// Add padding if needed
-	switch len(s) % 4 {
-	case 2:
-		s += "=="
-	case 3:
-		s += "="
-	}
-	// Replace URL-safe chars
-	s = strings.ReplaceAll(s, "-", "+")
-	s = strings.ReplaceAll(s, "_", "/")
-	return []byte(s), nil
 }

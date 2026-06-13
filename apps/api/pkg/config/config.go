@@ -14,6 +14,8 @@ import (
 type Config struct {
 	GoogleOAuthClientSecret  string
 	JWTSecret                string
+	SessionSecret            string // AES-256 key for cookie encryption (defaults to JWTSecret if not set)
+	SessionMaxAge            int    // Session duration in seconds (defaults to 86400 = 24h)
 	DatabaseURL              string
 	DataDir                  string
 	BinDir                   string
@@ -46,6 +48,14 @@ func Load() (Config, error) {
 		}
 	}
 
+	// Session cookie settings
+	sessionMaxAge := 86400 // default 24 hours
+	if v := os.Getenv("SESSION_MAX_AGE_SECONDS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			sessionMaxAge = n
+		}
+	}
+
 	// Token expiry defaults
 	emailVerifyExpiry := 24 * time.Hour
 	if v := os.Getenv("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS"); v != "" {
@@ -70,7 +80,8 @@ func Load() (Config, error) {
 		FirebaseCreds:           os.Getenv("FIREBASE_CREDENTIALS"),
 		TokenSecret:             os.Getenv("TOKEN_SECRET"),
 		JWTSecret:               os.Getenv("JWT_SECRET"),
-		JWTDuration:             jwtDuration,
+		SessionSecret:           os.Getenv("SESSION_SECRET"), // Uses SESSION_SECRET, falls back to JWTSecret at usage
+		SessionMaxAge:           sessionMaxAge,
 		AllowedOrigins:          splitCSV(get("ALLOWED_ORIGINS", "*")),
 		HMACWindow:              30 * time.Second, // Per COMMAND_SECURITY.md: 30-second window
 		NonceCacheTTL:           1 * time.Hour,
@@ -83,6 +94,7 @@ func Load() (Config, error) {
 		EmailFrom:     get("EMAIL_FROM", "noreply@vyzorix.app"),
 		EmailFromName: get("EMAIL_FROM_NAME", "Vyzorix"),
 		// Security token expiry
+		JWTDuration:              jwtDuration,
 		EmailVerifyTokenExpiry:   emailVerifyExpiry,
 		PasswordResetTokenExpiry: passwordResetExpiry,
 	}
