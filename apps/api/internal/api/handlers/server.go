@@ -84,19 +84,21 @@ func (s *Server) Engine() *gin.Engine {
 	public := r.Group("")
 	public.Use(s.Limiter.Middleware())
 
-	// Auth routes (no JWT required for login/register; JWT required for /me and logout)
+	// Auth routes (no auth required for login/register; cookie auth required for /me and logout)
 	auth := public.Group("/v1/auth")
 	auth.GET("/google", s.jwtCtrl.GoogleLoginRedirect)     // triggers OAuth redirect
 	auth.GET("/google/callback", s.jwtCtrl.GoogleCallback) // OAuth callback from Google
-	// Email verification and password reset (no JWT required)
+	// Email verification and password reset (no auth required)
 	auth.POST("/verify-email", s.jwtCtrl.VerifyEmail)
 	auth.POST("/resend-verification", s.jwtCtrl.ResendVerification)
-	auth.POST("/reset-password", s.jwtCtrl.ResetPassword)
-	// /me and /logout require JWT — middleware applied inline
-	auth.GET("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Me)
-	auth.PATCH("/me", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.UpdateName)
-	auth.PATCH("/me/settings", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.UpdateSettings)
-	auth.POST("/logout", JWTAuth(s.jwtCtrl.jwt, s.Store), s.jwtCtrl.Logout)
+	auth.POST("/resend-token", s.jwtCtrl.ResendVerification)        // Alias for Library compatibility
+	auth.POST("/cancel-verification", s.jwtCtrl.CancelVerification) // Cancel pending verification
+	auth.GET("/poll-verification", s.jwtCtrl.PollVerification)      // Poll verification status
+	// /me, /logout require authentication via HttpOnly cookie
+	auth.GET("/me", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.Me)
+	auth.PATCH("/me", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.UpdateName)
+	auth.PATCH("/me/settings", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.UpdateSettings)
+	auth.POST("/logout", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.Logout)
 
 	// Stricter rate limiting for sensitive auth endpoints (5 req/min to prevent brute force)
 	// Applied inline - both the general Limiter (100/min) AND AuthLimiter (5/min)
@@ -123,11 +125,11 @@ func (s *Server) Engine() *gin.Engine {
 	public.POST("/v1/device/register", s.register)
 	public.GET("/v1/device/:id/status", s.status)
 	r.PATCH("/v1/device/:id/fcm-token", s.requireHMAC(), s.fcmToken)
-	r.POST("/v1/device/:id/command", JWTAuth(s.jwtCtrl.jwt, s.Store), s.requireStrictHMAC(), s.command)
+	r.POST("/v1/device/:id/command", CookieAuth(s.jwtCtrl.session, s.Store), s.requireStrictHMAC(), s.command)
 	r.DELETE("/v1/device/:id", s.requireHMAC(), s.deleteDevice)
 
-	// Dashboard routes — protected by JWT
-	r.GET("/v1/dashboard/devices", JWTAuth(s.jwtCtrl.jwt, s.Store), s.dashboardDevices)
+	// Dashboard routes — protected by cookie auth
+	r.GET("/v1/dashboard/devices", CookieAuth(s.jwtCtrl.session, s.Store), s.dashboardDevices)
 
 	// WebSocket — HMAC or JWT
 	r.GET("/v1/device/:id/stream", s.stream)
@@ -498,35 +500,36 @@ func (s *Server) requireStrictHMAC() gin.HandlerFunc {
 	}
 }
 
-// JWTAuth is a Gin middleware that validates the Bearer JWT and sets the operator in context.
-// Use this to protect dashboard routes.
-func JWTAuth(jwtManager *security.JWTManager, store *storage.Store) gin.HandlerFunc {
+// CookieAuth is a Gin middleware that validates the HttpOnly session cookie and sets the operator in context.
+// This replaces JWT-based authentication with secure HttpOnly cookies.
+func CookieAuth(sessionManager *security.SessionManager, store *storage.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			c.JSON(401, map[string]string{"error": "unauthorized", "message": "missing or invalid Authorization header"})
-			c.Abort()
-			return
-		}
-		token := strings.TrimPrefix(authHeader, "Bearer ")
-		claims, err := jwtManager.Verify(token)
+		// Read the session cookie
+		cookieValue, err := c.Cookie(security.CookieName)
 		if err != nil {
-			msg := "invalid or expired token"
-			if errors.Is(err, security.ErrExpiredToken) {
-				msg = "token has expired"
-			}
-			c.JSON(401, map[string]string{"error": "unauthorized", "message": msg})
+			c.JSON(401, map[string]string{"error": "unauthorized", "message": "session cookie required"})
 			c.Abort()
 			return
 		}
+
+		// Decrypt the operator ID from the cookie
+		operatorID, err := sessionManager.DecryptOperatorID(cookieValue)
+		if err != nil {
+			c.JSON(401, map[string]string{"error": "unauthorized", "message": "invalid session"})
+			c.Abort()
+			return
+		}
+
+		// Validate operator exists
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 		defer cancel()
-		op, err := store.GetOperatorByEmail(ctx, claims.Email)
+		op, err := store.GetOperatorByID(ctx, operatorID)
 		if err != nil || op == nil {
 			c.JSON(401, map[string]string{"error": "unauthorized", "message": "operator not found"})
 			c.Abort()
 			return
 		}
+
 		c.Set("operator", op)
 		c.Next()
 	}
