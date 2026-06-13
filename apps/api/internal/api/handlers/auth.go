@@ -796,6 +796,94 @@ func (ac *AuthController) ResetPassword(c *gin.Context) {
 	c.JSON(200, models.MessageResponse{Message: "Password reset successful. Please log in with your new password."})
 }
 
+// PollVerification checks the status of an email verification token.
+func (ac *AuthController) PollVerification(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "token is required"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	// Hash the token for lookup
+	tokenHash := security.HashToken(token)
+	ev, err := ac.store.GetEmailVerificationByTokenHash(ctx, tokenHash)
+	if err != nil {
+		ac.log.Warn("pollVerification: db error", "err", err)
+		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "verification check failed"})
+		return
+	}
+
+	if ev == nil {
+		c.JSON(200, models.VerificationPollResponse{Status: "invalid", Email: ""})
+		return
+	}
+
+	// Check if expired
+	if time.Now().UTC().After(ev.ExpiresAt) {
+		// Delete expired token
+		ac.store.DeleteEmailVerification(ctx, ev.ID) //nolint:errcheck
+		c.JSON(200, models.VerificationPollResponse{Status: "expired", Email: ""})
+		return
+	}
+
+	// Get operator to check verification status and get email
+	op, err := ac.store.GetOperatorByID(ctx, ev.OperatorID)
+	if err != nil || op == nil {
+		// Operator not yet fully created, still waiting
+		c.JSON(200, models.VerificationPollResponse{Status: "waiting", Email: ""})
+		return
+	}
+
+	if op.EmailVerified {
+		// Already verified!
+		c.JSON(200, models.VerificationPollResponse{Status: "success", Email: op.Email})
+		return
+	}
+
+	// Still waiting for user to click verification link
+	c.JSON(200, models.VerificationPollResponse{Status: "waiting", Email: op.Email})
+}
+
+// CancelVerification removes pending verification tokens for an email.
+func (ac *AuthController) CancelVerification(c *gin.Context) {
+	var req models.CancelVerificationRequest
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "invalid request body"})
+		return
+	}
+
+	email := strings.TrimSpace(strings.ToLower(req.Email))
+	if email == "" {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "email is required"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	// Find operator by email
+	op, err := ac.store.GetOperatorByEmail(ctx, email)
+	if err != nil {
+		ac.log.Warn("cancelVerification: db error", "err", err)
+		// Always return success for security
+		c.JSON(200, map[string]bool{"success": true})
+		return
+	}
+
+	// Delete any pending verification tokens
+	if op != nil {
+		if err := ac.store.DeleteEmailVerificationsByOperator(ctx, op.ID); err != nil {
+			ac.log.Warn("cancelVerification: failed to delete verifications", "err", err)
+		}
+	}
+
+	// Always return success for security (prevents email enumeration)
+	c.JSON(200, map[string]bool{"success": true})
+}
+
 func getOperatorFromContext(c *gin.Context) *models.Operator {
 	v, exists := c.Get("operator")
 	if !exists {

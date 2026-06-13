@@ -1,8 +1,9 @@
-# Sign-Up Integration Plan: Library → vyzorix-update-server
+# Sign-Up Integration Plan: Library -> vyzorix-update-server
 
-> **Document Version:** 1.0  
+> **Document Version:** 1.1  
 > **Date:** 2026-06-13  
-> **Purpose:** End-to-end integration of Library's auth components into vyzorix-update-server
+> **Purpose:** End-to-end integration of Library's auth components into vyzorix-update-server  
+> **Status:** Phase 2A - Ready for Implementation  
 
 ---
 
@@ -16,70 +17,88 @@
 6. [Component Integration](#6-component-integration)
 7. [SSR Hydration Flow](#7-ssr-hydration-flow)
 8. [Auth Layout with Wolf Background](#8-auth-layout-with-wolf-background)
-9. [Missing Go Endpoints](#9-missing-go-endpoints)
-10. [Implementation Order](#10-implementation-order)
+9. [Missing Go Endpoints - CRITICAL BLOCKERS](#9-missing-go-endpoints---critical-blockers)
+10. [Revised Implementation Order](#10-revised-implementation-order)
+11. [Client Architecture Strategy](#11-client-architecture-strategy)
+12. [Error Handling Strategy](#12-error-handling-strategy)
 
 ---
 
 ## 1. Architecture Overview
 
-### Current State
+### Current State (As of v1.1)
 
 ```
 vyzorix-update-server (TanStack Start)
-┌─────────────────────────────────────────────────────────┐
-│  routes/                                                │
-│  ├── login.tsx              ← Basic card UI           │
-│  ├── forgot-password.tsx     ← Basic form               │
-│  └── verify-email.tsx      ← Basic form               │
-│                                                         │
-│  lib/                                                │
-│  ├── vyzorix-auth.ts       ← localStorage + JWT      │
-│  └── vyzorix-config.tsx    ← serverUrl config        │
-└─────────────────────────────────────────────────────────┘
-                          ↓
-┌─────────────────────────────────────────────────────────┐
-│  Go Backend (apps/api/)                               │
-│  ├── internal/api/handlers/auth.go   ← JWT validation │
-│  └── pkg/storage/sqlite.go           ← Database       │
-└─────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+|  routes/                                                    |
+|  +-- login.tsx              [UPDATED: SSR state]           |
+|  +-- forgot-password.tsx    [NEEDS UPDATE]                  |
+|  +-- verify-email.tsx       [NEEDS UPDATE]                  |
+|  +-- signup.tsx             [MISSING - NEEDS CREATION]      |
+|                                                           |
+|  lib/                                                   |
+|  +-- vyzorix-auth.ts        [localStorage + JWT]          |
+|  +-- vyzorix-config.tsx     [serverUrl config]            |
+|  +-- server/                [DONE: SSR infrastructure]     |
+|      +-- cookie-reader.ts                               |
+|      +-- state-injector.tsx                             |
+|                                                           |
+|  library-auth/                 [SOURCE COMPONENTS]        |
+|  +-- components/              [SignUpForm, LoginForm, etc] |
+|  +-- lib/clients/            [authClient, ssoClient]      |
++-------------------------------------------------------------+
+                          |
+                          v
++-------------------------------------------------------------+
+|  Go Backend (apps/api/)                                    |
+|  +-- internal/api/handlers/auth.go   [NEEDS NEW ENDPOINTS] |
+|  +-- internal/auth/session.go        [DONE: Cookie auth]   |
+|  +-- pkg/storage/sqlite.go           [NEEDS NEW METHODS]   |
++-------------------------------------------------------------+
 ```
 
 ### Target State
 
 ```
 vyzorix-update-server (TanStack Start)
-┌─────────────────────────────────────────────────────────┐
-│  routes/                                                │
-│  ├── login.tsx              ← Library's LoginForm     │
-│  ├── signup.tsx             ← Library's SignUpForm    │
-│  ├── forgot-password.tsx    ← Library's ForgotForm    │
-│  └── verify-email.tsx      ← Library's WaitingVerif  │
-│                                                         │
-│  components/auth/            ← COPY from Library      │
-│  ├── LoginForm.tsx                                  │
-│  ├── SignUpForm.tsx                                 │
-│  ├── ForgotPasswordForm.tsx                          │
-│  ├── WaitingVerification.tsx                          │
-│  ├── SuccessView.tsx                                │
-│  └── SpinningBlocksLoader.tsx                        │
-│                                                         │
-│  lib/clients/               ← 3 AUTH CLIENTS          │
-│  ├── auth.ts                ← register, login, etc.  │
-│  ├── sso.ts                 ← Google OAuth init    │
-│  └── verification.ts         ← Poll, resend          │
-│                                                         │
-│  lib/server/                ← SSR (DONE)             │
-│  ├── cookie-reader.ts                               │
-│  └── state-injector.tsx                             │
-└─────────────────────────────────────────────────────────┘
-                          ↓
-┌─────────────────────────────────────────────────────────┐
-│  Go Backend (apps/api/) - COOKIE AUTH (DONE)          │
-│  ├── SessionManager        ← AES-256-GCM cookies     │
-│  ├── CookieAuth            ← Middleware              │
-│  └── handlers/auth.go      ← Sets/clears cookies     │
-└─────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+|  routes/                                                    |
+|  +-- _auth-layout.tsx          [SHARED: Wolf background]   |
+|  +-- _auth/                                           |
+|      +-- login.tsx             [Library's LoginForm]       |
+|      +-- signup.tsx            [Library's SignUpForm]      |
+|      +-- forgot-password.tsx   [Library's ForgotForm]      |
+|      +-- verify-email.tsx      [Library's WaitingVerif]    |
+|                                                           |
+|  components/auth/              [COPY from library-auth]    |
+|  +-- SignUpForm.tsx                                      |
+|  +-- LoginForm.tsx                                       |
+|  +-- ForgotPasswordForm.tsx                              |
+|  +-- WaitingVerification.tsx                             |
+|  +-- SuccessView.tsx                                     |
+|  +-- SpinningBlocksLoader.tsx                            |
+|                                                           |
+|  lib/clients/                 [4 MODULAR CLIENTS]         |
+|  +-- auth.ts                   [register, login, logout]  |
+|  +-- sso.ts                    [Google OAuth initiation]  |
+|  +-- verification.ts           [poll, resend, cancel]     |
+|  +-- password.ts               [forgot, reset]            |
+|                                                           |
+|  lib/server/                   [SSR (DONE)]               |
+|  +-- cookie-reader.ts                                     |
+|  +-- state-injector.tsx                                   |
++-------------------------------------------------------------+
+                          |
+                          v
++-------------------------------------------------------------+
+|  Go Backend (apps/api/) - COOKIE AUTH (DONE)               |
+|  +-- SessionManager          [AES-256-GCM cookies]        |
+|  +-- CookieAuth              [Middleware]                 |
+|  +-- handlers/auth.go        [Sets/clears cookies]        |
+|  +-- NEW: PollVerification   [BLOCKER #1]                 |
+|  +-- NEW: CancelVerification [BLOCKER #2]                 |
++-------------------------------------------------------------+
 ```
 
 ---
@@ -88,10 +107,12 @@ vyzorix-update-server (TanStack Start)
 
 | Route | Component | Parent Route | Purpose |
 |-------|-----------|--------------|---------|
-| `/login` | `LoginForm.tsx` | None | Email/password + SSO login |
-| `/signup` | `SignUpForm.tsx` | None | Registration with email verification |
-| `/forgot-password` | `ForgotPasswordForm.tsx` | None | Request password reset email |
-| `/verify-email` | `WaitingVerification.tsx` | None | Poll for email verification |
+| `/login` | `LoginForm.tsx` | `_auth` | Email/password + SSO login |
+| `/signup` | `SignUpForm.tsx` | `_auth` | Registration with email verification |
+| `/forgot-password` | `ForgotPasswordForm.tsx` | `_auth` | Request password reset email |
+| `/verify-email` | `WaitingVerification.tsx` | `_auth` | Poll for email verification |
+
+**Note:** All routes use `_auth` parent layout for shared wolf background.
 
 ---
 

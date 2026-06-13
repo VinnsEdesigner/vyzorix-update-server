@@ -11,4 +11,4 @@ public/assets/*.js.map
 # Local development files
 *.db
 *.db-*
-/data/
+/data/api
