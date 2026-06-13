@@ -168,3 +168,14 @@ type EmailVerifiedResponse struct {
 	Email    string `json:"email,omitempty"`
 	Verified bool   `json:"verified"`
 }
+
+// VerificationPollResponse is the response for polling verification status.
+type VerificationPollResponse struct {
+	Status string `json:"status"` // "waiting", "success", "expired", "invalid"
+	Email  string `json:"email,omitempty"`
+}
+
+// CancelVerificationRequest is the payload for canceling pending verification.
+type CancelVerificationRequest struct {
+	Email string `json:"email"`
+}

@@ -1,0 +1,14 @@
+# Binary (built from source)
+vyzorix-server
+vyzorix-server-old
+
+# Built frontend assets (generated during build)
+public/assets/*.js
+public/assets/*.css
+public/assets/*.js.map
+!public/assets/.gitkeep
+
+# Local development files
+*.db
+*.db-*
+/data/api
