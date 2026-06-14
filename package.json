@@ -28,6 +28,7 @@
     "pnpm": ">=9.0.0"
   },
   "dependencies": {
-    "@tanstack/react-start-server": "^1.167.19"
+    "@tanstack/react-start-server": "^1.167.19",
+    "picocolors": "^1.1.1"
   }
 }

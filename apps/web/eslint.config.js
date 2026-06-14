@@ -14,7 +14,7 @@ const __dirname = dirname(__filename);
 const projectRoot = resolve(__filename, "..");
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi", "node_modules"] },
+  { ignores: ["dist", ".output", ".vinxi", "node_modules", "vitest.config.ts"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

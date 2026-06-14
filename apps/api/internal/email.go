@@ -49,7 +49,8 @@ func (s *EmailService) SendVerificationEmail(ctx context.Context, to, name, toke
 		return errors.New("RESEND_API_KEY not configured")
 	}
 
-	verifyURL := fmt.Sprintf("%s/auth/verify?token=%s", s.baseURL, token)
+	// Use waitVerify with type=verify for registration verification
+	verifyURL := fmt.Sprintf("%s/auth/waitVerify?token=%s&type=verify", s.baseURL, token)
 
 	// Parse template
 	html, err := s.parseTemplate(verificationEmailTemplate, EmailData{
@@ -70,7 +71,9 @@ func (s *EmailService) SendPasswordResetEmail(ctx context.Context, to, name, tok
 		return errors.New("RESEND_API_KEY not configured")
 	}
 
-	resetURL := fmt.Sprintf("%s/auth/reset-password?token=%s", s.baseURL, token)
+	// Use waitVerify with type=reset so user lands on the verification page first
+	// which shows success state before redirecting to set-password
+	resetURL := fmt.Sprintf("%s/auth/waitVerify?token=%s&type=reset", s.baseURL, token)
 
 	// Parse template
 	html, err := s.parseTemplate(passwordResetEmailTemplate, EmailData{

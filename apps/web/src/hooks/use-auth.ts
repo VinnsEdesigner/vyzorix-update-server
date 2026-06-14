@@ -1,141 +1,124 @@
 /**
- * use-auth.ts — React hooks for authentication
+ * use-auth.ts — Unified authentication hook using cookie-based auth.
  *
- * Provides authentication state and actions for the React app.
+ * This hook provides a single source of truth for authentication state,
+ * using HttpOnly cookies instead of localStorage/JWT.
+ *
+ * Flow:
+ *   - On mount: fetches /v1/auth/me with cookie credentials
+ *   - Caches the operator in React state
+ *   - Provides logout function that calls /v1/auth/logout
  */
 
 import { useCallback, useEffect, useState } from "react";
 
-import { logger } from "@/lib/logger";
-import { getToken, getStoredOperator, me, logout, type Operator } from "@/lib/vyzorix-auth";
-import { useVyzorixConfig } from "@/lib/vyzorix-config";
+import type { OperatorResponse } from "@/lib/clients/authClient";
 
 export interface AuthState {
+  operator: OperatorResponse | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  operator: Operator | null;
-  token: string | null;
 }
 
 export interface AuthActions {
-  checkAuth: () => Promise<boolean>;
-  refreshOperator: () => Promise<Operator | null>;
+  refreshOperator: () => Promise<OperatorResponse | null>;
   signOut: () => Promise<void>;
 }
 
 /**
- * useAuth hook - provides authentication state
+ * useAuth hook - provides authentication state and actions using cookie-based auth.
  */
-export const useAuth = (): AuthState => {
-  const [state, setState] = useState<AuthState>(() => {
-    const token = getToken();
-    const operator = getStoredOperator();
-    return {
-      isAuthenticated: Boolean(token) && Boolean(operator),
-      isLoading: false,
-      operator,
-      token,
-    };
-  });
+export const useAuth = (): AuthState & AuthActions => {
+  const [operator, setOperator] = useState<OperatorResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Update state when localStorage changes (for cross-tab sync)
-  useEffect(() => {
-    const handleStorage = (): void => {
-      const token = getToken();
-      const operator = getStoredOperator();
-      setState({
-        isAuthenticated: Boolean(token) && Boolean(operator),
-        isLoading: false,
-        operator,
-        token,
-      });
-    };
-
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
-
-  return state;
-};
-
-/**
- * useAuthActions hook - provides authentication actions
- */
-export const useAuthActions = (): AuthActions => {
-  const { operator: _operator } = useAuth();
-  const { serverUrl } = useVyzorixConfig();
-
-  const checkAuth = useCallback(async (): Promise<boolean> => {
-    const token = getToken();
-    if (!token) return false;
-
+  // Fetch current session from server using cookie
+  const fetchSession = useCallback(async (): Promise<OperatorResponse | null> => {
     try {
-      const op = await me(serverUrl);
-      logger.info("auth", "Session validated", { email: op.email });
-      return true;
-    } catch (err) {
-      logger.warn("auth", "Session validation failed", {
-        error: err instanceof Error ? err.message : String(err),
+      const res = await fetch("/v1/auth/me", {
+        method: "GET",
+        credentials: "include",
       });
-      return false;
-    }
-  }, [serverUrl]);
 
-  const refreshOperator = useCallback(async (): Promise<Operator | null> => {
-    try {
-      const op = await me(serverUrl);
-      return op;
-    } catch (err) {
-      logger.warn("auth", "Failed to refresh operator", {
-        error: err instanceof Error ? err.message : String(err),
-      });
+      if (!res.ok) {
+        return null;
+      }
+
+      const data = (await res.json()) as OperatorResponse;
+      return data;
+    } catch {
       return null;
     }
-  }, [serverUrl]);
+  }, []);
 
+  // Initial load - fetch session on mount
+  useEffect(() => {
+    const loadSession = async (): Promise<void> => {
+      setIsLoading(true);
+
+      // Fetch from server using cookie
+      const session = await fetchSession();
+      setOperator(session);
+      setIsLoading(false);
+    };
+
+    loadSession().catch(() => {
+      setIsLoading(false);
+    });
+  }, [fetchSession]);
+
+  // Refresh - force re-fetch of session
+  const refreshOperator = useCallback(async (): Promise<OperatorResponse | null> => {
+    setIsLoading(true);
+    const session = await fetchSession();
+    setOperator(session);
+    setIsLoading(false);
+    return session;
+  }, [fetchSession]);
+
+  // Logout - call server to clear cookie, then clear local state
   const signOut = useCallback(async (): Promise<void> => {
     try {
-      await logout(serverUrl);
-      logger.info("auth", "Signed out");
-    } catch (err) {
-      logger.warn("auth", "Sign out error", {
-        error: err instanceof Error ? err.message : String(err),
+      await fetch("/v1/auth/logout", {
+        method: "POST",
+        credentials: "include",
       });
+    } catch {
+      // ignore logout errors
     }
-  }, [serverUrl]);
 
-  return { checkAuth, refreshOperator, signOut };
+    // Clear local state
+    setOperator(null);
+
+    // Clear any localStorage references (for clean slate)
+    try {
+      localStorage.removeItem("vyz.auth.operator");
+      localStorage.removeItem("vyz.auth.token");
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  return {
+    operator,
+    isAuthenticated: operator !== null,
+    isLoading,
+    refreshOperator,
+    signOut,
+  };
 };
 
 /**
  * useAuthGuard hook - protects routes that require authentication
- *
- * Returns loading state while checking auth, and a redirect function.
  */
-
-export const useAuthGuard = (): object => {
+export const useAuthGuard = (): { isAuthenticated: boolean; isLoading: boolean } => {
   const { isAuthenticated, isLoading } = useAuth();
-  const { checkAuth } = useAuthActions();
-
-  const validate = useCallback((): Promise<boolean> => {
-    // First check local state
-    if (!getToken()) return Promise.resolve(false);
-
-    // Then validate with server
-    return checkAuth();
-  }, [checkAuth]);
-
-  return {
-    isAuthenticated,
-    isLoading,
-    validate,
-  };
+  return { isAuthenticated, isLoading };
 };
 
 /**
  * useRequireAuth hook - for components that need to wait for auth check
  */
-
 export const useRequireAuth = (): { isReady: boolean; isAuthenticated: boolean } => {
   const [state, setState] = useState<{
     isReady: boolean;
@@ -144,15 +127,16 @@ export const useRequireAuth = (): { isReady: boolean; isAuthenticated: boolean }
     isReady: false,
     isAuthenticated: false,
   });
-  const { checkAuth } = useAuthActions();
+
+  const { refreshOperator } = useAuth();
 
   useEffect(() => {
     const check = async (): Promise<void> => {
-      const isAuth = await checkAuth();
-      setState({ isReady: true, isAuthenticated: isAuth });
+      const op = await refreshOperator();
+      setState({ isReady: true, isAuthenticated: op !== null });
     };
     check();
-  }, [checkAuth]);
+  }, [refreshOperator]);
 
   return state;
 };
