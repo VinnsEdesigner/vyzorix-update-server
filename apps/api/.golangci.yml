@@ -1,164 +1,133 @@
-# =============================================
-# VYZORIX UPDATE SERVER - GO LINTING CONFIG
-# Aggressive Linters - Enterprise Grade
-# Compatible with golangci-lint v1.64.8
-# =============================================
-
+version: "2"
 run:
-  timeout: 15m
-  tests: true
-  modules-download-mode: readonly
   go: "1.24"
-
-issues:
-  exclude-use-default: false
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  new-from-rev: HEAD~1
-
-  exclude-files:
-    - ".*_test\\.go$"
-    - ".*_mock\\.go$"
-    - ".*_fake\\.go$"
-
-  exclude-dirs:
-    - vendor
-    - "\\.git"
-
-# =============================================
-# LINTERS - All aggressive linters enabled
-# =============================================
+  modules-download-mode: readonly
+  tests: true
+  timeout: 15m
 linters:
-  disable-all: true
+  default: none
   enable:
-    # Formatting (gofmt, gofumpt, goimports, gci)
-    - gofmt
-    - gofumpt
-    - goimports
-    - gci
-
-    # Error handling (critical)
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - containedctx
+    - copyloopvar
+    - decorder
+    - dupword
     - errcheck
+    - errchkjson
     - errname
+    - exhaustive
+    - funlen
+    - gocyclo
+    - godot
+    - godox
+    - gomoddirectives
+    - gomodguard_v2
+    - goprintffuncname
+    - gosec
+    - govet
+    - iface
+    - ineffassign
+    - loggercheck
+    - maintidx
+    - mirror
+    - misspell
+    - nakedret
+    - nestif
     - nilerr
     - nilnesserr
     - nilnil
-    - rowserrcheck
-    - sqlclosecheck
-
-    # Code quality
-    - unused
-    - staticcheck
-    - govet
-    - ineffassign
-    - copyloopvar
-    - predeclared
-
-    # Style & formatting
-    - godot
-    - misspell
-    - revive
-    - decorder
-
-    # Complexity
-    - gocyclo
-    - funlen
-    - nestif
-    - maintidx
-
-    # Security
-    - gosec
-    - bodyclose
-
-    # Best practices
-    - exhaustive
-    - iface
     - noctx
-    - containedctx
-    - asciicheck
-    - bidichk
-    - dupword
-
-    # Naming & conventions
-    - godox
-    - goprintffuncname
-    - errchkjson
-    - perfsprint
-
-    # Testing
     - paralleltest
-    - testableexamples
-    - testpackage
-    - testifylint
-
-    # Performance
+    - perfsprint
     - prealloc
-    - mirror
-    - nakedret
-
-    # Imports
-    - gomoddirectives
-    - gomodguard
-
-    # Logging
-    - loggercheck
+    - predeclared
+    - revive
+    - rowserrcheck
     - sloglint
-
-# =============================================
-# LINTER SETTINGS
-# =============================================
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-
-  govet:
-    enable-all: true
-    disable:
-      - fieldalignment
-      - shadow
-      - unusedwrite
-
-  gocyclo:
-    min-complexity: 25
-
-  funlen:
-    lines: 150
-    statements: 80
-
-  nestif:
-    min-complexity: 20
-
-  goimports:
-    local-prefixes: "github.com/VinnsEdesigner/vyzorix"
-
-  gci:
-    sections:
-      - standard
-      - default
-      - prefix(github.com/VinnsEdesigner/vyzorix)
-
-  exhaustive:
-    default-signifies-exhaustive: true
-
-  gosec:
-    excludes:
-      - G104  # Unchecked err in HTTP handlers
-      - G301  # Directory permissions (handled by umask)
-      - G304  # File read from app data directory (safe)
-      - G101  # Hardcoded credentials (false positive - HTML templates)
-      - G114  # http.ListenAndServe without timeouts (uses gin router)
-
-  revive:
-    rules:
-      - name: blank-imports
-        disabled: true
-      - name: package-comments
-        disabled: true
-      - name: exported
-        disabled: true
-      - name: var-naming
-        disabled: true
-      - name: unexported-naming
-        disabled: true
-
+    - sqlclosecheck
+    - staticcheck
+    - testableexamples
+    - testifylint
+    - testpackage
+    - unused
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    exhaustive:
+      default-signifies-exhaustive: true
+    funlen:
+      lines: 150
+      statements: 80
+    gocyclo:
+      min-complexity: 25
+    gosec:
+      excludes:
+        - G104
+        - G301
+        - G304
+        - G101
+        - G114
+    govet:
+      disable:
+        - fieldalignment
+        - shadow
+        - unusedwrite
+      enable-all: true
+    nestif:
+      min-complexity: 20
+    revive:
+      rules:
+        - name: blank-imports
+          disabled: true
+        - name: package-comments
+          disabled: true
+        - name: exported
+          disabled: true
+        - name: var-naming
+          disabled: true
+        - name: unexported-naming
+          disabled: true
+  exclusions:
+    generated: lax
+    paths:
+      - .*_test\.go$
+      - .*_mock\.go$
+      - .*_fake\.go$
+      - vendor
+      - \.git
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new-from-rev: HEAD~1
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/VinnsEdesigner/vyzorix)
+    goimports:
+      local-prefixes:
+        - github.com/VinnsEdesigner/vyzorix
+  exclusions:
+    generated: lax
+    paths:
+      - .*_test\.go$
+      - .*_mock\.go$
+      - .*_fake\.go$
+      - vendor
+      - \.git
+      - third_party$
+      - builtin$
+      - examples$
