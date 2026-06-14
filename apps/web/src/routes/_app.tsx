@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/
 import { useEffect, useState, type ReactElement } from "react";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import SpinningBlocksLoader from "@/components/auth/SpinningBlocksLoader";
 import { ConnectionBadge } from "@/components/connection-badge";
 import { LogDock } from "@/components/logs/log-dock";
 import { Separator } from "@/components/ui/separator";
@@ -58,10 +59,7 @@ const AppShell = (): ReactElement => {
       <SidebarProvider>
         <DeviceStreamProvider>
           <div className="flex h-screen items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <p className="text-sm text-muted-foreground">Loading...</p>
-            </div>
+            <SpinningBlocksLoader />
           </div>
         </DeviceStreamProvider>
       </SidebarProvider>
@@ -74,10 +72,7 @@ const AppShell = (): ReactElement => {
       <SidebarProvider>
         <DeviceStreamProvider>
           <div className="flex h-screen items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-              <p className="text-sm text-muted-foreground">Redirecting to login...</p>
-            </div>
+            <SpinningBlocksLoader />
           </div>
         </DeviceStreamProvider>
       </SidebarProvider>
