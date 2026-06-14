@@ -27,15 +27,6 @@ issues:
     - "\\.git"
 
 # =============================================
-# FORMATTERS - Code formatting (auto-fixable)
-# =============================================
-formatters:
-  enable:
-    - gofumpt      # Stricter gofmt with extra rules
-    - goimports    # Format imports
-    - gci          # Go import organizer
-
-# =============================================
 # LINTERS - All aggressive linters enabled
 # =============================================
 linters:

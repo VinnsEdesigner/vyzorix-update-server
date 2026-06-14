@@ -51,30 +51,33 @@ const OperatorSettings = (): JSX.Element => {
     }
   }, [operator]);
 
-  const saveName = useCallback(async (nameToSave: string) => {
-    setSavingName(true);
-    try {
-      const res = await fetch("/v1/auth/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ name: nameToSave.trim() }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message ?? "Failed to save name");
+  const saveName = useCallback(
+    async (nameToSave: string) => {
+      setSavingName(true);
+      try {
+        const res = await fetch("/v1/auth/me", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ name: nameToSave.trim() }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message ?? "Failed to save name");
+        }
+        setLastSavedName(nameToSave.trim());
+        await refreshOperator();
+        toast.success("Display name saved");
+      } catch (e) {
+        toast.error("Failed to save name", {
+          description: e instanceof Error ? e.message : "try again",
+        });
+      } finally {
+        setSavingName(false);
       }
-      setLastSavedName(nameToSave.trim());
-      await refreshOperator();
-      toast.success("Display name saved");
-    } catch (e) {
-      toast.error("Failed to save name", {
-        description: e instanceof Error ? e.message : "try again",
-      });
-    } finally {
-      setSavingName(false);
-    }
-  }, [refreshOperator]);
+    },
+    [refreshOperator],
+  );
 
   useEffect(() => {
     if (saveTimer.current) {
