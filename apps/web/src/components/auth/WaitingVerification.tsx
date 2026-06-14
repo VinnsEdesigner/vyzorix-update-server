@@ -1,5 +1,5 @@
 import { ShieldCheck } from "lucide-react";
-
+import type { ReactElement } from "react";
 
 import SpinningBlocksLoader from "./SpinningBlocksLoader";
 
@@ -19,7 +19,7 @@ export default function WaitingVerification({
   onResend,
   onCancel,
   statusText,
-}: WaitingVerificationProps) {
+}: WaitingVerificationProps): ReactElement {
   return (
     <div className="space-y-6 py-1 text-slate-100" id="waiting-verification-panel">
       <div className="text-left">
@@ -79,7 +79,7 @@ export default function WaitingVerification({
             <div className="absolute inset-1 bg-rose-600 rounded-[1px] animate-pulse"></div>
           </div>
           <span className="font-semibold text-slate-300">
-            {statusText || "Setting up profile..."}
+            {statusText ?? "Setting up profile..."}
           </span>
         </div>
       </div>

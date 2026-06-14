@@ -9,12 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AuthWaitVerifyRouteImport } from './routes/auth/waitVerify'
+import { Route as AuthSetPasswordRouteImport } from './routes/auth/set-password'
+import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as AuthCreateAccountRouteImport } from './routes/auth/create-account'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AppUpdatesRouteImport } from './routes/_app.updates'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
@@ -31,26 +32,6 @@ import { Route as AppSettingsConnectionRouteImport } from './routes/_app.setting
 import { Route as AppSettingsAppearanceRouteImport } from './routes/_app.settings.appearance'
 import { Route as AppSettingsAdvancedRouteImport } from './routes/_app.settings.advanced'
 
-const VerifyEmailRoute = VerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -59,6 +40,31 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const AuthWaitVerifyRoute = AuthWaitVerifyRouteImport.update({
+  id: '/auth/waitVerify',
+  path: '/auth/waitVerify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
+  id: '/auth/set-password',
+  path: '/auth/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCreateAccountRoute = AuthCreateAccountRouteImport.update({
+  id: '/auth/create-account',
+  path: '/auth/create-account',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
@@ -139,10 +145,6 @@ const AppSettingsAdvancedRoute = AppSettingsAdvancedRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/verify-email': typeof VerifyEmailRoute
   '/alerts': typeof AppAlertsRoute
   '/dashboard': typeof AppDashboardRoute
   '/device': typeof AppDeviceRoute
@@ -151,6 +153,11 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRouteWithChildren
   '/updates': typeof AppUpdatesRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/create-account': typeof AuthCreateAccountRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
+  '/auth/waitVerify': typeof AuthWaitVerifyRoute
   '/settings/advanced': typeof AppSettingsAdvancedRoute
   '/settings/appearance': typeof AppSettingsAppearanceRoute
   '/settings/connection': typeof AppSettingsConnectionRoute
@@ -160,10 +167,6 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/verify-email': typeof VerifyEmailRoute
   '/alerts': typeof AppAlertsRoute
   '/dashboard': typeof AppDashboardRoute
   '/device': typeof AppDeviceRoute
@@ -171,6 +174,11 @@ export interface FileRoutesByTo {
   '/logs': typeof AppLogsRoute
   '/updates': typeof AppUpdatesRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/create-account': typeof AuthCreateAccountRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
+  '/auth/waitVerify': typeof AuthWaitVerifyRoute
   '/': typeof AppIndexRoute
   '/settings/advanced': typeof AppSettingsAdvancedRoute
   '/settings/appearance': typeof AppSettingsAppearanceRoute
@@ -183,10 +191,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/verify-email': typeof VerifyEmailRoute
   '/_app/alerts': typeof AppAlertsRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/device': typeof AppDeviceRoute
@@ -195,6 +199,11 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRouteWithChildren
   '/_app/updates': typeof AppUpdatesRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/create-account': typeof AuthCreateAccountRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/set-password': typeof AuthSetPasswordRoute
+  '/auth/waitVerify': typeof AuthWaitVerifyRoute
   '/_app/': typeof AppIndexRoute
   '/_app/settings/advanced': typeof AppSettingsAdvancedRoute
   '/_app/settings/appearance': typeof AppSettingsAppearanceRoute
@@ -208,10 +217,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/forgot-password'
-    | '/login'
-    | '/reset-password'
-    | '/verify-email'
     | '/alerts'
     | '/dashboard'
     | '/device'
@@ -220,6 +225,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/updates'
     | '/auth/callback'
+    | '/auth/create-account'
+    | '/auth/forgot-password'
+    | '/auth/login'
+    | '/auth/set-password'
+    | '/auth/waitVerify'
     | '/settings/advanced'
     | '/settings/appearance'
     | '/settings/connection'
@@ -229,10 +239,6 @@ export interface FileRouteTypes {
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/forgot-password'
-    | '/login'
-    | '/reset-password'
-    | '/verify-email'
     | '/alerts'
     | '/dashboard'
     | '/device'
@@ -240,6 +246,11 @@ export interface FileRouteTypes {
     | '/logs'
     | '/updates'
     | '/auth/callback'
+    | '/auth/create-account'
+    | '/auth/forgot-password'
+    | '/auth/login'
+    | '/auth/set-password'
+    | '/auth/waitVerify'
     | '/'
     | '/settings/advanced'
     | '/settings/appearance'
@@ -251,10 +262,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
-    | '/forgot-password'
-    | '/login'
-    | '/reset-password'
-    | '/verify-email'
     | '/_app/alerts'
     | '/_app/dashboard'
     | '/_app/device'
@@ -263,6 +270,11 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/updates'
     | '/auth/callback'
+    | '/auth/create-account'
+    | '/auth/forgot-password'
+    | '/auth/login'
+    | '/auth/set-password'
+    | '/auth/waitVerify'
     | '/_app/'
     | '/_app/settings/advanced'
     | '/_app/settings/appearance'
@@ -275,43 +287,16 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
-  ForgotPasswordRoute: typeof ForgotPasswordRoute
-  LoginRoute: typeof LoginRoute
-  ResetPasswordRoute: typeof ResetPasswordRoute
-  VerifyEmailRoute: typeof VerifyEmailRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthCreateAccountRoute: typeof AuthCreateAccountRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthSetPasswordRoute: typeof AuthSetPasswordRoute
+  AuthWaitVerifyRoute: typeof AuthWaitVerifyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -325,6 +310,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/auth/waitVerify': {
+      id: '/auth/waitVerify'
+      path: '/auth/waitVerify'
+      fullPath: '/auth/waitVerify'
+      preLoaderRoute: typeof AuthWaitVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/set-password': {
+      id: '/auth/set-password'
+      path: '/auth/set-password'
+      fullPath: '/auth/set-password'
+      preLoaderRoute: typeof AuthSetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/create-account': {
+      id: '/auth/create-account'
+      path: '/auth/create-account'
+      fullPath: '/auth/create-account'
+      preLoaderRoute: typeof AuthCreateAccountRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -484,11 +504,12 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
-  ForgotPasswordRoute: ForgotPasswordRoute,
-  LoginRoute: LoginRoute,
-  ResetPasswordRoute: ResetPasswordRoute,
-  VerifyEmailRoute: VerifyEmailRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthCreateAccountRoute: AuthCreateAccountRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthSetPasswordRoute: AuthSetPasswordRoute,
+  AuthWaitVerifyRoute: AuthWaitVerifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
