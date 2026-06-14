@@ -1,14 +1,16 @@
 /**
- * /auth/callback — Handles the JWT token returned by the Go server's Google OAuth callback.
+ * /auth/callback — Handles OAuth callback with cookie-based flow.
  *
- * Flow:
+ * With cookie-based auth, the OAuth flow is:
  *   1. User clicks "Sign in with Google" on the login page
  *   2. Browser is redirected to /v1/auth/google on the Go server
  *   3. Go server redirects to Google's consent screen
  *   4. Google redirects to /v1/auth/google/callback on the Go server
- *   5. Go server validates the code, creates/retrieves the operator, issues a JWT
- *   6. Go server redirects browser to: FRONTEND_URL/auth/callback?token=<jwt>&isNew=<bool>
- *   7. This route parses the token, stores it in localStorage, redirects to /dashboard
+ *   5. Go server validates the code, creates/retrieves the operator, sets HttpOnly cookie
+ *   6. Go server redirects browser to: FRONTEND_URL/dashboard?oauth=success&new=<bool>
+ *
+ * This route is kept for backwards compatibility but OAuth now redirects to dashboard
+ * directly with the cookie already set.
  */
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -16,37 +18,28 @@ import { Loader2 } from "lucide-react";
 import { useEffect, type ReactElement } from "react";
 import { toast } from "sonner";
 
-import { handleOAuthCallback } from "@/lib/vyzorix-auth";
-
 const OAuthCallbackPage = (): ReactElement => {
   const navigate = useNavigate();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-    const isNew = params.get("isNew") === "true";
+    const oauth = params.get("oauth");
+    const isNew = params.get("new") === "true";
 
-    if (!token) {
-      toast.error("OAuth callback missing token — sign-in failed");
-      navigate({ to: "/login", replace: true });
+    // OAuth flow with cookies: Go server redirects to /dashboard?oauth=success&new=true
+    // The cookie is already set, we just need to show a toast and redirect
+    if (oauth === "success") {
+      if (isNew) {
+        toast.success("Welcome! Your operator account has been created.");
+      } else {
+        toast.success("Welcome back!");
+      }
+      navigate({ to: "/dashboard", replace: true });
       return;
     }
 
-    const auth = handleOAuthCallback(token, isNew ? "true" : "false");
-    if (!auth) {
-      toast.error("Failed to process authentication token");
-      navigate({ to: "/login", replace: true });
-      return;
-    }
-
-    if (isNew) {
-      toast.success("Welcome! Your operator account has been created.");
-    }
-
-    // Clean up the URL (remove token param) before navigating
-    const cleanUrl = window.location.pathname;
-    window.history.replaceState({}, "", cleanUrl);
-
+    // Fallback: if no oauth param, just redirect to dashboard
+    // The useAuth hook will handle checking the session cookie
     navigate({ to: "/dashboard", replace: true });
   }, [navigate]);
 

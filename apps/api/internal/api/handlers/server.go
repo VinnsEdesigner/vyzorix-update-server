@@ -91,9 +91,10 @@ func (s *Server) Engine() *gin.Engine {
 	// Email verification and password reset (no auth required)
 	auth.POST("/verify-email", s.jwtCtrl.VerifyEmail)
 	auth.POST("/resend-verification", s.jwtCtrl.ResendVerification)
-	auth.POST("/resend-token", s.jwtCtrl.ResendVerification)        // Alias for Library compatibility
-	auth.POST("/cancel-verification", s.jwtCtrl.CancelVerification) // Cancel pending verification
-	auth.GET("/poll-verification", s.jwtCtrl.PollVerification)      // Poll verification status
+	auth.POST("/resend-token", s.jwtCtrl.ResendVerification)           // Alias for Library compatibility
+	auth.POST("/cancel-verification", s.jwtCtrl.CancelVerification)    // Cancel pending verification
+	auth.GET("/poll-verification", s.jwtCtrl.PollVerification)         // Poll verification status
+	auth.POST("/resend-password-reset", s.jwtCtrl.ResendPasswordReset) // Password reset with rate limiting
 	// /me, /logout require authentication via HttpOnly cookie
 	auth.GET("/me", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.Me)
 	auth.PATCH("/me", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.UpdateName)

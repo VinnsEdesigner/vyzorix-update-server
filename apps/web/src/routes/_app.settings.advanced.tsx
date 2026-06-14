@@ -7,16 +7,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { resetSettings } from "@/lib/vyzorix-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { useVyzorixConfig, DEFAULT_SETTINGS } from "@/lib/vyzorix-config";
 
 const AdvancedSettings = (): ReactElement => {
   const cfg = useVyzorixConfig();
+  const { operator } = useAuth();
   const [logLimit, setLogLimit] = useState(cfg.logBufferLimit);
   const [signalLimit, setSignalLimit] = useState(cfg.signalHistoryLimit);
   const [resetting, setResetting] = useState(false);
 
-  const canDanger = cfg.operator.role === "super_admin";
+  const canDanger = operator?.role === "super_admin";
 
   const save = (): void => {
     cfg.update({
@@ -30,7 +31,17 @@ const AdvancedSettings = (): ReactElement => {
     if (!canDanger) return;
     setResetting(true);
     try {
-      const op = await resetSettings(cfg.serverUrl);
+      const res = await fetch("/v1/auth/me/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ reset: true }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message ?? "Reset failed");
+      }
+      const op = await res.json();
       // Update local config from server response
       cfg.update({
         thresholds: {

@@ -10,7 +10,7 @@ import {
   Terminal,
   LogOut,
 } from "lucide-react";
-import { useEffect, useState, type ReactElement } from "react";
+import { useEffect, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { getStoredOperator, logout } from "@/lib/vyzorix-auth";
-import { DEFAULT_SERVER_URL } from "@/lib/vyzorix-config";
+import { useAuth } from "@/hooks/use-auth";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -44,26 +43,21 @@ const OPERATOR_UPDATE_EVENT = "vyz.operator.updated";
 export const AppSidebar = (): ReactElement => {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
-  const [operator, setOperator] = useState(getStoredOperator);
+  const { operator, signOut, refreshOperator } = useAuth();
 
-  // Sync operator from localStorage and listen for name updates from settings
+  // Listen for name updates from the operator settings page
   useEffect(() => {
-    const sync = (): void => setOperator(getStoredOperator());
-    // Initial sync
-    sync();
-    // Listen for name updates from the operator settings page
+    const sync = (): void => {
+      refreshOperator();
+    };
     window.addEventListener(OPERATOR_UPDATE_EVENT, sync);
     return () => window.removeEventListener(OPERATOR_UPDATE_EVENT, sync);
-  }, []);
+  }, [refreshOperator]);
 
-  const signOut = async (): Promise<void> => {
-    try {
-      await logout(DEFAULT_SERVER_URL);
-    } catch {
-      // ignore logout error - sign out should still proceed
-    }
+  const handleSignOut = async (): Promise<void> => {
+    await signOut();
     toast.success("Signed out");
-    navigate({ to: "/login", replace: true });
+    navigate({ to: "/auth/login", replace: true });
   };
 
   return (
@@ -109,7 +103,7 @@ export const AppSidebar = (): ReactElement => {
             variant="ghost"
             size="sm"
             className="h-7 w-full justify-start gap-2 px-2 text-xs"
-            onClick={signOut}
+            onClick={handleSignOut}
           >
             <LogOut className="h-3.5 w-3.5" /> Sign out
           </Button>
@@ -118,7 +112,7 @@ export const AppSidebar = (): ReactElement => {
           variant="ghost"
           size="icon"
           className="hidden h-8 w-8 group-data-[collapsible=icon]:flex"
-          onClick={signOut}
+          onClick={handleSignOut}
           title="Sign out"
         >
           <LogOut className="h-4 w-4" />

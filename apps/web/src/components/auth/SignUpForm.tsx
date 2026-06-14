@@ -1,8 +1,8 @@
 import { Github, Chrome, ArrowRight, Eye, EyeOff } from "lucide-react";
-import React, { useState } from "react";
+import { useState, type FormEvent, type ReactElement } from "react";
 
 interface SignUpFormProps {
-  onSignUp: (data: { fullName: string; email: string; username: string }) => void;
+  onSignUp: (data: { fullName: string; email: string; username: string; password: string }) => void;
   onSSO: (provider: "GitHub" | "Google") => void;
   isSubmitting: boolean;
   triggerToast: (msg: string, type?: "success" | "alert") => void;
@@ -13,7 +13,7 @@ export default function SignUpForm({
   onSSO,
   isSubmitting,
   triggerToast,
-}: SignUpFormProps) {
+}: SignUpFormProps): ReactElement {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -25,7 +25,7 @@ export default function SignUpForm({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent): void => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
@@ -71,7 +71,7 @@ export default function SignUpForm({
     }
 
     setErrors({});
-    onSignUp({ fullName, email, username });
+    onSignUp({ fullName, email, username, password });
   };
 
   return (

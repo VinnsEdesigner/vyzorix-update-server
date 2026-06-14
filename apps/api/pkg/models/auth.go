@@ -165,8 +165,9 @@ type MessageResponse struct {
 
 // EmailVerifiedResponse is returned after successful email verification.
 type EmailVerifiedResponse struct {
-	Email    string `json:"email,omitempty"`
-	Verified bool   `json:"verified"`
+	Email     string `json:"email,omitempty"`
+	Verified  bool   `json:"verified"`
+	AutoLogin bool   `json:"autoLogin,omitempty"`
 }
 
 // VerificationPollResponse is the response for polling verification status.
@@ -178,4 +179,28 @@ type VerificationPollResponse struct {
 // CancelVerificationRequest is the payload for canceling pending verification.
 type CancelVerificationRequest struct {
 	Email string `json:"email"`
+}
+
+// ResendPasswordResetRequest is the payload for requesting a password reset resend.
+type ResendPasswordResetRequest struct {
+	Email string `json:"email"`
+}
+
+// ResendPasswordResetResponse is the response for password reset resend requests.
+type ResendPasswordResetResponse struct {
+	Success     bool   `json:"success"`
+	Message     string `json:"message"`
+	RetryAfter  int    `json:"retry_after,omitempty"`  // Seconds until next resend allowed
+	LockedUntil int64  `json:"locked_until,omitempty"` // Unix timestamp when lockout ends
+}
+
+// PasswordResetResendTracker tracks resend attempts for rate limiting.
+type PasswordResetResendTracker struct {
+	ID           string     `json:"id"`
+	EmailHash    string     `json:"-"` // never exposed via JSON
+	ResendCount  int        `json:"resend_count"`
+	LastResendAt time.Time  `json:"last_resend_at"`
+	LockoutUntil *time.Time `json:"lockout_until,omitempty"` // Unix timestamp when lockout ends
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }

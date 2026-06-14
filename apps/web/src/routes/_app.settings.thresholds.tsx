@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { updateSettings, me } from "@/lib/vyzorix-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { DEFAULT_SETTINGS, useVyzorixConfig, type Thresholds } from "@/lib/vyzorix-config";
 
 const NumField = ({
@@ -37,19 +37,26 @@ const ThresholdSettings = (): ReactElement => {
   const cfg = useVyzorixConfig();
   const cfgRef = useRef(cfg);
   cfgRef.current = cfg;
+  const { operator } = useAuth();
   const [t, setT] = useState<Thresholds>(cfg.thresholds);
   const [loading, setLoading] = useState(false);
 
-  const canEdit = cfg.operator.role === "super_admin";
+  const canEdit = operator?.role === "super_admin";
 
   // Load thresholds from server on mount
   useEffect(() => {
     const loadFromServer = async (): Promise<void> => {
       try {
-        const op = await me(cfgRef.current.serverUrl);
-        if (op.thresholds) {
-          setT(op.thresholds);
-          cfgRef.current.update({ thresholds: op.thresholds });
+        const res = await fetch("/v1/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+        if (res.ok) {
+          const op = await res.json();
+          if (op.thresholds) {
+            setT(op.thresholds);
+            cfgRef.current.update({ thresholds: op.thresholds });
+          }
         }
       } catch {
         // Use local defaults if server fetch fails
@@ -61,7 +68,16 @@ const ThresholdSettings = (): ReactElement => {
   const save = async (): Promise<void> => {
     setLoading(true);
     try {
-      await updateSettings(cfg.serverUrl, { thresholds: t });
+      const res = await fetch("/v1/auth/me/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ thresholds: t }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message ?? "Failed to save thresholds");
+      }
       cfg.update({ thresholds: t });
       toast.success("Thresholds saved to server");
     } catch (e) {

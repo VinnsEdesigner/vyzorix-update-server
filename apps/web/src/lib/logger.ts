@@ -11,7 +11,10 @@ export type LogSource =
   | "update"
   | "device"
   | "alert"
-  | "auth";
+  | "auth"
+  | "password"
+  | "sso"
+  | "verification";
 
 export interface LogEntry {
   id: number;

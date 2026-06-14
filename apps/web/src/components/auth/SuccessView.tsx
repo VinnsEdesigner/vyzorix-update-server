@@ -1,14 +1,21 @@
 import { CheckCircle2, ArrowRight } from "lucide-react";
-
-
-import { SuccessReport } from "../types";
+import type { ReactElement } from "react";
 
 interface SuccessViewProps {
-  successReport: SuccessReport;
+  successReport: {
+    fullName: string;
+    email: string;
+    username: string;
+    memberId: string;
+    operatorRole: string;
+    region: string;
+    createdAt: string;
+    method: string;
+  };
   onProceed: () => void;
 }
 
-export default function SuccessView({ successReport, onProceed }: SuccessViewProps) {
+export default function SuccessView({ successReport, onProceed }: SuccessViewProps): ReactElement {
   return (
     <div className="space-y-8 text-slate-100" id="success-view">
       <div className="text-center space-y-3">

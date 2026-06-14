@@ -3,6 +3,8 @@
 # Aggressive Linters - Enterprise Grade
 # =============================================
 
+version: 2
+
 run:
   timeout: 15m
   tests: true
@@ -25,6 +27,15 @@ issues:
     - "\\.git"
 
 # =============================================
+# FORMATTERS - Code formatting (auto-fixable)
+# =============================================
+formatters:
+  enable:
+    - gofumpt      # Stricter gofmt with extra rules
+    - goimports    # Format imports
+    - gci          # Go import organizer
+
+# =============================================
 # LINTERS - All aggressive linters enabled
 # =============================================
 linters:
@@ -42,22 +53,15 @@ linters:
     # Code quality
     - unused
     - staticcheck
-    - gosimple
     - govet
-    # - fieldalignment  # Disabled - too strict, breaks serialization
     - ineffassign
     - copyloopvar
     - predeclared
 
     # Style & formatting
-    - gofmt
-    - gofumpt
-    - goimports
     - godot
     - misspell
     - revive
-    - stylecheck
-    - gci
     - decorder
 
     # Complexity
@@ -72,10 +76,8 @@ linters:
 
     # Best practices
     - exhaustive
-    # - exhaustruct  # Disabled - too strict, requires code restructuring
     - iface
     - noctx
-    # - contextcheck  # Disabled - too strict, requires code restructuring
     - containedctx
     - asciicheck
     - bidichk

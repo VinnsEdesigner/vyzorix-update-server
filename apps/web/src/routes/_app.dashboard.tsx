@@ -11,6 +11,7 @@ import {
   AudioLines,
 } from "lucide-react";
 import type { JSX } from "react";
+import { useEffect } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -21,6 +22,7 @@ import {
   Tooltip,
   ReferenceLine,
 } from "recharts";
+import { toast } from "sonner";
 
 import { MetricSkeleton } from "@/components/loading/page-skeleton";
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
@@ -158,6 +160,23 @@ const DashboardPage = (): JSX.Element => {
   const health = useServerHealth(serverUrl);
   const stream = useStream();
   const t = stream.lastTelemetry;
+
+  // Handle OAuth success toast from cookie-based OAuth flow
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauth = params.get("oauth");
+    const isNew = params.get("new") === "true";
+
+    if (oauth === "success") {
+      if (isNew) {
+        toast.success("Welcome! Your operator account has been created.");
+      } else {
+        toast.success("Welcome back!");
+      }
+      // Clean up URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   const status = useQuery({
     queryKey: ["vyzorix", "status", serverUrl, deviceId],
