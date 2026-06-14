@@ -170,9 +170,9 @@ jobs:
         run: cd apps/api && go mod tidy
           
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: v1.64.8
+          version: v2.12.2
           working-directory: apps/api
           
       - name: Run tests
