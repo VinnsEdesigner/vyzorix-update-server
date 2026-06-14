@@ -1,5 +1,5 @@
-import { createFileRoute, redirect, Outlet, useRouterState } from "@tanstack/react-router";
-import type { ReactElement } from "react";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState, type ReactElement } from "react";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { ConnectionBadge } from "@/components/connection-badge";
@@ -7,6 +7,7 @@ import { LogDock } from "@/components/logs/log-dock";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
+import { useAuth } from "@/hooks/use-auth";
 import { DeviceStreamProvider, useStream } from "@/lib/device-stream-context";
 
 const titles: Record<string, string> = {
@@ -33,7 +34,55 @@ const AppShell = (): ReactElement => {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const title = titles[pathname] ?? (pathname.startsWith("/settings") ? "Settings" : "Vyzorix");
   const { state } = useStream();
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const [checked, setChecked] = useState(false);
+
   const isLogsPage = pathname === "/logs";
+
+  // Client-side auth check - redirect to login if not authenticated
+  useEffect(() => {
+    if (checked) return;
+
+    if (!isLoading) {
+      setChecked(true);
+      if (!isAuthenticated) {
+        navigate({ to: "/auth/login", replace: true });
+      }
+    }
+  }, [isAuthenticated, isLoading, checked, navigate]);
+
+  // Show loading state while checking auth
+  if (isLoading || !checked) {
+    return (
+      <SidebarProvider>
+        <DeviceStreamProvider>
+          <div className="flex h-screen items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            </div>
+          </div>
+        </DeviceStreamProvider>
+      </SidebarProvider>
+    );
+  }
+
+  // Not authenticated - will redirect
+  if (!isAuthenticated) {
+    return (
+      <SidebarProvider>
+        <DeviceStreamProvider>
+          <div className="flex h-screen items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <p className="text-sm text-muted-foreground">Redirecting to login...</p>
+            </div>
+          </div>
+        </DeviceStreamProvider>
+      </SidebarProvider>
+    );
+  }
 
   return (
     <>
@@ -62,26 +111,26 @@ const AppShell = (): ReactElement => {
  *
  * This beforeLoad hook runs on both server and client:
  * - Server: Uses middleware-injected context (if available)
- * - Client: Checks server-injected state (SSR hydration)
+ * - Client: Checks server-injected state (SSR hydration) OR falls back to /v1/auth/me API call
  *
  * Based on Library's SSR pattern for auth checking
  */
 export const Route = createFileRoute("/_app")({
   beforeLoad: () => {
-    // Client-side fallback: Check server-injected state (SSR hydration)
-    // This runs after hydration when JavaScript loads
+    // Client-side check: verify session with server using cookie
     if (typeof window !== "undefined") {
       // Import dynamically to avoid SSR issues
       const globalState = (
         window as unknown as { __VYZORIX_PREFETCHED_STATE__?: { isAuthenticated?: boolean } }
       ).__VYZORIX_PREFETCHED_STATE__;
       if (globalState?.isAuthenticated) {
-        // Server already validated the session
+        // Server already validated the session via SSR - user is authenticated, don't redirect
+        // eslint-disable-next-line no-useless-return
         return;
       }
 
-      // No valid auth state - redirect to login
-      throw redirect({ to: "/login" });
+      // No SSR state - let the component handle auth check via useAuth hook
+      // This prevents the redirect here and allows the hook to show loading state
     }
 
     // Server-side: For now, allow access and let the route handle auth

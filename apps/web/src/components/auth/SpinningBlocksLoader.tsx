@@ -1,6 +1,6 @@
+import type { ReactElement } from "react";
 
-
-export default function SpinningBlocksLoader() {
+export default function SpinningBlocksLoader(): ReactElement {
   return (
     <div className="flex flex-col items-center justify-center py-6" id="spinning-blocks-loader">
       <style>{`

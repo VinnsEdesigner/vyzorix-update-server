@@ -17,7 +17,53 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
 )
 
+// ANSI color codes for terminal output.
+const (
+	cyan    = "\033[36m"
+	magenta = "\033[35m"
+	yellow  = "\033[33m"
+	red     = "\033[31m"
+	green   = "\033[32m"
+	bold    = "\033[1m"
+	dim     = "\033[2m"
+	reset   = "\033[0m"
+)
+
+// printBanner prints the VYZORIX ASCII art banner.
+func printBanner(mode string) {
+	banner := []string{
+		magenta + bold + "+-------------------------------------------------------------+" + reset,
+		magenta + bold + "|   _   _           _        ____                           |" + reset,
+		magenta + bold + "|  |_| |_|   ___   | |__    |  _|  ___  ___                 |" + reset,
+		magenta + bold + "|  | | | |  / _ \\  | '_ \\  | |_  / _ \\/ __|                |" + reset,
+		magenta + bold + "|  | |_| | | (_) | | |_) | |  _|  __/\\__ \\                |" + reset,
+		magenta + bold + "|  |___|_|  \\___/  |_.__/   |_|   \\___||___/               |" + reset,
+		magenta + bold + "|                                                              |" + reset,
+		magenta + bold + "|                    GOLANG SERVER v1.0.0                      |" + reset,
+		magenta + bold + "+-------------------------------------------------------------+" + reset,
+	}
+
+	for _, line := range banner {
+		fmt.Println(line)
+	}
+
+	// Print mode indicator
+	modeColor := yellow
+	if mode == "production" {
+		modeColor = red
+	}
+	fmt.Printf("  %sMode:%s %s%s[%s]%s\n", dim, reset, modeColor, bold, mode, reset)
+	fmt.Printf("  %s%s\n", dim, "============================================================")
+}
+
 func main() {
+	// Print welcome banner
+	env := "development"
+	if os.Getenv("NODE_ENV") == "production" || os.Getenv("GIN_MODE") == "release" {
+		env = "production"
+	}
+	printBanner(env)
+
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	cfg, err := config.Load()
 	if err != nil {
