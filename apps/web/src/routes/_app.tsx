@@ -7,8 +7,8 @@ import { LogDock } from "@/components/logs/log-dock";
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { DeviceStreamProvider, useStream } from "@/lib/device-stream-context";
 import { useAuth } from "@/hooks/use-auth";
+import { DeviceStreamProvider, useStream } from "@/lib/device-stream-context";
 
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -124,13 +124,13 @@ export const Route = createFileRoute("/_app")({
         window as unknown as { __VYZORIX_PREFETCHED_STATE__?: { isAuthenticated?: boolean } }
       ).__VYZORIX_PREFETCHED_STATE__;
       if (globalState?.isAuthenticated) {
-        // Server already validated the session via SSR
+        // Server already validated the session via SSR - user is authenticated, don't redirect
+        // eslint-disable-next-line no-useless-return
         return;
       }
 
       // No SSR state - let the component handle auth check via useAuth hook
       // This prevents the redirect here and allows the hook to show loading state
-      return;
     }
 
     // Server-side: For now, allow access and let the route handle auth

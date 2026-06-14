@@ -27,17 +27,21 @@ issues:
     - "\\.git"
 
 # =============================================
-# LINTERS - All aggressive linters enabled
+# FORMATTERS - Code formatting (gofmt, gofumpt, goimports, gci are formatters in v2)
 # =============================================
-linters:
-  disable-all: true
+formatters:
   enable:
-    # Formatting (critical - required by linter-config-guardian)
     - gofmt
     - gofumpt
     - goimports
     - gci
 
+# =============================================
+# LINTERS - All aggressive linters enabled
+# =============================================
+linters:
+  disable-all: true
+  enable:
     # Error handling (critical)
     - errcheck
     - errname
@@ -130,15 +134,6 @@ linters-settings:
   nestif:
     min-complexity: 20
 
-  goimports:
-    local-prefixes: "github.com/VinnsEdesigner/vyzorix"
-
-  gci:
-    sections:
-      - standard
-      - default
-      - prefix(github.com/VinnsEdesigner/vyzorix)
-
   exhaustive:
     default-signifies-exhaustive: true
 
@@ -162,4 +157,17 @@ linters-settings:
         disabled: true
       - name: unexported-naming
         disabled: true
+
+# =============================================
+# FORMATTER SETTINGS
+# =============================================
+formatters-settings:
+  goimports:
+    local-prefixes: "github.com/VinnsEdesigner/vyzorix"
+
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/VinnsEdesigner/vyzorix)
 

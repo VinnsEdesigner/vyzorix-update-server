@@ -208,7 +208,7 @@ describe("getHydratedState", () => {
   const setWindowState = (state: HydratedState | undefined) => {
     Object.defineProperty(global, "window", {
       value: {
-        ...global.window,
+        ...(global.window as object),
         __VYZORIX_PREFETCHED_STATE__: state,
       },
       writable: true,
