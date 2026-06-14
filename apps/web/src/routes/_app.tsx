@@ -38,8 +38,17 @@ const AppShell = (): ReactElement => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [checked, setChecked] = useState(false);
+  const [showSpinner, setShowSpinner] = useState(true);
 
   const isLogsPage = pathname === "/logs";
+
+  // Minimum spinner display time for smooth UX
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSpinner(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Client-side auth check - redirect to login if not authenticated
   useEffect(() => {
@@ -53,8 +62,8 @@ const AppShell = (): ReactElement => {
     }
   }, [isAuthenticated, isLoading, checked, navigate]);
 
-  // Show loading state while checking auth
-  if (isLoading || !checked) {
+  // Show loading spinner during minimum display time
+  if (showSpinner) {
     return (
       <SidebarProvider>
         <DeviceStreamProvider>
@@ -66,8 +75,8 @@ const AppShell = (): ReactElement => {
     );
   }
 
-  // Not authenticated - will redirect
-  if (!isAuthenticated) {
+  // Still loading auth check - show spinner
+  if (!checked && isLoading) {
     return (
       <SidebarProvider>
         <DeviceStreamProvider>
