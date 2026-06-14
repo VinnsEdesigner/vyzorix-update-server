@@ -162,15 +162,18 @@ const DashboardPage = (): JSX.Element => {
   const stream = useStream();
   const t = stream.lastTelemetry;
 
-  // Show spinning loader during initial hydration
+  // Show spinning loader until hydration and initial data fetch complete
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
-    // Minimum spinner display time for smooth UX
-    const timer = setTimeout(() => {
+    // Wait for hydration to complete
+    const minDisplayTime = setTimeout(() => {
+      // Minimum 600ms display for smooth UX
+      // Then hide spinner (skeleton loaders will show during data fetch)
       setIsInitialLoad(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    }, 600);
+
+    return () => clearTimeout(minDisplayTime);
   }, []);
 
   // Handle OAuth success toast from cookie-based OAuth flow
