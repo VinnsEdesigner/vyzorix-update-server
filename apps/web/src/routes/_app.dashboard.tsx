@@ -11,7 +11,7 @@ import {
   AudioLines,
 } from "lucide-react";
 import type { JSX } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 
+import SpinningBlocksLoader from "@/components/auth/SpinningBlocksLoader";
 import { MetricSkeleton } from "@/components/loading/page-skeleton";
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -161,6 +162,17 @@ const DashboardPage = (): JSX.Element => {
   const stream = useStream();
   const t = stream.lastTelemetry;
 
+  // Show spinning loader during initial hydration
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  useEffect(() => {
+    // Minimum spinner display time for smooth UX
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Handle OAuth success toast from cookie-based OAuth flow
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -206,6 +218,15 @@ const DashboardPage = (): JSX.Element => {
 
   const riskSeries = stream.telemetryHistory.map((f, i) => ({ i, v: f.riskScore ?? 0 }));
   const thermalSeries = stream.telemetryHistory.map((f, i) => ({ i, v: f.thermalTemp ?? 0 }));
+
+  // Show spinning blocks loader during initial hydration
+  if (isInitialLoad) {
+    return (
+      <div className="flex h-[calc(100vh-12rem)] items-center justify-center">
+        <SpinningBlocksLoader />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
