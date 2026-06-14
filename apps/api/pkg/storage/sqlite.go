@@ -173,6 +173,9 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 	// Additive migrations for new columns
 	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`) //nolint:errcheck
 	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN verification_sent_at INTEGER`)              //nolint:errcheck
+	if err := s.migrateResendTracker(ctx); err != nil {
+		return err
+	}
 	return s.migrateSettings(ctx)
 }
 
@@ -204,6 +207,26 @@ func (s *Store) migrateSettings(ctx context.Context) error {
 		`, key, value, time.Now().UTC().UnixMilli())
 	}
 
+	return nil
+}
+
+// migrateResendTracker creates the password reset resend tracker table.
+func (s *Store) migrateResendTracker(ctx context.Context) error {
+	if _, err := s.db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS password_reset_resend_tracker (
+			id TEXT PRIMARY KEY,
+			email_hash TEXT NOT NULL UNIQUE,
+			resend_count INTEGER NOT NULL DEFAULT 0,
+			last_resend_at INTEGER NOT NULL,
+			lockout_until INTEGER,
+			created_at INTEGER NOT NULL,
+			updated_at INTEGER NOT NULL
+		)`); err != nil {
+		return err
+	}
+	if _, err := s.db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_resend_tracker_email ON password_reset_resend_tracker(email_hash)`); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -1341,4 +1364,99 @@ func (s *Store) GetHMACWindowSeconds(ctx context.Context) (int, error) {
 // SetHMACWindowSeconds updates the HMAC timestamp window.
 func (s *Store) SetHMACWindowSeconds(ctx context.Context, seconds int) error {
 	return s.SetSetting(ctx, "hmac_window_seconds", strconv.Itoa(seconds))
+}
+
+// =============================================================================
+// Password Reset Resend Tracker
+// =============================================================================
+
+// GetPasswordResetResendTracker retrieves the resend tracker for an email hash.
+func (s *Store) GetPasswordResetResendTracker(ctx context.Context, emailHash string) (*models.PasswordResetResendTracker, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT id, email_hash, resend_count, last_resend_at, lockout_until, created_at, updated_at
+		FROM password_reset_resend_tracker
+		WHERE email_hash = ?`, emailHash)
+
+	var tracker models.PasswordResetResendTracker
+	var lastResendAt, createdAt, updatedAt int64
+	var lockoutUntil *int64
+	err := row.Scan(
+		&tracker.ID,
+		&tracker.EmailHash,
+		&tracker.ResendCount,
+		&lastResendAt,
+		&lockoutUntil,
+		&createdAt,
+		&updatedAt,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get resend tracker: %w", err)
+	}
+	tracker.LastResendAt = time.UnixMilli(lastResendAt)
+	tracker.CreatedAt = time.UnixMilli(createdAt)
+	tracker.UpdatedAt = time.UnixMilli(updatedAt)
+	if lockoutUntil != nil {
+		lt := time.UnixMilli(*lockoutUntil)
+		tracker.LockoutUntil = &lt
+	}
+	return &tracker, nil
+}
+
+// UpsertPasswordResetResendTracker creates or updates a resend tracker.
+func (s *Store) UpsertPasswordResetResendTracker(ctx context.Context, tracker *models.PasswordResetResendTracker) error {
+	var lockoutUntil *int64
+	if tracker.LockoutUntil != nil {
+		lt := tracker.LockoutUntil.UnixMilli()
+		lockoutUntil = &lt
+	}
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO password_reset_resend_tracker (id, email_hash, resend_count, last_resend_at, lockout_until, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(email_hash) DO UPDATE SET
+			resend_count = excluded.resend_count,
+			last_resend_at = excluded.last_resend_at,
+			lockout_until = excluded.lockout_until,
+			updated_at = excluded.updated_at`,
+		tracker.ID,
+		tracker.EmailHash,
+		tracker.ResendCount,
+		tracker.LastResendAt.UnixMilli(),
+		lockoutUntil,
+		tracker.CreatedAt.UnixMilli(),
+		tracker.UpdatedAt.UnixMilli(),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to upsert resend tracker: %w", err)
+	}
+	return nil
+}
+
+// DeletePasswordResetResendTracker removes a resend tracker by email hash.
+func (s *Store) DeletePasswordResetResendTracker(ctx context.Context, emailHash string) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM password_reset_resend_tracker WHERE email_hash = ?`, emailHash)
+	if err != nil {
+		return fmt.Errorf("failed to delete resend tracker: %w", err)
+	}
+	return nil
+}
+
+// CleanupPasswordResetResendTrackers removes old resend trackers.
+// Trackers older than maxAge are deleted.
+func (s *Store) CleanupPasswordResetResendTrackers(ctx context.Context, maxAgeHours int) (int64, error) {
+	cutoff := time.Now().UTC().Add(-time.Duration(maxAgeHours) * time.Hour).UnixMilli()
+	result, err := s.db.ExecContext(ctx, `
+		DELETE FROM password_reset_resend_tracker
+		WHERE updated_at < ? OR (lockout_until IS NOT NULL AND lockout_until < ?)`,
+		cutoff, time.Now().UTC().UnixMilli())
+	if err != nil {
+		return 0, fmt.Errorf("failed to cleanup resend trackers: %w", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	return rows, nil
 }

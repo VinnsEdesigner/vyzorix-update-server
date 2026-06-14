@@ -10,13 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  getStoredOperator,
-  updateName,
-  updateSettings,
-  type ClientSettings,
-} from "@/lib/vyzorix-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
+
+interface ClientSettings {
+  notificationsEnabled?: boolean;
+}
 
 const RoleRow = ({ allowed, label }: { allowed: boolean; label: string }): JSX.Element => {
   return (
@@ -29,36 +28,45 @@ const RoleRow = ({ allowed, label }: { allowed: boolean; label: string }): JSX.E
 
 const OperatorSettings = (): JSX.Element => {
   const cfg = useVyzorixConfig();
-  const stored = getStoredOperator();
+  const { operator, refreshOperator } = useAuth();
 
-  const [email, setEmail] = useState(stored?.email ?? "");
-  const [role, setRole] = useState(stored?.role ?? "operator");
+  const [email, setEmail] = useState(operator?.email ?? "");
+  const [role, setRole] = useState(operator?.role ?? "operator");
   const [notifications, setNotifications] = useState(cfg.notificationsEnabled);
 
-  const [name, setName] = useState(stored?.name ?? "");
+  const [name, setName] = useState(operator?.name ?? "");
   const [savingName, setSavingName] = useState(false);
-  const [lastSavedName, setLastSavedName] = useState(stored?.name ?? "");
+  const [lastSavedName, setLastSavedName] = useState(operator?.name ?? "");
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nameRef = useRef(name);
   nameRef.current = name;
 
   useEffect(() => {
-    const op = getStoredOperator();
-    if (op) {
-      setName(op.name);
-      setLastSavedName(op.name);
-      setEmail(op.email);
-      setRole(op.role);
+    if (operator) {
+      setName(operator.name);
+      setLastSavedName(operator.name);
+      setEmail(operator.email);
+      setRole(operator.role);
     }
-  }, []);
+  }, [operator]);
 
   const saveName = useCallback(
     async (nameToSave: string) => {
       setSavingName(true);
       try {
-        await updateName(cfg.serverUrl, nameToSave.trim());
+        const res = await fetch("/v1/auth/me", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ name: nameToSave.trim() }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message ?? "Failed to save name");
+        }
         setLastSavedName(nameToSave.trim());
+        await refreshOperator();
         toast.success("Display name saved");
       } catch (e) {
         toast.error("Failed to save name", {
@@ -68,7 +76,7 @@ const OperatorSettings = (): JSX.Element => {
         setSavingName(false);
       }
     },
-    [cfg.serverUrl],
+    [refreshOperator],
   );
 
   useEffect(() => {
@@ -107,7 +115,16 @@ const OperatorSettings = (): JSX.Element => {
     setSavingName(true);
     try {
       const client: ClientSettings = { notificationsEnabled: notifications };
-      await updateSettings(cfg.serverUrl, { client });
+      const res = await fetch("/v1/auth/me/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ client }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message ?? "Failed to save settings");
+      }
       cfg.update({ notificationsEnabled: notifications });
       toast.success("Notification settings saved to server");
     } catch (e) {
