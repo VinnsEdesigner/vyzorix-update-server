@@ -32,6 +32,12 @@ issues:
 linters:
   disable-all: true
   enable:
+    # Formatting (critical - required by linter-config-guardian)
+    - gofmt
+    - gofumpt
+    - goimports
+    - gci
+
     # Error handling (critical)
     - errcheck
     - errname
