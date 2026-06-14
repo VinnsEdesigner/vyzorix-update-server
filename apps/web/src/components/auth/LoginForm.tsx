@@ -1,5 +1,5 @@
 import { Github, Chrome, ArrowRight, Eye, EyeOff } from "lucide-react";
-import React, { useState } from "react";
+import { useState, type FormEvent, type ReactElement } from "react";
 
 interface LoginFormProps {
   onLogin: (ident: string, pass: string) => void;
@@ -13,13 +13,13 @@ export default function LoginForm({
   onSSO,
   onForgotPassword,
   isSubmitting,
-}: LoginFormProps) {
+}: LoginFormProps): ReactElement {
   const [loginIdent, setLoginIdent] = useState("");
   const [loginPass, setLoginPass] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent): void => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
@@ -101,7 +101,7 @@ export default function LoginForm({
         <div className="flex justify-end pt-1">
           <button
             type="button"
-            className="text-xs text-rose-450 hover:text-rose-300 font-semibold underline underline-offset-4 cursor-pointer"
+            className="text-xs text-muted-foreground hover:text-primary font-semibold underline underline-offset-4 cursor-pointer transition-colors"
             onClick={onForgotPassword}
           >
             Forgot your password?
