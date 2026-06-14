@@ -176,10 +176,11 @@ func (s *DeviceController) List(c *gin.Context) {
 	// Parse online filter
 	onlineFilter := c.Query("online")
 	var filterOnline *bool
-	if onlineFilter == "true" {
+	switch onlineFilter {
+	case "true":
 		v := true
 		filterOnline = &v
-	} else if onlineFilter == "false" {
+	case "false":
 		v := false
 		filterOnline = &v
 	}
