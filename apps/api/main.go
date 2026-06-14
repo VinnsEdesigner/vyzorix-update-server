@@ -17,7 +17,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
 )
 
-// ANSI color codes for terminal output
+// ANSI color codes for terminal output.
 const (
 	cyan    = "\033[36m"
 	magenta = "\033[35m"
@@ -29,7 +29,7 @@ const (
 	reset   = "\033[0m"
 )
 
-// printBanner prints the VYZORIX ASCII art banner
+// printBanner prints the VYZORIX ASCII art banner.
 func printBanner(mode string) {
 	banner := []string{
 		magenta + bold + "+-------------------------------------------------------------+" + reset,
