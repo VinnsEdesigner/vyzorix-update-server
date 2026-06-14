@@ -1454,6 +1454,9 @@ func (s *Store) CleanupPasswordResetResendTrackers(ctx context.Context, maxAgeHo
 	if err != nil {
 		return 0, fmt.Errorf("failed to cleanup resend trackers: %w", err)
 	}
-	rows, _ := result.RowsAffected()
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get affected rows: %w", err)
+	}
 	return rows, nil
 }
