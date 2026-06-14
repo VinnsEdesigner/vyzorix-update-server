@@ -24,8 +24,8 @@ import { useEffect, useState, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import wolfImage from "@/assets/images/black_wolf_evening_1781264516831.jpg";
-import { triggerTokenResend } from "@/lib/clients/verificationClient";
 import { resendPasswordReset } from "@/lib/clients/passwordClient";
+import { triggerTokenResend } from "@/lib/clients/verificationClient";
 
 const MAX_WAIT_SECONDS = 900; // 15 minutes
 
@@ -394,6 +394,13 @@ const WaitVerifyPage = (): ReactElement => {
   }
 
   // For verify flow: show the existing waiting UI
+  const getResendButtonText = (): string => {
+    if (isResending) return "Resending...";
+    if (resendCooldown > 0) return `Resend in ${formatTime(resendCooldown)}`;
+    return "Resend verification email";
+  };
+  const resendButtonText = getResendButtonText();
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       <div
@@ -434,13 +441,7 @@ const WaitVerifyPage = (): ReactElement => {
               onClick={handleResend}
               disabled={resendCooldown > 0 || isResending}
             >
-              {isResending ? (
-                <>Resending...</>
-              ) : resendCooldown > 0 ? (
-                <>Resend in {formatTime(resendCooldown)}</>
-              ) : (
-                <>Resend verification email</>
-              )}
+              {resendButtonText}
             </button>
 
             <button
