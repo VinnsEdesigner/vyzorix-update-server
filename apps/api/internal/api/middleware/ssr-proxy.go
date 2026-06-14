@@ -13,7 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
 )
 
