@@ -256,7 +256,7 @@ describe("getHydratedState", () => {
     // Save original window descriptor
     const descriptor = Object.getOwnPropertyDescriptor(global, "window");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const originalWindow = global.window as Record<string, unknown>;
+    const originalWindow = global.window as unknown as Record<string, unknown>;
 
     // Create a new window-like object without __VYZORIX_PREFETCHED_STATE__
     const newWindow: Record<string, unknown> = {};
@@ -293,7 +293,7 @@ describe("getFullHydratedState", () => {
   // Helper to set window.__VYZORIX_PREFETCHED_STATE__
   const setWindowState = (state: HydratedState | undefined) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existingWindow = global.window as Record<string, unknown>;
+    const existingWindow = global.window as unknown as Record<string, unknown>;
     const newWindow: Record<string, unknown> = {};
     for (const key of Object.keys(existingWindow)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -337,7 +337,7 @@ describe("getFullHydratedState", () => {
     // Save original window descriptor
     const descriptor = Object.getOwnPropertyDescriptor(global, "window");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const originalWindow = global.window as Record<string, unknown>;
+    const originalWindow = global.window as unknown as Record<string, unknown>;
 
     // Create a new window-like object without __VYZORIX_PREFETCHED_STATE__
     const newWindow: Record<string, unknown> = {};
