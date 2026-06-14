@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -458,14 +459,15 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 		frontendURL = "http://localhost:5173"
 	}
 
-	// Use state parameter if provided (frontend URL), otherwise default to dashboard
+	// Use state parameter if provided (frontend URL), otherwise default to /auth/callback
 	redirectTarget := frontendURL
 	if state != "" {
 		redirectTarget = state
 	}
 
-	// Redirect to dashboard with success indicator (no sensitive data in URL)
-	redirectURL := fmt.Sprintf("%s/dashboard?oauth=success&new=%t", redirectTarget, isNew)
+	// Redirect to /auth/callback with success indicator (cookie is already set)
+	// This allows the callback page to show appropriate toast messages
+	redirectURL := fmt.Sprintf("%s/auth/callback?oauth=success&new=%t", redirectTarget, isNew)
 
 	ac.log.Info("google callback: login success", "email", op.Email, "role", op.Role)
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -823,8 +825,8 @@ func (ac *AuthController) PollVerification(c *gin.Context) {
 
 	// Check if expired
 	if time.Now().UTC().After(ev.ExpiresAt) {
-		// Delete expired token
-		ac.store.DeleteEmailVerification(ctx, ev.ID) //nolint:errcheck
+		// Delete expired token (ignore error - best effort cleanup)
+		_ = ac.store.DeleteEmailVerification(ctx, ev.ID) //nolint:errcheck
 		c.JSON(200, models.VerificationPollResponse{Status: "expired", Email: ""})
 		return
 	}
@@ -882,6 +884,253 @@ func (ac *AuthController) CancelVerification(c *gin.Context) {
 
 	// Always return success for security (prevents email enumeration)
 	c.JSON(200, map[string]bool{"success": true})
+}
+
+// getResendDelay calculates the required delay in seconds based on resend count.
+// Returns 0 for first resend, then (count-1) * 30 seconds.
+func getResendDelay(resendCount int) int {
+	if resendCount <= 1 {
+		return 0
+	}
+	delay := (resendCount - 1) * 30
+	if delay < 0 {
+		return 0
+	}
+	return delay
+}
+
+// checkResendRateLimit checks if a resend is allowed based on the tracker state.
+// Returns the delay to wait (0 = allowed), whether locked out, and lockout end time.
+func checkResendRateLimit(
+	tracker *models.PasswordResetResendTracker,
+	now time.Time,
+) (allowed bool, retryAfter int, lockedUntil *time.Time) {
+	// First resend - always allowed
+	if tracker == nil {
+		return true, 0, nil
+	}
+
+	// Check if currently locked out
+	if tracker.LockoutUntil != nil && now.Before(*tracker.LockoutUntil) {
+		return false, 0, tracker.LockoutUntil
+	}
+
+	// Calculate required delay based on resend count
+	requiredDelay := getResendDelay(tracker.ResendCount)
+	if requiredDelay > 0 {
+		timeSinceLastResend := now.Sub(tracker.LastResendAt).Seconds()
+		if timeSinceLastResend < float64(requiredDelay) {
+			retryAfter = requiredDelay - int(timeSinceLastResend)
+			return false, retryAfter, nil
+		}
+	}
+
+	return true, 0, nil
+}
+
+// handleRateLimitResponse sends the appropriate rate limit response.
+func handleRateLimitResponse(c *gin.Context, retryAfter int, lockedUntil *time.Time) {
+	if lockedUntil != nil {
+		c.JSON(429, models.ResendPasswordResetResponse{
+			Success:     false,
+			Message:     "Too many requests. Please try again later.",
+			LockedUntil: lockedUntil.UnixMilli(),
+		})
+	} else {
+		c.JSON(429, models.ResendPasswordResetResponse{
+			Success:    false,
+			Message:    "Please wait before requesting another reset link.",
+			RetryAfter: retryAfter,
+		})
+	}
+}
+
+// ResendPasswordReset handles resending the password reset email with rate limiting.
+// POST /v1/auth/resend-password-reset
+//
+// Rate limiting rules:
+//   - 1st resend: immediate
+//   - 2nd resend: 30 second delay
+//   - 3rd resend: 60 second delay
+//   - 4th+ resend: (count - 1) * 30 seconds delay
+//   - After 6 attempts: 5 hour lockout
+func (ac *AuthController) ResendPasswordReset(c *gin.Context) {
+	var req models.ResendPasswordResetRequest
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "invalid request body"})
+		return
+	}
+
+	email := strings.TrimSpace(strings.ToLower(req.Email))
+	if email == "" {
+		c.JSON(400, models.ErrorResponse{Error: "bad_request", Message: "email is required"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	// Hash email for tracker lookup (privacy)
+	emailHash := security.HashToken(email)
+	now := time.Now().UTC()
+
+	// Check rate limit
+	tracker, err := ac.checkResendRateLimitAndGetTracker(ctx, emailHash)
+	if err != nil && !errors.Is(err, storage.ErrNotFound) {
+		ac.log.WarnContext(ctx, "resendPasswordReset: failed to get tracker", "err", err)
+		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "failed to process request"})
+		return
+	}
+	// Treat ErrNotFound as nil tracker (first resend)
+	if errors.Is(err, storage.ErrNotFound) {
+		tracker = nil
+	}
+
+	allowed, retryAfter, lockedUntil := checkResendRateLimit(tracker, now)
+	if !allowed {
+		handleRateLimitResponse(c, retryAfter, lockedUntil)
+		return
+	}
+
+	// Send reset email if operator exists
+	ac.sendResetEmailIfOperatorExists(ctx, email, now)
+
+	// Update tracker and cleanup
+	newResendCount := updateResendTracker(ctx, ac.store, ac.log, tracker, emailHash, now)
+	triggerTrackerCleanup(ac.store, ac.log)
+
+	c.JSON(200, models.ResendPasswordResetResponse{
+		Success: true,
+		Message: "Password reset link sent.",
+	})
+	_ = newResendCount // suppress unused warning
+}
+
+// checkResendRateLimitAndGetTracker retrieves the tracker, treating ErrNotFound as nil.
+func (ac *AuthController) checkResendRateLimitAndGetTracker(
+	ctx context.Context,
+	emailHash string,
+) (*models.PasswordResetResendTracker, error) {
+	tracker, err := ac.store.GetPasswordResetResendTracker(ctx, emailHash)
+	if err != nil && !errors.Is(err, storage.ErrNotFound) {
+		return nil, err
+	}
+	if errors.Is(err, storage.ErrNotFound) {
+		return nil, storage.ErrNotFound
+	}
+	return tracker, nil
+}
+
+// sendResetEmailIfOperatorExists sends the password reset email if the operator exists.
+func (ac *AuthController) sendResetEmailIfOperatorExists(ctx context.Context, email string, now time.Time) {
+	op, err := ac.store.GetOperatorByEmail(ctx, email)
+	if err != nil {
+		// Log but don't fail - operator might not exist (email enumeration protection)
+		return
+	}
+	if op != nil {
+		_ = ac.sendPasswordResetEmail(ctx, op, now) //nolint:errcheck
+	}
+}
+
+// sendPasswordResetEmail handles the email sending part of resend.
+func (ac *AuthController) sendPasswordResetEmail(
+	ctx context.Context,
+	op *models.Operator,
+	now time.Time,
+) error {
+	// Delete any existing password reset tokens
+	if err := ac.store.DeletePasswordResetTokensByOperator(ctx, op.ID); err != nil {
+		ac.log.WarnContext(ctx, "resendPasswordReset: failed to delete old tokens", "err", err)
+	}
+
+	// Create new password reset token
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return fmt.Errorf("failed to generate token: %w", err)
+	}
+	token := hex.EncodeToString(tokenBytes)
+	tokenHash := security.HashToken(token)
+
+	prt := &storage.PasswordResetToken{
+		ID:         generateID(),
+		OperatorID: op.ID,
+		TokenHash:  tokenHash,
+		ExpiresAt:  now.Add(15 * time.Minute),
+		CreatedAt:  now,
+	}
+
+	if err := ac.store.CreatePasswordResetToken(ctx, prt); err != nil {
+		return fmt.Errorf("failed to create token: %w", err)
+	}
+
+	return ac.emailSvc.SendPasswordResetEmail(ctx, op.Email, op.Name, token)
+}
+
+// updateResendTracker updates the resend tracker and returns the new count.
+func updateResendTracker(
+	ctx context.Context,
+	store interface {
+		UpsertPasswordResetResendTracker(ctx context.Context, tracker *models.PasswordResetResendTracker) error
+	},
+	log interface {
+		WarnContext(ctx context.Context, msg string, args ...interface{})
+	},
+	tracker *models.PasswordResetResendTracker,
+	emailHash string,
+	now time.Time,
+) int {
+	newResendCount := 1
+	var lockoutUntil *time.Time
+
+	if tracker != nil {
+		newResendCount = tracker.ResendCount + 1
+
+		// Check if we've hit the lockout threshold (6 attempts)
+		if newResendCount > 6 {
+			lockoutDuration := 5 * time.Hour
+			lockout := now.Add(lockoutDuration)
+			lockoutUntil = &lockout
+			newResendCount = tracker.ResendCount // Don't increment on lockout
+		}
+	}
+
+	newTracker := &models.PasswordResetResendTracker{
+		ID:           generateID(),
+		EmailHash:    emailHash,
+		ResendCount:  newResendCount,
+		LastResendAt: now,
+		LockoutUntil: lockoutUntil,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+
+	if err := store.UpsertPasswordResetResendTracker(ctx, newTracker); err != nil {
+		log.WarnContext(ctx, "resendPasswordReset: failed to update tracker", "err", err)
+	}
+
+	return newResendCount
+}
+
+// triggerTrackerCleanup starts async cleanup of old trackers.
+func triggerTrackerCleanup(
+	store interface {
+		CleanupPasswordResetResendTrackers(ctx context.Context, maxAgeHours int) (int64, error)
+	},
+	log interface {
+		Warn(msg string, args ...interface{})
+		Info(msg string, args ...interface{})
+	},
+) {
+	go func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cleanupCancel()
+		if deleted, err := store.CleanupPasswordResetResendTrackers(cleanupCtx, 24); err != nil {
+			log.Warn("resendPasswordReset: cleanup failed", "err", err)
+		} else if deleted > 0 {
+			log.Info("resendPasswordReset: cleaned up trackers", "count", deleted)
+		}
+	}()
 }
 
 func getOperatorFromContext(c *gin.Context) *models.Operator {
