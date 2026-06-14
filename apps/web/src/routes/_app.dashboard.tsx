@@ -162,18 +162,15 @@ const DashboardPage = (): JSX.Element => {
   const stream = useStream();
   const t = stream.lastTelemetry;
 
-  // Show spinning loader until hydration and initial data fetch complete
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  // Show spinning loader during initial hydration (minimum 2 seconds)
+  const [showSpinner, setShowSpinner] = useState(true);
 
   useEffect(() => {
-    // Wait for hydration to complete
-    const minDisplayTime = setTimeout(() => {
-      // Minimum 600ms display for smooth UX
-      // Then hide spinner (skeleton loaders will show during data fetch)
-      setIsInitialLoad(false);
-    }, 600);
-
-    return () => clearTimeout(minDisplayTime);
+    // Force minimum spinner display time for UX
+    const timer = setTimeout(() => {
+      setShowSpinner(false);
+    }, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
   // Handle OAuth success toast from cookie-based OAuth flow
@@ -223,7 +220,7 @@ const DashboardPage = (): JSX.Element => {
   const thermalSeries = stream.telemetryHistory.map((f, i) => ({ i, v: f.thermalTemp ?? 0 }));
 
   // Show spinning blocks loader during initial hydration
-  if (isInitialLoad) {
+  if (showSpinner) {
     return (
       <div className="flex h-[calc(100vh-12rem)] items-center justify-center">
         <SpinningBlocksLoader />
