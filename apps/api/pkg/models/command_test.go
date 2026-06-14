@@ -110,7 +110,7 @@ func TestCommandFrame_JSON(t *testing.T) {
 		Command:    "FORCE_SPEAKER",
 		Nonce:      "frame_nonce",
 		Signature:  "frame_sig",
-		Args:      json.RawMessage(`{"level":75}`),
+		Args:       json.RawMessage(`{"level":75}`),
 		Timestamp:  1700000000000,
 	}
 

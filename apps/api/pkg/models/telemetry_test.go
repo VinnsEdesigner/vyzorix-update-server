@@ -152,8 +152,8 @@ func TestTelemetryFrame_RawNotSerialized(t *testing.T) {
 
 func TestTelemetryFrame_MaxBoundaryValues(t *testing.T) {
 	frame := TelemetryFrame{
-		Type:       "telemetry",
-		RiskScore:  100,
+		Type:        "telemetry",
+		RiskScore:   100,
 		ThermalTemp: 120.0,
 		BufferLevel: 100,
 	}
@@ -178,8 +178,8 @@ func TestTelemetryFrame_MaxBoundaryValues(t *testing.T) {
 
 func TestTelemetryFrame_MinBoundaryValues(t *testing.T) {
 	frame := TelemetryFrame{
-		Type:       "telemetry",
-		RiskScore:  0,
+		Type:        "telemetry",
+		RiskScore:   0,
 		ThermalTemp: -40.0,
 		BufferLevel: 0,
 	}

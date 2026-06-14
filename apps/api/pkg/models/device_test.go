@@ -152,9 +152,9 @@ func TestDeviceStatus_JSON(t *testing.T) {
 func TestDeviceStatus_OptionalFields(t *testing.T) {
 	// Only required fields
 	status := DeviceStatus{
-		DeviceID:   "device_min",
-		LastSeen:   1700000000000,
-		Online:     true,
+		DeviceID: "device_min",
+		LastSeen: 1700000000000,
+		Online:   true,
 	}
 
 	data, err := json.Marshal(status)
