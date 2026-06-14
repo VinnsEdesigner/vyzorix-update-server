@@ -10,8 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useServerHealth } from "@/hooks/use-server-health";
-import { updateSettings, me, type ClientSettings } from "@/lib/vyzorix-auth";
 import { DEFAULT_SERVER_URL, useVyzorixConfig } from "@/lib/vyzorix-config";
+
+interface ClientSettings {
+  autoReconnect?: boolean;
+  strictHmac?: boolean;
+}
 
 // Validate URL has proper protocol
 const isValidServerUrl = (url: string): boolean => {
@@ -74,14 +78,20 @@ const ConnectionSettings = (): ReactElement => {
   useEffect(() => {
     const loadFromServer = async (): Promise<void> => {
       try {
-        const op = await me(cfgRef.current.serverUrl);
-        if (op.client) {
-          setAutoReconnect(op.client.autoReconnect ?? true);
-          setStrictHmac(op.client.strictHmac ?? false);
-          cfgRef.current.update({
-            autoReconnect: op.client.autoReconnect ?? true,
-            strictHmac: op.client.strictHmac ?? false,
-          });
+        const res = await fetch("/v1/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+        if (res.ok) {
+          const op = await res.json();
+          if (op.client) {
+            setAutoReconnect(op.client.autoReconnect ?? true);
+            setStrictHmac(op.client.strictHmac ?? false);
+            cfgRef.current.update({
+              autoReconnect: op.client.autoReconnect ?? true,
+              strictHmac: op.client.strictHmac ?? false,
+            });
+          }
         }
       } catch {
         // Use local defaults
@@ -123,7 +133,16 @@ const ConnectionSettings = (): ReactElement => {
         autoReconnect,
         strictHmac,
       };
-      await updateSettings(cfg.serverUrl, { client });
+      const res = await fetch("/v1/auth/me/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ client }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message ?? "Failed to save settings");
+      }
       cfg.update({
         serverUrl: serverUrl.trim(),
         deviceId: deviceId.trim(),

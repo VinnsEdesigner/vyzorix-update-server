@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { updateSettings, me, type ClientSettings } from "@/lib/vyzorix-auth";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
+
+interface ClientSettings {
+  notificationsEnabled?: boolean;
+}
 
 const Row = ({
   label,
@@ -30,10 +33,8 @@ const Row = ({
 };
 
 const NotificationsSettings = (): ReactElement => {
-  const { notificationsEnabled, update, serverUrl } = useVyzorixConfig();
-  const serverUrlRef = useRef(serverUrl);
+  const { notificationsEnabled, update } = useVyzorixConfig();
   const updateRef = useRef(update);
-  serverUrlRef.current = serverUrl;
   updateRef.current = update;
   const [enabled, setEnabled] = useState(notificationsEnabled);
   const [saving, setSaving] = useState(false);
@@ -42,10 +43,16 @@ const NotificationsSettings = (): ReactElement => {
   useEffect(() => {
     const loadFromServer = async (): Promise<void> => {
       try {
-        const op = await me(serverUrlRef.current);
-        if (op.client) {
-          setEnabled(op.client.notificationsEnabled ?? true);
-          updateRef.current({ notificationsEnabled: op.client.notificationsEnabled ?? true });
+        const res = await fetch("/v1/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+        if (res.ok) {
+          const op = await res.json();
+          if (op.client) {
+            setEnabled(op.client.notificationsEnabled ?? true);
+            updateRef.current({ notificationsEnabled: op.client.notificationsEnabled ?? true });
+          }
         }
       } catch {
         // Use local defaults
@@ -59,7 +66,16 @@ const NotificationsSettings = (): ReactElement => {
     setSaving(true);
     try {
       const client: ClientSettings = { notificationsEnabled: v };
-      await updateSettings(serverUrl, { client });
+      const res = await fetch("/v1/auth/me/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ client }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message ?? "Failed to save settings");
+      }
       update({ notificationsEnabled: v });
       toast.success("Notification settings saved to server");
     } catch (e) {
