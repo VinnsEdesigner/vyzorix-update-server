@@ -9,8 +9,8 @@ import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import wolfImage from "@/assets/images/black_wolf_evening_1781264516831.jpg";
-import AuthLayout from "@/components/layout/AuthLayout";
 import LoginForm from "@/components/auth/LoginForm";
+import AuthLayout from "@/components/layout/AuthLayout";
 import { loginOperator } from "@/lib/clients/authClient";
 import { initiateSSO, type SSOProvider } from "@/lib/clients/ssoClient";
 import { getFullHydratedState } from "@/lib/server/state-injector";

@@ -9,8 +9,8 @@ import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
 import wolfImage from "@/assets/images/black_wolf_evening_1781264516831.jpg";
-import AuthLayout from "@/components/layout/AuthLayout";
 import SignUpForm from "@/components/auth/SignUpForm";
+import AuthLayout from "@/components/layout/AuthLayout";
 import { registerOperator } from "@/lib/clients/authClient";
 import { initiateSSO, type SSOProvider } from "@/lib/clients/ssoClient";
 

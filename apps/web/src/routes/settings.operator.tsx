@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import AppLayout from "@/components/layout/AppLayout";
 import { ShieldAlert, Loader2 } from "lucide-react";
 import type { JSX } from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 
+import AppLayout from "@/components/layout/AppLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
