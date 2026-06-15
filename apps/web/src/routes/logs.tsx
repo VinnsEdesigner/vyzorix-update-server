@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import AppLayout from "@/components/layout/AppLayout";
 import type { ReactElement } from "react";
 
+import AppLayout from "@/components/layout/AppLayout";
 import { LogConsole } from "@/components/logs/log-console";
 import { Card } from "@/components/ui/card";
 

@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 
+import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStream } from "@/lib/device-stream-context";

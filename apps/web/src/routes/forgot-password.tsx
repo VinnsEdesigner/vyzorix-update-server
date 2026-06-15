@@ -10,8 +10,8 @@ import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
 import wolfImage from "@/assets/images/black_wolf_evening_1781264516831.jpg";
-import AuthLayout from "@/components/layout/AuthLayout";
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
+import AuthLayout from "@/components/layout/AuthLayout";
 import { requestPasswordReset } from "@/lib/clients/passwordClient";
 
 const ForgotPasswordPage = (): ReactNode => {

@@ -41,6 +41,7 @@ type Operator struct {
 	PasswordHash  string         `json:"-"`
 	Role          OperatorRole   `json:"role"`
 	GoogleID      string         `json:"googleId,omitempty"`
+	GitHubID      string         `json:"githubId,omitempty"`
 	Thresholds    Thresholds     `json:"thresholds,omitempty" db:"-"`
 	Client        ClientSettings `json:"client,omitempty" db:"-"`
 	EmailVerified bool           `json:"emailVerified,omitempty"`
