@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import AppLayout from "@/components/layout/AppLayout";
 import { useState, useEffect, type ReactElement, type JSX } from "react";
 import { toast } from "sonner";
 
@@ -268,7 +269,11 @@ const RegisterPanel = ({ deviceStatus }: { deviceStatus: DeviceStatus | null }):
   );
 };
 
-export const Route = createFileRoute("/_app/device")({
+export const Route = createFileRoute("/device")({
   head: () => ({ meta: [{ title: "Device — Vyzorix" }] }),
-  component: DevicePage,
+  component: () => (
+    <AppLayout title="Device">
+      <DevicePage />
+    </AppLayout>
+  ),
 });
