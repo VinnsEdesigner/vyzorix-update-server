@@ -13,6 +13,8 @@ import (
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
 	GoogleOAuthClientSecret  string
+	GitHubOAuthClientID      string
+	GitHubOAuthClientSecret  string
 	JWTSecret                string
 	SessionSecret            string // AES-256 key for cookie encryption (defaults to JWTSecret if not set)
 	SessionMaxAge            int    // Session duration in seconds (defaults to 86400 = 24h)
@@ -87,6 +89,8 @@ func Load() (Config, error) {
 		NonceCacheTTL:           1 * time.Hour,
 		GoogleOAuthClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
 		GoogleOAuthClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+		GitHubOAuthClientID:     os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
+		GitHubOAuthClientSecret: os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
 		BaseURL:                 get("BASE_URL", "http://localhost:3000"),
 		FrontendURL:             get("FRONTEND_URL", "http://localhost:5173"),
 		// Email settings

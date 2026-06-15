@@ -8,7 +8,9 @@ GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 GOFMT=gofmt
 GOVET=$(GOCMD) vet
-GOLANGCILINT=/workspace/go/bin/golangci-lint
+GOLANGCILINT_VERSION=v2.12.2
+GOLANGCILINT_INSTALL_DIR=/workspace/go/bin
+GOLANGCILINT=$(GOLANGCILINT_INSTALL_DIR)/golangci-lint
 
 # Binary name
 BINARY_NAME=vyzorix-update-server
@@ -73,8 +75,19 @@ vet:
 	$(GOVET) -composites=false ./...
 
 lint-go:
-	@echo "Running STRICT Go linting..."
-	@if [ ! -f "$(GOLANGCILINT)" ]; then curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /workspace/go/bin v1.64.5; fi
+	@echo "Installing golangci-lint $(GOLANGCILINT_VERSION)..."
+	@if [ ! -f "$(GOLANGCILINT)" ] || [ "$$($(GOLANGCILINT) --version 2>/dev/null | grep -o 'version [0-9.]*' | cut -d' ' -f2)" != "2.12.2" ]; then \
+		mkdir -p $(GOLANGCILINT_INSTALL_DIR); \
+		curl -sSfL https://github.com/golangci/golangci-lint/releases/download/$(GOLANGCILINT_VERSION)/golangci-lint-$(GOLANGCILINT_VERSION)-linux-amd64.tar.gz -o /tmp/golangci-lint.tar.gz && \
+		tar -xzf /tmp/golangci-lint.tar.gz -C /tmp && \
+		cp /tmp/golangci-lint-$(GOLANGCILINT_VERSION)-linux-amd64/golangci-lint $(GOLANGCILINT) && \
+		chmod +x $(GOLANGCILINT) && \
+		rm -rf /tmp/golangci-lint* /tmp/golangci-lint-$(GOLANGCILINT_VERSION)-linux-amd64 && \
+		echo "Installed $(GOLANGCILINT_VERSION)"; \
+	else \
+		echo "golangci-lint $(GOLANGCILINT_VERSION) already installed"; \
+	fi
+	@echo "Running Go linting..."
 	$(GOLANGCILINT) run ./...
 
 lint-go-fix:
