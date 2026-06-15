@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 
+import AppLayout from "@/components/layout/AppLayout";
 import { cn } from "@/lib/utils";
 
 const tabs: { to: string; label: string; exact?: boolean }[] = [
@@ -11,7 +12,7 @@ const tabs: { to: string; label: string; exact?: boolean }[] = [
   { to: "/settings/advanced", label: "Advanced" },
 ];
 
-const SettingsLayout = (): ReactElement => {
+const SettingsContent = (): ReactElement => {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   return (
     <div className="space-y-4">
@@ -41,7 +42,11 @@ const SettingsLayout = (): ReactElement => {
   );
 };
 
-export const Route = createFileRoute("/_app/settings")({
+export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — Vyzorix" }] }),
-  component: SettingsLayout,
+  component: () => (
+    <AppLayout title="Settings">
+      <SettingsContent />
+    </AppLayout>
+  ),
 });

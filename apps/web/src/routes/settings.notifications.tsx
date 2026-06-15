@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import AppLayout from "@/components/layout/AppLayout";
 import { useState, useEffect, useRef, type ReactElement } from "react";
 import { toast } from "sonner";
 
@@ -123,6 +124,10 @@ const NotificationsSettings = (): ReactElement => {
   );
 };
 
-export const Route = createFileRoute("/_app/settings/notifications")({
-  component: NotificationsSettings,
+export const Route = createFileRoute("/settings/notifications")({
+  component: () => (
+    <AppLayout title="Settings">
+      <NotificationsSettings />
+    </AppLayout>
+  ),
 });

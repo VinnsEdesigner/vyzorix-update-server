@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import AppLayout from "@/components/layout/AppLayout";
 import { useState, type ReactElement } from "react";
 import { toast } from "sonner";
 
@@ -135,6 +136,10 @@ const AdvancedSettings = (): ReactElement => {
   );
 };
 
-export const Route = createFileRoute("/_app/settings/advanced")({
-  component: AdvancedSettings,
+export const Route = createFileRoute("/settings/advanced")({
+  component: () => (
+    <AppLayout title="Settings">
+      <AdvancedSettings />
+    </AppLayout>
+  ),
 });

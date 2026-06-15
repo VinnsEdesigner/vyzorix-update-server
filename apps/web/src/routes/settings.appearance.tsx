@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import AppLayout from "@/components/layout/AppLayout";
 import { Monitor, Moon, Sun } from "lucide-react";
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
@@ -86,6 +87,10 @@ const AppearanceSettings = (): JSX.Element => {
   );
 };
 
-export const Route = createFileRoute("/_app/settings/appearance")({
-  component: AppearanceSettings,
+export const Route = createFileRoute("/settings/appearance")({
+  component: () => (
+    <AppLayout title="Settings">
+      <AppearanceSettings />
+    </AppLayout>
+  ),
 });

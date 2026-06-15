@@ -24,6 +24,7 @@ import { useEffect, useState, type ReactElement } from "react";
 import { toast } from "sonner";
 
 import wolfImage from "@/assets/images/black_wolf_evening_1781264516831.jpg";
+import AuthLayout from "@/components/layout/AuthLayout";
 import { resendPasswordReset } from "@/lib/clients/passwordClient";
 import { triggerTokenResend } from "@/lib/clients/verificationClient";
 
@@ -151,7 +152,7 @@ const WaitVerifyPage = (): ReactElement => {
         setTimeout(() => {
           if (flowType === "reset") {
             // Password reset: redirect to set-password page with token
-            navigate({ to: "/auth/set-password", search: { token }, replace: true });
+            navigate({ to: "/set-password", search: { token }, replace: true });
           } else {
             // Registration: redirect to dashboard
             navigate({ to: "/dashboard", replace: true });
@@ -209,11 +210,11 @@ const WaitVerifyPage = (): ReactElement => {
   };
 
   const handleBackToLogin = (): void => {
-    navigate({ to: "/auth/login" });
+    navigate({ to: "/login" });
   };
 
   const handleBackToForgotPassword = (): void => {
-    navigate({ to: "/auth/forgot-password" });
+    navigate({ to: "/forgot-password" });
   };
 
   const formatTime = (seconds: number): string => {
@@ -458,7 +459,7 @@ const WaitVerifyPage = (): ReactElement => {
   );
 };
 
-export const Route = createFileRoute("/auth/waitVerify")({
+export const Route = createFileRoute("/waitVerify")({
   head: () => ({ meta: [{ title: "Verify - Vyzorix" }] }),
   validateSearch: (search: Record<string, unknown>) => {
     return {
@@ -467,5 +468,9 @@ export const Route = createFileRoute("/auth/waitVerify")({
       type: (search.type as string) ?? "verify",
     };
   },
-  component: WaitVerifyPage,
+  component: () => (
+    <AuthLayout>
+      <WaitVerifyPage />
+    </AuthLayout>
+  ),
 });
