@@ -10,6 +10,7 @@ import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
 import wolfImage from "@/assets/images/black_wolf_evening_1781264516831.jpg";
+import AuthLayout from "@/components/layout/AuthLayout";
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
 import { requestPasswordReset } from "@/lib/clients/passwordClient";
 
@@ -23,7 +24,7 @@ const ForgotPasswordPage = (): ReactNode => {
       await requestPasswordReset(email);
       toast.success("Password reset instructions sent to your email.");
       // Redirect to waitVerify page with email, empty token, and type=reset
-      navigate({ to: "/auth/waitVerify", search: { email, token: "", type: "reset" } });
+      navigate({ to: "/waitVerify", search: { email, token: "", type: "reset" } });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to process request";
       toast.error(msg);
@@ -32,7 +33,7 @@ const ForgotPasswordPage = (): ReactNode => {
   };
 
   const handleBackToLogin = (): void => {
-    navigate({ to: "/auth/login" });
+    navigate({ to: "/login" });
   };
 
   return (
@@ -64,7 +65,11 @@ const ForgotPasswordPage = (): ReactNode => {
   );
 };
 
-export const Route = createFileRoute("/auth/forgot-password")({
+export const Route = createFileRoute("/forgot-password")({
   head: () => ({ meta: [{ title: "Forgot Password - Vyzorix" }] }),
-  component: ForgotPasswordPage,
+  component: () => (
+    <AuthLayout>
+      <ForgotPasswordPage />
+    </AuthLayout>
+  ),
 });

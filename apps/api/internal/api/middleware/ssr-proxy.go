@@ -97,11 +97,11 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 
 		// Public routes that don't require authentication (must match React Router routes)
 		publicRoutes := []string{
-			"/auth/login",
-			"/auth/create-account",
-			"/auth/forgot-password",
-			"/auth/set-password",
-			"/auth/waitVerify",
+			"/login",
+			"/create-account",
+			"/forgot-password",
+			"/set-password",
+			"/waitVerify",
 			"/auth/callback",
 		}
 		for _, public := range publicRoutes {
@@ -116,7 +116,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 		tokenCookie, err := c.Cookie("vyz.auth.token")
 		if err != nil || tokenCookie == "" {
 			log.Warn("SSR access denied - no JWT cookie", "path", path, "ip", c.ClientIP())
-			c.Redirect(http.StatusTemporaryRedirect, "/auth/login")
+			c.Redirect(http.StatusTemporaryRedirect, "/login")
 			return
 		}
 
@@ -125,7 +125,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 		claims, err := jwtManager.Verify(tokenCookie)
 		if err != nil {
 			log.Warn("SSR access denied - invalid JWT", "path", path, "ip", c.ClientIP(), "err", err)
-			c.Redirect(http.StatusTemporaryRedirect, "/auth/login")
+			c.Redirect(http.StatusTemporaryRedirect, "/login")
 			return
 		}
 

@@ -10,6 +10,7 @@ import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
 import wolfImage from "@/assets/images/black_wolf_evening_1781264516831.jpg";
+import AuthLayout from "@/components/layout/AuthLayout";
 import SetPasswordForm from "@/components/auth/SetPasswordForm";
 
 const SetPasswordPage = (): ReactNode => {
@@ -22,7 +23,7 @@ const SetPasswordPage = (): ReactNode => {
     try {
       if (!token) {
         toast.error("Invalid reset link. Please request a new one.");
-        navigate({ to: "/auth/forgot-password" });
+        navigate({ to: "/forgot-password" });
         return;
       }
 
@@ -40,7 +41,7 @@ const SetPasswordPage = (): ReactNode => {
       }
 
       toast.success("Password set successfully!");
-      navigate({ to: "/auth/login" });
+      navigate({ to: "/login" });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to set password";
       toast.error(msg);
@@ -50,7 +51,7 @@ const SetPasswordPage = (): ReactNode => {
   };
 
   const handleBackToLogin = (): void => {
-    navigate({ to: "/auth/login" });
+    navigate({ to: "/login" });
   };
 
   return (
@@ -82,12 +83,16 @@ const SetPasswordPage = (): ReactNode => {
   );
 };
 
-export const Route = createFileRoute("/auth/set-password")({
+export const Route = createFileRoute("/set-password")({
   head: () => ({ meta: [{ title: "Set Password - Vyzorix" }] }),
   validateSearch: (search: Record<string, unknown>) => {
     return {
       token: (search.token as string) ?? "",
     };
   },
-  component: SetPasswordPage,
+  component: () => (
+    <AuthLayout>
+      <SetPasswordPage />
+    </AuthLayout>
+  ),
 });
