@@ -9,342 +9,395 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AppRouteImport } from './routes/_app'
-import { Route as AppIndexRouteImport } from './routes/_app.index'
-import { Route as AuthWaitVerifyRouteImport } from './routes/auth/waitVerify'
-import { Route as AuthSetPasswordRouteImport } from './routes/auth/set-password'
-import { Route as AuthLoginRouteImport } from './routes/auth/login'
-import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
-import { Route as AuthCreateAccountRouteImport } from './routes/auth/create-account'
+import { Route as WaitVerifyRouteImport } from './routes/waitVerify'
+import { Route as UpdatesRouteImport } from './routes/updates'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SetPasswordRouteImport } from './routes/set-password'
+import { Route as LogsRouteImport } from './routes/logs'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as DiagnosticsRouteImport } from './routes/diagnostics'
+import { Route as DeviceRouteImport } from './routes/device'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CreateAccountRouteImport } from './routes/create-account'
+import { Route as AlertsRouteImport } from './routes/alerts'
+import { Route as SettingsThresholdsRouteImport } from './routes/settings.thresholds'
+import { Route as SettingsOperatorRouteImport } from './routes/settings.operator'
+import { Route as SettingsNotificationsRouteImport } from './routes/settings.notifications'
+import { Route as SettingsConnectionRouteImport } from './routes/settings.connection'
+import { Route as SettingsAppearanceRouteImport } from './routes/settings.appearance'
+import { Route as SettingsAdvancedRouteImport } from './routes/settings.advanced'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as AppUpdatesRouteImport } from './routes/_app.updates'
-import { Route as AppSettingsRouteImport } from './routes/_app.settings'
-import { Route as AppLogsRouteImport } from './routes/_app.logs'
-import { Route as AppDiagnosticsRouteImport } from './routes/_app.diagnostics'
-import { Route as AppDeviceRouteImport } from './routes/_app.device'
-import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
-import { Route as AppAlertsRouteImport } from './routes/_app.alerts'
-import { Route as AppSettingsIndexRouteImport } from './routes/_app.settings.index'
-import { Route as AppSettingsThresholdsRouteImport } from './routes/_app.settings.thresholds'
-import { Route as AppSettingsOperatorRouteImport } from './routes/_app.settings.operator'
-import { Route as AppSettingsNotificationsRouteImport } from './routes/_app.settings.notifications'
-import { Route as AppSettingsConnectionRouteImport } from './routes/_app.settings.connection'
-import { Route as AppSettingsAppearanceRouteImport } from './routes/_app.settings.appearance'
-import { Route as AppSettingsAdvancedRouteImport } from './routes/_app.settings.advanced'
 
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
+const WaitVerifyRoute = WaitVerifyRouteImport.update({
+  id: '/waitVerify',
+  path: '/waitVerify',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppIndexRoute = AppIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AuthWaitVerifyRoute = AuthWaitVerifyRouteImport.update({
-  id: '/auth/waitVerify',
-  path: '/auth/waitVerify',
+const UpdatesRoute = UpdatesRouteImport.update({
+  id: '/updates',
+  path: '/updates',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthSetPasswordRoute = AuthSetPasswordRouteImport.update({
-  id: '/auth/set-password',
-  path: '/auth/set-password',
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/auth/login',
-  path: '/auth/login',
+const SetPasswordRoute = SetPasswordRouteImport.update({
+  id: '/set-password',
+  path: '/set-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
-  id: '/auth/forgot-password',
-  path: '/auth/forgot-password',
+const LogsRoute = LogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthCreateAccountRoute = AuthCreateAccountRouteImport.update({
-  id: '/auth/create-account',
-  path: '/auth/create-account',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagnosticsRoute = DiagnosticsRouteImport.update({
+  id: '/diagnostics',
+  path: '/diagnostics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeviceRoute = DeviceRouteImport.update({
+  id: '/device',
+  path: '/device',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateAccountRoute = CreateAccountRouteImport.update({
+  id: '/create-account',
+  path: '/create-account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlertsRoute = AlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsThresholdsRoute = SettingsThresholdsRouteImport.update({
+  id: '/thresholds',
+  path: '/thresholds',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsOperatorRoute = SettingsOperatorRouteImport.update({
+  id: '/operator',
+  path: '/operator',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsNotificationsRoute = SettingsNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsConnectionRoute = SettingsConnectionRouteImport.update({
+  id: '/connection',
+  path: '/connection',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsAdvancedRoute = SettingsAdvancedRouteImport.update({
+  id: '/advanced',
+  path: '/advanced',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppUpdatesRoute = AppUpdatesRouteImport.update({
-  id: '/updates',
-  path: '/updates',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSettingsRoute = AppSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppLogsRoute = AppLogsRouteImport.update({
-  id: '/logs',
-  path: '/logs',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDiagnosticsRoute = AppDiagnosticsRouteImport.update({
-  id: '/diagnostics',
-  path: '/diagnostics',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDeviceRoute = AppDeviceRouteImport.update({
-  id: '/device',
-  path: '/device',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDashboardRoute = AppDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAlertsRoute = AppAlertsRouteImport.update({
-  id: '/alerts',
-  path: '/alerts',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppSettingsRoute,
-} as any)
-const AppSettingsThresholdsRoute = AppSettingsThresholdsRouteImport.update({
-  id: '/thresholds',
-  path: '/thresholds',
-  getParentRoute: () => AppSettingsRoute,
-} as any)
-const AppSettingsOperatorRoute = AppSettingsOperatorRouteImport.update({
-  id: '/operator',
-  path: '/operator',
-  getParentRoute: () => AppSettingsRoute,
-} as any)
-const AppSettingsNotificationsRoute =
-  AppSettingsNotificationsRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
-    getParentRoute: () => AppSettingsRoute,
-  } as any)
-const AppSettingsConnectionRoute = AppSettingsConnectionRouteImport.update({
-  id: '/connection',
-  path: '/connection',
-  getParentRoute: () => AppSettingsRoute,
-} as any)
-const AppSettingsAppearanceRoute = AppSettingsAppearanceRouteImport.update({
-  id: '/appearance',
-  path: '/appearance',
-  getParentRoute: () => AppSettingsRoute,
-} as any)
-const AppSettingsAdvancedRoute = AppSettingsAdvancedRouteImport.update({
-  id: '/advanced',
-  path: '/advanced',
-  getParentRoute: () => AppSettingsRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AppIndexRoute
-  '/alerts': typeof AppAlertsRoute
-  '/dashboard': typeof AppDashboardRoute
-  '/device': typeof AppDeviceRoute
-  '/diagnostics': typeof AppDiagnosticsRoute
-  '/logs': typeof AppLogsRoute
-  '/settings': typeof AppSettingsRouteWithChildren
-  '/updates': typeof AppUpdatesRoute
+  '/alerts': typeof AlertsRoute
+  '/create-account': typeof CreateAccountRoute
+  '/dashboard': typeof DashboardRoute
+  '/device': typeof DeviceRoute
+  '/diagnostics': typeof DiagnosticsRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/logs': typeof LogsRoute
+  '/set-password': typeof SetPasswordRoute
+  '/settings': typeof SettingsRouteWithChildren
+  '/updates': typeof UpdatesRoute
+  '/waitVerify': typeof WaitVerifyRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/auth/create-account': typeof AuthCreateAccountRoute
-  '/auth/forgot-password': typeof AuthForgotPasswordRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/set-password': typeof AuthSetPasswordRoute
-  '/auth/waitVerify': typeof AuthWaitVerifyRoute
-  '/settings/advanced': typeof AppSettingsAdvancedRoute
-  '/settings/appearance': typeof AppSettingsAppearanceRoute
-  '/settings/connection': typeof AppSettingsConnectionRoute
-  '/settings/notifications': typeof AppSettingsNotificationsRoute
-  '/settings/operator': typeof AppSettingsOperatorRoute
-  '/settings/thresholds': typeof AppSettingsThresholdsRoute
-  '/settings/': typeof AppSettingsIndexRoute
+  '/settings/advanced': typeof SettingsAdvancedRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/connection': typeof SettingsConnectionRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings/operator': typeof SettingsOperatorRoute
+  '/settings/thresholds': typeof SettingsThresholdsRoute
 }
 export interface FileRoutesByTo {
-  '/alerts': typeof AppAlertsRoute
-  '/dashboard': typeof AppDashboardRoute
-  '/device': typeof AppDeviceRoute
-  '/diagnostics': typeof AppDiagnosticsRoute
-  '/logs': typeof AppLogsRoute
-  '/updates': typeof AppUpdatesRoute
+  '/alerts': typeof AlertsRoute
+  '/create-account': typeof CreateAccountRoute
+  '/dashboard': typeof DashboardRoute
+  '/device': typeof DeviceRoute
+  '/diagnostics': typeof DiagnosticsRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/logs': typeof LogsRoute
+  '/set-password': typeof SetPasswordRoute
+  '/settings': typeof SettingsRouteWithChildren
+  '/updates': typeof UpdatesRoute
+  '/waitVerify': typeof WaitVerifyRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/auth/create-account': typeof AuthCreateAccountRoute
-  '/auth/forgot-password': typeof AuthForgotPasswordRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/set-password': typeof AuthSetPasswordRoute
-  '/auth/waitVerify': typeof AuthWaitVerifyRoute
-  '/': typeof AppIndexRoute
-  '/settings/advanced': typeof AppSettingsAdvancedRoute
-  '/settings/appearance': typeof AppSettingsAppearanceRoute
-  '/settings/connection': typeof AppSettingsConnectionRoute
-  '/settings/notifications': typeof AppSettingsNotificationsRoute
-  '/settings/operator': typeof AppSettingsOperatorRoute
-  '/settings/thresholds': typeof AppSettingsThresholdsRoute
-  '/settings': typeof AppSettingsIndexRoute
+  '/settings/advanced': typeof SettingsAdvancedRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/connection': typeof SettingsConnectionRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings/operator': typeof SettingsOperatorRoute
+  '/settings/thresholds': typeof SettingsThresholdsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_app': typeof AppRouteWithChildren
-  '/_app/alerts': typeof AppAlertsRoute
-  '/_app/dashboard': typeof AppDashboardRoute
-  '/_app/device': typeof AppDeviceRoute
-  '/_app/diagnostics': typeof AppDiagnosticsRoute
-  '/_app/logs': typeof AppLogsRoute
-  '/_app/settings': typeof AppSettingsRouteWithChildren
-  '/_app/updates': typeof AppUpdatesRoute
+  '/alerts': typeof AlertsRoute
+  '/create-account': typeof CreateAccountRoute
+  '/dashboard': typeof DashboardRoute
+  '/device': typeof DeviceRoute
+  '/diagnostics': typeof DiagnosticsRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/logs': typeof LogsRoute
+  '/set-password': typeof SetPasswordRoute
+  '/settings': typeof SettingsRouteWithChildren
+  '/updates': typeof UpdatesRoute
+  '/waitVerify': typeof WaitVerifyRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/auth/create-account': typeof AuthCreateAccountRoute
-  '/auth/forgot-password': typeof AuthForgotPasswordRoute
-  '/auth/login': typeof AuthLoginRoute
-  '/auth/set-password': typeof AuthSetPasswordRoute
-  '/auth/waitVerify': typeof AuthWaitVerifyRoute
-  '/_app/': typeof AppIndexRoute
-  '/_app/settings/advanced': typeof AppSettingsAdvancedRoute
-  '/_app/settings/appearance': typeof AppSettingsAppearanceRoute
-  '/_app/settings/connection': typeof AppSettingsConnectionRoute
-  '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
-  '/_app/settings/operator': typeof AppSettingsOperatorRoute
-  '/_app/settings/thresholds': typeof AppSettingsThresholdsRoute
-  '/_app/settings/': typeof AppSettingsIndexRoute
+  '/settings/advanced': typeof SettingsAdvancedRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/connection': typeof SettingsConnectionRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings/operator': typeof SettingsOperatorRoute
+  '/settings/thresholds': typeof SettingsThresholdsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/alerts'
+    | '/create-account'
     | '/dashboard'
     | '/device'
     | '/diagnostics'
+    | '/forgot-password'
+    | '/login'
     | '/logs'
+    | '/set-password'
     | '/settings'
     | '/updates'
+    | '/waitVerify'
     | '/auth/callback'
-    | '/auth/create-account'
-    | '/auth/forgot-password'
-    | '/auth/login'
-    | '/auth/set-password'
-    | '/auth/waitVerify'
     | '/settings/advanced'
     | '/settings/appearance'
     | '/settings/connection'
     | '/settings/notifications'
     | '/settings/operator'
     | '/settings/thresholds'
-    | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/alerts'
+    | '/create-account'
     | '/dashboard'
     | '/device'
     | '/diagnostics'
+    | '/forgot-password'
+    | '/login'
     | '/logs'
+    | '/set-password'
+    | '/settings'
     | '/updates'
+    | '/waitVerify'
     | '/auth/callback'
-    | '/auth/create-account'
-    | '/auth/forgot-password'
-    | '/auth/login'
-    | '/auth/set-password'
-    | '/auth/waitVerify'
-    | '/'
     | '/settings/advanced'
     | '/settings/appearance'
     | '/settings/connection'
     | '/settings/notifications'
     | '/settings/operator'
     | '/settings/thresholds'
-    | '/settings'
   id:
     | '__root__'
-    | '/_app'
-    | '/_app/alerts'
-    | '/_app/dashboard'
-    | '/_app/device'
-    | '/_app/diagnostics'
-    | '/_app/logs'
-    | '/_app/settings'
-    | '/_app/updates'
+    | '/alerts'
+    | '/create-account'
+    | '/dashboard'
+    | '/device'
+    | '/diagnostics'
+    | '/forgot-password'
+    | '/login'
+    | '/logs'
+    | '/set-password'
+    | '/settings'
+    | '/updates'
+    | '/waitVerify'
     | '/auth/callback'
-    | '/auth/create-account'
-    | '/auth/forgot-password'
-    | '/auth/login'
-    | '/auth/set-password'
-    | '/auth/waitVerify'
-    | '/_app/'
-    | '/_app/settings/advanced'
-    | '/_app/settings/appearance'
-    | '/_app/settings/connection'
-    | '/_app/settings/notifications'
-    | '/_app/settings/operator'
-    | '/_app/settings/thresholds'
-    | '/_app/settings/'
+    | '/settings/advanced'
+    | '/settings/appearance'
+    | '/settings/connection'
+    | '/settings/notifications'
+    | '/settings/operator'
+    | '/settings/thresholds'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AppRoute: typeof AppRouteWithChildren
+  AlertsRoute: typeof AlertsRoute
+  CreateAccountRoute: typeof CreateAccountRoute
+  DashboardRoute: typeof DashboardRoute
+  DeviceRoute: typeof DeviceRoute
+  DiagnosticsRoute: typeof DiagnosticsRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
+  LoginRoute: typeof LoginRoute
+  LogsRoute: typeof LogsRoute
+  SetPasswordRoute: typeof SetPasswordRoute
+  SettingsRoute: typeof SettingsRouteWithChildren
+  UpdatesRoute: typeof UpdatesRoute
+  WaitVerifyRoute: typeof WaitVerifyRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
-  AuthCreateAccountRoute: typeof AuthCreateAccountRoute
-  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
-  AuthLoginRoute: typeof AuthLoginRoute
-  AuthSetPasswordRoute: typeof AuthSetPasswordRoute
-  AuthWaitVerifyRoute: typeof AuthWaitVerifyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_app': {
-      id: '/_app'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppRouteImport
+    '/waitVerify': {
+      id: '/waitVerify'
+      path: '/waitVerify'
+      fullPath: '/waitVerify'
+      preLoaderRoute: typeof WaitVerifyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/': {
-      id: '/_app/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/auth/waitVerify': {
-      id: '/auth/waitVerify'
-      path: '/auth/waitVerify'
-      fullPath: '/auth/waitVerify'
-      preLoaderRoute: typeof AuthWaitVerifyRouteImport
+    '/updates': {
+      id: '/updates'
+      path: '/updates'
+      fullPath: '/updates'
+      preLoaderRoute: typeof UpdatesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/set-password': {
-      id: '/auth/set-password'
-      path: '/auth/set-password'
-      fullPath: '/auth/set-password'
-      preLoaderRoute: typeof AuthSetPasswordRouteImport
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/login': {
-      id: '/auth/login'
-      path: '/auth/login'
-      fullPath: '/auth/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
+    '/set-password': {
+      id: '/set-password'
+      path: '/set-password'
+      fullPath: '/set-password'
+      preLoaderRoute: typeof SetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/forgot-password': {
-      id: '/auth/forgot-password'
-      path: '/auth/forgot-password'
-      fullPath: '/auth/forgot-password'
-      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+    '/logs': {
+      id: '/logs'
+      path: '/logs'
+      fullPath: '/logs'
+      preLoaderRoute: typeof LogsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/create-account': {
-      id: '/auth/create-account'
-      path: '/auth/create-account'
-      fullPath: '/auth/create-account'
-      preLoaderRoute: typeof AuthCreateAccountRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagnostics': {
+      id: '/diagnostics'
+      path: '/diagnostics'
+      fullPath: '/diagnostics'
+      preLoaderRoute: typeof DiagnosticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/device': {
+      id: '/device'
+      path: '/device'
+      fullPath: '/device'
+      preLoaderRoute: typeof DeviceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create-account': {
+      id: '/create-account'
+      path: '/create-account'
+      fullPath: '/create-account'
+      preLoaderRoute: typeof CreateAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/alerts': {
+      id: '/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/thresholds': {
+      id: '/settings/thresholds'
+      path: '/thresholds'
+      fullPath: '/settings/thresholds'
+      preLoaderRoute: typeof SettingsThresholdsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/operator': {
+      id: '/settings/operator'
+      path: '/operator'
+      fullPath: '/settings/operator'
+      preLoaderRoute: typeof SettingsOperatorRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/notifications': {
+      id: '/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof SettingsNotificationsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/connection': {
+      id: '/settings/connection'
+      path: '/connection'
+      fullPath: '/settings/connection'
+      preLoaderRoute: typeof SettingsConnectionRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/appearance': {
+      id: '/settings/appearance'
+      path: '/appearance'
+      fullPath: '/settings/appearance'
+      preLoaderRoute: typeof SettingsAppearanceRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/advanced': {
+      id: '/settings/advanced'
+      path: '/advanced'
+      fullPath: '/settings/advanced'
+      preLoaderRoute: typeof SettingsAdvancedRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -353,163 +406,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/updates': {
-      id: '/_app/updates'
-      path: '/updates'
-      fullPath: '/updates'
-      preLoaderRoute: typeof AppUpdatesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/settings': {
-      id: '/_app/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AppSettingsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/logs': {
-      id: '/_app/logs'
-      path: '/logs'
-      fullPath: '/logs'
-      preLoaderRoute: typeof AppLogsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/diagnostics': {
-      id: '/_app/diagnostics'
-      path: '/diagnostics'
-      fullPath: '/diagnostics'
-      preLoaderRoute: typeof AppDiagnosticsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/device': {
-      id: '/_app/device'
-      path: '/device'
-      fullPath: '/device'
-      preLoaderRoute: typeof AppDeviceRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/dashboard': {
-      id: '/_app/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppDashboardRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/alerts': {
-      id: '/_app/alerts'
-      path: '/alerts'
-      fullPath: '/alerts'
-      preLoaderRoute: typeof AppAlertsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/settings/': {
-      id: '/_app/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof AppSettingsIndexRouteImport
-      parentRoute: typeof AppSettingsRoute
-    }
-    '/_app/settings/thresholds': {
-      id: '/_app/settings/thresholds'
-      path: '/thresholds'
-      fullPath: '/settings/thresholds'
-      preLoaderRoute: typeof AppSettingsThresholdsRouteImport
-      parentRoute: typeof AppSettingsRoute
-    }
-    '/_app/settings/operator': {
-      id: '/_app/settings/operator'
-      path: '/operator'
-      fullPath: '/settings/operator'
-      preLoaderRoute: typeof AppSettingsOperatorRouteImport
-      parentRoute: typeof AppSettingsRoute
-    }
-    '/_app/settings/notifications': {
-      id: '/_app/settings/notifications'
-      path: '/notifications'
-      fullPath: '/settings/notifications'
-      preLoaderRoute: typeof AppSettingsNotificationsRouteImport
-      parentRoute: typeof AppSettingsRoute
-    }
-    '/_app/settings/connection': {
-      id: '/_app/settings/connection'
-      path: '/connection'
-      fullPath: '/settings/connection'
-      preLoaderRoute: typeof AppSettingsConnectionRouteImport
-      parentRoute: typeof AppSettingsRoute
-    }
-    '/_app/settings/appearance': {
-      id: '/_app/settings/appearance'
-      path: '/appearance'
-      fullPath: '/settings/appearance'
-      preLoaderRoute: typeof AppSettingsAppearanceRouteImport
-      parentRoute: typeof AppSettingsRoute
-    }
-    '/_app/settings/advanced': {
-      id: '/_app/settings/advanced'
-      path: '/advanced'
-      fullPath: '/settings/advanced'
-      preLoaderRoute: typeof AppSettingsAdvancedRouteImport
-      parentRoute: typeof AppSettingsRoute
-    }
   }
 }
 
-interface AppSettingsRouteChildren {
-  AppSettingsAdvancedRoute: typeof AppSettingsAdvancedRoute
-  AppSettingsAppearanceRoute: typeof AppSettingsAppearanceRoute
-  AppSettingsConnectionRoute: typeof AppSettingsConnectionRoute
-  AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
-  AppSettingsOperatorRoute: typeof AppSettingsOperatorRoute
-  AppSettingsThresholdsRoute: typeof AppSettingsThresholdsRoute
-  AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+interface SettingsRouteChildren {
+  SettingsAdvancedRoute: typeof SettingsAdvancedRoute
+  SettingsAppearanceRoute: typeof SettingsAppearanceRoute
+  SettingsConnectionRoute: typeof SettingsConnectionRoute
+  SettingsNotificationsRoute: typeof SettingsNotificationsRoute
+  SettingsOperatorRoute: typeof SettingsOperatorRoute
+  SettingsThresholdsRoute: typeof SettingsThresholdsRoute
 }
 
-const AppSettingsRouteChildren: AppSettingsRouteChildren = {
-  AppSettingsAdvancedRoute: AppSettingsAdvancedRoute,
-  AppSettingsAppearanceRoute: AppSettingsAppearanceRoute,
-  AppSettingsConnectionRoute: AppSettingsConnectionRoute,
-  AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
-  AppSettingsOperatorRoute: AppSettingsOperatorRoute,
-  AppSettingsThresholdsRoute: AppSettingsThresholdsRoute,
-  AppSettingsIndexRoute: AppSettingsIndexRoute,
+const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsAdvancedRoute: SettingsAdvancedRoute,
+  SettingsAppearanceRoute: SettingsAppearanceRoute,
+  SettingsConnectionRoute: SettingsConnectionRoute,
+  SettingsNotificationsRoute: SettingsNotificationsRoute,
+  SettingsOperatorRoute: SettingsOperatorRoute,
+  SettingsThresholdsRoute: SettingsThresholdsRoute,
 }
 
-const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
-  AppSettingsRouteChildren,
+const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
+  SettingsRouteChildren,
 )
 
-interface AppRouteChildren {
-  AppAlertsRoute: typeof AppAlertsRoute
-  AppDashboardRoute: typeof AppDashboardRoute
-  AppDeviceRoute: typeof AppDeviceRoute
-  AppDiagnosticsRoute: typeof AppDiagnosticsRoute
-  AppLogsRoute: typeof AppLogsRoute
-  AppSettingsRoute: typeof AppSettingsRouteWithChildren
-  AppUpdatesRoute: typeof AppUpdatesRoute
-  AppIndexRoute: typeof AppIndexRoute
-}
-
-const AppRouteChildren: AppRouteChildren = {
-  AppAlertsRoute: AppAlertsRoute,
-  AppDashboardRoute: AppDashboardRoute,
-  AppDeviceRoute: AppDeviceRoute,
-  AppDiagnosticsRoute: AppDiagnosticsRoute,
-  AppLogsRoute: AppLogsRoute,
-  AppSettingsRoute: AppSettingsRouteWithChildren,
-  AppUpdatesRoute: AppUpdatesRoute,
-  AppIndexRoute: AppIndexRoute,
-}
-
-const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
-  AppRoute: AppRouteWithChildren,
+  AlertsRoute: AlertsRoute,
+  CreateAccountRoute: CreateAccountRoute,
+  DashboardRoute: DashboardRoute,
+  DeviceRoute: DeviceRoute,
+  DiagnosticsRoute: DiagnosticsRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
+  LoginRoute: LoginRoute,
+  LogsRoute: LogsRoute,
+  SetPasswordRoute: SetPasswordRoute,
+  SettingsRoute: SettingsRouteWithChildren,
+  UpdatesRoute: UpdatesRoute,
+  WaitVerifyRoute: WaitVerifyRoute,
   AuthCallbackRoute: AuthCallbackRoute,
-  AuthCreateAccountRoute: AuthCreateAccountRoute,
-  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
-  AuthLoginRoute: AuthLoginRoute,
-  AuthSetPasswordRoute: AuthSetPasswordRoute,
-  AuthWaitVerifyRoute: AuthWaitVerifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
