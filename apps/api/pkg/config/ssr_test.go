@@ -8,8 +8,8 @@ import (
 func TestDefaultSSRConfig(t *testing.T) {
 	config := DefaultSSRConfig()
 
-	if config.EnableSSR != false {
-		t.Errorf("EnableSSR = %v, want false", config.EnableSSR)
+	if config.EnableSSR != true {
+		t.Errorf("EnableSSR = %v, want true", config.EnableSSR)
 	}
 	if config.SSRServerURL != "http://localhost:3001" {
 		t.Errorf("SSRServerURL = %q, want \"http://localhost:3001\"", config.SSRServerURL)
@@ -25,8 +25,8 @@ func TestLoadSSRConfig_Defaults(t *testing.T) {
 
 	config := LoadSSRConfig()
 
-	if config.EnableSSR != false {
-		t.Errorf("EnableSSR = %v, want false", config.EnableSSR)
+	if config.EnableSSR != true {
+		t.Errorf("EnableSSR = %v, want true", config.EnableSSR)
 	}
 	if config.SSRServerURL != "http://localhost:3001" {
 		t.Errorf("SSRServerURL = %q, want default", config.SSRServerURL)
