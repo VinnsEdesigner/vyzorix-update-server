@@ -8,12 +8,10 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 )
 
-func TestSecretHash_HashAndVerify(t *testing.T) {
-	hasher := NewSecretHash()
-
+func TestHashSecret(t *testing.T) {
 	// Test hashing
 	secret := "my-secret-key-123"
-	hash, err := hasher.HashSecret(secret)
+	hash, err := HashSecret(secret)
 	if err != nil {
 		t.Fatalf("HashSecret failed: %v", err)
 	}
@@ -25,32 +23,38 @@ func TestSecretHash_HashAndVerify(t *testing.T) {
 	}
 
 	// Test verification
-	if !hasher.VerifyHash(secret, hash) {
-		t.Error("VerifyHash failed for correct secret")
+	if len(hash) < 11 || hash[:11] != "$argon2id$v" {
+		t.Error("Hash should start with $argon2id$v")
 	}
-	if hasher.VerifyHash("wrong-secret", hash) {
-		t.Error("VerifyHash should fail for wrong secret")
+
+	err = VerifySecret(secret, hash)
+	if err != nil {
+		t.Fatalf("VerifySecret failed for correct secret: %v", err)
+	}
+
+	err = VerifySecret("wrong-secret", hash)
+	if err == nil {
+		t.Error("VerifySecret should fail for wrong secret")
 	}
 }
 
-func TestSecretHash_DifferentHashes(t *testing.T) {
-	hasher := NewSecretHash()
+func TestHashSecret_DifferentHashes(t *testing.T) {
 	secret := "same-secret"
 
-	hash1, _ := hasher.HashSecret(secret)
-	hash2, _ := hasher.HashSecret(secret)
+	hash1, _ := HashSecret(secret)
+	hash2, _ := HashSecret(secret)
 
-	// bcrypt should produce different hashes due to random salt
+	// Argon2id should produce different hashes due to random salt
 	if hash1 == hash2 {
-		t.Log("Note: bcrypt produced same hash (unlikely but possible)")
+		t.Log("Note: Argon2id produced same hash (unlikely but possible)")
 	}
 
 	// Both should verify
-	if !hasher.VerifyHash(secret, hash1) {
-		t.Error("VerifyHash failed for hash1")
+	if err := VerifySecret(secret, hash1); err != nil {
+		t.Error("VerifySecret failed for hash1")
 	}
-	if !hasher.VerifyHash(secret, hash2) {
-		t.Error("VerifyHash failed for hash2")
+	if err := VerifySecret(secret, hash2); err != nil {
+		t.Error("VerifySecret failed for hash2")
 	}
 }
 
@@ -70,7 +74,6 @@ func TestStore_SetAndGetSecretHash(t *testing.T) {
 	defer store.Close()
 
 	ctx := context.Background()
-	hasher := NewSecretHash()
 
 	// Register a device first
 	secret := "device-secret-abc"
@@ -83,7 +86,7 @@ func TestStore_SetAndGetSecretHash(t *testing.T) {
 	}
 
 	// Hash and store
-	hash, err := hasher.HashSecret(secret)
+	hash, err := HashSecret(secret)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +105,8 @@ func TestStore_SetAndGetSecretHash(t *testing.T) {
 	}
 
 	// Verify the secret
-	if !hasher.VerifyHash(secret, retrievedHash) {
+	err = VerifySecret(secret, retrievedHash)
+	if err != nil {
 		t.Error("Secret should verify against stored hash")
 	}
 }
@@ -137,7 +141,6 @@ func TestStore_HashAllSecrets(t *testing.T) {
 	}
 
 	// Verify all have hashes (they were hashed during registration)
-	hasher := NewSecretHash()
 	for _, id := range devices {
 		secret, _ := store.Secret(ctx, id)
 		hash, err := store.GetSecretHash(ctx, id)
@@ -147,8 +150,9 @@ func TestStore_HashAllSecrets(t *testing.T) {
 		if hash == "" {
 			t.Errorf("Device %s has no hash", id)
 		}
-		if !hasher.VerifyHash(secret, hash) {
-			t.Errorf("Device %s secret doesn't verify against hash", id)
+		verified := VerifySecret(secret, hash)
+		if verified != nil {
+			t.Errorf("Device %s secret should verify: %v", id, verified)
 		}
 	}
 
