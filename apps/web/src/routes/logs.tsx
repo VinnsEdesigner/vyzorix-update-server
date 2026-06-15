@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import AppLayout from "@/components/layout/AppLayout";
 import type { ReactElement } from "react";
 
 import { LogConsole } from "@/components/logs/log-console";
@@ -12,7 +13,11 @@ const LogsPage = (): ReactElement => {
   );
 };
 
-export const Route = createFileRoute("/_app/logs")({
+export const Route = createFileRoute("/logs")({
   head: () => ({ meta: [{ title: "Logs — Vyzorix" }] }),
-  component: LogsPage,
+  component: () => (
+    <AppLayout title="Logs">
+      <LogsPage />
+    </AppLayout>
+  ),
 });

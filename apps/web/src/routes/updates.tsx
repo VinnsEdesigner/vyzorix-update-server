@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import AppLayout from "@/components/layout/AppLayout";
 import { Zap, Download, ChevronDown } from "lucide-react";
 import type { ReactElement } from "react";
 import { toast } from "sonner";
@@ -191,7 +192,11 @@ const UpdatesPage = (): ReactElement => {
   );
 };
 
-export const Route = createFileRoute("/_app/updates")({
+export const Route = createFileRoute("/updates")({
   head: () => ({ meta: [{ title: "Updates — Vyzorix" }] }),
-  component: UpdatesPage,
+  component: () => (
+    <AppLayout title="Updates">
+      <UpdatesPage />
+    </AppLayout>
+  ),
 });

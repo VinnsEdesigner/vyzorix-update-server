@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import AppLayout from "@/components/layout/AppLayout";
 import { ShieldAlert, Loader2 } from "lucide-react";
 import type { JSX } from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -239,6 +240,10 @@ const OperatorSettings = (): JSX.Element => {
   );
 };
 
-export const Route = createFileRoute("/_app/settings/operator")({
-  component: OperatorSettings,
+export const Route = createFileRoute("/settings/operator")({
+  component: () => (
+    <AppLayout title="Settings">
+      <OperatorSettings />
+    </AppLayout>
+  ),
 });

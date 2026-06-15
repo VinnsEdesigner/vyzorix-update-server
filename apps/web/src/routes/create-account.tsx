@@ -9,6 +9,7 @@ import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
 import wolfImage from "@/assets/images/black_wolf_evening_1781264516831.jpg";
+import AuthLayout from "@/components/layout/AuthLayout";
 import SignUpForm from "@/components/auth/SignUpForm";
 import { registerOperator } from "@/lib/clients/authClient";
 import { initiateSSO, type SSOProvider } from "@/lib/clients/ssoClient";
@@ -34,7 +35,7 @@ const CreateAccountPage = (): ReactNode => {
       });
       toast.success("Account created. Check your email to verify.");
       navigate({
-        to: "/auth/waitVerify",
+        to: "/waitVerify",
         search: { email: data.email, token: "", type: "verify" },
       });
     } catch (err) {
@@ -87,7 +88,11 @@ const CreateAccountPage = (): ReactNode => {
   );
 };
 
-export const Route = createFileRoute("/auth/create-account")({
+export const Route = createFileRoute("/create-account")({
   head: () => ({ meta: [{ title: "Create Account - Vyzorix" }] }),
-  component: CreateAccountPage,
+  component: () => (
+    <AuthLayout>
+      <CreateAccountPage />
+    </AuthLayout>
+  ),
 });

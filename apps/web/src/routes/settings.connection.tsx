@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import AppLayout from "@/components/layout/AppLayout";
 import { useState, useEffect, useRef, type ReactElement } from "react";
 import { toast } from "sonner";
 
@@ -278,6 +279,10 @@ const ConnectionSettings = (): ReactElement => {
   );
 };
 
-export const Route = createFileRoute("/_app/settings/connection")({
-  component: ConnectionSettings,
+export const Route = createFileRoute("/settings/connection")({
+  component: () => (
+    <AppLayout title="Settings">
+      <ConnectionSettings />
+    </AppLayout>
+  ),
 });
