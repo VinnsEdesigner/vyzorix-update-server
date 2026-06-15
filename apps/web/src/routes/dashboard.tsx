@@ -24,8 +24,8 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 
-import AppLayout from "@/components/layout/AppLayout";
 import SpinningBlocksLoader from "@/components/auth/SpinningBlocksLoader";
+import AppLayout from "@/components/layout/AppLayout";
 import { MetricSkeleton } from "@/components/loading/page-skeleton";
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";

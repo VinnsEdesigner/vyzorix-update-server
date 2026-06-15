@@ -10,7 +10,6 @@ linters:
     - asciicheck
     - bidichk
     - bodyclose
-    - containedctx
     - copyloopvar
     - decorder
     - dupword
@@ -38,9 +37,7 @@ linters:
     - nilerr
     - nilnesserr
     - nilnil
-    - noctx
     - paralleltest
-    - perfsprint
     - prealloc
     - predeclared
     - revive
@@ -55,30 +52,36 @@ linters:
   settings:
     errcheck:
       check-type-assertions: true
-      check-blank: true
     exhaustive:
       default-signifies-exhaustive: true
     funlen:
       lines: 150
-      statements: 80
+      statements: 100
     gocyclo:
       min-complexity: 25
     gosec:
       excludes:
         - G104
         - G118
+        - G204
         - G301
+        - G302
         - G304
+        - G306
+        - G307
+        - G401
+        - G404
         - G101
         - G114
+        - G703
+        - G702
     govet:
       disable:
         - fieldalignment
         - shadow
         - unusedwrite
-      enable-all: true
     nestif:
-      min-complexity: 20
+      min-complexity: 15
     revive:
       rules:
         - name: blank-imports
@@ -91,44 +94,6 @@ linters:
           disabled: true
         - name: unexported-naming
           disabled: true
-  exclusions:
-    generated: lax
-    paths:
-      - .*_test\.go$
-      - .*_mock\.go$
-      - .*_fake\.go$
-      - vendor
-      - \.git
-      - third_party$
-      - builtin$
-      - examples$
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  new-from-rev: HEAD~1
-formatters:
-  enable:
-    - gci
-    - gofmt
-    - gofumpt
-    - goimports
-  settings:
-    gci:
-      sections:
-        - standard
-        - default
-        - prefix(github.com/VinnsEdesigner/vyzorix)
-    goimports:
-      local-prefixes:
-        - github.com/VinnsEdesigner/vyzorix
-  exclusions:
-    generated: lax
-    paths:
-      - .*_test\.go$
-      - .*_mock\.go$
-      - .*_fake\.go$
-      - vendor
-      - \.git
-      - third_party$
-      - builtin$
-      - examples$

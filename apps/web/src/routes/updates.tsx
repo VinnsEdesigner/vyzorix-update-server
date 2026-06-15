@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import AppLayout from "@/components/layout/AppLayout";
 import { Zap, Download, ChevronDown } from "lucide-react";
 import type { ReactElement } from "react";
 import { toast } from "sonner";
 
+import AppLayout from "@/components/layout/AppLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
