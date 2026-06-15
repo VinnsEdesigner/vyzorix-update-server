@@ -8,8 +8,11 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -18,6 +21,7 @@ import (
 )
 
 // SSRProxy creates a reverse proxy to the Node.js SSR server with JWT validation.
+// Includes health monitoring and automatic fallback to SPA when SSR is unavailable.
 func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jwtSecret string) gin.HandlerFunc {
 	if !ssrConfig.EnableSSR {
 		return func(c *gin.Context) {
@@ -34,6 +38,46 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(ssrServerURL)
+
+	// Health monitoring state
+	var (
+		ssrHealthy   = true
+		ssrHealthyMu sync.RWMutex
+	)
+
+	// Start background health checker
+	go func() {
+		ticker := time.NewTicker(time.Duration(ssrConfig.SSRHealthCheckInterval) * time.Second)
+		defer ticker.Stop()
+
+		client := &http.Client{Timeout: 5 * time.Second}
+
+		for range ticker.C {
+			resp, err := client.Get(ssrConfig.SSRServerURL + "/health")
+			if err != nil || resp.StatusCode >= 500 {
+				ssrHealthyMu.Lock()
+				if ssrHealthy {
+					log.Warn("SSR server health check failed, will use SPA fallback", "err", err)
+					ssrHealthy = false
+				}
+				ssrHealthyMu.Unlock()
+				if err == nil {
+					_ = resp.Body.Close()
+				}
+				continue
+			}
+			_ = resp.Body.Close()
+
+			ssrHealthyMu.Lock()
+			wasHealthy := ssrHealthy
+			ssrHealthy = true
+			ssrHealthyMu.Unlock()
+
+			if !wasHealthy {
+				log.Info("SSR server recovered, resuming SSR mode")
+			}
+		}
+	}()
 
 	// Custom director to properly modify the request
 	originalDirector := proxy.Director
@@ -69,13 +113,34 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 		return nil
 	}
 
+	// serveFallback serves the static SPA with resilience
+	serveFallback := func(w http.ResponseWriter, req *http.Request) {
+		// Try multiple fallback files
+		fallbackFiles := []string{
+			filepath.Join(publicDir, "index.html"),
+			filepath.Join(publicDir, "landing.html"),
+		}
+
+		for _, fallbackPath := range fallbackFiles {
+			if _, err := os.Stat(fallbackPath); err == nil {
+				http.ServeFile(w, req, fallbackPath)
+				return
+			}
+		}
+
+		// Ultimate fallback - hardcoded minimal HTML
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte(`<!DOCTYPE html>
+<html><head><title>Service Temporarily Unavailable</title></head>
+<body><h1>Service Temporarily Unavailable</h1>
+<p>The server is starting up. Please refresh in a moment.</p></body></html>`))
+	}
+
 	// Custom error handler with graceful fallback to static HTML
 	proxy.ErrorHandler = func(w http.ResponseWriter, req *http.Request, err error) {
-		log.Error("SSR proxy error, falling back to static HTML", "err", err, "path", req.URL.Path)
-
-		// Fallback: serve the static index.html for SPA routing
-		fallbackPath := filepath.Join(publicDir, "index.html")
-		http.ServeFile(w, req, fallbackPath)
+		log.Error("SSR proxy error, falling back to SPA", "err", err, "path", req.URL.Path)
+		serveFallback(w, req)
 	}
 
 	return func(c *gin.Context) {
@@ -88,6 +153,18 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 			strings.HasPrefix(path, "/bin/") ||
 			strings.Contains(path, ".") {
 			c.Next()
+			return
+		}
+
+		// Check SSR health before proxying
+		ssrHealthyMu.RLock()
+		healthy := ssrHealthy
+		ssrHealthyMu.RUnlock()
+
+		if !healthy {
+			log.Debug("SSR unhealthy, using SPA fallback", "path", path)
+			serveFallback(c.Writer, c.Request)
+			c.Abort()
 			return
 		}
 
@@ -106,7 +183,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 		}
 		for _, public := range publicRoutes {
 			if strings.HasPrefix(path, public) {
-				log.Info("Proxying to SSR server (public route)", "path", path)
+				log.Debug("Proxying to SSR server (public route)", "path", path)
 				proxy.ServeHTTP(c.Writer, c.Request)
 				return
 			}
@@ -129,7 +206,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 			return
 		}
 
-		log.Info("SSR access granted", "path", path, "email", claims.Email)
+		log.Debug("SSR access granted", "path", path, "email", claims.Email)
 		proxy.ServeHTTP(c.Writer, c.Request)
 	}
 }

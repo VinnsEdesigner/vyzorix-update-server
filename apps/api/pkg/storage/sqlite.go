@@ -97,6 +97,7 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 			password_hash TEXT,
 			role TEXT NOT NULL DEFAULT 'operator',
 			google_id TEXT UNIQUE,
+				github_id TEXT UNIQUE,
 			email_verified INTEGER NOT NULL DEFAULT 0,
 			verification_sent_at INTEGER,
 			risk_warn INTEGER NOT NULL DEFAULT 50,
@@ -171,8 +172,10 @@ func (s *Store) migrateAuth(ctx context.Context) error {
 		return err
 	}
 	// Additive migrations for new columns
-	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`) //nolint:errcheck
-	s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN verification_sent_at INTEGER`)              //nolint:errcheck
+	//nolint:errcheck // ALTER TABLE is best-effort for schema migrations
+	_, _ = s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`)
+	_, _ = s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN verification_sent_at INTEGER`)
+	_, _ = s.db.ExecContext(ctx, `ALTER TABLE operators ADD COLUMN github_id TEXT`)
 	if err := s.migrateResendTracker(ctx); err != nil {
 		return err
 	}
@@ -789,6 +792,80 @@ func (s *Store) OperatorCount(ctx context.Context) (int, error) {
 	return n, err
 }
 
+// ListOperators retrieves all operators in the system.
+func (s *Store) ListOperators(ctx context.Context) ([]*models.Operator, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, email, name, password_hash, role, google_id, github_id, COALESCE(email_verified, 0),
+		        COALESCE(risk_warn, 50), COALESCE(risk_crit, 75),
+		        COALESCE(thermal_warn, 45), COALESCE(thermal_crit, 55),
+		        COALESCE(buffer_warn, 50), COALESCE(buffer_crit, 80),
+		        COALESCE(strict_hmac, 0), COALESCE(auto_reconnect, 1), COALESCE(notifications_enabled, 1),
+		        created_at, updated_at
+		 FROM operators ORDER BY created_at ASC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close() //nolint:errcheck
+
+	var operators []*models.Operator
+	for rows.Next() {
+		var r struct {
+			ID                   string
+			Email                string
+			Name                 string
+			PasswordHash         []byte
+			Role                 string
+			GoogleID             sql.NullString
+			GitHubID             sql.NullString
+			EmailVerified        int
+			RiskWarn             int
+			RiskCrit             int
+			ThermalWarn          int
+			ThermalCrit          int
+			BufferWarn           int
+			BufferCrit           int
+			StrictHmac           int
+			AutoReconnect        int
+			NotificationsEnabled int
+			CreatedAt            int64
+			UpdatedAt            int64
+		}
+		if err := rows.Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.GitHubID, &r.EmailVerified,
+			&r.RiskWarn, &r.RiskCrit, &r.ThermalWarn, &r.ThermalCrit, &r.BufferWarn, &r.BufferCrit,
+			&r.StrictHmac, &r.AutoReconnect, &r.NotificationsEnabled,
+			&r.CreatedAt, &r.UpdatedAt); err != nil {
+			return nil, err
+		}
+		op := &models.Operator{
+			ID:           r.ID,
+			Email:        r.Email,
+			Name:         r.Name,
+			PasswordHash: string(r.PasswordHash),
+			Role:         models.OperatorRole(r.Role),
+			GoogleID:     r.GoogleID.String,
+			GitHubID:     r.GitHubID.String,
+			Thresholds: models.Thresholds{
+				RiskWarn:    r.RiskWarn,
+				RiskCrit:    r.RiskCrit,
+				ThermalWarn: r.ThermalWarn,
+				ThermalCrit: r.ThermalCrit,
+				BufferWarn:  r.BufferWarn,
+				BufferCrit:  r.BufferCrit,
+			},
+			Client: models.ClientSettings{
+				StrictHmac:           r.StrictHmac != 0,
+				AutoReconnect:        r.AutoReconnect != 0,
+				NotificationsEnabled: r.NotificationsEnabled != 0,
+			},
+			EmailVerified: r.EmailVerified != 0,
+			CreatedAt:     time.UnixMilli(r.CreatedAt).UTC(),
+			UpdatedAt:     time.UnixMilli(r.UpdatedAt).UTC(),
+		}
+		operators = append(operators, op)
+	}
+	return operators, rows.Err()
+}
+
 // GetOperatorByEmail retrieves an operator by email address.
 func (s *Store) GetOperatorByEmail(ctx context.Context, email string) (*models.Operator, error) {
 	var r struct {
@@ -948,6 +1025,85 @@ func (s *Store) UpdateOperatorGoogleID(ctx context.Context, operatorID, googleID
 	_, err := s.db.ExecContext(ctx,
 		`UPDATE operators SET google_id = ?, updated_at = ? WHERE id = ?`,
 		googleID, now.UnixMilli(), operatorID,
+	)
+	return err
+}
+
+// GetOperatorByGitHubID retrieves an operator by GitHub OAuth subject ID.
+func (s *Store) GetOperatorByGitHubID(ctx context.Context, githubID string) (*models.Operator, error) {
+	var r struct {
+		ID                   string
+		Email                string
+		Name                 string
+		Role                 string
+		GitHubID             sql.NullString
+		GoogleID             sql.NullString
+		PasswordHash         []byte
+		EmailVerified        int
+		RiskWarn             int
+		RiskCrit             int
+		ThermalWarn          int
+		ThermalCrit          int
+		BufferWarn           int
+		BufferCrit           int
+		StrictHmac           int
+		AutoReconnect        int
+		NotificationsEnabled int
+		CreatedAt            int64
+		UpdatedAt            int64
+	}
+	err := s.db.QueryRowContext(ctx,
+		`SELECT id, email, name, password_hash, role, google_id, github_id, COALESCE(email_verified, 0),
+		        COALESCE(risk_warn, 50), COALESCE(risk_crit, 75),
+		        COALESCE(thermal_warn, 45), COALESCE(thermal_crit, 55),
+		        COALESCE(buffer_warn, 50), COALESCE(buffer_crit, 80),
+		        COALESCE(strict_hmac, 0), COALESCE(auto_reconnect, 1), COALESCE(notifications_enabled, 1),
+		        created_at, updated_at
+		 FROM operators WHERE github_id = ?`,
+		githubID,
+	).Scan(&r.ID, &r.Email, &r.Name, &r.PasswordHash, &r.Role, &r.GoogleID, &r.GitHubID, &r.EmailVerified,
+		&r.RiskWarn, &r.RiskCrit, &r.ThermalWarn, &r.ThermalCrit, &r.BufferWarn, &r.BufferCrit,
+		&r.StrictHmac, &r.AutoReconnect, &r.NotificationsEnabled,
+		&r.CreatedAt, &r.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &models.Operator{
+		ID:           r.ID,
+		Email:        r.Email,
+		Name:         r.Name,
+		PasswordHash: string(r.PasswordHash),
+		Role:         models.OperatorRole(r.Role),
+		GoogleID:     r.GoogleID.String,
+		GitHubID:     r.GitHubID.String,
+		Thresholds: models.Thresholds{
+			RiskWarn:    r.RiskWarn,
+			RiskCrit:    r.RiskCrit,
+			ThermalWarn: r.ThermalWarn,
+			ThermalCrit: r.ThermalCrit,
+			BufferWarn:  r.BufferWarn,
+			BufferCrit:  r.BufferCrit,
+		},
+		Client: models.ClientSettings{
+			StrictHmac:           r.StrictHmac != 0,
+			AutoReconnect:        r.AutoReconnect != 0,
+			NotificationsEnabled: r.NotificationsEnabled != 0,
+		},
+		EmailVerified: r.EmailVerified != 0,
+		CreatedAt:     time.UnixMilli(r.CreatedAt).UTC(),
+		UpdatedAt:     time.UnixMilli(r.UpdatedAt).UTC(),
+	}, nil
+}
+
+// UpdateOperatorGitHubID sets the github_id for an operator (after successful OAuth callback).
+func (s *Store) UpdateOperatorGitHubID(ctx context.Context, operatorID, githubID string) error {
+	now := time.Now().UTC()
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE operators SET github_id = ?, updated_at = ? WHERE id = ?`,
+		githubID, now.UnixMilli(), operatorID,
 	)
 	return err
 }

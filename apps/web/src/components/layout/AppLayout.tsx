@@ -28,7 +28,7 @@ const titles: Record<string, string> = {
 
 /**
  * AppLayout - Shared layout component for protected routes
- * 
+ *
  * Features:
  * - Sidebar navigation
  * - Auth check with redirect to login
@@ -38,7 +38,8 @@ const titles: Record<string, string> = {
  */
 export const AppLayout = ({ children, title }: AppLayoutProps): ReactElement => {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
-  const pageTitle = title ?? titles[pathname] ?? (pathname.startsWith("/settings") ? "Settings" : "Vyzorix");
+  const pageTitle =
+    title ?? titles[pathname] ?? (pathname.startsWith("/settings") ? "Settings" : "Vyzorix");
   const { state } = useStream();
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
