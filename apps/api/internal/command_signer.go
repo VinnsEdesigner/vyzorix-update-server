@@ -11,9 +11,8 @@ import (
 	"strconv"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
-
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
 )
 
 // CommandSigner handles HMAC signing of commands per DEVICE_REGISTRATION.md §5
@@ -127,15 +126,15 @@ func (s *CommandSigner) GenerateTimestampMs() int64 {
 	return time.Now().UnixMilli()
 }
 
-// HashSecret creates a bcrypt hash of the command secret for secure storage.
-// Cost factor is 12 (default bcrypt cost), providing strong protection against brute force.
+// HashSecret creates an Argon2id hash of the command secret for secure storage.
+// Uses OWASP 2023 recommended parameters for strong protection against brute force.
 func (s *CommandSigner) HashSecret(secret string) string {
-	hash, err := bcrypt.GenerateFromPassword([]byte(secret), 12)
+	hash, err := storage.HashSecret(secret)
 	if err != nil {
-		// Fall back to SHA256-based hash if bcrypt fails (should never happen)
+		// Fall back to SHA256-based hash if argon2id fails (should never happen)
 		return s.fallbackHash(secret)
 	}
-	return string(hash)
+	return hash
 }
 
 // fallbackHash provides a SHA256-based fallback if bcrypt fails.
@@ -153,14 +152,14 @@ func (s *CommandSigner) fallbackHash(secret string) string {
 	return saltHex + ":" + hex.EncodeToString(hash)
 }
 
-// VerifySecretHash verifies a secret against its bcrypt hash.
+// VerifySecretHash verifies a secret against its Argon2id hash.
 func (s *CommandSigner) VerifySecretHash(secret, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(secret))
-	if err != nil {
-		// Try fallback hash format for backward compatibility
-		return s.verifyFallbackHash(secret, hash)
+	err := storage.VerifySecret(secret, hash)
+	if err == nil {
+		return true
 	}
-	return true
+	// Try fallback hash format for backward compatibility
+	return s.verifyFallbackHash(secret, hash)
 }
 
 // verifyFallbackHash verifies using the old SHA256-based hash format.

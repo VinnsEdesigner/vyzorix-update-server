@@ -483,7 +483,7 @@ func (s *Server) requireHMAC() gin.HandlerFunc {
 // signature validation when enabled for that operator.
 func (s *Server) requireStrictHMAC() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		op := getOperatorFromContext(c)
+		op := GetOperatorFromContext(c)
 		if op == nil {
 			// No operator in context means JWT auth didn't run or failed
 			c.Next()
