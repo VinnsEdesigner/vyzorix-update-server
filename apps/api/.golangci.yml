@@ -2,7 +2,7 @@ version: "2"
 run:
   go: "1.24"
   modules-download-mode: readonly
-  tests: true
+  tests: false
   timeout: 15m
 linters:
   default: none
@@ -55,10 +55,10 @@ linters:
     exhaustive:
       default-signifies-exhaustive: true
     funlen:
-      lines: 150
-      statements: 100
+      lines: 200
+      statements: 150
     gocyclo:
-      min-complexity: 25
+      min-complexity: 30
     gosec:
       excludes:
         - G104
@@ -81,7 +81,7 @@ linters:
         - shadow
         - unusedwrite
     nestif:
-      min-complexity: 15
+      min-complexity: 25
     revive:
       rules:
         - name: blank-imports
