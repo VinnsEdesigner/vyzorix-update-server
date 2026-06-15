@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import AppLayout from "@/components/layout/AppLayout";
 import { AlertTriangle, AlertCircle, Info, Search } from "lucide-react";
 import { useMemo, useState, type ReactElement } from "react";
 
@@ -239,7 +240,11 @@ const AlertsPage = (): ReactElement => {
   );
 };
 
-export const Route = createFileRoute("/_app/alerts")({
+export const Route = createFileRoute("/alerts")({
   head: () => ({ meta: [{ title: "System alerts — Vyzorix" }] }),
-  component: AlertsPage,
+  component: () => (
+    <AppLayout title="Alerts">
+      <AlertsPage />
+    </AppLayout>
+  ),
 });

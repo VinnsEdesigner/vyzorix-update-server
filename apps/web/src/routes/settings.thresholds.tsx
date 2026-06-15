@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import AppLayout from "@/components/layout/AppLayout";
 import { useState, useEffect, useRef, type ReactElement } from "react";
 import { toast } from "sonner";
 
@@ -158,6 +159,10 @@ const ThresholdSettings = (): ReactElement => {
   );
 };
 
-export const Route = createFileRoute("/_app/settings/thresholds")({
-  component: ThresholdSettings,
+export const Route = createFileRoute("/settings/thresholds")({
+  component: () => (
+    <AppLayout title="Settings">
+      <ThresholdSettings />
+    </AppLayout>
+  ),
 });

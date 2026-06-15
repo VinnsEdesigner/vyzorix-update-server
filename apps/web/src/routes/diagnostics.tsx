@@ -198,7 +198,11 @@ const DiagnosticsPage = (): ReactElement => {
   );
 };
 
-export const Route = createFileRoute("/_app/diagnostics")({
+export const Route = createFileRoute("/diagnostics")({
   head: () => ({ meta: [{ title: "Diagnostics — Vyzorix" }] }),
-  component: DiagnosticsPage,
+  component: () => (
+    <AppLayout title="Diagnostics">
+      <DiagnosticsPage />
+    </AppLayout>
+  ),
 });
