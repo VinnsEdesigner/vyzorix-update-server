@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import AppLayout from "@/components/layout/AppLayout";
 import { Monitor, Moon, Sun } from "lucide-react";
 import type { JSX } from "react";
 import { useEffect, useState } from "react";
 
+import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";

@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import AppLayout from "@/components/layout/AppLayout";
 import { AlertTriangle, AlertCircle, Info, Search } from "lucide-react";
 import { useMemo, useState, type ReactElement } from "react";
 
+import AppLayout from "@/components/layout/AppLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

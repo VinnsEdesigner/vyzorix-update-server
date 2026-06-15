@@ -8,7 +8,7 @@ interface AuthLayoutProps {
 
 /**
  * AuthLayout - Shared layout component for authentication pages
- * 
+ *
  * Features:
  * - Wolf background image
  * - Centered content
@@ -27,7 +27,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps): ReactElement => {
     >
       {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-black/60" />
-      
+
       {/* Content */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4">
         {children}

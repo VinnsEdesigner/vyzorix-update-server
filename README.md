@@ -187,16 +187,115 @@ EMAIL_FROM=your@email.com
 ### 3. Run the Server
 
 ```bash
-# Backend only
-go run .
+# Using the automated startup script (recommended)
+cd apps/api
+./scripts/startup.sh
 
-# With frontend dev server (another terminal)
-cd src && npm install && npm run dev
+# Or manually:
+go run .
 ```
 
 ### 4. Access Dashboard
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## Automated Startup Script
+
+The `apps/api/scripts/startup.sh` script provides a comprehensive, fully-automated server startup experience:
+
+### Features
+
+| Feature | Description |
+|:--------|:-------------|
+| **Build Verification** | Automatically builds Go server if binary is missing |
+| **Asset Validation** | Counts and validates JS, CSS, HTML, and image assets |
+| **Out-of-Sync Detection** | Warns when `dist/client` and `public` are out of sync |
+| **Auto-Sync** | Automatically copies assets to public directory |
+| **Critical File Checks** | Validates presence of index.html, landing.html, manifest.json |
+| **SSR Auto-Start** | Go server automatically spawns SSR subprocess |
+| **Health Monitoring** | Verifies both Go and SSR servers are healthy |
+| **Browser Auto-Open** | Automatically opens dashboard in browser |
+
+### Usage
+
+```bash
+cd apps/api
+
+# Full startup with browser (default)
+./scripts/startup.sh
+
+# Start without auto-opening browser
+./scripts/startup.sh --no-browser
+
+# Development mode
+./scripts/startup.sh --dev
+
+# Production mode (default)
+./scripts/startup.sh --prod
+
+# Check only (validate without starting servers)
+./scripts/startup.sh --check-only
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|:---------|:--------|:------------|
+| `AUTO_OPEN_BROWSER` | `true` | Set to `false` to disable browser auto-open |
+| `BUILD_MODE` | `production` | Set to `development` for dev mode |
+
+### Example
+
+```bash
+# Disable browser auto-open
+AUTO_OPEN_BROWSER=false ./scripts/startup.sh
+
+# Development with custom settings
+AUTO_OPEN_BROWSER=false BUILD_MODE=development ./scripts/startup.sh
+```
+
+### Output
+
+```
++-------------------------------------------------------------+
+  |   _   _           _        ____                           |
+  |  |_| |_|   ___   | |__    |  _|  ___  ___                 |
+  |  | | | |  / _ \  | '_ \  | |_  / _ \/ __|                |
+  |  | |_| | | (_) | | |_) | |  _|  __/\__ \                |
+  |  |___|_|  \___/  |_.__/   |_|   \___||___/               |
+  |                                                              |
+  |              SERVER STARTUP v1.0.0                          |
+  +-------------------------------------------------------------+
+
+[STEP 1: Go Server Binary]
+  ✓ /path/to/vyzorix-server exists (35M bytes)
+
+[STEP 2: Web App Build]
+  ✓ dist/client exists (89 files)
+  > Assets found:
+    JS:  40 files
+    CSS: 2 files
+    HTML: 2 files
+    Images: 2 files
+
+[STEP 3: Asset Validation]
+  ✓ Assets in sync
+  ✓ index.html exists
+  ✓ landing.html exists
+  ✓ manifest.json exists
+
+[STEP 8: Starting Servers]
+  ✓ Go server started (PID: 12345)
+  ✓ Go server health check passed
+  ✓ SSR server health check passed
+
+[STARTUP COMPLETE]
+  Go Server:   http://localhost:3000
+  SSR Server:  http://localhost:3001
+  Health:      http://localhost:3000/health
+```
 
 ---
 
