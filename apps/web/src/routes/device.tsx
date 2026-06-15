@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import AppLayout from "@/components/layout/AppLayout";
 import { useState, useEffect, type ReactElement, type JSX } from "react";
 import { toast } from "sonner";
 
+import AppLayout from "@/components/layout/AppLayout";
 import { StatusBadge, type DeviceHealth } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

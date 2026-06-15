@@ -88,6 +88,8 @@ func (s *Server) Engine() *gin.Engine {
 	auth := public.Group("/v1/auth")
 	auth.GET("/google", s.jwtCtrl.GoogleLoginRedirect)     // triggers OAuth redirect
 	auth.GET("/google/callback", s.jwtCtrl.GoogleCallback) // OAuth callback from Google
+	auth.GET("/github", s.jwtCtrl.GitHubLoginRedirect)     // triggers OAuth redirect
+	auth.GET("/github/callback", s.jwtCtrl.GitHubCallback) // OAuth callback from GitHub
 	// Email verification and password reset (no auth required)
 	auth.POST("/verify-email", s.jwtCtrl.VerifyEmail)
 	auth.POST("/resend-verification", s.jwtCtrl.ResendVerification)
@@ -100,6 +102,8 @@ func (s *Server) Engine() *gin.Engine {
 	auth.PATCH("/me", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.UpdateName)
 	auth.PATCH("/me/settings", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.UpdateSettings)
 	auth.POST("/logout", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.Logout)
+	// Admin endpoints (super_admin only)
+	auth.GET("/admin/operators", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.ListOperators)
 
 	// Stricter rate limiting for sensitive auth endpoints (5 req/min to prevent brute force)
 	// Applied inline - both the general Limiter (100/min) AND AuthLimiter (5/min)

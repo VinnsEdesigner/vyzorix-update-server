@@ -2,10 +2,12 @@
 
 ## Overview
 
-The SSR implementation has been completed with the following stack:
+The SSR implementation is **HARDENED FOR PRODUCTION** with the following stack:
 - **H3/Nitro** - Already a TanStack Start dependency, replaces Express for lighter footprint
 - **TanStack Start SSR** - Native SSR support with hydration
 - **Vite** - Handles SSR in development, build in production
+
+**SSR is now the DEFAULT in all modes** (dev and production) with automatic fallback to SPA when SSR is unavailable.
 
 ## Architecture
 
@@ -198,21 +200,41 @@ The Go server will now proxy HTML requests to the Node.js SSR server.
 
 ### Environment Variables
 
+**SSR is now ENABLED by default.** To disable SSR (use pure SPA mode), set `SSR_ENABLED=false`.
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SSR_ENABLED` | `false` | Enable SSR mode (true/false) |
+| `SSR_ENABLED` | `true` | Enable SSR mode (true/false) - **DEFAULT IS NOW TRUE** |
 | `SSR_SERVER_URL` | `http://localhost:3001` | Node.js SSR server URL |
 | `SSR_PORT` | `3001` | Node.js SSR server port |
+| `SSR_AUTO_START` | `true` | Auto-start SSR subprocess by Go server |
+| `SSR_AUTO_BUILD` | `true` | Auto-build web app if not present |
+| `SSR_BUILD_TIMEOUT` | `60` | Timeout in seconds for SSR server startup |
+| `SSR_HEALTH_CHECK_INTERVAL` | `5` | Health check interval in seconds |
+| `SSR_RETRY_ATTEMPTS` | `3` | Number of retry attempts for SSR startup |
 
 ### SSR Config in Go
 
 ```go
 config.SSRConfig{
-    EnableSSR:    true,  // Enable SSR
-    SSRServerURL: "http://localhost:3001",
-    SSRPort:     "3001",
+    EnableSSR:              true,   // SSR enabled by default
+    SSRServerURL:           "http://localhost:3001",
+    SSRPort:                "3001",
+    SSRAutoStart:           true,   // Auto-start SSR subprocess
+    SSRAutoBuild:           true,   // Auto-build web app if needed
+    SSRBuildTimeout:        60,     // 60 second timeout
+    SSRHealthCheckInterval: 5,      // Health check every 5 seconds
+    SSRRetryAttempts:       3,      // Retry up to 3 times
 }
 ```
+
+### Hardening Features
+
+1. **Automatic Retry**: SSR server startup retries up to 3 times with exponential backoff
+2. **Health Monitoring**: Background health checks every 5 seconds with automatic SPA fallback
+3. **Graceful Recovery**: SSR automatically resumes when the SSR server recovers
+4. **SPA Fallback**: Multiple fallback files tried in order (index.html, landing.html)
+5. **Error Recovery**: SSR errors return user-friendly messages and log details
 
 ## SSR Proxy Logic
 
