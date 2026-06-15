@@ -327,9 +327,9 @@ func TestCommandSigner_HashSecret(t *testing.T) {
 
 	hash := signer.HashSecret(secret)
 
-	// Hash should be bcrypt format (starts with $2a$, $2b$, etc.)
-	if !strings.HasPrefix(hash, "$2") {
-		t.Error("HashSecret() should return bcrypt hash format")
+	// Hash should be Argon2id format (starts with $argon2id$)
+	if !strings.HasPrefix(hash, "$argon2id$") {
+		t.Error("HashSecret() should return Argon2id hash format")
 	}
 
 	// Hash should be verifiable
