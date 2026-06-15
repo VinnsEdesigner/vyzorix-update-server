@@ -57,7 +57,7 @@ export const AppSidebar = (): ReactElement => {
   const handleSignOut = async (): Promise<void> => {
     await signOut();
     toast.success("Signed out");
-    navigate({ to: "/auth/login", replace: true });
+    navigate({ to: "/login", replace: true });
   };
 
   return (
