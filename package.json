@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev --",
+    "dev": "cd apps/web && vite dev",
     "build": "turbo run build",
     "test": "turbo run test",
     "prelint": "pnpm --filter @vyzorix/config exec tsc --build --force",
