@@ -1,0 +1,108 @@
+# docker-compose.yml - Local Development & Testing
+#
+# Usage:
+#   docker-compose up -d          # Start in background
+#   docker-compose logs -f        # View logs
+#   docker-compose down          # Stop and remove
+#   docker-compose down -v       # Stop and remove volumes
+
+services:
+  vyzorix:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    container_name: vyzorix-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Required secrets - change these in production!
+      - TOKEN_SECRET=dev-token-secret-minimum-32-chars!!
+      - JWT_SECRET=dev-jwt-secret-minimum-32-chars!!
+      # SSR Configuration
+      - SSR_ENABLED=true
+      - SSR_AUTO_BUILD=false
+      # Application
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=/data/vyzorix.db
+      - VYZORIX_API_DIR=/data
+      - VYZORIX_BIN_DIR=/app/bin
+      - VYZORIX_PUBLIC_DIR=/app/public
+      # Security (disable for local dev if needed)
+      - ENFORCE_HMAC=true
+      # Optional: Google OAuth
+      # - GOOGLE_OAUTH_CLIENT_ID=your-client-id
+      # - GOOGLE_OAUTH_CLIENT_SECRET=your-client-secret
+      # Optional: Email (Resend)
+      # - RESEND_API_KEY=your-resend-api-key
+      # - EMAIL_FROM=noreply@example.com
+      # Optional: Firebase
+      # - FIREBASE_CREDENTIALS={"type":"service_account",...}
+    volumes:
+      - vyzorix-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - vyzorix-network
+
+  # Optional: Production-like setup with hardening
+  vyzorix-hardened:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    container_name: vyzorix-hardened
+    profiles:
+      - hardened
+    ports:
+      - "3001:3000"
+    environment:
+      - TOKEN_SECRET=dev-token-secret-minimum-32-chars!!
+      - JWT_SECRET=dev-jwt-secret-minimum-32-chars!!
+      - SSR_ENABLED=true
+      - SSR_AUTO_BUILD=false
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=/data/vyzorix.db
+    volumes:
+      - vyzorix-data-hardened:/data
+    # Security hardening options
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc:
+        soft: 512
+        hard: 512
+    mem_limit: 512m
+    memswap_limit: 512m
+    pids_limit: 100
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - vyzorix-network
+
+volumes:
+  vyzorix-data:
+    driver: local
+  vyzorix-data-hardened:
+    driver: local
+
+networks:
+  vyzorix-network:
+    driver: bridge
