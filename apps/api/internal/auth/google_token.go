@@ -1,5 +1,5 @@
 // Package security provides authentication utilities.
-package security
+package auth
 
 import (
 	"context"
@@ -59,7 +59,7 @@ func (v *GoogleTokenVerifier) Verify(token string) (*GoogleClaims, error) {
 		return nil, ErrInvalidGoogleToken
 	}
 
-	// Parse header to get key ID
+	// Parse header to get key ID.
 	var header struct {
 		Kid string `json:"kid"`
 		Alg string `json:"alg"`
@@ -76,18 +76,18 @@ func (v *GoogleTokenVerifier) Verify(token string) (*GoogleClaims, error) {
 		return nil, fmt.Errorf("%w: expected RS256, got %s", ErrInvalidGoogleToken, header.Alg)
 	}
 
-	// Get the public key
+	// Get the public key.
 	key, err := v.getKey(header.Kid)
 	if err != nil {
 		return nil, err
 	}
 
-	// Verify signature
+	// Verify signature.
 	if err := v.verifySignature(parts[0]+"."+parts[1], parts[2], key); err != nil {
 		return nil, fmt.Errorf("%w: signature verification failed", ErrInvalidGoogleToken)
 	}
 
-	// Parse claims
+	// Parse claims.
 	claimsBytes, err := base64RawURLDecode(parts[1])
 	if err != nil {
 		return nil, fmt.Errorf("%w: invalid claims", ErrInvalidGoogleToken)
@@ -97,7 +97,7 @@ func (v *GoogleTokenVerifier) Verify(token string) (*GoogleClaims, error) {
 		return nil, fmt.Errorf("%w: invalid claims", ErrInvalidGoogleToken)
 	}
 
-	// Verify claims
+	// Verify claims.
 	if err := v.verifyClaims(&claims); err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ type GoogleClaims struct {
 
 // getKey retrieves the public key for the given key ID.
 func (v *GoogleTokenVerifier) getKey(kid string) (*rsa.PublicKey, error) {
-	// Try cache first
+	// Try cache first.
 	v.keysMu.RLock()
 	if key, ok := v.keys[kid]; ok && time.Since(v.lastFetch) < v.cacheTTL {
 		v.keysMu.RUnlock()
@@ -129,9 +129,9 @@ func (v *GoogleTokenVerifier) getKey(kid string) (*rsa.PublicKey, error) {
 	}
 	v.keysMu.RUnlock()
 
-	// Refresh keys
+	// Refresh keys.
 	if err := v.refreshKeys(); err != nil {
-		// If refresh fails but we have a cached key, use it
+		// If refresh fails but we have a cached key, use it.
 		v.keysMu.RLock()
 		if key, ok := v.keys[kid]; ok {
 			v.keysMu.RUnlock()
@@ -217,17 +217,17 @@ func (v *GoogleTokenVerifier) verifySignature(signingInput, signature string, ke
 func (v *GoogleTokenVerifier) verifyClaims(claims *GoogleClaims) error {
 	now := time.Now().Unix()
 
-	// Check expiration
+	// Check expiration.
 	if claims.Exp < now {
 		return ErrGoogleTokenExpired
 	}
 
-	// Check issued at (allow 5 minute clock skew)
+	// Check issued at (allow 5 minute clock skew).
 	if claims.Iat > now+300 {
 		return fmt.Errorf("%w: token issued in the future", ErrInvalidGoogleToken)
 	}
 
-	// Check issuer
+	// Check issuer.
 	validIssuer := false
 	for _, iss := range googleIssuers {
 		if claims.Iss == iss {
@@ -239,7 +239,7 @@ func (v *GoogleTokenVerifier) verifyClaims(claims *GoogleClaims) error {
 		return ErrGoogleTokenBadIssuer
 	}
 
-	// Check audience
+	// Check audience.
 	if v.audience != "" && claims.Aud != v.audience {
 		return ErrGoogleTokenBadAudience
 	}
@@ -270,14 +270,14 @@ func parseRSAPublicKey(nStr, eStr string) (*rsa.PublicKey, error) {
 // base64RawURLDecode decodes a base64url string without padding.
 // Handles the URL-safe alphabet (- for +, _ for /) by converting to standard base64 first.
 func base64RawURLDecode(s string) ([]byte, error) {
-	// Replace URL-safe chars with standard base64 chars
+	// Replace URL-safe chars with standard base64 chars.
 	s = strings.ReplaceAll(s, "-", "+")
 	s = strings.ReplaceAll(s, "_", "/")
-	// Add padding if needed for standard base64
-	// len % 4 == 0: no padding
-	// len % 4 == 1: need 3 padding chars (invalid for base64, but we handle it)
-	// len % 4 == 2: need 2 padding chars
-	// len % 4 == 3: need 1 padding char
+	// Add padding if needed for standard base64.
+	// len % 4 == 0: no padding.
+	// len % 4 == 1: need 3 padding chars (invalid for base64, but we handle it).
+	// len % 4 == 2: need 2 padding chars.
+	// len % 4 == 3: need 1 padding char.
 	switch len(s) % 4 {
 	case 1:
 		s += "==="

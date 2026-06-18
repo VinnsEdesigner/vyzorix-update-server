@@ -1,5 +1,5 @@
 // Package security provides authentication utilities.
-package security
+package auth
 
 import (
 	"fmt"
@@ -30,21 +30,21 @@ var DefaultPasswordPolicy = PasswordPolicy{
 }
 
 // UserPasswordPolicy is a user-friendly password policy for personal account passwords.
-// This policy is designed for scenarios where users set passwords for their own
-// email accounts or personal services, which may have different restrictions than
+// This policy is designed for scenarios where users set passwords for their own.
+// email accounts or personal services, which may have different restrictions than.
 // system-generated passwords.
 //
-// Requirements:
-// - Minimum 12 characters (longer passwords provide security without requiring special chars)
-// - At least 1 uppercase letter
-// - At least 1 lowercase letter
-// - At least 1 number
+// Requirements:.
+// - Minimum 12 characters (longer passwords provide security without requiring special chars).
+// - At least 1 uppercase letter.
+// - At least 1 lowercase letter.
+// - At least 1 number.
 //
-// Note: Special characters are NOT required because:
-// 1. Many email providers don't allow special characters in passwords
-// 2. Mobile keyboards make special characters harder to type
-// 3. Password managers typically generate alphanumeric-only passwords
-// 4. Length is more important than special characters for security
+// Note: Special characters are NOT required because:.
+// 1. Many email providers don't allow special characters in passwords.
+// 2. Mobile keyboards make special characters harder to type.
+// 3. Password managers typically generate alphanumeric-only passwords.
+// 4. Length is more important than special characters for security.
 //
 // Users can still use special characters if they want, but they're not required.
 var UserPasswordPolicy = PasswordPolicy{

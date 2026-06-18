@@ -1,5 +1,5 @@
 // Package security provides authentication utilities.
-package security
+package auth
 
 import (
 	"net/http"
@@ -45,7 +45,7 @@ func NewRateLimiter(window time.Duration, maxRequests int) *RateLimiter {
 		ttl:    window,
 		max:    maxRequests,
 	}
-	// Start cleanup goroutine
+	// Start cleanup goroutine.
 	go rl.cleanup()
 	return rl
 }
@@ -59,7 +59,7 @@ func (rl *RateLimiter) Allow(key string) bool {
 	b, exists := rl.bucket[key]
 
 	if !exists || now.Sub(b.lastReset) >= rl.ttl {
-		// New or expired bucket
+		// New or expired bucket.
 		rl.bucket[key] = &tokenBucket{
 			tokens:    1,
 			lastReset: now,
@@ -147,7 +147,7 @@ func (rl *RateLimiter) Middleware(cfg RateLimitConfig) gin.HandlerFunc {
 			return
 		}
 
-		// Set rate limit headers for successful requests
+		// Set rate limit headers for successful requests.
 		remaining := rl.GetRemaining(key)
 		c.Header("X-RateLimit-Limit", strconv.Itoa(rl.max))
 		c.Header("X-RateLimit-Remaining", strconv.FormatInt(int64(remaining), 10))

@@ -38,7 +38,7 @@ func TestHub_Send_noClient(t *testing.T) {
 		DispatchID: "dispatch-001",
 	}
 
-	// Should return false when no client connected
+	// Should return false when no client connected.
 	if h.Send("nonexistent-device", frame) {
 		t.Error("Send() should return false for nonexistent device")
 	}
@@ -85,7 +85,7 @@ func TestHub_Run_contextCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	// Run should return immediately when context is cancelled
+	// Run should return immediately when context is cancelled.
 	done := make(chan struct{})
 	go func() {
 		h.Run(ctx)
@@ -94,7 +94,7 @@ func TestHub_Run_contextCancel(t *testing.T) {
 
 	select {
 	case <-done:
-		// Success - Run returned when context was cancelled
+		// Success - Run returned when context was cancelled.
 	case <-time.After(200 * time.Millisecond):
 		t.Error("Run() did not exit when context was cancelled")
 	}
@@ -143,10 +143,10 @@ func TestClient_SendChannel(t *testing.T) {
 		Send:     make(chan models.CommandFrame, 5),
 	}
 
-	// Should be able to send to channel
+	// Should be able to send to channel.
 	select {
 	case c.Send <- models.CommandFrame{Type: "test"}:
-		// Success
+		// Success.
 	default:
 		t.Error("failed to send to client channel")
 	}
@@ -158,15 +158,15 @@ func TestClient_SendChannel_full(t *testing.T) {
 		Send:     make(chan models.CommandFrame, 1), // Buffer of 1
 	}
 
-	// Fill the buffer
+	// Fill the buffer.
 	c.Send <- models.CommandFrame{Type: "first"}
 
-	// This should block since buffer is full
+	// This should block since buffer is full.
 	select {
 	case c.Send <- models.CommandFrame{Type: "second"}:
-		// If we get here immediately, channel buffer isn't working
+		// If we get here immediately, channel buffer isn't working.
 		t.Error("send should block on full channel")
 	case <-time.After(10 * time.Millisecond):
-		// Expected - send blocked
+		// Expected - send blocked.
 	}
 }

@@ -49,10 +49,10 @@ func (s *EmailService) SendVerificationEmail(ctx context.Context, to, name, toke
 		return errors.New("RESEND_API_KEY not configured")
 	}
 
-	// Use waitVerify with type=verify for registration verification
+	// Use waitVerify with type=verify for registration verification.
 	verifyURL := fmt.Sprintf("%s/auth/waitVerify?token=%s&type=verify", s.baseURL, token)
 
-	// Parse template
+	// Parse template.
 	html, err := s.parseTemplate(verificationEmailTemplate, EmailData{
 		Name:        name,
 		VerifyURL:   verifyURL,
@@ -71,11 +71,11 @@ func (s *EmailService) SendPasswordResetEmail(ctx context.Context, to, name, tok
 		return errors.New("RESEND_API_KEY not configured")
 	}
 
-	// Use waitVerify with type=reset so user lands on the verification page first
-	// which shows success state before redirecting to set-password
+	// Use waitVerify with type=reset so user lands on the verification page first.
+	// which shows success state before redirecting to set-password.
 	resetURL := fmt.Sprintf("%s/auth/waitVerify?token=%s&type=reset", s.baseURL, token)
 
-	// Parse template
+	// Parse template.
 	html, err := s.parseTemplate(passwordResetEmailTemplate, EmailData{
 		Name:       name,
 		ResetURL:   resetURL,
@@ -261,7 +261,7 @@ const passwordResetEmailTemplate = `<!DOCTYPE html>
                     <a href="{{.ResetURL}}" class="button">Reset Password</a>
                 </div>
                 <div class="warning">
-                    <strong>⚠️ Security Notice:</strong> This link expires in {{.ExpiryMins}} minutes and can only be used once. If you didn't request a password reset, please ignore this email.
+                    <strong> Security Notice:</strong> This link expires in {{.ExpiryMins}} minutes and can only be used once. If you didn't request a password reset, please ignore this email.
                 </div>
                 <p class="expiry">Link expires in {{.ExpiryMins}} minutes</p>
             </div>
@@ -303,7 +303,7 @@ const passwordChangedEmailTemplate = `<!DOCTYPE html>
                 <div class="logo">Vyzorix</div>
             </div>
             <div class="content">
-                <div class="checkmark">✓</div>
+                <div class="checkmark"></div>
                 <h1>Password changed successfully</h1>
                 <p>Hi {{.Name}},</p>
                 <p>Your password has been changed successfully. If you did not make this change, please contact support immediately.</p>

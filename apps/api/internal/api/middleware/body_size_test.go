@@ -60,7 +60,7 @@ func TestBodySizeLimit(t *testing.T) {
 			}
 
 			req := httptest.NewRequest(http.MethodPost, "/test", bytes.NewReader(body))
-			// Use contentLength if specified, otherwise use bodySize
+			// Use contentLength if specified, otherwise use bodySize.
 			if tt.contentLength > 0 {
 				req.ContentLength = tt.contentLength
 			} else {
