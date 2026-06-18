@@ -348,29 +348,29 @@ If Layer 3 passes, the route-forcing thesis is proven on hardware. All later lay
 
 ```
 Layer 0 (common)
-    │
-    ▼
+    
+    
 Layer 1 (data)         (depends on Layer 0; needs Android context)
-    │
-    ▼
+    
+    
 Layer 2 (audioengine)  (depends on Layer 0; independent of Layer 1)
-    │
-    ▼
+    
+    
 Layer 3 (route war)    (depends on 0, 1, 2 — THIS IS THE GO/NO-GO GATE)
-    │
-    ▼
+    
+    
 Layer 4 (capture)      (depends on 3)
-    │
-    ▼
+    
+    
 Layer 5 (dashboard)    (depends on 3; can technically start in parallel with 4)
-    │
-    ▼
+    
+    
 Layer 6 (diagnostics)  (depends on 3, 4, 5; instruments them)
-    │
-    ▼
+    
+    
 Layer 7 (updates)      (depends on 6 for crash recovery + dashboard)
-    │
-    ▼
+    
+    
 Layer 8 (C2 stack)     (depends on ALL — must be last)
 ```
 

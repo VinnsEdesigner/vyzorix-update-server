@@ -94,58 +94,58 @@ This document outlines the implementation plan for securing the Vyzorix Update S
 ### System Components
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Frontend (React)                        │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐ │
-│  │ Login Page  │  │ Signup Page │  │ Password Reset Flow     │ │
-│  └──────┬──────┘  └──────┬──────┘  └───────────┬─────────────┘ │
-└─────────┼────────────────┼────────────────────┼────────────────┘
-          │                │                    │
-          └────────────────┼────────────────────┘
-                          │ HTTP/HTTPS
-                          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Backend (Go + Gin)                          │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │                    Auth Controller                        │  │
-│  │  ┌──────────┐ ┌──────────┐ ┌───────────┐ ┌───────────┐  │  │
-│  │  │ Register  │ │ Login    │ │ Reset Pwd │ │ Verify    │  │  │
-│  │  └─────┬────┘ └────┬────┘ └─────┬─────┘ └─────┬─────┘  │  │
-│  └────────┼───────────┼───────────┼─────────────┼────────┘  │
-│           │           │           │             │            │
-│           ▼           ▼           ▼             ▼            │
-│  ┌────────────────────────────────────────────────────────┐   │
-│  │                   Rate Limiter                          │   │
-│  │            (In-memory or Redis-based)                  │   │
-│  └────────────────────────────────────────────────────────┘   │
-│                              │                                 │
-│                              ▼                                 │
-│  ┌────────────────────────────────────────────────────────┐   │
-│  │                     Store (SQLite)                     │   │
-│  │  ┌──────────┐ ┌───────────┐ ┌────────────────────┐   │   │
-│  │  │operators │ │email_tokens│ │password_reset_tokens│   │   │
-│  │  └──────────┘ └───────────┘ └────────────────────┘   │   │
-│  └────────────────────────────────────────────────────────┘   │
-│                              │                                 │
-│                              ▼                                 │
-│  ┌────────────────────────────────────────────────────────┐   │
-│  │              Email Service (Resend API)                │   │
-│  └────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+
+                         Frontend (React)                        
+       
+   Login Page     Signup Page    Password Reset Flow      
+       
+
+                                              
+          
+                           HTTP/HTTPS
+                          
+
+                    Backend (Go + Gin)                          
+    
+                      Auth Controller                          
+           
+     Register    Login      Reset Pwd   Verify        
+           
+    
+                                                          
+                                                          
+     
+                     Rate Limiter                             
+              (In-memory or Redis-based)                     
+     
+                                                               
+                                                               
+     
+                       Store (SQLite)                        
+            
+    operators  email_tokens password_reset_tokens      
+            
+     
+                                                               
+                                                               
+     
+                Email Service (Resend API)                   
+     
+
 ```
 
 ### Email Flow Diagram
 
 ```
 SIGNUP FLOW:
-─────────────────────────────────────────────────────────────
+
 User submits form → Create operator (unverified) → Generate token 
 → Store token (expires 24h) → Send verification email 
 → User clicks link → Validate token → Mark verified 
 → Redirect to dashboard
 
 PASSWORD RESET FLOW:
-─────────────────────────────────────────────────────────────
+
 User clicks "Forgot Password" → Enter email → Check if exists 
 → Generate reset token → Store (expires 1h) → Send reset email 
 → User clicks link → Validate token → Show new password form 
@@ -270,27 +270,27 @@ EMAIL_VERIFY_TOKEN_EXPIRY=86400  # 24 hours in seconds
 
 ```
 vyzorix-update-server/
-├── controllers/
-│   └── auth.go                    # MODIFIED: Add email verification endpoints
-├── models/
-│   └── auth.go                    # MODIFIED: Add request/response types for new flows
-├── security/
-│   ├── password.go                # NEW: Password validation and complexity checking
-│   ├── password_test.go           # NEW: Tests for password validation
-│   ├── ratelimit.go               # NEW: Rate limiting middleware
-│   └── ratelimit_test.go          # NEW: Tests for rate limiting
-├── services/
-│   └── email.go                   # NEW: Email service using Resend API
-│   └── email_test.go              # NEW: Tests for email service
-├── storage/
-│   ├── sqlite.go                  # MODIFIED: Add verification/reset token methods
-│   └── sqlite_test.go             # MODIFIED: Add tests for new methods
-├── config/
-│   └── config.go                  # MODIFIED: Add email and security config
-├── templates/                     # NEW: Email HTML templates
-│   ├── verification.html
-│   └── password-reset.html
-└── .env.example                   # MODIFIED: Add new environment variables
+ controllers/
+    auth.go                    # MODIFIED: Add email verification endpoints
+ models/
+    auth.go                    # MODIFIED: Add request/response types for new flows
+ security/
+    password.go                # NEW: Password validation and complexity checking
+    password_test.go           # NEW: Tests for password validation
+    ratelimit.go               # NEW: Rate limiting middleware
+    ratelimit_test.go          # NEW: Tests for rate limiting
+ services/
+    email.go                   # NEW: Email service using Resend API
+    email_test.go              # NEW: Tests for email service
+ storage/
+    sqlite.go                  # MODIFIED: Add verification/reset token methods
+    sqlite_test.go             # MODIFIED: Add tests for new methods
+ config/
+    config.go                  # MODIFIED: Add email and security config
+ templates/                     # NEW: Email HTML templates
+    verification.html
+    password-reset.html
+ .env.example                   # MODIFIED: Add new environment variables
 ```
 
 ### Existing Files to Modify
@@ -626,7 +626,7 @@ func (s *Store) DeleteEmailVerificationsByOperator(ctx context.Context, operator
             <a href="{{.resetURL}}" class="button">Reset Password</a>
         </p>
         <div class="warning">
-            <strong>[WARN]️ Security Notice:</strong> This link expires in {{.expiryMinutes}} minutes and can only be used once.
+            <strong>[WARN] Security Notice:</strong> This link expires in {{.expiryMinutes}} minutes and can only be used once.
         </div>
         <p>If you didn't request a password reset, please ignore this email. Your password won't be changed.</p>
         <div class="footer">

@@ -12,7 +12,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 )
 
-// ─── System Settings ─────────────────────────────────────────────────────────────
+//  System Settings 
 
 // GetSetting retrieves a setting value by key.
 func (s *Store) GetSetting(ctx context.Context, key string) (string, error) {
@@ -75,7 +75,7 @@ func (s *Store) SetHMACWindowSeconds(ctx context.Context, seconds int) error {
 	return s.SetSetting(ctx, "hmac_window_seconds", strconv.Itoa(seconds))
 }
 
-// ─── Password Reset Resend Tracker ─────────────────────────────────────────────
+//  Password Reset Resend Tracker 
 
 // GetPasswordResetResendTracker retrieves the resend tracker for an email hash.
 func (s *Store) GetPasswordResetResendTracker(ctx context.Context, emailHash string) (*models.PasswordResetResendTracker, error) {
@@ -168,7 +168,7 @@ func (s *Store) CleanupPasswordResetResendTrackers(ctx context.Context, maxAgeHo
 	return rows, nil
 }
 
-// ─── Email Verification ──────────────────────────────────────────────────────────
+//  Email Verification 
 
 // EmailVerification represents a pending email verification token.
 type EmailVerification struct {
@@ -230,7 +230,7 @@ func (s *Store) DeleteEmailVerificationsByOperator(ctx context.Context, operator
 	return err
 }
 
-// ─── Password Reset Tokens ──────────────────────────────────────────────────────
+//  Password Reset Tokens 
 
 // PasswordResetToken represents a pending password reset token.
 type PasswordResetToken struct {
@@ -309,7 +309,7 @@ func (s *Store) DeletePasswordResetTokensByOperator(ctx context.Context, operato
 	return err
 }
 
-// ─── Auth Sessions ──────────────────────────────────────────────────────────────
+//  Auth Sessions 
 
 // CreateSession inserts a new auth session.
 func (s *Store) CreateSession(ctx context.Context, sess *models.Session) error {

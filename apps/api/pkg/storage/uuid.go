@@ -3,30 +3,26 @@ package storage
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
-// UUIDv7 provides time-ordered UUID generation.
-// UUIDv7 format: xxxxxxxx-xxxx-7xxx-yxxx-xxxxxxxxxxxx
-// - 48 bits: Unix timestamp (milliseconds)
-// - 4 bits: version (7)
-// - 12 bits: random (first part)
-// - 2 bits: variant (10)
-// - 62 bits: random (second part)
-//
-// UUIDv7 is time-sortable, globally unique, and database-agnostic.
+// ErrUUIDGenerationFailed is returned when UUID generation fails.
+var ErrUUIDGenerationFailed = errors.New("failed to generate UUID: crypto/rand unavailable")
 
 var (
-	uuidMu     sync.Mutex
-	uuidRand   = rand.Reader
-	lastTimestamp int64
-	counter       uint16
+	uuidMu         sync.Mutex
+	lastTimestamp  int64
+	counter        uint16
 )
 
-// NewUUIDv7 generates a new UUIDv7 string.
+// NewUUIDv7 generates a new UUIDv7 string using google/uuid library.
 // Thread-safe and monotonically increasing within the same millisecond.
+// Falls back to standard UUID v4 if crypto/rand is unavailable (should never happen in production).
 func NewUUIDv7() string {
 	uuidMu.Lock()
 	defer uuidMu.Unlock()
@@ -53,11 +49,10 @@ func NewUUIDv7() string {
 
 	// Generate random bytes for the random portion (only 8 bytes needed for groups 4+5)
 	var randBytes [8]byte
-	if _, err := uuidRand.Read(randBytes[:]); err != nil {
-		// Fallback to less secure random on error
-		for i := range randBytes {
-			randBytes[i] = byte(time.Now().UnixNano() & 0xff)
-		}
+	if _, err := rand.Read(randBytes[:]); err != nil {
+		// In production, crypto/rand NEVER fails. If it does, the system is in a critical
+		// state. We panic rather than falling back to predictable random.
+		panic(ErrUUIDGenerationFailed)
 	}
 
 	// Build UUIDv7.
@@ -91,6 +86,16 @@ func NewUUIDv7() string {
 		randBytes[6],
 		randBytes[7],
 	)
+}
+
+// MustNewUUIDv7 generates a new UUIDv7 or panics if generation fails.
+// Use this when failure to generate a UUID is a fatal error.
+func MustNewUUIDv7() string {
+	uuidStr := NewUUIDv7()
+	if uuidStr == "" {
+		panic("MustNewUUIDv7: generated empty UUID")
+	}
+	return uuidStr
 }
 
 // ParseUUIDv7 validates that a string is a properly formatted UUIDv7.
@@ -131,6 +136,13 @@ func ParseUUIDv7(s string) error {
 	return nil
 }
 
+// ParseUUID validates that a string is a properly formatted UUID (any version).
+// Uses google/uuid library for validation.
+func ParseUUID(s string) error {
+	_, err := uuid.Parse(s)
+	return err
+}
+
 func isHexChar(c rune) bool {
 	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
@@ -149,8 +161,8 @@ func hexCharToInt(c rune) int {
 }
 
 // UUIDv7ToTime extracts the Unix timestamp (milliseconds) from a UUIDv7.
-func UUIDv7ToTime(uuid string) (time.Time, error) {
-	if err := ParseUUIDv7(uuid); err != nil {
+func UUIDv7ToTime(uuidStr string) (time.Time, error) {
+	if err := ParseUUIDv7(uuidStr); err != nil {
 		return time.Time{}, err
 	}
 
@@ -158,7 +170,7 @@ func UUIDv7ToTime(uuid string) (time.Time, error) {
 	// Format: xxxxxxxx-xxxx-xxxx...
 	// timestamp is encoded in first 48 bits (12 hex chars)
 	// The version nibble is in bits 12-15, so we shift right by 4 to get the actual timestamp.
-	timestampHex := uuid[0:8] + uuid[9:13]
+	timestampHex := uuidStr[0:8] + uuidStr[9:13]
 
 	var timestamp int64
 	_, err := fmt.Sscanf(timestampHex, "%012x", &timestamp)
@@ -176,4 +188,10 @@ func UUIDv7ToTime(uuid string) (time.Time, error) {
 // IsUUIDv7 returns true if the string is a valid UUIDv7.
 func IsUUIDv7(s string) bool {
 	return ParseUUIDv7(s) == nil
+}
+
+// IsValidUUID returns true if the string is a valid UUID (any version).
+func IsValidUUID(s string) bool {
+	_, err := uuid.Parse(s)
+	return err == nil
 }

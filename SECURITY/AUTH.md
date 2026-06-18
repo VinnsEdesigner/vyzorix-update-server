@@ -10,33 +10,33 @@ The incoming HTTP request is treated as hostile at every boundary. It must pass 
 
 ```text
   [ Incoming Request ]
-          │
-          ▼
-┌──────────────────────────────────┐
-│ Layer 1: Ingress & Rate Limiting │ ── (Drops bots & terminal attacks via HTTP 429)
-└──────────────────────────────────┘
-          │
-          ▼
-┌──────────────────────────────────┐
-│  Layer 2: Validation & Max Bytes │ ── (Limits request body RAM allocation to 1MB)
-└──────────────────────────────────┘
-          │
-          ▼
-┌──────────────────────────────────┐
-│  Layer 3: User Enumeration Block │ ── (Constant execution times, uniform HTTP 201)
-└──────────────────────────────────┘
-          │
-          ▼
-┌──────────────────────────────────┐
-│  Layer 4: Argon2id Memory Hard   │ ── (Protects database from offline brute-forcing)
-└──────────────────────────────────┘
-          │
-          ▼
-┌──────────────────────────────────┐
-│  Layer 5: Async Tokenless Queue  │ ── (Delegates email deliveries to background worker)
-└──────────────────────────────────┘
-          │
-          ▼
+          
+          
+
+ Layer 1: Ingress & Rate Limiting   (Drops bots & terminal attacks via HTTP 429)
+
+          
+          
+
+  Layer 2: Validation & Max Bytes   (Limits request body RAM allocation to 1MB)
+
+          
+          
+
+  Layer 3: User Enumeration Block   (Constant execution times, uniform HTTP 201)
+
+          
+          
+
+  Layer 4: Argon2id Memory Hard     (Protects database from offline brute-forcing)
+
+          
+          
+
+  Layer 5: Async Tokenless Queue    (Delegates email deliveries to background worker)
+
+          
+          
   [ SQLite Execution ]
 
 ```
@@ -420,15 +420,15 @@ To enforce this 5-layer pipeline without creating code complexity, implement thi
 
 ```text
 vyzorix-update-server/
-├── main.go                       # 1. Bootstrapper, SQLite WAL engine setup, Async thread spawn
-├── middleware/
-│   ├── ratelimit.go              # 2. Layer 1: Ingress Token Bucket rate throttling
-│   └── auth.go                   # 3. Security Core: HttpOnly JWT cookie parsing and verification
-└── user/
-    ├── model.go                  # 4. Layer 2: Sanitizers, structure bounds, and pattern regex
-    ├── handler.go                # 5. Layer 3: Payload decoding and constant generic API outputs
-    ├── service.go                # 6. Layer 4 & 5: Argon2id logic, random token generation, and job dispatching
-    └── repository.go             # 7. SQLite Adapter: Safe parameterized execution queries
+ main.go                       # 1. Bootstrapper, SQLite WAL engine setup, Async thread spawn
+ middleware/
+    ratelimit.go              # 2. Layer 1: Ingress Token Bucket rate throttling
+    auth.go                   # 3. Security Core: HttpOnly JWT cookie parsing and verification
+ user/
+     model.go                  # 4. Layer 2: Sanitizers, structure bounds, and pattern regex
+     handler.go                # 5. Layer 3: Payload decoding and constant generic API outputs
+     service.go                # 6. Layer 4 & 5: Argon2id logic, random token generation, and job dispatching
+     repository.go             # 7. SQLite Adapter: Safe parameterized execution queries
 
 ```
 

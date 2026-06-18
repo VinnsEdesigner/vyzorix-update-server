@@ -104,15 +104,15 @@ print_section() {
 
 # Print status
 print_ok() {
-    echo -e "  ${GREEN}✓${RESET} $1"
+    echo -e "  ${GREEN}${RESET} $1"
 }
 
 print_warn() {
-    echo -e "  ${YELLOW}⚠${RESET} $1"
+    echo -e "  ${YELLOW}${RESET} $1"
 }
 
 print_fail() {
-    echo -e "  ${RED}✗${RESET} $1"
+    echo -e "  ${RED}${RESET} $1"
 }
 
 print_info() {

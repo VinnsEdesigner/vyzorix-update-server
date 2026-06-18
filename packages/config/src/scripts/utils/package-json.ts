@@ -54,7 +54,7 @@ export async function updatePackageJson(answers: any): Promise<void> {
     // Write updated package.json
     await Bun.write(packageJsonPath, JSON.stringify(packageJson, null, 2));
     
-    console.log("  📝 Dependencies to install:");
+    console.log("   Dependencies to install:");
     if (newDeps.length > 0) {
       console.log("    Dependencies:", newDeps.join(", "));
     }
@@ -62,6 +62,6 @@ export async function updatePackageJson(answers: any): Promise<void> {
       console.log("    Dev Dependencies:", newDevDeps.join(", "));
     }
   } catch (error) {
-    console.error("  ⚠️  Could not update package.json:", error);
+    console.error("    Could not update package.json:", error);
   }
 }

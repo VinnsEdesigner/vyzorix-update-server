@@ -21,66 +21,66 @@ telemetry:
 
 ```text
        CONTROL PANEL WEB DASHBOARD (React)                 RENDER GO BACKEND SERVER
-                │                                                     │
-                │◄───────────────── (WebSocket / JSON) ──────────────►│
-                │                                                     │
-                │                                                     ▼
-                │                                            WebSocket Hub (hub.go)
-                │                                                     │
-                │                                                     ▼ (Persistent TCP socket)
-                │                                        WebSocketClientManager (Device client)
-                │                                                     │
-                │                                                     ▼ (Intercepts raw network frames)
-                │                                        WebSocketConnectionListener
-                │                                                     │
-                │                                                     ▼
-                │                                        WebSocketFrameHandler
-                │                                                     │
-                │                                                     ▼ (Validates HMAC signature)
-                │                                        CommandHmacValidator
-                │                                                     │
-                │                                                     ▼ (Directs validated JSON payloads)
-                │                                        RemoteCommandDispatcher
-                │                                                     │
-                │ 1. Executes routing adjustment                      ▼
-                │◄────────────────────────────────────────────────────┤
-                │                                                     │
-                │ 2. Compiles active telemetry                        ▼
-                │├───────────────────────────────────────────────────►│
-                │                                                     │
-                │ 3. WebSocketTelemetryDispatcher streams metrics     ▼
-                │├───────────────────────────────────────────────────►│
+                                                                     
+                 (WebSocket / JSON) 
+                                                                     
+                                                                     
+                                                            WebSocket Hub (hub.go)
+                                                                     
+                                                                      (Persistent TCP socket)
+                                                        WebSocketClientManager (Device client)
+                                                                     
+                                                                      (Intercepts raw network frames)
+                                                        WebSocketConnectionListener
+                                                                     
+                                                                     
+                                                        WebSocketFrameHandler
+                                                                     
+                                                                      (Validates HMAC signature)
+                                                        CommandHmacValidator
+                                                                     
+                                                                      (Directs validated JSON payloads)
+                                                        RemoteCommandDispatcher
+                                                                     
+                 1. Executes routing adjustment                      
+                
+                                                                     
+                 2. Compiles active telemetry                        
+                
+                                                                     
+                 3. WebSocketTelemetryDispatcher streams metrics     
+                
 ```
 
 ### 1.1 Command Signing Layer (inserted between server dispatch and device execution)
 
 ```text
 Dashboard POST /v1/command
-    │
-    ▼
+    
+    
 controllers/command.go
-    │
-    ▼ services/command_signer.go
+    
+     services/command_signer.go
     - Generate nonce (crypto/rand 16 bytes → hex)
     - Build canonical string: transactionId|deviceId|action|timestampMs|nonce|params
     - Compute HMAC-SHA256 using devices.command_secret from SQLite
     - Attach nonce + hmac fields to CommandFrame
-    │
-    ▼
+    
+    
 hub.ActiveHub.Send() → device WebSocket
-    │
-    ▼ (on device)
+    
+     (on device)
 WebSocketFrameHandler.kt
-    │
-    ▼ CommandHmacValidator.kt
+    
+     CommandHmacValidator.kt
     - Recompute HMAC from same canonical string
     - Constant-time compare
     - Check timestamp ±30s window
     - Check nonce not in NonceCache (replay protection)
     - Store nonce in NonceCache (5min TTL)
-    │
-    ├── VALID → RemoteCommandExecutor.kt → RemoteCommandDispatcher.kt → subsystem
-    └── INVALID → log to CrashTraceStore → send rejection result → do not execute
+    
+     VALID → RemoteCommandExecutor.kt → RemoteCommandDispatcher.kt → subsystem
+     INVALID → log to CrashTraceStore → send rejection result → do not execute
 ```
 
 ---
@@ -92,39 +92,39 @@ package installation process satisfying strict Android 13 Go Edition security:
 
 ```text
                                   UPDATECHECKER SCHEDULE
-                                             │
-                                             ▼
+                                             
+                                             
                                  UpdateStateMonitor (Wi-Fi?)
-                                             │
-                                             ▼ (Polls GET /api/v1/version)
+                                             
+                                              (Polls GET /api/v1/version)
                                      UpdateChecker
-                                             │
-                       ┌─────────────────────┴─────────────────────┐
-                       │                                           │
+                                             
+                       
+                                                                  
               Newer Version Available?                   No New Version?
-                       │                                           │
-                       ▼ (YES: DOWNLOAD)                           ▼ (NO: IDLE)
+                                                                  
+                        (YES: DOWNLOAD)                            (NO: IDLE)
          UpdateNotificationHandler                           Prune download cache
-                       │                                           │
-                       ▼ (Shows available notification)            ▼
+                                                                  
+                        (Shows available notification)            
                 User Taps [Download]                       Schedule next poll
-                       │
-                       ▼ (Launches FOREGROUND_SERVICE_DATA_SYNC)
+                       
+                        (Launches FOREGROUND_SERVICE_DATA_SYNC)
                UpdateDownloadService
-                       │
-                       ▼ (OkHttp downloads with Range headers)
+                       
+                        (OkHttp downloads with Range headers)
                  UpdateDownloader (caches chunk ranges to disk)
-                       │
-                       ▼ (Verify SHA-256 Checksum)
+                       
+                        (Verify SHA-256 Checksum)
                  UpdateStateStore (Marks DOWNLOAD_SUCCESS)
-                       │
-                       ▼ (FileProvider content:// URI)
+                       
+                        (FileProvider content:// URI)
                  UpdateInstaller (Intent.ACTION_INSTALL_PACKAGE)
-                       │
-                       ▼ (Mandatory user confirmation dialog)
+                       
+                        (Mandatory user confirmation dialog)
                     PackageInstaller (OS verification)
-                       │
-                       ▼ (Success: Restart process)
+                       
+                        (Success: Restart process)
           BootStateRestorer (Loads previous snap context)
 ```
 
@@ -137,12 +137,12 @@ payloads, validates HMAC signatures, and handles Wakelocks during background exe
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/fcm/
-├── VyzorixMessagingService.kt
-├── FcmCommandParser.kt
-├── FcmTokenManager.kt
-├── FcmNotificationGateway.kt
-├── FcmWakeLockHolder.kt
-└── FcmRegistrationWorker.kt
+ VyzorixMessagingService.kt
+ FcmCommandParser.kt
+ FcmTokenManager.kt
+ FcmNotificationGateway.kt
+ FcmWakeLockHolder.kt
+ FcmRegistrationWorker.kt
 ```
 
 ### 3.1 `VyzorixMessagingService.kt`
@@ -198,14 +198,14 @@ pending result queuing, and live telemetry streaming.
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/websocket/
-├── WebSocketClientManager.kt
-├── WebSocketConnectionListener.kt
-├── WebSocketFrameHandler.kt
-├── WebSocketKeepAliveEngine.kt
-├── WebSocketReconnectionPolicy.kt
-├── WebSocketTelemetryDispatcher.kt
-├── WebSocketSessionMetadata.kt
-└── PendingResultQueue.kt
+ WebSocketClientManager.kt
+ WebSocketConnectionListener.kt
+ WebSocketFrameHandler.kt
+ WebSocketKeepAliveEngine.kt
+ WebSocketReconnectionPolicy.kt
+ WebSocketTelemetryDispatcher.kt
+ WebSocketSessionMetadata.kt
+ PendingResultQueue.kt
 ```
 
 ### 4.1 `WebSocketClientManager.kt`
@@ -355,45 +355,45 @@ command path.
 
 ```text
 Render Server
-    │
-    ▼ (device offline / sleeping)
+    
+     (device offline / sleeping)
 services/fcm/notifier.go → Google FCM Cloud Gateway
-    │
-    ▼ (silent push delivered to sleeping device)
+    
+     (silent push delivered to sleeping device)
 VyzorixMessagingService.kt receives push intent
-    │
-    ▼
+    
+    
 FcmWakeLockHolder.kt grabs 20s CPU lock
 (20s because command payload detected — extended from 10s default)
-    │
-    ▼
+    
+    
 FcmCommandParser.kt deserializes CommandFrame
-    │
-    ▼
+    
+    
 CommandHmacValidator.kt validates HMAC signature
-    │
-    ├── INVALID → log rejection → release wake lock → stop
-    │
-    └── VALID
-        │
-        ▼
+    
+     INVALID → log rejection → release wake lock → stop
+    
+     VALID
+        
+        
 RemoteCommandExecutor.kt executes command (~1-5s)
-        │
-        ▼
+        
+        
 RemoteCommandResultDispatcher.kt attempts result dispatch
-        │
-        ├── WebSocketClientManager.isConnected() = true
-        │       → send result immediately via WebSocket
-        │
-        └── WebSocketClientManager.isConnected() = false
-                │
-                ▼ (WebSocket still reconnecting — TLS handshake + auth in progress)
+        
+         WebSocketClientManager.isConnected() = true
+               → send result immediately via WebSocket
+        
+         WebSocketClientManager.isConnected() = false
+                
+                 (WebSocket still reconnecting — TLS handshake + auth in progress)
             PendingResultQueue.enqueue(result)
-                │
-                ▼ (WebSocket reconnects — onOpen fires)
+                
+                 (WebSocket reconnects — onOpen fires)
             WebSocketClientManager flushes PendingResultQueue
-                │
-                ▼
+                
+                
             Result delivered to Render server → Dashboard updated
 ```
 
@@ -421,24 +421,24 @@ prevent unauthorized retrieval of diagnostic logs, state flags, or payment timel
 Vyzorix encrypts database tables transparently.
 
 ```text
-  ┌──────────────────────┐
-  │   Android Keystore   │  ← Cryptographically sealed inside hardware Secure Element (SoC)
-  └──────────┬───────────┘
-             │ getOrGenerateDatabaseKey()
-             ▼
-  ┌──────────────────────┐
-  │   SupportFactory     │  ← Dynamically unlocks SQLCipher database using PBKDF2 hash
-  └──────────┬───────────┘
-             │ Binds factory
-             ▼
-  ┌──────────────────────┐
-  │   DeviceSecretStore  │  ← command_secret encrypted with same Keystore key via TokenEncryptor
-  └──────────┬───────────┘
-             │ Decrypts on read
-             ▼
-  ┌──────────────────────┐
-  │  CommandHmacValidator│  ← Uses decrypted secret only within validation call scope
-  └──────────────────────┘
+  
+     Android Keystore     ← Cryptographically sealed inside hardware Secure Element (SoC)
+  
+              getOrGenerateDatabaseKey()
+             
+  
+     SupportFactory       ← Dynamically unlocks SQLCipher database using PBKDF2 hash
+  
+              Binds factory
+             
+  
+     DeviceSecretStore    ← command_secret encrypted with same Keystore key via TokenEncryptor
+  
+              Decrypts on read
+             
+  
+    CommandHmacValidator  ← Uses decrypted secret only within validation call scope
+  
 ```
 
 ## 7.1 SQLCipher Integration Details
@@ -454,14 +454,14 @@ transparent SQLite cryptor). See DOC_7_DATA_SECURITY_AND_PERSISTENCE.md for full
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/updates/
-├── UpdateChecker.kt
-├── UpdateDownloader.kt
-├── UpdateDownloadService.kt
-├── UpdateInstaller.kt
-├── UpdateConfig.kt
-├── UpdateStateMonitor.kt
-├── UpdateStateStore.kt
-└── UpdateNotificationHandler.kt
+ UpdateChecker.kt
+ UpdateDownloader.kt
+ UpdateDownloadService.kt
+ UpdateInstaller.kt
+ UpdateConfig.kt
+ UpdateStateMonitor.kt
+ UpdateStateStore.kt
+ UpdateNotificationHandler.kt
 ```
 
 See UPDATE_MECHANISM.md for full OTA endpoint contract, Render server setup, download

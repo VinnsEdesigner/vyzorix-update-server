@@ -71,16 +71,16 @@ async function syncDependency(
       
       if (updated) {
         await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
-        console.log(`  ✅ Updated ${pkg.name} (${depName}@${depVersion})`);
+        console.log(`   Updated ${pkg.name} (${depName}@${depVersion})`);
       }
     } catch (e) {
-      console.error(`  ⚠️  Failed to update ${pkgPath}:`, e);
+      console.error(`    Failed to update ${pkgPath}:`, e);
     }
   }
 }
 
 async function main() {
-  console.log("🔄 Syncing dependencies across workspace...\n");
+  console.log(" Syncing dependencies across workspace...\n");
   
   const rootDir = process.cwd();
   const packageJsonPath = join(rootDir, "package.json");
@@ -115,7 +115,7 @@ async function main() {
       allPackages.push(...packages);
     }
     
-    console.log(`📦 Found ${allPackages.length} packages\n`);
+    console.log(` Found ${allPackages.length} packages\n`);
     
     // Sync dependencies from root
     const depsToSync = {
@@ -124,13 +124,13 @@ async function main() {
     };
     
     for (const [name, version] of Object.entries(depsToSync)) {
-      console.log(`\n🔗 Syncing ${name}@${version}...`);
+      console.log(`\n Syncing ${name}@${version}...`);
       await syncDependency(allPackages, name, version);
     }
     
-    console.log("\n✅ Dependency sync complete!");
+    console.log("\n Dependency sync complete!");
   } catch (error) {
-    console.error("❌ Sync failed:", error);
+    console.error(" Sync failed:", error);
     process.exit(1);
   }
 }

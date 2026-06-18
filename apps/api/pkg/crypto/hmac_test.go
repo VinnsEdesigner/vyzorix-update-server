@@ -3,7 +3,7 @@ package security
 import (
 	"bytes"
 	"crypto/hmac"
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -212,7 +212,7 @@ func TestVerifier_ValidSignature(t *testing.T) {
 	body := []byte(`{"test":"data"}`)
 
 	// Build valid signature
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha512.New, []byte(secret))
 	mac.Write([]byte("POST\n/test\n" + nonce + "\n" + ts + "\n"))
 	mac.Write(body)
 	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
@@ -241,7 +241,7 @@ func TestVerifier_ValidSignatureWithEmptyBody(t *testing.T) {
 	ts := strconv.FormatInt(time.Now().UnixMilli(), 10)
 
 	// Build valid signature for empty body
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha512.New, []byte(secret))
 	mac.Write([]byte("GET\n/test\n" + nonce + "\n" + ts + "\n"))
 	mac.Write(nil)
 	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
@@ -270,7 +270,7 @@ func TestVerifier_ReplayRejected(t *testing.T) {
 	ts := strconv.FormatInt(time.Now().UnixMilli(), 10)
 
 	// Build valid signature
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha512.New, []byte(secret))
 	mac.Write([]byte("POST\n/test\n" + nonce + "\n" + ts + "\n"))
 	mac.Write(nil)
 	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
@@ -305,7 +305,7 @@ func TestVerifier_DifferentDeviceAllowsSameNonce(t *testing.T) {
 	nonce := "shared-nonce"
 	ts := strconv.FormatInt(time.Now().UnixMilli(), 10)
 
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha512.New, []byte(secret))
 	mac.Write([]byte("POST\n/test\n" + nonce + "\n" + ts + "\n"))
 	mac.Write(nil)
 	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
@@ -343,7 +343,7 @@ func TestReadAndVerifyHTTP_Success(t *testing.T) {
 	nonce := "nonce-1"
 	ts := strconv.FormatInt(time.Now().UnixMilli(), 10)
 
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha512.New, []byte(secret))
 	mac.Write([]byte("POST\n/test\n" + nonce + "\n" + ts + "\n"))
 	mac.Write(body)
 	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
@@ -374,7 +374,7 @@ func TestReadAndVerifyHTTP_RequestBodyConsumed(t *testing.T) {
 	nonce := "nonce-1"
 	ts := strconv.FormatInt(time.Now().UnixMilli(), 10)
 
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha512.New, []byte(secret))
 	mac.Write([]byte("POST\n/test\n" + nonce + "\n" + ts + "\n"))
 	mac.Write(body)
 	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
@@ -391,7 +391,7 @@ func TestReadAndVerifyHTTP_RequestBodyConsumed(t *testing.T) {
 	nonce = "nonce-2"
 	ts = strconv.FormatInt(time.Now().UnixMilli(), 10)
 
-	mac = hmac.New(sha256.New, []byte(secret))
+	mac = hmac.New(sha512.New, []byte(secret))
 	mac.Write([]byte("POST\n/test\n" + nonce + "\n" + ts + "\n"))
 	mac.Write(body)
 	sig = base64.StdEncoding.EncodeToString(mac.Sum(nil))
@@ -441,7 +441,7 @@ func TestVerifier_WithinWindowBoundary(t *testing.T) {
 	nonce := "nonce-1"
 	ts := strconv.FormatInt(withinWindow, 10)
 
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha512.New, []byte(secret))
 	mac.Write([]byte("POST\n/test\n" + nonce + "\n" + ts + "\n"))
 	mac.Write(nil)
 	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
@@ -469,7 +469,7 @@ func TestVerifier_NilNonces(t *testing.T) {
 	ts := strconv.FormatInt(time.Now().UnixMilli(), 10)
 	nonce := "nonce-1"
 
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha512.New, []byte(secret))
 	mac.Write([]byte("POST\n/test\n" + nonce + "\n" + ts + "\n"))
 	mac.Write(nil)
 	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
@@ -502,7 +502,7 @@ func _signRequest(secretHex, method, path, body, nonce, ts string) string {
 	if body != "" {
 		canonical += body
 	}
-	mac := hmac.New(sha256.New, key)
+	mac := hmac.New(sha512.New, key)
 	mac.Write([]byte(canonical))
 	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
 }

@@ -1,5 +1,5 @@
 // Package controllers provides HTTP handlers.
-package controllers
+package handlers
 
 import (
 	"context"
@@ -25,6 +25,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
 )
 
+// Ensure time package is used (needed for Duration conversions).
+
 type Server struct {
 	Notifier        fcm.Notifier
 	Log             *slog.Logger
@@ -33,33 +35,79 @@ type Server struct {
 	Limiter         *middleware.RateLimiter
 	AuthLimiter     *middleware.RateLimiter
 	jwtCtrl         *AuthController
+	mfaCtrl         *MFAHandler
 	originValidator *security.OriginValidator
 	upgrader        websocket.Upgrader
 	HMAC            hmac.Verifier
 	Config          config.Config
+	CSRFProtector   *middleware.CSRFProtector
+	Lockout         *middleware.Lockout
+	RevocationList  *security.RevocationList
+	Turnstile       *middleware.TurnstileVerifier
+	Signer          *middleware.SignatureVerifier
+	UserEnumEnabled bool
 }
 
 func New(log *slog.Logger, cfg config.Config, st *storage.Store, h *hub.Hub, notifier fcm.Notifier) *Server {
 	s := &Server{Log: log, Config: cfg, Store: st, Hub: h, Notifier: notifier}
+	s.mfaCtrl = NewMFAHandler(st)
 	s.HMAC = hmac.Verifier{
 		Window: cfg.HMACWindow,
 		Nonces: hmac.NewNonceCache(cfg.HMACWindow),
 		Secret: func(id string) (string, bool) { return st.Secret(context.Background(), id) },
 	}
 	s.Limiter = middleware.NewRateLimiter(100, time.Minute)
-	// Stricter rate limiter for auth endpoints: 5 requests per minute to prevent brute force
+	// Stricter rate limiter for auth endpoints: 5 requests per minute to prevent brute force.
 	s.AuthLimiter = middleware.NewRateLimiter(5, time.Minute)
 	s.jwtCtrl = NewAuthController(log, cfg, st)
 
-	// Initialize origin validator
+	// Initialize origin validator.
 	s.originValidator = security.NewOriginValidator(cfg.AllowedOrigins)
 	s.originValidator.SetLogger(log)
 
-	// Initialize WebSocket upgrader with proper origin checking
+	// Initialize WebSocket upgrader with proper origin checking.
 	s.upgrader = websocket.Upgrader{
 		CheckOrigin:      s.originValidator.CheckOrigin(),
 		HandshakeTimeout: 10 * time.Second,
 	}
+
+	// CSRF Protection.
+	csrfConfig := middleware.LoadCSRFConfig()
+	if csrfConfig.Enabled {
+		s.CSRFProtector = middleware.NewCSRFProtector(csrfConfig)
+	}
+
+	// Account Lockout (brute force protection).
+	lockoutConfig := middleware.LoadLockoutConfig()
+	s.Lockout = middleware.NewLockout(lockoutConfig)
+
+	// Session Revocation.
+	if middleware.LoadRevocationConfig().Enabled {
+		s.RevocationList = security.DefaultRevocationList()
+	}
+
+	// User Enumeration Prevention.
+	s.UserEnumEnabled = os.Getenv("USER_ENUM_PREVENTION_ENABLED") == "true"
+
+	// Turnstile Verification (bot protection for auth flows).
+	turnstileConfig := middleware.LoadTurnstileConfig()
+	s.Turnstile = middleware.NewTurnstileVerifier(turnstileConfig)
+
+	// Request Signing (API client authentication).
+	signingConfig := middleware.SigningConfig{
+		Enabled:           config.LoadSigningConfig().Enabled,
+		TimestampWindow:   time.Duration(config.LoadSigningConfig().TimestampWindow) * time.Second,
+		MaxCacheSize:      config.LoadSigningConfig().MaxCacheSize,
+		GracePeriod:       time.Duration(config.LoadSigningConfig().GracePeriod) * time.Second,
+		AllowUnsignedFallback: config.LoadSigningConfig().AllowUnsignedFallback,
+	}
+	// Client secret function that retrieves HMAC key from storage for request signing verification.
+	// The HMAC key is derived from the client secret (SHA512) and stored in api_clients table.
+	clientSecretFn := func(clientID string) (string, bool) {
+		hmacKey, ok := st.GetAPIClientHmacKey(context.Background(), clientID)
+		return hmacKey, ok
+	}
+	s.Signer = middleware.NewSignatureVerifier(signingConfig, clientSecretFn)
 
 	return s
 }
@@ -69,47 +117,104 @@ func (s *Server) Engine() *gin.Engine {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	r := gin.New()
-	r.Use(gin.Recovery())
+	r.Use(middleware.GinPanicRecovery(s.Log))
 	r.Use(middleware.RequestIDMiddleware())
 	r.Use(middleware.Logger(s.Log))
 	r.Use(middleware.CORSHandler(s.Config.AllowedOrigins))
 
-	// Security: limit request body size to prevent large payload attacks
+	// Security headers - CSP, HSTS, X-Frame-Options, etc.
+	if s.Config.Env == "production" {
+		r.Use(middleware.SecurityHeaders())
+	} else {
+		r.Use(middleware.SecurityHeadersRelaxed())
+	}
+
+	// Security: limit request body size to prevent large payload attacks.
 	r.Use(middleware.BodySizeLimit(middleware.DefaultBodySizeLimit))
 
-	// Multipart form limit (8MB for APK uploads)
+	// Multipart form limit (8MB for APK uploads).
 	r.MaxMultipartMemory = middleware.LargeBodySizeLimit
 
-	// Rate limit public endpoints to prevent abuse
+	// Rate limit public endpoints to prevent abuse.
 	public := r.Group("")
 	public.Use(s.Limiter.Middleware())
 
-	// Auth routes (no auth required for login/register; cookie auth required for /me and logout)
+	// Auth routes (no auth required for login/register; cookie auth required for /me and logout).
 	auth := public.Group("/v1/auth")
+
+	// User enumeration prevention.
+	if s.UserEnumEnabled {
+		auth.Use(middleware.PreventUserEnum())
+	}
+
+	// Account lockout middleware.
+	if s.Lockout != nil && s.Lockout.IsEnabled() {
+		auth.Use(middleware.LockoutMiddleware(s.Lockout))
+	}
+
+	// Session revocation check.
+	if s.RevocationList != nil {
+		auth.Use(middleware.AuthRevocationMiddleware(s.RevocationList))
+	}
+
+	// CSRF protection.
+	if s.CSRFProtector != nil && s.CSRFProtector.Config.Enabled {
+		auth.Use(s.CSRFProtector.Middleware())
+	}
+
 	auth.GET("/google", s.jwtCtrl.GoogleLoginRedirect)     // triggers OAuth redirect
 	auth.GET("/google/callback", s.jwtCtrl.GoogleCallback) // OAuth callback from Google
 	auth.GET("/github", s.jwtCtrl.GitHubLoginRedirect)     // triggers OAuth redirect
 	auth.GET("/github/callback", s.jwtCtrl.GitHubCallback) // OAuth callback from GitHub
-	// Email verification and password reset (no auth required)
+	// Email verification and password reset (no auth required).
 	auth.POST("/verify-email", s.jwtCtrl.VerifyEmail)
 	auth.POST("/resend-verification", s.jwtCtrl.ResendVerification)
 	auth.POST("/resend-token", s.jwtCtrl.ResendVerification)           // Alias for Library compatibility
 	auth.POST("/cancel-verification", s.jwtCtrl.CancelVerification)    // Cancel pending verification
 	auth.GET("/poll-verification", s.jwtCtrl.PollVerification)         // Poll verification status
 	auth.POST("/resend-password-reset", s.jwtCtrl.ResendPasswordReset) // Password reset with rate limiting
-	// /me, /logout require authentication via HttpOnly cookie
+	// /me, /logout require authentication via HttpOnly cookie.
 	auth.GET("/me", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.Me)
 	auth.PATCH("/me", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.UpdateName)
 	auth.PATCH("/me/settings", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.UpdateSettings)
 	auth.POST("/logout", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.Logout)
-	// Admin endpoints (super_admin only)
+	// Admin endpoints (super_admin only).
 	auth.GET("/admin/operators", CookieAuth(s.jwtCtrl.session, s.Store), s.jwtCtrl.ListOperators)
 
-	// Stricter rate limiting for sensitive auth endpoints (5 req/min to prevent brute force)
-	// Applied inline - both the general Limiter (100/min) AND AuthLimiter (5/min)
-	auth.POST("/login", s.AuthLimiter.Middleware(), s.jwtCtrl.Login)
-	auth.POST("/register", s.AuthLimiter.Middleware(), s.jwtCtrl.Register)
-	auth.POST("/forgot-password", s.AuthLimiter.Middleware(), s.jwtCtrl.ForgotPassword)
+	// Client credentials endpoints (authenticated users only).
+	authClient := auth.Group("/client-credentials")
+	authClient.Use(CookieAuth(s.jwtCtrl.session, s.Store))
+	authClient.POST("", s.jwtCtrl.GetClientCredentials)
+	authClient.GET("", s.jwtCtrl.ListClientCredentials)
+	authClient.GET("/:clientId", s.jwtCtrl.GetClientCredentialsDetail)
+	authClient.DELETE("/:clientId", s.jwtCtrl.RevokeClientCredentials)
+
+	// MFA endpoints (authenticated users only).
+	mfa := auth.Group("/mfa")
+	mfa.Use(CookieAuth(s.jwtCtrl.session, s.Store))
+	mfa.GET("/status", s.mfaCtrl.GetMFAStatus)
+	mfa.POST("/enroll", s.mfaCtrl.EnrollMFA)
+	mfa.POST("/verify-setup", s.mfaCtrl.VerifySetupMFA)
+	mfa.POST("/enable", s.mfaCtrl.EnableMFA)
+	mfa.POST("/disable", s.mfaCtrl.DisableMFA)
+	mfa.POST("/verify-backup", s.mfaCtrl.VerifyBackupCode)
+	mfa.POST("/regenerate-backup-codes", s.mfaCtrl.RegenerateBackupCodes)
+
+	// Admin client management endpoints (super_admin only).
+	adminClient := auth.Group("/admin/clients")
+	adminClient.Use(CookieAuth(s.jwtCtrl.session, s.Store))
+	adminClient.GET("", s.jwtCtrl.ListAllClients)
+	adminClient.GET("/:clientId", s.jwtCtrl.GetClient)
+	adminClient.PATCH("/:clientId", s.jwtCtrl.UpdateClient)
+	adminClient.DELETE("/:clientId", s.jwtCtrl.DeleteClient)
+	adminClient.POST("/:clientId/rotate-key", s.jwtCtrl.RotateClientKey)
+
+	// Stricter rate limiting for sensitive auth endpoints (5 req/min to prevent brute force).
+	// Applied inline - both the general Limiter (100/min) AND AuthLimiter (5/min).
+	// Turnstile bot protection applied to these sensitive endpoints.
+	auth.POST("/login", s.AuthLimiter.Middleware(), middleware.TurnstileMiddleware(s.Turnstile), s.jwtCtrl.Login)
+	auth.POST("/register", s.AuthLimiter.Middleware(), middleware.TurnstileMiddleware(s.Turnstile), s.jwtCtrl.Register)
+	auth.POST("/forgot-password", s.AuthLimiter.Middleware(), middleware.TurnstileMiddleware(s.Turnstile), s.jwtCtrl.ForgotPassword)
 
 	public.GET("/health", s.health)
 	public.GET("/healthz", s.health)
@@ -118,38 +223,41 @@ func (s *Server) Engine() *gin.Engine {
 	public.GET("/api/v1/apk/*name", s.apk)
 	public.GET("/bin/*name", s.bin)
 
-	// Static assets - serve directly from public directory
-	// This MUST be before NoRoute to prevent index.html fallback for assets
+	// Static assets - serve directly from public directory.
+	// This MUST be before NoRoute to prevent index.html fallback for assets.
 	r.Static("/assets", filepath.Join(s.Config.PublicDir, "assets"))
 
-	// Root path → native HTML landing page (no React needed)
-	// Explicit route so Gin doesn't need to resolve /*path wildcard for /
+	// Root path → native HTML landing page (no React needed).
+	// Explicit route so Gin doesn't need to resolve /*path wildcard for /.
 	public.GET("/", s.dashboard)
 
-	// Device routes - rate limited for public endpoints
+	// Device routes - rate limited for public endpoints.
 	public.POST("/v1/device/register", s.register)
 	public.GET("/v1/device/:id/status", s.status)
-	r.PATCH("/v1/device/:id/fcm-token", s.requireHMAC(), s.fcmToken)
-	r.POST("/v1/device/:id/command", CookieAuth(s.jwtCtrl.session, s.Store), s.requireStrictHMAC(), s.command)
-	r.DELETE("/v1/device/:id", s.requireHMAC(), s.deleteDevice)
 
-	// Dashboard routes — protected by cookie auth
+	// Protected device routes with request signing (when enabled).
+	// Request signing middleware is applied to these routes when REQUEST_SIGNING_ENABLED=true.
+	r.PATCH("/v1/device/:id/fcm-token", middleware.RequestSigningMiddleware(s.Signer), s.requireHMAC(), s.fcmToken)
+	r.POST("/v1/device/:id/command", middleware.RequestSigningMiddleware(s.Signer), CookieAuth(s.jwtCtrl.session, s.Store), s.requireStrictHMAC(), s.command)
+	r.DELETE("/v1/device/:id", middleware.RequestSigningMiddleware(s.Signer), s.requireHMAC(), s.deleteDevice)
+
+	// Dashboard routes — protected by cookie auth.
 	r.GET("/v1/dashboard/devices", CookieAuth(s.jwtCtrl.session, s.Store), s.dashboardDevices)
 
-	// WebSocket — HMAC or JWT
+	// WebSocket — HMAC or JWT.
 	r.GET("/v1/device/:id/stream", s.stream)
 
-	// SSR Proxy - if enabled, proxy HTML requests to Node.js SSR server
-	// This allows TanStack Start SSR to work with Go backend
+	// SSR Proxy - if enabled, proxy HTML requests to Node.js SSR server.
+	// This allows TanStack Start SSR to work with Go backend.
 	ssrConfig := config.LoadSSRConfig()
 	if ssrConfig.EnableSSR {
 		r.Use(middleware.SSRProxy(s.Log, ssrConfig, s.Config.PublicDir, s.Config.JWTSecret))
 	} else {
-		// Fallback: serve static HTML files (no SSR)
+		// Fallback: serve static HTML files (no SSR).
 		s.Log.Warn("SSR disabled - serving static HTML files only")
 
-		// SPA fallback — handle any non-API routes by serving the React app
-		// Use NoRoute to catch unmatched routes and serve the SPA
+		// SPA fallback — handle any non-API routes by serving the React app.
+		// Use NoRoute to catch unmatched routes and serve the SPA.
 		r.NoRoute(func(c *gin.Context) {
 			s.dashboard(c)
 		})
@@ -164,11 +272,11 @@ func (s *Server) health(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 	defer cancel()
 
-	// Check database connectivity with a simple query
+	// Check database connectivity with a simple query.
 	dbOk := false
 	var dbErr error
 	if err := s.Store.Ping(ctx); err == nil {
-		// Additional check: verify we can execute a query
+		// Additional check: verify we can execute a query.
 		if _, err := s.Store.Devices(ctx); err == nil {
 			dbOk = true
 		} else {
@@ -398,14 +506,14 @@ func (s *Server) stream(c *gin.Context) {
 func (s *Server) dashboard(c *gin.Context) {
 	path := c.Request.URL.Path
 
-	// / → serve the native static landing page (pure HTML, no React)
+	// / → serve the native static landing page (pure HTML, no React).
 	if path == "/" {
 		c.File(filepath.Join(s.Config.PublicDir, "landing.html"))
 		return
 	}
 
-	// All other non-API paths → serve the React SPA (index.html)
-	// TanStack Router inside the SPA handles client-side routing
+	// All other non-API paths → serve the React SPA (index.html).
+	// TanStack Router inside the SPA handles client-side routing.
 	clean := strings.TrimPrefix(filepath.Clean(path), "/")
 	if clean == "." || clean == "" {
 		clean = "index.html"
@@ -444,24 +552,6 @@ func (s *Server) dashboardDevices(c *gin.Context) {
 	c.JSON(200, map[string]any{"devices": out})
 }
 
-//nolint:unused
-func (s *Server) _dashboardAuth() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if s.Config.TokenSecret == "" && s.Config.Env != "production" {
-			c.Next()
-			return
-		}
-		auth := c.GetHeader("Authorization")
-		token := c.GetHeader("X-Vyzorix-Token")
-		if auth == "Bearer "+s.Config.TokenSecret || token == s.Config.TokenSecret {
-			c.Next()
-			return
-		}
-		c.JSON(401, map[string]string{"error": "unauthorized", "message": "missing or invalid dashboard token"})
-		c.Abort()
-	}
-}
-
 func (s *Server) requireHMAC() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		body, err := s.HMAC.ReadAndVerifyHTTP(c.Request)
@@ -479,22 +569,22 @@ func (s *Server) requireHMAC() gin.HandlerFunc {
 	}
 }
 
-// requireStrictHMAC checks the operator's strictHmac setting and enforces HMAC
+// requireStrictHMAC checks the operator's strictHmac setting and enforces HMAC.
 // signature validation when enabled for that operator.
 func (s *Server) requireStrictHMAC() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		op := GetOperatorFromContext(c)
 		if op == nil {
-			// No operator in context means JWT auth didn't run or failed
+			// No operator in context means JWT auth didn't run or failed.
 			c.Next()
 			return
 		}
-		// If operator has strictHmac disabled, skip HMAC validation
+		// If operator has strictHmac disabled, skip HMAC validation.
 		if !op.Client.StrictHmac {
 			c.Next()
 			return
 		}
-		// Operator has strictHmac enabled — validate the signature
+		// Operator has strictHmac enabled — validate the signature.
 		_, err := s.HMAC.ReadAndVerifyHTTP(c.Request)
 		if err != nil {
 			c.JSON(401, map[string]string{"error": "bad_hmac", "message": "strictHmac is enabled: " + err.Error()})
@@ -509,7 +599,7 @@ func (s *Server) requireStrictHMAC() gin.HandlerFunc {
 // This replaces JWT-based authentication with secure HttpOnly cookies.
 func CookieAuth(sessionManager *security.SessionManager, store *storage.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Read the session cookie
+		// Read the session cookie.
 		cookieValue, err := c.Cookie(security.CookieName)
 		if err != nil {
 			c.JSON(401, map[string]string{"error": "unauthorized", "message": "session cookie required"})
@@ -517,7 +607,7 @@ func CookieAuth(sessionManager *security.SessionManager, store *storage.Store) g
 			return
 		}
 
-		// Decrypt the operator ID from the cookie
+		// Decrypt the operator ID from the cookie.
 		operatorID, err := sessionManager.DecryptOperatorID(cookieValue)
 		if err != nil {
 			c.JSON(401, map[string]string{"error": "unauthorized", "message": "invalid session"})
@@ -525,7 +615,7 @@ func CookieAuth(sessionManager *security.SessionManager, store *storage.Store) g
 			return
 		}
 
-		// Validate operator exists
+		// Validate operator exists.
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 		defer cancel()
 		op, err := store.GetOperatorByID(ctx, operatorID)

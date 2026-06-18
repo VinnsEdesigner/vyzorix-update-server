@@ -30,6 +30,12 @@ var migrations = []Migration{
 	{10, "add_device_secret_hash", migrateAddDeviceSecretHash},
 	{11, "add_operators_github_id", migrateAddOperatorsGitHubID},
 	{12, "create_resend_tracker_table", migrateCreateResendTracker},
+	{13, "create_api_clients_table", migrateCreateAPIClients},
+	{14, "create_signing_keys_table", migrateCreateSigningKeys},
+	{15, "create_session_revocation_list", migrateCreateSessionRevocationList},
+	{16, "create_failed_login_attempts", migrateCreateFailedLoginAttempts},
+	{17, "create_account_lockouts", migrateCreateAccountLockouts},
+	{18, "create_audit_logs", migrateCreateAuditLogs},
 }
 
 // RunMigrations applies all pending migrations to the database.
@@ -349,6 +355,168 @@ func migrateCreateResendTracker(db *sql.DB) error {
 			created_at INTEGER NOT NULL,
 			updated_at INTEGER NOT NULL
 		)
+	`)
+	return err
+}
+
+func migrateCreateAPIClients(db *sql.DB) error {
+	_, err := db.ExecContext(context.Background(), `
+		CREATE TABLE IF NOT EXISTS api_clients (
+			id TEXT PRIMARY KEY,
+			operator_id TEXT NOT NULL,
+			name TEXT NOT NULL,
+			platform TEXT NOT NULL,
+			client_secret_hash TEXT NOT NULL,
+			allowed_origins TEXT,
+			allowed_paths TEXT,
+			rate_limit INTEGER NOT NULL DEFAULT 100,
+			is_active INTEGER NOT NULL DEFAULT 1,
+			request_count INTEGER NOT NULL DEFAULT 0,
+			last_request_at INTEGER,
+			created_at INTEGER NOT NULL,
+			updated_at INTEGER NOT NULL,
+			FOREIGN KEY (operator_id) REFERENCES operators(id) ON DELETE CASCADE
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_api_clients_operator ON api_clients(operator_id)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_api_clients_active ON api_clients(is_active)
+	`)
+	return err
+}
+
+func migrateCreateSigningKeys(db *sql.DB) error {
+	_, err := db.ExecContext(context.Background(), `
+		CREATE TABLE IF NOT EXISTS signing_keys (
+			id TEXT PRIMARY KEY,
+			client_id TEXT NOT NULL,
+			key_hash TEXT NOT NULL,
+			version INTEGER NOT NULL,
+			issued_at INTEGER NOT NULL,
+			expires_at INTEGER,
+			is_active INTEGER NOT NULL DEFAULT 1,
+			revoked_at INTEGER,
+			FOREIGN KEY (client_id) REFERENCES api_clients(id) ON DELETE CASCADE
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_signing_keys_client ON signing_keys(client_id)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_signing_keys_active ON signing_keys(client_id, is_active)
+	`)
+	return err
+}
+
+func migrateCreateSessionRevocationList(db *sql.DB) error {
+	_, err := db.ExecContext(context.Background(), `
+		CREATE TABLE IF NOT EXISTS session_revocation_list (
+			token_hash TEXT PRIMARY KEY,
+			revoked_at INTEGER NOT NULL,
+			reason TEXT
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_revocation_token ON session_revocation_list(token_hash)
+	`)
+	return err
+}
+
+func migrateCreateFailedLoginAttempts(db *sql.DB) error {
+	_, err := db.ExecContext(context.Background(), `
+		CREATE TABLE IF NOT EXISTS failed_login_attempts (
+			id TEXT PRIMARY KEY,
+			operator_id TEXT NOT NULL,
+			ip_address TEXT NOT NULL,
+			attempted_at INTEGER NOT NULL
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_failed_attempts_operator ON failed_login_attempts(operator_id)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_failed_attempts_ip ON failed_login_attempts(ip_address)
+	`)
+	return err
+}
+
+func migrateCreateAccountLockouts(db *sql.DB) error {
+	_, err := db.ExecContext(context.Background(), `
+		CREATE TABLE IF NOT EXISTS account_lockouts (
+			operator_id TEXT PRIMARY KEY,
+			locked_until INTEGER NOT NULL,
+			reason TEXT,
+			created_at INTEGER NOT NULL
+		)
+	`)
+	return err
+}
+
+func migrateCreateAuditLogs(db *sql.DB) error {
+	_, err := db.ExecContext(context.Background(), `
+		CREATE TABLE IF NOT EXISTS audit_logs (
+			id TEXT PRIMARY KEY,
+			operator_id TEXT,
+			action TEXT NOT NULL,
+			resource_type TEXT,
+			resource_id TEXT,
+			ip_address TEXT,
+			user_agent TEXT,
+			metadata TEXT,
+			result TEXT NOT NULL,
+			created_at INTEGER NOT NULL
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_audit_operator ON audit_logs(operator_id)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action)
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at DESC)
 	`)
 	return err
 }
