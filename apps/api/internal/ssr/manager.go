@@ -29,25 +29,25 @@ type Manager struct {
 // NewManager creates a new SSR manager with the given configuration.
 // If webDir or publicDir is empty, they will be auto-discovered.
 func NewManager(cfg config.SSRConfig, logger *slog.Logger, webDir, publicDir string) *Manager {
-	// Discover web directory if not provided
+	// Discover web directory if not provided.
 	if webDir == "" {
 		webDir = discoverWebDir()
 	}
 
-	// Calculate public dir relative to api
+	// Calculate public dir relative to api.
 	if publicDir == "" {
 		wd, _ := os.Getwd()
 		publicDir = filepath.Join(wd, "public")
 	}
 
-	// Discover SSR script path
+	// Discover SSR script path.
 	ssrScript := filepath.Join(filepath.Dir(os.Args[0]), "ssr-server.js")
-	//nolint:gosec // G703 - path is validated and falls back to safe default
+	//nolint:gosec // G703 - path is validated and falls back to safe default.
 	if _, err := os.Stat(ssrScript); os.IsNotExist(err) {
 		ssrScript = "./ssr-server.js"
 	}
 
-	// Create internal config for process manager
+	// Create internal config for process manager.
 	internalCfg := Config{
 		EnableSSR:              cfg.EnableSSR,
 		SSRServerURL:           cfg.SSRServerURL,
@@ -76,22 +76,22 @@ func NewManager(cfg config.SSRConfig, logger *slog.Logger, webDir, publicDir str
 
 // discoverWebDir attempts to find the web app directory.
 func discoverWebDir() string {
-	// Try common locations relative to executable
+	// Try common locations relative to executable.
 	exeDir, _ := os.Executable()
 	if exeDir != "" {
-		// Try ../web from api directory
+		// Try ../web from api directory.
 		webDir := filepath.Join(filepath.Dir(exeDir), "..", "web")
 		if _, err := os.Stat(webDir); err == nil {
 			return webDir
 		}
 	}
 
-	// Try ./web from current directory
+	// Try ./web from current directory.
 	if _, err := os.Stat("./web"); err == nil {
 		return "./web"
 	}
 
-	// Fallback to ./web
+	// Fallback to ./web.
 	return "./web"
 }
 
@@ -141,7 +141,7 @@ func (m *Manager) Start() error {
 		"retries", m.config.SSRRetryAttempts,
 	)
 
-	// Auto-build if enabled
+	// Auto-build if enabled.
 	if m.config.SSRAutoBuild {
 		if err := m.builder.BuildIfNeeded(); err != nil {
 			m.logger.Error("SSR auto-build failed", "err", err)
@@ -152,14 +152,14 @@ func (m *Manager) Start() error {
 		}
 	}
 
-	// Start process if enabled
+	// Start process if enabled.
 	if m.config.SSRAutoStart {
 		if err := m.process.Start(m.ssrScript); err != nil {
 			m.logger.Error("SSR process start failed", "err", err)
 			return err
 		}
 
-		// Start monitoring with auto-restart callback
+		// Start monitoring with auto-restart callback.
 		ctx, cancel := context.WithCancel(context.Background())
 		m.monitor.SetCancel(cancel)
 		m.monitor.SetRestartCallback(func() {
@@ -168,7 +168,7 @@ func (m *Manager) Start() error {
 				m.mu.RUnlock()
 				return
 			}
-			// Restart the process (stops existing and starts fresh)
+			// Restart the process (stops existing and starts fresh).
 			m.logger.Info("Auto-restarting SSR process...")
 			if err := m.process.Restart(m.ssrScript); err != nil {
 				m.logger.Error("SSR auto-restart failed", "err", err)
@@ -191,10 +191,10 @@ func (m *Manager) Stop() error {
 	m.logger.Info("Stopping SSR manager")
 	m.stopped = true
 
-	// Stop monitoring first (this will cancel the context)
+	// Stop monitoring first (this will cancel the context).
 	m.monitor.Stop()
 
-	// Stop process
+	// Stop process.
 	if err := m.process.Stop(); err != nil {
 		m.logger.Error("SSR process stop failed", "err", err)
 		return err

@@ -41,27 +41,27 @@ A device on the server transitions through these states. The state is stored in 
 
 ```
             POST /v1/device/register
-                       │
-                       ▼
-                 ┌───────────┐
-                 │ REGISTERED│  initial state after secret generation
-                 └─────┬─────┘
-                       │
+                       
+                       
+                 
+                  REGISTERED  initial state after secret generation
+                 
+                       
             WSS connect or first telemetry
-                       │
-                       ▼
-                 ┌───────────┐    WSS disconnect    ┌───────────┐
-                 │  ONLINE   │ ───────────────────► │  OFFLINE  │
-                 │           │ ◄─────────────────── │           │
-                 └─────┬─────┘    WSS reconnect     └─────┬─────┘
-                       │                                   │
-                       │      DELETE /v1/device/:id        │
-                       └─────────────────┬─────────────────┘
-                                         ▼
-                                   ┌─────────────┐
-                                   │DEREGISTERED │  terminal state;
-                                   │             │  commands rejected
-                                   └─────────────┘
+                       
+                       
+                     WSS disconnect    
+                   ONLINE       OFFLINE  
+                                         
+                     WSS reconnect     
+                                                          
+                             DELETE /v1/device/:id        
+                       
+                                         
+                                   
+                                   DEREGISTERED   terminal state;
+                                                  commands rejected
+                                   
 ```
 
 Transitions:

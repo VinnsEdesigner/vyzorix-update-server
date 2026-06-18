@@ -1,4 +1,4 @@
-package controllers
+package handlers
 
 import (
 	"bytes"
@@ -117,7 +117,7 @@ func TestDeviceController_DeviceStatus_JSON(t *testing.T) {
 }
 
 func TestDeviceController_Register_InvalidJSON(t *testing.T) {
-	// Test that invalid JSON is handled gracefully
+	// Test that invalid JSON is handled gracefully.
 	data := []byte(`{invalid json}`)
 
 	var req models.RegisterRequest
@@ -128,7 +128,7 @@ func TestDeviceController_Register_InvalidJSON(t *testing.T) {
 }
 
 func TestDeviceController_Register_MissingFields(t *testing.T) {
-	// Only provide some fields
+	// Only provide some fields.
 	data := []byte(`{"deviceId": "device-001"}`)
 
 	var req models.RegisterRequest
@@ -139,7 +139,7 @@ func TestDeviceController_Register_MissingFields(t *testing.T) {
 	if req.DeviceID != "device-001" {
 		t.Errorf("DeviceID = %s, want device-001", req.DeviceID)
 	}
-	// Other fields should be zero values
+	// Other fields should be zero values.
 	if req.FCMToken != "" {
 		t.Errorf("FCMToken = %s, want empty", req.FCMToken)
 	}

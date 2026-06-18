@@ -100,33 +100,33 @@
 
 ```
 [Incoming Request]
-        │
-        ▼
-┌───────────────────────────────┐
-│ L1: Ingress Filtering        │ ← Bots, missing User-Agent, known IPs
-└───────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────┐
-│ L2: Memory Ceiling (1MB)     │ ← http.MaxBytesReader
-└───────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────┐
-│ L3: Attestation (Turnstile)   │ ← Cloudflare verification
-└───────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────┐
-│ L4: Rate Limiting            │ ← Per-session throttle
-└───────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────┐
-│ L5: DOA Ownership Check     │ ← Query includes user_id
-└───────────────────────────────┘
-        │
-        ▼
+        
+        
+
+ L1: Ingress Filtering         ← Bots, missing User-Agent, known IPs
+
+        
+        
+
+ L2: Memory Ceiling (1MB)      ← http.MaxBytesReader
+
+        
+        
+
+ L3: Attestation (Turnstile)    ← Cloudflare verification
+
+        
+        
+
+ L4: Rate Limiting             ← Per-session throttle
+
+        
+        
+
+ L5: DOA Ownership Check      ← Query includes user_id
+
+        
+        
    [Database Execution]
 ```
 
@@ -174,33 +174,33 @@
 
 ```
 [Registration/Login Request]
-        │
-        ▼
-┌───────────────────────────────┐
-│ L1: Rate Limiting            │ ← Token bucket per IP
-└───────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────┐
-│ L2: Input Validation (1MB)     │ ← MaxBytesReader + Zod
-└───────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────┐
-│ L3: User Enum Prevention     │ ← Constant-time 201 response
-└───────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────┐
-│ L4: Argon2id Hashing         │ ← 64MB, 1 iter, 4 parallel
-└───────────────────────────────┘
-        │
-        ▼
-┌───────────────────────────────┐
-│ L5: Async Email Queue        │ ← Background SMTP worker
-└───────────────────────────────┘
-        │
-        ▼
+        
+        
+
+ L1: Rate Limiting             ← Token bucket per IP
+
+        
+        
+
+ L2: Input Validation (1MB)      ← MaxBytesReader + Zod
+
+        
+        
+
+ L3: User Enum Prevention      ← Constant-time 201 response
+
+        
+        
+
+ L4: Argon2id Hashing          ← 64MB, 1 iter, 4 parallel
+
+        
+        
+
+ L5: Async Email Queue         ← Background SMTP worker
+
+        
+        
    [Database Commit]
 ```
 

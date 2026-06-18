@@ -216,49 +216,49 @@ Implement an **advanced WebSocket communication platform** with:
 
 ```
 apps/api/internal/ws/
-├── message_queue.go           # Message queue implementation
-├── message_queue_test.go
-├── compression.go             # Message compression
-├── compression_test.go
-├── rate_limiter.go            # WebSocket rate limiting
-└── rate_limiter_test.go
+ message_queue.go           # Message queue implementation
+ message_queue_test.go
+ compression.go             # Message compression
+ compression_test.go
+ rate_limiter.go            # WebSocket rate limiting
+ rate_limiter_test.go
 
 apps/api/pkg/storage/
-├── message_queue.go           # Database-backed queue
-└── message_queue_test.go
+ message_queue.go           # Database-backed queue
+ message_queue_test.go
 
 apps/api/internal/api/handlers/
-├── telemetry_history.go       # Historical data endpoints
-└── telemetry_history_test.go
+ telemetry_history.go       # Historical data endpoints
+ telemetry_history_test.go
 
 apps/web/src/
-├── websocket/
-│   ├── enhanced-client.ts     # Enhanced WebSocket client
-│   ├── telemetry-cache.ts     # Client-side cache
-│   └── connection-monitor.ts # Connection status
-└── components/
-    └── DeviceTelemetry.tsx     # Enhanced telemetry component
+ websocket/
+    enhanced-client.ts     # Enhanced WebSocket client
+    telemetry-cache.ts     # Client-side cache
+    connection-monitor.ts # Connection status
+ components/
+     DeviceTelemetry.tsx     # Enhanced telemetry component
 ```
 
 ### Files to Update (8 files)
 
 ```
 apps/api/internal/ws/
-├── hub.go                     # Add queue support, filtering
-├── client.go                  # Add compression, reconnection
-└── websocket_handler.go       # Add rate limiting
+ hub.go                     # Add queue support, filtering
+ client.go                  # Add compression, reconnection
+ websocket_handler.go       # Add rate limiting
 
 apps/api/internal/fcm/
-├── notifier.go                # Add retry logic
-└── fcm.go                     # Add metrics
+ notifier.go                # Add retry logic
+ fcm.go                     # Add metrics
 
 apps/api/pkg/models/
-├── updater.go                 # Add new message types
-└── command_frame.go           # Add queue metadata
+ updater.go                 # Add new message types
+ command_frame.go           # Add queue metadata
 
 apps/web/src/
-├── api-client.ts              # Update WebSocket usage
-└── App.tsx                    # Add connection status
+ api-client.ts              # Update WebSocket usage
+ App.tsx                    # Add connection status
 ```
 
 ---
@@ -1473,26 +1473,26 @@ func (c *Client) SendSilentWake(ctx context.Context, wake SilentWake) error {
 
 ```
 Phase 1: Core Infrastructure (P0)
-├── Message queue implementation
-├── WebSocket reconnection logic
-├── FCM retry enhancements      [FCM-001]
-├── FCM metrics tracking        [FCM-002]
-└── Rate limiting
+ Message queue implementation
+ WebSocket reconnection logic
+ FCM retry enhancements      [FCM-001]
+ FCM metrics tracking        [FCM-002]
+ Rate limiting
 
 Phase 2: Performance & Features (P1)
-├── Message compression
-├── Telemetry filtering
-├── Telemetry history
-├── FCM token validation        [FCM-003]
-└── Connection status UI
+ Message compression
+ Telemetry filtering
+ Telemetry history
+ FCM token validation        [FCM-003]
+ Connection status UI
 
 Phase 3: Enhancements (P2)
-├── WebSocket encryption
-├── Session resumption
-├── FCM topic messaging         [FCM-004]
-├── FCM priority levels         [FCM-005]
-├── Advanced aggregation
-└── Offline sync
+ WebSocket encryption
+ Session resumption
+ FCM topic messaging         [FCM-004]
+ FCM priority levels         [FCM-005]
+ Advanced aggregation
+ Offline sync
 ```
 
 ---

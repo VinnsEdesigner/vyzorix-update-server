@@ -7,7 +7,7 @@ import (
 )
 
 func TestEmailService_IsConfigured(t *testing.T) {
-	// Save original values
+	// Save original values.
 	origAPIKey := os.Getenv("RESEND_API_KEY")
 	origEmail := os.Getenv("EMAIL_FROM")
 
@@ -42,7 +42,7 @@ func TestEmailService_IsConfigured(t *testing.T) {
 }
 
 func TestEmailService_SendVerificationEmail_NotConfigured(t *testing.T) {
-	// Clear environment
+	// Clear environment.
 	os.Unsetenv("RESEND_API_KEY")
 	os.Unsetenv("EMAIL_FROM")
 
@@ -89,7 +89,7 @@ func TestEmailService_ParseTemplate(t *testing.T) {
 		t.Fatalf("parseTemplate failed: %v", err)
 	}
 
-	// Check that template was rendered with data
+	// Check that template was rendered with data.
 	if !contains(html, "John Doe") {
 		t.Error("output should contain name")
 	}
@@ -156,7 +156,7 @@ func TestEmailService_ParseTemplate_Invalid(t *testing.T) {
 }
 
 func TestEmailService_NewEmailService_Defaults(t *testing.T) {
-	// Clear environment
+	// Clear environment.
 	os.Unsetenv("RESEND_API_KEY")
 	os.Unsetenv("EMAIL_FROM")
 	os.Unsetenv("EMAIL_FROM_NAME")

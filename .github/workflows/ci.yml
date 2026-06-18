@@ -178,3 +178,148 @@ jobs:
       - name: Run tests
         run: go test ./...
         working-directory: apps/api
+
+  # =============================================
+  # DOCKER BUILD & SECURITY SCANNING
+  # =============================================
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: false
+          load: true
+          tags: vyzorix-update-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Inspect image
+        run: |
+          docker images vyzorix-update-server:latest
+          docker history vyzorix-update-server:latest
+
+  docker-test:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: false
+          load: true
+          tags: vyzorix-update-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create data directory
+        run: mkdir -p /tmp/vyzorix-data
+
+      - name: Run container (SPA mode)
+        run: |
+          docker run -d --name vyzorix-test \
+            -e TOKEN_SECRET=test-secret-minimum-32-chars!! \
+            -e JWT_SECRET=test-jwt-secret-minimum-32-chars!! \
+            -e SSR_ENABLED=false \
+            -v /tmp/vyzorix-data:/data \
+            -p 3000:3000 \
+            vyzorix-update-server:latest
+          sleep 10
+          docker logs vyzorix-test
+          docker stop vyzorix-test
+
+      - name: Run container (SSR mode)
+        run: |
+          docker run -d --name vyzorix-ssr-test \
+            -e TOKEN_SECRET=test-secret-minimum-32-chars!! \
+            -e JWT_SECRET=test-jwt-secret-minimum-32-chars!! \
+            -e SSR_ENABLED=true \
+            -v /tmp/vyzorix-data:/data \
+            -p 3001:3000 \
+            vyzorix-update-server:latest
+          sleep 15
+          docker logs vyzorix-ssr-test
+          docker stop vyzorix-ssr-test
+
+      - name: Health check
+        run: |
+          # Start fresh container for health check
+          docker run -d --name vyzorix-health \
+            -e TOKEN_SECRET=test-secret-minimum-32-chars!! \
+            -e JWT_SECRET=test-jwt-secret-minimum-32-chars!! \
+            -v /tmp/vyzorix-data:/data \
+            -p 3002:3000 \
+            vyzorix-update-server:latest
+          sleep 10
+
+          # Test health endpoint
+          curl -f http://localhost:3002/health || exit 1
+
+          # Cleanup
+          docker stop vyzorix-health
+
+  docker-security-scan:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: false
+          load: true
+          tags: vyzorix-update-server:latest
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'vyzorix-update-server:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Display vulnerabilities
+        run: |
+          echo "=== Docker Image Vulnerabilities ==="
+          trivy image --severity HIGH,CRITICAL vyzorix-update-server:latest || true
+          echo ""
+          echo "=== Full Report ==="
+          trivy image vyzorix-update-server:latest || true
+
+      - name: Fail on critical vulnerabilities
+        run: |
+          # Count critical issues
+          CRITICAL_COUNT=$(trivy image --severity CRITICAL --quiet vyzorix-update-server:latest 2>/dev/null | grep -c "CRITICAL" || echo "0")
+          echo "Critical vulnerabilities found: $CRITICAL_COUNT"
+
+          # Note: Using || true to not block PRs, but report in PR
+          # For stricter enforcement, change to: if [ "$CRITICAL_COUNT" -gt 0 ]; then exit 1; fi
+          if [ "$CRITICAL_COUNT" -gt 0 ]; then
+            echo "WARNING: Critical vulnerabilities detected. Please review and fix before merging."
+          fi

@@ -1,5 +1,5 @@
 // Package controllers provides HTTP handlers.
-package controllers
+package handlers
 
 import (
 	"context"
@@ -61,7 +61,7 @@ func NewWebSocketHandler(
 	h *hub.Hub,
 	hmac hmac.Verifier,
 ) *WebSocketHandler {
-	// Initialize origin validator
+	// Initialize origin validator.
 	originValidator := security.NewOriginValidator(cfg.AllowedOrigins)
 	originValidator.SetLogger(log)
 
@@ -87,7 +87,7 @@ func NewWebSocketHandlerWithValidator(
 	hmac hmac.Verifier,
 	originValidator *security.OriginValidator,
 ) *WebSocketHandler {
-	// Use the UpgraderFactory for consistent configuration
+	// Use the UpgraderFactory for consistent configuration.
 	factory := NewUpgraderFactory(originValidator)
 	return &WebSocketHandler{
 		log:             log,
@@ -132,7 +132,7 @@ func (s *WebSocketHandler) HandleStream(c *gin.Context) {
 		return
 	}
 
-	// HMAC verification for WebSocket upgrade if enforced
+	// HMAC verification for WebSocket upgrade if enforced.
 	if s.config.EnforceHMAC {
 		body, err := s.hmac.ReadAndVerifyHTTP(c.Request)
 		if err != nil {
@@ -142,14 +142,14 @@ func (s *WebSocketHandler) HandleStream(c *gin.Context) {
 		_ = body // Body consumed for verification
 	}
 
-	// Perform WebSocket upgrade
+	// Perform WebSocket upgrade.
 	conn, err := s.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		s.log.Warn("websocket upgrade failed", "deviceId", id, "err", err)
 		return
 	}
 
-	// Register client with hub
+	// Register client with hub.
 	client := &hub.Client{
 		DeviceID: id,
 		Conn:     conn,
@@ -160,7 +160,7 @@ func (s *WebSocketHandler) HandleStream(c *gin.Context) {
 
 	s.log.Info("device connected via websocket", "deviceId", id)
 
-	// Start pumps - ReadPump blocks, so run WritePump in goroutine
+	// Start pumps - ReadPump blocks, so run WritePump in goroutine.
 	go client.WritePump()
 	client.ReadPump()
 }
@@ -226,12 +226,12 @@ func (s *WebSocketHandler) handleTelemetry(client *hub.Client, raw []byte) error
 		t.DeviceID = client.DeviceID
 	}
 
-	// Save telemetry to store
+	// Save telemetry to store.
 	if err := client.Hub.Store().SaveTelemetry(context.Background(), client.DeviceID, raw, t); err != nil {
 		s.log.Warn("telemetry save failed", "deviceId", client.DeviceID, "err", err)
 	}
 
-	// Broadcast to dashboard
+	// Broadcast to dashboard.
 	client.Hub.BroadcastTelemetry(raw)
 
 	s.log.Debug("telemetry received", "deviceId", client.DeviceID, "riskScore", t.RiskScore)

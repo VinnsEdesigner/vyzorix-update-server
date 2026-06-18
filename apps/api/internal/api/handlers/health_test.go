@@ -1,4 +1,4 @@
-package controllers
+package handlers
 
 import (
 	"context"
@@ -11,13 +11,13 @@ import (
 func TestHealth_DatabaseOk(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	// Note: This test verifies the health response structure
-	// Full integration test would require actual DB setup
+	// Note: This test verifies the health response structure.
+	// Full integration test would require actual DB setup.
 	t.Log("Health check response structure verified")
 }
 
 func TestHealth_ResponseFields(t *testing.T) {
-	// Verify the health response includes required fields
+	// Verify the health response includes required fields.
 	expectedFields := []string{
 		"ok",
 		"database",
@@ -35,15 +35,15 @@ func TestHealth_ResponseFields(t *testing.T) {
 }
 
 func TestHealth_StatusCode(t *testing.T) {
-	// Test that health returns correct status codes
+	// Test that health returns correct status codes.
 	gin.SetMode(gin.TestMode)
 
-	// When dbOk is true, status should be 200
-	// When dbOk is false, status should be 503
+	// When dbOk is true, status should be 200.
+	// When dbOk is false, status should be 503.
 	t.Log("Health status code logic verified")
 }
 
-// Mock health response for documentation
+// Mock health response for documentation.
 type healthResponse struct {
 	Database         string `json:"database"`
 	Version          string `json:"version"`
@@ -82,21 +82,21 @@ func TestHealth_ResponseJSON(t *testing.T) {
 	}
 }
 
-// Verify context cancellation is handled
+// Verify context cancellation is handled.
 func TestHealth_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	// Verify that cancelled context is handled gracefully
+	// Verify that cancelled context is handled gracefully.
 	select {
 	case <-ctx.Done():
-		// Expected behavior
+		// Expected behavior.
 	default:
 		t.Error("Context should be cancelled")
 	}
 }
 
-// Verify response includes error details when DB is down
+// Verify response includes error details when DB is down.
 func TestHealth_DbErrorIncluded(t *testing.T) {
 	resp := healthResponse{
 		OK:       false,

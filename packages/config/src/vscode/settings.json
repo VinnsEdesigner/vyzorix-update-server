@@ -60,7 +60,7 @@
   ],
   "tailwindCSS.lint.cssConflict": "warning",
   "tailwindCSS.validProducts": [
-    "裁定"
+    ""
   ],
   
   "git.autofetch": true,

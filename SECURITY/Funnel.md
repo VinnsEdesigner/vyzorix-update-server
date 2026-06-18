@@ -1,36 +1,36 @@
 The Inbound Request Pipeline Funnel
 Plaintext
        [ Hostile Client Request / Manual CURL Command ]
-                              │
-                              ▼
-┌────────────────────────────────────────────────────────────┐
-│ Layer 1: Ingress Edge Shielding (Network & Proxy Checks)   │ ── (Drops raw bots & missing User-Agents)
-└────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌────────────────────────────────────────────────────────────┐
-│ Layer 2: Memory Ceiling Barrier (http.MaxBytesReader)      │ ── (Clamps data size allocations to 1MB)
-└────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌────────────────────────────────────────────────────────────┐
-│ Layer 3: Environment Attestation (Cloudflare Turnstile)    │ ── (Filters headless browser automations)
-└────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌────────────────────────────────────────────────────────────┐
-│ Layer 4: Behavioral Session Throttler (Token Bucket Map)   │ ── (Caps transaction bursts per credential)
-└────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌────────────────────────────────────────────────────────────┐
-│ Deep Object Authorization (DOA Boundary Constraints)       │ ── (Enforces implicit identity ownership check)
-└────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+                              
+                              
+
+ Layer 1: Ingress Edge Shielding (Network & Proxy Checks)     (Drops raw bots & missing User-Agents)
+
+                              
+                              
+
+ Layer 2: Memory Ceiling Barrier (http.MaxBytesReader)        (Clamps data size allocations to 1MB)
+
+                              
+                              
+
+ Layer 3: Environment Attestation (Cloudflare Turnstile)      (Filters headless browser automations)
+
+                              
+                              
+
+ Layer 4: Behavioral Session Throttler (Token Bucket Map)     (Caps transaction bursts per credential)
+
+                              
+                              
+
+ Deep Object Authorization (DOA Boundary Constraints)         (Enforces implicit identity ownership check)
+
+                              
+                              
                  [ SQLite Secure Database Commit ]
  PART 2: EXPLOTATION PLAYS & BACKEND PRODUCTION SPECS
-🏎️ Play 1: The Concurrency / Race Condition Blaster
+ Play 1: The Concurrency / Race Condition Blaster
 The Attack Strategy: Attackers execute multi-threaded orchestration scripts (e.g., Goroutines or Python concurrent workers) to slam mutative endpoints like credit transactions, point scoring, or resource provisioning at the exact same millisecond. They aim to exploit the delta between data reading and data writing to trigger state anomalies or bypass checking thresholds.
 
 The Vulnerability: Executing a raw, unguarded sequence like SELECT count FROM items followed by a subsequent UPDATE allows multiple concurrent threads to read the identical stale balance value before the first thread completes its modification block.
@@ -94,7 +94,7 @@ The Enterprise Requirement: Audit your code before every production release usin
 Bash
 go install golang.org/x/vuln/cmd/govulncheck@latest
 govulncheck ./...
-💻 Production Go Security Engine Source Implementation
+ Production Go Security Engine Source Implementation
 config/env.go
 Go
 package config
@@ -243,13 +243,13 @@ To solve this risk, enforce asymmetric cryptography using Ed25519. The Go backen
 Firebase Cloud Messaging runs across public routing tables and can be sniffed by system level debug logs or intercept mechanisms. To protect your pipeline against transit snooping, use The Tickle Pattern.
 
 Plaintext
-┌──────────────┐             1. Send Empty Notification             ┌─────────────┐
-│  Go Backend  │ ─────────────────────────────────────────────────> │ Android APK │
-└──────────────┘                                                    └─────────────┘
-       ▲                                                                   │
-       │                                                                   │
-       │ 2. Establish Secure mTLS WebSocket & Download Signed Payload      │
-       └───────────────────────────────────────────────────────────────────┘
+             1. Send Empty Notification             
+  Go Backend   >  Android APK 
+                                                    
+                                                                          
+                                                                          
+        2. Establish Secure mTLS WebSocket & Download Signed Payload      
+       
 The server does not include structural parameters or execution strings inside push notification payloads. Instead, it drops an empty, silent notification payload containing an ephemeral sequence tracker index. Once intercepted, the client APK service wakes up, establishes an authenticated Mutual TLS (mTLS) WebSocket socket back to your infrastructure, and pulls the signed operational instruction set directly.
 
 3. Mutual TLS (mTLS) & Network Security Pinning

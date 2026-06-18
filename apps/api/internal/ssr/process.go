@@ -154,7 +154,7 @@ func (pm *ProcessManager) startInternalLocked(scriptPath string) error {
 			return nil
 		}
 
-		// Process didn't become ready, clean up
+		// Process didn't become ready, clean up.
 		pm.killProcess()
 		lastErr = errors.New("SSR process did not become ready")
 	}
@@ -165,7 +165,7 @@ func (pm *ProcessManager) startInternalLocked(scriptPath string) error {
 
 // startProcess starts the SSR subprocess.
 func (pm *ProcessManager) startProcess(scriptPath string) error {
-	//nolint:gosec
+	//nolint:gosec.
 	pm.cmd = exec.Command("node", scriptPath)
 	pm.cmd.Stdout = os.Stdout
 	pm.cmd.Stderr = os.Stderr
@@ -178,7 +178,7 @@ func (pm *ProcessManager) startProcess(scriptPath string) error {
 		return fmt.Errorf("failed to start: %w", err)
 	}
 
-	// Create cancellation context for monitoring
+	// Create cancellation context for monitoring.
 	pm.cancelFunc = func() {}
 
 	return nil
@@ -260,7 +260,7 @@ func (pm *ProcessManager) Stop() error {
 		return nil
 	}
 
-	// Try graceful shutdown first
+	// Try graceful shutdown first.
 	if err := pm.cmd.Process.Signal(syscall.SIGTERM); err == nil {
 		done := make(chan struct{})
 		go func() {
@@ -305,7 +305,7 @@ func (pm *ProcessManager) HealthCheck() *HealthStatus {
 		status.PID = pm.cmd.Process.Pid
 	}
 
-	// Check if process has exited unexpectedly (crashed)
+	// Check if process has exited unexpectedly (crashed).
 	if pm.cmd != nil && pm.cmd.ProcessState != nil && pm.cmd.ProcessState.Exited() {
 		status.Healthy = false
 		status.State = ProcessStateCrashed.String()
@@ -317,7 +317,7 @@ func (pm *ProcessManager) HealthCheck() *HealthStatus {
 		return status
 	}
 
-	// Perform HTTP health check
+	// Perform HTTP health check.
 	client := &http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Get(pm.config.SSRServerURL + "/health")
 	if err != nil {

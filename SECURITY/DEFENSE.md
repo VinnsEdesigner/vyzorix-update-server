@@ -12,20 +12,20 @@ To implement these protection mechanisms across your development workspace witho
 
 ```text
 vyzorix-update-server/
-├── go.mod                         # Go dependency tracking module
-├── main.go                        # Application bootstrapper, WAL engine connection lifecycle, and async daemons
-├── config/
-│   └── env.go                     # Environment parsing configuration & secure "Read-and-Burn" variable cleaner
-├── storage/
-│   └── sqlite.go                  # SQLite WAL concurrency optimizer and connection pool limits
-└── security/
-    ├── errors.go                  # Unified structural JSON security panic recovery outputs
-    ├── attestation.go             # Out-of-band Cloudflare Turnstile token validation engine
-    ├── csrf.go                    # Layer 2 CSRF token tracking and masking utilities
-    ├── cryptographic_signing.go   # Ed25519 asymmetric signature tracking for remote device blocks
-    ├── middleware.go              # Combined security filter stack: MaxBytes, Headers, CSRF, Token Limiters
-    ├── router.go                  # Explicit functional chain wiring for individual endpoint tiers
-    └── repository.go              # SQLite Parameterized Data Access Layer with built-in DOA constraints
+ go.mod                         # Go dependency tracking module
+ main.go                        # Application bootstrapper, WAL engine connection lifecycle, and async daemons
+ config/
+    env.go                     # Environment parsing configuration & secure "Read-and-Burn" variable cleaner
+ storage/
+    sqlite.go                  # SQLite WAL concurrency optimizer and connection pool limits
+ security/
+     errors.go                  # Unified structural JSON security panic recovery outputs
+     attestation.go             # Out-of-band Cloudflare Turnstile token validation engine
+     csrf.go                    # Layer 2 CSRF token tracking and masking utilities
+     cryptographic_signing.go   # Ed25519 asymmetric signature tracking for remote device blocks
+     middleware.go              # Combined security filter stack: MaxBytes, Headers, CSRF, Token Limiters
+     router.go                  # Explicit functional chain wiring for individual endpoint tiers
+     repository.go              # SQLite Parameterized Data Access Layer with built-in DOA constraints
 
 ```
 
