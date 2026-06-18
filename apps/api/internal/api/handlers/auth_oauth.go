@@ -1,4 +1,4 @@
-package controllers
+package handlers
 
 import (
 	"context"
@@ -22,8 +22,8 @@ func (ac *AuthController) GoogleLoginRedirect(c *gin.Context) {
 		c.JSON(501, models.ErrorResponse{Error: "not_configured", Message: "Google OAuth is not configured on this server"})
 		return
 	}
-	// Build the Google OAuth authorization URL
-	// The callback will come back to /v1/auth/google/callback
+	// Build the Google OAuth authorization URL.
+	// The callback will come back to /v1/auth/google/callback.
 	frontendURL := ac.config.FrontendURL
 	if frontendURL == "" {
 		frontendURL = "http://localhost:5173"
@@ -52,7 +52,7 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	// Exchange the code for tokens
+	// Exchange the code for tokens.
 	tokenURL := "https://oauth2.googleapis.com/token"
 	tokenReq := map[string]string{
 		"code":          code,
@@ -73,7 +73,7 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Verify the ID token using Google's public keys (cryptographically secure)
+	// Verify the ID token using Google's public keys (cryptographically secure).
 	googleClaims, err := ac.googleVer.Verify(tokenResp.IDToken)
 	if err != nil {
 		ac.log.Warn("google callback: ID token verification failed", "err", err)
@@ -86,7 +86,7 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Find or create the operator
+	// Find or create the operator.
 	op, err := ac.store.GetOperatorByGoogleID(ctx, googleClaims.Sub)
 	if err != nil {
 		ac.log.Warn("google callback: db lookup failed", "err", err)
@@ -96,7 +96,7 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 
 	isNew := false
 	if op == nil {
-		// Check if this is the first operator (bootstrap)
+		// Check if this is the first operator (bootstrap).
 		count, err := ac.store.OperatorCount(ctx)
 		if err != nil {
 			ac.log.Warn("google callback: failed to count operators", "err", err)
@@ -122,7 +122,7 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 		}
 		isNew = true
 	} else if op.GoogleID == "" {
-		// Existing operator linking their Google account
+		// Existing operator linking their Google account.
 		if err := ac.store.UpdateOperatorGoogleID(ctx, op.ID, googleClaims.Sub); err != nil {
 			ac.log.Warn("google callback: link failed", "err", err)
 			c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
@@ -130,7 +130,7 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 		}
 	}
 
-	// Set HttpOnly session cookie instead of exposing token in URL
+	// Set HttpOnly session cookie instead of exposing token in URL.
 	cookie, err := ac.session.CreateSessionCookieWithExpiry(op.ID, ac.config.SessionMaxAge)
 	if err != nil {
 		ac.log.Warn("google callback: failed to create session cookie", "err", err)
@@ -139,20 +139,20 @@ func (ac *AuthController) GoogleCallback(c *gin.Context) {
 	}
 	http.SetCookie(c.Writer, cookie)
 
-	// Redirect to frontend - cookie is set, no token in URL
+	// Redirect to frontend - cookie is set, no token in URL.
 	frontendURL := ac.config.FrontendURL
 	if frontendURL == "" {
 		frontendURL = "http://localhost:5173"
 	}
 
-	// Use state parameter if provided (frontend URL), otherwise default to /auth/callback
+	// Use state parameter if provided (frontend URL), otherwise default to /auth/callback.
 	redirectTarget := frontendURL
 	if state != "" {
 		redirectTarget = state
 	}
 
-	// Redirect to /auth/callback with success indicator (cookie is already set)
-	// This allows the callback page to show appropriate toast messages
+	// Redirect to /auth/callback with success indicator (cookie is already set).
+	// This allows the callback page to show appropriate toast messages.
 	redirectURL := fmt.Sprintf("%s/auth/callback?oauth=success&new=%t", redirectTarget, isNew)
 
 	ac.log.Info("google callback: login success", "email", op.Email, "role", op.Role)
@@ -167,13 +167,13 @@ func (ac *AuthController) GitHubLoginRedirect(c *gin.Context) {
 		return
 	}
 
-	// Build the GitHub OAuth authorization URL
-	// The callback will come back to /v1/auth/github/callback
+	// Build the GitHub OAuth authorization URL.
+	// The callback will come back to /v1/auth/github/callback.
 	callbackURL := ac.config.BaseURL + "/v1/auth/github/callback"
 
 	state := c.Query("state")
 	if state == "" {
-		// Generate CSRF state
+		// Generate CSRF state.
 		b := make([]byte, 16)
 		_, _ = rand.Read(b)
 		state = hex.EncodeToString(b)
@@ -204,7 +204,7 @@ func (ac *AuthController) GitHubCallback(c *gin.Context) {
 
 	callbackURL := ac.config.BaseURL + "/v1/auth/github/callback"
 
-	// Exchange the code for an access token
+	// Exchange the code for an access token.
 	tokenResp, err := security.ExchangeGitHubCode(ctx, code, security.GitHubOAuthConfig{
 		ClientID:     ac.config.GitHubOAuthClientID,
 		ClientSecret: ac.config.GitHubOAuthClientSecret,
@@ -216,7 +216,7 @@ func (ac *AuthController) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	// Fetch GitHub user profile
+	// Fetch GitHub user profile.
 	ghUser, err := security.FetchGitHubUserProfile(ctx, tokenResp.AccessToken)
 	if err != nil {
 		ac.log.Warn("github callback: failed to fetch user profile", "err", err)
@@ -224,7 +224,7 @@ func (ac *AuthController) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	// Fetch user emails to get a verified email
+	// Fetch user emails to get a verified email.
 	var email string
 	if ghUser.Email == "" {
 		emails, err := security.FetchGitHubEmails(ctx, tokenResp.AccessToken)
@@ -232,7 +232,7 @@ func (ac *AuthController) GitHubCallback(c *gin.Context) {
 			ac.log.Warn("github callback: failed to fetch emails", "err", err)
 		}
 		email = security.GetPrimaryEmail(emails)
-		// If still no email, use a fallback (GitHub allows login without email)
+		// If still no email, use a fallback (GitHub allows login without email).
 		if email == "" {
 			email = ghUser.Login + "@github.noreply.vyzorix.internal"
 		}
@@ -240,10 +240,10 @@ func (ac *AuthController) GitHubCallback(c *gin.Context) {
 		email = ghUser.Email
 	}
 
-	// Generate a stable GitHub ID string
+	// Generate a stable GitHub ID string.
 	githubID := fmt.Sprintf("gh_%d", ghUser.ID)
 
-	// Find or create the operator
+	// Find or create the operator.
 	op, err := ac.store.GetOperatorByGitHubID(ctx, githubID)
 	if err != nil {
 		ac.log.Warn("github callback: db lookup failed", "err", err)
@@ -253,7 +253,7 @@ func (ac *AuthController) GitHubCallback(c *gin.Context) {
 
 	isNew := false
 	if op == nil {
-		// Check if this is the first operator (bootstrap)
+		// Check if this is the first operator (bootstrap).
 		count, err := ac.store.OperatorCount(ctx)
 		if err != nil {
 			ac.log.Warn("github callback: failed to count operators", "err", err)
@@ -285,7 +285,7 @@ func (ac *AuthController) GitHubCallback(c *gin.Context) {
 		}
 		isNew = true
 	} else if op.GitHubID == "" {
-		// Existing operator linking their GitHub account
+		// Existing operator linking their GitHub account.
 		if err := ac.store.UpdateOperatorGitHubID(ctx, op.ID, githubID); err != nil {
 			ac.log.Warn("github callback: link failed", "err", err)
 			c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "login failed"})
@@ -293,7 +293,7 @@ func (ac *AuthController) GitHubCallback(c *gin.Context) {
 		}
 	}
 
-	// Set HttpOnly session cookie
+	// Set HttpOnly session cookie.
 	cookie, err := ac.session.CreateSessionCookieWithExpiry(op.ID, ac.config.SessionMaxAge)
 	if err != nil {
 		ac.log.Warn("github callback: failed to create session cookie", "err", err)
@@ -302,7 +302,7 @@ func (ac *AuthController) GitHubCallback(c *gin.Context) {
 	}
 	http.SetCookie(c.Writer, cookie)
 
-	// Redirect to frontend
+	// Redirect to frontend.
 	frontendURL := ac.config.FrontendURL
 	if frontendURL == "" {
 		frontendURL = "http://localhost:5173"

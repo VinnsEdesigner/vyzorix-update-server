@@ -107,7 +107,7 @@ func (m *Monitor) run() {
 func (m *Monitor) check() {
 	state := m.process.State()
 
-	// Log state transitions
+	// Log state transitions.
 	if state != m.lastState {
 		m.logger.Info("SSR state changed", "from", m.lastState, "to", state)
 		m.lastState = state
@@ -115,7 +115,7 @@ func (m *Monitor) check() {
 
 	health := m.process.HealthCheck()
 
-	// Check if process crashed (process exited but we think it's running)
+	// Check if process crashed (process exited but we think it's running).
 	shouldRestart := false
 
 	switch state {
@@ -124,18 +124,18 @@ func (m *Monitor) check() {
 		shouldRestart = true
 	case ProcessStateRunning, ProcessStateStarting:
 		if !health.Healthy {
-			// Process running but HTTP health check failing - might be hung
+			// Process running but HTTP health check failing - might be hung.
 			m.logger.Warn("SSR process unhealthy (HTTP check failed)", "status", health.String())
 			shouldRestart = true
 		}
 	case ProcessStateStopped, ProcessStateStopping:
-		// Process is stopping or stopped - no restart needed
+		// Process is stopping or stopped - no restart needed.
 	default:
-		// Unknown state - log but don't restart
+		// Unknown state - log but don't restart.
 		m.logger.Debug("SSR unknown state", "state", state)
 	}
 
-	// Trigger restart if needed and not in backoff period
+	// Trigger restart if needed and not in backoff period.
 	if shouldRestart {
 		m.mu.RLock()
 		cb := m.restartCb

@@ -45,6 +45,9 @@ type Operator struct {
 	Thresholds    Thresholds     `json:"thresholds,omitempty" db:"-"`
 	Client        ClientSettings `json:"client,omitempty" db:"-"`
 	EmailVerified bool           `json:"emailVerified,omitempty"`
+	MFASecret     string         `json:"-"`
+	MFAEnabled    bool           `json:"mfaEnabled"`
+	BackupCodes   []string       `json:"-"`
 }
 
 // OperatorResponse is the safe JSON representation returned to clients.

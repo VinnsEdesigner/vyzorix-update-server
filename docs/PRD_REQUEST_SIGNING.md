@@ -181,11 +181,12 @@ Implement **cryptographic request signing + encryption** for all API endpoints (
 - FR-2.3: Key lookup is by `client_id + is_active + not_expired`
 
 ### FR-3: Request Signing Algorithm
-- FR-3.1: **String to sign format:** `{METHOD}\n{PATH}\n{TIMESTAMP}\n{BODY_SHA256}`
-- FR-3.2: **Signature format:** `t={TIMESTAMP},v1={HMAC-SHA256(secret, string_to_sign)}`
+- FR-3.1: **String to sign format:** `{METHOD}\n{PATH}\n{TIMESTAMP}\n{BODY_SHA512}`
+- FR-3.2: **Signature format:** `t={TIMESTAMP},v1={HMAC-SHA512(secret, string_to_sign)}`
 - FR-3.3: Body is AES-256-GCM encrypted with random 12-byte nonce before signing
 - FR-3.4: Nonce is prepended to ciphertext
 - FR-3.5: Encrypted body is base64-encoded for transport
+- FR-3.6: AES key derived from client secret using SHA-512 (first 32 bytes)
 
 ### FR-4: Request Verification Middleware
 - FR-4.1: Middleware runs on all routes except excluded ones
@@ -282,72 +283,75 @@ CREATE INDEX idx_signing_keys_active ON signing_keys(client_id, is_active);
 ### 6.2 Request Flow Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        REQUEST SIGNING FLOW                                  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  CLIENT (Web/Mobile)                    SERVER                               │
-│                                                                              │
-│  1. GET /v1/auth/client-credentials                                           │
-│     (with session cookie)                                                    │
-│     ─────────────────────────────────►                                       │
-│                                      2. Validate session                     │
-│                                      3. Create/fetch client record           │
-│                                      4. Generate client_secret               │
-│                                      5. Store hash in db                     │
-│     ◄─────────────────────────────────                                       │
-│     { client_id, client_secret }         (encrypted response)                │
-│                                                                              │
-│  6. Cache credentials locally                                                │
-│                                                                              │
-│  7. BUILD API REQUEST                                                        │
-│     ┌─────────────────────────────────────────────────────────────┐          │
-│     │ Method: POST                                                 │          │
-│     │ Path: /v1/device/wipe                                        │          │
-│     │ Body: {"device_id": "..."}                                   │          │
-│     │ Timestamp: 1720000000                                        │          │
-│     └─────────────────────────────────────────────────────────────┘          │
-│                                                                              │
-│  8. ENCRYPT BODY                                                             │
-│     AES-256-GCM(client_secret, body) → encrypted_body (base64)               │
-│                                                                              │
-│  9. CREATE SIGNATURE                                                         │
-│     string_to_sign = "POST\n/v1/device/wipe\n1720000000\n<SHA256(encrypted_body)>" │
-│     signature = HMAC-SHA256(client_secret, string_to_sign)                   │
-│     signature_string = "t=1720000000,v1={hex_signature}"                     │
-│                                                                              │
-│  10. SEND REQUEST                                                            │
-│      POST /v1/device/wipe                                                    │
-│      Headers:                                                                │
-│        X-Client-ID: 0191abcd-...                                             │
-│        X-Timestamp: 1720000000                                               │
-│        X-Signature: t=1720000000,v1=abc123...                                │
-│        X-Encrypted-Body: base64_encrypted_body                               │
-│      ──────────────────────────────────────────────────────────────────────► │
-│                                                                              │
-│                                    11. EXTRACT HEADERS                        │
-│                                    12. LOOKUP CLIENT                          │
-│                                    13. CHECK TIMESTAMP (±5min)                │
-│                                    14. CHECK REPLAY CACHE                     │
-│                                    15. DECRYPT BODY                           │
-│                                    16. VERIFY SIGNATURE                       │
-│                                    17. PROCESS HANDLER                        │
-│                                    18. ADD TO REPLAY CACHE                    │
-│                                    19. LOG AUDIT                              │
-│                                                                              │
-│      ◄─────────────────────────────────────────────────────────────────────  │
-│      { success: true }                                                       │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
+
+                        REQUEST SIGNING FLOW                                  
+
+                                                                              
+  CLIENT (Web/Mobile)                    SERVER                               
+                                                                              
+  1. GET /v1/auth/client-credentials                                           
+     (with session cookie)                                                    
+                                            
+                                      2. Validate session                     
+                                      3. Create/fetch client record           
+                                      4. Generate client_secret               
+                                      5. Store hash in db                     
+                                            
+     { client_id, client_secret }         (encrypted response)                
+                                                                              
+  6. Cache credentials locally                                                
+                                                                              
+  7. BUILD API REQUEST                                                        
+               
+      Method: POST                                                           
+      Path: /v1/device/wipe                                                  
+      Body: {"device_id": "..."}                                             
+      Timestamp: 1720000000                                                  
+               
+                                                                              
+  8. ENCRYPT BODY                                                             
+     key = SHA-512(client_secret)[0:32]  # Derive 256-bit key from secret
+     nonce = random(12 bytes)
+     AES-256-GCM(key, nonce, body) → encrypted_body (base64)               
+                                                                              
+  9. CREATE SIGNATURE                                                         
+     body_hash = SHA-512(encrypted_body)
+     string_to_sign = "POST\n/v1/device/wipe\n1720000000\n<body_hash_hex>" 
+     signature = HMAC-SHA512(client_secret, string_to_sign)                   
+     signature_string = "t=1720000000,v1={hex_signature}"                     
+                                                                              
+  10. SEND REQUEST                                                            
+      POST /v1/device/wipe                                                    
+      Headers:                                                                
+        X-Client-ID: 0191abcd-...                                             
+        X-Timestamp: 1720000000                                               
+        X-Signature: t=1720000000,v1=abc123...                                
+        X-Encrypted-Body: base64_encrypted_body                               
+       
+                                                                              
+                                    11. EXTRACT HEADERS                        
+                                    12. LOOKUP CLIENT                          
+                                    13. CHECK TIMESTAMP (±5min)                
+                                    14. CHECK REPLAY CACHE                     
+                                    15. DECRYPT BODY                           
+                                    16. VERIFY SIGNATURE                       
+                                    17. PROCESS HANDLER                        
+                                    18. ADD TO REPLAY CACHE                    
+                                    19. LOG AUDIT                              
+                                                                              
+        
+      { success: true }                                                       
+                                                                              
+
 ```
 
 ### 6.3 Security Properties
 
 | Property | Mechanism | Protection Against |
 |----------|-----------|-------------------|
-| **Origin Verification** | HMAC signature with client secret | Unauthorized clients |
-| **Integrity** | HMAC over method+path+timestamp+body | Request tampering |
-| **Confidentiality** | AES-256-GCM body encryption | Eavesdropping |
+| **Origin Verification** | HMAC-SHA512 signature with client secret | Unauthorized clients |
+| **Integrity** | HMAC-SHA512 over method+path+timestamp+SHA512(body) | Request tampering |
+| **Confidentiality** | AES-256-GCM body encryption (key derived via SHA-512) | Eavesdropping |
 | **Freshness** | Timestamp validation (±5min) | Replay attacks |
 | **Replay Prevention** | Signature cache | Replay attacks |
 
@@ -420,7 +424,7 @@ ALLOW_UNSIGNED_FALLBACK=false         # Emergency mode only
 
 1. **Should mobile apps cache credentials indefinitely?** Or expire after 30 days requiring re-auth?
 
-2. **Should we support Ed25519 instead of HMAC-SHA256?** Ed25519 is more modern but slightly more complex to implement in JavaScript.
+2. **Should we support Ed25519 instead of HMAC-SHA512?** Current implementation uses HMAC-SHA512 which is NIST approved, FIPS 140-2 compliant, and widely supported across platforms.
 
 3. **Do we need API versioning for the signing scheme itself?** (e.g., `v1` in signature indicates algorithm version)
 
@@ -434,32 +438,32 @@ ALLOW_UNSIGNED_FALLBACK=false         # Emergency mode only
 
 ```
 apps/api/
-├── internal/
-│   ├── api/
-│   │   ├── middleware/
-│   │   │   ├── request_signing.go           # Core signature verification
-│   │   │   ├── request_signing_test.go
-│   │   │   ├── replay_protection.go         # Replay attack prevention
-│   │   │   ├── replay_protection_test.go
-│   │   │   ├── response_encryption.go       # Encrypt responses
-│   │   │   └── signed_handlers.go           # Route registration
-│   │   └── handlers/
-│   │       ├── admin_clients.go             # Admin CRUD for clients
-│   │       ├── admin_clients_test.go
-│   │       └── client_credentials.go        # Get credentials endpoint
-│   └── auth/
-│       ├── request_signer.go                # Client-side signing (for reference)
-│       ├── request_signer_test.go
-│       ├── client_registry.go               # Client management logic
-│       └── client_registry_test.go
-├── pkg/
-│   ├── config/
-│   │   └── signing.go                       # Signing configuration
-│   └── storage/
-│       ├── clients.go                       # Client storage operations
-│       ├── clients_test.go
-│       ├── signing_keys.go                  # Key rotation storage
-│       └── signing_keys_test.go
+ internal/
+    api/
+       middleware/
+          request_signing.go           # Core signature verification
+          request_signing_test.go
+          replay_protection.go         # Replay attack prevention
+          replay_protection_test.go
+          response_encryption.go       # Encrypt responses
+          signed_handlers.go           # Route registration
+       handlers/
+           admin_clients.go             # Admin CRUD for clients
+           admin_clients_test.go
+           client_credentials.go        # Get credentials endpoint
+    auth/
+        request_signer.go                # Client-side signing (for reference)
+        request_signer_test.go
+        client_registry.go               # Client management logic
+        client_registry_test.go
+ pkg/
+    config/
+       signing.go                       # Signing configuration
+    storage/
+        clients.go                       # Client storage operations
+        clients_test.go
+        signing_keys.go                  # Key rotation storage
+        signing_keys_test.go
 ```
 
 ---
