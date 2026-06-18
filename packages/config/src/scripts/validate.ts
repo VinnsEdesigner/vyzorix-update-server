@@ -52,18 +52,18 @@ export async function validateSetup(): Promise<void> {
   const { errors, warnings } = await validateConfig();
   
   if (errors.length > 0) {
-    console.error("\n❌ Validation failed:");
+    console.error("\n Validation failed:");
     errors.forEach((error) => console.error(`  - ${error}`));
     throw new Error("Setup validation failed");
   }
 
   if (warnings.length > 0) {
-    console.warn("\n⚠️  Validation warnings:");
+    console.warn("\n  Validation warnings:");
     warnings.forEach((warning) => console.warn(`  - ${warning}`));
   }
 
   if (errors.length === 0 && warnings.length === 0) {
-    console.log("  ✅ All configuration files validated successfully");
+    console.log("   All configuration files validated successfully");
   }
 }
 

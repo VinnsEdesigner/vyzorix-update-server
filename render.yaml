@@ -15,28 +15,33 @@
 services:
   - type: web
     name: vyzorix-update-server
-    env: go
+    env: docker
     region: oregon
     plan: starter
     autoDeploy: true
-    healthCheckPath: /healthz
+    dockerfilePath: ./apps/api/Dockerfile
+    healthCheckPath: /health
+    numInstances: 1
 
-    # Persistent disk for SQLite database
+    # Persistent disk for SQLite database and data
     disk:
       name: vyzorix-data
       mountPath: /data
       sizeGB: 1
 
     envVars:
-      # Go runtime version
-      - key: GOLANG_VERSION
-        value: "1.22"
-
       # Application
       - key: NODE_ENV
         value: production
       - key: PORT
         value: "3000"
+
+      # SSR Configuration
+      # Disable SSR auto-build since Docker image includes pre-built assets
+      - key: SSR_ENABLED
+        value: "true"
+      - key: SSR_AUTO_BUILD
+        value: "false"
 
       # Database — on the mounted /data volume (persists across redeploys)
       - key: DATABASE_URL

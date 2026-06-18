@@ -5,26 +5,26 @@ The SSR (Server-Side Rendering) system is now modular, with separated concerns f
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         SSR Manager                               │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────┐           │
-│  │   Config    │  │   Process    │  │  Monitor   │           │
-│  │             │  │   Manager    │  │            │           │
-│  │ - Enable    │  │              │  │ - Health   │           │
-│  │ - URL       │  │ - Start/Stop │  │   checks   │           │
-│  │ - Port      │  │ - Retry     │  │ - Crash    │           │
-│  │ - Timeout   │  │ - Crash     │  │   detection│           │
-│  │ - Retries   │  │   detection │  │ - Logging  │           │
-│  └─────────────┘  └──────────────┘  └────────────┘           │
-│                                   │                            │
-│  ┌─────────────┐                  │                            │
-│  │  Builder   │                  │                            │
-│  │            │                  │                            │
-│  │ - Build    │                  │                            │
-│  │ - Copy     │◄─────────────────┘                            │
-│  │   Assets   │                                               │
-│  └─────────────┘                                               │
-└─────────────────────────────────────────────────────────────────┘
+
+                         SSR Manager                               
+                 
+     Config         Process        Monitor              
+                    Manager                             
+   - Enable                       - Health              
+   - URL          - Start/Stop      checks              
+   - Port         - Retry        - Crash               
+   - Timeout      - Crash          detection           
+   - Retries        detection    - Logging             
+                 
+                                                               
+                                                
+    Builder                                                 
+                                                            
+   - Build                                                  
+   - Copy                                 
+     Assets                                                  
+                                                 
+
 ```
 
 ## Module Structure

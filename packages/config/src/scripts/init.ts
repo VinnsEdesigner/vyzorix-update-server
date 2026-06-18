@@ -164,7 +164,7 @@ async function promptCustom() {
 }
 
 async function scaffoldAll(answers: any) {
-  console.log("\n🚀 Scaffolding Vyzorix config...\n");
+  console.log("\n Scaffolding Vyzorix config...\n");
 
   const { services, target } = answers;
 
@@ -182,20 +182,20 @@ async function scaffoldAll(answers: any) {
 
   for (const service of services) {
     if (scaffolders[service as keyof typeof scaffolders]) {
-      console.log(`  📦 Scaffolding ${service}...`);
+      console.log(`   Scaffolding ${service}...`);
       try {
         await scaffolders[service as keyof typeof scaffolders](target);
-        console.log(`  ✅ ${service} scaffolded successfully`);
+        console.log(`   ${service} scaffolded successfully`);
       } catch (error) {
-        console.error(`  ❌ Failed to scaffold ${service}:`, error);
+        console.error(`   Failed to scaffold ${service}:`, error);
       }
     }
   }
 
-  console.log("\n  📝 Updating package.json...");
+  console.log("\n   Updating package.json...");
   await updatePackageJson(answers);
 
-  console.log("\n  🔍 Validating setup...");
+  console.log("\n   Validating setup...");
   await validateSetup();
 }
 
@@ -229,20 +229,20 @@ async function main() {
         await scaffoldAll(answers);
 
         console.log("\n" + "=".repeat(60));
-        console.log("✅ Vyzorix config initialized successfully!");
+        console.log(" Vyzorix config initialized successfully!");
         console.log("=".repeat(60));
-        console.log("\n📋 Next steps:");
+        console.log("\n Next steps:");
         console.log("  1. Run `pnpm install` to install new dependencies");
         console.log("  2. Review the generated configuration files");
         console.log("  3. Run `pnpm dev` to start development");
-        console.log("\n📚 Documentation:");
+        console.log("\n Documentation:");
         console.log("  - @vyzorix/config README: ./node_modules/@vyzorix/config/README.md");
         console.log("  - Vite config: vite.config.ts");
         console.log("  - ESLint config: eslint.config.js");
         console.log("  - Prettier config: .prettierrc");
         console.log("=".repeat(60) + "\n");
       } catch (error) {
-        console.error("❌ Initialization failed:", error);
+        console.error(" Initialization failed:", error);
         process.exit(1);
       }
     });

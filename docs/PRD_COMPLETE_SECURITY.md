@@ -111,33 +111,33 @@ Implement a **comprehensive, layered security architecture** following enterpris
 
 ```
 apps/api/internal/api/middleware/
-├── request_signing.go           # Core signature verification middleware
-├── request_signing_test.go     # Unit tests
-├── replay_protection.go        # Replay attack prevention cache
-├── replay_protection_test.go  # Unit tests
-├── response_encryption.go      # Optional response encryption
-└── signed_handlers.go           # Route registration
+ request_signing.go           # Core signature verification middleware
+ request_signing_test.go     # Unit tests
+ replay_protection.go        # Replay attack prevention cache
+ replay_protection_test.go  # Unit tests
+ response_encryption.go      # Optional response encryption
+ signed_handlers.go           # Route registration
 
 apps/api/internal/api/handlers/
-├── admin_clients.go            # Admin CRUD for clients
-├── admin_clients_test.go
-├── client_credentials.go       # Get credentials endpoint
-└── client_credentials_test.go
+ admin_clients.go            # Admin CRUD for clients
+ admin_clients_test.go
+ client_credentials.go       # Get credentials endpoint
+ client_credentials_test.go
 
 apps/api/internal/auth/
-├── request_signer.go           # Client-side signing reference
-├── request_signer_test.go
-├── client_registry.go          # Client management logic
-└── client_registry_test.go
+ request_signer.go           # Client-side signing reference
+ request_signer_test.go
+ client_registry.go          # Client management logic
+ client_registry_test.go
 
 apps/api/pkg/config/
-└── signing.go                  # Signing configuration
+ signing.go                  # Signing configuration
 
 apps/api/pkg/storage/
-├── clients.go                  # Client storage operations
-├── clients_test.go
-├── signing_keys.go             # Key rotation storage
-└── signing_keys_test.go
+ clients.go                  # Client storage operations
+ clients_test.go
+ signing_keys.go             # Key rotation storage
+ signing_keys_test.go
 ```
 
 **Each file must:**
@@ -155,8 +155,8 @@ apps/api/pkg/storage/
 
 ```
 apps/api/internal/api/middleware/
-├── security_headers.go        # Main middleware
-└── security_headers_test.go
+ security_headers.go        # Main middleware
+ security_headers_test.go
 ```
 
 **Each file must:**
@@ -170,11 +170,11 @@ apps/api/internal/api/middleware/
 
 ```
 apps/api/internal/api/middleware/
-├── turnstile.go               # Verification middleware
-└── turnstile_test.go
+ turnstile.go               # Verification middleware
+ turnstile_test.go
 
 apps/api/pkg/config/
-└── turnstile.go               # Config loading
+ turnstile.go               # Config loading
 ```
 
 **Each file must:**
@@ -189,8 +189,8 @@ apps/api/pkg/config/
 
 ```
 apps/api/internal/api/middleware/
-├── recovery.go                # Panic recovery
-└── error.go                   # Uniform error responses
+ recovery.go                # Panic recovery
+ error.go                   # Uniform error responses
 ```
 
 **Each file must:**
@@ -205,8 +205,8 @@ apps/api/internal/api/middleware/
 
 ```
 apps/api/pkg/config/
-├── validator.go               # Validation logic
-└── validator_test.go
+ validator.go               # Validation logic
+ validator_test.go
 ```
 
 **Each file must:**
@@ -220,11 +220,11 @@ apps/api/pkg/config/
 
 ```
 apps/api/internal/api/middleware/
-├── csrf.go                    # Token generation/validation
-└── csrf_test.go
+ csrf.go                    # Token generation/validation
+ csrf_test.go
 
 apps/api/internal/api/handlers/
-└── auth_csrf.go               # Get CSRF token endpoint
+ auth_csrf.go               # Get CSRF token endpoint
 ```
 
 **Each file must:**
@@ -239,14 +239,14 @@ apps/api/internal/api/handlers/
 
 ```
 apps/api/internal/auth/
-├── revocation.go              # Revocation list management
-└── revocation_test.go
+ revocation.go              # Revocation list management
+ revocation_test.go
 
 apps/api/internal/api/middleware/
-└── auth_revocation.go       # Check revocation
+ auth_revocation.go       # Check revocation
 
 apps/api/pkg/storage/
-└── sessions.go               # Session storage with revocation
+ sessions.go               # Session storage with revocation
 ```
 
 **Each file must:**
@@ -262,10 +262,10 @@ apps/api/pkg/storage/
 
 ```
 apps/api/internal/api/middleware/
-└── user_enum_block.go         # Fake hash timing
+ user_enum_block.go         # Fake hash timing
 
 apps/api/internal/api/handlers/
-└── auth_enum_safe.go          # Constant-time response handlers
+ auth_enum_safe.go          # Constant-time response handlers
 ```
 
 **Each file must:**
@@ -280,14 +280,14 @@ apps/api/internal/api/handlers/
 
 ```
 apps/api/internal/auth/
-├── lockout.go                 # Lockout logic
-└── lockout_test.go
+ lockout.go                 # Lockout logic
+ lockout_test.go
 
 apps/api/internal/api/middleware/
-└── auth_lockout.go            # Check lockout on auth
+ auth_lockout.go            # Check lockout on auth
 
 apps/api/internal/api/handlers/
-└── auth_lockout.go            # Lockout status endpoints
+ auth_lockout.go            # Lockout status endpoints
 ```
 
 **Each file must:**
@@ -303,10 +303,10 @@ apps/api/internal/api/handlers/
 
 ```
 apps/api/internal/audit/
-├── logger.go                  # Audit logger
-├── logger_test.go
-├── repository.go             # SQLite storage
-└── repository_test.go
+ logger.go                  # Audit logger
+ logger_test.go
+ repository.go             # SQLite storage
+ repository_test.go
 ```
 
 **Each file must:**
@@ -321,17 +321,17 @@ apps/api/internal/audit/
 
 ```
 apps/api/internal/auth/
-├── totp.go                    # TOTP generation/verification
-├── totp_test.go
-├── totp_qr.go                 # QR code generation
-└── totp_qr_test.go
+ totp.go                    # TOTP generation/verification
+ totp_test.go
+ totp_qr.go                 # QR code generation
+ totp_qr_test.go
 
 apps/api/internal/api/handlers/
-├── auth_mfa.go                # MFA enrollment/verification endpoints
-└── auth_mfa_test.go
+ auth_mfa.go                # MFA enrollment/verification endpoints
+ auth_mfa_test.go
 
 apps/api/pkg/config/
-└── totp.go                    # TOTP configuration
+ totp.go                    # TOTP configuration
 ```
 
 **Each file must:**
@@ -347,12 +347,12 @@ apps/api/pkg/config/
 
 ```
 apps/api/internal/api/handlers/
-├── health.go                  # Health check endpoints
-└── health_test.go
+ health.go                  # Health check endpoints
+ health_test.go
 
 apps/api/internal/metrics/
-├── prometheus.go             # Prometheus metrics endpoint
-└── middleware.go             # Request metrics
+ prometheus.go             # Prometheus metrics endpoint
+ middleware.go             # Request metrics
 ```
 
 **Each file must:**
@@ -367,12 +367,12 @@ apps/api/internal/metrics/
 
 ```
 apps/api/internal/api/middleware/
-└── log_context.go             # Request ID, user ID in logs
+ log_context.go             # Request ID, user ID in logs
 
 apps/api/pkg/logging/
-├── structured.go             # Structured JSON logging
-├── levels.go                 # Log level management
-└── redactor.go               # PII redaction in logs
+ structured.go             # Structured JSON logging
+ levels.go                 # Log level management
+ redactor.go               # PII redaction in logs
 ```
 
 **Each file must:**
@@ -388,9 +388,9 @@ apps/api/pkg/logging/
 
 ```
 tooling/docker/
-├── Dockerfile.prod            # Hardened multi-stage build
-├── .dockerignore
-└── security-check.sh          # Container security scan
+ Dockerfile.prod            # Hardened multi-stage build
+ .dockerignore
+ security-check.sh          # Container security scan
 ```
 
 **Each file must:**
@@ -405,9 +405,9 @@ tooling/docker/
 
 ```
 .github/workflows/
-├── security.yml               # Security checks in CI
-├── test.yml                  # Test pipeline
-└── lint.yml                  # Lint pipeline
+ security.yml               # Security checks in CI
+ test.yml                  # Test pipeline
+ lint.yml                  # Lint pipeline
 ```
 
 **Each file must:**
@@ -423,10 +423,10 @@ tooling/docker/
 
 ```
 docs/
-├── API.md                     # Complete API documentation
-├── SECURITY.md                # Security posture document
-├── DEPLOYMENT.md              # Deployment guide
-└── ENVIRONMENT.md             # All environment variables
+ API.md                     # Complete API documentation
+ SECURITY.md                # Security posture document
+ DEPLOYMENT.md              # Deployment guide
+ ENVIRONMENT.md             # All environment variables
 ```
 
 **Each file must:**
@@ -444,13 +444,13 @@ docs/
 ```
 **/ *_test.go for every new file
 **/integration_tests/
-├── api_test.go                # API integration tests
-├── auth_test.go               # Auth flow tests
-└── security_test.go          # Security-specific tests
+ api_test.go                # API integration tests
+ auth_test.go               # Auth flow tests
+ security_test.go          # Security-specific tests
 
 **/fuzz_tests/
-├── parser_fuzz.go             # Fuzzing tests for parsers
-└── crypto_fuzz.go             # Fuzzing tests for crypto
+ parser_fuzz.go             # Fuzzing tests for parsers
+ crypto_fuzz.go             # Fuzzing tests for crypto
 ```
 
 **Each file must:**
@@ -728,29 +728,29 @@ DOCKER_READONLY_ROOT=true
 
 ```
 Phase 1: Core Security (P0)
-├── Config Validator
-├── Panic Recovery + Error Handler
-├── Security Headers Middleware
-├── Request Signing & Encryption
-└── Cloudflare Turnstile
+ Config Validator
+ Panic Recovery + Error Handler
+ Security Headers Middleware
+ Request Signing & Encryption
+ Cloudflare Turnstile
 
 Phase 2: Authentication & Authorization (P1)
-├── CSRF Protection
-├── Session Revocation
-├── User Enumeration Prevention
-└── Account Lockout
+ CSRF Protection
+ Session Revocation
+ User Enumeration Prevention
+ Account Lockout
 
 Phase 3: Monitoring & Compliance (P2)
-├── Audit Logging
-├── MFA/TOTP
-├── Health & Metrics
-└── Structured Logging
+ Audit Logging
+ MFA/TOTP
+ Health & Metrics
+ Structured Logging
 
 Phase 4: Infrastructure & Testing (P3)
-├── Container Hardening
-├── CI/CD Security
-├── Documentation
-└── Testing
+ Container Hardening
+ CI/CD Security
+ Documentation
+ Testing
 ```
 
 ---

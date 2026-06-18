@@ -1,5 +1,5 @@
 // Package controllers provides HTTP handlers.
-package controllers
+package handlers
 
 import (
 	"context"
@@ -47,11 +47,11 @@ func NewCommandController(
 }
 
 // SendCommand issues a command to a device.
-// POST /v1/device/:id/command
-// Operational Flow:
-//   - Check if target device is online via WebSocket
-//   - If online: send via hub.Send() directly
-//   - If offline: use FCM signaling via notifier.SendSilentWake()
+// POST /v1/device/:id/command.
+// Operational Flow:.
+//   - Check if target device is online via WebSocket.
+//   - If online: send via hub.Send() directly.
+//   - If offline: use FCM signaling via notifier.SendSilentWake().
 func (s *CommandController) SendCommand(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -71,7 +71,7 @@ func (s *CommandController) SendCommand(c *gin.Context) {
 
 	s.log.Info("command received", "deviceId", id, "command", req.Command)
 
-	// Verify device exists
+	// Verify device exists.
 	_, found, err := s.store.Device(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(500, map[string]string{"error": "lookup_failed", "message": err.Error()})
@@ -82,7 +82,7 @@ func (s *CommandController) SendCommand(c *gin.Context) {
 		return
 	}
 
-	// Build command frame
+	// Build command frame.
 	frame := models.CommandFrame{
 		Type:       "command",
 		DispatchID: storage.NewDispatchID(),
@@ -93,24 +93,24 @@ func (s *CommandController) SendCommand(c *gin.Context) {
 		Signature:  req.Signature,
 	}
 
-	// Determine delivery method
+	// Determine delivery method.
 	delivery := "queued"
 
-	// Try WebSocket first
+	// Try WebSocket first.
 	if s.hub != nil && s.hub.Send(id, frame) {
 		delivery = "sent"
 		s.log.Info("command sent via WebSocket", "deviceId", id, "dispatchId", frame.DispatchID)
 	} else {
-		// Fallback to FCM
+		// Fallback to FCM.
 		s.log.Info("device offline, queuing for FCM wake", "deviceId", id, "dispatchId", frame.DispatchID)
 	}
 
-	// Persist command record
+	// Persist command record.
 	if err := s.store.SaveCommand(c.Request.Context(), frame.DispatchID, id, req.Command, req.Args, delivery); err != nil {
 		s.log.Warn("failed to save command", "err", err)
 	}
 
-	// If device offline, trigger FCM wake
+	// If device offline, trigger FCM wake.
 	if delivery == "queued" {
 		s.sendFCMWakeIfNeeded(id, req.Command, frame.DispatchID)
 	}
@@ -158,8 +158,8 @@ func (s *CommandController) GetCommandStatus(c *gin.Context) {
 		return
 	}
 
-	// Query command status from store
-	// This would require adding a GetCommand method to the store
+	// Query command status from store.
+	// This would require adding a GetCommand method to the store.
 	c.JSON(200, map[string]any{
 		"dispatchId": dispatchID,
 		"status":     "pending",
@@ -191,7 +191,7 @@ func (s *CommandController) GetPendingCommands(c *gin.Context) {
 		return
 	}
 
-	// Query pending commands from store
+	// Query pending commands from store.
 	c.JSON(200, map[string]any{
 		"commands": []interface{}{},
 	})

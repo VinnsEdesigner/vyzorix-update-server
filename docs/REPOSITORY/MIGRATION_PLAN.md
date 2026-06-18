@@ -31,11 +31,11 @@ This document provides **step-by-step instructions** for migrating the current `
 
 ### 1.2 Migration Goals
 
-1. ✅ Restructure into `apps/` and `packages/` layout
-2. ✅ Implement pnpm workspaces
-3. ✅ Configure Turborepo build pipeline
-4. ✅ Maintain all existing functionality
-5. ✅ Zero downtime migration
+1.  Restructure into `apps/` and `packages/` layout
+2.  Implement pnpm workspaces
+3.  Configure Turborepo build pipeline
+4.  Maintain all existing functionality
+5.  Zero downtime migration
 
 ### 1.3 Time Estimate
 
@@ -52,9 +52,9 @@ This document provides **step-by-step instructions** for migrating the current `
 
 ### 1.4 Important Notes
 
-> ⚠️ **CRITICAL:** This migration is performed in a **feature branch**. The `main` branch remains untouched until verification is complete.
+>  **CRITICAL:** This migration is performed in a **feature branch**. The `main` branch remains untouched until verification is complete.
 
-> 📝 All file movements must be tracked in git to enable rollback if needed.
+>  All file movements must be tracked in git to enable rollback if needed.
 
 ---
 
@@ -97,8 +97,8 @@ ls -la vyzorix-update-server.backup.*/
 
 ```
 main (protected - never touch directly)
-└── feature/monorepo-migration (working branch)
-    └── Will merge to main after successful testing
+ feature/monorepo-migration (working branch)
+     Will merge to main after successful testing
 ```
 
 ### 3.2 Migration Approach: "Lift and Shift"

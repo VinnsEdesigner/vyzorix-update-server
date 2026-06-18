@@ -4,6 +4,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -477,6 +478,53 @@ func (s *Store) UpdateOperatorPassword(ctx context.Context, operatorID, password
 	result, err := s.db.ExecContext(ctx,
 		`UPDATE operators SET password_hash = ?, updated_at = ? WHERE id = ?`,
 		passwordHash, now.UnixMilli(), operatorID,
+	)
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if rows == 0 {
+		return errors.New("operator not found")
+	}
+	return nil
+}
+
+// UpdateOperatorMFA updates the MFA secret and backup codes for an operator.
+func (s *Store) UpdateOperatorMFA(ctx context.Context, operatorID, mfaSecret string, backupCodes []string) error {
+	backupCodesJSON := ""
+	if len(backupCodes) > 0 {
+		codes, err := json.Marshal(backupCodes)
+		if err != nil {
+			return fmt.Errorf("failed to marshal backup codes: %w", err)
+		}
+		backupCodesJSON = string(codes)
+	}
+
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE operators SET mfa_secret = ?, mfa_enabled = 1, mfa_backup_codes = ?, updated_at = ? WHERE id = ?`,
+		mfaSecret, backupCodesJSON, time.Now().UTC().UnixMilli(), operatorID,
+	)
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if rows == 0 {
+		return errors.New("operator not found")
+	}
+	return nil
+}
+
+// DisableOperatorMFA disables MFA for an operator by clearing the MFA secret and backup codes.
+func (s *Store) DisableOperatorMFA(ctx context.Context, operatorID string) error {
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE operators SET mfa_secret = '', mfa_enabled = 0, mfa_backup_codes = '', updated_at = ? WHERE id = ?`,
+		time.Now().UTC().UnixMilli(), operatorID,
 	)
 	if err != nil {
 		return err

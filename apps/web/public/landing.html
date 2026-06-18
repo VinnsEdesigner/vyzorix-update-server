@@ -42,7 +42,7 @@
       flex-direction: column;
     }
 
-    /* ── Header ── */
+    /*  Header  */
     header {
       display: flex;
       align-items: center;
@@ -82,7 +82,7 @@
     }
     .dot.online { background: var(--success); }
 
-    /* ── Main ── */
+    /*  Main  */
     main {
       flex: 1;
       display: flex; align-items: center; justify-content: center;
@@ -93,7 +93,7 @@
       width: 100%; max-width: 440px;
     }
 
-    /* ── Status card ── */
+    /*  Status card  */
     .card {
       border: 1px solid var(--border);
       border-radius: 16px;
@@ -120,7 +120,7 @@
     .card-title    { font-size: 14px; font-weight: 600; }
     .card-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
 
-    /* ── Metrics grid ── */
+    /*  Metrics grid  */
     .metrics {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -154,7 +154,7 @@
       font-size: 11px; color: var(--text-secondary); margin-top: 3px;
     }
 
-    /* ── Alert ── */
+    /*  Alert  */
     .alert {
       display: flex; align-items: center; gap: 8px;
       padding: 10px 16px;
@@ -164,14 +164,14 @@
     }
     .alert svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; fill: none; }
 
-    /* ── Version tag ── */
+    /*  Version tag  */
     .version-tag {
       text-align: center;
       margin: 16px 0 28px;
       font-size: 12px; color: var(--text-secondary);
     }
 
-    /* ── CTA Button ── */
+    /*  CTA Button  */
     .cta {
       display: flex; align-items: center; justify-content: center; gap: 8px;
       width: 100%;
@@ -189,7 +189,7 @@
     .cta:active  { transform: scale(0.98); }
     .cta svg      { width: 18px; height: 18px; stroke: currentColor; fill: none; }
 
-    /* ── Footer links ── */
+    /*  Footer links  */
     .footer-links {
       display: flex; justify-content: center; gap: 20px;
       margin-top: 20px;
@@ -200,7 +200,7 @@
     }
     .footer-links a:hover { color: var(--text-primary); }
 
-    /* ── Footer ── */
+    /*  Footer  */
     footer {
       text-align: center;
       padding: 12px 24px;
@@ -208,7 +208,7 @@
       font-size: 11px; color: var(--text-secondary);
     }
 
-    /* ── Loading state ── */
+    /*  Loading state  */
     .loading-spinner {
       width: 18px; height: 18px;
       border: 2px solid rgba(255,255,255,0.3);
@@ -218,7 +218,7 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Offline style ── */
+    /*  Offline style  */
     .metric-value.offline { color: var(--text-secondary); }
   </style>
 </head>
@@ -327,12 +327,12 @@
   </footer>
 
   <script>
-    // ── State ──────────────────────────────────────────────────────────────
+    //  State 
     let serverStartMs = null;
     let deviceCount = 0;
     let isOnline = false;
 
-    // ── Clock ───────────────────────────────────────────────────────────────
+    //  Clock 
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').textContent =
@@ -341,7 +341,7 @@
         now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
-    // ── Uptime ──────────────────────────────────────────────────────────────
+    //  Uptime 
     function updateUptime() {
       if (!serverStartMs) return;
       const diff = Math.floor((Date.now() - serverStartMs) / 1000);
@@ -351,7 +351,7 @@
       document.getElementById('uptime').textContent = `${h}:${m}:${s}`;
     }
 
-    // ── Fetch status ───────────────────────────────────────────────────────
+    //  Fetch status 
     async function fetchStatus() {
       try {
         const res = await fetch('/health');
@@ -392,7 +392,7 @@
       document.getElementById('offlineAlert').style.display = 'flex';
     }
 
-    // ── CTA ─────────────────────────────────────────────────────────────────
+    //  CTA 
     function handleCta() {
       const token = localStorage.getItem('vyz.auth.token');
       const dest = token ? '/dashboard' : '/login';
@@ -400,7 +400,7 @@
       return false;
     }
 
-    // ── Boot ─────────────────────────────────────────────────────────────────
+    //  Boot 
     (function init() {
       updateClock();
       setInterval(updateClock, 1000);
