@@ -83,15 +83,15 @@ Split `sqlite.go` (1,618 lines) into domain-specific modules:
 
 ```
 pkg/storage/
-├── store.go       # Store struct, connection
-├── migrations.go  # Migration registry
-├── devices.go     # Device CRUD
-├── telemetry.go    # Telemetry storage (UUIDv7)
-├── commands.go    # Command dispatch
-├── operators.go   # Operator CRUD
-├── settings.go    # System settings
-├── crypto.go      # Argon2id utilities
-└── uuid.go        # UUIDv7 utilities
+ store.go       # Store struct, connection
+ migrations.go  # Migration registry
+ devices.go     # Device CRUD
+ telemetry.go    # Telemetry storage (UUIDv7)
+ commands.go    # Command dispatch
+ operators.go   # Operator CRUD
+ settings.go    # System settings
+ crypto.go      # Argon2id utilities
+ uuid.go        # UUIDv7 utilities
 ```
 
 ### Phase 2: UUIDv7 Migration

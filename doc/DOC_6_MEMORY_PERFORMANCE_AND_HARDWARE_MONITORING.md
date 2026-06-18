@@ -11,32 +11,32 @@ The following mapping outlines the progressive resource degradation steps execut
 
 ```text
                         SYSTEM ON_TRIM_MEMORY(LEVEL) CALLBACK
-                                           │
-                                           ▼
+                                           
+                                           
                                  ServiceTrimCoordinator
-                                           │
-                                           ▼
+                                           
+                                           
                                  MemoryClassProfiler
-                                           │
-                                           ▼
+                                           
+                                           
                                  LowRamModeController
-                                           │
-               ┌───────────────────────────┴───────────────────────────┐
-               │                                                       │
+                                           
+               
+                                                                      
      Trim Level >= MODERATE?                                 Trim Level < MODERATE?
-               │                                                       │
-               ▼ (YES: AGGRESSIVE REDUCTION)                           ▼ (NO: LIGHT CLEANUP)
+                                                                      
+                (YES: AGGRESSIVE REDUCTION)                            (NO: LIGHT CLEANUP)
          CacheBudgetManager                                   AllocationPressureMonitor
-               │                                                       │
-               ├── Shrink PCM JNI buffers (4MB -> 2MB)                 └── Prune oldest log list
-               ├── Shed non-essential monitoring observers             
-               ├── Disable diagnostic trace logging                    
-               │                                                       
-               ▼                                                       
+                                                                      
+                Shrink PCM JNI buffers (4MB -> 2MB)                  Prune oldest log list
+                Shed non-essential monitoring observers             
+                Disable diagnostic trace logging                    
+                                                                      
+                                                                      
        EmergencyMemoryReducer                                          
-               │                                                       
-               ├── Force GC run (System.gc())                          
-               └── Reclaim native JNI heaps                            
+                                                                      
+                Force GC run (System.gc())                          
+                Reclaim native JNI heaps                            
 ```
 
 ---
@@ -47,13 +47,13 @@ The `memory` package manages RAM profiling, handles low-memory signals, limits c
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/memory/
-├── MemoryClassProfiler.kt
-├── LowRamModeController.kt
-├── CacheBudgetManager.kt
-├── ServiceTrimCoordinator.kt
-├── NativeHeapWatcher.kt
-├── AllocationPressureMonitor.kt
-└── EmergencyMemoryReducer.kt
+ MemoryClassProfiler.kt
+ LowRamModeController.kt
+ CacheBudgetManager.kt
+ ServiceTrimCoordinator.kt
+ NativeHeapWatcher.kt
+ AllocationPressureMonitor.kt
+ EmergencyMemoryReducer.kt
 ```
 
 ### 2.1 `MemoryClassProfiler.kt`
@@ -94,11 +94,11 @@ The `performance` submodule dynamically balances CPU resources, adjusts polling 
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/performance/
-├── AdaptiveSamplingController.kt
-├── CpuLoadBalancer.kt
-├── FeatureLoadShedding.kt
-├── LightweightModeController.kt
-└── ThermalMitigationPolicy.kt
+ AdaptiveSamplingController.kt
+ CpuLoadBalancer.kt
+ FeatureLoadShedding.kt
+ LightweightModeController.kt
+ ThermalMitigationPolicy.kt
 ```
 
 ### 3.1 `AdaptiveSamplingController.kt`
@@ -129,16 +129,16 @@ The `monitoring` package tracks device state changes, listens to connected perip
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/monitoring/
-├── HeadsetStateMonitor.kt
-├── BluetoothRouteMonitor.kt
-├── AudioFocusMonitor.kt
-├── PlaybackStateMonitor.kt
-├── DeviceThermalMonitor.kt
-├── RuntimeMemoryMonitor.kt
+ HeadsetStateMonitor.kt
+ BluetoothRouteMonitor.kt
+ AudioFocusMonitor.kt
+ PlaybackStateMonitor.kt
+ DeviceThermalMonitor.kt
+ RuntimeMemoryMonitor.kt
 # NOTE: ProcessHealthMonitor.kt removed — split into MemoryPressureSignal + LivenessProbe (ADR-0007).
 #       Memory tracking → core/services/foreground/signals/MemoryPressureSignal.kt
 #       Process liveness → core/services/foreground/LivenessProbe.kt
-└── NetworkStateMonitor.kt
+ NetworkStateMonitor.kt
 ```
 
 ### 4.1 `HeadsetStateMonitor.kt`
@@ -183,11 +183,11 @@ The `metrics` package logs hardware metrics and measures system performance.
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/metrics/
-├── AudioLatencyMetrics.kt
-├── RouteSwitchMetrics.kt
-├── CrashMetrics.kt
-├── CapturePerformanceTracker.kt
-└── BatteryImpactMonitor.kt
+ AudioLatencyMetrics.kt
+ RouteSwitchMetrics.kt
+ CrashMetrics.kt
+ CapturePerformanceTracker.kt
+ BatteryImpactMonitor.kt
 ```
 
 ### 5.1 `AudioLatencyMetrics.kt`
@@ -218,10 +218,10 @@ The `oem` package implements device-specific timing adjustments, AudioManager pa
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/oem/
-├── NokiaAudioWorkarounds.kt
-├── UnisocPlatformTweaks.kt
-├── VendorRouteResetter.kt
-└── DeviceQuirkRegistry.kt
+ NokiaAudioWorkarounds.kt
+ UnisocPlatformTweaks.kt
+ VendorRouteResetter.kt
+ DeviceQuirkRegistry.kt
 ```
 
 ### 6.1 `NokiaAudioWorkarounds.kt`

@@ -56,104 +56,104 @@ This document defines the **target enterprise monorepo structure** for the Vyzor
 ### 2.1 High-Level System Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              INTERNET                                        │
-└─────────────────────────────────────┬───────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         CLOUDFLARE (Free Tier)                               │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │
-│  │     WAF     │  │  DDoS       │  │  Turnstile  │  │  SSL/TLS        │   │
-│  │  (OWASP)    │  │  Protection │  │  Bot Block   │  │  (Auto-Renew)   │   │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────┘   │
-└─────────────────────────────────────┬───────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              VYZORIX MONOREPO                                 │
-│                                                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                         apps/web (React SSR)                         │   │
-│  │   TanStack Start + Vite + Tailwind + shadcn/ui                       │   │
-│  │   Serves dashboard at /*, landing at /                             │   │
-│  └─────────────────────────────────────┬───────────────────────────────┘   │
-│                                        │ Proxy /v1/*, /api/* to apps/api   │
-│  ┌─────────────────────────────────────▼───────────────────────────────┐   │
-│  │                         apps/api (Go Backend)                       │   │
-│  │   Gin HTTP Router + WebSocket Hub + SQLite                           │   │
-│  │   ┌──────────────┐ ┌──────────────┐ ┌──────────────┐               │   │
-│  │   │ REST API     │ │ WebSocket    │ │ FCM          │               │   │
-│  │   │ /v1/auth/*   │ │ /v1/device/* │ │ Notifier     │               │   │
-│  │   │ /v1/device/* │ │ /stream      │ │              │               │   │
-│  │   └──────────────┘ └──────────────┘ └──────────────┘               │   │
-│  │   ┌──────────────────────────────────────────────────────┐          │   │
-│  │   │              Security Middleware Stack              │          │   │
-│  │   │  RateLimit → CORS → SecurityHeaders → PanicRecover │          │   │
-│  │   │  CSRF → JWT Auth → HMAC Verify → DOA Check         │          │   │
-│  │   └──────────────────────────────────────────────────────┘          │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                         packages/ (Shared Libraries)                  │   │
-│  │   ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────────────────┐   │   │
-│  │   │  types  │  │   ui    │  │  config │  │    api-client       │   │   │
-│  │   │(TS def) │  │(components)│ │(ESLint)│  │    (Go SDK)        │   │   │
-│  │   └─────────┘  └─────────┘  └─────────┘  └─────────────────────┘   │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              PERSISTENT DISK                                 │
-│  ┌─────────────────────────┐  ┌─────────────────────────────────────────┐ │
-│  │  SQLite Database         │  │  APK/Binary Storage                     │ │
-│  │  (WAL Mode, Encrypted)   │  │  (version.json, *.apk, *.bin)          │ │
-│  │  ./data/vyzorix.db       │  │  ./bin/                                  │ │
-│  └─────────────────────────┘  └─────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────┘
+
+                              INTERNET                                        
+
+                                      
+                                      
+
+                         CLOUDFLARE (Free Tier)                               
+           
+       WAF         DDoS           Turnstile      SSL/TLS           
+    (OWASP)        Protection     Bot Block       (Auto-Renew)      
+           
+
+                                      
+                                      
+
+                              VYZORIX MONOREPO                                 
+                                                                              
+     
+                           apps/web (React SSR)                            
+     TanStack Start + Vite + Tailwind + shadcn/ui                          
+     Serves dashboard at /*, landing at /                                
+     
+                                         Proxy /v1/*, /api/* to apps/api   
+     
+                           apps/api (Go Backend)                          
+     Gin HTTP Router + WebSocket Hub + SQLite                              
+                         
+      REST API       WebSocket      FCM                            
+      /v1/auth/*     /v1/device/*   Notifier                       
+      /v1/device/*   /stream                                       
+                         
+                  
+                   Security Middleware Stack                           
+       RateLimit → CORS → SecurityHeaders → PanicRecover              
+       CSRF → JWT Auth → HMAC Verify → DOA Check                      
+                  
+     
+                                                                              
+     
+                           packages/ (Shared Libraries)                     
+                 
+       types       ui        config       api-client             
+     (TS def)   (components) (ESLint)      (Go SDK)              
+                 
+     
+                                                                              
+
+                                      
+                                      
+
+                              PERSISTENT DISK                                 
+     
+    SQLite Database             APK/Binary Storage                      
+    (WAL Mode, Encrypted)       (version.json, *.apk, *.bin)           
+    ./data/vyzorix.db           ./bin/                                   
+     
+
 ```
 
 ### 2.2 Security Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         SECURITY LAYERS (Defense in Depth)                   │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  Layer 1: Network Perimeter                                                 │
-│  └─ Cloudflare WAF + DDoS + Turnstile                                       │
-│                                                                              │
-│  Layer 2: Transport Security                                                 │
-│  └─ HTTPS Only (TLS 1.3), HSTS Header                                       │
-│                                                                              │
-│  Layer 3: Application Firewall                                              │
-│  └─ Rate Limiting (IP + Session based)                                      │
-│  └─ CORS Origin Whitelist                                                   │
-│  └─ Security Headers (X-Frame-Options, CSP, etc.)                           │
-│                                                                              │
-│  Layer 4: Request Validation                                                 │
-│  └─ MaxBytesReader (1MB limit)                                               │
-│  └─ Input Sanitization                                                       │
-│  └─ HMAC Signature Verification                                              │
-│                                                                              │
-│  Layer 5: Authentication & Authorization                                     │
-│  └─ JWT Validation (HttpOnly cookies)                                        │
-│  └─ CSRF Token (Synchronizer pattern)                                        │
-│  └─ Deep Object Authorization (DOA)                                          │
-│                                                                              │
-│  Layer 6: Cryptographic Operations                                           │
-│  └─ Argon2id Password Hashing (64MB, 1 iteration)                            │
-│  └─ Ed25519 Command Signing                                                  │
-│  └─ Token Revocation List                                                     │
-│                                                                              │
-│  Layer 7: Audit & Monitoring                                                 │
-│  └─ Structured JSON Logging                                                  │
-│  └─ Security Event Tracking                                                  │
-│  └─ Error Masking (no stack traces)                                          │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
+
+                         SECURITY LAYERS (Defense in Depth)                   
+
+                                                                              
+  Layer 1: Network Perimeter                                                 
+   Cloudflare WAF + DDoS + Turnstile                                       
+                                                                              
+  Layer 2: Transport Security                                                 
+   HTTPS Only (TLS 1.3), HSTS Header                                       
+                                                                              
+  Layer 3: Application Firewall                                              
+   Rate Limiting (IP + Session based)                                      
+   CORS Origin Whitelist                                                   
+   Security Headers (X-Frame-Options, CSP, etc.)                           
+                                                                              
+  Layer 4: Request Validation                                                 
+   MaxBytesReader (1MB limit)                                               
+   Input Sanitization                                                       
+   HMAC Signature Verification                                              
+                                                                              
+  Layer 5: Authentication & Authorization                                     
+   JWT Validation (HttpOnly cookies)                                        
+   CSRF Token (Synchronizer pattern)                                        
+   Deep Object Authorization (DOA)                                          
+                                                                              
+  Layer 6: Cryptographic Operations                                           
+   Argon2id Password Hashing (64MB, 1 iteration)                            
+   Ed25519 Command Signing                                                  
+   Token Revocation List                                                     
+                                                                              
+  Layer 7: Audit & Monitoring                                                 
+   Structured JSON Logging                                                  
+   Security Event Tracking                                                  
+   Error Masking (no stack traces)                                          
+                                                                              
+
 ```
 
 ---
@@ -162,55 +162,55 @@ This document defines the **target enterprise monorepo structure** for the Vyzor
 
 ```
 vyzorix/                                # Root: Monorepo workspace root
-│
-├── .github/                            # GitHub configuration
-│   ├── workflows/                      # CI/CD pipelines
-│   │   ├── ci.yml                     # Lint → Test → Type-check
-│   │   ├── deploy-api.yml            # Build + Deploy Go backend
-│   │   └── deploy-web.yml            # Build + Deploy React app
-│   ├── CODEOWNERS                    # Auto-assign PR reviewers
-│   └── PULL_REQUEST_TEMPLATE.md      # PR description template
-│
-├── .husky/                            # Git hooks
-│   ├── pre-commit                     # Runs lint-staged on staged files
-│   └── commit-msg                     # Validates conventional commit format
-│
-├── .vscode/                           # VS Code workspace settings
-│   ├── settings.json                  # Editor config
-│   └── extensions.json                # Recommended extensions
-│
-├── apps/                              # Deployable applications
-│   ├── web/                          # React frontend (TanStack Start + Vite)
-│   └── api/                          # Go backend (Gin HTTP server)
-│
-├── packages/                          # Shared libraries (versioned independently)
-│   ├── ui/                          # shadcn/ui component library
-│   ├── types/                       # TypeScript type definitions
-│   ├── config/                      # Shared ESLint, TS, Tailwind configs
-│   └── api-client/                  # Go HTTP client (for external integrations)
-│
-├── tooling/                          # Build scripts and utilities
-│   ├── scripts/                     # DevOps automation scripts
-│   └── docker/                      # Container definitions
-│
-├── docs/                             # Project documentation
-│   ├── SECURITY/                    # Security documentation
-│   │   ├── IMPLEMENTATION_PLAN.md  # Security implementation roadmap
-│   │   ├── THREAT_MODEL.md         # Risk assessment
-│   │   ├── AUTH.md                 # Authentication pipeline
-│   │   ├── DEFENSE.md              # Defense matrix
-│   │   ├── FUNNEL.md               # Request funnel
-│   │   └── MATRIX.md               # API protection
-│   ├── ARCHITECTURE.md             # System design
-│   └── DEPLOYMENT.md               # Deployment guide
-│
-├── turbo.json                        # Turborepo pipeline configuration
-├── pnpm-workspace.yaml               # pnpm workspaces manifest
-├── package.json                      # Root workspace manifest
-├── go.mod                           # Root Go module (for tools)
-├── render.yaml                      # Render deployment blueprint
-├── .env.example                     # All environment variables
-└── README.md                        # Project overview
+
+ .github/                            # GitHub configuration
+    workflows/                      # CI/CD pipelines
+       ci.yml                     # Lint → Test → Type-check
+       deploy-api.yml            # Build + Deploy Go backend
+       deploy-web.yml            # Build + Deploy React app
+    CODEOWNERS                    # Auto-assign PR reviewers
+    PULL_REQUEST_TEMPLATE.md      # PR description template
+
+ .husky/                            # Git hooks
+    pre-commit                     # Runs lint-staged on staged files
+    commit-msg                     # Validates conventional commit format
+
+ .vscode/                           # VS Code workspace settings
+    settings.json                  # Editor config
+    extensions.json                # Recommended extensions
+
+ apps/                              # Deployable applications
+    web/                          # React frontend (TanStack Start + Vite)
+    api/                          # Go backend (Gin HTTP server)
+
+ packages/                          # Shared libraries (versioned independently)
+    ui/                          # shadcn/ui component library
+    types/                       # TypeScript type definitions
+    config/                      # Shared ESLint, TS, Tailwind configs
+    api-client/                  # Go HTTP client (for external integrations)
+
+ tooling/                          # Build scripts and utilities
+    scripts/                     # DevOps automation scripts
+    docker/                      # Container definitions
+
+ docs/                             # Project documentation
+    SECURITY/                    # Security documentation
+       IMPLEMENTATION_PLAN.md  # Security implementation roadmap
+       THREAT_MODEL.md         # Risk assessment
+       AUTH.md                 # Authentication pipeline
+       DEFENSE.md              # Defense matrix
+       FUNNEL.md               # Request funnel
+       MATRIX.md               # API protection
+    ARCHITECTURE.md             # System design
+    DEPLOYMENT.md               # Deployment guide
+
+ turbo.json                        # Turborepo pipeline configuration
+ pnpm-workspace.yaml               # pnpm workspaces manifest
+ package.json                      # Root workspace manifest
+ go.mod                           # Root Go module (for tools)
+ render.yaml                      # Render deployment blueprint
+ .env.example                     # All environment variables
+ README.md                        # Project overview
 ```
 
 ---
@@ -244,336 +244,336 @@ vyzorix/                                # Root: Monorepo workspace root
 
 ```
 apps/web/                         # React SSR Dashboard
-│                                 # Responsible for: UI, routing, API calls, state
-│
-├── package.json                  # @vyzorix/web - workspace dependency
-│
-├── tsconfig.json                # TypeScript (extends @vyzorix/tsconfig)
-│
-├── vite.config.ts               # Vite + TanStack Start + proxy to apps/api
-│
-├── eslint.config.js             # ESLint (extends @vyzorix/eslint-web)
-│
-├── tailwind.config.ts           # Tailwind CSS config
-│
-├── components.json              # shadcn/ui CLI config
-│
-├── src/
-│   ├── main.tsx               # Client hydration entry point
-│   ├── start.ts               # TanStack Start SSR entry
-│   ├── server.ts              # SSR error wrapper
-│   ├── router.tsx             # TanStack Router config
-│   ├── routeTree.gen.ts       # Auto-generated (DO NOT EDIT)
-│   │
-│   ├── routes/                # File-based routing
-│   │   ├── __root.tsx        # Root layout
-│   │   ├── _app.tsx          # App shell (sidebar + header)
-│   │   ├── _app.index.tsx    # Redirect to /dashboard
-│   │   ├── _app.dashboard.tsx
-│   │   ├── _app.device.tsx
-│   │   ├── _app.diagnostics.tsx
-│   │   ├── _app.alerts.tsx
-│   │   ├── _app.updates.tsx
-│   │   ├── _app.logs.tsx
-│   │   ├── _app.settings.tsx
-│   │   ├── _app.settings.index.tsx
-│   │   ├── _app.settings.connection.tsx
-│   │   ├── _app.settings.operator.tsx
-│   │   ├── _app.settings.thresholds.tsx
-│   │   ├── _app.settings.notifications.tsx
-│   │   ├── _app.settings.appearance.tsx
-│   │   ├── _app.settings.advanced.tsx
-│   │   ├── login.tsx
-│   │   ├── auth.callback.tsx
-│   │   ├── forgot-password.tsx
-│   │   ├── reset-password.tsx
-│   │   └── verify-email.tsx
-│   │
-│   ├── components/           # Page-specific components
-│   │   ├── dashboard/
-│   │   │   ├── device-list.tsx
-│   │   │   ├── device-card.tsx
-│   │   │   ├── stats-panel.tsx
-│   │   │   └── quick-actions.tsx
-│   │   ├── diagnostics/
-│   │   │   ├── command-panel.tsx
-│   │   │   └── command-history.tsx
-│   │   └── settings/
-│   │       ├── threshold-slider.tsx
-│   │       └── connection-form.tsx
-│   │
-│   ├── hooks/               # Custom React hooks
-│   │   ├── use-auth.ts
-│   │   ├── use-device.ts
-│   │   ├── use-websocket.ts
-│   │   ├── use-device-stream.ts
-│   │   └── use-vyzorix-config.ts
-│   │
-│   ├── lib/                 # Utility modules
-│   │   ├── api/
-│   │   │   ├── index.ts     # API client functions
-│   │   │   ├── device.ts    # Device API calls
-│   │   │   └── auth.ts      # Auth API calls
-│   │   ├── config.tsx       # Vyzorix config context + provider
-│   │   ├── utils.ts         # cn() helper, formatters
-│   │   ├── logger.ts        # Structured logging client
-│   │   ├── error-page.tsx   # 500 error page component
-│   │   ├── error-capture.ts  # SSR error capture utility
-│   │   └── integrations/
-│   │       └── supabase/
-│   │           └── auth-attacher.ts  # Supabase auth middleware
-│   │
-│   └── styles.css           # Global styles + Tailwind
-│
-├── public/
-│   ├── landing.html         # Static landing page (served by Go backend)
-│   ├── index.html          # Static fallback (served by Go backend)
-│   ├── favicon.ico
-│   ├── manifest.json       # PWA manifest
-│   └── assets/
-│       └── .gitkeep
-│
-└── tests/
-    └── e2e/                 # Playwright E2E tests
-        ├── playwright.config.ts  # Playwright config
-        ├── login.spec.ts         # Login flow tests
-        ├── dashboard.spec.ts     # Dashboard tests
-        └── device.spec.ts       # Device management tests
+                                 # Responsible for: UI, routing, API calls, state
+
+ package.json                  # @vyzorix/web - workspace dependency
+
+ tsconfig.json                # TypeScript (extends @vyzorix/tsconfig)
+
+ vite.config.ts               # Vite + TanStack Start + proxy to apps/api
+
+ eslint.config.js             # ESLint (extends @vyzorix/eslint-web)
+
+ tailwind.config.ts           # Tailwind CSS config
+
+ components.json              # shadcn/ui CLI config
+
+ src/
+    main.tsx               # Client hydration entry point
+    start.ts               # TanStack Start SSR entry
+    server.ts              # SSR error wrapper
+    router.tsx             # TanStack Router config
+    routeTree.gen.ts       # Auto-generated (DO NOT EDIT)
+   
+    routes/                # File-based routing
+       __root.tsx        # Root layout
+       _app.tsx          # App shell (sidebar + header)
+       _app.index.tsx    # Redirect to /dashboard
+       _app.dashboard.tsx
+       _app.device.tsx
+       _app.diagnostics.tsx
+       _app.alerts.tsx
+       _app.updates.tsx
+       _app.logs.tsx
+       _app.settings.tsx
+       _app.settings.index.tsx
+       _app.settings.connection.tsx
+       _app.settings.operator.tsx
+       _app.settings.thresholds.tsx
+       _app.settings.notifications.tsx
+       _app.settings.appearance.tsx
+       _app.settings.advanced.tsx
+       login.tsx
+       auth.callback.tsx
+       forgot-password.tsx
+       reset-password.tsx
+       verify-email.tsx
+   
+    components/           # Page-specific components
+       dashboard/
+          device-list.tsx
+          device-card.tsx
+          stats-panel.tsx
+          quick-actions.tsx
+       diagnostics/
+          command-panel.tsx
+          command-history.tsx
+       settings/
+           threshold-slider.tsx
+           connection-form.tsx
+   
+    hooks/               # Custom React hooks
+       use-auth.ts
+       use-device.ts
+       use-websocket.ts
+       use-device-stream.ts
+       use-vyzorix-config.ts
+   
+    lib/                 # Utility modules
+       api/
+          index.ts     # API client functions
+          device.ts    # Device API calls
+          auth.ts      # Auth API calls
+       config.tsx       # Vyzorix config context + provider
+       utils.ts         # cn() helper, formatters
+       logger.ts        # Structured logging client
+       error-page.tsx   # 500 error page component
+       error-capture.ts  # SSR error capture utility
+       integrations/
+           supabase/
+               auth-attacher.ts  # Supabase auth middleware
+   
+    styles.css           # Global styles + Tailwind
+
+ public/
+    landing.html         # Static landing page (served by Go backend)
+    index.html          # Static fallback (served by Go backend)
+    favicon.ico
+    manifest.json       # PWA manifest
+    assets/
+        .gitkeep
+
+ tests/
+     e2e/                 # Playwright E2E tests
+         playwright.config.ts  # Playwright config
+         login.spec.ts         # Login flow tests
+         dashboard.spec.ts     # Dashboard tests
+         device.spec.ts       # Device management tests
 ```
 
 ### 4.3 apps/api/ (Go Backend)
 
 ```
 apps/api/                       # Go Backend
-│                               # Responsible for: HTTP, auth, device management, WebSocket
-│
-├── go.mod                     # module github.com/VinnsEdesigner/vyzorix/apps/api
-│
-├── main.go                    # Bootstrap: SQLite init, FCM init, server start
-│
-├── cmd/
-│   └── server/
-│       └── main.go           # Alternative entry point (for docker)
-│
-├── internal/                  # Private application code (not importable)
-│   │
-│   ├── api/                  # HTTP layer
-│   │   ├── router.go        # Gin router setup + middleware registration
-│   │   │
-│   │   ├── handlers/        # HTTP request handlers
-│   │   │   ├── auth.go      # Login, register, logout, me, OAuth
-│   │   │   ├── auth_test.go
-│   │   │   ├── device.go    # Register, status, fcm-token, delete
-│   │   │   ├── device_test.go
-│   │   │   ├── command.go   # Command dispatch
-│   │   │   ├── command_test.go
-│   │   │   ├── health.go    # Health check
-│   │   │   ├── health_test.go
-│   │   │   └── rate_limit_test.go
-│   │   │
-│   │   └── middleware/      # HTTP middleware
-│   │       ├── security.go  # CORS, security headers, panic recovery
-│   │       ├── ratelimit.go # IP + session rate limiting
-│   │       ├── auth.go     # JWT validation
-│   │       ├── csrf.go     # CSRF token validation
-│   │       ├── body_size.go # MaxBytesReader wrapper
-│   │       ├── logger.go   # Request logging
-│   │       └── request_id.go # X-Request-ID injection
-│   │
-│   ├── auth/                 # Authentication logic
-│   │   ├── jwt.go           # JWT generation + validation
-│   │   ├── jwt_test.go
-│   │   ├── password.go     # Argon2id hashing
-│   │   ├── password_test.go
-│   │   ├── session.go      # Session management
-│   │   ├── revocation.go    # Token blacklist (logout)
-│   │   └── csrf.go         # CSRF token generation
-│   │
-│   ├── device/              # Device management
-│   │   ├── service.go       # Device business logic
-│   │   ├── repository.go    # SQLite operations
-│   │   └── models.go        # Device types
-│   │
-│   ├── ws/                  # WebSocket hub
-│   │   ├── hub.go          # WebSocket connection manager
-│   │   ├── hub_test.go
-│   │   └── client.go      # Individual WebSocket client
-│   │
-│   └── fcm/                 # Firebase Cloud Messaging
-│       └── notifier.go     # FCM notification sender
-│
-├── pkg/                      # Public libraries (can be imported)
-│   │
-│   ├── models/              # Shared data models
-│   │   ├── device.go       # Device struct + JSON tags
-│   │   ├── command.go      # Command structs
-│   │   ├── auth.go         # Auth request/response types
-│   │   ├── response.go     # Standard API response wrapper
-│   │   ├── telemetry.go    # Telemetry frame types
-│   │   └── updater.go      # OTA update types
-│   │
-│   ├── crypto/             # Cryptographic utilities
-│   │   ├── hmac.go        # HMAC-SHA256 verification
-│   │   ├── hmac_test.go
-│   │   └── signature.go   # Ed25519 command signing
-│   │
-│   ├── storage/            # Database layer
-│   │   ├── sqlite.go      # SQLite connection + WAL config
-│   │   ├── sqlite_test.go
-│   │   └── migrations/     # SQL migration files
-│   │       ├── 001_initial.sql
-│   │       └── 002_uuidv7.sql
-│   │
-│   └── config/             # Configuration
-│       ├── config.go       # Config struct + Load()
-│       └── config_test.go
-│
-├── scripts/                 # Build/maintenance scripts
-│   ├── migrate.sh          # Run SQL migrations
-│   ├── seed.sh             # Seed database with test data
-│   └── cleanup_old_apks.sh # Remove stale APK files
-│
-├── Dockerfile               # Multi-stage Docker build
-│
-└── docker-compose.yml      # Local development services
+                               # Responsible for: HTTP, auth, device management, WebSocket
+
+ go.mod                     # module github.com/VinnsEdesigner/vyzorix/apps/api
+
+ main.go                    # Bootstrap: SQLite init, FCM init, server start
+
+ cmd/
+    server/
+        main.go           # Alternative entry point (for docker)
+
+ internal/                  # Private application code (not importable)
+   
+    api/                  # HTTP layer
+       router.go        # Gin router setup + middleware registration
+      
+       handlers/        # HTTP request handlers
+          auth.go      # Login, register, logout, me, OAuth
+          auth_test.go
+          device.go    # Register, status, fcm-token, delete
+          device_test.go
+          command.go   # Command dispatch
+          command_test.go
+          health.go    # Health check
+          health_test.go
+          rate_limit_test.go
+      
+       middleware/      # HTTP middleware
+           security.go  # CORS, security headers, panic recovery
+           ratelimit.go # IP + session rate limiting
+           auth.go     # JWT validation
+           csrf.go     # CSRF token validation
+           body_size.go # MaxBytesReader wrapper
+           logger.go   # Request logging
+           request_id.go # X-Request-ID injection
+   
+    auth/                 # Authentication logic
+       jwt.go           # JWT generation + validation
+       jwt_test.go
+       password.go     # Argon2id hashing
+       password_test.go
+       session.go      # Session management
+       revocation.go    # Token blacklist (logout)
+       csrf.go         # CSRF token generation
+   
+    device/              # Device management
+       service.go       # Device business logic
+       repository.go    # SQLite operations
+       models.go        # Device types
+   
+    ws/                  # WebSocket hub
+       hub.go          # WebSocket connection manager
+       hub_test.go
+       client.go      # Individual WebSocket client
+   
+    fcm/                 # Firebase Cloud Messaging
+        notifier.go     # FCM notification sender
+
+ pkg/                      # Public libraries (can be imported)
+   
+    models/              # Shared data models
+       device.go       # Device struct + JSON tags
+       command.go      # Command structs
+       auth.go         # Auth request/response types
+       response.go     # Standard API response wrapper
+       telemetry.go    # Telemetry frame types
+       updater.go      # OTA update types
+   
+    crypto/             # Cryptographic utilities
+       hmac.go        # HMAC-SHA256 verification
+       hmac_test.go
+       signature.go   # Ed25519 command signing
+   
+    storage/            # Database layer
+       sqlite.go      # SQLite connection + WAL config
+       sqlite_test.go
+       migrations/     # SQL migration files
+           001_initial.sql
+           002_uuidv7.sql
+   
+    config/             # Configuration
+        config.go       # Config struct + Load()
+        config_test.go
+
+ scripts/                 # Build/maintenance scripts
+    migrate.sh          # Run SQL migrations
+    seed.sh             # Seed database with test data
+    cleanup_old_apks.sh # Remove stale APK files
+
+ Dockerfile               # Multi-stage Docker build
+
+ docker-compose.yml      # Local development services
 ```
 
 ### 4.4 packages/ui/ (Shared React Components)
 
 ```
 packages/ui/                    # shadcn/ui component library
-│                              # Responsible for: Reusable UI primitives
-│
-├── package.json              # @vyzorix/ui - published to npm (internal only)
-│
-├── tsconfig.json            # TypeScript (extends @vyzorix/tsconfig)
-│
-├── src/
-│   ├── index.ts            # Exports all components
-│   │
-│   ├── components/
-│   │   └── ui/             # shadcn/ui base components
-│   │       ├── button.tsx
-│   │       ├── card.tsx
-│   │       ├── input.tsx
-│   │       ├── label.tsx
-│   │       ├── select.tsx
-│   │       ├── switch.tsx
-│   │       ├── tabs.tsx
-│   │       ├── dialog.tsx
-│   │       ├── dropdown-menu.tsx
-│   │       ├── separator.tsx
-│   │       ├── progress.tsx
-│   │       ├── slider.tsx
-│   │       ├── tooltip.tsx
-│   │       ├── toast.tsx
-│   │       ├── sonner.tsx
-│   │       └── ... (other shadcn components)
-│   │
-│   └── lib/
-│       └── utils.ts        # cn() classname utility
-│
-└── README.md               # Usage instructions
+                              # Responsible for: Reusable UI primitives
+
+ package.json              # @vyzorix/ui - published to npm (internal only)
+
+ tsconfig.json            # TypeScript (extends @vyzorix/tsconfig)
+
+ src/
+    index.ts            # Exports all components
+   
+    components/
+       ui/             # shadcn/ui base components
+           button.tsx
+           card.tsx
+           input.tsx
+           label.tsx
+           select.tsx
+           switch.tsx
+           tabs.tsx
+           dialog.tsx
+           dropdown-menu.tsx
+           separator.tsx
+           progress.tsx
+           slider.tsx
+           tooltip.tsx
+           toast.tsx
+           sonner.tsx
+           ... (other shadcn components)
+   
+    lib/
+        utils.ts        # cn() classname utility
+
+ README.md               # Usage instructions
 ```
 
 ### 4.5 packages/types/ (TypeScript Type Definitions)
 
 ```
 packages/types/                # Shared TypeScript types
-│                              # Responsible for: Type definitions for API contracts
-│
-├── package.json              # @vyzorix/types
-│
-├── tsconfig.json            # TypeScript (extends @vyzorix/tsconfig)
-│
-└── src/
-    ├── index.ts            # Re-exports all types
-    ├── device.ts           # Device types
-    ├── command.ts          # Command types
-    ├── api.ts              # API response types
-    ├── auth.ts             # Auth types
-    ├── telemetry.ts        # Telemetry types
-    └── updater.ts          # OTA update types
+                              # Responsible for: Type definitions for API contracts
+
+ package.json              # @vyzorix/types
+
+ tsconfig.json            # TypeScript (extends @vyzorix/tsconfig)
+
+ src/
+     index.ts            # Re-exports all types
+     device.ts           # Device types
+     command.ts          # Command types
+     api.ts              # API response types
+     auth.ts             # Auth types
+     telemetry.ts        # Telemetry types
+     updater.ts          # OTA update types
 ```
 
 ### 4.6 packages/config/ (Shared Configurations)
 
 ```
 packages/config/               # Shared configurations
-│                              # Responsible for: ESLint, TypeScript, Tailwind base configs
-│
-├── eslint-config-web/        # ESLint config for web apps
-│   ├── index.js             # .eslintrc replacement (flat config)
-│   └── README.md
-│
-├── tsconfig-base/            # Base TypeScript config
-│   ├── base.json            # Compiler options shared by all apps
-│   └── README.md
-│
-└── tailwind-config/          # Base Tailwind config
-    ├── base.ts              # Theme extension base
-    └── README.md
+                              # Responsible for: ESLint, TypeScript, Tailwind base configs
+
+ eslint-config-web/        # ESLint config for web apps
+    index.js             # .eslintrc replacement (flat config)
+    README.md
+
+ tsconfig-base/            # Base TypeScript config
+    base.json            # Compiler options shared by all apps
+    README.md
+
+ tailwind-config/          # Base Tailwind config
+     base.ts              # Theme extension base
+     README.md
 ```
 
 ### 4.7 packages/api-client/ (Go API Client)
 
 ```
 packages/api-client/          # Go HTTP client library
-│                              # Responsible for: Type-safe API client for external integrations
-│
-├── go.mod                   # module github.com/VinnsEdesigner/vyzorix/packages/api-client
-│
-├── client.go               # HTTP client with auth
-├── types.go                # Shared Go types
-├── mock.go                 # Mock server for testing
-└── README.md               # Usage documentation
+                              # Responsible for: Type-safe API client for external integrations
+
+ go.mod                   # module github.com/VinnsEdesigner/vyzorix/packages/api-client
+
+ client.go               # HTTP client with auth
+ types.go                # Shared Go types
+ mock.go                 # Mock server for testing
+ README.md               # Usage documentation
 ```
 
 ### 4.8 tooling/ (Build Scripts)
 
 ```
 tooling/
-│
-├── scripts/                 # DevOps automation
-│   ├── bootstrap.sh        # Initial setup: install deps, run migrations
-│   ├── build.sh            # Full build: web + api
-│   ├── test-all.sh         # Run all tests: unit + e2e
-│   ├── release.sh          # Version bump + git tag + changelog
-│   ├── lint.sh             # Run all linters
-│   └── setup-db.sh         # Initialize SQLite database
-│
-└── docker/
-    ├── Dockerfile.web       # Multi-stage build for React
-    ├── Dockerfile.api      # Multi-stage build for Go
-    └── docker-compose.yml   # Local development stack
+
+ scripts/                 # DevOps automation
+    bootstrap.sh        # Initial setup: install deps, run migrations
+    build.sh            # Full build: web + api
+    test-all.sh         # Run all tests: unit + e2e
+    release.sh          # Version bump + git tag + changelog
+    lint.sh             # Run all linters
+    setup-db.sh         # Initialize SQLite database
+
+ docker/
+     Dockerfile.web       # Multi-stage build for React
+     Dockerfile.api      # Multi-stage build for Go
+     docker-compose.yml   # Local development stack
 ```
 
 ### 4.9 docs/ (Documentation)
 
 ```
 docs/
-│
-├── README.md               # Documentation index
-│
-├── ARCHITECTURE.md         # System design document
-│
-├── DEPLOYMENT.md           # Deployment guide (Render + Cloudflare)
-│
-├── API.md                  # API reference
-│
-├── REPOSITORY/             # Repository structure docs
-│   ├── REPO_STRUCTURE.md  # This file
-│   ├── CURRENT_STATE.md   # Current repo analysis
-│   └── MIGRATION_PLAN.md  # Migration steps
-│
-└── SECURITY/              # Security documentation
-    ├── README.md          # Security index
-    ├── IMPLEMENTATION_PLAN.md  # Security implementation roadmap
-    ├── THREAT_MODEL.md    # Risk assessment
-    ├── AUTH.md            # Authentication pipeline
-    ├── DEFENSE.md         # Defense matrix
-    ├── FUNNEL.md          # Request funnel
-    └── MATRIX.md          # API protection
+
+ README.md               # Documentation index
+
+ ARCHITECTURE.md         # System design document
+
+ DEPLOYMENT.md           # Deployment guide (Render + Cloudflare)
+
+ API.md                  # API reference
+
+ REPOSITORY/             # Repository structure docs
+    REPO_STRUCTURE.md  # This file
+    CURRENT_STATE.md   # Current repo analysis
+    MIGRATION_PLAN.md  # Migration steps
+
+ SECURITY/              # Security documentation
+     README.md          # Security index
+     IMPLEMENTATION_PLAN.md  # Security implementation roadmap
+     THREAT_MODEL.md    # Risk assessment
+     AUTH.md            # Authentication pipeline
+     DEFENSE.md         # Defense matrix
+     FUNNEL.md          # Request funnel
+     MATRIX.md          # API protection
 ```
 
 ---
@@ -767,41 +767,41 @@ pnpm typecheck
 ## 8. Dependency Graph
 
 ```
-                    ┌─────────────────────┐
-                    │   Root package.json │
-                    │   (workspaces only) │
-                    └──────────┬──────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          │                    │                    │
-          ▼                    ▼                    ▼
-    ┌───────────┐        ┌───────────┐        ┌───────────┐
-    │  tooling/ │        │  packages │        │   apps/   │
-    │  (deps)   │        │  (deps)   │        │  (deps)   │
-    └─────┬─────┘        └─────┬─────┘        └─────┬─────┘
-          │                    │                    │
-          │              ┌─────┴─────┐              │
-          │              │           │              │
-          ▼              ▼           ▼              ▼
-    ┌───────────┐  ┌────────┐ ┌────────┐  ┌────────────┐
-    │  scripts  │  │   ui    │ │ types  │  │    web     │
-    │  (bash)  │  │(React)  │ │  (TS)  │  │  (React)   │
-    └───────────┘  └────┬────┘ └────────┘  └──────┬─────┘
-                        │                        │
-                        │                        │ proxy /v1/* → api
-                        ▼                        ▼
-                   ┌────────────┐         ┌────────────┐
-                   │ @vyzorix/ui│         │    api     │
-                   │  (deps)    │         │   (Go)     │
-                   └────────────┘         └─────┬──────┘
-                                                │
-                   ┌────────────────────────────┼────────────────────────────┐
-                   │                            │                            │
-                   ▼                            ▼                            ▼
-            ┌────────────┐              ┌────────────┐              ┌────────────┐
-            │   pkg/     │              │ internal/  │              │   pkg/     │
-            │  storage   │              │    ws/     │              │   crypto   │
-            └────────────┘              └────────────┘              └────────────┘
+                    
+                       Root package.json 
+                       (workspaces only) 
+                    
+                               
+          
+                                                  
+                                                  
+                    
+      tooling/           packages            apps/   
+      (deps)             (deps)             (deps)   
+                    
+                                                  
+                                      
+                                                 
+                                                 
+         
+      scripts       ui      types        web     
+      (bash)    (React)     (TS)      (React)   
+         
+                                                
+                                                 proxy /v1/* → api
+                                                
+                            
+                    @vyzorix/ui             api     
+                     (deps)                (Go)     
+                            
+                                                
+                   
+                                                                           
+                                                                           
+                                        
+               pkg/                    internal/                   pkg/     
+              storage                     ws/                      crypto   
+                                        
 ```
 
 ---
@@ -847,11 +847,11 @@ pnpm typecheck
 
 ```
 main                    # Production-ready code
-├── develop             # Integration branch
-│   ├── feature/*       # Feature branches
-│   ├── fix/*           # Bug fix branches
-│   └── refactor/*      # Refactoring branches
-└── release/*           # Release preparation
+ develop             # Integration branch
+    feature/*       # Feature branches
+    fix/*           # Bug fix branches
+    refactor/*      # Refactoring branches
+ release/*           # Release preparation
 ```
 
 ### 10.2 Commit Convention
@@ -891,53 +891,53 @@ Examples:
 
 ```
 vyzorix-update-server/
-├── .env                      # Environment (NOT in git)
-├── .env.example              # Template
-├── .gitignore
-├── .golangci.yml
-├── .prettierignore
-├── .prettierrc
-├── .github/
-│   └── workflows/           # Existing CI (needs update)
-├── Makefile
-├── Dockerfile
-├── docker-compose.yml
-├── render.yaml
-├── go.mod
-├── go.sum
-├── package.json
-├── package-lock.json
-├── bun.lock                  # Legacy (will convert to pnpm)
-├── bunfig.toml               # Legacy
-├── tsconfig.json
-├── vite.config.ts
-├── eslint.config.js
-├── components.json
-└── coverage.out
+ .env                      # Environment (NOT in git)
+ .env.example              # Template
+ .gitignore
+ .golangci.yml
+ .prettierignore
+ .prettierrc
+ .github/
+    workflows/           # Existing CI (needs update)
+ Makefile
+ Dockerfile
+ docker-compose.yml
+ render.yaml
+ go.mod
+ go.sum
+ package.json
+ package-lock.json
+ bun.lock                  # Legacy (will convert to pnpm)
+ bunfig.toml               # Legacy
+ tsconfig.json
+ vite.config.ts
+ eslint.config.js
+ components.json
+ coverage.out
 ```
 
 ### A.2 Current Source Structure
 
 ```
 src/                    # React frontend
-├── main.tsx
-├── start.ts
-├── server.ts
-├── router.tsx
-├── routeTree.gen.ts
-├── routes/
-├── components/
-├── hooks/
-├── lib/
-└── styles.css
+ main.tsx
+ start.ts
+ server.ts
+ router.tsx
+ routeTree.gen.ts
+ routes/
+ components/
+ hooks/
+ lib/
+ styles.css
 
 public/                 # Static files
-├── index.html         # Placeholder (Go serves React)
-├── landing.html        # Static landing page
-├── favicon.ico
-├── health.json
-├── manifest.json
-└── style.css
+ index.html         # Placeholder (Go serves React)
+ landing.html        # Static landing page
+ favicon.ico
+ health.json
+ manifest.json
+ style.css
 
 controllers/            # Go HTTP handlers
 middleware/            # Go middleware

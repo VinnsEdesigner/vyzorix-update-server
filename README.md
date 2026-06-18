@@ -1,16 +1,16 @@
 <!--
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                                                                          ║
-║   ██████╗ ██╗      ██████╗ ██████╗ ███████╗████████╗                    ║
-║   ██╔══██╗██║     ██╔═══██╗██╔══██╗██╔════╝╚══██╔══╝                    ║
-║   ██████╔╝██║     ██║   ██║██████╔╝█████╗     ██║                       ║
-║   ██╔══██╗██║     ██║   ██║██╔══██╗██╔══╝     ██║                       ║
-║   ██████╔╝███████╗╚██████╔╝██║  ██║███████╗   ██║                       ║
-║   ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝   ╚═╝                       ║
-║                                                                          ║
-║   UPDATE SERVER — Real-time Device Management & OTA Updates             ║
-║                                                                          ║
-╚══════════════════════════════════════════════════════════════════════════════╝
+
+                                                                          
+                                
+                            
+                                       
+                                       
+                               
+                                  
+                                                                          
+   UPDATE SERVER — Real-time Device Management & OTA Updates             
+                                                                          
+
 -->
 <div align="center">
 
@@ -73,48 +73,48 @@
 ## Architecture
 
 ```
-                           ╔═══════════════════════════════════════╗
-                           ║      VYZORIX CONTROL PLATFORM       ║
-                           ╚═══════════════════════════════════════╝
+                           
+                                 VYZORIX CONTROL PLATFORM       
+                           
 
-    ┌────────────────────────────────────────────────────────────────────────┐
-    │                          Frontend (React)                             │
-    │  ┌────────────────────────────────────────────────────────────────┐  │
-    │  │                    TanStack Start Router                        │  │
-    │  │  Dashboard  │  Device  │  Diagnostics  │  Alerts  │  Settings │  │
-    │  └────────────────────────────────────────────────────────────────┘  │
-    │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────┐ │
-    │  │ WS Stream    │  │ Config      │  │ Logs        │  │ Operator  │ │
-    │  │ useDevice    │  │ useVyzorix   │  │ useLogs     │  │ Auth      │ │
-    │  │ Stream       │  │ Config      │  │             │  │ useAuth    │ │
-    │  └──────────────┘  └──────────────┘  └──────────────┘  └────────────┘ │
-    └────────────────────────────────────────────────────────────────────────┘
-                                      │
+    
+                              Frontend (React)                             
+        
+                          TanStack Start Router                          
+        Dashboard    Device    Diagnostics    Alerts    Settings   
+        
+             
+       WS Stream       Config         Logs           Operator   
+       useDevice       useVyzorix      useLogs        Auth       
+       Stream          Config                        useAuth     
+             
+    
+                                      
                               WebSocket + REST
-                                      │
-    ┌────────────────────────────────────────────────────────────────────────┐
-    │                          Backend (Go)                                 │
-    │  ┌──────────────────────────────────────────────────────────────────┐  │
-    │  │                         Gin HTTP Router                         │  │
-    │  │  /v1/auth/*  │  /v1/device/*  │  /api/v1/*  │  /healthz         │  │
-    │  └──────────────────────────────────────────────────────────────────┘  │
-    │  ┌────────────────────┐              ┌────────────────────────────┐   │
-    │  │  WebSocket Hub      │              │       Services             │   │
-    │  │  /v1/device/:id/    │              │  ┌─────────────────────┐  │   │
-    │  │  stream              │              │  │  FCM Notifier       │  │   │
-    │  └──────────┬───────────┘              │  │  (SafeNotifier)     │  │   │
-    │             │                             │  └─────────────────────┘  │   │
-    │  ┌──────────▼───────────────────────────┴──────────────────────────┐   │
-    │  │                    Middleware Stack                             │   │
-    │  │  CORS Handler  │  JWT Auth  │  Rate Limiter  │  Request Logger │   │
-    │  └─────────────────────────────────────────────────────────────────┘   │
-    └────────────────────────────────────────────────────────────────────────┘
-                                      │
-    ┌────────────────────────────────────────────────────────────────────────┐
-    │                         Storage Layer                                  │
-    │                      SQLite (WAL Mode)                                 │
-    │   Operators  │  Sessions  │  Devices  │  Commands  │  Secrets     │
-    └────────────────────────────────────────────────────────────────────────┘
+                                      
+    
+                              Backend (Go)                                 
+        
+                               Gin HTTP Router                           
+        /v1/auth/*    /v1/device/*    /api/v1/*    /healthz           
+        
+                       
+        WebSocket Hub                           Services                
+        /v1/device/:id/                         
+        stream                                FCM Notifier            
+                        (SafeNotifier)          
+                                                     
+         
+                          Middleware Stack                                
+        CORS Handler    JWT Auth    Rate Limiter    Request Logger    
+         
+    
+                                      
+    
+                             Storage Layer                                  
+                          SQLite (WAL Mode)                                 
+       Operators    Sessions    Devices    Commands    Secrets     
+    
 ```
 
 ### Tech Stack
@@ -270,10 +270,10 @@ AUTO_OPEN_BROWSER=false BUILD_MODE=development ./scripts/startup.sh
   +-------------------------------------------------------------+
 
 [STEP 1: Go Server Binary]
-  ✓ /path/to/vyzorix-server exists (35M bytes)
+   /path/to/vyzorix-server exists (35M bytes)
 
 [STEP 2: Web App Build]
-  ✓ dist/client exists (89 files)
+   dist/client exists (89 files)
   > Assets found:
     JS:  40 files
     CSS: 2 files
@@ -281,15 +281,15 @@ AUTO_OPEN_BROWSER=false BUILD_MODE=development ./scripts/startup.sh
     Images: 2 files
 
 [STEP 3: Asset Validation]
-  ✓ Assets in sync
-  ✓ index.html exists
-  ✓ landing.html exists
-  ✓ manifest.json exists
+   Assets in sync
+   index.html exists
+   landing.html exists
+   manifest.json exists
 
 [STEP 8: Starting Servers]
-  ✓ Go server started (PID: 12345)
-  ✓ Go server health check passed
-  ✓ SSR server health check passed
+   Go server started (PID: 12345)
+   Go server health check passed
+   SSR server health check passed
 
 [STARTUP COMPLETE]
   Go Server:   http://localhost:3000
@@ -417,21 +417,21 @@ docker run -p 3000:3000 \
 
 ```
 vyzorix-update-server/
-├── cmd/
-│   └── mockserver/           # Phase 1 mock server
-├── controllers/               # HTTP handlers
-├── hub/                      # WebSocket broker
-├── middleware/               # Auth, CORS, rate limit
-├── models/                   # Type definitions
-├── security/                # JWT, HMAC, password
-├── services/                # FCM, email
-├── storage/                  # SQLite operations
-├── src/                      # React frontend
-│   ├── lib/                  # API clients, config
-│   ├── hooks/                # Custom React hooks
-│   ├── components/          # UI components
-│   └── routes/               # Page routes
-└── doc/                      # Documentation
+ cmd/
+    mockserver/           # Phase 1 mock server
+ controllers/               # HTTP handlers
+ hub/                      # WebSocket broker
+ middleware/               # Auth, CORS, rate limit
+ models/                   # Type definitions
+ security/                # JWT, HMAC, password
+ services/                # FCM, email
+ storage/                  # SQLite operations
+ src/                      # React frontend
+    lib/                  # API clients, config
+    hooks/                # Custom React hooks
+    components/          # UI components
+    routes/               # Page routes
+ doc/                      # Documentation
 ```
 
 ### Available Scripts

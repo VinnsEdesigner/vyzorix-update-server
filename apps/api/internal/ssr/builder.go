@@ -47,7 +47,7 @@ func (b *Builder) NeedsBuild() (bool, error) {
 func (b *Builder) Build() error {
 	b.logger.Info("Building web app", "dir", b.webDir)
 
-	// Build the web app
+	// Build the web app.
 	cmd := exec.Command("pnpm", "run", "build")
 	cmd.Dir = b.webDir
 	cmd.Stdout = os.Stdout
@@ -65,7 +65,7 @@ func (b *Builder) Build() error {
 func (b *Builder) CopyAssets() error {
 	clientDist := filepath.Join(b.webDir, "dist", "client")
 
-	// Check if client dist exists
+	// Check if client dist exists.
 	exists, err := dirExists(clientDist)
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func (b *Builder) CopyAssets() error {
 		return fmt.Errorf("client dist directory not found: %s", clientDist)
 	}
 
-	// Check if there are files to copy
+	// Check if there are files to copy.
 	files, err := os.ReadDir(clientDist)
 	if err != nil {
 		return fmt.Errorf("failed to read client dist: %w", err)
@@ -84,14 +84,14 @@ func (b *Builder) CopyAssets() error {
 		return nil
 	}
 
-	// Ensure public directory exists
-	//nolint:gosec,G302
+	// Ensure public directory exists.
+	//nolint:gosec,G302.
 	if err := os.MkdirAll(b.publicDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create public dir: %w", err)
 	}
 
-	// Copy assets using shell command
-	// #nosec:G204 - Paths are validated before use (clientDist from known web build)
+	// Copy assets using shell command.
+	// #nosec:G204 - Paths are validated before use (clientDist from known web build).
 	cmd := exec.Command("cp", "-r", clientDist+"/", b.publicDir+"/")
 	cmd.Stdout = nil
 	cmd.Stderr = nil

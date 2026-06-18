@@ -2,7 +2,7 @@ package services
 
 import (
 	"crypto/hmac"
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
 	"strconv"
@@ -30,17 +30,17 @@ func TestCommandSigner_SignCommand(t *testing.T) {
 		t.Fatalf("SignCommand() error = %v", err)
 	}
 
-	// Nonce should be 32 hex chars (16 bytes)
+	// Nonce should be 32 hex chars (16 bytes).
 	if len(nonce) != 32 {
 		t.Errorf("nonce length = %d, want 32", len(nonce))
 	}
 
-	// HMAC should be 64 hex chars (32 bytes SHA256)
-	if len(hmacHex) != 64 {
-		t.Errorf("hmac length = %d, want 64", len(hmacHex))
+	// HMAC should be 128 hex chars (64 bytes SHA512).
+	if len(hmacHex) != 128 {
+		t.Errorf("hmac length = %d, want 128", len(hmacHex))
 	}
 
-	// HMAC should be valid hex
+	// HMAC should be valid hex.
 	for _, c := range hmacHex {
 		if !strings.ContainsRune("0123456789abcdef", c) {
 			t.Errorf("hmac contains non-hex char: %c", c)
@@ -60,7 +60,7 @@ func TestCommandSigner_SignCommand_Deterministic(t *testing.T) {
 	deviceID := "device-fixed"
 	secret := "testsecret123456789012345678901234567890123456789012345678"
 
-	// Sign twice with same frame - nonces should be different but HMAC computation same
+	// Sign twice with same frame - nonces should be different but HMAC computation same.
 	nonce1, hmac1, err := signer.SignCommand(frame, deviceID, secret)
 	if err != nil {
 		t.Fatalf("SignCommand() error = %v", err)
@@ -71,12 +71,12 @@ func TestCommandSigner_SignCommand_Deterministic(t *testing.T) {
 		t.Fatalf("SignCommand() error = %v", err)
 	}
 
-	// Nonces should be different (random)
+	// Nonces should be different (random).
 	if nonce1 == nonce2 {
 		t.Error("nonces should be different (random)")
 	}
 
-	// HMAC values should be different because nonce changes
+	// HMAC values should be different because nonce changes.
 	if hmac1 == hmac2 {
 		t.Error("hmac values should be different due to different nonces")
 	}
@@ -94,7 +94,7 @@ func TestCommandSigner_ValidateCommandHMAC(t *testing.T) {
 	deviceID := "device-456"
 	secret := "testsecret123456789012345678901234567890123456789012345678"
 
-	// Sign the command
+	// Sign the command.
 	nonce, hmacHex, err := signer.SignCommand(frame, deviceID, secret)
 	if err != nil {
 		t.Fatalf("SignCommand() error = %v", err)
@@ -102,7 +102,7 @@ func TestCommandSigner_ValidateCommandHMAC(t *testing.T) {
 	frame.Nonce = nonce
 	frame.Signature = hmacHex
 
-	// Validation should pass
+	// Validation should pass.
 	if !signer.ValidateCommandHMAC(frame, deviceID, secret) {
 		t.Error("ValidateCommandHMAC() should pass for valid signature")
 	}
@@ -128,7 +128,7 @@ func TestCommandSigner_ValidateCommandHMAC_InvalidSecret(t *testing.T) {
 	frame.Nonce = nonce
 	frame.Signature = hmacHex
 
-	// Validation should fail with wrong secret
+	// Validation should fail with wrong secret.
 	if signer.ValidateCommandHMAC(frame, deviceID, wrongSecret) {
 		t.Error("ValidateCommandHMAC() should fail for wrong secret")
 	}
@@ -154,7 +154,7 @@ func TestCommandSigner_ValidateCommandHMAC_WrongDeviceID(t *testing.T) {
 	frame.Nonce = nonce
 	frame.Signature = hmacHex
 
-	// Validation should fail with wrong device ID
+	// Validation should fail with wrong device ID.
 	if signer.ValidateCommandHMAC(frame, wrongDeviceID, secret) {
 		t.Error("ValidateCommandHMAC() should fail for wrong device ID")
 	}
@@ -179,10 +179,10 @@ func TestCommandSigner_ValidateCommandHMAC_TamperedFrame(t *testing.T) {
 	frame.Nonce = nonce
 	frame.Signature = hmacHex
 
-	// Tamper with the frame after signing
+	// Tamper with the frame after signing.
 	frame.Command = "DANGER_COMMAND"
 
-	// Validation should fail
+	// Validation should fail.
 	if signer.ValidateCommandHMAC(frame, deviceID, secret) {
 		t.Error("ValidateCommandHMAC() should fail for tampered frame")
 	}
@@ -228,18 +228,18 @@ func TestCommandSigner_ValidateConnectHMAC(t *testing.T) {
 	deviceID := "device-123"
 	secret := "testsecret123456789012345678901234567890123456789012345678"
 
-	// Generate connect parameters
+	// Generate connect parameters.
 	timestamp := signer.GenerateTimestamp()
 	nonce, _ := signer.GenerateNonce()
 
-	// Compute HMAC manually for the CONNECT format
+	// Compute HMAC manually for the CONNECT format using SHA512.
 	canonical := "CONNECT:" + deviceID + ":" + timestamp + ":" + nonce
 
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha512.New, []byte(secret))
 	mac.Write([]byte(canonical))
 	expectedHmac := hex.EncodeToString(mac.Sum(nil))
 
-	// Validate should pass with correct HMAC
+	// Validate should pass with correct HMAC.
 	if !signer.ValidateConnectHMAC(deviceID, timestamp, nonce, expectedHmac, secret) {
 		t.Error("ValidateConnectHMAC() should pass for valid signature")
 	}
@@ -263,7 +263,7 @@ func TestCommandSigner_ValidateConnectHMAC_WrongSecret(t *testing.T) {
 	}
 	_, hmacHex, _ := signer.SignCommand(frame, deviceID, secret)
 
-	// Validate should fail with wrong secret
+	// Validate should fail with wrong secret.
 	if signer.ValidateConnectHMAC(deviceID, timestamp, nonce, hmacHex, wrongSecret) {
 		t.Error("ValidateConnectHMAC() should fail for wrong secret")
 	}
@@ -327,12 +327,12 @@ func TestCommandSigner_HashSecret(t *testing.T) {
 
 	hash := signer.HashSecret(secret)
 
-	// Hash should be Argon2id format (starts with $argon2id$)
+	// Hash should be Argon2id format (starts with $argon2id$).
 	if !strings.HasPrefix(hash, "$argon2id$") {
 		t.Error("HashSecret() should return Argon2id hash format")
 	}
 
-	// Hash should be verifiable
+	// Hash should be verifiable.
 	if !signer.VerifySecretHash(secret, hash) {
 		t.Error("VerifySecretHash() should pass for correct secret")
 	}
@@ -347,12 +347,12 @@ func TestCommandSigner_HashSecret_DifferentSecrets(t *testing.T) {
 	hash1 := signer.HashSecret(secret1)
 	hash2 := signer.HashSecret(secret2)
 
-	// Hashes should be different
+	// Hashes should be different.
 	if hash1 == hash2 {
 		t.Error("HashSecret() should produce different hashes for different secrets")
 	}
 
-	// Cross-verification should fail
+	// Cross-verification should fail.
 	if signer.VerifySecretHash(secret1, hash2) {
 		t.Error("VerifySecretHash() should fail for mismatched secret/hash")
 	}
@@ -361,7 +361,7 @@ func TestCommandSigner_HashSecret_DifferentSecrets(t *testing.T) {
 func TestCommandSigner_VerifySecretHash_InvalidHash(t *testing.T) {
 	signer := NewCommandSigner()
 
-	// Invalid hash formats
+	// Invalid hash formats.
 	invalidHashes := []string{
 		"nocolon",
 		"invalidsalthex",
@@ -424,14 +424,14 @@ func TestBuildCanonicalString_EmptyArgs(t *testing.T) {
 
 	canonical := BuildCanonicalString(frame, deviceID, nonce)
 
-	// Empty args should default to {}
+	// Empty args should default to {}.
 	expected := "tx-1|device-1|REBOOT|1000000000|abcd|{}"
 	if canonical != expected {
 		t.Errorf("BuildCanonicalString() = %s, want %s", canonical, expected)
 	}
 }
 
-// Edge case tests
+// Edge case tests.
 
 func TestCommandSigner_EmptySecret(t *testing.T) {
 	signer := NewCommandSigner()
@@ -445,7 +445,7 @@ func TestCommandSigner_EmptySecret(t *testing.T) {
 	deviceID := "device-456"
 	secret := ""
 
-	// Should not panic
+	// Should not panic.
 	_, _, err := signer.SignCommand(frame, deviceID, secret)
 	if err != nil {
 		t.Errorf("SignCommand() with empty secret error = %v", err)
@@ -464,7 +464,7 @@ func TestCommandSigner_VeryLongNonce(t *testing.T) {
 	deviceID := "device-456"
 	secret := "testsecret"
 
-	// Sign multiple times to get different nonces
+	// Sign multiple times to get different nonces.
 	nonces := make(map[string]bool)
 	for i := 0; i < 100; i++ {
 		nonce, _, err := signer.SignCommand(frame, deviceID, secret)
@@ -474,7 +474,7 @@ func TestCommandSigner_VeryLongNonce(t *testing.T) {
 		nonces[nonce] = true
 	}
 
-	// All nonces should be unique
+	// All nonces should be unique.
 	if len(nonces) != 100 {
 		t.Errorf("Expected 100 unique nonces, got %d", len(nonces))
 	}
@@ -484,7 +484,7 @@ func TestCommandSigner_TimestampBoundary(t *testing.T) {
 	signer := NewCommandSigner()
 	nowMs := time.Now().UnixMilli()
 
-	// Test exactly at boundary
+	// Test exactly at boundary.
 	frame := &models.CommandFrame{
 		Timestamp: nowMs + 30_000, // Exactly 30s in future
 	}
@@ -502,7 +502,7 @@ func TestCommandSigner_TimestampBoundary(t *testing.T) {
 func TestCommandSigner_HashVerification(t *testing.T) {
 	signer := NewCommandSigner()
 
-	// Test that we can generate, hash, verify cycle
+	// Test that we can generate, hash, verify cycle.
 	originalSecret := "my-super-secret-key-12345678901234567890123456789012"
 
 	hash := signer.HashSecret(originalSecret)

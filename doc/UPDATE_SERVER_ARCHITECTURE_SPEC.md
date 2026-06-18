@@ -18,48 +18,48 @@ It details:
 The server is engineered as a lightweight, static-binary Go web service with a React frontend. It coordinates three major runtime boundaries:
 
 ```
-                           ╔═══════════════════════════════════════╗
-                           ║      VYZORIX CONTROL PLATFORM       ║
-                           ╚═══════════════════════════════════════╝
+                           
+                                 VYZORIX CONTROL PLATFORM       
+                           
 
-    ┌────────────────────────────────────────────────────────────────────────┐
-    │                          Frontend (React)                             │
-    │  ┌────────────────────────────────────────────────────────────────┐  │
-    │  │                    TanStack Start Router                        │  │
-    │  │  Dashboard  │  Device  │  Diagnostics  │  Alerts  │  Settings │  │
-    │  └────────────────────────────────────────────────────────────────┘  │
-    │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────┐ │
-    │  │ WS Stream    │  │ Config      │  │ Logs        │  │ Operator  │ │
-    │  │ useDevice    │  │ useVyzorix   │  │ useLogs     │  │ Auth      │ │
-    │  │ Stream       │  │ Config      │  │             │  │ useAuth    │ │
-    │  └──────────────┘  └──────────────┘  └──────────────┘  └────────────┘ │
-    └────────────────────────────────────────────────────────────────────────┘
-                                      │
+    
+                              Frontend (React)                             
+        
+                          TanStack Start Router                          
+        Dashboard    Device    Diagnostics    Alerts    Settings   
+        
+             
+       WS Stream       Config         Logs           Operator   
+       useDevice       useVyzorix      useLogs        Auth       
+       Stream          Config                        useAuth     
+             
+    
+                                      
                               WebSocket + REST
-                                      │
-    ┌────────────────────────────────────────────────────────────────────────┐
-    │                          Backend (Go)                                 │
-    │  ┌──────────────────────────────────────────────────────────────────┐  │
-    │  │                         Gin HTTP Router                         │  │
-    │  │  /v1/auth/*  │  /v1/device/*  │  /api/v1/*  │  /healthz         │  │
-    │  └──────────────────────────────────────────────────────────────────┘  │
-    │  ┌────────────────────┐              ┌────────────────────────────┐   │
-    │  │  WebSocket Hub      │              │       Services             │   │
-    │  │  /v1/device/:id/    │              │  ┌─────────────────────┐  │   │
-    │  │  stream              │              │  │  FCM Notifier       │  │   │
-    │  └──────────┬───────────┘              │  │  (SafeNotifier)     │  │   │
-    │             │                             │  └─────────────────────┘  │   │
-    │  ┌──────────▼───────────────────────────┴──────────────────────────┐   │
-    │  │                    Middleware Stack                             │   │
-    │  │  CORS Handler  │  JWT Auth  │  Rate Limiter  │  Request Logger │   │
-    │  └─────────────────────────────────────────────────────────────────┘   │
-    └────────────────────────────────────────────────────────────────────────┘
-                                      │
-    ┌────────────────────────────────────────────────────────────────────────┐
-    │                         Storage Layer                                  │
-    │                      SQLite (WAL Mode)                                 │
-    │   Operators  │  Sessions  │  Devices  │  Commands  │  Secrets     │
-    └────────────────────────────────────────────────────────────────────────┘
+                                      
+    
+                              Backend (Go)                                 
+        
+                               Gin HTTP Router                           
+        /v1/auth/*    /v1/device/*    /api/v1/*    /healthz           
+        
+                       
+        WebSocket Hub                           Services                
+        /v1/device/:id/                         
+        stream                                FCM Notifier            
+                        (SafeNotifier)          
+                                                     
+         
+                          Middleware Stack                                
+        CORS Handler    JWT Auth    Rate Limiter    Request Logger    
+         
+    
+                                      
+    
+                             Storage Layer                                  
+                          SQLite (WAL Mode)                                 
+       Operators    Sessions    Devices    Commands    Secrets     
+    
 ```
 
 ### A. The REST API Layer
@@ -77,24 +77,24 @@ The server is engineered as a lightweight, static-binary Go web service with a R
 
 ```
 vyzorix-update-server/
-├── go.mod / go.sum         # Go module definition (1.22+)
-├── main.go                 # Server entrypoint
-├── Makefile                # Build, test, docker commands
-├── Dockerfile              # Multi-stage build (Go + React)
-├── docker-compose.yml      # Local dev environment
-├── render.yaml             # Render deployment blueprint
-├── .env.example            # Environment variable template
-├── Todo.md                 # Task tracking
-├── README.md               # Main documentation
-│
-├── .github/
-│   └── workflows/
-│       ├── ci.yml          # CI: tests, lint, security
-│       ├── deploy.yml      # Deploy: staging, production
-│       └── pr-labels.yml   # Auto-label PRs
-│
-├── SETUP-GUIDE.md          # Manual setup for Google OAuth, Resend, Render
-└── LICENSE                 # MIT License
+ go.mod / go.sum         # Go module definition (1.22+)
+ main.go                 # Server entrypoint
+ Makefile                # Build, test, docker commands
+ Dockerfile              # Multi-stage build (Go + React)
+ docker-compose.yml      # Local dev environment
+ render.yaml             # Render deployment blueprint
+ .env.example            # Environment variable template
+ Todo.md                 # Task tracking
+ README.md               # Main documentation
+
+ .github/
+    workflows/
+        ci.yml          # CI: tests, lint, security
+        deploy.yml      # Deploy: staging, production
+        pr-labels.yml   # Auto-label PRs
+
+ SETUP-GUIDE.md          # Manual setup for Google OAuth, Resend, Render
+ LICENSE                 # MIT License
 ```
 
 ### 2.1 `go.mod` & `go.sum`
@@ -124,12 +124,12 @@ vyzorix-update-server/
 
 ```
 vyzorix-update-server/
-├── config/
-│   ├── config.go          # Environment variable parsing
-│   └── config_test.go     # Config tests
-└── storage/
-    ├── sqlite.go          # SQLite connection pool + all CRUD methods
-    └── sqlite_test.go     # Storage tests
+ config/
+    config.go          # Environment variable parsing
+    config_test.go     # Config tests
+ storage/
+     sqlite.go          # SQLite connection pool + all CRUD methods
+     sqlite_test.go     # Storage tests
 ```
 
 ### 3.1 `config/config.go`
@@ -157,22 +157,22 @@ vyzorix-update-server/
 
 ```
 vyzorix-update-server/security/
-├── jwt.go                   # JWT signing and verification
-├── jwt_test.go              # JWT tests
-├── hmac.go                  # HMAC-SHA256 command signing
-├── hmac_test.go             # HMAC tests
-├── google_token.go          # Google OAuth ID token verification (JWKS)
-├── google_token_test.go     # Google token tests
-├── password.go              # Password complexity validation
-│   ├── DefaultPasswordPolicy  // Strict: 8+ chars, upper, lower, digit, special
-│   └── UserPasswordPolicy    // User-friendly: 12+ chars, no special required
-├── password_test.go         # Password validation tests
-├── ratelimit.go             # In-memory rate limiting middleware
-├── ratelimit_test.go        # Rate limiter tests
-├── origin.go                 # WebSocket origin validation
-├── origin_test.go           # Origin validation tests
-└── secretstore/
-    └── secretstore.go       # Key rotation and secret management
+ jwt.go                   # JWT signing and verification
+ jwt_test.go              # JWT tests
+ hmac.go                  # HMAC-SHA256 command signing
+ hmac_test.go             # HMAC tests
+ google_token.go          # Google OAuth ID token verification (JWKS)
+ google_token_test.go     # Google token tests
+ password.go              # Password complexity validation
+    DefaultPasswordPolicy  // Strict: 8+ chars, upper, lower, digit, special
+    UserPasswordPolicy    // User-friendly: 12+ chars, no special required
+ password_test.go         # Password validation tests
+ ratelimit.go             # In-memory rate limiting middleware
+ ratelimit_test.go        # Rate limiter tests
+ origin.go                 # WebSocket origin validation
+ origin_test.go           # Origin validation tests
+ secretstore/
+     secretstore.go       # Key rotation and secret management
 ```
 
 ---
@@ -181,13 +181,13 @@ vyzorix-update-server/security/
 
 ```
 vyzorix-update-server/models/
-├── auth.go              # Operator, Session, login/register models
-├── device.go           # Device, registration, status
-├── command.go          # CommandFrame, CommandRequest
-├── telemetry.go        # TelemetryFrame (from device)
-├── updater.go           # VersionManifest, update state
-├── response.go          # APIError, APIResponse
-└── models.go            # Re-exports
+ auth.go              # Operator, Session, login/register models
+ device.go           # Device, registration, status
+ command.go          # CommandFrame, CommandRequest
+ telemetry.go        # TelemetryFrame (from device)
+ updater.go           # VersionManifest, update state
+ response.go          # APIError, APIResponse
+ models.go            # Re-exports
 ```
 
 ### 5.1 `models/auth.go`
@@ -208,9 +208,9 @@ vyzorix-update-server/models/
 
 ```
 vyzorix-update-server/hub/
-├── hub.go              # Client registry + broadcast goroutine
-├── client.go           # readPump/writePump per connection
-└── hub_test.go         # Hub tests
+ hub.go              # Client registry + broadcast goroutine
+ client.go           # readPump/writePump per connection
+ hub_test.go         # Hub tests
 ```
 
 ### 6.1 `hub/hub.go`
@@ -229,16 +229,16 @@ vyzorix-update-server/hub/
 
 ```
 vyzorix-update-server/controllers/
-├── server.go                 # Health, version, SPA serving
-├── auth.go                   # Login, register, logout, Google OAuth, email verification
-├── auth_test.go              # Auth tests
-├── device.go                 # Device registration, status, FCM
-├── device_test.go            # Device tests
-├── command.go                # Command dispatch (WS or FCM)
-├── command_test.go           # Command tests
-├── updater.go                # OTA version manifest endpoints
-├── websocket_handler.go      # WebSocket upgrade handler with OriginValidator
-└── websocket_handler_test.go # WebSocket tests
+ server.go                 # Health, version, SPA serving
+ auth.go                   # Login, register, logout, Google OAuth, email verification
+ auth_test.go              # Auth tests
+ device.go                 # Device registration, status, FCM
+ device_test.go            # Device tests
+ command.go                # Command dispatch (WS or FCM)
+ command_test.go           # Command tests
+ updater.go                # OTA version manifest endpoints
+ websocket_handler.go      # WebSocket upgrade handler with OriginValidator
+ websocket_handler_test.go # WebSocket tests
 ```
 
 ### 7.1 `controllers/auth.go` — Authentication Endpoints
@@ -268,10 +268,10 @@ vyzorix-update-server/controllers/
 ### 7.3 `controllers/command.go` — Command Dispatch
 * **Operational Flow**:
   ```
-  POST /v1/device/:id/command ──► Parse JSON ──► Check if target online?
-                                                │
-                ┌──────────────────────────────┴────────────────────────────┐
-                ▼ (YES: Direct WS Route)              ▼ (NO: FCM Signaling)
+  POST /v1/device/:id/command  Parse JSON  Check if target online?
+                                                
+                
+                 (YES: Direct WS Route)               (NO: FCM Signaling)
      hub.ActiveHub.Send()                  services.fcm.SendSilentPush()
   ```
 
@@ -281,10 +281,10 @@ vyzorix-update-server/controllers/
 
 ```
 vyzorix-update-server/services/fcm/
-├── fcm.go               # Firebase Admin SDK init
-├── notifier.go          # SafeNotifier wrapper for graceful degradation
-├── notifier_test.go     # FCM notifier tests
-└── errors.go            # ErrUnavailable and custom errors
+ fcm.go               # Firebase Admin SDK init
+ notifier.go          # SafeNotifier wrapper for graceful degradation
+ notifier_test.go     # FCM notifier tests
+ errors.go            # ErrUnavailable and custom errors
 ```
 
 ### 8.1 `services/fcm/notifier.go` (SafeNotifier)
@@ -313,14 +313,14 @@ vyzorix-update-server/services/fcm/
 
 ```
 vyzorix-update-server/middleware/
-├── auth.go               # Dashboard bearer token authentication
-├── auth_test.go         # Auth middleware tests
-├── cors.go              # CORS with configurable origins, MaxAge
-├── cors_test.go         # CORS tests (strict origin validation)
-├── logger.go            # Structured JSON request logging
-├── logger_test.go       # Logger tests
-├── rate_limiter.go      # Token-bucket rate limiting per IP
-└── rate_limiter_test.go # Rate limiter tests
+ auth.go               # Dashboard bearer token authentication
+ auth_test.go         # Auth middleware tests
+ cors.go              # CORS with configurable origins, MaxAge
+ cors_test.go         # CORS tests (strict origin validation)
+ logger.go            # Structured JSON request logging
+ logger_test.go       # Logger tests
+ rate_limiter.go      # Token-bucket rate limiting per IP
+ rate_limiter_test.go # Rate limiter tests
 ```
 
 ### 9.1 `middleware/cors.go`
@@ -337,45 +337,45 @@ vyzorix-update-server/middleware/
 
 ```
 vyzorix-update-server/src/
-├── main.tsx             # React entrypoint
-├── start.ts             # TanStack Start adapter
-├── server.ts            # SSR server
-├── router.tsx           # React Router setup
-├── routeTree.gen.ts     # Generated route tree
-│
-├── lib/                 # Utilities and API client
-│   ├── vyzorix-api.ts  # Browser API client (fetch wrapper)
-│   ├── vyzorix-auth.ts  # Auth client (login, register, OAuth)
-│   ├── vyzorix-config.tsx # LocalStorage settings + VyzorixConfigProvider
-│   ├── logger.ts        # App-wide log bus with persistence
-│   ├── format.ts        # Utility functions
-│   ├── utils.ts         # General utilities
-│   └── settings.test.ts # Settings validation tests
-│
-├── hooks/               # Custom React hooks
-│   ├── use-logs.ts      # Log fetching and display
-│   ├── use-device-stream.ts # WebSocket with reconnect
-│   ├── use-server-health.ts # Health polling
-│   └── use-mobile.tsx   # Mobile detection
-│
-├── components/
-│   ├── ui/              # Base UI components (shadcn/ui)
-│   ├── layout/          # Layout components
-│   ├── logs/            # LogDock, LogConsole components
-│   └── status-badge.tsx  # Device health status
-│
-└── routes/              # TanStack file-based routes
-    ├── __root.tsx      # Root layout
-    ├── _app.tsx        # App layout (sidebar, header, log dock)
-    ├── _app.dashboard.tsx # Main dashboard
-    ├── _app.device.tsx  # Device page
-    ├── _app.diagnostics.tsx # Command panel, charts
-    ├── _app.alerts.tsx   # System alerts
-    ├── _app.updates.tsx  # OTA version info
-    ├── _app.logs.tsx     # Full page log viewer
-    ├── _app.settings.*.tsx # All settings pages
-    ├── login.tsx        # Login/register page
-    └── auth.callback.tsx # OAuth callback
+ main.tsx             # React entrypoint
+ start.ts             # TanStack Start adapter
+ server.ts            # SSR server
+ router.tsx           # React Router setup
+ routeTree.gen.ts     # Generated route tree
+
+ lib/                 # Utilities and API client
+    vyzorix-api.ts  # Browser API client (fetch wrapper)
+    vyzorix-auth.ts  # Auth client (login, register, OAuth)
+    vyzorix-config.tsx # LocalStorage settings + VyzorixConfigProvider
+    logger.ts        # App-wide log bus with persistence
+    format.ts        # Utility functions
+    utils.ts         # General utilities
+    settings.test.ts # Settings validation tests
+
+ hooks/               # Custom React hooks
+    use-logs.ts      # Log fetching and display
+    use-device-stream.ts # WebSocket with reconnect
+    use-server-health.ts # Health polling
+    use-mobile.tsx   # Mobile detection
+
+ components/
+    ui/              # Base UI components (shadcn/ui)
+    layout/          # Layout components
+    logs/            # LogDock, LogConsole components
+    status-badge.tsx  # Device health status
+
+ routes/              # TanStack file-based routes
+     __root.tsx      # Root layout
+     _app.tsx        # App layout (sidebar, header, log dock)
+     _app.dashboard.tsx # Main dashboard
+     _app.device.tsx  # Device page
+     _app.diagnostics.tsx # Command panel, charts
+     _app.alerts.tsx   # System alerts
+     _app.updates.tsx  # OTA version info
+     _app.logs.tsx     # Full page log viewer
+     _app.settings.*.tsx # All settings pages
+     login.tsx        # Login/register page
+     auth.callback.tsx # OAuth callback
 ```
 
 ### Key Frontend Features
@@ -390,24 +390,24 @@ vyzorix-update-server/src/
 
 ```
 .github/workflows/
-├── ci.yml           # Continuous Integration
-│   ├── backend-test      # Go tests with coverage
-│   ├── frontend-test     # Vitest tests with coverage
-│   ├── backend-lint      # golangci-lint
-│   ├── frontend-lint     # ESLint + TypeScript
-│   ├── build            # Build Go + frontend
-│   ├── security         # Gosec scanner
-│   └── dependency-review # Dependency audit
-│
-├── deploy.yml        # Deployment
-│   ├── build          # Build & package
-│   ├── deploy-staging    # Deploy to staging (on push to main)
-│   ├── deploy-production # Deploy to production (on tag v*)
-│   └── notify-failure   # Notify on deployment failure
-│
-└── pr-labels.yml     # PR automation
-    ├── label-pr          # Auto-label PRs (size, type)
-    └── auto-assign       # Request reviews for fixes
+ ci.yml           # Continuous Integration
+    backend-test      # Go tests with coverage
+    frontend-test     # Vitest tests with coverage
+    backend-lint      # golangci-lint
+    frontend-lint     # ESLint + TypeScript
+    build            # Build Go + frontend
+    security         # Gosec scanner
+    dependency-review # Dependency audit
+
+ deploy.yml        # Deployment
+    build          # Build & package
+    deploy-staging    # Deploy to staging (on push to main)
+    deploy-production # Deploy to production (on tag v*)
+    notify-failure   # Notify on deployment failure
+
+ pr-labels.yml     # PR automation
+     label-pr          # Auto-label PRs (size, type)
+     auto-assign       # Request reviews for fixes
 ```
 
 ---

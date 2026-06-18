@@ -18,33 +18,33 @@ To render automated scripts or manual `curl` commands completely useless against
 
 ```text
        [ Hostile Client Request / Manual CURL ]
-                          │
-                          ▼
-┌──────────────────────────────────────────────────┐
-│  Layer 1: Cryptographic Passport (HttpOnly Vault)│ ── (Rejects requests missing secure cookies)
-└──────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌──────────────────────────────────────────────────┐
-│  Layer 2: Dual-Token Verification (CSRF Shield)  │ ── (Blocks cross-site automation exploits)
-└──────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌──────────────────────────────────────────────────┐
-│  Layer 3: Environment Attestation (Turnstile)    │ ── (Filters headless browser engines & consoles)
-└──────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌──────────────────────────────────────────────────┐
-│  Layer 4: Behavioral Session Rate Limiting       │ ── (Throttles interaction bursts per token)
-└──────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌──────────────────────────────────────────────────┐
-│  Deep Object Authorization (DOA Boundary)        │ ── (Enforces implicit ownership queries)
-└──────────────────────────────────────────────────┘
-                          │
-                          ▼
+                          
+                          
+
+  Layer 1: Cryptographic Passport (HttpOnly Vault)  (Rejects requests missing secure cookies)
+
+                          
+                          
+
+  Layer 2: Dual-Token Verification (CSRF Shield)    (Blocks cross-site automation exploits)
+
+                          
+                          
+
+  Layer 3: Environment Attestation (Turnstile)      (Filters headless browser engines & consoles)
+
+                          
+                          
+
+  Layer 4: Behavioral Session Rate Limiting         (Throttles interaction bursts per token)
+
+                          
+                          
+
+  Deep Object Authorization (DOA Boundary)          (Enforces implicit ownership queries)
+
+                          
+                          
              [ SQLite Secure Execution ]
 
 ```
@@ -123,7 +123,7 @@ Unlike traditional random UUIDv4 variants, UUIDv7 embeds a high-precision Unix m
 
 ###  How SQLite Stores UUIDv7
 
-SQLite does not provide a native UUID data type. For mobile and browser-based terminal workspaces, we store UUIDv7 strings as explicit **`TEXT`** fields (36-character hyphenated blocks). While this uses more disk space than a raw 16-byte binary blob, it lets you debug database mutations directly from your mobile browser window or web console without requiring a Hex-to-String converter tool. 📱🛠️
+SQLite does not provide a native UUID data type. For mobile and browser-based terminal workspaces, we store UUIDv7 strings as explicit **`TEXT`** fields (36-character hyphenated blocks). While this uses more disk space than a raw 16-byte binary blob, it lets you debug database mutations directly from your mobile browser window or web console without requiring a Hex-to-String converter tool. 
 
 ---
 
@@ -477,18 +477,18 @@ COMMIT;
 
 ```text
 vyzorix-update-server/
-├── config/
-│   └── env.go            #  Centralized environment & secret management
-├── storage/
-│   └── sqlite.go         # Handles WAL pool tuning & isolated driver storage
-└── security/
-    ├── csrf.go           # Layer 2: Secure CSRF state generation & handshake validators
-    ├── attestation.go    # Layer 3: Cloudflare Turnstile verification engine
-    ├── middleware.go     # Layer 1 & 4: HttpOnly context handling & rate engines
-    ├── errors.go         # Centralized, uniform JSON error responders
-    ├── router.go         # The Chain: Locks all four barriers sequentially onto handlers
-    ├── uuid.go           # Engine: Generates time-ordered sequential UUIDv7 strings
-    └── repository.go     # Layer 5 / DOA: Implements implicit ownership-constrained SQL queries
+ config/
+    env.go            #  Centralized environment & secret management
+ storage/
+    sqlite.go         # Handles WAL pool tuning & isolated driver storage
+ security/
+     csrf.go           # Layer 2: Secure CSRF state generation & handshake validators
+     attestation.go    # Layer 3: Cloudflare Turnstile verification engine
+     middleware.go     # Layer 1 & 4: HttpOnly context handling & rate engines
+     errors.go         # Centralized, uniform JSON error responders
+     router.go         # The Chain: Locks all four barriers sequentially onto handlers
+     uuid.go           # Engine: Generates time-ordered sequential UUIDv7 strings
+     repository.go     # Layer 5 / DOA: Implements implicit ownership-constrained SQL queries
 
 ```
 

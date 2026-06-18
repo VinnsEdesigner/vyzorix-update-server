@@ -4,7 +4,7 @@ package security
 import (
 	"bytes"
 	"crypto/hmac"
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"errors"
 	"io"
@@ -94,7 +94,7 @@ func (v Verifier) Verify(method, path, deviceID string, body []byte, h http.Head
 	if !ok || secret == "" {
 		return ErrUnknownDevice
 	}
-	mac := hmac.New(sha256.New, []byte(secret))
+	mac := hmac.New(sha512.New, []byte(secret))
 	_, _ = mac.Write([]byte(method + "\n" + path + "\n" + nonce + "\n" + ts + "\n"))
 	_, _ = mac.Write(body)
 	expected := base64.StdEncoding.EncodeToString(mac.Sum(nil))

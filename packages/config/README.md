@@ -192,21 +192,21 @@ npx @vyzorix/config init --preset minimal
 When you run `npx @vyzorix/config init`, it will create the following files:
 
 ```
-├── vite.config.ts              # Vite configuration
-├── eslint.config.js            # ESLint configuration
-├── .prettierrc                 # Prettier configuration
-├── vitest.config.ts            # Vitest configuration
-├── vitest.setup.ts             # Test setup and utilities
-├── tailwind.config.js          # Tailwind CSS configuration
-├── .husky/                     # Git hooks (if selected)
-│   └── pre-commit
-├── .github/
-│   └── workflows/
-│       └── ci.yml              # GitHub Actions CI/CD
-├── .vscode/
-│   ├── settings.json           # VSCode settings
-│   └── extensions.json         # Recommended extensions
-└── docker-compose.yml          # Docker Compose (if selected)
+ vite.config.ts              # Vite configuration
+ eslint.config.js            # ESLint configuration
+ .prettierrc                 # Prettier configuration
+ vitest.config.ts            # Vitest configuration
+ vitest.setup.ts             # Test setup and utilities
+ tailwind.config.js          # Tailwind CSS configuration
+ .husky/                     # Git hooks (if selected)
+    pre-commit
+ .github/
+    workflows/
+        ci.yml              # GitHub Actions CI/CD
+ .vscode/
+    settings.json           # VSCode settings
+    extensions.json         # Recommended extensions
+ docker-compose.yml          # Docker Compose (if selected)
 ```
 
 ## Environment Variables

@@ -1,4 +1,4 @@
-package controllers
+package handlers
 
 import (
 	"context"
@@ -28,17 +28,17 @@ func CheckResendRateLimit(
 	tracker *models.PasswordResetResendTracker,
 	now time.Time,
 ) (allowed bool, retryAfter int, lockedUntil *time.Time) {
-	// First resend - always allowed
+	// First resend - always allowed.
 	if tracker == nil {
 		return true, 0, nil
 	}
 
-	// Check if currently locked out
+	// Check if currently locked out.
 	if tracker.LockoutUntil != nil && now.Before(*tracker.LockoutUntil) {
 		return false, 0, tracker.LockoutUntil
 	}
 
-	// Calculate required delay based on resend count
+	// Calculate required delay based on resend count.
 	requiredDelay := GetResendDelay(tracker.ResendCount)
 	if requiredDelay > 0 {
 		timeSinceLastResend := now.Sub(tracker.LastResendAt).Seconds()
@@ -87,7 +87,7 @@ func UpdateResendTracker(
 	if tracker != nil {
 		newResendCount = tracker.ResendCount + 1
 
-		// Check if we've hit the lockout threshold (6 attempts)
+		// Check if we've hit the lockout threshold (6 attempts).
 		if newResendCount > 6 {
 			lockoutDuration := 5 * time.Hour
 			lockout := now.Add(lockoutDuration)

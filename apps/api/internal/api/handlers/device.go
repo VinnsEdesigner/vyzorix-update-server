@@ -1,5 +1,5 @@
 // Package controllers provides HTTP handlers.
-package controllers
+package handlers
 
 import (
 	"encoding/json"
@@ -149,13 +149,13 @@ func (s *DeviceController) Delete(c *gin.Context) {
 }
 
 // List returns registered devices with cursor-based pagination and filtering.
-// GET /v1/dashboard/devices?limit=50&cursor=<lastSeenTimestamp>&online=<true|false|all>
-// Query params:
-//   - limit: number of results (default 50, max 100)
-//   - cursor: lastSeen timestamp in ms for pagination
-//   - online: filter by online status ('true', 'false', or 'all' (default))
+// GET /v1/dashboard/devices?limit=50&cursor=<lastSeenTimestamp>&online=<true|false|all>.
+// Query params:.
+//   - limit: number of results (default 50, max 100).
+//   - cursor: lastSeen timestamp in ms for pagination.
+//   - online: filter by online status ('true', 'false', or 'all' (default)).
 func (s *DeviceController) List(c *gin.Context) {
-	// Parse pagination parameters
+	// Parse pagination parameters.
 	limit := 50
 	if l := c.Query("limit"); l != "" {
 		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
@@ -173,7 +173,7 @@ func (s *DeviceController) List(c *gin.Context) {
 		}
 	}
 
-	// Parse online filter
+	// Parse online filter.
 	onlineFilter := c.Query("online")
 	var filterOnline *bool
 	switch onlineFilter {
@@ -185,7 +185,7 @@ func (s *DeviceController) List(c *gin.Context) {
 		filterOnline = &v
 	}
 
-	// Fetch devices with pagination
+	// Fetch devices with pagination.
 	devices, err := s.store.DevicesPaginated(c.Request.Context(), limit+1, cursor)
 	if err != nil {
 		c.JSON(500, map[string]string{"error": "list_failed", "message": err.Error()})
@@ -204,7 +204,7 @@ func (s *DeviceController) List(c *gin.Context) {
 	for _, d := range devices {
 		isOnline := s.isDeviceOnline(d.ID) || d.Online
 
-		// Apply online filter if specified
+		// Apply online filter if specified.
 		if filterOnline != nil && isOnline != *filterOnline {
 			continue
 		}
@@ -217,13 +217,13 @@ func (s *DeviceController) List(c *gin.Context) {
 			DeviceClass: d.DeviceClass,
 		})
 
-		// Stop if we have enough results (before checking hasMore)
+		// Stop if we have enough results (before checking hasMore).
 		if len(out) >= limit {
 			break
 		}
 	}
 
-	// Determine if there are more results
+	// Determine if there are more results.
 	response := map[string]any{"devices": out}
 	if len(out) > 0 && len(out) == limit {
 		response["nextCursor"] = out[len(out)-1].LastSeen
@@ -235,7 +235,7 @@ func (s *DeviceController) List(c *gin.Context) {
 // isDeviceOnline checks if a device has an active WebSocket connection via the hub.
 func (s *DeviceController) isDeviceOnline(deviceID string) bool {
 	if s.hub == nil {
-		// Fallback to database state if hub not available
+		// Fallback to database state if hub not available.
 		return false
 	}
 	return s.hub.Online(deviceID)

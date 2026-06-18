@@ -1,4 +1,4 @@
-package controllers
+package handlers
 
 import (
 	"bytes"
@@ -185,12 +185,12 @@ func TestAuthController_UpdateSettingsRequest_JSON(t *testing.T) {
 	if result["name"] != "Updated Name" {
 		t.Errorf("name = %v, want Updated Name", result["name"])
 	}
-	// reset=false is omitted due to omitempty, so the key should not exist
+	// reset=false is omitted due to omitempty, so the key should not exist.
 	if _, ok := result["reset"]; ok {
 		t.Error("reset=false should be omitted from JSON (omitempty)")
 	}
 
-	// Verify thresholds
+	// Verify thresholds.
 	th, ok := result["thresholds"].(map[string]interface{})
 	if !ok {
 		t.Fatal("thresholds is not a map")
@@ -199,7 +199,7 @@ func TestAuthController_UpdateSettingsRequest_JSON(t *testing.T) {
 		t.Errorf("thresholds.riskWarn = %v, want 40", th["riskWarn"])
 	}
 
-	// Verify client settings
+	// Verify client settings.
 	cl, ok := result["client"].(map[string]interface{})
 	if !ok {
 		t.Fatal("client is not a map")
@@ -213,7 +213,7 @@ func TestAuthController_UpdateSettingsRequest_JSON(t *testing.T) {
 }
 
 func TestAuthController_UpdateSettingsRequest_PartialUpdate(t *testing.T) {
-	// Only update thresholds, no name or client
+	// Only update thresholds, no name or client.
 	thresholds := models.Thresholds{
 		RiskWarn:   35,
 		RiskCrit:   65,
@@ -234,16 +234,16 @@ func TestAuthController_UpdateSettingsRequest_PartialUpdate(t *testing.T) {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
 
-	// Name should be omitted (nil pointer)
+	// Name should be omitted (nil pointer).
 	if _, ok := result["name"]; ok {
 		t.Error("name should be omitted for partial update")
 	}
-	// Reset should be omitted (zero value false)
+	// Reset should be omitted (zero value false).
 	if _, ok := result["reset"]; ok {
 		t.Error("reset should be omitted when false (omitempty)")
 	}
 
-	// Verify thresholds only
+	// Verify thresholds only.
 	th, ok := result["thresholds"].(map[string]interface{})
 	if !ok {
 		t.Fatal("thresholds is not a map")
@@ -312,7 +312,7 @@ func TestAuthController_ClientSettings_PartialJSON(t *testing.T) {
 	if !client.StrictHmac {
 		t.Error("StrictHmac = false, want true")
 	}
-	// Other fields should be zero values when not provided
+	// Other fields should be zero values when not provided.
 	if client.AutoReconnect {
 		t.Error("AutoReconnect should be false when omitted")
 	}
@@ -351,7 +351,7 @@ func TestAuthController_OperatorResponse_IncludesClientSettings(t *testing.T) {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
 
-	// Check thresholds present
+	// Check thresholds present.
 	th, ok := result["thresholds"].(map[string]interface{})
 	if !ok {
 		t.Fatal("thresholds not in response")
@@ -360,7 +360,7 @@ func TestAuthController_OperatorResponse_IncludesClientSettings(t *testing.T) {
 		t.Errorf("thresholds.riskWarn = %v, want 50", th["riskWarn"])
 	}
 
-	// Check client settings present
+	// Check client settings present.
 	cl, ok := result["client"].(map[string]interface{})
 	if !ok {
 		t.Fatal("client not in response")

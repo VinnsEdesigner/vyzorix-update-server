@@ -1,5 +1,5 @@
 // Package controllers provides HTTP handlers.
-package controllers
+package handlers
 
 import (
 	"context"
@@ -36,7 +36,7 @@ func NewAuthController(log *slog.Logger, cfg config.Config, store *storage.Store
 	googleVer := security.NewGoogleTokenVerifier(cfg.GoogleOAuthClientID)
 	emailSvc := services.NewEmailService()
 
-	// Initialize SessionManager - uses SESSION_SECRET, falls back to JWTSecret
+	// Initialize SessionManager - uses SESSION_SECRET, falls back to JWTSecret.
 	sessionSecret := cfg.SessionSecret
 	if sessionSecret == "" {
 		sessionSecret = cfg.JWTSecret
@@ -90,7 +90,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	// Set HttpOnly session cookie
+	// Set HttpOnly session cookie.
 	cookie, err := ac.session.CreateSessionCookieWithExpiry(op.ID, ac.config.SessionMaxAge)
 	if err != nil {
 		ac.log.Warn("login: failed to create session cookie", "err", err)
@@ -99,7 +99,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 	}
 	http.SetCookie(c.Writer, cookie)
 
-	// Return operator (no JWT token in body - using cookie instead)
+	// Return operator (no JWT token in body - using cookie instead).
 	c.JSON(200, op.ToResponse())
 }
 
@@ -117,7 +117,7 @@ func (ac *AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	// Validate password complexity
+	// Validate password complexity.
 	if err := security.ValidatePassword(req.Password, security.DefaultPasswordPolicy); err != nil {
 		ac.log.Warn("register: weak password", "email", req.Email)
 		c.JSON(400, models.ErrorResponse{Error: "bad_password", Message: err.Error()})
@@ -134,13 +134,13 @@ func (ac *AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	// Determine role: first operator gets super_admin, all others require super_admin auth
+	// Determine role: first operator gets super_admin, all others require super_admin auth.
 	role := models.RoleOperator
 	if count == 0 {
 		role = models.RoleSuperAdmin
 		ac.log.Info("register: bootstrapping first operator", "email", req.Email)
 	} else {
-		// Subsequent registrations require a super_admin session cookie
+		// Subsequent registrations require a super_admin session cookie.
 		authOp := GetOperatorFromContext(c)
 		if authOp == nil || authOp.Role != models.RoleSuperAdmin {
 			c.JSON(403, models.ErrorResponse{Error: "forbidden", Message: "only a super_admin can invite new operators"})
@@ -176,7 +176,7 @@ func (ac *AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	// Send verification email
+	// Send verification email.
 	ac.sendVerificationEmail(ctx, op)
 
 	ac.log.Info("register: operator created", "email", req.Email, "role", role)
@@ -197,7 +197,7 @@ func (ac *AuthController) Me(c *gin.Context) {
 
 // Logout clears the session cookie.
 func (ac *AuthController) Logout(c *gin.Context) {
-	// Clear the session cookie
+	// Clear the session cookie.
 	clearCookie := ac.session.ClearSessionCookie()
 	http.SetCookie(c.Writer, clearCookie)
 	c.JSON(200, map[string]any{"ok": true})

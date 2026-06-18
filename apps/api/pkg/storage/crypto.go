@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"time"
 
 	"golang.org/x/crypto/argon2"
 )
@@ -38,12 +37,18 @@ var ErrHashMismatch = errors.New("password does not match hash")
 
 // HashPassword creates an Argon2id hash of the password.
 // The hash is deterministic for the same password - salt is prepended to output.
+// Uses cryptographically secure random salt generation.
 func HashPassword(password string) (string, error) {
 	if password == "" {
 		return "", errors.New("password cannot be empty")
 	}
 
-	salt := generateSecureSalt(argon2Params.saltLength)
+	salt, err := generateSecureSalt(argon2Params.saltLength)
+	if err != nil {
+		// crypto/rand failure is critical - return error rather than using insecure fallback
+		return "", fmt.Errorf("failed to generate secure salt: %w", err)
+	}
+
 	hash := argon2.IDKey(
 		[]byte(password),
 		salt,
@@ -166,18 +171,15 @@ func decodeArgon2Hash(hash string) ([]byte, []byte, error) {
 }
 
 // generateSecureSalt generates cryptographically secure random bytes for salt.
-func generateSecureSalt(length uint32) []byte {
+// Uses crypto/rand which is guaranteed to be available in production environments.
+func generateSecureSalt(length uint32) ([]byte, error) {
 	salt := make([]byte, length)
-	randomBytes(salt)
-	return salt
-}
-
-// randomBytes fills the given slice with cryptographically secure random bytes.
-func randomBytes(b []byte) {
-	if _, err := rand.Read(b); err != nil {
-		// Fallback - should never happen in practice.
-		for i := range b {
-			b[i] = byte(time.Now().UnixNano() & 0xff)
-		}
+	_, err := rand.Read(salt)
+	if err != nil {
+		// In production, crypto/rand NEVER fails. If it does, the system is in a critical
+		// state and we should fail explicitly rather than fall back to insecure random.
+		// The error is returned so the caller can handle it appropriately.
+		return nil, err
 	}
+	return salt, nil
 }
