@@ -1,0 +1,328 @@
+package storage
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"time"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
+)
+
+// Ensure CommandRepository implements command.Repository.
+var _ command.Repository = (*CommandRepository)(nil)
+
+// CommandRepository implements command.Repository using SQLite.
+type CommandRepository struct {
+	db *sql.DB
+}
+
+// NewCommandRepository creates a new CommandRepository.
+func NewCommandRepository(db *sql.DB) *CommandRepository {
+	return &CommandRepository{db: db}
+}
+
+// FindByID retrieves a command by ID.
+func (r *CommandRepository) FindByID(ctx context.Context, id string) (*command.Command, error) {
+	query := `
+		SELECT id, device_id, dispatch_id, command, args, status, 
+		       delivered_at, completed_at, created_at, updated_at 
+		FROM commands WHERE id = ?`
+
+	var cmd command.Command
+	var argsJSON []byte
+	var deliveredAt, completedAt sql.NullInt64
+
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&cmd.ID, &cmd.DeviceID, &cmd.DispatchID, &cmd.Command, &argsJSON,
+		&cmd.Status, &deliveredAt, &completedAt, &cmd.CreatedAt, &cmd.UpdatedAt,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, command.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if argsJSON != nil {
+		_ = json.Unmarshal(argsJSON, &cmd.Args)
+	}
+	if deliveredAt.Valid {
+		cmd.DeliveredAt = &deliveredAt.Int64
+	}
+	if completedAt.Valid {
+		cmd.CompletedAt = &completedAt.Int64
+	}
+
+	return &cmd, nil
+}
+
+// FindByDispatchID retrieves a command by dispatch ID (for idempotency).
+func (r *CommandRepository) FindByDispatchID(ctx context.Context, deviceID, dispatchID string) (*command.Command, error) {
+	query := `
+		SELECT id, device_id, dispatch_id, command, args, status, 
+		       delivered_at, completed_at, created_at, updated_at 
+		FROM commands WHERE dispatch_id = ? AND device_id = ?`
+
+	var cmd command.Command
+	var argsJSON []byte
+	var deliveredAt, completedAt sql.NullInt64
+
+	err := r.db.QueryRowContext(ctx, query, dispatchID, deviceID).Scan(
+		&cmd.ID, &cmd.DeviceID, &cmd.DispatchID, &cmd.Command, &argsJSON,
+		&cmd.Status, &deliveredAt, &completedAt, &cmd.CreatedAt, &cmd.UpdatedAt,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, command.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if argsJSON != nil {
+		_ = json.Unmarshal(argsJSON, &cmd.Args)
+	}
+	if deliveredAt.Valid {
+		cmd.DeliveredAt = &deliveredAt.Int64
+	}
+	if completedAt.Valid {
+		cmd.CompletedAt = &completedAt.Int64
+	}
+
+	return &cmd, nil
+}
+
+// FindByDispatchIDOnly retrieves a command by dispatch ID only (dispatch ID should be globally unique).
+func (r *CommandRepository) FindByDispatchIDOnly(ctx context.Context, dispatchID string) (*command.Command, error) {
+	query := `
+		SELECT id, device_id, dispatch_id, command, args, status, 
+		       delivered_at, completed_at, created_at, updated_at 
+		FROM commands WHERE dispatch_id = ?`
+
+	var cmd command.Command
+	var argsJSON []byte
+	var deliveredAt, completedAt sql.NullInt64
+
+	err := r.db.QueryRowContext(ctx, query, dispatchID).Scan(
+		&cmd.ID, &cmd.DeviceID, &cmd.DispatchID, &cmd.Command, &argsJSON,
+		&cmd.Status, &deliveredAt, &completedAt, &cmd.CreatedAt, &cmd.UpdatedAt,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, command.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if argsJSON != nil {
+		_ = json.Unmarshal(argsJSON, &cmd.Args)
+	}
+	if deliveredAt.Valid {
+		cmd.DeliveredAt = &deliveredAt.Int64
+	}
+	if completedAt.Valid {
+		cmd.CompletedAt = &completedAt.Int64
+	}
+
+	return &cmd, nil
+}
+
+// FindByDeviceID retrieves commands for a device.
+func (r *CommandRepository) FindByDeviceID(ctx context.Context, deviceID string, limit int) ([]*command.Command, error) {
+	query := `
+		SELECT id, device_id, dispatch_id, command, args, status, 
+		       delivered_at, completed_at, created_at, updated_at 
+		FROM commands WHERE device_id = ? ORDER BY created_at DESC LIMIT ?`
+
+	rows, err := r.db.QueryContext(ctx, query, deviceID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var commands []*command.Command
+	for rows.Next() {
+		var cmd command.Command
+		var argsJSON []byte
+		var deliveredAt, completedAt sql.NullInt64
+
+		if err := rows.Scan(
+			&cmd.ID, &cmd.DeviceID, &cmd.DispatchID, &cmd.Command, &argsJSON,
+			&cmd.Status, &deliveredAt, &completedAt, &cmd.CreatedAt, &cmd.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		if argsJSON != nil {
+			_ = json.Unmarshal(argsJSON, &cmd.Args)
+		}
+		if deliveredAt.Valid {
+			cmd.DeliveredAt = &deliveredAt.Int64
+		}
+		if completedAt.Valid {
+			cmd.CompletedAt = &completedAt.Int64
+		}
+
+		commands = append(commands, &cmd)
+	}
+
+	return commands, rows.Err()
+}
+
+// Create creates a new command.
+func (r *CommandRepository) Create(ctx context.Context, cmd *command.Command) error {
+	argsJSON, err := json.Marshal(cmd.Args)
+	if err != nil {
+		return err
+	}
+
+	query := `
+		INSERT INTO commands (id, device_id, dispatch_id, command, args, status, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+
+	_, err = r.db.ExecContext(ctx, query,
+		cmd.ID, cmd.DeviceID, cmd.DispatchID, cmd.Command, argsJSON,
+		cmd.Status, cmd.CreatedAt, cmd.UpdatedAt,
+	)
+
+	return err
+}
+
+// UpdateStatus updates the status of a command.
+func (r *CommandRepository) UpdateStatus(ctx context.Context, id string, status command.Status) error {
+	now := time.Now()
+
+	var query string
+	var args []interface{}
+
+	switch status {
+	case command.StatusDelivered:
+		query = "UPDATE commands SET status = ?, delivered_at = ?, updated_at = ? WHERE id = ?"
+		args = []interface{}{status, now.UnixMilli(), now, id}
+	case command.StatusCompleted:
+		query = "UPDATE commands SET status = ?, completed_at = ?, updated_at = ? WHERE id = ?"
+		args = []interface{}{status, now.UnixMilli(), now, id}
+	default:
+		query = "UPDATE commands SET status = ?, updated_at = ? WHERE id = ?"
+		args = []interface{}{status, now, id}
+	}
+
+	result, err := r.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return command.ErrNotFound
+	}
+
+	return nil
+}
+
+// Delete deletes a command.
+func (r *CommandRepository) Delete(ctx context.Context, id string) error {
+	result, err := r.db.ExecContext(ctx, "DELETE FROM commands WHERE id = ?", id)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return command.ErrNotFound
+	}
+
+	return nil
+}
+
+// DeleteByDeviceID deletes all commands for a device.
+func (r *CommandRepository) DeleteByDeviceID(ctx context.Context, deviceID string) error {
+	_, err := r.db.ExecContext(ctx, "DELETE FROM commands WHERE device_id = ?", deviceID)
+	return err
+}
+
+// Update updates a command.
+func (r *CommandRepository) Update(ctx context.Context, cmd *command.Command) error {
+	query := `
+		UPDATE commands SET 
+			device_id = ?, dispatch_id = ?, command = ?, args = ?, 
+			status = ?, delivered_at = ?, completed_at = ?, updated_at = ?
+		WHERE id = ?`
+
+	argsJSON, err := json.Marshal(cmd.Args)
+	if err != nil {
+		return err
+	}
+	_, err = r.db.ExecContext(ctx, query,
+		cmd.DeviceID, cmd.DispatchID, cmd.Command, argsJSON,
+		cmd.Status, cmd.DeliveredAt, cmd.CompletedAt, cmd.UpdatedAt, cmd.ID)
+	return err
+}
+
+// FindPendingByDeviceID retrieves pending commands for a device.
+func (r *CommandRepository) FindPendingByDeviceID(ctx context.Context, deviceID string) ([]*command.Command, error) {
+	query := `
+		SELECT id, device_id, dispatch_id, command, args, status,
+		       delivered_at, completed_at, created_at, updated_at
+		FROM commands WHERE device_id = ? AND status = 'pending'
+		ORDER BY created_at ASC`
+
+	rows, err := r.db.QueryContext(ctx, query, deviceID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var commands []*command.Command
+	for rows.Next() {
+		var cmd command.Command
+		var argsJSON []byte
+		var deliveredAt, completedAt sql.NullInt64
+
+		err := rows.Scan(
+			&cmd.ID, &cmd.DeviceID, &cmd.DispatchID, &cmd.Command, &argsJSON,
+			&cmd.Status, &deliveredAt, &completedAt, &cmd.CreatedAt, &cmd.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if argsJSON != nil {
+			_ = json.Unmarshal(argsJSON, &cmd.Args)
+		}
+		if deliveredAt.Valid {
+			cmd.DeliveredAt = &deliveredAt.Int64
+		}
+		if completedAt.Valid {
+			cmd.CompletedAt = &completedAt.Int64
+		}
+
+		commands = append(commands, &cmd)
+	}
+
+	return commands, rows.Err()
+}
+
+// Count returns the total number of commands.
+func (r *CommandRepository) Count(ctx context.Context) (int, error) {
+	var count int
+	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM commands").Scan(&count)
+	return count, err
+}
+
+// CountPending returns the number of pending commands.
+func (r *CommandRepository) CountPending(ctx context.Context) (int, error) {
+	var count int
+	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM commands WHERE status = 'pending'").Scan(&count)
+	return count, err
+}

@@ -1,4 +1,4 @@
-package security
+package auth
 
 import (
 	"testing"
@@ -49,7 +49,7 @@ func TestJWTManager_Verify_ValidToken(t *testing.T) {
 }
 
 func TestJWTManager_Verify_ExpiredToken(t *testing.T) {
-	// Create manager with 0 duration (already expired)
+	// Create manager with 0 duration (already expired).
 	manager := NewJWTManager("test-secret-key-32-bytes-long!!", -1*time.Hour, "test-issuer")
 
 	token, _, err := manager.Generate("operator-123", "test@example.com", "Test User", "admin")
@@ -104,7 +104,7 @@ func TestJWTManager_Verify_WrongSecret(t *testing.T) {
 func TestJWTManager_Verify_WrongAlgorithm(t *testing.T) {
 	manager := NewJWTManager("test-secret-key-32-bytes-long!!", 7*24*time.Hour, "test-issuer")
 
-	// Create a token with none algorithm (invalid)
+	// Create a token with none algorithm (invalid).
 	claims := OperatorClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
@@ -117,7 +117,7 @@ func TestJWTManager_Verify_WrongAlgorithm(t *testing.T) {
 		Role:       "admin",
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodNone, claims)
-	// This should fail - none algorithm is not allowed
+	// This should fail - none algorithm is not allowed.
 	tokenString, _ := token.SignedString([]byte(""))
 
 	_, err := manager.Verify(tokenString)
@@ -134,7 +134,7 @@ func TestJWTManager_Verify_ModifiedToken(t *testing.T) {
 		t.Fatalf("Generate failed: %v", err)
 	}
 
-	// Modify the token (change one character)
+	// Modify the token (change one character).
 	modifiedToken := token[:len(token)-10] + "X" + token[len(token)-9:]
 
 	_, err = manager.Verify(modifiedToken)
@@ -174,7 +174,7 @@ func TestHashToken(t *testing.T) {
 		t.Errorf("hash length = %d, want 64", len(hash))
 	}
 
-	// Same input should produce same hash
+	// Same input should produce same hash.
 	hash2 := HashToken(token)
 	if hash != hash2 {
 		t.Error("same token should produce same hash")
@@ -209,7 +209,7 @@ func TestJWTManager_DifferentExpiry(t *testing.T) {
 	token1, _, _ := manager1.Generate("op", "e@e.com", "N", "r")
 	token2, _, _ := manager2.Generate("op", "e@e.com", "N", "r")
 
-	// Both should be valid now
+	// Both should be valid now.
 	_, err := manager1.Verify(token1)
 	if err != nil {
 		t.Errorf("token1 should be valid, got %v", err)

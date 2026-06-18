@@ -15,21 +15,21 @@ const RequestIDHeader = "X-Request-ID"
 const RequestIDKey = "request_id"
 
 // RequestIDMiddleware adds a unique request ID to each request.
-// The ID is generated as a random hex string and added to:
-// - Response header X-Request-ID
+// The ID is generated as a random hex string and added to:.
+// - Response header X-Request-ID.
 // - Gin context for use in handlers.
 func RequestIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get request ID from header or generate new one
+		// Get request ID from header or generate new one.
 		requestID := c.GetHeader(RequestIDHeader)
 		if requestID == "" {
 			requestID = generateRequestID()
 		}
 
-		// Set in context
+		// Set in context.
 		c.Set(RequestIDKey, requestID)
 
-		// Set in response header
+		// Set in response header.
 		c.Header(RequestIDHeader, requestID)
 
 		c.Next()

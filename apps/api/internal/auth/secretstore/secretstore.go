@@ -15,7 +15,7 @@ import (
 )
 
 // SecretStore manages encrypted storage of per-device command secrets.
-// Per DEVICE_REGISTRATION.md §6.1: secrets stored in data/secrets/<deviceId>.bin
+// Per DEVICE_REGISTRATION.md §6.1: secrets stored in data/secrets/<deviceId>.bin.
 // encrypted with AES-GCM using a master key from VYZORIX_SECRET_MASTER_KEY env.
 type SecretStore struct {
 	encryptor *AESGCMEncryptor
@@ -42,7 +42,7 @@ func NewSecretStore(baseDir string, masterKeyBase64 string) (*SecretStore, error
 		return nil, fmt.Errorf("failed to create encryptor: %w", err)
 	}
 
-	// Ensure base directory exists with proper permissions
+	// Ensure base directory exists with proper permissions.
 
 	if err := os.MkdirAll(baseDir, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create secrets directory: %w", err)

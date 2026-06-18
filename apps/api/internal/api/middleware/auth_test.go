@@ -106,7 +106,7 @@ func TestAuthenticator_NoToken(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/test", nil)
-	// No auth headers
+	// No auth headers.
 
 	handler(c)
 
@@ -129,7 +129,7 @@ func TestAuthenticator_DevelopmentBypass(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/test", nil)
-	// No auth headers
+	// No auth headers.
 
 	handler(c)
 
@@ -213,7 +213,7 @@ func TestAuthenticator_EmptyTokenSecret(t *testing.T) {
 
 	handler(c)
 
-	// With empty token secret and no bypass, should abort
+	// With empty token secret and no bypass, should abort.
 	if !c.IsAborted() {
 		t.Error("request should be aborted for empty token secret")
 	}
@@ -265,7 +265,7 @@ func TestAuthenticator_BothHeadersSet(t *testing.T) {
 
 	handler := auth.Middleware()
 
-	// Both headers set with valid token in Authorization
+	// Both headers set with valid token in Authorization.
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/test", nil)
@@ -274,7 +274,7 @@ func TestAuthenticator_BothHeadersSet(t *testing.T) {
 
 	handler(c)
 
-	// Should pass because Authorization header is valid
+	// Should pass because Authorization header is valid.
 	if c.IsAborted() {
 		t.Error("request should not be aborted when Authorization header is valid")
 	}
@@ -292,7 +292,7 @@ func TestAuthenticator_XVyzorixTokenOnly(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/test", nil)
 	c.Request.Header.Set("X-Vyzorix-Token", "secret-token-123")
-	// No Authorization header
+	// No Authorization header.
 
 	handler(c)
 
