@@ -1,5 +1,5 @@
 // Package security provides authentication utilities.
-package security
+package auth
 
 import (
 	"crypto/rand"
@@ -98,7 +98,7 @@ func HashToken(token string) string {
 func generateTokenID() string {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
-		// Fall back to time-based ID if crypto rand fails
+		// Fall back to time-based ID if crypto rand fails.
 		return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("fallback-%d", time.Now().UnixNano())))
 	}
 	return base64.RawURLEncoding.EncodeToString(b)

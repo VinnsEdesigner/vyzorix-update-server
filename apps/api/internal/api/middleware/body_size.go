@@ -19,7 +19,7 @@ func BodySizeLimit(limit int64) gin.HandlerFunc {
 			return
 		}
 
-		// Wrap the body with a limited reader
+		// Wrap the body with a limited reader.
 		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, limit)
 		c.Next()
 	}

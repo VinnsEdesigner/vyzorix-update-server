@@ -12,3 +12,8 @@ public/assets/*.js.map
 *.db
 *.db-*
 /data/api
+
+# Go toolchain (downloaded)
+go/bin/
+go*.tar.gz
+go*.tar.gz.*

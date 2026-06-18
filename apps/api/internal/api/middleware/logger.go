@@ -12,7 +12,7 @@ func Logger(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 
-		// Get request ID from context (set by RequestIDMiddleware)
+		// Get request ID from context (set by RequestIDMiddleware).
 		requestID := GetRequestID(c)
 
 		c.Next()

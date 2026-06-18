@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// mockNotifier implements Notifier for testing
+// mockNotifier implements Notifier for testing.
 type mockNotifier struct {
 	err error
 }
@@ -46,7 +46,7 @@ func TestSafeNotifier_OtherError(t *testing.T) {
 		DeviceID: "test-device",
 	})
 
-	// SafeNotifier should swallow all errors for graceful degradation
+	// SafeNotifier should swallow all errors for graceful degradation.
 	if err != nil {
 		t.Errorf("SafeNotifier should swallow errors, got %v", err)
 	}

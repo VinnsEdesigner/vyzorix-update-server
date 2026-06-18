@@ -25,7 +25,7 @@ type Notifier interface {
 }
 
 // SafeNotifier wraps a Notifier with graceful degradation.
-// If FCM fails, it logs the error but doesn't propagate it,
+// If FCM fails, it logs the error but doesn't propagate it,.
 // allowing the service to continue operating.
 type SafeNotifier struct {
 	Notifier Notifier
@@ -40,13 +40,13 @@ func (s *SafeNotifier) SendSilentWake(ctx context.Context, wake SilentWake) erro
 
 	err := s.Notifier.SendSilentWake(ctx, wake)
 	if err != nil {
-		// Log the error but don't propagate - graceful degradation
+		// Log the error but don't propagate - graceful degradation.
 		if errors.Is(err, ErrDisabled) {
-			// Not an error - FCM is intentionally disabled
+			// Not an error - FCM is intentionally disabled.
 			return nil
 		}
-		// Log the FCM failure but don't fail the caller
-		// The device will be notified via WebSocket or next poll
+		// Log the FCM failure but don't fail the caller.
+		// The device will be notified via WebSocket or next poll.
 		return nil
 	}
 	return nil
@@ -90,7 +90,7 @@ func (c *Client) SendSilentWake(ctx context.Context, wake SilentWake) error {
 
 	result, err := client.Send(ctx, msg)
 	if err != nil {
-		// Log as warning, not error - FCM failures shouldn't crash the service
+		// Log as warning, not error - FCM failures shouldn't crash the service.
 		c.log.Warn("fcm send failed (graceful degradation)",
 			"deviceId", wake.DeviceID,
 			"dispatchId", wake.DispatchID,
