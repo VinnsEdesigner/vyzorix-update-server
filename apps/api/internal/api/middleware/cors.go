@@ -16,17 +16,17 @@ func (co CORS) Handler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 
-		// Check if origin is allowed
+		// Check if origin is allowed.
 		if co.allowed(origin) {
 			c.Writer.Header().Set("Vary", "Origin")
-			// Only set Allow-Origin header for allowed origins
-			// Never use wildcard "*" when credentials are involved
+			// Only set Allow-Origin header for allowed origins.
+			// Never use wildcard "*" when credentials are involved.
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-			// Allow credentials for authenticated requests
+			// Allow credentials for authenticated requests.
 			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		}
 
-		// Always set these headers for CORS support
+		// Always set these headers for CORS support.
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PATCH, DELETE, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", strings.Join([]string{
 			"Authorization",
@@ -38,14 +38,14 @@ func (co CORS) Handler() gin.HandlerFunc {
 			"X-Vyzorix-Token",
 		}, ", "))
 
-		// Cache preflight response for 1 hour by default
+		// Cache preflight response for 1 hour by default.
 		if co.MaxAge != "" {
 			c.Writer.Header().Set("Access-Control-Max-Age", co.MaxAge)
 		} else {
 			c.Writer.Header().Set("Access-Control-Max-Age", "3600")
 		}
 
-		// Handle preflight requests
+		// Handle preflight requests.
 		if c.Request.Method == "OPTIONS" {
 			c.Writer.WriteHeader(204)
 			return

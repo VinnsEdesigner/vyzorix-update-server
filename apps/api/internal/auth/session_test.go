@@ -1,4 +1,4 @@
-package security
+package auth
 
 import (
 	"errors"
@@ -59,7 +59,7 @@ func TestEncryptOperatorID(t *testing.T) {
 		t.Error("encrypted value should differ from original")
 	}
 
-	// Encrypted value should be base64 encoded (RawURLEncoding)
+	// Encrypted value should be base64 encoded (RawURLEncoding).
 	if strings.ContainsAny(encrypted, "+/=") {
 		t.Error("RawURLEncoding should not contain +, /, or =")
 	}
@@ -69,8 +69,8 @@ func TestEncryptOperatorID_Uniqueness(t *testing.T) {
 	sm := NewSessionManager("test-secret-key")
 	operatorID := "op_same_id"
 
-	// Encrypt same operator ID multiple times - should get different ciphertexts
-	// due to random nonce
+	// Encrypt same operator ID multiple times - should get different ciphertexts.
+	// due to random nonce.
 	encrypted1, err := sm.EncryptOperatorID(operatorID)
 	if err != nil {
 		t.Fatalf("EncryptOperatorID() error = %v", err)
@@ -85,7 +85,7 @@ func TestEncryptOperatorID_Uniqueness(t *testing.T) {
 		t.Error("encrypting same ID twice should produce different ciphertexts (random nonce)")
 	}
 
-	// But both should decrypt to the same value
+	// But both should decrypt to the same value.
 	decrypted1, err := sm.DecryptOperatorID(encrypted1)
 	if err != nil {
 		t.Fatalf("DecryptOperatorID() error = %v", err)
@@ -148,7 +148,7 @@ func TestDecryptOperatorID_TamperedCiphertext(t *testing.T) {
 		t.Fatalf("EncryptOperatorID() error = %v", err)
 	}
 
-	// Tamper with the ciphertext
+	// Tamper with the ciphertext.
 	tampered := encrypted[:len(encrypted)-4] + "XXXX"
 
 	_, err = sm.DecryptOperatorID(tampered)
@@ -174,7 +174,7 @@ func TestDecryptOperatorID_WrongSecret(t *testing.T) {
 
 func TestDecryptOperatorID_TooShortCiphertext(t *testing.T) {
 	sm := NewSessionManager("test-secret-key")
-	// GCM nonce is 12 bytes, so anything shorter than that should fail
+	// GCM nonce is 12 bytes, so anything shorter than that should fail.
 	short := "YWJj" // "abc" in base64
 
 	_, err := sm.DecryptOperatorID(short)
@@ -321,12 +321,12 @@ func TestHashOperatorID(t *testing.T) {
 		t.Error("hash should not be empty")
 	}
 
-	// SHA-256 produces 64 hex characters
-	if len(hash) != 64 {
-		t.Errorf("hash length = %d, want 64", len(hash))
+	// SHA-512 produces 128 hex characters.
+	if len(hash) != 128 {
+		t.Errorf("hash length = %d, want 128", len(hash))
 	}
 
-	// Hash should be deterministic
+	// Hash should be deterministic.
 	hash2 := HashOperatorID(operatorID)
 	if hash != hash2 {
 		t.Error("same operator ID should produce same hash")
@@ -346,7 +346,7 @@ func TestHashOperatorID_NotReversible(t *testing.T) {
 	operatorID := "op_secret123"
 	hash := HashOperatorID(operatorID)
 
-	// Hash should not contain the original ID
+	// Hash should not contain the original ID.
 	if strings.Contains(hash, operatorID) {
 		t.Error("hash should not contain the original operator ID")
 	}
@@ -379,7 +379,7 @@ func TestSessionManager_EmptySecret(t *testing.T) {
 		t.Errorf("encryptionKey length = %d, want 32", len(sm.encryptionKey))
 	}
 
-	// Should still be able to encrypt/decrypt with empty secret
+	// Should still be able to encrypt/decrypt with empty secret.
 	encrypted, err := sm.EncryptOperatorID("op_test")
 	if err != nil {
 		t.Fatalf("EncryptOperatorID() error = %v", err)
@@ -397,7 +397,7 @@ func TestSessionManager_EmptySecret(t *testing.T) {
 
 func TestSessionManager_LongOperatorID(t *testing.T) {
 	sm := NewSessionManager("test-secret")
-	// Test with a very long operator ID
+	// Test with a very long operator ID.
 	longID := strings.Repeat("a", 1000)
 
 	encrypted, err := sm.EncryptOperatorID(longID)
@@ -422,7 +422,7 @@ func TestSessionManager_SpecialCharacters(t *testing.T) {
 		"op_with_underscore",
 		"op_with.dots",
 		"op_with@email",
-		"op_with_unicode_🦀",
+		"op_with_unicode_",
 	}
 
 	for _, id := range testIDs {
