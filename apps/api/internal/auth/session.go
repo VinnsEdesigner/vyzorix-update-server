@@ -1,11 +1,11 @@
 // Package security provides authentication utilities including session cookie management.
-package security
+package auth
 
 import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -34,12 +34,16 @@ type SessionManager struct {
 }
 
 // NewSessionManager creates a new session manager with the given secret.
-// The secret is hashed to produce a 32-byte AES-256 key.
+// The secret is hashed with SHA512 and truncated to 32 bytes for AES-256 key.
 func NewSessionManager(secret string) *SessionManager {
-	h := sha256.New()
+	h := sha512.New()
 	h.Write([]byte(secret))
+	// Truncate SHA512 (64 bytes) to AES-256 key size (32 bytes).
+	fullHash := h.Sum(nil)
+	key := make([]byte, EncryptionKeyLen)
+	copy(key, fullHash)
 	return &SessionManager{
-		encryptionKey: h.Sum(nil),
+		encryptionKey: key,
 	}
 }
 
@@ -55,22 +59,22 @@ func (sm *SessionManager) EncryptOperatorID(operatorID string) (string, error) {
 		return "", fmt.Errorf("failed to create GCM: %w", err)
 	}
 
-	// Generate random nonce (12 bytes for GCM)
+	// Generate random nonce (12 bytes for GCM).
 	nonce := make([]byte, aesGCM.NonceSize())
 	if _, err := rand.Read(nonce); err != nil {
 		return "", fmt.Errorf("failed to generate nonce: %w", err)
 	}
 
-	// Encrypt the operator ID
+	// Encrypt the operator ID.
 	ciphertext := aesGCM.Seal(nonce, nonce, []byte(operatorID), nil)
 
-	// Encode to base64 for safe cookie storage
+	// Encode to base64 for safe cookie storage.
 	return base64.RawURLEncoding.EncodeToString(ciphertext), nil
 }
 
 // DecryptOperatorID decrypts an operator ID from a cookie value.
 func (sm *SessionManager) DecryptOperatorID(cookieValue string) (string, error) {
-	// Decode from base64
+	// Decode from base64.
 	ciphertext, err := base64.RawURLEncoding.DecodeString(cookieValue)
 	if err != nil {
 		return "", fmt.Errorf("%w: invalid base64 encoding", ErrDecryptionFailed)
@@ -91,10 +95,10 @@ func (sm *SessionManager) DecryptOperatorID(cookieValue string) (string, error) 
 		return "", fmt.Errorf("%w: ciphertext too short", ErrDecryptionFailed)
 	}
 
-	// Split nonce and ciphertext
+	// Split nonce and ciphertext.
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 
-	// Decrypt
+	// Decrypt.
 	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", ErrDecryptionFailed, err)
@@ -165,6 +169,6 @@ func (sm *SessionManager) ExtractSessionFromCookie(cookieValue string) (string, 
 // HashOperatorID creates a SHA-256 hash of an operator ID for database lookups.
 // This is used to store session hashes in the database for tracking/revocation.
 func HashOperatorID(operatorID string) string {
-	h := sha256.Sum256([]byte(operatorID))
+	h := sha512.Sum512([]byte(operatorID))
 	return hex.EncodeToString(h[:])
 }

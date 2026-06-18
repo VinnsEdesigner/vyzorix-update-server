@@ -39,7 +39,7 @@ func TestCORS_AllowedOrigins(t *testing.T) {
 func TestCORS_EmptyOrigin(t *testing.T) {
 	cors := CORS{AllowedOrigins: []string{"https://example.com"}}
 
-	// Empty origin is now rejected for security - origin is required for CORS
+	// Empty origin is now rejected for security - origin is required for CORS.
 	if cors.allowed("") {
 		t.Error("empty origin should be rejected for security")
 	}
@@ -102,13 +102,13 @@ func TestCORSHandler_NoOrigin(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 
 	req := httptest.NewRequest("GET", "/test", nil)
-	// No Origin header
+	// No Origin header.
 	c.Request = req
 
 	corsHandler(c)
 
-	// When no Origin header is provided, the handler should not set CORS headers
-	// for security reasons (origin validation requires an origin)
+	// When no Origin header is provided, the handler should not set CORS headers.
+	// for security reasons (origin validation requires an origin).
 	allowOrigin := c.Writer.Header().Get("Access-Control-Allow-Origin")
 	if allowOrigin != "" {
 		t.Errorf("expected no Access-Control-Allow-Origin for no-origin request, got %s", allowOrigin)
@@ -127,10 +127,10 @@ func TestCORSHandler_OPTIONS(t *testing.T) {
 
 	corsHandler(c)
 
-	// For OPTIONS, the middleware writes 204 directly then returns (no c.Next())
-	// The status code should be what gin defaults to when no explicit status is set after middleware runs
-	// gin.CreateTestContext may not capture the early WriteHeader(204) properly
-	// This test verifies the handler doesn't crash on OPTIONS and sets CORS headers
+	// For OPTIONS, the middleware writes 204 directly then returns (no c.Next()).
+	// The status code should be what gin defaults to when no explicit status is set after middleware runs.
+	// gin.CreateTestContext may not capture the early WriteHeader(204) properly.
+	// This test verifies the handler doesn't crash on OPTIONS and sets CORS headers.
 	if w.Code == 0 {
 		t.Error("status code should not be 0")
 	}
@@ -185,7 +185,7 @@ func TestCORSHandler_WildcardOrigin(t *testing.T) {
 
 	corsHandler(c)
 
-	// When wildcard is set, should return actual origin, not "*"
+	// When wildcard is set, should return actual origin, not "*".
 	allowOrigin := c.Writer.Header().Get("Access-Control-Allow-Origin")
 	if allowOrigin != "https://any-site.com" {
 		t.Errorf("expected actual origin, got %s", allowOrigin)

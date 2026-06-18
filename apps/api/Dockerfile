@@ -1,52 +1,156 @@
-FROM golang:1.22-alpine AS go-builder
-RUN apk add --no-cache build-base sqlite-dev
+# =============================================================================
+# Vyzorix Update Server - Production Dockerfile
+# =============================================================================
+# Ubuntu-based production image with Node.js SSR support
+# Hardening can be added incrementally - see comments for suggestions
+# =============================================================================
+
+# syntax=docker/dockerfile:1.7-labs
+
+# =============================================================================
+# Stage 1: Go Builder - Build the Go server binary
+# =============================================================================
+FROM golang:1.24 AS go-builder
+
 WORKDIR /app
-COPY go.mod go.sum ./
+
+# Copy dependency files first for better layer caching
+COPY apps/api/go.mod apps/api/go.sum ./
 RUN go mod download
-COPY . .
-RUN CGO_ENABLED=1 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/vyzorix-update-server .
 
-FROM node:22-alpine AS web-builder
+# Copy source and build
+COPY apps/api ./
+
+# Build the Go server
+RUN CGO_ENABLED=1 GOOS=linux go build \
+    -trimpath \
+    -ldflags="-s -w" \
+    -o /out/vyzorix-update-server .
+
+# =============================================================================
+# Stage 2: Web Builder - Build the frontend with Vite and pnpm
+# =============================================================================
+FROM node:22-bookworm AS web-builder
+
+# Disable telemetry
+ENV PNPM_TELEMETRY=0 \
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+    COREPACK_ENABLE_AUTOINSTALL=0
+
+RUN npm install -g pnpm
+
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
 
-FROM alpine:3.20
-RUN apk add --no-cache ca-certificates sqlite tzdata
+# Copy workspace files
+COPY . .
+
+# Install all dependencies
+RUN pnpm install --frozen-lockfile
+
+# Build config package first (outputs to dist/)
+RUN pnpm --filter @vyzorix/config run build
+
+# Then build web (which depends on config)
+RUN pnpm --filter @vyzorix/web run build
+
+# =============================================================================
+# Stage 3: Production - Ubuntu with Node.js for SSR
+# =============================================================================
+FROM ubuntu:24.04 AS production
+
+# Build arguments for version info
+ARG VERSION=unknown
+ARG BUILD_DATE=unknown
+
+# Update and install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        sqlite3 \
+        tzdata \
+        nodejs \
+        npm \
+        curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && npm install -g pnpm
+
+# Create app user
+RUN useradd -m -s /bin/bash appuser
+
+# Labels
+LABEL org.opencontainers.image.title="Vyzorix Update Server" \
+      org.opencontainers.image.description="Production update server" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.vendor="Vyzorix"
+
 WORKDIR /app
 
-# Create required directories
-RUN mkdir -p /data /app/bin /app/public
+# Copy package files (needed for SSR server)
+COPY --from=web-builder /app/package.json /app/pnpm-lock.yaml* ./
 
-# Environment variables - matches config.go defaults and .env.example
+# Ensure ES modules are enabled for SSR server (add to existing package.json)
+RUN node -e "const pkg = require('./package.json'); pkg.type = 'module'; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));"
+
+# Install all dependencies (vite is in devDependencies but needed for SSR)
+RUN npm install --ignore-scripts
+
+# Environment variables
 ENV PORT=3000 \
     NODE_ENV=production \
+    NODE_PATH=/app \
     DATABASE_URL=/data/vyzorix.db \
-    VYZORIX_API_DIR=/app/data \
+    VYZORIX_API_DIR=/data \
     VYZORIX_BIN_DIR=/app/bin \
-    VYZORIX_PUBLIC_DIR=/app/public
+    VYZORIX_PUBLIC_DIR=/app/public \
+    PATH=/app/bin:/usr/local/bin:$PATH \
+    # Disable SSR auto-build since we use pre-built assets
+    SSR_AUTO_BUILD=false
 
-# Copy binary from go-builder
-COPY --from=go-builder /out/vyzorix-update-server /app/vyzorix-update-server
+# Create directories
+RUN mkdir -p /data /app/bin /app/public /app/logs && \
+    chown -R appuser:appuser /app /data
 
-# Copy built web assets from web-builder
-# TanStack Start outputs to .output/public
-COPY --from=web-builder /app/.output/public /app/public
+# Copy binary
+COPY --from=go-builder --chown=appuser:appuser /out/vyzorix-update-server /app/vyzorix-update-server
 
-# Copy data directory from builder (version.json, changelog.json)
-# This needs the data directory to exist in the source
-COPY --from=web-builder /app/data /app/data || true
+# Copy web assets
+COPY --from=web-builder --chown=appuser:appuser /app/apps/web/dist/client /app/public
+COPY --from=web-builder --chown=appuser:appuser /app/apps/web/dist/server /app/data/server
 
-# Copy bin directory contents (APK files, binaries)
-COPY --from=web-builder /app/bin /app/bin || true
+# Copy SSR server entry point from source
+COPY apps/api/ssr-server.js /app/ssr-server.js
 
-EXPOSE 3000
+# Create web directory for SSR server
+COPY --from=web-builder --chown=appuser:appuser /app/apps/web /web
 
-# Health check: verify the server is responding
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget -qO- http://localhost:3000/health || exit 1
+# Make binary executable
+RUN chmod +x /app/vyzorix-update-server /app/ssr-server.js
 
-# Use exec form for proper signal handling (SIGTERM → process)
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Switch to non-root user
+USER appuser
+
+# Use exec form
 ENTRYPOINT ["/app/vyzorix-update-server"]
+
+# =============================================================================
+# Hardening Notes (for future implementation):
+# =============================================================================
+# 1. Add to run with more security:
+#    docker run --read-only \
+#               --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+#               --cap-drop=ALL \
+#               --security-opt=no-new-privileges:true \
+#               --memory=512m \
+#               --pids-limit=100 \
+#               -v /path/to/data:/data \
+#               vyzorix-update-server:latest
+#
+# 2. Switch to distroless or scratch for minimal image
+# 3. Add AppArmor/SELinux profiles
+# 4. Implement read-only root filesystem where possible
+# =============================================================================

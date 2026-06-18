@@ -12,14 +12,14 @@ import (
 func TestRateLimiter_Allow(t *testing.T) {
 	limiter := NewRateLimiter(5, time.Minute)
 
-	// First 5 requests should pass
+	// First 5 requests should pass.
 	for i := 0; i < 5; i++ {
 		if !limiter.Allow("192.168.1.1") {
 			t.Errorf("request %d should be allowed", i+1)
 		}
 	}
 
-	// 6th request should be denied
+	// 6th request should be denied.
 	if limiter.Allow("192.168.1.1") {
 		t.Error("6th request should be denied")
 	}
@@ -28,7 +28,7 @@ func TestRateLimiter_Allow(t *testing.T) {
 func TestRateLimiter_DifferentKeys(t *testing.T) {
 	limiter := NewRateLimiter(2, time.Minute)
 
-	// Different IPs should have separate buckets
+	// Different IPs should have separate buckets.
 	if !limiter.Allow("192.168.1.1") {
 		t.Error("IP1 request 1 should be allowed")
 	}
@@ -38,11 +38,11 @@ func TestRateLimiter_DifferentKeys(t *testing.T) {
 	if !limiter.Allow("192.168.1.1") {
 		t.Error("IP1 request 2 should be allowed")
 	}
-	// IP1 should now be rate limited
+	// IP1 should now be rate limited.
 	if limiter.Allow("192.168.1.1") {
 		t.Error("IP1 request 3 should be denied")
 	}
-	// IP2 should still work
+	// IP2 should still work.
 	if !limiter.Allow("192.168.1.2") {
 		t.Error("IP2 request 2 should be allowed")
 	}
@@ -51,19 +51,19 @@ func TestRateLimiter_DifferentKeys(t *testing.T) {
 func TestRateLimiter_Refill(t *testing.T) {
 	limiter := NewRateLimiter(2, 100*time.Millisecond)
 
-	// Exhaust tokens
+	// Exhaust tokens.
 	limiter.Allow("192.168.1.1")
 	limiter.Allow("192.168.1.1")
 
-	// Should be denied
+	// Should be denied.
 	if limiter.Allow("192.168.1.1") {
 		t.Error("should be rate limited")
 	}
 
-	// Wait for refill
+	// Wait for refill.
 	time.Sleep(150 * time.Millisecond)
 
-	// Should be allowed again
+	// Should be allowed again.
 	if !limiter.Allow("192.168.1.1") {
 		t.Error("should be allowed after refill")
 	}
@@ -72,15 +72,15 @@ func TestRateLimiter_Refill(t *testing.T) {
 func TestRateLimiter_MaxCapacity(t *testing.T) {
 	limiter := NewRateLimiter(5, time.Minute)
 
-	// Fill up
+	// Fill up.
 	for i := 0; i < 10; i++ {
 		limiter.Allow("192.168.1.1")
 	}
 
-	// Wait for some refill
+	// Wait for some refill.
 	time.Sleep(200 * time.Millisecond)
 
-	// Should not exceed capacity
+	// Should not exceed capacity.
 	allowed := 0
 	for i := 0; i < 100; i++ {
 		if limiter.Allow("192.168.1.1") {
@@ -98,7 +98,7 @@ func TestRateLimiter_Middleware(t *testing.T) {
 
 	handler := limiter.Middleware()
 
-	// First two requests should succeed
+	// First two requests should succeed.
 	for i := 0; i < 2; i++ {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
@@ -112,7 +112,7 @@ func TestRateLimiter_Middleware(t *testing.T) {
 		}
 	}
 
-	// Third request should be rate limited
+	// Third request should be rate limited.
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/test", nil)
@@ -129,14 +129,14 @@ func TestRateLimiter_Middleware_DifferentIPs(t *testing.T) {
 	limiter := NewRateLimiter(1, time.Minute)
 	handler := limiter.Middleware()
 
-	// IP1
+	// IP1.
 	w1 := httptest.NewRecorder()
 	c1, _ := gin.CreateTestContext(w1)
 	c1.Request = httptest.NewRequest("GET", "/test", nil)
 	c1.Request.RemoteAddr = "192.168.1.1:12345"
 	handler(c1)
 
-	// IP2 (different, should be allowed)
+	// IP2 (different, should be allowed).
 	w2 := httptest.NewRecorder()
 	c2, _ := gin.CreateTestContext(w2)
 	c2.Request = httptest.NewRequest("GET", "/test", nil)
@@ -150,7 +150,7 @@ func TestRateLimiter_Middleware_DifferentIPs(t *testing.T) {
 		t.Errorf("IP2 first request: got %d, want %d", w2.Code, http.StatusOK)
 	}
 
-	// IP1 again should be blocked
+	// IP1 again should be blocked.
 	w3 := httptest.NewRecorder()
 	c3, _ := gin.CreateTestContext(w3)
 	c3.Request = httptest.NewRequest("GET", "/test", nil)
@@ -166,14 +166,14 @@ func TestRateLimiter_ResponseBody(t *testing.T) {
 	limiter := NewRateLimiter(1, time.Minute)
 	handler := limiter.Middleware()
 
-	// Exhaust
+	// Exhaust.
 	w1 := httptest.NewRecorder()
 	c1, _ := gin.CreateTestContext(w1)
 	c1.Request = httptest.NewRequest("GET", "/test", nil)
 	c1.Request.RemoteAddr = "192.168.1.1:12345"
 	handler(c1)
 
-	// Should be rate limited
+	// Should be rate limited.
 	w2 := httptest.NewRecorder()
 	c2, _ := gin.CreateTestContext(w2)
 	c2.Request = httptest.NewRequest("GET", "/test", nil)
@@ -233,8 +233,8 @@ func TestRateLimiter_ConcurrentAccess(t *testing.T) {
 		<-done
 	}
 
-	// Should have consumed 100 tokens
-	// Next request should be denied
+	// Should have consumed 100 tokens.
+	// Next request should be denied.
 	if limiter.Allow("192.168.1.1") {
 		t.Error("should be rate limited after concurrent access")
 	}
@@ -243,7 +243,7 @@ func TestRateLimiter_ConcurrentAccess(t *testing.T) {
 func TestRateLimiter_ZeroCapacity(t *testing.T) {
 	limiter := NewRateLimiter(0, time.Minute)
 
-	// No requests should be allowed
+	// No requests should be allowed.
 	if limiter.Allow("192.168.1.1") {
 		t.Error("zero capacity should deny all")
 	}
@@ -252,7 +252,7 @@ func TestRateLimiter_ZeroCapacity(t *testing.T) {
 func TestRateLimiter_EmptyKey(t *testing.T) {
 	limiter := NewRateLimiter(5, time.Minute)
 
-	// Should work with empty key
+	// Should work with empty key.
 	if !limiter.Allow("") {
 		t.Error("empty key should be allowed")
 	}

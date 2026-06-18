@@ -1,5 +1,5 @@
-// Package security provides GitHub OAuth utilities.
-package security
+// Package auth provides GitHub OAuth utilities.
+package auth
 
 import (
 	"context"
@@ -144,19 +144,19 @@ func FetchGitHubEmails(ctx context.Context, accessToken string) ([]GitHubEmailIn
 // If no primary email, falls back to any verified email.
 // If still nothing, returns the first email.
 func GetPrimaryEmail(emails []GitHubEmailInfo) string {
-	// First priority: primary verified email
+	// First priority: primary verified email.
 	for _, e := range emails {
 		if e.Primary && e.Verified {
 			return e.Email
 		}
 	}
-	// Second priority: any verified email
+	// Second priority: any verified email.
 	for _, e := range emails {
 		if e.Verified {
 			return e.Email
 		}
 	}
-	// Third priority: first email in list
+	// Third priority: first email in list.
 	if len(emails) > 0 {
 		return emails[0].Email
 	}

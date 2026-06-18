@@ -1,4 +1,4 @@
-// Package middleware provides SSR proxy middleware
+// Package middleware provides SSR proxy middleware.
 package middleware
 
 import (
@@ -39,13 +39,13 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 
 	proxy := httputil.NewSingleHostReverseProxy(ssrServerURL)
 
-	// Health monitoring state
+	// Health monitoring state.
 	var (
 		ssrHealthy   = true
 		ssrHealthyMu sync.RWMutex
 	)
 
-	// Start background health checker
+	// Start background health checker.
 	go func() {
 		ticker := time.NewTicker(time.Duration(ssrConfig.SSRHealthCheckInterval) * time.Second)
 		defer ticker.Stop()
@@ -79,18 +79,18 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 		}
 	}()
 
-	// Custom director to properly modify the request
+	// Custom director to properly modify the request.
 	originalDirector := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		req.URL.Scheme = ssrServerURL.Scheme
 		req.URL.Host = ssrServerURL.Host
 
-		// Forward important headers for SSR
+		// Forward important headers for SSR.
 		req.Header.Set("X-Forwarded-Host", req.Host)
 		req.Header.Set("X-Forwarded-Proto", ssrServerURL.Scheme)
 		req.Header.Set("X-Forwarded-For", req.RemoteAddr)
 
-		// Keep original host for the SSR server to generate absolute URLs if needed
+		// Keep original host for the SSR server to generate absolute URLs if needed.
 		req.Header.Set("X-Original-Host", req.Host)
 		req.Header.Set("X-Original-URI", req.RequestURI)
 
@@ -99,7 +99,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 		}
 	}
 
-	// Custom modify response to handle errors and logging
+	// Custom modify response to handle errors and logging.
 	proxy.ModifyResponse = func(res *http.Response) error {
 		log.Debug("SSR proxy response", "status", res.StatusCode, "path", res.Request.URL.Path)
 
@@ -113,9 +113,9 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 		return nil
 	}
 
-	// serveFallback serves the static SPA with resilience
+	// serveFallback serves the static SPA with resilience.
 	serveFallback := func(w http.ResponseWriter, req *http.Request) {
-		// Try multiple fallback files
+		// Try multiple fallback files.
 		fallbackFiles := []string{
 			filepath.Join(publicDir, "index.html"),
 			filepath.Join(publicDir, "landing.html"),
@@ -128,7 +128,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 			}
 		}
 
-		// Ultimate fallback - hardcoded minimal HTML
+		// Ultimate fallback - hardcoded minimal HTML.
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusServiceUnavailable)
 		_, _ = w.Write([]byte(`<!DOCTYPE html>
@@ -137,7 +137,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 <p>The server is starting up. Please refresh in a moment.</p></body></html>`))
 	}
 
-	// Custom error handler with graceful fallback to static HTML
+	// Custom error handler with graceful fallback to static HTML.
 	proxy.ErrorHandler = func(w http.ResponseWriter, req *http.Request, err error) {
 		log.Error("SSR proxy error, falling back to SPA", "err", err, "path", req.URL.Path)
 		serveFallback(w, req)
@@ -146,7 +146,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
 
-		// Skip proxying for API, static assets, and health checks
+		// Skip proxying for API, static assets, and health checks.
 		if strings.HasPrefix(path, "/api/") ||
 			strings.HasPrefix(path, "/v1/") ||
 			strings.HasPrefix(path, "/health") ||
@@ -156,7 +156,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 			return
 		}
 
-		// Check SSR health before proxying
+		// Check SSR health before proxying.
 		ssrHealthyMu.RLock()
 		healthy := ssrHealthy
 		ssrHealthyMu.RUnlock()
@@ -168,11 +168,11 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 			return
 		}
 
-		// ============================================================
-		// SECURITY: Validate JWT before proxying protected routes
-		// ============================================================
+		// ============================================================.
+		// SECURITY: Validate JWT before proxying protected routes.
+		// ============================================================.
 
-		// Public routes that don't require authentication (must match React Router routes)
+		// Public routes that don't require authentication (must match React Router routes).
 		publicRoutes := []string{
 			"/login",
 			"/create-account",
@@ -189,7 +189,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 			}
 		}
 
-		// For all other routes, validate JWT cookie
+		// For all other routes, validate JWT cookie.
 		tokenCookie, err := c.Cookie("vyz.auth.token")
 		if err != nil || tokenCookie == "" {
 			log.Warn("SSR access denied - no JWT cookie", "path", path, "ip", c.ClientIP())
@@ -197,7 +197,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 			return
 		}
 
-		// Validate JWT
+		// Validate JWT.
 		jwtManager := security.NewJWTManager(jwtSecret, 0, "")
 		claims, err := jwtManager.Verify(tokenCookie)
 		if err != nil {

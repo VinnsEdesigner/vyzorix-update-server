@@ -17,13 +17,13 @@ func TestRequestIDMiddleware_GeneratesID(t *testing.T) {
 	handler := RequestIDMiddleware()
 	handler(c)
 
-	// Check that request ID is set in context
+	// Check that request ID is set in context.
 	id := GetRequestID(c)
 	if id == "" {
 		t.Error("Request ID should be generated")
 	}
 
-	// Check that response header is set
+	// Check that response header is set.
 	if w.Header().Get(RequestIDHeader) == "" {
 		t.Error("X-Request-ID header should be set")
 	}
@@ -40,7 +40,7 @@ func TestRequestIDMiddleware_UsesProvidedID(t *testing.T) {
 	handler := RequestIDMiddleware()
 	handler(c)
 
-	// Check that provided request ID is used
+	// Check that provided request ID is used.
 	id := GetRequestID(c)
 	if id != "custom-request-id-123" {
 		t.Errorf("Request ID = %s, want custom-request-id-123", id)
@@ -57,13 +57,13 @@ func TestRequestIDMiddleware_SetsResponseHeader(t *testing.T) {
 	handler := RequestIDMiddleware()
 	handler(c)
 
-	// Check response header
+	// Check response header.
 	header := w.Header().Get(RequestIDHeader)
 	if header == "" {
 		t.Error("Response X-Request-ID header should be set")
 	}
 
-	// Verify it's the same as context
+	// Verify it's the same as context.
 	if header != GetRequestID(c) {
 		t.Error("Response header should match context request ID")
 	}
@@ -93,12 +93,12 @@ func TestRequestIDFormat(t *testing.T) {
 
 	id := GetRequestID(c)
 
-	// Request ID should be a 32-character hex string (16 bytes)
+	// Request ID should be a 32-character hex string (16 bytes).
 	if len(id) != 32 {
 		t.Errorf("Request ID length = %d, want 32", len(id))
 	}
 
-	// Should be valid hex
+	// Should be valid hex.
 	for _, ch := range id {
 		if !((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f')) {
 			t.Error("Request ID should be lowercase hex")
