@@ -346,7 +346,7 @@ func NewDispatchID() string {
 	return s
 }
 
-// ─── Backward Compatibility Aliases ─────────────────────────────────────────────
+//  Backward Compatibility Aliases 
 // These methods provide backward-compatible interfaces for existing code.
 
 // Device is a backward-compatible alias for GetDevice.

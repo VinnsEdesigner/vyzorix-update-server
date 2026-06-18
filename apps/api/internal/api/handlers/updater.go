@@ -1,5 +1,5 @@
 // Package controllers provides HTTP handlers.
-package controllers
+package handlers
 
 import (
 	"encoding/json"

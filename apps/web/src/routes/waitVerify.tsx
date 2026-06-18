@@ -340,7 +340,7 @@ const WaitVerifyPage = (): ReactElement => {
               {/* Status indicator */}
               <div className="bg-slate-800/50 border border-white/5 rounded-xl p-4 mb-6">
                 <p className="text-emerald-400 text-sm font-medium text-center">
-                  ✓ Reset link sent successfully
+                   Reset link sent successfully
                 </p>
                 <p className="text-slate-400 text-xs text-center mt-2">
                   Click the link in your email to reset your password.

@@ -11,35 +11,35 @@ The following mapping outlines the programmatic steps executed by the resilience
 
 ```text
                         SYSTEM AUDIOSERVER CRASH / BINDER UNBIND
-                                           │
-                                           ▼
+                                           
+                                           
                     [IBinder.DeathRecipient.binderDied() Callback]
-                                           │
-                                           ▼
+                                           
+                                           
                             AudioServerReconnectHandler
-                                           │
-                                           ▼
+                                           
+                                           
                                    BinderRecoveryLoop
-                                           │
-                                           ▼
+                                           
+                                           
                                  RecoveryCoordinator
                               (crash-loop policy, ADR-0007)
-                                           │
-               ┌───────────────────────────┴───────────────────────────┐
-               │                                                       │
+                                           
+               
+                                                                      
       Crashes > Max (3x/5min)?                                Crashes <= Max?
-               │                                                       │
-               ▼ (YES: ESCALATE)                                       ▼ (NO: RE-BIND)
+                                                                      
+                (YES: ESCALATE)                                        (NO: RE-BIND)
        SafeModeController                                    StartupBackoffScheduler
-               │                                                       │
-               ▼                                                       ▼
+                                                                      
+                                                                      
        [Enter Fallback]                                       Re-bind Core Services
-               │                                                       │
-  ┌────────────┼────────────┐                                          ▼
-  ▼            ▼            ▼                                  Validate Session
+                                                                      
+                                            
+                                                            Validate Session
 Playback    VoIP-Only     Silent                             (verify stream headers)
-Capture     Speaker      Recovery                                      │
-Fallback    Fallback     Mode                                          ▼
+Capture     Speaker      Recovery                                      
+Fallback    Fallback     Mode                                          
                                                               Resume Headless Loop
 ```
 
@@ -51,11 +51,11 @@ The `resilience` submodule manages IPC liveness, recovers from dead binder inter
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/resilience/
-├── AudioServerReconnectHandler.kt
-├── BinderRecoveryLoop.kt
-├── ThreadIsolationExecutor.kt
-├── DeadObjectRecovery.kt
-└── WatchdogEscalationPolicy.kt
+ AudioServerReconnectHandler.kt
+ BinderRecoveryLoop.kt
+ ThreadIsolationExecutor.kt
+ DeadObjectRecovery.kt
+ WatchdogEscalationPolicy.kt
 ```
 
 ### 2.1 `AudioServerReconnectHandler.kt`
@@ -92,9 +92,9 @@ The `stability` submodule manages startup crash prevention, limits process resta
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/stability/
 # NOTE: CrashLoopProtector.kt folded into RecoveryCoordinator (Layer A, ADR-0007).
-├── SafeModeController.kt
-├── StartupBackoffScheduler.kt
-└── ProcessRestartLimiter.kt
+ SafeModeController.kt
+ StartupBackoffScheduler.kt
+ ProcessRestartLimiter.kt
 ```
 
 ### 3.1 ~~`CrashLoopProtector.kt`~~ — folded into `RecoveryCoordinator` (ADR-0007)
@@ -120,10 +120,10 @@ The `fallback` submodule implements multi-layered, graded degradation profiles t
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/fallback/
-├── PlaybackCaptureFallback.kt
-├── CommunicationModeFallback.kt
-├── SpeakerBypassFallback.kt
-└── SilentRecoveryMode.kt
+ PlaybackCaptureFallback.kt
+ CommunicationModeFallback.kt
+ SpeakerBypassFallback.kt
+ SilentRecoveryMode.kt
 ```
 
 ### 4.1 `PlaybackCaptureFallback.kt`

@@ -51,15 +51,15 @@ Additionally, the current ID strategy and hashing algorithm need modernization f
 
 ```
 pkg/storage/
-├── store.go           # Store struct, Open/Close, DB connection
-├── migrations.go      # Migration registry and runner
-├── devices.go         # Device CRUD operations
-├── telemetry.go       # Telemetry storage (UUIDv7)
-├── commands.go        # Command dispatch & status
-├── operators.go       # Operator CRUD, sessions, verifications
-├── settings.go        # System settings
-├── crypto.go          # Argon2id utilities (NEW)
-└── uuid.go            # UUIDv7 generation utilities (NEW)
+ store.go           # Store struct, Open/Close, DB connection
+ migrations.go      # Migration registry and runner
+ devices.go         # Device CRUD operations
+ telemetry.go       # Telemetry storage (UUIDv7)
+ commands.go        # Command dispatch & status
+ operators.go       # Operator CRUD, sessions, verifications
+ settings.go        # System settings
+ crypto.go          # Argon2id utilities (NEW)
+ uuid.go            # UUIDv7 generation utilities (NEW)
 ```
 
 #### 2.1.2 Module Specifications

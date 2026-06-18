@@ -1,4 +1,4 @@
-package controllers
+package handlers
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func (ac *AuthController) UpdateName(c *gin.Context) {
 		return
 	}
 
-	// Re-fetch to return the updated operator
+	// Re-fetch to return the updated operator.
 	updated, err := ac.store.GetOperatorByEmail(ctx, op.Email)
 	if err != nil || updated == nil {
 		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "update succeeded but fetch failed"})
@@ -73,7 +73,7 @@ func (ac *AuthController) UpdateSettings(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	// Reset all settings to defaults
+	// Reset all settings to defaults.
 	if req.Reset {
 		if err := ac.store.ResetOperatorSettings(ctx, op.ID); err != nil {
 			ac.log.Warn("updateSettings: reset failed", "operatorID", op.ID, "err", err)
@@ -90,7 +90,7 @@ func (ac *AuthController) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	// Update name if provided
+	// Update name if provided.
 	if req.Name != nil {
 		name := strings.TrimSpace(*req.Name)
 		if name == "" {
@@ -104,7 +104,7 @@ func (ac *AuthController) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	// Update thresholds if provided
+	// Update thresholds if provided.
 	if req.Thresholds != nil {
 		if err := ac.store.UpdateOperatorThresholds(ctx, op.ID, *req.Thresholds); err != nil {
 			ac.log.Warn("updateSettings: thresholds update failed", "operatorID", op.ID, "err", err)
@@ -113,7 +113,7 @@ func (ac *AuthController) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	// Update client settings if provided
+	// Update client settings if provided.
 	if req.Client != nil {
 		if err := ac.store.UpdateOperatorClientSettings(ctx, op.ID, *req.Client); err != nil {
 			ac.log.Warn("updateSettings: client settings update failed", "operatorID", op.ID, "err", err)
@@ -122,7 +122,7 @@ func (ac *AuthController) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	// Re-fetch to return the updated operator
+	// Re-fetch to return the updated operator.
 	updated, err := ac.store.GetOperatorByID(ctx, op.ID)
 	if err != nil || updated == nil {
 		c.JSON(500, models.ErrorResponse{Error: "internal_error", Message: "update succeeded but fetch failed"})

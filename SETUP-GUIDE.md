@@ -89,7 +89,7 @@ The OAuth consent screen is what users see when they click "Sign in with Google"
    http://localhost:3000/v1/auth/google/callback
    ```
 
-   > [WARN]️ Important: The redirect URI must match exactly what your app expects. The path `/v1/auth/google/callback` is hardcoded.
+   > [WARN] Important: The redirect URI must match exactly what your app expects. The path `/v1/auth/google/callback` is hardcoded.
 
 7. Click **Create**
 8. A modal will appear with your credentials:
@@ -145,7 +145,7 @@ Resend is an email API service that makes it easy to send transactional emails (
    re_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ```
 
-   > [WARN]️ Important: This is the only time you'll see this key. Copy it now!
+   > [WARN] Important: This is the only time you'll see this key. Copy it now!
 
 ### 2.3 Add a Domain (Recommended for Production)
 
