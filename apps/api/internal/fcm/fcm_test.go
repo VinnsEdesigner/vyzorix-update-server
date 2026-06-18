@@ -9,7 +9,7 @@ import (
 func TestInit_Disabled(t *testing.T) {
 	logger := slog.Default()
 
-	// Empty credentials should return disabled client
+	// Empty credentials should return disabled client.
 	c, err := Init(logger, "")
 	if err != nil {
 		t.Fatalf("Init() returned error: %v", err)
@@ -25,7 +25,7 @@ func TestInit_Disabled(t *testing.T) {
 func TestInit_Disabled_EmptyCredentials(t *testing.T) {
 	logger := slog.Default()
 
-	// Explicitly empty string
+	// Explicitly empty string.
 	c, err := Init(logger, "")
 	if err != nil {
 		t.Fatalf("Init() returned error: %v", err)
@@ -218,6 +218,6 @@ func TestPtr24Hours(t *testing.T) {
 }
 
 func TestNotifierInterface(t *testing.T) {
-	// Verify SilentWake implements Notifier interface
+	// Verify SilentWake implements Notifier interface.
 	var _ Notifier = (*Client)(nil)
 }

@@ -13,11 +13,11 @@ func TestLogger_RecordsRequestDetails(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := slog.Default()
 
-	// Create a new gin engine with logger middleware
+	// Create a new gin engine with logger middleware.
 	r := gin.New()
 	r.Use(Logger(logger))
 
-	// Test various HTTP methods and paths
+	// Test various HTTP methods and paths.
 	testCases := []struct {
 		method string
 		path   string
@@ -50,7 +50,7 @@ func TestLogger_ExtractsClientIP(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.RemoteAddr = "192.168.1.100:12345"
 
-	// Should not panic and should extract IP
+	// Should not panic and should extract IP.
 	r.ServeHTTP(w, req)
 }
 
@@ -67,7 +67,7 @@ func TestLogger_RecordsStatus(t *testing.T) {
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 
-	// Should not panic
+	// Should not panic.
 	r.ServeHTTP(w, req)
 }
 
@@ -75,14 +75,14 @@ func TestLogger_NextIsCalled(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := slog.Default()
 
-	// Create a new gin engine with a route
+	// Create a new gin engine with a route.
 	r := gin.New()
 	r.Use(Logger(logger))
 	r.GET("/test", func(cx *gin.Context) {
 		cx.Status(http.StatusOK)
 	})
 
-	// The handler should call Next()
+	// The handler should call Next().
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	r.ServeHTTP(w, req)

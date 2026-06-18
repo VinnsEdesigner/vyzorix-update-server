@@ -1,4 +1,4 @@
-package security
+package auth
 
 import (
 	"encoding/base64"
@@ -7,15 +7,15 @@ import (
 	"time"
 )
 
-// Test base64RawURLDecode
+// Test base64RawURLDecode.
 func TestBase64RawURLDecode(t *testing.T) {
-	// Test inputs - URL-safe base64 without padding (function adds padding internally)
-	// "a" -> YQ (4 chars, divisible by 4, no padding needed)
-	// "ab" -> YWI (4 chars, divisible by 4, no padding needed)
-	// "abc" -> YWJj (4 chars, divisible by 4, no padding needed)
-	// "abcd" -> YWJjZA== (8 chars with padding)
-	// "Hello" -> SGVsbG8= (7 chars, needs 1 padding char)
-	// "HelloWorld" -> SGVsbG8gV29ybGQ= (17 chars, needs 3 padding chars)
+	// Test inputs - URL-safe base64 without padding (function adds padding internally).
+	// "a" -> YQ (4 chars, divisible by 4, no padding needed).
+	// "ab" -> YWI (4 chars, divisible by 4, no padding needed).
+	// "abc" -> YWJj (4 chars, divisible by 4, no padding needed).
+	// "abcd" -> YWJjZA== (8 chars with padding).
+	// "Hello" -> SGVsbG8= (7 chars, needs 1 padding char).
+	// "HelloWorld" -> SGVsbG8gV29ybGQ= (17 chars, needs 3 padding chars).
 	tests := []struct {
 		name      string
 		input     string
@@ -54,7 +54,7 @@ func TestBase64RawURLDecode_InvalidInput(t *testing.T) {
 	}
 }
 
-// Test GoogleClaims struct
+// Test GoogleClaims struct.
 func TestGoogleClaims(t *testing.T) {
 	claims := GoogleClaims{
 		Iss:           "https://accounts.google.com",
@@ -83,13 +83,13 @@ func TestGoogleClaims(t *testing.T) {
 	}
 }
 
-// Test parseRSAPublicKey (we need valid RSA components)
+// Test parseRSAPublicKey (we need valid RSA components).
 func TestParseRSAPublicKey(t *testing.T) {
-	// This is a test RSA key pair for testing purposes
-	// Modulus (n) and exponent (e) in base64url format
-	// This is NOT a real Google key - just for testing parsing logic
+	// This is a test RSA key pair for testing purposes.
+	// Modulus (n) and exponent (e) in base64url format.
+	// This is NOT a real Google key - just for testing parsing logic.
 
-	// Simple test with minimal values
+	// Simple test with minimal values.
 	nStr := base64.RawURLEncoding.EncodeToString([]byte{0x00, 0x80})       // Small modulus
 	eStr := base64.RawURLEncoding.EncodeToString([]byte{0x01, 0x00, 0x01}) // 65537 exponent
 
@@ -102,9 +102,9 @@ func TestParseRSAPublicKey(t *testing.T) {
 	}
 }
 
-// Test JWT structure validation (without actual Google verification)
+// Test JWT structure validation (without actual Google verification).
 func TestJWTPayloadExtraction(t *testing.T) {
-	// Create a fake JWT payload for testing structure
+	// Create a fake JWT payload for testing structure.
 	payload := map[string]interface{}{
 		"iss":            "https://accounts.google.com",
 		"azp":            "test-client-id",
@@ -121,7 +121,7 @@ func TestJWTPayloadExtraction(t *testing.T) {
 	payloadBytes, _ := json.Marshal(payload)
 	encoded := base64.RawURLEncoding.EncodeToString(payloadBytes)
 
-	// Decode it back
+	// Decode it back.
 	decoded, err := base64RawURLDecode(encoded)
 	if err != nil {
 		t.Fatalf("decode failed: %v", err)
@@ -140,7 +140,7 @@ func TestJWTPayloadExtraction(t *testing.T) {
 	}
 }
 
-// Test claims verification logic
+// Test claims verification logic.
 func TestVerifyClaimsLogic(t *testing.T) {
 	verifier := &GoogleTokenVerifier{
 		audience: "test-client-id",
@@ -238,7 +238,7 @@ func TestVerifyClaimsLogic(t *testing.T) {
 	}
 }
 
-// Test token with no audience requirement
+// Test token with no audience requirement.
 func TestVerifyClaims_NoAudienceCheck(t *testing.T) {
 	verifier := &GoogleTokenVerifier{
 		audience: "", // No audience check
@@ -260,7 +260,7 @@ func TestVerifyClaims_NoAudienceCheck(t *testing.T) {
 	}
 }
 
-// Test valid Google issuers
+// Test valid Google issuers.
 func TestGoogleIssuers(t *testing.T) {
 	validIssuers := []string{"https://accounts.google.com", "accounts.google.com"}
 
@@ -278,11 +278,11 @@ func TestGoogleIssuers(t *testing.T) {
 	}
 }
 
-// Test token with different algorithms
+// Test token with different algorithms.
 func TestVerify_InvalidAlgorithm(t *testing.T) {
 	verifier := NewGoogleTokenVerifier("test-audience")
 
-	// Create a mock token with a non-RS256 algorithm
+	// Create a mock token with a non-RS256 algorithm.
 	header := map[string]string{
 		"alg": "RS384", // Wrong algorithm
 		"kid": "test-key",
@@ -305,7 +305,7 @@ func TestVerify_InvalidAlgorithm(t *testing.T) {
 	}
 }
 
-// Test malformed JWT
+// Test malformed JWT.
 func TestVerify_MalformedJWT(t *testing.T) {
 	verifier := NewGoogleTokenVerifier("test-audience")
 
@@ -329,7 +329,7 @@ func TestVerify_MalformedJWT(t *testing.T) {
 	}
 }
 
-// Test GoogleUserInfo struct
+// Test GoogleUserInfo struct.
 func TestGoogleUserInfo(t *testing.T) {
 	info := GoogleUserInfo{
 		ID:            "google-id-123",
@@ -353,7 +353,7 @@ func TestGoogleUserInfo(t *testing.T) {
 func BenchmarkGoogleTokenVerify(b *testing.B) {
 	verifier := NewGoogleTokenVerifier("test-audience")
 
-	// Create a mock token for benchmarking
+	// Create a mock token for benchmarking.
 	header := map[string]interface{}{
 		"alg": "RS256",
 		"kid": "test-key",

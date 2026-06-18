@@ -1,5 +1,5 @@
 // Package security provides authentication utilities.
-package security
+package auth
 
 import (
 	"log/slog"
@@ -31,7 +31,7 @@ func NewOriginValidator(origins []string) *OriginValidator {
 			continue
 		}
 
-		// Normalize to lowercase for case-insensitive comparison
+		// Normalize to lowercase for case-insensitive comparison.
 		normalized := strings.ToLower(origin)
 		allowed[origin] = true
 		allowed[normalized] = true
@@ -50,66 +50,64 @@ func (v *OriginValidator) SetLogger(log *slog.Logger) {
 }
 
 // Validate checks if the origin is allowed.
-// Returns true if:
-//   - Origin is empty (non-browser client like curl, mobile app)
-//   - Origin is "*" wildcard and allowed
-//   - Origin matches an entry in the allowed list
-//   - Origin matches scheme://host (port-sensitive)
+// Returns true if:.
+//   - Origin is empty (non-browser client like curl, mobile app).
+//   - Origin is "*" wildcard and allowed.
+//   - Origin matches an entry in the allowed list.
+//   - Origin matches scheme://host (port-sensitive).
 func (v *OriginValidator) Validate(origin string) bool {
-	// Empty origin - non-browser client (curl, mobile app, server-to-server)
+	// Empty origin - non-browser client (curl, mobile app, server-to-server).
 	if origin == "" {
 		return true
 	}
 
-	// Wildcard allowed
+	// Wildcard allowed.
 	if v.allowWildcard {
 		return true
 	}
 
-	// Direct match
+	// Direct match.
 	if v.allowedOrigins[origin] {
 		return true
 	}
 
-	// Case-insensitive match
+	// Case-insensitive match.
 	normalized := strings.ToLower(origin)
 	if v.allowedOrigins[normalized] {
 		return true
 	}
 
-	// Parse and validate structure
+	// Parse and validate structure.
 	u, err := url.Parse(origin)
 	if err != nil {
 		return false
 	}
 
-	// Check scheme - only allow secure connections in production
-	// ws:// and http:// are only allowed in development
+	// Check scheme - only allow secure connections in production.
+	// ws:// and http:// are only allowed in development.
 	if u.Scheme == "http" || u.Scheme == "ws" {
 		return false
 	}
 
-	// Reject non-secure schemes
-	if u.Scheme != "https" && u.Scheme != "wss" && u.Scheme != "" {
-		return false
-	}
-
-	return false
+	// For any other scheme (https, wss, or empty), verify the origin is in the allowed list.
+	// Normalize to lowercase for case-insensitive comparison.
+	normalized = strings.ToLower(origin)
+	return v.allowedOrigins[normalized]
 }
 
 // ValidateWithDetails returns validation result with details for logging.
 func (v *OriginValidator) ValidateWithDetails(origin string) (bool, string) {
-	// Empty origin - always allowed (non-browser clients)
+	// Empty origin - always allowed (non-browser clients).
 	if origin == "" {
 		return true, "empty origin (non-browser client)"
 	}
 
-	// Wildcard allowed
+	// Wildcard allowed.
 	if v.allowWildcard {
 		return true, "wildcard origin allowed"
 	}
 
-	// Direct or case-insensitive match
+	// Direct or case-insensitive match.
 	if v.allowedOrigins[origin] {
 		return true, "direct match"
 	}
@@ -119,7 +117,7 @@ func (v *OriginValidator) ValidateWithDetails(origin string) (bool, string) {
 		return true, "case-insensitive match"
 	}
 
-	// Parse for detailed rejection reason
+	// Parse for detailed rejection reason.
 	u, err := url.Parse(origin)
 	if err != nil {
 		return false, "malformed origin URL"
@@ -140,7 +138,7 @@ func (v *OriginValidator) CheckOrigin() func(*http.Request) bool {
 
 		if !valid && origin != "" {
 			if v.log != nil {
-				// Extract path safely - URL may be nil in some cases
+				// Extract path safely - URL may be nil in some cases.
 				path := ""
 				if r.URL != nil {
 					path = r.URL.Path

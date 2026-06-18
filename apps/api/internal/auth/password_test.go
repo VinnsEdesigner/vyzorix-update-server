@@ -1,4 +1,4 @@
-package security
+package auth
 
 import (
 	"strings"
@@ -11,13 +11,13 @@ func TestValidatePassword_Valid(t *testing.T) {
 		password string
 		policy   PasswordPolicy
 	}{
-		// DefaultPasswordPolicy tests
+		// DefaultPasswordPolicy tests.
 		{"minimum valid default", "Password1!", DefaultPasswordPolicy},
 		{"complex password default", "MyP@ssw0rd!2024", DefaultPasswordPolicy},
 		{"with special chars default", "Test@123Abc!", DefaultPasswordPolicy},
 		{"maximum length default", strings.Repeat("A", 100) + "a1!", DefaultPasswordPolicy},
 
-		// UserPasswordPolicy tests (no special char required, min 12 chars)
+		// UserPasswordPolicy tests (no special char required, min 12 chars).
 		{"minimum valid user", "Password1234", UserPasswordPolicy}, // exactly 12 chars
 		{"alphanumeric user", "MySecurePassword99", UserPasswordPolicy},
 		{"long password user", strings.Repeat("A", 50) + "a1", UserPasswordPolicy},
@@ -40,13 +40,13 @@ func TestValidatePassword_TooShort(t *testing.T) {
 		password string
 		policy   PasswordPolicy
 	}{
-		// DefaultPasswordPolicy (8 char min)
+		// DefaultPasswordPolicy (8 char min).
 		{"7 chars default", "Pass1!", DefaultPasswordPolicy},
 		{"6 chars default", "Ab1!", DefaultPasswordPolicy},
 		{"empty default", "", DefaultPasswordPolicy},
 		{"7 chars user", "Pass1!", UserPasswordPolicy},
 
-		// UserPasswordPolicy (12 char min)
+		// UserPasswordPolicy (12 char min).
 		{"11 chars user", "Password1!", UserPasswordPolicy}, // missing 1 char
 		{"8 chars user", "PassWord1", UserPasswordPolicy},   // too short
 	}
@@ -74,7 +74,7 @@ func TestValidatePassword_NoUppercase(t *testing.T) {
 		t.Error("expected error for missing uppercase (default policy)")
 	}
 
-	// User policy also requires uppercase
+	// User policy also requires uppercase.
 	err = ValidatePassword("password123456", UserPasswordPolicy)
 	if err == nil {
 		t.Error("expected error for missing uppercase (user policy)")
@@ -106,13 +106,13 @@ func TestValidatePassword_NoDigit(t *testing.T) {
 }
 
 func TestValidatePassword_NoSpecial(t *testing.T) {
-	// DefaultPasswordPolicy requires special chars
+	// DefaultPasswordPolicy requires special chars.
 	err := ValidatePassword("Password1", DefaultPasswordPolicy)
 	if err == nil {
 		t.Error("expected error for missing special character (default policy)")
 	}
 
-	// UserPasswordPolicy does NOT require special chars (but needs 12+ chars)
+	// UserPasswordPolicy does NOT require special chars (but needs 12+ chars).
 	err = ValidatePassword("Password1234", UserPasswordPolicy) // 12 chars, no special
 	if err != nil {
 		t.Errorf("UserPasswordPolicy should NOT require special chars, got error: %v", err)
@@ -133,7 +133,7 @@ func TestValidatePassword_TooLong(t *testing.T) {
 }
 
 func TestValidatePassword_MultipleFailures(t *testing.T) {
-	// DefaultPasswordPolicy: short, no upper, no digit, no special
+	// DefaultPasswordPolicy: short, no upper, no digit, no special.
 	err := ValidatePassword("short", DefaultPasswordPolicy)
 	if err == nil {
 		t.Error("expected error for multiple failures (default policy)")
@@ -146,7 +146,7 @@ func TestValidatePassword_MultipleFailures(t *testing.T) {
 		t.Errorf("expected at least 4 failures, got %d: %v", len(pe.Missing), pe.Missing)
 	}
 
-	// UserPasswordPolicy: short, no upper, no digit (but no special required)
+	// UserPasswordPolicy: short, no upper, no digit (but no special required).
 	err = ValidatePassword("short", UserPasswordPolicy)
 	if err == nil {
 		t.Error("expected error for multiple failures (user policy)")
@@ -161,7 +161,7 @@ func TestValidatePassword_MultipleFailures(t *testing.T) {
 }
 
 func TestValidatePassword_CustomPolicy(t *testing.T) {
-	// Custom policy with minimal requirements
+	// Custom policy with minimal requirements.
 	policy := PasswordPolicy{
 		MinLength:      6,
 		MaxLength:      50,
@@ -171,7 +171,7 @@ func TestValidatePassword_CustomPolicy(t *testing.T) {
 		RequireSpecial: false,
 	}
 
-	// All passwords should pass
+	// All passwords should pass.
 	err := ValidatePassword("simple", policy)
 	if err != nil {
 		t.Errorf("expected valid with custom policy, got: %v", err)
@@ -179,7 +179,7 @@ func TestValidatePassword_CustomPolicy(t *testing.T) {
 }
 
 func TestUserPasswordPolicy_NoSpecialRequired(t *testing.T) {
-	// These should all pass with UserPasswordPolicy (12+ chars, mixed case, number)
+	// These should all pass with UserPasswordPolicy (12+ chars, mixed case, number).
 	validPasswords := []string{
 		"Password1234",    // basic alphanumeric, 12 chars
 		"MySecurePass99",  // longer alphanumeric

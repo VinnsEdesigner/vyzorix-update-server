@@ -1,4 +1,4 @@
-package security
+package auth
 
 import (
 	"log/slog"
@@ -14,7 +14,7 @@ func TestOriginValidator_Validate(t *testing.T) {
 		origins    []string
 		want       bool
 	}{
-		// Empty origin tests (non-browser clients)
+		// Empty origin tests (non-browser clients).
 		{
 			name:       "empty origin allowed",
 			origins:    []string{"https://example.com"},
@@ -28,7 +28,7 @@ func TestOriginValidator_Validate(t *testing.T) {
 			want:       true,
 		},
 
-		// Wildcard tests
+		// Wildcard tests.
 		{
 			name:       "wildcard allows any origin",
 			origins:    []string{"*"},
@@ -36,7 +36,7 @@ func TestOriginValidator_Validate(t *testing.T) {
 			want:       true,
 		},
 
-		// Direct match tests
+		// Direct match tests.
 		{
 			name:       "exact match allowed",
 			origins:    []string{"https://example.com"},
@@ -50,7 +50,7 @@ func TestOriginValidator_Validate(t *testing.T) {
 			want:       false,
 		},
 
-		// Case-insensitive tests
+		// Case-insensitive tests.
 		{
 			name:       "case insensitive match",
 			origins:    []string{"https://Example.com"},
@@ -64,7 +64,7 @@ func TestOriginValidator_Validate(t *testing.T) {
 			want:       true,
 		},
 
-		// Scheme tests
+		// Scheme tests.
 		{
 			name:       "http rejected in production",
 			origins:    []string{"https://example.com"},
@@ -78,7 +78,7 @@ func TestOriginValidator_Validate(t *testing.T) {
 			want:       false,
 		},
 
-		// Multiple origins
+		// Multiple origins.
 		{
 			name:       "first origin matches",
 			origins:    []string{"https://a.com", "https://b.com"},
@@ -155,13 +155,13 @@ func TestOriginValidator_CheckOrigin(t *testing.T) {
 }
 
 func TestOriginValidator_CheckOriginWithLogging(t *testing.T) {
-	// Create a logger
+	// Create a logger.
 	logger := slog.Default()
 
 	v := NewOriginValidator([]string{"https://example.com"})
 	v.SetLogger(logger)
 
-	// Should not panic with logger set
+	// Should not panic with logger set.
 	checkOrigin := v.CheckOrigin()
 
 	req := &http.Request{
@@ -169,7 +169,7 @@ func TestOriginValidator_CheckOriginWithLogging(t *testing.T) {
 	}
 	req.Header.Set("Origin", "https://evil.com")
 
-	// Should reject without panic
+	// Should reject without panic.
 	if got := checkOrigin(req); got != false {
 		t.Errorf("CheckOrigin() should reject evil.com, got %v", got)
 	}
@@ -178,10 +178,10 @@ func TestOriginValidator_CheckOriginWithLogging(t *testing.T) {
 func TestOriginValidator_SetLogger(t *testing.T) {
 	v := NewOriginValidator([]string{"https://example.com"})
 
-	// Should not panic
+	// Should not panic.
 	v.SetLogger(slog.Default())
 
-	// Should work with nil logger too
+	// Should work with nil logger too.
 	v.SetLogger(nil)
 
 	checkOrigin := v.CheckOrigin()
@@ -201,12 +201,12 @@ func TestOriginValidator_AllowedOrigins(t *testing.T) {
 
 	got := v.AllowedOrigins()
 
-	// Should have at least the normalized versions of each origin
+	// Should have at least the normalized versions of each origin.
 	if len(got) < 3 {
 		t.Errorf("AllowedOrigins() returned %d items, want at least 3", len(got))
 	}
 
-	// Check that all original origins are present
+	// Check that all original origins are present.
 	for _, origin := range origins {
 		found := false
 		for _, g := range got {
@@ -364,7 +364,7 @@ func TestOriginValidator_CheckOriginWithoutLogging(t *testing.T) {
 	}
 }
 
-// Benchmark tests
+// Benchmark tests.
 func BenchmarkOriginValidator_Validate(b *testing.B) {
 	v := NewOriginValidator([]string{"https://example.com", "https://app.example.com", "https://dashboard.example.com"})
 

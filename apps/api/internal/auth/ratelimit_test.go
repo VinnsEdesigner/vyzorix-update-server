@@ -1,4 +1,4 @@
-package security
+package auth
 
 import (
 	"net/http"
@@ -16,14 +16,14 @@ func init() {
 func TestRateLimiter_Allow(t *testing.T) {
 	rl := NewRateLimiter(time.Minute, 3)
 
-	// First 3 requests should be allowed
+	// First 3 requests should be allowed.
 	for i := 0; i < 3; i++ {
 		if !rl.Allow("test-key") {
 			t.Errorf("request %d should be allowed", i+1)
 		}
 	}
 
-	// 4th request should be denied
+	// 4th request should be denied.
 	if rl.Allow("test-key") {
 		t.Error("4th request should be denied")
 	}
@@ -32,7 +32,7 @@ func TestRateLimiter_Allow(t *testing.T) {
 func TestRateLimiter_AllowDifferentKeys(t *testing.T) {
 	rl := NewRateLimiter(time.Minute, 2)
 
-	// Different keys should have separate limits
+	// Different keys should have separate limits.
 	if !rl.Allow("key1") {
 		t.Error("key1 request 1 should be allowed")
 	}
@@ -43,7 +43,7 @@ func TestRateLimiter_AllowDifferentKeys(t *testing.T) {
 		t.Error("key1 request 3 should be denied")
 	}
 
-	// key2 should still have its own quota
+	// key2 should still have its own quota.
 	if !rl.Allow("key2") {
 		t.Error("key2 request 1 should be allowed")
 	}
@@ -52,7 +52,7 @@ func TestRateLimiter_AllowDifferentKeys(t *testing.T) {
 func TestRateLimiter_WindowReset(t *testing.T) {
 	rl := NewRateLimiter(50*time.Millisecond, 2)
 
-	// Use up the limit
+	// Use up the limit.
 	if !rl.Allow("test-key") {
 		t.Error("request 1 should be allowed")
 	}
@@ -63,10 +63,10 @@ func TestRateLimiter_WindowReset(t *testing.T) {
 		t.Error("request 3 should be denied")
 	}
 
-	// Wait for window to reset
+	// Wait for window to reset.
 	time.Sleep(60 * time.Millisecond)
 
-	// Should be allowed again
+	// Should be allowed again.
 	if !rl.Allow("test-key") {
 		t.Error("request after window reset should be allowed")
 	}
@@ -86,7 +86,7 @@ func TestRateLimiter_GetRemaining(t *testing.T) {
 		t.Errorf("remaining should be 3, got %d", remaining)
 	}
 
-	// Non-existent key
+	// Non-existent key.
 	if remaining := rl.GetRemaining("nonexistent"); remaining != 5 {
 		t.Errorf("non-existent key should have 5 remaining, got %d", remaining)
 	}
@@ -95,17 +95,17 @@ func TestRateLimiter_GetRemaining(t *testing.T) {
 func TestRateLimiter_Reset(t *testing.T) {
 	rl := NewRateLimiter(time.Minute, 2)
 
-	// Use up the limit
+	// Use up the limit.
 	rl.Allow("test-key")
 	rl.Allow("test-key")
 	if rl.Allow("test-key") {
 		t.Error("request should be denied")
 	}
 
-	// Reset
+	// Reset.
 	rl.Reset("test-key")
 
-	// Should be allowed again
+	// Should be allowed again.
 	if !rl.Allow("test-key") {
 		t.Error("request after reset should be allowed")
 	}
@@ -122,7 +122,7 @@ func TestRateLimiter_Middleware(t *testing.T) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	// First 2 requests should succeed
+	// First 2 requests should succeed.
 	for i := 0; i < 2; i++ {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/test", nil)
@@ -134,7 +134,7 @@ func TestRateLimiter_Middleware(t *testing.T) {
 		}
 	}
 
-	// 3rd request should be rate limited
+	// 3rd request should be rate limited.
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/test", nil)
 	req.RemoteAddr = "192.168.1.1:12345"
@@ -161,7 +161,7 @@ func TestRateLimiter_MiddlewareHeaders(t *testing.T) {
 	req.RemoteAddr = "192.168.1.1:12345"
 	router.ServeHTTP(w, req)
 
-	// Check rate limit headers
+	// Check rate limit headers.
 	if limit := w.Header().Get("X-RateLimit-Limit"); limit != "5" {
 		t.Errorf("X-RateLimit-Limit should be 5, got %s", limit)
 	}
@@ -183,8 +183,8 @@ func TestRateLimiter_MiddlewareCustomKey(t *testing.T) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	// Test with different user IDs - each should have its own limit
-	// User 1: 2 requests allowed
+	// Test with different user IDs - each should have its own limit.
+	// User 1: 2 requests allowed.
 	for i := 0; i < 2; i++ {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/test", nil)
@@ -196,7 +196,7 @@ func TestRateLimiter_MiddlewareCustomKey(t *testing.T) {
 		}
 	}
 
-	// User 1's 3rd request should be denied
+	// User 1's 3rd request should be denied.
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/test", nil)
 	req.Header.Set("X-User-ID", "user1")
@@ -206,7 +206,7 @@ func TestRateLimiter_MiddlewareCustomKey(t *testing.T) {
 		t.Errorf("user1 request 3: expected status 429, got %d", w.Code)
 	}
 
-	// User 2 should have its own quota (not affected by user1's limit)
+	// User 2 should have its own quota (not affected by user1's limit).
 	for i := 0; i < 2; i++ {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/test", nil)
@@ -218,7 +218,7 @@ func TestRateLimiter_MiddlewareCustomKey(t *testing.T) {
 		}
 	}
 
-	// User 2's 3rd request should be denied
+	// User 2's 3rd request should be denied.
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/test", nil)
 	req.Header.Set("X-User-ID", "user2")
@@ -238,19 +238,19 @@ func TestMultiWindowLimiter(t *testing.T) {
 		"hour":   {Window: time.Hour, Max: 10},
 	})
 
-	// Simulate 3 requests (minute limit)
+	// Simulate 3 requests (minute limit).
 	for i := 0; i < 3; i++ {
 		if !ml.limiters["minute"].Allow("test") {
 			t.Errorf("minute request %d should be allowed", i+1)
 		}
 	}
 
-	// 4th should be denied by minute limiter
+	// 4th should be denied by minute limiter.
 	if ml.limiters["minute"].Allow("test") {
 		t.Error("minute request 4 should be denied")
 	}
 
-	// But hour limiter should still allow
+	// But hour limiter should still allow.
 	if !ml.limiters["hour"].Allow("test") {
 		t.Error("hour request should still be allowed")
 	}
@@ -270,7 +270,7 @@ func TestMultiWindowLimiter_Middleware(t *testing.T) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	// First 2 requests should succeed
+	// First 2 requests should succeed.
 	for i := 0; i < 2; i++ {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", "/test", nil)
@@ -282,7 +282,7 @@ func TestMultiWindowLimiter_Middleware(t *testing.T) {
 		}
 	}
 
-	// 3rd request should be rate limited
+	// 3rd request should be rate limited.
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/test", nil)
 	req.RemoteAddr = "192.168.1.1:12345"
