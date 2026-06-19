@@ -125,7 +125,7 @@ func (h *PasswordResetHandler) ResendPasswordReset(c *gin.Context) {
 	// Use a background context since the response is already sent.
 	if err := h.authService.UpdateResendTracker(c.Request.Context(), req.Email); err != nil {
 		// Log but don't fail the request - email was already sent.
-		c.Error(err)
+		_ = c.Error(err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Password reset link sent."})
