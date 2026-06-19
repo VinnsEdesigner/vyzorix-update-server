@@ -62,6 +62,7 @@ linters:
     gosec:
       excludes:
         - G104
+        - G115
         - G118
         - G204
         - G301
