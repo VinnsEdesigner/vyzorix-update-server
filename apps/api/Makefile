@@ -33,19 +33,19 @@ tidy:
 	$(GOMOD) tidy
 
 build:
-	CGO_ENABLED=1 $(GOBUILD) $(LDFLAGS) -o $(BINARY_NAME) .
+	CGO_ENABLED=1 $(GOBUILD) $(LDFLAGS) -o $(BINARY_NAME) ./cmd/api
 
 build-go:
-	CGO_ENABLED=1 $(GOBUILD) $(LDFLAGS) -o $(BINARY_NAME) .
+	CGO_ENABLED=1 $(GOBUILD) $(LDFLAGS) -o $(BINARY_NAME) ./cmd/api
 
 frontend:
 	@if command -v npm >/dev/null 2>&1; then npm run build; else echo "npm not found"; fi
 
 build-linux:
-	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BINARY_UNIX) .
+	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BINARY_UNIX) ./cmd/api
 
 run:
-	$(GOCMD) run .
+	$(GOCMD) run ./cmd/api
 
 run-local: export DATA_DIR=$(DATA_DIR)
 run-local: export BIN_DIR=$(BIN_DIR)
