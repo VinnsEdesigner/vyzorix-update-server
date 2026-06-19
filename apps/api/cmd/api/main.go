@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/fcm"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ssr"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
 )
@@ -207,6 +209,42 @@ func main() {
 	accountLockout := middleware.NewLockout(lockoutConfig)
 	printStatus("AccountLockout", fmt.Sprintf("Enabled: %v, MaxAttempts: %d", lockoutConfig.Enabled, lockoutConfig.MaxAttempts), false)
 
+	// ============================================================
+	// STEP 5: SSR Server (Server-Side Rendering)
+	// SSR is ENABLED BY DEFAULT - native mode for both dev and prod
+	// ============================================================
+	ssrConfig := config.LoadSSRConfig()
+	var ssrManager *ssr.Manager // Will be nil if SSR is disabled
+
+	if ssrConfig.EnableSSR {
+		printSection("SSR Configuration")
+		printStatus("SSR Mode", "Enabled (Native SSR mode)", false)
+		printStatus("SSR Auto-Start", strconv.FormatBool(ssrConfig.SSRAutoStart), false)
+		printStatus("SSR Auto-Build", strconv.FormatBool(ssrConfig.SSRAutoBuild), false)
+		printStatus("SSR URL", ssrConfig.SSRServerURL, false)
+		printStatus("SSR Timeout", strconv.Itoa(ssrConfig.SSRBuildTimeout)+"s", false)
+		printStatus("SSR Retries", strconv.Itoa(ssrConfig.SSRRetryAttempts), false)
+
+		// Create SSR Manager (webDir and publicDir)
+		ssrManager = ssr.NewManager(ssrConfig, log, "", "")
+
+		// Start SSR server with auto-build
+		if err := ssrManager.Start(); err != nil {
+			log.Error("SSR server failed to start", "err", err)
+			printWarning("SSR Server", fmt.Sprintf("Failed after %d attempts, using SPA fallback", ssrConfig.SSRRetryAttempts))
+		} else if ssrManager.IsReady() {
+			printStatus("SSR Server", "Ready on "+ssrConfig.SSRServerURL, false)
+			printStatus("Frontend Mode", "SSR (Node.js)", false)
+		} else {
+			printWarning("SSR Server", "Started but not ready, using SPA fallback")
+			printStatus("Frontend Mode", "SPA (Static HTML fallback)", false)
+		}
+	} else {
+		printSection("SSR Configuration")
+		printStatus("SSR Mode", "Disabled (SPA fallback only)", false)
+		printStatus("Frontend Mode", "SPA (Static HTML)", false)
+	}
+
 	printSection("Server")
 	printStatus("Go Server", "Starting on "+cfg.Port, false)
 	printStatus("Environment", env, false)
@@ -262,6 +300,12 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Error("shutdown error", "err", err)
 	}
+
+	// Stop SSR Manager (handles graceful shutdown of Node.js subprocess)
+	if ssrConfig.EnableSSR && ssrManager != nil {
+		_ = ssrManager.Stop()
+		log.Info("SSR server stopped")
+	}
 }
 
 // DEPENDENCY WIRING DIAGRAM (Clean Architecture):
@@ -300,6 +344,16 @@ func main() {
 //     device.NewService(deviceRepo, operatorRepo)
 //
 //     ▼
-//     api.NewServer(config) ─► api.Routes()
+//     ssr.NewManager(ssrConfig, log) ─► Node.js SSR subprocess (auto-builds web app)
+//         │
+//         ├─► WebPublicDir: served static files
+//         ├─► WebDistDir: SSR build output
+//         └─► Health monitoring + auto-recovery
+//
+//     ▼
+//     api.NewServer(config) ─► api.Routes() + SSRProxy middleware
+//         │
+//         └─► SSRProxy: proxies /dashboard/* to Node.js SSR, falls back to static HTML
 //
 // The flow: Infrastructure → Domain Interfaces ← Application Services ← API Handlers
+//           └────────────────────────── SSR ────────────────────────────────┘

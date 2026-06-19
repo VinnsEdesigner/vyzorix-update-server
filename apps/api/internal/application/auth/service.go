@@ -879,6 +879,7 @@ func (s *AuthService) GetResendTracker(ctx context.Context, email string) (*pass
 	tracker, err := s.passwordResetRepo.GetResendTracker(ctx, emailHash)
 	if err != nil {
 		if err == password_reset.ErrNotFound {
+			//nolint:nilnil
 			return nil, nil // No tracker means no attempts yet
 		}
 		return nil, err
