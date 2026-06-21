@@ -193,7 +193,8 @@ func (tf *TelemetryFilter) ShouldForward(clientID, deviceID string) bool {
 
 	// If client has no subscriptions, forward all (dashboard mode)
 	tf.mu.RLock()
-	hasSubscriptions := tf.subscriptions[clientID] != nil && len(tf.subscriptions[clientID]) > 0
+	subs, ok := tf.subscriptions[clientID]
+	hasSubscriptions := ok && len(subs) > 0
 	tf.mu.RUnlock()
 
 	if !hasSubscriptions {

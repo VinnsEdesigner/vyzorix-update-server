@@ -74,12 +74,12 @@ func (v *Validator) ValidateFCMToken(token string) error {
 }
 
 // ValidateLimit validates a pagination limit.
-func (v *Validator) ValidateLimit(limit, max int) error {
+func (v *Validator) ValidateLimit(limit, maxVal int) error {
 	if limit < 0 {
 		return errors.BadRequest("limit cannot be negative")
 	}
-	if limit > max {
-		return errors.BadRequest("limit exceeds maximum of %d", max)
+	if limit > maxVal {
+		return errors.BadRequest("limit exceeds maximum of %d", maxVal)
 	}
 	return nil
 }
@@ -140,20 +140,20 @@ func (v *Validator) ValidateArgs(args map[string]interface{}) error {
 	return nil
 }
 
-func checkDepth(val interface{}, current, max int) bool {
-	if current >= max {
+func checkDepth(val interface{}, current, maxVal int) bool {
+	if current >= maxVal {
 		return false
 	}
 	switch v := val.(type) {
 	case map[string]interface{}:
 		for _, vv := range v {
-			if !checkDepth(vv, current+1, max) {
+			if !checkDepth(vv, current+1, maxVal) {
 				return false
 			}
 		}
 	case []interface{}:
 		for _, vv := range v {
-			if !checkDepth(vv, current+1, max) {
+			if !checkDepth(vv, current+1, maxVal) {
 				return false
 			}
 		}

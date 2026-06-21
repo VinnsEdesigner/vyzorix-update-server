@@ -84,7 +84,7 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 	}
 
 	// Get queue status for this device
-	if h.hub.QueueSize != nil {
+	{
 		response.QueueMetrics = &hub.QueueMetrics{}
 		if queueSize := h.hub.QueueSize(deviceID); queueSize >= 0 {
 			// Get full metrics if available
@@ -102,8 +102,8 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 	// Get all clients
 	clients := h.hub.Clients()
-	
-	var devices []DeviceConnectionStatus
+
+	devices := make([]DeviceConnectionStatus, 0, len(clients))
 	for deviceID, client := range clients {
 		metrics := client.GetMetrics()
 		
@@ -117,9 +117,7 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 		}
 		
 		// Get queue size for this device
-		if h.hub.QueueSize != nil {
-			status.QueueSize = h.hub.QueueSize(deviceID)
-		}
+		status.QueueSize = h.hub.QueueSize(deviceID)
 		
 		devices = append(devices, status)
 	}

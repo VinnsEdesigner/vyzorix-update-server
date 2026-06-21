@@ -205,7 +205,7 @@ func (h *TelemetryHistoryHandler) exportCSV(c *gin.Context, data QueryHistoryRes
 	defer writer.Flush()
 
 	// Write header
-	writer.Write([]string{
+	_ = writer.Write([]string{
 		"id",
 		"device_id",
 		"received_at",
@@ -216,7 +216,7 @@ func (h *TelemetryHistoryHandler) exportCSV(c *gin.Context, data QueryHistoryRes
 
 	// Write data
 	for _, e := range data.Entries {
-		writer.Write([]string{
+		_ = writer.Write([]string{
 			e.ID,
 			e.DeviceID,
 			e.ReceivedAt.Format(time.RFC3339),
@@ -270,12 +270,14 @@ func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 		req.EndTime,
 	))
 
-	json.NewEncoder(c.Writer).Encode(gin.H{
+	if err := json.NewEncoder(c.Writer).Encode(gin.H{
 		"deviceId":   req.DeviceID,
 		"exportedAt": time.Now().Format(time.RFC3339),
 		"count":      len(entries),
 		"entries":    entries,
-	})
+	}); err != nil {
+		_ = c.Error(err)
+	}
 }
 
 // GetLatest handles GET /v1/telemetry/latest/:deviceId
@@ -352,7 +354,7 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 
 	// Calculate statistics
 	var totalRisk, totalBuffer, totalTemp int
-	var minRisk, maxRisk int = 999, -1
+	var minRisk, maxRisk = 999, -1
 	var minTemp, maxTemp float64 = 999, -999
 
 	for _, e := range entries {
