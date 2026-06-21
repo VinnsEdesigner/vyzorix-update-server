@@ -14,20 +14,24 @@ import (
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
+	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/fcm"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
+	infraConfig "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
-	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
+	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,7 +44,7 @@ type ServerConfig struct {
 	CommandService  *cmdapp.Service
 	RateLimiter     *middleware.RateLimiter
 	AuthLimiter     *middleware.RateLimiter
-	Config          config.Config
+	Config          infraConfig.Config
 	Log             *slog.Logger
 	SessionManager  *infraauth.SessionManager
 	GoogleVerifier  *infraauth.GoogleTokenVerifier
@@ -50,6 +54,9 @@ type ServerConfig struct {
 	DB              *storage.SQLite
 	Lockout         *middleware.Lockout
 	OperatorRepo    operator.Repository
+	Metrics         *metrics.Metrics
+	AuditLogger     *audit.Logger
+	IPIntelligence  *middleware.IPIntelligence
 }
 
 // Server is the main API server.
@@ -57,11 +64,14 @@ type Server struct {
 	engine        *gin.Engine
 	rateLimiter   *middleware.RateLimiter
 	authLimiter   *middleware.RateLimiter
-	config        config.Config
+	config        infraConfig.Config
 	log           *slog.Logger
 
 	// Database for health checks
 	db *storage.SQLite
+
+	// Metrics
+	metricsHandler *metrics.MetricsHandler
 
 	// Auth handlers
 	authHandlers *authhandlers.AllHandlers
@@ -78,8 +88,17 @@ type Server struct {
 	// WebSocket handler
 	streamHandler *websockethandlers.StreamHandler
 
+	// Telemetry history handler
+	telemetryHistoryHandler *handlers.TelemetryHistoryHandler
+
+	// Connection status handler
+	connectionStatusHandler *handlers.ConnectionStatusHandler
+
 	// Admin handlers
 	adminClientsHandler *admin.ClientsHandler
+
+	// Updater handlers
+	updaterHandler *updaterhandlers.Handler
 
 	// Middleware
 	cookieAuth         *middleware.CookieAuth
@@ -88,6 +107,7 @@ type Server struct {
 	csrfProtector     *middleware.CSRFProtector
 	turnstileVerifier *middleware.TurnstileVerifier
 	revocationList    *infraauth.RevocationList
+	ipIntelligence    *middleware.IPIntelligence
 
 	// Hub for WebSocket state
 	hub           *hub.Hub
@@ -116,15 +136,26 @@ func NewServer(cfg *ServerConfig) *Server {
 		Window: cfg.Config.HMACWindow,
 	}
 
-	// Create SignatureVerifier for request signing
-	signingConfig := middleware.SigningConfig{
-		Enabled:           cfg.Config.EnforceHMAC,
-		TimestampWindow:   cfg.Config.HMACWindow,
-		MaxCacheSize:      100000,
-		GracePeriod:       24 * time.Hour,
-		AllowUnsignedFallback: false,
+	// Create SignatureVerifier for request signing (ENABLED by default per PRD)
+	signingConfig := middleware.LoadSigningConfig()
+	// If EnforceHMAC is explicitly set in config, it overrides the default
+	if !cfg.Config.EnforceHMAC && !signingConfig.Enabled {
+		// Both say disabled - keep disabled
+	} else if cfg.Config.EnforceHMAC {
+		signingConfig.Enabled = true
 	}
 	signatureVerifier := middleware.NewSignatureVerifier(signingConfig, hmacSecretFn)
+
+	// Create encryption key function for response encryption
+	// Derives AES-256 key from client_secret using SHA-512
+	encryptKeyFn := func(clientID string) ([]byte, bool) {
+		secret, ok := cfg.ClientService.GetHmacKey(context.Background(), clientID)
+		if !ok || secret == "" {
+			return nil, false
+		}
+		// Derive 32-byte key from secret using SHA-512 (per PRD)
+		return crypto.DeriveKey(secret), true
+	}
 
 	// Create CookieAuth middleware
 	cookieAuth := middleware.NewCookieAuth(cfg.SessionManager, cfg.AuthService)
@@ -138,18 +169,20 @@ func NewServer(cfg *ServerConfig) *Server {
 	csrfProtector := middleware.NewCSRFProtector(csrfConfig)
 
 	// Create Turnstile verifier for bot protection
-	turnstileConfig := config.LoadTurnstileConfig()
-	turnstileVerifier := middleware.NewTurnstileVerifier(middleware.TurnstileConfig{
-		Secret:   turnstileConfig.Secret,
-		Enabled:  turnstileConfig.Enabled,
-		CacheTTL: 5 * time.Minute,
-	})
+	turnstileCfg := middleware.LoadTurnstileConfig()
+	turnstileVerifier := middleware.NewTurnstileVerifier(turnstileCfg)
 
 	// Create session revocation list
 	revocationConfig := middleware.LoadRevocationConfig()
 	var revocationList *infraauth.RevocationList
 	if revocationConfig.Enabled {
 		revocationList = infraauth.DefaultRevocationList()
+	}
+
+	// Create IP intelligence
+	ipIntelligence := middleware.NewIPIntelligence(middleware.LoadIPIntelligenceConfig())
+	if ipIntelligence != nil {
+		go ipIntelligence.StartCleanupRoutine(context.Background(), 5*time.Minute)
 	}
 
 	s := &Server{
@@ -164,6 +197,7 @@ func NewServer(cfg *ServerConfig) *Server {
 		csrfProtector: csrfProtector,
 		turnstileVerifier: turnstileVerifier,
 		revocationList: revocationList,
+		ipIntelligence: ipIntelligence,
 		hub:           cfg.Hub,
 		hmacVerifier: hmacVerifier,
 		db:           cfg.DB,
@@ -178,6 +212,8 @@ func NewServer(cfg *ServerConfig) *Server {
 			EmailService:   cfg.EmailService,
 			Lockout:        cfg.Lockout,
 			OperatorRepo:   cfg.OperatorRepo,
+			AuditLogger:    cfg.AuditLogger,
+			IPIntelligence:  cfg.IPIntelligence,
 		}),
 
 		// Device handlers
@@ -192,8 +228,21 @@ func NewServer(cfg *ServerConfig) *Server {
 		// WebSocket handler
 		streamHandler: websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, hmacVerifier),
 
+		// Telemetry history handler
+		telemetryHistoryHandler: handlers.NewTelemetryHistoryHandler(
+			cfg.Log,
+			storage.NewTelemetryRepository(cfg.DB.DB()),
+			nil, // Use default config
+		),
+
+		// Connection status handler
+		connectionStatusHandler: handlers.NewConnectionStatusHandler(cfg.Log, cfg.Hub),
+
 		// Admin handlers
 		adminClientsHandler: admin.NewClientsHandler(cfg.ClientService),
+
+		// Updater handlers
+		updaterHandler: updaterhandlers.NewHandler(cfg.Log, cfg.Config),
 	}
 
 	// Start Hub if available
@@ -201,21 +250,32 @@ func NewServer(cfg *ServerConfig) *Server {
 		go cfg.Hub.Run(context.Background())
 	}
 
+	// Initialize metrics handler
+	if cfg.Metrics != nil {
+		s.metricsHandler = metrics.NewMetricsHandler(cfg.Metrics)
+		s.engine.Use(metrics.Middleware(cfg.Metrics))
+	}
+
 	s.setupRoutes()
 	return s
 }
 
 func (s *Server) setupRoutes() {
+	// Enable method not allowed handling
+	s.engine.HandleMethodNotAllowed = true
+
 	// Global middleware
 	s.engine.Use(middleware.RequestIDMiddleware())
 	s.engine.Use(middleware.Logger(s.log))
 	s.engine.Use(middleware.CORSHandler(s.config.AllowedOrigins))
-	if s.config.Env == "production" {
-		s.engine.Use(middleware.SecurityHeaders())
-	} else {
-		s.engine.Use(middleware.SecurityHeadersRelaxed())
-	}
+	// Always use strict security headers (both production and development)
+	s.engine.Use(middleware.SecurityHeaders())
 	s.engine.Use(middleware.BodySizeLimit(middleware.DefaultBodySizeLimit))
+	// Disable dangerous HTTP methods globally
+	s.engine.Use(middleware.DisableTrace())
+	s.engine.Use(middleware.DisableConnect())
+	// Error handler must be last to catch all errors
+	s.engine.Use(middleware.ErrorHandler(s.log))
 
 	// ============================================================.
 	// Static assets - serve directly from public directory.
@@ -227,15 +287,22 @@ func (s *Server) setupRoutes() {
 	s.engine.GET("/health", s.healthHandler)
 	s.engine.GET("/healthz", s.healthHandler)
 
+	// Metrics endpoint (Prometheus format)
+	if s.metricsHandler != nil {
+		s.engine.GET("/metrics", s.metricsHandler.Handle)
+	}
+
 	// Static endpoints
 	s.engine.GET("/api/v1/version", s.versionHandler)
 	s.engine.GET("/api/v1/changelog", s.changelogHandler)
 	s.engine.GET("/api/v1/apk/*name", s.apkHandler)
 	s.engine.GET("/bin/*name", s.binHandler)
+	s.engine.GET("/api/v1/check-update", s.updaterHandler.CheckUpdate)
+	s.engine.POST("/api/v1/download-progress", s.updaterHandler.DownloadProgress)
 
 	// SSR Proxy - if enabled, proxy HTML requests to Node.js SSR server.
 	// This allows TanStack Start SSR to work with Go backend.
-	ssrConfig := config.LoadSSRConfig()
+	ssrConfig := infraConfig.LoadSSRConfig()
 	if ssrConfig.EnableSSR {
 		s.engine.Use(middleware.SSRProxy(s.log, ssrConfig, s.config.PublicDir, s.config.JWTSecret))
 	} else {
@@ -255,6 +322,11 @@ func (s *Server) setupRoutes() {
 	authGroup.Use(s.authLimiter.Middleware())
 	
 	// Apply security middleware to auth routes
+	// IP Intelligence - block known malicious IPs
+	if s.ipIntelligence != nil && s.ipIntelligence.Config.Enabled {
+		authGroup.Use(s.ipIntelligence.Middleware())
+	}
+	
 	// Prevent user enumeration
 	authGroup.Use(middleware.PreventUserEnum())
 	
@@ -275,8 +347,11 @@ func (s *Server) setupRoutes() {
 	
 	s.authHandlers.RegisterRoutes(authGroup, s.cookieAuth)
 
-	// Device registration (public)
-	public.POST("/v1/device/register", s.deviceRegisterHandler.Handle)
+	// Device registration (public) - with validation
+	public.POST("/v1/device/register", 
+		middleware.ValidationMiddleware(&middleware.DeviceRegisterSchema{}), 
+		s.deviceRegisterHandler.Handle,
+	)
 	public.GET("/v1/device/:id/status", s.deviceStatusHandler.Handle)
 
 	// Authenticated routes
@@ -293,7 +368,7 @@ func (s *Server) setupRoutes() {
 		r.GET("/dashboard/devices", s.deviceListHandler.Handle)
 		r.GET("/dashboard/devices/operator", s.deviceListHandler.ListByOperator)
 
-		// Admin clients
+		// Admin clients - with validation
 		adminClients := r.Group("/admin/clients")
 		adminClients.GET("", s.adminClientsHandler.List)
 		adminClients.GET("/:clientId", s.adminClientsHandler.Get)
@@ -301,28 +376,77 @@ func (s *Server) setupRoutes() {
 		adminClients.DELETE("/:clientId", s.adminClientsHandler.Delete)
 		adminClients.POST("/:clientId/rotate-key", s.adminClientsHandler.RotateKey)
 
-		// Device management (with request signing for API clients)
+		// Device management (with request signing for API clients) - with validation
+		// ALL responses are MANDATORY encrypted per PRD
 		deviceMgmt := r.Group("/device")
 		deviceMgmt.Use(middleware.RequestSigningMiddleware(s.signatureVerifier))
+		deviceMgmt.Use(middleware.MandatoryEncryptionMiddleware(encryptKeyFn))
 		deviceMgmt.Use(s.requireHMAC())
 		{
 			deviceMgmt.GET("/count", s.deviceListHandler.Count)
 			deviceMgmt.GET("/:id", s.deviceListHandler.GetDevice)
-			deviceMgmt.PATCH("/:id/fcm-token", s.deviceUpdaterHandler.UpdateFCMToken)
-			deviceMgmt.POST("/:id/command", s.commandHandler.Handle, s.requireStrictHMAC())
+			deviceMgmt.PATCH("/:id/fcm-token", 
+				middleware.ValidationMiddleware(&middleware.FCMTokenUpdateSchema{}), 
+				s.deviceUpdaterHandler.UpdateFCMToken,
+			)
+			deviceMgmt.POST("/:id/command", 
+				middleware.ValidationMiddleware(&middleware.CommandExecuteSchema{}), 
+				s.commandHandler.Handle, 
+				s.requireStrictHMAC(),
+			)
 			deviceMgmt.GET("/:id/commands/pending", s.commandHandler.GetPending)
 			deviceMgmt.DELETE("/:id", s.deviceUpdaterHandler.Delete)
 			deviceMgmt.GET("/:id/stream", s.streamHandler.Handle)
 		}
 
-		// Command management
+		// Command management (requires signing + encrypted responses)
 		commandMgmt := r.Group("/command")
+		commandMgmt.Use(middleware.RequestSigningMiddleware(s.signatureVerifier))
+		commandMgmt.Use(middleware.MandatoryEncryptionMiddleware(encryptKeyFn))
 		{
 			commandMgmt.GET("/:dispatchId/status", s.commandHandler.GetStatus)
 			commandMgmt.POST("/:dispatchId/retry", s.commandHandler.Retry)
 			commandMgmt.DELETE("/:dispatchId", s.commandHandler.Cancel)
 		}
+
+		// Telemetry history management
+		telemetryMgmt := r.Group("/telemetry")
+		{
+			telemetryMgmt.GET("/history", s.telemetryHistoryHandler.Query)
+			telemetryMgmt.GET("/history/export", s.telemetryHistoryHandler.ExportJSON)
+			telemetryMgmt.GET("/latest/:deviceId", s.telemetryHistoryHandler.GetLatest)
+			telemetryMgmt.GET("/stats/:deviceId", s.telemetryHistoryHandler.GetStats)
+			telemetryMgmt.DELETE("/cleanup", s.telemetryHistoryHandler.CleanupOld)
+		}
+
+		// Connection status management
+		connections := r.Group("/connections")
+		{
+			connections.GET("", s.connectionStatusHandler.GetAllStatus)
+			connections.GET("/metrics", s.connectionStatusHandler.GetMetrics)
+		}
+
+		// Device connection status (within device group for auth consistency)
+		deviceMgmt.GET("/:id/connection-status", s.connectionStatusHandler.GetStatus)
+		deviceMgmt.POST("/:id/disconnect", s.connectionStatusHandler.DisconnectDevice)
 	}
+
+	// ============================================================.
+	// Method Not Allowed — return 405 for matched paths with wrong methods.
+	// This must be before NoRoute.
+	// ============================================================.
+	s.engine.NoMethod(func(c *gin.Context) {
+		// Don't serve SPA for API routes - return proper 405
+		if strings.HasPrefix(c.Request.URL.Path, "/v1/") || strings.HasPrefix(c.Request.URL.Path, "/api/") {
+			c.JSON(http.StatusMethodNotAllowed, gin.H{
+				"error":   "method_not_allowed",
+				"message": "the requested method is not allowed for this endpoint",
+			})
+			return
+		}
+		// For non-API routes, fall through to dashboard (SPA handles routing)
+		s.dashboardHandler(c)
+	})
 
 	// ============================================================.
 	// SPA fallback — handle any non-API routes by serving the React app.
@@ -463,7 +587,7 @@ func (s *Server) requireHMAC() gin.HandlerFunc {
 				c.Next()
 				return
 			}
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "bad_hmac", "message": err.Error()})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Invalid request"})
 			c.Abort()
 			return
 		}
@@ -490,7 +614,7 @@ func (s *Server) requireStrictHMAC() gin.HandlerFunc {
 		// Operator has strictHmac enabled — validate the signature.
 		_, err := s.hmacVerifier.ReadAndVerifyHTTP(c.Request)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "bad_hmac", "message": "strictHmac is enabled: " + err.Error()})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "strictHmac is enabled: HMAC signature verification failed"})
 			c.Abort()
 			return
 		}

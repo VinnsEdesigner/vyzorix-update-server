@@ -2,6 +2,7 @@
  * login.tsx - Operator login page.
  *
  * Uses the wolf background layout and LoginForm component.
+ * After successful login, fetches client credentials for request signing.
  */
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -14,6 +15,7 @@ import AuthLayout from "@/components/layout/AuthLayout";
 import { loginOperator } from "@/lib/clients/authClient";
 import { initiateSSO, type SSOProvider } from "@/lib/clients/ssoClient";
 import { getFullHydratedState } from "@/lib/server/state-injector";
+import { fetchClientCredentials, getSignedApiClient } from "@/lib/signed-api-client";
 
 const LoginPage = (): ReactNode => {
   const navigate = useNavigate();
@@ -48,8 +50,21 @@ const LoginPage = (): ReactNode => {
   const handleLogin = async (ident: string, pass: string): Promise<void> => {
     setIsSubmitting(true);
     try {
+      // Step 1: Login with session cookie
       await loginOperator(ident, pass);
-      toast.success("Welcome back!");
+      
+      // Step 2: Fetch client credentials for request signing
+      // This establishes the signing identity for all subsequent API calls
+      try {
+        const apiUrl = window.location.origin;
+        await fetchClientCredentials(apiUrl, "Web Dashboard");
+        toast.success("Welcome back! Signed API ready.");
+      } catch (credsErr) {
+        // If credentials fetch fails, log but don't block login
+        console.warn("Failed to fetch client credentials:", credsErr);
+        toast.warning("Logged in, but signing not available. Some features may be limited.");
+      }
+      
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Login failed";

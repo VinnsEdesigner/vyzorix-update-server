@@ -61,7 +61,7 @@ func (h *ListHandler) Handle(c *gin.Context) {
 	// Get paginated devices.
 	response, err := h.deviceService.List(ctx, limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed_to_list_devices", "message": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Invalid request"})
 		return
 	}
 
@@ -122,13 +122,13 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 
 	operatorID := c.Query("operatorId")
 	if operatorID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "operator_id is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 		return
 	}
 
 	devices, err := h.deviceService.ListByOperatorEntity(ctx, operatorID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed_to_list_devices"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 
@@ -166,17 +166,17 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 func (h *ListHandler) GetDevice(c *gin.Context) {
 	deviceID := c.Param("id")
 	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "device_id is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 		return
 	}
 
 	d, err := h.deviceService.GetDevice(c.Request.Context(), deviceID)
 	if err != nil {
 		if err == devicedomain.ErrNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "device_not_found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed_to_get_device"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 
@@ -198,7 +198,7 @@ func (h *ListHandler) GetDevice(c *gin.Context) {
 func (h *ListHandler) Count(c *gin.Context) {
 	count, err := h.deviceService.Count(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed_to_count_devices"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 

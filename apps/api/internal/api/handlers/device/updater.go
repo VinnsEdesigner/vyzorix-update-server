@@ -22,7 +22,7 @@ func NewUpdaterHandler(deviceService *device.Service) *UpdaterHandler {
 func (h *UpdaterHandler) UpdateFCMToken(c *gin.Context) {
 	deviceID := c.Param("id")
 	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "device_id is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 		return
 	}
 
@@ -30,13 +30,13 @@ func (h *UpdaterHandler) UpdateFCMToken(c *gin.Context) {
 		FCMToken string `json:"fcmToken" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid request"})
 		return
 	}
 
 	err := h.deviceService.UpdateFCMToken(c.Request.Context(), deviceID, req.FCMToken)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update FCM token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 
@@ -47,13 +47,13 @@ func (h *UpdaterHandler) UpdateFCMToken(c *gin.Context) {
 func (h *UpdaterHandler) Delete(c *gin.Context) {
 	deviceID := c.Param("id")
 	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "device_id is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 		return
 	}
 
 	err := h.deviceService.Delete(c.Request.Context(), deviceID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete device"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 

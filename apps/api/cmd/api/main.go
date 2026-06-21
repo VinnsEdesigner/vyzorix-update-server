@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,12 +20,15 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/fcm"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/logging"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ssr"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/ssr"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 )
 
 // ANSI color codes for terminal output.
@@ -95,7 +97,8 @@ func main() {
 	}
 	printBanner(env)
 
-	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	// Use structured logging with PII redaction
+	log := logging.NewFromEnv()
 
 	// Load configuration
 	cfg, err := config.Load()
@@ -185,17 +188,41 @@ func main() {
 	}
 
 	// FCM notifier for push notifications (optional - only if FIREBASE_CREDENTIALS is configured)
+	// Using EnhancedNotifier with retry logic and metrics
 	var fcmNotifier fcm.Notifier
 	if fcmClient, err := fcm.Init(log, cfg.FirebaseCreds); err == nil {
-		fcmNotifier = fcmClient
-		printStatus("FCM", "Initialized", false)
+		enhancedFCM := fcm.NewEnhancedNotifier(fcmClient, fcm.DefaultFCMConfig())
+		fcmNotifier = enhancedFCM
+		printStatus("FCM", "Initialized (Enhanced: 3 retries, metrics, token validation)", false)
 	} else {
 		printWarning("FCM", "Firebase not configured (push notifications disabled)")
 	}
 
-	// WebSocket hub for device connections
-	wsHub := hub.New(log, nil) // Storage is optional for hub
+	// Create telemetry repository for WebSocket hub
+	telemetryRepo := storage.NewTelemetryRepository(db.DB())
+	printStatus("TelemetryRepository", "Initialized", false)
+
+	// WebSocket hub configuration with new features
+	hubConfig := &hub.HubConfig{
+		MessageQueue: hub.DefaultMessageQueueConfig(),
+		RateLimiter:  hub.DefaultRateLimiterConfig(),
+	}
+
+	// Create WebSocket hub
+	wsHub := hub.New(log, deviceRepo, telemetryRepo, nil, hubConfig)
 	printStatus("WebSocketHub", "Initialized", false)
+
+	// Initialize message queue for offline command delivery
+	messageQueue := hub.NewMessageQueue(log, db.DB(), hub.DefaultMessageQueueConfig())
+	messageQueue.Start(context.Background())
+	wsHub.SetMessageQueue(messageQueue)
+	printStatus("MessageQueue", "Initialized (offline command queue enabled)", false)
+
+	// Initialize rate limiter for WebSocket connections
+	wsRateLimiter := hub.NewRateLimiter(log, hub.DefaultRateLimiterConfig())
+	wsRateLimiter.StartCleanup(context.Background())
+	wsHub.SetRateLimiter(wsRateLimiter)
+	printStatus("WebSocketRateLimiter", "Initialized (100 msg/s, 200 burst)", false)
 
 	// ============================================================
 	// STEP 4: API Layer - Router + Middleware
@@ -249,6 +276,13 @@ func main() {
 	printStatus("Go Server", "Starting on "+cfg.Port, false)
 	printStatus("Environment", env, false)
 
+	// Initialize metrics
+	appMetrics := metrics.New()
+
+	// Initialize audit logger
+	auditRepo := audit.NewRepository(db.DB())
+	auditLogger := audit.NewLogger(auditRepo, log, audit.DefaultLoggerConfig())
+
 	apiServer := api.NewServer(&api.ServerConfig{
 		AuthService:     authService,
 		DeviceService:   deviceService,
@@ -266,6 +300,8 @@ func main() {
 		DB:              db,
 		Lockout:         accountLockout,
 		OperatorRepo:    operatorRepo,
+		Metrics:         appMetrics,
+		AuditLogger:     auditLogger,
 	})
 
 	// ============================================================

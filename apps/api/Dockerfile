@@ -21,11 +21,11 @@ RUN go mod download
 # Copy source and build
 COPY apps/api ./
 
-# Build the Go server
+# Build the Go server (from apps/api directory)
 RUN CGO_ENABLED=1 GOOS=linux go build \
     -trimpath \
     -ldflags="-s -w" \
-    -o /out/vyzorix-update-server .
+    -o /out/vyzorix-update-server ./cmd/api
 
 # =============================================================================
 # Stage 2: Web Builder - Build the frontend with Vite and pnpm

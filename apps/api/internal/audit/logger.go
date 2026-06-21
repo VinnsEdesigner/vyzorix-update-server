@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/uuid"
 )
 
 // Logger handles logging of security events to the audit repository.
@@ -41,7 +41,7 @@ func NewLogger(repo *Repository, log *slog.Logger, cfg LoggerConfig) *Logger {
 // LogEvent logs a security event to the audit repository asynchronously.
 func (l *Logger) LogEvent(ctx context.Context, entry *Entry) {
 	if entry.ID == "" {
-		entry.ID = storage.NewUUIDv7()
+		entry.ID = uuid.New()
 	}
 	if entry.CreatedAt.IsZero() {
 		entry.CreatedAt = time.Now()

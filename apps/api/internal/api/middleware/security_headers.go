@@ -2,8 +2,27 @@
 package middleware
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 )
+
+// NoCache returns a middleware that sets Cache-Control: no-store, no-cache, must-revalidate.
+func NoCache() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
+		c.Header("Pragma", "no-cache")
+		c.Header("Expires", "0")
+		c.Next()
+	}
+}
+
+// CacheWithPrivate returns a middleware that allows private caching.
+func CacheWithPrivate(maxAge int) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		c.Header("Cache-Control", fmt.Sprintf("private, max-age=%d", maxAge))
+		c.Next()
+	}
+}
 
 // SecurityHeaders returns a middleware that adds security headers to all responses.
 func SecurityHeaders() func(c *gin.Context) {
@@ -23,6 +42,10 @@ func SecurityHeaders() func(c *gin.Context) {
 		// X-Content-Type-Options.
 		// Prevent MIME type sniffing.
 		c.Header("X-Content-Type-Options", "nosniff")
+
+		// X-XSS-Protection.
+		// Enable browser's XSS filter (legacy, but still useful for older browsers).
+		c.Header("X-XSS-Protection", "1; mode=block")
 
 		// Referrer-Policy.
 		// Only send referrer for same-origin requests.
