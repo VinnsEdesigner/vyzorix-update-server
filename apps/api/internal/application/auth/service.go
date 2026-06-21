@@ -396,9 +396,8 @@ func (s *AuthService) CreateSession(ctx context.Context, operatorID string) (*se
 // This allows for server-side session invalidation while maintaining audit trail.
 func (s *AuthService) Logout(ctx context.Context, sessionID string) error {
 	// Add to revocation list for audit trail (allows checking "was this session revoked")
-	if err := s.sessionRepo.AddSessionRevocation(ctx, sessionID, "operator_logout"); err != nil {
-		// Log but don't fail - still delete the session
-	}
+	// Ignoring error - revocation is best-effort, main operation is session deletion
+	_ = s.sessionRepo.AddSessionRevocation(ctx, sessionID, "operator_logout")
 	// Delete the session from active sessions
 	return s.sessionRepo.Delete(ctx, sessionID)
 }
@@ -410,9 +409,8 @@ func (s *AuthService) LogoutAll(ctx context.Context, operatorID string) error {
 		return err
 	}
 	// Also revoke all refresh tokens for this operator
-	if err := s.RevokeAllRefreshTokens(ctx, operatorID); err != nil {
-		// Log but don't fail
-	}
+	// Ignoring error - revocation is best-effort, main operation succeeded
+	_ = s.RevokeAllRefreshTokens(ctx, operatorID)
 	return nil
 }
 
@@ -1515,9 +1513,7 @@ func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken st
 	}
 
 	// Revoke old refresh token
-	if err := s.refreshTokenRepo.Revoke(ctx, existing.ID); err != nil {
-		// Log but don't fail
-	}
+	_ = s.refreshTokenRepo.Revoke(ctx, existing.ID)
 
 	return &RefreshTokenResult{
 		AccessToken:  accessToken,

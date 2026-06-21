@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-// Standard GraphQL error codes
+// Standard GraphQL error codes.
 const (
 	CodeUnauthorized     = "UNAUTHORIZED"
 	CodeForbidden        = "FORBIDDEN"
@@ -57,7 +57,7 @@ func (e *Error) WithLocation(line, column int) *Error {
 	return e
 }
 
-// Common errors
+// Common errors.
 var (
 	ErrUnauthorized = New(CodeUnauthorized, "authentication required")
 	ErrForbidden    = New(CodeForbidden, "access denied")
@@ -90,7 +90,7 @@ func Is(err error, code string) bool {
 	return false
 }
 
-// Helper functions for creating typed errors
+// Helper functions for creating typed errors.
 func Unauthorized(format string, args ...interface{}) *Error {
 	return New(CodeUnauthorized, fmt.Sprintf(format, args...))
 }

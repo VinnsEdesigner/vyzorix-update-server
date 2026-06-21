@@ -29,6 +29,7 @@ type Dependencies struct {
 
 // AllHandlers holds references to all auth handlers.
 type AllHandlers struct {
+	AuthService   *auth.AuthService
 	Login         *LoginHandler
 	Register      *RegisterHandler
 	Logout        *LogoutHandler
@@ -46,6 +47,7 @@ type AllHandlers struct {
 // NewAllHandlers creates all auth handlers with proper dependencies.
 func NewAllHandlers(deps *Dependencies) *AllHandlers {
 	return &AllHandlers{
+		AuthService:   deps.AuthService,
 		Login:         NewLoginHandler(deps.AuthService, deps.AuditLogger, deps.IPIntelligence),
 		Register:      NewRegisterHandler(deps.AuthService, deps.EmailService, deps.AuditLogger),
 		Logout:        NewLogoutHandler(deps.AuthService, deps.AuditLogger),
