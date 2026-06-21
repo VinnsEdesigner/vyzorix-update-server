@@ -14,12 +14,12 @@ import { logger } from "@/lib/logger";
 // Re-export signed API client for authenticated requests
 export { SignedApiClient, getSignedApiClient, clearSignedApiClient } from "./signed-api-client";
 export type { SignedRequestOptions } from "./signed-api-client";
-export { 
-  fetchClientCredentials, 
-  getActiveCredentials, 
-  listClientCredentials, 
+export {
+  fetchClientCredentials,
+  getActiveCredentials,
+  listClientCredentials,
   deleteClientCredentials,
-  type ClientCredentials 
+  type ClientCredentials,
 } from "./client-credentials";
 
 export interface VersionManifest {
@@ -276,17 +276,17 @@ export const COMMANDS: { id: string; label: string; description: string; danger?
 // 1. After user logs in, fetch client credentials:
 //
 //    import { fetchClientCredentials, getSignedApiClient } from './vyzorix-api';
-//    
+//
 //    const credentials = await fetchClientCredentials('https://api.example.com');
 //    console.log('Client ID:', credentials.clientId);
 //
 // 2. Make signed requests:
 //
 //    const client = getSignedApiClient('https://api.example.com');
-//    
+//
 //    // GET request
 //    const devices = await client.get<Device[]>('/v1/device/count');
-//    
+//
 //    // POST request with body
 //    const response = await client.post<CommandResponse>('/v1/device/123/command', {
 //      command: 'REQUEST_STATUS'

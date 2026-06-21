@@ -16,7 +16,7 @@ export function deriveKey(secret: string): Uint8Array {
  * SHA-512 hash function using Web Crypto API.
  */
 export async function sha512(data: BufferSource): Promise<Uint8Array> {
-  const hashBuffer = await crypto.subtle.digest('SHA-512', data);
+  const hashBuffer = await crypto.subtle.digest("SHA-512", data);
   return new Uint8Array(hashBuffer);
 }
 
@@ -27,8 +27,8 @@ export async function sha512Hex(data: string): Promise<string> {
   const encoder = new TextEncoder();
   const hash = await sha512(encoder.encode(data));
   return Array.from(hash)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 /**
@@ -37,16 +37,16 @@ export async function sha512Hex(data: string): Promise<string> {
 export async function hmacSha512(key: string, message: string): Promise<Uint8Array> {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(key);
-  
+
   const cryptoKey = await crypto.subtle.importKey(
-    'raw',
+    "raw",
     keyData,
-    { name: 'HMAC', hash: 'SHA-512' },
+    { name: "HMAC", hash: "SHA-512" },
     false,
-    ['sign']
+    ["sign"],
   );
-  
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(message));
+
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(message));
   return new Uint8Array(signature);
 }
 
@@ -56,8 +56,8 @@ export async function hmacSha512(key: string, message: string): Promise<Uint8Arr
 export async function hmacSha512Hex(key: string, message: string): Promise<string> {
   const sig = await hmacSha512(key, message);
   return Array.from(sig)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 /**
@@ -80,36 +80,30 @@ export function generateNonce(): Uint8Array {
  */
 export async function aes256GcmEncrypt(
   secret: string,
-  plaintext: string | object
+  plaintext: string | object,
 ): Promise<{ nonce: string; ciphertext: string }> {
   const key = deriveKey(secret);
   const nonce = generateNonce();
-  
+
   // Handle object or string input
-  const data = typeof plaintext === 'string' 
-    ? plaintext 
-    : JSON.stringify(plaintext);
-  
+  const data = typeof plaintext === "string" ? plaintext : JSON.stringify(plaintext);
+
   const encoder = new TextEncoder();
   const plaintextBytes = encoder.encode(data);
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'AES-GCM' },
-    false,
-    ['encrypt']
-  );
-  
+
+  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-GCM" }, false, [
+    "encrypt",
+  ]);
+
   const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv: nonce },
+    { name: "AES-GCM", iv: nonce },
     cryptoKey,
-    plaintextBytes
+    plaintextBytes,
   );
-  
+
   return {
     nonce: b64Encode(nonce),
-    ciphertext: b64Encode(new Uint8Array(ciphertext))
+    ciphertext: b64Encode(new Uint8Array(ciphertext)),
   };
 }
 
@@ -120,26 +114,22 @@ export async function aes256GcmEncrypt(
 export async function aes256GcmDecrypt(
   secret: string,
   nonceB64: string,
-  ciphertextB64: string
+  ciphertextB64: string,
 ): Promise<string> {
   const key = deriveKey(secret);
   const nonce = b64Decode(nonceB64);
   const ciphertext = b64Decode(ciphertextB64);
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'AES-GCM' },
-    false,
-    ['decrypt']
-  );
-  
+
+  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-GCM" }, false, [
+    "decrypt",
+  ]);
+
   const plaintext = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: nonce },
+    { name: "AES-GCM", iv: nonce },
     cryptoKey,
-    ciphertext
+    ciphertext,
   );
-  
+
   const decoder = new TextDecoder();
   return decoder.decode(plaintext);
 }
@@ -149,28 +139,24 @@ export async function aes256GcmDecrypt(
  */
 export async function aes256GcmDecryptCombined(
   secret: string,
-  combinedB64: string
+  combinedB64: string,
 ): Promise<string> {
   const combined = b64Decode(combinedB64);
   const nonce = combined.slice(0, 12);
   const ciphertext = combined.slice(12);
-  
+
   const key = deriveKey(secret);
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'AES-GCM' },
-    false,
-    ['decrypt']
-  );
-  
+
+  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-GCM" }, false, [
+    "decrypt",
+  ]);
+
   const plaintext = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: nonce },
+    { name: "AES-GCM", iv: nonce },
     cryptoKey,
-    ciphertext
+    ciphertext,
   );
-  
+
   const decoder = new TextDecoder();
   return decoder.decode(plaintext);
 }

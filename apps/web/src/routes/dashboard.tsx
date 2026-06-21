@@ -32,13 +32,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useServerHealth } from "@/hooks/use-server-health";
+import { useDashboardData } from "@/lib/api/graphql";
 import { useStream } from "@/lib/device-stream-context";
 import { formatRelative, formatUptime } from "@/lib/format";
-import { getDashboardDevices, getDeviceStatus, getVersion } from "@/lib/vyzorix-api";
+import { getDeviceStatus, getVersion } from "@/lib/vyzorix-api";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
 // GraphQL imports
-import { useDashboardData, useHealth } from "@/lib/api/graphql";
 
 const tip = {
   background: "var(--popover)",
@@ -161,7 +161,7 @@ const ChartShell = ({
 };
 
 const DashboardPage = (): JSX.Element => {
-  const { serverUrl, deviceId, thresholds, dashboardToken } = useVyzorixConfig();
+  const { serverUrl, deviceId, thresholds, _dashboardToken } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
   const stream = useStream();
   const t = stream.lastTelemetry;
@@ -210,19 +210,20 @@ const DashboardPage = (): JSX.Element => {
   });
 
   // GraphQL: Get devices and connections in a single query
-  const { data: dashboardData, isLoading: isLoadingDashboard } = useDashboardData(100, {
+  const { data: dashboardData, isLoading: _isLoadingDashboard } = useDashboardData(100, {
     enabled: health.data?.ok === true,
     refetchInterval: 15_000,
   });
 
   // Map GraphQL devices to the format expected by the UI
-  const devices = dashboardData?.devices.map(d => ({
-    deviceId: d.id,
-    online: d.online,
-    lastSeen: d.lastSeen ? new Date(d.lastSeen).getTime() : undefined,
-    appVersion: d.version,
-    deviceClass: d.deviceClass,
-  })) ?? [];
+  const devices =
+    dashboardData?.devices.map((d) => ({
+      deviceId: d.id,
+      online: d.online,
+      lastSeen: d.lastSeen ? new Date(d.lastSeen).getTime() : undefined,
+      appVersion: d.version,
+      deviceClass: d.deviceClass,
+    })) ?? [];
 
   const online = status.data?.online ?? stream.state === "connected";
   const deviceHealth = deriveHealth(online, t?.riskScore, t?.thermalTemp, thresholds);
