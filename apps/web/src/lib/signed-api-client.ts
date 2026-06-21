@@ -27,9 +27,6 @@ export interface SignedRequestHeaders {
   "Content-Type": string;
 }
 
-// Signature timestamp window (5 minutes) - kept for documentation
-const _SIGNATURE_TIMESTAMP_WINDOW_MS = 5 * 60 * 1000;
-
 /**
  * Create a signed and encrypted request.
  * Returns headers needed for the request.
@@ -204,7 +201,7 @@ export class SignedApiClient {
         body,
         client: this.client,
       });
-      headers = signed.headers as Record<string, string>;
+      headers = signed.headers as unknown as Record<string, string>;
       // For encrypted requests, we don't send body separately - it's in X-Encrypted-Body
       requestBody = undefined;
     } else {

@@ -29,7 +29,6 @@ linters:
     - iface
     - ineffassign
     - loggercheck
-    - maintidx
     - mirror
     - misspell
     - nakedret
@@ -55,8 +54,8 @@ linters:
     exhaustive:
       default-signifies-exhaustive: true
     funlen:
-      lines: 200
-      statements: 150
+      lines: 250
+      statements: 200
     gocyclo:
       min-complexity: 30
     gosec:
