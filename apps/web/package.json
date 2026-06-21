@@ -14,6 +14,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@graphql-tools/schema": "^10.0.33",
+    "@graphql-tools/utils": "^10.11.0",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -54,6 +56,8 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
+    "graphql": "^16.14.2",
+    "graphql-request": "^6.1.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.575.0",
     "react": "^19.2.0",

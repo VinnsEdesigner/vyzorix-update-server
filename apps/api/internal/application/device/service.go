@@ -168,6 +168,14 @@ func (s *Service) UpdateFCMToken(ctx context.Context, deviceID, fcmToken string)
 	return s.deviceRepo.UpdateFCMToken(ctx, deviceID, fcmToken)
 }
 
+// UpdateFCMTokenAndReturn updates FCM token and returns the device.
+func (s *Service) UpdateFCMTokenAndReturn(ctx context.Context, deviceID, fcmToken string) (*device.Device, error) {
+	if err := s.deviceRepo.UpdateFCMToken(ctx, deviceID, fcmToken); err != nil {
+		return nil, err
+	}
+	return s.deviceRepo.FindByID(ctx, deviceID)
+}
+
 // SetOnline sets the online status of a device.
 func (s *Service) SetOnline(ctx context.Context, deviceID string, online bool) error {
 	return s.deviceRepo.SetOnline(ctx, deviceID, online)
@@ -242,6 +250,11 @@ func (s *Service) Delete(ctx context.Context, deviceID string) error {
 	return s.deviceRepo.Delete(ctx, deviceID)
 }
 
+// DeleteDevice deletes a device (alias for Delete).
+func (s *Service) DeleteDevice(ctx context.Context, deviceID string) error {
+	return s.deviceRepo.Delete(ctx, deviceID)
+}
+
 // GetDevice retrieves a device by ID.
 func (s *Service) GetDevice(ctx context.Context, deviceID string) (*device.Device, error) {
 	return s.deviceRepo.FindByID(ctx, deviceID)
@@ -250,4 +263,39 @@ func (s *Service) GetDevice(ctx context.Context, deviceID string) (*device.Devic
 // Count returns the total number of devices.
 func (s *Service) Count(ctx context.Context) (int, error) {
 	return s.deviceRepo.Count(ctx)
+}
+
+// CountByOperator returns the total number of devices for an operator.
+func (s *Service) CountByOperator(ctx context.Context, operatorID string) (int, error) {
+	devices, err := s.deviceRepo.ListByOperator(ctx, operatorID)
+	if err != nil {
+		return 0, err
+	}
+	return len(devices), nil
+}
+
+// ListByOperatorPaginated returns paginated devices for an operator.
+func (s *Service) ListByOperatorPaginated(ctx context.Context, operatorID string, limit, offset int) ([]*device.Device, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	allDevices, err := s.deviceRepo.ListByOperator(ctx, operatorID)
+	if err != nil {
+		return nil, err
+	}
+
+	if offset >= len(allDevices) {
+		return []*device.Device{}, nil
+	}
+
+	end := offset + limit
+	if end > len(allDevices) {
+		end = len(allDevices)
+	}
+
+	return allDevices[offset:end], nil
 }
