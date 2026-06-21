@@ -1,7 +1,7 @@
 // GraphQL Mutations for Vyzorix API
 // These replace corresponding REST endpoints
 
-import { gql } from 'graphql-request';
+import { gql } from "graphql-request";
 
 // ============================================================
 // DEVICE MUTATIONS
@@ -75,42 +75,42 @@ export const DISCONNECT_DEVICE = gql`
 export const COMMAND_MUTATIONS = {
   FORCE_SPEAKER: (deviceId: string) => ({
     deviceId,
-    command: 'FORCE_SPEAKER',
+    command: "FORCE_SPEAKER",
     args: null,
   }),
   RESET_AUDIO_HAL: (deviceId: string) => ({
     deviceId,
-    command: 'RESET_AUDIO_HAL',
+    command: "RESET_AUDIO_HAL",
     args: null,
   }),
   TOGGLE_CAPTURE: (deviceId: string) => ({
     deviceId,
-    command: 'TOGGLE_CAPTURE',
+    command: "TOGGLE_CAPTURE",
     args: null,
   }),
   REINIT_PROJECTION: (deviceId: string) => ({
     deviceId,
-    command: 'REINIT_PROJECTION',
+    command: "REINIT_PROJECTION",
     args: null,
   }),
   REQUEST_STATUS: (deviceId: string) => ({
     deviceId,
-    command: 'REQUEST_STATUS',
+    command: "REQUEST_STATUS",
     args: null,
   }),
   WAKE_UP_UPDATER: (deviceId: string) => ({
     deviceId,
-    command: 'WAKE_UP_UPDATER',
+    command: "WAKE_UP_UPDATER",
     args: null,
   }),
   DUMP_FLIGHT_DATA: (deviceId: string) => ({
     deviceId,
-    command: 'DUMP_FLIGHT_DATA',
+    command: "DUMP_FLIGHT_DATA",
     args: null,
   }),
   ROTATE_KEYS: (deviceId: string) => ({
     deviceId,
-    command: 'ROTATE_KEYS',
+    command: "ROTATE_KEYS",
     args: null,
   }),
 } as const;

@@ -1,7 +1,7 @@
 // GraphQL Queries for Vyzorix API
 // These mirror the REST endpoints but allow fetching related data in a single request
 
-import { gql } from 'graphql-request';
+import { gql } from "graphql-request";
 
 // ============================================================
 // FRAGMENTS - Reusable field selections
@@ -258,7 +258,7 @@ export const GET_DASHBOARD_DATA = gql`
       deviceClass
     }
     deviceCount
-    
+
     # Get all connection statuses
     allConnections {
       deviceId

@@ -40,8 +40,7 @@ import { GET_DEVICES } from '@/lib/api/graphql/queries';
 
 async function fetchDevices() {
   const client = getGraphQLClient();
-  const data = await client.request(GET_DEVICES, { limit: 10 });
-  return data;
+  return await client.request(GET_DEVICES, { limit: 10 });
 }
 ```
 

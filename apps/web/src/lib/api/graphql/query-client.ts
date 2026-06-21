@@ -1,7 +1,7 @@
 // GraphQL QueryClient integration
 // This provides a way to use GraphQL with TanStack Query
 
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient } from "@tanstack/react-query";
 
 // Create a GraphQL-specific query client configuration
 // This can be used alongside the main query client for GraphQL operations
