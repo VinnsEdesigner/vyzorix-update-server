@@ -263,7 +263,7 @@ func (c *Client) WritePump() {
 			if c.Hub.compression != nil {
 				data, err := json.Marshal(frame)
 				if err == nil {
-					compressed, didCompress, ratio := c.Hub.compression.CompressMessage(data)
+					compressed, didCompress, _ := c.Hub.compression.CompressMessage(data)
 					if didCompress {
 						// Track compression metrics for G4 verification
 						c.Hub.compression.RecordCompression(len(data), len(compressed))
@@ -273,8 +273,6 @@ func (c *Client) WritePump() {
 							Type:         frame.Type,
 							Compressed:   true,
 							OriginalSize: len(data),
-							CompressedSize: len(compressed),
-							CompressionRatio: ratio,
 							Data:         compressed,
 						}
 						if err := c.Conn.WriteJSON(compFrame); err != nil {

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
@@ -114,6 +115,12 @@ type Server struct {
 
 	// HMAC verifier for device command verification
 	hmacVerifier cryptohmac.Verifier
+
+	// GraphQL server
+	graphqlServer *graphql.Server
+
+	// Session manager for GraphQL auth
+	sessionManager *infraauth.SessionManager
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -201,6 +208,7 @@ func NewServer(cfg *ServerConfig) *Server {
 		hub:           cfg.Hub,
 		hmacVerifier: hmacVerifier,
 		db:           cfg.DB,
+		sessionManager: cfg.SessionManager, // Store for GraphQL
 
 		// Create all auth handlers at once
 		authHandlers: authhandlers.NewAllHandlers(&authhandlers.Dependencies{
@@ -620,4 +628,60 @@ func (s *Server) requireStrictHMAC() gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+// RegisterGraphQL initializes and registers the GraphQL server with the API server.
+func (s *Server) RegisterGraphQL(
+	deviceService *device.Service,
+	commandService *cmdapp.Service,
+	telemetryRepo *storage.TelemetryRepository,
+	wsHub *hub.Hub,
+) error {
+	// Get auth services from server config
+	authService := s.getAuthService()
+	sessionManager := s.getSessionManager()
+
+	// Create GraphQL server configuration
+	gqlCfg := &graphql.Config{
+		AuthService:    authService,
+		SessionManager: sessionManager,
+		DeviceService:  deviceService,
+		CommandService: commandService,
+		TelemetryRepo:  telemetryRepo,
+		Hub:            wsHub,
+		FCMNotifier:    s.FCMNotifier,
+		Log:            s.log,
+	}
+
+	// Create GraphQL server
+	gqlServer, err := graphql.NewServer(gqlCfg)
+	if err != nil {
+		return err
+	}
+
+	// Store reference
+	s.graphqlServer = gqlServer
+
+	// Register HTTP routes
+	gqlServer.Routes(s.engine)
+
+	// Register WebSocket subscription endpoint
+	subsHandler := graphql.NewSubscriptionHandler(wsHub, gqlServer.Handler(), authService, sessionManager, s.log)
+	gqlServer.RegisterSubscriptions(s.engine, subsHandler.HandleWebSocket)
+
+	s.log.Info("GraphQL server registered", "path", "/graphql", "playground", "/playground", "subscriptions", "/graphql/ws")
+	return nil
+}
+
+// getAuthService returns the AuthService from auth handlers.
+func (s *Server) getAuthService() *appsvc.AuthService {
+	if s.authHandlers != nil {
+		return s.authHandlers.AuthService
+	}
+	return nil
+}
+
+// getSessionManager returns the SessionManager from the server.
+func (s *Server) getSessionManager() *infraauth.SessionManager {
+	return s.sessionManager
 }

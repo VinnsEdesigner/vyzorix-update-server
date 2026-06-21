@@ -37,6 +37,9 @@ import { formatRelative, formatUptime } from "@/lib/format";
 import { getDashboardDevices, getDeviceStatus, getVersion } from "@/lib/vyzorix-api";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
+// GraphQL imports
+import { useDashboardData, useHealth } from "@/lib/api/graphql";
+
 const tip = {
   background: "var(--popover)",
   border: "1px solid var(--border)",
@@ -206,13 +209,20 @@ const DashboardPage = (): JSX.Element => {
     retry: false,
   });
 
-  const devices = useQuery({
-    queryKey: ["vyzorix", "dashboard-devices", serverUrl, dashboardToken],
-    queryFn: () => getDashboardDevices(serverUrl, dashboardToken),
+  // GraphQL: Get devices and connections in a single query
+  const { data: dashboardData, isLoading: isLoadingDashboard } = useDashboardData(100, {
     enabled: health.data?.ok === true,
     refetchInterval: 15_000,
-    retry: false,
   });
+
+  // Map GraphQL devices to the format expected by the UI
+  const devices = dashboardData?.devices.map(d => ({
+    deviceId: d.id,
+    online: d.online,
+    lastSeen: d.lastSeen ? new Date(d.lastSeen).getTime() : undefined,
+    appVersion: d.version,
+    deviceClass: d.deviceClass,
+  })) ?? [];
 
   const online = status.data?.online ?? stream.state === "connected";
   const deviceHealth = deriveHealth(online, t?.riskScore, t?.thermalTemp, thresholds);
@@ -417,7 +427,7 @@ const DashboardPage = (): JSX.Element => {
                 v={version.data?.version_code != null ? `${version.data.version_code}` : "—"}
               />
               <KV k="Health" v={health.data?.ok ? "ok" : "down"} />
-              <KV k="Fleet devices" v={devices.data ? `${devices.data.length}` : "—"} />
+              <KV k="Fleet devices" v={`${dashboardData?.deviceCount ?? devices.length ?? 0}`} />
             </CardContent>
           </Card>
         </div>
