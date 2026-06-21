@@ -227,7 +227,6 @@ func (q *MessageQueue) EnqueueWithConfirmation(deviceID string, frame command.Co
 				"err", err,
 			)
 			q.incrementDropped()
-			q.metrics.DroppedDueToDBError++
 			return false
 		}
 		return true
@@ -245,7 +244,6 @@ func (q *MessageQueue) EnqueueWithConfirmation(deviceID string, frame command.Co
 					"err", err,
 				)
 				q.incrementDropped()
-				q.metrics.DroppedDueToDBError++
 				return false
 			}
 			return true
@@ -269,7 +267,18 @@ func (q *MessageQueue) persistMessageSync(msg *QueuedMessage) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	return q.saveToDatabaseWithContext(ctx, msg)
+	frameJSON, err := json.Marshal(msg.Frame)
+	if err != nil {
+		return err
+	}
+
+	_, err = q.db.ExecContext(ctx,
+		`INSERT INTO message_queue (id, device_id, frame_json, enqueued_at, expires_at) 
+		 VALUES (?, ?, ?, ?, ?)`,
+		msg.ID, msg.DeviceID, string(frameJSON),
+		msg.EnqueuedAt.UnixMilli(), msg.ExpiresAt.UnixMilli(),
+	)
+	return err
 }
 
 // evictOldest removes the oldest message from a device's queue.

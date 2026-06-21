@@ -16,7 +16,7 @@ import (
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/graphql"
 )
@@ -29,7 +29,7 @@ type Config struct {
 	DeviceService  *device.Service
 	CommandService *command.Service
 	TelemetryRepo  *storage.TelemetryRepository
-	Hub            *ws.Hub
+	Hub            *hub.Hub
 	FCMNotifier    fcm.Notifier
 	Log            *slog.Logger
 }
@@ -92,11 +92,12 @@ func DefaultValidator() *validator.Validator {
 
 // NewSubscriptionHandler creates a WebSocket handler for GraphQL subscriptions.
 func NewSubscriptionHandler(
-	hub *ws.Hub,
+	hub *hub.Hub,
 	res *resolver.Resolver,
 	authService *auth.AuthService,
 	sessionManager *infraauth.SessionManager,
 	log *slog.Logger,
 ) *subscription.Handler {
-	return subscription.NewSubscriptionHandler(hub, res, authService, sessionManager, log)
+	authMw := middleware.NewAuthMiddleware(sessionManager, authService, log)
+	return subscription.NewHandler(hub, res, authMw, log)
 }
