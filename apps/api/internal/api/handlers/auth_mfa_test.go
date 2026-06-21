@@ -530,7 +530,7 @@ func TestMFAResponse_MarshalJSON(t *testing.T) {
 func TestMFAResponse_MarshalJSON_WithError(t *testing.T) {
 	resp := MFAResponse{
 		Success: false,
-		Error:   "invalid code",
+		Error:   "bad_request",
 	}
 
 	data, err := json.Marshal(resp)
@@ -546,7 +546,7 @@ func TestMFAResponse_MarshalJSON_WithError(t *testing.T) {
 	if result["success"] != false {
 		t.Errorf("success = %v, want false", result["success"])
 	}
-	if result["error"] != "invalid code" {
+	if result["error"] != "bad_request" {
 		t.Errorf("error = %v, want 'invalid code'", result["error"])
 	}
 }

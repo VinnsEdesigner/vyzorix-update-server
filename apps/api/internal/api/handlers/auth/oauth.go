@@ -14,7 +14,7 @@ import (
 
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -47,7 +47,7 @@ func (h *OAuthHandler) WithLogger(logger *slog.Logger) *OAuthHandler {
 // GoogleLogin handles GET /v1/auth/google.
 func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 	if h.config.GoogleOAuthClientID == "" || h.config.GoogleOAuthClientSecret == "" {
-		c.JSON(http.StatusNotImplemented, gin.H{"error": "not_configured", "message": "Google OAuth is not configured on this server"})
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "internal_error", "message": "Google OAuth is not configured on this server"})
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
 	if code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_callback", "message": "missing authorization code from Google"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "missing authorization code from Google"})
 		return
 	}
 
@@ -95,19 +95,19 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		ExpiresIn    int    `json:"expires_in"`
 	}
 	if err := postJSON(ctx, tokenURL, tokenReq, &tokenResp); err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "oauth_error", "message": "failed to exchange code with Google"})
+		c.JSON(http.StatusBadGateway, gin.H{"error": "internal_error", "message": "failed to exchange code with Google"})
 		return
 	}
 
 	// Verify ID token
 	googleClaims, err := h.googleVer.Verify(tokenResp.IDToken)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "oauth_error", "message": "invalid identity token from Google"})
+		c.JSON(http.StatusBadGateway, gin.H{"error": "internal_error", "message": "invalid identity token from Google"})
 		return
 	}
 
 	if googleClaims.Email == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "oauth_error", "message": "Google did not return an email address"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "internal_error", "message": "Google did not return an email address"})
 		return
 	}
 
@@ -148,7 +148,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 // GitHubLogin handles GET /v1/auth/github.
 func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 	if h.config.GitHubOAuthClientID == "" || h.config.GitHubOAuthClientSecret == "" {
-		c.JSON(http.StatusNotImplemented, gin.H{"error": "not_configured", "message": "GitHub OAuth is not configured on this server"})
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "internal_error", "message": "GitHub OAuth is not configured on this server"})
 		return
 	}
 
@@ -176,7 +176,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
 	if code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_callback", "message": "missing authorization code from GitHub"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "missing authorization code from GitHub"})
 		return
 	}
 
@@ -192,14 +192,14 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		RedirectURI:  callbackURL,
 	})
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "oauth_error", "message": "failed to exchange code with GitHub"})
+		c.JSON(http.StatusBadGateway, gin.H{"error": "internal_error", "message": "failed to exchange code with GitHub"})
 		return
 	}
 
 	// Fetch GitHub user profile
 	ghUser, err := infraauth.FetchGitHubUserProfile(ctx, tokenResp.AccessToken)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "oauth_error", "message": "failed to retrieve GitHub user profile"})
+		c.JSON(http.StatusBadGateway, gin.H{"error": "internal_error", "message": "failed to retrieve GitHub user profile"})
 		return
 	}
 

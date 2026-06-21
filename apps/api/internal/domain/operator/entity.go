@@ -1,40 +1,24 @@
 package operator
 
 import (
-	"errors"
 	"strings"
 	"time"
 )
 
-// ErrNotFound is returned when an operator is not found.
-var ErrNotFound = errors.New("operator not found")
-
-// Role represents the role of an operator.
-type Role string
-
-const (
-	// RoleSuperAdmin is the highest privilege role.
-	RoleSuperAdmin Role = "super_admin"
-	// RoleAdmin is an administrative role.
-	RoleAdmin Role = "admin"
-	// RoleOperator is a standard operator role.
-	RoleOperator Role = "operator"
-)
-
 // Thresholds define alert levels for device telemetry.
 type Thresholds struct {
-	RiskWarn    int `json:"riskWarn"`
-	RiskCrit   int `json:"riskCrit"`
-	ThermalWarn int `json:"thermalWarn"`
-	ThermalCrit int `json:"thermalCrit"`
-	BufferWarn  int `json:"bufferWarn"`
-	BufferCrit  int `json:"bufferCrit"`
+	RiskWarn     int `json:"riskWarn"`
+	RiskCrit     int `json:"riskCrit"`
+	ThermalWarn  int `json:"thermalWarn"`
+	ThermalCrit  int `json:"thermalCrit"`
+	BufferWarn   int `json:"bufferWarn"`
+	BufferCrit   int `json:"bufferCrit"`
 }
 
 // ClientSettings holds operator preferences that control dashboard behavior.
 type ClientSettings struct {
 	StrictHmac           bool `json:"strictHmac"`
-	AutoReconnect       bool `json:"autoReconnect"`
+	AutoReconnect        bool `json:"autoReconnect"`
 	NotificationsEnabled bool `json:"notificationsEnabled"`
 }
 
@@ -44,22 +28,22 @@ type Operator struct {
 	Email        string
 	Name         string
 	PasswordHash string
-	Role         Role
+	Role         OperatorRole
 
 	// OAuth fields (optional - one or both may be set).
 	GoogleID string
 	GitHubID string
 
 	// MFA fields.
-	MFASecret    string
-	MFAEnabled   bool
-	BackupCodes  []string
+	MFASecret   string
+	MFAEnabled  bool
+	BackupCodes []string
 
 	// Email verification.
 	EmailVerified bool
 
 	// Settings.
-	Thresholds    Thresholds    `json:"thresholds"`
+	Thresholds     Thresholds     `json:"thresholds"`
 	ClientSettings ClientSettings `json:"client"`
 
 	// Timestamps.
@@ -74,7 +58,7 @@ func (o *Operator) IsSuperAdmin() bool {
 
 // IsAdmin returns true if the operator is an admin or super admin.
 func (o *Operator) IsAdmin() bool {
-	return o.Role == RoleSuperAdmin || o.Role == RoleAdmin
+	return o.Role == RoleSuperAdmin
 }
 
 // CanManageOperators returns true if the operator can manage other operators.

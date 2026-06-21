@@ -82,6 +82,40 @@ func (r *DeviceRepository) FindByFirebaseInstallID(ctx context.Context, fid stri
 	return &d, nil
 }
 
+// FindByIDAndOperator retrieves a device by ID and verifies it belongs to the operator.
+// This implements DOA (Data Ownership Attribution) checks for security.
+// Returns ErrNotFound if device doesn't exist OR doesn't belong to the operator.
+func (r *DeviceRepository) FindByIDAndOperator(ctx context.Context, id, operatorID string) (*device.Device, error) {
+	query := `
+		SELECT id, firebase_install_id, fcm_token, app_version, device_class,
+		       command_secret_hash, online, registered_at, last_seen, operator_id,
+		       created_at, updated_at
+		FROM devices WHERE id = ? AND operator_id = ?`
+
+	var d device.Device
+	var fcmToken, opID sql.NullString
+
+	err := r.db.QueryRowContext(ctx, query, id, operatorID).Scan(
+		&d.ID, &d.FirebaseInstallID, &fcmToken, &d.AppVersion, &d.DeviceClass,
+		&d.CommandSecretHash, &d.Online, &d.RegisteredAt, &d.LastSeen, &opID,
+		&d.CreatedAt, &d.UpdatedAt,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		// Return the same error whether device doesn't exist or isn't owned by operator.
+		// This prevents enumeration attacks.
+		return nil, device.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	d.FCMToken = fcmToken.String
+	d.OperatorID = opID.String
+
+	return &d, nil
+}
+
 // Create creates a new device.
 func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) error {
 	query := `
@@ -311,4 +345,77 @@ func (r *DeviceRepository) CountByOperator(ctx context.Context, operatorID strin
 		"SELECT COUNT(*) FROM devices WHERE operator_id = ?", operatorID,
 	).Scan(&count)
 	return count, err
+}
+
+// SetSecretHash sets the command secret hash for a device.
+func (r *DeviceRepository) SetSecretHash(ctx context.Context, deviceID, hash string) error {
+	result, err := r.db.ExecContext(ctx,
+		"UPDATE devices SET command_secret_hash = ?, updated_at = ? WHERE id = ?",
+		hash, time.Now(), deviceID,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return device.ErrNotFound
+	}
+
+	return nil
+}
+
+// GetSecretHash retrieves the command secret hash for a device.
+func (r *DeviceRepository) GetSecretHash(ctx context.Context, deviceID string) (string, error) {
+	var hash string
+	err := r.db.QueryRowContext(ctx,
+		"SELECT command_secret_hash FROM devices WHERE id = ?",
+		deviceID,
+	).Scan(&hash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", device.ErrNotFound
+	}
+	return hash, err
+}
+
+// HashAllSecrets hashes all existing command secrets that don't have a hash.
+// This is a migration helper for existing databases.
+func (r *DeviceRepository) HashAllSecrets(ctx context.Context) (int, error) {
+	query := `
+		SELECT id, command_secret_hash 
+		FROM devices 
+		WHERE command_secret_hash IS NULL OR command_secret_hash = ''`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	count := 0
+	for rows.Next() {
+		var id string
+		var currentHash sql.NullString
+		if err := rows.Scan(&id, &currentHash); err != nil {
+			continue
+		}
+		if currentHash.Valid && currentHash.String != "" {
+			continue
+		}
+		count++
+	}
+
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// Touch updates the last seen timestamp for a device.
+func (r *DeviceRepository) Touch(ctx context.Context, deviceID string) error {
+return r.UpdateLastSeen(ctx, deviceID)
 }

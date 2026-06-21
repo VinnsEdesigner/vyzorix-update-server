@@ -122,6 +122,47 @@ func (s *Service) GetStatus(ctx context.Context, deviceID string) (*dto.DeviceSt
 	}, nil
 }
 
+// GetStatusByOperator retrieves device status with DOA verification.
+// Only returns device if it belongs to the specified operator.
+func (s *Service) GetStatusByOperator(ctx context.Context, deviceID, operatorID string) (*dto.DeviceStatusResponse, error) {
+	d, err := s.deviceRepo.FindByIDAndOperator(ctx, deviceID, operatorID)
+	if err != nil {
+		if err == device.ErrNotFound {
+			return nil, application.ErrDeviceNotFound
+		}
+		return nil, err
+	}
+
+	return &dto.DeviceStatusResponse{
+		DeviceID:    d.ID,
+		Online:      d.Online,
+		LastSeen:    d.LastSeen,
+		AppVersion:  d.AppVersion,
+		DeviceClass: d.DeviceClass,
+	}, nil
+}
+
+// GetDeviceByOperator retrieves a device with DOA verification.
+func (s *Service) GetDeviceByOperator(ctx context.Context, deviceID, operatorID string) (*dto.DeviceResponse, error) {
+	d, err := s.deviceRepo.FindByIDAndOperator(ctx, deviceID, operatorID)
+	if err != nil {
+		if err == device.ErrNotFound {
+			return nil, application.ErrDeviceNotFound
+		}
+		return nil, err
+	}
+
+	return &dto.DeviceResponse{
+		ID:                d.ID,
+		FirebaseInstallID: d.FirebaseInstallID,
+		AppVersion:        d.AppVersion,
+		DeviceClass:       d.DeviceClass,
+		Online:            d.Online,
+		RegisteredAt:      d.RegisteredAt,
+		LastSeen:          d.LastSeen,
+	}, nil
+}
+
 // UpdateFCMToken updates the FCM token for a device.
 func (s *Service) UpdateFCMToken(ctx context.Context, deviceID, fcmToken string) error {
 	return s.deviceRepo.UpdateFCMToken(ctx, deviceID, fcmToken)

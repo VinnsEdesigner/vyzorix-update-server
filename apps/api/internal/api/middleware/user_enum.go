@@ -2,19 +2,9 @@
 package middleware
 
 import (
-	"crypto/subtle"
-	"time"
-
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/auth"
 	"github.com/gin-gonic/gin"
 )
-
-// Constant time comparison to prevent timing attacks.
-func constantTimeCompare(a, b string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
-}
 
 // UserEnumSafeResponse provides timing-safe responses to prevent user enumeration attacks.
 // All authentication responses (success or failure) return identical timing characteristics.
@@ -37,30 +27,6 @@ func (m *UserEnumSafeResponse) Middleware() gin.HandlerFunc {
 
 		c.Next()
 	}
-}
-
-// FakePasswordHashDuration is the minimum time to spend computing fake hash.
-// This ensures consistent timing even when user doesn't exist.
-const FakePasswordHashDuration = 50 * time.Millisecond
-
-// ComputeFakePasswordHash computes a fake password hash to maintain constant time.
-// This should be called when a user doesn't exist to prevent timing attacks.
-func ComputeFakePasswordHash() {
-	// Use timing-safe comparison to prevent compiler optimization.
-	start := time.Now()
-	attempt := 0
-
-	for {
-		// Perform dummy work that takes consistent time.
-		_ = constantTimeCompare("dummy", "comparison")
-		attempt++
-		if time.Since(start) >= FakePasswordHashDuration {
-			break
-		}
-	}
-
-	// Use attempt to prevent empty loop optimization.
-	_ = attempt
 }
 
 // LoginSafeResponse returns a timing-safe login response.
@@ -108,7 +74,8 @@ func PreventUserEnum() gin.HandlerFunc {
 			// Add fake processing delay if this was an auth endpoint.
 			path := c.Request.URL.Path
 			if isAuthEndpoint(path) {
-				ComputeFakePasswordHash()
+				// Use the domain auth package's timing-safe implementation
+				auth.ComputeFakePasswordHash()
 			}
 		}
 	}

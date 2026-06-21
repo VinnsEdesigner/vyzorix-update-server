@@ -17,7 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 )
 
 // SSRProxy creates a reverse proxy to the Node.js SSR server with JWT validation.
