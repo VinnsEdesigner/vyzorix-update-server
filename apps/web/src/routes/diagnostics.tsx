@@ -16,13 +16,13 @@ import { toast } from "sonner";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTelemetryHistory, useSendCommand } from "@/lib/api/graphql";
 import { useStream } from "@/lib/device-stream-context";
 import { formatRelative } from "@/lib/format";
 import { COMMANDS, dispatchCommand } from "@/lib/vyzorix-api";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
 // GraphQL imports
-import { useTelemetryHistory, useSendCommand } from "@/lib/api/graphql";
 
 const tip = {
   background: "var(--popover)",
@@ -98,13 +98,19 @@ const DiagnosticsPage = (): ReactElement => {
   const [pending, setPending] = useState<string | null>(null);
 
   // GraphQL: Get historical telemetry data
-  const { data: telemetryHistory } = useTelemetryHistory(deviceId ?? "", undefined, undefined, 100, {
-    enabled: Boolean(deviceId),
-    refetchInterval: 60_000,
-  });
+  const { data: telemetryHistory } = useTelemetryHistory(
+    deviceId ?? "",
+    undefined,
+    undefined,
+    100,
+    {
+      enabled: Boolean(deviceId),
+      refetchInterval: 60_000,
+    },
+  );
 
   // GraphQL: Send command mutation (replaces REST dispatchCommand)
-  const sendCommandMutation = useSendCommand({
+  const _sendCommandMutation = useSendCommand({
     onSuccess: (data) => {
       toast.success(`${data.sendCommand.command} → ${data.sendCommand.status}`, {
         description: `dispatch ${data.sendCommand.dispatchId.slice(0, 8)}`,
@@ -144,21 +150,25 @@ const DiagnosticsPage = (): ReactElement => {
   };
 
   // Use WebSocket data for real-time, GraphQL data for historical
-  const risk = stream.telemetryHistory.length > 0
-    ? stream.telemetryHistory.map((f, i) => ({ i, v: f.riskScore ?? 0 }))
-    : (telemetryHistory?.telemetryHistory ?? []).map((f, i) => ({ i, v: f.riskScore ?? 0 }));
-  
-  const thermal = stream.telemetryHistory.length > 0
-    ? stream.telemetryHistory.map((f, i) => ({ i, v: f.thermalTemp ?? 0 }))
-    : (telemetryHistory?.telemetryHistory ?? []).map((f, i) => ({ i, v: f.thermalTemp ?? 0 }));
-  
-  const buffer = stream.telemetryHistory.length > 0
-    ? stream.telemetryHistory.map((f, i) => ({ i, v: f.bufferLevel ?? 0 }))
-    : (telemetryHistory?.telemetryHistory ?? []).map((f, i) => ({ i, v: f.bufferLevel ?? 0 }));
-  
-  const audioMode = stream.telemetryHistory.length > 0
-    ? stream.telemetryHistory.map((f, i) => ({ i, v: f.audioMode ?? 0 }))
-    : (telemetryHistory?.telemetryHistory ?? []).map((f, i) => ({ i, v: f.audioMode ?? 0 }));
+  const risk =
+    stream.telemetryHistory.length > 0
+      ? stream.telemetryHistory.map((f, i) => ({ i, v: f.riskScore ?? 0 }))
+      : (telemetryHistory?.telemetryHistory ?? []).map((f, i) => ({ i, v: f.riskScore ?? 0 }));
+
+  const thermal =
+    stream.telemetryHistory.length > 0
+      ? stream.telemetryHistory.map((f, i) => ({ i, v: f.thermalTemp ?? 0 }))
+      : (telemetryHistory?.telemetryHistory ?? []).map((f, i) => ({ i, v: f.thermalTemp ?? 0 }));
+
+  const buffer =
+    stream.telemetryHistory.length > 0
+      ? stream.telemetryHistory.map((f, i) => ({ i, v: f.bufferLevel ?? 0 }))
+      : (telemetryHistory?.telemetryHistory ?? []).map((f, i) => ({ i, v: f.bufferLevel ?? 0 }));
+
+  const audioMode =
+    stream.telemetryHistory.length > 0
+      ? stream.telemetryHistory.map((f, i) => ({ i, v: f.audioMode ?? 0 }))
+      : (telemetryHistory?.telemetryHistory ?? []).map((f, i) => ({ i, v: f.audioMode ?? 0 }));
 
   return (
     <div className="space-y-4">

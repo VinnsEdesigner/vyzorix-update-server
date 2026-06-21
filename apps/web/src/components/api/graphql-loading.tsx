@@ -1,5 +1,6 @@
 import { Loader2, Sparkles } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -115,13 +116,7 @@ export function DashboardOverviewSkeleton({ className }: { className?: string })
 /**
  * Spinner with optional label.
  */
-export function GraphQLSpinner({
-  label,
-  className,
-}: {
-  label?: string;
-  className?: string;
-}) {
+export function GraphQLSpinner({ label, className }: { label?: string; className?: string }) {
   return (
     <div className={cn("flex items-center gap-2 text-muted-foreground", className)}>
       <Loader2 className="h-4 w-4 animate-spin" />
@@ -148,9 +143,7 @@ export function GraphQLPageLoading({
       </div>
       <div className="text-center">
         <p className="text-lg font-medium">{title}</p>
-        {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
-        )}
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
     </div>
   );
@@ -234,19 +227,13 @@ export function GraphQLQueryState<TData>({
       <>{errorComponent}</>
     ) : (
       <div className={className}>
-        <p className="text-sm text-destructive">
-          Error: {error?.message || "Failed to load data"}
-        </p>
+        <p className="text-sm text-destructive">Error: {error?.message ?? "Failed to load data"}</p>
       </div>
     );
   }
 
   if (isEmpty || !data) {
-    return emptyComponent ? (
-      <>{emptyComponent}</>
-    ) : (
-      <GraphQLEmptyState className={className} />
-    );
+    return emptyComponent ? <>{emptyComponent}</> : <GraphQLEmptyState className={className} />;
   }
 
   return <div className={className}>{children}</div>;
