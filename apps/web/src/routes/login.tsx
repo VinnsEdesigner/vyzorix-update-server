@@ -15,7 +15,7 @@ import AuthLayout from "@/components/layout/AuthLayout";
 import { loginOperator } from "@/lib/clients/authClient";
 import { initiateSSO, type SSOProvider } from "@/lib/clients/ssoClient";
 import { getFullHydratedState } from "@/lib/server/state-injector";
-import { fetchClientCredentials, getSignedApiClient } from "@/lib/signed-api-client";
+import { fetchClientCredentials } from "@/lib/signed-api-client";
 
 const LoginPage = (): ReactNode => {
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ const LoginPage = (): ReactNode => {
     try {
       // Step 1: Login with session cookie
       await loginOperator(ident, pass);
-      
+
       // Step 2: Fetch client credentials for request signing
       // This establishes the signing identity for all subsequent API calls
       try {
@@ -64,7 +64,7 @@ const LoginPage = (): ReactNode => {
         console.warn("Failed to fetch client credentials:", credsErr);
         toast.warning("Logged in, but signing not available. Some features may be limited.");
       }
-      
+
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Login failed";

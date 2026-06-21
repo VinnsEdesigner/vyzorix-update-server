@@ -14,10 +14,10 @@ export type JSON = Record<string, unknown> | unknown[] | string | number | boole
 // ============================================================
 
 export enum CommandStatus {
-  PENDING = 'PENDING',
-  DELIVERED = 'DELIVERED',
-  FAILED = 'FAILED',
-  CANCELLED = 'CANCELLED',
+  PENDING = "PENDING",
+  DELIVERED = "DELIVERED",
+  FAILED = "FAILED",
+  CANCELLED = "CANCELLED",
 }
 
 // ============================================================
