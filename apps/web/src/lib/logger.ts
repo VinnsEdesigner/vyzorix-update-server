@@ -7,6 +7,7 @@ export type LogSource =
   | "system"
   | "ws"
   | "api"
+  | "graphql"
   | "command"
   | "update"
   | "device"
@@ -14,7 +15,10 @@ export type LogSource =
   | "auth"
   | "password"
   | "sso"
-  | "verification";
+  | "verification"
+  | "credentials"
+  | "signed-api"
+  | "useSignedApi";
 
 export interface LogEntry {
   id: number;

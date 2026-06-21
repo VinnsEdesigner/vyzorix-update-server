@@ -178,14 +178,14 @@ export class GraphQLErrorBoundary extends React.Component<
     };
   }
 
-  componentDidCatch(error: Error): void {
+  override componentDidCatch(error: Error): void {
     this.props.onError?.({
       message: error.message ?? "An unexpected error occurred",
       code: "INTERNAL_ERROR",
     });
   }
 
-  render(): React.ReactNode {
+  override render(): React.ReactNode {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;

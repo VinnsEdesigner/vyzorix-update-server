@@ -13,6 +13,7 @@ import { Route as WaitVerifyRouteImport } from './routes/waitVerify'
 import { Route as UpdatesRouteImport } from './routes/updates'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SetPasswordRouteImport } from './routes/set-password'
+import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -47,6 +48,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SetPasswordRoute = SetPasswordRouteImport.update({
   id: '/set-password',
   path: '/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaygroundRoute = PlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LogsRoute = LogsRouteImport.update({
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/playground': typeof PlaygroundRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
   '/updates': typeof UpdatesRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/playground': typeof PlaygroundRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
   '/updates': typeof UpdatesRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/playground': typeof PlaygroundRoute
   '/set-password': typeof SetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
   '/updates': typeof UpdatesRoute
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/logs'
+    | '/playground'
     | '/set-password'
     | '/settings'
     | '/updates'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/logs'
+    | '/playground'
     | '/set-password'
     | '/settings'
     | '/updates'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/logs'
+    | '/playground'
     | '/set-password'
     | '/settings'
     | '/updates'
@@ -264,6 +276,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
+  PlaygroundRoute: typeof PlaygroundRoute
   SetPasswordRoute: typeof SetPasswordRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   UpdatesRoute: typeof UpdatesRoute
@@ -299,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/set-password'
       fullPath: '/set-password'
       preLoaderRoute: typeof SetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/playground': {
+      id: '/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof PlaygroundRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/logs': {
@@ -440,6 +460,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,
+  PlaygroundRoute: PlaygroundRoute,
   SetPasswordRoute: SetPasswordRoute,
   SettingsRoute: SettingsRouteWithChildren,
   UpdatesRoute: UpdatesRoute,

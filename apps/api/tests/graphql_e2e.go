@@ -487,17 +487,23 @@ func E2ETestGraphQLDashboard(t *testing.T) {
 
 		if errors, ok := result["errors"].([]interface{}); ok && len(errors) > 0 {
 			for _, e := range errors {
-				errMap := e.(map[string]interface{})
+				errMap, mapOk := e.(map[string]interface{})
+				if !mapOk {
+					t.Logf("GraphQL Error (unparseable): %v", e)
+					continue
+				}
 				t.Logf("GraphQL Error: %v", errMap)
 			}
 		}
 
-		data := result["data"].(map[string]interface{})
-		if data != nil {
-			dashboard := data["dashboard"].(map[string]interface{})
-			t.Logf("Dashboard: totalDevices=%v, onlineDevices=%v, totalCommands=%v, pendingCommands=%v",
-				dashboard["totalDevices"], dashboard["onlineDevices"],
-				dashboard["totalCommands"], dashboard["pendingCommands"])
+		data, dataOk := result["data"].(map[string]interface{})
+		if dataOk && data != nil {
+			dashboard, dashOk := data["dashboard"].(map[string]interface{})
+			if dashOk {
+				t.Logf("Dashboard: totalDevices=%v, onlineDevices=%v, totalCommands=%v, pendingCommands=%v",
+					dashboard["totalDevices"], dashboard["onlineDevices"],
+					dashboard["totalCommands"], dashboard["pendingCommands"])
+			}
 		}
 	})
 }
@@ -514,7 +520,11 @@ func E2ETestGraphQLAuthentication(t *testing.T) {
 		// Without auth, we expect either errors or empty data
 		if errors, ok := result["errors"].([]interface{}); ok && len(errors) > 0 {
 			for _, e := range errors {
-				errMap := e.(map[string]interface{})
+				errMap, mapOk := e.(map[string]interface{})
+				if !mapOk {
+					t.Logf("Expected unauthenticated error (unparseable): %v", e)
+					continue
+				}
 				t.Logf("Expected unauthenticated error: %v", errMap)
 			}
 		} else {
@@ -533,8 +543,7 @@ func E2ETestGraphQLAuthentication(t *testing.T) {
 
 		if errors, ok := result["errors"].([]interface{}); ok && len(errors) > 0 {
 			for _, e := range errors {
-				errMap := e.(map[string]interface{})
-				t.Logf("GraphQL Error after login: %v", errMap)
+				t.Logf("GraphQL Error after login: %v", e)
 			}
 		} else {
 			t.Log("Query succeeded after login")
