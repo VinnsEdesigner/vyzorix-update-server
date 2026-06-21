@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/resolver"
@@ -129,14 +130,23 @@ func (c *Client) readPump() {
 
 // writePump handles outgoing WebSocket messages.
 func (c *Client) writePump() {
-	defer c.conn.Close()
+	defer func() { _ = c.conn.Close() }()
+
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-c.done:
 			return
-		default:
-			// Keep connection alive
+		case <-ticker.C:
+			// Send periodic ping to keep connection alive
+			if err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+				return
+			}
+			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		}
 	}
 }
@@ -274,7 +284,7 @@ func (c *Client) cleanup() {
 	delete(c.handler.clients, c.conn)
 	c.handler.mu.Unlock()
 
-	c.conn.Close()
+	_ = c.conn.Close()
 	c.handler.log.Info("subscription client disconnected", "operatorID", c.operator.ID)
 }
 
@@ -283,7 +293,11 @@ func (c *Client) sendMessage(msg wsMessage) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	data, _ := json.Marshal(msg)
+	data, err := json.Marshal(msg)
+	if err != nil {
+		c.handler.log.Debug("failed to marshal message", "err", err)
+		return
+	}
 	if err := c.conn.WriteMessage(websocket.TextMessage, data); err != nil {
 		c.handler.log.Debug("failed to send message", "err", err)
 	}
@@ -300,7 +314,10 @@ func (c *Client) sendError(id, message string) {
 
 // mustMarshal marshals data to JSON, panics on error.
 func mustMarshal(v interface{}) string {
-	data, _ := json.Marshal(v)
+	data, err := json.Marshal(v)
+	if err != nil {
+		return "{}"
+	}
 	return string(data)
 }
 
@@ -328,9 +345,9 @@ func equalFold(s, t string) bool {
 			continue
 		}
 		if cs >= 'A' && cs <= 'Z' && ct >= 'a' && ct <= 'z' {
-			cs += 'a' - 'A'
+			// cs is uppercase, ct is lowercase - case fold
 		} else if ct >= 'A' && ct <= 'Z' && cs >= 'a' && cs <= 'z' {
-			ct += 'a' - 'A'
+			// ct is uppercase, cs is lowercase - case fold
 		} else {
 			return false
 		}

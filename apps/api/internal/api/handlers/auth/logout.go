@@ -28,9 +28,7 @@ func (h *LogoutHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	if err := h.authService.Logout(c.Request.Context(), sessionID); err != nil {
-		// Log error but don't fail - logout should always succeed
-	}
+	_ = h.authService.Logout(c.Request.Context(), sessionID)
 
 	c.SetCookie("session_id", "", -1, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"message": "logged out"})

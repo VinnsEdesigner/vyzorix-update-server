@@ -115,7 +115,7 @@ func (c *Compression) DecompressMessage(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	return io.ReadAll(reader)
 }
@@ -156,12 +156,6 @@ func (c *Compression) incrementBypassed() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.metrics.TotalBypassed++
-}
-
-func (c *Compression) incrementUncompressed() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.metrics.TotalUncompressed++
 }
 
 // IsCompressed checks if data is gzip compressed by looking for magic bytes.

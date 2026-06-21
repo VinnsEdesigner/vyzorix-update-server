@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql"
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	gqlmiddleware "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/resolver"
@@ -40,7 +39,7 @@ import (
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 
 	"github.com/gin-gonic/gin"
-	"github.com/graphql-go/graphql"
+	gql "github.com/graphql-go/graphql"
 )
 
 // ServerConfig holds the server configuration.
@@ -122,8 +121,8 @@ type Server struct {
 	// HMAC verifier for device command verification
 	hmacVerifier cryptohmac.Verifier
 
-	// GraphQL server
-	graphqlServer *graphql.Server
+	// Encryption key function for response encryption
+	encryptKeyFn func(clientID string) ([]byte, bool)
 
 	// Session manager for GraphQL auth
 	sessionManager *infraauth.SessionManager
@@ -213,6 +212,7 @@ func NewServer(cfg *ServerConfig) *Server {
 		ipIntelligence: ipIntelligence,
 		hub:           cfg.Hub,
 		hmacVerifier: hmacVerifier,
+		encryptKeyFn: encryptKeyFn,
 		db:           cfg.DB,
 		sessionManager: cfg.SessionManager, // Store for GraphQL
 
@@ -394,7 +394,7 @@ func (s *Server) setupRoutes() {
 		// ALL responses are MANDATORY encrypted per PRD
 		deviceMgmt := r.Group("/device")
 		deviceMgmt.Use(middleware.RequestSigningMiddleware(s.signatureVerifier))
-		deviceMgmt.Use(middleware.MandatoryEncryptionMiddleware(encryptKeyFn))
+		deviceMgmt.Use(middleware.MandatoryEncryptionMiddleware(s.encryptKeyFn))
 		deviceMgmt.Use(s.requireHMAC())
 		{
 			deviceMgmt.GET("/count", s.deviceListHandler.Count)
@@ -416,7 +416,7 @@ func (s *Server) setupRoutes() {
 		// Command management (requires signing + encrypted responses)
 		commandMgmt := r.Group("/command")
 		commandMgmt.Use(middleware.RequestSigningMiddleware(s.signatureVerifier))
-		commandMgmt.Use(middleware.MandatoryEncryptionMiddleware(encryptKeyFn))
+		commandMgmt.Use(middleware.MandatoryEncryptionMiddleware(s.encryptKeyFn))
 		{
 			commandMgmt.GET("/:dispatchId/status", s.commandHandler.GetStatus)
 			commandMgmt.POST("/:dispatchId/retry", s.commandHandler.Retry)
@@ -648,7 +648,7 @@ func (s *Server) RegisterGraphQL(
 	sessionManager := s.getSessionManager()
 
 	// Create auth middleware for GraphQL
-	authMw := middleware.NewAuthMiddleware(sessionManager, authService, s.log)
+	authMw := gqlmiddleware.NewAuthMiddleware(sessionManager, authService, s.log)
 
 	// Create resolver
 	res := resolver.NewResolver(
@@ -688,8 +688,8 @@ func (s *Server) RegisterGraphQL(
 
 // gqlHandler is the GraphQL HTTP handler.
 type gqlHandler struct {
-	schema         graphql.Schema
-	authMiddleware *middleware.AuthMiddleware
+	schema         gql.Schema
+	authMiddleware *gqlmiddleware.AuthMiddleware
 }
 
 // gqlRequest represents a GraphQL request.
@@ -724,10 +724,10 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 	}
 
 	// Add operator to context
-	ctx := context.WithOperator(c.Request.Context(), op)
+	ctx := gqlcontext.WithOperator(c.Request.Context(), op)
 
 	// Execute query
-	result := graphql.Do(graphql.Params{
+	result := gql.Do(gql.Params{
 		Schema:         h.schema,
 		RequestString:  req.Query,
 		VariableValues: req.Variables,

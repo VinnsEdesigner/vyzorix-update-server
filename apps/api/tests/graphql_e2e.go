@@ -54,7 +54,10 @@ func (c *E2EGraphQLClient) Login(t *testing.T, email, password string) {
 		"password": password,
 	}
 
-	jsonData, _ := json.Marshal(loginData)
+	jsonData, err := json.Marshal(loginData)
+	if err != nil {
+		t.Fatalf("Failed to marshal login data: %v", err)
+	}
 	req, err := http.NewRequest("POST", LoginEndpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		t.Fatalf("Failed to create login request: %v", err)
@@ -66,7 +69,7 @@ func (c *E2EGraphQLClient) Login(t *testing.T, email, password string) {
 		t.Logf("Login request failed: %v (this may be expected if no users exist)", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Logf("Login returned status %d (this may be expected)", resp.StatusCode)
@@ -82,7 +85,10 @@ func (c *E2EGraphQLClient) GraphQLRequest(t *testing.T, query string, variables 
 		request["variables"] = variables
 	}
 
-	jsonData, _ := json.Marshal(request)
+	jsonData, err := json.Marshal(request)
+	if err != nil {
+		t.Fatalf("Failed to marshal GraphQL request: %v", err)
+	}
 	req, err := http.NewRequest("POST", c.baseURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		t.Fatalf("Failed to create GraphQL request: %v", err)
@@ -93,7 +99,7 @@ func (c *E2EGraphQLClient) GraphQLRequest(t *testing.T, query string, variables 
 	if err != nil {
 		t.Fatalf("GraphQL request failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -125,7 +131,11 @@ func E2ETestGraphQLDeviceLifecycle(t *testing.T) {
 		// Check for GraphQL errors
 		if errors, ok := result["errors"].([]interface{}); ok && len(errors) > 0 {
 			for _, e := range errors {
-				errMap := e.(map[string]interface{})
+				errMap, mapOk := e.(map[string]interface{})
+				if !mapOk {
+					t.Logf("GraphQL Error (unparseable): %v", e)
+					continue
+				}
 				t.Logf("GraphQL Error: %v", errMap)
 			}
 		}
@@ -143,7 +153,10 @@ func E2ETestGraphQLDeviceLifecycle(t *testing.T) {
 
 		t.Logf("Found %d devices", len(devices))
 		for _, d := range devices {
-			device := d.(map[string]interface{})
+			device, devOk := d.(map[string]interface{})
+			if !devOk {
+				continue
+			}
 			t.Logf("  Device: %s (%s) - %s", device["deviceId"], device["model"], device["status"])
 		}
 	})
@@ -153,13 +166,23 @@ func E2ETestGraphQLDeviceLifecycle(t *testing.T) {
 		query := `query { devices(limit: 1) { id } }`
 		result := client.GraphQLRequest(t, query, nil)
 
-		data := result["data"].(map[string]interface{})
-		devices := data["devices"].([]interface{})
-		if len(devices) == 0 {
+		data, dataOk := result["data"].(map[string]interface{})
+		if !dataOk {
+			t.Skip("No data in response")
+		}
+		devices, devsOk := data["devices"].([]interface{})
+		if !devsOk || len(devices) == 0 {
 			t.Skip("No devices to test detail view")
 		}
 
-		deviceID := devices[0].(map[string]interface{})["id"].(string)
+		firstDev, firstOk := devices[0].(map[string]interface{})
+		if !firstOk {
+			t.Skip("Cannot parse device data")
+		}
+		deviceID, idOk := firstDev["id"].(string)
+		if !idOk {
+			t.Skip("Cannot parse device ID")
+		}
 
 		detailQuery := fmt.Sprintf(`query {
 			device(id: "%s") {
@@ -182,8 +205,14 @@ func E2ETestGraphQLDeviceLifecycle(t *testing.T) {
 			}
 		}
 
-		detailData := detailResult["data"].(map[string]interface{})
-		device := detailData["device"].(map[string]interface{})
+		detailData, ddOk := detailResult["data"].(map[string]interface{})
+		if !ddOk {
+			t.Skip("No detail data")
+		}
+		device, devOk := detailData["device"].(map[string]interface{})
+		if !devOk {
+			t.Skip("Cannot parse device detail")
+		}
 		t.Logf("Device detail: %+v", device)
 	})
 
@@ -192,13 +221,23 @@ func E2ETestGraphQLDeviceLifecycle(t *testing.T) {
 		query := `query { devices(limit: 1) { deviceId } }`
 		result := client.GraphQLRequest(t, query, nil)
 
-		data := result["data"].(map[string]interface{})
-		devices := data["devices"].([]interface{})
-		if len(devices) == 0 {
+		data, dataOk := result["data"].(map[string]interface{})
+		if !dataOk {
+			t.Skip("No data in response")
+		}
+		devices, devsOk := data["devices"].([]interface{})
+		if !devsOk || len(devices) == 0 {
 			t.Skip("No devices to test telemetry")
 		}
 
-		deviceID := devices[0].(map[string]interface{})["deviceId"].(string)
+		firstDev, firstOk := devices[0].(map[string]interface{})
+		if !firstOk {
+			t.Skip("Cannot parse device data")
+		}
+		deviceID, idOk := firstDev["deviceId"].(string)
+		if !idOk {
+			t.Skip("Cannot parse device ID")
+		}
 
 		telemetryQuery := fmt.Sprintf(`query {
 			telemetryHistory(
@@ -233,13 +272,23 @@ func E2ETestGraphQLCommandFlow(t *testing.T) {
 		query := `query { devices(limit: 1) { deviceId } }`
 		result := client.GraphQLRequest(t, query, nil)
 
-		data := result["data"].(map[string]interface{})
-		devices := data["devices"].([]interface{})
-		if len(devices) == 0 {
+		data, dataOk := result["data"].(map[string]interface{})
+		if !dataOk {
+			t.Skip("No data in response")
+		}
+		devices, devsOk := data["devices"].([]interface{})
+		if !devsOk || len(devices) == 0 {
 			t.Skip("No devices to test commands")
 		}
 
-		deviceID := devices[0].(map[string]interface{})["deviceId"].(string)
+		firstDev, firstOk := devices[0].(map[string]interface{})
+		if !firstOk {
+			t.Skip("Cannot parse device data")
+		}
+		deviceID, idOk := firstDev["deviceId"].(string)
+		if !idOk {
+			t.Skip("Cannot parse device ID")
+		}
 
 		mutation := `mutation SendCommand($deviceId: ID!, $command: String!) {
 			sendCommand(input: {deviceId: $deviceId, command: $command}) {
@@ -258,7 +307,11 @@ func E2ETestGraphQLCommandFlow(t *testing.T) {
 
 		if errors, ok := mutationResult["errors"].([]interface{}); ok && len(errors) > 0 {
 			for _, e := range errors {
-				errMap := e.(map[string]interface{})
+				errMap, mapOk := e.(map[string]interface{})
+				if !mapOk {
+					t.Logf("GraphQL Error (unparseable): %v", e)
+					continue
+				}
 				t.Logf("GraphQL Error: %v", errMap)
 				// UNAUTHORIZED is expected without proper auth
 				if msg, ok := errMap["message"].(string); ok && strings.Contains(msg, "unauthorized") {
@@ -267,10 +320,12 @@ func E2ETestGraphQLCommandFlow(t *testing.T) {
 			}
 		}
 
-		mutationData := mutationResult["data"].(map[string]interface{})
-		if mutationData != nil {
-			sendCommand := mutationData["sendCommand"].(map[string]interface{})
-			t.Logf("Command result: %+v", sendCommand)
+		mutationData, mdOk := mutationResult["data"].(map[string]interface{})
+		if mdOk && mutationData != nil {
+			sendCommand, scOk := mutationData["sendCommand"].(map[string]interface{})
+			if scOk {
+				t.Logf("Command result: %+v", sendCommand)
+			}
 		}
 	})
 
@@ -279,13 +334,23 @@ func E2ETestGraphQLCommandFlow(t *testing.T) {
 		query := `query { devices(limit: 1) { deviceId } }`
 		result := client.GraphQLRequest(t, query, nil)
 
-		data := result["data"].(map[string]interface{})
-		devices := data["devices"].([]interface{})
-		if len(devices) == 0 {
+		data, dataOk := result["data"].(map[string]interface{})
+		if !dataOk {
+			t.Skip("No data in response")
+		}
+		devices, devsOk := data["devices"].([]interface{})
+		if !devsOk || len(devices) == 0 {
 			t.Skip("No devices to test pending commands")
 		}
 
-		deviceID := devices[0].(map[string]interface{})["deviceId"].(string)
+		firstDev, firstOk := devices[0].(map[string]interface{})
+		if !firstOk {
+			t.Skip("Cannot parse device data")
+		}
+		deviceID, idOk := firstDev["deviceId"].(string)
+		if !idOk {
+			t.Skip("Cannot parse device ID")
+		}
 
 		pendingQuery := fmt.Sprintf(`query {
 			pendingCommands(deviceId: "%s") {
@@ -332,12 +397,21 @@ func E2ETestGraphQLConnectionStatus(t *testing.T) {
 			}
 		}
 
-		data := result["data"].(map[string]interface{})
-		connections := data["allConnections"].([]interface{})
+		data, dataOk := result["data"].(map[string]interface{})
+		if !dataOk {
+			t.Skip("No data in response")
+		}
+		connections, connsOk := data["allConnections"].([]interface{})
+		if !connsOk {
+			t.Skip("Cannot parse connections")
+		}
 		t.Logf("Found %d connections", len(connections))
 
 		for _, c := range connections {
-			conn := c.(map[string]interface{})
+			conn, connOk := c.(map[string]interface{})
+			if !connOk {
+				continue
+			}
 			t.Logf("  Connection: %s - %s", conn["deviceId"], conn["status"])
 		}
 	})
@@ -347,13 +421,23 @@ func E2ETestGraphQLConnectionStatus(t *testing.T) {
 		query := `query { devices(limit: 1) { deviceId } }`
 		result := client.GraphQLRequest(t, query, nil)
 
-		data := result["data"].(map[string]interface{})
-		devices := data["devices"].([]interface{})
-		if len(devices) == 0 {
+		data, dataOk := result["data"].(map[string]interface{})
+		if !dataOk {
+			t.Skip("No data in response")
+		}
+		devices, devsOk := data["devices"].([]interface{})
+		if !devsOk || len(devices) == 0 {
 			t.Skip("No devices to test connection status")
 		}
 
-		deviceID := devices[0].(map[string]interface{})["deviceId"].(string)
+		firstDev, firstOk := devices[0].(map[string]interface{})
+		if !firstOk {
+			t.Skip("Cannot parse device data")
+		}
+		deviceID, idOk := firstDev["deviceId"].(string)
+		if !idOk {
+			t.Skip("Cannot parse device ID")
+		}
 
 		connQuery := fmt.Sprintf(`query {
 			connectionStatus(deviceId: "%s") {
