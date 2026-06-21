@@ -50,7 +50,7 @@ func TestGraphQLHealth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GraphQL endpoint not reachable: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", resp.StatusCode)
@@ -62,7 +62,7 @@ func TestGraphQLHealth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Introspection query failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Introspection query failed with status %d", resp.StatusCode)
@@ -282,7 +282,7 @@ func TestGraphQLPlaygroundAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Playground endpoint not reachable: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", resp.StatusCode)
@@ -360,7 +360,7 @@ func executeGraphQLQuery(t *testing.T, query GraphQLTestQuery) GraphQLTestResult
 			Error:    fmt.Errorf("request failed: %w", err),
 		}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var gqlResp GraphQLResponse
 	if err := json.NewDecoder(resp.Body).Decode(&gqlResp); err != nil {
@@ -401,7 +401,7 @@ func BenchmarkGraphQLQueryDevices(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		req, _ := http.NewRequest("POST", GraphQLEndpoint, bytes.NewBuffer(queryJSON))
 		req.Header.Set("Content-Type", "application/json")
-		client.Do(req)
+		_, _ = client.Do(req)
 	}
 }
 
@@ -429,6 +429,6 @@ func BenchmarkGraphQLQueryTelemetryHistory(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		req, _ := http.NewRequest("POST", GraphQLEndpoint, bytes.NewBuffer(queryJSON))
 		req.Header.Set("Content-Type", "application/json")
-		client.Do(req)
+		_, _ = client.Do(req)
 	}
 }

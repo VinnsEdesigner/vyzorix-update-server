@@ -104,7 +104,7 @@ func (q *MessageQueue) preWarmQueues() {
 		q.log.Warn("failed to pre-warm message queues", "err", err)
 		return
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var deviceIDs []string
 	for rows.Next() {
@@ -113,6 +113,9 @@ func (q *MessageQueue) preWarmQueues() {
 			continue
 		}
 		deviceIDs = append(deviceIDs, deviceID)
+	}
+	if err := rows.Err(); err != nil {
+		q.log.Warn("error iterating device IDs", "err", err)
 	}
 
 	// Pre-warm each queue
@@ -125,7 +128,7 @@ func (q *MessageQueue) preWarmQueues() {
 				case ch <- msg:
 				default:
 					// Queue full, skip
-					break
+					// noop
 				}
 			}
 			q.log.Info("pre-warmed message queue", "deviceId", deviceID, "count", len(messages))
@@ -345,7 +348,7 @@ func (q *MessageQueue) LoadPersistedMessages(deviceID string) []*QueuedMessage {
 		q.log.Warn("failed to load persisted messages", "err", err, "deviceId", deviceID)
 		return nil
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var messages []*QueuedMessage
 	for rows.Next() {
@@ -364,6 +367,9 @@ func (q *MessageQueue) LoadPersistedMessages(deviceID string) []*QueuedMessage {
 		msg.EnqueuedAt = time.UnixMilli(enqueuedAt)
 		msg.ExpiresAt = time.UnixMilli(expiresAt)
 		messages = append(messages, &msg)
+	}
+	if err := rows.Err(); err != nil {
+		q.log.Warn("error loading persisted messages", "err", err, "deviceId", deviceID)
 	}
 
 	return messages
@@ -467,12 +473,6 @@ func (q *MessageQueue) incrementEnqueued() {
 func (q *MessageQueue) incrementDelivered() {
 	q.metricsMu.Lock()
 	q.metrics.TotalDelivered++
-	q.metricsMu.Unlock()
-}
-
-func (q *MessageQueue) incrementExpired() {
-	q.metricsMu.Lock()
-	q.metrics.TotalExpired++
 	q.metricsMu.Unlock()
 }
 

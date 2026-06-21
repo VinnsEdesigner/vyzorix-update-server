@@ -359,7 +359,7 @@ func (ii *IPIntelligence) CheckAbuseIPDB(ctx context.Context, ip string) (bool, 
 	if err != nil {
 		return false, 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	
 	// Parse response
 	type abuseIPDBResponse struct {
