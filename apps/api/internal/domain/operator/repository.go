@@ -53,4 +53,40 @@ type Repository interface {
 	
 	// UpdateGitHubID updates the GitHub ID for an operator.
 	UpdateGitHubID(ctx context.Context, id, githubID string) error
+
+	// UpdateName updates the display name for an operator.
+	UpdateName(ctx context.Context, id, name string) error
+
+	// UpdateThresholds updates the alert thresholds for an operator.
+	UpdateThresholds(ctx context.Context, id string, th Thresholds) error
+
+	// UpdateClientSettings updates the client preferences for an operator.
+	UpdateClientSettings(ctx context.Context, id string, cs ClientSettings) error
+
+	// ResetSettings resets all settings to defaults for an operator.
+	ResetSettings(ctx context.Context, id string) error
+
+	// GetEmailVerified returns whether an operator has verified their email.
+	GetEmailVerified(ctx context.Context, id string) (bool, error)
+
+	// DisableMFA disables MFA for an operator by clearing the MFA secret and backup codes.
+	DisableMFA(ctx context.Context, id string) error
+
+	// GetSetting retrieves a setting value by key.
+	GetSetting(ctx context.Context, key string) (string, error)
+
+	// SetSetting updates or inserts a setting value.
+	SetSetting(ctx context.Context, key, value string) error
+
+	// GetEnforceHMAC returns whether HMAC enforcement is enabled.
+	GetEnforceHMAC(ctx context.Context) (bool, error)
+
+	// SetEnforceHMAC updates the HMAC enforcement setting.
+	SetEnforceHMAC(ctx context.Context, enforce bool) error
+
+	// GetHMACWindowSeconds returns the HMAC timestamp window in seconds.
+	GetHMACWindowSeconds(ctx context.Context) (int, error)
+
+	// SetHMACWindowSeconds updates the HMAC timestamp window.
+	SetHMACWindowSeconds(ctx context.Context, seconds int) error
 }

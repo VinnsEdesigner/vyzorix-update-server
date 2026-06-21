@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 )
 
 // ReplayProtection provides thread-safe replay attack prevention.

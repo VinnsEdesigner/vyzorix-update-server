@@ -5,9 +5,10 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,6 +23,8 @@ type Dependencies struct {
 	EmailService   *emailService.Service
 	Lockout        *middleware.Lockout
 	OperatorRepo   operator.Repository
+	AuditLogger    *audit.Logger
+	IPIntelligence *middleware.IPIntelligence
 }
 
 // AllHandlers holds references to all auth handlers.
@@ -43,9 +46,9 @@ type AllHandlers struct {
 // NewAllHandlers creates all auth handlers with proper dependencies.
 func NewAllHandlers(deps *Dependencies) *AllHandlers {
 	return &AllHandlers{
-		Login:         NewLoginHandler(deps.AuthService),
-		Register:      NewRegisterHandler(deps.AuthService, deps.EmailService),
-		Logout:        NewLogoutHandler(deps.AuthService),
+		Login:         NewLoginHandler(deps.AuthService, deps.AuditLogger, deps.IPIntelligence),
+		Register:      NewRegisterHandler(deps.AuthService, deps.EmailService, deps.AuditLogger),
+		Logout:        NewLogoutHandler(deps.AuthService, deps.AuditLogger),
 		Me:            NewMeHandler(deps.AuthService),
 		EmailVerify:   NewEmailVerifyHandler(deps.AuthService, deps.EmailService),
 		PasswordReset: NewPasswordResetHandler(deps.AuthService, deps.EmailService),
@@ -60,20 +63,44 @@ func NewAllHandlers(deps *Dependencies) *AllHandlers {
 
 // RegisterRoutes registers all auth routes under the given router group.
 func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth) {
-	// Public auth endpoints
-	rg.POST("/login", h.Login.Handle)
-	rg.POST("/register", h.Register.Handle)
-	rg.POST("/forgot-password", h.PasswordReset.ForgotPassword)
-	rg.POST("/reset-password", h.PasswordReset.ResetPassword)
+	// Public auth endpoints with NoCache and POST-only restriction
+	publicAuth := rg.Group("")
+	publicAuth.Use(middleware.NoCache())
+	{
+		// Login with validation
+		publicAuth.POST("/login", middleware.POST(), 
+			middleware.ValidationMiddleware(&middleware.LoginSchema{}), 
+			h.Login.Handle,
+		)
+		
+		// Register with validation
+		publicAuth.POST("/register", middleware.POST(), 
+			middleware.ValidationMiddleware(&middleware.RegisterSchema{}), 
+			h.Register.Handle,
+		)
+		
+		// Password reset with validation
+		publicAuth.POST("/forgot-password", middleware.POST(), 
+			middleware.ValidationMiddleware(&middleware.ForgotPasswordSchema{}), 
+			h.PasswordReset.ForgotPassword,
+		)
+		publicAuth.POST("/reset-password", middleware.POST(), 
+			middleware.ValidationMiddleware(&middleware.ResetPasswordSchema{}), 
+			h.PasswordReset.ResetPassword,
+		)
+		publicAuth.POST("/resend-password-reset", middleware.POST(), 
+			middleware.ValidationMiddleware(&middleware.ForgotPasswordSchema{}), 
+			h.PasswordReset.ResendPasswordReset,
+		)
+		
+		// Email verification
+		publicAuth.POST("/verify-email", middleware.POST(), h.EmailVerify.VerifyEmail)
+		publicAuth.POST("/resend-verification", middleware.POST(), h.EmailVerify.ResendVerification)
+		publicAuth.POST("/cancel-verification", middleware.POST(), h.EmailVerify.CancelVerification)
+		publicAuth.GET("/poll-verification", middleware.GET(), h.EmailVerify.PollVerification)
+	}
 
-	// Email verification
-	rg.POST("/verify-email", h.EmailVerify.VerifyEmail)
-	rg.POST("/resend-verification", h.EmailVerify.ResendVerification)
-	rg.POST("/cancel-verification", h.EmailVerify.CancelVerification)
-	rg.GET("/poll-verification", h.EmailVerify.PollVerification)
-	rg.POST("/resend-password-reset", h.PasswordReset.ResendPasswordReset)
-
-	// OAuth endpoints
+	// OAuth endpoints (GET only)
 	rg.GET("/google", h.OAuth.GoogleLogin)
 	rg.GET("/google/callback", h.OAuth.GoogleCallback)
 	rg.GET("/github", h.OAuth.GitHubLogin)
@@ -82,6 +109,7 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 	// Authenticated endpoints (require session cookie)
 	authenticated := rg.Group("")
 	authenticated.Use(cookieAuth.Middleware())
+	authenticated.Use(middleware.NoCache())
 	{
 		authenticated.GET("/me", h.Me.Handle)
 		authenticated.PATCH("/me", h.Settings.UpdateName)
@@ -98,6 +126,7 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 	// Admin lockout management
 	adminLockout := rg.Group("/admin/lockout")
 	adminLockout.Use(cookieAuth.Middleware())
+	adminLockout.Use(middleware.NoCache())
 	{
 		adminLockout.POST("/unlock/:operator_id", h.Lockout.UnlockAccount)
 	}
@@ -105,6 +134,7 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 	// MFA endpoints (require authentication)
 	mfa := rg.Group("/mfa")
 	mfa.Use(cookieAuth.Middleware())
+	mfa.Use(middleware.NoCache())
 	{
 		mfa.GET("/status", h.MFA.GetMFAStatus)
 		mfa.POST("/enroll", h.MFA.EnrollMFA)
@@ -118,6 +148,7 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 	// Client credentials (require authentication)
 	clientCreds := rg.Group("/client-credentials")
 	clientCreds.Use(cookieAuth.Middleware())
+	clientCreds.Use(middleware.NoCache())
 	{
 		clientCreds.POST("", h.ClientCreds.Create)
 		clientCreds.GET("", h.ClientCreds.List)

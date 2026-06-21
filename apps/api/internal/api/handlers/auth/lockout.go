@@ -76,20 +76,20 @@ func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 	}
 
 	if op.Role != "super_admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "admin access required"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
 
 	targetOperatorID := c.Param("operator_id")
 	if targetOperatorID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "operator_id required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 		return
 	}
 
 	// Get target operator email to clear their lockout
 	targetOp, err := h.authService.GetOperatorByID(c.Request.Context(), targetOperatorID)
 	if err != nil || targetOp == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "operator not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
 		return
 	}
 
@@ -105,7 +105,7 @@ func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 
 // getSessionFromCookie extracts session ID from cookie.
 func (h *LockoutHandler) getSessionFromCookie(c *gin.Context) (string, error) {
-	sessionID, err := c.Cookie("vyz_session")
+	sessionID, err := c.Cookie("session_id")
 	if err != nil {
 		return "", err
 	}

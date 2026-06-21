@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 )
 
 // ============================================================================.

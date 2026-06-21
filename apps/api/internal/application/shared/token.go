@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/uuid"
 )
 
 const (
@@ -49,7 +51,8 @@ func GenerateVerificationToken() (string, error) {
 	return GenerateTokenWithSize(VerificationTokenSize)
 }
 
-// GenerateID generates a unique ID (alias for token for compatibility).
-func GenerateID() (string, error) {
-	return GenerateToken()
+// GenerateID generates a UUIDv7 for time-ordered unique identifiers.
+// Use this for entity IDs that benefit from timestamp ordering.
+func GenerateID() string {
+	return uuid.New()
 }

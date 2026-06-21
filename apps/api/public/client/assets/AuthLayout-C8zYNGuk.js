@@ -1,0 +1,2 @@
+import{j as e}from"./index-LTc6bdeV.js";const a="/assets/black_wolf_evening_1781264516831-BsvEcvMc.jpg",n=({children:s})=>e.jsxs("div",{className:"relative min-h-screen w-full overflow-hidden",style:{backgroundImage:`url(${a})`,backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat"},children:[e.jsx("div",{className:"absolute inset-0 bg-black/60"}),e.jsx("div",{className:"relative z-10 flex min-h-screen items-center justify-center px-4",children:s})]});export{n as A,a as w};
+//# sourceMappingURL=AuthLayout-C8zYNGuk.js.map

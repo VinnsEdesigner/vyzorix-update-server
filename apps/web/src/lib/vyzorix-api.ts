@@ -1,7 +1,26 @@
 // Browser client for the Vyzorix Go update server. It targets the real
 // Render-backed Phase 1.5 server while keeping the same Android-facing paths
 // as the Phase 1 mock server.
+//
+// This module provides:
+// - UNSIGNED requests for public endpoints (health, version, device status)
+// - RE-EXPORTS SignedApiClient for authenticated requests requiring signing + encryption
+//
+// For authenticated endpoints, use SignedApiClient from './signed-api-client.ts'.
+// See ./signed-api-client.ts for full request signing and response encryption implementation.
+
 import { logger } from "@/lib/logger";
+
+// Re-export signed API client for authenticated requests
+export { SignedApiClient, getSignedApiClient, clearSignedApiClient } from "./signed-api-client";
+export type { SignedRequestOptions } from "./signed-api-client";
+export { 
+  fetchClientCredentials, 
+  getActiveCredentials, 
+  listClientCredentials, 
+  deleteClientCredentials,
+  type ClientCredentials 
+} from "./client-credentials";
 
 export interface VersionManifest {
   version: string;
@@ -242,3 +261,41 @@ export const COMMANDS: { id: string; label: string; description: string; danger?
     danger: true,
   },
 ];
+
+// ============================================================
+// SIGNED API CLIENT USAGE
+// ============================================================
+//
+// For authenticated API endpoints, use SignedApiClient which implements:
+// - Request signing with HMAC-SHA512
+// - Request body encryption with AES-256-GCM
+// - Response decryption (for encrypted responses)
+//
+// QUICK START:
+//
+// 1. After user logs in, fetch client credentials:
+//
+//    import { fetchClientCredentials, getSignedApiClient } from './vyzorix-api';
+//    
+//    const credentials = await fetchClientCredentials('https://api.example.com');
+//    console.log('Client ID:', credentials.clientId);
+//
+// 2. Make signed requests:
+//
+//    const client = getSignedApiClient('https://api.example.com');
+//    
+//    // GET request
+//    const devices = await client.get<Device[]>('/v1/device/count');
+//    
+//    // POST request with body
+//    const response = await client.post<CommandResponse>('/v1/device/123/command', {
+//      command: 'REQUEST_STATUS'
+//    });
+//
+// 3. The client automatically:
+//    - Adds X-Client-ID, X-Timestamp, X-Signature, X-Encrypted-Body headers
+//    - Encrypts the request body
+//    - Verifies the response signature (if encrypted)
+//    - Decrypts the response body (if encrypted)
+//
+// See ./signed-api-client.ts for full implementation details.

@@ -44,3 +44,10 @@ func (s *Session) RemainingLifetime() int {
 	}
 	return int((remaining / total) * 100)
 }
+
+// SessionRevocation represents a revoked session entry.
+type SessionRevocation struct {
+	TokenHash string
+	RevokedAt time.Time
+	Reason    string
+}

@@ -38,10 +38,7 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 	}
 
 	// Generate dispatch ID for idempotency.
-	id, err := shared.GenerateID()
-	if err != nil {
-		return nil, err
-	}
+	id := shared.GenerateID()
 	dispatchID := id
 
 	// Check for duplicate dispatch (idempotency).
@@ -73,10 +70,7 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 	}
 
 	// Generate command ID.
-	cmdID, err := shared.GenerateID()
-	if err != nil {
-		return nil, err
-	}
+	cmdID := shared.GenerateID()
 
 	now := time.Now()
 	cmd := &command.Command{
