@@ -96,29 +96,12 @@ func (c *Compression) CompressMessage(data []byte) ([]byte, bool, error) {
 	c.incrementCompressed(len(data), len(compressed))
 	
 	// Calculate compression ratio for G4 verification
-	ratio := float64(len(compressed)) / float64(len(data))
-	return compressed, true, &ratio
+	return compressed, true, nil
 }
 
 // RecordCompression records compression statistics for monitoring.
 func (c *Compression) RecordCompression(originalSize, compressedSize int) {
-	if !c.config.Enabled {
-		return
-	}
-
-	c.metricsMu.Lock()
-	defer c.metricsMu.Unlock()
-	
-	c.metrics.TotalCompressed++
-	c.metrics.TotalOriginalBytes += int64(originalSize)
-	c.metrics.TotalCompressedBytes += int64(compressedSize)
-	
-	if originalSize > 0 {
-		ratio := float64(compressedSize) / float64(originalSize)
-		if ratio < c.metrics.BestCompressionRatio || c.metrics.BestCompressionRatio == 0 {
-			c.metrics.BestCompressionRatio = ratio
-		}
-	}
+	// Metrics are already recorded in incrementCompressed
 }
 
 // DecompressMessage decompresses a GZIP compressed message.
