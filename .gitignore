@@ -43,3 +43,11 @@ dist-ssr
 !/db/.gitkeep
 .turbo
 *.tsbuildinfo
+
+# Agent scripts (never commit these)
+AGENTS/siliconflow_agent.py
+__pycache__/
+*.pyc
+*.pyo
+.Python
+

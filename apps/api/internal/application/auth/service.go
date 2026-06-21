@@ -117,12 +117,44 @@ func containsSpecial(s string) bool {
 
 // AuthService handles authentication operations.
 type AuthService struct {
-	operatorRepo      operator.Repository
-	sessionRepo       session.Repository
-	emailVerifyRepo   email_verification.Repository
-	passwordResetRepo password_reset.Repository
-	passwordHasher    PasswordHasher
-	sessionTTL        time.Duration
+	operatorRepo       operator.Repository
+	sessionRepo        session.Repository
+	emailVerifyRepo    email_verification.Repository
+	passwordResetRepo  password_reset.Repository
+	passwordHasher     PasswordHasher
+	sessionTTL         time.Duration
+	refreshTokenRepo   RefreshTokenRepository
+	refreshTokenExpiry time.Duration
+	jwtManager        *auth.JWTManager
+}
+
+// RefreshTokenRepository interface for refresh token operations.
+type RefreshTokenRepository interface {
+	Create(ctx context.Context, rt *RefreshToken) error
+	FindByID(ctx context.Context, id string) (*RefreshToken, error)
+	FindByTokenHash(ctx context.Context, tokenHash string) (*RefreshToken, error)
+	Revoke(ctx context.Context, id string) error
+	RevokeByTokenHash(ctx context.Context, tokenHash string) error
+	RevokeAllForOperator(ctx context.Context, operatorID string) error
+	CleanupExpired(ctx context.Context, olderThan time.Duration) (int, error)
+}
+
+// RefreshToken represents a refresh token for rotation.
+type RefreshToken struct {
+	ID           string
+	TokenHash    string
+	OperatorID   string
+	SessionID    string
+	ExpiresAt    time.Time
+	CreatedAt    time.Time
+	RevokedAt    time.Time
+	ReplacedByID string
+	IsRevoked    bool
+}
+
+// IsExpired returns true if the refresh token has expired.
+func (rt *RefreshToken) IsExpired() bool {
+	return time.Now().After(rt.ExpiresAt)
 }
 
 // NewAuthService creates a new AuthService.
@@ -142,6 +174,36 @@ func NewAuthService(
 		passwordHasher:    passwordHasher,
 		sessionTTL:        sessionTTL,
 	}
+}
+
+// NewAuthServiceWithRefresh creates a new AuthService with refresh token support.
+func NewAuthServiceWithRefresh(
+	operatorRepo operator.Repository,
+	sessionRepo session.Repository,
+	emailVerifyRepo email_verification.Repository,
+	passwordResetRepo password_reset.Repository,
+	passwordHasher PasswordHasher,
+	sessionTTL time.Duration,
+	refreshTokenRepo RefreshTokenRepository,
+	refreshTokenExpiry time.Duration,
+	jwtManager *auth.JWTManager,
+) *AuthService {
+	return &AuthService{
+		operatorRepo:       operatorRepo,
+		sessionRepo:        sessionRepo,
+		emailVerifyRepo:    emailVerifyRepo,
+		passwordResetRepo:  passwordResetRepo,
+		passwordHasher:     passwordHasher,
+		sessionTTL:         sessionTTL,
+		refreshTokenRepo:   refreshTokenRepo,
+		refreshTokenExpiry: refreshTokenExpiry,
+		jwtManager:       jwtManager,
+	}
+}
+
+// SetJWTManager sets the JWT manager for the auth service.
+func (s *AuthService) SetJWTManager(jwtManager *auth.JWTManager) {
+	s.jwtManager = jwtManager
 }
 
 // =============================================================================
@@ -240,10 +302,7 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest, va
 	}
 
 	// Generate ID.
-	id, err := shared.GenerateID()
-	if err != nil {
-		return nil, err
-	}
+	id := shared.GenerateID()
 
 	now := time.Now()
 	op := &operator.Operator{
@@ -289,10 +348,7 @@ func (s *AuthService) RegisterAsSuperAdmin(ctx context.Context, req *dto.Registe
 	}
 
 	// Generate ID.
-	id, err := shared.GenerateID()
-	if err != nil {
-		return nil, err
-	}
+	id := shared.GenerateID()
 
 	now := time.Now()
 	op := &operator.Operator{
@@ -319,10 +375,7 @@ func (s *AuthService) RegisterAsSuperAdmin(ctx context.Context, req *dto.Registe
 
 // CreateSession creates a new session for an operator.
 func (s *AuthService) CreateSession(ctx context.Context, operatorID string) (*session.Session, error) {
-	id, err := shared.GenerateID()
-	if err != nil {
-		return nil, err
-	}
+	id := shared.GenerateID()
 
 	now := time.Now()
 	sess := &session.Session{
@@ -339,14 +392,28 @@ func (s *AuthService) CreateSession(ctx context.Context, operatorID string) (*se
 	return sess, nil
 }
 
-// Logout invalidates a session.
+// Logout invalidates a session by adding it to the revocation list.
+// This allows for server-side session invalidation while maintaining audit trail.
 func (s *AuthService) Logout(ctx context.Context, sessionID string) error {
+	// Add to revocation list for audit trail (allows checking "was this session revoked")
+	if err := s.sessionRepo.AddSessionRevocation(ctx, sessionID, "operator_logout"); err != nil {
+		// Log but don't fail - still delete the session
+	}
+	// Delete the session from active sessions
 	return s.sessionRepo.Delete(ctx, sessionID)
 }
 
 // LogoutAll invalidates all sessions for an operator.
 func (s *AuthService) LogoutAll(ctx context.Context, operatorID string) error {
-	return s.sessionRepo.DeleteByOperatorID(ctx, operatorID)
+	// Revoke all sessions and delete them
+	if err := s.sessionRepo.RevokeAllOperatorSessions(ctx, operatorID); err != nil {
+		return err
+	}
+	// Also revoke all refresh tokens for this operator
+	if err := s.RevokeAllRefreshTokens(ctx, operatorID); err != nil {
+		// Log but don't fail
+	}
+	return nil
 }
 
 // GetOperator retrieves an operator by ID.
@@ -365,6 +432,7 @@ func (s *AuthService) GetSession(ctx context.Context, id string) (*session.Sessi
 }
 
 // ValidateSession validates a session and returns the operator.
+// It checks expiration and revocation status.
 func (s *AuthService) ValidateSession(ctx context.Context, sessionID string) (*session.Session, *operator.Operator, error) {
 	sess, err := s.sessionRepo.FindByID(ctx, sessionID)
 	if err != nil {
@@ -374,10 +442,20 @@ func (s *AuthService) ValidateSession(ctx context.Context, sessionID string) (*s
 		return nil, nil, err
 	}
 
+	// Check if session is expired.
 	if sess.IsExpired() {
 		// Clean up expired session.
 		_ = s.sessionRepo.Delete(ctx, sessionID)
 		return nil, nil, application.ErrTokenExpired
+	}
+
+	// Check if session has been revoked (server-side logout).
+	revoked, err := s.sessionRepo.IsSessionRevoked(ctx, sessionID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if revoked {
+		return nil, nil, application.ErrUnauthorized
 	}
 
 	op, err := s.operatorRepo.FindByID(ctx, sess.OperatorID)
@@ -628,10 +706,7 @@ func (s *AuthService) CreateEmailVerification(ctx context.Context, operatorID st
 	tokenHash := hashTokenSha256(token)
 
 	// Generate ID.
-	id, err := shared.GenerateID()
-	if err != nil {
-		return "", err
-	}
+	id := shared.GenerateID()
 
 	// Create verification record.
 	ev := &email_verification.EmailVerification{
@@ -739,10 +814,7 @@ func (s *AuthService) GeneratePasswordResetToken(ctx context.Context, email stri
 	tokenHash := hashTokenSha256(token)
 
 	// Generate ID.
-	id, err := shared.GenerateID()
-	if err != nil {
-		return "", err
-	}
+	id := shared.GenerateID()
 
 	// Create reset token record.
 	prt := &password_reset.PasswordResetToken{
@@ -967,10 +1039,7 @@ func (s *AuthService) UpdateResendTracker(ctx context.Context, email string) err
 	}
 
 	// Generate ID for tracker.
-	id, err := shared.GenerateID()
-	if err != nil {
-		return err
-	}
+	id := shared.GenerateID()
 
 	newTracker := &password_reset.ResendTracker{
 		ID:           id,
@@ -1052,10 +1121,7 @@ func (s *AuthService) FindOrCreateGoogleOperator(ctx context.Context, googleID, 
 		role = operator.RoleSuperAdmin
 	}
 
-	id, err := shared.GenerateID()
-	if err != nil {
-		return nil, err
-	}
+	id := shared.GenerateID()
 
 	now := time.Now()
 	newOp := &operator.Operator{
@@ -1114,10 +1180,7 @@ func (s *AuthService) FindOrCreateGitHubOperator(ctx context.Context, githubID, 
 		role = operator.RoleSuperAdmin
 	}
 
-	id, err := shared.GenerateID()
-	if err != nil {
-		return nil, err
-	}
+	id := shared.GenerateID()
 
 	now := time.Now()
 	newOp := &operator.Operator{
@@ -1276,14 +1339,11 @@ func (s *AuthService) CreateOperator(ctx context.Context, req *dto.RegisterReque
 	// Determine role
 	role := operator.RoleOperator
 	if req.Role != "" {
-		role = operator.Role(req.Role)
+		role = operator.OperatorRole(req.Role)
 	}
 
 	now := time.Now()
-	id, err := shared.GenerateID()
-	if err != nil {
-		return nil, err
-	}
+	id := shared.GenerateID()
 	op := &operator.Operator{
 		ID:           id,
 		Email:        req.Email,
@@ -1331,7 +1391,7 @@ func (s *AuthService) UpdateOperator(ctx context.Context, operatorID string, req
 		op.Email = *req.Email
 	}
 	if req.Role != nil {
-		op.Role = operator.Role(*req.Role)
+		op.Role = operator.OperatorRole(*req.Role)
 	}
 
 	op.UpdatedAt = time.Now()
@@ -1365,4 +1425,132 @@ func (s *AuthService) DeleteOperator(ctx context.Context, operatorID string) err
 func hashTokenSha256(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
+}
+
+// =============================================================================
+// Refresh Token Rotation
+// =============================================================================
+
+// RefreshTokenResult holds the result of a refresh token rotation.
+type RefreshTokenResult struct {
+	AccessToken  string
+	RefreshToken string
+	ExpiresAt    time.Time
+	SessionID    string
+}
+
+// RotateRefreshToken rotates a refresh token, revoking the old one and issuing a new one.
+// This is called during token refresh to implement refresh token rotation security.
+func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken string) (*RefreshTokenResult, error) {
+	// Check if refresh token repository is configured
+	if s.refreshTokenRepo == nil {
+		return nil, application.ErrUnauthorized
+	}
+
+	// Hash the incoming token
+	tokenHash := hashTokenSha256(oldRefreshToken)
+
+	// Find the existing refresh token
+	existing, err := s.refreshTokenRepo.FindByTokenHash(ctx, tokenHash)
+	if err != nil {
+		return nil, application.ErrUnauthorized
+	}
+
+	// Check if revoked
+	if existing.IsRevoked {
+		// Token was already used after rotation - potential theft!
+		// Revoke ALL refresh tokens for this operator (force re-login)
+		_ = s.refreshTokenRepo.RevokeAllForOperator(ctx, existing.OperatorID)
+		return nil, application.ErrUnauthorized
+	}
+
+	// Check if expired
+	if existing.IsExpired() {
+		return nil, application.ErrTokenExpired
+	}
+
+	// Generate new tokens
+	accessToken, expiresAt, err := s.jwtManager.Generate(
+		existing.OperatorID,
+		"", // Email not needed for access token
+		"", // Name not needed
+		"", // Role not needed
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create new session
+	sess, err := s.CreateSession(ctx, existing.OperatorID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create new refresh token
+	newRefreshToken, err := shared.GenerateToken()
+	if err != nil {
+		return nil, err
+	}
+
+	newRT := &RefreshToken{
+		ID:           shared.GenerateID(),
+		TokenHash:    hashTokenSha256(newRefreshToken),
+		OperatorID:   existing.OperatorID,
+		SessionID:    sess.ID,
+		ExpiresAt:    time.Now().Add(s.refreshTokenExpiry),
+		CreatedAt:    time.Now(),
+		ReplacedByID: existing.ID, // Link to old token for audit
+	}
+
+	if err := s.refreshTokenRepo.Create(ctx, newRT); err != nil {
+		return nil, err
+	}
+
+	// Revoke old refresh token
+	if err := s.refreshTokenRepo.Revoke(ctx, existing.ID); err != nil {
+		// Log but don't fail
+	}
+
+	return &RefreshTokenResult{
+		AccessToken:  accessToken,
+		RefreshToken: newRefreshToken,
+		ExpiresAt:    expiresAt,
+		SessionID:    sess.ID,
+	}, nil
+}
+
+// IssueRefreshToken issues a new refresh token for a session.
+// This is called during login to issue the initial refresh token.
+func (s *AuthService) IssueRefreshToken(ctx context.Context, operatorID, sessionID string) (string, error) {
+	if s.refreshTokenRepo == nil {
+		return "", nil // Refresh tokens not configured
+	}
+
+	refreshToken, err := shared.GenerateToken()
+	if err != nil {
+		return "", err
+	}
+
+	rt := &RefreshToken{
+		ID:         shared.GenerateID(),
+		TokenHash:  hashTokenSha256(refreshToken),
+		OperatorID: operatorID,
+		SessionID:  sessionID,
+		ExpiresAt:  time.Now().Add(s.refreshTokenExpiry),
+		CreatedAt:  time.Now(),
+	}
+
+	if err := s.refreshTokenRepo.Create(ctx, rt); err != nil {
+		return "", err
+	}
+
+	return refreshToken, nil
+}
+
+// RevokeAllRefreshTokens revokes all refresh tokens for an operator.
+func (s *AuthService) RevokeAllRefreshTokens(ctx context.Context, operatorID string) error {
+	if s.refreshTokenRepo == nil {
+		return nil
+	}
+	return s.refreshTokenRepo.RevokeAllForOperator(ctx, operatorID)
 }

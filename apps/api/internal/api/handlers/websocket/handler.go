@@ -1,15 +1,17 @@
 package websocket
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"time"
 
-	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/telemetry"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
-	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	config "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -19,7 +21,7 @@ import (
 type StreamHandler struct {
 	log             *slog.Logger
 	hub             *hub.Hub
-	originValidator *security.OriginValidator
+	originValidator *auth.OriginValidator
 	upgrader        websocket.Upgrader
 	hmacVerifier    cryptohmac.Verifier
 	config          config.Config
@@ -27,7 +29,7 @@ type StreamHandler struct {
 
 // NewStreamHandler creates a new StreamHandler.
 func NewStreamHandler(log *slog.Logger, cfg config.Config, h *hub.Hub, hmacVerifier cryptohmac.Verifier) *StreamHandler {
-	originValidator := security.NewOriginValidator(cfg.AllowedOrigins)
+	originValidator := auth.NewOriginValidator(cfg.AllowedOrigins)
 	originValidator.SetLogger(log)
 
 	return &StreamHandler{
@@ -55,7 +57,7 @@ func (h *StreamHandler) Handle(c *gin.Context) {
 	if h.config.EnforceHMAC {
 		body, err := h.hmacVerifier.ReadAndVerifyHTTP(c.Request)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "bad_hmac", "message": err.Error()})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Invalid request"})
 			return
 		}
 		_ = body // Body consumed for verification
@@ -72,7 +74,7 @@ func (h *StreamHandler) Handle(c *gin.Context) {
 	client := &hub.Client{
 		DeviceID: id,
 		Conn:     conn,
-		Send:     make(chan models.CommandFrame, 32),
+		Send:     make(chan command.CommandFrame, 32),
 		Hub:      h.hub,
 	}
 	h.hub.Register(client)
@@ -82,4 +84,93 @@ func (h *StreamHandler) Handle(c *gin.Context) {
 	// Start pumps - ReadPump blocks, so run WritePump in goroutine
 	go client.WritePump()
 	client.ReadPump()
+}
+
+// BroadcastTelemetry sends telemetry data to all connected dashboard clients.
+func (h *StreamHandler) BroadcastTelemetry(raw []byte) {
+	h.hub.BroadcastTelemetry(raw)
+}
+
+// ClientCount returns the number of connected WebSocket clients.
+func (h *StreamHandler) ClientCount() int {
+	return h.hub.ClientCount()
+}
+
+// GetClient retrieves a specific client by device ID.
+func (h *StreamHandler) GetClient(deviceID string) *hub.Client {
+	return h.hub.GetClient(deviceID)
+}
+
+// DisconnectClient forcefully disconnects a client by device ID.
+func (h *StreamHandler) DisconnectClient(deviceID string) {
+	client := h.hub.GetClient(deviceID)
+	if client != nil {
+		h.hub.Unregister(client)
+		if err := client.Conn.Close(); err != nil {
+			h.log.Warn("client close failed", "deviceId", deviceID, "err", err)
+		}
+	}
+}
+
+// HandleIncomingMessage processes incoming WebSocket messages from devices.
+func (h *StreamHandler) HandleIncomingMessage(client *hub.Client, raw []byte) error {
+	var env struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(raw, &env); err != nil {
+		h.log.Warn("bad ws frame", "deviceId", client.DeviceID, "err", err)
+		return err
+	}
+
+	switch env.Type {
+	case "telemetry":
+		return h.handleTelemetry(client, raw)
+	case "pong":
+		return h.handlePong(client)
+	case "status":
+		return h.handleStatus(client, raw)
+	default:
+		h.log.Warn("unknown ws message type", "deviceId", client.DeviceID, "type", env.Type)
+	}
+
+	return nil
+}
+
+// handleTelemetry processes telemetry frames from devices.
+func (h *StreamHandler) handleTelemetry(client *hub.Client, raw []byte) error {
+	var t telemetry.TelemetryFrame
+	if err := json.Unmarshal(raw, &t); err != nil {
+		return err
+	}
+	t.Raw = raw
+	if t.DeviceID == "" {
+		t.DeviceID = client.DeviceID
+	}
+
+	// Broadcast to dashboard
+	h.hub.BroadcastTelemetry(raw)
+
+	h.log.Debug("telemetry received", "deviceId", client.DeviceID, "riskScore", t.RiskScore)
+	return nil
+}
+
+// handlePong handles ping/pong heartbeat responses.
+func (h *StreamHandler) handlePong(client *hub.Client) error {
+	return nil
+}
+
+// handleStatus processes status updates from devices.
+func (h *StreamHandler) handleStatus(client *hub.Client, raw []byte) error {
+	h.log.Info("status update", "deviceId", client.DeviceID)
+	return nil
+}
+
+// SendToClient sends a command frame to a specific device.
+func (h *StreamHandler) SendToClient(deviceID string, frame command.CommandFrame) bool {
+	return h.hub.Send(deviceID, frame)
+}
+
+// IsOnline checks if a device is currently connected via WebSocket.
+func (h *StreamHandler) IsOnline(deviceID string) bool {
+	return h.hub.Online(deviceID)
 }

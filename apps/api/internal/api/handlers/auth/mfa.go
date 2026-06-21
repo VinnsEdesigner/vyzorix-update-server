@@ -46,7 +46,7 @@ func (h *MFAHandler) GetMFAStatus(c *gin.Context) {
 
 	mfaEnabled, err := h.authService.GetMFAStatus(c.Request.Context(), opID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get MFA status"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 
@@ -64,13 +64,13 @@ func (h *MFAHandler) EnrollMFA(c *gin.Context) {
 	// Get operator for email
 	op, err := h.operatorRepo.FindByID(c.Request.Context(), opID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get operator"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 
 	result, err := h.authService.EnrollMFA(c.Request.Context(), opID, op.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to enroll MFA"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *MFAHandler) VerifySetupMFA(c *gin.Context) {
 		Token string `json:"token"` // TOTP code to verify
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 		return
 	}
 
@@ -100,7 +100,7 @@ func (h *MFAHandler) VerifySetupMFA(c *gin.Context) {
 	// Verify TOTP code
 	_, err = h.authService.VerifyMFACode(c.Request.Context(), opID, req.Token)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid code"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "bad_request"})
 		return
 	}
 
@@ -114,7 +114,7 @@ func (h *MFAHandler) EnableMFA(c *gin.Context) {
 		Token string `json:"token"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 		return
 	}
 
@@ -127,21 +127,21 @@ func (h *MFAHandler) EnableMFA(c *gin.Context) {
 	// Verify TOTP code first
 	_, err = h.authService.VerifyMFACode(c.Request.Context(), opID, req.Token)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid code"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "bad_request"})
 		return
 	}
 
 	// Generate backup codes
 	backupCodes, err := infraauth.GenerateBackupCodes(8)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate backup codes"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 
 	// Enable MFA and save backup codes using UpdateOperatorMFA
 	err = h.operatorRepo.UpdateOperatorMFA(c.Request.Context(), opID, req.Token, backupCodes)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to enable MFA"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 
@@ -154,7 +154,7 @@ func (h *MFAHandler) DisableMFA(c *gin.Context) {
 		Code string `json:"code"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *MFAHandler) DisableMFA(c *gin.Context) {
 
 	err = h.authService.DisableMFA(c.Request.Context(), opID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to disable MFA"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 
@@ -179,7 +179,7 @@ func (h *MFAHandler) VerifyBackupCode(c *gin.Context) {
 		Code string `json:"code"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 		return
 	}
 
@@ -192,14 +192,14 @@ func (h *MFAHandler) VerifyBackupCode(c *gin.Context) {
 	// Verify the operator has MFA enabled
 	mfaEnabled, err := h.authService.GetMFAStatus(c.Request.Context(), opID)
 	if err != nil || !mfaEnabled {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "mfa not enabled"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "forbidden"})
 		return
 	}
 
 	// Verify as backup code using service method
 	valid, err := h.authService.VerifyBackupCode(c.Request.Context(), opID, req.Code)
 	if err != nil || !valid {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid code"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "bad_request"})
 		return
 	}
 
@@ -217,7 +217,7 @@ func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 	// Generate and persist new backup codes via service
 	backupCodes, err := h.authService.RegenerateBackupCodes(c.Request.Context(), opID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to regenerate backup codes"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return
 	}
 

@@ -36,12 +36,12 @@ type CSRFConfig struct {
 // DefaultCSRFConfig returns the default CSRF configuration.
 func DefaultCSRFConfig() CSRFConfig {
 	return CSRFConfig{
-		Enabled:    false,
-		Secret:    "",
+		Enabled:    true,
+		Secret:    "csrf-secret-change-in-production",
 		TokenLength: 32,
 		CookieName: "_csrf",
 		HeaderName: "X-CSRF-Token",
-		MaxAge:    0,
+		MaxAge:    3600, // 1 hour
 	}
 }
 
@@ -164,6 +164,11 @@ func (p *CSRFProtector) verifyToken(signed string) (string, bool) {
 // Middleware returns a Gin middleware that validates CSRF tokens.
 func (p *CSRFProtector) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Add cache control headers early to prevent caching of sensitive responses
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
+		c.Header("Pragma", "no-cache")
+		c.Header("Expires", "0")
+
 		if !p.Config.Enabled {
 			c.Next()
 			return

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
 )
 

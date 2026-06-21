@@ -40,6 +40,18 @@ type Command struct {
 	UpdatedAt time.Time
 }
 
+// CommandFrame is the internal representation of a command for the WebSocket hub.
+type CommandFrame struct {
+	Type               string          `json:"type"`
+	DispatchID         string          `json:"dispatchId"`
+	Command            string          `json:"command"`
+	Nonce              string          `json:"nonce"`
+	Signature          string          `json:"signature,omitempty"`
+	Args               json.RawMessage `json:"args,omitempty"`
+	Timestamp          int64           `json:"timestamp"`
+	DeliveryConfirmation chan<- bool   `json:"-"` // Channel for delivery confirmation (G1: 100% delivery)
+}
+
 // IsPending returns true if the command is pending.
 func (c *Command) IsPending() bool {
 	return c.Status == StatusPending

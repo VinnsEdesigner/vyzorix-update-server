@@ -326,3 +326,58 @@ func (r *CommandRepository) CountPending(ctx context.Context) (int, error) {
 	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM commands WHERE status = 'pending'").Scan(&count)
 	return count, err
 }
+
+// MarkWake marks whether a wake command was sent successfully for a command dispatch.
+func (r *CommandRepository) MarkWake(ctx context.Context, dispatchID string, errText string) error {
+	wakeSent := 1
+	if errText != "" {
+		wakeSent = 0
+	}
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE commands SET wake_sent = ?, failure_reason = ? WHERE dispatch_id = ?`,
+		wakeSent, errText, dispatchID,
+	)
+	return err
+}
+
+// MarkDelivered marks a command as delivered by dispatch ID.
+func (r *CommandRepository) MarkDelivered(ctx context.Context, dispatchID string) error {
+	now := time.Now()
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE commands SET status = ?, delivered_at = ?, updated_at = ? WHERE dispatch_id = ?`,
+		command.StatusDelivered, now.UnixMilli(), now, dispatchID,
+	)
+	return err
+}
+
+// MarkCompleted marks a command as completed by dispatch ID with result.
+func (r *CommandRepository) MarkCompleted(ctx context.Context, dispatchID, result string) error {
+	now := time.Now()
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE commands SET status = ?, completed_at = ?, updated_at = ?, failure_reason = ? WHERE dispatch_id = ?`,
+		command.StatusCompleted, now.UnixMilli(), now, result, dispatchID,
+	)
+	return err
+}
+
+// MarkFailed marks a command as failed by dispatch ID with error message.
+func (r *CommandRepository) MarkFailed(ctx context.Context, dispatchID, errMsg string) error {
+	now := time.Now()
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE commands SET status = ?, completed_at = ?, updated_at = ?, failure_reason = ? WHERE dispatch_id = ?`,
+		command.StatusFailed, now.UnixMilli(), now, errMsg, dispatchID,
+	)
+	return err
+}
+
+// DeleteOldCommands removes commands older than the given timestamp.
+func (r *CommandRepository) DeleteOldCommands(ctx context.Context, olderThan int64) (int64, error) {
+	result, err := r.db.ExecContext(ctx,
+		`DELETE FROM commands WHERE created_at < ?`,
+		olderThan,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}

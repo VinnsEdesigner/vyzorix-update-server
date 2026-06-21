@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/telemetry"
 )
 
 func TestNew(t *testing.T) {
 	logger := slog.Default()
-	h := New(logger, nil)
+	h := New(logger, nil, nil)
 
 	if h == nil {
 		t.Fatal("New() returned nil")
@@ -31,9 +32,9 @@ func TestNew(t *testing.T) {
 }
 
 func TestHub_Send_noClient(t *testing.T) {
-	h := New(nil, nil)
+	h := New(nil, nil, nil)
 
-	frame := models.CommandFrame{
+	frame := command.CommandFrame{
 		Type:       "update",
 		DispatchID: "dispatch-001",
 	}
@@ -45,7 +46,7 @@ func TestHub_Send_noClient(t *testing.T) {
 }
 
 func TestHub_Online_noClient(t *testing.T) {
-	h := New(nil, nil)
+	h := New(nil, nil, nil)
 
 	if h.Online("nonexistent") {
 		t.Error("Online() should return false for nonexistent device")
@@ -53,7 +54,7 @@ func TestHub_Online_noClient(t *testing.T) {
 }
 
 func TestHub_ClientCount_empty(t *testing.T) {
-	h := New(nil, nil)
+	h := New(nil, nil, nil)
 
 	if h.ClientCount() != 0 {
 		t.Errorf("ClientCount() = %d, want 0", h.ClientCount())
@@ -61,7 +62,7 @@ func TestHub_ClientCount_empty(t *testing.T) {
 }
 
 func TestHub_Clients_empty(t *testing.T) {
-	h := New(nil, nil)
+	h := New(nil, nil, nil)
 
 	clients := h.Clients()
 	if len(clients) != 0 {
@@ -70,7 +71,7 @@ func TestHub_Clients_empty(t *testing.T) {
 }
 
 func TestHub_GetClient_noClient(t *testing.T) {
-	h := New(nil, nil)
+	h := New(nil, nil, nil)
 
 	c := h.GetClient("nonexistent")
 	if c != nil {
@@ -80,7 +81,7 @@ func TestHub_GetClient_noClient(t *testing.T) {
 
 func TestHub_Run_contextCancel(t *testing.T) {
 	logger := slog.Default()
-	h := New(logger, nil)
+	h := New(logger, nil, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
@@ -101,7 +102,7 @@ func TestHub_Run_contextCancel(t *testing.T) {
 }
 
 func TestCommandFrame_Fields(t *testing.T) {
-	frame := models.CommandFrame{
+	frame := command.CommandFrame{
 		Type:       "update",
 		DispatchID: "dispatch-001",
 		Args:       []byte(`{"version":"2.0.0"}`),
@@ -116,7 +117,7 @@ func TestCommandFrame_Fields(t *testing.T) {
 }
 
 func TestTelemetryFrame_Fields(t *testing.T) {
-	frame := models.TelemetryFrame{
+	frame := telemetry.TelemetryFrame{
 		DeviceID:    "device-001",
 		RiskScore:   25,
 		BufferLevel: 60,
@@ -140,12 +141,12 @@ func TestTelemetryFrame_Fields(t *testing.T) {
 func TestClient_SendChannel(t *testing.T) {
 	c := &Client{
 		DeviceID: "device-001",
-		Send:     make(chan models.CommandFrame, 5),
+		Send:     make(chan command.CommandFrame, 5),
 	}
 
 	// Should be able to send to channel.
 	select {
-	case c.Send <- models.CommandFrame{Type: "test"}:
+	case c.Send <- command.CommandFrame{Type: "test"}:
 		// Success.
 	default:
 		t.Error("failed to send to client channel")
@@ -155,15 +156,15 @@ func TestClient_SendChannel(t *testing.T) {
 func TestClient_SendChannel_full(t *testing.T) {
 	c := &Client{
 		DeviceID: "device-001",
-		Send:     make(chan models.CommandFrame, 1), // Buffer of 1
+		Send:     make(chan command.CommandFrame, 1), // Buffer of 1
 	}
 
 	// Fill the buffer.
-	c.Send <- models.CommandFrame{Type: "first"}
+	c.Send <- command.CommandFrame{Type: "first"}
 
 	// This should block since buffer is full.
 	select {
-	case c.Send <- models.CommandFrame{Type: "second"}:
+	case c.Send <- command.CommandFrame{Type: "second"}:
 		// If we get here immediately, channel buffer isn't working.
 		t.Error("send should block on full channel")
 	case <-time.After(10 * time.Millisecond):

@@ -87,6 +87,7 @@ func (h *ClientsHandler) Delete(c *gin.Context) {
 }
 
 // RotateKey handles POST /v1/admin/clients/:clientId/rotate-key.
+// Rotates the signing key with a 24-hour grace period.
 func (h *ClientsHandler) RotateKey(c *gin.Context) {
 	clientID := c.Param("clientId")
 	if clientID == "" {
@@ -94,10 +95,16 @@ func (h *ClientsHandler) RotateKey(c *gin.Context) {
 		return
 	}
 
-	if err := h.clientService.RotateKey(c.Request.Context(), clientID); err != nil {
+	keyVersion, err := h.clientService.RotateKey(c.Request.Context(), clientID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to rotate key"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "clientId": clientID})
+	c.JSON(http.StatusOK, gin.H{
+		"success":     true,
+		"message":     "Key rotated. Client must fetch new credentials.",
+		"clientId":    clientID,
+		"keyVersion":  keyVersion,
+	})
 }
