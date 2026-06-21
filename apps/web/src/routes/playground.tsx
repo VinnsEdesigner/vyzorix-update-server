@@ -11,7 +11,7 @@ import { useVyzorixConfig } from "@/lib/vyzorix-config";
  * Displays the schema types and their fields.
  */
 function SchemaExplorer() {
-  const { _serverUrl } = useVyzorixConfig();
+  const { serverUrl: _serverUrl } = useVyzorixConfig();
 
   const schemaTypes = [
     {
@@ -225,16 +225,15 @@ function ExampleQueries() {
  * Provides links and information about the GraphQL playground.
  */
 function PlaygroundPage(): React.ReactElement {
-  const { _serverUrl } = useVyzorixConfig();
-  const playgroundUrl = `${_serverUrl}/playground`;
-  const graphqlUrl = `${_serverUrl}/graphql`;
-  const _voyagerUrl = `${_serverUrl}/voyager`; // Optional: GraphQL Voyager for schema visualization
+  const { serverUrl } = useVyzorixConfig();
+  const playgroundUrl = `${serverUrl}/playground`;
+  const graphqlUrl = `${serverUrl}/graphql`;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link to="/">
+        <Link to="/dashboard">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
@@ -332,7 +331,9 @@ function PlaygroundPage(): React.ReactElement {
             </p>
           </div>
           <Button variant="outline" asChild>
-            <Link to="/docs/migration-graphql">View Migration Guide</Link>
+            <a href="/docs/migration-graphql" target="_blank" rel="noopener noreferrer">
+              View Migration Guide
+            </a>
           </Button>
         </CardContent>
       </Card>

@@ -88,6 +88,7 @@ const DevicePage = (): JSX.Element => {
 
   // GraphQL: Get full device detail in one query
   const { data: deviceDetail, isLoading: _isLoadingDetail } = useDeviceDetail(deviceId ?? "", {
+    queryKey: ["vyzorix", "device", deviceId],
     enabled: Boolean(deviceId),
     refetchInterval: 30_000, // Less frequent, WebSocket provides real-time
   });
@@ -99,6 +100,7 @@ const DevicePage = (): JSX.Element => {
     undefined,
     100,
     {
+      queryKey: ["vyzorix", "telemetryHistory", deviceId],
       enabled: Boolean(deviceId),
       refetchInterval: 60_000, // Historical data doesn't need frequent updates
     },
@@ -106,21 +108,23 @@ const DevicePage = (): JSX.Element => {
 
   // GraphQL: Get telemetry stats
   const { data: telemetryStats } = useTelemetryStats(deviceId ?? "", {
+    queryKey: ["vyzorix", "telemetryStats", deviceId],
     enabled: Boolean(deviceId),
     refetchInterval: 30_000,
   });
 
   // GraphQL: Get pending commands
   const { data: pendingCommands } = usePendingCommands(deviceId ?? "", {
+    queryKey: ["vyzorix", "pendingCommands", deviceId],
     enabled: Boolean(deviceId),
     refetchInterval: 15_000,
   });
 
   // GraphQL: Send command mutation
-  const _sendCommand = useSendCommand({
+  useSendCommand({
     onSuccess: (data) => {
       toast.success("Command sent", {
-        description: `${data._sendCommand.command} → ${data._sendCommand.status}`,
+        description: `${data.sendCommand.command} → ${data.sendCommand.status}`,
       });
     },
     onError: (error) => {
@@ -147,7 +151,7 @@ const DevicePage = (): JSX.Element => {
     id: deviceId,
     online: status.data?.online,
     lastSeen: status.data?.lastSeen ? new Date(status.data.lastSeen).toISOString() : undefined,
-    appVersion: status.data?.appVersion,
+    version: status.data?.appVersion,
     deviceClass: status.data?.deviceClass,
     fcmToken: status.data?.fcmToken,
   };
@@ -230,10 +234,7 @@ const DevicePage = (): JSX.Element => {
             </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <KV
-                k="App version"
-                v={effectiveDevice?.version ?? effectiveDevice?.appVersion ?? "—"}
-              />
+              <KV k="App version" v={effectiveDevice?.version ?? "—"} />
               <KV k="Device class" v={effectiveDevice?.deviceClass ?? "—"} />
               <KV k="Server says online" v={effectiveDevice?.online ? "yes" : "no"} />
               <KV
