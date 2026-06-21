@@ -41,14 +41,23 @@ type SigningConfig struct {
 }
 
 // DefaultSigningConfig returns the default signing configuration.
+// Request signing is ENABLED by default for production security.
 func DefaultSigningConfig() SigningConfig {
 	return SigningConfig{
-		Enabled:           false,
+		Enabled:           true,
 		TimestampWindow:   5 * time.Minute,
 		MaxCacheSize:      100000,
 		GracePeriod:       24 * time.Hour,
 		AllowUnsignedFallback: false,
 	}
+}
+
+// LoadSigningConfig loads signing configuration from environment variables.
+func LoadSigningConfig() SigningConfig {
+	cfg := DefaultSigningConfig()
+	cfg.Enabled = getEnvBool("REQUEST_SIGNING_ENABLED", true)
+	cfg.AllowUnsignedFallback = getEnvBool("ALLOW_UNSIGNED_FALLBACK", false)
+	return cfg
 }
 
 // SignatureVerifier verifies request signatures.
@@ -294,34 +303,52 @@ func SignRequest(method, path string, body []byte, clientID, clientSecret string
 }
 
 // IsSigningRequiredPath checks if a path requires request signing.
+// Per PRD: Only truly public endpoints are exempt; everything else requires signing.
 func IsSigningRequiredPath(path string) bool {
-	// Exempt health checks.
-	if strings.HasPrefix(path, "/health/live") ||
-		strings.HasPrefix(path, "/health/ready") ||
-		strings.HasPrefix(path, "/healthz") {
+	// Exempt ONLY these truly public endpoints:
+	
+	// Health checks - no auth required, just liveness probes
+	if path == "/health/live" || 
+	   path == "/health/ready" || 
+	   path == "/healthz" ||
+	   path == "/health" {
 		return false
 	}
-	// Exempt metrics (if auth is handled separately).
-	if strings.HasPrefix(path, "/metrics") {
+	
+	// Static assets - no sensitive data
+	if strings.HasPrefix(path, "/assets/") ||
+	   path == "/favicon.ico" {
 		return false
 	}
-	// Exempt static assets.
-	if strings.HasPrefix(path, "/assets") ||
-		strings.HasPrefix(path, "/favicon") {
-		return false
-	}
-	// Exempt auth endpoints (they use their own auth mechanism).
+	
+	// Auth endpoints use their own session/cookie auth mechanism
+	// These are exempt because they establish the session used for signing
 	if strings.HasPrefix(path, "/v1/auth/") {
 		return false
 	}
-	// Exempt public device endpoints (device registration doesn't require prior credentials).
-	if path == "/v1/device/register" || strings.HasPrefix(path, "/v1/device/") && strings.Contains(path, "/status") {
+	
+	// Public device registration - device gets its credentials via device auth
+	if path == "/v1/device/register" {
 		return false
 	}
-	// Exempt API info endpoints.
-	if strings.HasPrefix(path, "/api/v1/version") || strings.HasPrefix(path, "/api/v1/changelog") {
+	
+	// Device status is public - used by devices to check in
+	if path == "/v1/device/status" {
 		return false
 	}
+	
+	// API info - no sensitive data
+	if path == "/api/v1/version" || path == "/api/v1/changelog" {
+		return false
+	}
+	
+	// ALL other endpoints REQUIRE request signing
+	// This includes:
+	// - /metrics (Prometheus metrics - sensitive operational data)
+	// - /health/secure (security status - requires signing)
+	// - All /v1/device/* endpoints except register
+	// - All /v1/command/* endpoints
+	// - All admin endpoints
 	return true
 }
 

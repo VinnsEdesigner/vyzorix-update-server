@@ -9,9 +9,10 @@ import (
 	cmdSvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/fcm"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,6 +35,14 @@ func NewExecuteHandler(commandService *cmdSvc.Service, deviceService *device.Ser
 		fcmNotifier:  fcmNotifier,
 		log:          slog.Default(),
 	}
+}
+
+// verifyDeviceOwnership verifies the device belongs to the operator (DOA check).
+// Returns unauthorized if the device doesn't exist OR doesn't belong to the operator.
+// This prevents enumeration attacks by returning the same error for both cases.
+func (h *ExecuteHandler) verifyDeviceOwnership(ctx context.Context, deviceID, operatorID string) error {
+	_, err := h.deviceService.GetDeviceByOperator(ctx, deviceID, operatorID)
+	return err
 }
 
 // Handle handles POST /v1/device/:id/command.
@@ -62,6 +71,21 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 		return
 	}
 
+	// DOA: Verify device belongs to the authenticated operator
+	// Get operator from context (set by cookie auth middleware)
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
+		return
+	}
+	
+	// Verify the device belongs to this operator (DOA check)
+	// This returns the same error whether device doesn't exist OR isn't owned by operator
+	if err := h.verifyDeviceOwnership(c.Request.Context(), deviceID, op.ID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
+		return
+	}
+
 	// Marshal args
 	argsJSON, err := json.Marshal(req.Args)
 	if err != nil {
@@ -70,7 +94,7 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 	}
 
 	// Build command frame for WebSocket
-	frame := models.CommandFrame{
+	frame := command.CommandFrame{
 		Type:       req.Command,
 		Command:    req.Command,
 		DispatchID: req.DispatchID,
@@ -170,6 +194,26 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 		return
 	}
 
+	// DOA: First get the command to find the device, then verify ownership
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
+		return
+	}
+
+	// Get command by dispatchId to find the device
+	cmd, err := h.commandService.GetCommandByDispatchID(c.Request.Context(), dispatchID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
+		return
+	}
+
+	// Verify the device belongs to this operator
+	if err := h.verifyDeviceOwnership(c.Request.Context(), cmd.DeviceID, op.ID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
+		return
+	}
+
 	newCmd, err := h.commandService.RetryCommand(c.Request.Context(), dispatchID)
 	if err != nil {
 		h.log.Error("failed to retry command", "error", err, "dispatchId", dispatchID)
@@ -193,6 +237,18 @@ func (h *ExecuteHandler) GetPending(c *gin.Context) {
 		return
 	}
 
+	// DOA: Verify device belongs to the authenticated operator
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
+		return
+	}
+	
+	if err := h.verifyDeviceOwnership(c.Request.Context(), deviceID, op.ID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
+		return
+	}
+
 	pendingCmds, err := h.commandService.GetPendingCommands(c.Request.Context(), deviceID)
 	if err != nil {
 		h.log.Error("failed to get pending commands", "error", err, "deviceId", deviceID)
@@ -213,7 +269,27 @@ func (h *ExecuteHandler) Cancel(c *gin.Context) {
 		return
 	}
 
-	err := h.commandService.CancelCommandByDispatchID(c.Request.Context(), dispatchID)
+	// DOA: First get the command to find the device, then verify ownership
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
+		return
+	}
+
+	// Get command by dispatchId to find the device
+	cmd, err := h.commandService.GetCommandByDispatchID(c.Request.Context(), dispatchID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
+		return
+	}
+
+	// Verify the device belongs to this operator
+	if err := h.verifyDeviceOwnership(c.Request.Context(), cmd.DeviceID, op.ID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
+		return
+	}
+
+	err = h.commandService.CancelCommandByDispatchID(c.Request.Context(), dispatchID)
 	if err != nil {
 		h.log.Error("failed to cancel command", "error", err, "dispatchId", dispatchID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to cancel command"})

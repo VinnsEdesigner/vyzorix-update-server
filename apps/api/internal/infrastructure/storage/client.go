@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/client"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/auth"
 )
 
 // Helper functions for client repository
@@ -42,6 +43,15 @@ func hashSHA512(input string) string {
 	h := sha512.Sum512([]byte(input))
 	return hex.EncodeToString(h[:])
 }
+
+// deriveHmacKey derives an HMAC verification key from the client secret.
+// This is a one-way deterministic derivation: SHA512(secret).
+// Both server and client can compute this key.
+func deriveHmacKey(clientSecret string) string {
+	return hashSHA512(clientSecret)
+}
+
+// verifyHmacKey verifies a client secret against the stored HMAC key.
 
 // hmacSHA256 computes HMAC-SHA256.
 func hmacSHA256(key, data string) string {
@@ -195,6 +205,32 @@ func (r *ClientRepository) FindAll(ctx context.Context, limit, offset int) ([]*c
 
 // Create creates a new client.
 func (r *ClientRepository) Create(ctx context.Context, c *client.Client, secret string) (*client.Client, string, error) {
+	// Generate client ID (UUIDv7) if not set
+	if c.ID == "" {
+		c.ID = NewUUIDv7()
+	}
+
+	// Generate client secret (32 bytes = 64 hex chars) if provided secret is empty
+	if secret == "" {
+		secretBytes := make([]byte, 32)
+		if _, err := readRandom(secretBytes); err != nil {
+			return nil, "", err
+		}
+		secret = hexEncode(secretBytes)
+	}
+
+	// Hash the secret with Argon2id for authentication
+	secretHash, err := auth.HashPassword(secret)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Derive HMAC key for request signing verification
+	hmacKey := deriveHmacKey(secret)
+
+	c.ClientSecretHash = secretHash
+	c.HmacKey = hmacKey
+
 	originsJSON, err := json.Marshal(c.AllowedOrigins)
 	if err != nil {
 		return nil, "", err
@@ -351,14 +387,33 @@ func (r *ClientRepository) ValidateSigningKey(ctx context.Context, clientID, sig
 // GetHmacKey retrieves the HMAC signing key for a client.
 func (r *ClientRepository) GetHmacKey(ctx context.Context, clientID string) (string, bool) {
 	query := `SELECT hmac_key, is_active FROM api_clients WHERE id = ?`
-	
+
 	var hmacKey string
 	var isActive bool
-	
+
 	err := r.db.QueryRowContext(ctx, query, clientID).Scan(&hmacKey, &isActive)
 	if err != nil || !isActive {
 		return "", false
 	}
-	
+
 	return hmacKey, true
+}
+
+// VerifyAPIClientSecret verifies a client secret against the stored hash.
+// Returns the client if valid, error if invalid.
+func (r *ClientRepository) VerifyAPIClientSecret(ctx context.Context, clientID, secret string) (*client.Client, error) {
+	c, err := r.FindByID(ctx, clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !c.IsActive {
+		return nil, client.ErrNotFound
+	}
+
+	if err := auth.VerifyPassword(secret, c.ClientSecretHash); err != nil {
+		return nil, client.ErrNotFound
+	}
+
+	return c, nil
 }

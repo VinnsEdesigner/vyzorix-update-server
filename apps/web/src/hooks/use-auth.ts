@@ -8,11 +8,13 @@
  *   - On mount: fetches /v1/auth/me with cookie credentials
  *   - Caches the operator in React state
  *   - Provides logout function that calls /v1/auth/logout
+ *   - Clears signed API credentials on logout
  */
 
 import { useCallback, useEffect, useState } from "react";
 
 import type { OperatorResponse } from "@/lib/clients/authClient";
+import { clearSignedApiClient } from "@/lib/signed-api-client";
 
 export interface AuthState {
   operator: OperatorResponse | null;
@@ -90,10 +92,15 @@ export const useAuth = (): AuthState & AuthActions => {
     // Clear local state
     setOperator(null);
 
+    // Clear signed API credentials (clientId, clientSecret from memory)
+    clearSignedApiClient();
+
     // Clear any localStorage references (for clean slate)
     try {
       localStorage.removeItem("vyz.auth.operator");
       localStorage.removeItem("vyz.auth.token");
+      localStorage.removeItem("vyz_client_credentials");
+      localStorage.removeItem("vyz_active_client_id");
     } catch {
       // ignore
     }

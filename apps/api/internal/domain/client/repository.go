@@ -34,4 +34,8 @@ type Repository interface {
 	// GetHmacKey retrieves the HMAC signing key for a client.
 	// Returns the key and ok=false if client not found or inactive.
 	GetHmacKey(ctx context.Context, clientID string) (string, bool)
+
+	// VerifyAPIClientSecret verifies a client secret against the stored hash.
+	// Returns the client if valid, nil if invalid.
+	VerifyAPIClientSecret(ctx context.Context, clientID, secret string) (*Client, error)
 }

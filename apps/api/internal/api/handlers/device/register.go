@@ -31,12 +31,12 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 		DeviceClass       string `json:"deviceClass"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid JSON in request body"})
 		return
 	}
 
 	if req.DeviceID == "" || req.FirebaseInstallID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "message": "deviceId and firebaseInstallId are required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "deviceId and firebaseInstallId are required"})
 		return
 	}
 
@@ -51,10 +51,10 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 	result, err := h.deviceService.Register(c.Request.Context(), dtoReq)
 	if err != nil {
 		if errors.Is(err, device.ErrDeviceHijack) {
-			c.JSON(http.StatusConflict, gin.H{"error": "device_hijack", "message": "device registration hijack detected"})
+			c.JSON(http.StatusConflict, gin.H{"error": "conflict", "message": "device registration hijack detected"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "registration_failed", "message": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to register device"})
 		return
 	}
 

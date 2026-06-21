@@ -4,11 +4,15 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
+	securityAuth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,14 +20,16 @@ import (
 // RegisterHandler handles POST /v1/auth/register.
 type RegisterHandler struct {
 	authService *auth.AuthService
-	emailSvc   *emailService.Service
+	emailSvc    *emailService.Service
+	auditLogger *audit.Logger
 }
 
 // NewRegisterHandler creates a new RegisterHandler.
-func NewRegisterHandler(authService *auth.AuthService, emailSvc *emailService.Service) *RegisterHandler {
+func NewRegisterHandler(authService *auth.AuthService, emailSvc *emailService.Service, auditLogger *audit.Logger) *RegisterHandler {
 	return &RegisterHandler{
 		authService: authService,
-		emailSvc:   emailSvc,
+		emailSvc:    emailSvc,
+		auditLogger: auditLogger,
 	}
 }
 
@@ -31,23 +37,38 @@ func NewRegisterHandler(authService *auth.AuthService, emailSvc *emailService.Se
 func (h *RegisterHandler) Handle(c *gin.Context) {
 	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid request"})
 		return
 	}
+
+	// Normalize email (trim whitespace and lowercase) - matches old behavior
+	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
+	// Also normalize name
+	req.Name = strings.TrimSpace(req.Name)
 
 	if req.Email == "" || req.Password == "" || req.Name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request", "message": "email, password, and name required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "email, password, and name required"})
 		return
 	}
 
-	result, err := h.authService.Register(c.Request.Context(), &req, true)
+	// Validate email format using enterprise-grade validator
+	if _, err := securityAuth.ValidateEmail(req.Email); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid request"})
+		return
+	}
+
+	// Add request timeout - prevents hanging on slow DB queries (matches old behavior)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	result, err := h.authService.Register(ctx, &req, true)
 	if err != nil {
 		if errors.Is(err, application.ErrUserExists) {
-			c.JSON(http.StatusConflict, gin.H{"error": "user_exists", "message": "an account with this email already exists"})
+			c.JSON(http.StatusConflict, gin.H{"error": "conflict", "message": "an account with this email already exists"})
 			return
 		}
 		if errors.Is(err, application.ErrInvalidInput) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_password", "message": "password does not meet requirements"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "password does not meet requirements"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "an error occurred"})

@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -422,6 +424,195 @@ func (r *OperatorRepository) UpdateGitHubID(ctx context.Context, id, githubID st
 	}
 
 	return nil
+}
+
+// UpdateName updates the display name for an operator.
+func (r *OperatorRepository) UpdateName(ctx context.Context, id, name string) error {
+	result, err := r.db.ExecContext(ctx,
+		"UPDATE operators SET name = ?, updated_at = ? WHERE id = ?",
+		strings.TrimSpace(name), time.Now(), id,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return operator.ErrNotFound
+	}
+
+	return nil
+}
+
+// UpdateThresholds updates the alert thresholds for an operator.
+func (r *OperatorRepository) UpdateThresholds(ctx context.Context, id string, th operator.Thresholds) error {
+	result, err := r.db.ExecContext(ctx,
+		`UPDATE operators SET risk_warn = ?, risk_crit = ?, thermal_warn = ?, thermal_crit = ?, 
+		 buffer_warn = ?, buffer_crit = ?, updated_at = ? WHERE id = ?`,
+		th.RiskWarn, th.RiskCrit, th.ThermalWarn, th.ThermalCrit,
+		th.BufferWarn, th.BufferCrit, time.Now(), id,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return operator.ErrNotFound
+	}
+
+	return nil
+}
+
+// UpdateClientSettings updates the client preferences for an operator.
+func (r *OperatorRepository) UpdateClientSettings(ctx context.Context, id string, cs operator.ClientSettings) error {
+	result, err := r.db.ExecContext(ctx,
+		`UPDATE operators SET strict_hmac = ?, auto_reconnect = ?, notifications_enabled = ?, 
+		 updated_at = ? WHERE id = ?`,
+		cs.StrictHmac, cs.AutoReconnect, cs.NotificationsEnabled, time.Now(), id,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return operator.ErrNotFound
+	}
+
+	return nil
+}
+
+// ResetSettings resets all settings to defaults for an operator.
+func (r *OperatorRepository) ResetSettings(ctx context.Context, id string) error {
+	result, err := r.db.ExecContext(ctx,
+		`UPDATE operators SET 
+		 risk_warn = 50, risk_crit = 75, thermal_warn = 45, thermal_crit = 55, 
+		 buffer_warn = 50, buffer_crit = 80,
+		 strict_hmac = 0, auto_reconnect = 1, notifications_enabled = 1,
+		 updated_at = ? WHERE id = ?`,
+		time.Now(), id,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return operator.ErrNotFound
+	}
+
+	return nil
+}
+
+// GetEmailVerified returns whether an operator has verified their email.
+func (r *OperatorRepository) GetEmailVerified(ctx context.Context, id string) (bool, error) {
+	var verified int
+	err := r.db.QueryRowContext(ctx,
+		"SELECT email_verified FROM operators WHERE id = ?",
+		id,
+	).Scan(&verified)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, operator.ErrNotFound
+	}
+	if err != nil {
+		return false, err
+	}
+	return verified != 0, nil
+}
+
+// DisableMFA disables MFA for an operator by clearing the MFA secret and backup codes.
+func (r *OperatorRepository) DisableMFA(ctx context.Context, id string) error {
+	result, err := r.db.ExecContext(ctx,
+		"UPDATE operators SET mfa_secret = '', mfa_enabled = 0, mfa_backup_codes = '', updated_at = ? WHERE id = ?",
+		time.Now(), id,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return operator.ErrNotFound
+	}
+
+	return nil
+}
+
+// GetSetting retrieves a setting value by key.
+func (r *OperatorRepository) GetSetting(ctx context.Context, key string) (string, error) {
+	var value string
+	err := r.db.QueryRowContext(ctx,
+		`SELECT value FROM settings WHERE key = ?`, key,
+	).Scan(&value)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return value, err
+}
+
+// SetSetting updates or inserts a setting value.
+func (r *OperatorRepository) SetSetting(ctx context.Context, key, value string) error {
+	_, err := r.db.ExecContext(ctx,
+		`INSERT OR REPLACE INTO settings(key, value, updated_at) VALUES(?, ?, ?)`,
+		key, value, time.Now().UTC().UnixMilli(),
+	)
+	return err
+}
+
+// GetEnforceHMAC returns whether HMAC enforcement is enabled.
+func (r *OperatorRepository) GetEnforceHMAC(ctx context.Context) (bool, error) {
+	val, err := r.GetSetting(ctx, "enforce_hmac")
+	if err != nil || val == "" {
+		return false, err
+	}
+	return val == "true" || val == "1", nil
+}
+
+// SetEnforceHMAC updates the HMAC enforcement setting.
+func (r *OperatorRepository) SetEnforceHMAC(ctx context.Context, enforce bool) error {
+	val := "false"
+	if enforce {
+		val = "true"
+	}
+	return r.SetSetting(ctx, "enforce_hmac", val)
+}
+
+// GetHMACWindowSeconds returns the HMAC timestamp window in seconds.
+func (r *OperatorRepository) GetHMACWindowSeconds(ctx context.Context) (int, error) {
+	val, err := r.GetSetting(ctx, "hmac_window_seconds")
+	if err != nil {
+		return 30, err
+	}
+	if val == "" {
+		return 30, nil // default 30 seconds per COMMAND_SECURITY.md
+	}
+	var seconds int
+	_, err = fmt.Sscanf(val, "%d", &seconds)
+	if err != nil {
+		return 30, err
+	}
+	return seconds, nil
+}
+
+// SetHMACWindowSeconds updates the HMAC timestamp window.
+func (r *OperatorRepository) SetHMACWindowSeconds(ctx context.Context, seconds int) error {
+	return r.SetSetting(ctx, "hmac_window_seconds", strconv.Itoa(seconds))
 }
 
 // nullString returns a sql.NullString for optional string fields.

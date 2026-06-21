@@ -40,7 +40,7 @@ return
 
 result, err := h.authService.VerifyEmail(c.Request.Context(), req.Token)
 if err != nil {
-c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_token", "message": "invalid or expired verification token"})
+c.JSON(http.StatusBadRequest, gin.H{"error": "unauthorized", "message": "invalid or expired verification token"})
 return
 }
 
