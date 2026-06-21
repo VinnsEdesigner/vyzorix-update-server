@@ -15,7 +15,6 @@ import (
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
@@ -75,7 +74,7 @@ func (r *Resolver) RequireAuth(ctx context.Context) (*context.Context, error) {
 // ============================================================
 
 // GetDevice resolves the device query.
-func (r *Resolver) GetDevice(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) GetDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	id, ok := p.Args["id"].(string)
 	if !ok || id == "" {
@@ -97,7 +96,7 @@ func (r *Resolver) GetDevice(p graphql.GQLParams) (interface{}, error) {
 }
 
 // GetDevices resolves the devices list query.
-func (r *Resolver) GetDevices(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) GetDevices(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	limit, _ := p.Args["limit"].(int)
 	offset, _ := p.Args["offset"].(int)
@@ -117,7 +116,7 @@ func (r *Resolver) GetDevices(p graphql.GQLParams) (interface{}, error) {
 		return nil, errors.ErrUnauthorized
 	}
 
-	devices, err := r.DeviceService.ListDevices(ctx, op.ID, limit, offset)
+	devices, err := r.DeviceService.ListByOperatorPaginated(ctx, op.ID, limit, offset)
 	if err != nil {
 		r.Log.Error("failed to list devices", "err", err)
 		return nil, errors.Internal("failed to list devices")
@@ -125,14 +124,18 @@ func (r *Resolver) GetDevices(p graphql.GQLParams) (interface{}, error) {
 
 	result := make([]map[string]interface{}, 0, len(devices))
 	for _, dev := range devices {
-		result = append(result, r.deviceToMap(ctx, dev))
+		result = append(result, r.deviceToMap(ctx, &dto.DeviceResponse{
+			ID:         dev.ID,
+			AppVersion: dev.AppVersion,
+			LastSeen:   dev.LastSeen,
+		}))
 	}
 
 	return result, nil
 }
 
 // GetDeviceCount resolves the deviceCount query.
-func (r *Resolver) GetDeviceCount(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) GetDeviceCount(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -140,7 +143,7 @@ func (r *Resolver) GetDeviceCount(p graphql.GQLParams) (interface{}, error) {
 		return nil, errors.ErrUnauthorized
 	}
 
-	count, err := r.DeviceService.CountDevices(ctx, op.ID)
+	count, err := r.DeviceService.CountByOperator(ctx, op.ID)
 	if err != nil {
 		r.Log.Error("failed to count devices", "err", err)
 		return nil, errors.Internal("failed to count devices")
@@ -150,7 +153,7 @@ func (r *Resolver) GetDeviceCount(p graphql.GQLParams) (interface{}, error) {
 }
 
 // GetCommand resolves the command query.
-func (r *Resolver) GetCommand(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) GetCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	dispatchID, ok := p.Args["dispatchId"].(string)
 	if !ok || dispatchID == "" {
@@ -173,11 +176,11 @@ func (r *Resolver) GetCommand(p graphql.GQLParams) (interface{}, error) {
 		return nil, errors.NotFound("command not found")
 	}
 
-	return r.commandToMap(cmd), nil
+	return r.commandStatusToMap(cmd), nil
 }
 
 // GetPendingCommands resolves the pendingCommands query.
-func (r *Resolver) GetPendingCommands(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) GetPendingCommands(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, ok := p.Args["deviceId"].(string)
 	if !ok || deviceID == "" {
@@ -210,7 +213,7 @@ func (r *Resolver) GetPendingCommands(p graphql.GQLParams) (interface{}, error) 
 }
 
 // GetTelemetryHistory resolves the telemetryHistory query.
-func (r *Resolver) GetTelemetryHistory(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) GetTelemetryHistory(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
 	startTime, _ := p.Args["startTime"].(int64)
@@ -269,7 +272,7 @@ func (r *Resolver) GetTelemetryHistory(p graphql.GQLParams) (interface{}, error)
 }
 
 // GetLatestTelemetry resolves the latestTelemetry query.
-func (r *Resolver) GetLatestTelemetry(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) GetLatestTelemetry(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
 
@@ -306,7 +309,7 @@ func (r *Resolver) GetLatestTelemetry(p graphql.GQLParams) (interface{}, error) 
 }
 
 // GetTelemetryStats resolves the telemetryStats query.
-func (r *Resolver) GetTelemetryStats(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) GetTelemetryStats(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
 
@@ -332,7 +335,7 @@ func (r *Resolver) GetTelemetryStats(p graphql.GQLParams) (interface{}, error) {
 
 	// Calculate stats
 	var totalRisk, totalBuffer, totalTemp int
-	var minRisk, maxRisk int = 999, -1
+	var minRisk, maxRisk = 999, -1
 	var minTemp, maxTemp float64 = 999, -999
 
 	for _, e := range entries {
@@ -375,7 +378,7 @@ func (r *Resolver) GetTelemetryStats(p graphql.GQLParams) (interface{}, error) {
 }
 
 // GetConnectionStatus resolves the connectionStatus query.
-func (r *Resolver) GetConnectionStatus(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) GetConnectionStatus(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
 
@@ -420,7 +423,7 @@ func (r *Resolver) GetConnectionStatus(p graphql.GQLParams) (interface{}, error)
 }
 
 // GetAllConnections resolves the allConnections query.
-func (r *Resolver) GetAllConnections(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) GetAllConnections(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -462,7 +465,7 @@ func (r *Resolver) GetAllConnections(p graphql.GQLParams) (interface{}, error) {
 // ============================================================
 
 // UpdateFCMToken resolves the updateFCMToken mutation.
-func (r *Resolver) UpdateFCMToken(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
 	token, _ := p.Args["token"].(string)
@@ -480,23 +483,25 @@ func (r *Resolver) UpdateFCMToken(p graphql.GQLParams) (interface{}, error) {
 	}
 
 	// Verify device ownership
-	dev, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+	_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
 	if err != nil {
 		return nil, errors.NotFound("device not found")
 	}
 
 	// Update FCM token
-	updated, err := r.DeviceService.UpdateFCMToken(ctx, deviceID, token)
+	err = r.DeviceService.UpdateFCMToken(ctx, deviceID, token)
 	if err != nil {
 		r.Log.Error("failed to update FCM token", "err", err)
 		return nil, errors.Internal("failed to update FCM token")
 	}
 
-	return r.deviceToMap(ctx, updated), nil
+	return map[string]interface{}{
+		"success": true,
+	}, nil
 }
 
 // DeleteDevice resolves the deleteDevice mutation.
-func (r *Resolver) DeleteDevice(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["id"].(string)
 
@@ -525,7 +530,7 @@ func (r *Resolver) DeleteDevice(p graphql.GQLParams) (interface{}, error) {
 }
 
 // SendCommand resolves the sendCommand mutation.
-func (r *Resolver) SendCommand(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
 	cmdStr, _ := p.Args["command"].(string)
@@ -566,7 +571,10 @@ func (r *Resolver) SendCommand(p graphql.GQLParams) (interface{}, error) {
 	delivery := "queued"
 	if r.Hub != nil && r.Hub.Online(deviceID) {
 		// Build command frame
-		argsJSON, _ := json.Marshal(args)
+		argsJSON, err := json.Marshal(args)
+		if err != nil {
+			argsJSON = []byte("{}")
+		}
 		frame := command.CommandFrame{
 			Type:       cmdStr,
 			Command:    cmdStr,
@@ -590,12 +598,12 @@ func (r *Resolver) SendCommand(p graphql.GQLParams) (interface{}, error) {
 				Command:    cmdStr,
 				DispatchID: cmdResp.DispatchID,
 				DeviceID:   deviceID,
-			}
+		}
 			if err := r.FCMNotifier.SendSilentWake(ctx, wake); err != nil {
 				r.Log.Warn("fcm wake failed", "err", err)
 			} else {
 				delivery = "queued_fcm"
-			}
+		}
 		}
 	}
 
@@ -608,7 +616,7 @@ func (r *Resolver) SendCommand(p graphql.GQLParams) (interface{}, error) {
 }
 
 // RetryCommand resolves the retryCommand mutation.
-func (r *Resolver) RetryCommand(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	dispatchID, _ := p.Args["dispatchId"].(string)
 
@@ -639,11 +647,15 @@ func (r *Resolver) RetryCommand(p graphql.GQLParams) (interface{}, error) {
 		return nil, errors.Internal("failed to retry command")
 	}
 
-	return r.commandToMap(newCmd), nil
+	return map[string]interface{}{
+		"dispatchId": newCmd.DispatchID,
+		"commandId":  newCmd.CommandID,
+		"status":     newCmd.Status,
+	}, nil
 }
 
 // CancelCommand resolves the cancelCommand mutation.
-func (r *Resolver) CancelCommand(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	dispatchID, _ := p.Args["dispatchId"].(string)
 
@@ -678,7 +690,7 @@ func (r *Resolver) CancelCommand(p graphql.GQLParams) (interface{}, error) {
 }
 
 // DisconnectDevice resolves the disconnectDevice mutation.
-func (r *Resolver) DisconnectDevice(p graphql.GQLParams) (interface{}, error) {
+func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
 
@@ -707,7 +719,7 @@ func (r *Resolver) DisconnectDevice(p graphql.GQLParams) (interface{}, error) {
 	}
 
 	// Close the connection
-	client.Conn.Close()
+	_ = client.Conn.Close()
 
 	return true, nil
 }
@@ -716,27 +728,36 @@ func (r *Resolver) DisconnectDevice(p graphql.GQLParams) (interface{}, error) {
 // Helper Methods
 // ============================================================
 
-func (r *Resolver) deviceToMap(ctx context.Context, dev *device.Device) map[string]interface{} {
+func (r *Resolver) deviceToMap(ctx context.Context, dev *dto.DeviceResponse) map[string]interface{} {
 	return map[string]interface{}{
-		"id":        dev.ID,
-		"name":      "", // Device entity doesn't have a name field
-		"online":    r.Hub != nil && r.Hub.Online(dev.ID),
-		"lastSeen":  time.UnixMilli(dev.LastSeen).Format(time.RFC3339),
-		"fcmToken":  dev.FCMToken,
-		"version":   dev.AppVersion,
-		"createdAt": dev.CreatedAt.Format(time.RFC3339),
+		"id":       dev.ID,
+		"name":     "",
+		"online":   r.Hub != nil && r.Hub.Online(dev.ID),
+		"lastSeen": time.UnixMilli(dev.LastSeen).Format(time.RFC3339),
+		"version":  dev.AppVersion,
 	}
 }
 
-func (r *Resolver) commandToMap(cmd *command.Command) map[string]interface{} {
+func (r *Resolver) commandStatusToMap(cmd *dto.CommandStatusResponse) map[string]interface{} {
+	var deliveredAt interface{}
+	if cmd.DeliveredAt != nil {
+		deliveredAt = cmd.DeliveredAt.Format(time.RFC3339)
+	}
+
+	return map[string]interface{}{
+		"dispatchId":  cmd.CommandID,
+		"commandId":   cmd.CommandID,
+		"deviceId":    cmd.DeviceID,
+		"command":     cmd.Command,
+		"status":      cmd.Status,
+		"deliveredAt": deliveredAt,
+	}
+}
+
+func (r *Resolver) commandToMap(cmd dto.CommandResponse) map[string]interface{} {
 	var args map[string]interface{}
 	if len(cmd.Args) > 0 {
 		_ = json.Unmarshal(cmd.Args, &args)
-	}
-
-	var deliveredAt interface{}
-	if cmd.DeliveredAt != nil {
-		deliveredAt = time.UnixMilli(*cmd.DeliveredAt).Format(time.RFC3339)
 	}
 
 	return map[string]interface{}{
@@ -745,8 +766,7 @@ func (r *Resolver) commandToMap(cmd *command.Command) map[string]interface{} {
 		"deviceId":    cmd.DeviceID,
 		"command":     cmd.Command,
 		"args":        args,
-		"status":      string(cmd.Status),
+		"status":      cmd.Status,
 		"createdAt":   cmd.CreatedAt.Format(time.RFC3339),
-		"deliveredAt": deliveredAt,
 	}
 }
