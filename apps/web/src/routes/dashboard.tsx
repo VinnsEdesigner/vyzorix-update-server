@@ -161,7 +161,7 @@ const ChartShell = ({
 };
 
 const DashboardPage = (): JSX.Element => {
-  const { serverUrl, deviceId, thresholds, _dashboardToken } = useVyzorixConfig();
+  const { serverUrl, deviceId, thresholds } = useVyzorixConfig();
   const health = useServerHealth(serverUrl);
   const stream = useStream();
   const t = stream.lastTelemetry;
@@ -211,6 +211,7 @@ const DashboardPage = (): JSX.Element => {
 
   // GraphQL: Get devices and connections in a single query
   const { data: dashboardData, isLoading: _isLoadingDashboard } = useDashboardData(100, {
+    queryKey: ["vyzorix", "dashboard", serverUrl],
     enabled: health.data?.ok === true,
     refetchInterval: 15_000,
   });

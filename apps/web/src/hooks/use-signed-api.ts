@@ -4,16 +4,18 @@
 
 import React, { useState, useCallback, useEffect, createContext, type ReactNode } from "react";
 
-import { logger } from "../lib/logger";
 import {
-  SignedApiClient,
-  getSignedApiClient,
-  clearSignedApiClient,
   ClientCredentials,
   fetchClientCredentials,
   getActiveCredentials,
   listClientCredentials,
   deleteClientCredentials,
+} from "../lib/client-credentials";
+import { logger } from "../lib/logger";
+import {
+  SignedApiClient,
+  getSignedApiClient,
+  clearSignedApiClient,
 } from "../lib/signed-api-client";
 
 // Error codes that require re-authentication
@@ -186,8 +188,7 @@ export function useSignedApi(options: UseSignedApiOptions): UseSignedApiReturn {
     setLoading(true);
     setError(null);
     try {
-      const apiUrlForFetch = apiUrl ?? window.location.origin;
-      const creds = await client.fetchCredentials(apiUrlForFetch, clientName);
+      const creds = await client.fetchCredentials(clientName);
       setHasCredentials(true);
       logger.info("useSignedApi", `Fetched credentials for ${creds.clientId}`);
       return creds;
@@ -199,7 +200,7 @@ export function useSignedApi(options: UseSignedApiOptions): UseSignedApiReturn {
     } finally {
       setLoading(false);
     }
-  }, [client, clientName, apiUrl]);
+  }, [client, clientName]);
 
   const logout = useCallback(() => {
     clearSignedApiClient();
@@ -286,21 +287,8 @@ export function useSignedApi(options: UseSignedApiOptions): UseSignedApiReturn {
  */
 export const SignedApiContext = createContext<SignedApiClient | null>(null);
 
-export function SignedApiProvider({
-  children,
-  apiUrl,
-  clientName = "Web Dashboard",
-}: {
-  children: ReactNode;
-  apiUrl: string;
-  clientName?: string;
-}) {
+export function SignedApiProvider({ children, apiUrl }: { children: ReactNode; apiUrl: string }) {
   const [client] = useState(() => getSignedApiClient(apiUrl));
-
-  const _fetchCredentials = useCallback(async () => {
-    const creds = await client.fetchCredentials(clientName);
-    return creds;
-  }, [client, clientName]);
 
   // Try to restore credentials on mount
   useEffect(() => {
