@@ -49,5 +49,9 @@ func GetRequestID(ctx context.Context) string {
 	if val == nil {
 		return ""
 	}
-	return val.(string)
+	str, ok := val.(string)
+	if !ok {
+		return ""
+	}
+	return str
 }

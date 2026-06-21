@@ -350,7 +350,7 @@ func validateFCMToken(token string) bool {
 	return true
 }
 
-// Legacy send without retry - kept for backward compatibility
+// Legacy send without retry - kept for backward compatibility.
 func (c *Client) SendSilentWake(ctx context.Context, wake SilentWake) error {
 	if c == nil {
 		return ErrDisabled

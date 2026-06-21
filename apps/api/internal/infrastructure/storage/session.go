@@ -2,9 +2,7 @@ package storage
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"time"
 
@@ -260,12 +258,6 @@ type RefreshTokenRepository struct {
 // NewRefreshTokenRepository creates a new RefreshTokenRepository.
 func NewRefreshTokenRepository(db *sql.DB) *RefreshTokenRepository {
 	return &RefreshTokenRepository{db: db}
-}
-
-// hashToken creates a SHA-256 hash of a token for storage.
-func hashToken(token string) string {
-	h := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(h[:])
 }
 
 // Create creates a new refresh token.

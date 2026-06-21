@@ -145,7 +145,7 @@ func (er *EncryptedResponseWriter) Flush() {
 	if err != nil {
 		// Can't encrypt - write error as plain text
 		er.ResponseWriter.WriteHeader(http.StatusInternalServerError)
-		er.ResponseWriter.Write([]byte("encryption failed"))
+		_, _ = er.ResponseWriter.Write([]byte("encryption failed"))
 		return
 	}
 
@@ -158,7 +158,7 @@ func (er *EncryptedResponseWriter) Flush() {
 	er.ResponseWriter.Header().Set("Content-Length", fmt.Sprintf("%d", len(encrypted)))
 
 	er.ResponseWriter.WriteHeader(er.statusCode)
-	er.ResponseWriter.Write(encrypted)
+	_, _ = er.ResponseWriter.Write(encrypted)
 }
 
 // Status returns the HTTP response status code.
@@ -202,12 +202,16 @@ func (er *EncryptedResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error)
 	return nil, nil, fmt.Errorf(" ResponseWriter does not implement http.Hijacker")
 }
 
-// CloseNotify implements http.CloseNotifier.
+// CloseNotify implements context-based close notification.
+// Deprecated: This method is provided for backward compatibility.
+// New code should use Request.Context().Done() instead.
 func (er *EncryptedResponseWriter) CloseNotify() <-chan bool {
-	if cn, ok := er.ResponseWriter.(http.CloseNotifier); ok {
+	if cn, ok := er.ResponseWriter.(interface {
+		CloseNotify() <-chan bool
+	}); ok {
 		return cn.CloseNotify()
 	}
-	// Return a closed channel as fallback
+	// Return a closed channel as fallback - client disconnected
 	ch := make(chan bool)
 	close(ch)
 	return ch

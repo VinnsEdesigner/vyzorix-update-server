@@ -48,31 +48,31 @@ func (ve ValidationErrors) Error() string {
 // =============================================================================
 
 var (
-	// EmailPattern validates email format (RFC 5322 simplified)
+	// EmailPattern validates email format (RFC 5322 simplified).
 	EmailPattern = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-	
-	// UUIDv7Pattern validates UUID format
+
+	// UUIDv7Pattern validates UUID format.
 	UUIDv7Pattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
-	
-	// UUIDPattern validates any UUID format
+
+	// UUIDPattern validates any UUID format.
 	UUIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
-	
-	// PasswordPattern validates password meets policy
+
+	// PasswordPattern validates password meets policy.
 	PasswordPattern = regexp.MustCompile(`^.{12,128}$`)
-	
-	// NamePattern validates display names (2-100 chars, letters/numbers/spaces)
+
+	// NamePattern validates display names (2-100 chars, letters/numbers/spaces).
 	NamePattern = regexp.MustCompile(`^[a-zA-Z0-9\s\-'.]{2,100}$`)
-	
-	// DeviceIDPattern validates device ID format
+
+	// DeviceIDPattern validates device ID format.
 	DeviceIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_\-]{1,64}$`)
-	
-	// TokenPattern validates hex tokens (64-256 chars)
+
+	// TokenPattern validates hex tokens (64-256 chars).
 	TokenPattern = regexp.MustCompile(`^[a-fA-F0-9]{64,256}$`)
-	
-	// DispatchIDPattern validates dispatch ID format
+
+	// DispatchIDPattern validates dispatch ID format.
 	DispatchIDPattern = regexp.MustCompile(`^[a-fA-F0-9]{32,128}$`)
-	
-	// CommandPattern validates command name format
+
+	// CommandPattern validates command name format.
 	CommandPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]{0,63}$`)
 )
 
