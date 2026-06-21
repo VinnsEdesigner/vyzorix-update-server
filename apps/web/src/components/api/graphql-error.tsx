@@ -1,5 +1,6 @@
 import { AlertTriangle, RefreshCw, Copy, Check } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
@@ -44,6 +45,7 @@ function getErrorTitle(code?: string): string {
       return "Rate Limited";
     case "INTERNAL_ERROR":
       return "Server Error";
+    case undefined:
     default:
       return "GraphQL Error";
   }
@@ -59,6 +61,7 @@ function getErrorVariant(code?: string): "default" | "destructive" {
     case "RATE_LIMITED":
     case "INTERNAL_ERROR":
       return "destructive";
+    case undefined:
     default:
       return "default";
   }
@@ -89,29 +92,21 @@ export function GraphQLErrorDisplay({
   return (
     <div className={className}>
       {errors.map((err, index) => {
-        const code = err.code || err.extensions?.code as string | undefined;
+        const code = err.code ?? (err.extensions?.code as string | undefined);
         const variant = getErrorVariant(code);
-        const errorTitle = title || getErrorTitle(code);
+        const errorTitle = title ?? getErrorTitle(code);
 
         return (
           <Alert key={index} variant={variant} className="mb-2">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle className="flex items-center gap-2">
               {errorTitle}
-              {code && (
-                <span className="text-xs font-normal text-muted-foreground">
-                  ({code})
-                </span>
-              )}
+              {code && <span className="text-xs font-normal text-muted-foreground">({code})</span>}
             </AlertTitle>
             <AlertDescription className="mt-2">
-              <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                {err.message}
-              </code>
+              <code className="text-xs bg-muted px-1 py-0.5 rounded">{err.message}</code>
               {err.path && err.path.length > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Field: {err.path.join(".")}
-                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Field: {err.path.join(".")}</p>
               )}
             </AlertDescription>
           </Alert>
@@ -126,11 +121,7 @@ export function GraphQLErrorDisplay({
           </Button>
         )}
         <Button variant="ghost" size="sm" onClick={handleCopy}>
-          {copied ? (
-            <Check className="mr-2 h-4 w-4" />
-          ) : (
-            <Copy className="mr-2 h-4 w-4" />
-          )}
+          {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
           {copied ? "Copied" : "Copy Error"}
         </Button>
       </div>
@@ -141,20 +132,11 @@ export function GraphQLErrorDisplay({
 /**
  * GraphQL loading skeleton for use during data fetching.
  */
-export function GraphQLLoading({
-  rows = 3,
-  className,
-}: {
-  rows?: number;
-  className?: string;
-}) {
+export function GraphQLLoading({ rows = 3, className }: { rows?: number; className?: string }) {
   return (
     <div className={className}>
       {Array.from({ length: rows }).map((_, i) => (
-        <div
-          key={i}
-          className="mb-3 animate-pulse rounded-md border border-border bg-muted/50 p-4"
-        >
+        <div key={i} className="mb-3 animate-pulse rounded-md border border-border bg-muted/50 p-4">
           <div className="h-4 w-1/3 rounded bg-muted" />
           <div className="mt-2 h-3 w-2/3 rounded bg-muted" />
         </div>
@@ -166,31 +148,31 @@ export function GraphQLLoading({
 /**
  * GraphQLErrorBoundary provides error handling for GraphQL queries.
  */
+interface GraphQLErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+  onError?: (error: GraphQLError) => void;
+}
+
+interface GraphQLErrorBoundaryState {
+  hasError: boolean;
+  error: GraphQLError | null;
+}
+
 export class GraphQLErrorBoundary extends React.Component<
-  {
-    children: React.ReactNode;
-    fallback?: React.ReactNode;
-    onError?: (error: GraphQLError) => void;
-  },
-  { hasError: boolean; error: GraphQLError | null }
+  GraphQLErrorBoundaryProps,
+  GraphQLErrorBoundaryState
 > {
-  constructor(props: {
-    children: React.ReactNode;
-    fallback?: React.ReactNode;
-    onError?: (error: GraphQLError) => void;
-  }) {
+  constructor(props: GraphQLErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: Error): {
-    hasError: boolean;
-    error: GraphQLError;
-  } {
+  static getDerivedStateFromError(error: Error): GraphQLErrorBoundaryState {
     return {
       hasError: true,
       error: {
-        message: error.message || "An unexpected error occurred",
+        message: error.message ?? "An unexpected error occurred",
         code: "INTERNAL_ERROR",
       },
     };
@@ -198,7 +180,7 @@ export class GraphQLErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error): void {
     this.props.onError?.({
-      message: error.message || "An unexpected error occurred",
+      message: error.message ?? "An unexpected error occurred",
       code: "INTERNAL_ERROR",
     });
   }

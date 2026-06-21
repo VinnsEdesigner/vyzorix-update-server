@@ -11,13 +11,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useDeviceDetail,
+  useTelemetryHistory,
+  useTelemetryStats,
+  usePendingCommands,
+  useSendCommand,
+  useCancelCommand,
+} from "@/lib/api/graphql";
 import { useStream } from "@/lib/device-stream-context";
 import { formatRelative, formatUptime, shortHash } from "@/lib/format";
 import { getDeviceStatus, registerDevice, type DeviceStatus } from "@/lib/vyzorix-api";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
 // GraphQL imports
-import { useDeviceDetail, useTelemetryHistory, useTelemetryStats, usePendingCommands, useSendCommand, useCancelCommand } from "@/lib/api/graphql";
 
 const formatDeviceClass = (deviceClass: string | undefined): string => {
   if (!deviceClass) return "Unknown Device";
@@ -80,16 +87,22 @@ const DevicePage = (): JSX.Element => {
   });
 
   // GraphQL: Get full device detail in one query
-  const { data: deviceDetail, isLoading: isLoadingDetail } = useDeviceDetail(deviceId ?? "", {
+  const { data: deviceDetail, isLoading: _isLoadingDetail } = useDeviceDetail(deviceId ?? "", {
     enabled: Boolean(deviceId),
     refetchInterval: 30_000, // Less frequent, WebSocket provides real-time
   });
 
   // GraphQL: Get telemetry history for charts
-  const { data: telemetryHistory } = useTelemetryHistory(deviceId ?? "", undefined, undefined, 100, {
-    enabled: Boolean(deviceId),
-    refetchInterval: 60_000, // Historical data doesn't need frequent updates
-  });
+  const { data: _telemetryHistory } = useTelemetryHistory(
+    deviceId ?? "",
+    undefined,
+    undefined,
+    100,
+    {
+      enabled: Boolean(deviceId),
+      refetchInterval: 60_000, // Historical data doesn't need frequent updates
+    },
+  );
 
   // GraphQL: Get telemetry stats
   const { data: telemetryStats } = useTelemetryStats(deviceId ?? "", {
@@ -104,10 +117,10 @@ const DevicePage = (): JSX.Element => {
   });
 
   // GraphQL: Send command mutation
-  const sendCommand = useSendCommand({
+  const _sendCommand = useSendCommand({
     onSuccess: (data) => {
       toast.success("Command sent", {
-        description: `${data.sendCommand.command} → ${data.sendCommand.status}`,
+        description: `${data._sendCommand.command} → ${data._sendCommand.status}`,
       });
     },
     onError: (error) => {
@@ -217,10 +230,20 @@ const DevicePage = (): JSX.Element => {
             </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <KV k="App version" v={effectiveDevice?.version ?? effectiveDevice?.appVersion ?? "—"} />
+              <KV
+                k="App version"
+                v={effectiveDevice?.version ?? effectiveDevice?.appVersion ?? "—"}
+              />
               <KV k="Device class" v={effectiveDevice?.deviceClass ?? "—"} />
               <KV k="Server says online" v={effectiveDevice?.online ? "yes" : "no"} />
-              <KV k="Last seen" v={effectiveDevice?.lastSeen ? formatRelative(new Date(effectiveDevice.lastSeen).getTime()) : formatRelative(status.data?.lastSeen)} />
+              <KV
+                k="Last seen"
+                v={
+                  effectiveDevice?.lastSeen
+                    ? formatRelative(new Date(effectiveDevice.lastSeen).getTime())
+                    : formatRelative(status.data?.lastSeen)
+                }
+              />
               <KV k="Uptime" v={formatUptime(t?.uptime)} />
               <KV k="Risk score" v={t?.riskScore != null ? `${t.riskScore}` : "—"} />
               <KV k="Thermal" v={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"} />
@@ -245,7 +268,8 @@ const DevicePage = (): JSX.Element => {
                   {telemetryStats.telemetryStats.riskScore.avg.toFixed(1)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  min: {telemetryStats.telemetryStats.riskScore.min.toFixed(1)} / max: {telemetryStats.telemetryStats.riskScore.max.toFixed(1)}
+                  min: {telemetryStats.telemetryStats.riskScore.min.toFixed(1)} / max:{" "}
+                  {telemetryStats.telemetryStats.riskScore.max.toFixed(1)}
                 </p>
               </div>
               <div className="rounded-md border p-3">
@@ -254,7 +278,8 @@ const DevicePage = (): JSX.Element => {
                   {telemetryStats.telemetryStats.thermalTemp.avg.toFixed(1)}°C
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  min: {telemetryStats.telemetryStats.thermalTemp.min.toFixed(1)}°C / max: {telemetryStats.telemetryStats.thermalTemp.max.toFixed(1)}°C
+                  min: {telemetryStats.telemetryStats.thermalTemp.min.toFixed(1)}°C / max:{" "}
+                  {telemetryStats.telemetryStats.thermalTemp.max.toFixed(1)}°C
                 </p>
               </div>
               <div className="rounded-md border p-3">
@@ -263,7 +288,8 @@ const DevicePage = (): JSX.Element => {
                   {telemetryStats.telemetryStats.bufferLevel.avg.toFixed(1)}%
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  min: {telemetryStats.telemetryStats.bufferLevel.min.toFixed(1)}% / max: {telemetryStats.telemetryStats.bufferLevel.max.toFixed(1)}%
+                  min: {telemetryStats.telemetryStats.bufferLevel.min.toFixed(1)}% / max:{" "}
+                  {telemetryStats.telemetryStats.bufferLevel.max.toFixed(1)}%
                 </p>
               </div>
             </div>
@@ -272,36 +298,41 @@ const DevicePage = (): JSX.Element => {
       )}
 
       {/* GraphQL: Pending Commands Card */}
-      {pendingCommands && pendingCommands.pendingCommands && pendingCommands.pendingCommands.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Pending Commands</CardTitle>
-            <CardDescription>Commands waiting for delivery</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {pendingCommands.pendingCommands.map((cmd) => (
-                <div key={cmd.dispatchId} className="flex items-center justify-between rounded-md border p-3">
-                  <div>
-                    <p className="text-sm font-medium">{cmd.command}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {cmd.dispatchId.slice(0, 8)}... / {cmd.status}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => cancelCommand.mutate({ dispatchId: cmd.dispatchId })}
-                    disabled={cancelCommand.isPending}
+      {pendingCommands &&
+        pendingCommands.pendingCommands &&
+        pendingCommands.pendingCommands.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Pending Commands</CardTitle>
+              <CardDescription>Commands waiting for delivery</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {pendingCommands.pendingCommands.map((cmd) => (
+                  <div
+                    key={cmd.dispatchId}
+                    className="flex items-center justify-between rounded-md border p-3"
                   >
-                    Cancel
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                    <div>
+                      <p className="text-sm font-medium">{cmd.command}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {cmd.dispatchId.slice(0, 8)}... / {cmd.status}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => cancelCommand.mutate({ dispatchId: cmd.dispatchId })}
+                      disabled={cancelCommand.isPending}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       <Separator />
       <RegisterPanel deviceStatus={status.data ?? null} />
