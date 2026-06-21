@@ -46,6 +46,9 @@ type ResendTracker struct {
 	UpdatedAt    time.Time
 }
 
+// PasswordResetResendTracker is an alias for ResendTracker for backwards compatibility.
+type PasswordResetResendTracker = ResendTracker
+
 // IsLockedOut returns true if the tracker is currently in lockout.
 func (t *ResendTracker) IsLockedOut() bool {
 	if t.LockoutUntil == nil {

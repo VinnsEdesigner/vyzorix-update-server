@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
@@ -150,10 +151,14 @@ func (s *Service) Delete(ctx context.Context, clientID string) error {
 	return s.clientRepo.Delete(ctx, clientID)
 }
 
-// RotateKey rotates the signing key for a client.
-func (s *Service) RotateKey(ctx context.Context, clientID string) error {
-	_, _, err := s.clientRepo.RotateSigningKey(ctx, clientID, 24*24*60*60*1000000000) // 24 hours
-	return err
+// RotateKey rotates the signing key for a client with 24-hour grace period.
+// Returns the new key version.
+func (s *Service) RotateKey(ctx context.Context, clientID string) (int, error) {
+	signingKey, _, err := s.clientRepo.RotateSigningKey(ctx, clientID, 24*time.Hour)
+	if err != nil {
+		return 0, err
+	}
+	return signingKey.Version, nil
 }
 
 // Deactivate deactivates a client (revokes credentials).

@@ -45,27 +45,28 @@ func (c *CookieAuth) Middleware() gin.HandlerFunc {
 			return
 		}
 
-		// Decrypt the operator ID from the cookie.
-		operatorID, err := c.sessionManager.DecryptOperatorID(cookieValue)
+		// Decrypt the session ID from the cookie.
+		sessionID, err := c.sessionManager.DecryptOperatorID(cookieValue)
 		if err != nil {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "invalid session"})
 			ctx.Abort()
 			return
 		}
 
-		// Validate operator exists using auth service.
+		// Validate session (checks expiration and revocation).
 		timeout, cancel := context.WithTimeout(ctx.Request.Context(), 2*time.Second)
 		defer cancel()
 
-		op, err := c.authService.GetOperator(timeout, operatorID)
+		sess, op, err := c.authService.ValidateSession(timeout, sessionID)
 		if err != nil || op == nil {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "operator not found"})
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "session invalid or revoked"})
 			ctx.Abort()
 			return
 		}
 
-		// Set operator in context for downstream handlers.
+		// Set operator and session in context for downstream handlers.
 		ctx.Set(ContextKeyOperator, op)
+		ctx.Set("session", sess)
 		ctx.Next()
 	}
 }

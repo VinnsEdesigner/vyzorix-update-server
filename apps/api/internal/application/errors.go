@@ -15,7 +15,7 @@ var (
 	ErrEmailExists      = errors.New("email already exists")
 	ErrUserExists      = errors.New("user already exists")
 	ErrOAuthFailed     = errors.New("oauth authentication failed")
-	ErrOperatorNotFound = errors.New("operator not found")
+	ErrOperatorNotFound = errors.New("not_found")
 
 	// Device errors.
 	ErrDeviceNotFound   = errors.New("device not found")

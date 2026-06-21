@@ -12,6 +12,11 @@ type Repository interface {
 	// FindByFirebaseInstallID retrieves a device by Firebase install ID.
 	FindByFirebaseInstallID(ctx context.Context, fid string) (*Device, error)
 	
+	// FindByIDAndOperator retrieves a device by ID and verifies ownership.
+	// Returns ErrNotFound if device doesn't exist or doesn't belong to operator.
+	// This is used for DOA (Data Ownership Attribution) checks.
+	FindByIDAndOperator(ctx context.Context, id, operatorID string) (*Device, error)
+	
 	// Create creates a new device.
 	Create(ctx context.Context, d *Device) error
 	
@@ -29,6 +34,19 @@ type Repository interface {
 	
 	// UpdateLastSeen updates the last seen timestamp.
 	UpdateLastSeen(ctx context.Context, id string) error
+	
+	// Touch updates the last seen timestamp (alias for UpdateLastSeen).
+	Touch(ctx context.Context, deviceID string) error
+	
+	// SetSecretHash sets the command secret hash for a device.
+	SetSecretHash(ctx context.Context, deviceID, hash string) error
+	
+	// GetSecretHash retrieves the command secret hash for a device.
+	GetSecretHash(ctx context.Context, deviceID string) (string, error)
+	
+	// HashAllSecrets hashes all existing command secrets that don't have a hash.
+	// This is a migration helper for existing databases.
+	HashAllSecrets(ctx context.Context) (int, error)
 	
 	// List returns a paginated list of devices.
 	List(ctx context.Context, limit, offset int) ([]*Device, int, error)

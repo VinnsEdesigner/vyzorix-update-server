@@ -150,14 +150,14 @@ func (h *PasswordResetHandler) ResetPassword(c *gin.Context) {
 	// Get operator email from token for validation
 	// First, validate the token exists and is not expired
 	if err := h.authService.ValidatePasswordResetToken(c.Request.Context(), req.Token, ""); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_token", "message": "invalid or expired reset token"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unauthorized", "message": "invalid or expired reset token"})
 		return
 	}
 
 	// Reset password
 	err := h.authService.ResetPassword(c.Request.Context(), req.Token, "", req.NewPassword)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "reset_failed", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "internal_error", "message": "Invalid request"})
 		return
 	}
 

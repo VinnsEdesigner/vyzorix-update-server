@@ -36,7 +36,7 @@ func (h *AdminHandler) ListOperators(c *gin.Context) {
 
 	// Check role
 	if op.Role != "super_admin" && op.Role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "admin access required"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "forbidden"})
 		return
 	}
 
@@ -66,7 +66,7 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 
 	// Check role
 	if op.Role != "super_admin" && op.Role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "admin access required"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "forbidden"})
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 
 	newOp, err := h.authService.CreateOperator(c.Request.Context(), &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "create_failed", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "internal_error", "message": "Invalid request"})
 		return
 	}
 
@@ -117,7 +117,7 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 
 	// Check role
 	if op.Role != "super_admin" && op.Role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "admin access required"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "forbidden"})
 		return
 	}
 
@@ -129,7 +129,7 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 
 	targetOp, err := h.authService.GetOperatorByID(c.Request.Context(), operatorID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "operator not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "not_found"})
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 
 	// Check role
 	if op.Role != "super_admin" && op.Role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "admin access required"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "forbidden"})
 		return
 	}
 
@@ -180,7 +180,7 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 
 	updatedOp, err := h.authService.UpdateOperator(c.Request.Context(), operatorID, &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "update_failed", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "internal_error", "message": "Invalid request"})
 		return
 	}
 
@@ -210,7 +210,7 @@ func (h *AdminHandler) DeleteOperator(c *gin.Context) {
 
 	// Check role
 	if op.Role != "super_admin" && op.Role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "admin access required"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "forbidden"})
 		return
 	}
 
@@ -227,7 +227,7 @@ func (h *AdminHandler) DeleteOperator(c *gin.Context) {
 	}
 
 	if err := h.authService.DeleteOperator(c.Request.Context(), operatorID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "delete_failed", "message": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Invalid request"})
 		return
 	}
 
