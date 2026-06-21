@@ -12,10 +12,10 @@ import { toast } from "sonner";
 import wolfImage from "@/assets/images/black_wolf_evening_1781264516831.jpg";
 import LoginForm from "@/components/auth/LoginForm";
 import AuthLayout from "@/components/layout/AuthLayout";
+import { fetchClientCredentials } from "@/lib/client-credentials";
 import { loginOperator } from "@/lib/clients/authClient";
 import { initiateSSO, type SSOProvider } from "@/lib/clients/ssoClient";
 import { getFullHydratedState } from "@/lib/server/state-injector";
-import { fetchClientCredentials } from "@/lib/signed-api-client";
 
 const LoginPage = (): ReactNode => {
   const navigate = useNavigate();

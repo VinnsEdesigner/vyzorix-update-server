@@ -5,10 +5,10 @@
  * Derives a 32-byte key from a secret using SHA-512.
  * Used to derive AES-256 key from client_secret.
  */
-export function deriveKey(secret: string): Uint8Array {
+export async function deriveKey(secret: string): Promise<Uint8Array> {
   const encoder = new TextEncoder();
   const data = encoder.encode(secret);
-  const hash = sha512(data);
+  const hash = await sha512(data);
   return hash.slice(0, 32);
 }
 
@@ -82,7 +82,7 @@ export async function aes256GcmEncrypt(
   secret: string,
   plaintext: string | object,
 ): Promise<{ nonce: string; ciphertext: string }> {
-  const key = deriveKey(secret);
+  const key = await deriveKey(secret);
   const nonce = generateNonce();
 
   // Handle object or string input
@@ -91,12 +91,12 @@ export async function aes256GcmEncrypt(
   const encoder = new TextEncoder();
   const plaintextBytes = encoder.encode(data);
 
-  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-GCM" }, false, [
+  const cryptoKey = await crypto.subtle.importKey("raw", key as BufferSource, "AES-GCM", false, [
     "encrypt",
   ]);
 
   const ciphertext = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: nonce },
+    { name: "AES-GCM", iv: nonce as BufferSource },
     cryptoKey,
     plaintextBytes,
   );
@@ -116,18 +116,18 @@ export async function aes256GcmDecrypt(
   nonceB64: string,
   ciphertextB64: string,
 ): Promise<string> {
-  const key = deriveKey(secret);
+  const key = await deriveKey(secret);
   const nonce = b64Decode(nonceB64);
   const ciphertext = b64Decode(ciphertextB64);
 
-  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-GCM" }, false, [
+  const cryptoKey = await crypto.subtle.importKey("raw", key as BufferSource, "AES-GCM", false, [
     "decrypt",
   ]);
 
   const plaintext = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: nonce },
+    { name: "AES-GCM", iv: nonce as BufferSource },
     cryptoKey,
-    ciphertext,
+    ciphertext as BufferSource,
   );
 
   const decoder = new TextDecoder();
@@ -145,16 +145,16 @@ export async function aes256GcmDecryptCombined(
   const nonce = combined.slice(0, 12);
   const ciphertext = combined.slice(12);
 
-  const key = deriveKey(secret);
+  const key = await deriveKey(secret);
 
-  const cryptoKey = await crypto.subtle.importKey("raw", key, { name: "AES-GCM" }, false, [
+  const cryptoKey = await crypto.subtle.importKey("raw", key as BufferSource, "AES-GCM", false, [
     "decrypt",
   ]);
 
   const plaintext = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: nonce },
+    { name: "AES-GCM", iv: nonce as BufferSource },
     cryptoKey,
-    ciphertext,
+    ciphertext as BufferSource,
   );
 
   const decoder = new TextDecoder();

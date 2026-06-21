@@ -32,7 +32,7 @@ export function SignedCommandExample() {
     apiUrl: window.location.origin,
     onReauthNeeded: () => {
       toast.error("Session expired. Please login again.");
-      navigate("/login");
+      navigate({ to: "/login" });
     },
     onKeyRotationNeeded: (_clientId) => {
       toast.warning("API key rotated. Re-authenticating...");

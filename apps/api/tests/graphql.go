@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -395,13 +396,24 @@ func BenchmarkGraphQLQueryDevices(b *testing.B) {
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
-	queryJSON, _ := json.Marshal(query)
+	queryJSON, err := json.Marshal(query)
+	if err != nil {
+		b.Fatalf("failed to marshal query: %v", err)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		req, _ := http.NewRequest("POST", GraphQLEndpoint, bytes.NewBuffer(queryJSON))
+		req, err := http.NewRequest("POST", GraphQLEndpoint, bytes.NewBuffer(queryJSON))
+		if err != nil {
+			b.Fatalf("failed to create request: %v", err)
+		}
 		req.Header.Set("Content-Type", "application/json")
-		_, _ = client.Do(req)
+		resp, err := client.Do(req)
+		if err != nil {
+			b.Fatalf("request failed: %v", err)
+		}
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
 	}
 }
 
@@ -423,12 +435,23 @@ func BenchmarkGraphQLQueryTelemetryHistory(b *testing.B) {
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
-	queryJSON, _ := json.Marshal(query)
+	queryJSON, err := json.Marshal(query)
+	if err != nil {
+		b.Fatalf("failed to marshal query: %v", err)
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		req, _ := http.NewRequest("POST", GraphQLEndpoint, bytes.NewBuffer(queryJSON))
+		req, err := http.NewRequest("POST", GraphQLEndpoint, bytes.NewBuffer(queryJSON))
+		if err != nil {
+			b.Fatalf("failed to create request: %v", err)
+		}
 		req.Header.Set("Content-Type", "application/json")
-		_, _ = client.Do(req)
+		resp, err := client.Do(req)
+		if err != nil {
+			b.Fatalf("request failed: %v", err)
+		}
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
 	}
 }

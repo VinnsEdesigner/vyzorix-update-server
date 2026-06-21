@@ -233,7 +233,7 @@ export function GraphQLQueryState<TData>({
   }
 
   if (isEmpty || !data) {
-    return emptyComponent ? <>{emptyComponent}</> : <GraphQLEmptyState className={className} />;
+    return emptyComponent ? <>{emptyComponent}</> : <GraphQLEmptyState />;
   }
 
   return <div className={className}>{children}</div>;
