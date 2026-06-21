@@ -6,12 +6,32 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+// getEnv returns an environment variable with a default value.
+func getEnv(key, defaultVal string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultVal
+}
+
+// getEnvInt returns an integer from an environment variable.
+func getEnvInt(key string, defaultVal int) int {
+	if v := os.Getenv(key); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			return i
+		}
+	}
+	return defaultVal
+}
 
 // IPIntelligenceConfig holds configuration for IP intelligence.
 type IPIntelligenceConfig struct {

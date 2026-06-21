@@ -2,14 +2,16 @@
 package middleware
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/cipher"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
+	"net"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 )
 
@@ -83,6 +85,8 @@ type EncryptedResponseWriter struct {
 	buf        *bytes.Buffer
 	headerSet  bool
 	statusCode int
+	written    bool
+	size       int
 }
 
 // NewEncryptedResponseWriter creates a response writer that encrypts all responses.
@@ -92,6 +96,8 @@ func NewEncryptedResponseWriter(w http.ResponseWriter, enc *ResponseEncryptor) *
 		encryptor:  enc,
 		buf:        bytes.NewBuffer(nil),
 		statusCode: http.StatusOK,
+		written:    false,
+		size:       0,
 	}
 }
 
@@ -116,6 +122,8 @@ func (er *EncryptedResponseWriter) Write(b []byte) (int, error) {
 		er.ResponseWriter.Header().Set("Content-Type", "application/octet-stream")
 	}
 	er.buf.Write(b)
+	er.size += len(b)
+	er.written = true
 	return len(b), nil
 }
 
@@ -151,6 +159,58 @@ func (er *EncryptedResponseWriter) Flush() {
 
 	er.ResponseWriter.WriteHeader(er.statusCode)
 	er.ResponseWriter.Write(encrypted)
+}
+
+// Status returns the HTTP response status code.
+func (er *EncryptedResponseWriter) Status() int {
+	return er.statusCode
+}
+
+// Size returns the number of bytes written.
+func (er *EncryptedResponseWriter) Size() int {
+	return er.size
+}
+
+// WriteString writes a string to the response body.
+func (er *EncryptedResponseWriter) WriteString(s string) (int, error) {
+	return er.Write([]byte(s))
+}
+
+// Written returns true if the response body was written.
+func (er *EncryptedResponseWriter) Written() bool {
+	return er.written
+}
+
+// WriteHeaderNow forces to write the http header.
+func (er *EncryptedResponseWriter) WriteHeaderNow() {
+	er.ResponseWriter.WriteHeader(er.statusCode)
+}
+
+// Pusher get the http.Pusher for server push.
+func (er *EncryptedResponseWriter) Pusher() http.Pusher {
+	if pusher, ok := er.ResponseWriter.(http.Pusher); ok {
+		return pusher
+	}
+	return nil
+}
+
+// Hijack implements http.Hijacker.
+func (er *EncryptedResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hj, ok := er.ResponseWriter.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, fmt.Errorf(" ResponseWriter does not implement http.Hijacker")
+}
+
+// CloseNotify implements http.CloseNotifier.
+func (er *EncryptedResponseWriter) CloseNotify() <-chan bool {
+	if cn, ok := er.ResponseWriter.(http.CloseNotifier); ok {
+		return cn.CloseNotify()
+	}
+	// Return a closed channel as fallback
+	ch := make(chan bool)
+	close(ch)
+	return ch
 }
 
 // MandatoryEncryptionMiddleware returns a middleware that encrypts ALL responses.
@@ -208,7 +268,6 @@ func JSONEncryptResponse(encryptor *ResponseEncryptor, status int, obj interface
 	}
 
 	nonceB64 := base64.StdEncoding.EncodeToString(nonce)
-	ciphertextB64 := base64.StdEncoding.EncodeToString(ciphertext)
 
 	return status, ciphertext, nonceB64, nil
 }

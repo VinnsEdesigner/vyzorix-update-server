@@ -8,11 +8,28 @@ import (
 // subscriptionCallback is a function that receives subscription data.
 type subscriptionCallback func(interface{})
 
+// callbackWrapper wraps a callback with an ID for tracking.
+type callbackWrapper struct {
+	id       int
+	callback subscriptionCallback
+}
+
+var callbackIDCounter int
+var callbackIDMu sync.Mutex
+
+// nextCallbackID generates the next unique callback ID.
+func nextCallbackID() int {
+	callbackIDMu.Lock()
+	defer callbackIDMu.Unlock()
+	callbackIDCounter++
+	return callbackIDCounter
+}
+
 // SubscriptionManager manages real-time subscriptions for GraphQL subscriptions.
 type SubscriptionManager struct {
 	hub            *Hub
-	deviceUpdates  map[string][]subscriptionCallback
-	telemetry      map[string][]subscriptionCallback
+	deviceUpdates  map[string][]callbackWrapper
+	telemetry      map[string][]callbackWrapper
 	commandStatus  map[string]subscriptionCallback
 	mu             sync.RWMutex
 }
@@ -24,8 +41,8 @@ func (h *Hub) InitSubscriptions() {
 	if subscriptionMgr == nil {
 		subscriptionMgr = &SubscriptionManager{
 			hub:           h,
-			deviceUpdates: make(map[string][]subscriptionCallback),
-			telemetry:     make(map[string][]subscriptionCallback),
+			deviceUpdates: make(map[string][]callbackWrapper),
+			telemetry:     make(map[string][]callbackWrapper),
 			commandStatus: make(map[string]subscriptionCallback),
 		}
 	}
@@ -44,14 +61,18 @@ func (h *Hub) SubscribeDeviceUpdates(operatorID, deviceID string, callback subsc
 		key = operatorID + ":" + deviceID
 	}
 
-	subMgr.deviceUpdates[key] = append(subMgr.deviceUpdates[key], callback)
+	wrapper := callbackWrapper{
+		id:       nextCallbackID(),
+		callback: callback,
+	}
+	subMgr.deviceUpdates[key] = append(subMgr.deviceUpdates[key], wrapper)
 
 	return func() {
 		subMgr.mu.Lock()
 		defer subMgr.mu.Unlock()
 		subs := subMgr.deviceUpdates[key]
-		for i, cb := range subs {
-			if cb == callback {
+		for i, w := range subs {
+			if w.id == wrapper.id {
 				subMgr.deviceUpdates[key] = append(subs[:i], subs[i+1:]...)
 				break
 			}
@@ -69,14 +90,18 @@ func (h *Hub) SubscribeTelemetry(operatorID, deviceID string, callback subscript
 
 	key := operatorID + ":" + deviceID
 
-	subMgr.telemetry[key] = append(subMgr.telemetry[key], callback)
+	wrapper := callbackWrapper{
+		id:       nextCallbackID(),
+		callback: callback,
+	}
+	subMgr.telemetry[key] = append(subMgr.telemetry[key], wrapper)
 
 	return func() {
 		subMgr.mu.Lock()
 		defer subMgr.mu.Unlock()
 		subs := subMgr.telemetry[key]
-		for i, cb := range subs {
-			if cb == callback {
+		for i, w := range subs {
+			if w.id == wrapper.id {
 				subMgr.telemetry[key] = append(subs[:i], subs[i+1:]...)
 				break
 			}
@@ -112,10 +137,10 @@ func (h *Hub) PublishDeviceUpdate(operatorID, deviceID string, data interface{})
 	defer subMgr.mu.RUnlock()
 
 	// Notify all subscriptions for this operator
-	for key, cbs := range subMgr.deviceUpdates {
+	for key, wrappers := range subMgr.deviceUpdates {
 		if key == operatorID || key == operatorID+":"+deviceID {
-			for _, cb := range cbs {
-				go cb(data)
+			for _, w := range wrappers {
+				go w.callback(data)
 			}
 		}
 	}
@@ -130,16 +155,16 @@ func (h *Hub) PublishTelemetry(operatorID, deviceID string, data interface{}) {
 	defer subMgr.mu.RUnlock()
 
 	key := operatorID + ":" + deviceID
-	if cbs, ok := subMgr.telemetry[key]; ok {
-		for _, cb := range cbs {
-			go cb(data)
+	if wrappers, ok := subMgr.telemetry[key]; ok {
+		for _, w := range wrappers {
+			go w.callback(data)
 		}
 	}
 
 	// Also notify operator-wide subscriptions
-	if cbs, ok := subMgr.telemetry[operatorID]; ok {
-		for _, cb := range cbs {
-			go cb(data)
+	if wrappers, ok := subMgr.telemetry[operatorID]; ok {
+		for _, w := range wrappers {
+			go w.callback(data)
 		}
 	}
 }
