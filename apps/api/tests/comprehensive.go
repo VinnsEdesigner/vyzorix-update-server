@@ -39,9 +39,10 @@ type EndpointResult struct {
 }
 
 const (
-	BaseURL    = "http://localhost:3000"
-	ReportFile = "endpoint_test_report.md"
-	DBPath     = "./data/vyzorix.db"
+	BaseURL          = "http://localhost:3000"
+	GraphQLEndpoint  = "http://localhost:3000/graphql"
+	ReportFile       = "endpoint_test_report.md"
+	DBPath           = "./data/vyzorix.db"
 )
 
 // HTTP Client setup
@@ -424,7 +425,7 @@ func testErrorHandling() []EndpointResult {
 	var results []EndpointResult
 
 	results = append(results, testRequest("GET", BaseURL+"/nonexistent", nil))
-	results = append(results, testRequest("POST", BaseURL+"/v1/auth/login", `{"email": "not-json`), true)
+	results = append(results, testRequest("POST", BaseURL+"/v1/auth/login", `{"email": "not-json`))
 	results = append(results, testRequest("GET", BaseURL+"/v1/device/invalid@id/status", nil))
 
 	return results

@@ -12,9 +12,7 @@ import (
 )
 
 const (
-	BaseURL        = "http://localhost:3000"
 	LoginEndpoint  = BaseURL + "/api/v1/auth/login"
-	GraphQLEndpoint = BaseURL + "/graphql"
 )
 
 // E2ETestCredentials holds login credentials for E2E tests.

@@ -9,7 +9,6 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/resolver"
-	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/gin-gonic/gin"
@@ -26,7 +25,7 @@ var upgrader = websocket.Upgrader{
 
 // Handler manages WebSocket connections for GraphQL subscriptions.
 type Handler struct {
-	hub      *ws.Hub
+	hub      *hub.Hub
 	resolver *resolver.Resolver
 	authMw   *middleware.AuthMiddleware
 	log      *slog.Logger
@@ -59,7 +58,7 @@ type SubscribePayload struct {
 }
 
 // NewHandler creates a new subscription handler.
-func NewHandler(hub *ws.Hub, res *resolver.Resolver, authMw *middleware.AuthMiddleware, log *slog.Logger) *Handler {
+func NewHandler(hub *hub.Hub, res *resolver.Resolver, authMw *middleware.AuthMiddleware, log *slog.Logger) *Handler {
 	return &Handler{
 		hub:      hub,
 		resolver: res,
