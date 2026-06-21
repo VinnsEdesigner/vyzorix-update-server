@@ -3,6 +3,7 @@ package schema
 
 import (
 	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/language/ast"
 )
 
 // Define scalar types
@@ -17,7 +18,7 @@ var JSONScalar = graphql.NewScalar(graphql.ScalarConfig{
 	ParseValue: func(value interface{}) interface{} {
 		return value
 	},
-	ParseLiteral: func(valueAST interface{}) interface{} {
+	ParseLiteral: func(valueAST ast.Value) interface{} {
 		return valueAST
 	},
 })
@@ -35,7 +36,7 @@ var DateTimeScalar = graphql.NewScalar(graphql.ScalarConfig{
 	ParseValue: func(value interface{}) interface{} {
 		return value
 	},
-	ParseLiteral: func(valueAST interface{}) interface{} {
+	ParseLiteral: func(valueAST ast.Value) interface{} {
 		return valueAST
 	},
 })

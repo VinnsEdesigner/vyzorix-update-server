@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/resolver"

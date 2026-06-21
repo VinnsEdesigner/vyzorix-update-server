@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	GraphQLEndpoint = "http://localhost:3000/graphql"
 	PlaygroundEndpoint = "http://localhost:3000/playground"
 )
 
