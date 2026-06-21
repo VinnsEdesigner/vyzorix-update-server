@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ExternalLink, BookOpen, Code, FlaskConical, ArrowLeft } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
@@ -10,15 +11,62 @@ import { useVyzorixConfig } from "@/lib/vyzorix-config";
  * Displays the schema types and their fields.
  */
 function SchemaExplorer() {
-  const { serverUrl } = useVyzorixConfig();
+  const { _serverUrl } = useVyzorixConfig();
 
   const schemaTypes = [
-    { name: "Query", fields: ["devices", "device", "dashboard", "telemetryHistory", "telemetryStats", "pendingCommands", "connectionStatus", "allConnections"] },
-    { name: "Mutation", fields: ["sendCommand", "cancelCommand", "retryCommand", "updateFCMToken", "deleteDevice"] },
-    { name: "Device", fields: ["id", "deviceId", "model", "manufacturer", "osVersion", "appVersion", "status", "lastSeen", "createdAt"] },
-    { name: "TelemetryFrame", fields: ["timestamp", "riskScore", "thermalTemp", "bufferLevel", "audioMode", "fcmToken"] },
-    { name: "Command", fields: ["id", "dispatchId", "deviceId", "command", "status", "createdAt", "updatedAt", "delivery", "result"] },
-    { name: "Connection", fields: ["deviceId", "status", "connectedAt", "lastActivity", "ipAddress", "userAgent"] },
+    {
+      name: "Query",
+      fields: [
+        "devices",
+        "device",
+        "dashboard",
+        "telemetryHistory",
+        "telemetryStats",
+        "pendingCommands",
+        "connectionStatus",
+        "allConnections",
+      ],
+    },
+    {
+      name: "Mutation",
+      fields: ["sendCommand", "cancelCommand", "retryCommand", "updateFCMToken", "deleteDevice"],
+    },
+    {
+      name: "Device",
+      fields: [
+        "id",
+        "deviceId",
+        "model",
+        "manufacturer",
+        "osVersion",
+        "appVersion",
+        "status",
+        "lastSeen",
+        "createdAt",
+      ],
+    },
+    {
+      name: "TelemetryFrame",
+      fields: ["timestamp", "riskScore", "thermalTemp", "bufferLevel", "audioMode", "fcmToken"],
+    },
+    {
+      name: "Command",
+      fields: [
+        "id",
+        "dispatchId",
+        "deviceId",
+        "command",
+        "status",
+        "createdAt",
+        "updatedAt",
+        "delivery",
+        "result",
+      ],
+    },
+    {
+      name: "Connection",
+      fields: ["deviceId", "status", "connectedAt", "lastActivity", "ipAddress", "userAgent"],
+    },
   ];
 
   return (
@@ -158,11 +206,7 @@ function ExampleQueries() {
           <div key={example.title}>
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium">{example.title}</h4>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => copyToClipboard(example.query)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => copyToClipboard(example.query)}>
                 Copy
               </Button>
             </div>
@@ -181,10 +225,10 @@ function ExampleQueries() {
  * Provides links and information about the GraphQL playground.
  */
 function PlaygroundPage(): React.ReactElement {
-  const { serverUrl } = useVyzorixConfig();
-  const playgroundUrl = `${serverUrl}/playground`;
-  const graphqlUrl = `${serverUrl}/graphql`;
-  const voyagerUrl = `${serverUrl}/voyager`; // Optional: GraphQL Voyager for schema visualization
+  const { _serverUrl } = useVyzorixConfig();
+  const playgroundUrl = `${_serverUrl}/playground`;
+  const graphqlUrl = `${_serverUrl}/graphql`;
+  const _voyagerUrl = `${_serverUrl}/voyager`; // Optional: GraphQL Voyager for schema visualization
 
   return (
     <div className="space-y-6">
@@ -288,9 +332,7 @@ function PlaygroundPage(): React.ReactElement {
             </p>
           </div>
           <Button variant="outline" asChild>
-            <Link to="/docs/migration-graphql">
-              View Migration Guide
-            </Link>
+            <Link to="/docs/migration-graphql">View Migration Guide</Link>
           </Button>
         </CardContent>
       </Card>

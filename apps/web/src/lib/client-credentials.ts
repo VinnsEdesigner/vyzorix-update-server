@@ -1,12 +1,15 @@
 // Client credentials management for request signing.
 // Handles storage, retrieval, and lifecycle of API client credentials.
 
-import { logger } from './logger';
+import { logger } from "./logger";
 
+/* eslint-disable @typescript-eslint/no-extraneous-class */
+// ClientCredentialsStore uses class syntax for organization even though all methods are static
+// This pattern is intentional for namespacing related functionality
 export interface ClientCredentials {
   clientId: string;
   clientSecret: string;
-  platform: 'web' | 'ios' | 'android';
+  platform: "web" | "ios" | "android";
   name: string;
   createdAt: number;
   /** Unix timestamp when credentials were fetched for this session */
@@ -19,8 +22,8 @@ export interface SignedClient extends ClientCredentials {
 }
 
 // Storage keys
-const STORAGE_KEY = 'vyz_client_credentials';
-const ACTIVE_KEY = 'vyz_active_client_id';
+const STORAGE_KEY = "vyz_client_credentials";
+const ACTIVE_KEY = "vyz_active_client_id";
 
 // In-memory cache for the active client's derived key
 let activeClientCache: SignedClient | null = null;
@@ -34,35 +37,35 @@ export class ClientCredentialsStore {
   /**
    * Save credentials after receiving from /v1/auth/client-credentials
    */
-  static save(credentials: Omit<ClientCredentials, 'fetchedAt'>): void {
+  static save(credentials: Omit<ClientCredentials, "fetchedAt">): void {
     try {
       // Get existing list
       const existing = this.getAll();
-      
+
       // Check if client already exists
-      const idx = existing.findIndex(c => c.clientId === credentials.clientId);
+      const idx = existing.findIndex((c) => c.clientId === credentials.clientId);
       if (idx >= 0) {
         existing[idx] = { ...existing[idx], ...credentials, fetchedAt: Date.now() };
       } else {
         existing.push({ ...credentials, fetchedAt: Date.now() });
       }
-      
+
       // Save to localStorage
       localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-      
+
       // Set as active
       localStorage.setItem(ACTIVE_KEY, credentials.clientId);
-      
-      logger.info('credentials', `Saved client: ${credentials.clientId}`);
+
+      logger.info("credentials", `Saved client: ${credentials.clientId}`);
     } catch (e) {
-      logger.error('credentials', `Failed to save: ${e}`);
+      logger.error("credentials", `Failed to save: ${e}`);
     }
   }
 
   /**
    * Get all stored credentials (without secrets - those are in memory only)
    */
-  static getAll(): Omit<ClientCredentials, 'clientSecret'>[] {
+  static getAll(): Omit<ClientCredentials, "clientSecret">[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return [];
@@ -75,9 +78,9 @@ export class ClientCredentialsStore {
   /**
    * Get credentials for a specific client (without secret - secret is in memory)
    */
-  static getMeta(clientId: string): Omit<ClientCredentials, 'clientSecret'> | null {
+  static getMeta(clientId: string): Omit<ClientCredentials, "clientSecret"> | null {
     const all = this.getAll();
-    return all.find(c => c.clientId === clientId) || null;
+    return all.find((c) => c.clientId === clientId) ?? null;
   }
 
   /**
@@ -87,9 +90,9 @@ export class ClientCredentialsStore {
   static getActive(): ClientCredentials | null {
     const clientId = localStorage.getItem(ACTIVE_KEY);
     if (!clientId || !activeClientCache) return null;
-    
+
     if (activeClientCache.clientId !== clientId) return null;
-    
+
     return {
       clientId: activeClientCache.clientId,
       clientSecret: activeClientCache.clientSecret,
@@ -108,18 +111,18 @@ export class ClientCredentialsStore {
     // Store in memory cache with derived key
     const meta = this.getMeta(clientId);
     if (!meta) {
-      logger.warn('credentials', `Client ${clientId} not found in storage`);
+      logger.warn("credentials", `Client ${clientId} not found in storage`);
       return;
     }
-    
+
     activeClientCache = {
       ...meta,
       clientSecret: secret,
       encryptionKey: new Uint8Array(), // Derived key computed on-demand
     };
-    
+
     localStorage.setItem(ACTIVE_KEY, clientId);
-    logger.info('credentials', `Set active client: ${clientId}`);
+    logger.info("credentials", `Set active client: ${clientId}`);
   }
 
   /**
@@ -127,7 +130,7 @@ export class ClientCredentialsStore {
    */
   static clearCache(): void {
     activeClientCache = null;
-    logger.info('credentials', 'Cleared credentials cache');
+    logger.info("credentials", "Cleared credentials cache");
   }
 
   /**
@@ -136,17 +139,17 @@ export class ClientCredentialsStore {
   static remove(clientId: string): void {
     try {
       const existing = this.getAll();
-      const filtered = existing.filter(c => c.clientId !== clientId);
+      const filtered = existing.filter((c) => c.clientId !== clientId);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-      
+
       if (localStorage.getItem(ACTIVE_KEY) === clientId) {
         localStorage.removeItem(ACTIVE_KEY);
         this.clearCache();
       }
-      
-      logger.info('credentials', `Removed client: ${clientId}`);
+
+      logger.info("credentials", `Removed client: ${clientId}`);
     } catch (e) {
-      logger.error('credentials', `Failed to remove: ${e}`);
+      logger.error("credentials", `Failed to remove: ${e}`);
     }
   }
 
@@ -157,14 +160,14 @@ export class ClientCredentialsStore {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(ACTIVE_KEY);
     this.clearCache();
-    logger.info('credentials', 'Cleared all credentials');
+    logger.info("credentials", "Cleared all credentials");
   }
 
   /**
    * Check if we have credentials for a client.
    */
   static has(clientId: string): boolean {
-    return this.getAll().some(c => c.clientId === clientId);
+    return this.getAll().some((c) => c.clientId === clientId);
   }
 
   /**
@@ -181,18 +184,18 @@ export class ClientCredentialsStore {
  */
 export async function fetchClientCredentials(
   apiUrl: string,
-  name: string = 'Web Dashboard'
+  name: string = "Web Dashboard",
 ): Promise<ClientCredentials> {
   const response = await fetch(`${apiUrl}/v1/auth/client-credentials`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       // Include session cookie automatically
     },
-    credentials: 'include',
+    credentials: "include",
     body: JSON.stringify({
       name,
-      platform: 'web',
+      platform: "web",
       allowedOrigins: [window.location.origin],
     }),
   });
@@ -203,12 +206,12 @@ export async function fetchClientCredentials(
   }
 
   const data = await response.json();
-  
+
   const credentials: ClientCredentials = {
     clientId: data.clientId,
     clientSecret: data.clientSecret, // Only returned once!
-    platform: 'web',
-    name: data.name || name,
+    platform: "web",
+    name: data.name ?? name,
     createdAt: new Date(data.createdAt).getTime(),
     fetchedAt: Date.now(),
   };
@@ -223,7 +226,7 @@ export async function fetchClientCredentials(
 /**
  * List all client credentials (metadata only - no secrets).
  */
-export function listClientCredentials(): Omit<ClientCredentials, 'clientSecret'>[] {
+export function listClientCredentials(): Omit<ClientCredentials, "clientSecret">[] {
   return ClientCredentialsStore.getAll();
 }
 
