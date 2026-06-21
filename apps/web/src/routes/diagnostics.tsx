@@ -104,13 +104,14 @@ const DiagnosticsPage = (): ReactElement => {
     undefined,
     100,
     {
+      queryKey: ["vyzorix", "telemetryHistory", deviceId],
       enabled: Boolean(deviceId),
       refetchInterval: 60_000,
     },
   );
 
   // GraphQL: Send command mutation (replaces REST dispatchCommand)
-  const _sendCommandMutation = useSendCommand({
+  useSendCommand({
     onSuccess: (data) => {
       toast.success(`${data.sendCommand.command} → ${data.sendCommand.status}`, {
         description: `dispatch ${data.sendCommand.dispatchId.slice(0, 8)}`,

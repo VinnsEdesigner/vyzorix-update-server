@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -270,14 +269,12 @@ func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 		req.EndTime,
 	))
 
-	if err := json.NewEncoder(c.Writer).Encode(gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"deviceId":   req.DeviceID,
 		"exportedAt": time.Now().Format(time.RFC3339),
 		"count":      len(entries),
 		"entries":    entries,
-	}); err != nil {
-		_ = c.Error(err)
-	}
+	})
 }
 
 // GetLatest handles GET /v1/telemetry/latest/:deviceId
@@ -354,8 +351,8 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 
 	// Calculate statistics
 	var totalRisk, totalBuffer, totalTemp int
-	var minRisk, maxRisk = 999, -1
-	var minTemp, maxTemp float64 = 999, -999
+	minRisk, maxRisk := 999, -1
+	minTemp, maxTemp := 999.0, -999.0
 
 	for _, e := range entries {
 		totalRisk += e.RiskScore
