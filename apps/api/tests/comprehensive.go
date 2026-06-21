@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// TestReport holds test results
+// TestReport holds test results.
 type TestReport struct {
 	TotalEndpoints int
 	Reachable      int
@@ -45,7 +45,7 @@ const (
 	DBPath           = "./data/vyzorix.db"
 )
 
-// HTTP Client setup
+// HTTP Client setup.
 var client = &http.Client{
 	Timeout: 10 * time.Second,
 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -209,7 +209,7 @@ func testRequest(method, url string, body interface{}) EndpointResult {
 		result.Notes = fmt.Sprintf("Connection error: %v", err)
 		return result
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	result.StatusCode = resp.StatusCode
 	bodyBytes, _ := io.ReadAll(resp.Body)
@@ -551,7 +551,7 @@ func testDatabaseOperations() []EndpointResult {
 
 func RunAllTests() error {
 	fmt.Println("🔍 Comprehensive API Testing Suite")
-	fmt.Println("====================================\n")
+	fmt.Println("====================================")
 
 	report := &TestReport{}
 
@@ -611,10 +611,10 @@ func RunAllTests() error {
 	fmt.Printf("Done (%d)\n", len(results))
 
 	// Generate report
-	os.MkdirAll("./data", 0755)
+	_ = os.MkdirAll("./data", 0755)
 	reportContent := report.generateReport()
 	reportPath := filepath.Join(".", ReportFile)
-	os.WriteFile(reportPath, []byte(reportContent), 0644)
+	_ = os.WriteFile(reportPath, []byte(reportContent), 0644)
 
 	fmt.Println("\n====================================")
 	fmt.Println("📊 TEST SUMMARY")

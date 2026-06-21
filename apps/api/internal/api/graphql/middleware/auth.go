@@ -73,13 +73,12 @@ func (m *AuthMiddleware) authenticateSession(ctx context.Context, cookieHeader s
 		return nil, gqlerrors.ErrUnauthorized
 	}
 
-	sess, op, err := m.AuthService.ValidateSession(ctx, operatorID)
+	_, op, err := m.AuthService.ValidateSession(ctx, operatorID)
 	if err != nil || op == nil {
 		m.Log.Debug("session validation failed", "operatorID", operatorID, "err", err)
 		return nil, gqlerrors.ErrUnauthorized
 	}
 
-	ctx = context.WithValue(ctx, "session", sess)
 	return op, nil
 }
 

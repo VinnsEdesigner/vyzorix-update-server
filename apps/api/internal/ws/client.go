@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"math/rand"
 	"sync/atomic"
 	"time"
 
@@ -20,14 +19,7 @@ const (
 	pongWait     = 70 * time.Second
 	pingPeriod   = 30 * time.Second
 
-	// Reconnection configuration
-	maxReconnectAttempts = 5
-	baseReconnectDelay   = 1 * time.Second
-	maxReconnectDelay   = 16 * time.Second
-	reconnectJitter     = 500 * time.Millisecond
-	connectionTimeout    = 10 * time.Second
-
-	// Rate limit exceeded HTTP code
+	// Rate limit exceeded HTTP code.
 	RateLimitExceeded = 429
 )
 
@@ -133,22 +125,6 @@ func (c *Client) Uptime() int64 {
 		return 0
 	}
 	return time.Now().Unix() - connectedAt
-}
-
-// calculateReconnectDelay calculates the delay for the next reconnection attempt.
-// Uses exponential backoff with jitter: delay = min(base * 2^attempt, maxDelay) + random(jitter)
-func calculateReconnectDelay(attempt int) time.Duration {
-	// Exponential backoff: 1s, 2s, 4s, 8s, 16s
-	delay := baseReconnectDelay * time.Duration(1<<uint(attempt))
-	if delay > maxReconnectDelay {
-		delay = maxReconnectDelay
-	}
-
-	// Add jitter: ±500ms
-	jitter := time.Duration(rand.Int63n(int64(reconnectJitter)*2) - int64(reconnectJitter))
-	delay += jitter
-
-	return delay
 }
 
 // setReadDeadline safely sets read deadline, logging any error.
