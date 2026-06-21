@@ -1366,6 +1366,14 @@ func (s *AuthService) GetOperatorByID(ctx context.Context, id string) (*operator
 	return s.operatorRepo.FindByID(ctx, id)
 }
 
+// VerifyJWT verifies a JWT token and returns the claims.
+func (s *AuthService) VerifyJWT(token string) (*auth.OperatorClaims, error) {
+	if s.jwtManager == nil {
+		return nil, auth.ErrInvalidToken
+	}
+	return s.jwtManager.Verify(token)
+}
+
 // UpdateOperator updates an existing operator (admin only).
 func (s *AuthService) UpdateOperator(ctx context.Context, operatorID string, req *UpdateOperatorRequest) (*operator.Operator, error) {
 	op, err := s.operatorRepo.FindByID(ctx, operatorID)

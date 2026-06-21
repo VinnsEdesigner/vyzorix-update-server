@@ -2,7 +2,7 @@
 // Provides authenticated API access with request signing and response encryption.
 // Handles automatic re-authentication on SIGN_005 errors and key rotation.
 
-import React, { useState, useCallback, useEffect, createContext } from 'react';
+import React, { useState, useCallback, useEffect, createContext, type ReactNode } from 'react';
 import {
   SignedApiClient,
   getSignedApiClient,
@@ -281,7 +281,7 @@ export function SignedApiProvider({
   apiUrl,
   clientName = 'Web Dashboard',
 }: { 
-  children: React.ReactNode;
+  children: ReactNode;
   apiUrl: string;
   clientName?: string;
 }) {
@@ -309,9 +309,9 @@ export function SignedApiProvider({
     }
   }, [client]);
 
-  return (
-    <SignedApiContext.Provider value={client}>
-      {children}
-    </SignedApiContext.Provider>
+  return React.createElement(
+    SignedApiContext.Provider,
+    { value: client },
+    children
   );
 }

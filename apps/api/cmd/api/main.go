@@ -305,6 +305,21 @@ func main() {
 	})
 
 	// ============================================================
+	// STEP 4.5: GraphQL (if enabled)
+	// ============================================================
+	if cfg.EnableGraphQL {
+		telemetryRepo := storage.NewTelemetryRepository(db.DB())
+		if err := apiServer.RegisterGraphQL(
+			deviceService,
+			commandService,
+			telemetryRepo,
+			wsHub,
+		); err != nil {
+			log.Error("failed to register GraphQL", "err", err)
+		}
+	}
+
+	// ============================================================
 	// STEP 5: HTTP Server
 	// ============================================================
 	addr := ":" + cfg.Port
