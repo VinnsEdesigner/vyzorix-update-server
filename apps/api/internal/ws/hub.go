@@ -3,10 +3,12 @@ package hub
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
@@ -29,6 +31,7 @@ type Hub struct {
 	rateLimiter    *RateLimiter
 	telemetryFilter *TelemetryFilter
 	compression    *Compression
+	latencyConfig  *LatencyConfig
 	mu             sync.RWMutex
 	metrics        HubMetrics
 	metricsMu      sync.RWMutex

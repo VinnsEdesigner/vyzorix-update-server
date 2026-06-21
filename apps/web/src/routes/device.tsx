@@ -16,6 +16,9 @@ import { formatRelative, formatUptime, shortHash } from "@/lib/format";
 import { getDeviceStatus, registerDevice, type DeviceStatus } from "@/lib/vyzorix-api";
 import { useVyzorixConfig } from "@/lib/vyzorix-config";
 
+// GraphQL imports
+import { useDeviceDetail, useTelemetryHistory, useTelemetryStats, usePendingCommands, useSendCommand, useCancelCommand } from "@/lib/api/graphql";
+
 const formatDeviceClass = (deviceClass: string | undefined): string => {
   if (!deviceClass) return "Unknown Device";
   return deviceClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -67,6 +70,7 @@ const DevicePage = (): JSX.Element => {
   const stream = useStream();
   const t = stream.lastTelemetry;
 
+  // REST fallback for basic status
   const status = useQuery({
     queryKey: ["vyzorix", "status", serverUrl, deviceId],
     queryFn: () => getDeviceStatus(serverUrl, deviceId),
@@ -75,15 +79,75 @@ const DevicePage = (): JSX.Element => {
     retry: false,
   });
 
+  // GraphQL: Get full device detail in one query
+  const { data: deviceDetail, isLoading: isLoadingDetail } = useDeviceDetail(deviceId ?? "", {
+    enabled: Boolean(deviceId),
+    refetchInterval: 30_000, // Less frequent, WebSocket provides real-time
+  });
+
+  // GraphQL: Get telemetry history for charts
+  const { data: telemetryHistory } = useTelemetryHistory(deviceId ?? "", undefined, undefined, 100, {
+    enabled: Boolean(deviceId),
+    refetchInterval: 60_000, // Historical data doesn't need frequent updates
+  });
+
+  // GraphQL: Get telemetry stats
+  const { data: telemetryStats } = useTelemetryStats(deviceId ?? "", {
+    enabled: Boolean(deviceId),
+    refetchInterval: 30_000,
+  });
+
+  // GraphQL: Get pending commands
+  const { data: pendingCommands } = usePendingCommands(deviceId ?? "", {
+    enabled: Boolean(deviceId),
+    refetchInterval: 15_000,
+  });
+
+  // GraphQL: Send command mutation
+  const sendCommand = useSendCommand({
+    onSuccess: (data) => {
+      toast.success("Command sent", {
+        description: `${data.sendCommand.command} → ${data.sendCommand.status}`,
+      });
+    },
+    onError: (error) => {
+      toast.error("Command failed", {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    },
+  });
+
+  // GraphQL: Cancel command mutation
+  const cancelCommand = useCancelCommand({
+    onSuccess: () => {
+      toast.success("Command cancelled");
+    },
+    onError: (error) => {
+      toast.error("Cancel failed", {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    },
+  });
+
+  // Use GraphQL data if available, fallback to REST
+  const effectiveDevice = deviceDetail?.device ?? {
+    id: deviceId,
+    online: status.data?.online,
+    lastSeen: status.data?.lastSeen ? new Date(status.data.lastSeen).toISOString() : undefined,
+    appVersion: status.data?.appVersion,
+    deviceClass: status.data?.deviceClass,
+    fcmToken: status.data?.fcmToken,
+  };
+
   const health: DeviceHealth = computeDeviceHealth(
-    Boolean(status.data?.online),
+    Boolean(effectiveDevice?.online),
     stream.state,
     t?.riskScore,
     t?.thermalTemp,
     thresholds,
   );
 
-  const deviceDisplayName = formatDeviceClass(status.data?.deviceClass);
+  const deviceDisplayName = formatDeviceClass(effectiveDevice?.deviceClass);
 
   // No device configured
   if (!deviceId) {
@@ -146,17 +210,17 @@ const DevicePage = (): JSX.Element => {
           <StatusBadge status={health} />
         </CardHeader>
         <CardContent>
-          {status.isError ? (
+          {status.isError && !deviceDetail?.device ? (
             <p className="text-sm text-muted-foreground">
               Device not registered yet. Use the registration panel below or run the Android daemon
               to call <code className="text-xs">POST /v1/device/register</code>.
             </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <KV k="App version" v={status.data?.appVersion ?? "—"} />
-              <KV k="Device class" v={status.data?.deviceClass ?? "—"} />
-              <KV k="Server says online" v={status.data?.online ? "yes" : "no"} />
-              <KV k="Last seen" v={formatRelative(status.data?.lastSeen)} />
+              <KV k="App version" v={effectiveDevice?.version ?? effectiveDevice?.appVersion ?? "—"} />
+              <KV k="Device class" v={effectiveDevice?.deviceClass ?? "—"} />
+              <KV k="Server says online" v={effectiveDevice?.online ? "yes" : "no"} />
+              <KV k="Last seen" v={effectiveDevice?.lastSeen ? formatRelative(new Date(effectiveDevice.lastSeen).getTime()) : formatRelative(status.data?.lastSeen)} />
               <KV k="Uptime" v={formatUptime(t?.uptime)} />
               <KV k="Risk score" v={t?.riskScore != null ? `${t.riskScore}` : "—"} />
               <KV k="Thermal" v={t?.thermalTemp != null ? `${t.thermalTemp.toFixed(1)}°C` : "—"} />
@@ -165,6 +229,80 @@ const DevicePage = (): JSX.Element => {
           )}
         </CardContent>
       </Card>
+
+      {/* GraphQL: Telemetry Stats Card */}
+      {telemetryStats?.telemetryStats && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Telemetry Statistics</CardTitle>
+            <CardDescription>Historical stats from GraphQL</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Risk Score Avg</p>
+                <p className="text-lg font-medium">
+                  {telemetryStats.telemetryStats.riskScore.avg.toFixed(1)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  min: {telemetryStats.telemetryStats.riskScore.min.toFixed(1)} / max: {telemetryStats.telemetryStats.riskScore.max.toFixed(1)}
+                </p>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Thermal Temp Avg</p>
+                <p className="text-lg font-medium">
+                  {telemetryStats.telemetryStats.thermalTemp.avg.toFixed(1)}°C
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  min: {telemetryStats.telemetryStats.thermalTemp.min.toFixed(1)}°C / max: {telemetryStats.telemetryStats.thermalTemp.max.toFixed(1)}°C
+                </p>
+              </div>
+              <div className="rounded-md border p-3">
+                <p className="text-xs text-muted-foreground">Buffer Level Avg</p>
+                <p className="text-lg font-medium">
+                  {telemetryStats.telemetryStats.bufferLevel.avg.toFixed(1)}%
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  min: {telemetryStats.telemetryStats.bufferLevel.min.toFixed(1)}% / max: {telemetryStats.telemetryStats.bufferLevel.max.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* GraphQL: Pending Commands Card */}
+      {pendingCommands && pendingCommands.pendingCommands && pendingCommands.pendingCommands.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Pending Commands</CardTitle>
+            <CardDescription>Commands waiting for delivery</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {pendingCommands.pendingCommands.map((cmd) => (
+                <div key={cmd.dispatchId} className="flex items-center justify-between rounded-md border p-3">
+                  <div>
+                    <p className="text-sm font-medium">{cmd.command}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {cmd.dispatchId.slice(0, 8)}... / {cmd.status}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => cancelCommand.mutate({ dispatchId: cmd.dispatchId })}
+                    disabled={cancelCommand.isPending}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Separator />
       <RegisterPanel deviceStatus={status.data ?? null} />
     </div>
