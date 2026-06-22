@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 )
 
 func TestCommandController_CommandRequest_JSON(t *testing.T) {
-	req := models.CommandRequest{
+	req := dto.CommandRequest{
 		Command:   "update",
 		Args:      []byte(`{"version":"2.0.0"}`),
 		Nonce:     "nonce123",
@@ -46,7 +46,7 @@ func TestCommandController_CommandRequest_JSONUnmarshal(t *testing.T) {
 		"signature": "sig456"
 	}`)
 
-	var req models.CommandRequest
+	var req dto.CommandRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestCommandController_CommandRequest_JSONUnmarshal(t *testing.T) {
 }
 
 func TestCommandController_CommandResponse_JSON(t *testing.T) {
-	resp := models.CommandResponse{
+	resp := dto.CommandResponse{
 		DispatchID: "dispatch-001",
 		Delivery:   "queued",
 		ServerTime: 1234567890,
@@ -88,7 +88,7 @@ func TestCommandController_CommandResponse_JSON(t *testing.T) {
 }
 
 func TestCommandController_CommandFrame_JSON(t *testing.T) {
-	frame := models.CommandFrame{
+	frame := dto.CommandFrame{
 		Type:       "update",
 		DispatchID: "dispatch-001",
 		Command:    "update",
@@ -121,7 +121,7 @@ func TestCommandController_CommandFrame_JSON(t *testing.T) {
 func TestCommandController_Dispatch_InvalidJSON(t *testing.T) {
 	data := []byte(`{invalid}`)
 
-	var req models.CommandRequest
+	var req dto.CommandRequest
 	err := json.Unmarshal(data, &req)
 	if err == nil {
 		t.Error("expected error for invalid JSON")
@@ -139,7 +139,7 @@ func TestCommandController_HTTPRequest_Parsing(t *testing.T) {
 }
 
 func TestCommandController_HTTPResponse_Success(t *testing.T) {
-	resp := models.CommandResponse{
+	resp := dto.CommandResponse{
 		DispatchID: "dispatch-001",
 		Delivery:   "queued",
 		ServerTime: 1234567890,
@@ -158,7 +158,7 @@ func TestCommandController_HTTPResponse_Success(t *testing.T) {
 }
 
 func TestCommandController_HTTPResponse_Error(t *testing.T) {
-	resp := models.ErrorResponse{
+	resp := dto.ErrorResponse{
 		Error:   "device_not_found",
 		Message: "Device does not exist",
 	}
