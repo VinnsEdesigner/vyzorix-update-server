@@ -10,7 +10,7 @@ import { useVyzorixConfig } from "@/lib/vyzorix-config";
  * GraphQL Schema Explorer Component
  * Displays the schema types and their fields.
  */
-function SchemaExplorer() {
+const SchemaExplorer = (): React.ReactElement => {
   const { serverUrl: _serverUrl } = useVyzorixConfig();
 
   const schemaTypes = [
@@ -97,13 +97,13 @@ function SchemaExplorer() {
       </CardContent>
     </Card>
   );
-}
+};
 
 /**
  * Example Queries Component
  */
-function ExampleQueries() {
-  const copyToClipboard = async (query: string) => {
+const ExampleQueries = (): React.ReactElement => {
+  const copyToClipboard = async (query: string): Promise<void> => {
     await navigator.clipboard.writeText(query);
   };
 
@@ -218,13 +218,13 @@ function ExampleQueries() {
       </CardContent>
     </Card>
   );
-}
+};
 
 /**
  * GraphQL Playground Page
  * Provides links and information about the GraphQL playground.
  */
-function PlaygroundPage(): React.ReactElement {
+const PlaygroundPage = (): React.ReactElement => {
   const { serverUrl } = useVyzorixConfig();
   const playgroundUrl = `${serverUrl}/playground`;
   const graphqlUrl = `${serverUrl}/graphql`;
@@ -339,7 +339,7 @@ function PlaygroundPage(): React.ReactElement {
       </Card>
     </div>
   );
-}
+};
 
 export const Route = createFileRoute("/playground")({
   head: () => ({ meta: [{ title: "GraphQL Playground — Vyzorix" }] }),

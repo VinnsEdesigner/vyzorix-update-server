@@ -15,6 +15,10 @@ import { parseCookies, getPrefetchedAuthState, hasSessionCookie } from "./cookie
 const mockFetch = vi.fn();
 global.fetch = mockFetch as unknown as typeof global.fetch;
 
+// Mock console.error and console.warn to suppress test output noise
+vi.spyOn(console, "error").mockImplementation(() => {});
+vi.spyOn(console, "warn").mockImplementation(() => {});
+
 // Mock environment
 const originalEnv = process.env;
 beforeEach(() => {
@@ -119,6 +123,7 @@ describe("hasSessionCookie", () => {
 });
 
 describe("getPrefetchedAuthState", () => {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const mockRequest = (cookie: string | null) =>
     ({
       headers: new Headers(cookie ? { cookie } : {}),
