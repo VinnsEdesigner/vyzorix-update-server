@@ -14,7 +14,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	infraauthinfra "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/auth"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
@@ -379,10 +379,10 @@ func main() {
 //     └─────────────────────────────────────────────────────────────────────────────┘
 //
 //     ▼
-//     infraauth.NewArgon2idHasher() ─► implements auth.PasswordHasher interface
+//     infraauth.NewArgon2idHasher() ─► implements infraauth.PasswordHasher interface
 //
 //     ▼
-//     auth.NewAuthService(
+//     infraauth.NewAuthService(
 //       operatorRepo,
 //       sessionRepo,
 //       emailVerifyRepo,

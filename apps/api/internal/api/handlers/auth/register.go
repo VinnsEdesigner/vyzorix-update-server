@@ -12,7 +12,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
-	securityAuth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
 )
@@ -52,7 +52,7 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 	}
 
 	// Validate email format using enterprise-grade validator
-	if _, err := securityAuth.ValidateEmail(req.Email); err != nil {
+	if _, err := infraauth.ValidateEmail(req.Email); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid request"})
 		return
 	}
