@@ -39,12 +39,12 @@ interface ResendButtonProps {
   formatTime: (seconds: number) => string;
 }
 
-function ResendButton({
+const ResendButton = ({
   isResending,
   resendCooldown,
   onResend,
   formatTime,
-}: ResendButtonProps): ReactElement {
+}: ResendButtonProps): ReactElement => {
   const isDisabled = resendCooldown > 0 || isResending;
 
   const getButtonText = (): string => {
@@ -68,7 +68,7 @@ function ResendButton({
       <span>{getButtonText()}</span>
     </button>
   );
-}
+};
 
 const WaitVerifyPage = (): ReactElement => {
   const navigate = useNavigate();

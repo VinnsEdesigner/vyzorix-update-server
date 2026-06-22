@@ -65,22 +65,22 @@ export interface UseSignedApiReturn {
 /**
  * Check if an error message contains a re-auth error code.
  */
-function isReauthError(errorMessage: string): boolean {
+const isReauthError = (errorMessage: string): boolean => {
   return ERROR_REQUIRES_REAUTH.some(
     (code) =>
       errorMessage.includes(code) || errorMessage.toLowerCase().includes(code.toLowerCase()),
   );
-}
+};
 
 /**
  * Check if an error message indicates key rotation is needed.
  */
-function isKeyRotationError(errorMessage: string): boolean {
+const isKeyRotationError = (errorMessage: string): boolean => {
   return ERROR_REQUIRES_KEY_ROTATION.some(
     (code) =>
       errorMessage.includes(code) || errorMessage.toLowerCase().includes(code.toLowerCase()),
   );
-}
+};
 
 /**
  * Hook for using signed API client in React components.
@@ -105,6 +105,7 @@ function isKeyRotationError(errorMessage: string): boolean {
  * }
  * ```
  */
+// eslint-disable-next-line func-style
 export function useSignedApi(options: UseSignedApiOptions): UseSignedApiReturn {
   const {
     apiUrl,
@@ -287,7 +288,13 @@ export function useSignedApi(options: UseSignedApiOptions): UseSignedApiReturn {
  */
 export const SignedApiContext = createContext<SignedApiClient | null>(null);
 
-export function SignedApiProvider({ children, apiUrl }: { children: ReactNode; apiUrl: string }) {
+export const SignedApiProvider = ({
+  children,
+  apiUrl,
+}: {
+  children: ReactNode;
+  apiUrl: string;
+}): React.ReactElement => {
   const [client] = useState(() => getSignedApiClient(apiUrl));
 
   // Try to restore credentials on mount
@@ -299,4 +306,4 @@ export function SignedApiProvider({ children, apiUrl }: { children: ReactNode; a
   }, [client]);
 
   return React.createElement(SignedApiContext.Provider, { value: client }, children);
-}
+};
