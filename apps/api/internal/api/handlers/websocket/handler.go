@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/telemetry"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
@@ -21,7 +21,7 @@ import (
 type StreamHandler struct {
 	log             *slog.Logger
 	hub             *hub.Hub
-	originValidator *auth.OriginValidator
+	originValidator *infraauth.OriginValidator
 	upgrader        websocket.Upgrader
 	hmacVerifier    cryptohmac.Verifier
 	config          config.Config
@@ -29,7 +29,7 @@ type StreamHandler struct {
 
 // NewStreamHandler creates a new StreamHandler.
 func NewStreamHandler(log *slog.Logger, cfg config.Config, h *hub.Hub, hmacVerifier cryptohmac.Verifier) *StreamHandler {
-	originValidator := auth.NewOriginValidator(cfg.AllowedOrigins)
+	originValidator := infraauth.NewOriginValidator(cfg.AllowedOrigins)
 	originValidator.SetLogger(log)
 
 	return &StreamHandler{

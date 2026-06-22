@@ -14,7 +14,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/email_verification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/password_reset"
@@ -125,7 +125,7 @@ type AuthService struct {
 	sessionTTL         time.Duration
 	refreshTokenRepo   RefreshTokenRepository
 	refreshTokenExpiry time.Duration
-	jwtManager        *auth.JWTManager
+	jwtManager        *infraauth.JWTManager
 }
 
 // RefreshTokenRepository interface for refresh token operations.
@@ -186,7 +186,7 @@ func NewAuthServiceWithRefresh(
 	sessionTTL time.Duration,
 	refreshTokenRepo RefreshTokenRepository,
 	refreshTokenExpiry time.Duration,
-	jwtManager *auth.JWTManager,
+	jwtManager *infraauth.JWTManager,
 ) *AuthService {
 	return &AuthService{
 		operatorRepo:       operatorRepo,
@@ -202,7 +202,7 @@ func NewAuthServiceWithRefresh(
 }
 
 // SetJWTManager sets the JWT manager for the auth service.
-func (s *AuthService) SetJWTManager(jwtManager *auth.JWTManager) {
+func (s *AuthService) SetJWTManager(jwtManager *infraauth.JWTManager) {
 	s.jwtManager = jwtManager
 }
 
@@ -507,7 +507,7 @@ func (s *AuthService) VerifyMFACode(ctx context.Context, operatorID, code string
 	}
 
 	// Verify TOTP code.
-	totp := auth.NewTOTP(op.MFASecret, auth.DefaultTOTPConfig())
+	totp := infraauth.NewTOTP(op.MFASecret, infraauth.DefaultTOTPConfig())
 	if !totp.Verify(code) {
 		return nil, application.ErrInvalidCredentials
 	}
@@ -525,17 +525,17 @@ type MFAEnrollResult struct {
 // EnrollMFA generates a new MFA secret for enrollment.
 func (s *AuthService) EnrollMFA(ctx context.Context, operatorID, email string) (*MFAEnrollResult, error) {
 	// Generate TOTP secret.
-	secret, err := auth.GenerateSecret()
+	secret, err := infraauth.GenerateSecret()
 	if err != nil {
 		return nil, err
 	}
 
-	cfg := auth.DefaultTOTPConfig()
+	cfg := infraauth.DefaultTOTPConfig()
 	cfg.AccountName = email
-	totp := auth.NewTOTP(secret, cfg)
+	totp := infraauth.NewTOTP(secret, cfg)
 
 	// Generate backup codes.
-	backupCodes, err := auth.GenerateBackupCodes(8)
+	backupCodes, err := infraauth.GenerateBackupCodes(8)
 	if err != nil {
 		return nil, err
 	}
@@ -578,7 +578,7 @@ func (s *AuthService) RegenerateBackupCodes(ctx context.Context, operatorID stri
 	}
 
 	// Generate new backup codes
-	codes, err := auth.GenerateBackupCodes(8)
+	codes, err := infraauth.GenerateBackupCodes(8)
 	if err != nil {
 		return nil, err
 	}
@@ -603,13 +603,13 @@ func (s *AuthService) VerifyBackupCode(ctx context.Context, operatorID, code str
 		return false, nil
 	}
 
-	idx := auth.ValidateBackupCode(op.BackupCodes, code)
+	idx := infraauth.ValidateBackupCode(op.BackupCodes, code)
 	if idx < 0 {
 		return false, nil
 	}
 
 	// Remove the used backup code
-	remaining := auth.RemoveBackupCode(op.BackupCodes, idx)
+	remaining := infraauth.RemoveBackupCode(op.BackupCodes, idx)
 	err = s.operatorRepo.UpdateOperatorMFA(ctx, operatorID, op.MFASecret, remaining)
 	if err != nil {
 		return false, err
@@ -1365,9 +1365,9 @@ func (s *AuthService) GetOperatorByID(ctx context.Context, id string) (*operator
 }
 
 // VerifyJWT verifies a JWT token and returns the claims.
-func (s *AuthService) VerifyJWT(token string) (*auth.OperatorClaims, error) {
+func (s *AuthService) VerifyJWT(token string) (*infraauth.OperatorClaims, error) {
 	if s.jwtManager == nil {
-		return nil, auth.ErrInvalidToken
+		return nil, infraauth.ErrInvalidToken
 	}
 	return s.jwtManager.Verify(token)
 }
@@ -1446,7 +1446,7 @@ type RefreshTokenResult struct {
 }
 
 // RotateRefreshToken rotates a refresh token, revoking the old one and issuing a new one.
-// This is called during token refresh to implement refresh token rotation security.
+// This is called during token refresh to implement refresh token rotation infraauth.
 func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken string) (*RefreshTokenResult, error) {
 	// Check if refresh token repository is configured
 	if s.refreshTokenRepo == nil {

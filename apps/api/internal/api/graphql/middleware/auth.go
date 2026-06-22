@@ -8,20 +8,20 @@ import (
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	gqlerrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/errors"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+        appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 )
 
 // AuthMiddleware provides authentication for GraphQL resolvers.
 type AuthMiddleware struct {
 	SessionManager *infraauth.SessionManager
-	AuthService    *auth.AuthService
+	AuthService    *appsvc.AuthService
 	Log            *slog.Logger
 }
 
 // NewAuthMiddleware creates a new auth middleware.
-func NewAuthMiddleware(sessionManager *infraauth.SessionManager, authService *auth.AuthService, log *slog.Logger) *AuthMiddleware {
+func NewAuthMiddleware(sessionManager *infraauth.SessionManager, authService *appsvc.AuthService, log *slog.Logger) *AuthMiddleware {
 	return &AuthMiddleware{
 		SessionManager: sessionManager,
 		AuthService:    authService,

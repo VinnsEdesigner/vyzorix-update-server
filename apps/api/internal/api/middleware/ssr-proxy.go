@@ -16,7 +16,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 )
 
@@ -190,7 +190,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 		}
 
 		// For all other routes, validate JWT cookie.
-		tokenCookie, err := c.Cookie("vyz.auth.token")
+		tokenCookie, err := c.Cookie("vyz.infraauth.token")
 		if err != nil || tokenCookie == "" {
 			log.Warn("SSR access denied - no JWT cookie", "path", path, "ip", c.ClientIP())
 			c.Redirect(http.StatusTemporaryRedirect, "/login")
@@ -198,7 +198,7 @@ func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jw
 		}
 
 		// Validate JWT.
-		jwtManager := security.NewJWTManager(jwtSecret, 0, "")
+		jwtManager := infraauth.NewJWTManager(jwtSecret, 0, "")
 		claims, err := jwtManager.Verify(tokenCookie)
 		if err != nil {
 			log.Warn("SSR access denied - invalid JWT", "path", path, "ip", c.ClientIP(), "err", err)
