@@ -15,6 +15,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+	infraSession "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/session"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/email_verification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/password_reset"
@@ -126,6 +127,7 @@ type AuthService struct {
 	refreshTokenRepo   RefreshTokenRepository
 	refreshTokenExpiry time.Duration
 	jwtManager        *infraauth.JWTManager
+	sessionManager    *infraSession.Manager
 }
 
 // RefreshTokenRepository interface for refresh token operations.
@@ -204,6 +206,16 @@ func NewAuthServiceWithRefresh(
 // SetJWTManager sets the JWT manager for the auth service.
 func (s *AuthService) SetJWTManager(jwtManager *infraauth.JWTManager) {
 	s.jwtManager = jwtManager
+}
+
+// SetSessionManager sets the session manager for the auth service.
+func (s *AuthService) SetSessionManager(sessionManager *infraSession.Manager) {
+	s.sessionManager = sessionManager
+}
+
+// GetSessionManager returns the session manager.
+func (s *AuthService) GetSessionManager() *infraSession.Manager {
+	return s.sessionManager
 }
 
 // =============================================================================

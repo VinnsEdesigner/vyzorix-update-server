@@ -3,14 +3,13 @@ package auth
 import (
 	"context"
 	"errors"
-	"net/http"
 	"strings"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
@@ -21,15 +20,15 @@ import (
 type RegisterHandler struct {
 	authService *auth.AuthService
 	emailSvc    *emailService.Service
-	auditLogger *audit.Logger
+	presenter   *response.Presenter
 }
 
 // NewRegisterHandler creates a new RegisterHandler.
-func NewRegisterHandler(authService *auth.AuthService, emailSvc *emailService.Service, auditLogger *audit.Logger) *RegisterHandler {
+func NewRegisterHandler(authService *auth.AuthService, emailSvc *emailService.Service, presenter *response.Presenter) *RegisterHandler {
 	return &RegisterHandler{
 		authService: authService,
 		emailSvc:    emailSvc,
-		auditLogger: auditLogger,
+		presenter:   presenter,
 	}
 }
 
@@ -37,7 +36,7 @@ func NewRegisterHandler(authService *auth.AuthService, emailSvc *emailService.Se
 func (h *RegisterHandler) Handle(c *gin.Context) {
 	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid request"})
+		h.presenter.BadRequest(c, "Invalid request")
 		return
 	}
 
@@ -47,13 +46,13 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 	req.Name = strings.TrimSpace(req.Name)
 
 	if req.Email == "" || req.Password == "" || req.Name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "email, password, and name required"})
+		h.presenter.BadRequest(c, "email, password, and name required")
 		return
 	}
 
 	// Validate email format using enterprise-grade validator
 	if _, err := infraauth.ValidateEmail(req.Email); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid request"})
+		h.presenter.BadRequest(c, "Invalid request")
 		return
 	}
 
@@ -64,27 +63,27 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 	result, err := h.authService.Register(ctx, &req, true)
 	if err != nil {
 		if errors.Is(err, application.ErrUserExists) {
-			c.JSON(http.StatusConflict, gin.H{"error": "conflict", "message": "an account with this email already exists"})
+			h.presenter.Conflict(c, "an account with this email already exists")
 			return
 		}
 		if errors.Is(err, application.ErrInvalidInput) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "password does not meet requirements"})
+			h.presenter.BadRequest(c, "password does not meet requirements")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "an error occurred"})
+		h.presenter.InternalError(c, "an error occurred")
 		return
 	}
+
+	// Log successful registration
+	h.presenter.RegisterSuccess(c, result.OperatorID)
 
 	// Send verification email after successful registration
 	if err := h.sendVerificationEmail(c.Request.Context(), req.Email, req.Name, result.OperatorID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "internal_error",
-			"message": "Registration successful but failed to send verification email",
-		})
+		h.presenter.InternalError(c, "Registration successful but failed to send verification email")
 		return
 	}
 
-	c.JSON(http.StatusCreated, result)
+	h.presenter.Created(c, result)
 }
 
 // sendVerificationEmail creates a verification token and sends the verification email.
