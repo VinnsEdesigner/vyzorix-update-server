@@ -2,8 +2,8 @@ package auth
 
 import (
 	"errors"
-	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
@@ -13,15 +13,17 @@ import (
 
 // ClientCredentialsHandler handles client credentials endpoints.
 type ClientCredentialsHandler struct {
-	authService    *auth.AuthService
-	clientService  *client.Service
+	authService   *auth.AuthService
+	clientService *client.Service
+	presenter    *response.Presenter
 }
 
 // NewClientCredentialsHandler creates a new ClientCredentialsHandler.
-func NewClientCredentialsHandler(authService *auth.AuthService, clientService *client.Service) *ClientCredentialsHandler {
+func NewClientCredentialsHandler(authService *auth.AuthService, clientService *client.Service, presenter *response.Presenter) *ClientCredentialsHandler {
 	return &ClientCredentialsHandler{
 		authService:   authService,
 		clientService: clientService,
+		presenter:    presenter,
 	}
 }
 
@@ -45,10 +47,10 @@ func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
 		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
+			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "an error occurred"})
+		h.presenter.InternalError(c, "an error occurred")
 		return
 	}
 
@@ -61,7 +63,7 @@ func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid request body"})
+		h.presenter.BadRequest(c, "Invalid request body")
 		return
 	}
 
@@ -79,11 +81,12 @@ func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 		RateLimit:      req.RateLimit,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to create client credentials"})
+		h.presenter.InternalError(c, "Failed to create client credentials")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	h.presenter.APIClientCreated(c, operatorID, clientResp.ID)
+	h.presenter.OK(c, gin.H{
 		"clientId":     clientResp.ID,
 		"clientSecret": secret, // Only returned once!
 		"platform":     clientResp.Platform,
@@ -97,20 +100,20 @@ func (h *ClientCredentialsHandler) List(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
 		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
+			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "an error occurred"})
+		h.presenter.InternalError(c, "an error occurred")
 		return
 	}
 
 	clients, err := h.clientService.ListByOperatorID(c.Request.Context(), operatorID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to list clients"})
+		h.presenter.InternalError(c, "Failed to list clients")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"clients": clients})
+	h.presenter.OK(c, gin.H{"clients": clients})
 }
 
 // Get handles GET /v1/auth/client-credentials/:clientId.
@@ -118,26 +121,26 @@ func (h *ClientCredentialsHandler) Get(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
 		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
+			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "an error occurred"})
+		h.presenter.InternalError(c, "an error occurred")
 		return
 	}
 
 	clientID := c.Param("clientId")
 	if clientID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "clientId is required"})
+		h.presenter.BadRequest(c, "clientId is required")
 		return
 	}
 
 	clientResp, err := h.clientService.GetByOperatorID(c.Request.Context(), clientID, operatorID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Client not found"})
+		h.presenter.NotFound(c, "Client not found")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"client": clientResp})
+	h.presenter.OK(c, gin.H{"client": clientResp})
 }
 
 // Delete handles DELETE /v1/auth/client-credentials/:clientId.
@@ -145,30 +148,31 @@ func (h *ClientCredentialsHandler) Delete(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
 		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
+			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "an error occurred"})
+		h.presenter.InternalError(c, "an error occurred")
 		return
 	}
 
 	clientID := c.Param("clientId")
 	if clientID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "clientId is required"})
+		h.presenter.BadRequest(c, "clientId is required")
 		return
 	}
 
 	// Verify ownership first
 	_, err = h.clientService.GetByOperatorID(c.Request.Context(), clientID, operatorID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Client not found"})
+		h.presenter.NotFound(c, "Client not found")
 		return
 	}
 
 	if err := h.clientService.Deactivate(c.Request.Context(), clientID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to revoke client"})
+		h.presenter.InternalError(c, "Failed to revoke client")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "clientId": clientID})
+	h.presenter.APIClientRevoked(c, operatorID, clientID)
+	h.presenter.OK(c, gin.H{"success": true, "clientId": clientID})
 }

@@ -89,6 +89,39 @@ func (p *Presenter) PasswordChangeSuccess(c *gin.Context, operatorID string) {
 	}
 }
 
+// AccountLocked logs an account lockout.
+func (p *Presenter) AccountLocked(c *gin.Context, operatorID string, attempts int) {
+	if p.auditLogger != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			p.auditLogger.AccountLocked(ctx, operatorID, c.ClientIP(), attempts)
+		}()
+	}
+}
+
+// APIClientCreated logs API client creation.
+func (p *Presenter) APIClientCreated(c *gin.Context, operatorID, clientID string) {
+	if p.auditLogger != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			p.auditLogger.APIClientCreated(ctx, operatorID, clientID, c.ClientIP())
+		}()
+	}
+}
+
+// APIClientRevoked logs API client revocation.
+func (p *Presenter) APIClientRevoked(c *gin.Context, operatorID, clientID string) {
+	if p.auditLogger != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			p.auditLogger.APIClientRevoked(ctx, operatorID, clientID, c.ClientIP())
+		}()
+	}
+}
+
 // AdminAction logs an admin action.
 func (p *Presenter) AdminAction(c *gin.Context, operatorID, action, resourceType, resourceID string, metadata map[string]string) {
 	if p.auditLogger != nil {
