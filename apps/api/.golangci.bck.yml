@@ -1,6 +1,5 @@
 # =============================================
 # VYZORIX UPDATE SERVER - GO LINTING CONFIG
-# Aggressive Linters - Enterprise Grade
 # Compatible with golangci-lint v1.64.8
 # =============================================
 
@@ -26,7 +25,7 @@ issues:
     - "\\.git"
 
 # =============================================
-# LINTERS - All aggressive linters enabled
+# LINTERS - All linters enabled
 # =============================================
 linters:
   disable-all: true
