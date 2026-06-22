@@ -6,7 +6,7 @@ import (
 
 	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
-	hmac "github.com/VinnsEdesigner/vyzorix/apps/api/pkg/crypto"
+	"crypto/hmac"
 )
 
 func TestUpgraderFactory_Create(t *testing.T) {

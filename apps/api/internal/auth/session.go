@@ -1,174 +1,31 @@
-// Package security provides authentication utilities including session cookie management.
+// Package auth provides authentication utilities.
+// Deprecated: Use github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security instead.
 package auth
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha512"
-	"encoding/base64"
-	"encoding/hex"
-	"errors"
-	"fmt"
-	"net/http"
-	"time"
+"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/session"
 )
 
-// Session cookie configuration.
+// Re-export from new location for backward compatibility.
+type SessionManager = session.Manager
+
 const (
-	CookieName       = "vyz_session"
-	CookieMaxAge     = 86400 // 24 hours in seconds
-	CookiePath       = "/"
-	EncryptionKeyLen = 32 // AES-256 requires 32 bytes
+CookieName   = session.CookieName
+CookieMaxAge = session.CookieMaxAge
+CookiePath   = session.CookiePath
 )
 
 var (
-	ErrInvalidCookie    = errors.New("invalid session cookie")
-	ErrExpiredCookie    = errors.New("session cookie expired")
-	ErrDecryptionFailed = errors.New("cookie decryption failed")
+ErrInvalidCookie    = session.ErrInvalidCookie
+ErrExpiredCookie    = session.ErrExpiredCookie
+ErrDecryptionFailed = session.ErrDecryptionFailed
 )
 
-// SessionManager handles encrypted session cookies for HttpOnly cookie auth.
-type SessionManager struct {
-	encryptionKey []byte
+func NewSessionManager(secret string) *session.Manager {
+return session.NewManager(secret)
 }
 
-// NewSessionManager creates a new session manager with the given secret.
-// The secret is hashed with SHA512 and truncated to 32 bytes for AES-256 key.
-func NewSessionManager(secret string) *SessionManager {
-	h := sha512.New()
-	h.Write([]byte(secret))
-	// Truncate SHA512 (64 bytes) to AES-256 key size (32 bytes).
-	fullHash := h.Sum(nil)
-	key := make([]byte, EncryptionKeyLen)
-	copy(key, fullHash)
-	return &SessionManager{
-		encryptionKey: key,
-	}
+func HashOperatorID(id string) string {
+return session.HashOperatorID(id)
 }
 
-// EncryptOperatorID encrypts an operator ID for storage in a cookie value.
-func (sm *SessionManager) EncryptOperatorID(operatorID string) (string, error) {
-	block, err := aes.NewCipher(sm.encryptionKey)
-	if err != nil {
-		return "", fmt.Errorf("failed to create cipher: %w", err)
-	}
-
-	aesGCM, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", fmt.Errorf("failed to create GCM: %w", err)
-	}
-
-	// Generate random nonce (12 bytes for GCM).
-	nonce := make([]byte, aesGCM.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", fmt.Errorf("failed to generate nonce: %w", err)
-	}
-
-	// Encrypt the operator ID.
-	ciphertext := aesGCM.Seal(nonce, nonce, []byte(operatorID), nil)
-
-	// Encode to base64 for safe cookie storage.
-	return base64.RawURLEncoding.EncodeToString(ciphertext), nil
-}
-
-// DecryptOperatorID decrypts an operator ID from a cookie value.
-func (sm *SessionManager) DecryptOperatorID(cookieValue string) (string, error) {
-	// Decode from base64.
-	ciphertext, err := base64.RawURLEncoding.DecodeString(cookieValue)
-	if err != nil {
-		return "", fmt.Errorf("%w: invalid base64 encoding", ErrDecryptionFailed)
-	}
-
-	block, err := aes.NewCipher(sm.encryptionKey)
-	if err != nil {
-		return "", fmt.Errorf("failed to create cipher: %w", err)
-	}
-
-	aesGCM, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", fmt.Errorf("failed to create GCM: %w", err)
-	}
-
-	nonceSize := aesGCM.NonceSize()
-	if len(ciphertext) < nonceSize {
-		return "", fmt.Errorf("%w: ciphertext too short", ErrDecryptionFailed)
-	}
-
-	// Split nonce and ciphertext.
-	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
-
-	// Decrypt.
-	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return "", fmt.Errorf("%w: %v", ErrDecryptionFailed, err)
-	}
-
-	return string(plaintext), nil
-}
-
-// CreateSessionCookie creates an HttpOnly session cookie for the given operator.
-func (sm *SessionManager) CreateSessionCookie(operatorID string) (*http.Cookie, error) {
-	encryptedID, err := sm.EncryptOperatorID(operatorID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt session: %w", err)
-	}
-
-	return &http.Cookie{
-		Name:     CookieName,
-		Value:    encryptedID,
-		Path:     CookiePath,
-		MaxAge:   CookieMaxAge,
-		HttpOnly: true,
-		Secure:   true, // HTTPS only in production
-		SameSite: http.SameSiteLaxMode,
-	}, nil
-}
-
-// CreateSessionCookieWithExpiry creates an HttpOnly session cookie with custom expiry.
-func (sm *SessionManager) CreateSessionCookieWithExpiry(operatorID string, maxAge int) (*http.Cookie, error) {
-	encryptedID, err := sm.EncryptOperatorID(operatorID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt session: %w", err)
-	}
-
-	return &http.Cookie{
-		Name:     CookieName,
-		Value:    encryptedID,
-		Path:     CookiePath,
-		MaxAge:   maxAge,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	}, nil
-}
-
-// ClearSessionCookie creates an expired cookie to clear the session.
-func (sm *SessionManager) ClearSessionCookie() *http.Cookie {
-	return &http.Cookie{
-		Name:     CookieName,
-		Value:    "",
-		Path:     CookiePath,
-		MaxAge:   -1,
-		Expires:  time.Unix(0, 0),
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	}
-}
-
-// ExtractSessionFromCookie extracts the operator ID from a session cookie value.
-// Returns empty string if the cookie is invalid or decryption fails.
-func (sm *SessionManager) ExtractSessionFromCookie(cookieValue string) (string, error) {
-	if cookieValue == "" {
-		return "", ErrInvalidCookie
-	}
-	return sm.DecryptOperatorID(cookieValue)
-}
-
-// HashOperatorID creates a SHA-256 hash of an operator ID for database lookups.
-// This is used to store session hashes in the database for tracking/revocation.
-func HashOperatorID(operatorID string) string {
-	h := sha512.Sum512([]byte(operatorID))
-	return hex.EncodeToString(h[:])
-}
