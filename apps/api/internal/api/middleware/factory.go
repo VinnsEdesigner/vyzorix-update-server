@@ -304,6 +304,16 @@ func (f *MiddlewareFactory) GetLockout() *Lockout {
 	return f.lockout
 }
 
+// GetCSRF returns the CSRF protector instance.
+func (f *MiddlewareFactory) GetCSRF() *CSRFProtector {
+	return f.csrfProtector
+}
+
+// GetTurnstile returns the Turnstile verifier instance.
+func (f *MiddlewareFactory) GetTurnstile() *TurnstileVerifier {
+	return f.turnstile
+}
+
 // GetRevocationList returns the revocation list.
 func (f *MiddlewareFactory) GetRevocationList() *infraauth.RevocationList {
 	return f.revocationList

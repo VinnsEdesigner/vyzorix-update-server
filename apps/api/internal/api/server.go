@@ -108,6 +108,7 @@ type Server struct {
 	updaterHandler *updaterhandlers.Handler
 
 	// Middleware
+	mwFactory          *middleware.MiddlewareFactory
 	cookieAuth         *middleware.CookieAuth
 	signatureVerifier  *middleware.SignatureVerifier
 	lockout           *middleware.Lockout
@@ -120,7 +121,7 @@ type Server struct {
 	hub           *hub.Hub
 
 	// HMAC verifier for device command verification
-	hmacVerifier cryptohmac.Verifier
+	hmacVerifier *cryptohmac.Verifier
 
 	// Encryption key function for response encryption
 	encryptKeyFn func(clientID string) ([]byte, bool)
@@ -138,73 +139,43 @@ func NewServer(cfg *ServerConfig) *Server {
 	engine := gin.New()
 	engine.Use(middleware.GinPanicRecovery(cfg.Log))
 
-	// Create HMAC verifier with proper secret function from client service
-	// Wrapper to adapt context-aware method to context-unaware interface
-	hmacSecretFn := func(clientID string) (string, bool) {
-		return cfg.ClientService.GetHmacKey(context.Background(), clientID)
-	}
-	hmacVerifier := cryptohmac.Verifier{
-		Secret: hmacSecretFn,
-		Nonces: cryptohmac.NewNonceCache(cfg.Config.HMACWindow),
-		Window: cfg.Config.HMACWindow,
-	}
+	// Create MiddlewareFactory to centralize all middleware creation
+	mwFactory := middleware.NewMiddlewareFactory(
+		cfg.Log,
+		cfg.SessionManager,
+		cfg.AuthService,
+		cfg.ClientService,
+		middleware.FactoryConfig{
+			AllowedOrigins:     cfg.Config.AllowedOrigins,
+			EnforceHMAC:       cfg.Config.EnforceHMAC,
+			HMACWindow:        cfg.Config.HMACWindow,
+			PublicDir:         cfg.Config.PublicDir,
+			JWTSecret:         cfg.Config.JWTSecret,
+			RateLimitPerMin:   100,
+			AuthRateLimitMin:  5,
+		},
+	)
 
-	// Create SignatureVerifier for request signing (ENABLED by default per PRD)
-	signingConfig := middleware.LoadSigningConfig()
-	// If EnforceHMAC is explicitly set in config, it overrides the default
-	if !cfg.Config.EnforceHMAC && !signingConfig.Enabled {
-		// Both say disabled - keep disabled
-	} else if cfg.Config.EnforceHMAC {
-		signingConfig.Enabled = true
-	}
-	signatureVerifier := middleware.NewSignatureVerifier(signingConfig, hmacSecretFn)
-
-	// Create encryption key function for response encryption
-	// Derives AES-256 key from client_secret using SHA-512
-	encryptKeyFn := func(clientID string) ([]byte, bool) {
-		secret, ok := cfg.ClientService.GetHmacKey(context.Background(), clientID)
-		if !ok || secret == "" {
-			return nil, false
-		}
-		// Derive 32-byte key from secret using SHA-512 (per PRD)
-		return cryptohmac.DeriveKey(secret), true
-	}
-
-	// Create CookieAuth middleware
-	cookieAuth := middleware.NewCookieAuth(cfg.SessionManager, cfg.AuthService)
-
-	// Create lockout middleware for brute force protection
-	lockoutConfig := middleware.LoadLockoutConfig()
-	lockout := middleware.NewLockout(lockoutConfig)
-
-	// Create CSRF protector
-	csrfConfig := middleware.DefaultCSRFConfig()
-	csrfProtector := middleware.NewCSRFProtector(csrfConfig)
-
-	// Create Turnstile verifier for bot protection
-	turnstileCfg := middleware.LoadTurnstileConfig()
-	turnstileVerifier := middleware.NewTurnstileVerifier(turnstileCfg)
-
-	// Create session revocation list
-	revocationConfig := middleware.LoadRevocationConfig()
-	var revocationList *infraauth.RevocationList
-	if revocationConfig.Enabled {
-		revocationList = infraauth.DefaultRevocationList()
-	}
-
-	// Create IP intelligence
-	ipIntelligence := middleware.NewIPIntelligence(middleware.LoadIPIntelligenceConfig())
-	if ipIntelligence != nil {
-		go ipIntelligence.StartCleanupRoutine(context.Background(), 5*time.Minute)
-	}
+	// Get middleware instances for server use
+	hmacVerifier := mwFactory.GetHmacVerifier()
+	encryptKeyFn := mwFactory.GetEncryptionKeyFn()
+	// CookieAuth needs the full struct for RegisterRoutes, get it directly
+	cookieAuthMw := middleware.NewCookieAuth(cfg.SessionManager, cfg.AuthService)
+	lockout := mwFactory.GetLockout()
+	csrfProtector := mwFactory.GetCSRF()
+	turnstileVerifier := mwFactory.GetTurnstile()
+	revocationList := mwFactory.GetRevocationList()
+	ipIntelligence := mwFactory.IPIntelligence()
+	signatureVerifier := mwFactory.GetSignatureVerifier()
 
 	s := &Server{
 		engine:        engine,
+		mwFactory:     mwFactory,
 		rateLimiter:   cfg.RateLimiter,
 		authLimiter:   cfg.AuthLimiter,
 		config:        cfg.Config,
 		log:           cfg.Log,
-		cookieAuth:    cookieAuth,
+		cookieAuth:    cookieAuthMw,
 		signatureVerifier: signatureVerifier,
 		lockout:       lockout,
 		csrfProtector: csrfProtector,
@@ -246,7 +217,7 @@ func NewServer(cfg *ServerConfig) *Server {
 	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier)
 
 	// WebSocket handler
-	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, hmacVerifier)
+	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *hmacVerifier)
 
 	// Telemetry history handler
 	s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(
@@ -283,18 +254,18 @@ func (s *Server) setupRoutes() {
 	// Enable method not allowed handling
 	s.engine.HandleMethodNotAllowed = true
 
-	// Global middleware
-	s.engine.Use(middleware.RequestIDMiddleware())
-	s.engine.Use(middleware.Logger(s.log))
-	s.engine.Use(middleware.CORSHandler(s.config.AllowedOrigins))
+	// Global middleware - using factory methods
+	s.engine.Use(s.mwFactory.RequestID())
+	s.engine.Use(s.mwFactory.Logger())
+	s.engine.Use(s.mwFactory.CORS())
 	// Always use strict security headers (both production and development)
-	s.engine.Use(middleware.SecurityHeaders())
-	s.engine.Use(middleware.BodySizeLimit(middleware.DefaultBodySizeLimit))
+	s.engine.Use(s.mwFactory.SecurityHeaders())
+	s.engine.Use(s.mwFactory.BodySizeLimit())
 	// Disable dangerous HTTP methods globally
-	s.engine.Use(middleware.DisableTrace())
-	s.engine.Use(middleware.DisableConnect())
+	s.engine.Use(s.mwFactory.DisableTrace())
+	s.engine.Use(s.mwFactory.DisableConnect())
 	// Error handler must be last to catch all errors
-	s.engine.Use(middleware.ErrorHandler(s.log))
+	s.engine.Use(s.mwFactory.ErrorHandler())
 
 	// ============================================================.
 	// Static assets - serve directly from public directory.
@@ -323,7 +294,7 @@ func (s *Server) setupRoutes() {
 	// This allows TanStack Start SSR to work with Go backend.
 	ssrConfig := infraConfig.LoadSSRConfig()
 	if ssrConfig.EnableSSR {
-		s.engine.Use(middleware.SSRProxy(s.log, ssrConfig, s.config.PublicDir, s.config.JWTSecret))
+		s.engine.Use(s.mwFactory.SSRProxy(ssrConfig))
 	} else {
 		s.log.Warn("SSR disabled - serving static HTML files only")
 	}
@@ -340,28 +311,28 @@ func (s *Server) setupRoutes() {
 	authGroup := public.Group("/v1/auth")
 	authGroup.Use(s.authLimiter.Middleware())
 	
-	// Apply security middleware to auth routes
+	// Apply security middleware to auth routes - using factory
 	// IP Intelligence - block known malicious IPs
 	if s.ipIntelligence != nil {
 		authGroup.Use(s.ipIntelligence.Middleware())
 	}
 	
 	// Prevent user enumeration
-	authGroup.Use(middleware.PreventUserEnum())
+	authGroup.Use(s.mwFactory.PreventUserEnum())
 	
 	// Account lockout for brute force protection
 	if s.lockout != nil && s.lockout.IsEnabled() {
-		authGroup.Use(middleware.LockoutMiddleware(s.lockout))
+		authGroup.Use(s.mwFactory.Lockout())
 	}
 	
 	// CSRF protection
 	if s.csrfProtector != nil && s.csrfProtector.Config.Enabled {
-		authGroup.Use(s.csrfProtector.Middleware())
+		authGroup.Use(s.mwFactory.CSRF())
 	}
 	
 	// Turnstile bot protection
 	if s.turnstileVerifier != nil && s.turnstileVerifier.Config.Enabled {
-		authGroup.Use(middleware.TurnstileMiddleware(s.turnstileVerifier))
+		authGroup.Use(s.mwFactory.Turnstile())
 	}
 	
 	s.authHandlers.RegisterRoutes(authGroup, s.cookieAuth)
