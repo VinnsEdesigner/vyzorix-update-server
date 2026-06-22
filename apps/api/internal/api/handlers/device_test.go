@@ -11,7 +11,7 @@ import (
 )
 
 func TestDeviceController_RegisterRequest_JSON(t *testing.T) {
-	req := dto.RegisterRequest{
+	req := dto.DeviceRegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "fcm-token",
@@ -46,7 +46,7 @@ func TestDeviceController_RegisterRequest_JSONUnmarshal(t *testing.T) {
 		"deviceClass": "tablet"
 	}`)
 
-	var req dto.RegisterRequest
+	var req dto.DeviceRegisterRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestDeviceController_RegisterRequest_JSONUnmarshal(t *testing.T) {
 }
 
 func TestDeviceController_RegisterResponse_JSON(t *testing.T) {
-	resp := dto.RegisterResponse{
+	resp := dto.DeviceRegisterResponse{
 		DeviceID:      "device-001",
 		CommandSecret: "secret123",
 	}
@@ -120,7 +120,7 @@ func TestDeviceController_Register_InvalidJSON(t *testing.T) {
 	// Test that invalid JSON is handled gracefully.
 	data := []byte(`{invalid json}`)
 
-	var req dto.RegisterRequest
+	var req dto.DeviceRegisterRequest
 	err := json.Unmarshal(data, &req)
 	if err == nil {
 		t.Error("expected error for invalid JSON")
@@ -131,7 +131,7 @@ func TestDeviceController_Register_MissingFields(t *testing.T) {
 	// Only provide some fields.
 	data := []byte(`{"deviceId": "device-001"}`)
 
-	var req dto.RegisterRequest
+	var req dto.DeviceRegisterRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestDeviceController_HTTPRequest_Parsing(t *testing.T) {
 }
 
 func TestDeviceController_HTTPResponse_JSON(t *testing.T) {
-	resp := dto.RegisterResponse{
+	resp := dto.DeviceRegisterResponse{
 		DeviceID:      "device-001",
 		CommandSecret: "secret123",
 	}

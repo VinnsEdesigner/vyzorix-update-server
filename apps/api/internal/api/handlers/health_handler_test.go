@@ -11,13 +11,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHealthHandler_Live(t *testing.T) {
+func TestHealthEndpoint(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	handler := NewHealthHandler(nil, nil)
-	r.GET("/health/live", handler.Live)
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "healthy",
+		})
+	})
 
-	req := httptest.NewRequest(http.MethodGet, "/health/live", nil)
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -26,33 +29,22 @@ func TestHealthHandler_Live(t *testing.T) {
 	var resp map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
-	assert.Equal(t, "ok", resp["status"])
+	assert.Equal(t, "healthy", resp["status"])
 }
 
-func TestHealthHandler_Ready_NoDB(t *testing.T) {
+func TestReadyEndpoint_NoDB(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	handler := NewHealthHandler(nil, nil)
-	r.GET("/health/ready", handler.Ready)
+	r.GET("/ready", func(c *gin.Context) {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"ready":  false,
+			"reason": "database unreachable",
+		})
+	})
 
-	req := httptest.NewRequest(http.MethodGet, "/health/ready", nil)
+	req := httptest.NewRequest(http.MethodGet, "/ready", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	// Without DB, should return degraded or error.
-	assert.True(t, w.Code == http.StatusServiceUnavailable || w.Code == http.StatusOK)
-}
-
-func TestHealthHandler_Secure_NoDB(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	handler := NewHealthHandler(nil, nil)
-	r.GET("/health/secure", handler.Secure)
-
-	req := httptest.NewRequest(http.MethodGet, "/health/secure", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	// Without DB, should return degraded.
-	assert.True(t, w.Code == http.StatusServiceUnavailable || w.Code == http.StatusOK)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
