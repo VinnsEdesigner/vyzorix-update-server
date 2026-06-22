@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 )
 
 func TestAuthController_LoginRequest_JSON(t *testing.T) {
-	req := models.LoginRequest{
+	req := dto.LoginRequest{
 		Email:    "test@example.com",
 		Password: "secret123",
 	}
@@ -37,7 +37,7 @@ func TestAuthController_LoginRequest_JSON(t *testing.T) {
 func TestAuthController_LoginRequest_JSONUnmarshal(t *testing.T) {
 	data := []byte(`{"email":"user@example.com","password":"pass123"}`)
 
-	var req models.LoginRequest
+	var req dto.LoginRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
@@ -51,7 +51,7 @@ func TestAuthController_LoginRequest_JSONUnmarshal(t *testing.T) {
 }
 
 func TestAuthController_RegisterRequest_JSON(t *testing.T) {
-	req := models.OperatorRegisterRequest{
+	req := dto.OperatorRegisterRequest{
 		Email:    "new@example.com",
 		Password: "newpassword",
 		Name:     "New User",
@@ -76,13 +76,13 @@ func TestAuthController_RegisterRequest_JSON(t *testing.T) {
 }
 
 func TestAuthController_AuthResponse_JSON(t *testing.T) {
-	resp := models.AuthResponse{
+	resp := dto.AuthResponse{
 		Token: "jwt-token-abc123",
-		Operator: models.OperatorResponse{
+		Operator: dto.OperatorResponse{
 			ID:    "op-001",
 			Email: "test@example.com",
 			Name:  "Test User",
-			Role:  models.RoleOperator,
+			Role:  dto.RoleOperator,
 		},
 	}
 
@@ -105,7 +105,7 @@ func TestAuthController_AuthResponse_JSON(t *testing.T) {
 }
 
 func TestAuthController_ErrorResponse_JSON(t *testing.T) {
-	resp := models.ErrorResponse{
+	resp := dto.ErrorResponse{
 		Error:   "unauthorized",
 		Message: "Invalid credentials",
 	}
@@ -131,7 +131,7 @@ func TestAuthController_ErrorResponse_JSON(t *testing.T) {
 func strPtr(s string) *string { return &s }
 
 func TestAuthController_UpdateNameRequest_JSON(t *testing.T) {
-	req := models.UpdateNameRequest{
+	req := dto.UpdateNameRequest{
 		Name: strPtr("Updated Name"),
 	}
 
@@ -151,7 +151,7 @@ func TestAuthController_UpdateNameRequest_JSON(t *testing.T) {
 }
 
 func TestAuthController_UpdateSettingsRequest_JSON(t *testing.T) {
-	thresholds := models.Thresholds{
+	thresholds := dto.Thresholds{
 		RiskWarn:    40,
 		RiskCrit:    70,
 		ThermalWarn: 42,
@@ -159,13 +159,13 @@ func TestAuthController_UpdateSettingsRequest_JSON(t *testing.T) {
 		BufferWarn:  45,
 		BufferCrit:  75,
 	}
-	client := models.ClientSettings{
+	client := dto.ClientSettings{
 		StrictHmac:           true,
 		AutoReconnect:        false,
 		NotificationsEnabled: true,
 	}
 	name := "Updated Name"
-	req := models.UpdateSettingsRequest{
+	req := dto.UpdateSettingsRequest{
 		Name:       &name,
 		Thresholds: &thresholds,
 		Client:     &client,
@@ -214,13 +214,13 @@ func TestAuthController_UpdateSettingsRequest_JSON(t *testing.T) {
 
 func TestAuthController_UpdateSettingsRequest_PartialUpdate(t *testing.T) {
 	// Only update thresholds, no name or client.
-	thresholds := models.Thresholds{
+	thresholds := dto.Thresholds{
 		RiskWarn:   35,
 		RiskCrit:   65,
 		BufferWarn: 55,
 		BufferCrit: 80,
 	}
-	req := models.UpdateSettingsRequest{
+	req := dto.UpdateSettingsRequest{
 		Thresholds: &thresholds,
 	}
 
@@ -254,7 +254,7 @@ func TestAuthController_UpdateSettingsRequest_PartialUpdate(t *testing.T) {
 }
 
 func TestAuthController_UpdateSettingsRequest_ResetFlag(t *testing.T) {
-	req := models.UpdateSettingsRequest{
+	req := dto.UpdateSettingsRequest{
 		Reset: true,
 	}
 
@@ -274,7 +274,7 @@ func TestAuthController_UpdateSettingsRequest_ResetFlag(t *testing.T) {
 }
 
 func TestAuthController_ClientSettings_JSON(t *testing.T) {
-	client := models.ClientSettings{
+	client := dto.ClientSettings{
 		StrictHmac:           true,
 		AutoReconnect:        false,
 		NotificationsEnabled: true,
@@ -304,7 +304,7 @@ func TestAuthController_ClientSettings_JSON(t *testing.T) {
 func TestAuthController_ClientSettings_PartialJSON(t *testing.T) {
 	data := []byte(`{"strictHmac": true}`)
 
-	var client models.ClientSettings
+	var client dto.ClientSettings
 	if err := json.Unmarshal(data, &client); err != nil {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
@@ -319,7 +319,7 @@ func TestAuthController_ClientSettings_PartialJSON(t *testing.T) {
 }
 
 func TestAuthController_OperatorResponse_IncludesClientSettings(t *testing.T) {
-	thresholds := models.Thresholds{
+	thresholds := dto.Thresholds{
 		RiskWarn:    50,
 		RiskCrit:    75,
 		ThermalWarn: 45,
@@ -327,16 +327,16 @@ func TestAuthController_OperatorResponse_IncludesClientSettings(t *testing.T) {
 		BufferWarn:  50,
 		BufferCrit:  80,
 	}
-	client := models.ClientSettings{
+	client := dto.ClientSettings{
 		StrictHmac:           false,
 		AutoReconnect:        true,
 		NotificationsEnabled: true,
 	}
-	resp := models.OperatorResponse{
+	resp := dto.OperatorResponse{
 		ID:         "op-001",
 		Email:      "test@example.com",
 		Name:       "Test User",
-		Role:       models.RoleOperator,
+		Role:       dto.RoleOperator,
 		Thresholds: &thresholds,
 		Client:     &client,
 	}
@@ -373,7 +373,7 @@ func TestAuthController_OperatorResponse_IncludesClientSettings(t *testing.T) {
 func TestAuthController_GoogleOAuthCallbackRequest_JSON(t *testing.T) {
 	data := []byte(`{"code":"auth-code-123","state":"state-abc"}`)
 
-	var req models.GoogleOAuthCallbackRequest
+	var req dto.GoogleOAuthCallbackRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
