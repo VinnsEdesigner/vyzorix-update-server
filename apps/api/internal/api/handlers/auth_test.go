@@ -132,7 +132,7 @@ func strPtr(s string) *string { return &s }
 
 func TestAuthController_UpdateNameRequest_JSON(t *testing.T) {
 	req := dto.UpdateNameRequest{
-		Name: strPtr("Updated Name"),
+		Name: "Updated Name",
 	}
 
 	data, err := json.Marshal(req)
@@ -166,7 +166,7 @@ func TestAuthController_UpdateSettingsRequest_JSON(t *testing.T) {
 	}
 	name := "Updated Name"
 	req := dto.UpdateSettingsRequest{
-		Name:       &name,
+		Name:       name,
 		Thresholds: &thresholds,
 		Client:     &client,
 		Reset:      false,

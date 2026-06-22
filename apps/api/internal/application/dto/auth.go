@@ -61,13 +61,21 @@ type LogoutRequest struct {
 
 // OperatorResponse represents an operator in responses.
 type OperatorResponse struct {
-	ID            string `json:"id"`
-	Email         string `json:"email"`
-	Name          string `json:"name"`
-	Role          string `json:"role"`
-	MFAEnabled    bool   `json:"mfa_enabled"`
-	EmailVerified  bool   `json:"email_verified"`
-	CreatedAt      string `json:"created_at"`
+	ID            string           `json:"id"`
+	Email         string           `json:"email"`
+	Name          string           `json:"name"`
+	Role          string           `json:"role"`
+	MFAEnabled    bool             `json:"mfa_enabled"`
+	EmailVerified bool             `json:"email_verified"`
+	CreatedAt     string           `json:"created_at"`
+	Thresholds    *Thresholds      `json:"thresholds,omitempty"`
+	Client        *ClientSettings   `json:"client,omitempty"`
+}
+
+// GoogleOAuthCallbackRequest represents a Google OAuth callback request.
+type GoogleOAuthCallbackRequest struct {
+	Code  string `json:"code"`
+	State string `json:"state"`
 }
 
 // UpdateOperatorRequest represents an operator update request.
@@ -139,7 +147,8 @@ type ClientSettings = operator.ClientSettings
 
 // UpdateSettingsRequest represents a settings update request.
 type UpdateSettingsRequest struct {
-	Name      string          `json:"name,omitempty"`
-	Thresholds *Thresholds    `json:"thresholds,omitempty"`
-	Client    *ClientSettings `json:"client,omitempty"`
+	Name       string          `json:"name,omitempty"`
+	Thresholds *Thresholds     `json:"thresholds,omitempty"`
+	Client     *ClientSettings `json:"client,omitempty"`
+	Reset      bool            `json:"reset,omitempty"`
 }
