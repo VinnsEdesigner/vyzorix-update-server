@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
@@ -25,6 +26,7 @@ type Dependencies struct {
 	OperatorRepo   operator.Repository
 	AuditLogger    *audit.Logger
 	IPIntelligence *middleware.IPIntelligence
+	Presenter      *response.Presenter
 }
 
 // AllHandlers holds references to all auth handlers.
@@ -48,9 +50,9 @@ type AllHandlers struct {
 func NewAllHandlers(deps *Dependencies) *AllHandlers {
 	return &AllHandlers{
 		AuthService:   deps.AuthService,
-		Login:         NewLoginHandler(deps.AuthService, deps.AuditLogger, deps.IPIntelligence),
-		Register:      NewRegisterHandler(deps.AuthService, deps.EmailService, deps.AuditLogger),
-		Logout:        NewLogoutHandler(deps.AuthService, deps.AuditLogger),
+		Login:         NewLoginHandler(deps.AuthService, deps.Presenter),
+		Register:      NewRegisterHandler(deps.AuthService, deps.EmailService, deps.Presenter),
+		Logout:        NewLogoutHandler(deps.AuthService, deps.Presenter),
 		Me:            NewMeHandler(deps.AuthService),
 		EmailVerify:   NewEmailVerifyHandler(deps.AuthService, deps.EmailService),
 		PasswordReset: NewPasswordResetHandler(deps.AuthService, deps.EmailService),
