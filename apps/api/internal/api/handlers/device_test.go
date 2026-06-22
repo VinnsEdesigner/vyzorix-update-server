@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 )
 
 func TestDeviceController_RegisterRequest_JSON(t *testing.T) {
-	req := models.RegisterRequest{
+	req := dto.RegisterRequest{
 		DeviceID:          "device-001",
 		FirebaseInstallID: "firebase-abc",
 		FCMToken:          "fcm-token",
@@ -46,7 +46,7 @@ func TestDeviceController_RegisterRequest_JSONUnmarshal(t *testing.T) {
 		"deviceClass": "tablet"
 	}`)
 
-	var req models.RegisterRequest
+	var req dto.RegisterRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestDeviceController_RegisterRequest_JSONUnmarshal(t *testing.T) {
 }
 
 func TestDeviceController_RegisterResponse_JSON(t *testing.T) {
-	resp := models.RegisterResponse{
+	resp := dto.RegisterResponse{
 		DeviceID:      "device-001",
 		CommandSecret: "secret123",
 	}
@@ -87,7 +87,7 @@ func TestDeviceController_RegisterResponse_JSON(t *testing.T) {
 }
 
 func TestDeviceController_DeviceStatus_JSON(t *testing.T) {
-	status := models.DeviceStatus{
+	status := dto.DeviceStatus{
 		DeviceID:    "device-001",
 		Online:      true,
 		LastSeen:    1234567890,
@@ -120,7 +120,7 @@ func TestDeviceController_Register_InvalidJSON(t *testing.T) {
 	// Test that invalid JSON is handled gracefully.
 	data := []byte(`{invalid json}`)
 
-	var req models.RegisterRequest
+	var req dto.RegisterRequest
 	err := json.Unmarshal(data, &req)
 	if err == nil {
 		t.Error("expected error for invalid JSON")
@@ -131,7 +131,7 @@ func TestDeviceController_Register_MissingFields(t *testing.T) {
 	// Only provide some fields.
 	data := []byte(`{"deviceId": "device-001"}`)
 
-	var req models.RegisterRequest
+	var req dto.RegisterRequest
 	if err := json.Unmarshal(data, &req); err != nil {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestDeviceController_HTTPRequest_Parsing(t *testing.T) {
 }
 
 func TestDeviceController_HTTPResponse_JSON(t *testing.T) {
-	resp := models.RegisterResponse{
+	resp := dto.RegisterResponse{
 		DeviceID:      "device-001",
 		CommandSecret: "secret123",
 	}
