@@ -83,7 +83,7 @@ func (r *DeviceRepository) FindByFirebaseInstallID(ctx context.Context, fid stri
 }
 
 // FindByIDAndOperator retrieves a device by ID and verifies it belongs to the operator.
-// This implements DOA (Data Ownership Attribution) checks for security.
+// This implements DOA (Data Ownership Attribution) checks for infraauth.
 // Returns ErrNotFound if device doesn't exist OR doesn't belong to the operator.
 func (r *DeviceRepository) FindByIDAndOperator(ctx context.Context, id, operatorID string) (*device.Device, error) {
 	query := `

@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/gin-gonic/gin"
 )
@@ -89,12 +89,12 @@ func TestMFAHandler_VerifySetupMFA_Success(t *testing.T) {
 	}
 
 	// Generate a valid TOTP secret and code.
-	secret, err := auth.GenerateSecret()
+	secret, err := infraauth.GenerateSecret()
 	if err != nil {
 		t.Fatalf("GenerateSecret() failed: %v", err)
 	}
 
-	totp := auth.NewTOTP(secret, auth.DefaultTOTPConfig())
+	totp := infraauth.NewTOTP(secret, infraauth.DefaultTOTPConfig())
 	code, err := totp.GenerateCode()
 	if err != nil {
 		t.Fatalf("GenerateCode() failed: %v", err)
@@ -142,7 +142,7 @@ func TestMFAHandler_VerifySetupMFA_InvalidCode(t *testing.T) {
 	}
 
 	// Generate a valid TOTP secret but use wrong code.
-	secret, err := auth.GenerateSecret()
+	secret, err := infraauth.GenerateSecret()
 	if err != nil {
 		t.Fatalf("GenerateSecret() failed: %v", err)
 	}
@@ -178,7 +178,7 @@ func TestMFAHandler_EnableMFA_MFAEnabled(t *testing.T) {
 	}
 
 	// Generate a valid code.
-	totp := auth.NewTOTP(operator.MFASecret, auth.DefaultTOTPConfig())
+	totp := infraauth.NewTOTP(operator.MFASecret, infraauth.DefaultTOTPConfig())
 	code, _ := totp.GenerateCode()
 
 	reqBody := map[string]string{
@@ -211,7 +211,7 @@ func TestMFAHandler_DisableMFA_Success(t *testing.T) {
 	}
 
 	// Generate a valid code.
-	totp := auth.NewTOTP(operator.MFASecret, auth.DefaultTOTPConfig())
+	totp := infraauth.NewTOTP(operator.MFASecret, infraauth.DefaultTOTPConfig())
 	code, _ := totp.GenerateCode()
 
 	reqBody := map[string]string{
@@ -440,7 +440,7 @@ func TestMFAHandler_RegenerateBackupCodes_Success(t *testing.T) {
 	}
 
 	// Generate a valid TOTP code.
-	totp := auth.NewTOTP(operator.MFASecret, auth.DefaultTOTPConfig())
+	totp := infraauth.NewTOTP(operator.MFASecret, infraauth.DefaultTOTPConfig())
 	code, _ := totp.GenerateCode()
 
 	reqBody := map[string]string{
