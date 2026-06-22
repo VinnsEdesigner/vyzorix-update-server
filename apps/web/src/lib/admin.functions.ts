@@ -28,11 +28,13 @@ export const ensureAdminAccess = createServerFn({ method: "POST" })
       if (insertErr) throw new Error(insertErr.message);
       // Lock the door behind the first admin.
       try {
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!serviceRoleKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY not configured");
         await fetch(`${process.env.SUPABASE_URL}/auth/v1/admin/config`, {
           method: "PATCH",
           headers: {
-            apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            apikey: serviceRoleKey,
+            Authorization: `Bearer ${serviceRoleKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ DISABLE_SIGNUP: true }),

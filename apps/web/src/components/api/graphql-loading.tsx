@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 /**
  * Skeleton for dashboard device cards.
  */
-export function DeviceCardSkeleton({ className }: { className?: string }) {
+// eslint-disable-next-line func-style
+export function DeviceCardSkeleton({ className }: { className?: string }): React.ReactNode {
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
@@ -39,7 +40,8 @@ export function DeviceCardSkeleton({ className }: { className?: string }) {
 /**
  * Skeleton for device detail page.
  */
-export function DeviceDetailSkeleton({ className }: { className?: string }) {
+// eslint-disable-next-line func-style
+export function DeviceDetailSkeleton({ className }: { className?: string }): React.ReactNode {
   return (
     <div className={cn("space-y-4", className)}>
       <div className="grid gap-4 lg:grid-cols-3">
@@ -83,7 +85,8 @@ export function DeviceDetailSkeleton({ className }: { className?: string }) {
 /**
  * Skeleton for dashboard overview.
  */
-export function DashboardOverviewSkeleton({ className }: { className?: string }) {
+// eslint-disable-next-line func-style
+export function DashboardOverviewSkeleton({ className }: { className?: string }): React.ReactNode {
   return (
     <div className={cn("space-y-4", className)}>
       <div className="grid gap-4 lg:grid-cols-4">
@@ -116,7 +119,14 @@ export function DashboardOverviewSkeleton({ className }: { className?: string })
 /**
  * Spinner with optional label.
  */
-export function GraphQLSpinner({ label, className }: { label?: string; className?: string }) {
+// eslint-disable-next-line func-style
+export function GraphQLSpinner({
+  label,
+  className,
+}: {
+  label?: string;
+  className?: string;
+}): React.ReactNode {
   return (
     <div className={cn("flex items-center gap-2 text-muted-foreground", className)}>
       <Loader2 className="h-4 w-4 animate-spin" />
@@ -128,13 +138,14 @@ export function GraphQLSpinner({ label, className }: { label?: string; className
 /**
  * Full-page loading state for GraphQL queries.
  */
+// eslint-disable-next-line func-style
 export function GraphQLPageLoading({
   title = "Loading...",
   description,
 }: {
   title?: string;
   description?: string;
-}) {
+}): React.ReactNode {
   return (
     <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
       <div className="relative">
@@ -152,7 +163,8 @@ export function GraphQLPageLoading({
 /**
  * Inline loading indicator for small spaces.
  */
-export function GraphQLInlineLoading({ className }: { className?: string }) {
+// eslint-disable-next-line func-style
+export function GraphQLInlineLoading({ className }: { className?: string }): React.ReactNode {
   return (
     <span className={cn("inline-flex items-center gap-1 text-xs text-muted-foreground", className)}>
       <Loader2 className="h-3 w-3 animate-spin" />
@@ -164,6 +176,7 @@ export function GraphQLInlineLoading({ className }: { className?: string }) {
 /**
  * Empty state for when GraphQL returns no data.
  */
+// eslint-disable-next-line func-style
 export function GraphQLEmptyState({
   title = "No Data",
   description = "No data available for this query.",
@@ -174,7 +187,7 @@ export function GraphQLEmptyState({
   description?: string;
   action?: React.ReactNode;
   icon?: React.ComponentType<{ className?: string }>;
-}) {
+}): React.ReactNode {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="rounded-full bg-muted p-4">
@@ -191,6 +204,7 @@ export function GraphQLEmptyState({
  * Combined GraphQL query state component.
  * Shows appropriate UI based on query state (loading, error, empty, data).
  */
+// eslint-disable-next-line func-style
 export function GraphQLQueryState<TData>({
   isLoading,
   isError,
@@ -213,7 +227,7 @@ export function GraphQLQueryState<TData>({
   emptyComponent?: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
-}) {
+}): React.ReactNode {
   if (isLoading) {
     return loadingComponent ? (
       <>{loadingComponent}</>

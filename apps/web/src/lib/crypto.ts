@@ -5,36 +5,36 @@
  * Derives a 32-byte key from a secret using SHA-512.
  * Used to derive AES-256 key from client_secret.
  */
-export async function deriveKey(secret: string): Promise<Uint8Array> {
+export const deriveKey = async (secret: string): Promise<Uint8Array> => {
   const encoder = new TextEncoder();
   const data = encoder.encode(secret);
   const hash = await sha512(data);
   return hash.slice(0, 32);
-}
+};
 
 /**
  * SHA-512 hash function using Web Crypto API.
  */
-export async function sha512(data: BufferSource): Promise<Uint8Array> {
+export const sha512 = async (data: BufferSource): Promise<Uint8Array> => {
   const hashBuffer = await crypto.subtle.digest("SHA-512", data);
   return new Uint8Array(hashBuffer);
-}
+};
 
 /**
  * SHA-512 hash that returns hex string.
  */
-export async function sha512Hex(data: string): Promise<string> {
+export const sha512Hex = async (data: string): Promise<string> => {
   const encoder = new TextEncoder();
   const hash = await sha512(encoder.encode(data));
   return Array.from(hash)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
+};
 
 /**
  * HMAC-SHA512 using Web Crypto API.
  */
-export async function hmacSha512(key: string, message: string): Promise<Uint8Array> {
+export const hmacSha512 = async (key: string, message: string): Promise<Uint8Array> => {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(key);
 
@@ -48,40 +48,40 @@ export async function hmacSha512(key: string, message: string): Promise<Uint8Arr
 
   const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(message));
   return new Uint8Array(signature);
-}
+};
 
 /**
  * HMAC-SHA512 that returns hex string.
  */
-export async function hmacSha512Hex(key: string, message: string): Promise<string> {
+export const hmacSha512Hex = async (key: string, message: string): Promise<string> => {
   const sig = await hmacSha512(key, message);
   return Array.from(sig)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-}
+};
 
 /**
  * Generate cryptographically secure random bytes.
  */
-export function randomBytes(length: number): Uint8Array {
+export const randomBytes = (length: number): Uint8Array => {
   return crypto.getRandomValues(new Uint8Array(length));
-}
+};
 
 /**
  * Generate a random nonce for AES-GCM (12 bytes).
  */
-export function generateNonce(): Uint8Array {
+export const generateNonce = (): Uint8Array => {
   return randomBytes(12);
-}
+};
 
 /**
  * AES-256-GCM encryption.
  * Returns nonce || ciphertext (both base64 encoded).
  */
-export async function aes256GcmEncrypt(
+export const aes256GcmEncrypt = async (
   secret: string,
   plaintext: string | object,
-): Promise<{ nonce: string; ciphertext: string }> {
+): Promise<{ nonce: string; ciphertext: string }> => {
   const key = await deriveKey(secret);
   const nonce = generateNonce();
 
@@ -105,17 +105,17 @@ export async function aes256GcmEncrypt(
     nonce: b64Encode(nonce),
     ciphertext: b64Encode(new Uint8Array(ciphertext)),
   };
-}
+};
 
 /**
  * AES-256-GCM decryption.
  * Expects nonce and ciphertext as base64 strings.
  */
-export async function aes256GcmDecrypt(
+export const aes256GcmDecrypt = async (
   secret: string,
   nonceB64: string,
   ciphertextB64: string,
-): Promise<string> {
+): Promise<string> => {
   const key = await deriveKey(secret);
   const nonce = b64Decode(nonceB64);
   const ciphertext = b64Decode(ciphertextB64);
@@ -132,15 +132,15 @@ export async function aes256GcmDecrypt(
 
   const decoder = new TextDecoder();
   return decoder.decode(plaintext);
-}
+};
 
 /**
  * AES-256-GCM decryption from combined ciphertext (nonce prepended).
  */
-export async function aes256GcmDecryptCombined(
+export const aes256GcmDecryptCombined = async (
   secret: string,
   combinedB64: string,
-): Promise<string> {
+): Promise<string> => {
   const combined = b64Decode(combinedB64);
   const nonce = combined.slice(0, 12);
   const ciphertext = combined.slice(12);
@@ -159,33 +159,33 @@ export async function aes256GcmDecryptCombined(
 
   const decoder = new TextDecoder();
   return decoder.decode(plaintext);
-}
+};
 
 // Base64 utilities using native btoa/atob
-function b64Encode(data: Uint8Array): string {
+const b64Encode = (data: Uint8Array): string => {
   const str = String.fromCharCode(...data);
   return btoa(str);
-}
+};
 
-function b64Decode(b64: string): Uint8Array {
+const b64Decode = (b64: string): Uint8Array => {
   const str = atob(b64);
   const bytes = new Uint8Array(str.length);
   for (let i = 0; i < str.length; i++) {
     bytes[i] = str.charCodeAt(i);
   }
   return bytes;
-}
+};
 
 /**
  * Decode base64 string to text.
  */
-export function b64ToString(b64: string): string {
+export const b64ToString = (b64: string): string => {
   return atob(b64);
-}
+};
 
 /**
  * Encode string to base64.
  */
-export function stringToB64(str: string): string {
+export const stringToB64 = (str: string): string => {
   return btoa(str);
-}
+};
