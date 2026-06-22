@@ -1,8 +1,7 @@
 package auth
 
 import (
-	"net/http"
-
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 
@@ -13,13 +12,15 @@ import (
 type LockoutHandler struct {
 	authService *appauth.AuthService
 	lockout     *middleware.Lockout
+	presenter  *response.Presenter
 }
 
 // NewLockoutHandler creates a new LockoutHandler.
-func NewLockoutHandler(authService *appauth.AuthService, lockout *middleware.Lockout) *LockoutHandler {
+func NewLockoutHandler(authService *appauth.AuthService, lockout *middleware.Lockout, presenter *response.Presenter) *LockoutHandler {
 	return &LockoutHandler{
 		authService: authService,
 		lockout:     lockout,
+		presenter:  presenter,
 	}
 }
 
@@ -27,25 +28,25 @@ func NewLockoutHandler(authService *appauth.AuthService, lockout *middleware.Loc
 func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
 	sessionID, err := h.getSessionFromCookie(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		h.presenter.Unauthorized(c, "")
 		return
 	}
 
 	// Get operator email to check lockout status
 	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		h.presenter.Unauthorized(c, "")
 		return
 	}
 
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		h.presenter.Unauthorized(c, "")
 		return
 	}
 
 	locked, attemptsRemaining, retryAfter := h.lockout.GetLockoutInfo(op.Email)
 	if locked {
-		c.JSON(http.StatusOK, gin.H{
+		h.presenter.OK(c, gin.H{
 			"locked":             true,
 			"reason":             "Too many failed attempts",
 			"retry_after":        retryAfter.Seconds(),
@@ -54,7 +55,7 @@ func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	h.presenter.OK(c, gin.H{
 		"locked":             false,
 		"attempts_remaining": attemptsRemaining,
 	})
@@ -64,39 +65,40 @@ func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
 func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 	sessionID, err := h.getSessionFromCookie(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		h.presenter.Unauthorized(c, "")
 		return
 	}
 
 	// Check if admin
 	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		h.presenter.Unauthorized(c, "")
 		return
 	}
 
 	if op.Role != "super_admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		h.presenter.Forbidden(c, "")
 		return
 	}
 
 	targetOperatorID := c.Param("operator_id")
 	if targetOperatorID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
+		h.presenter.BadRequest(c, "")
 		return
 	}
 
 	// Get target operator email to clear their lockout
 	targetOp, err := h.authService.GetOperatorByID(c.Request.Context(), targetOperatorID)
 	if err != nil || targetOp == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+		h.presenter.NotFound(c, "")
 		return
 	}
 
 	// Clear lockout using in-memory lockout (email-based)
 	h.lockout.RecordSuccessfulAttempt(targetOp.Email)
 
-	c.JSON(http.StatusOK, gin.H{
+	h.presenter.AdminAction(c, op.ID, "unlock_account", "operator", targetOperatorID, nil)
+	h.presenter.OK(c, gin.H{
 		"success":     true,
 		"message":     "Account unlocked successfully",
 		"operator_id": targetOperatorID,
@@ -105,7 +107,7 @@ func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 
 // getSessionFromCookie extracts session ID from cookie.
 func (h *LockoutHandler) getSessionFromCookie(c *gin.Context) (string, error) {
-	sessionID, err := c.Cookie("session_id")
+	sessionID, err := c.Cookie("vyz_session")
 	if err != nil {
 		return "", err
 	}
