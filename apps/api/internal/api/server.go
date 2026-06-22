@@ -23,6 +23,7 @@ import (
 	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
@@ -215,49 +216,53 @@ func NewServer(cfg *ServerConfig) *Server {
 		encryptKeyFn: encryptKeyFn,
 		db:           cfg.DB,
 		sessionManager: cfg.SessionManager, // Store for GraphQL
-
-		// Create all auth handlers at once
-		authHandlers: authhandlers.NewAllHandlers(&authhandlers.Dependencies{
-			AuthService:    cfg.AuthService,
-			SessionManager: cfg.SessionManager,
-			Config:         cfg.Config,
-			GoogleVerifier: cfg.GoogleVerifier,
-			ClientService:  cfg.ClientService,
-			EmailService:   cfg.EmailService,
-			Lockout:        cfg.Lockout,
-			OperatorRepo:   cfg.OperatorRepo,
-			AuditLogger:    cfg.AuditLogger,
-			IPIntelligence:  cfg.IPIntelligence,
-		}),
-
-		// Device handlers
-		deviceRegisterHandler: devicehandlers.NewRegisterHandler(cfg.DeviceService),
-		deviceStatusHandler:   devicehandlers.NewStatusHandler(cfg.DeviceService),
-		deviceUpdaterHandler:  devicehandlers.NewUpdaterHandler(cfg.DeviceService),
-		deviceListHandler:     devicehandlers.NewListHandler(cfg.DeviceService, cfg.Hub),
-
-		// Command handler with FCM notifier
-		commandHandler: cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier),
-
-		// WebSocket handler
-		streamHandler: websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, hmacVerifier),
-
-		// Telemetry history handler
-		telemetryHistoryHandler: handlers.NewTelemetryHistoryHandler(
-			cfg.Log,
-			storage.NewTelemetryRepository(cfg.DB.DB()),
-			nil, // Use default config
-		),
-
-		// Connection status handler
-		connectionStatusHandler: handlers.NewConnectionStatusHandler(cfg.Log, cfg.Hub),
-
-		// Admin handlers
-		adminClientsHandler: admin.NewClientsHandler(cfg.ClientService),
-
-		// Updater handlers
-		updaterHandler: updaterhandlers.NewHandler(cfg.Log, cfg.Config),
 	}
+
+	// Create presenter for HTTP response handling
+	presenter := response.NewPresenter(cfg.AuthService, cfg.AuditLogger, cfg.IPIntelligence)
+
+	// Create all auth handlers
+	s.authHandlers = authhandlers.NewAllHandlers(&authhandlers.Dependencies{
+		AuthService:    cfg.AuthService,
+		SessionManager: cfg.SessionManager,
+		Config:         cfg.Config,
+		GoogleVerifier: cfg.GoogleVerifier,
+		ClientService:  cfg.ClientService,
+		EmailService:   cfg.EmailService,
+		Lockout:        cfg.Lockout,
+		OperatorRepo:   cfg.OperatorRepo,
+		AuditLogger:    cfg.AuditLogger,
+		IPIntelligence:  cfg.IPIntelligence,
+		Presenter:      presenter,
+	})
+
+	// Device handlers
+	s.deviceRegisterHandler = devicehandlers.NewRegisterHandler(cfg.DeviceService)
+	s.deviceStatusHandler = devicehandlers.NewStatusHandler(cfg.DeviceService)
+	s.deviceUpdaterHandler = devicehandlers.NewUpdaterHandler(cfg.DeviceService)
+	s.deviceListHandler = devicehandlers.NewListHandler(cfg.DeviceService, cfg.Hub)
+
+	// Command handler with FCM notifier
+	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier)
+
+	// WebSocket handler
+	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, hmacVerifier)
+
+	// Telemetry history handler
+	s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(
+		cfg.Log,
+		storage.NewTelemetryRepository(cfg.DB.DB()),
+		nil, // Use default config
+	)
+
+	// Connection status handler
+	s.connectionStatusHandler = handlers.NewConnectionStatusHandler(cfg.Log, cfg.Hub)
+
+	// Admin handlers
+	s.adminClientsHandler = admin.NewClientsHandler(cfg.ClientService)
+
+	// Updater handlers
+	s.updaterHandler = updaterhandlers.NewHandler(cfg.Log, cfg.Config)
 
 	// Start Hub if available
 	if cfg.Hub != nil {
