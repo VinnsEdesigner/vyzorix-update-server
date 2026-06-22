@@ -12,7 +12,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
-	securityAuth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
 )
@@ -50,7 +50,7 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 	}
 
 	// Validate email format using enterprise-grade validator (prevents SQL injection via email)
-	if _, err := securityAuth.ValidateEmail(req.Email); err != nil {
+	if _, err := infraauth.ValidateEmail(req.Email); err != nil {
 		// Return generic error to prevent email enumeration
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "invalid email or password"})
 		return

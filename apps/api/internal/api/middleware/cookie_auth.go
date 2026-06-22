@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 
 	"github.com/gin-gonic/gin"
