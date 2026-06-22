@@ -7,7 +7,7 @@ import { logger } from "@/lib/logger";
 
 // Create a singleton GraphQL client
 // The API server uses session cookies, so we need credentials: 'include'
-const createGraphQLClient = (baseUrl: string) => {
+const createGraphQLClient = (baseUrl: string): GraphQLClient => {
   return new GraphQLClient(`${baseUrl}/graphql`, {
     credentials: "include", // Send cookies for session auth
     headers: {
@@ -38,7 +38,7 @@ export const getGraphQLClient = (): GraphQLClient => {
 };
 
 // Reset client (useful for testing or re-initialization)
-export const resetGraphQLClient = () => {
+export const resetGraphQLClient = (): void => {
   graphqlClient = null;
 };
 

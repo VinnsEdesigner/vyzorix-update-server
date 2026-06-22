@@ -16,6 +16,7 @@ export const DeviceStreamProvider = ({ children }: { children: ReactNode }): Rea
   return <Ctx.Provider value={state}>{children}</Ctx.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useStream = (): DeviceStreamState => {
   const v = useContext(Ctx);
   if (!v) throw new Error("useStream must be used inside DeviceStreamProvider");

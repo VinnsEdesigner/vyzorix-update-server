@@ -64,9 +64,9 @@ const injectAuthState = async (request: Request, response: Response): Promise<Re
 
     // Log for debugging
     if (authState.isAuthenticated) {
-      console.log(`[SSR] Injecting auth state for: ${authState.operator?.email}`);
+      console.info(`[SSR] Injecting auth state for: ${authState.operator?.email}`);
     } else {
-      console.log("[SSR] No auth state (unauthenticated)");
+      console.info("[SSR] No auth state (unauthenticated)");
     }
 
     // Return new response with injected state

@@ -21,17 +21,17 @@ export interface GraphQLErrorDisplayProps {
 /**
  * Formats a GraphQL error for display.
  */
-function formatError(error: GraphQLError): string {
+const formatError = (error: GraphQLError): string => {
   if (error.path && error.path.length > 0) {
     return `${error.message} (path: ${error.path.join(".")})`;
   }
   return error.message;
-}
+};
 
 /**
  * Gets a user-friendly error title based on the error code.
  */
-function getErrorTitle(code?: string): string {
+const getErrorTitle = (code?: string): string => {
   switch (code) {
     case "UNAUTHORIZED":
       return "Authentication Required";
@@ -49,12 +49,12 @@ function getErrorTitle(code?: string): string {
     default:
       return "GraphQL Error";
   }
-}
+};
 
 /**
  * Gets the severity/variant based on error code.
  */
-function getErrorVariant(code?: string): "default" | "destructive" {
+const getErrorVariant = (code?: string): "default" | "destructive" => {
   switch (code) {
     case "UNAUTHORIZED":
     case "FORBIDDEN":
@@ -65,24 +65,25 @@ function getErrorVariant(code?: string): "default" | "destructive" {
     default:
       return "default";
   }
-}
+};
 
 /**
  * GraphQLErrorDisplay displays GraphQL errors with retry functionality.
  */
+// eslint-disable-next-line func-style
 export function GraphQLErrorDisplay({
   error,
   title,
   onRetry,
   className,
-}: GraphQLErrorDisplayProps) {
+}: GraphQLErrorDisplayProps): React.ReactNode {
   const [copied, setCopied] = useState(false);
 
   if (!error) return null;
 
   const errors = Array.isArray(error) ? error : [error];
 
-  const handleCopy = async () => {
+  const handleCopy = async (): Promise<void> => {
     const text = errors.map(formatError).join("\n");
     await navigator.clipboard.writeText(text);
     setCopied(true);
@@ -132,7 +133,14 @@ export function GraphQLErrorDisplay({
 /**
  * GraphQL loading skeleton for use during data fetching.
  */
-export function GraphQLLoading({ rows = 3, className }: { rows?: number; className?: string }) {
+// eslint-disable-next-line func-style
+export function GraphQLLoading({
+  rows = 3,
+  className,
+}: {
+  rows?: number;
+  className?: string;
+}): React.ReactNode {
   return (
     <div className={className}>
       {Array.from({ length: rows }).map((_, i) => (

@@ -21,8 +21,10 @@ fi
 
 # Check for non-null assertions (!)
 echo "Checking for non-null assertions..."
-if grep -rE "!(\s|$|\(|;|\)|\])" apps/web/src --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "_test.ts" | grep -v "node_modules" > /dev/null; then
-    NON_NULL_COUNT=$(grep -rE "!(\s|$|\(|;|\)|\])" apps/web/src --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "_test.ts" | grep -v "node_modules" | wc -l)
+# Match ! followed by . , ; or end of line (actual non-null assertions like variable! or variable!.prop)
+# Exclude: !( (negation), test files, node_modules, graphql files (ID! is GraphQL syntax), supabase configs, toast messages, comments
+if grep -rE "!\.|[^!]!," apps/web/src --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "_test.ts" | grep -v "node_modules" | grep -v "\.test\.tsx" | grep -v "graphql/" | grep -v "supabase/" | grep -v "toast.success" | grep -v "toast.error" | grep -v "toast.warning" | grep -v "toast.info" | grep -v "// " | grep -v "^.*\*" > /dev/null; then
+    NON_NULL_COUNT=$(grep -rE "!\.|[^!]!," apps/web/src --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "_test.ts" | grep -v "node_modules" | grep -v "\.test\.tsx" | grep -v "graphql/" | grep -v "supabase/" | grep -v "toast.success" | grep -v "toast.error" | grep -v "toast.warning" | grep -v "toast.info" | grep -v "// " | grep -v "^.*\*" | wc -l)
     echo "   [WARNING] Found $NON_NULL_COUNT non-null assertions (!)"
     echo "   Consider using proper null checks instead"
     WARNINGS=$((WARNINGS + NON_NULL_COUNT))

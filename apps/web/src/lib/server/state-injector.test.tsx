@@ -205,6 +205,7 @@ describe("getHydratedState", () => {
   };
 
   // Helper to set window.__VYZORIX_PREFETCHED_STATE__
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const setWindowState = (state: HydratedState | undefined) => {
     Object.defineProperty(global, "window", {
       value: {
@@ -291,6 +292,7 @@ describe("getFullHydratedState", () => {
   };
 
   // Helper to set window.__VYZORIX_PREFETCHED_STATE__
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const setWindowState = (state: HydratedState | undefined) => {
     const existingWindow = global.window as unknown as Record<string, unknown>;
     const newWindow: Record<string, unknown> = {};

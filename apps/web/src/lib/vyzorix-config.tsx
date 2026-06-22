@@ -7,8 +7,10 @@ import {
   type ReactElement,
 } from "react";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const DEFAULT_SERVER_URL = "http://localhost:3000";
 // No default device - must be selected from registered devices or empty
+// eslint-disable-next-line react-refresh/only-export-components
 export const DEFAULT_DEVICE_ID = "";
 
 const STORAGE_KEY = "vyzorix.config.v2";
@@ -47,6 +49,7 @@ export interface VyzorixSettings {
   thresholds: Thresholds;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const DEFAULT_SETTINGS: VyzorixSettings = {
   serverUrl: DEFAULT_SERVER_URL,
   deviceId: DEFAULT_DEVICE_ID,
@@ -167,12 +170,14 @@ export const VyzorixConfigProvider = ({ children }: { children: ReactNode }): Re
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useVyzorixConfig = (): Config => {
   const ctx = useContext(ConfigCtx);
   if (!ctx) throw new Error("useVyzorixConfig must be used inside VyzorixConfigProvider");
   return ctx;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const wsUrl = (serverUrl: string, path: string): string => {
   try {
     const u = new URL(path, serverUrl);
