@@ -1,8 +1,7 @@
 package auth
 
 import (
-	"net/http"
-
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 
@@ -13,13 +12,15 @@ import (
 type PasswordResetHandler struct {
 	authService *auth.AuthService
 	emailSvc   *emailService.Service
+	presenter *response.Presenter
 }
 
 // NewPasswordResetHandler creates a new PasswordResetHandler.
-func NewPasswordResetHandler(authService *auth.AuthService, emailSvc *emailService.Service) *PasswordResetHandler {
+func NewPasswordResetHandler(authService *auth.AuthService, emailSvc *emailService.Service, presenter *response.Presenter) *PasswordResetHandler {
 	return &PasswordResetHandler{
 		authService: authService,
 		emailSvc:   emailSvc,
+		presenter: presenter,
 	}
 }
 
@@ -29,19 +30,19 @@ func (h *PasswordResetHandler) ForgotPassword(c *gin.Context) {
 		Email string `json:"email"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid JSON body"})
+		h.presenter.BadRequest(c, "invalid JSON body")
 		return
 	}
 
 	if req.Email == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "email is required"})
+		h.presenter.BadRequest(c, "email is required")
 		return
 	}
 
 	// Generate token (returns empty string if email not found - security)
 	token, err := h.authService.GeneratePasswordResetToken(c.Request.Context(), req.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "request failed"})
+		h.presenter.InternalError(c, "request failed")
 		return
 	}
 
@@ -54,12 +55,12 @@ func (h *PasswordResetHandler) ForgotPassword(c *gin.Context) {
 			name = op.Name
 		}
 		if err := h.emailSvc.SendPasswordResetEmail(c.Request.Context(), req.Email, name, token); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to send email"})
+			h.presenter.InternalError(c, "failed to send email")
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "If that email exists, a password reset link has been sent."})
+	h.presenter.OK(c, gin.H{"message": "If that email exists, a password reset link has been sent."})
 }
 
 // ResendPasswordReset handles POST /v1/auth/resend-password-reset.
@@ -68,33 +69,33 @@ func (h *PasswordResetHandler) ResendPasswordReset(c *gin.Context) {
 		Email string `json:"email"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid request body"})
+		h.presenter.BadRequest(c, "invalid request body")
 		return
 	}
 
 	if req.Email == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "email is required"})
+		h.presenter.BadRequest(c, "email is required")
 		return
 	}
 
 	// Check rate limit before processing.
 	rateLimit, err := h.authService.CheckResendRateLimit(c.Request.Context(), req.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to check rate limit"})
+		h.presenter.InternalError(c, "failed to check rate limit")
 		return
 	}
 
 	if !rateLimit.Allowed {
 		// Return rate limit response.
 		if rateLimit.LockedUntil != nil {
-			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error":       "rate_limited",
-				"message":     "Too many requests. Please try again later.",
-				"lockedUntil": rateLimit.LockedUntil.UnixMilli(),
+			h.presenter.OK(c, gin.H{
+				"error":        "rate_limited",
+				"message":      "Too many requests. Please try again later.",
+				"lockedUntil":  rateLimit.LockedUntil.UnixMilli(),
 			})
 			return
 		}
-		c.JSON(http.StatusTooManyRequests, gin.H{
+		h.presenter.OK(c, gin.H{
 			"error":       "rate_limited",
 			"message":     "Please wait before requesting another reset link.",
 			"retryAfter":  rateLimit.RetryAfter,
@@ -104,7 +105,7 @@ func (h *PasswordResetHandler) ResendPasswordReset(c *gin.Context) {
 
 	token, err := h.authService.GeneratePasswordResetToken(c.Request.Context(), req.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "request failed"})
+		h.presenter.InternalError(c, "request failed")
 		return
 	}
 
@@ -116,7 +117,7 @@ func (h *PasswordResetHandler) ResendPasswordReset(c *gin.Context) {
 			name = op.Name
 		}
 		if err := h.emailSvc.SendPasswordResetEmail(c.Request.Context(), req.Email, name, token); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to send email"})
+			h.presenter.InternalError(c, "failed to send email")
 			return
 		}
 	}
@@ -128,7 +129,7 @@ func (h *PasswordResetHandler) ResendPasswordReset(c *gin.Context) {
 		_ = c.Error(err)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Password reset link sent."})
+	h.presenter.OK(c, gin.H{"success": true, "message": "Password reset link sent."})
 }
 
 // ResetPassword handles POST /v1/auth/reset-password.
@@ -138,28 +139,28 @@ func (h *PasswordResetHandler) ResetPassword(c *gin.Context) {
 		NewPassword string `json:"newPassword"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid JSON body"})
+		h.presenter.BadRequest(c, "invalid JSON body")
 		return
 	}
 
 	if req.Token == "" || req.NewPassword == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "token and newPassword are required"})
+		h.presenter.BadRequest(c, "token and newPassword are required")
 		return
 	}
 
 	// Get operator email from token for validation
 	// First, validate the token exists and is not expired
 	if err := h.authService.ValidatePasswordResetToken(c.Request.Context(), req.Token, ""); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "unauthorized", "message": "invalid or expired reset token"})
+		h.presenter.Unauthorized(c, "invalid or expired reset token")
 		return
 	}
 
 	// Reset password
 	err := h.authService.ResetPassword(c.Request.Context(), req.Token, "", req.NewPassword)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "internal_error", "message": "Invalid request"})
+		h.presenter.BadRequest(c, "Invalid request")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Password has been reset successfully."})
+	h.presenter.OK(c, gin.H{"success": true, "message": "Password has been reset successfully."})
 }

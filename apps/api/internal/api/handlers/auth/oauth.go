@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -26,15 +27,17 @@ type OAuthHandler struct {
 	config      config.Config
 	googleVer   *infraauth.GoogleTokenVerifier
 	logger      *slog.Logger
+	presenter   *response.Presenter
 }
 
 // NewOAuthHandler creates a new OAuthHandler.
-func NewOAuthHandler(authService *appsvc.AuthService, sessionMgr *infraauth.SessionManager, cfg config.Config, googleVer *infraauth.GoogleTokenVerifier) *OAuthHandler {
+func NewOAuthHandler(authService *appsvc.AuthService, sessionMgr *infraauth.SessionManager, cfg config.Config, googleVer *infraauth.GoogleTokenVerifier, presenter *response.Presenter) *OAuthHandler {
 	return &OAuthHandler{
 		authService: authService,
 		sessionMgr:  sessionMgr,
 		config:      cfg,
 		googleVer:  googleVer,
+		presenter:  presenter,
 	}
 }
 
@@ -47,7 +50,7 @@ func (h *OAuthHandler) WithLogger(logger *slog.Logger) *OAuthHandler {
 // GoogleLogin handles GET /v1/auth/google.
 func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 	if h.config.GoogleOAuthClientID == "" || h.config.GoogleOAuthClientSecret == "" {
-		c.JSON(http.StatusNotImplemented, gin.H{"error": "internal_error", "message": "Google OAuth is not configured on this server"})
+		h.presenter.NotImplemented(c, "Google OAuth is not configured on this server")
 		return
 	}
 
@@ -72,7 +75,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
 	if code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "missing authorization code from Google"})
+		h.presenter.BadRequest(c, "missing authorization code from Google")
 		return
 	}
 
@@ -95,40 +98,40 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		ExpiresIn    int    `json:"expires_in"`
 	}
 	if err := postJSON(ctx, tokenURL, tokenReq, &tokenResp); err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "internal_error", "message": "failed to exchange code with Google"})
+		h.presenter.BadGateway(c, "failed to exchange code with Google")
 		return
 	}
 
 	// Verify ID token
 	googleClaims, err := h.googleVer.Verify(tokenResp.IDToken)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "internal_error", "message": "invalid identity token from Google"})
+		h.presenter.BadGateway(c, "invalid identity token from Google")
 		return
 	}
 
 	if googleClaims.Email == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "internal_error", "message": "Google did not return an email address"})
+		h.presenter.BadRequest(c, "Google did not return an email address")
 		return
 	}
 
 	// Find or create operator via application service
 	result, err := h.authService.FindOrCreateGoogleOperator(ctx, googleClaims.Sub, googleClaims.Email, googleClaims.Name)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "login failed"})
+		h.presenter.InternalError(c, "login failed")
 		return
 	}
 
 	// Create session (validates operator was found/created)
 	_, err = h.authService.CreateSession(ctx, result.Operator.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "login failed"})
+		h.presenter.InternalError(c, "login failed")
 		return
 	}
 
 	// Set session cookie
 	cookie, err := h.sessionMgr.CreateCookieWithExpiry(result.Operator.ID, h.config.SessionMaxAge)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "login failed"})
+		h.presenter.InternalError(c, "login failed")
 		return
 	}
 	http.SetCookie(c.Writer, cookie)
@@ -148,7 +151,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 // GitHubLogin handles GET /v1/auth/github.
 func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 	if h.config.GitHubOAuthClientID == "" || h.config.GitHubOAuthClientSecret == "" {
-		c.JSON(http.StatusNotImplemented, gin.H{"error": "internal_error", "message": "GitHub OAuth is not configured on this server"})
+		h.presenter.NotImplemented(c, "GitHub OAuth is not configured on this server")
 		return
 	}
 
@@ -176,7 +179,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
 	if code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "missing authorization code from GitHub"})
+		h.presenter.BadRequest(c, "missing authorization code from GitHub")
 		return
 	}
 
@@ -192,14 +195,14 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		RedirectURI:  callbackURL,
 	})
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "internal_error", "message": "failed to exchange code with GitHub"})
+		h.presenter.BadGateway(c, "failed to exchange code with GitHub")
 		return
 	}
 
 	// Fetch GitHub user profile
 	ghUser, err := infraauth.FetchGitHubUserProfile(ctx, tokenResp.AccessToken)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "internal_error", "message": "failed to retrieve GitHub user profile"})
+		h.presenter.BadGateway(c, "failed to retrieve GitHub user profile")
 		return
 	}
 
@@ -232,21 +235,21 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	// Find or create operator
 	result, err := h.authService.FindOrCreateGitHubOperator(ctx, githubID, email, name)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "login failed"})
+		h.presenter.InternalError(c, "login failed")
 		return
 	}
 
 	// Create session (validates operator was found/created)
 	_, err = h.authService.CreateSession(ctx, result.Operator.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "login failed"})
+		h.presenter.InternalError(c, "login failed")
 		return
 	}
 
 	// Set session cookie
 	cookie, err := h.sessionMgr.CreateCookieWithExpiry(result.Operator.ID, h.config.SessionMaxAge)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "login failed"})
+		h.presenter.InternalError(c, "login failed")
 		return
 	}
 	http.SetCookie(c.Writer, cookie)
