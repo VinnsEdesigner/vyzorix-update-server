@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 )
 
 func TestLockoutHandler_GetLockoutStatus_Unauthorized(t *testing.T) {
@@ -45,7 +45,7 @@ func TestLockoutHandler_UnlockAccount_Unauthorized(t *testing.T) {
 func TestLockoutHandler_UnlockAccount_NonAdmin(t *testing.T) {
 	handler := NewLockoutHandler(nil, nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
 		Role:  "operator", // Not admin
@@ -67,7 +67,7 @@ func TestLockoutHandler_UnlockAccount_NonAdmin(t *testing.T) {
 func TestLockoutHandler_UnlockAccount_MissingOperatorID(t *testing.T) {
 	handler := NewLockoutHandler(nil, nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
 		Role:  "admin",

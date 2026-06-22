@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/pkg/models"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,10 +29,10 @@ func TestMFAHandler_EnrollMFA_Unauthorized(t *testing.T) {
 func TestMFAHandler_EnrollMFA_Success(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  models.RoleOperator,
+		Role:  dto.RoleOperator,
 	}
 
 	w := httptest.NewRecorder()
@@ -61,10 +61,10 @@ func TestMFAHandler_EnrollMFA_Success(t *testing.T) {
 func TestMFAHandler_VerifySetupMFA_InvalidRequest(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  models.RoleOperator,
+		Role:  dto.RoleOperator,
 	}
 
 	// Empty body.
@@ -82,10 +82,10 @@ func TestMFAHandler_VerifySetupMFA_InvalidRequest(t *testing.T) {
 func TestMFAHandler_VerifySetupMFA_Success(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  models.RoleOperator,
+		Role:  dto.RoleOperator,
 	}
 
 	// Generate a valid TOTP secret and code.
@@ -135,10 +135,10 @@ func TestMFAHandler_VerifySetupMFA_Success(t *testing.T) {
 func TestMFAHandler_VerifySetupMFA_InvalidCode(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  models.RoleOperator,
+		Role:  dto.RoleOperator,
 	}
 
 	// Generate a valid TOTP secret but use wrong code.
@@ -169,10 +169,10 @@ func TestMFAHandler_EnableMFA_MFAEnabled(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
 	// Operator already has MFA enabled.
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:         "op-test-123",
 		Email:      "test@example.com",
-		Role:       models.RoleOperator,
+		Role:       dto.RoleOperator,
 		MFASecret:  "JBSWY3DPEHPK3PXP", // Valid base32 secret
 		MFAEnabled: true,
 	}
@@ -201,10 +201,10 @@ func TestMFAHandler_EnableMFA_MFAEnabled(t *testing.T) {
 func TestMFAHandler_DisableMFA_Success(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:         "op-test-123",
 		Email:      "test@example.com",
-		Role:       models.RoleOperator,
+		Role:       dto.RoleOperator,
 		MFASecret:  "JBSWY3DPEHPK3PXP",
 		MFAEnabled: true,
 		BackupCodes: []string{"ABCD-EFGH-IJKL", "MNPQ-RSTU-VWXY"},
@@ -234,10 +234,10 @@ func TestMFAHandler_DisableMFA_Success(t *testing.T) {
 func TestMFAHandler_DisableMFA_NotEnabled(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  models.RoleOperator,
+		Role:  dto.RoleOperator,
 		// MFASecret is empty - MFA not enabled.
 	}
 
@@ -261,10 +261,10 @@ func TestMFAHandler_DisableMFA_NotEnabled(t *testing.T) {
 func TestMFAHandler_GetMFAStatus_Enabled(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:           "op-test-123",
 		Email:        "test@example.com",
-		Role:         models.RoleOperator,
+		Role:         dto.RoleOperator,
 		MFASecret:    "JBSWY3DPEHPK3PXP",
 		MFAEnabled:   true,
 		BackupCodes:  []string{"ABCD-EFGH-IJKL", "MNPQ-RSTU-VWXY"},
@@ -299,10 +299,10 @@ func TestMFAHandler_GetMFAStatus_Enabled(t *testing.T) {
 func TestMFAHandler_GetMFAStatus_Disabled(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  models.RoleOperator,
+		Role:  dto.RoleOperator,
 		// MFA not enabled.
 	}
 
@@ -333,10 +333,10 @@ func TestMFAHandler_VerifyBackupCode_Success(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
 	backupCodes := []string{"ABCD-EFGH-IJKL", "MNPQ-RSTU-VWXY", "YYYY-ZZZZ-WWWW"}
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:           "op-test-123",
 		Email:        "test@example.com",
-		Role:         models.RoleOperator,
+		Role:         dto.RoleOperator,
 		MFASecret:    "JBSWY3DPEHPK3PXP",
 		MFAEnabled:   true,
 		BackupCodes:  backupCodes,
@@ -374,10 +374,10 @@ func TestMFAHandler_VerifyBackupCode_Success(t *testing.T) {
 func TestMFAHandler_VerifyBackupCode_Invalid(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:           "op-test-123",
 		Email:        "test@example.com",
-		Role:         models.RoleOperator,
+		Role:         dto.RoleOperator,
 		MFASecret:    "JBSWY3DPEHPK3PXP",
 		MFAEnabled:   true,
 		BackupCodes:  []string{"ABCD-EFGH-IJKL"},
@@ -403,10 +403,10 @@ func TestMFAHandler_VerifyBackupCode_Invalid(t *testing.T) {
 func TestMFAHandler_VerifyBackupCode_NotConfigured(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  models.RoleOperator,
+		Role:  dto.RoleOperator,
 		// MFA not configured.
 	}
 
@@ -430,10 +430,10 @@ func TestMFAHandler_VerifyBackupCode_NotConfigured(t *testing.T) {
 func TestMFAHandler_RegenerateBackupCodes_Success(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:          "op-test-123",
 		Email:       "test@example.com",
-		Role:        models.RoleOperator,
+		Role:        dto.RoleOperator,
 		MFASecret:   "JBSWY3DPEHPK3PXP",
 		MFAEnabled:  true,
 		BackupCodes: []string{"OLD1-OLD2-OLD3"},
@@ -477,10 +477,10 @@ func TestMFAHandler_RegenerateBackupCodes_Success(t *testing.T) {
 func TestMFAHandler_RegenerateBackupCodes_MFAEnabled(t *testing.T) {
 	handler := NewMFAHandler(nil)
 
-	operator := &models.Operator{
+	operator := &dto.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  models.RoleOperator,
+		Role:  dto.RoleOperator,
 		// MFASecret is empty - MFA not enabled.
 	}
 
@@ -553,7 +553,7 @@ func TestMFAResponse_MarshalJSON_WithError(t *testing.T) {
 
 // Helper functions.
 
-func createTestContext(w *httptest.ResponseRecorder, operator *models.Operator) (*gin.Context, *gin.Engine) {
+func createTestContext(w *httptest.ResponseRecorder, operator *dto.Operator) (*gin.Context, *gin.Engine) {
 	gin.SetMode(gin.TestMode)
 	e := gin.New()
 	c, _ := gin.CreateTestContext(w)
@@ -563,7 +563,7 @@ func createTestContext(w *httptest.ResponseRecorder, operator *models.Operator) 
 	return c, e
 }
 
-func createTestContextWithOperator(w *httptest.ResponseRecorder, operator *models.Operator) (*gin.Context, *gin.Engine) {
+func createTestContextWithOperator(w *httptest.ResponseRecorder, operator *dto.Operator) (*gin.Context, *gin.Engine) {
 	gin.SetMode(gin.TestMode)
 	e := gin.New()
 	c, _ := gin.CreateTestContext(w)

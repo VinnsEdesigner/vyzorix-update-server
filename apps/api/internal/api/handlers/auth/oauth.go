@@ -126,7 +126,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	}
 
 	// Set session cookie
-	cookie, err := h.sessionMgr.CreateSessionCookieWithExpiry(result.Operator.ID, h.config.SessionMaxAge)
+	cookie, err := h.sessionMgr.CreateCookieWithExpiry(result.Operator.ID, h.config.SessionMaxAge)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "login failed"})
 		return
@@ -244,7 +244,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	}
 
 	// Set session cookie
-	cookie, err := h.sessionMgr.CreateSessionCookieWithExpiry(result.Operator.ID, h.config.SessionMaxAge)
+	cookie, err := h.sessionMgr.CreateCookieWithExpiry(result.Operator.ID, h.config.SessionMaxAge)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "login failed"})
 		return
