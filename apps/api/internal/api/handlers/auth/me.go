@@ -2,8 +2,8 @@ package auth
 
 import (
 	"errors"
-	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 
@@ -13,37 +13,38 @@ import (
 // MeHandler handles GET /v1/auth/me.
 type MeHandler struct {
 	authService *auth.AuthService
+	presenter  *response.Presenter
 }
 
 // NewMeHandler creates a new MeHandler.
-func NewMeHandler(authService *auth.AuthService) *MeHandler {
-	return &MeHandler{authService: authService}
+func NewMeHandler(authService *auth.AuthService, presenter *response.Presenter) *MeHandler {
+	return &MeHandler{authService: authService, presenter: presenter}
 }
 
 // Handle processes the me request.
 func (h *MeHandler) Handle(c *gin.Context) {
-	sessionID, err := c.Cookie("session_id")
+	sessionID, err := c.Cookie("vyz_session")
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
+		h.presenter.Unauthorized(c, "not authenticated")
 		return
 	}
 
 	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
 	if err != nil {
 		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "session invalid or expired"})
+			h.presenter.Unauthorized(c, "session invalid or expired")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "an error occurred"})
+		h.presenter.InternalError(c, "an error occurred")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	h.presenter.OK(c, gin.H{
 		"id":              op.ID,
 		"email":           op.Email,
 		"name":            op.Name,
 		"role":            op.Role,
 		"mfa_enabled":     op.MFAEnabled,
-		"email_verified": op.EmailVerified,
+		"email_verified":  op.EmailVerified,
 	})
 }

@@ -2,8 +2,8 @@ package auth
 
 import (
 	"errors"
-	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -14,11 +14,12 @@ import (
 // SettingsHandler handles /me settings endpoints.
 type SettingsHandler struct {
 	authService *auth.AuthService
+	presenter  *response.Presenter
 }
 
 // NewSettingsHandler creates a new SettingsHandler.
-func NewSettingsHandler(authService *auth.AuthService) *SettingsHandler {
-	return &SettingsHandler{authService: authService}
+func NewSettingsHandler(authService *auth.AuthService, presenter *response.Presenter) *SettingsHandler {
+	return &SettingsHandler{authService: authService, presenter: presenter}
 }
 
 // getOperatorFromSession extracts operator ID from session.
@@ -41,10 +42,10 @@ func (h *SettingsHandler) UpdateName(c *gin.Context) {
 	operatorID, _, err := h.getOperatorFromSession(c)
 	if err != nil {
 		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
+			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "an error occurred"})
+		h.presenter.InternalError(c, "an error occurred")
 		return
 	}
 
@@ -52,22 +53,22 @@ func (h *SettingsHandler) UpdateName(c *gin.Context) {
 		Name *string `json:"name"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid JSON body"})
+		h.presenter.BadRequest(c, "invalid JSON body")
 		return
 	}
 
 	if req.Name == nil || *req.Name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "name is required"})
+		h.presenter.BadRequest(c, "name is required")
 		return
 	}
 
 	op, err := h.authService.UpdateOperatorName(c.Request.Context(), operatorID, *req.Name)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "update failed"})
+		h.presenter.InternalError(c, "update failed")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	h.presenter.OK(c, gin.H{
 		"id":              op.ID,
 		"email":           op.Email,
 		"name":            op.Name,
@@ -84,16 +85,16 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 	operatorID, _, err := h.getOperatorFromSession(c)
 	if err != nil {
 		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
+			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "an error occurred"})
+		h.presenter.InternalError(c, "an error occurred")
 		return
 	}
 
 	var req auth.UpdateSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid JSON body"})
+		h.presenter.BadRequest(c, "invalid JSON body")
 		return
 	}
 
@@ -106,11 +107,11 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "update failed"})
+		h.presenter.InternalError(c, "update failed")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	h.presenter.OK(c, gin.H{
 		"id":              op.ID,
 		"email":           op.Email,
 		"name":            op.Name,
