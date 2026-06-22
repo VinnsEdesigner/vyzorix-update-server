@@ -2,29 +2,34 @@ package dto
 
 import "time"
 
+// Type aliases for backward compatibility with tests.
+type DeviceRegisterRequest = RegisterDeviceRequest
+type DeviceRegisterResponse = RegisterDeviceResponse
+type DeviceStatus = DeviceStatusResponse
+
 // RegisterDeviceRequest represents a device registration request.
 type RegisterDeviceRequest struct {
-	DeviceID          string `json:"device_id"`
-	FirebaseInstallID string `json:"firebase_install_id"`
-	FCMToken         string `json:"fcm_token"`
-	AppVersion        string `json:"app_version"`
-	DeviceClass       string `json:"device_class"`
+	DeviceID          string `json:"deviceId"`
+	FirebaseInstallID string `json:"firebaseInstallId"`
+	FCMToken          string `json:"fcmToken"`
+	AppVersion        string `json:"appVersion"`
+	DeviceClass       string `json:"deviceClass"`
 }
 
 // RegisterDeviceResponse represents a device registration response.
 type RegisterDeviceResponse struct {
-	DeviceID      string `json:"device_id"`
-	CommandSecret string `json:"command_secret"`
-	RegisteredAt  int64  `json:"registered_at"`
+	DeviceID      string `json:"deviceId"`
+	CommandSecret string `json:"commandSecret"`
+	RegisteredAt  int64  `json:"registeredAt"`
 }
 
 // DeviceStatusResponse represents device status.
 type DeviceStatusResponse struct {
-	DeviceID    string `json:"device_id"`
+	DeviceID    string `json:"deviceId"`
 	Online      bool   `json:"online"`
-	LastSeen    int64  `json:"last_seen"`
-	AppVersion  string `json:"app_version"`
-	DeviceClass string `json:"device_class"`
+	LastSeen    int64  `json:"lastSeen"`
+	AppVersion  string `json:"appVersion"`
+	DeviceClass string `json:"deviceClass"`
 }
 
 // UpdateFCMTokenRequest represents FCM token update request.
@@ -70,14 +75,35 @@ type SendCommandResponse struct {
 
 // CommandResponse represents a command in responses.
 type CommandResponse struct {
-	ID         string                 `json:"id"`
-	DeviceID   string                 `json:"device_id"`
-	Command    string                 `json:"command"`
-	Args       []byte                 `json:"args,omitempty"`
-	DispatchID string                `json:"dispatch_id"`
-	Status     string                 `json:"status"`
-	CreatedAt  time.Time              `json:"created_at"`
-	UpdatedAt  time.Time              `json:"updated_at"`
+	ID         string    `json:"id,omitempty"`
+	DeviceID   string    `json:"deviceId,omitempty"`
+	Command    string    `json:"command,omitempty"`
+	Args       []byte    `json:"args,omitempty"`
+	DispatchID string    `json:"dispatchId,omitempty"`
+	Status     string    `json:"status,omitempty"`
+	Delivery   string    `json:"delivery,omitempty"`
+	ServerTime int64     `json:"serverTime,omitempty"`
+	CreatedAt  time.Time `json:"createdAt,omitempty"`
+	UpdatedAt  time.Time `json:"updatedAt,omitempty"`
+}
+
+// CommandRequest represents an incoming command request.
+type CommandRequest struct {
+	Command   string                 `json:"command"`
+	Args      interface{}            `json:"args,omitempty"`
+	Nonce     string                 `json:"nonce"`
+	Timestamp int64                  `json:"timestamp"`
+	Signature string                 `json:"signature"`
+}
+
+// CommandFrame represents a command frame for device communication.
+type CommandFrame struct {
+	Type       string                 `json:"type"`
+	DispatchID string                 `json:"dispatchId,omitempty"`
+	Command    string                 `json:"command,omitempty"`
+	Args       interface{}            `json:"args,omitempty"`
+	Nonce      string                 `json:"nonce,omitempty"`
+	Timestamp  int64                  `json:"timestamp,omitempty"`
 }
 
 // CommandStatusResponse represents command status.
