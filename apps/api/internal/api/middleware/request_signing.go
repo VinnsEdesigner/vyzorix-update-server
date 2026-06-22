@@ -41,7 +41,7 @@ type SigningConfig struct {
 }
 
 // DefaultSigningConfig returns the default signing configuration.
-// Request signing is ENABLED by default for production security.
+// Request signing is ENABLED by default for production infraauth.
 func DefaultSigningConfig() SigningConfig {
 	return SigningConfig{
 		Enabled:           true,

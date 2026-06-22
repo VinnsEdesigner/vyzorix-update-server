@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 )
 
 // RevocationConfig holds session revocation configuration.
@@ -29,7 +29,7 @@ func LoadRevocationConfig() RevocationConfig {
 }
 
 // AuthRevocationMiddleware returns a middleware that checks if a session has been revoked.
-func AuthRevocationMiddleware(revocationList *security.RevocationList) func(c *gin.Context) {
+func AuthRevocationMiddleware(revocationList *infraauth.RevocationList) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		if revocationList == nil {
 			c.Next()
@@ -37,14 +37,14 @@ func AuthRevocationMiddleware(revocationList *security.RevocationList) func(c *g
 		}
 
 		// Get session cookie.
-		cookieValue, err := c.Cookie(security.CookieName)
+		cookieValue, err := c.Cookie(infraauth.CookieName)
 		if err != nil || cookieValue == "" {
 			c.Next()
 			return
 		}
 
 		// Hash the cookie value to check against revocation list.
-		tokenHash := security.HashOperatorID(cookieValue)
+		tokenHash := infraauth.HashOperatorID(cookieValue)
 
 		if revocationList.IsRevoked(tokenHash) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
