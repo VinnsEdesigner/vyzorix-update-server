@@ -182,6 +182,7 @@ export class ClientCredentialsStore {
  * Fetch client credentials from the API.
  * This is called after login to get the signing credentials.
  */
+// eslint-disable-next-line func-style
 export async function fetchClientCredentials(
   apiUrl: string,
   name: string = "Web Dashboard",
@@ -226,27 +227,27 @@ export async function fetchClientCredentials(
 /**
  * List all client credentials (metadata only - no secrets).
  */
-export function listClientCredentials(): Omit<ClientCredentials, "clientSecret">[] {
+export const listClientCredentials = (): Omit<ClientCredentials, "clientSecret">[] => {
   return ClientCredentialsStore.getAll();
-}
+};
 
 /**
  * Get the active client's credentials.
  */
-export function getActiveCredentials(): ClientCredentials | null {
+export const getActiveCredentials = (): ClientCredentials | null => {
   return ClientCredentialsStore.getActive();
-}
+};
 
 /**
  * Delete a client's credentials.
  */
-export function deleteClientCredentials(clientId: string): void {
+export const deleteClientCredentials = (clientId: string): void => {
   ClientCredentialsStore.remove(clientId);
-}
+};
 
 /**
  * Clear all credentials on logout.
  */
-export function clearAllCredentials(): void {
+export const clearAllCredentials = (): void => {
   ClientCredentialsStore.clearAll();
-}
+};

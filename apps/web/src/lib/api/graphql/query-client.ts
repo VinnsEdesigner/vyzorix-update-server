@@ -5,7 +5,7 @@ import { QueryClient } from "@tanstack/react-query";
 
 // Create a GraphQL-specific query client configuration
 // This can be used alongside the main query client for GraphQL operations
-export const createGraphQLQueryClient = () => {
+export const createGraphQLQueryClient = (): QueryClient => {
   return new QueryClient({
     defaultOptions: {
       queries: {

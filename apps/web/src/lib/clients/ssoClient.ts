@@ -44,21 +44,21 @@ const jsonOrThrow = async <T>(res: Response): Promise<T> => {
 /**
  * Initiate SSO OAuth flow - redirects to provider's auth page.
  */
-export function initiateSSO(provider: SSOProvider): void {
+export const initiateSSO = (provider: SSOProvider): void => {
   const target = `/v1/auth/${provider.toLowerCase()}`;
   logger.info("sso", `-> Redirecting to ${provider} OAuth`, { target });
   window.location.href = target;
-}
+};
 
 /**
  * Handle OAuth callback - called after redirect from provider.
  * This is typically called on the /auth/callback route.
  */
-export async function handleSSOCallback(
+export const handleSSOCallback = async (
   provider: SSOProvider,
   code: string,
   state: string,
-): Promise<OperatorResponse> {
+): Promise<OperatorResponse> => {
   logger.info("sso", "-> POST OAuth callback", { provider });
   const res = await fetch(
     `${API_BASE}/v1/auth/${provider.toLowerCase()}/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
@@ -67,4 +67,4 @@ export async function handleSSOCallback(
   const out = await jsonOrThrow<OperatorResponse>(res);
   logger.info("sso", "<- OAuth callback OK", { provider, email: out.email });
   return out;
-}
+};

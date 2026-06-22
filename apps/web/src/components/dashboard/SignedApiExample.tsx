@@ -23,7 +23,7 @@ import { useSignedApi } from "@/hooks/use-signed-api";
  * Example: Signed API integration for device commands.
  * This demonstrates how to use the signed API client in a dashboard component.
  */
-export function SignedCommandExample() {
+export const SignedCommandExample = (): React.ReactNode => {
   const navigate = useNavigate();
   const [commandResult, setCommandResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -148,12 +148,13 @@ export function SignedCommandExample() {
       </CardContent>
     </Card>
   );
-}
+};
 
 /**
  * Hook-based example for use in TanStack Query components.
  * This shows how to integrate signing into data fetching hooks.
  */
+// eslint-disable-next-line react-refresh/only-export-components, func-style, @typescript-eslint/explicit-function-return-type
 export function useSignedApiQuery() {
   const api = useSignedApi({
     apiUrl: window.location.origin,

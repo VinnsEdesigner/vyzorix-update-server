@@ -66,7 +66,7 @@ const jsonOrThrow = async <T>(res: Response): Promise<T> => {
 /**
  * Register a new operator account.
  */
-export async function registerOperator(payload: SignUpPayload): Promise<MessageResponse> {
+export const registerOperator = async (payload: SignUpPayload): Promise<MessageResponse> => {
   logger.info("auth", "-> POST /v1/auth/register", {
     email: payload.email,
   });
@@ -79,12 +79,12 @@ export async function registerOperator(payload: SignUpPayload): Promise<MessageR
   const out = await jsonOrThrow<MessageResponse>(res);
   logger.info("auth", "<- register OK");
   return out;
-}
+};
 
 /**
  * Login with email/password credentials.
  */
-export async function loginOperator(identity: string, password: string): Promise<AuthResponse> {
+export const loginOperator = async (identity: string, password: string): Promise<AuthResponse> => {
   logger.info("auth", "-> POST /v1/auth/login", { identity });
   const res = await fetch(`${API_BASE}/v1/auth/login`, {
     method: "POST",
@@ -95,12 +95,12 @@ export async function loginOperator(identity: string, password: string): Promise
   const out = await jsonOrThrow<AuthResponse>(res);
   logger.info("auth", "<- login OK", { role: out.operator.role });
   return out;
-}
+};
 
 /**
  * Logout the current operator.
  */
-export async function logoutOperator(): Promise<void> {
+export const logoutOperator = async (): Promise<void> => {
   logger.info("auth", "-> POST /v1/auth/logout");
   try {
     await fetch(`${API_BASE}/v1/auth/logout`, {
@@ -111,12 +111,12 @@ export async function logoutOperator(): Promise<void> {
     logger.warn("auth", `logout failed: ${e instanceof Error ? e.message : String(e)}`);
   }
   logger.info("auth", "<- logout OK");
-}
+};
 
 /**
  * Get current operator profile from session cookie.
  */
-export async function getCurrentSession(): Promise<OperatorResponse | null> {
+export const getCurrentSession = async (): Promise<OperatorResponse | null> => {
   logger.info("auth", "-> GET /v1/auth/me");
   try {
     const res = await fetch(`${API_BASE}/v1/auth/me`, {
@@ -132,4 +132,4 @@ export async function getCurrentSession(): Promise<OperatorResponse | null> {
   } catch {
     return null;
   }
-}
+};

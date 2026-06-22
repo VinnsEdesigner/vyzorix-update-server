@@ -44,6 +44,7 @@ export interface AuthContext {
  *     return defaultValue;
  *   }
  */
+// eslint-disable-next-line func-style
 export function useOperator(): AuthContext {
   const [operator, setOperator] = useState<Operator | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -89,47 +90,15 @@ export function useOperator(): AuthContext {
 /**
  * Hook to check if user is authenticated (simpler version)
  */
-export function useIsAuthenticated(): boolean {
+export const useIsAuthenticated = (): boolean => {
   const { isAuthenticated, isLoading } = useOperator();
   return !isLoading && isAuthenticated;
-}
+};
 
 /**
  * Hook to get the current operator (simpler version)
  */
-export function useCurrentOperator(): Operator | null {
+export const useCurrentOperator = (): Operator | null => {
   const { operator } = useOperator();
   return operator;
-}
-
-/**
- * Fetch operator from API with automatic cookie forwarding
- * Useful for manual auth checks
- */
-export async function fetchOperator(): Promise<Operator | null> {
-  try {
-    const res = await fetch("/v1/auth/me", { credentials: "include" });
-    if (res.ok) {
-      return res.json();
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Check if there's an authenticated session
- * First checks server state, falls back to API call
- */
-export async function checkAuth(): Promise<boolean> {
-  // Check server-injected state first
-  const state = getFullHydratedState();
-  if (state) {
-    return state.isAuthenticated;
-  }
-
-  // Fallback to API call
-  const operator = await fetchOperator();
-  return operator !== null;
-}
+};
