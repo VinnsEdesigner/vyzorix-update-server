@@ -42,7 +42,7 @@ const jsonOrThrow = async <T>(res: Response): Promise<T> => {
 /**
  * Request a password reset email for the given address.
  */
-export async function requestPasswordReset(email: string): Promise<ForgotPasswordResponse> {
+export const requestPasswordReset = async (email: string): Promise<ForgotPasswordResponse> => {
   logger.info("password", "-> POST /v1/auth/forgot-password", { email });
   const res = await fetch(`${API_BASE}/v1/auth/forgot-password`, {
     method: "POST",
@@ -53,15 +53,15 @@ export async function requestPasswordReset(email: string): Promise<ForgotPasswor
   const out = await jsonOrThrow<ForgotPasswordResponse>(res);
   logger.info("password", "<- forgot-password OK");
   return out;
-}
+};
 
 /**
  * Reset password using a token from the reset email.
  */
-export async function resetPasswordWithToken(
+export const resetPasswordWithToken = async (
   token: string,
   newPassword: string,
-): Promise<ResetPasswordResponse> {
+): Promise<ResetPasswordResponse> => {
   logger.info("password", "-> POST /v1/auth/reset-password");
   const res = await fetch(`${API_BASE}/v1/auth/reset-password`, {
     method: "POST",
@@ -72,7 +72,7 @@ export async function resetPasswordWithToken(
   const out = await jsonOrThrow<ResetPasswordResponse>(res);
   logger.info("password", "<- reset-password OK");
   return out;
-}
+};
 
 export interface ResendPasswordResetResponse {
   success: boolean;
@@ -92,7 +92,7 @@ export interface ResendError {
  * Resend password reset email with rate limiting.
  * Returns retry_after seconds if rate limited.
  */
-export async function resendPasswordReset(email: string): Promise<ResendPasswordResetResponse> {
+export const resendPasswordReset = async (email: string): Promise<ResendPasswordResetResponse> => {
   logger.info("password", "-> POST /v1/auth/resend-password-reset", { email });
   const res = await fetch(`${API_BASE}/v1/auth/resend-password-reset`, {
     method: "POST",
@@ -118,4 +118,4 @@ export async function resendPasswordReset(email: string): Promise<ResendPassword
 
   logger.info("password", "<- resend-password-reset OK");
   return data as ResendPasswordResetResponse;
-}
+};

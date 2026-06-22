@@ -87,7 +87,7 @@ export { injectStateAfterRoot };
  *     return defaultValue;
  *   }
  */
-function getHydratedState<T>(key: string, defaultValue: T): T {
+const getHydratedState = <T,>(key: string, defaultValue: T): T => {
   if (typeof window !== "undefined") {
     const globalState = (window as unknown as { __VYZORIX_PREFETCHED_STATE__?: HydratedState })
       .__VYZORIX_PREFETCHED_STATE__;
@@ -96,7 +96,7 @@ function getHydratedState<T>(key: string, defaultValue: T): T {
     }
   }
   return defaultValue;
-}
+};
 
 export { getHydratedState };
 

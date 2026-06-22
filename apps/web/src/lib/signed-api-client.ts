@@ -31,9 +31,9 @@ export interface SignedRequestHeaders {
  * Create a signed and encrypted request.
  * Returns headers needed for the request.
  */
-async function createSignedRequest(
+const createSignedRequest = async (
   options: SignedRequestOptions,
-): Promise<{ headers: SignedRequestHeaders; body?: string }> {
+): Promise<{ headers: SignedRequestHeaders; body?: string }> => {
   const { method, path, body, client } = options;
 
   // Use provided client or get active one
@@ -90,12 +90,15 @@ async function createSignedRequest(
   };
 
   return { headers, body: undefined };
-}
+};
 
 /**
  * Decrypt a response body.
  */
-async function decryptResponse(ciphertextB64: string, client: ClientCredentials): Promise<string> {
+const decryptResponse = async (
+  ciphertextB64: string,
+  client: ClientCredentials,
+): Promise<string> => {
   // Response format: base64(nonce || ciphertext)
   // Header: X-Encryption-Nonce contains the nonce
   try {
@@ -104,11 +107,7 @@ async function decryptResponse(ciphertextB64: string, client: ClientCredentials)
     logger.error("signed-api", `Decryption failed: ${e}`);
     throw new Error("Failed to decrypt response");
   }
-}
-
-/**
- * SignedApiClient makes authenticated and encrypted API calls.
- */
+};
 export class SignedApiClient {
   private readonly apiUrl: string;
   private client: ClientCredentials | null;
@@ -304,17 +303,17 @@ let defaultClient: SignedApiClient | null = null;
 /**
  * Get or create the default SignedApiClient.
  */
-export function getSignedApiClient(apiUrl: string): SignedApiClient {
+export const getSignedApiClient = (apiUrl: string): SignedApiClient => {
   if (defaultClient?.["apiUrl"] !== apiUrl) {
     defaultClient = new SignedApiClient(apiUrl);
   }
   return defaultClient;
-}
+};
 
 /**
  * Clear the default client (on logout).
  */
-export function clearSignedApiClient(): void {
+export const clearSignedApiClient = (): void => {
   defaultClient = null;
   ClientCredentialsStore.clearCache();
-}
+};

@@ -33,7 +33,10 @@ const UpdatesPage = (): ReactElement => {
 
   const apkSize = useQuery({
     queryKey: ["vyzorix", "apk", serverUrl, version.data?.apk_filename],
-    queryFn: () => headApk(serverUrl, version.data!.apk_filename),
+    queryFn: () => {
+      if (!version.data?.apk_filename) throw new Error("No APK filename available");
+      return headApk(serverUrl, version.data.apk_filename);
+    },
     enabled: Boolean(version.data?.apk_filename),
     retry: false,
   });
