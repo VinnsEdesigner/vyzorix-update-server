@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+
 // LoginRequest represents a login request.
 type LoginRequest struct {
 	Email    string `json:"email"`
@@ -104,4 +106,40 @@ type OperatorListResponse struct {
 	MFAEnabled    bool   `json:"mfa_enabled"`
 	EmailVerified bool   `json:"email_verified"`
 	CreatedAt     int64  `json:"created_at"`
+}
+
+// RoleOperator is the role for regular operators.
+const RoleOperator = "operator"
+
+// OperatorRegisterRequest represents a registration request (alias for RegisterRequest).
+type OperatorRegisterRequest = RegisterRequest
+
+// AuthResponse represents an authentication response.
+type AuthResponse struct {
+	Token    string           `json:"token"`
+	Operator OperatorResponse `json:"operator"`
+}
+
+// ErrorResponse represents an error response.
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Message string `json:"message,omitempty"`
+}
+
+// UpdateNameRequest represents a name update request.
+type UpdateNameRequest struct {
+	Name string `json:"name"`
+}
+
+// Thresholds represents threshold settings (alias to domain).
+type Thresholds = operator.Thresholds
+
+// ClientSettings represents client settings (alias to domain).
+type ClientSettings = operator.ClientSettings
+
+// UpdateSettingsRequest represents a settings update request.
+type UpdateSettingsRequest struct {
+	Name      string          `json:"name,omitempty"`
+	Thresholds *Thresholds    `json:"thresholds,omitempty"`
+	Client    *ClientSettings `json:"client,omitempty"`
 }
