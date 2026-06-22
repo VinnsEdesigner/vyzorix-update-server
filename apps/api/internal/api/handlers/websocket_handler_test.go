@@ -4,14 +4,14 @@ import (
 	"testing"
 	"time"
 
-	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/auth"
+	security "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"crypto/hmac"
 )
 
 func TestUpgraderFactory_Create(t *testing.T) {
 	// Test that factory creates upgraders with consistent settings.
-	validator := security.NewOriginValidator([]string{"https://app.example.com"})
+	validator := infraauth.NewOriginValidator([]string{"https://app.example.com"})
 	factory := NewUpgraderFactory(validator)
 
 	upgrader := factory.Create()
@@ -28,7 +28,7 @@ func TestUpgraderFactory_Create(t *testing.T) {
 }
 
 func TestUpgraderFactory_SetHandshakeTimeout(t *testing.T) {
-	validator := security.NewOriginValidator([]string{"https://app.example.com"})
+	validator := infraauth.NewOriginValidator([]string{"https://app.example.com"})
 	factory := NewUpgraderFactory(validator).SetHandshakeTimeout(5 * time.Second)
 
 	upgrader := factory.Create()
@@ -40,7 +40,7 @@ func TestUpgraderFactory_SetHandshakeTimeout(t *testing.T) {
 
 func TestUpgraderFactory_Consistency(t *testing.T) {
 	// Multiple calls should return upgraders with same config.
-	validator := security.NewOriginValidator([]string{"https://app.example.com"})
+	validator := infraauth.NewOriginValidator([]string{"https://app.example.com"})
 	factory := NewUpgraderFactory(validator).SetHandshakeTimeout(15 * time.Second)
 
 	upgrader1 := factory.Create()
@@ -57,7 +57,7 @@ func TestUpgraderFactory_Consistency(t *testing.T) {
 }
 
 func TestNewWebSocketHandlerWithFactory(t *testing.T) {
-	validator := security.NewOriginValidator([]string{"https://app.example.com"})
+	validator := infraauth.NewOriginValidator([]string{"https://app.example.com"})
 	factory := NewUpgraderFactory(validator)
 
 	// This should not panic.
