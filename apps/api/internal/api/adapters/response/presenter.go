@@ -163,6 +163,16 @@ func (p *Presenter) InternalError(c *gin.Context, message string) {
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": message})
 }
 
+// BadGateway sends a 502 response.
+func (p *Presenter) BadGateway(c *gin.Context, message string) {
+	c.JSON(http.StatusBadGateway, gin.H{"error": "bad_gateway", "message": message})
+}
+
+// NotImplemented sends a 501 response.
+func (p *Presenter) NotImplemented(c *gin.Context, message string) {
+	c.JSON(http.StatusNotImplemented, gin.H{"error": "not_implemented", "message": message})
+}
+
 // OK sends a 200 response with data.
 func (p *Presenter) OK(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, data)

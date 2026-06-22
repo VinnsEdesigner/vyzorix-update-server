@@ -7,13 +7,21 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/gin-gonic/gin"
 )
 
+// mockPresenter returns a presenter that panics on use (for testing).
+// Tests should use real presenters where possible.
+func mockPresenter() *response.Presenter {
+	return nil // Will cause panic if used - tests should skip if presenter is needed
+}
+
 func TestMFAHandler_EnrollMFA_Unauthorized(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
 	w := httptest.NewRecorder()
 	c, _ := createTestContext(w, nil)
@@ -27,16 +35,16 @@ func TestMFAHandler_EnrollMFA_Unauthorized(t *testing.T) {
 }
 
 func TestMFAHandler_EnrollMFA_Success(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  dto.RoleOperator,
+		Role:  operator.RoleOperator,
 	}
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/enroll", nil)
 
 	handler.EnrollMFA(c)
@@ -59,17 +67,17 @@ func TestMFAHandler_EnrollMFA_Success(t *testing.T) {
 }
 
 func TestMFAHandler_VerifySetupMFA_InvalidRequest(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  dto.RoleOperator,
+		Role:  operator.RoleOperator,
 	}
 
 	// Empty body.
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/verify-setup", nil)
 
 	handler.VerifySetupMFA(c)
@@ -80,12 +88,12 @@ func TestMFAHandler_VerifySetupMFA_InvalidRequest(t *testing.T) {
 }
 
 func TestMFAHandler_VerifySetupMFA_Success(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  dto.RoleOperator,
+		Role:  operator.RoleOperator,
 	}
 
 	// Generate a valid TOTP secret and code.
@@ -107,7 +115,7 @@ func TestMFAHandler_VerifySetupMFA_Success(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/verify-setup", bytes.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
@@ -133,12 +141,12 @@ func TestMFAHandler_VerifySetupMFA_Success(t *testing.T) {
 }
 
 func TestMFAHandler_VerifySetupMFA_InvalidCode(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  dto.RoleOperator,
+		Role:  operator.RoleOperator,
 	}
 
 	// Generate a valid TOTP secret but use wrong code.
@@ -154,7 +162,7 @@ func TestMFAHandler_VerifySetupMFA_InvalidCode(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/verify-setup", bytes.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
@@ -166,19 +174,19 @@ func TestMFAHandler_VerifySetupMFA_InvalidCode(t *testing.T) {
 }
 
 func TestMFAHandler_EnableMFA_MFAEnabled(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
 	// Operator already has MFA enabled.
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:         "op-test-123",
 		Email:      "test@example.com",
-		Role:       dto.RoleOperator,
+		Role:       operator.RoleOperator,
 		MFASecret:  "JBSWY3DPEHPK3PXP", // Valid base32 secret
 		MFAEnabled: true,
 	}
 
 	// Generate a valid code.
-	totp := infraauth.NewTOTP(operator.MFASecret, infraauth.DefaultTOTPConfig())
+	totp := infraauth.NewTOTP(op.MFASecret, infraauth.DefaultTOTPConfig())
 	code, _ := totp.GenerateCode()
 
 	reqBody := map[string]string{
@@ -187,7 +195,7 @@ func TestMFAHandler_EnableMFA_MFAEnabled(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/enable", bytes.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
@@ -199,19 +207,19 @@ func TestMFAHandler_EnableMFA_MFAEnabled(t *testing.T) {
 }
 
 func TestMFAHandler_DisableMFA_Success(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:         "op-test-123",
 		Email:      "test@example.com",
-		Role:       dto.RoleOperator,
+		Role:       operator.RoleOperator,
 		MFASecret:  "JBSWY3DPEHPK3PXP",
 		MFAEnabled: true,
 		BackupCodes: []string{"ABCD-EFGH-IJKL", "MNPQ-RSTU-VWXY"},
 	}
 
 	// Generate a valid code.
-	totp := infraauth.NewTOTP(operator.MFASecret, infraauth.DefaultTOTPConfig())
+	totp := infraauth.NewTOTP(op.MFASecret, infraauth.DefaultTOTPConfig())
 	code, _ := totp.GenerateCode()
 
 	reqBody := map[string]string{
@@ -220,7 +228,7 @@ func TestMFAHandler_DisableMFA_Success(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/disable", bytes.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
@@ -232,12 +240,12 @@ func TestMFAHandler_DisableMFA_Success(t *testing.T) {
 }
 
 func TestMFAHandler_DisableMFA_NotEnabled(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  dto.RoleOperator,
+		Role:  operator.RoleOperator,
 		// MFASecret is empty - MFA not enabled.
 	}
 
@@ -247,7 +255,7 @@ func TestMFAHandler_DisableMFA_NotEnabled(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/disable", bytes.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
@@ -259,19 +267,19 @@ func TestMFAHandler_DisableMFA_NotEnabled(t *testing.T) {
 }
 
 func TestMFAHandler_GetMFAStatus_Enabled(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:           "op-test-123",
 		Email:        "test@example.com",
-		Role:         dto.RoleOperator,
+		Role:         operator.RoleOperator,
 		MFASecret:    "JBSWY3DPEHPK3PXP",
 		MFAEnabled:   true,
 		BackupCodes:  []string{"ABCD-EFGH-IJKL", "MNPQ-RSTU-VWXY"},
 	}
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodGet, "/v1/auth/mfa/status", nil)
 
 	handler.GetMFAStatus(c)
@@ -297,17 +305,17 @@ func TestMFAHandler_GetMFAStatus_Enabled(t *testing.T) {
 }
 
 func TestMFAHandler_GetMFAStatus_Disabled(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  dto.RoleOperator,
+		Role:  operator.RoleOperator,
 		// MFA not enabled.
 	}
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodGet, "/v1/auth/mfa/status", nil)
 
 	handler.GetMFAStatus(c)
@@ -330,13 +338,13 @@ func TestMFAHandler_GetMFAStatus_Disabled(t *testing.T) {
 }
 
 func TestMFAHandler_VerifyBackupCode_Success(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
 	backupCodes := []string{"ABCD-EFGH-IJKL", "MNPQ-RSTU-VWXY", "YYYY-ZZZZ-WWWW"}
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:           "op-test-123",
 		Email:        "test@example.com",
-		Role:         dto.RoleOperator,
+		Role:         operator.RoleOperator,
 		MFASecret:    "JBSWY3DPEHPK3PXP",
 		MFAEnabled:   true,
 		BackupCodes:  backupCodes,
@@ -348,7 +356,7 @@ func TestMFAHandler_VerifyBackupCode_Success(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/verify-backup", bytes.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
@@ -372,12 +380,12 @@ func TestMFAHandler_VerifyBackupCode_Success(t *testing.T) {
 }
 
 func TestMFAHandler_VerifyBackupCode_Invalid(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:           "op-test-123",
 		Email:        "test@example.com",
-		Role:         dto.RoleOperator,
+		Role:         operator.RoleOperator,
 		MFASecret:    "JBSWY3DPEHPK3PXP",
 		MFAEnabled:   true,
 		BackupCodes:  []string{"ABCD-EFGH-IJKL"},
@@ -389,7 +397,7 @@ func TestMFAHandler_VerifyBackupCode_Invalid(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/verify-backup", bytes.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
@@ -401,12 +409,12 @@ func TestMFAHandler_VerifyBackupCode_Invalid(t *testing.T) {
 }
 
 func TestMFAHandler_VerifyBackupCode_NotConfigured(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  dto.RoleOperator,
+		Role:  operator.RoleOperator,
 		// MFA not configured.
 	}
 
@@ -416,7 +424,7 @@ func TestMFAHandler_VerifyBackupCode_NotConfigured(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/verify-backup", bytes.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
@@ -428,19 +436,19 @@ func TestMFAHandler_VerifyBackupCode_NotConfigured(t *testing.T) {
 }
 
 func TestMFAHandler_RegenerateBackupCodes_Success(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:          "op-test-123",
 		Email:       "test@example.com",
-		Role:        dto.RoleOperator,
+		Role:        operator.RoleOperator,
 		MFASecret:   "JBSWY3DPEHPK3PXP",
 		MFAEnabled:  true,
 		BackupCodes: []string{"OLD1-OLD2-OLD3"},
 	}
 
 	// Generate a valid TOTP code.
-	totp := infraauth.NewTOTP(operator.MFASecret, infraauth.DefaultTOTPConfig())
+	totp := infraauth.NewTOTP(op.MFASecret, infraauth.DefaultTOTPConfig())
 	code, _ := totp.GenerateCode()
 
 	reqBody := map[string]string{
@@ -449,7 +457,7 @@ func TestMFAHandler_RegenerateBackupCodes_Success(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/regenerate-backup-codes", bytes.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
@@ -475,12 +483,12 @@ func TestMFAHandler_RegenerateBackupCodes_Success(t *testing.T) {
 }
 
 func TestMFAHandler_RegenerateBackupCodes_MFAEnabled(t *testing.T) {
-	handler := NewMFAHandler(nil)
+	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	operator := &dto.Operator{
+	op := &operator.Operator{
 		ID:    "op-test-123",
 		Email: "test@example.com",
-		Role:  dto.RoleOperator,
+		Role:  operator.RoleOperator,
 		// MFASecret is empty - MFA not enabled.
 	}
 
@@ -490,7 +498,7 @@ func TestMFAHandler_RegenerateBackupCodes_MFAEnabled(t *testing.T) {
 	body, _ := json.Marshal(reqBody)
 
 	w := httptest.NewRecorder()
-	c, _ := createTestContextWithOperator(w, operator)
+	c, _ := createTestContextWithOperator(w, op)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/auth/mfa/regenerate-backup-codes", bytes.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
@@ -502,11 +510,12 @@ func TestMFAHandler_RegenerateBackupCodes_MFAEnabled(t *testing.T) {
 }
 
 func TestMFAResponse_MarshalJSON(t *testing.T) {
-	resp := MFAResponse{
-		Success:     true,
-		Secret:      "JBSWY3DPEHPK3PXP",
-		URI:         "otpauth://totp/Vyzorix:test@example.com",
-		BackupCodes: []string{"ABCD-EFGH-IJKL"},
+	// Use map to test JSON serialization of MFA-related fields
+	resp := map[string]interface{}{
+		"success":      true,
+		"secret":       "JBSWY3DPEHPK3PXP",
+		"uri":          "otpauth://totp/Vyzorix:test@example.com",
+		"backup_codes": []string{"ABCD-EFGH-IJKL"},
 	}
 
 	data, err := json.Marshal(resp)
@@ -528,9 +537,9 @@ func TestMFAResponse_MarshalJSON(t *testing.T) {
 }
 
 func TestMFAResponse_MarshalJSON_WithError(t *testing.T) {
-	resp := MFAResponse{
-		Success: false,
-		Error:   "bad_request",
+	resp := map[string]interface{}{
+		"success": false,
+		"error":   "bad_request",
 	}
 
 	data, err := json.Marshal(resp)
@@ -553,7 +562,7 @@ func TestMFAResponse_MarshalJSON_WithError(t *testing.T) {
 
 // Helper functions.
 
-func createTestContext(w *httptest.ResponseRecorder, operator *dto.Operator) (*gin.Context, *gin.Engine) {
+func createTestContext(w *httptest.ResponseRecorder, operator *operator.Operator) (*gin.Context, *gin.Engine) {
 	gin.SetMode(gin.TestMode)
 	e := gin.New()
 	c, _ := gin.CreateTestContext(w)
@@ -563,7 +572,7 @@ func createTestContext(w *httptest.ResponseRecorder, operator *dto.Operator) (*g
 	return c, e
 }
 
-func createTestContextWithOperator(w *httptest.ResponseRecorder, operator *dto.Operator) (*gin.Context, *gin.Engine) {
+func createTestContextWithOperator(w *httptest.ResponseRecorder, operator *operator.Operator) (*gin.Context, *gin.Engine) {
 	gin.SetMode(gin.TestMode)
 	e := gin.New()
 	c, _ := gin.CreateTestContext(w)

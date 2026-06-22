@@ -1,115 +1,116 @@
 package auth
 
 import (
-"net/http"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 
-"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
-emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
-
-"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 // EmailVerifyHandler handles email verification endpoints.
 type EmailVerifyHandler struct {
-authService *auth.AuthService
-emailSvc    *emailService.Service
+	authService *auth.AuthService
+	emailSvc    *emailService.Service
+	presenter  *response.Presenter
 }
 
 // NewEmailVerifyHandler creates a new EmailVerifyHandler.
-func NewEmailVerifyHandler(authService *auth.AuthService, emailSvc *emailService.Service) *EmailVerifyHandler {
-return &EmailVerifyHandler{
-authService: authService,
-emailSvc:    emailSvc,
-}
+func NewEmailVerifyHandler(authService *auth.AuthService, emailSvc *emailService.Service, presenter *response.Presenter) *EmailVerifyHandler {
+	return &EmailVerifyHandler{
+		authService: authService,
+		emailSvc:    emailSvc,
+		presenter:  presenter,
+	}
 }
 
 // VerifyEmail handles POST /v1/auth/verify-email.
 func (h *EmailVerifyHandler) VerifyEmail(c *gin.Context) {
-var req struct {
-Token string `json:"token"`
-}
-if err := c.ShouldBindJSON(&req); err != nil {
-c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid JSON body"})
-return
-}
+	var req struct {
+		Token string `json:"token"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.presenter.BadRequest(c, "invalid JSON body")
+		return
+	}
 
-if req.Token == "" {
-c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "token is required"})
-return
-}
+	if req.Token == "" {
+		h.presenter.BadRequest(c, "token is required")
+		return
+	}
 
-result, err := h.authService.VerifyEmail(c.Request.Context(), req.Token)
-if err != nil {
-c.JSON(http.StatusBadRequest, gin.H{"error": "unauthorized", "message": "invalid or expired verification token"})
-return
-}
+	result, err := h.authService.VerifyEmail(c.Request.Context(), req.Token)
+	if err != nil {
+		h.presenter.Unauthorized(c, "invalid or expired verification token")
+		return
+	}
 
-c.JSON(http.StatusOK, gin.H{"verified": true, "email": result.Email})
+	h.presenter.OK(c, gin.H{"verified": true, "email": result.Email})
 }
 
 // ResendVerification handles POST /v1/auth/resend-verification.
 func (h *EmailVerifyHandler) ResendVerification(c *gin.Context) {
-var req struct {
-Email string `json:"email"`
-}
-if err := c.ShouldBindJSON(&req); err != nil {
-c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid request body"})
-return
-}
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.presenter.BadRequest(c, "invalid request body")
+		return
+	}
 
-if req.Email == "" {
-c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "email is required"})
-return
-}
+	if req.Email == "" {
+		h.presenter.BadRequest(c, "email is required")
+		return
+	}
 
-// Delete old verification tokens and create/send new one
-err := h.authService.ResendVerification(c.Request.Context(), req.Email)
-if err != nil {
-c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to resend verification email"})
-return
-}
+	// Delete old verification tokens and create/send new one
+	err := h.authService.ResendVerification(c.Request.Context(), req.Email)
+	if err != nil {
+		h.presenter.InternalError(c, "failed to resend verification email")
+		return
+	}
 
-c.JSON(http.StatusOK, gin.H{"message": "If that email exists, a verification email has been sent."})
+	h.presenter.OK(c, gin.H{"message": "If that email exists, a verification email has been sent."})
 }
 
 // PollVerification handles GET /v1/auth/poll-verification.
 func (h *EmailVerifyHandler) PollVerification(c *gin.Context) {
-token := c.Query("token")
-if token == "" {
-c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "token is required"})
-return
-}
+	token := c.Query("token")
+	if token == "" {
+		h.presenter.BadRequest(c, "token is required")
+		return
+	}
 
-status, email, err := h.authService.PollVerification(c.Request.Context(), token)
-if err != nil {
-c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "verification check failed"})
-return
-}
+	status, email, err := h.authService.PollVerification(c.Request.Context(), token)
+	if err != nil {
+		h.presenter.InternalError(c, "verification check failed")
+		return
+	}
 
-c.JSON(http.StatusOK, gin.H{"status": status, "email": email})
+	h.presenter.OK(c, gin.H{"status": status, "email": email})
 }
 
 // CancelVerification handles POST /v1/auth/cancel-verification.
 func (h *EmailVerifyHandler) CancelVerification(c *gin.Context) {
-var req struct {
-Email string `json:"email"`
-}
-if err := c.ShouldBindJSON(&req); err != nil {
-c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid request body"})
-return
-}
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.presenter.BadRequest(c, "invalid request body")
+		return
+	}
 
-if req.Email == "" {
-c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "email is required"})
-return
-}
+	if req.Email == "" {
+		h.presenter.BadRequest(c, "email is required")
+		return
+	}
 
-// Cancel verification - return success for security (don't reveal if email exists)
-err := h.authService.CancelVerification(c.Request.Context(), req.Email)
-if err != nil {
-c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to cancel verification"})
-return
-}
+	// Cancel verification - return success for security (don't reveal if email exists)
+	err := h.authService.CancelVerification(c.Request.Context(), req.Email)
+	if err != nil {
+		h.presenter.InternalError(c, "failed to cancel verification")
+		return
+	}
 
-c.JSON(http.StatusOK, gin.H{"success": true})
+	h.presenter.OK(c, gin.H{"success": true})
 }
