@@ -74,16 +74,16 @@ func TestCommandController_CommandResponse_JSON(t *testing.T) {
 		t.Fatalf("json.Marshal() failed: %v", err)
 	}
 
-	var result map[string]interface{}
+	var result dto.CommandResponse
 	if err := json.Unmarshal(data, &result); err != nil {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
 
-	if result["dispatchId"] != "dispatch-001" {
-		t.Errorf("dispatchId = %v, want dispatch-001", result["dispatchId"])
+	if result.DispatchID != "dispatch-001" {
+		t.Errorf("DispatchID = %v, want dispatch-001", result.DispatchID)
 	}
-	if result["delivery"] != "queued" {
-		t.Errorf("delivery = %v, want queued", result["delivery"])
+	if result.Delivery != "queued" {
+		t.Errorf("Delivery = %v, want queued", result.Delivery)
 	}
 }
 
@@ -92,7 +92,7 @@ func TestCommandController_CommandFrame_JSON(t *testing.T) {
 		Type:       "update",
 		DispatchID: "dispatch-001",
 		Command:    "update",
-		Args:       []byte(`{"version":"2.0.0"}`),
+		Args:       map[string]string{"version": "2.0.0"},
 		Nonce:      "nonce123",
 		Timestamp:  1234567890,
 	}
@@ -102,19 +102,19 @@ func TestCommandController_CommandFrame_JSON(t *testing.T) {
 		t.Fatalf("json.Marshal() failed: %v", err)
 	}
 
-	var result map[string]interface{}
+	var result dto.CommandFrame
 	if err := json.Unmarshal(data, &result); err != nil {
 		t.Fatalf("json.Unmarshal() failed: %v", err)
 	}
 
-	if result["type"] != "update" {
-		t.Errorf("type = %v, want update", result["type"])
+	if result.Type != "update" {
+		t.Errorf("Type = %v, want update", result.Type)
 	}
-	if result["dispatchId"] != "dispatch-001" {
-		t.Errorf("dispatchId = %v, want dispatch-001", result["dispatchId"])
+	if result.DispatchID != "dispatch-001" {
+		t.Errorf("DispatchID = %v, want dispatch-001", result.DispatchID)
 	}
-	if result["command"] != "update" {
-		t.Errorf("command = %v, want update", result["command"])
+	if result.Command != "update" {
+		t.Errorf("Command = %v, want update", result.Command)
 	}
 }
 

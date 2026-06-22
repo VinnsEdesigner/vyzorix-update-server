@@ -20,7 +20,7 @@ import (
 func TestSigningConfig(t *testing.T) {
 	t.Run("default_signing_config", func(t *testing.T) {
 		cfg := DefaultSigningConfig()
-		assert.False(t, cfg.Enabled)
+		assert.True(t, cfg.Enabled)
 		assert.Equal(t, 5*time.Minute, cfg.TimestampWindow)
 		assert.Equal(t, 100000, cfg.MaxCacheSize)
 	})
