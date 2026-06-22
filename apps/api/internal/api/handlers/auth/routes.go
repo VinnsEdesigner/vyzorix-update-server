@@ -53,15 +53,15 @@ func NewAllHandlers(deps *Dependencies) *AllHandlers {
 		Login:         NewLoginHandler(deps.AuthService, deps.Presenter),
 		Register:      NewRegisterHandler(deps.AuthService, deps.EmailService, deps.Presenter),
 		Logout:        NewLogoutHandler(deps.AuthService, deps.Presenter),
-		Me:            NewMeHandler(deps.AuthService),
+		Me:            NewMeHandler(deps.AuthService, deps.Presenter),
 		EmailVerify:   NewEmailVerifyHandler(deps.AuthService, deps.EmailService),
 		PasswordReset: NewPasswordResetHandler(deps.AuthService, deps.EmailService),
 		MFA:           NewMFAHandler(deps.AuthService, deps.OperatorRepo),
 		OAuth:         NewOAuthHandler(deps.AuthService, deps.SessionManager, deps.Config, deps.GoogleVerifier),
-		Settings:      NewSettingsHandler(deps.AuthService),
-		Admin:         NewAdminHandler(deps.AuthService),
-		ClientCreds:   NewClientCredentialsHandler(deps.AuthService, deps.ClientService),
-		Lockout:       NewLockoutHandler(deps.AuthService, deps.Lockout),
+		Settings:      NewSettingsHandler(deps.AuthService, deps.Presenter),
+		Admin:         NewAdminHandler(deps.AuthService, deps.Presenter),
+		ClientCreds:   NewClientCredentialsHandler(deps.AuthService, deps.ClientService, deps.Presenter),
+		Lockout:       NewLockoutHandler(deps.AuthService, deps.Lockout, deps.Presenter),
 	}
 }
 
