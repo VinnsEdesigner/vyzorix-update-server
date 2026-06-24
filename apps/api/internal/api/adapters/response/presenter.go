@@ -194,5 +194,6 @@ func (p *Presenter) SetSessionCookie(c *gin.Context, cookie *http.Cookie) {
 
 // ClearSessionCookie clears the session cookie.
 func (p *Presenter) ClearSessionCookie(c *gin.Context) {
-	c.SetCookie("session_id", "", -1, "/", "", false, true)
+	// Use the correct cookie name from middleware to match cookie_auth.go
+	c.SetCookie(middleware.CookieName, "", -1, "/", "", false, true)
 }

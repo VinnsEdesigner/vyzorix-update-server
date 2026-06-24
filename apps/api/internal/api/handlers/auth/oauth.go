@@ -59,13 +59,21 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 		frontendURL = "http://localhost:5173"
 	}
 
+	// Generate random state for CSRF protection
+	stateBytes := make([]byte, 16)
+	if _, err := rand.Read(stateBytes); err != nil {
+		h.presenter.InternalError(c, "failed to generate OAuth state")
+		return
+	}
+	state := hex.EncodeToString(stateBytes)
+
 	callbackURL := h.config.BaseURL + "/v1/auth/google/callback"
 	googleURL := fmt.Sprintf(
 		"https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&access_type=offline&state=%s",
 		url.QueryEscape(h.config.GoogleOAuthClientID),
 		url.QueryEscape(callbackURL),
 		url.QueryEscape("openid email profile"),
-		url.QueryEscape(frontendURL),
+		url.QueryEscape(state+":"+frontendURL),
 	)
 	c.Redirect(http.StatusTemporaryRedirect, googleURL)
 }
@@ -77,6 +85,12 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 
 	if code == "" {
 		h.presenter.BadRequest(c, "missing authorization code from Google")
+		return
+	}
+
+	// Validate state format (should be hex:url)
+	if state == "" {
+		h.presenter.BadRequest(c, "missing state parameter")
 		return
 	}
 
