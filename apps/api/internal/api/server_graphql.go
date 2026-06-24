@@ -66,7 +66,13 @@ func (s *Server) RegisterGraphQL(
 	s.engine.GET("/playground", h.Playground)
 
 	// Create subscription handler
-	subsHandler := subscription.NewHandler(wsHub, res, authMw, s.log)
+	subsHandler := subscription.NewHandler(&subscription.Config{
+			Hub:         wsHub,
+			Resolver:    res,
+			AuthMw:     authMw,
+			Logger:     s.log,
+			AuditLogger: subscription.NewAuditLoggerAdapter(s.AuditLogger),
+		})
 	s.engine.GET("/graphql/ws", subsHandler.HandleWebSocket)
 
 	s.log.Info("GraphQL server registered", "path", "/graphql", "playground", "/playground", "subscriptions", "/graphql/ws")
