@@ -201,7 +201,9 @@ func (c *Client) processTelemetry(raw []byte) {
 		t.DeviceID = c.DeviceID
 	}
 	if c.Hub.telemetryRepo != nil {
-		if err := c.Hub.telemetryRepo.Save(context.Background(), c.DeviceID, raw, t); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := c.Hub.telemetryRepo.Save(ctx, c.DeviceID, raw, t); err != nil {
 			if c.log != nil {
 				c.log.Warn("telemetry save failed", "deviceId", c.DeviceID, "err", err)
 			}
@@ -279,9 +281,11 @@ func (c *Client) WritePump() {
 			c.RecordMessageSent()
 
 			// Send delivery confirmation if requested (G1: 100% delivery guarantee)
+			// Set to nil after close to prevent double-close panic
 			if frame.DeliveryConfirmation != nil {
 				frame.DeliveryConfirmation <- true
 				close(frame.DeliveryConfirmation)
+				frame.DeliveryConfirmation = nil
 			}
 		case <-ticker.C:
 			setWriteDeadline(c.Conn, time.Now().Add(writeTimeout), c.log)
