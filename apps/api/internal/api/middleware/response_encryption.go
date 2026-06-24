@@ -154,16 +154,13 @@ func (er *EncryptedResponseWriter) Flush() {
 		return
 	}
 
-	// Combine nonce + ciphertext
-	encrypted := append(nonce, ciphertext...)
-
-	// Set headers
+	// Set headers with nonce for client to use during decryption
 	er.ResponseWriter.Header().Set("X-Encryption-Nonce", base64.StdEncoding.EncodeToString(nonce))
-	er.ResponseWriter.Header().Set("X-Content-Length", fmt.Sprintf("%d", len(ciphertext)))
-	er.ResponseWriter.Header().Set("Content-Length", fmt.Sprintf("%d", len(encrypted)))
+	er.ResponseWriter.Header().Set("Content-Length", fmt.Sprintf("%d", len(ciphertext)))
 
 	er.ResponseWriter.WriteHeader(er.statusCode)
-	_, _ = er.ResponseWriter.Write(encrypted)
+	// Send only ciphertext - client uses nonce from header
+	_, _ = er.ResponseWriter.Write(ciphertext)
 }
 
 // Status returns the HTTP response status code.

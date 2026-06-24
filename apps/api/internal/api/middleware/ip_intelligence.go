@@ -76,12 +76,15 @@ func LoadIPIntelligenceConfig() IPIntelligenceConfig {
 }
 
 // IPIntelligence provides IP-based threat detection.
+//nolint:govet // Field alignment requires reordering interface/map fields which breaks the type layout.
 type IPIntelligence struct {
-	failures  map[string]*ipFailureRecord
-	blocked   map[string]time.Time
-	whitelist map[string]bool
-	config    IPIntelligenceConfig
-	mu        sync.RWMutex
+	mu          sync.RWMutex
+	config      IPIntelligenceConfig
+	failures    map[string]*ipFailureRecord
+	blocked     map[string]time.Time
+	whitelist   map[string]bool
+	stopCleanup chan struct{}
+	cleanupWg   sync.WaitGroup
 }
 
 type ipFailureRecord struct {
@@ -254,7 +257,11 @@ func (ii *IPIntelligence) Cleanup() {
 
 // StartCleanupRoutine starts a background goroutine to periodically cleanup.
 func (ii *IPIntelligence) StartCleanupRoutine(ctx context.Context, interval time.Duration) {
+	ii.stopCleanup = make(chan struct{})
+	ii.cleanupWg.Add(1)
+
 	go func() {
+		defer ii.cleanupWg.Done()
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
@@ -262,11 +269,21 @@ func (ii *IPIntelligence) StartCleanupRoutine(ctx context.Context, interval time
 			select {
 			case <-ctx.Done():
 				return
+			case <-ii.stopCleanup:
+				return
 			case <-ticker.C:
 				ii.Cleanup()
 			}
 		}
 	}()
+}
+
+// Stop stops the cleanup goroutine.
+func (ii *IPIntelligence) Stop() {
+	if ii.stopCleanup != nil {
+		close(ii.stopCleanup)
+		ii.cleanupWg.Wait()
+	}
 }
 
 // Middleware returns a Gin middleware that blocks known malicious IPs.
@@ -333,7 +350,8 @@ func (ii *IPIntelligence) CheckAbuseIPDB(ctx context.Context, ip string) (bool, 
 	}
 
 	// Skip private IPs
-	if net.ParseIP(ip).IsPrivate() || net.ParseIP(ip).IsLoopback() {
+	parsedIP := net.ParseIP(ip)
+	if parsedIP == nil || parsedIP.IsPrivate() || parsedIP.IsLoopback() {
 		return false, 0, nil
 	}
 
