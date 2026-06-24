@@ -153,6 +153,8 @@ func (h *Hub) RateLimiter() *RateLimiter {
 // Run starts the hub's event loop in a background goroutine.
 // It handles client registration, unregistration, and telemetry broadcasting.
 func (h *Hub) Run(ctx context.Context) {
+	dbTimeout := 5 * time.Second
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -171,10 +173,12 @@ func (h *Hub) Run(ctx context.Context) {
 			h.clients[c.DeviceID] = c
 			h.mu.Unlock()
 
-			// Set device online
-			if err := h.deviceRepo.SetOnline(context.Background(), c.DeviceID, true); err != nil {
+			// Set device online with timeout context
+			opCtx, cancel := context.WithTimeout(ctx, dbTimeout)
+			if err := h.deviceRepo.SetOnline(opCtx, c.DeviceID, true); err != nil {
 				h.log.Warn("set online failed", "deviceId", c.DeviceID, "err", err)
 			}
+			cancel()
 
 			// Replay queued messages to the newly connected device
 			if h.messageQueue != nil {
@@ -195,9 +199,12 @@ func (h *Hub) Run(ctx context.Context) {
 				delete(h.clients, c.DeviceID)
 				close(c.Send)
 
-				if err := h.deviceRepo.SetOnline(context.Background(), c.DeviceID, false); err != nil {
+				// Set device offline with timeout context
+				opCtx, cancel := context.WithTimeout(ctx, dbTimeout)
+				if err := h.deviceRepo.SetOnline(opCtx, c.DeviceID, false); err != nil {
 					h.log.Warn("set offline failed", "deviceId", c.DeviceID, "err", err)
 				}
+				cancel()
 			}
 			h.mu.Unlock()
 			h.log.Info("device websocket offline", "deviceId", c.DeviceID)
