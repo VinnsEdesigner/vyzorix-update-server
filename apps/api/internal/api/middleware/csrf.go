@@ -241,7 +241,7 @@ func (p *CSRFProtector) GetToken(c *gin.Context) (string, error) {
 
 	signed := p.signToken(token.Token)
 
-	secure := os.Getenv("NODE_ENV") == "production"
+	secure := os.Getenv("GIN_MODE") == "release"
 
 	c.SetCookie(
 		p.Config.CookieName,
