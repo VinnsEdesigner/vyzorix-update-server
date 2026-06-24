@@ -36,18 +36,21 @@ type SubscriptionManager struct {
 	mu            sync.RWMutex
 }
 
-var subscriptionMgr *SubscriptionManager
+var (
+	subscriptionMgr *SubscriptionManager
+	subscriptionOnce sync.Once
+)
 
 // InitSubscriptions initializes the subscription manager.
 func (h *Hub) InitSubscriptions() {
-	if subscriptionMgr == nil {
+	subscriptionOnce.Do(func() {
 		subscriptionMgr = &SubscriptionManager{
 			hub:           h,
 			deviceUpdates: make(map[string][]callbackWrapper),
 			telemetry:     make(map[string][]callbackWrapper),
 			commandStatus: make(map[string]subscriptionCallback),
 		}
-	}
+	})
 }
 
 // SubscribeDeviceUpdates subscribes to device update events.
