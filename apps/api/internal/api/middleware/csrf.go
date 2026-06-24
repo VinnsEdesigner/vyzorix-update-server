@@ -53,16 +53,55 @@ type CSRFToken struct {
 }
 
 // CSRFTokenStore manages CSRF tokens in memory.
+//nolint:govet // Field arrangement is intentional for cleanup goroutine management.
 type CSRFTokenStore struct {
-	tokens map[string]*CSRFToken
 	mu     sync.RWMutex
+	tokens map[string]*CSRFToken
+	stop   chan struct{}
 }
 
 // NewCSRFTokenStore creates a new CSRF token store.
 func NewCSRFTokenStore() *CSRFTokenStore {
-	return &CSRFTokenStore{
+	store := &CSRFTokenStore{
 		tokens: make(map[string]*CSRFToken),
+		stop:   make(chan struct{}),
 	}
+	go store.cleanupExpired()
+	return store
+}
+
+// cleanupExpired periodically removes expired tokens from the store.
+func (s *CSRFTokenStore) cleanupExpired() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			s.removeExpired()
+		case <-s.stop:
+			return
+		}
+	}
+}
+
+// removeExpired removes all expired tokens.
+func (s *CSRFTokenStore) removeExpired() {
+	now := time.Now()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for sessionID, token := range s.tokens {
+		if token.ExpiresAt != nil && now.After(*token.ExpiresAt) {
+			delete(s.tokens, sessionID)
+		}
+	}
+}
+
+// Stop stops the cleanup goroutine.
+func (s *CSRFTokenStore) Stop() {
+	close(s.stop)
 }
 
 // Generate creates a new CSRF token for a session.
