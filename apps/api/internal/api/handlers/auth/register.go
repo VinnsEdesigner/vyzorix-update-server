@@ -103,7 +103,9 @@ func (h *RegisterHandler) sendVerificationEmail(ctx context.Context, email, name
 
 	// Send email asynchronously (email send failure is non-fatal)
 	go func() {
-		_ = h.emailSvc.SendVerificationEmail(context.Background(), email, name, token)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		_ = h.emailSvc.SendVerificationEmail(ctx, email, name, token)
 	}()
 
 	return nil
