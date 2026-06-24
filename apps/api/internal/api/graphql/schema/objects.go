@@ -3,75 +3,11 @@ package schema
 
 import (
 	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/language/ast"
 )
-
-// Define scalar types
-
-// JSONScalar is a custom scalar for arbitrary JSON values.
-var JSONScalar = graphql.NewScalar(graphql.ScalarConfig{
-	Name:        "JSON",
-	Description: "Arbitrary JSON value",
-	Serialize: func(value interface{}) interface{} {
-		return value
-	},
-	ParseValue: func(value interface{}) interface{} {
-		return value
-	},
-	ParseLiteral: func(valueAST ast.Value) interface{} {
-		return valueAST
-	},
-})
-
-// DateTimeScalar is a custom scalar for ISO 8601 datetime.
-var DateTimeScalar = graphql.NewScalar(graphql.ScalarConfig{
-	Name:        "DateTime",
-	Description: "ISO 8601 datetime string",
-	Serialize: func(value interface{}) interface{} {
-		if value == nil {
-			return nil
-		}
-		return value
-	},
-	ParseValue: func(value interface{}) interface{} {
-		return value
-	},
-	ParseLiteral: func(valueAST ast.Value) interface{} {
-		return valueAST
-	},
-})
-
-// Define enum types
-
-// CommandStatusEnum represents the status of a command.
-var CommandStatusEnum = graphql.NewEnum(graphql.EnumConfig{
-	Name: "CommandStatus",
-	Description: "Status of a device command",
-	Values: graphql.EnumValueConfigMap{
-		"PENDING": &graphql.EnumValueConfig{
-			Value: "pending",
-			Description: "Command is pending delivery",
-		},
-		"DELIVERED": &graphql.EnumValueConfig{
-			Value: "delivered",
-			Description: "Command was delivered to device",
-		},
-		"FAILED": &graphql.EnumValueConfig{
-			Value: "failed",
-			Description: "Command delivery failed",
-		},
-		"CANCELLED": &graphql.EnumValueConfig{
-			Value: "cancelled",
-			Description: "Command was cancelled",
-		},
-	},
-})
-
-// Define object types
 
 // DeviceType represents a device in the system.
 var DeviceType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "Device",
+	Name:        "Device",
 	Description: "A registered device",
 	Fields: graphql.Fields{
 		"id": &graphql.Field{
@@ -107,7 +43,7 @@ var DeviceType = graphql.NewObject(graphql.ObjectConfig{
 
 // TelemetryEntryType represents a telemetry data point.
 var TelemetryEntryType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "TelemetryEntry",
+	Name:        "TelemetryEntry",
 	Description: "Telemetry data from a device",
 	Fields: graphql.Fields{
 		"id": &graphql.Field{
@@ -143,7 +79,7 @@ var TelemetryEntryType = graphql.NewObject(graphql.ObjectConfig{
 
 // CommandType represents a command sent to a device.
 var CommandType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "Command",
+	Name:        "Command",
 	Description: "A command sent to a device",
 	Fields: graphql.Fields{
 		"dispatchId": &graphql.Field{
@@ -183,7 +119,7 @@ var CommandType = graphql.NewObject(graphql.ObjectConfig{
 
 // ConnectionStatusType represents a device's WebSocket connection status.
 var ConnectionStatusType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "ConnectionStatus",
+	Name:        "ConnectionStatus",
 	Description: "WebSocket connection status for a device",
 	Fields: graphql.Fields{
 		"deviceId": &graphql.Field{
@@ -211,7 +147,7 @@ var ConnectionStatusType = graphql.NewObject(graphql.ObjectConfig{
 
 // CommandResultType represents the result of sending a command.
 var CommandResultType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "CommandResult",
+	Name:        "CommandResult",
 	Description: "Result of sending a command to a device",
 	Fields: graphql.Fields{
 		"dispatchId": &graphql.Field{
@@ -235,7 +171,7 @@ var CommandResultType = graphql.NewObject(graphql.ObjectConfig{
 
 // TelemetryStatsType represents aggregated telemetry statistics.
 var TelemetryStatsType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "TelemetryStats",
+	Name:        "TelemetryStats",
 	Description: "Aggregated telemetry statistics",
 	Fields: graphql.Fields{
 		"deviceId": &graphql.Field{
@@ -263,7 +199,7 @@ var TelemetryStatsType = graphql.NewObject(graphql.ObjectConfig{
 
 // RiskScoreStatsType represents risk score statistics.
 var RiskScoreStatsType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "RiskScoreStats",
+	Name:        "RiskScoreStats",
 	Description: "Risk score statistics",
 	Fields: (graphql.FieldsThunk)(func() graphql.Fields {
 		return graphql.Fields{
@@ -276,7 +212,7 @@ var RiskScoreStatsType = graphql.NewObject(graphql.ObjectConfig{
 
 // BufferLevelStatsType represents buffer level statistics.
 var BufferLevelStatsType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "BufferLevelStats",
+	Name:        "BufferLevelStats",
 	Description: "Buffer level statistics",
 	Fields: (graphql.FieldsThunk)(func() graphql.Fields {
 		return graphql.Fields{
@@ -287,7 +223,7 @@ var BufferLevelStatsType = graphql.NewObject(graphql.ObjectConfig{
 
 // ThermalTempStatsType represents temperature statistics.
 var ThermalTempStatsType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "ThermalTempStats",
+	Name:        "ThermalTempStats",
 	Description: "Temperature statistics",
 	Fields: (graphql.FieldsThunk)(func() graphql.Fields {
 		return graphql.Fields{
@@ -300,7 +236,7 @@ var ThermalTempStatsType = graphql.NewObject(graphql.ObjectConfig{
 
 // PaginationType represents pagination information.
 var PaginationType = graphql.NewObject(graphql.ObjectConfig{
-	Name: "Pagination",
+	Name:        "Pagination",
 	Description: "Pagination information for list queries",
 	Fields: graphql.Fields{
 		"total": &graphql.Field{
