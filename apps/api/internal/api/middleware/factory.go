@@ -15,7 +15,16 @@ import (
 
 // MiddlewareFactory creates and configures all middleware with their dependencies.
 // This centralizes middleware creation and reduces coupling in server.go.
+//nolint:govet // Field alignment requires reordering interface fields which breaks the type layout.
 type MiddlewareFactory struct {
+	ssrCleanup          func()
+	allowedOrigins      []string
+	authRateLimitPerMin int
+	rateLimitPerMinute  int
+	hmacWindow          time.Duration
+	enforceHMAC         bool
+	jwtSecret           string
+	publicDir           string
 	clientService       ClientServiceProvider
 	ipIntelligence      *IPIntelligence
 	sessionManager      *infraauth.SessionManager
@@ -26,13 +35,6 @@ type MiddlewareFactory struct {
 	csrfProtector       *CSRFProtector
 	log                 *slog.Logger
 	lockout             *Lockout
-	jwtSecret           string
-	publicDir           string
-	allowedOrigins      []string
-	authRateLimitPerMin int
-	rateLimitPerMinute  int
-	hmacWindow          time.Duration
-	enforceHMAC         bool
 }
 
 // ClientServiceProvider interface for client service dependency.
@@ -231,7 +233,9 @@ func (f *MiddlewareFactory) SSRProxy(ssrConfig infraConfig.SSRConfig) gin.Handle
 		return func(c *gin.Context) { c.Next() }
 	}
 
-	return SSRProxy(f.log, ssrConfig, f.publicDir, f.jwtSecret)
+	handler, cleanup := SSRProxy(f.log, ssrConfig, f.publicDir, f.jwtSecret)
+	f.ssrCleanup = cleanup
+	return handler
 }
 
 // =============================================================================
