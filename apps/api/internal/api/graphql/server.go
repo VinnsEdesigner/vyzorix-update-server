@@ -4,6 +4,7 @@ package graphql
 import (
 	"log/slog"
 
+	gqladapters "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/adapters"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/handler"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/resolver"
@@ -13,6 +14,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
@@ -32,6 +34,7 @@ type Config struct {
 	Hub            *hub.Hub
 	FCMNotifier    fcm.Notifier
 	Log            *slog.Logger
+	AuditLogger    *audit.Logger
 }
 
 // Server provides GraphQL HTTP handling.
@@ -44,6 +47,9 @@ func NewServer(cfg *Config) (*Server, error) {
 	// Create auth middleware
 	authMw := middleware.NewAuthMiddleware(cfg.SessionManager, cfg.AuthService, cfg.Log)
 
+	// Create GraphQL presenter for audit logging
+	presenter := gqladapters.NewPresenter(cfg.AuditLogger)
+
 	// Create resolver
 	res := resolver.NewResolver(
 		cfg.DeviceService,
@@ -52,7 +58,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		cfg.TelemetryRepo,
 		cfg.FCMNotifier,
 		authMw,
-		cfg.Log,
+		presenter,
 	)
 
 	// Create handler
