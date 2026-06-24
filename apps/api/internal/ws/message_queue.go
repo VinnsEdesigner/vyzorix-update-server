@@ -296,14 +296,16 @@ func (q *MessageQueue) persistMessageSync(msg *QueuedMessage) error {
 
 // evictOldest removes the oldest message from a device's queue.
 func (q *MessageQueue) evictOldest(deviceID string) {
-	q.mu.RLock()
+	// Use write lock to prevent race with queue deletion
+	q.mu.Lock()
 	ch, ok := q.queues[deviceID]
-	q.mu.RUnlock()
-
 	if !ok {
+		q.mu.Unlock()
 		return
 	}
+	q.mu.Unlock()
 
+	// Channel send/receive are atomic - safe to do without lock
 	select {
 	case <-ch:
 		// Evicted oldest
@@ -399,6 +401,8 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 
 	// First, replay persisted messages in FIFO order
 	for _, msg := range persisted {
+		// DeliveryConfirmation cannot be fulfilled after replay - clear it
+		msg.Frame.DeliveryConfirmation = nil
 		select {
 		case dest <- msg.Frame:
 			count++
@@ -420,6 +424,8 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 	for {
 		select {
 		case msg := <-ch:
+			// DeliveryConfirmation cannot be fulfilled after replay - clear it
+			msg.Frame.DeliveryConfirmation = nil
 			select {
 			case dest <- msg.Frame:
 				count++
