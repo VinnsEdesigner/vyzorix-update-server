@@ -14,8 +14,9 @@ import (
 )
 
 var (
-	ErrInvalidToken = errors.New("invalid token")
-	ErrExpiredToken = errors.New("token has expired")
+	ErrInvalidToken        = errors.New("invalid token")
+	ErrExpiredToken        = errors.New("token has expired")
+	ErrTokenIDGeneration   = errors.New("failed to generate token ID")
 )
 
 // OperatorClaims are the JWT claims for an authenticated operator.
@@ -48,6 +49,11 @@ func NewManager(secret string, expiry time.Duration, issuer string) *Manager {
 
 // Generate creates a new JWT token for an operator.
 func (m *Manager) Generate(operatorID, email, name, role string) (string, time.Time, error) {
+	tokenID, err := generateTokenID()
+	if err != nil {
+		return "", time.Time{}, ErrTokenIDGeneration
+	}
+
 	expiresAt := time.Now().Add(m.expiry)
 	claims := OperatorClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -55,7 +61,7 @@ func (m *Manager) Generate(operatorID, email, name, role string) (string, time.T
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Issuer:    m.issuer,
-			ID:        generateTokenID(),
+			ID:        tokenID,
 		},
 		OperatorID: operatorID,
 		Email:      email,
@@ -99,11 +105,15 @@ func HashToken(token string) string {
 	return hex.EncodeToString(h[:])
 }
 
-func generateTokenID() string {
+func generateTokenID() (string, error) {
 	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("fallback-%d", time.Now().UnixNano())))
+	n, err := rand.Read(b)
+	if err != nil {
+		return "", fmt.Errorf("crypto/rand read failed: %w", err)
+	}
+	if n != len(b) {
+		return "", fmt.Errorf("crypto/rand returned unexpected count: %d", n)
 	}
 
-	return base64.RawURLEncoding.EncodeToString(b)
+	return base64.RawURLEncoding.EncodeToString(b), nil
 }
