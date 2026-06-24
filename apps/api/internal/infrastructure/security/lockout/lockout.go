@@ -141,11 +141,7 @@ var dummyPasswordHash = argon2.IDKey(
 
 // FakeHash performs constant-time comparison to prevent timing attacks.
 func FakeHash(a, b string) bool {
-	if len(a) != len(b) {
-		subtle.ConstantTimeCompare([]byte(a), []byte(b))
-		return false
-	}
-
+	// Always perform constant-time comparison to avoid timing leaks
 	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
 }
 

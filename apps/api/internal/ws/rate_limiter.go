@@ -154,12 +154,14 @@ func (rl *RateLimiter) AllowN(clientID string, n int) bool {
 
 func (rl *RateLimiter) incrementAllowed() {
 	rl.metricsMu.Lock()
+	rl.metrics.TotalRequests++
 	rl.metrics.TotalAllowed++
 	rl.metricsMu.Unlock()
 }
 
 func (rl *RateLimiter) incrementLimited() {
 	rl.metricsMu.Lock()
+	rl.metrics.TotalRequests++
 	rl.metrics.TotalLimited++
 	rl.metricsMu.Unlock()
 }
@@ -177,8 +179,13 @@ func (rl *RateLimiter) GetMetrics() RateLimiterMetrics {
 	rl.mu.RLock()
 	defer rl.mu.RUnlock()
 
+	rl.metricsMu.Lock()
+	defer rl.metricsMu.Unlock()
+
 	return RateLimiterMetrics{
-		TotalRequests: int64(len(rl.buckets)), // Simplified
+		TotalRequests: rl.metrics.TotalRequests,
+		TotalAllowed:  rl.metrics.TotalAllowed,
+		TotalLimited:  rl.metrics.TotalLimited,
 		ActiveClients: len(rl.buckets),
 	}
 }
