@@ -20,6 +20,7 @@ func BuildSubscriptionType(res *resolver.Resolver) *graphql.Object {
 						Description: "Optional device ID to filter updates",
 					},
 				},
+				Resolve: res.DeviceUpdated,
 			},
 			"telemetryReceived": &graphql.Field{
 				Type:        TelemetryEntryType,
@@ -30,6 +31,7 @@ func BuildSubscriptionType(res *resolver.Resolver) *graphql.Object {
 						Description: "Device ID to subscribe to (omit for all devices)",
 					},
 				},
+				Resolve: res.TelemetryReceived,
 			},
 			"commandStatusChanged": &graphql.Field{
 				Type:        CommandType,
@@ -40,6 +42,7 @@ func BuildSubscriptionType(res *resolver.Resolver) *graphql.Object {
 						Description: "Dispatch ID to track (omit for all commands)",
 					},
 				},
+				Resolve: res.CommandStatusChanged,
 			},
 		},
 	})

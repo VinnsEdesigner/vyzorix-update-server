@@ -24,44 +24,40 @@ type MessageQueueConfig struct {
 func DefaultMessageQueueConfig() *MessageQueueConfig {
 	return &MessageQueueConfig{
 		MaxQueueSize:    1000,
-		MessageTTL:       7 * 24 * time.Hour, // 7 days
-		MaxMessageAge:   7 * 24 * time.Hour,  // 7 days
+		MessageTTL:      7 * 24 * time.Hour, // 7 days
+		MaxMessageAge:   7 * 24 * time.Hour, // 7 days
 		CleanupInterval: 1 * time.Hour,
 	}
 }
 
 // QueuedMessage represents a message in the queue.
 type QueuedMessage struct {
-	ID         string                 `json:"id"`
-	DeviceID   string                 `json:"deviceId"`
-	Frame      command.CommandFrame   `json:"frame"`
-	EnqueuedAt time.Time              `json:"enqueuedAt"`
-	ExpiresAt  time.Time              `json:"expiresAt"`
+	EnqueuedAt time.Time            `json:"enqueuedAt"`
+	ExpiresAt  time.Time            `json:"expiresAt"`
+	ID         string               `json:"id"`
+	DeviceID   string               `json:"deviceId"`
+	Frame      command.CommandFrame `json:"frame"`
 }
 
 // QueueMetrics holds queue metrics.
 type QueueMetrics struct {
+	LastCleanupAt  time.Time `json:"lastCleanupAt"`
 	TotalEnqueued  int64     `json:"totalEnqueued"`
 	TotalDelivered int64     `json:"totalDelivered"`
 	TotalExpired   int64     `json:"totalExpired"`
 	TotalDropped   int64     `json:"totalDropped"`
-	LastCleanupAt  time.Time `json:"lastCleanupAt"`
 }
 
 // MessageQueue manages queued messages for offline devices.
 // It uses a two-tier storage approach: in-memory channels for low-latency access
 // and SQLite persistence for durability across restarts.
 type MessageQueue struct {
-	log    *slog.Logger
-	config *MessageQueueConfig
-	db     *sql.DB
-
-	// In-memory queue per device (channel-based for thread safety)
-	queues map[string]chan *QueuedMessage
-	mu     sync.RWMutex
-
-	// Metrics
+	log       *slog.Logger
+	config    *MessageQueueConfig
+	db        *sql.DB
+	queues    map[string]chan *QueuedMessage
 	metrics   QueueMetrics
+	mu        sync.RWMutex
 	metricsMu sync.RWMutex
 }
 
@@ -104,16 +100,20 @@ func (q *MessageQueue) preWarmQueues() {
 		q.log.Warn("failed to pre-warm message queues", "err", err)
 		return
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var deviceIDs []string
+
 	for rows.Next() {
 		var deviceID string
 		if err := rows.Scan(&deviceID); err != nil {
 			continue
 		}
+
 		deviceIDs = append(deviceIDs, deviceID)
 	}
+
 	if err := rows.Err(); err != nil {
 		q.log.Warn("error iterating device IDs", "err", err)
 	}
@@ -123,14 +123,14 @@ func (q *MessageQueue) preWarmQueues() {
 		messages := q.LoadPersistedMessages(deviceID)
 		if len(messages) > 0 {
 			ch := q.GetOrCreateQueue(deviceID)
+
 			for _, msg := range messages {
 				select {
 				case ch <- msg:
 				default:
-					// Queue full, skip
-					// noop
 				}
 			}
+
 			q.log.Info("pre-warmed message queue", "deviceId", deviceID, "count", len(messages))
 		}
 	}
@@ -153,6 +153,7 @@ func (q *MessageQueue) GetOrCreateQueue(deviceID string) chan *QueuedMessage {
 
 	ch := make(chan *QueuedMessage, q.config.MaxQueueSize)
 	q.queues[deviceID] = ch
+
 	return ch
 }
 
@@ -185,6 +186,7 @@ func (q *MessageQueue) Enqueue(deviceID string, frame command.CommandFrame) bool
 	case ch <- msg:
 		q.incrementEnqueued()
 		go q.persistMessage(msg)
+
 		return true
 	default:
 		// Queue full - evict oldest and retry once
@@ -193,6 +195,7 @@ func (q *MessageQueue) Enqueue(deviceID string, frame command.CommandFrame) bool
 		case ch <- msg:
 			q.incrementEnqueued()
 			go q.persistMessage(msg)
+
 			return true
 		default:
 			q.incrementDropped()
@@ -200,6 +203,7 @@ func (q *MessageQueue) Enqueue(deviceID string, frame command.CommandFrame) bool
 				"deviceId", deviceID,
 				"dispatchId", frame.DispatchID,
 			)
+
 			return false
 		}
 	}
@@ -230,8 +234,10 @@ func (q *MessageQueue) EnqueueWithConfirmation(deviceID string, frame command.Co
 				"err", err,
 			)
 			q.incrementDropped()
+
 			return false
 		}
+
 		return true
 	default:
 		// Queue full - evict oldest and retry once
@@ -247,8 +253,10 @@ func (q *MessageQueue) EnqueueWithConfirmation(deviceID string, frame command.Co
 					"err", err,
 				)
 				q.incrementDropped()
+
 				return false
 			}
+
 			return true
 		default:
 			q.incrementDropped()
@@ -256,6 +264,7 @@ func (q *MessageQueue) EnqueueWithConfirmation(deviceID string, frame command.Co
 				"deviceId", deviceID,
 				"dispatchId", frame.DispatchID,
 			)
+
 			return false
 		}
 	}
@@ -276,11 +285,12 @@ func (q *MessageQueue) persistMessageSync(msg *QueuedMessage) error {
 	}
 
 	_, err = q.db.ExecContext(ctx,
-		`INSERT INTO message_queue (id, device_id, frame_json, enqueued_at, expires_at) 
+		`INSERT INTO message_queue (id, device_id, frame_json, enqueued_at, expires_at)
 		 VALUES (?, ?, ?, ?, ?)`,
 		msg.ID, msg.DeviceID, string(frameJSON),
 		msg.EnqueuedAt.UnixMilli(), msg.ExpiresAt.UnixMilli(),
 	)
+
 	return err
 }
 
@@ -298,7 +308,6 @@ func (q *MessageQueue) evictOldest(deviceID string) {
 	case <-ch:
 		// Evicted oldest
 	default:
-		// Channel empty
 	}
 }
 
@@ -318,7 +327,7 @@ func (q *MessageQueue) persistMessage(msg *QueuedMessage) {
 	}
 
 	_, err = q.db.ExecContext(ctx,
-		`INSERT INTO message_queue (id, device_id, frame_json, enqueued_at, expires_at) 
+		`INSERT INTO message_queue (id, device_id, frame_json, enqueued_at, expires_at)
 		 VALUES (?, ?, ?, ?, ?)`,
 		msg.ID, msg.DeviceID, string(frameJSON),
 		msg.EnqueuedAt.UnixMilli(), msg.ExpiresAt.UnixMilli(),
@@ -338,9 +347,9 @@ func (q *MessageQueue) LoadPersistedMessages(deviceID string) []*QueuedMessage {
 	defer cancel()
 
 	rows, err := q.db.QueryContext(ctx,
-		`SELECT id, device_id, frame_json, enqueued_at, expires_at 
-		 FROM message_queue 
-		 WHERE device_id = ? AND expires_at > ? 
+		`SELECT id, device_id, frame_json, enqueued_at, expires_at
+		 FROM message_queue
+		 WHERE device_id = ? AND expires_at > ?
 		 ORDER BY enqueued_at ASC`,
 		deviceID, time.Now().UnixMilli(),
 	)
@@ -348,12 +357,16 @@ func (q *MessageQueue) LoadPersistedMessages(deviceID string) []*QueuedMessage {
 		q.log.Warn("failed to load persisted messages", "err", err, "deviceId", deviceID)
 		return nil
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var messages []*QueuedMessage
+
 	for rows.Next() {
 		var msg QueuedMessage
+
 		var frameJSON string
+
 		var enqueuedAt, expiresAt int64
 
 		if err := rows.Scan(&msg.ID, &msg.DeviceID, &frameJSON, &enqueuedAt, &expiresAt); err != nil {
@@ -368,6 +381,7 @@ func (q *MessageQueue) LoadPersistedMessages(deviceID string) []*QueuedMessage {
 		msg.ExpiresAt = time.UnixMilli(expiresAt)
 		messages = append(messages, &msg)
 	}
+
 	if err := rows.Err(); err != nil {
 		q.log.Warn("error loading persisted messages", "err", err, "deviceId", deviceID)
 	}
@@ -388,13 +402,16 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 		select {
 		case dest <- msg.Frame:
 			count++
+
 			q.incrementDelivered()
+
 			go q.deleteMessage(msg.ID)
 		default:
 			q.log.Warn("destination buffer full during replay",
 				"deviceId", deviceID,
 				"replayedCount", count,
 			)
+
 			return count
 		}
 	}
@@ -406,7 +423,9 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 			select {
 			case dest <- msg.Frame:
 				count++
+
 				q.incrementDelivered()
+
 				go q.deleteMessage(msg.ID)
 			default:
 				// Put it back and stop
@@ -414,6 +433,7 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 				case ch <- msg:
 				default:
 				}
+
 				return count
 			}
 		default:
@@ -442,6 +462,7 @@ func (q *MessageQueue) QueueSize(deviceID string) int {
 	if ch, ok := q.queues[deviceID]; ok {
 		return len(ch)
 	}
+
 	return 0
 }
 
@@ -454,6 +475,7 @@ func (q *MessageQueue) TotalQueuedMessages() int {
 	for _, ch := range q.queues {
 		total += len(ch)
 	}
+
 	return total
 }
 
@@ -461,6 +483,7 @@ func (q *MessageQueue) TotalQueuedMessages() int {
 func (q *MessageQueue) GetMetrics() QueueMetrics {
 	q.metricsMu.RLock()
 	defer q.metricsMu.RUnlock()
+
 	return q.metrics
 }
 
@@ -507,6 +530,7 @@ func (q *MessageQueue) cleanupExpired() {
 	defer cancel()
 
 	now := time.Now().UnixMilli()
+
 	result, err := q.db.ExecContext(ctx,
 		`DELETE FROM message_queue WHERE expires_at < ?`,
 		now,

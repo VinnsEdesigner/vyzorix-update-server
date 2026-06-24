@@ -61,6 +61,7 @@ func (r *TelemetryRepository) List(ctx context.Context, deviceID string, limit i
 	if limit <= 0 {
 		limit = 100
 	}
+
 	if limit > 5000 {
 		limit = 5000
 	}
@@ -76,15 +77,19 @@ func (r *TelemetryRepository) List(ctx context.Context, deviceID string, limit i
 	defer rows.Close() //nolint:errcheck
 
 	var entries []telemetry.TelemetryEntry
+
 	for rows.Next() {
 		var e telemetry.TelemetryEntry
+
 		var receivedAt int64
 		if err := rows.Scan(&e.ID, &e.DeviceID, &receivedAt, &e.Payload, &e.RiskScore, &e.BufferLevel, &e.ThermalTemp); err != nil {
 			return nil, err
 		}
+
 		e.ReceivedAt = time.UnixMilli(receivedAt).UTC()
 		entries = append(entries, e)
 	}
+
 	return entries, rows.Err()
 }
 
@@ -93,6 +98,7 @@ func (r *TelemetryRepository) ListSince(ctx context.Context, deviceID string, si
 	if limit <= 0 {
 		limit = 100
 	}
+
 	if limit > 5000 {
 		limit = 5000
 	}
@@ -108,15 +114,19 @@ func (r *TelemetryRepository) ListSince(ctx context.Context, deviceID string, si
 	defer rows.Close() //nolint:errcheck
 
 	var entries []telemetry.TelemetryEntry
+
 	for rows.Next() {
 		var e telemetry.TelemetryEntry
+
 		var receivedAt int64
 		if err := rows.Scan(&e.ID, &e.DeviceID, &receivedAt, &e.Payload, &e.RiskScore, &e.BufferLevel, &e.ThermalTemp); err != nil {
 			return nil, err
 		}
+
 		e.ReceivedAt = time.UnixMilli(receivedAt).UTC()
 		entries = append(entries, e)
 	}
+
 	return entries, rows.Err()
 }
 
@@ -127,6 +137,7 @@ func (r *TelemetryRepository) Count(ctx context.Context, deviceID string) (int, 
 		`SELECT COUNT(*) FROM telemetry WHERE device_id = ?`,
 		deviceID,
 	).Scan(&count)
+
 	return count, err
 }
 
@@ -139,5 +150,6 @@ func (r *TelemetryRepository) DeleteOlderThan(ctx context.Context, olderThanTime
 	if err != nil {
 		return 0, err
 	}
+
 	return result.RowsAffected()
 }

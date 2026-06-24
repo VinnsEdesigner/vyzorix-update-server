@@ -15,10 +15,10 @@ import (
 // It maintains an in-memory cache of recently seen signatures to detect.
 // and reject replay attacks within the configured time window.
 type ReplayProtection struct {
-	mu     sync.RWMutex
 	cache  map[string]time.Time
 	window time.Duration
 	max    int
+	mu     sync.RWMutex
 }
 
 // NewReplayProtection creates a new replay protection cache.
@@ -58,6 +58,7 @@ func (rp *ReplayProtection) IsReplay(clientID, signature string) bool {
 func (rp *ReplayProtection) buildKey(clientID, signature string) string {
 	h := sha256.New()
 	h.Write([]byte(clientID + ":" + signature))
+
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -73,6 +74,7 @@ func (rp *ReplayProtection) evictOldLocked() {
 
 	// Collect keys to delete to avoid modifying map during iteration.
 	var expiredKeys []string
+
 	for key, timestamp := range rp.cache {
 		if now.Sub(timestamp) > window {
 			expiredKeys = append(expiredKeys, key)
@@ -100,8 +102,8 @@ func (rp *ReplayProtection) trimToMaxLocked() {
 
 	// Create a sortable slice of entries.
 	type cacheEntry struct {
-		key       string
 		timestamp time.Time
+		key       string
 	}
 
 	entries := make([]cacheEntry, 0, len(rp.cache))
@@ -135,15 +137,16 @@ func (rp *ReplayProtection) Clear() {
 func (rp *ReplayProtection) Size() int {
 	rp.mu.RLock()
 	defer rp.mu.RUnlock()
+
 	return len(rp.cache)
 }
 
-// Stats returns cache statistics for monitoring purposes.
+// ReplayStats holds replay protection cache statistics.
 type ReplayStats struct {
-	CacheSize  int           `json:"cacheSize"`
-	WindowSecs int           `json:"windowSecs"`
-	MaxSize    int           `json:"maxSize"`
-	UtilPct    float64       `json:"utilPct"`
+	CacheSize  int     `json:"cacheSize"`
+	WindowSecs int     `json:"windowSecs"`
+	MaxSize    int     `json:"maxSize"`
+	UtilPct    float64 `json:"utilPct"`
 }
 
 // Stats returns current replay protection statistics.
@@ -153,7 +156,9 @@ func (rp *ReplayProtection) Stats() ReplayStats {
 
 	size := len(rp.cache)
 	maxSize := rp.max
+
 	var utilPct float64
+
 	if maxSize > 0 {
 		utilPct = float64(size) / float64(maxSize) * 100
 	}

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
 )
@@ -42,6 +42,7 @@ func (c *CookieAuth) Middleware() gin.HandlerFunc {
 		if err != nil {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "session cookie required"})
 			ctx.Abort()
+
 			return
 		}
 
@@ -50,6 +51,7 @@ func (c *CookieAuth) Middleware() gin.HandlerFunc {
 		if err != nil {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "invalid session"})
 			ctx.Abort()
+
 			return
 		}
 
@@ -61,6 +63,7 @@ func (c *CookieAuth) Middleware() gin.HandlerFunc {
 		if err != nil || op == nil {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "session invalid or revoked"})
 			ctx.Abort()
+
 			return
 		}
 
@@ -77,9 +80,11 @@ func GetOperatorFromContext(c *gin.Context) *operator.Operator {
 	if !exists {
 		return nil
 	}
+
 	op, ok := val.(*operator.Operator)
 	if !ok {
 		return nil
 	}
+
 	return op
 }

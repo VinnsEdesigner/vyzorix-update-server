@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/jwt"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/lockout"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/oauth"
@@ -191,20 +192,20 @@ func GenerateFakeToken() string {
 }
 
 // EmailValidator provides configurable email validation.
-type EmailValidator = validate.Validator
+type EmailValidator = operator.EmailValidator
 
 // ValidationError represents a validation error.
-type ValidationError = validate.Error
+type ValidationError = operator.EmailError
 
 // EmailValidationResult contains detailed validation results.
-type EmailValidationResult = validate.Result
+type EmailValidationResult = operator.EmailValidationResult
 
 // EmailValidationError represents a specific email validation error.
-type EmailValidationError = validate.ValidationError
+type EmailValidationError = operator.EmailValidationError
 
 const (
-	MaxEmailLength    = validate.MaxEmailLength
-	MaxNameLength     = validate.MaxNameLength
+	MaxEmailLength    = operator.MaxEmailLength
+	MaxNameLength     = operator.MaxNameLength
 	MaxPasswordLength = validate.MaxPasswordLength
 	MinPasswordLength = validate.MinPasswordLength
 	MaxDeviceIDLength = validate.MaxDeviceIDLength
@@ -213,24 +214,24 @@ const (
 )
 
 // DefaultEmailValidator returns a validator for typical user registration.
-var DefaultEmailValidator = validate.DefaultValidator()
+var DefaultEmailValidator = operator.DefaultEmailValidator()
 
 // StrictEmailValidator returns a validator for high-security requirements.
-var StrictEmailValidator = validate.StrictValidator()
+var StrictEmailValidator = operator.StrictEmailValidator()
 
 // ValidateEmail validates an email address.
 func ValidateEmail(email string) (string, error) {
-	return validate.Email(email)
+	return operator.ValidateEmail(email)
 }
 
 // ValidateEmailFull performs comprehensive email validation.
-func ValidateEmailFull(email string, validator *validate.Validator) *validate.Result {
-	return validate.EmailFull(email, validator)
+func ValidateEmailFull(email string, validator *operator.EmailValidator) *operator.EmailValidationResult {
+	return operator.ValidateEmailFull(email, validator)
 }
 
 // ValidateName validates a name.
 func ValidateName(name string) (string, error) {
-	return validate.Name(name)
+	return operator.ValidateName(name)
 }
 
 // ValidatePasswordLength validates password length constraints.
@@ -260,37 +261,37 @@ func SanitizeString(s string, maxLen int) string {
 
 // ContainsInvalidUTF8 checks for invalid UTF-8.
 func ContainsInvalidUTF8(s string) bool {
-	return validate.ContainsInvalidUTF8(s)
+	return operator.ContainsInvalidUTF8(s)
 }
 
 // ContainsControlCharacters checks for Unicode control characters.
 func ContainsControlCharacters(s string) bool {
-	return validate.ContainsControlCharacters(s)
+	return operator.ContainsControlCharacters(s)
 }
 
 // ExtractDomain extracts the domain from an email.
 func ExtractDomain(email string) string {
-	return validate.ExtractDomain(email)
+	return operator.ExtractDomain(email)
 }
 
 // IsEmailDomainDisposable checks if email domain is disposable.
 func IsEmailDomainDisposable(email string) bool {
-	return validate.IsDisposableDomain(email)
+	return operator.IsDisposableDomain(email)
 }
 
 // ClearMXCache clears the DNS MX record cache.
 func ClearMXCache() {
-	validate.ClearMXCache()
+	operator.ClearMXCache()
 }
 
 // NormalizeEmailForComparison normalizes an email.
 func NormalizeEmailForComparison(email string) string {
-	return validate.NormalizeEmail(email)
+	return operator.NormalizeEmail(email)
 }
 
 // ValidateEmailURI validates a mailto: URI.
 func ValidateEmailURI(uri string) error {
-	return validate.EmailURI(uri)
+	return operator.ValidateEmailURI(uri)
 }
 
 // GitHubTokenResponse represents the token response from GitHub.

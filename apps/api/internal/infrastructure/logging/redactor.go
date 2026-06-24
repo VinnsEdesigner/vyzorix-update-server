@@ -53,6 +53,7 @@ func NewRedactor() *Redactor {
 			regexp.MustCompile(`"type"\s*:\s*"service_account"`),
 		},
 	}
+
 	return r
 }
 
@@ -62,19 +63,23 @@ func (r *Redactor) Redact(s string) string {
 	for _, pattern := range r.patterns {
 		result = pattern.ReplaceAllString(result, "[REDACTED]")
 	}
+
 	return result
 }
 
 // RedactMap redacts sensitive fields in a map.
 func (r *Redactor) RedactMap(m map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
+
 	for k, v := range m {
 		if isSensitiveKey(k) {
 			result[k] = "[REDACTED]"
 			continue
 		}
+
 		result[k] = r.redactValue(v)
 	}
+
 	return result
 }
 
@@ -90,6 +95,7 @@ func (r *Redactor) redactValue(v interface{}) interface{} {
 		for i, item := range val {
 			result[i] = r.redactValue(item)
 		}
+
 		return result
 	default:
 		return val
@@ -104,6 +110,7 @@ func isSensitiveKey(key string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 

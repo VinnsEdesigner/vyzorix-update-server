@@ -65,6 +65,7 @@ func (s *Service) ListAll(ctx context.Context, limit, offset int) ([]dto.ClientR
 	if limit <= 0 {
 		limit = 20
 	}
+
 	if limit > 100 {
 		limit = 100
 	}
@@ -104,10 +105,12 @@ func (s *Service) Get(ctx context.Context, clientID string) (*dto.ClientResponse
 		if err == client.ErrNotFound {
 			return nil, application.ErrClientNotFound
 		}
+
 		return nil, err
 	}
 
 	resp := toClientResponse(c)
+
 	return &resp, nil
 }
 
@@ -118,6 +121,7 @@ func (s *Service) Update(ctx context.Context, clientID string, req *dto.UpdateCl
 		if err == client.ErrNotFound {
 			return nil, application.ErrClientNotFound
 		}
+
 		return nil, err
 	}
 
@@ -125,15 +129,19 @@ func (s *Service) Update(ctx context.Context, clientID string, req *dto.UpdateCl
 	if req.Name != nil {
 		c.Name = *req.Name
 	}
+
 	if req.AllowedOrigins != nil {
 		c.AllowedOrigins = req.AllowedOrigins
 	}
+
 	if req.AllowedPaths != nil {
 		c.AllowedPaths = req.AllowedPaths
 	}
+
 	if req.RateLimit != nil {
 		c.RateLimit = *req.RateLimit
 	}
+
 	if req.IsActive != nil {
 		c.IsActive = *req.IsActive
 	}
@@ -143,6 +151,7 @@ func (s *Service) Update(ctx context.Context, clientID string, req *dto.UpdateCl
 	}
 
 	resp := toClientResponse(c)
+
 	return &resp, nil
 }
 
@@ -158,6 +167,7 @@ func (s *Service) RotateKey(ctx context.Context, clientID string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return signingKey.Version, nil
 }
 
@@ -167,7 +177,9 @@ func (s *Service) Deactivate(ctx context.Context, clientID string) error {
 	if err != nil {
 		return err
 	}
+
 	c.IsActive = false
+
 	return s.clientRepo.Update(ctx, c)
 }
 
@@ -178,6 +190,7 @@ func (s *Service) GetByOperatorID(ctx context.Context, clientID, operatorID stri
 		if err == client.ErrNotFound {
 			return nil, application.ErrClientNotFound
 		}
+
 		return nil, err
 	}
 
@@ -187,6 +200,7 @@ func (s *Service) GetByOperatorID(ctx context.Context, clientID, operatorID stri
 	}
 
 	resp := toClientResponse(c)
+
 	return &resp, nil
 }
 

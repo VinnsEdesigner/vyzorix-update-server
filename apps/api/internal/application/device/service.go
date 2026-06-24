@@ -20,7 +20,7 @@ var (
 
 // Service handles device operations.
 type Service struct {
-	deviceRepo  device.Repository
+	deviceRepo   device.Repository
 	operatorRepo operator.Repository
 }
 
@@ -30,7 +30,7 @@ func NewService(
 	operatorRepo operator.Repository,
 ) *Service {
 	return &Service{
-		deviceRepo:  deviceRepo,
+		deviceRepo:   deviceRepo,
 		operatorRepo: operatorRepo,
 	}
 }
@@ -56,13 +56,13 @@ func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) 
 		existing.Online = true
 		existing.LastSeen = time.Now().UnixMilli()
 
-		if err := s.deviceRepo.Update(ctx, existing); err != nil {
+		if err = s.deviceRepo.Update(ctx, existing); err != nil {
 			return nil, err
 		}
 
 		// Return existing command secret (we don't regenerate it).
 		return &dto.RegisterDeviceResponse{
-			DeviceID:     existing.ID,
+			DeviceID:      existing.ID,
 			CommandSecret: "", // Don't return secret on re-registration
 			RegisteredAt:  existing.RegisteredAt,
 		}, nil
@@ -78,13 +78,13 @@ func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) 
 	d := &device.Device{
 		ID:                req.DeviceID,
 		FirebaseInstallID: req.FirebaseInstallID,
-		FCMToken:         req.FCMToken,
+		FCMToken:          req.FCMToken,
 		AppVersion:        req.AppVersion,
 		DeviceClass:       req.DeviceClass,
-		Online:           true,
+		Online:            true,
 		RegisteredAt:      now.UnixMilli(),
-		LastSeen:         now.UnixMilli(),
-		CreatedAt:        now,
+		LastSeen:          now.UnixMilli(),
+		CreatedAt:         now,
 		UpdatedAt:         now,
 	}
 
@@ -97,7 +97,7 @@ func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) 
 	}
 
 	return &dto.RegisterDeviceResponse{
-		DeviceID:     d.ID,
+		DeviceID:      d.ID,
 		CommandSecret: commandSecret,
 		RegisteredAt:  d.RegisteredAt,
 	}, nil
@@ -110,6 +110,7 @@ func (s *Service) GetStatus(ctx context.Context, deviceID string) (*dto.DeviceSt
 		if err == device.ErrNotFound {
 			return nil, application.ErrDeviceNotFound
 		}
+
 		return nil, err
 	}
 
@@ -130,6 +131,7 @@ func (s *Service) GetStatusByOperator(ctx context.Context, deviceID, operatorID 
 		if err == device.ErrNotFound {
 			return nil, application.ErrDeviceNotFound
 		}
+
 		return nil, err
 	}
 
@@ -149,6 +151,7 @@ func (s *Service) GetDeviceByOperator(ctx context.Context, deviceID, operatorID 
 		if err == device.ErrNotFound {
 			return nil, application.ErrDeviceNotFound
 		}
+
 		return nil, err
 	}
 
@@ -173,6 +176,7 @@ func (s *Service) UpdateFCMTokenAndReturn(ctx context.Context, deviceID, fcmToke
 	if err := s.deviceRepo.UpdateFCMToken(ctx, deviceID, fcmToken); err != nil {
 		return nil, err
 	}
+
 	return s.deviceRepo.FindByID(ctx, deviceID)
 }
 
@@ -186,6 +190,7 @@ func (s *Service) List(ctx context.Context, limit, offset int) (*dto.DeviceListR
 	if limit <= 0 {
 		limit = 20
 	}
+
 	if limit > 100 {
 		limit = 100
 	}
@@ -209,7 +214,7 @@ func (s *Service) List(ctx context.Context, limit, offset int) (*dto.DeviceListR
 			AppVersion:        d.AppVersion,
 			DeviceClass:       d.DeviceClass,
 			Online:            d.Online,
-			RegisteredAt:        d.RegisteredAt,
+			RegisteredAt:      d.RegisteredAt,
 			LastSeen:          d.LastSeen,
 		}
 	}
@@ -232,7 +237,7 @@ func (s *Service) ListByOperator(ctx context.Context, operatorID string) ([]dto.
 			AppVersion:        d.AppVersion,
 			DeviceClass:       d.DeviceClass,
 			Online:            d.Online,
-			RegisteredAt:        d.RegisteredAt,
+			RegisteredAt:      d.RegisteredAt,
 			LastSeen:          d.LastSeen,
 		}
 	}
@@ -271,6 +276,7 @@ func (s *Service) CountByOperator(ctx context.Context, operatorID string) (int, 
 	if err != nil {
 		return 0, err
 	}
+
 	return len(devices), nil
 }
 
@@ -279,6 +285,7 @@ func (s *Service) ListByOperatorPaginated(ctx context.Context, operatorID string
 	if limit <= 0 {
 		limit = 50
 	}
+
 	if limit > 100 {
 		limit = 100
 	}

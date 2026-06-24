@@ -25,6 +25,7 @@ func GenerateToken() (string, error) {
 	if _, err := rand.Read(b); err != nil {
 		return "", ErrTokenGenerationFailed
 	}
+
 	return hex.EncodeToString(b), nil
 }
 
@@ -34,11 +35,12 @@ func GenerateTokenWithSize(size int) (string, error) {
 	if size <= 0 {
 		return "", fmt.Errorf("invalid token size: %d", size)
 	}
-	
+
 	b := make([]byte, size)
 	if _, err := rand.Read(b); err != nil {
 		return "", ErrTokenGenerationFailed
 	}
+
 	return hex.EncodeToString(b), nil
 }
 
@@ -47,10 +49,11 @@ func GenerateRandomBytes(size int) ([]byte, error) {
 	if size <= 0 {
 		return nil, fmt.Errorf("invalid size: %d", size)
 	}
-	
+
 	b := make([]byte, size)
 	if _, err := rand.Read(b); err != nil {
 		return nil, fmt.Errorf("failed to generate random bytes: %w", err)
 	}
+
 	return b, nil
 }

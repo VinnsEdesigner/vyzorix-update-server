@@ -21,33 +21,33 @@ import (
 
 // Request signing errors.
 var (
-	ErrMissingHeaders      = errors.New("missing required signature headers")
-	ErrInvalidTimestamp    = errors.New("invalid timestamp format")
+	ErrMissingHeaders         = errors.New("missing required signature headers")
+	ErrInvalidTimestamp       = errors.New("invalid timestamp format")
 	ErrTimestampOutsideWindow = errors.New("timestamp outside allowed window")
-	ErrReplayDetected      = errors.New("replay detected")
-	ErrInvalidSignature    = errors.New("invalid signature")
-	ErrInvalidEncryptedBody = errors.New("invalid encrypted body")
-	ErrUnknownClient       = errors.New("unknown or inactive client")
-	ErrDecryptionFailed    = errors.New("decryption failed")
+	ErrReplayDetected         = errors.New("replay detected")
+	ErrInvalidSignature       = errors.New("invalid signature")
+	ErrInvalidEncryptedBody   = errors.New("invalid encrypted body")
+	ErrUnknownClient          = errors.New("unknown or inactive client")
+	ErrDecryptionFailed       = errors.New("decryption failed")
 )
 
 // SigningConfig holds request signing configuration.
 type SigningConfig struct {
-	Enabled           bool
-	TimestampWindow   time.Duration // ±5 minutes default
-	MaxCacheSize      int           // Max replay cache entries
-	GracePeriod       time.Duration // Key rotation grace period
-	AllowUnsignedFallback bool      // Emergency mode only
+	TimestampWindow       time.Duration
+	MaxCacheSize          int
+	GracePeriod           time.Duration
+	Enabled               bool
+	AllowUnsignedFallback bool
 }
 
 // DefaultSigningConfig returns the default signing configuration.
 // Request signing is ENABLED by default for production infraauth.
 func DefaultSigningConfig() SigningConfig {
 	return SigningConfig{
-		Enabled:           true,
-		TimestampWindow:   5 * time.Minute,
-		MaxCacheSize:      100000,
-		GracePeriod:       24 * time.Hour,
+		Enabled:               true,
+		TimestampWindow:       5 * time.Minute,
+		MaxCacheSize:          100000,
+		GracePeriod:           24 * time.Hour,
 		AllowUnsignedFallback: false,
 	}
 }
@@ -57,24 +57,25 @@ func LoadSigningConfig() SigningConfig {
 	cfg := DefaultSigningConfig()
 	cfg.Enabled = getEnvBool("REQUEST_SIGNING_ENABLED", true)
 	cfg.AllowUnsignedFallback = getEnvBool("ALLOW_UNSIGNED_FALLBACK", false)
+
 	return cfg
 }
 
 // SignatureVerifier verifies request signatures.
 type SignatureVerifier struct {
-	Config       SigningConfig
-	ClientSecret func(clientID string) (string, bool) // Returns secret and whether client is active
-	Now          func() time.Time                      // For testing
+	ClientSecret func(clientID string) (string, bool)
+	Now          func() time.Time
 	replayCache  *ReplayCache
+	Config       SigningConfig
 }
 
 // ReplayCache is a thread-safe cache for preventing replay attacks.
 // It stores signatures seen within the timestamp window.
 type ReplayCache struct {
-	mu       sync.Mutex
-	seen     map[string]time.Time
-	window   time.Duration
-	maxSize  int
+	seen    map[string]time.Time
+	window  time.Duration
+	maxSize int
+	mu      sync.Mutex
 }
 
 // NewReplayCache creates a new replay cache with the given window and max size.
@@ -112,12 +113,15 @@ func (c *ReplayCache) Use(signature string) bool {
 		// Remove 10% of oldest entries.
 		evictCount := c.maxSize / 10
 		removed := 0
+
 		for sig, t := range c.seen {
 			if removed >= evictCount {
 				break
 			}
+
 			if t.Before(now.Add(-c.window / 2)) {
 				delete(c.seen, sig)
+
 				removed++
 			}
 		}
@@ -125,6 +129,7 @@ func (c *ReplayCache) Use(signature string) bool {
 
 	// Mark this signature as seen.
 	c.seen[signature] = now
+
 	return true
 }
 
@@ -132,6 +137,7 @@ func (c *ReplayCache) Use(signature string) bool {
 func (c *ReplayCache) Size() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	return len(c.seen)
 }
 
@@ -200,11 +206,13 @@ func (v *SignatureVerifier) Verify(method, path string, body []byte, h http.Head
 
 	// For requests with encrypted body, decrypt first.
 	var bodyToVerify []byte
+
 	if encryptedBody != "" {
 		decrypted, err := v.decryptBody(encryptedBody, secret)
 		if err != nil {
 			return ErrInvalidEncryptedBody
 		}
+
 		bodyToVerify = decrypted
 	} else {
 		// Use original body if not encrypted.
@@ -265,6 +273,7 @@ func (v *SignatureVerifier) EncryptBody(plaintext []byte, secret string) (string
 	if err != nil {
 		return "", ErrDecryptionFailed
 	}
+
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
@@ -275,11 +284,13 @@ func SignRequest(method, path string, body []byte, clientID, clientSecret string
 
 	// Encrypt body using shared crypto package.
 	var encryptedBody string
+
 	if len(body) > 0 {
 		ciphertext, err := crypto.EncryptAES256GCM(clientSecret, body)
 		if err != nil {
 			return nil, err
 		}
+
 		encryptedBody = base64.StdEncoding.EncodeToString(ciphertext)
 	}
 
@@ -295,6 +306,7 @@ func SignRequest(method, path string, body []byte, clientID, clientSecret string
 	headers.Set("X-Client-ID", clientID)
 	headers.Set("X-Timestamp", timestamp)
 	headers.Set("X-Signature", signature)
+
 	if encryptedBody != "" {
 		headers.Set("X-Encrypted-Body", encryptedBody)
 	}
@@ -306,42 +318,41 @@ func SignRequest(method, path string, body []byte, clientID, clientSecret string
 // Per PRD: Only truly public endpoints are exempt; everything else requires signing.
 func IsSigningRequiredPath(path string) bool {
 	// Exempt ONLY these truly public endpoints:
-	
 	// Health checks - no auth required, just liveness probes
-	if path == "/health/live" || 
-	   path == "/health/ready" || 
-	   path == "/healthz" ||
-	   path == "/health" {
+	if path == "/health/live" ||
+		path == "/health/ready" ||
+		path == "/healthz" ||
+		path == "/health" {
 		return false
 	}
-	
+
 	// Static assets - no sensitive data
 	if strings.HasPrefix(path, "/assets/") ||
-	   path == "/favicon.ico" {
+		path == "/favicon.ico" {
 		return false
 	}
-	
+
 	// Auth endpoints use their own session/cookie auth mechanism
 	// These are exempt because they establish the session used for signing
 	if strings.HasPrefix(path, "/v1/auth/") {
 		return false
 	}
-	
+
 	// Public device registration - device gets its credentials via device auth
 	if path == "/v1/device/register" {
 		return false
 	}
-	
+
 	// Device status is public - used by devices to check in
 	if path == "/v1/device/status" {
 		return false
 	}
-	
+
 	// API info - no sensitive data
 	if path == "/api/v1/version" || path == "/api/v1/changelog" {
 		return false
 	}
-	
+
 	// ALL other endpoints REQUIRE request signing
 	// This includes:
 	// - /metrics (Prometheus metrics - sensitive operational data)
@@ -415,6 +426,7 @@ func RequestSigningMiddleware(verifier *SignatureVerifier) func(c *gin.Context) 
 					"message": "Signature verification failed",
 				})
 			}
+
 			return
 		}
 

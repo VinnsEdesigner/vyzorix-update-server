@@ -45,9 +45,9 @@ func TestLockoutHandler_UnlockAccount_Unauthorized(t *testing.T) {
 
 func TestLockoutMiddleware_NewLockout(t *testing.T) {
 	config := middleware.LockoutConfig{
-		Enabled:           true,
-		MaxAttempts:       5,
-		LockoutDuration:   5 * time.Minute,
+		Enabled:            true,
+		MaxAttempts:        5,
+		LockoutDuration:    5 * time.Minute,
 		MaxLockoutDuration: 30 * time.Minute,
 	}
 	lockout := middleware.NewLockout(config)

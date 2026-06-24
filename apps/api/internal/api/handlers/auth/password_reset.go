@@ -11,16 +11,16 @@ import (
 // PasswordResetHandler handles password reset endpoints.
 type PasswordResetHandler struct {
 	authService *auth.AuthService
-	emailSvc   *emailService.Service
-	presenter *response.Presenter
+	emailSvc    *emailService.Service
+	presenter   *response.Presenter
 }
 
 // NewPasswordResetHandler creates a new PasswordResetHandler.
 func NewPasswordResetHandler(authService *auth.AuthService, emailSvc *emailService.Service, presenter *response.Presenter) *PasswordResetHandler {
 	return &PasswordResetHandler{
 		authService: authService,
-		emailSvc:   emailSvc,
-		presenter: presenter,
+		emailSvc:    emailSvc,
+		presenter:   presenter,
 	}
 }
 
@@ -29,6 +29,7 @@ func (h *PasswordResetHandler) ForgotPassword(c *gin.Context) {
 	var req struct {
 		Email string `json:"email"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "invalid JSON body")
 		return
@@ -51,9 +52,11 @@ func (h *PasswordResetHandler) ForgotPassword(c *gin.Context) {
 		// Get operator name for email
 		op, err := h.authService.GetOperatorByEmail(c.Request.Context(), req.Email)
 		name := ""
+
 		if err == nil && op != nil {
 			name = op.Name
 		}
+
 		if err := h.emailSvc.SendPasswordResetEmail(c.Request.Context(), req.Email, name, token); err != nil {
 			h.presenter.InternalError(c, "failed to send email")
 			return
@@ -68,6 +71,7 @@ func (h *PasswordResetHandler) ResendPasswordReset(c *gin.Context) {
 	var req struct {
 		Email string `json:"email"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "invalid request body")
 		return
@@ -89,17 +93,20 @@ func (h *PasswordResetHandler) ResendPasswordReset(c *gin.Context) {
 		// Return rate limit response.
 		if rateLimit.LockedUntil != nil {
 			h.presenter.OK(c, gin.H{
-				"error":        "rate_limited",
-				"message":      "Too many requests. Please try again later.",
-				"lockedUntil":  rateLimit.LockedUntil.UnixMilli(),
+				"error":       "rate_limited",
+				"message":     "Too many requests. Please try again later.",
+				"lockedUntil": rateLimit.LockedUntil.UnixMilli(),
 			})
+
 			return
 		}
+
 		h.presenter.OK(c, gin.H{
-			"error":       "rate_limited",
-			"message":     "Please wait before requesting another reset link.",
-			"retryAfter":  rateLimit.RetryAfter,
+			"error":      "rate_limited",
+			"message":    "Please wait before requesting another reset link.",
+			"retryAfter": rateLimit.RetryAfter,
 		})
+
 		return
 	}
 
@@ -113,9 +120,11 @@ func (h *PasswordResetHandler) ResendPasswordReset(c *gin.Context) {
 	if token != "" && h.emailSvc != nil && h.emailSvc.IsConfigured() {
 		op, err := h.authService.GetOperatorByEmail(c.Request.Context(), req.Email)
 		name := ""
+
 		if err == nil && op != nil {
 			name = op.Name
 		}
+
 		if err := h.emailSvc.SendPasswordResetEmail(c.Request.Context(), req.Email, name, token); err != nil {
 			h.presenter.InternalError(c, "failed to send email")
 			return
@@ -138,6 +147,7 @@ func (h *PasswordResetHandler) ResetPassword(c *gin.Context) {
 		Token       string `json:"token"`
 		NewPassword string `json:"newPassword"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "invalid JSON body")
 		return

@@ -87,6 +87,7 @@ func containsUpper(s string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -96,6 +97,7 @@ func containsLower(s string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -105,6 +107,7 @@ func containsDigit(s string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -115,6 +118,7 @@ func containsSpecial(s string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -125,15 +129,19 @@ func Strength(password string) int {
 	if len(password) >= 8 {
 		score++
 	}
+
 	if len(password) >= 12 {
 		score++
 	}
+
 	if len(password) >= 16 {
 		score++
 	}
+
 	if containsUpper(password) && containsLower(password) {
 		score++
 	}
+
 	if containsDigit(password) || containsSpecial(password) {
 		score++
 	}

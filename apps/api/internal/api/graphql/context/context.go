@@ -32,7 +32,9 @@ func GetOperator(ctx context.Context) (*operator.Operator, bool) {
 	if val == nil {
 		return nil, false
 	}
+
 	op, ok := val.(*operator.Operator)
+
 	return op, ok
 }
 
@@ -42,6 +44,7 @@ func MustGetOperator(ctx context.Context) *operator.Operator {
 	if !ok {
 		panic("operator not found in context")
 	}
+
 	return op
 }
 
@@ -56,10 +59,12 @@ func GetRequestID(ctx context.Context) string {
 	if val == nil {
 		return ""
 	}
+
 	str, ok := val.(string)
 	if !ok {
 		return ""
 	}
+
 	return str
 }
 
@@ -77,7 +82,9 @@ func GetRequestMetadata(ctx context.Context) (RequestMetadata, bool) {
 	if val == nil {
 		return RequestMetadata{}, false
 	}
+
 	meta, ok := val.(RequestMetadata)
+
 	return meta, ok
 }
 
@@ -86,6 +93,7 @@ func GetClientIP(ctx context.Context) string {
 	if meta, ok := GetRequestMetadata(ctx); ok {
 		return meta.ClientIP
 	}
+
 	return ""
 }
 
@@ -94,5 +102,6 @@ func GetUserAgent(ctx context.Context) string {
 	if meta, ok := GetRequestMetadata(ctx); ok {
 		return meta.UserAgent
 	}
+
 	return ""
 }
