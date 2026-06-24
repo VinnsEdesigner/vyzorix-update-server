@@ -66,11 +66,14 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 			h.presenter.Conflict(c, "an account with this email already exists")
 			return
 		}
+
 		if errors.Is(err, application.ErrInvalidInput) {
 			h.presenter.BadRequest(c, "password does not meet requirements")
 			return
 		}
+
 		h.presenter.InternalError(c, "an error occurred")
+
 		return
 	}
 

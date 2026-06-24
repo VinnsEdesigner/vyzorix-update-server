@@ -16,18 +16,18 @@ import (
 
 // Turnstile errors.
 var (
-	ErrTurnstileInvalid   = errors.New("invalid turnstile token")
-	ErrTurnstileExpired   = errors.New("turnstile token expired")
-	ErrTurnstileMismatch  = errors.New("turnstile token mismatch")
-	ErrTurnstileFailed    = errors.New("turnstile verification failed")
+	ErrTurnstileInvalid  = errors.New("invalid turnstile token")
+	ErrTurnstileExpired  = errors.New("turnstile token expired")
+	ErrTurnstileMismatch = errors.New("turnstile token mismatch")
+	ErrTurnstileFailed   = errors.New("turnstile verification failed")
 )
 
 // TurnstileConfig holds Turnstile configuration.
 type TurnstileConfig struct {
-	Enabled  bool
 	Secret   string
 	SiteKey  string
 	CacheTTL time.Duration
+	Enabled  bool
 }
 
 // getEnvBool returns a boolean from environment variable.
@@ -36,6 +36,7 @@ func getEnvBool(key string, defaultVal bool) bool {
 	if v == "" {
 		return defaultVal
 	}
+
 	switch strings.ToLower(v) {
 	case "true", "1", "yes", "on":
 		return true
@@ -58,25 +59,25 @@ func LoadTurnstileConfig() TurnstileConfig {
 
 // TurnstileResponse represents the Turnstile verification response.
 type TurnstileResponse struct {
-	Success     bool      `json:"success"`
 	ChallengeTS time.Time `json:"challenge_ts"`
 	Hostname    string    `json:"hostname"`
-	ErrorCodes  []string  `json:"error-codes"`
 	Action      string    `json:"action"`
 	CData       string    `json:"cdata"`
+	ErrorCodes  []string  `json:"error-codes"`
+	Success     bool      `json:"success"`
 }
 
 // TurnstileCache caches verification results to avoid repeated API calls.
 type TurnstileCache struct {
-	mu       sync.RWMutex
-	cache    map[string]turnstileCacheEntry
-	maxSize  int
-	ttl      time.Duration
+	cache   map[string]turnstileCacheEntry
+	maxSize int
+	ttl     time.Duration
+	mu      sync.RWMutex
 }
 
 type turnstileCacheEntry struct {
-	result  bool
 	expires time.Time
+	result  bool
 }
 
 // NewTurnstileCache creates a new Turnstile cache.
@@ -97,9 +98,11 @@ func (c *TurnstileCache) Get(token string) (bool, bool) {
 	if !exists {
 		return false, false
 	}
+
 	if time.Now().After(entry.expires) {
 		return false, false
 	}
+
 	return entry.result, true
 }
 
@@ -113,12 +116,15 @@ func (c *TurnstileCache) Set(token string, result bool) {
 		// Remove 20% oldest entries.
 		evictCount := c.maxSize / 5
 		removed := 0
+
 		for k, v := range c.cache {
 			if removed >= evictCount {
 				break
 			}
+
 			if time.Now().After(v.expires) {
 				delete(c.cache, k)
+
 				removed++
 			}
 		}
@@ -132,9 +138,9 @@ func (c *TurnstileCache) Set(token string, result bool) {
 
 // TurnstileVerifier handles Cloudflare Turnstile token verification.
 type TurnstileVerifier struct {
-	Config TurnstileConfig
 	Cache  *TurnstileCache
 	Client *http.Client
+	Config TurnstileConfig
 }
 
 // NewTurnstileVerifier creates a new Turnstile verifier.
@@ -153,6 +159,7 @@ func (v *TurnstileVerifier) Verify(ctx context.Context, token, remoteIP string) 
 		if !result {
 			return ErrTurnstileInvalid
 		}
+
 		return nil
 	}
 
@@ -174,12 +181,14 @@ func (v *TurnstileVerifier) Verify(ctx context.Context, token, remoteIP string) 
 	if err != nil {
 		return ErrTurnstileFailed
 	}
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := v.Client.Do(req)
 	if err != nil {
 		return ErrTurnstileFailed
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	var result TurnstileResponse
@@ -199,6 +208,7 @@ func (v *TurnstileVerifier) Verify(ctx context.Context, token, remoteIP string) 
 				return ErrTurnstileMismatch
 			}
 		}
+
 		return ErrTurnstileInvalid
 	}
 
@@ -230,6 +240,7 @@ func TurnstileMiddleware(verifier *TurnstileVerifier) func(c *gin.Context) {
 				"error":   "verification_failed",
 				"message": "Security verification failed, please try again",
 			})
+
 			return
 		}
 
@@ -255,5 +266,6 @@ func ShouldVerifyTurnstile(path string) bool {
 			return true
 		}
 	}
+
 	return false
 }

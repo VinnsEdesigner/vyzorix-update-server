@@ -10,29 +10,19 @@ var ErrNotFound = errors.New("device not found")
 
 // Device represents a registered device.
 type Device struct {
-	ID                string
-	FirebaseInstallID string
-	FCMToken         string
-	AppVersion       string
-	DeviceClass      string
-
-	// Command signing.
+	UpdatedAt         time.Time
+	CreatedAt         time.Time
+	Metadata          map[string]string
+	OperatorID        string
+	DeviceClass       string
 	CommandSecretHash string
-
-	// Status.
-	Online       bool
-	RegisteredAt int64 // Unix milliseconds
-	LastSeen     int64 // Unix milliseconds
-
-	// Ownership.
-	OperatorID string
-
-	// Metadata.
-	Metadata map[string]string
-
-	// Timestamps.
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID                string
+	AppVersion        string
+	FCMToken          string
+	FirebaseInstallID string
+	RegisteredAt      int64
+	LastSeen          int64
+	Online            bool
 }
 
 // IsOnline returns true if the device is currently online.
@@ -60,12 +50,12 @@ func (d *Device) IsValid() bool {
 	return d.ID != "" && d.FirebaseInstallID != ""
 }
 
-// DeviceClassPhone returns true if the device is a phone.
+// IsPhone returns true if the device is a phone.
 func (d *Device) IsPhone() bool {
 	return d.DeviceClass == "phone"
 }
 
-// DeviceClassTablet returns true if the device is a tablet.
+// IsTablet returns true if the device is a tablet.
 func (d *Device) IsTablet() bool {
 	return d.DeviceClass == "tablet"
 }

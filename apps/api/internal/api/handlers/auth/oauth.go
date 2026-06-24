@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,10 +24,10 @@ import (
 type OAuthHandler struct {
 	authService *appsvc.AuthService
 	sessionMgr  *infraauth.SessionManager
-	config      config.Config
 	googleVer   *infraauth.GoogleTokenVerifier
 	logger      *slog.Logger
 	presenter   *response.Presenter
+	config      config.Config
 }
 
 // NewOAuthHandler creates a new OAuthHandler.
@@ -36,8 +36,8 @@ func NewOAuthHandler(authService *appsvc.AuthService, sessionMgr *infraauth.Sess
 		authService: authService,
 		sessionMgr:  sessionMgr,
 		config:      cfg,
-		googleVer:  googleVer,
-		presenter:  presenter,
+		googleVer:   googleVer,
+		presenter:   presenter,
 	}
 }
 
@@ -74,6 +74,7 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
+
 	if code == "" {
 		h.presenter.BadRequest(c, "missing authorization code from Google")
 		return
@@ -91,12 +92,14 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		"redirect_uri":  h.config.BaseURL + "/v1/auth/google/callback",
 		"grant_type":    "authorization_code",
 	}
+
 	var tokenResp struct {
 		AccessToken  string `json:"access_token"`
 		IDToken      string `json:"id_token"`
 		RefreshToken string `json:"refresh_token"`
 		ExpiresIn    int    `json:"expires_in"`
 	}
+
 	if err := postJSON(ctx, tokenURL, tokenReq, &tokenResp); err != nil {
 		h.presenter.BadGateway(c, "failed to exchange code with Google")
 		return
@@ -134,6 +137,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		h.presenter.InternalError(c, "login failed")
 		return
 	}
+
 	http.SetCookie(c.Writer, cookie)
 
 	// Redirect to frontend
@@ -141,9 +145,11 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	if frontendURL == "" {
 		frontendURL = "http://localhost:5173"
 	}
+
 	if state != "" {
 		frontendURL = state
 	}
+
 	redirectURL := fmt.Sprintf("%s/auth/callback?oauth=success&new=%t", frontendURL, result.IsNew)
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
@@ -178,6 +184,7 @@ func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
+
 	if code == "" {
 		h.presenter.BadRequest(c, "missing authorization code from GitHub")
 		return
@@ -207,20 +214,9 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	}
 
 	// Fetch user emails
-	var email string
-	if ghUser.Email == "" {
-		emails, err := infraauth.FetchGitHubEmails(ctx, tokenResp.AccessToken)
-		if err != nil {
-			if h.logger != nil {
-				h.logger.Warn("Failed to fetch GitHub emails, using fallback", "err", err)
-			}
-		}
-		email = infraauth.GetPrimaryEmail(emails)
-		if email == "" {
-			email = ghUser.Login + "@github.noreply.vyzorix.internal"
-		}
-	} else {
-		email = ghUser.Email
+	email := ghUser.Email
+	if email == "" {
+		email = fetchGitHubEmailWithFallback(ctx, tokenResp.AccessToken, ghUser.Login, h.logger)
 	}
 
 	// Generate stable GitHub ID
@@ -252,6 +248,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		h.presenter.InternalError(c, "login failed")
 		return
 	}
+
 	http.SetCookie(c.Writer, cookie)
 
 	// Redirect to frontend
@@ -259,9 +256,11 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	if frontendURL == "" {
 		frontendURL = "http://localhost:5173"
 	}
+
 	if state != "" {
 		frontendURL = state
 	}
+
 	redirectURL := fmt.Sprintf("%s/auth/callback?oauth=success&new=%t&provider=github", frontendURL, result.IsNew)
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
@@ -277,13 +276,16 @@ func postJSON(ctx context.Context, url string, body map[string]string, resp inte
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Second}
+
 	httpResp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}
+
 	defer func() { _ = httpResp.Body.Close() }()
 
 	if httpResp.StatusCode >= 400 {
@@ -295,4 +297,21 @@ func postJSON(ctx context.Context, url string, body map[string]string, resp inte
 	}
 
 	return nil
+}
+
+// fetchGitHubEmailWithFallback fetches the primary email or generates a fallback.
+func fetchGitHubEmailWithFallback(ctx context.Context, accessToken, login string, logger *slog.Logger) string {
+	emails, fetchErr := infraauth.FetchGitHubEmails(ctx, accessToken)
+	email := infraauth.GetPrimaryEmail(emails)
+	if email == "" {
+		email = login + "@github.noreply.vyzorix.internal"
+		if fetchErr != nil {
+			logger.Warn("Failed to fetch GitHub emails, using fallback", "err", fetchErr)
+		}
+		return email
+	}
+	if fetchErr != nil {
+		logger.Warn("Failed to fetch GitHub emails, using fallback", "err", fetchErr)
+	}
+	return email
 }

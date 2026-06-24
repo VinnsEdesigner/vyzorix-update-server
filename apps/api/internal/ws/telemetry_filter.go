@@ -17,40 +17,40 @@ type TelemetryFilterConfig struct {
 // DefaultTelemetryFilterConfig returns the default telemetry filter configuration.
 func DefaultTelemetryFilterConfig() *TelemetryFilterConfig {
 	return &TelemetryFilterConfig{
-		MaxSubscriptions:         50,
-		EnableServerSideFilter:   true,
+		MaxSubscriptions:       50,
+		EnableServerSideFilter: true,
 	}
 }
 
 // TelemetryFilterMetrics holds telemetry filter metrics.
 type TelemetryFilterMetrics struct {
-	TotalSubscriptions   int64 `json:"totalSubscriptions"`
+	TotalSubscriptions  int64 `json:"totalSubscriptions"`
 	TotalUnsubscribes   int64 `json:"totalUnsubscribes"`
 	TotalFiltered       int64 `json:"totalFiltered"`
 	TotalForwarded      int64 `json:"totalForwarded"`
-	ActiveSubscriptions  int   `json:"activeSubscriptions"`
+	ActiveSubscriptions int   `json:"activeSubscriptions"`
 }
 
 // Subscription represents a client's subscription to a device's telemetry.
 type Subscription struct {
-	ClientID  string
-	DeviceID  string
+	ClientID     string
+	DeviceID     string
 	SubscribedAt int64 // Unix timestamp
 }
 
 // TelemetryFilter manages client subscriptions to specific device telemetry.
 // It supports server-side filtering to reduce bandwidth for dashboard clients.
 type TelemetryFilter struct {
-	log     *slog.Logger
-	config  *TelemetryFilterConfig
-	
+	log    *slog.Logger
+	config *TelemetryFilterConfig
+
 	// subscriptions maps client ID -> set of device IDs they're subscribed to
 	subscriptions map[string]map[string]*Subscription
 	// deviceSubscribers maps device ID -> set of client IDs subscribed to it
 	deviceSubscribers map[string]map[string]bool
-	
-	mu sync.RWMutex
-	metrics TelemetryFilterMetrics
+
+	mu        sync.RWMutex
+	metrics   TelemetryFilterMetrics
 	metricsMu sync.RWMutex
 }
 
@@ -59,6 +59,7 @@ func NewTelemetryFilter(log *slog.Logger, cfg *TelemetryFilterConfig) *Telemetry
 	if cfg == nil {
 		cfg = DefaultTelemetryFilterConfig()
 	}
+
 	return &TelemetryFilter{
 		log:               log,
 		config:            cfg,
@@ -78,6 +79,7 @@ func (tf *TelemetryFilter) Subscribe(clientID, deviceID string) bool {
 			"clientId", clientID,
 			"maxSubscriptions", tf.config.MaxSubscriptions,
 		)
+
 		return false
 	}
 
@@ -87,8 +89,8 @@ func (tf *TelemetryFilter) Subscribe(clientID, deviceID string) bool {
 	}
 
 	tf.subscriptions[clientID][deviceID] = &Subscription{
-		ClientID:  clientID,
-		DeviceID:  deviceID,
+		ClientID:     clientID,
+		DeviceID:     deviceID,
 		SubscribedAt: nowUnix(),
 	}
 
@@ -96,6 +98,7 @@ func (tf *TelemetryFilter) Subscribe(clientID, deviceID string) bool {
 	if tf.deviceSubscribers[deviceID] == nil {
 		tf.deviceSubscribers[deviceID] = make(map[string]bool)
 	}
+
 	tf.deviceSubscribers[deviceID][clientID] = true
 
 	tf.incrementSubscriptions()
@@ -122,11 +125,12 @@ func (tf *TelemetryFilter) Unsubscribe(clientID, deviceID string) bool {
 
 	delete(tf.subscriptions[clientID], deviceID)
 	delete(tf.deviceSubscribers[deviceID], clientID)
-	
+
 	// Cleanup empty maps
 	if len(tf.subscriptions[clientID]) == 0 {
 		delete(tf.subscriptions, clientID)
 	}
+
 	if len(tf.deviceSubscribers[deviceID]) == 0 {
 		delete(tf.deviceSubscribers, deviceID)
 	}
@@ -148,7 +152,9 @@ func (tf *TelemetryFilter) IsSubscribed(clientID, deviceID string) bool {
 	if tf.subscriptions[clientID] == nil {
 		return false
 	}
+
 	_, exists := tf.subscriptions[clientID][deviceID]
+
 	return exists
 }
 
@@ -165,6 +171,7 @@ func (tf *TelemetryFilter) GetSubscriptions(clientID string) []string {
 	for deviceID := range tf.subscriptions[clientID] {
 		devices = append(devices, deviceID)
 	}
+
 	return devices
 }
 
@@ -181,6 +188,7 @@ func (tf *TelemetryFilter) GetSubscribers(deviceID string) []string {
 	for clientID := range tf.deviceSubscribers[deviceID] {
 		clients = append(clients, clientID)
 	}
+
 	return clients
 }
 
@@ -203,13 +211,13 @@ func (tf *TelemetryFilter) ShouldForward(clientID, deviceID string) bool {
 
 	// Check subscription
 	isSubscribed := tf.IsSubscribed(clientID, deviceID)
-	
+
 	if isSubscribed {
 		tf.incrementForwarded()
 	} else {
 		tf.incrementFiltered()
 	}
-	
+
 	return isSubscribed
 }
 
@@ -218,6 +226,7 @@ func (tf *TelemetryFilter) clientSubscriptionCount(clientID string) int {
 	if tf.subscriptions[clientID] == nil {
 		return 0
 	}
+
 	return len(tf.subscriptions[clientID])
 }
 
@@ -241,6 +250,7 @@ func (tf *TelemetryFilter) totalSubscriptions() int {
 	for _, subs := range tf.subscriptions {
 		total += len(subs)
 	}
+
 	return total
 }
 
@@ -280,10 +290,12 @@ func (tf *TelemetryFilter) UnsubscribeAll(clientID string) {
 
 	for deviceID := range devices {
 		delete(tf.deviceSubscribers[deviceID], clientID)
+
 		if len(tf.deviceSubscribers[deviceID]) == 0 {
 			delete(tf.deviceSubscribers, deviceID)
 		}
 	}
+
 	delete(tf.subscriptions, clientID)
 
 	tf.metricsMu.Lock()

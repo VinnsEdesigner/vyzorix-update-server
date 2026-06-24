@@ -22,8 +22,8 @@ func (e *ValidationError) Error() string {
 
 // ConfigValidator validates configuration values including format and ranges.
 type ConfigValidator struct {
-	config Config
 	errs   []ValidationError
+	config Config
 }
 
 // NewValidator creates a new config validator with the given configuration.
@@ -44,6 +44,7 @@ func (v *ConfigValidator) Validate() []ValidationError {
 	v.validateSession()
 	v.validateRateLimits()
 	v.validateTimeWindows()
+
 	return v.errs
 }
 
@@ -54,11 +55,13 @@ func (v *ConfigValidator) validatePort() {
 		v.addError("PORT", "port is required")
 		return
 	}
+
 	p, err := strconv.Atoi(port)
 	if err != nil {
 		v.addError("PORT", fmt.Sprintf("must be a valid number, got: %q", port))
 		return
 	}
+
 	if p < 1 || p > 65535 {
 		v.addError("PORT", fmt.Sprintf("must be between 1 and 65535, got: %d", p))
 	}
@@ -107,13 +110,16 @@ func (v *ConfigValidator) validateOrigins() {
 	if len(v.config.AllowedOrigins) == 0 {
 		return
 	}
+
 	for _, origin := range v.config.AllowedOrigins {
 		if origin == "*" {
 			if v.config.Env == "production" {
 				v.addError("ALLOWED_ORIGINS", "wildcard '*' is not allowed in production")
 			}
+
 			continue
 		}
+
 		if _, err := url.Parse(origin); err != nil {
 			v.addError("ALLOWED_ORIGINS", fmt.Sprintf("invalid origin format: %q", origin))
 		}
@@ -127,6 +133,7 @@ func (v *ConfigValidator) validateURLs() {
 			v.addError("BASE_URL", fmt.Sprintf("must be a valid URL, got: %q", v.config.BaseURL))
 		}
 	}
+
 	if v.config.FrontendURL != "" {
 		if _, err := url.Parse(v.config.FrontendURL); err != nil {
 			v.addError("FRONTEND_URL", fmt.Sprintf("must be a valid URL, got: %q", v.config.FrontendURL))
@@ -187,6 +194,7 @@ func (v *ConfigValidator) validateCSRF() {
 	if !csrfEnabled {
 		return
 	}
+
 	csrfSecret := os.Getenv("CSRF_SECRET")
 	if csrfSecret == "" {
 		v.addError("CSRF_SECRET", "is required when CSRF_ENABLED=true")
@@ -230,6 +238,7 @@ func (v *ConfigValidator) validateTimeWindows() {
 	if v.config.EmailVerifyTokenExpiry < 5*time.Minute {
 		v.addError("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS", "should be at least 5 minutes")
 	}
+
 	if v.config.PasswordResetTokenExpiry < 5*time.Minute {
 		v.addError("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES", "should be at least 5 minutes")
 	}
@@ -240,7 +249,7 @@ func (v *ConfigValidator) addError(field, message string) {
 	v.errs = append(v.errs, ValidationError{Field: field, Message: message})
 }
 
-// Validate runs validation and returns an error if invalid.
+// Err returns validation errors if any.
 func (v *ConfigValidator) Err() error {
 	errs := v.Validate()
 	if len(errs) > 0 {
@@ -248,12 +257,14 @@ func (v *ConfigValidator) Err() error {
 		for _, e := range errs {
 			msgs = append(msgs, e.Error())
 		}
+
 		return fmt.Errorf("configuration validation failed: %s", strings.Join(msgs, "; "))
 	}
+
 	return nil
 }
 
-// ValidateConfig runs validation on the given config and returns an error if invalid.
+// Validate runs validation on the given config and returns an error if invalid.
 func Validate(cfg Config) error {
 	validator := NewValidator(cfg)
 	return validator.Err()

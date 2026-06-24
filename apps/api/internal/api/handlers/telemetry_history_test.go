@@ -22,7 +22,7 @@ func TestTelemetryHistoryEndpoint(t *testing.T) {
 		c.JSON(http.StatusOK, gin.H{
 			"success":  true,
 			"deviceId": deviceID,
-			"entries": []interface{}{},
+			"entries":  []interface{}{},
 		})
 	})
 

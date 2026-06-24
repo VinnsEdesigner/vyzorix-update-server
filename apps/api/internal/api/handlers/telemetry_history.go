@@ -35,9 +35,9 @@ func DefaultTelemetryHistoryConfig() *TelemetryHistoryConfig {
 
 // TelemetryHistoryHandler handles telemetry history requests.
 type TelemetryHistoryHandler struct {
-	log         *slog.Logger
+	log           *slog.Logger
 	telemetryRepo *storage.TelemetryRepository
-	config      *TelemetryHistoryConfig
+	config        *TelemetryHistoryConfig
 }
 
 // NewTelemetryHistoryHandler creates a new TelemetryHistoryHandler.
@@ -49,54 +49,56 @@ func NewTelemetryHistoryHandler(
 	if cfg == nil {
 		cfg = DefaultTelemetryHistoryConfig()
 	}
+
 	return &TelemetryHistoryHandler{
-		log:          log,
+		log:           log,
 		telemetryRepo: telemetryRepo,
-		config:       cfg,
+		config:        cfg,
 	}
 }
 
 // QueryHistoryRequest represents a telemetry history query request.
 type QueryHistoryRequest struct {
-	DeviceID    string `json:"deviceId" form:"deviceId"`
-	StartTime   int64  `json:"startTime" form:"startTime"`
-	EndTime     int64  `json:"endTime" form:"endTime"`
-	Limit       int    `json:"limit" form:"limit"`
-	Format      string `json:"format" form:"format"` // json, csv
+	DeviceID  string `json:"deviceId" form:"deviceId"`
+	Format    string `json:"format" form:"format"`
+	StartTime int64  `json:"startTime" form:"startTime"`
+	EndTime   int64  `json:"endTime" form:"endTime"`
+	Limit     int    `json:"limit" form:"limit"`
 }
 
 // QueryHistoryResponse represents the response for telemetry history.
 type QueryHistoryResponse struct {
-	DeviceID    string               `json:"deviceId"`
-	Entries     []telemetryEntry    `json:"entries"`
-	TotalCount  int                 `json:"totalCount"`
-	StartTime   int64               `json:"startTime"`
-	EndTime     int64               `json:"endTime"`
-	QueryTime   int64               `json:"queryTime"` // Server-side query duration in ms
+	DeviceID   string           `json:"deviceId"`
+	Entries    []telemetryEntry `json:"entries"`
+	TotalCount int              `json:"totalCount"`
+	StartTime  int64            `json:"startTime"`
+	EndTime    int64            `json:"endTime"`
+	QueryTime  int64            `json:"queryTime"` // Server-side query duration in ms
 }
 
 // TelemetryEntry represents a single telemetry entry for the API response.
 type telemetryEntry struct {
+	ReceivedAt  time.Time `json:"receivedAt"`
 	ID          string    `json:"id"`
 	DeviceID    string    `json:"deviceId"`
-	ReceivedAt  time.Time `json:"receivedAt"`
+	Payload     string    `json:"payload,omitempty"`
 	RiskScore   int       `json:"riskScore,omitempty"`
 	BufferLevel int       `json:"bufferLevel,omitempty"`
 	ThermalTemp float64   `json:"thermalTemp,omitempty"`
-	Payload     string    `json:"payload,omitempty"`
 }
 
 // Query handles GET /v1/telemetry/history
 // Query telemetry history for a device within a time range.
 func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 	startTime := time.Now()
-	
+
 	var req QueryHistoryRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "bad_request",
 			"message": "invalid query parameters",
 		})
+
 		return
 	}
 
@@ -105,6 +107,7 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 			"error":   "bad_request",
 			"message": "deviceId is required",
 		})
+
 		return
 	}
 
@@ -118,6 +121,7 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 	if req.EndTime <= 0 {
 		req.EndTime = now.UnixMilli()
 	}
+
 	if req.StartTime <= 0 {
 		req.StartTime = now.Add(-1 * time.Hour).UnixMilli()
 	}
@@ -138,11 +142,13 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 			"error":   "internal_error",
 			"message": "failed to query telemetry history",
 		})
+
 		return
 	}
 
 	// Filter by end time
 	var filtered []telemetry.TelemetryEntry
+
 	for _, e := range entries {
 		if e.ReceivedAt.UnixMilli() <= req.EndTime {
 			filtered = append(filtered, e)
@@ -176,9 +182,7 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 		h.exportCSV(c, response)
 		return
 	case "json":
-		// Default JSON response
 	}
-
 	c.JSON(http.StatusOK, response)
 }
 
@@ -189,6 +193,7 @@ func (h *TelemetryHistoryHandler) exportCSV(c *gin.Context, data QueryHistoryRes
 			"error":   "forbidden",
 			"message": "CSV export is disabled",
 		})
+
 		return
 	}
 
@@ -233,6 +238,7 @@ func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 			"error":   "forbidden",
 			"message": "JSON export is disabled",
 		})
+
 		return
 	}
 
@@ -242,6 +248,7 @@ func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 			"error":   "bad_request",
 			"message": "invalid query parameters",
 		})
+
 		return
 	}
 
@@ -258,6 +265,7 @@ func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 			"error":   "internal_error",
 			"message": "failed to query telemetry",
 		})
+
 		return
 	}
 
@@ -286,6 +294,7 @@ func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 			"error":   "bad_request",
 			"message": "deviceId is required",
 		})
+
 		return
 	}
 
@@ -296,6 +305,7 @@ func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 			"error":   "internal_error",
 			"message": "failed to get latest telemetry",
 		})
+
 		return
 	}
 
@@ -304,17 +314,18 @@ func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 			"error":   "not_found",
 			"message": "no telemetry found for device",
 		})
+
 		return
 	}
 
 	e := entries[0]
 	c.JSON(http.StatusOK, gin.H{
-		"id":           e.ID,
-		"deviceId":     e.DeviceID,
-		"receivedAt":    e.ReceivedAt,
-		"riskScore":    e.RiskScore,
-		"bufferLevel":  e.BufferLevel,
-		"thermalTemp":  e.ThermalTemp,
+		"id":          e.ID,
+		"deviceId":    e.DeviceID,
+		"receivedAt":  e.ReceivedAt,
+		"riskScore":   e.RiskScore,
+		"bufferLevel": e.BufferLevel,
+		"thermalTemp": e.ThermalTemp,
 	})
 }
 
@@ -327,6 +338,7 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 			"error":   "bad_request",
 			"message": "deviceId is required",
 		})
+
 		return
 	}
 
@@ -338,6 +350,7 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 			"error":   "internal_error",
 			"message": "failed to get telemetry stats",
 		})
+
 		return
 	}
 
@@ -346,11 +359,13 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 			"error":   "not_found",
 			"message": "no telemetry found for device",
 		})
+
 		return
 	}
 
 	// Calculate statistics
 	var totalRisk, totalBuffer, totalTemp int
+
 	minRisk, maxRisk := 999, -1
 	minTemp, maxTemp := 999.0, -999.0
 
@@ -362,12 +377,15 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 		if e.RiskScore < minRisk {
 			minRisk = e.RiskScore
 		}
+
 		if e.RiskScore > maxRisk {
 			maxRisk = e.RiskScore
 		}
+
 		if e.ThermalTemp < minTemp {
 			minTemp = e.ThermalTemp
 		}
+
 		if e.ThermalTemp > maxTemp {
 			maxTemp = e.ThermalTemp
 		}
@@ -375,14 +393,14 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 
 	count := len(entries)
 	c.JSON(http.StatusOK, gin.H{
-		"deviceId":      deviceID,
-		"sampleCount":   count,
-		"latestEntry":   entries[0].ReceivedAt,
-		"oldestEntry":   entries[count-1].ReceivedAt,
+		"deviceId":    deviceID,
+		"sampleCount": count,
+		"latestEntry": entries[0].ReceivedAt,
+		"oldestEntry": entries[count-1].ReceivedAt,
 		"riskScore": gin.H{
-			"avg":      float64(totalRisk) / float64(count),
-			"min":      minRisk,
-			"max":      maxRisk,
+			"avg": float64(totalRisk) / float64(count),
+			"min": minRisk,
+			"max": maxRisk,
 		},
 		"bufferLevel": gin.H{
 			"avg": float64(totalBuffer) / float64(count),
@@ -405,17 +423,20 @@ func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 			"error":   "forbidden",
 			"message": "admin or operator role required",
 		})
+
 		return
 	}
 
 	var req struct {
 		OlderThan int64 `json:"olderThan" form:"olderThan"`
 	}
+
 	if err := c.ShouldBindQuery(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "bad_request",
 			"message": "olderThan timestamp required",
 		})
+
 		return
 	}
 
@@ -424,6 +445,7 @@ func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 			"error":   "bad_request",
 			"message": "olderThan must be a positive timestamp",
 		})
+
 		return
 	}
 
@@ -434,6 +456,7 @@ func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 			"error":   "internal_error",
 			"message": "failed to cleanup old telemetry",
 		})
+
 		return
 	}
 
@@ -443,7 +466,7 @@ func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 	)
 
 	c.JSON(http.StatusOK, gin.H{
-		"deleted": deleted,
+		"deleted":   deleted,
 		"olderThan": req.OlderThan,
 	})
 }

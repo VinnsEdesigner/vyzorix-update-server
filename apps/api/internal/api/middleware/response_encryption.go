@@ -11,8 +11,8 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
+	"github.com/gin-gonic/gin"
 )
 
 // ResponseEncryptionConfig holds response encryption configuration.
@@ -65,6 +65,7 @@ func (re *ResponseEncryptor) Encrypt(plaintext []byte) (nonce, ciphertext []byte
 	}
 
 	ciphertext = re.cipher.Seal(nil, nonce, plaintext, nil)
+
 	return nonce, ciphertext, nil
 }
 
@@ -74,6 +75,7 @@ func (re *ResponseEncryptor) EncryptToBase64(plaintext []byte) (string, string, 
 	if err != nil {
 		return "", "", err
 	}
+
 	return base64.StdEncoding.EncodeToString(nonce),
 		base64.StdEncoding.EncodeToString(ciphertext), nil
 }
@@ -83,21 +85,21 @@ type EncryptedResponseWriter struct {
 	http.ResponseWriter
 	encryptor  *ResponseEncryptor
 	buf        *bytes.Buffer
-	headerSet  bool
 	statusCode int
-	written    bool
 	size       int
+	headerSet  bool
+	written    bool
 }
 
 // NewEncryptedResponseWriter creates a response writer that encrypts all responses.
 func NewEncryptedResponseWriter(w http.ResponseWriter, enc *ResponseEncryptor) *EncryptedResponseWriter {
 	return &EncryptedResponseWriter{
 		ResponseWriter: w,
-		encryptor:  enc,
-		buf:        bytes.NewBuffer(nil),
-		statusCode: http.StatusOK,
-		written:    false,
-		size:       0,
+		encryptor:      enc,
+		buf:            bytes.NewBuffer(nil),
+		statusCode:     http.StatusOK,
+		written:        false,
+		size:           0,
 	}
 }
 
@@ -107,9 +109,9 @@ func (er *EncryptedResponseWriter) Header() http.Header {
 }
 
 // WriteHeader implements http.ResponseWriter.
+// Headers are deferred until Write() to allow flushing encrypted data.
 func (er *EncryptedResponseWriter) WriteHeader(statusCode int) {
 	er.statusCode = statusCode
-	// Don't write headers yet - wait for Write() to flush encrypted
 }
 
 // Write encrypts the data before writing.
@@ -121,9 +123,11 @@ func (er *EncryptedResponseWriter) Write(b []byte) (int, error) {
 		er.ResponseWriter.Header().Set("X-Content-Encryption", "AES-256-GCM")
 		er.ResponseWriter.Header().Set("Content-Type", "application/octet-stream")
 	}
+
 	er.buf.Write(b)
 	er.size += len(b)
 	er.written = true
+
 	return len(b), nil
 }
 
@@ -146,6 +150,7 @@ func (er *EncryptedResponseWriter) Flush() {
 		// Can't encrypt - write error as plain text
 		er.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 		_, _ = er.ResponseWriter.Write([]byte("encryption failed"))
+
 		return
 	}
 
@@ -191,6 +196,7 @@ func (er *EncryptedResponseWriter) Pusher() http.Pusher {
 	if pusher, ok := er.ResponseWriter.(http.Pusher); ok {
 		return pusher
 	}
+
 	return nil
 }
 
@@ -199,6 +205,7 @@ func (er *EncryptedResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error)
 	if hj, ok := er.ResponseWriter.(http.Hijacker); ok {
 		return hj.Hijack()
 	}
+
 	return nil, nil, fmt.Errorf(" ResponseWriter does not implement http.Hijacker")
 }
 
@@ -214,6 +221,7 @@ func (er *EncryptedResponseWriter) CloseNotify() <-chan bool {
 	// Return a closed channel as fallback - client disconnected
 	ch := make(chan bool)
 	close(ch)
+
 	return ch
 }
 

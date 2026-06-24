@@ -62,8 +62,10 @@ func DisableTrace() gin.HandlerFunc {
 				"message": "TRACE method is not allowed",
 			})
 			c.Abort()
+
 			return
 		}
+
 		c.Next()
 	}
 }
@@ -77,8 +79,10 @@ func DisableConnect() gin.HandlerFunc {
 				"message": "CONNECT method is not allowed",
 			})
 			c.Abort()
+
 			return
 		}
+
 		c.Next()
 	}
 }

@@ -7,12 +7,12 @@ import (
 
 // Thresholds define alert levels for device telemetry.
 type Thresholds struct {
-	RiskWarn     int `json:"riskWarn"`
-	RiskCrit     int `json:"riskCrit"`
-	ThermalWarn  int `json:"thermalWarn"`
-	ThermalCrit  int `json:"thermalCrit"`
-	BufferWarn   int `json:"bufferWarn"`
-	BufferCrit   int `json:"bufferCrit"`
+	RiskWarn    int `json:"riskWarn"`
+	RiskCrit    int `json:"riskCrit"`
+	ThermalWarn int `json:"thermalWarn"`
+	ThermalCrit int `json:"thermalCrit"`
+	BufferWarn  int `json:"bufferWarn"`
+	BufferCrit  int `json:"bufferCrit"`
 }
 
 // ClientSettings holds operator preferences that control dashboard behavior.
@@ -24,31 +24,21 @@ type ClientSettings struct {
 
 // Operator represents a system operator (user).
 type Operator struct {
-	ID           string
-	Email        string
-	Name         string
-	PasswordHash string
-	Role         OperatorRole
-
-	// OAuth fields (optional - one or both may be set).
-	GoogleID string
-	GitHubID string
-
-	// MFA fields.
-	MFASecret   string
-	MFAEnabled  bool
-	BackupCodes []string
-
-	// Email verification.
-	EmailVerified bool
-
-	// Settings.
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	GitHubID       string
+	PasswordHash   string
+	Role           OperatorRole
+	GoogleID       string
+	ID             string
+	MFASecret      string
+	Name           string
+	Email          string
+	BackupCodes    []string
 	Thresholds     Thresholds     `json:"thresholds"`
 	ClientSettings ClientSettings `json:"client"`
-
-	// Timestamps.
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	MFAEnabled     bool
+	EmailVerified  bool
 }
 
 // IsSuperAdmin returns true if the operator is a super admin.

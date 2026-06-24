@@ -41,6 +41,7 @@ func (s *CommandSigner) SignCommand(frame *command.CommandFrame, deviceID, secre
 	if _, err := rand.Read(nonceBytes); err != nil {
 		return "", "", fmt.Errorf("failed to generate nonce: %w", err)
 	}
+
 	nonce = hex.EncodeToString(nonceBytes)
 
 	// Build canonical string.
@@ -62,6 +63,7 @@ func BuildCanonicalString(frame *command.CommandFrame, deviceID, nonce string) s
 	if argsStr == "" {
 		argsStr = "{}"
 	}
+
 	return frame.DispatchID + "|" + deviceID + "|" + frame.Command + "|" +
 		strconv.FormatInt(frame.Timestamp, 10) + "|" + nonce + "|" + argsStr
 }
@@ -74,6 +76,7 @@ func (s *CommandSigner) ValidateCommandHMAC(frame *command.CommandFrame, deviceI
 	if argsStr == "" {
 		argsStr = "{}"
 	}
+
 	canonical := frame.DispatchID + "|" + deviceID + "|" + frame.Command + "|" +
 		strconv.FormatInt(frame.Timestamp, 10) + "|" + frame.Nonce + "|" + argsStr
 
@@ -94,10 +97,12 @@ func (s *CommandSigner) ValidateTimestamp(frame *command.CommandFrame, maxDriftM
 
 	// Timestamp is already Unix milliseconds.
 	nowMs := time.Now().UnixMilli()
+
 	drift := nowMs - frame.Timestamp
 	if drift < 0 {
 		drift = -drift
 	}
+
 	return drift <= maxDriftMs
 }
 
@@ -119,6 +124,7 @@ func (s *CommandSigner) GenerateNonce() (string, error) {
 	if _, err := rand.Read(nonceBytes); err != nil {
 		return "", errors.New("failed to generate nonce")
 	}
+
 	return hex.EncodeToString(nonceBytes), nil
 }
 
@@ -141,6 +147,7 @@ func (s *CommandSigner) HashSecret(secret string) string {
 		// crypto/rand failure is critical - panic rather than using weak fallback.
 		panic(ErrHashSecretFailed)
 	}
+
 	return hash
 }
 
@@ -154,6 +161,7 @@ func (s *CommandSigner) VerifySecretHash(secret, hash string) bool {
 	if s.isLegacyHash(hash) {
 		return s.verifyLegacyHash(secret, hash)
 	}
+
 	return false
 }
 
@@ -170,14 +178,17 @@ func (s *CommandSigner) verifyLegacyHash(secret, hash string) bool {
 	if len(parts) != 2 {
 		return false
 	}
+
 	salt, err := hex.DecodeString(parts[0])
 	if err != nil {
 		return false
 	}
+
 	mac := sha512.New()
 	mac.Write(salt)
 	mac.Write([]byte(secret))
 	expected := mac.Sum(nil)
+
 	return hmac.Equal([]byte(hex.EncodeToString(expected)), []byte(parts[1]))
 }
 
@@ -187,5 +198,6 @@ func splitHash(hash string) []string {
 			return []string{hash[:i], hash[i+1:]}
 		}
 	}
+
 	return nil
 }

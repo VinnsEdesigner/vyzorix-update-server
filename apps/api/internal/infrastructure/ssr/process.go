@@ -52,14 +52,14 @@ func (s ProcessState) String() string {
 
 // ProcessManager handles SSR subprocess lifecycle with resilience.
 type ProcessManager struct {
-	config     Config
+	startTime  time.Time
 	logger     *slog.Logger
 	cmd        *exec.Cmd
 	cancelFunc context.CancelFunc
-	mu         sync.RWMutex
+	config     Config
 	state      ProcessState
+	mu         sync.RWMutex
 	ready      bool
-	startTime  time.Time
 }
 
 // NewProcessManager creates a new SSR process manager.
@@ -75,6 +75,7 @@ func NewProcessManager(config Config, logger *slog.Logger) *ProcessManager {
 func (pm *ProcessManager) State() ProcessState {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
+
 	return pm.state
 }
 
@@ -82,6 +83,7 @@ func (pm *ProcessManager) State() ProcessState {
 func (pm *ProcessManager) IsReady() bool {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
+
 	return pm.ready
 }
 
@@ -89,6 +91,7 @@ func (pm *ProcessManager) IsReady() bool {
 func (pm *ProcessManager) StartTime() time.Time {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
+
 	return pm.startTime
 }
 
@@ -97,6 +100,7 @@ func (pm *ProcessManager) Uptime() time.Duration {
 	if pm.startTime.IsZero() {
 		return 0
 	}
+
 	return time.Since(pm.startTime)
 }
 
@@ -130,6 +134,7 @@ func (pm *ProcessManager) startInternalLocked(scriptPath string) error {
 	pm.logger.Info("Starting SSR process", "script", scriptPath, "retries", pm.config.SSRRetryAttempts)
 
 	var lastErr error
+
 	for attempt := 1; attempt <= pm.config.SSRRetryAttempts; attempt++ {
 		pm.state = ProcessStateStarting
 
@@ -144,6 +149,7 @@ func (pm *ProcessManager) startInternalLocked(scriptPath string) error {
 		if err := pm.startProcess(scriptPath); err != nil {
 			lastErr = err
 			pm.logger.Error("SSR start attempt failed", "attempt", attempt, "err", err)
+
 			continue
 		}
 
@@ -151,15 +157,18 @@ func (pm *ProcessManager) startInternalLocked(scriptPath string) error {
 			pm.state = ProcessStateRunning
 			pm.startTime = time.Now()
 			pm.logger.Info("SSR process started successfully", "pid", pm.cmd.Process.Pid)
+
 			return nil
 		}
 
 		// Process didn't become ready, clean up.
 		pm.killProcess()
+
 		lastErr = errors.New("SSR process did not become ready")
 	}
 
 	pm.state = ProcessStateStopped
+
 	return fmt.Errorf("SSR failed after %d attempts: %w", pm.config.SSRRetryAttempts, lastErr)
 }
 
@@ -206,12 +215,15 @@ func (pm *ProcessManager) waitForReady() bool {
 
 		for _, endpoint := range healthEndpoints {
 			url := pm.config.SSRServerURL + endpoint
+
 			resp, err := client.Get(url)
 			if err == nil {
 				_ = resp.Body.Close()
+
 				if resp.StatusCode < 500 {
 					pm.logger.Info("SSR health check passed", "endpoint", endpoint, "status", resp.StatusCode)
 					pm.ready = true
+
 					return true
 				}
 			}
@@ -265,6 +277,7 @@ func (pm *ProcessManager) Stop() error {
 		done := make(chan struct{})
 		go func() {
 			_ = pm.cmd.Wait()
+
 			close(done)
 		}()
 
@@ -310,6 +323,7 @@ func (pm *ProcessManager) HealthCheck() *HealthStatus {
 		status.Healthy = false
 		status.State = ProcessStateCrashed.String()
 		status.Error = fmt.Sprintf("process exited with code %d", pm.cmd.ProcessState.ExitCode())
+
 		return status
 	}
 
@@ -319,12 +333,15 @@ func (pm *ProcessManager) HealthCheck() *HealthStatus {
 
 	// Perform HTTP health check.
 	client := &http.Client{Timeout: 2 * time.Second}
+
 	resp, err := client.Get(pm.config.SSRServerURL + "/health")
 	if err != nil {
 		status.Healthy = false
 		status.Error = err.Error()
+
 		return status
 	}
+
 	_ = resp.Body.Close()
 
 	status.Healthy = resp.StatusCode < 500
@@ -336,12 +353,12 @@ func (pm *ProcessManager) HealthCheck() *HealthStatus {
 // HealthStatus represents the health of an SSR process.
 type HealthStatus struct {
 	State      string        `json:"state"`
-	Ready      bool          `json:"ready"`
-	Healthy    bool          `json:"healthy"`
+	Error      string        `json:"error,omitempty"`
 	Uptime     time.Duration `json:"uptime"`
 	PID        int           `json:"pid"`
 	HTTPStatus int           `json:"httpStatus"`
-	Error      string        `json:"error,omitempty"`
+	Ready      bool          `json:"ready"`
+	Healthy    bool          `json:"healthy"`
 }
 
 // String returns a string representation of the health status.
@@ -351,12 +368,15 @@ func (h *HealthStatus) String() string {
 	parts = append(parts, "ready="+strconv.FormatBool(h.Ready))
 	parts = append(parts, "healthy="+strconv.FormatBool(h.Healthy))
 	parts = append(parts, "uptime="+h.Uptime.String())
+
 	if h.PID > 0 {
 		parts = append(parts, "pid="+strconv.Itoa(h.PID))
 	}
+
 	if h.Error != "" {
 		parts = append(parts, "error="+h.Error)
 	}
+
 	return "{" + joinStrings(parts, " ") + "}"
 }
 
@@ -364,9 +384,11 @@ func joinStrings(parts []string, sep string) string {
 	if len(parts) == 0 {
 		return ""
 	}
+
 	result := parts[0]
 	for i := 1; i < len(parts); i++ {
 		result += sep + parts[i]
 	}
+
 	return result
 }

@@ -54,7 +54,9 @@ func GinPanicRecovery(logger *slog.Logger) func(c *gin.Context) {
 
 				// Extract just the relevant stack frames (skip this function).
 				lines := strings.Split(stackStr, "\n")
+
 				var relevantLines []string
+
 				skipNext := true // Skip the first line (panic line)
 				for _, line := range lines {
 					if skipNext {
@@ -65,6 +67,7 @@ func GinPanicRecovery(logger *slog.Logger) func(c *gin.Context) {
 					if strings.Contains(line, "runtime/") {
 						continue
 					}
+
 					relevantLines = append(relevantLines, line)
 					// Only keep first 20 relevant lines.
 					if len(relevantLines) >= 20 {

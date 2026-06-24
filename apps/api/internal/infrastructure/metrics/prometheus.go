@@ -60,10 +60,10 @@ func (g *Gauge) Value() int64 {
 
 // Histogram represents a histogram metric.
 type Histogram struct {
-	count   atomic.Int64
-	sum     atomic.Int64
 	buckets []int64
 	bCounts []atomic.Int64
+	count   atomic.Int64
+	sum     atomic.Int64
 }
 
 // NewHistogram creates a new histogram with the given bucket boundaries.
@@ -75,6 +75,7 @@ func NewHistogram(buckets []int64) *Histogram {
 	sort.Slice(h.buckets, func(i, j int) bool {
 		return h.buckets[i] < h.buckets[j]
 	})
+
 	return h
 }
 
@@ -89,6 +90,7 @@ func (h *Histogram) Observe(v int64) {
 			return
 		}
 	}
+
 	h.bCounts[len(h.buckets)].Add(1)
 }
 
@@ -100,18 +102,18 @@ type Metrics struct {
 	HTTPRequestsInFlight *Gauge
 
 	// Auth metrics.
-	LoginAttemptsTotal   *Counter
-	LoginFailuresTotal   *Counter
+	LoginAttemptsTotal    *Counter
+	LoginFailuresTotal    *Counter
 	RegisterAttemptsTotal *Counter
 
 	// Security metrics.
-	CSRFFailuresTotal      *Counter
-	SigningFailuresTotal   *Counter
-	RateLimitHitsTotal     *Counter
-	AccountLockoutsTotal   *Counter
+	CSRFFailuresTotal    *Counter
+	SigningFailuresTotal *Counter
+	RateLimitHitsTotal   *Counter
+	AccountLockoutsTotal *Counter
 
 	// Session metrics.
-	ActiveSessions *Gauge
+	ActiveSessions          *Gauge
 	SessionRevocationsTotal *Counter
 
 	// API metrics.
@@ -125,17 +127,17 @@ type Metrics struct {
 // New creates a new metrics instance.
 func New() *Metrics {
 	return &Metrics{
-		HTTPRequestsTotal:     new(Counter),
-		HTTPRequestDuration:  NewHistogram([]int64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000}),
-		HTTPRequestsInFlight:  new(Gauge),
-		LoginAttemptsTotal:    new(Counter),
-		LoginFailuresTotal:   new(Counter),
-		RegisterAttemptsTotal: new(Counter),
-		CSRFFailuresTotal:    new(Counter),
-		SigningFailuresTotal:  new(Counter),
-		RateLimitHitsTotal:   new(Counter),
-		AccountLockoutsTotal: new(Counter),
-		ActiveSessions:       new(Gauge),
+		HTTPRequestsTotal:       new(Counter),
+		HTTPRequestDuration:     NewHistogram([]int64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000}),
+		HTTPRequestsInFlight:    new(Gauge),
+		LoginAttemptsTotal:      new(Counter),
+		LoginFailuresTotal:      new(Counter),
+		RegisterAttemptsTotal:   new(Counter),
+		CSRFFailuresTotal:       new(Counter),
+		SigningFailuresTotal:    new(Counter),
+		RateLimitHitsTotal:      new(Counter),
+		AccountLockoutsTotal:    new(Counter),
+		ActiveSessions:          new(Gauge),
 		SessionRevocationsTotal: new(Counter),
 		APIClientCreationsTotal: new(Counter),
 		APIRequestsTotal:        new(Counter),
@@ -148,6 +150,7 @@ var startTime = time.Now()
 
 func init() {
 	globalMetrics = New()
+
 	go func() {
 		ticker := time.NewTicker(time.Second)
 		for range ticker.C {
@@ -164,21 +167,21 @@ func Get() *Metrics {
 // Collect returns all metrics in Prometheus text format.
 func (m *Metrics) Collect() map[string]any {
 	return map[string]any{
-		"http_requests_total":        m.HTTPRequestsTotal.Value(),
+		"http_requests_total":         m.HTTPRequestsTotal.Value(),
 		"http_request_duration_count": m.HTTPRequestDuration.count.Load(),
 		"http_requests_in_flight":     m.HTTPRequestsInFlight.Value(),
 		"login_attempts_total":        m.LoginAttemptsTotal.Value(),
 		"login_failures_total":        m.LoginFailuresTotal.Value(),
 		"register_attempts_total":     m.RegisterAttemptsTotal.Value(),
-		"csrf_failures_total":        m.CSRFFailuresTotal.Value(),
+		"csrf_failures_total":         m.CSRFFailuresTotal.Value(),
 		"signing_failures_total":      m.SigningFailuresTotal.Value(),
 		"rate_limit_hits_total":       m.RateLimitHitsTotal.Value(),
-		"account_lockouts_total":     m.AccountLockoutsTotal.Value(),
-		"active_sessions":            m.ActiveSessions.Value(),
-		"session_revocations_total":  m.SessionRevocationsTotal.Value(),
-		"api_client_creations_total": m.APIClientCreationsTotal.Value(),
-		"api_requests_total":         m.APIRequestsTotal.Value(),
-		"uptime_seconds":             m.UptimeSeconds.Value(),
+		"account_lockouts_total":      m.AccountLockoutsTotal.Value(),
+		"active_sessions":             m.ActiveSessions.Value(),
+		"session_revocations_total":   m.SessionRevocationsTotal.Value(),
+		"api_client_creations_total":  m.APIClientCreationsTotal.Value(),
+		"api_requests_total":          m.APIRequestsTotal.Value(),
+		"uptime_seconds":              m.UptimeSeconds.Value(),
 	}
 }
 
@@ -188,9 +191,11 @@ func (m *Metrics) PrometheusOutput() string {
 
 	metrics := m.Collect()
 	keys := make([]string, 0, len(metrics))
+
 	for k := range metrics {
 		keys = append(keys, k)
 	}
+
 	sort.Strings(keys)
 
 	for _, k := range keys {
@@ -211,6 +216,7 @@ func (m *Metrics) RecordHTTPRequest(duration time.Duration, statusCode int) {
 // RecordLogin records a login attempt.
 func (m *Metrics) RecordLogin(success bool) {
 	m.LoginAttemptsTotal.Inc()
+
 	if !success {
 		m.LoginFailuresTotal.Inc()
 	}

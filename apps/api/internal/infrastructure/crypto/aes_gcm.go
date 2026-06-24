@@ -11,12 +11,12 @@ import (
 
 const (
 	AES256KeySize = 32
-	NonceSize      = 12
+	NonceSize     = 12
 )
 
 var (
 	ErrCiphertextTooShort  = errors.New("ciphertext too short")
-	ErrDecryptionFailed   = errors.New("decryption failed")
+	ErrDecryptionFailed    = errors.New("decryption failed")
 	ErrKeyDerivationFailed = errors.New("key derivation failed")
 	ErrEncryptionFailed    = errors.New("encryption failed")
 )
@@ -104,6 +104,7 @@ func DecryptAES256GCMWithKey(key []byte, ciphertext []byte) ([]byte, error) {
 	}
 
 	nonce := ciphertext[:NonceSize]
+
 	plaintext, err := gcm.Open(nil, nonce, ciphertext[NonceSize:], nil)
 	if err != nil {
 		return nil, ErrDecryptionFailed
@@ -138,5 +139,6 @@ func GenerateNonce(size int) ([]byte, error) {
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, ErrEncryptionFailed
 	}
+
 	return nonce, nil
 }

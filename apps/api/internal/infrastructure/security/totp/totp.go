@@ -24,9 +24,9 @@ const (
 type Config struct {
 	Issuer      string
 	AccountName string
+	Algorithm   string
 	Digits      int
 	Period      int
-	Algorithm   string
 }
 
 // DefaultConfig returns the default TOTP configuration.
@@ -43,8 +43,8 @@ func DefaultConfig() Config {
 // TOTP represents a TOTP secret and its configuration.
 type TOTP struct {
 	Secret      string
-	Config      Config
 	BackupCodes []string
+	Config      Config
 }
 
 // GenerateSecret generates a new random TOTP secret.
@@ -53,6 +53,7 @@ func GenerateSecret() (string, error) {
 	if _, err := rand.Read(secret); err != nil {
 		return "", err
 	}
+
 	return base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(secret), nil
 }
 
@@ -80,11 +81,13 @@ func (t *TOTP) Verify(code string) bool {
 	now := time.Now()
 	for _, offset := range []int{-1, 0, 1} {
 		checkTime := now.Add(time.Duration(offset*t.Config.Period) * time.Second)
+
 		generated, err := t.GenerateCodeAt(checkTime)
 		if err == nil && hmac.Equal([]byte(generated), []byte(code)) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -105,6 +108,7 @@ func (t *TOTP) generateHOTP(counter uint64) (string, error) {
 	truncatedHash := binary.BigEndian.Uint32(hash[offset:offset+4]) & 0x7fffffff
 
 	code := truncatedHash % uint32(math.Pow10(t.Config.Digits))
+
 	return fmt.Sprintf("%0*d", t.Config.Digits, code), nil
 }
 
@@ -135,11 +139,13 @@ func (t *TOTP) ProvisioningURIFor(accountName string) string {
 // GenerateBackupCodes generates a set of backup codes for account recovery.
 func GenerateBackupCodes(count int) ([]string, error) {
 	codes := make([]string, count)
+
 	for i := 0; i < count; i++ {
 		code := make([]byte, 8)
 		if _, err := rand.Read(code); err != nil {
 			return nil, err
 		}
+
 		encoded := base32.StdEncoding.EncodeToString(code)
 		codes[i] = fmt.Sprintf("%s-%s-%s",
 			encoded[:4],
@@ -147,6 +153,7 @@ func GenerateBackupCodes(count int) ([]string, error) {
 			encoded[8:12],
 		)
 	}
+
 	return codes, nil
 }
 
@@ -157,6 +164,7 @@ func ValidateBackupCode(stored []string, code string) int {
 			return i
 		}
 	}
+
 	return -1
 }
 
@@ -165,5 +173,6 @@ func RemoveBackupCode(codes []string, index int) []string {
 	if index < 0 || index >= len(codes) {
 		return codes
 	}
+
 	return append(codes[:index], codes[index+1:]...)
 }

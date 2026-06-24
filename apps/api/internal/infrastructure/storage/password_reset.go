@@ -29,13 +29,16 @@ func (r *PasswordResetRepository) Create(ctx context.Context, token *password_re
 		 VALUES(?, ?, ?, ?, ?, ?)`,
 		token.ID, token.OperatorID, token.TokenHash, token.ExpiresAt.UnixMilli(), nil, token.CreatedAt.UnixMilli(),
 	)
+
 	return err
 }
 
 // FindByTokenHash retrieves a token by its hash.
 func (r *PasswordResetRepository) FindByTokenHash(ctx context.Context, tokenHash string) (*password_reset.PasswordResetToken, error) {
 	var token password_reset.PasswordResetToken
+
 	var expiresAt, createdAt int64
+
 	var usedAt *int64
 
 	err := r.db.QueryRowContext(ctx,
@@ -47,12 +50,14 @@ func (r *PasswordResetRepository) FindByTokenHash(ctx context.Context, tokenHash
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, password_reset.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
 
 	token.ExpiresAt = time.UnixMilli(expiresAt).UTC()
 	token.CreatedAt = time.UnixMilli(createdAt).UTC()
+
 	if usedAt != nil {
 		t := time.UnixMilli(*usedAt).UTC()
 		token.UsedAt = &t
@@ -67,6 +72,7 @@ func (r *PasswordResetRepository) MarkUsed(ctx context.Context, id string) error
 		`UPDATE password_reset_tokens SET used_at = ? WHERE id = ?`,
 		time.Now().UTC().UnixMilli(), id,
 	)
+
 	return err
 }
 
@@ -79,7 +85,9 @@ func (r *PasswordResetRepository) DeleteByOperator(ctx context.Context, operator
 // GetResendTracker retrieves the resend tracker for an email hash.
 func (r *PasswordResetRepository) GetResendTracker(ctx context.Context, emailHash string) (*password_reset.ResendTracker, error) {
 	var tracker password_reset.ResendTracker
+
 	var lastResendAt, createdAt, updatedAt int64
+
 	var lockoutUntil *int64
 
 	err := r.db.QueryRowContext(ctx,
@@ -91,6 +99,7 @@ func (r *PasswordResetRepository) GetResendTracker(ctx context.Context, emailHas
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, password_reset.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -98,6 +107,7 @@ func (r *PasswordResetRepository) GetResendTracker(ctx context.Context, emailHas
 	tracker.LastResendAt = time.UnixMilli(lastResendAt).UTC()
 	tracker.CreatedAt = time.UnixMilli(createdAt).UTC()
 	tracker.UpdatedAt = time.UnixMilli(updatedAt).UTC()
+
 	if lockoutUntil != nil {
 		t := time.UnixMilli(*lockoutUntil).UTC()
 		tracker.LockoutUntil = &t
@@ -109,10 +119,12 @@ func (r *PasswordResetRepository) GetResendTracker(ctx context.Context, emailHas
 // UpsertResendTracker creates or updates a resend tracker.
 func (r *PasswordResetRepository) UpsertResendTracker(ctx context.Context, tracker *password_reset.ResendTracker) error {
 	var lockoutUntil *int64
+
 	if tracker.LockoutUntil != nil {
 		lt := tracker.LockoutUntil.UnixMilli()
 		lockoutUntil = &lt
 	}
+
 	_, err := r.db.ExecContext(ctx,
 		`INSERT INTO password_reset_resend_tracker(id, email_hash, resend_count, last_resend_at, lockout_until, created_at, updated_at)
 		 VALUES(?, ?, ?, ?, ?, ?, ?)
@@ -121,9 +133,10 @@ func (r *PasswordResetRepository) UpsertResendTracker(ctx context.Context, track
 			last_resend_at = excluded.last_resend_at,
 			lockout_until = excluded.lockout_until,
 			updated_at = excluded.updated_at`,
-		tracker.ID, tracker.EmailHash, tracker.ResendCount, tracker.LastResendAt.UnixMilli(), 
+		tracker.ID, tracker.EmailHash, tracker.ResendCount, tracker.LastResendAt.UnixMilli(),
 		lockoutUntil, tracker.CreatedAt.UnixMilli(), tracker.UpdatedAt.UnixMilli(),
 	)
+
 	return err
 }
 
@@ -136,6 +149,7 @@ func (r *PasswordResetRepository) DeleteResendTracker(ctx context.Context, email
 // CleanupResendTrackers removes old resend trackers.
 func (r *PasswordResetRepository) CleanupResendTrackers(ctx context.Context, maxAgeHours int) (int64, error) {
 	cutoff := time.Now().UTC().Add(-time.Duration(maxAgeHours) * time.Hour).UnixMilli()
+
 	result, err := r.db.ExecContext(ctx,
 		`DELETE FROM password_reset_resend_tracker WHERE updated_at < ? AND lockout_until IS NULL`,
 		cutoff,
@@ -143,5 +157,6 @@ func (r *PasswordResetRepository) CleanupResendTrackers(ctx context.Context, max
 	if err != nil {
 		return 0, err
 	}
+
 	return result.RowsAffected()
 }
