@@ -15,6 +15,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
@@ -104,6 +105,7 @@ func NewSubscriptionHandler(
 	sessionManager *infraauth.SessionManager,
 	log *slog.Logger,
 	auditLogger *audit.Logger,
+	cfg config.Config,
 ) *subscription.Handler {
 	authMw := middleware.NewAuthMiddleware(sessionManager, authService, log)
 
@@ -113,5 +115,6 @@ func NewSubscriptionHandler(
 		AuthMw:      authMw,
 		Logger:      log,
 		AuditLogger: subscription.NewAuditLoggerAdapter(auditLogger),
+		Config:      cfg,
 	})
 }
