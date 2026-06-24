@@ -72,6 +72,7 @@ func (s *Server) RegisterGraphQL(
 		AuthMw:      authMw,
 		Logger:      s.log,
 		AuditLogger: subscription.NewAuditLoggerAdapter(s.AuditLogger),
+		Config:      s.config,
 	})
 	s.engine.GET("/graphql/ws", subsHandler.HandleWebSocket)
 
