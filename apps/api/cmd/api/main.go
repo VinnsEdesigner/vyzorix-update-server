@@ -1,5 +1,4 @@
 // Package main provides the Vyzorix API server entry point.
-// This wires up the NEW clean architecture: Domain → Application → Infrastructure.
 package main
 
 import (
@@ -32,63 +31,9 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 )
 
-// ANSI color codes for terminal output.
-const (
-	cyan    = "\033[36m"
-	magenta = "\033[35m"
-	yellow  = "\033[33m"
-	red     = "\033[31m"
-	green   = "\033[32m"
-	bold    = "\033[1m"
-	dim     = "\033[2m"
-	reset   = "\033[0m"
-)
-
-// printBanner prints the VYZORIX ASCII art banner.
-func printBanner(mode string) {
-	banner := []string{
-		magenta + bold + "+-------------------------------------------------------------+" + reset,
-		magenta + bold + "|   _   _           _        ____                           |" + reset,
-		magenta + bold + "|  |_| |_|   ___   | |__    |  _|  ___  ___                 |" + reset,
-		magenta + bold + "|  | | | |  / _ \\  | '_ \\  | |_  / _ \\/ __|                |" + reset,
-		magenta + bold + "|  | |_| | | (_) | | |_) | |  _|  __/\\__ \\                |" + reset,
-		magenta + bold + "|  |___|_|  \\___/  |_.__/   |_|   \\___||___/               |" + reset,
-		magenta + bold + "|                                                              |" + reset,
-		magenta + bold + "|                    GOLANG SERVER v1.0.0                      |" + reset,
-		magenta + bold + "+-------------------------------------------------------------+" + reset,
-	}
-
-	for _, line := range banner {
-		fmt.Println(line)
-	}
-
-	// Print mode indicator
-	modeColor := yellow
-	if mode == "production" {
-		modeColor = red
-	}
-	fmt.Printf("  %sMode:%s %s%s[%s]%s\n", dim, reset, modeColor, bold, mode, reset)
-	fmt.Printf("  %s%s\n", dim, "============================================================")
-}
-
-// printSection prints a section header.
-func printSection(label string) {
-	fmt.Printf("\n%s[%s]%s\n", cyan, label, reset)
-}
-
-// printStatus prints a status line with color coding.
-func printStatus(label, value string, _ bool) {
-	fmt.Printf("  %s✓%s %s: %s%s%s\n", green, reset, label, green, value, reset)
-}
-
-// printWarning prints a warning message.
-func printWarning(label, value string) {
-	fmt.Printf("  %s⚠%s %s: %s%s%s\n", yellow, reset, label, yellow, value, reset)
-}
-
 func main() {
 	env := getEnv()
-	printBanner(env)
+	PrintBanner(env)
 
 	log := logging.NewFromEnv()
 
@@ -135,39 +80,32 @@ func main() {
 	startServer(cfg.Port, log, apiServer, ssrConfig, ssrManager)
 }
 
-func getEnv() string {
-	if os.Getenv("NODE_ENV") == "production" || os.Getenv("GIN_MODE") == "release" {
-		return "production"
-	}
-	return "development"
-}
-
 func initDatabase(cfg config.Config) (*storage.SQLite, error) {
-	printSection("Database")
+	PrintSection("Database")
 
 	sqliteCfg := storage.DefaultConfig(cfg.DatabaseURL)
 	db, err := storage.Open(sqliteCfg)
 	if err != nil {
 		return nil, err
 	}
-	printStatus("Database", "Connected to "+cfg.DatabaseURL, false)
+	PrintStatus("Database", "Connected to "+cfg.DatabaseURL)
 
-	printStatus("Repositories", "Initialized", false)
+	PrintStatus("Repositories", "Initialized")
 
 	return db, nil
 }
 
 func initSecurity(cfg config.Config) (*infraauthinfra.Argon2idHasher, *infraauth.SessionManager, *infraauth.GoogleTokenVerifier) {
-	printSection("Security")
+	PrintSection("Security")
 
 	passwordHasher := infraauthinfra.NewArgon2idHasher()
-	printStatus("PasswordHasher", "Argon2id initialized", false)
+	PrintStatus("PasswordHasher", "Argon2id initialized")
 
 	sessionManager := infraauth.NewSessionManager(cfg.SessionSecret)
-	printStatus("SessionManager", "Initialized", false)
+	PrintStatus("SessionManager", "Initialized")
 
 	googleVerifier := infraauth.NewGoogleTokenVerifier(cfg.GoogleOAuthClientID)
-	printStatus("GoogleVerifier", "Initialized", false)
+	PrintStatus("GoogleVerifier", "Initialized")
 
 	return passwordHasher, sessionManager, googleVerifier
 }
@@ -177,7 +115,7 @@ func initServices(cfg config.Config, log *slog.Logger, db *storage.SQLite,
 	commandRepo *storage.CommandRepository) (*appsvc.AuthService, *device.Service, *client.Service,
 	*cmdapp.Service, *emailService.Service, fcm.Notifier, *storage.TelemetryRepository,
 	*hub.Hub, *hub.MessageQueue, *hub.RateLimiter) {
-	printSection("Services")
+	PrintSection("Services")
 
 	sessionTTL := 7 * 24 * time.Hour
 
@@ -189,51 +127,51 @@ func initServices(cfg config.Config, log *slog.Logger, db *storage.SQLite,
 		infraauthinfra.NewArgon2idHasher(),
 		sessionTTL,
 	)
-	printStatus("AuthService", "Initialized", false)
+	PrintStatus("AuthService", "Initialized")
 
 	deviceService := device.NewService(deviceRepo, operatorRepo)
-	printStatus("DeviceService", "Initialized", false)
+	PrintStatus("DeviceService", "Initialized")
 
 	clientService := client.NewService(storage.NewClientRepository(db.DB()))
-	printStatus("ClientService", "Initialized", false)
+	PrintStatus("ClientService", "Initialized")
 
 	commandService := cmdapp.NewService(commandRepo, deviceRepo)
-	printStatus("CommandService", "Initialized", false)
+	PrintStatus("CommandService", "Initialized")
 
 	emailSvc := emailService.NewService()
 	if cfg.ResendAPIKey != "" {
-		printStatus("EmailService", "Resend configured", false)
+		PrintStatus("EmailService", "Resend configured")
 	} else {
-		printWarning("EmailService", "RESEND_API_KEY not configured")
+		PrintWarning("EmailService", "RESEND_API_KEY not configured")
 	}
 
 	var fcmNotifier fcm.Notifier
 	if fcmClient, err := fcm.Init(log, cfg.FirebaseCreds); err == nil {
 		fcmNotifier = fcm.NewEnhancedNotifier(fcmClient, fcm.DefaultFCMConfig())
-		printStatus("FCM", "Initialized", false)
+		PrintStatus("FCM", "Initialized")
 	} else {
-		printWarning("FCM", "Firebase not configured")
+		PrintWarning("FCM", "Firebase not configured")
 	}
 
 	telemetryRepo := storage.NewTelemetryRepository(db.DB())
-	printStatus("TelemetryRepository", "Initialized", false)
+	PrintStatus("TelemetryRepository", "Initialized")
 
 	hubConfig := &hub.HubConfig{
 		MessageQueue: hub.DefaultMessageQueueConfig(),
 		RateLimiter:  hub.DefaultRateLimiterConfig(),
 	}
 	wsHub := hub.New(log, deviceRepo, telemetryRepo, nil, hubConfig)
-	printStatus("WebSocketHub", "Initialized", false)
+	PrintStatus("WebSocketHub", "Initialized")
 
 	messageQueue := hub.NewMessageQueue(log, db.DB(), hub.DefaultMessageQueueConfig())
 	messageQueue.Start(context.Background())
 	wsHub.SetMessageQueue(messageQueue)
-	printStatus("MessageQueue", "Initialized", false)
+	PrintStatus("MessageQueue", "Initialized")
 
 	wsRateLimiter := hub.NewRateLimiter(log, hub.DefaultRateLimiterConfig())
 	wsRateLimiter.StartCleanup(context.Background())
 	wsHub.SetRateLimiter(wsRateLimiter)
-	printStatus("WebSocketRateLimiter", "Initialized", false)
+	PrintStatus("WebSocketRateLimiter", "Initialized")
 
 	return authService, deviceService, clientService, commandService, emailSvc,
 		fcmNotifier, telemetryRepo, wsHub, messageQueue, wsRateLimiter
@@ -242,11 +180,11 @@ func initServices(cfg config.Config, log *slog.Logger, db *storage.SQLite,
 func initMiddleware() (*middleware.RateLimiter, *middleware.RateLimiter, *middleware.Lockout) {
 	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
 	authLimiter := middleware.NewRateLimiter(5, time.Minute)
-	printStatus("RateLimiters", "Initialized", false)
+	PrintStatus("RateLimiters", "Initialized")
 
 	lockoutConfig := middleware.LoadLockoutConfig()
 	accountLockout := middleware.NewLockout(lockoutConfig)
-	printStatus("AccountLockout", fmt.Sprintf("Enabled: %v", lockoutConfig.Enabled), false)
+	PrintStatus("AccountLockout", fmt.Sprintf("Enabled: %v", lockoutConfig.Enabled))
 
 	return rateLimiter, authLimiter, accountLockout
 }
@@ -256,22 +194,22 @@ func initSSR(log *slog.Logger) (config.SSRConfig, *ssr.Manager) {
 	var ssrManager *ssr.Manager
 
 	if ssrConfig.EnableSSR {
-		printSection("SSR Configuration")
-		printStatus("SSR Mode", "Enabled", false)
-		printStatus("SSR Auto-Start", strconv.FormatBool(ssrConfig.SSRAutoStart), false)
-		printStatus("SSR Auto-Build", strconv.FormatBool(ssrConfig.SSRAutoBuild), false)
-		printStatus("SSR URL", ssrConfig.SSRServerURL, false)
+		PrintSection("SSR Configuration")
+		PrintStatus("SSR Mode", "Enabled")
+		PrintStatus("SSR Auto-Start", strconv.FormatBool(ssrConfig.SSRAutoStart))
+		PrintStatus("SSR Auto-Build", strconv.FormatBool(ssrConfig.SSRAutoBuild))
+		PrintStatus("SSR URL", ssrConfig.SSRServerURL)
 
 		ssrManager = ssr.NewManager(ssrConfig, log, "", "")
 		if err := ssrManager.Start(); err != nil {
 			log.Error("SSR server failed to start", "err", err)
-			printWarning("SSR Server", "Failed, using SPA fallback")
+			PrintWarning("SSR Server", "Failed, using SPA fallback")
 		} else if ssrManager.IsReady() {
-			printStatus("SSR Server", "Ready", false)
+			PrintStatus("SSR Server", "Ready")
 		}
 	} else {
-		printSection("SSR Configuration")
-		printStatus("SSR Mode", "Disabled", false)
+		PrintSection("SSR Configuration")
+		PrintStatus("SSR Mode", "Disabled")
 	}
 
 	return ssrConfig, ssrManager
@@ -284,8 +222,8 @@ func createAPIServer(cfg config.Config, log *slog.Logger, db *storage.SQLite,
 	commandService *cmdapp.Service, emailSvc *emailService.Service,
 	rateLimiter *middleware.RateLimiter, authLimiter *middleware.RateLimiter,
 	accountLockout *middleware.Lockout, wsHub *hub.Hub, fcmNotifier fcm.Notifier) *api.Server {
-	printSection("Server")
-	printStatus("Go Server", "Starting on "+cfg.Port, false)
+	PrintSection("Server")
+	PrintStatus("Go Server", "Starting on "+cfg.Port)
 
 	appMetrics := metrics.New()
 	auditRepo := audit.NewRepository(db.DB())
