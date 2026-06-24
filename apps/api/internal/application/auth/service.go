@@ -1349,7 +1349,11 @@ func (s *AuthService) UpdateOperator(ctx context.Context, operatorID string, req
 	}
 
 	if req.Name != nil {
-		op.Name = *req.Name
+		name := strings.TrimSpace(*req.Name)
+		if name == "" {
+			return nil, application.ErrInvalidInput
+		}
+		op.Name = name
 	}
 
 	if req.Email != nil {
@@ -1367,7 +1371,11 @@ func (s *AuthService) UpdateOperator(ctx context.Context, operatorID string, req
 	}
 
 	if req.Role != nil {
-		op.Role = operator.OperatorRole(*req.Role)
+		role := operator.OperatorRole(*req.Role)
+		if !role.IsValid() {
+			return nil, application.ErrInvalidInput
+		}
+		op.Role = role
 	}
 
 	op.UpdatedAt = time.Now()
@@ -1421,6 +1429,11 @@ type RefreshTokenResult struct {
 func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken string) (*RefreshTokenResult, error) {
 	// Check if refresh token repository is configured
 	if s.refreshTokenRepo == nil {
+		return nil, application.ErrUnauthorized
+	}
+
+	// Check if JWT manager is configured
+	if s.jwtManager == nil {
 		return nil, application.ErrUnauthorized
 	}
 
