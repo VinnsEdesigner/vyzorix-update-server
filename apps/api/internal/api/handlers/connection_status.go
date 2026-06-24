@@ -102,6 +102,15 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 // GetAllStatus handles GET /v1/connections
 // Returns the status of all WebSocket connections.
 func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
+	// Defensive: ensure hub is initialized
+	if h.hub == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error":   "service_unavailable",
+			"message": "WebSocket hub not initialized",
+		})
+		return
+	}
+
 	// Get all clients
 	clients := h.hub.Clients()
 

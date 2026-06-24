@@ -392,6 +392,14 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 	}
 
 	count := len(entries)
+	// Safety: should never happen due to early return, but double-check
+	if count == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "not_found",
+			"message": "no telemetry found for device",
+		})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"deviceId":    deviceID,
 		"sampleCount": count,
