@@ -152,7 +152,7 @@ func (r *SessionRepository) Extend(ctx context.Context, id string, newExpiry tim
 
 // AddSessionRevocation adds a session token hash to the revocation list.
 func (r *SessionRepository) AddSessionRevocation(ctx context.Context, tokenHash, reason string) error {
-	query := `INSERT INTO session_revocation_list (token_hash, revoked_at, reason) VALUES (?, ?, ?)`
+	query := `INSERT INTO session_revocations (session_id, revoked_at, reason) VALUES (?, ?, ?)`
 	_, err := r.db.ExecContext(ctx, query, tokenHash, time.Now().UnixMilli(), reason)
 
 	return err
@@ -160,7 +160,7 @@ func (r *SessionRepository) AddSessionRevocation(ctx context.Context, tokenHash,
 
 // IsSessionRevoked checks if a session token hash is in the revocation list.
 func (r *SessionRepository) IsSessionRevoked(ctx context.Context, tokenHash string) (bool, error) {
-	query := `SELECT COUNT(*) FROM session_revocation_list WHERE token_hash = ?`
+	query := `SELECT COUNT(*) FROM session_revocations WHERE session_id = ?`
 
 	var count int
 
@@ -174,7 +174,7 @@ func (r *SessionRepository) IsSessionRevoked(ctx context.Context, tokenHash stri
 
 // RemoveSessionRevocation removes a session from the revocation list.
 func (r *SessionRepository) RemoveSessionRevocation(ctx context.Context, tokenHash string) error {
-	query := `DELETE FROM session_revocation_list WHERE token_hash = ?`
+	query := `DELETE FROM session_revocations WHERE session_id = ?`
 	_, err := r.db.ExecContext(ctx, query, tokenHash)
 
 	return err
