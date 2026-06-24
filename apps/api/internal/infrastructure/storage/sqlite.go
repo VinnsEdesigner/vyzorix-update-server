@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -365,13 +366,35 @@ func migrateAddCommandsColumns(db *sql.DB) error {
 }
 
 func migrateAddDeviceSecretHash(db *sql.DB) error {
-	db.ExecContext(context.Background(), `ALTER TABLE devices ADD COLUMN command_secret_hash TEXT`) //nolint:errcheck
+	_, err := db.ExecContext(context.Background(), `ALTER TABLE devices ADD COLUMN command_secret_hash TEXT`)
+	if err != nil {
+		// Column may already exist (SQLite ignores duplicate column additions)
+		if !isColumnExistsError(err) {
+			return fmt.Errorf("failed to add command_secret_hash column: %w", err)
+		}
+	}
 	return nil
 }
 
 func migrateAddOperatorsGitHubID(db *sql.DB) error {
-	db.ExecContext(context.Background(), `ALTER TABLE operators ADD COLUMN github_id TEXT`) //nolint:errcheck
+	_, err := db.ExecContext(context.Background(), `ALTER TABLE operators ADD COLUMN github_id TEXT`)
+	if err != nil {
+		// Column may already exist
+		if !isColumnExistsError(err) {
+			return fmt.Errorf("failed to add github_id column: %w", err)
+		}
+	}
 	return nil
+}
+
+// isColumnExistsError checks if the error is because the column already exists.
+// SQLite silently ignores duplicate column additions.
+func isColumnExistsError(err error) bool {
+	if err == nil {
+		return true // No error means success (column added or already exists)
+	}
+	// SQLite doesn't error on duplicate column - it just ignores it
+	return strings.Contains(err.Error(), "duplicate column")
 }
 
 func migrateCreateResendTracker(db *sql.DB) error {
