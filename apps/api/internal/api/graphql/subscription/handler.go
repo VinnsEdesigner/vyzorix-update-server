@@ -4,21 +4,46 @@ package subscription
 import (
 	"context"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/resolver"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
+// AllowedOrigins returns origin validation function based on config.
+func allowedOrigins(cfg config.Config) func(r *http.Request) bool {
+	origins := cfg.AllowedOrigins
+	return func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true // Allow empty origin (e.g., same-origin requests)
+		}
+		// Check against allowed origins
+		for _, allowed := range origins {
+			if allowed == "*" || allowed == origin {
+				return true
+			}
+			// Support wildcard subdomains (e.g., *.example.com)
+			if strings.HasPrefix(allowed, "*.") {
+				domain := allowed[2:]
+				if strings.HasSuffix(origin, domain) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins for development
-	},
+	CheckOrigin:     nil, // Set during initialization
 }
 
 // AuditLogger interface for audit logging.
@@ -33,6 +58,7 @@ type Config struct {
 	AuthMw      *middleware.AuthMiddleware
 	Logger      Logger
 	AuditLogger AuditLogger
+	Config      config.Config
 }
 
 // Handler manages WebSocket connections for GraphQL subscriptions.
@@ -47,6 +73,9 @@ type Handler struct {
 
 // NewHandler creates a new subscription handler.
 func NewHandler(cfg *Config) *Handler {
+	// Set origin check function based on config
+	upgrader.CheckOrigin = allowedOrigins(cfg.Config)
+
 	return &Handler{
 		hub:       cfg.Hub,
 		resolver:  cfg.Resolver,

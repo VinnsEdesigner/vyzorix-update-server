@@ -69,6 +69,12 @@ func (h *StreamHandler) Handle(c *gin.Context) {
 		return
 	}
 
+	// Defensive: ensure client is not nil
+	if client == nil {
+		h.presenter.LogUpgradeFailed(c.Request.Context(), deviceID, "client was nil after upgrade")
+		return
+	}
+
 	// Set hub on client
 	client.Hub = h.hub
 
