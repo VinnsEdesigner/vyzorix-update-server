@@ -22,6 +22,7 @@ type RateLimiter struct {
 	CleanupInterval time.Duration
 	TTL             time.Duration
 	mu              sync.RWMutex
+	cleanupWg       sync.WaitGroup
 }
 
 type bucket struct {
@@ -88,7 +89,7 @@ func NewRateLimiterWithOptions(capacity int, refill time.Duration, opts ...RateL
 		opt(rl)
 	}
 
-	// Start cleanup goroutine.
+	rl.cleanupWg.Add(1)
 	go rl.cleanupLoop()
 
 	return rl
@@ -96,6 +97,7 @@ func NewRateLimiterWithOptions(capacity int, refill time.Duration, opts ...RateL
 
 // cleanupLoop periodically removes stale buckets to prevent memory leaks.
 func (l *RateLimiter) cleanupLoop() {
+	defer l.cleanupWg.Done()
 	ticker := time.NewTicker(l.CleanupInterval)
 	defer ticker.Stop()
 
@@ -138,6 +140,7 @@ func (l *RateLimiter) cleanup() {
 // Stop stops the cleanup goroutine and releases resources.
 func (l *RateLimiter) Stop() {
 	l.cancel()
+	l.cleanupWg.Wait()
 }
 
 // Middleware returns a Gin middleware that rate limits requests.

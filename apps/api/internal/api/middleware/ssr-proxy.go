@@ -20,26 +20,30 @@ import (
 
 // SSRProxy creates a reverse proxy to the Node.js SSR server with JWT validation.
 // Includes health monitoring and automatic fallback to SPA when SSR is unavailable.
-func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jwtSecret string) gin.HandlerFunc {
+// Returns a handler and a cleanup function that should be called when shutting down.
+func SSRProxy(log *slog.Logger, ssrConfig config.SSRConfig, publicDir string, jwtSecret string) (gin.HandlerFunc, func()) {
 	if !ssrConfig.EnableSSR {
-		return func(c *gin.Context) { c.Next() }
+		return func(c *gin.Context) { c.Next() }, func() {}
 	}
 
 	ssrServerURL, err := url.Parse(ssrConfig.SSRServerURL)
 	if err != nil {
 		log.Error("invalid SSR server URL", "err", err, "url", ssrConfig.SSRServerURL)
-		return func(c *gin.Context) { c.Next() }
+		return func(c *gin.Context) { c.Next() }, func() {}
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(ssrServerURL)
-	ssrHealthy, ssrHealthyMu := setupSSRHealthChecker(log, ssrConfig)
+	stopCh := make(chan struct{})
+	ssrHealthy, ssrHealthyMu := setupSSRHealthChecker(log, ssrConfig, stopCh)
 	setupProxyDirector(proxy, ssrServerURL)
 	setupProxyErrorHandler(proxy, log, publicDir)
 
-	return handleSSRRequest(log, proxy, ssrHealthy, ssrHealthyMu, jwtSecret, publicDir)
+	handler := handleSSRRequest(log, proxy, ssrHealthy, ssrHealthyMu, jwtSecret, publicDir)
+	cleanup := func() { close(stopCh) }
+	return handler, cleanup
 }
 
-func setupSSRHealthChecker(log *slog.Logger, ssrConfig config.SSRConfig) (bool, *sync.RWMutex) {
+func setupSSRHealthChecker(log *slog.Logger, ssrConfig config.SSRConfig, stopCh <-chan struct{}) (bool, *sync.RWMutex) {
 	var ssrHealthy = true
 	var ssrHealthyMu sync.RWMutex
 
@@ -48,31 +52,41 @@ func setupSSRHealthChecker(log *slog.Logger, ssrConfig config.SSRConfig) (bool, 
 		defer ticker.Stop()
 		client := &http.Client{Timeout: 5 * time.Second}
 
-		for range ticker.C {
-			resp, err := client.Get(ssrConfig.SSRServerURL + "/health")
-			if err != nil || resp.StatusCode >= 500 {
-				ssrHealthyMu.Lock()
-				if ssrHealthy {
-					log.Warn("SSR server health check failed, will use SPA fallback", "err", err)
-					ssrHealthy = false
-				}
-				ssrHealthyMu.Unlock()
-				if err == nil {
-					_ = resp.Body.Close()
-				}
-				continue
-			}
-			_ = resp.Body.Close()
-			ssrHealthyMu.Lock()
-			wasHealthy := ssrHealthy
-			ssrHealthy = true
-			ssrHealthyMu.Unlock()
-			if !wasHealthy {
-				log.Info("SSR server recovered, resuming SSR mode")
+		for {
+			select {
+			case <-stopCh:
+				return
+			case <-ticker.C:
+				checkSSRHealth(log, ssrConfig, client, &ssrHealthy, &ssrHealthyMu)
 			}
 		}
 	}()
+
 	return ssrHealthy, &ssrHealthyMu
+}
+
+func checkSSRHealth(log *slog.Logger, ssrConfig config.SSRConfig, client *http.Client, ssrHealthy *bool, ssrHealthyMu *sync.RWMutex) {
+	resp, err := client.Get(ssrConfig.SSRServerURL + "/health")
+	if err != nil || resp.StatusCode >= 500 {
+		ssrHealthyMu.Lock()
+		if *ssrHealthy {
+			log.Warn("SSR server health check failed, will use SPA fallback", "err", err)
+			*ssrHealthy = false
+		}
+		ssrHealthyMu.Unlock()
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+		return
+	}
+	_ = resp.Body.Close()
+	ssrHealthyMu.Lock()
+	wasHealthy := *ssrHealthy
+	*ssrHealthy = true
+	ssrHealthyMu.Unlock()
+	if !wasHealthy {
+		log.Info("SSR server recovered, resuming SSR mode")
+	}
 }
 
 func setupProxyDirector(proxy *httputil.ReverseProxy, ssrServerURL *url.URL) {
