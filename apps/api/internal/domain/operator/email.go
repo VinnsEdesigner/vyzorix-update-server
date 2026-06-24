@@ -409,7 +409,7 @@ func ContainsInvalidUTF8(s string) bool {
 		}
 	}
 
-	return []byte(s) == nil && s != ""
+	return false
 }
 
 // ContainsControlCharacters checks for Unicode control characters.
