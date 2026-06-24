@@ -3,6 +3,7 @@ package admin
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 
@@ -19,8 +20,26 @@ func NewClientsHandler(clientService *client.Service) *ClientsHandler {
 	return &ClientsHandler{clientService: clientService}
 }
 
+// requireAdmin is middleware that ensures the request is from an admin user.
+func requireAdmin(c *gin.Context) bool {
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return false
+	}
+	if op.Role != "admin" && op.Role != "super_admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "admin access required"})
+		return false
+	}
+	return true
+}
+
 // List handles GET /v1/admin/clients.
 func (h *ClientsHandler) List(c *gin.Context) {
+	if !requireAdmin(c) {
+		return
+	}
+
 	clients, total, err := h.clientService.ListAll(c.Request.Context(), 20, 0)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to list clients"})
@@ -32,6 +51,10 @@ func (h *ClientsHandler) List(c *gin.Context) {
 
 // Get handles GET /v1/admin/clients/:clientId.
 func (h *ClientsHandler) Get(c *gin.Context) {
+	if !requireAdmin(c) {
+		return
+	}
+
 	clientID := c.Param("clientId")
 	if clientID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "clientId is required"})
@@ -49,6 +72,10 @@ func (h *ClientsHandler) Get(c *gin.Context) {
 
 // Update handles PATCH /v1/admin/clients/:clientId.
 func (h *ClientsHandler) Update(c *gin.Context) {
+	if !requireAdmin(c) {
+		return
+	}
+
 	clientID := c.Param("clientId")
 	if clientID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "clientId is required"})
@@ -72,6 +99,10 @@ func (h *ClientsHandler) Update(c *gin.Context) {
 
 // Delete handles DELETE /v1/admin/clients/:clientId.
 func (h *ClientsHandler) Delete(c *gin.Context) {
+	if !requireAdmin(c) {
+		return
+	}
+
 	clientID := c.Param("clientId")
 	if clientID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "clientId is required"})
@@ -89,6 +120,10 @@ func (h *ClientsHandler) Delete(c *gin.Context) {
 // RotateKey handles POST /v1/admin/clients/:clientId/rotate-key.
 // Rotates the signing key with a 24-hour grace period.
 func (h *ClientsHandler) RotateKey(c *gin.Context) {
+	if !requireAdmin(c) {
+		return
+	}
+
 	clientID := c.Param("clientId")
 	if clientID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "clientId is required"})
