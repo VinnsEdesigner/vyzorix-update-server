@@ -103,7 +103,14 @@ func NewSubscriptionHandler(
 	authService *auth.AuthService,
 	sessionManager *infraauth.SessionManager,
 	log *slog.Logger,
+	auditLogger *audit.Logger,
 ) *subscription.Handler {
 	authMw := middleware.NewAuthMiddleware(sessionManager, authService, log)
-	return subscription.NewHandler(hub, res, authMw, log)
+	return subscription.NewHandler(&subscription.Config{
+		Hub:          hub,
+		Resolver:     res,
+		AuthMw:      authMw,
+		Logger:      log,
+		AuditLogger: subscription.NewAuditLoggerAdapter(auditLogger),
+	})
 }

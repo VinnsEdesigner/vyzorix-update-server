@@ -10,9 +10,16 @@ import (
 type contextKey string
 
 const (
-	operatorKey contextKey = "operator"
+	operatorKey  contextKey = "operator"
 	requestIDKey contextKey = "requestID"
+	metadataKey  contextKey = "requestMetadata"
 )
+
+// RequestMetadata holds request metadata.
+type RequestMetadata struct {
+	ClientIP  string
+	UserAgent string
+}
 
 // WithOperator adds the operator to the context.
 func WithOperator(ctx context.Context, op *operator.Operator) context.Context {
@@ -54,4 +61,38 @@ func GetRequestID(ctx context.Context) string {
 		return ""
 	}
 	return str
+}
+
+// WithRequestMetadata adds request metadata to the context.
+func WithRequestMetadata(ctx context.Context, clientIP, userAgent string) context.Context {
+	return context.WithValue(ctx, metadataKey, RequestMetadata{
+		ClientIP:  clientIP,
+		UserAgent: userAgent,
+	})
+}
+
+// GetRequestMetadata retrieves the request metadata from context.
+func GetRequestMetadata(ctx context.Context) (RequestMetadata, bool) {
+	val := ctx.Value(metadataKey)
+	if val == nil {
+		return RequestMetadata{}, false
+	}
+	meta, ok := val.(RequestMetadata)
+	return meta, ok
+}
+
+// GetClientIP retrieves the client IP from context.
+func GetClientIP(ctx context.Context) string {
+	if meta, ok := GetRequestMetadata(ctx); ok {
+		return meta.ClientIP
+	}
+	return ""
+}
+
+// GetUserAgent retrieves the user agent from context.
+func GetUserAgent(ctx context.Context) string {
+	if meta, ok := GetRequestMetadata(ctx); ok {
+		return meta.UserAgent
+	}
+	return ""
 }
