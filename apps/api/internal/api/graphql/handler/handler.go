@@ -16,20 +16,20 @@ import (
 
 // Config holds handler configuration.
 type Config struct {
+	Logger         Logger
 	Resolver       *resolver.Resolver
 	AuthMiddleware *middleware.AuthMiddleware
 	PlaygroundPath string
-	Logger         Logger
 }
 
 // Handler is the GraphQL HTTP handler.
 type Handler struct {
-	schema         gql.Schema
+	logger         Logger
 	resolver       *resolver.Resolver
 	authMiddleware *middleware.AuthMiddleware
-	playgroundPath string
-	logger         Logger
 	presenter      *ResponsePresenter
+	playgroundPath string
+	schema         gql.Schema
 }
 
 // NewHandler creates a new GraphQL handler.
@@ -58,9 +58,9 @@ func NewHandler(cfg *Config) (*Handler, error) {
 
 // Request represents a GraphQL request.
 type Request struct {
+	Variables     map[string]interface{} `json:"variables"`
 	Query         string                 `json:"query"`
 	OperationName string                 `json:"operationName"`
-	Variables     map[string]interface{} `json:"variables"`
 }
 
 // Response represents a GraphQL response.
@@ -118,6 +118,7 @@ func (h *Handler) logRequest(c *gin.Context, req Request, operatorID string, err
 	if h.logger == nil {
 		return
 	}
+
 	h.logger.LogRequest(RequestLog{
 		Timestamp:  start,
 		Operation:  req.OperationName,
@@ -134,15 +135,19 @@ func (h *Handler) logRequest(c *gin.Context, req Request, operatorID string, err
 // formatErrors converts GraphQL errors to response format.
 func (h *Handler) formatErrors(errs []gqlerrors.FormattedError) Response {
 	details := make([]ErrorDetail, 0, len(errs))
+
 	for _, err := range errs {
 		detail := ErrorDetail{Message: err.Message}
+
 		if err.Extensions != nil {
 			if code, ok := err.Extensions["code"].(string); ok {
 				detail.Code = code
 			}
 		}
+
 		details = append(details, detail)
 	}
+
 	return Response{
 		Data:   nil,
 		Errors: details,

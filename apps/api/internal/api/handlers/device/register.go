@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,12 +24,13 @@ func NewRegisterHandler(deviceService *device.Service) *RegisterHandler {
 // Handle processes the device registration request.
 func (h *RegisterHandler) Handle(c *gin.Context) {
 	var req struct {
-		DeviceID           string `json:"deviceId" binding:"required"`
+		DeviceID          string `json:"deviceId" binding:"required"`
 		FirebaseInstallID string `json:"firebaseInstallId" binding:"required"`
 		FCMToken          string `json:"fcmToken"`
 		AppVersion        string `json:"appVersion"`
 		DeviceClass       string `json:"deviceClass"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid JSON in request body"})
 		return
@@ -41,7 +42,7 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 	}
 
 	dtoReq := &dto.RegisterDeviceRequest{
-		DeviceID:           req.DeviceID,
+		DeviceID:          req.DeviceID,
 		FirebaseInstallID: req.FirebaseInstallID,
 		FCMToken:          req.FCMToken,
 		AppVersion:        req.AppVersion,
@@ -54,14 +55,16 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 			c.JSON(http.StatusConflict, gin.H{"error": "conflict", "message": "device registration hijack detected"})
 			return
 		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to register device"})
+
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"device_id":       result.DeviceID,
+		"device_id":      result.DeviceID,
 		"command_secret": result.CommandSecret,
-		"registered_at":   result.RegisteredAt,
-		"server_time":     time.Now().UnixMilli(),
+		"registered_at":  result.RegisteredAt,
+		"server_time":    time.Now().UnixMilli(),
 	})
 }

@@ -31,6 +31,7 @@ func (h *ListHandler) Handle(c *gin.Context) {
 
 	// Parse pagination parameters.
 	limit := 50
+
 	if l := c.Query("limit"); l != "" {
 		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
 			limit = parsed
@@ -41,6 +42,7 @@ func (h *ListHandler) Handle(c *gin.Context) {
 	}
 
 	offset := 0
+
 	if o := c.Query("offset"); o != "" {
 		if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
 			offset = parsed
@@ -49,6 +51,7 @@ func (h *ListHandler) Handle(c *gin.Context) {
 
 	// Parse online filter.
 	var filterOnline *bool
+
 	switch c.Query("online") {
 	case "true":
 		v := true
@@ -75,6 +78,7 @@ func (h *ListHandler) Handle(c *gin.Context) {
 	}
 
 	devices := make([]DeviceRow, 0, len(response.Devices))
+
 	for _, d := range response.Devices {
 		// Check if device is online via WebSocket hub.
 		isOnline := h.isDeviceOnline(d.ID) || d.Online
@@ -102,6 +106,7 @@ func (h *ListHandler) Handle(c *gin.Context) {
 	if response.Total > offset+len(devices) {
 		result["nextCursor"] = offset + len(devices)
 	}
+
 	result["total"] = response.Total
 
 	c.JSON(http.StatusOK, result)
@@ -112,6 +117,7 @@ func (h *ListHandler) isDeviceOnline(deviceID string) bool {
 	if h.hub == nil {
 		return false
 	}
+
 	return h.hub.Online(deviceID)
 }
 
@@ -143,6 +149,7 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 	}
 
 	result := make([]DeviceRow, len(devices))
+
 	for i, d := range devices {
 		isOnline := h.isDeviceOnline(d.ID) || d.Online
 		result[i] = DeviceRow{
@@ -176,21 +183,23 @@ func (h *ListHandler) GetDevice(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
 			return
 		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
+
 		return
 	}
 
 	isOnline := h.isDeviceOnline(d.ID) || d.Online
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":                   d.ID,
-		"device_id":            d.ID,
-		"firebase_install_id":  d.FirebaseInstallID,
-		"app_version":          d.AppVersion,
-		"device_class":          d.DeviceClass,
-		"online":                isOnline,
-		"last_seen":             d.LastSeen,
-		"registered_at":          d.RegisteredAt,
+		"id":                  d.ID,
+		"device_id":           d.ID,
+		"firebase_install_id": d.FirebaseInstallID,
+		"app_version":         d.AppVersion,
+		"device_class":        d.DeviceClass,
+		"online":              isOnline,
+		"last_seen":           d.LastSeen,
+		"registered_at":       d.RegisteredAt,
 	})
 }
 

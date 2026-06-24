@@ -13,7 +13,7 @@ import (
 // MeHandler handles GET /v1/auth/me.
 type MeHandler struct {
 	authService *auth.AuthService
-	presenter  *response.Presenter
+	presenter   *response.Presenter
 }
 
 // NewMeHandler creates a new MeHandler.
@@ -35,16 +35,18 @@ func (h *MeHandler) Handle(c *gin.Context) {
 			h.presenter.Unauthorized(c, "session invalid or expired")
 			return
 		}
+
 		h.presenter.InternalError(c, "an error occurred")
+
 		return
 	}
 
 	h.presenter.OK(c, gin.H{
-		"id":              op.ID,
-		"email":           op.Email,
-		"name":            op.Name,
-		"role":            op.Role,
-		"mfa_enabled":     op.MFAEnabled,
-		"email_verified":  op.EmailVerified,
+		"id":             op.ID,
+		"email":          op.Email,
+		"name":           op.Name,
+		"role":           op.Role,
+		"mfa_enabled":    op.MFAEnabled,
+		"email_verified": op.EmailVerified,
 	})
 }

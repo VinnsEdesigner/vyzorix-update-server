@@ -29,6 +29,7 @@ func (h *UpdaterHandler) UpdateFCMToken(c *gin.Context) {
 	var req struct {
 		FCMToken string `json:"fcmToken" binding:"required"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid request"})
 		return

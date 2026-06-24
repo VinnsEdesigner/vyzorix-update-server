@@ -24,6 +24,7 @@ func GenerateToken() (string, error) {
 	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("failed to generate token: %w", err)
 	}
+
 	return hex.EncodeToString(b), nil
 }
 
@@ -38,6 +39,7 @@ func GenerateTokenWithSize(size int) (string, error) {
 	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("failed to generate token: %w", err)
 	}
+
 	return hex.EncodeToString(b), nil
 }
 

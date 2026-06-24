@@ -31,6 +31,7 @@ func (h *LogoutHandler) Handle(c *gin.Context) {
 
 	// Get operator ID from session before logout
 	var operatorID string
+
 	session, err := h.authService.GetSession(c.Request.Context(), sessionID)
 	if err == nil && session != nil {
 		operatorID = session.OperatorID

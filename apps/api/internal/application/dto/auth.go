@@ -28,8 +28,8 @@ type RegisterRequest struct {
 // RegisterResponse represents a registration response.
 type RegisterResponse struct {
 	OperatorID string `json:"operator_id"`
-	Email     string `json:"email"`
-	Name      string `json:"name"`
+	Email      string `json:"email"`
+	Name       string `json:"name"`
 }
 
 // ForgotPasswordRequest represents a forgot password request.
@@ -61,15 +61,15 @@ type LogoutRequest struct {
 
 // OperatorResponse represents an operator in responses.
 type OperatorResponse struct {
-	ID            string           `json:"id"`
-	Email         string           `json:"email"`
-	Name          string           `json:"name"`
-	Role          string           `json:"role"`
-	MFAEnabled    bool             `json:"mfa_enabled"`
-	EmailVerified bool             `json:"email_verified"`
-	CreatedAt     string           `json:"created_at"`
-	Thresholds    *Thresholds      `json:"thresholds,omitempty"`
-	Client        *ClientSettings   `json:"client,omitempty"`
+	Thresholds    *Thresholds     `json:"thresholds,omitempty"`
+	Client        *ClientSettings `json:"client,omitempty"`
+	ID            string          `json:"id"`
+	Email         string          `json:"email"`
+	Name          string          `json:"name"`
+	Role          string          `json:"role"`
+	CreatedAt     string          `json:"created_at"`
+	MFAEnabled    bool            `json:"mfa_enabled"`
+	EmailVerified bool            `json:"email_verified"`
 }
 
 // GoogleOAuthCallbackRequest represents a Google OAuth callback request.
@@ -85,8 +85,8 @@ type UpdateOperatorRequest struct {
 
 // MFAStatusResponse represents MFA status.
 type MFAStatusResponse struct {
-	Enabled   bool     `json:"enabled"`
 	BackupCodes []string `json:"backup_codes,omitempty"`
+	Enabled     bool     `json:"enabled"`
 }
 
 // MFAEnrollRequest represents MFA enrollment request.
@@ -147,8 +147,8 @@ type ClientSettings = operator.ClientSettings
 
 // UpdateSettingsRequest represents a settings update request.
 type UpdateSettingsRequest struct {
-	Name       string          `json:"name,omitempty"`
 	Thresholds *Thresholds     `json:"thresholds,omitempty"`
 	Client     *ClientSettings `json:"client,omitempty"`
+	Name       string          `json:"name,omitempty"`
 	Reset      bool            `json:"reset,omitempty"`
 }

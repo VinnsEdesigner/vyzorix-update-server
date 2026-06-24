@@ -25,37 +25,37 @@ var (
 
 // CSRFConfig holds CSRF configuration.
 type CSRFConfig struct {
-	Enabled    bool
-	Secret    string
+	Secret      string
+	CookieName  string
+	HeaderName  string
 	TokenLength int
-	CookieName string
-	HeaderName string
-	MaxAge    int
+	MaxAge      int
+	Enabled     bool
 }
 
 // DefaultCSRFConfig returns the default CSRF configuration.
 func DefaultCSRFConfig() CSRFConfig {
 	return CSRFConfig{
-		Enabled:    true,
-		Secret:    "csrf-secret-change-in-production",
+		Enabled:     true,
+		Secret:      "csrf-secret-change-in-production",
 		TokenLength: 32,
-		CookieName: "_csrf",
-		HeaderName: "X-CSRF-Token",
-		MaxAge:    3600, // 1 hour
+		CookieName:  "_csrf",
+		HeaderName:  "X-CSRF-Token",
+		MaxAge:      3600, // 1 hour
 	}
 }
 
 // CSRFToken represents a CSRF token with metadata.
 type CSRFToken struct {
-	Token     string
 	CreatedAt time.Time
 	ExpiresAt *time.Time
+	Token     string
 }
 
 // CSRFTokenStore manages CSRF tokens in memory.
 type CSRFTokenStore struct {
-	mu     sync.RWMutex
 	tokens map[string]*CSRFToken
+	mu     sync.RWMutex
 }
 
 // NewCSRFTokenStore creates a new CSRF token store.
@@ -71,6 +71,7 @@ func (s *CSRFTokenStore) Generate(sessionID string, maxAge int) (*CSRFToken, err
 	if _, err := rand.Read(tokenBytes); err != nil {
 		return nil, err
 	}
+
 	tokenStr := base64.URLEncoding.EncodeToString(tokenBytes)
 
 	now := time.Now()
@@ -117,9 +118,9 @@ func (s *CSRFTokenStore) Invalidate(sessionID string) {
 
 // CSRFProtector provides CSRF protection middleware.
 type CSRFProtector struct {
-	Config CSRFConfig
 	Store  *CSRFTokenStore
 	Secret []byte
+	Config CSRFConfig
 }
 
 // NewCSRFProtector creates a new CSRF protector.
@@ -135,6 +136,7 @@ func NewCSRFProtector(config CSRFConfig) *CSRFProtector {
 func (p *CSRFProtector) signToken(token string) string {
 	mac := hmac.New(sha512.New, p.Secret)
 	mac.Write([]byte(token))
+
 	return token + "." + base64.URLEncoding.EncodeToString(mac.Sum(nil))
 }
 
@@ -143,6 +145,7 @@ func (p *CSRFProtector) verifyToken(signed string) (string, bool) {
 	for i := len(signed) - 1; i >= 0; i-- {
 		if signed[i] == '.' {
 			token := signed[:i]
+
 			sig, err := base64.URLEncoding.DecodeString(signed[i+1:])
 			if err != nil {
 				return "", false
@@ -155,9 +158,11 @@ func (p *CSRFProtector) verifyToken(signed string) (string, bool) {
 			if hmac.Equal([]byte(sig), expected) {
 				return token, true
 			}
+
 			return "", false
 		}
 	}
+
 	return "", false
 }
 
@@ -185,6 +190,7 @@ func (p *CSRFProtector) Middleware() gin.HandlerFunc {
 				"error":   "forbidden",
 				"message": "CSRF token required",
 			})
+
 			return
 		}
 
@@ -194,6 +200,7 @@ func (p *CSRFProtector) Middleware() gin.HandlerFunc {
 				"error":   "forbidden",
 				"message": "Invalid CSRF token",
 			})
+
 			return
 		}
 
@@ -203,6 +210,7 @@ func (p *CSRFProtector) Middleware() gin.HandlerFunc {
 				"error":   "forbidden",
 				"message": "CSRF token required",
 			})
+
 			return
 		}
 
@@ -211,6 +219,7 @@ func (p *CSRFProtector) Middleware() gin.HandlerFunc {
 				"error":   "forbidden",
 				"message": "Invalid CSRF token",
 			})
+
 			return
 		}
 
@@ -252,6 +261,7 @@ func LoadCSRFConfig() CSRFConfig {
 	enabled := os.Getenv("CSRF_ENABLED") == "true"
 	secret := os.Getenv("CSRF_SECRET")
 	maxAge := 0
+
 	if v := os.Getenv("CSRF_TOKEN_MAX_AGE"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			maxAge = n
@@ -259,11 +269,11 @@ func LoadCSRFConfig() CSRFConfig {
 	}
 
 	return CSRFConfig{
-		Enabled:    enabled,
-		Secret:     secret,
+		Enabled:     enabled,
+		Secret:      secret,
 		TokenLength: 32,
-		CookieName: "_csrf",
-		HeaderName: "X-CSRF-Token",
-		MaxAge:    maxAge,
+		CookieName:  "_csrf",
+		HeaderName:  "X-CSRF-Token",
+		MaxAge:      maxAge,
 	}
 }

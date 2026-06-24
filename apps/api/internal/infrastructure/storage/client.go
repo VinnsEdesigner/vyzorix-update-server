@@ -25,6 +25,7 @@ func NewUUIDv7() string {
 	b[6] = (b[6] & 0x0f) | 0x70
 	// Set variant 10
 	b[8] = (b[8] & 0x3f) | 0x80
+
 	return hex.EncodeToString(b)
 }
 
@@ -57,6 +58,7 @@ func deriveHmacKey(clientSecret string) string {
 func hmacSHA256(key, data string) string {
 	h := hmac.New(sha512.New, []byte(key))
 	h.Write([]byte(data))
+
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -81,7 +83,9 @@ func (r *ClientRepository) FindByID(ctx context.Context, id string) (*client.Cli
 		FROM api_clients WHERE id = ?`
 
 	var c client.Client
+
 	var allowedOrigins, allowedPaths sql.NullString
+
 	var lastRequestAt sql.NullInt64
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
@@ -93,6 +97,7 @@ func (r *ClientRepository) FindByID(ctx context.Context, id string) (*client.Cli
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, client.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -100,9 +105,11 @@ func (r *ClientRepository) FindByID(ctx context.Context, id string) (*client.Cli
 	if allowedOrigins.Valid {
 		_ = json.Unmarshal([]byte(allowedOrigins.String), &c.AllowedOrigins)
 	}
+
 	if allowedPaths.Valid {
 		_ = json.Unmarshal([]byte(allowedPaths.String), &c.AllowedPaths)
 	}
+
 	if lastRequestAt.Valid {
 		c.LastRequestAt = &lastRequestAt.Int64
 	}
@@ -121,12 +128,16 @@ func (r *ClientRepository) FindByOperatorID(ctx context.Context, operatorID stri
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var clients []*client.Client
+
 	for rows.Next() {
 		var c client.Client
+
 		var allowedOrigins, allowedPaths sql.NullString
+
 		var lastRequestAt sql.NullInt64
 
 		if err := rows.Scan(
@@ -140,9 +151,11 @@ func (r *ClientRepository) FindByOperatorID(ctx context.Context, operatorID stri
 		if allowedOrigins.Valid {
 			_ = json.Unmarshal([]byte(allowedOrigins.String), &c.AllowedOrigins)
 		}
+
 		if allowedPaths.Valid {
 			_ = json.Unmarshal([]byte(allowedPaths.String), &c.AllowedPaths)
 		}
+
 		if lastRequestAt.Valid {
 			c.LastRequestAt = &lastRequestAt.Int64
 		}
@@ -157,6 +170,7 @@ func (r *ClientRepository) FindByOperatorID(ctx context.Context, operatorID stri
 func (r *ClientRepository) FindAll(ctx context.Context, limit, offset int) ([]*client.Client, int, error) {
 	// Get total count
 	var total int
+
 	countQuery := `SELECT COUNT(*) FROM api_clients`
 	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&total); err != nil {
 		return nil, 0, err
@@ -171,12 +185,16 @@ func (r *ClientRepository) FindAll(ctx context.Context, limit, offset int) ([]*c
 	if err != nil {
 		return nil, 0, err
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var clients []*client.Client
+
 	for rows.Next() {
 		var c client.Client
+
 		var allowedOrigins, allowedPaths sql.NullString
+
 		var lastRequestAt sql.NullInt64
 
 		if err := rows.Scan(
@@ -190,9 +208,11 @@ func (r *ClientRepository) FindAll(ctx context.Context, limit, offset int) ([]*c
 		if allowedOrigins.Valid {
 			_ = json.Unmarshal([]byte(allowedOrigins.String), &c.AllowedOrigins)
 		}
+
 		if allowedPaths.Valid {
 			_ = json.Unmarshal([]byte(allowedPaths.String), &c.AllowedPaths)
 		}
+
 		if lastRequestAt.Valid {
 			c.LastRequestAt = &lastRequestAt.Int64
 		}
@@ -216,6 +236,7 @@ func (r *ClientRepository) Create(ctx context.Context, c *client.Client, secret 
 		if _, err := readRandom(secretBytes); err != nil {
 			return nil, "", err
 		}
+
 		secret = hexEncode(secretBytes)
 	}
 
@@ -235,6 +256,7 @@ func (r *ClientRepository) Create(ctx context.Context, c *client.Client, secret 
 	if err != nil {
 		return nil, "", err
 	}
+
 	pathsJSON, err := json.Marshal(c.AllowedPaths)
 	if err != nil {
 		return nil, "", err
@@ -267,10 +289,12 @@ func (r *ClientRepository) Update(ctx context.Context, c *client.Client) error {
 	if err != nil {
 		return err
 	}
+
 	pathsJSON, err := json.Marshal(c.AllowedPaths)
 	if err != nil {
 		return err
 	}
+
 	now := time.Now().UnixMilli()
 
 	query := `UPDATE api_clients SET 
@@ -282,6 +306,7 @@ func (r *ClientRepository) Update(ctx context.Context, c *client.Client) error {
 		c.Name, string(originsJSON), string(pathsJSON), c.RateLimit,
 		c.IsActive, now, c.ID,
 	)
+
 	return err
 }
 
@@ -301,6 +326,7 @@ func (r *ClientRepository) RotateSigningKey(ctx context.Context, clientID string
 	if _, err := readRandom(keyBytes); err != nil {
 		return nil, "", err
 	}
+
 	key := hexEncode(keyBytes)
 
 	// Hash the key for storage
@@ -308,6 +334,7 @@ func (r *ClientRepository) RotateSigningKey(ctx context.Context, clientID string
 
 	// Get current max version
 	var maxVersion int
+
 	err := r.db.QueryRowContext(ctx, `
 		SELECT COALESCE(MAX(version), 0) FROM signing_keys WHERE client_id = ?
 	`, clientID).Scan(&maxVersion)
@@ -317,7 +344,9 @@ func (r *ClientRepository) RotateSigningKey(ctx context.Context, clientID string
 
 	now := time.Now().UnixMilli()
 	gracePeriodMs := gracePeriod.Milliseconds()
+
 	var expiresAt *int64
+
 	if gracePeriodMs > 0 {
 		expiresAtVal := now + gracePeriodMs
 		expiresAt = &expiresAtVal
@@ -352,7 +381,6 @@ func (r *ClientRepository) ValidateSigningKey(ctx context.Context, clientID, sig
 	now := time.Now().UnixMilli()
 
 	var key client.SigningKey
-	var expiresAt sql.NullInt64
 
 	err := r.db.QueryRowContext(ctx, `
 		SELECT id, client_id, key_hash, version, issued_at, expires_at, is_active
@@ -361,18 +389,15 @@ func (r *ClientRepository) ValidateSigningKey(ctx context.Context, clientID, sig
 		ORDER BY version DESC LIMIT 1
 	`, clientID, now).Scan(
 		&key.ID, &key.ClientID, &key.KeyHash, &key.Version,
-		&key.IssuedAt, &expiresAt, &key.IsActive,
+		&key.IssuedAt, new(sql.NullInt64), &key.IsActive,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return client.ErrSigningKeyNotFound
 	}
+
 	if err != nil {
 		return err
-	}
-
-	if expiresAt.Valid {
-		key.ExpiresAt = &expiresAt.Int64
 	}
 
 	// Verify signature using HMAC-SHA256
@@ -389,6 +414,7 @@ func (r *ClientRepository) GetHmacKey(ctx context.Context, clientID string) (str
 	query := `SELECT hmac_key, is_active FROM api_clients WHERE id = ?`
 
 	var hmacKey string
+
 	var isActive bool
 
 	err := r.db.QueryRowContext(ctx, query, clientID).Scan(&hmacKey, &isActive)

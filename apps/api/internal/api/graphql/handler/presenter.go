@@ -26,9 +26,16 @@ func (p *ResponsePresenter) Success(data interface{}) Response {
 
 // Error returns an error response.
 func (p *ResponsePresenter) Error(err error) Response {
+	if err == nil {
+		return Response{
+			Data:   nil,
+			Errors: nil,
+		}
+	}
+
 	var gqlErr *gqlerrors.Error
-	if errors.Is(err, &gqlerrors.Error{}) {
-		gqlErr = err.(*gqlerrors.Error)
+	if errors.As(err, &gqlErr) {
+		// Use the GraphQL error as-is
 	} else {
 		gqlErr = gqlerrors.Internal("%s", err.Error())
 	}
@@ -47,6 +54,7 @@ func (p *ResponsePresenter) Error(err error) Response {
 // ErrorList returns an error response with multiple errors.
 func (p *ResponsePresenter) ErrorList(errors []error) Response {
 	details := make([]ErrorDetail, 0, len(errors))
+
 	for _, err := range errors {
 		if gqlErr, ok := err.(*gqlerrors.Error); ok {
 			details = append(details, ErrorDetail{
@@ -99,11 +107,11 @@ func (p *ResponsePresenter) ValidationError(message string) Response {
 
 // ErrorDetail represents a single error in a response.
 type ErrorDetail struct {
+	Extensions map[string]interface{} `json:"extensions,omitempty"`
 	Message    string                 `json:"message"`
 	Code       string                 `json:"code,omitempty"`
 	Path       []interface{}          `json:"path,omitempty"`
 	Locations  []ErrorLocation        `json:"locations,omitempty"`
-	Extensions map[string]interface{} `json:"extensions,omitempty"`
 }
 
 // ErrorLocation represents a location in the GraphQL query.
@@ -115,14 +123,14 @@ type ErrorLocation struct {
 // RequestLog represents a request log entry.
 type RequestLog struct {
 	Timestamp  time.Time              `json:"timestamp"`
-	Operation  string                 `json:"operation,omitempty"`
 	Variables  map[string]interface{} `json:"variables,omitempty"`
-	Duration   time.Duration          `json:"duration,omitempty"`
-	StatusCode int                    `json:"statusCode"`
-	ErrorCount int                    `json:"errorCount"`
+	Operation  string                 `json:"operation,omitempty"`
 	OperatorID string                 `json:"operatorId,omitempty"`
 	ClientIP   string                 `json:"clientIp,omitempty"`
 	UserAgent  string                 `json:"userAgent,omitempty"`
+	Duration   time.Duration          `json:"duration,omitempty"`
+	StatusCode int                    `json:"statusCode"`
+	ErrorCount int                    `json:"errorCount"`
 }
 
 // Logger interface for request logging.

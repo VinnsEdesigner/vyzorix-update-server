@@ -12,7 +12,7 @@ import (
 type EmailVerifyHandler struct {
 	authService *auth.AuthService
 	emailSvc    *emailService.Service
-	presenter  *response.Presenter
+	presenter   *response.Presenter
 }
 
 // NewEmailVerifyHandler creates a new EmailVerifyHandler.
@@ -20,7 +20,7 @@ func NewEmailVerifyHandler(authService *auth.AuthService, emailSvc *emailService
 	return &EmailVerifyHandler{
 		authService: authService,
 		emailSvc:    emailSvc,
-		presenter:  presenter,
+		presenter:   presenter,
 	}
 }
 
@@ -29,6 +29,7 @@ func (h *EmailVerifyHandler) VerifyEmail(c *gin.Context) {
 	var req struct {
 		Token string `json:"token"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "invalid JSON body")
 		return
@@ -53,6 +54,7 @@ func (h *EmailVerifyHandler) ResendVerification(c *gin.Context) {
 	var req struct {
 		Email string `json:"email"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "invalid request body")
 		return
@@ -95,6 +97,7 @@ func (h *EmailVerifyHandler) CancelVerification(c *gin.Context) {
 	var req struct {
 		Email string `json:"email"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "invalid request body")
 		return

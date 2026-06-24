@@ -28,10 +28,10 @@ type Entry struct {
 
 // List manages session revocation with thread-safe operations.
 type List struct {
-	mu         sync.RWMutex
 	revoked    map[string]*Entry
 	maxEntries int
 	ttl        time.Duration
+	mu         sync.RWMutex
 }
 
 // New creates a new revocation list with specified limits.
@@ -108,6 +108,7 @@ func (r *List) Remove(tokenHash string) {
 func (r *List) Size() int {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
 	return len(r.revoked)
 }
 
@@ -135,12 +136,13 @@ func (r *List) evictOldEntries() {
 		}
 
 		type entryWithTime struct {
-			hash      string
 			revokedAt time.Time
+			hash      string
 		}
+
 		entries := make([]entryWithTime, 0, len(r.revoked))
 		for hash, entry := range r.revoked {
-			entries = append(entries, entryWithTime{hash, entry.RevokedAt})
+			entries = append(entries, entryWithTime{revokedAt: entry.RevokedAt, hash: hash})
 		}
 
 		sort.Slice(entries, func(i, j int) bool {

@@ -13,7 +13,7 @@ import (
 // AdminHandler handles admin endpoints.
 type AdminHandler struct {
 	authService *auth.AuthService
-	presenter  *response.Presenter
+	presenter   *response.Presenter
 }
 
 // NewAdminHandler creates a new AdminHandler.
@@ -73,7 +73,7 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 	}
 
 	var req dto.RegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err = c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "invalid request body")
 		return
 	}
@@ -82,6 +82,7 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 		h.presenter.BadRequest(c, "email is required")
 		return
 	}
+
 	if req.Password == "" {
 		h.presenter.BadRequest(c, "password is required")
 		return
@@ -176,7 +177,7 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 	}
 
 	var req auth.UpdateOperatorRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err = c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid request body"})
 		return
 	}

@@ -13,14 +13,14 @@ import (
 
 // Client represents a subscription WebSocket client.
 type Client struct {
+	ctx       context.Context
 	conn      *websocket.Conn
 	operator  *operator.Operator
-	subs      map[string]func() // subscriptionID -> unsubscribe
-	mu        sync.Mutex
+	subs      map[string]func()
 	done      chan struct{}
-	ctx       context.Context
 	handler   *Handler
 	presenter *Presenter
+	mu        sync.Mutex
 }
 
 // NewClient creates a new subscription client.
@@ -62,6 +62,7 @@ func (c *Client) readPump() {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				c.presenter.LogMessageError(c.ctx, err)
 			}
+
 			return
 		}
 
@@ -85,6 +86,7 @@ func (c *Client) writePump() {
 			if err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
 				return
 			}
+
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -157,6 +159,12 @@ func (c *Client) subscribeDeviceUpdates(id string, sub SubscribePayload) {
 	// Extract device ID from variables if present
 	deviceID, _ := sub.Variables["deviceId"].(string)
 
+	// Check hub availability
+	if c.handler.hub == nil {
+		c.sendError(id, "subscription service unavailable")
+		return
+	}
+
 	// Subscribe to hub for device updates
 	unsubscribe := c.handler.hub.SubscribeDeviceUpdates(c.operator.ID, deviceID, func(data interface{}) {
 		c.sendMessage(wsMessage{
@@ -180,6 +188,12 @@ func (c *Client) subscribeDeviceUpdates(id string, sub SubscribePayload) {
 func (c *Client) subscribeTelemetry(id string, sub SubscribePayload) {
 	deviceID, _ := sub.Variables["deviceId"].(string)
 
+	// Check hub availability
+	if c.handler.hub == nil {
+		c.sendError(id, "subscription service unavailable")
+		return
+	}
+
 	unsubscribe := c.handler.hub.SubscribeTelemetry(c.operator.ID, deviceID, func(data interface{}) {
 		c.sendMessage(wsMessage{
 			Type:    "next",
@@ -200,6 +214,12 @@ func (c *Client) subscribeTelemetry(id string, sub SubscribePayload) {
 // subscribeCommandStatus subscribes to command status changes.
 func (c *Client) subscribeCommandStatus(id string, sub SubscribePayload) {
 	dispatchID, _ := sub.Variables["dispatchId"].(string)
+
+	// Check hub availability
+	if c.handler.hub == nil {
+		c.sendError(id, "subscription service unavailable")
+		return
+	}
 
 	unsubscribe := c.handler.hub.SubscribeCommandStatus(c.operator.ID, dispatchID, func(data interface{}) {
 		c.sendMessage(wsMessage{
@@ -243,6 +263,7 @@ func (c *Client) sendMessage(msg wsMessage) {
 		c.presenter.LogMessageError(c.ctx, err)
 		return
 	}
+
 	if err := c.conn.WriteMessage(websocket.TextMessage, data); err != nil {
 		c.presenter.LogMessageError(c.ctx, err)
 	}
@@ -263,6 +284,7 @@ func mustMarshal(v interface{}) string {
 	if err != nil {
 		return "{}"
 	}
+
 	return string(data)
 }
 
@@ -277,6 +299,7 @@ func containsLower(s, substr string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -284,11 +307,13 @@ func equalFold(s, t string) bool {
 	if len(s) != len(t) {
 		return false
 	}
+
 	for i := 0; i < len(s); i++ {
 		cs, ct := s[i], t[i]
 		if cs == ct {
 			continue
 		}
+
 		if cs >= 'A' && cs <= 'Z' && ct >= 'a' && ct <= 'z' {
 			// cs is uppercase, ct is lowercase - case fold
 		} else if ct >= 'A' && ct <= 'Z' && cs >= 'a' && cs <= 'z' {
@@ -297,5 +322,6 @@ func equalFold(s, t string) bool {
 			return false
 		}
 	}
+
 	return true
 }

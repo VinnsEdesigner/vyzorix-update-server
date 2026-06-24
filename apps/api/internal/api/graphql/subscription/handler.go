@@ -41,8 +41,8 @@ type Handler struct {
 	resolver  *resolver.Resolver
 	authMw    *middleware.AuthMiddleware
 	presenter *Presenter
-	mu        sync.Mutex
 	clients   map[*websocket.Conn]*Client
+	mu        sync.Mutex
 }
 
 // NewHandler creates a new subscription handler.
@@ -73,6 +73,7 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 	if err != nil {
 		h.presenter.LogAuthFail(c.Request.Context(), err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+
 		return
 	}
 

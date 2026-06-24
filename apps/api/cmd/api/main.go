@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -76,12 +77,8 @@ func printSection(label string) {
 }
 
 // printStatus prints a status line with color coding.
-func printStatus(label, value string, isError bool) {
-	color := green
-	if isError {
-		color = red
-	}
-	fmt.Printf("  %s✓%s %s: %s%s%s\n", green, reset, label, color, value, reset)
+func printStatus(label, value string, _ bool) {
+	fmt.Printf("  %s✓%s %s: %s%s%s\n", green, reset, label, green, value, reset)
 }
 
 // printWarning prints a warning message.
@@ -90,54 +87,77 @@ func printWarning(label, value string) {
 }
 
 func main() {
-	// Print welcome banner
-	env := "development"
-	if os.Getenv("NODE_ENV") == "production" || os.Getenv("GIN_MODE") == "release" {
-		env = "production"
-	}
+	env := getEnv()
 	printBanner(env)
 
-	// Use structured logging with PII redaction
 	log := logging.NewFromEnv()
 
-	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
 		log.Error("configuration failed", "err", err)
 		os.Exit(1)
 	}
 
-	// ============================================================
-	// STEP 1: Infrastructure Layer - SQLite + Repositories
-	// ============================================================
+	db, err := initDatabase(cfg)
+	if err != nil {
+		log.Error("database initialization failed", "err", err)
+		os.Exit(1)
+	}
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			log.Error("database close failed", "err", closeErr)
+		}
+	}()
+
+	operatorRepo := storage.NewOperatorRepository(db.DB())
+	deviceRepo := storage.NewDeviceRepository(db.DB())
+	commandRepo := storage.NewCommandRepository(db.DB())
+
+	_, sessionManager, googleVerifier := initSecurity(cfg)
+
+	authService, deviceService, clientService, commandService, emailSvc,
+		fcmNotifier, telemetryRepo, wsHub, _, _ := initServices(cfg, log, db, deviceRepo, operatorRepo, commandRepo)
+
+	rateLimiter, authLimiter, accountLockout := initMiddleware()
+
+	ssrConfig, ssrManager := initSSR(log)
+
+	apiServer := createAPIServer(cfg, log, db, operatorRepo, sessionManager, googleVerifier,
+		authService, deviceService, clientService, commandService, emailSvc,
+		rateLimiter, authLimiter, accountLockout, wsHub, fcmNotifier)
+
+	if cfg.EnableGraphQL {
+		if regErr := apiServer.RegisterGraphQL(deviceService, commandService, telemetryRepo, wsHub); regErr != nil {
+			log.Error("failed to register GraphQL", "err", regErr)
+		}
+	}
+
+	startServer(cfg.Port, log, apiServer, ssrConfig, ssrManager)
+}
+
+func getEnv() string {
+	if os.Getenv("NODE_ENV") == "production" || os.Getenv("GIN_MODE") == "release" {
+		return "production"
+	}
+	return "development"
+}
+
+func initDatabase(cfg config.Config) (*storage.SQLite, error) {
 	printSection("Database")
 
 	sqliteCfg := storage.DefaultConfig(cfg.DatabaseURL)
 	db, err := storage.Open(sqliteCfg)
 	if err != nil {
-		log.Error("database connection failed", "err", err)
-		os.Exit(1)
+		return nil, err
 	}
-	defer func() {
-		if err := db.Close(); err != nil {
-			log.Error("database close failed", "err", err)
-		}
-	}()
 	printStatus("Database", "Connected to "+cfg.DatabaseURL, false)
 
-	// Create repository instances (implement domain interfaces)
-	operatorRepo := storage.NewOperatorRepository(db.DB())
-	sessionRepo := storage.NewSessionRepository(db.DB())
-	emailVerifyRepo := storage.NewEmailVerificationRepository(db.DB())
-	passwordResetRepo := storage.NewPasswordResetRepository(db.DB())
-	deviceRepo := storage.NewDeviceRepository(db.DB())
-	clientRepo := storage.NewClientRepository(db.DB())
-	commandRepo := storage.NewCommandRepository(db.DB())
-	printStatus("Repositories", "Initialized (operator, session, device, client, command, email, password_reset)", false)
+	printStatus("Repositories", "Initialized", false)
 
-	// ============================================================
-	// STEP 2: Infrastructure - Password Hasher & Session Manager
-	// ============================================================
+	return db, nil
+}
+
+func initSecurity(cfg config.Config) (*infraauthinfra.Argon2idHasher, *infraauth.SessionManager, *infraauth.GoogleTokenVerifier) {
 	printSection("Security")
 
 	passwordHasher := infraauthinfra.NewArgon2idHasher()
@@ -146,183 +166,156 @@ func main() {
 	sessionManager := infraauth.NewSessionManager(cfg.SessionSecret)
 	printStatus("SessionManager", "Initialized", false)
 
-	// Google token verifier for OAuth
 	googleVerifier := infraauth.NewGoogleTokenVerifier(cfg.GoogleOAuthClientID)
 	printStatus("GoogleVerifier", "Initialized", false)
 
-	// ============================================================
-	// STEP 3: Application Layer - Services
-	// ============================================================
+	return passwordHasher, sessionManager, googleVerifier
+}
+
+func initServices(cfg config.Config, log *slog.Logger, db *storage.SQLite,
+	deviceRepo *storage.DeviceRepository, operatorRepo *storage.OperatorRepository,
+	commandRepo *storage.CommandRepository) (*appsvc.AuthService, *device.Service, *client.Service,
+	*cmdapp.Service, *emailService.Service, fcm.Notifier, *storage.TelemetryRepository,
+	*hub.Hub, *hub.MessageQueue, *hub.RateLimiter) {
 	printSection("Services")
 
-	sessionTTL := 7 * 24 * time.Hour // 7 days
+	sessionTTL := 7 * 24 * time.Hour
 
 	authService := appsvc.NewAuthService(
 		operatorRepo,
-		sessionRepo,
-		emailVerifyRepo,
-		passwordResetRepo,
-		passwordHasher,
+		storage.NewSessionRepository(db.DB()),
+		storage.NewEmailVerificationRepository(db.DB()),
+		storage.NewPasswordResetRepository(db.DB()),
+		infraauthinfra.NewArgon2idHasher(),
 		sessionTTL,
 	)
 	printStatus("AuthService", "Initialized", false)
 
-	deviceService := device.NewService(
-		deviceRepo,
-		operatorRepo,
-	)
+	deviceService := device.NewService(deviceRepo, operatorRepo)
 	printStatus("DeviceService", "Initialized", false)
 
-	clientService := client.NewService(clientRepo)
+	clientService := client.NewService(storage.NewClientRepository(db.DB()))
 	printStatus("ClientService", "Initialized", false)
 
 	commandService := cmdapp.NewService(commandRepo, deviceRepo)
 	printStatus("CommandService", "Initialized", false)
 
-	// Email service (optional - only sends if RESEND_API_KEY is configured)
 	emailSvc := emailService.NewService()
 	if cfg.ResendAPIKey != "" {
 		printStatus("EmailService", "Resend configured", false)
 	} else {
-		printWarning("EmailService", "RESEND_API_KEY not configured (email disabled)")
+		printWarning("EmailService", "RESEND_API_KEY not configured")
 	}
 
-	// FCM notifier for push notifications (optional - only if FIREBASE_CREDENTIALS is configured)
-	// Using EnhancedNotifier with retry logic and metrics
 	var fcmNotifier fcm.Notifier
 	if fcmClient, err := fcm.Init(log, cfg.FirebaseCreds); err == nil {
-		enhancedFCM := fcm.NewEnhancedNotifier(fcmClient, fcm.DefaultFCMConfig())
-		fcmNotifier = enhancedFCM
-		printStatus("FCM", "Initialized (Enhanced: 3 retries, metrics, token validation)", false)
+		fcmNotifier = fcm.NewEnhancedNotifier(fcmClient, fcm.DefaultFCMConfig())
+		printStatus("FCM", "Initialized", false)
 	} else {
-		printWarning("FCM", "Firebase not configured (push notifications disabled)")
+		printWarning("FCM", "Firebase not configured")
 	}
 
-	// Create telemetry repository for WebSocket hub
 	telemetryRepo := storage.NewTelemetryRepository(db.DB())
 	printStatus("TelemetryRepository", "Initialized", false)
 
-	// WebSocket hub configuration with new features
 	hubConfig := &hub.HubConfig{
 		MessageQueue: hub.DefaultMessageQueueConfig(),
 		RateLimiter:  hub.DefaultRateLimiterConfig(),
 	}
-
-	// Create WebSocket hub
 	wsHub := hub.New(log, deviceRepo, telemetryRepo, nil, hubConfig)
 	printStatus("WebSocketHub", "Initialized", false)
 
-	// Initialize message queue for offline command delivery
 	messageQueue := hub.NewMessageQueue(log, db.DB(), hub.DefaultMessageQueueConfig())
 	messageQueue.Start(context.Background())
 	wsHub.SetMessageQueue(messageQueue)
-	printStatus("MessageQueue", "Initialized (offline command queue enabled)", false)
+	printStatus("MessageQueue", "Initialized", false)
 
-	// Initialize rate limiter for WebSocket connections
 	wsRateLimiter := hub.NewRateLimiter(log, hub.DefaultRateLimiterConfig())
 	wsRateLimiter.StartCleanup(context.Background())
 	wsHub.SetRateLimiter(wsRateLimiter)
-	printStatus("WebSocketRateLimiter", "Initialized (100 msg/s, 200 burst)", false)
+	printStatus("WebSocketRateLimiter", "Initialized", false)
 
-	// ============================================================
-	// STEP 4: API Layer - Router + Middleware
-	// ============================================================
+	return authService, deviceService, clientService, commandService, emailSvc,
+		fcmNotifier, telemetryRepo, wsHub, messageQueue, wsRateLimiter
+}
+
+func initMiddleware() (*middleware.RateLimiter, *middleware.RateLimiter, *middleware.Lockout) {
 	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
-	authLimiter := middleware.NewRateLimiter(5, time.Minute) // Stricter for auth endpoints
-	printStatus("RateLimiters", "Initialized (100/min general, 5/min auth)", false)
+	authLimiter := middleware.NewRateLimiter(5, time.Minute)
+	printStatus("RateLimiters", "Initialized", false)
 
-	// Account lockout configuration
 	lockoutConfig := middleware.LoadLockoutConfig()
 	accountLockout := middleware.NewLockout(lockoutConfig)
-	printStatus("AccountLockout", fmt.Sprintf("Enabled: %v, MaxAttempts: %d", lockoutConfig.Enabled, lockoutConfig.MaxAttempts), false)
+	printStatus("AccountLockout", fmt.Sprintf("Enabled: %v", lockoutConfig.Enabled), false)
 
-	// ============================================================
-	// STEP 5: SSR Server (Server-Side Rendering)
-	// SSR is ENABLED BY DEFAULT - native mode for both dev and prod
-	// ============================================================
+	return rateLimiter, authLimiter, accountLockout
+}
+
+func initSSR(log *slog.Logger) (config.SSRConfig, *ssr.Manager) {
 	ssrConfig := config.LoadSSRConfig()
-	var ssrManager *ssr.Manager // Will be nil if SSR is disabled
+	var ssrManager *ssr.Manager
 
 	if ssrConfig.EnableSSR {
 		printSection("SSR Configuration")
-		printStatus("SSR Mode", "Enabled (Native SSR mode)", false)
+		printStatus("SSR Mode", "Enabled", false)
 		printStatus("SSR Auto-Start", strconv.FormatBool(ssrConfig.SSRAutoStart), false)
 		printStatus("SSR Auto-Build", strconv.FormatBool(ssrConfig.SSRAutoBuild), false)
 		printStatus("SSR URL", ssrConfig.SSRServerURL, false)
-		printStatus("SSR Timeout", strconv.Itoa(ssrConfig.SSRBuildTimeout)+"s", false)
-		printStatus("SSR Retries", strconv.Itoa(ssrConfig.SSRRetryAttempts), false)
 
-		// Create SSR Manager (webDir and publicDir)
 		ssrManager = ssr.NewManager(ssrConfig, log, "", "")
-
-		// Start SSR server with auto-build
 		if err := ssrManager.Start(); err != nil {
 			log.Error("SSR server failed to start", "err", err)
-			printWarning("SSR Server", fmt.Sprintf("Failed after %d attempts, using SPA fallback", ssrConfig.SSRRetryAttempts))
+			printWarning("SSR Server", "Failed, using SPA fallback")
 		} else if ssrManager.IsReady() {
-			printStatus("SSR Server", "Ready on "+ssrConfig.SSRServerURL, false)
-			printStatus("Frontend Mode", "SSR (Node.js)", false)
-		} else {
-			printWarning("SSR Server", "Started but not ready, using SPA fallback")
-			printStatus("Frontend Mode", "SPA (Static HTML fallback)", false)
+			printStatus("SSR Server", "Ready", false)
 		}
 	} else {
 		printSection("SSR Configuration")
-		printStatus("SSR Mode", "Disabled (SPA fallback only)", false)
-		printStatus("Frontend Mode", "SPA (Static HTML)", false)
+		printStatus("SSR Mode", "Disabled", false)
 	}
 
+	return ssrConfig, ssrManager
+}
+
+func createAPIServer(cfg config.Config, log *slog.Logger, db *storage.SQLite,
+	operatorRepo *storage.OperatorRepository, sessionManager *infraauth.SessionManager,
+	googleVerifier *infraauth.GoogleTokenVerifier, authService *appsvc.AuthService,
+	deviceService *device.Service, clientService *client.Service,
+	commandService *cmdapp.Service, emailSvc *emailService.Service,
+	rateLimiter *middleware.RateLimiter, authLimiter *middleware.RateLimiter,
+	accountLockout *middleware.Lockout, wsHub *hub.Hub, fcmNotifier fcm.Notifier) *api.Server {
 	printSection("Server")
 	printStatus("Go Server", "Starting on "+cfg.Port, false)
-	printStatus("Environment", env, false)
 
-	// Initialize metrics
 	appMetrics := metrics.New()
-
-	// Initialize audit logger
 	auditRepo := audit.NewRepository(db.DB())
 	auditLogger := audit.NewLogger(auditRepo, log, audit.DefaultLoggerConfig())
 
-	apiServer := api.NewServer(&api.ServerConfig{
-		AuthService:     authService,
-		DeviceService:   deviceService,
-		ClientService:   clientService,
-		CommandService:  commandService,
-		RateLimiter:     rateLimiter,
-		AuthLimiter:     authLimiter,
-		Config:          cfg,
-		Log:             log,
+	return api.NewServer(&api.ServerConfig{
+		AuthService:    authService,
+		DeviceService:  deviceService,
+		ClientService:  clientService,
+		CommandService: commandService,
+		RateLimiter:    rateLimiter,
+		AuthLimiter:    authLimiter,
+		Config:         cfg,
+		Log:            log,
 		SessionManager:  sessionManager,
 		GoogleVerifier:  googleVerifier,
 		EmailService:    emailSvc,
 		Hub:             wsHub,
 		FCMNotifier:     fcmNotifier,
-		DB:              db,
+		DB:             db,
 		Lockout:         accountLockout,
-		OperatorRepo:    operatorRepo,
-		Metrics:         appMetrics,
-		AuditLogger:     auditLogger,
+		OperatorRepo:   operatorRepo,
+		Metrics:        appMetrics,
+		AuditLogger:    auditLogger,
 	})
+}
 
-	// ============================================================
-	// STEP 4.5: GraphQL (if enabled)
-	// ============================================================
-	if cfg.EnableGraphQL {
-		telemetryRepo := storage.NewTelemetryRepository(db.DB())
-		if err := apiServer.RegisterGraphQL(
-			deviceService,
-			commandService,
-			telemetryRepo,
-			wsHub,
-		); err != nil {
-			log.Error("failed to register GraphQL", "err", err)
-		}
-	}
-
-	// ============================================================
-	// STEP 5: HTTP Server
-	// ============================================================
-	addr := ":" + cfg.Port
+func startServer(port string, log *slog.Logger, apiServer *api.Server,
+	ssrConfig config.SSRConfig, ssrManager *ssr.Manager) {
+	addr := ":" + port
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      apiServer.Routes(),
@@ -331,7 +324,6 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -348,63 +340,13 @@ func main() {
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Error("shutdown error", "err", err)
 	}
 
-	// Stop SSR Manager (handles graceful shutdown of Node.js subprocess)
 	if ssrConfig.EnableSSR && ssrManager != nil {
 		_ = ssrManager.Stop()
 		log.Info("SSR server stopped")
 	}
 }
-
-// DEPENDENCY WIRING DIAGRAM (Clean Architecture):
-//
-//   main()
-//     │
-//     ├─► infrastructure/storage.Open() ─► SQLite (DB connection)
-//     │                                        │
-//     │   ┌─────────────────────────────────────┴─────────────────────────────────────┐
-//     │   │                                                                         │
-//     │   ▼                                                                         ▼
-//     │   storage.NewOperatorRepository() ◄────────────── storage.NewSessionRepository()
-//     │   (implements operator.Repository)                 (implements session.Repository)
-//     │                                                                         │
-//     │   storage.NewEmailVerificationRepository() ◄── storage.NewPasswordResetRepository()
-//     │   (implements email_verification.Repository)      (implements password_reset.Repository)
-//     │                                                                         │
-//     │   storage.NewDeviceRepository() ◄────────────── storage.NewCommandRepository()
-//     │                                                                         │
-//     └─────────────────────────────────────────────────────────────────────────────┘
-//
-//     ▼
-//     infraauth.NewArgon2idHasher() ─► implements infraauth.PasswordHasher interface
-//
-//     ▼
-//     infraauth.NewAuthService(
-//       operatorRepo,
-//       sessionRepo,
-//       emailVerifyRepo,
-//       passwordResetRepo,
-//       passwordHasher,
-//       sessionTTL,
-//     )
-//
-//     ▼
-//     device.NewService(deviceRepo, operatorRepo)
-//
-//     ▼
-//     ssr.NewManager(ssrConfig, log) ─► Node.js SSR subprocess (auto-builds web app)
-//         │
-//         ├─► WebPublicDir: served static files
-//         ├─► WebDistDir: SSR build output
-//         └─► Health monitoring + auto-recovery
-//
-//     ▼
-//     api.NewServer(config) ─► api.Routes() + SSRProxy middleware
-//         │
-//         └─► SSRProxy: proxies /dashboard/* to Node.js SSR, falls back to static HTML
-//
-// The flow: Infrastructure → Domain Interfaces ← Application Services ← API Handlers
-//           └────────────────────────── SSR ────────────────────────────────┘

@@ -16,8 +16,8 @@ type Session struct {
 	CreatedAt  time.Time
 
 	// Optional metadata.
-	IPAddress  string
-	UserAgent  string
+	IPAddress string
+	UserAgent string
 }
 
 // IsExpired returns true if the session has expired.
@@ -39,9 +39,11 @@ func (s *Session) TimeUntilExpiry() time.Duration {
 func (s *Session) RemainingLifetime() int {
 	total := s.ExpiresAt.Sub(s.CreatedAt).Seconds()
 	remaining := s.TimeUntilExpiry().Seconds()
+
 	if total <= 0 {
 		return 0
 	}
+
 	return int((remaining / total) * 100)
 }
 

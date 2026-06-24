@@ -155,13 +155,13 @@ func (e *Error) Error() string {
 
 // Result contains detailed validation results.
 type Result struct {
-	Valid       bool
+	HasMXRecord *bool
 	Normalized  string
 	Domain      string
 	LocalPart   string
-	HasMXRecord *bool
 	Errors      []ValidationError
 	Warnings    []string
+	Valid       bool
 }
 
 // ValidationError represents a specific email validation error.
@@ -177,8 +177,8 @@ var (
 )
 
 var mxCache = struct {
-	sync.RWMutex
 	entries map[string][]string
+	sync.RWMutex
 }{
 	entries: make(map[string][]string),
 }
@@ -194,12 +194,14 @@ func Email(email string) (string, error) {
 				Code:    result.Errors[0].Code,
 			}
 		}
+
 		return "", &Error{
 			Field:   "email",
 			Message: "invalid email format",
 			Code:    "INVALID_FORMAT",
 		}
 	}
+
 	return result.Normalized, nil
 }
 
@@ -215,12 +217,14 @@ func EmailFull(email string, validator *Validator) *Result {
 	if len(email) == 0 {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{Code: "EMPTY", Message: "email is required"})
+
 		return result
 	}
 
 	if len(email) > MaxEmailLength {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{Code: "TOO_LONG", Message: "email exceeds maximum length"})
+
 		return result
 	}
 
@@ -229,6 +233,7 @@ func EmailFull(email string, validator *Validator) *Result {
 	if len(parts) != 2 {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{Code: "INVALID_FORMAT", Message: "invalid email format"})
+
 		return result
 	}
 
@@ -242,6 +247,7 @@ func EmailFull(email string, validator *Validator) *Result {
 	if !emailRegexRFC5322.MatchString(email) && !emailRegexPermissive.MatchString(email) {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{Code: "INVALID_FORMAT", Message: "invalid email format"})
+
 		return result
 	}
 
@@ -249,6 +255,7 @@ func EmailFull(email string, validator *Validator) *Result {
 	if emailRegexIPDomain.MatchString(email) {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{Code: "IP_DOMAIN", Message: "IP addresses in email domain are not allowed"})
+
 		return result
 	}
 
@@ -256,6 +263,7 @@ func EmailFull(email string, validator *Validator) *Result {
 	if !validator.AllowDisposable && isDisposable(domain) {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{Code: "DISPOSABLE_DOMAIN", Message: "temporary/disposable email addresses are not allowed"})
+
 		return result
 	}
 
@@ -268,6 +276,7 @@ func EmailFull(email string, validator *Validator) *Result {
 	if validator.RequireTrustedProviderOnly && !isTrusted(domain) && !isDisposable(domain) {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{Code: "UNTRUSTED_PROVIDER", Message: "only email from trusted providers are allowed"})
+
 		return result
 	}
 
@@ -275,9 +284,11 @@ func EmailFull(email string, validator *Validator) *Result {
 	if validator.VerifyMX && result.Valid {
 		hasMX, _ := checkMX(domain, validator.MXLookupTimeout)
 		result.HasMXRecord = &hasMX
+
 		if !hasMX {
 			result.Valid = false
 			result.Errors = append(result.Errors, ValidationError{Code: "NO_MX_RECORD", Message: "email domain does not accept mail"})
+
 			return result
 		}
 	}
@@ -290,11 +301,13 @@ func isDisposable(domain string) bool {
 	if disposableEmailDomains[domain] {
 		return true
 	}
+
 	for d := range disposableEmailDomains {
 		if strings.HasSuffix(domain, "."+d) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -303,12 +316,14 @@ func isRoleBased(local string) bool {
 	if roleBasedSuffixes[local] {
 		return true
 	}
+
 	prefixes := []string{"admin", "support", "noreply", "no-reply", "donotreply", "info", "contact", "help", "sales", "billing"}
 	for _, p := range prefixes {
 		if strings.HasPrefix(local, p) || strings.HasPrefix(local, p+".") {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -316,7 +331,7 @@ func isTrusted(domain string) bool {
 	return trustedEmailProviders[strings.ToLower(domain)]
 }
 
-func checkMX(domain string, timeoutSeconds int) (bool, error) {
+func checkMX(domain string, _ int) (bool, error) {
 	mxCache.RLock()
 	if records, ok := mxCache.entries[domain]; ok {
 		mxCache.RUnlock()
@@ -324,16 +339,22 @@ func checkMX(domain string, timeoutSeconds int) (bool, error) {
 	}
 	mxCache.RUnlock()
 
-	mxRecords, _ := net.LookupMX(domain)
+	mxRecords, mxErr := net.LookupMX(domain)
+
+	if mxErr != nil {
+		return false, mxErr
+	}
 
 	if len(mxRecords) == 0 {
 		mxCache.Lock()
 		mxCache.entries[domain] = []string{}
 		mxCache.Unlock()
+
 		return false, nil
 	}
 
 	mxCache.Lock()
+
 	mxCache.entries[domain] = make([]string, len(mxRecords))
 	for i, mx := range mxRecords {
 		mxCache.entries[domain][i] = mx.Host
@@ -349,9 +370,11 @@ func Name(name string) (string, error) {
 	if len(name) == 0 {
 		return "", &Error{Field: "name", Message: "name is required"}
 	}
+
 	if len(name) > MaxNameLength {
 		return "", &Error{Field: "name", Message: "name exceeds maximum length"}
 	}
+
 	return name, nil
 }
 
@@ -360,9 +383,11 @@ func PasswordLength(password string) error {
 	if len(password) < MinPasswordLength {
 		return &Error{Field: "password", Message: "password must be at least 8 characters"}
 	}
+
 	if len(password) > MaxPasswordLength {
 		return &Error{Field: "password", Message: "password exceeds maximum length"}
 	}
+
 	return nil
 }
 
@@ -372,13 +397,16 @@ func DeviceID(id string) (string, error) {
 	if len(id) == 0 {
 		return "", &Error{Field: "deviceId", Message: "device ID is required"}
 	}
+
 	if len(id) > MaxDeviceIDLength {
 		return "", &Error{Field: "deviceId", Message: "device ID exceeds maximum length"}
 	}
+
 	validID := regexp.MustCompile(`^[a-zA-Z0-9\-_]+$`)
 	if !validID.MatchString(id) {
 		return "", &Error{Field: "deviceId", Message: "device ID contains invalid characters"}
 	}
+
 	return id, nil
 }
 
@@ -388,9 +416,11 @@ func Command(cmd string) (string, error) {
 	if len(cmd) == 0 {
 		return "", &Error{Field: "command", Message: "command is required"}
 	}
+
 	if len(cmd) > MaxCommandLength {
 		return "", &Error{Field: "command", Message: "command exceeds maximum length"}
 	}
+
 	return cmd, nil
 }
 
@@ -400,9 +430,11 @@ func Token(token string) (string, error) {
 	if len(token) == 0 {
 		return "", &Error{Field: "token", Message: "token is required"}
 	}
+
 	if len(token) > MaxTokenLength {
 		return "", &Error{Field: "token", Message: "token exceeds maximum length"}
 	}
+
 	return token, nil
 }
 
@@ -412,6 +444,7 @@ func Sanitize(s string, maxLen int) string {
 	if len(s) > maxLen {
 		s = s[:maxLen]
 	}
+
 	return s
 }
 
@@ -422,6 +455,7 @@ func ContainsInvalidUTF8(s string) bool {
 			return true
 		}
 	}
+
 	return []byte(s) == nil && s != ""
 }
 
@@ -432,6 +466,7 @@ func ContainsControlCharacters(s string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -441,6 +476,7 @@ func ExtractDomain(email string) string {
 	if len(parts) != 2 {
 		return ""
 	}
+
 	return parts[1]
 }
 
@@ -461,15 +497,18 @@ func NormalizeEmail(email string) string {
 	return strings.TrimSpace(strings.ToLower(email))
 }
 
-// ValidateEmailURI validates a mailto: URI.
+// EmailURI validates a mailto: URI.
 func EmailURI(uri string) error {
 	parsed, err := url.Parse(uri)
 	if err != nil {
 		return &Error{Field: "uri", Message: "invalid URI format"}
 	}
+
 	if parsed.Scheme != "mailto" {
 		return &Error{Field: "uri", Message: "URI must be mailto: scheme"}
 	}
+
 	_, err = Email(parsed.Opaque)
+
 	return err
 }

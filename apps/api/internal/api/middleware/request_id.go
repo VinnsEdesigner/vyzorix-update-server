@@ -40,6 +40,7 @@ func RequestIDMiddleware() gin.HandlerFunc {
 func generateRequestID() string {
 	b := make([]byte, 16)
 	rand.Read(b) //nolint:errcheck
+
 	return hex.EncodeToString(b)
 }
 
@@ -50,5 +51,6 @@ func GetRequestID(c *gin.Context) string {
 			return s
 		}
 	}
+
 	return ""
 }

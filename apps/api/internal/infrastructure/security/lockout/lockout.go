@@ -120,6 +120,7 @@ func (h *Handler) ClearLockout(ctx context.Context, operatorID string) error {
 	if err := h.storage.ClearAccountLockout(ctx, operatorID); err != nil {
 		return err
 	}
+
 	return h.storage.ClearFailedAttempts(ctx, operatorID)
 }
 
@@ -144,6 +145,7 @@ func FakeHash(a, b string) bool {
 		subtle.ConstantTimeCompare([]byte(a), []byte(b))
 		return false
 	}
+
 	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
 }
 
@@ -171,5 +173,6 @@ func GenerateFakeToken() string {
 	if _, err := rand.Read(b); err != nil {
 		panic(ErrTokenGenerationFailed)
 	}
+
 	return "fake_" + hex.EncodeToString(b)
 }

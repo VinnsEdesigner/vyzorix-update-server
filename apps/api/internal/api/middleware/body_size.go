@@ -16,6 +16,7 @@ func BodySizeLimit(limit int64) gin.HandlerFunc {
 				"error":   "request_too_large",
 				"message": "Request body exceeds maximum allowed size",
 			})
+
 			return
 		}
 

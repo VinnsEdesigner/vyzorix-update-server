@@ -51,6 +51,7 @@ func AuthRevocationMiddleware(revocationList *infraauth.RevocationList) func(c *
 				"error":   "session_revoked",
 				"message": "Session has been revoked, please login again",
 			})
+
 			return
 		}
 

@@ -12,22 +12,22 @@ import (
 
 // SSRConfig holds SSR server configuration.
 type SSRConfig struct {
-	EnableSSR              bool
 	SSRServerURL           string
 	SSRPort                string
-	SSRAutoStart           bool
 	SSRBuildTimeout        int
-	SSRAutoBuild          bool
 	SSRHealthCheckInterval int
 	SSRRetryAttempts       int
+	EnableSSR              bool
+	SSRAutoStart           bool
+	SSRAutoBuild           bool
 }
 
 // SigningConfig holds request signing configuration.
 type SigningConfig struct {
-	Enabled               bool
 	TimestampWindow       int
-	MaxCacheSize         int
-	GracePeriod          int
+	MaxCacheSize          int
+	GracePeriod           int
+	Enabled               bool
 	AllowUnsignedFallback bool
 }
 
@@ -49,21 +49,25 @@ func LoadSigningConfig() SigningConfig {
 	if v := os.Getenv("REQUEST_SIGNING_ENABLED"); v != "" {
 		cfg.Enabled = v == "true" || v == "1" || v == "yes"
 	}
+
 	if v := os.Getenv("SIGNING_TIMESTAMP_WINDOW"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			cfg.TimestampWindow = n
 		}
 	}
+
 	if v := os.Getenv("SIGNING_MAX_CACHE_SIZE"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			cfg.MaxCacheSize = n
 		}
 	}
+
 	if v := os.Getenv("SIGNING_GRACE_PERIOD"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			cfg.GracePeriod = n
 		}
 	}
+
 	if v := os.Getenv("ALLOW_UNSIGNED_FALLBACK"); v != "" {
 		cfg.AllowUnsignedFallback = v == "true" || v == "1" || v == "yes"
 	}
@@ -73,62 +77,40 @@ func LoadSigningConfig() SigningConfig {
 
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
-	// OAuth Configuration
-	GoogleOAuthClientID     string
-	GoogleOAuthClientSecret string
-	GitHubOAuthClientID     string
-	GitHubOAuthClientSecret string
-
-	// JWT & Session Configuration
-	JWTSecret                string
-	SessionSecret            string
-	SessionMaxAge            int
-	JWTDuration              time.Duration
-	EnforceHMAC              bool
-	HMACWindow               time.Duration
-
-	// Database Configuration
-	DatabaseURL string
-
-	// File System Configuration
-	DataDir    string
-	BinDir     string
-	PublicDir  string
-
-	// Firebase Configuration
-	FirebaseCreds string
-
-	// Email Configuration
-	EmailFromName  string
-	EmailFrom      string
-	ResendAPIKey   string
-
-	// Environment
-	Env string
-
-	// URL Configuration
-	FrontendURL string
-	BaseURL     string
-
-	// Token Configuration
 	TokenSecret              string
-	EmailVerifyTokenExpiry   time.Duration
+	PublicDir                string
+	GitHubOAuthClientID      string
+	GitHubOAuthClientSecret  string
+	FirebaseCreds            string
+	SessionSecret            string
+	FrontendURL              string
+	BinDir                   string
+	Port                     string
+	BaseURL                  string
+	DatabaseURL              string
+	DataDir                  string
+	GoogleOAuthClientSecret  string
+	GoogleOAuthClientID      string
+	JWTSecret                string
+	EmailFromName            string
+	EmailFrom                string
+	ResendAPIKey             string
+	Env                      string
+	AllowedOrigins           []string
+	JWTDuration              time.Duration
 	PasswordResetTokenExpiry time.Duration
-
-	// Server Configuration
-	Port           string
-	AllowedOrigins []string
-
-	// GraphQL Configuration
-	EnableGraphQL bool
-
-	// Cache Configuration
-	NonceCacheTTL time.Duration
+	EmailVerifyTokenExpiry   time.Duration
+	HMACWindow               time.Duration
+	SessionMaxAge            int
+	NonceCacheTTL            time.Duration
+	EnforceHMAC              bool
+	EnableGraphQL            bool
 }
 
 // Load reads configuration from environment variables and returns a Config struct.
 func Load() (Config, error) {
 	jwtDuration := 7 * 24 * time.Hour
+
 	if v := os.Getenv("JWT_DURATION_HOURS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			jwtDuration = time.Duration(n) * time.Hour
@@ -136,6 +118,7 @@ func Load() (Config, error) {
 	}
 
 	sessionMaxAge := 86400
+
 	if v := os.Getenv("SESSION_MAX_AGE_SECONDS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			sessionMaxAge = n
@@ -143,6 +126,7 @@ func Load() (Config, error) {
 	}
 
 	emailVerifyExpiry := 24 * time.Hour
+
 	if v := os.Getenv("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			emailVerifyExpiry = time.Duration(n) * time.Hour
@@ -150,6 +134,7 @@ func Load() (Config, error) {
 	}
 
 	passwordResetExpiry := time.Hour
+
 	if v := os.Getenv("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			passwordResetExpiry = time.Duration(n) * time.Minute
@@ -157,33 +142,33 @@ func Load() (Config, error) {
 	}
 
 	c := Config{
-		Port:                    get("PORT", "3000"),
-		Env:                     get("NODE_ENV", get("GO_ENV", "development")),
-		DatabaseURL:             get("DATABASE_URL", "./data/vyzorix.db"),
-		DataDir:                 get("VYZORIX_API_DIR", "./data"),
-		BinDir:                  get("VYZORIX_BIN_DIR", "./bin"),
-		PublicDir:               get("VYZORIX_PUBLIC_DIR", "./public"),
-		FirebaseCreds:           os.Getenv("FIREBASE_CREDENTIALS"),
-		TokenSecret:             os.Getenv("TOKEN_SECRET"),
-		JWTSecret:               os.Getenv("JWT_SECRET"),
-		SessionSecret:           os.Getenv("SESSION_SECRET"),
-		SessionMaxAge:           sessionMaxAge,
-		AllowedOrigins:          splitCSV(get("ALLOWED_ORIGINS", "*")),
-		HMACWindow:              30 * time.Second,
-		NonceCacheTTL:           1 * time.Hour,
-		GoogleOAuthClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
-		GoogleOAuthClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
-		GitHubOAuthClientID:     os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
-		GitHubOAuthClientSecret: os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
-		BaseURL:                 get("BASE_URL", "http://localhost:3000"),
-		FrontendURL:             get("FRONTEND_URL", "http://localhost:5173"),
-		ResendAPIKey:            os.Getenv("RESEND_API_KEY"),
-		EmailFrom:               get("EMAIL_FROM", "noreply@vyzorix.app"),
-		EmailFromName:           get("EMAIL_FROM_NAME", "Vyzorix"),
-		JWTDuration:             jwtDuration,
-		EmailVerifyTokenExpiry:  emailVerifyExpiry,
+		Port:                     get("PORT", "3000"),
+		Env:                      get("NODE_ENV", get("GO_ENV", "development")),
+		DatabaseURL:              get("DATABASE_URL", "./data/vyzorix.db"),
+		DataDir:                  get("VYZORIX_API_DIR", "./data"),
+		BinDir:                   get("VYZORIX_BIN_DIR", "./bin"),
+		PublicDir:                get("VYZORIX_PUBLIC_DIR", "./public"),
+		FirebaseCreds:            os.Getenv("FIREBASE_CREDENTIALS"),
+		TokenSecret:              os.Getenv("TOKEN_SECRET"),
+		JWTSecret:                os.Getenv("JWT_SECRET"),
+		SessionSecret:            os.Getenv("SESSION_SECRET"),
+		SessionMaxAge:            sessionMaxAge,
+		AllowedOrigins:           splitCSV(get("ALLOWED_ORIGINS", "*")),
+		HMACWindow:               30 * time.Second,
+		NonceCacheTTL:            1 * time.Hour,
+		GoogleOAuthClientID:      os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
+		GoogleOAuthClientSecret:  os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+		GitHubOAuthClientID:      os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
+		GitHubOAuthClientSecret:  os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
+		BaseURL:                  get("BASE_URL", "http://localhost:3000"),
+		FrontendURL:              get("FRONTEND_URL", "http://localhost:5173"),
+		ResendAPIKey:             os.Getenv("RESEND_API_KEY"),
+		EmailFrom:                get("EMAIL_FROM", "noreply@vyzorix.app"),
+		EmailFromName:            get("EMAIL_FROM_NAME", "Vyzorix"),
+		JWTDuration:              jwtDuration,
+		EmailVerifyTokenExpiry:   emailVerifyExpiry,
 		PasswordResetTokenExpiry: passwordResetExpiry,
-		EnableGraphQL:           getBool("ENABLE_GRAPHQL", true), // Enabled by default
+		EnableGraphQL:            getBool("ENABLE_GRAPHQL", true), // Enabled by default
 	}
 
 	enforceDefault := strings.EqualFold(c.Env, "production")
@@ -194,6 +179,7 @@ func Load() (Config, error) {
 		if err != nil || n <= 0 {
 			return c, fmt.Errorf("invalid HMAC_WINDOW_SECONDS: %q", v)
 		}
+
 		c.HMACWindow = time.Duration(n) * time.Second
 	}
 
@@ -213,6 +199,7 @@ func get(k, fallback string) string {
 	if v != "" {
 		return strings.TrimSpace(v)
 	}
+
 	return fallback
 }
 
@@ -221,21 +208,25 @@ func getBool(k string, fallback bool) bool {
 	if v == "" {
 		return fallback
 	}
+
 	b, err := strconv.ParseBool(v)
 	if err != nil {
 		return fallback
 	}
+
 	return b
 }
 
 func splitCSV(v string) []string {
 	parts := strings.Split(v, ",")
 	out := make([]string, 0, len(parts))
+
 	for _, p := range parts {
 		if s := strings.TrimSpace(p); s != "" {
 			out = append(out, s)
 		}
 	}
+
 	return out
 }
 
@@ -247,7 +238,7 @@ func DefaultSSRConfig() SSRConfig {
 		SSRPort:                "3001",
 		SSRAutoStart:           true,
 		SSRBuildTimeout:        60,
-		SSRAutoBuild:          true,
+		SSRAutoBuild:           true,
 		SSRHealthCheckInterval: 5,
 		SSRRetryAttempts:       3,
 	}
@@ -257,36 +248,37 @@ func DefaultSSRConfig() SSRConfig {
 func LoadSSRConfig() SSRConfig {
 	cfg := DefaultSSRConfig()
 
-	if v := os.Getenv("SSR_ENABLED"); v != "" {
-		cfg.EnableSSR = v == "true" || v == "1" || v == "yes"
-	}
-	if v := os.Getenv("SSR_SERVER_URL"); v != "" {
-		cfg.SSRServerURL = v
-	}
-	if v := os.Getenv("SSR_PORT"); v != "" {
-		cfg.SSRPort = v
-	}
-	if v := os.Getenv("SSR_AUTO_START"); v != "" {
-		cfg.SSRAutoStart = v == "true" || v == "1" || v == "yes"
-	}
-	if v := os.Getenv("SSR_BUILD_TIMEOUT"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 {
-			cfg.SSRBuildTimeout = n
-		}
-	}
-	if v := os.Getenv("SSR_AUTO_BUILD"); v != "" {
-		cfg.SSRAutoBuild = v == "true" || v == "1" || v == "yes"
-	}
-	if v := os.Getenv("SSR_HEALTH_CHECK_INTERVAL"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 {
-			cfg.SSRHealthCheckInterval = n
-		}
-	}
-	if v := os.Getenv("SSR_RETRY_ATTEMPTS"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 {
-			cfg.SSRRetryAttempts = n
-		}
-	}
+	cfg.EnableSSR = parseBoolEnv("SSR_ENABLED", cfg.EnableSSR)
+	cfg.SSRServerURL = parseStringEnv("SSR_SERVER_URL", cfg.SSRServerURL)
+	cfg.SSRPort = parseStringEnv("SSR_PORT", cfg.SSRPort)
+	cfg.SSRAutoStart = parseBoolEnv("SSR_AUTO_START", cfg.SSRAutoStart)
+	cfg.SSRBuildTimeout = parseIntEnv("SSR_BUILD_TIMEOUT", cfg.SSRBuildTimeout)
+	cfg.SSRAutoBuild = parseBoolEnv("SSR_AUTO_BUILD", cfg.SSRAutoBuild)
+	cfg.SSRHealthCheckInterval = parseIntEnv("SSR_HEALTH_CHECK_INTERVAL", cfg.SSRHealthCheckInterval)
+	cfg.SSRRetryAttempts = parseIntEnv("SSR_RETRY_ATTEMPTS", cfg.SSRRetryAttempts)
 
 	return cfg
+}
+
+func parseStringEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func parseBoolEnv(key string, fallback bool) bool {
+	if v := os.Getenv(key); v != "" {
+		return v == "true" || v == "1" || v == "yes"
+	}
+	return fallback
+}
+
+func parseIntEnv(key string, fallback int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return fallback
 }

@@ -31,6 +31,7 @@ func (r *DeviceRepository) FindByID(ctx context.Context, id string) (*device.Dev
 		FROM devices WHERE id = ?`
 
 	var d device.Device
+
 	var fcmToken, operatorID sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
@@ -42,6 +43,7 @@ func (r *DeviceRepository) FindByID(ctx context.Context, id string) (*device.Dev
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, device.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +63,7 @@ func (r *DeviceRepository) FindByFirebaseInstallID(ctx context.Context, fid stri
 		FROM devices WHERE firebase_install_id = ?`
 
 	var d device.Device
+
 	var fcmToken, operatorID sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, fid).Scan(
@@ -72,6 +75,7 @@ func (r *DeviceRepository) FindByFirebaseInstallID(ctx context.Context, fid stri
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, device.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +97,7 @@ func (r *DeviceRepository) FindByIDAndOperator(ctx context.Context, id, operator
 		FROM devices WHERE id = ? AND operator_id = ?`
 
 	var d device.Device
+
 	var fcmToken, opID sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, id, operatorID).Scan(
@@ -106,6 +111,7 @@ func (r *DeviceRepository) FindByIDAndOperator(ctx context.Context, id, operator
 		// This prevents enumeration attacks.
 		return nil, device.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -155,6 +161,7 @@ func (r *DeviceRepository) Update(ctx context.Context, d *device.Device) error {
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return device.ErrNotFound
 	}
@@ -173,6 +180,7 @@ func (r *DeviceRepository) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return device.ErrNotFound
 	}
@@ -194,6 +202,7 @@ func (r *DeviceRepository) UpdateFCMToken(ctx context.Context, id, fcmToken stri
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return device.ErrNotFound
 	}
@@ -204,7 +213,9 @@ func (r *DeviceRepository) UpdateFCMToken(ctx context.Context, id, fcmToken stri
 // SetOnline sets the online status of a device.
 func (r *DeviceRepository) SetOnline(ctx context.Context, id string, online bool) error {
 	now := time.Now().UnixMilli()
+
 	var result sql.Result
+
 	var err error
 
 	if online {
@@ -227,6 +238,7 @@ func (r *DeviceRepository) SetOnline(ctx context.Context, id string, online bool
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return device.ErrNotFound
 	}
@@ -237,6 +249,7 @@ func (r *DeviceRepository) SetOnline(ctx context.Context, id string, online bool
 // UpdateLastSeen updates the last seen timestamp.
 func (r *DeviceRepository) UpdateLastSeen(ctx context.Context, id string) error {
 	now := time.Now().UnixMilli()
+
 	result, err := r.db.ExecContext(ctx,
 		"UPDATE devices SET last_seen = ?, updated_at = ? WHERE id = ?",
 		now, time.Now(), id,
@@ -249,6 +262,7 @@ func (r *DeviceRepository) UpdateLastSeen(ctx context.Context, id string) error 
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return device.ErrNotFound
 	}
@@ -268,11 +282,14 @@ func (r *DeviceRepository) List(ctx context.Context, limit, offset int) ([]*devi
 	if err != nil {
 		return nil, 0, err
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var devices []*device.Device
+
 	for rows.Next() {
 		var d device.Device
+
 		var fcmToken, operatorID sql.NullString
 
 		if err := rows.Scan(
@@ -308,11 +325,14 @@ func (r *DeviceRepository) ListByOperator(ctx context.Context, operatorID string
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var devices []*device.Device
+
 	for rows.Next() {
 		var d device.Device
+
 		var fcmToken, opID sql.NullString
 
 		if err := rows.Scan(
@@ -335,6 +355,7 @@ func (r *DeviceRepository) ListByOperator(ctx context.Context, operatorID string
 func (r *DeviceRepository) Count(ctx context.Context) (int, error) {
 	var count int
 	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM devices").Scan(&count)
+
 	return count, err
 }
 
@@ -344,6 +365,7 @@ func (r *DeviceRepository) CountByOperator(ctx context.Context, operatorID strin
 	err := r.db.QueryRowContext(ctx,
 		"SELECT COUNT(*) FROM devices WHERE operator_id = ?", operatorID,
 	).Scan(&count)
+
 	return count, err
 }
 
@@ -361,6 +383,7 @@ func (r *DeviceRepository) SetSecretHash(ctx context.Context, deviceID, hash str
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return device.ErrNotFound
 	}
@@ -371,6 +394,7 @@ func (r *DeviceRepository) SetSecretHash(ctx context.Context, deviceID, hash str
 // GetSecretHash retrieves the command secret hash for a device.
 func (r *DeviceRepository) GetSecretHash(ctx context.Context, deviceID string) (string, error) {
 	var hash string
+
 	err := r.db.QueryRowContext(ctx,
 		"SELECT command_secret_hash FROM devices WHERE id = ?",
 		deviceID,
@@ -378,6 +402,7 @@ func (r *DeviceRepository) GetSecretHash(ctx context.Context, deviceID string) (
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", device.ErrNotFound
 	}
+
 	return hash, err
 }
 
@@ -393,18 +418,23 @@ func (r *DeviceRepository) HashAllSecrets(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	count := 0
+
 	for rows.Next() {
 		var id string
+
 		var currentHash sql.NullString
 		if err := rows.Scan(&id, &currentHash); err != nil {
 			continue
 		}
+
 		if currentHash.Valid && currentHash.String != "" {
 			continue
 		}
+
 		count++
 	}
 
@@ -417,5 +447,5 @@ func (r *DeviceRepository) HashAllSecrets(ctx context.Context) (int, error) {
 
 // Touch updates the last seen timestamp for a device.
 func (r *DeviceRepository) Touch(ctx context.Context, deviceID string) error {
-return r.UpdateLastSeen(ctx, deviceID)
+	return r.UpdateLastSeen(ctx, deviceID)
 }

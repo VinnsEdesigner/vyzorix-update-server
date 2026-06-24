@@ -67,29 +67,30 @@ func (s *Server) RegisterGraphQL(
 
 	// Create subscription handler
 	subsHandler := subscription.NewHandler(&subscription.Config{
-			Hub:         wsHub,
-			Resolver:    res,
-			AuthMw:     authMw,
-			Logger:     s.log,
-			AuditLogger: subscription.NewAuditLoggerAdapter(s.AuditLogger),
-		})
+		Hub:         wsHub,
+		Resolver:    res,
+		AuthMw:      authMw,
+		Logger:      s.log,
+		AuditLogger: subscription.NewAuditLoggerAdapter(s.AuditLogger),
+	})
 	s.engine.GET("/graphql/ws", subsHandler.HandleWebSocket)
 
 	s.log.Info("GraphQL server registered", "path", "/graphql", "playground", "/playground", "subscriptions", "/graphql/ws")
+
 	return nil
 }
 
 // gqlHandler is the GraphQL HTTP handler.
 type gqlHandler struct {
-	schema         gql.Schema
 	authMiddleware *gqlmiddleware.AuthMiddleware
+	schema         gql.Schema
 }
 
 // gqlRequest represents a GraphQL request.
 type gqlRequest struct {
+	Variables     map[string]interface{} `json:"variables"`
 	Query         string                 `json:"query"`
 	OperationName string                 `json:"operationName"`
-	Variables     map[string]interface{} `json:"variables"`
 }
 
 // Handle processes GraphQL requests.
@@ -99,6 +100,7 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"errors": []gin.H{{"message": "invalid request body"}},
 		})
+
 		return
 	}
 
@@ -113,6 +115,7 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"errors": []gin.H{{"message": "authentication required"}},
 		})
+
 		return
 	}
 
@@ -131,22 +134,27 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 	// Convert errors
 	if len(result.Errors) > 0 {
 		gqlErrs := make([]map[string]interface{}, 0, len(result.Errors))
+
 		for _, err := range result.Errors {
 			ext := make(map[string]interface{})
+
 			if err.Extensions != nil {
 				if code, ok := err.Extensions["code"].(string); ok {
 					ext["code"] = code
 				}
 			}
+
 			gqlErrs = append(gqlErrs, map[string]interface{}{
 				"message":    err.Message,
 				"extensions": ext,
 			})
 		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"data":   result.Data,
 			"errors": gqlErrs,
 		})
+
 		return
 	}
 
@@ -198,6 +206,7 @@ func (s *Server) getAuthService() *appsvc.AuthService {
 	if s.authHandlers != nil {
 		return s.authHandlers.AuthService
 	}
+
 	return nil
 }
 

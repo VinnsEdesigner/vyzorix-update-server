@@ -36,19 +36,19 @@ type RateLimiterMetrics struct {
 
 // tokenBucket implements the token bucket algorithm.
 type tokenBucket struct {
-	tokens     float64
 	lastUpdate time.Time
+	tokens     float64
 	rate       float64
 	burst      int
 }
 
 // RateLimiter implements per-client WebSocket rate limiting using token bucket algorithm.
 type RateLimiter struct {
-	log     *slog.Logger
-	config  *RateLimiterConfig
-	buckets map[string]*tokenBucket
-	mu      sync.RWMutex
-	metrics RateLimiterMetrics
+	log       *slog.Logger
+	config    *RateLimiterConfig
+	buckets   map[string]*tokenBucket
+	mu        sync.RWMutex
+	metrics   RateLimiterMetrics
 	metricsMu sync.RWMutex
 }
 
@@ -98,12 +98,15 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 	// Check if we have tokens
 	if bucket.tokens >= 1 {
 		bucket.tokens--
+
 		rl.incrementAllowed()
+
 		return true
 	}
 
 	rl.incrementLimited()
 	rl.log.Debug("rate limit exceeded", "clientId", clientID, "tokens", bucket.tokens)
+
 	return false
 }
 
@@ -138,11 +141,14 @@ func (rl *RateLimiter) AllowN(clientID string, n int) bool {
 	// Check if we have enough tokens
 	if bucket.tokens >= float64(n) {
 		bucket.tokens -= float64(n)
+
 		rl.incrementAllowed()
+
 		return true
 	}
 
 	rl.incrementLimited()
+
 	return false
 }
 
@@ -207,6 +213,7 @@ func (rl *RateLimiter) cleanupIdle() {
 		// Remove entries that haven't been used in a while and have no tokens
 		if bucket.tokens < 1 && now.Sub(bucket.lastUpdate) > idleThreshold {
 			delete(rl.buckets, clientID)
+
 			removed++
 		}
 	}
@@ -220,6 +227,7 @@ func (rl *RateLimiter) cleanupIdle() {
 func (rl *RateLimiter) ClientCount() int {
 	rl.mu.RLock()
 	defer rl.mu.RUnlock()
+
 	return len(rl.buckets)
 }
 
@@ -236,6 +244,7 @@ func (rl *RateLimiter) TokenLevel(clientID string) float64 {
 	// Calculate current tokens including refill
 	now := time.Now()
 	elapsed := now.Sub(bucket.lastUpdate).Seconds()
+
 	currentTokens := bucket.tokens + elapsed*bucket.rate
 	if currentTokens > float64(bucket.burst) {
 		currentTokens = float64(bucket.burst)

@@ -107,10 +107,12 @@ func (h *Argon2idHasher) Verify(password, hash string) error {
 // generateSecureSalt generates cryptographically secure random bytes for salt.
 func generateSecureSalt(length uint32) ([]byte, error) {
 	salt := make([]byte, length)
+
 	_, err := rand.Read(salt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate secure salt: %w", err)
 	}
+
 	return salt, nil
 }
 
@@ -121,6 +123,7 @@ func decodeArgon2Hash(hash string) ([]byte, []byte, error) {
 	}
 
 	var dollarPositions []int
+
 	for i, c := range hash {
 		if c == '$' {
 			dollarPositions = append(dollarPositions, i)
@@ -245,13 +248,13 @@ func HashPassword(password string) (string, error) {
 	encodedHash := base64.RawStdEncoding.EncodeToString(hash)
 
 	return fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
-			argon2.Version,
-			DefaultArgon2idParams.Memory,
-			DefaultArgon2idParams.Iterations,
-			DefaultArgon2idParams.Parallelism,
-			encodedSalt,
-			encodedHash,
-		), nil
+		argon2.Version,
+		DefaultArgon2idParams.Memory,
+		DefaultArgon2idParams.Iterations,
+		DefaultArgon2idParams.Parallelism,
+		encodedSalt,
+		encodedHash,
+	), nil
 }
 
 // VerifyPassword checks if a password matches its Argon2id hash using constant-time comparison.

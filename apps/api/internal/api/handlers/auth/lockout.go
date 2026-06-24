@@ -2,8 +2,8 @@ package auth
 
 import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
-	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,7 +12,7 @@ import (
 type LockoutHandler struct {
 	authService *appauth.AuthService
 	lockout     *middleware.Lockout
-	presenter  *response.Presenter
+	presenter   *response.Presenter
 }
 
 // NewLockoutHandler creates a new LockoutHandler.
@@ -20,7 +20,7 @@ func NewLockoutHandler(authService *appauth.AuthService, lockout *middleware.Loc
 	return &LockoutHandler{
 		authService: authService,
 		lockout:     lockout,
-		presenter:  presenter,
+		presenter:   presenter,
 	}
 }
 
@@ -52,6 +52,7 @@ func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
 			"retry_after":        retryAfter.Seconds(),
 			"attempts_remaining": attemptsRemaining,
 		})
+
 		return
 	}
 

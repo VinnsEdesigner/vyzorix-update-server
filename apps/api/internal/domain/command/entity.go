@@ -25,31 +25,28 @@ const (
 
 // Command represents a command to be sent to a device.
 type Command struct {
-	ID         string
-	DeviceID   string
-	DispatchID string // Unique dispatch identifier for idempotency
-	Command    string
-	Args       []byte // JSON-encoded arguments
-
-	Status Status
-
-	DeliveredAt *int64 // Unix milliseconds
-	CompletedAt *int64 // Unix milliseconds
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeliveredAt *int64
+	CompletedAt *int64
+	ID          string
+	DeviceID    string
+	DispatchID  string
+	Command     string
+	Status      Status
+	Args        []byte
 }
 
 // CommandFrame is the internal representation of a command for the WebSocket hub.
 type CommandFrame struct {
-	Type               string          `json:"type"`
-	DispatchID         string          `json:"dispatchId"`
-	Command            string          `json:"command"`
-	Nonce              string          `json:"nonce"`
-	Signature          string          `json:"signature,omitempty"`
-	Args               json.RawMessage `json:"args,omitempty"`
-	Timestamp          int64           `json:"timestamp"`
-	DeliveryConfirmation chan<- bool   `json:"-"` // Channel for delivery confirmation (G1: 100% delivery)
+	DeliveryConfirmation chan<- bool     `json:"-"`
+	Type                 string          `json:"type"`
+	DispatchID           string          `json:"dispatchId"`
+	Command              string          `json:"command"`
+	Nonce                string          `json:"nonce"`
+	Signature            string          `json:"signature,omitempty"`
+	Args                 json.RawMessage `json:"args,omitempty"`
+	Timestamp            int64           `json:"timestamp"`
 }
 
 // IsPending returns true if the command is pending.
@@ -82,7 +79,9 @@ func (c *Command) DeliveredAtTime() *time.Time {
 	if c.DeliveredAt == nil {
 		return nil
 	}
+
 	t := time.UnixMilli(*c.DeliveredAt)
+
 	return &t
 }
 
@@ -91,7 +90,9 @@ func (c *Command) CompletedAtTime() *time.Time {
 	if c.CompletedAt == nil {
 		return nil
 	}
+
 	t := time.UnixMilli(*c.CompletedAt)
+
 	return &t
 }
 
@@ -101,7 +102,9 @@ func (c *Command) SetArgs(v interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	c.Args = data
+
 	return nil
 }
 

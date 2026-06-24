@@ -14,37 +14,14 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
-	infraSession "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/session"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/email_verification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/password_reset"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/refresh_token"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+	infraSession "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/session"
 )
-
-// =============================================================================
-// Password Policy Types and Validation
-// =============================================================================
-
-// PasswordPolicy defines password requirements.
-type PasswordPolicy struct {
-	MinLength      int
-	MaxLength      int
-	RequireUpper   bool
-	RequireLower   bool
-	RequireDigit   bool
-	RequireSpecial bool
-}
-
-// DefaultPasswordPolicy is the default password requirements.
-var DefaultPasswordPolicy = PasswordPolicy{
-	MinLength:      8,
-	MaxLength:      128,
-	RequireUpper:   true,
-	RequireLower:   true,
-	RequireDigit:   true,
-	RequireSpecial: true,
-}
 
 // UpdateOperatorRequest represents a request to update an operator.
 type UpdateOperatorRequest struct {
@@ -53,64 +30,24 @@ type UpdateOperatorRequest struct {
 	Role  *string `json:"role,omitempty"`
 }
 
-// ValidatePassword validates a password against policy.
-func ValidatePassword(password string, policy PasswordPolicy) error {
-	if len(password) < policy.MinLength {
-		return application.ErrInvalidInput
-	}
-	if len(password) > policy.MaxLength {
-		return application.ErrInvalidInput
-	}
-	if policy.RequireUpper && !containsUpper(password) {
-		return application.ErrInvalidInput
-	}
-	if policy.RequireLower && !containsLower(password) {
-		return application.ErrInvalidInput
-	}
-	if policy.RequireDigit && !containsDigit(password) {
-		return application.ErrInvalidInput
-	}
-	if policy.RequireSpecial && !containsSpecial(password) {
-		return application.ErrInvalidInput
-	}
-	return nil
-}
+// =============================================================================
+// Password Policy Delegation
+// =============================================================================
 
-func containsUpper(s string) bool {
-	for _, c := range s {
-		if c >= 'A' && c <= 'Z' {
-			return true
-		}
-	}
-	return false
-}
+// PasswordPolicy delegates to domain operator package.
+type PasswordPolicy = operator.PasswordPolicy
 
-func containsLower(s string) bool {
-	for _, c := range s {
-		if c >= 'a' && c <= 'z' {
-			return true
-		}
-	}
-	return false
-}
+// DefaultPasswordPolicy delegates to domain operator package.
+var DefaultPasswordPolicy = operator.DefaultPasswordPolicy
 
-func containsDigit(s string) bool {
-	for _, c := range s {
-		if c >= '0' && c <= '9' {
-			return true
-		}
-	}
-	return false
-}
+// ValidatePassword delegates to domain operator package.
+var ValidatePassword = operator.ValidatePassword
 
-func containsSpecial(s string) bool {
-	for _, c := range s {
-		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') {
-			return true
-		}
-	}
-	return false
-}
+// PasswordStrength delegates to domain operator package.
+var PasswordStrength = operator.Strength
+
+// PasswordError delegates to domain operator package.
+type PasswordError = operator.PasswordError
 
 // =============================================================================
 // Service Struct and Constructor
@@ -123,11 +60,11 @@ type AuthService struct {
 	emailVerifyRepo    email_verification.Repository
 	passwordResetRepo  password_reset.Repository
 	passwordHasher     PasswordHasher
-	sessionTTL         time.Duration
 	refreshTokenRepo   RefreshTokenRepository
+	jwtManager         *infraauth.JWTManager
+	sessionManager     *infraSession.Manager
+	sessionTTL         time.Duration
 	refreshTokenExpiry time.Duration
-	jwtManager        *infraauth.JWTManager
-	sessionManager    *infraSession.Manager
 }
 
 // RefreshTokenRepository interface for refresh token operations.
@@ -141,23 +78,8 @@ type RefreshTokenRepository interface {
 	CleanupExpired(ctx context.Context, olderThan time.Duration) (int, error)
 }
 
-// RefreshToken represents a refresh token for rotation.
-type RefreshToken struct {
-	ID           string
-	TokenHash    string
-	OperatorID   string
-	SessionID    string
-	ExpiresAt    time.Time
-	CreatedAt    time.Time
-	RevokedAt    time.Time
-	ReplacedByID string
-	IsRevoked    bool
-}
-
-// IsExpired returns true if the refresh token has expired.
-func (rt *RefreshToken) IsExpired() bool {
-	return time.Now().After(rt.ExpiresAt)
-}
+// RefreshToken aliases domain refresh_token package.
+type RefreshToken = refresh_token.RefreshToken
 
 // NewAuthService creates a new AuthService.
 func NewAuthService(
@@ -199,7 +121,7 @@ func NewAuthServiceWithRefresh(
 		sessionTTL:         sessionTTL,
 		refreshTokenRepo:   refreshTokenRepo,
 		refreshTokenExpiry: refreshTokenExpiry,
-		jwtManager:       jwtManager,
+		jwtManager:         jwtManager,
 	}
 }
 
@@ -235,6 +157,7 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 			_ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
 			return nil, nil, application.ErrInvalidCredentials
 		}
+
 		return nil, nil, err
 	}
 
@@ -244,7 +167,7 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 	}
 
 	// Verify password.
-	if err := s.passwordHasher.Verify(req.Password, op.PasswordHash); err != nil {
+	if err = s.passwordHasher.Verify(req.Password, op.PasswordHash); err != nil {
 		return nil, nil, application.ErrInvalidCredentials
 	}
 
@@ -292,6 +215,7 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest, va
 	if err != nil && err != operator.ErrNotFound {
 		return nil, err
 	}
+
 	if existing != nil {
 		return nil, application.ErrUserExists
 	}
@@ -349,6 +273,7 @@ func (s *AuthService) RegisterAsSuperAdmin(ctx context.Context, req *dto.Registe
 	if err != nil && err != operator.ErrNotFound {
 		return nil, err
 	}
+
 	if existing != nil {
 		return nil, application.ErrUserExists
 	}
@@ -423,6 +348,7 @@ func (s *AuthService) LogoutAll(ctx context.Context, operatorID string) error {
 	// Also revoke all refresh tokens for this operator
 	// Ignoring error - revocation is best-effort, main operation succeeded
 	_ = s.RevokeAllRefreshTokens(ctx, operatorID)
+
 	return nil
 }
 
@@ -449,6 +375,7 @@ func (s *AuthService) ValidateSession(ctx context.Context, sessionID string) (*s
 		if err == session.ErrNotFound {
 			return nil, nil, application.ErrUnauthorized
 		}
+
 		return nil, nil, err
 	}
 
@@ -464,6 +391,7 @@ func (s *AuthService) ValidateSession(ctx context.Context, sessionID string) (*s
 	if err != nil {
 		return nil, nil, err
 	}
+
 	if revoked {
 		return nil, nil, application.ErrUnauthorized
 	}
@@ -484,12 +412,12 @@ func (s *AuthService) ChangePassword(ctx context.Context, operatorID, oldPasswor
 	}
 
 	// Verify old password.
-	if err := s.passwordHasher.Verify(oldPassword, op.PasswordHash); err != nil {
+	if err = s.passwordHasher.Verify(oldPassword, op.PasswordHash); err != nil {
 		return application.ErrInvalidCredentials
 	}
 
 	// Validate new password.
-	if err := ValidatePassword(newPassword, DefaultPasswordPolicy); err != nil {
+	if err = ValidatePassword(newPassword, DefaultPasswordPolicy); err != nil {
 		return err
 	}
 
@@ -575,6 +503,7 @@ func (s *AuthService) GetMFAStatus(ctx context.Context, operatorID string) (bool
 	if err != nil {
 		return false, err
 	}
+
 	return op.MFAEnabled, nil
 }
 
@@ -585,6 +514,7 @@ func (s *AuthService) RegenerateBackupCodes(ctx context.Context, operatorID stri
 	if err != nil {
 		return nil, err
 	}
+
 	if op.MFASecret == "" {
 		return nil, application.ErrInvalidInput
 	}
@@ -622,6 +552,7 @@ func (s *AuthService) VerifyBackupCode(ctx context.Context, operatorID, code str
 
 	// Remove the used backup code
 	remaining := infraauth.RemoveBackupCode(op.BackupCodes, idx)
+
 	err = s.operatorRepo.UpdateOperatorMFA(ctx, operatorID, op.MFASecret, remaining)
 	if err != nil {
 		return false, err
@@ -636,8 +567,8 @@ func (s *AuthService) VerifyBackupCode(ctx context.Context, operatorID, code str
 
 // VerifyEmailResult holds the result of email verification.
 type VerifyEmailResult struct {
-	Verified bool
 	Email    string
+	Verified bool
 }
 
 // VerifyEmail verifies an email using a token.
@@ -651,6 +582,7 @@ func (s *AuthService) VerifyEmail(ctx context.Context, token string) (*VerifyEma
 		if err == email_verification.ErrNotFound {
 			return &VerifyEmailResult{Verified: false}, nil
 		}
+
 		return nil, err
 	}
 
@@ -670,6 +602,7 @@ func (s *AuthService) VerifyEmail(ctx context.Context, token string) (*VerifyEma
 	// Get operator email.
 	op, _ := s.operatorRepo.FindByID(ctx, ev.OperatorID)
 	email := ""
+
 	if op != nil {
 		email = op.Email
 	}
@@ -689,6 +622,7 @@ func (s *AuthService) ResendVerification(ctx context.Context, email string) erro
 			// Return success anyway to prevent enumeration.
 			return nil
 		}
+
 		return err
 	}
 
@@ -712,6 +646,7 @@ func (s *AuthService) CreateEmailVerification(ctx context.Context, operatorID st
 	if _, err := rand.Read(tokenBytes); err != nil {
 		return "", err
 	}
+
 	token := hex.EncodeToString(tokenBytes)
 	tokenHash := hashTokenSha256(token)
 
@@ -745,6 +680,7 @@ func (s *AuthService) PollVerification(ctx context.Context, token string) (strin
 		if err == email_verification.ErrNotFound {
 			return "invalid", "", nil
 		}
+
 		return "", "", err
 	}
 
@@ -779,6 +715,7 @@ func (s *AuthService) CancelVerification(ctx context.Context, email string) erro
 		if err == operator.ErrNotFound {
 			return nil
 		}
+
 		return err
 	}
 
@@ -809,6 +746,7 @@ func (s *AuthService) GeneratePasswordResetToken(ctx context.Context, email stri
 			// Return success anyway to prevent email enumeration.
 			return "", nil
 		}
+
 		return "", err
 	}
 
@@ -820,6 +758,7 @@ func (s *AuthService) GeneratePasswordResetToken(ctx context.Context, email stri
 	if _, err := rand.Read(tokenBytes); err != nil {
 		return "", err
 	}
+
 	token := hex.EncodeToString(tokenBytes)
 	tokenHash := hashTokenSha256(token)
 
@@ -856,6 +795,7 @@ func (s *AuthService) ValidatePasswordResetToken(ctx context.Context, token, ema
 		if err == password_reset.ErrNotFound {
 			return application.ErrInvalidInput
 		}
+
 		return err
 	}
 
@@ -874,6 +814,7 @@ func (s *AuthService) ValidatePasswordResetToken(ctx context.Context, token, ema
 	if err != nil {
 		return err
 	}
+
 	if strings.ToLower(op.Email) != email {
 		return application.ErrInvalidInput
 	}
@@ -884,7 +825,6 @@ func (s *AuthService) ValidatePasswordResetToken(ctx context.Context, token, ema
 // ResetPassword resets a password using a token.
 func (s *AuthService) ResetPassword(ctx context.Context, token, _email string, newPassword string) error {
 	// Note: email parameter kept for API compatibility but operator is derived from token.
-
 	// Validate password.
 	if err := ValidatePassword(newPassword, DefaultPasswordPolicy); err != nil {
 		return application.ErrInvalidInput
@@ -950,22 +890,25 @@ const (
 
 // ResendRateLimitResult holds the result of a resend rate limit check.
 type ResendRateLimitResult struct {
+	LockedUntil *time.Time
+	RetryAfter  int
 	Allowed     bool
-	RetryAfter  int    // seconds to wait, 0 if allowed
-	LockedUntil *time.Time // nil if not locked out
 }
 
 // GetResendTracker retrieves the resend tracker for an email.
 func (s *AuthService) GetResendTracker(ctx context.Context, email string) (*password_reset.ResendTracker, error) {
 	emailHash := hashEmailForTracker(email)
+
 	tracker, err := s.passwordResetRepo.GetResendTracker(ctx, emailHash)
 	if err != nil {
 		if err == password_reset.ErrNotFound {
 			//nolint:nilnil
 			return nil, nil // No tracker means no attempts yet
 		}
+
 		return nil, err
 	}
+
 	return tracker, nil
 }
 
@@ -999,8 +942,10 @@ func (s *AuthService) CheckResendRateLimit(ctx context.Context, email string) (*
 	if tracker.ResendCount > 1 {
 		requiredCooldown := (tracker.ResendCount - 1) * ResendCooldownBase
 		timeSinceLastResend := now.Sub(tracker.LastResendAt).Seconds()
+
 		if timeSinceLastResend < float64(requiredCooldown) {
 			retryAfter := requiredCooldown - int(timeSinceLastResend)
+
 			return &ResendRateLimitResult{
 				Allowed:    false,
 				RetryAfter: retryAfter,
@@ -1027,25 +972,9 @@ func (s *AuthService) UpdateResendTracker(ctx context.Context, email string) err
 	var lockoutUntil *time.Time
 
 	if tracker == nil {
-		// First resend.
 		newCount = 1
 	} else {
-		// Check if lockout has expired and reset count.
-		if tracker.IsLockedOut() {
-			// Lockout expired, reset.
-			newCount = 1
-		} else {
-			// Increment count.
-			newCount = tracker.ResendCount + 1
-
-			// Check if we've hit the lockout threshold.
-			if newCount > MaxResendCount {
-				// Apply lockout.
-				lockout := now.Add(ResendLockoutDuration)
-				lockoutUntil = &lockout
-				newCount = tracker.ResendCount // Don't increment further while locked
-			}
-		}
+		newCount, lockoutUntil = s.calculateResendCount(tracker)
 	}
 
 	// Generate ID for tracker.
@@ -1070,6 +999,18 @@ func (s *AuthService) UpdateResendTracker(ctx context.Context, email string) err
 	return s.passwordResetRepo.UpsertResendTracker(ctx, newTracker)
 }
 
+func (s *AuthService) calculateResendCount(tracker *password_reset.ResendTracker) (int, *time.Time) {
+	if tracker.IsLockedOut() {
+		return 1, nil
+	}
+	newCount := tracker.ResendCount + 1
+	if newCount > MaxResendCount {
+		lockout := time.Now().UTC().Add(ResendLockoutDuration)
+		return tracker.ResendCount, &lockout
+	}
+	return newCount, nil
+}
+
 // DeleteResendTracker removes the resend tracker for an email (e.g., after successful reset).
 func (s *AuthService) DeleteResendTracker(ctx context.Context, email string) error {
 	emailHash := hashEmailForTracker(email)
@@ -1080,6 +1021,7 @@ func (s *AuthService) DeleteResendTracker(ctx context.Context, email string) err
 func hashEmailForTracker(email string) string {
 	normalized := strings.ToLower(strings.TrimSpace(email))
 	hash := sha256.Sum256([]byte(normalized))
+
 	return hex.EncodeToString(hash[:])
 }
 
@@ -1113,10 +1055,12 @@ func (s *AuthService) FindOrCreateGoogleOperator(ctx context.Context, googleID, 
 
 	if op != nil {
 		// Link existing account to Google.
-		if err := s.operatorRepo.UpdateGoogleID(ctx, op.ID, googleID); err != nil {
+		if err = s.operatorRepo.UpdateGoogleID(ctx, op.ID, googleID); err != nil {
 			return nil, err
 		}
+
 		op.GoogleID = googleID
+
 		return &OAuthResult{Operator: op, IsNew: false}, nil
 	}
 
@@ -1172,10 +1116,12 @@ func (s *AuthService) FindOrCreateGitHubOperator(ctx context.Context, githubID, 
 
 	if op != nil {
 		// Link existing account to GitHub.
-		if err := s.operatorRepo.UpdateGitHubID(ctx, op.ID, githubID); err != nil {
+		if err = s.operatorRepo.UpdateGitHubID(ctx, op.ID, githubID); err != nil {
 			return nil, err
 		}
+
 		op.GitHubID = githubID
+
 		return &OAuthResult{Operator: op, IsNew: false}, nil
 	}
 
@@ -1218,9 +1164,9 @@ func (s *AuthService) FindOrCreateGitHubOperator(ctx context.Context, githubID, 
 // UpdateSettingsRequest is the payload for updating operator settings.
 type UpdateSettingsRequest struct {
 	Name       *string                  `json:"name,omitempty"`
-	Thresholds *operator.Thresholds    `json:"thresholds,omitempty"`
+	Thresholds *operator.Thresholds     `json:"thresholds,omitempty"`
 	Client     *operator.ClientSettings `json:"client,omitempty"`
-	Reset      bool                    `json:"reset,omitempty"`
+	Reset      bool                     `json:"reset,omitempty"`
 }
 
 // UpdateOperatorName updates the name for an operator.
@@ -1230,6 +1176,7 @@ func (s *AuthService) UpdateOperatorName(ctx context.Context, operatorID, name s
 		if err == operator.ErrNotFound {
 			return nil, application.ErrUnauthorized
 		}
+
 		return nil, err
 	}
 
@@ -1250,6 +1197,7 @@ func (s *AuthService) UpdateSettings(ctx context.Context, operatorID string, req
 		if err == operator.ErrNotFound {
 			return nil, application.ErrUnauthorized
 		}
+
 		return nil, err
 	}
 
@@ -1258,6 +1206,7 @@ func (s *AuthService) UpdateSettings(ctx context.Context, operatorID string, req
 		if name == "" {
 			return nil, application.ErrInvalidInput
 		}
+
 		op.Name = name
 	}
 
@@ -1285,6 +1234,7 @@ func (s *AuthService) ResetSettings(ctx context.Context, operatorID string) (*op
 		if err == operator.ErrNotFound {
 			return nil, application.ErrUnauthorized
 		}
+
 		return nil, err
 	}
 
@@ -1304,6 +1254,7 @@ func (s *AuthService) ListAllOperators(ctx context.Context, limit, offset int) (
 	if limit <= 0 {
 		limit = 20
 	}
+
 	if limit > 100 {
 		limit = 100
 	}
@@ -1336,6 +1287,7 @@ func (s *AuthService) CreateOperator(ctx context.Context, req *dto.RegisterReque
 	if err != nil && err != operator.ErrNotFound {
 		return nil, err
 	}
+
 	if existing != nil {
 		return nil, application.ErrEmailExists
 	}
@@ -1381,6 +1333,7 @@ func (s *AuthService) VerifyJWT(token string) (*infraauth.OperatorClaims, error)
 	if s.jwtManager == nil {
 		return nil, infraauth.ErrInvalidToken
 	}
+
 	return s.jwtManager.Verify(token)
 }
 
@@ -1391,23 +1344,28 @@ func (s *AuthService) UpdateOperator(ctx context.Context, operatorID string, req
 		if err == operator.ErrNotFound {
 			return nil, application.ErrOperatorNotFound
 		}
+
 		return nil, err
 	}
 
 	if req.Name != nil {
 		op.Name = *req.Name
 	}
+
 	if req.Email != nil {
 		// Check if new email already exists
 		existing, err := s.operatorRepo.FindByEmail(ctx, *req.Email)
 		if err != nil && err != operator.ErrNotFound {
 			return nil, err
 		}
+
 		if existing != nil && existing.ID != operatorID {
 			return nil, application.ErrEmailExists
 		}
+
 		op.Email = *req.Email
 	}
+
 	if req.Role != nil {
 		op.Role = operator.OperatorRole(*req.Role)
 	}
@@ -1429,6 +1387,7 @@ func (s *AuthService) DeleteOperator(ctx context.Context, operatorID string) err
 		if err == operator.ErrNotFound {
 			return application.ErrOperatorNotFound
 		}
+
 		return err
 	}
 
@@ -1568,5 +1527,6 @@ func (s *AuthService) RevokeAllRefreshTokens(ctx context.Context, operatorID str
 	if s.refreshTokenRepo == nil {
 		return nil
 	}
+
 	return s.refreshTokenRepo.RevokeAllForOperator(ctx, operatorID)
 }

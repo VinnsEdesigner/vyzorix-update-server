@@ -58,6 +58,7 @@ func (b *Builder) Build() error {
 	}
 
 	b.logger.Info("Web app built successfully")
+
 	return nil
 }
 
@@ -70,6 +71,7 @@ func (b *Builder) CopyAssets() error {
 	if err != nil {
 		return err
 	}
+
 	if !exists {
 		return fmt.Errorf("client dist directory not found: %s", clientDist)
 	}
@@ -79,6 +81,7 @@ func (b *Builder) CopyAssets() error {
 	if err != nil {
 		return fmt.Errorf("failed to read client dist: %w", err)
 	}
+
 	if len(files) == 0 {
 		b.logger.Warn("No files in client dist to copy")
 		return nil
@@ -101,6 +104,7 @@ func (b *Builder) CopyAssets() error {
 	}
 
 	b.logger.Info("Assets copied to public directory", "from", clientDist, "to", b.publicDir)
+
 	return nil
 }
 
@@ -134,6 +138,7 @@ func (b *Builder) Clean() error {
 	}
 
 	b.logger.Info("Build artifacts cleaned")
+
 	return nil
 }
 
@@ -144,7 +149,9 @@ func dirExists(path string) (bool, error) {
 		if os.IsNotExist(err) {
 			return false, nil
 		}
+
 		return false, err
 	}
+
 	return info.IsDir(), nil
 }

@@ -11,8 +11,8 @@ import (
 // LoggerConfig holds logging configuration.
 type LoggerConfig struct {
 	Level      string
-	RedactPII  bool
 	RedactKeys []string
+	RedactPII  bool
 }
 
 // DefaultLoggerConfig returns the default logging configuration.
@@ -40,6 +40,7 @@ func DefaultLoggerConfig() LoggerConfig {
 // NewLogger creates a new structured logger with PII redaction.
 func NewLogger(cfg LoggerConfig) *slog.Logger {
 	var level slog.Level
+
 	switch strings.ToLower(cfg.Level) {
 	case "debug":
 		level = slog.LevelDebug
@@ -83,6 +84,7 @@ func (h *redactingHandler) Handle(ctx context.Context, r slog.Record) error {
 	if h.enabled {
 		h.redactRecord(r)
 	}
+
 	return h.Handler.Handle(ctx, r)
 }
 
@@ -91,6 +93,7 @@ func (h *redactingHandler) redactRecord(r slog.Record) {
 	redactor := NewRedactor()
 
 	var newAttrs []slog.Attr
+
 	r.Attrs(func(a slog.Attr) bool {
 		newAttrs = append(newAttrs, h.redactAttr(a, redactor))
 		return true
@@ -134,8 +137,8 @@ func NewProductionLogger() *slog.Logger {
 // NewDevelopmentLogger creates a logger for development.
 func NewDevelopmentLogger() *slog.Logger {
 	return NewLogger(LoggerConfig{
-		Level:     "debug",
-		RedactPII: false,
+		Level:      "debug",
+		RedactPII:  false,
 		RedactKeys: []string{},
 	})
 }
@@ -146,8 +149,10 @@ func NewFromEnv() *slog.Logger {
 	if env == "" {
 		env = os.Getenv("NODE_ENV")
 	}
+
 	if env == "production" {
 		return NewProductionLogger()
 	}
+
 	return NewDevelopmentLogger()
 }
