@@ -34,6 +34,7 @@ func (r *OperatorRepository) FindByID(ctx context.Context, id string) (*operator
 		FROM operators WHERE id = ?`
 
 	var op operator.Operator
+
 	var googleID, githubID, mfaSecret, mfaBackupCodes sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
@@ -45,6 +46,7 @@ func (r *OperatorRepository) FindByID(ctx context.Context, id string) (*operator
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, operator.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +75,7 @@ func (r *OperatorRepository) FindByEmail(ctx context.Context, email string) (*op
 		FROM operators WHERE email = ?`
 
 	var op operator.Operator
+
 	var googleID, githubID, mfaSecret sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, strings.ToLower(email)).Scan(
@@ -84,6 +87,7 @@ func (r *OperatorRepository) FindByEmail(ctx context.Context, email string) (*op
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, operator.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +107,7 @@ func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string
 		FROM operators WHERE google_id = ?`
 
 	var op operator.Operator
+
 	var googleIDVal, githubID, mfaSecret, mfaBackupCodes sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, googleID).Scan(
@@ -114,6 +119,7 @@ func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, operator.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +127,7 @@ func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string
 	op.GoogleID = googleIDVal.String
 	op.GitHubID = githubID.String
 	op.MFASecret = mfaSecret.String
+
 	if mfaBackupCodes.Valid && mfaBackupCodes.String != "" {
 		_ = json.Unmarshal([]byte(mfaBackupCodes.String), &op.BackupCodes)
 	}
@@ -136,6 +143,7 @@ func (r *OperatorRepository) FindByGitHubID(ctx context.Context, githubID string
 		FROM operators WHERE github_id = ?`
 
 	var op operator.Operator
+
 	var googleID, githubIDVal, mfaSecret, mfaBackupCodes sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, githubID).Scan(
@@ -147,6 +155,7 @@ func (r *OperatorRepository) FindByGitHubID(ctx context.Context, githubID string
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, operator.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -154,6 +163,7 @@ func (r *OperatorRepository) FindByGitHubID(ctx context.Context, githubID string
 	op.GoogleID = googleID.String
 	op.GitHubID = githubIDVal.String
 	op.MFASecret = mfaSecret.String
+
 	if mfaBackupCodes.Valid && mfaBackupCodes.String != "" {
 		_ = json.Unmarshal([]byte(mfaBackupCodes.String), &op.BackupCodes)
 	}
@@ -198,6 +208,7 @@ func (r *OperatorRepository) Update(ctx context.Context, op *operator.Operator) 
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -216,6 +227,7 @@ func (r *OperatorRepository) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -227,6 +239,7 @@ func (r *OperatorRepository) Delete(ctx context.Context, id string) error {
 func (r *OperatorRepository) Count(ctx context.Context) (int, error) {
 	var count int
 	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM operators").Scan(&count)
+
 	return count, err
 }
 
@@ -241,11 +254,14 @@ func (r *OperatorRepository) List(ctx context.Context, limit, offset int) ([]*op
 	if err != nil {
 		return nil, 0, err
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var operators []*operator.Operator
+
 	for rows.Next() {
 		var op operator.Operator
+
 		var googleID, githubID, mfaSecret sql.NullString
 
 		if err := rows.Scan(
@@ -284,6 +300,7 @@ func (r *OperatorRepository) UpdatePassword(ctx context.Context, id, passwordHas
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -305,6 +322,7 @@ func (r *OperatorRepository) UpdateMFA(ctx context.Context, id, secret string, e
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -315,11 +333,13 @@ func (r *OperatorRepository) UpdateMFA(ctx context.Context, id, secret string, e
 // UpdateOperatorMFA updates the MFA secret and backup codes for an operator.
 func (r *OperatorRepository) UpdateOperatorMFA(ctx context.Context, operatorID, mfaSecret string, backupCodes []string) error {
 	backupCodesJSON := "[]"
+
 	if len(backupCodes) > 0 {
 		data, err := json.Marshal(backupCodes)
 		if err != nil {
 			return err
 		}
+
 		backupCodesJSON = string(data)
 	}
 
@@ -335,6 +355,7 @@ func (r *OperatorRepository) UpdateOperatorMFA(ctx context.Context, operatorID, 
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -356,6 +377,7 @@ func (r *OperatorRepository) VerifyEmail(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -377,6 +399,7 @@ func (r *OperatorRepository) UpdateEmailVerified(ctx context.Context, id string,
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -398,6 +421,7 @@ func (r *OperatorRepository) UpdateGoogleID(ctx context.Context, id, googleID st
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -419,6 +443,7 @@ func (r *OperatorRepository) UpdateGitHubID(ctx context.Context, id, githubID st
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -440,6 +465,7 @@ func (r *OperatorRepository) UpdateName(ctx context.Context, id, name string) er
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -463,6 +489,7 @@ func (r *OperatorRepository) UpdateThresholds(ctx context.Context, id string, th
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -485,6 +512,7 @@ func (r *OperatorRepository) UpdateClientSettings(ctx context.Context, id string
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -510,6 +538,7 @@ func (r *OperatorRepository) ResetSettings(ctx context.Context, id string) error
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -520,6 +549,7 @@ func (r *OperatorRepository) ResetSettings(ctx context.Context, id string) error
 // GetEmailVerified returns whether an operator has verified their email.
 func (r *OperatorRepository) GetEmailVerified(ctx context.Context, id string) (bool, error) {
 	var verified int
+
 	err := r.db.QueryRowContext(ctx,
 		"SELECT email_verified FROM operators WHERE id = ?",
 		id,
@@ -527,9 +557,11 @@ func (r *OperatorRepository) GetEmailVerified(ctx context.Context, id string) (b
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, operator.ErrNotFound
 	}
+
 	if err != nil {
 		return false, err
 	}
+
 	return verified != 0, nil
 }
 
@@ -547,6 +579,7 @@ func (r *OperatorRepository) DisableMFA(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return operator.ErrNotFound
 	}
@@ -557,12 +590,14 @@ func (r *OperatorRepository) DisableMFA(ctx context.Context, id string) error {
 // GetSetting retrieves a setting value by key.
 func (r *OperatorRepository) GetSetting(ctx context.Context, key string) (string, error) {
 	var value string
+
 	err := r.db.QueryRowContext(ctx,
 		`SELECT value FROM settings WHERE key = ?`, key,
 	).Scan(&value)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil
 	}
+
 	return value, err
 }
 
@@ -572,6 +607,7 @@ func (r *OperatorRepository) SetSetting(ctx context.Context, key, value string) 
 		`INSERT OR REPLACE INTO settings(key, value, updated_at) VALUES(?, ?, ?)`,
 		key, value, time.Now().UTC().UnixMilli(),
 	)
+
 	return err
 }
 
@@ -581,6 +617,7 @@ func (r *OperatorRepository) GetEnforceHMAC(ctx context.Context) (bool, error) {
 	if err != nil || val == "" {
 		return false, err
 	}
+
 	return val == "true" || val == "1", nil
 }
 
@@ -590,6 +627,7 @@ func (r *OperatorRepository) SetEnforceHMAC(ctx context.Context, enforce bool) e
 	if enforce {
 		val = "true"
 	}
+
 	return r.SetSetting(ctx, "enforce_hmac", val)
 }
 
@@ -599,14 +637,18 @@ func (r *OperatorRepository) GetHMACWindowSeconds(ctx context.Context) (int, err
 	if err != nil {
 		return 30, err
 	}
+
 	if val == "" {
 		return 30, nil // default 30 seconds per COMMAND_SECURITY.md
 	}
+
 	var seconds int
+
 	_, err = fmt.Sscanf(val, "%d", &seconds)
 	if err != nil {
 		return 30, err
 	}
+
 	return seconds, nil
 }
 
@@ -620,5 +662,6 @@ func nullString(s string) sql.NullString {
 	if s == "" {
 		return sql.NullString{}
 	}
+
 	return sql.NullString{String: s, Valid: true}
 }

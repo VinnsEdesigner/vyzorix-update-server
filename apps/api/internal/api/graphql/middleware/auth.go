@@ -8,9 +8,9 @@ import (
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	gqlerrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/errors"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
-        appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 )
 
 // AuthMiddleware provides authentication for GraphQL resolvers.
@@ -54,6 +54,7 @@ func (m *AuthMiddleware) Authenticate(ctx context.Context, headers map[string]st
 // authenticateSession validates the session cookie.
 func (m *AuthMiddleware) authenticateSession(ctx context.Context, cookieHeader string) (*operator.Operator, error) {
 	var sessionID string
+
 	cookies := strings.Split(cookieHeader, ";")
 	for _, cookie := range cookies {
 		parts := strings.SplitN(strings.TrimSpace(cookie), "=", 2)
@@ -90,6 +91,7 @@ func (m *AuthMiddleware) authenticateBearer(ctx context.Context, authHeader stri
 	}
 
 	token := parts[1]
+
 	claims, err := m.AuthService.VerifyJWT(token)
 	if err != nil {
 		m.Log.Debug("bearer token validation failed", "err", err)
@@ -113,6 +115,7 @@ func RequireAuth(resolverFunc func(ctx context.Context) (interface{}, error)) fu
 		if !ok || op == nil {
 			return nil, gqlerrors.ErrUnauthorized
 		}
+
 		return resolverFunc(ctx)
 	}
 }

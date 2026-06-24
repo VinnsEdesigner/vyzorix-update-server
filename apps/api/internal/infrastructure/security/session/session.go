@@ -39,6 +39,7 @@ func NewManager(secret string) *Manager {
 	fullHash := h.Sum(nil)
 	key := make([]byte, EncryptionKeyLen)
 	copy(key, fullHash)
+
 	return &Manager{
 		encryptionKey: key,
 	}
@@ -62,6 +63,7 @@ func (sm *Manager) EncryptOperatorID(operatorID string) (string, error) {
 	}
 
 	ciphertext := aesGCM.Seal(nonce, nonce, []byte(operatorID), nil)
+
 	return base64.RawURLEncoding.EncodeToString(ciphertext), nil
 }
 
@@ -88,6 +90,7 @@ func (sm *Manager) DecryptOperatorID(cookieValue string) (string, error) {
 	}
 
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+
 	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", ErrDecryptionFailed, err)
@@ -151,6 +154,7 @@ func (sm *Manager) ExtractFromCookie(cookieValue string) (string, error) {
 	if cookieValue == "" {
 		return "", ErrInvalidCookie
 	}
+
 	return sm.DecryptOperatorID(cookieValue)
 }
 

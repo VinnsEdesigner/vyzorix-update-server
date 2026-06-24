@@ -10,8 +10,8 @@ type subscriptionCallback func(interface{})
 
 // callbackWrapper wraps a callback with an ID for tracking.
 type callbackWrapper struct {
-	id       int
 	callback subscriptionCallback
+	id       int
 }
 
 var callbackIDCounter int
@@ -21,17 +21,19 @@ var callbackIDMu sync.Mutex
 func nextCallbackID() int {
 	callbackIDMu.Lock()
 	defer callbackIDMu.Unlock()
+
 	callbackIDCounter++
+
 	return callbackIDCounter
 }
 
 // SubscriptionManager manages real-time subscriptions for GraphQL subscriptions.
 type SubscriptionManager struct {
-	hub            *Hub
-	deviceUpdates  map[string][]callbackWrapper
-	telemetry      map[string][]callbackWrapper
-	commandStatus  map[string]subscriptionCallback
-	mu             sync.RWMutex
+	hub           *Hub
+	deviceUpdates map[string][]callbackWrapper
+	telemetry     map[string][]callbackWrapper
+	commandStatus map[string]subscriptionCallback
+	mu            sync.RWMutex
 }
 
 var subscriptionMgr *SubscriptionManager
@@ -70,6 +72,7 @@ func (h *Hub) SubscribeDeviceUpdates(operatorID, deviceID string, callback subsc
 	return func() {
 		subMgr.mu.Lock()
 		defer subMgr.mu.Unlock()
+
 		subs := subMgr.deviceUpdates[key]
 		for i, w := range subs {
 			if w.id == wrapper.id {
@@ -99,6 +102,7 @@ func (h *Hub) SubscribeTelemetry(operatorID, deviceID string, callback subscript
 	return func() {
 		subMgr.mu.Lock()
 		defer subMgr.mu.Unlock()
+
 		subs := subMgr.telemetry[key]
 		for i, w := range subs {
 			if w.id == wrapper.id {

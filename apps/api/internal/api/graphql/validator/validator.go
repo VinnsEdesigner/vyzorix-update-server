@@ -27,9 +27,11 @@ func (v *Validator) ValidateDeviceID(id string) error {
 	if id == "" {
 		return errors.BadRequest("device ID is required")
 	}
+
 	if len(id) > 255 {
 		return errors.BadRequest("device ID too long")
 	}
+
 	return nil
 }
 
@@ -38,9 +40,11 @@ func (v *Validator) ValidateDispatchID(id string) error {
 	if id == "" {
 		return errors.BadRequest("dispatch ID is required")
 	}
+
 	if len(id) > 255 {
 		return errors.BadRequest("dispatch ID too long")
 	}
+
 	return nil
 }
 
@@ -49,6 +53,7 @@ func (v *Validator) ValidateCommand(cmd string) error {
 	if cmd == "" {
 		return errors.BadRequest("command is required")
 	}
+
 	if len(cmd) > 100 {
 		return errors.BadRequest("command too long")
 	}
@@ -56,6 +61,7 @@ func (v *Validator) ValidateCommand(cmd string) error {
 	if !regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*$`).MatchString(cmd) {
 		return errors.BadRequest("invalid command format")
 	}
+
 	return nil
 }
 
@@ -64,12 +70,15 @@ func (v *Validator) ValidateFCMToken(token string) error {
 	if token == "" {
 		return errors.BadRequest("FCM token is required")
 	}
+
 	if len(token) < 50 || len(token) > 500 {
 		return errors.BadRequest("invalid FCM token length")
 	}
+
 	if !FCMTokenRegex.MatchString(token) {
 		return errors.BadRequest("invalid FCM token format")
 	}
+
 	return nil
 }
 
@@ -78,9 +87,11 @@ func (v *Validator) ValidateLimit(limit, maxVal int) error {
 	if limit < 0 {
 		return errors.BadRequest("limit cannot be negative")
 	}
+
 	if limit > maxVal {
 		return errors.BadRequest("limit exceeds maximum of %d", maxVal)
 	}
+
 	return nil
 }
 
@@ -89,6 +100,7 @@ func (v *Validator) ValidateOffset(offset int) error {
 	if offset < 0 {
 		return errors.BadRequest("offset cannot be negative")
 	}
+
 	return nil
 }
 
@@ -97,12 +109,15 @@ func (v *Validator) ValidateTimeRange(startTime, endTime int64) error {
 	if startTime < 0 {
 		return errors.BadRequest("startTime cannot be negative")
 	}
+
 	if endTime < 0 {
 		return errors.BadRequest("endTime cannot be negative")
 	}
+
 	if endTime > 0 && startTime > endTime {
 		return errors.BadRequest("startTime must be before endTime")
 	}
+
 	return nil
 }
 
@@ -125,6 +140,7 @@ func (v *Validator) ValidateArgs(args map[string]interface{}) error {
 		if len(k) > 100 {
 			return errors.BadRequest("argument key too long")
 		}
+
 		switch v := val.(type) {
 		case string:
 			if len(v) > 10000 {
@@ -137,6 +153,7 @@ func (v *Validator) ValidateArgs(args map[string]interface{}) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -144,6 +161,7 @@ func checkDepth(val interface{}, current, maxVal int) bool {
 	if current >= maxVal {
 		return false
 	}
+
 	switch v := val.(type) {
 	case map[string]interface{}:
 		for _, vv := range v {
@@ -158,5 +176,6 @@ func checkDepth(val interface{}, current, maxVal int) bool {
 			}
 		}
 	}
+
 	return true
 }

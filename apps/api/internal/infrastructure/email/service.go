@@ -104,6 +104,7 @@ func (s *Service) send(ctx context.Context, to, subject, html string) error {
 	if s.fromEmail == "" {
 		s.fromEmail = "noreply@vyzorix.app"
 	}
+
 	if s.fromName == "" {
 		s.fromName = "Vyzorix"
 	}

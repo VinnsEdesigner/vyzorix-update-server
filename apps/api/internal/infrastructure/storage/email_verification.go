@@ -29,12 +29,14 @@ func (r *EmailVerificationRepository) Create(ctx context.Context, ev *email_veri
 		 VALUES(?, ?, ?, ?, ?)`,
 		ev.ID, ev.OperatorID, ev.TokenHash, ev.ExpiresAt.UnixMilli(), ev.CreatedAt.UnixMilli(),
 	)
+
 	return err
 }
 
 // FindByTokenHash retrieves an email verification by token hash.
 func (r *EmailVerificationRepository) FindByTokenHash(ctx context.Context, tokenHash string) (*email_verification.EmailVerification, error) {
 	var ev email_verification.EmailVerification
+
 	var expiresAt, createdAt int64
 
 	err := r.db.QueryRowContext(ctx,
@@ -46,6 +48,7 @@ func (r *EmailVerificationRepository) FindByTokenHash(ctx context.Context, token
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, email_verification.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}

@@ -68,6 +68,7 @@ func (s *Store) Get(deviceID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get secret for device %s: %w", deviceID, err)
 	}
+
 	return secret, nil
 }
 
@@ -100,8 +101,10 @@ func (s *Store) Delete(deviceID string) error {
 		if os.IsNotExist(err) {
 			return nil
 		}
+
 		return fmt.Errorf("failed to delete secret: %w", err)
 	}
+
 	return nil
 }
 
@@ -111,6 +114,7 @@ func (s *Store) Exists(deviceID string) bool {
 	defer s.mu.RUnlock()
 
 	_, err := os.Stat(s.secretPath(deviceID))
+
 	return err == nil
 }
 
@@ -125,12 +129,14 @@ func (s *Store) List() ([]string, error) {
 	}
 
 	var deviceIDs []string
+
 	for _, entry := range entries {
 		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".bin" {
 			deviceID := entry.Name()[:len(entry.Name())-4]
 			deviceIDs = append(deviceIDs, deviceID)
 		}
 	}
+
 	return deviceIDs, nil
 }
 
@@ -146,6 +152,7 @@ func (s *Store) getSecret(deviceID string) (string, error) {
 		if os.IsNotExist(err) {
 			return "", ErrNotFound
 		}
+
 		return "", err
 	}
 
@@ -193,6 +200,7 @@ func (e *AESGCMEncryptor) Encrypt(plaintext []byte) ([]byte, error) {
 	}
 
 	ciphertext := e.gcm.Seal(nonce, nonce, plaintext, nil)
+
 	return ciphertext, nil
 }
 
@@ -204,6 +212,7 @@ func (e *AESGCMEncryptor) Decrypt(ciphertext []byte) ([]byte, error) {
 	}
 
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+
 	plaintext, err := e.gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDecryption, err)

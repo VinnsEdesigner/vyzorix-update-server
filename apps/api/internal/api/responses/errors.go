@@ -9,14 +9,14 @@ import (
 
 // Common error codes - standardized across the API.
 const (
-	ErrCodeBadRequest     = "bad_request"
-	ErrCodeUnauthorized   = "unauthorized"
-	ErrCodeForbidden      = "forbidden"
-	ErrCodeNotFound       = "not_found"
-	ErrCodeConflict       = "conflict"
-	ErrCodeInternalError  = "internal_error"
-	ErrCodeRateLimit      = "rate_limit_exceeded"
-	ErrCodeInvalidInput   = "invalid_input"
+	ErrCodeBadRequest    = "bad_request"
+	ErrCodeUnauthorized  = "unauthorized"
+	ErrCodeForbidden     = "forbidden"
+	ErrCodeNotFound      = "not_found"
+	ErrCodeConflict      = "conflict"
+	ErrCodeInternalError = "internal_error"
+	ErrCodeRateLimit     = "rate_limit_exceeded"
+	ErrCodeInvalidInput  = "invalid_input"
 )
 
 // ErrorMessages maps error codes to safe user messages.

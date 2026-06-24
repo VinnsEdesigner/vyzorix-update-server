@@ -111,6 +111,7 @@ func (c *NonceCache) Use(nonce string, now time.Time) bool {
 	}
 
 	c.seen[nonce] = now
+
 	return true
 }
 
@@ -118,6 +119,7 @@ func (c *NonceCache) Use(nonce string, now time.Time) bool {
 func (c *NonceCache) Len() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	return len(c.seen)
 }
 
@@ -154,6 +156,7 @@ func (v *Verifier) ReadAndVerifyHTTP(r *http.Request) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	r.Body = io.NopCloser(bytes.NewReader(body))
 
 	return body, v.Verify(r.Method, r.URL.RequestURI(), "", body, r.Header)
@@ -166,6 +169,7 @@ func (v *Verifier) ReadAndVerify(r *http.Request, deviceID string) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
+
 	r.Body = io.NopCloser(bytes.NewReader(body))
 
 	return body, v.Verify(r.Method, r.URL.RequestURI(), deviceID, body, r.Header)
@@ -189,6 +193,7 @@ func (v *Verifier) Verify(method, path, deviceID string, body []byte, h http.Hea
 
 	now := time.Now()
 	t := time.UnixMilli(milli)
+
 	if t.Before(now.Add(-v.Window)) || t.After(now.Add(v.Window)) {
 		return &TimestampExpiredError{Window: v.Window}
 	}

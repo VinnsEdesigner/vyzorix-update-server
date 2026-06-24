@@ -17,33 +17,33 @@ var ErrAccountLocked = errors.New("account locked")
 
 // LockoutConfig holds lockout configuration.
 type LockoutConfig struct {
-	Enabled           bool
-	MaxAttempts       int
-	LockoutDuration   time.Duration
+	Enabled            bool
+	MaxAttempts        int
+	LockoutDuration    time.Duration
 	MaxLockoutDuration time.Duration
 }
 
 // DefaultLockoutConfig returns default lockout configuration.
 func DefaultLockoutConfig() LockoutConfig {
 	return LockoutConfig{
-		Enabled:           false,
-		MaxAttempts:       5,
-		LockoutDuration:   time.Hour,
+		Enabled:            false,
+		MaxAttempts:        5,
+		LockoutDuration:    time.Hour,
 		MaxLockoutDuration: 24 * time.Hour,
 	}
 }
 
 type attemptInfo struct {
-	count        int
 	firstAt     time.Time
 	lockedUntil *time.Time
+	count       int
 }
 
 // Lockout tracks failed login attempts.
 type Lockout struct {
-	mu       sync.RWMutex
 	attempts map[string]*attemptInfo
 	config   LockoutConfig
+	mu       sync.RWMutex
 }
 
 // IsEnabled returns whether lockout is enabled.
@@ -55,7 +55,7 @@ func (l *Lockout) IsEnabled() bool {
 func NewLockout(config LockoutConfig) *Lockout {
 	return &Lockout{
 		attempts: make(map[string]*attemptInfo),
-		config:  config,
+		config:   config,
 	}
 }
 
@@ -73,9 +73,10 @@ func (l *Lockout) RecordFailedAttempt(email string) error {
 
 	if !exists {
 		l.attempts[email] = &attemptInfo{
-			count:    1,
+			count:   1,
 			firstAt: now,
 		}
+
 		return nil
 	}
 
@@ -90,10 +91,12 @@ func (l *Lockout) RecordFailedAttempt(email string) error {
 		if multiplier > 4 {
 			multiplier = 4
 		}
+
 		lockDuration := time.Duration(1<<uint(multiplier)) * time.Hour
 		if lockDuration > l.config.MaxLockoutDuration {
 			lockDuration = l.config.MaxLockoutDuration
 		}
+
 		lockedUntil := now.Add(lockDuration)
 		info.lockedUntil = &lockedUntil
 	}
@@ -175,6 +178,7 @@ func LockoutMiddleware(lockout *Lockout) func(c *gin.Context) {
 				"message":     "Too many failed attempts, please try again later",
 				"retry_after": retryAfter.Seconds(),
 			})
+
 			return
 		}
 
@@ -186,6 +190,7 @@ func LockoutMiddleware(lockout *Lockout) func(c *gin.Context) {
 func LoadLockoutConfig() LockoutConfig {
 	enabled := os.Getenv("ACCOUNT_LOCKOUT_ENABLED") == "true"
 	maxAttempts := 5
+
 	if v := os.Getenv("ACCOUNT_LOCKOUT_ATTEMPTS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			maxAttempts = n
@@ -193,6 +198,7 @@ func LoadLockoutConfig() LockoutConfig {
 	}
 
 	duration := time.Hour
+
 	if v := os.Getenv("ACCOUNT_LOCKOUT_DURATION"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			duration = time.Duration(n) * time.Second
@@ -200,9 +206,9 @@ func LoadLockoutConfig() LockoutConfig {
 	}
 
 	return LockoutConfig{
-		Enabled:           enabled,
-		MaxAttempts:       maxAttempts,
-		LockoutDuration:   duration,
+		Enabled:            enabled,
+		MaxAttempts:        maxAttempts,
+		LockoutDuration:    duration,
 		MaxLockoutDuration: 24 * time.Hour,
 	}
 }

@@ -7,9 +7,9 @@ type EmailVerifiedResponse struct {
 
 // VerificationPollResponse is returned when polling for email verification status.
 type VerificationPollResponse struct {
-	Verified  bool   `json:"verified"`
 	Message   string `json:"message,omitempty"`
-	ExpiresIn int64  `json:"expiresIn,omitempty"` // Seconds remaining
+	ExpiresIn int64  `json:"expiresIn,omitempty"`
+	Verified  bool   `json:"verified"`
 }
 
 // ResendVerificationResponse indicates a verification email was sent.

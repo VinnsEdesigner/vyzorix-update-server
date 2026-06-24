@@ -45,6 +45,8 @@ const (
 
 // Entry represents a single audit log entry.
 type Entry struct {
+	CreatedAt    time.Time         `json:"created_at"`
+	Metadata     map[string]string `json:"metadata,omitempty"`
 	ID           string            `json:"id"`
 	OperatorID   string            `json:"operator_id,omitempty"`
 	Action       Action            `json:"action"`
@@ -52,9 +54,7 @@ type Entry struct {
 	ResourceID   string            `json:"resource_id,omitempty"`
 	IPAddress    string            `json:"ip_address,omitempty"`
 	UserAgent    string            `json:"user_agent,omitempty"`
-	Metadata     map[string]string `json:"metadata,omitempty"`
 	Result       Result            `json:"result"`
-	CreatedAt    time.Time         `json:"created_at"`
 }
 
 // Repository handles audit log persistence.
@@ -70,11 +70,13 @@ func NewRepository(db *sql.DB) *Repository {
 // Log writes an audit entry to the database.
 func (r *Repository) Log(ctx context.Context, entry *Entry) error {
 	metadataJSON := ""
+
 	if entry.Metadata != nil {
 		data, err := json.Marshal(entry.Metadata)
 		if err != nil {
 			return err
 		}
+
 		metadataJSON = string(data)
 	}
 
@@ -101,14 +103,14 @@ func (r *Repository) Log(ctx context.Context, entry *Entry) error {
 
 // Query filters for searching audit logs.
 type Query struct {
+	StartTime    time.Time
+	EndTime      time.Time
 	OperatorID   string
 	Action       Action
 	ResourceType string
 	ResourceID   string
 	IPAddress    string
 	Result       Result
-	StartTime    time.Time
-	EndTime      time.Time
 	Limit        int
 	Offset       int
 }
@@ -118,6 +120,7 @@ func (r *Repository) List(ctx context.Context, q Query) ([]Entry, error) {
 	if q.Limit <= 0 {
 		q.Limit = 100
 	}
+
 	if q.Limit > 1000 {
 		q.Limit = 1000
 	}
@@ -130,51 +133,72 @@ func (r *Repository) List(ctx context.Context, q Query) ([]Entry, error) {
 
 	if q.OperatorID != "" {
 		query += " AND operator_id = ?"
+
 		args = append(args, q.OperatorID)
 	}
+
 	if q.Action != "" {
 		query += " AND action = ?"
+
 		args = append(args, string(q.Action))
 	}
+
 	if q.ResourceType != "" {
 		query += " AND resource_type = ?"
+
 		args = append(args, q.ResourceType)
 	}
+
 	if q.ResourceID != "" {
 		query += " AND resource_id = ?"
+
 		args = append(args, q.ResourceID)
 	}
+
 	if q.IPAddress != "" {
 		query += " AND ip_address = ?"
+
 		args = append(args, q.IPAddress)
 	}
+
 	if q.Result != "" {
 		query += " AND result = ?"
+
 		args = append(args, string(q.Result))
 	}
+
 	if !q.StartTime.IsZero() {
 		query += " AND created_at >= ?"
+
 		args = append(args, q.StartTime.UnixMilli())
 	}
+
 	if !q.EndTime.IsZero() {
 		query += " AND created_at <= ?"
+
 		args = append(args, q.EndTime.UnixMilli())
 	}
 
 	query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+
 	args = append(args, q.Limit, q.Offset)
 
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var entries []Entry
+
 	for rows.Next() {
 		var e Entry
+
 		var operatorID, resourceType, resourceID, ipAddress, userAgent, metadataJSON sql.NullString
+
 		var action, result string
+
 		var createdAt int64
 
 		err := rows.Scan(&e.ID, &operatorID, &action, &resourceType, &resourceID, &ipAddress, &userAgent, &metadataJSON, &result, &createdAt)
@@ -208,38 +232,51 @@ func (r *Repository) Count(ctx context.Context, q Query) (int, error) {
 
 	if q.OperatorID != "" {
 		query += " AND operator_id = ?"
+
 		args = append(args, q.OperatorID)
 	}
+
 	if q.Action != "" {
 		query += " AND action = ?"
+
 		args = append(args, string(q.Action))
 	}
+
 	if q.Result != "" {
 		query += " AND result = ?"
+
 		args = append(args, string(q.Result))
 	}
+
 	if !q.StartTime.IsZero() {
 		query += " AND created_at >= ?"
+
 		args = append(args, q.StartTime.UnixMilli())
 	}
+
 	if !q.EndTime.IsZero() {
 		query += " AND created_at <= ?"
+
 		args = append(args, q.EndTime.UnixMilli())
 	}
 
 	var count int
 	err := r.db.QueryRowContext(ctx, query, args...).Scan(&count)
+
 	return count, err
 }
 
 // Cleanup removes old audit entries beyond the retention period.
 func (r *Repository) Cleanup(ctx context.Context, retentionDays int) (int, error) {
 	cutoff := time.Now().AddDate(0, 0, -retentionDays).UnixMilli()
+
 	result, err := r.db.ExecContext(ctx, "DELETE FROM audit_logs WHERE created_at < ?", cutoff)
 	if err != nil {
 		return 0, err
 	}
+
 	n, _ := result.RowsAffected()
+
 	return int(n), nil
 }
 
@@ -247,5 +284,6 @@ func nullableString(s string) sql.NullString {
 	if s == "" {
 		return sql.NullString{}
 	}
+
 	return sql.NullString{String: s, Valid: true}
 }

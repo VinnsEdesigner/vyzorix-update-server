@@ -29,22 +29,22 @@ type FCMConfig struct {
 // DefaultFCMConfig returns the default FCM configuration.
 func DefaultFCMConfig() *FCMConfig {
 	return &FCMConfig{
-		MaxRetries:            3,
-		BaseRetryDelay:        1 * time.Second,
+		MaxRetries:             3,
+		BaseRetryDelay:         1 * time.Second,
 		TokenValidationEnabled: true,
 	}
 }
 
 // FCMMetrics holds FCM delivery metrics.
 type FCMMetrics struct {
-	SuccessCount     int64     `json:"successCount"`
-	FailureCount     int64     `json:"failureCount"`
-	RetryCount      int64     `json:"retryCount"`
-	TokenErrorCount int64     `json:"tokenErrorCount"`
-	LastSuccessAt   int64     `json:"lastSuccessAt"`   // Unix timestamp
-	LastFailureAt   int64     `json:"lastFailureAt"`   // Unix timestamp
-	LastSuccessID   string    `json:"lastSuccessId"`   // Last successful dispatch ID
-	LastFailureID   string    `json:"lastFailureId"`   // Last failed dispatch ID
+	LastSuccessID   string `json:"lastSuccessId"`
+	LastFailureID   string `json:"lastFailureId"`
+	SuccessCount    int64  `json:"successCount"`
+	FailureCount    int64  `json:"failureCount"`
+	RetryCount      int64  `json:"retryCount"`
+	TokenErrorCount int64  `json:"tokenErrorCount"`
+	LastSuccessAt   int64  `json:"lastSuccessAt"`
+	LastFailureAt   int64  `json:"lastFailureAt"`
 }
 
 type SilentWake struct {
@@ -86,14 +86,15 @@ func (s *SafeNotifier) SendSilentWake(ctx context.Context, wake SilentWake) erro
 		// The device will be notified via WebSocket or next poll.
 		return nil
 	}
+
 	return nil
 }
 
 // EnhancedNotifier wraps Client with retry logic, metrics, and token validation.
 type EnhancedNotifier struct {
 	*Client
-	config *FCMConfig
-	metrics FCMMetrics
+	config    *FCMConfig
+	metrics   FCMMetrics
 	metricsMu sync.RWMutex
 }
 
@@ -102,6 +103,7 @@ func NewEnhancedNotifier(client *Client, cfg *FCMConfig) *EnhancedNotifier {
 	if cfg == nil {
 		cfg = DefaultFCMConfig()
 	}
+
 	return &EnhancedNotifier{
 		Client: client,
 		config: cfg,
@@ -122,6 +124,7 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 				"deviceId", wake.DeviceID,
 				"dispatchId", wake.DispatchID,
 			)
+
 			return fmt.Errorf("invalid fcm token for device %s", wake.DeviceID)
 		}
 	}
@@ -138,6 +141,7 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 	}
 
 	var lastErr error
+
 	for attempt := 1; attempt <= e.config.MaxRetries; attempt++ {
 		select {
 		case <-ctx.Done():
@@ -174,10 +178,12 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 				"messageId", result,
 				"attempt", attempt,
 			)
+
 			return nil
 		}
 
 		lastErr = err
+
 		e.incrementRetry()
 
 		// Log failure
@@ -227,7 +233,7 @@ type TopicMessage struct {
 	Topic      string
 	Command    string
 	DispatchID string
-	Priority  string // "high" or "normal"
+	Priority   string // "high" or "normal"
 }
 
 // SendToTopic sends a message to an FCM topic.
@@ -278,6 +284,7 @@ func (e *EnhancedNotifier) SendToTopic(ctx context.Context, msg TopicMessage) er
 			"dispatchId", msg.DispatchID,
 			"err", err,
 		)
+
 		return fmt.Errorf("fcm topic send: %w", err)
 	}
 
@@ -295,6 +302,7 @@ func (e *EnhancedNotifier) SendToTopic(ctx context.Context, msg TopicMessage) er
 func (e *EnhancedNotifier) GetMetrics() FCMMetrics {
 	e.metricsMu.RLock()
 	defer e.metricsMu.RUnlock()
+
 	return e.metrics
 }
 
@@ -350,17 +358,20 @@ func validateFCMToken(token string) bool {
 	return true
 }
 
-// Legacy send without retry - kept for backward compatibility.
+// SendSilentWake sends a silent wake notification without retry.
 func (c *Client) SendSilentWake(ctx context.Context, wake SilentWake) error {
 	if c == nil {
 		return ErrDisabled
 	}
+
 	if !c.enabled {
 		return ErrDisabled
 	}
+
 	if wake.Token == "" {
 		return fmt.Errorf("missing fcm token for device %s", wake.DeviceID)
 	}
+
 	client := c.Messaging()
 	if client == nil {
 		return ErrUnavailable
@@ -393,9 +404,12 @@ func (c *Client) SendSilentWake(ctx context.Context, wake SilentWake) error {
 			"deviceId", wake.DeviceID,
 			"dispatchId", wake.DispatchID,
 			"err", err)
+
 		return fmt.Errorf("fcm send: %w", err)
 	}
+
 	c.log.Info("fcm silent wake sent", "deviceId", wake.DeviceID, "dispatchId", wake.DispatchID, "messageId", result)
+
 	return nil
 }
 

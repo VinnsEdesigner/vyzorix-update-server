@@ -38,6 +38,7 @@ type Manager struct {
 func NewManager(secret string, expiry time.Duration, issuer string) *Manager {
 	h := sha256.New()
 	h.Write([]byte(secret))
+
 	return &Manager{
 		secret: h.Sum(nil),
 		expiry: expiry,
@@ -63,6 +64,7 @@ func (m *Manager) Generate(operatorID, email, name, role string) (string, time.T
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString(m.secret)
+
 	return signed, expiresAt, err
 }
 
@@ -72,18 +74,22 @@ func (m *Manager) Verify(tokenString string) (*OperatorClaims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, ErrInvalidToken
 		}
+
 		return m.secret, nil
 	})
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, ErrExpiredToken
 		}
+
 		return nil, ErrInvalidToken
 	}
+
 	claims, ok := token.Claims.(*OperatorClaims)
 	if !ok || !token.Valid {
 		return nil, ErrInvalidToken
 	}
+
 	return claims, nil
 }
 
@@ -98,5 +104,6 @@ func generateTokenID() string {
 	if _, err := rand.Read(b); err != nil {
 		return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("fallback-%d", time.Now().UnixNano())))
 	}
+
 	return base64.RawURLEncoding.EncodeToString(b)
 }

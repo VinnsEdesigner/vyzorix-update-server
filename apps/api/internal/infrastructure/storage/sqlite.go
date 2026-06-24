@@ -13,45 +13,46 @@ import (
 
 // Config holds SQLite configuration.
 type Config struct {
-	Path            string
-	JournalMode    string // WAL, DELETE, etc.
-	CacheSize      int    // KB, negative means MB
-	BusyTimeout    int    // milliseconds
-	ForeignKeys    bool
+	Path        string
+	JournalMode string // WAL, DELETE, etc.
+	CacheSize   int    // KB, negative means MB
+	BusyTimeout int    // milliseconds
+	ForeignKeys bool
 }
 
 // DefaultConfig returns the default SQLite configuration.
 func DefaultConfig(dbPath string) *Config {
 	return &Config{
-		Path:         dbPath,
-		JournalMode:  "WAL",
-		CacheSize:    -2000, // 2GB cache
-		BusyTimeout:  5000,  // 5 seconds
-		ForeignKeys:  true,
+		Path:        dbPath,
+		JournalMode: "WAL",
+		CacheSize:   -2000, // 2GB cache
+		BusyTimeout: 5000,  // 5 seconds
+		ForeignKeys: true,
 	}
 }
 
 // buildDSN builds the SQLite DSN from config.
 func (c *Config) buildDSN() string {
 	dsn := c.Path
-	
+
 	// Ensure directory exists.
 	dir := filepath.Dir(c.Path)
 	if dir != "" {
 		_ = os.MkdirAll(dir, 0755)
 	}
-	
+
 	// Add query parameters.
 	params := "?_journal_mode=" + c.JournalMode
 	params += "&_cache_size=" + fmt.Sprintf("%d", c.CacheSize)
 	params += "&_busy_timeout=" + fmt.Sprintf("%d", c.BusyTimeout)
 	params += "&_foreign_keys="
+
 	if c.ForeignKeys {
 		params += "1"
 	} else {
 		params += "0"
 	}
-	
+
 	return dsn + params
 }
 
@@ -111,32 +112,32 @@ func (s *SQLite) BeginTx() (*sql.Tx, error) {
 
 // Migration represents a database migration.
 type Migration struct {
-	Version int
-	Name    string
 	Apply   func(*sql.DB) error
+	Name    string
+	Version int
 }
 
 // migrations is the registry of all database migrations.
 var migrations = []Migration{
-	{1, "create_devices_table", migrateCreateDevices},
-	{2, "create_telemetry_table", migrateCreateTelemetry},
-	{3, "create_commands_table", migrateCreateCommands},
-	{4, "create_operators_table", migrateCreateOperators},
-	{5, "create_auth_sessions_table", migrateCreateAuthSessions},
-	{6, "create_email_verifications_table", migrateCreateEmailVerifications},
-	{7, "create_password_reset_table", migrateCreatePasswordReset},
-	{8, "create_settings_table", migrateCreateSettings},
-	{9, "add_commands_columns", migrateAddCommandsColumns},
-	{10, "add_device_secret_hash", migrateAddDeviceSecretHash},
-	{11, "add_operators_github_id", migrateAddOperatorsGitHubID},
-	{12, "create_resend_tracker_table", migrateCreateResendTracker},
-	{13, "create_api_clients_table", migrateCreateAPIClients},
-	{14, "create_signing_keys_table", migrateCreateSigningKeys},
-	{15, "create_session_revocation_list", migrateCreateSessionRevocationList},
-	{16, "create_failed_login_attempts", migrateCreateFailedLoginAttempts},
-	{17, "create_account_lockouts", migrateCreateAccountLockouts},
-	{18, "create_audit_logs", migrateCreateAuditLogs},
-	{19, "create_message_queue_table", migrateCreateMessageQueue},
+	{Apply: migrateCreateDevices, Name: "create_devices_table", Version: 1},
+	{Apply: migrateCreateTelemetry, Name: "create_telemetry_table", Version: 2},
+	{Apply: migrateCreateCommands, Name: "create_commands_table", Version: 3},
+	{Apply: migrateCreateOperators, Name: "create_operators_table", Version: 4},
+	{Apply: migrateCreateAuthSessions, Name: "create_auth_sessions_table", Version: 5},
+	{Apply: migrateCreateEmailVerifications, Name: "create_email_verifications_table", Version: 6},
+	{Apply: migrateCreatePasswordReset, Name: "create_password_reset_table", Version: 7},
+	{Apply: migrateCreateSettings, Name: "create_settings_table", Version: 8},
+	{Apply: migrateAddCommandsColumns, Name: "add_commands_columns", Version: 9},
+	{Apply: migrateAddDeviceSecretHash, Name: "add_device_secret_hash", Version: 10},
+	{Apply: migrateAddOperatorsGitHubID, Name: "add_operators_github_id", Version: 11},
+	{Apply: migrateCreateResendTracker, Name: "create_resend_tracker_table", Version: 12},
+	{Apply: migrateCreateAPIClients, Name: "create_api_clients_table", Version: 13},
+	{Apply: migrateCreateSigningKeys, Name: "create_signing_keys_table", Version: 14},
+	{Apply: migrateCreateSessionRevocationList, Name: "create_session_revocation_list", Version: 15},
+	{Apply: migrateCreateFailedLoginAttempts, Name: "create_failed_login_attempts", Version: 16},
+	{Apply: migrateCreateAccountLockouts, Name: "create_account_lockouts", Version: 17},
+	{Apply: migrateCreateAuditLogs, Name: "create_audit_logs", Version: 18},
+	{Apply: migrateCreateMessageQueue, Name: "create_message_queue_table", Version: 19},
 }
 
 // runMigrations applies all pending migrations.
@@ -179,10 +180,12 @@ func createMigrationsTable(db *sql.DB) error {
 
 func getCurrentVersion(db *sql.DB) (int, error) {
 	var version int
+
 	err := db.QueryRow(`SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1`).Scan(&version)
 	if err == sql.ErrNoRows {
 		return 0, nil
 	}
+
 	return version, err
 }
 
@@ -213,6 +216,7 @@ func migrateCreateDevices(db *sql.DB) error {
 			updated_at INTEGER NOT NULL
 		)
 	`)
+
 	return err
 }
 
@@ -232,9 +236,11 @@ func migrateCreateTelemetry(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
+
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_telemetry_device_time ON telemetry(device_id, received_at DESC)
 	`)
+
 	return err
 }
 
@@ -257,6 +263,7 @@ func migrateCreateCommands(db *sql.DB) error {
 			FOREIGN KEY(device_id) REFERENCES devices(id) ON DELETE CASCADE
 		)
 	`)
+
 	return err
 }
 
@@ -280,6 +287,7 @@ func migrateCreateOperators(db *sql.DB) error {
 			updated_at INTEGER NOT NULL
 		)
 	`)
+
 	return err
 }
 
@@ -296,6 +304,7 @@ func migrateCreateAuthSessions(db *sql.DB) error {
 			FOREIGN KEY(operator_id) REFERENCES operators(id) ON DELETE CASCADE
 		)
 	`)
+
 	return err
 }
 
@@ -310,6 +319,7 @@ func migrateCreateEmailVerifications(db *sql.DB) error {
 			FOREIGN KEY(operator_id) REFERENCES operators(id) ON DELETE CASCADE
 		)
 	`)
+
 	return err
 }
 
@@ -325,6 +335,7 @@ func migrateCreatePasswordReset(db *sql.DB) error {
 			FOREIGN KEY(operator_id) REFERENCES operators(id) ON DELETE CASCADE
 		)
 	`)
+
 	return err
 }
 
@@ -336,6 +347,7 @@ func migrateCreateSettings(db *sql.DB) error {
 			updated_at INTEGER NOT NULL
 		)
 	`)
+
 	return err
 }
 
@@ -348,6 +360,7 @@ func migrateAddCommandsColumns(db *sql.DB) error {
 	for _, col := range cols {
 		db.ExecContext(context.Background(), col) //nolint:errcheck
 	}
+
 	return nil
 }
 
@@ -373,6 +386,7 @@ func migrateCreateResendTracker(db *sql.DB) error {
 			updated_at INTEGER NOT NULL
 		)
 	`)
+
 	return err
 }
 
@@ -387,6 +401,7 @@ func migrateCreateAPIClients(db *sql.DB) error {
 			updated_at INTEGER NOT NULL
 		)
 	`)
+
 	return err
 }
 
@@ -401,6 +416,7 @@ func migrateCreateSigningKeys(db *sql.DB) error {
 			FOREIGN KEY(client_id) REFERENCES api_clients(id) ON DELETE CASCADE
 		)
 	`)
+
 	return err
 }
 
@@ -412,6 +428,7 @@ func migrateCreateSessionRevocationList(db *sql.DB) error {
 			reason TEXT
 		)
 	`)
+
 	return err
 }
 
@@ -424,6 +441,7 @@ func migrateCreateFailedLoginAttempts(db *sql.DB) error {
 			success INTEGER NOT NULL DEFAULT 0
 		)
 	`)
+
 	return err
 }
 
@@ -436,6 +454,7 @@ func migrateCreateAccountLockouts(db *sql.DB) error {
 			first_attempt_at INTEGER NOT NULL
 		)
 	`)
+
 	return err
 }
 
@@ -451,6 +470,7 @@ func migrateCreateAuditLogs(db *sql.DB) error {
 			created_at INTEGER NOT NULL
 		)
 	`)
+
 	return err
 }
 
@@ -473,5 +493,6 @@ func migrateCreateMessageQueue(db *sql.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_message_queue_device_expires 
 		ON message_queue(device_id, expires_at)
 	`)
+
 	return err
 }

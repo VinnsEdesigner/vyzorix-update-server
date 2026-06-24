@@ -25,6 +25,7 @@ func New(clientID, clientSecret string) (*Signer, error) {
 	if clientID == "" {
 		return nil, fmt.Errorf("client ID is required")
 	}
+
 	if len(clientSecret) < 32 {
 		return nil, fmt.Errorf("client secret must be at least 32 bytes")
 	}
@@ -98,6 +99,7 @@ func (rs *Signer) encryptBody(plaintext []byte) ([]byte, error) {
 	}
 
 	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
+
 	return ciphertext, nil
 }
 
@@ -123,5 +125,6 @@ func (rs *Signer) DecryptBody(ciphertext []byte) ([]byte, error) {
 	}
 
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+
 	return gcm.Open(nil, nonce, ciphertext, nil)
 }

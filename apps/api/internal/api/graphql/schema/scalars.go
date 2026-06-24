@@ -29,6 +29,7 @@ var DateTimeScalar = graphql.NewScalar(graphql.ScalarConfig{
 		if value == nil {
 			return nil
 		}
+
 		return value
 	},
 	ParseValue: func(value interface{}) interface{} {

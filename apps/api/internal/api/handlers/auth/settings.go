@@ -14,7 +14,7 @@ import (
 // SettingsHandler handles /me settings endpoints.
 type SettingsHandler struct {
 	authService *auth.AuthService
-	presenter  *response.Presenter
+	presenter   *response.Presenter
 }
 
 // NewSettingsHandler creates a new SettingsHandler.
@@ -23,36 +23,39 @@ func NewSettingsHandler(authService *auth.AuthService, presenter *response.Prese
 }
 
 // getOperatorFromSession extracts operator ID from session.
-func (h *SettingsHandler) getOperatorFromSession(c *gin.Context) (string, *operator.Operator, error) {
+func (h *SettingsHandler) getOperatorFromSession(c *gin.Context) (string, error) {
 	sessionID, err := c.Cookie("vyz_session")
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 
 	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 
-	return op.ID, op, nil
+	return op.ID, nil
 }
 
 // UpdateName handles PATCH /v1/auth/me.
 func (h *SettingsHandler) UpdateName(c *gin.Context) {
-	operatorID, _, err := h.getOperatorFromSession(c)
+	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
 		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
 			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
+
 		h.presenter.InternalError(c, "an error occurred")
+
 		return
 	}
 
 	var req struct {
 		Name *string `json:"name"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+
+	if err = c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "invalid JSON body")
 		return
 	}
@@ -69,31 +72,33 @@ func (h *SettingsHandler) UpdateName(c *gin.Context) {
 	}
 
 	h.presenter.OK(c, gin.H{
-		"id":              op.ID,
-		"email":           op.Email,
-		"name":            op.Name,
-		"role":            op.Role,
-		"mfa_enabled":     op.MFAEnabled,
-		"email_verified":  op.EmailVerified,
-		"thresholds":      op.Thresholds,
+		"id":             op.ID,
+		"email":          op.Email,
+		"name":           op.Name,
+		"role":           op.Role,
+		"mfa_enabled":    op.MFAEnabled,
+		"email_verified": op.EmailVerified,
+		"thresholds":     op.Thresholds,
 		"client":         op.ClientSettings,
 	})
 }
 
 // UpdateSettings handles PATCH /v1/auth/me/settings.
 func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
-	operatorID, _, err := h.getOperatorFromSession(c)
+	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
 		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
 			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
+
 		h.presenter.InternalError(c, "an error occurred")
+
 		return
 	}
 
 	var req auth.UpdateSettingsRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err = c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "invalid JSON body")
 		return
 	}
@@ -112,13 +117,13 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 	}
 
 	h.presenter.OK(c, gin.H{
-		"id":              op.ID,
-		"email":           op.Email,
-		"name":            op.Name,
-		"role":            op.Role,
-		"mfa_enabled":     op.MFAEnabled,
-		"email_verified":  op.EmailVerified,
-		"thresholds":      op.Thresholds,
+		"id":             op.ID,
+		"email":          op.Email,
+		"name":           op.Name,
+		"role":           op.Role,
+		"mfa_enabled":    op.MFAEnabled,
+		"email_verified": op.EmailVerified,
+		"thresholds":     op.Thresholds,
 		"client":         op.ClientSettings,
 	})
 }

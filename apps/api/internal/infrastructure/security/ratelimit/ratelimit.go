@@ -45,6 +45,7 @@ func New(window time.Duration, maxRequests int) *Limiter {
 		max:    maxRequests,
 	}
 	go rl.cleanup()
+
 	return rl
 }
 
@@ -61,6 +62,7 @@ func (rl *Limiter) Allow(key string) bool {
 			tokens:    1,
 			lastReset: now,
 		}
+
 		return true
 	}
 
@@ -69,6 +71,7 @@ func (rl *Limiter) Allow(key string) bool {
 	}
 
 	b.tokens++
+
 	return true
 }
 
@@ -90,6 +93,7 @@ func (rl *Limiter) GetRemaining(key string) int {
 	if remaining < 0 {
 		return 0
 	}
+
 	return remaining
 }
 
@@ -106,6 +110,7 @@ func (rl *Limiter) cleanup() {
 
 	for range ticker.C {
 		rl.mu.Lock()
+
 		now := time.Now()
 		for key, b := range rl.bucket {
 			if now.Sub(b.lastReset) >= rl.ttl {
@@ -140,6 +145,7 @@ func (rl *Limiter) Middleware(cfg Config) gin.HandlerFunc {
 				"error":   "rate_limit_exceeded",
 				"message": "Too many requests. Please try again later.",
 			})
+
 			return
 		}
 
@@ -190,6 +196,7 @@ func (ml *MultiWindowLimiter) Middleware(keyFunc func(*gin.Context) string) gin.
 					"error":   "rate_limit_exceeded",
 					"message": "Too many requests. Please try again later.",
 				})
+
 				return
 			}
 		}
