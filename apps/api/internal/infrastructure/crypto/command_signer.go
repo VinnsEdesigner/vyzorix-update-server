@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/password"
 )
 
 // ErrHashSecretFailed is returned when hashing a secret fails.
@@ -142,7 +142,7 @@ func (s *CommandSigner) GenerateTimestampMs() int64 {
 // Uses OWASP 2023 recommended parameters for strong protection against brute force.
 // Panics if hashing fails since this is a critical security operation.
 func (s *CommandSigner) HashSecret(secret string) string {
-	hash, err := auth.HashSecret(secret)
+	hash, err := password.HashSecret(secret)
 	if err != nil {
 		// crypto/rand failure is critical - panic rather than using weak fallback.
 		panic(ErrHashSecretFailed)
@@ -153,7 +153,7 @@ func (s *CommandSigner) HashSecret(secret string) string {
 
 // VerifySecretHash verifies a secret against its Argon2id hash.
 func (s *CommandSigner) VerifySecretHash(secret, hash string) bool {
-	err := auth.VerifySecret(secret, hash)
+	err := password.VerifySecret(secret, hash)
 	if err == nil {
 		return true
 	}
