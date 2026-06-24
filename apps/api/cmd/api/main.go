@@ -15,7 +15,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
-	infraauthinfra "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/auth"
+	passwordpkg "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/password"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
@@ -95,10 +95,10 @@ func initDatabase(cfg config.Config) (*storage.SQLite, error) {
 	return db, nil
 }
 
-func initSecurity(cfg config.Config) (*infraauthinfra.Argon2idHasher, *infraauth.SessionManager, *infraauth.GoogleTokenVerifier) {
+func initSecurity(cfg config.Config) (*passwordpkg.Argon2idHasher, *infraauth.SessionManager, *infraauth.GoogleTokenVerifier) {
 	PrintSection("Security")
 
-	passwordHasher := infraauthinfra.NewArgon2idHasher()
+	passwordHasher := passwordpkg.NewArgon2idHasher()
 	PrintStatus("PasswordHasher", "Argon2id initialized")
 
 	sessionManager := infraauth.NewSessionManager(cfg.SessionSecret)
@@ -124,7 +124,7 @@ func initServices(cfg config.Config, log *slog.Logger, db *storage.SQLite,
 		storage.NewSessionRepository(db.DB()),
 		storage.NewEmailVerificationRepository(db.DB()),
 		storage.NewPasswordResetRepository(db.DB()),
-		infraauthinfra.NewArgon2idHasher(),
+		passwordpkg.NewArgon2idHasher(),
 		sessionTTL,
 	)
 	PrintStatus("AuthService", "Initialized")

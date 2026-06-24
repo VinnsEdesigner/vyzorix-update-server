@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/client"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/password"
 )
 
 // Helper functions for client repository
@@ -241,7 +241,7 @@ func (r *ClientRepository) Create(ctx context.Context, c *client.Client, secret 
 	}
 
 	// Hash the secret with Argon2id for authentication
-	secretHash, err := auth.HashPassword(secret)
+	secretHash, err := password.HashPassword(secret)
 	if err != nil {
 		return nil, "", err
 	}
@@ -437,7 +437,7 @@ func (r *ClientRepository) VerifyAPIClientSecret(ctx context.Context, clientID, 
 		return nil, client.ErrNotFound
 	}
 
-	if err := auth.VerifyPassword(secret, c.ClientSecretHash); err != nil {
+	if err := password.VerifyPassword(secret, c.ClientSecretHash); err != nil {
 		return nil, client.ErrNotFound
 	}
 
