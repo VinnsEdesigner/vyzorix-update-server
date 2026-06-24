@@ -35,52 +35,48 @@ import (
 
 // ServerConfig holds the server configuration.
 type ServerConfig struct {
-	AuthService    *auth.AuthService
-	DeviceService  *device.Service
-	ClientService  *client.Service
-	CommandService *command.Service
+	FCMNotifier    fcm.Notifier
+	OperatorRepo   operator.Repository
 	RateLimiter    *middleware.RateLimiter
+	Hub            *hub.Hub
+	AuthService    *auth.AuthService
 	AuthLimiter    *middleware.RateLimiter
-	Config         config.Config
+	IPIntelligence *middleware.IPIntelligence
 	Log            *slog.Logger
 	SessionManager *infraauth.SessionManager
 	GoogleVerifier *infraauth.GoogleTokenVerifier
 	EmailService   *emailService.Service
-	Hub            *hub.Hub
-	FCMNotifier    fcm.Notifier
+	CommandService *command.Service
+	ClientService  *client.Service
 	DB             *storage.SQLite
 	Lockout        *middleware.Lockout
-	OperatorRepo   operator.Repository
+	DeviceService  *device.Service
 	Metrics        *metrics.Metrics
 	AuditLogger    *audit.Logger
-	IPIntelligence *middleware.IPIntelligence
+	Config         config.Config
 }
 
 // Server is the main API server.
 type Server struct {
-	engine *gin.Engine
-
-	// Middleware
-	mwFactory         *middleware.MiddlewareFactory
-	rateLimiter       *middleware.RateLimiter
-	authLimiter       *middleware.RateLimiter
-	config            config.Config
-	log               *slog.Logger
-	cookieAuth        *middleware.CookieAuth
-	signatureVerifier *middleware.SignatureVerifier
-	lockout           *middleware.Lockout
-	csrfProtector     *middleware.CSRFProtector
-	turnstileVerifier *middleware.TurnstileVerifier
-	revocationList    *infraauth.RevocationList
-	ipIntelligence    *middleware.IPIntelligence
-	hmacVerifier      *cryptohmac.Verifier
-	encryptKeyFn      func(clientID string) ([]byte, bool)
-	sessionManager    *infraauth.SessionManager
-
-	// Handlers
+	encryptKeyFn            func(clientID string) ([]byte, bool)
 	authHandlers            *authhandlers.AllHandlers
-	deviceRegisterHandler   *devicehandlers.RegisterHandler
+	rateLimiter             *middleware.RateLimiter
+	authLimiter             *middleware.RateLimiter
+	AuditLogger             *audit.Logger
+	log                     *slog.Logger
+	cookieAuth              *middleware.CookieAuth
+	signatureVerifier       *middleware.SignatureVerifier
+	lockout                 *middleware.Lockout
+	csrfProtector           *middleware.CSRFProtector
+	turnstileVerifier       *middleware.TurnstileVerifier
+	revocationList          *infraauth.RevocationList
+	ipIntelligence          *middleware.IPIntelligence
+	hmacVerifier            *cryptohmac.Verifier
+	mwFactory               *middleware.MiddlewareFactory
+	engine                  *gin.Engine
 	deviceStatusHandler     *devicehandlers.StatusHandler
+	deviceRegisterHandler   *devicehandlers.RegisterHandler
+	sessionManager          *infraauth.SessionManager
 	deviceUpdaterHandler    *devicehandlers.UpdaterHandler
 	deviceListHandler       *devicehandlers.ListHandler
 	commandHandler          *cmdhandlers.ExecuteHandler
@@ -90,13 +86,9 @@ type Server struct {
 	adminClientsHandler     *admin.ClientsHandler
 	updaterHandler          *updaterhandlers.Handler
 	metricsHandler          *metrics.MetricsHandler
-
-	// State
-	db  *storage.SQLite
-	hub *hub.Hub
-
-	// Audit
-	AuditLogger *audit.Logger
+	db                      *storage.SQLite
+	hub                     *hub.Hub
+	config                  config.Config
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -163,6 +155,7 @@ func NewServer(cfg *ServerConfig) *Server {
 
 	// Set audit logger
 	s.AuditLogger = cfg.AuditLogger
+
 	return s
 }
 
@@ -193,7 +186,7 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier)
 
 	// WebSocket handler
-	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier)
+	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
 
 	// Telemetry history handler
 	s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(

@@ -47,17 +47,19 @@ linters:
     - testableexamples
     - testifylint
     - testpackage
+    - unparam
     - unused
+    - wastedassign
   settings:
     errcheck:
       check-type-assertions: true
     exhaustive:
       default-signifies-exhaustive: true
     funlen:
-      lines: 250
-      statements: 200
+      lines: 150
+      statements: 100
     gocyclo:
-      min-complexity: 30
+      min-complexity: 20
     gosec:
       excludes:
         - G104
@@ -77,12 +79,17 @@ linters:
         - G703
         - G702
     govet:
-      disable:
+      enable:
         - fieldalignment
         - shadow
         - unusedwrite
+        - nilness
+        - printf
+    loggercheck:
+      tags:
+        - slog
     nestif:
-      min-complexity: 25
+      min-complexity: 20
     revive:
       rules:
         - name: blank-imports

@@ -21,10 +21,10 @@ type GitHubTokenResponse struct {
 
 // GitHubUserInfo represents the GitHub user profile.
 type GitHubUserInfo struct {
-	ID    int64  `json:"id"`
 	Login string `json:"login"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
+	ID    int64  `json:"id"`
 }
 
 // GitHubEmailInfo represents a GitHub email address.
@@ -54,14 +54,17 @@ func ExchangeGitHubCode(ctx context.Context, code string, config GitHubConfig) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
+
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Second}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to request access token: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -82,14 +85,17 @@ func FetchGitHubUserProfile(ctx context.Context, accessToken string) (*GitHubUse
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Accept", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Second}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call GitHub user API: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -111,14 +117,17 @@ func FetchGitHubEmails(ctx context.Context, accessToken string) ([]GitHubEmailIn
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Accept", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Second}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call GitHub emails API: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -141,13 +150,16 @@ func GetPrimaryEmail(emails []GitHubEmailInfo) string {
 			return e.Email
 		}
 	}
+
 	for _, e := range emails {
 		if e.Verified {
 			return e.Email
 		}
 	}
+
 	if len(emails) > 0 {
 		return emails[0].Email
 	}
+
 	return ""
 }

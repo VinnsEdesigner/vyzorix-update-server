@@ -15,7 +15,7 @@ import (
 type ClientCredentialsHandler struct {
 	authService   *auth.AuthService
 	clientService *client.Service
-	presenter    *response.Presenter
+	presenter     *response.Presenter
 }
 
 // NewClientCredentialsHandler creates a new ClientCredentialsHandler.
@@ -23,7 +23,7 @@ func NewClientCredentialsHandler(authService *auth.AuthService, clientService *c
 	return &ClientCredentialsHandler{
 		authService:   authService,
 		clientService: clientService,
-		presenter:    presenter,
+		presenter:     presenter,
 	}
 }
 
@@ -50,7 +50,9 @@ func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
+
 		h.presenter.InternalError(c, "an error occurred")
+
 		return
 	}
 
@@ -59,10 +61,10 @@ func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 		Platform       string   `json:"platform" binding:"required,oneof=web ios android"`
 		AllowedOrigins []string `json:"allowedOrigins"`
 		AllowedPaths   []string `json:"allowedPaths"`
-		RateLimit     int      `json:"rateLimit"`
+		RateLimit      int      `json:"rateLimit"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err = c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "Invalid request body")
 		return
 	}
@@ -91,7 +93,7 @@ func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 		"clientSecret": secret, // Only returned once!
 		"platform":     clientResp.Platform,
 		"name":         clientResp.Name,
-		"createdAt":   clientResp.CreatedAt,
+		"createdAt":    clientResp.CreatedAt,
 	})
 }
 
@@ -103,7 +105,9 @@ func (h *ClientCredentialsHandler) List(c *gin.Context) {
 			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
+
 		h.presenter.InternalError(c, "an error occurred")
+
 		return
 	}
 
@@ -124,7 +128,9 @@ func (h *ClientCredentialsHandler) Get(c *gin.Context) {
 			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
+
 		h.presenter.InternalError(c, "an error occurred")
+
 		return
 	}
 
@@ -151,7 +157,9 @@ func (h *ClientCredentialsHandler) Delete(c *gin.Context) {
 			h.presenter.Unauthorized(c, "not authenticated")
 			return
 		}
+
 		h.presenter.InternalError(c, "an error occurred")
+
 		return
 	}
 

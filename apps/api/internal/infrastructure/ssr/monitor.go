@@ -13,18 +13,18 @@ type RestartCallback func()
 
 // Monitor monitors SSR process health and triggers auto-restart on crashes.
 type Monitor struct {
+	lastRestart    time.Time
+	ctx            context.Context
 	process        *ProcessManager
 	logger         *slog.Logger
-	interval       time.Duration
-	ctx            context.Context
 	cancel         context.CancelFunc
+	restartCb      RestartCallback
 	wg             sync.WaitGroup
+	interval       time.Duration
+	lastState      ProcessState
+	restartBackoff time.Duration
 	mu             sync.RWMutex
 	running        bool
-	lastState      ProcessState
-	restartCb      RestartCallback
-	restartBackoff time.Duration
-	lastRestart    time.Time
 }
 
 // NewMonitor creates a new SSR process monitor.
@@ -59,6 +59,7 @@ func (m *Monitor) Start(ctx context.Context) {
 		m.mu.Unlock()
 		return
 	}
+
 	m.ctx, m.cancel = context.WithCancel(ctx)
 	m.running = true
 	m.mu.Unlock()
@@ -76,6 +77,7 @@ func (m *Monitor) Stop() {
 		m.mu.Unlock()
 		return
 	}
+
 	m.running = false
 	if m.cancel != nil {
 		m.cancel()
@@ -121,11 +123,13 @@ func (m *Monitor) check() {
 	switch state {
 	case ProcessStateCrashed:
 		m.logger.Warn("SSR process crashed, triggering restart")
+
 		shouldRestart = true
 	case ProcessStateRunning, ProcessStateStarting:
 		if !health.Healthy {
 			// Process running but HTTP health check failing - might be hung.
 			m.logger.Warn("SSR process unhealthy (HTTP check failed)", "status", health.String())
+
 			shouldRestart = true
 		}
 	case ProcessStateStopped, ProcessStateStopping:
@@ -150,6 +154,7 @@ func (m *Monitor) check() {
 				m.mu.Unlock()
 
 				m.logger.Info("Calling restart callback for SSR")
+
 				go cb() // Call restart in goroutine to avoid deadlock
 			} else {
 				m.logger.Warn("SSR restart skipped (backoff period)", "backoff", backoff)

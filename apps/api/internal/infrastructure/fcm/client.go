@@ -29,19 +29,24 @@ type serviceAccount struct {
 
 func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 	c := &Client{log: log}
+
 	if rawCredentials == "" {
 		log.Warn("fcm disabled; FIREBASE_CREDENTIALS not configured")
 		return c, nil
 	}
+
 	creds := option.WithCredentialsJSON([]byte(rawCredentials))
+
 	app, err := firebase.NewApp(context.Background(), nil, creds)
 	if err != nil {
 		return nil, fmt.Errorf("firebase init: %w", err)
 	}
+
 	c.app = app
 	c.enabled = true
 	c.projects = getProjectID(rawCredentials)
 	c.log.Info("fcm initialized", "project", c.projects)
+
 	return c, nil
 }
 
@@ -51,6 +56,7 @@ func (c *Client) ProjectID() string {
 	if c == nil {
 		return ""
 	}
+
 	return c.projects
 }
 
@@ -58,11 +64,13 @@ func (c *Client) Messaging() *messaging.Client {
 	if c == nil || c.app == nil {
 		return nil
 	}
+
 	client, err := c.app.Messaging(context.Background())
 	if err != nil {
 		c.log.Error("fcm messaging client", "err", err)
 		return nil
 	}
+
 	return client
 }
 
@@ -71,5 +79,6 @@ func getProjectID(cred string) string {
 	if err := json.Unmarshal([]byte(cred), &sa); err == nil && sa.ProjectID != "" {
 		return sa.ProjectID
 	}
+
 	return ""
 }

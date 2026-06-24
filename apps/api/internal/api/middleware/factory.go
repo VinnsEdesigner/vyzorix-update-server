@@ -9,30 +9,30 @@ import (
 
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	infraConfig "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 )
 
 // MiddlewareFactory creates and configures all middleware with their dependencies.
 // This centralizes middleware creation and reduces coupling in server.go.
 type MiddlewareFactory struct {
-	log                 *slog.Logger
+	clientService       ClientServiceProvider
+	ipIntelligence      *IPIntelligence
 	sessionManager      *infraauth.SessionManager
 	authService         *appsvc.AuthService
-	clientService       ClientServiceProvider
-	allowedOrigins      []string
-	enforceHMAC         bool
-	hmacWindow          time.Duration
-	publicDir           string
-	jwtSecret           string
-	rateLimitPerMinute  int
-	authRateLimitPerMin int
-	ipIntelligence      *IPIntelligence
-	lockout             *Lockout
-	csrfProtector       *CSRFProtector
-	turnstile           *TurnstileVerifier
-	signatureVerifier   *SignatureVerifier
 	revocationList      *infraauth.RevocationList
+	signatureVerifier   *SignatureVerifier
+	turnstile           *TurnstileVerifier
+	csrfProtector       *CSRFProtector
+	log                 *slog.Logger
+	lockout             *Lockout
+	jwtSecret           string
+	publicDir           string
+	allowedOrigins      []string
+	authRateLimitPerMin int
+	rateLimitPerMinute  int
+	hmacWindow          time.Duration
+	enforceHMAC         bool
 }
 
 // ClientServiceProvider interface for client service dependency.
@@ -42,13 +42,13 @@ type ClientServiceProvider interface {
 
 // FactoryConfig holds configuration for the middleware factory.
 type FactoryConfig struct {
-	AllowedOrigins     []string
-	EnforceHMAC       bool
-	HMACWindow        time.Duration
-	PublicDir         string
-	JWTSecret         string
-	RateLimitPerMin   int
-	AuthRateLimitMin  int
+	PublicDir        string
+	JWTSecret        string
+	AllowedOrigins   []string
+	HMACWindow       time.Duration
+	RateLimitPerMin  int
+	AuthRateLimitMin int
+	EnforceHMAC      bool
 }
 
 // NewMiddlewareFactory creates a new MiddlewareFactory with all dependencies.
@@ -172,6 +172,7 @@ func (f *MiddlewareFactory) SignatureVerifier() gin.HandlerFunc {
 	if f.signatureVerifier == nil {
 		return func(c *gin.Context) { c.Next() }
 	}
+
 	return RequestSigningMiddleware(f.signatureVerifier)
 }
 
@@ -184,6 +185,7 @@ func (f *MiddlewareFactory) Lockout() gin.HandlerFunc {
 	if f.lockout == nil {
 		return func(c *gin.Context) { c.Next() }
 	}
+
 	return LockoutMiddleware(f.lockout)
 }
 
@@ -192,6 +194,7 @@ func (f *MiddlewareFactory) CSRF() gin.HandlerFunc {
 	if f.csrfProtector == nil {
 		return func(c *gin.Context) { c.Next() }
 	}
+
 	return f.csrfProtector.Middleware()
 }
 
@@ -200,6 +203,7 @@ func (f *MiddlewareFactory) Turnstile() gin.HandlerFunc {
 	if f.turnstile == nil {
 		return func(c *gin.Context) { c.Next() }
 	}
+
 	return TurnstileMiddleware(f.turnstile)
 }
 
@@ -257,6 +261,7 @@ func (f *MiddlewareFactory) initSignatureVerifier() {
 
 func (f *MiddlewareFactory) initIPIntelligence() {
 	config := LoadIPIntelligenceConfig()
+
 	f.ipIntelligence = NewIPIntelligence(config)
 	if f.ipIntelligence != nil {
 		go f.ipIntelligence.StartCleanupRoutine(context.Background(), 5*time.Minute)
@@ -325,6 +330,7 @@ func (f *MiddlewareFactory) GetHmacVerifier() *cryptohmac.Verifier {
 		if f.clientService == nil {
 			return "", false
 		}
+
 		return f.clientService.GetHmacKey(context.Background(), clientID)
 	}
 
@@ -342,6 +348,7 @@ func (f *MiddlewareFactory) GetEncryptionKeyFn() func(clientID string) ([]byte, 
 		if !ok || secret == "" {
 			return nil, false
 		}
+
 		return cryptohmac.DeriveKey(secret), true
 	}
 }

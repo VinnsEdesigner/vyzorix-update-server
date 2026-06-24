@@ -28,6 +28,7 @@ func (r *SessionRepository) FindByID(ctx context.Context, id string) (*session.S
 	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent FROM auth_sessions WHERE id = ?`
 
 	var s session.Session
+
 	var ipAddress, userAgent sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
@@ -37,6 +38,7 @@ func (r *SessionRepository) FindByID(ctx context.Context, id string) (*session.S
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, session.ErrNotFound
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -55,11 +57,14 @@ func (r *SessionRepository) FindByOperatorID(ctx context.Context, operatorID str
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var sessions []*session.Session
+
 	for rows.Next() {
 		var s session.Session
+
 		var ipAddress, userAgent sql.NullString
 
 		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent); err != nil {
@@ -97,6 +102,7 @@ func (r *SessionRepository) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return session.ErrNotFound
 	}
@@ -118,6 +124,7 @@ func (r *SessionRepository) DeleteExpired(ctx context.Context) (int, error) {
 	}
 
 	deleted, err := result.RowsAffected()
+
 	return int(deleted), err
 }
 
@@ -135,6 +142,7 @@ func (r *SessionRepository) Extend(ctx context.Context, id string, newExpiry tim
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return session.ErrNotFound
 	}
@@ -146,17 +154,21 @@ func (r *SessionRepository) Extend(ctx context.Context, id string, newExpiry tim
 func (r *SessionRepository) AddSessionRevocation(ctx context.Context, tokenHash, reason string) error {
 	query := `INSERT INTO session_revocation_list (token_hash, revoked_at, reason) VALUES (?, ?, ?)`
 	_, err := r.db.ExecContext(ctx, query, tokenHash, time.Now().UnixMilli(), reason)
+
 	return err
 }
 
 // IsSessionRevoked checks if a session token hash is in the revocation list.
 func (r *SessionRepository) IsSessionRevoked(ctx context.Context, tokenHash string) (bool, error) {
 	query := `SELECT COUNT(*) FROM session_revocation_list WHERE token_hash = ?`
+
 	var count int
+
 	err := r.db.QueryRowContext(ctx, query, tokenHash).Scan(&count)
 	if err != nil {
 		return false, err
 	}
+
 	return count > 0, nil
 }
 
@@ -164,6 +176,7 @@ func (r *SessionRepository) IsSessionRevoked(ctx context.Context, tokenHash stri
 func (r *SessionRepository) RemoveSessionRevocation(ctx context.Context, tokenHash string) error {
 	query := `DELETE FROM session_revocation_list WHERE token_hash = ?`
 	_, err := r.db.ExecContext(ctx, query, tokenHash)
+
 	return err
 }
 
@@ -172,11 +185,13 @@ func (r *SessionRepository) ListSessionRevocations(ctx context.Context, reason s
 	if limit <= 0 {
 		limit = 100
 	}
+
 	if limit > 1000 {
 		limit = 1000
 	}
 
 	var query string
+
 	var args []interface{}
 
 	if reason != "" {
@@ -191,22 +206,29 @@ func (r *SessionRepository) ListSessionRevocations(ctx context.Context, reason s
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var revocations []*session.SessionRevocation
+
 	for rows.Next() {
 		var rev session.SessionRevocation
+
 		var revokedAt int64
+
 		var reasonVal sql.NullString
 		if err := rows.Scan(&rev.TokenHash, &revokedAt, &reasonVal); err != nil {
 			return nil, err
 		}
+
 		rev.RevokedAt = time.UnixMilli(revokedAt)
 		if reasonVal.Valid {
 			rev.Reason = reasonVal.String
 		}
+
 		revocations = append(revocations, &rev)
 	}
+
 	return revocations, rows.Err()
 }
 
@@ -214,21 +236,26 @@ func (r *SessionRepository) ListSessionRevocations(ctx context.Context, reason s
 func (r *SessionRepository) CleanupSessionRevocations(ctx context.Context, olderThan time.Duration) (int, error) {
 	cutoff := time.Now().Add(-olderThan).UnixMilli()
 	query := `DELETE FROM session_revocation_list WHERE revoked_at < ?`
+
 	result, err := r.db.ExecContext(ctx, query, cutoff)
 	if err != nil {
 		return 0, err
 	}
+
 	n, _ := result.RowsAffected()
+
 	return int(n), nil
 }
 
 // RevokeAllOperatorSessions revokes all sessions for a specific operator.
 func (r *SessionRepository) RevokeAllOperatorSessions(ctx context.Context, operatorID string) error {
 	query := `SELECT id FROM auth_sessions WHERE operator_id = ?`
+
 	rows, err := r.db.QueryContext(ctx, query, operatorID)
 	if err != nil {
 		return err
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
@@ -236,10 +263,12 @@ func (r *SessionRepository) RevokeAllOperatorSessions(ctx context.Context, opera
 		if err := rows.Scan(&sessionID); err != nil {
 			continue
 		}
+
 		if err := r.AddSessionRevocation(ctx, sessionID, "operator_logout"); err != nil {
 			return err
 		}
 	}
+
 	return rows.Err()
 }
 
@@ -269,6 +298,7 @@ func (r *RefreshTokenRepository) Create(ctx context.Context, rt *refresh_token.R
 	_, err := r.db.ExecContext(ctx, query,
 		rt.ID, rt.TokenHash, rt.OperatorID, rt.SessionID, rt.ExpiresAt, rt.CreatedAt, rt.RevokedAt, rt.ReplacedByID, rt.IsRevoked,
 	)
+
 	return err
 }
 
@@ -279,12 +309,14 @@ func (r *RefreshTokenRepository) FindByID(ctx context.Context, id string) (*refr
 		FROM refresh_tokens WHERE id = ?`
 
 	var rt refresh_token.RefreshToken
+
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&rt.ID, &rt.TokenHash, &rt.OperatorID, &rt.SessionID, &rt.ExpiresAt, &rt.CreatedAt, &rt.RevokedAt, &rt.ReplacedByID, &rt.IsRevoked,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, refresh_token.ErrNotFound
 	}
+
 	return &rt, err
 }
 
@@ -295,29 +327,35 @@ func (r *RefreshTokenRepository) FindByTokenHash(ctx context.Context, tokenHash 
 		FROM refresh_tokens WHERE token_hash = ?`
 
 	var rt refresh_token.RefreshToken
+
 	err := r.db.QueryRowContext(ctx, query, tokenHash).Scan(
 		&rt.ID, &rt.TokenHash, &rt.OperatorID, &rt.SessionID, &rt.ExpiresAt, &rt.CreatedAt, &rt.RevokedAt, &rt.ReplacedByID, &rt.IsRevoked,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, refresh_token.ErrNotFound
 	}
+
 	return &rt, err
 }
 
 // Revoke revokes a refresh token by ID.
 func (r *RefreshTokenRepository) Revoke(ctx context.Context, id string) error {
 	query := `UPDATE refresh_tokens SET is_revoked = true, revoked_at = ? WHERE id = ?`
+
 	result, err := r.db.ExecContext(ctx, query, time.Now(), id)
 	if err != nil {
 		return err
 	}
+
 	rows, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
+
 	if rows == 0 {
 		return refresh_token.ErrNotFound
 	}
+
 	return nil
 }
 
@@ -325,6 +363,7 @@ func (r *RefreshTokenRepository) Revoke(ctx context.Context, id string) error {
 func (r *RefreshTokenRepository) RevokeByTokenHash(ctx context.Context, tokenHash string) error {
 	query := `UPDATE refresh_tokens SET is_revoked = true, revoked_at = ? WHERE token_hash = ?`
 	_, err := r.db.ExecContext(ctx, query, time.Now(), tokenHash)
+
 	return err
 }
 
@@ -332,6 +371,7 @@ func (r *RefreshTokenRepository) RevokeByTokenHash(ctx context.Context, tokenHas
 func (r *RefreshTokenRepository) RevokeAllForOperator(ctx context.Context, operatorID string) error {
 	query := `UPDATE refresh_tokens SET is_revoked = true, revoked_at = ? WHERE operator_id = ? AND is_revoked = false`
 	_, err := r.db.ExecContext(ctx, query, time.Now(), operatorID)
+
 	return err
 }
 
@@ -339,10 +379,13 @@ func (r *RefreshTokenRepository) RevokeAllForOperator(ctx context.Context, opera
 func (r *RefreshTokenRepository) CleanupExpired(ctx context.Context, olderThan time.Duration) (int, error) {
 	cutoff := time.Now().Add(-olderThan)
 	query := `DELETE FROM refresh_tokens WHERE expires_at < ? AND is_revoked = true AND revoked_at < ?`
+
 	result, err := r.db.ExecContext(ctx, query, cutoff, cutoff)
 	if err != nil {
 		return 0, err
 	}
+
 	rows, err := result.RowsAffected()
+
 	return int(rows), err
 }

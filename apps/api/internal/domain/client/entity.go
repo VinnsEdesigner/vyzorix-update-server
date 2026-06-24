@@ -13,30 +13,30 @@ var ErrSigningKeyNotFound = errors.New("signing key not found")
 
 // Client represents an API client for request signing.
 type Client struct {
-	ID                string
-	OperatorID        string
-	Name              string
-	Platform          string
-	ClientSecretHash  string
-	HmacKey           string
-	AllowedOrigins    []string
-	AllowedPaths      []string
-	RateLimit         int
-	IsActive          bool
-	RequestCount      int64
-	LastRequestAt     *int64
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	UpdatedAt        time.Time
+	CreatedAt        time.Time
+	LastRequestAt    *int64
+	OperatorID       string
+	Name             string
+	Platform         string
+	ClientSecretHash string
+	HmacKey          string
+	ID               string
+	AllowedOrigins   []string
+	AllowedPaths     []string
+	RequestCount     int64
+	RateLimit        int
+	IsActive         bool
 }
 
 // SigningKey represents a signing key for a client.
 type SigningKey struct {
+	ExpiresAt *int64
 	ID        string
 	ClientID  string
 	KeyHash   string
 	Version   int
 	IssuedAt  int64
-	ExpiresAt *int64
 	IsActive  bool
 }
 
@@ -45,5 +45,6 @@ func (k *SigningKey) IsExpired() bool {
 	if k.ExpiresAt == nil {
 		return false
 	}
+
 	return time.Now().UnixMilli() > *k.ExpiresAt
 }

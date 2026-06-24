@@ -46,7 +46,7 @@ func (r *LoginSafeResponse) Response() gin.H {
 	}
 }
 
-// SignupSafeResponse returns a consistent signup response.
+// SignupResponse returns a consistent signup response.
 func (r *LoginSafeResponse) SignupResponse() gin.H {
 	return gin.H{
 		"error":   "unauthorized",
@@ -54,7 +54,7 @@ func (r *LoginSafeResponse) SignupResponse() gin.H {
 	}
 }
 
-// PasswordResetSafeResponse returns a consistent password reset response.
+// PasswordResetResponse returns a consistent password reset response.
 func (r *LoginSafeResponse) PasswordResetResponse() gin.H {
 	return gin.H{
 		"error":   "unauthorized",

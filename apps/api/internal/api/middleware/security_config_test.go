@@ -29,7 +29,7 @@ func TestSigningConfig(t *testing.T) {
 		cfg := config.SigningConfig{
 			Enabled:         true,
 			TimestampWindow: 300, // 5 minutes in seconds
-			MaxCacheSize:   1000,
+			MaxCacheSize:    1000,
 		}
 		assert.True(t, cfg.Enabled)
 		assert.Equal(t, 300, cfg.TimestampWindow)
@@ -41,7 +41,7 @@ func TestReplayProtectionFromConfig(t *testing.T) {
 		cfg := config.SigningConfig{
 			Enabled:         true,
 			TimestampWindow: 300,
-			MaxCacheSize:   100,
+			MaxCacheSize:    100,
 		}
 		rp := NewReplayProtection(cfg)
 		assert.NotNil(t, rp)
@@ -136,8 +136,8 @@ func TestCSRFProtection(t *testing.T) {
 
 	t.Run("token_generated", func(t *testing.T) {
 		cfg := CSRFConfig{
-			Enabled:    true,
-			Secret:     "test-secret",
+			Enabled:     true,
+			Secret:      "test-secret",
 			TokenLength: 32,
 		}
 		protector := NewCSRFProtector(cfg)
@@ -159,7 +159,7 @@ func TestCSRFProtection(t *testing.T) {
 	t.Run("invalid_token_rejected", func(t *testing.T) {
 		cfg := CSRFConfig{
 			Enabled: true,
-			Secret: "test-secret",
+			Secret:  "test-secret",
 		}
 		protector := NewCSRFProtector(cfg)
 
@@ -233,9 +233,9 @@ func TestAccountLockout(t *testing.T) {
 
 	t.Run("lockout_after_attempts", func(t *testing.T) {
 		cfg := LockoutConfig{
-			Enabled:           true,
-			MaxAttempts:       3,
-			LockoutDuration:   15 * time.Minute,
+			Enabled:            true,
+			MaxAttempts:        3,
+			LockoutDuration:    15 * time.Minute,
 			MaxLockoutDuration: 24 * time.Hour,
 		}
 		lockout := NewLockout(cfg)
@@ -265,7 +265,7 @@ func TestAccountLockout(t *testing.T) {
 	})
 
 	t.Run("lockout_middleware", func(t *testing.T) {
-		cfg := LockoutConfig{Enabled: true, MaxAttempts: 2, LockoutDuration: time.Hour, MaxLockoutDuration: 24*time.Hour}
+		cfg := LockoutConfig{Enabled: true, MaxAttempts: 2, LockoutDuration: time.Hour, MaxLockoutDuration: 24 * time.Hour}
 		lockout := NewLockout(cfg)
 		email := "locked@example.com"
 

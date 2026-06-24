@@ -33,13 +33,16 @@ func (ve ValidationErrors) Error() string {
 	if len(ve) == 0 {
 		return ""
 	}
+
 	if len(ve) == 1 {
 		return ve[0].Message
 	}
+
 	var msgs []string
 	for _, e := range ve {
 		msgs = append(msgs, e.Message)
 	}
+
 	return strings.Join(msgs, "; ")
 }
 
@@ -88,18 +91,18 @@ type LoginSchema struct {
 
 func (s *LoginSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	email := strings.TrimSpace(strings.ToLower(s.Email))
 	if email == "" {
 		errs = append(errs, ValidationError{Field: "email", Message: "email is required"})
 	} else if !EmailPattern.MatchString(email) {
 		errs = append(errs, ValidationError{Field: "email", Message: "invalid email format"})
 	}
-	
+
 	if s.Password == "" {
 		errs = append(errs, ValidationError{Field: "password", Message: "password is required"})
 	}
-	
+
 	return errs
 }
 
@@ -113,14 +116,14 @@ type RegisterSchema struct {
 
 func (s *RegisterSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	email := strings.TrimSpace(strings.ToLower(s.Email))
 	if email == "" {
 		errs = append(errs, ValidationError{Field: "email", Message: "email is required"})
 	} else if !EmailPattern.MatchString(email) {
 		errs = append(errs, ValidationError{Field: "email", Message: "invalid email format"})
 	}
-	
+
 	if s.Password == "" {
 		errs = append(errs, ValidationError{Field: "password", Message: "password is required"})
 	} else if len(s.Password) < 12 {
@@ -128,19 +131,19 @@ func (s *RegisterSchema) Validate() ValidationErrors {
 	} else if len(s.Password) > 128 {
 		errs = append(errs, ValidationError{Field: "password", Message: "password must be at most 128 characters"})
 	}
-	
+
 	name := strings.TrimSpace(s.Name)
 	if name == "" {
 		errs = append(errs, ValidationError{Field: "name", Message: "name is required"})
 	} else if !NamePattern.MatchString(name) {
 		errs = append(errs, ValidationError{Field: "name", Message: "name must be 2-100 characters (letters, numbers, spaces, hyphens, apostrophes)"})
 	}
-	
+
 	// Role is optional, but if provided must be valid
 	if s.Role != "" && s.Role != "operator" && s.Role != "super_admin" {
 		errs = append(errs, ValidationError{Field: "role", Message: "role must be 'operator' or 'super_admin'"})
 	}
-	
+
 	return errs
 }
 
@@ -151,14 +154,14 @@ type ForgotPasswordSchema struct {
 
 func (s *ForgotPasswordSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	email := strings.TrimSpace(strings.ToLower(s.Email))
 	if email == "" {
 		errs = append(errs, ValidationError{Field: "email", Message: "email is required"})
 	} else if !EmailPattern.MatchString(email) {
 		errs = append(errs, ValidationError{Field: "email", Message: "invalid email format"})
 	}
-	
+
 	return errs
 }
 
@@ -170,20 +173,20 @@ type ResetPasswordSchema struct {
 
 func (s *ResetPasswordSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	token := strings.TrimSpace(s.Token)
 	if token == "" {
 		errs = append(errs, ValidationError{Field: "token", Message: "token is required"})
 	} else if !TokenPattern.MatchString(token) {
 		errs = append(errs, ValidationError{Field: "token", Message: "invalid token format"})
 	}
-	
+
 	if s.NewPassword == "" {
 		errs = append(errs, ValidationError{Field: "new_password", Message: "new_password is required"})
 	} else if len(s.NewPassword) < 12 {
 		errs = append(errs, ValidationError{Field: "new_password", Message: "password must be at least 12 characters"})
 	}
-	
+
 	return errs
 }
 
@@ -195,21 +198,21 @@ type ChangePasswordSchema struct {
 
 func (s *ChangePasswordSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	if s.OldPassword == "" {
 		errs = append(errs, ValidationError{Field: "old_password", Message: "old_password is required"})
 	}
-	
+
 	if s.NewPassword == "" {
 		errs = append(errs, ValidationError{Field: "new_password", Message: "new_password is required"})
 	} else if len(s.NewPassword) < 12 {
 		errs = append(errs, ValidationError{Field: "new_password", Message: "password must be at least 12 characters"})
 	}
-	
+
 	if s.OldPassword != "" && s.NewPassword != "" && s.OldPassword == s.NewPassword {
 		errs = append(errs, ValidationError{Field: "new_password", Message: "new_password must be different from old_password"})
 	}
-	
+
 	return errs
 }
 
@@ -224,80 +227,80 @@ type DeviceRegisterSchema struct {
 
 func (s *DeviceRegisterSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	if s.DeviceID == "" {
 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId is required"})
 	} else if !DeviceIDPattern.MatchString(s.DeviceID) {
 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId must be 1-64 alphanumeric characters with underscores or hyphens"})
 	}
-	
+
 	if s.FirebaseInstallID == "" {
 		errs = append(errs, ValidationError{Field: "firebaseInstallId", Message: "firebaseInstallId is required"})
 	}
-	
+
 	if s.AppVersion != "" && len(s.AppVersion) > 32 {
 		errs = append(errs, ValidationError{Field: "appVersion", Message: "appVersion must be at most 32 characters"})
 	}
-	
+
 	if s.DeviceClass != "" && len(s.DeviceClass) > 64 {
 		errs = append(errs, ValidationError{Field: "deviceClass", Message: "deviceClass must be at most 64 characters"})
 	}
-	
+
 	return errs
 }
 
 // DeviceStatusSchema validates device status update requests.
 type DeviceStatusSchema struct {
-	DeviceID string `json:"deviceId"`
 	Online   *bool  `json:"online"`
+	DeviceID string `json:"deviceId"`
 }
 
 func (s *DeviceStatusSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	if s.DeviceID == "" {
 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId is required"})
 	} else if !DeviceIDPattern.MatchString(s.DeviceID) {
 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId must be 1-64 alphanumeric characters"})
 	}
-	
+
 	if s.Online == nil {
 		errs = append(errs, ValidationError{Field: "online", Message: "online is required"})
 	}
-	
+
 	return errs
 }
 
 // CommandExecuteSchema validates command execution requests.
 type CommandExecuteSchema struct {
+	Args       map[string]interface{} `json:"args"`
 	DeviceID   string                 `json:"deviceId"`
 	Command    string                 `json:"command"`
-	Args       map[string]interface{} `json:"args"`
 	DispatchID string                 `json:"dispatchId"`
-	Timestamp  int64                  `json:"timestamp"`
 	Nonce      string                 `json:"nonce"`
 	Signature  string                 `json:"signature"`
+	Timestamp  int64                  `json:"timestamp"`
 }
 
 func (s *CommandExecuteSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	if s.DeviceID == "" {
 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId is required"})
 	} else if !DeviceIDPattern.MatchString(s.DeviceID) {
 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId must be 1-64 alphanumeric characters"})
 	}
-	
+
 	if s.Command == "" {
 		errs = append(errs, ValidationError{Field: "command", Message: "command is required"})
 	} else if !CommandPattern.MatchString(s.Command) {
 		errs = append(errs, ValidationError{Field: "command", Message: "command must start with letter and contain only alphanumeric and underscores (max 64 chars)"})
 	}
-	
+
 	if s.DispatchID != "" && !DispatchIDPattern.MatchString(s.DispatchID) {
 		errs = append(errs, ValidationError{Field: "dispatchId", Message: "invalid dispatchId format"})
 	}
-	
+
 	return errs
 }
 
@@ -310,24 +313,24 @@ type ClientSchema struct {
 
 func (s *ClientSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	name := strings.TrimSpace(s.Name)
 	if name == "" {
 		errs = append(errs, ValidationError{Field: "name", Message: "name is required"})
 	} else if len(name) < 2 || len(name) > 100 {
 		errs = append(errs, ValidationError{Field: "name", Message: "name must be 2-100 characters"})
 	}
-	
+
 	if s.Description != "" && len(s.Description) > 500 {
 		errs = append(errs, ValidationError{Field: "description", Message: "description must be at most 500 characters"})
 	}
-	
+
 	// Validate permissions
 	validPermissions := map[string]bool{
-		"device:read":   true,
-		"device:write":  true,
-		"command:read":  true,
-		"command:write": true,
+		"device:read":    true,
+		"device:write":   true,
+		"command:read":   true,
+		"command:write":  true,
 		"telemetry:read": true,
 	}
 	for _, p := range s.Permissions {
@@ -335,7 +338,7 @@ func (s *ClientSchema) Validate() ValidationErrors {
 			errs = append(errs, ValidationError{Field: "permissions", Message: "invalid permission: " + p})
 		}
 	}
-	
+
 	return errs
 }
 
@@ -347,15 +350,15 @@ type OAuthCallbackSchema struct {
 
 func (s *OAuthCallbackSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	if s.Code == "" {
 		errs = append(errs, ValidationError{Field: "code", Message: "code is required"})
 	}
-	
+
 	if s.State == "" {
 		errs = append(errs, ValidationError{Field: "state", Message: "state is required"})
 	}
-	
+
 	return errs
 }
 
@@ -366,13 +369,13 @@ type MFASchema struct {
 
 func (s *MFASchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	if s.Code == "" {
 		errs = append(errs, ValidationError{Field: "code", Message: "code is required"})
 	} else if len(s.Code) < 6 || len(s.Code) > 8 {
 		errs = append(errs, ValidationError{Field: "code", Message: "code must be 6-8 characters"})
 	}
-	
+
 	return errs
 }
 
@@ -383,27 +386,27 @@ type RefreshTokenSchema struct {
 
 func (s *RefreshTokenSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	if s.RefreshToken == "" {
 		errs = append(errs, ValidationError{Field: "refresh_token", Message: "refresh_token is required"})
 	} else if !TokenPattern.MatchString(s.RefreshToken) {
 		errs = append(errs, ValidationError{Field: "refresh_token", Message: "invalid refresh_token format"})
 	}
-	
+
 	return errs
 }
 
 // UpdateSettingsSchema validates settings update requests.
 type UpdateSettingsSchema struct {
-	Name        *string `json:"name"`
-	Email       *string `json:"email"`
-	Role        *string `json:"role"`
-	StrictHmac  *bool   `json:"strictHmac"`
+	Name       *string `json:"name"`
+	Email      *string `json:"email"`
+	Role       *string `json:"role"`
+	StrictHmac *bool   `json:"strictHmac"`
 }
 
 func (s *UpdateSettingsSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	if s.Name != nil {
 		name := strings.TrimSpace(*s.Name)
 		if name == "" {
@@ -412,7 +415,7 @@ func (s *UpdateSettingsSchema) Validate() ValidationErrors {
 			errs = append(errs, ValidationError{Field: "name", Message: "name must be 2-100 characters (letters, numbers, spaces, hyphens, apostrophes)"})
 		}
 	}
-	
+
 	if s.Email != nil {
 		email := strings.TrimSpace(strings.ToLower(*s.Email))
 		if email == "" {
@@ -421,11 +424,11 @@ func (s *UpdateSettingsSchema) Validate() ValidationErrors {
 			errs = append(errs, ValidationError{Field: "email", Message: "invalid email format"})
 		}
 	}
-	
+
 	if s.Role != nil && *s.Role != "operator" && *s.Role != "super_admin" {
 		errs = append(errs, ValidationError{Field: "role", Message: "role must be 'operator' or 'super_admin'"})
 	}
-	
+
 	return errs
 }
 
@@ -436,13 +439,13 @@ type FCMTokenUpdateSchema struct {
 
 func (s *FCMTokenUpdateSchema) Validate() ValidationErrors {
 	var errs ValidationErrors
-	
+
 	if s.FCMToken == "" {
 		errs = append(errs, ValidationError{Field: "fcmToken", Message: "fcmToken is required"})
 	} else if len(s.FCMToken) > 500 {
 		errs = append(errs, ValidationError{Field: "fcmToken", Message: "fcmToken is too long"})
 	}
-	
+
 	return errs
 }
 
@@ -457,24 +460,26 @@ func ValidationMiddleware(schema Validator) gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		
+
 		if err := c.ShouldBindJSON(schema); err != nil {
 			c.AbortWithStatusJSON(400, gin.H{
 				"error":   "bad_request",
 				"message": "invalid request body format",
 			})
+
 			return
 		}
-		
+
 		if errs := schema.Validate(); errs.HasErrors() {
 			c.AbortWithStatusJSON(400, gin.H{
 				"error":   "bad_request",
 				"message": errs.Error(),
 				"errors":  errs,
 			})
+
 			return
 		}
-		
+
 		c.Next()
 	}
 }
@@ -487,24 +492,26 @@ func ValidationMiddlewareFunc(validateFn func(Validator) ValidationErrors) func(
 				c.Next()
 				return
 			}
-			
+
 			if err := c.ShouldBindJSON(schema); err != nil {
 				c.AbortWithStatusJSON(400, gin.H{
 					"error":   "bad_request",
 					"message": "invalid request body format",
 				})
+
 				return
 			}
-			
+
 			if errs := validateFn(schema); errs.HasErrors() {
 				c.AbortWithStatusJSON(400, gin.H{
 					"error":   "bad_request",
 					"message": errs.Error(),
 					"errors":  errs,
 				})
+
 				return
 			}
-			
+
 			c.Next()
 		}
 	}

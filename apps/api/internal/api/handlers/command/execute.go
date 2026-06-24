@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	cmdSvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
@@ -21,20 +21,20 @@ import (
 // ExecuteHandler handles device command execution.
 type ExecuteHandler struct {
 	commandService *cmdSvc.Service
-	deviceService *device.Service
-	hub          *hub.Hub
-	fcmNotifier  fcm.Notifier
-	log          *slog.Logger
+	deviceService  *device.Service
+	hub            *hub.Hub
+	fcmNotifier    fcm.Notifier
+	log            *slog.Logger
 }
 
 // NewExecuteHandler creates a new ExecuteHandler.
 func NewExecuteHandler(commandService *cmdSvc.Service, deviceService *device.Service, hub *hub.Hub, fcmNotifier fcm.Notifier) *ExecuteHandler {
 	return &ExecuteHandler{
 		commandService: commandService,
-		deviceService: deviceService,
-		hub:           hub,
-		fcmNotifier:  fcmNotifier,
-		log:          slog.Default(),
+		deviceService:  deviceService,
+		hub:            hub,
+		fcmNotifier:    fcmNotifier,
+		log:            slog.Default(),
 	}
 }
 
@@ -55,13 +55,14 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 	}
 
 	var req struct {
-		Command   string                 `json:"command"`
-		Nonce     string                 `json:"nonce"`
-		Signature string                 `json:"signature,omitempty"`
-		Args      map[string]interface{} `json:"args,omitempty"`
-		Timestamp int64                  `json:"timestamp"`
-		DispatchID string                `json:"dispatch_id,omitempty"`
+		Args       map[string]interface{} `json:"args,omitempty"`
+		Command    string                 `json:"command"`
+		Nonce      string                 `json:"nonce"`
+		Signature  string                 `json:"signature,omitempty"`
+		DispatchID string                 `json:"dispatch_id,omitempty"`
+		Timestamp  int64                  `json:"timestamp"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid request body"})
 		return
@@ -79,7 +80,7 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
 		return
 	}
-	
+
 	// Verify the device belongs to this operator (DOA check)
 	// This returns the same error whether device doesn't exist OR isn't owned by operator
 	if err := h.verifyDeviceOwnership(c.Request.Context(), deviceID, op.ID); err != nil {
@@ -117,6 +118,7 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 	if err != nil {
 		h.log.Error("failed to send command", "error", err, "deviceId", deviceID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to send command"})
+
 		return
 	}
 
@@ -125,6 +127,7 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 
 	// Check if device is online via WebSocket and send
 	delivery := "queued"
+
 	if h.hub != nil && h.hub.Online(deviceID) {
 		if sent := h.hub.Send(deviceID, frame); sent {
 			delivery = "sent"
@@ -174,15 +177,16 @@ func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 	if err != nil {
 		h.log.Error("failed to get command status", "error", err, "dispatchId", dispatchID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to get command status"})
+
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"dispatchId": dispatchID,
 		"command_id": cmdStatus.CommandID,
-		"device_id": cmdStatus.DeviceID,
-		"command": cmdStatus.Command,
-		"status": cmdStatus.Status,
+		"device_id":  cmdStatus.DeviceID,
+		"command":    cmdStatus.Command,
+		"status":     cmdStatus.Status,
 		"serverTime": time.Now().Unix(),
 	})
 }
@@ -210,7 +214,7 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 	}
 
 	// Verify the device belongs to this operator
-	if err := h.verifyDeviceOwnership(c.Request.Context(), cmd.DeviceID, op.ID); err != nil {
+	if err = h.verifyDeviceOwnership(c.Request.Context(), cmd.DeviceID, op.ID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
 		return
 	}
@@ -219,13 +223,14 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 	if err != nil {
 		h.log.Error("failed to retry command", "error", err, "dispatchId", dispatchID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to retry command"})
+
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"dispatchId": newCmd.DispatchID,
 		"command_id": newCmd.CommandID,
-		"retried":   true,
+		"retried":    true,
 		"serverTime": time.Now().Unix(),
 	})
 }
@@ -244,7 +249,7 @@ func (h *ExecuteHandler) GetPending(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
 		return
 	}
-	
+
 	if err := h.verifyDeviceOwnership(c.Request.Context(), deviceID, op.ID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
 		return
@@ -254,6 +259,7 @@ func (h *ExecuteHandler) GetPending(c *gin.Context) {
 	if err != nil {
 		h.log.Error("failed to get pending commands", "error", err, "deviceId", deviceID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to get pending commands"})
+
 		return
 	}
 
@@ -285,7 +291,7 @@ func (h *ExecuteHandler) Cancel(c *gin.Context) {
 	}
 
 	// Verify the device belongs to this operator
-	if err := h.verifyDeviceOwnership(c.Request.Context(), cmd.DeviceID, op.ID); err != nil {
+	if err = h.verifyDeviceOwnership(c.Request.Context(), cmd.DeviceID, op.ID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
 		return
 	}
@@ -294,6 +300,7 @@ func (h *ExecuteHandler) Cancel(c *gin.Context) {
 	if err != nil {
 		h.log.Error("failed to cancel command", "error", err, "dispatchId", dispatchID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to cancel command"})
+
 		return
 	}
 

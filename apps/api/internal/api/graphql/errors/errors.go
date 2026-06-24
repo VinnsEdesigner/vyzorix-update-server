@@ -8,14 +8,14 @@ import (
 
 // Standard GraphQL error codes.
 const (
-	CodeUnauthorized     = "UNAUTHORIZED"
-	CodeForbidden        = "FORBIDDEN"
-	CodeNotFound         = "NOT_FOUND"
-	CodeBadRequest       = "BAD_REQUEST"
-	CodeInternalError    = "INTERNAL_ERROR"
-	CodeValidation       = "VALIDATION_ERROR"
-	CodeRateLimited      = "RATE_LIMITED"
-	CodeAlreadyExists    = "ALREADY_EXISTS"
+	CodeUnauthorized  = "UNAUTHORIZED"
+	CodeForbidden     = "FORBIDDEN"
+	CodeNotFound      = "NOT_FOUND"
+	CodeBadRequest    = "BAD_REQUEST"
+	CodeInternalError = "INTERNAL_ERROR"
+	CodeValidation    = "VALIDATION_ERROR"
+	CodeRateLimited   = "RATE_LIMITED"
+	CodeAlreadyExists = "ALREADY_EXISTS"
 )
 
 // Error represents a GraphQL-specific error with code and message.
@@ -32,7 +32,7 @@ type Location struct {
 	Column int
 }
 
-// Implement the Error interface.
+// Error implements the Error interface.
 func (e *Error) Error() string {
 	return fmt.Sprintf("%s: %s", e.Code, e.Message)
 }
@@ -71,10 +71,12 @@ func Wrap(err error, code string) error {
 	if err == nil {
 		return nil
 	}
+
 	var gqlErr *Error
 	if errors.As(err, &gqlErr) {
 		return err
 	}
+
 	return &Error{
 		Code:    code,
 		Message: err.Error(),
@@ -87,10 +89,11 @@ func Is(err error, code string) bool {
 	if errors.As(err, &gqlErr) {
 		return gqlErr.Code == code
 	}
+
 	return false
 }
 
-// Helper functions for creating typed errors.
+// Unauthorized creates an unauthorized error.
 func Unauthorized(format string, args ...interface{}) *Error {
 	return New(CodeUnauthorized, fmt.Sprintf(format, args...))
 }

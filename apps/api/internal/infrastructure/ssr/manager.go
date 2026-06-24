@@ -15,15 +15,15 @@ import (
 
 // Manager orchestrates all SSR components.
 type Manager struct {
-	config    config.SSRConfig
 	logger    *slog.Logger
 	process   *ProcessManager
 	monitor   *Monitor
 	builder   *Builder
+	ssrScript string
+	config    config.SSRConfig
+	mu        sync.RWMutex
 	started   bool
 	stopped   bool
-	ssrScript string
-	mu        sync.RWMutex
 }
 
 // NewManager creates a new SSR manager with the given configuration.
@@ -145,9 +145,11 @@ func (m *Manager) Start() error {
 	if m.config.SSRAutoBuild {
 		if err := m.builder.BuildIfNeeded(); err != nil {
 			m.logger.Error("SSR auto-build failed", "err", err)
+
 			if !m.config.SSRAutoStart {
 				return nil // Not required to start
 			}
+
 			return err
 		}
 	}
@@ -170,6 +172,7 @@ func (m *Manager) Start() error {
 			}
 			// Restart the process (stops existing and starts fresh).
 			m.logger.Info("Auto-restarting SSR process...")
+
 			if err := m.process.Restart(m.ssrScript); err != nil {
 				m.logger.Error("SSR auto-restart failed", "err", err)
 			}
@@ -180,6 +183,7 @@ func (m *Manager) Start() error {
 
 	m.started = true
 	m.stopped = false
+
 	return nil
 }
 
@@ -201,6 +205,7 @@ func (m *Manager) Stop() error {
 	}
 
 	m.started = false
+
 	return nil
 }
 

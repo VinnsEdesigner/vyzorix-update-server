@@ -34,6 +34,7 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 		if err == device.ErrNotFound {
 			return nil, application.ErrDeviceNotFound
 		}
+
 		return nil, err
 	}
 
@@ -43,10 +44,11 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 
 	// Check for duplicate dispatch (idempotency).
 	if req.DispatchID != "" {
-		existing, err := s.commandRepo.FindByDispatchID(ctx, req.DeviceID, req.DispatchID)
-		if err != nil && err != command.ErrNotFound {
-			return nil, err
+		existing, findErr := s.commandRepo.FindByDispatchID(ctx, req.DeviceID, req.DispatchID)
+		if findErr != nil && findErr != command.ErrNotFound {
+			return nil, findErr
 		}
+
 		if existing != nil {
 			// Return existing command (idempotent).
 			return &dto.SendCommandResponse{
@@ -57,6 +59,7 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 				CreatedAt:  existing.CreatedAt,
 			}, nil
 		}
+
 		dispatchID = req.DispatchID
 	}
 
@@ -104,18 +107,19 @@ func (s *Service) GetCommandStatus(ctx context.Context, commandID string) (*dto.
 		if err == command.ErrNotFound {
 			return nil, application.ErrCommandNotFound
 		}
+
 		return nil, err
 	}
 
 	return &dto.CommandStatusResponse{
-		CommandID:    cmd.ID,
-		DeviceID:     cmd.DeviceID,
-		Command:      cmd.Command,
-		Status:       string(cmd.Status),
-		DeliveredAt:  cmd.DeliveredAtTime(),
-		CompletedAt:  cmd.CompletedAtTime(),
-		CreatedAt:    cmd.CreatedAt,
-		UpdatedAt:    cmd.UpdatedAt,
+		CommandID:   cmd.ID,
+		DeviceID:    cmd.DeviceID,
+		Command:     cmd.Command,
+		Status:      string(cmd.Status),
+		DeliveredAt: cmd.DeliveredAtTime(),
+		CompletedAt: cmd.CompletedAtTime(),
+		CreatedAt:   cmd.CreatedAt,
+		UpdatedAt:   cmd.UpdatedAt,
 	}, nil
 }
 
@@ -129,13 +133,13 @@ func (s *Service) GetPendingCommands(ctx context.Context, deviceID string) ([]dt
 	response := make([]dto.CommandResponse, len(cmds))
 	for i, cmd := range cmds {
 		response[i] = dto.CommandResponse{
-			ID:         cmd.ID,
-			DeviceID:   cmd.DeviceID,
-			Command:    cmd.Command,
-			Args:       cmd.Args,
-			Status:     string(cmd.Status),
-			CreatedAt:  cmd.CreatedAt,
-			UpdatedAt:  cmd.UpdatedAt,
+			ID:        cmd.ID,
+			DeviceID:  cmd.DeviceID,
+			Command:   cmd.Command,
+			Args:      cmd.Args,
+			Status:    string(cmd.Status),
+			CreatedAt: cmd.CreatedAt,
+			UpdatedAt: cmd.UpdatedAt,
 		}
 	}
 
@@ -224,11 +228,13 @@ func (s *Service) GetCommandByDispatchID(ctx context.Context, dispatchID string)
 		if err == command.ErrNotFound {
 			return nil, application.ErrCommandNotFound
 		}
+
 		return nil, err
 	}
 
 	return &dto.CommandStatusResponse{
-		CommandID:    cmd.ID,
+		CommandID:   cmd.ID,
+		DispatchID:  cmd.DispatchID,
 		DeviceID:    cmd.DeviceID,
 		Command:     cmd.Command,
 		Status:      string(cmd.Status),

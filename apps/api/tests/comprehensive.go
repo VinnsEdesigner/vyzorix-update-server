@@ -15,6 +15,7 @@ import (
 
 // TestReport holds test results.
 type TestReport struct {
+	Results        []EndpointResult
 	TotalEndpoints int
 	Reachable      int
 	Unreachable    int
@@ -22,20 +23,19 @@ type TestReport struct {
 	DBTests        int
 	DBPassed       int
 	DBFailed       int
-	Results        []EndpointResult
 	mu             sync.Mutex
 }
 
 type EndpointResult struct {
 	Method       string
 	Path         string
+	DBResult     string
+	Notes        string
 	StatusCode   int
 	ResponseTime time.Duration
 	Reachable    bool
 	ErrorTested  bool
 	DBTested     bool
-	DBResult     string
-	Notes        string
 }
 
 const (
@@ -58,26 +58,32 @@ func prettyJSON(data []byte) string {
 	if err := json.Unmarshal(data, &obj); err != nil {
 		return string(data)
 	}
+
 	out, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return string(data)
 	}
+
 	return string(out)
 }
 
 func (r *TestReport) addResult(res ...EndpointResult) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	for _, ep := range res {
 		r.Results = append(r.Results, ep)
 		r.TotalEndpoints++
+
 		if ep.Reachable {
 			r.Reachable++
 		} else {
 			r.Unreachable++
 		}
+
 		if ep.DBTested {
 			r.DBTests++
+
 			switch ep.DBResult {
 			case "PASS":
 				r.DBPassed++
@@ -85,6 +91,7 @@ func (r *TestReport) addResult(res ...EndpointResult) {
 				r.DBFailed++
 			}
 		}
+
 		if ep.ErrorTested {
 			r.ErrorHandling++
 		}
@@ -93,6 +100,7 @@ func (r *TestReport) addResult(res ...EndpointResult) {
 
 func (r *TestReport) generateReport() string {
 	var sb strings.Builder
+
 	sb.WriteString("# Comprehensive API Test Report\n\n")
 	fmt.Fprintf(&sb, "**Generated:** %s\n", time.Now().Format(time.RFC3339))
 	fmt.Fprintf(&sb, "**Base URL:** %s\n\n", BaseURL)
@@ -112,23 +120,9 @@ func (r *TestReport) generateReport() string {
 
 	// Group results by path prefix
 	categories := map[string][]EndpointResult{}
+
 	for _, res := range r.Results {
-		cat := "Other"
-		if strings.HasPrefix(res.Path, "/v1/auth") {
-			cat = "Auth"
-		} else if strings.HasPrefix(res.Path, "/v1/device") {
-			cat = "Device"
-		} else if strings.HasPrefix(res.Path, "/v1/dashboard") {
-			cat = "Dashboard"
-		} else if strings.HasPrefix(res.Path, "/v1/admin") {
-			cat = "Admin"
-		} else if strings.HasPrefix(res.Path, "/v1/command") {
-			cat = "Command"
-		} else if strings.HasPrefix(res.Path, "/api/v1") {
-			cat = "API"
-		} else if strings.HasPrefix(res.Path, "/health") {
-			cat = "Health"
-		}
+		cat := categorizePath(res.Path)
 		categories[cat] = append(categories[cat], res)
 	}
 
@@ -136,8 +130,10 @@ func (r *TestReport) generateReport() string {
 		fmt.Fprintf(&sb, "### %s Endpoints\n\n", cat)
 		sb.WriteString("| Method | Path | Status | Time | DB | Notes |\n")
 		sb.WriteString("|--------|------|--------|------|-----|-------|\n")
+
 		for _, res := range resList {
 			dbStatus := "—"
+
 			if res.DBTested {
 				switch res.DBResult {
 				case "PASS":
@@ -148,24 +144,29 @@ func (r *TestReport) generateReport() string {
 					dbStatus = "❓"
 				}
 			}
+
 			reachable := "✅"
 			if !res.Reachable {
 				reachable = "❌"
 			}
+
 			notes := res.Notes
 			if len(notes) > 100 {
 				notes = notes[:100] + "..."
 			}
+
 			notes = strings.ReplaceAll(notes, "\n", " ")
 			fmt.Fprintf(&sb, "| %s | `%s` | %s %d | %s | %s | %s |\n",
 				res.Method, res.Path, reachable, res.StatusCode,
 				res.ResponseTime.Round(time.Millisecond), dbStatus, notes)
 		}
+
 		sb.WriteString("\n")
 	}
 
 	// DB Summary
 	sb.WriteString("## Database Operations Summary\n\n")
+
 	for _, res := range r.Results {
 		if res.DBTested {
 			fmt.Fprintf(&sb, "- %s %s: %s\n", res.Method, res.Path, res.DBResult)
@@ -177,6 +178,7 @@ func (r *TestReport) generateReport() string {
 
 func testRequest(method, url string, body interface{}) EndpointResult {
 	var reqBody io.Reader
+
 	if body != nil {
 		if s, ok := body.(string); ok {
 			reqBody = strings.NewReader(s)
@@ -190,11 +192,13 @@ func testRequest(method, url string, body interface{}) EndpointResult {
 					Notes:     fmt.Sprintf("JSON marshal error: %v", err),
 				}
 			}
+
 			reqBody = bytes.NewReader(b)
 		}
 	}
 
 	start := time.Now()
+
 	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
 		return EndpointResult{
@@ -222,10 +226,12 @@ func testRequest(method, url string, body interface{}) EndpointResult {
 		result.Notes = fmt.Sprintf("Connection error: %v", err)
 		return result
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	result.StatusCode = resp.StatusCode
 	bodyBytes, _ := io.ReadAll(resp.Body)
+
 	if len(bodyBytes) > 0 {
 		result.Notes = prettyJSON(bodyBytes)
 	}
@@ -479,6 +485,7 @@ func testDatabaseOperations() []EndpointResult {
 			Reachable: false,
 			Notes:     "Database file not found at " + DBPath,
 		})
+
 		return results
 	}
 
@@ -487,21 +494,25 @@ func testDatabaseOperations() []EndpointResult {
 	res := testRequest("POST", BaseURL+"/v1/auth/admin/operators",
 		map[string]interface{}{"email": email, "password": "TestPass123!", "name": "DB Test", "role": "user"})
 	res.DBTested = true
+
 	if res.StatusCode >= 200 && res.StatusCode < 300 {
 		res.DBResult = "PASS"
 	} else {
 		res.DBResult = "FAIL"
 	}
+
 	results = append(results, res)
 
 	// List operators (verify read)
 	res = testRequest("GET", BaseURL+"/v1/auth/admin/operators", nil)
 	res.DBTested = true
+
 	if res.StatusCode == 200 {
 		res.DBResult = "PASS"
 	} else {
 		res.DBResult = "FAIL"
 	}
+
 	results = append(results, res)
 
 	// Register device
@@ -509,52 +520,62 @@ func testDatabaseOperations() []EndpointResult {
 	res = testRequest("POST", BaseURL+"/v1/device/register",
 		map[string]interface{}{"device_id": deviceID, "name": "DB Test Device", "platform": "android", "app_version": "1.0.0"})
 	res.DBTested = true
+
 	if res.StatusCode >= 200 && res.StatusCode < 300 {
 		res.DBResult = "PASS"
 	} else {
 		res.DBResult = "FAIL"
 	}
+
 	results = append(results, res)
 
 	// List devices
 	res = testRequest("GET", BaseURL+"/v1/dashboard/devices", nil)
 	res.DBTested = true
+
 	if res.StatusCode == 200 {
 		res.DBResult = "PASS"
 	} else {
 		res.DBResult = "FAIL"
 	}
+
 	results = append(results, res)
 
 	// Get device count
 	res = testRequest("GET", BaseURL+"/v1/device/count", nil)
 	res.DBTested = true
+
 	if res.StatusCode == 200 {
 		res.DBResult = "PASS"
 	} else {
 		res.DBResult = "FAIL"
 	}
+
 	results = append(results, res)
 
 	// Send command
 	res = testRequest("POST", BaseURL+"/v1/device/"+deviceID+"/command",
 		map[string]interface{}{"command": "TEST_CMD", "args": map[string]bool{"test": true}, "priority": 5})
 	res.DBTested = true
+
 	if res.StatusCode >= 200 && res.StatusCode < 300 {
 		res.DBResult = "PASS"
 	} else {
 		res.DBResult = "FAIL"
 	}
+
 	results = append(results, res)
 
 	// Get pending commands
 	res = testRequest("GET", BaseURL+"/v1/device/"+deviceID+"/commands/pending", nil)
 	res.DBTested = true
+
 	if res.StatusCode == 200 {
 		res.DBResult = "PASS"
 	} else {
 		res.DBResult = "FAIL"
 	}
+
 	results = append(results, res)
 
 	return results
@@ -569,56 +590,67 @@ func RunAllTests() error {
 	report := &TestReport{}
 
 	fmt.Print("Testing health endpoints... ")
+
 	results := testHealthEndpoints()
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
 
 	fmt.Print("Testing version endpoints... ")
+
 	results = testVersionEndpoints()
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
 
 	fmt.Print("Testing auth endpoints... ")
+
 	results = testAuthEndpoints()
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
 
 	fmt.Print("Testing device endpoints... ")
+
 	results = testDeviceEndpoints()
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
 
 	fmt.Print("Testing command endpoints... ")
+
 	results = testCommandEndpoints()
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
 
 	fmt.Print("Testing dashboard endpoints... ")
+
 	results = testDashboardEndpoints()
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
 
 	fmt.Print("Testing admin endpoints... ")
+
 	results = testAdminEndpoints()
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
 
 	fmt.Print("Testing WebSocket... ")
+
 	results = testWebSocket()
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
 
 	fmt.Print("Testing error handling... ")
+
 	results = testErrorHandling()
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
 
 	fmt.Print("Testing malformed data... ")
+
 	results = testMalformedData()
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
 
 	fmt.Print("Testing database operations... ")
+
 	results = testDatabaseOperations()
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
@@ -641,4 +673,25 @@ func RunAllTests() error {
 	fmt.Printf("\n📄 Full report: %s\n", reportPath)
 
 	return nil
+}
+
+func categorizePath(path string) string {
+	switch {
+	case strings.HasPrefix(path, "/v1/auth"):
+		return "Auth"
+	case strings.HasPrefix(path, "/v1/device"):
+		return "Device"
+	case strings.HasPrefix(path, "/v1/dashboard"):
+		return "Dashboard"
+	case strings.HasPrefix(path, "/v1/admin"):
+		return "Admin"
+	case strings.HasPrefix(path, "/v1/command"):
+		return "Command"
+	case strings.HasPrefix(path, "/api/v1"):
+		return "API"
+	case strings.HasPrefix(path, "/health"):
+		return "Health"
+	default:
+		return "Other"
+	}
 }

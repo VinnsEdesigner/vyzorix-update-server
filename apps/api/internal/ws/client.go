@@ -25,16 +25,16 @@ const (
 
 // ClientMetrics holds reconnection metrics for a client.
 type ClientMetrics struct {
-	ConnectAttempts   int32 `json:"connectAttempts"`
-	ConnectSuccesses  int32 `json:"connectSuccesses"`
-	ConnectFailures   int32 `json:"connectFailures"`
-	LastConnectedAt   int64 `json:"lastConnectedAt"`   // Unix timestamp
+	ConnectAttempts    int32 `json:"connectAttempts"`
+	ConnectSuccesses   int32 `json:"connectSuccesses"`
+	ConnectFailures    int32 `json:"connectFailures"`
+	LastConnectedAt    int64 `json:"lastConnectedAt"`    // Unix timestamp
 	LastDisconnectedAt int64 `json:"lastDisconnectedAt"` // Unix timestamp
-	MessagesSent      int32 `json:"messagesSent"`
-	MessagesReceived  int32 `json:"messagesReceived"`
-	PongMissedCount   int32 `json:"pongMissedCount"`
-	RateLimitedCount  int32 `json:"rateLimitedCount"`
-	LastRateLimitedAt int64 `json:"lastRateLimitedAt"` // Unix timestamp
+	MessagesSent       int32 `json:"messagesSent"`
+	MessagesReceived   int32 `json:"messagesReceived"`
+	PongMissedCount    int32 `json:"pongMissedCount"`
+	RateLimitedCount   int32 `json:"rateLimitedCount"`
+	LastRateLimitedAt  int64 `json:"lastRateLimitedAt"` // Unix timestamp
 }
 
 // Client represents a WebSocket client connection to a device.
@@ -47,9 +47,9 @@ type Client struct {
 	ClientID string // Dashboard client ID for subscription tracking
 
 	// Metrics and state
-	metrics       ClientMetrics
-	connectedAt   int64
-	isConnected   atomic.Bool
+	metrics     ClientMetrics
+	connectedAt int64
+	isConnected atomic.Bool
 }
 
 // closeConn safely closes a websocket connection, logging any error.
@@ -124,6 +124,7 @@ func (c *Client) Uptime() int64 {
 	if connectedAt == 0 {
 		return 0
 	}
+
 	return time.Now().Unix() - connectedAt
 }
 
@@ -175,51 +176,81 @@ func (c *Client) ReadPump() {
 		var env struct {
 			Type string `json:"type"`
 		}
+
 		if err := json.Unmarshal(raw, &env); err != nil {
 			if c.log != nil {
 				c.log.Warn("bad ws frame", "deviceId", c.DeviceID, "err", err)
 			}
+
 			continue
 		}
+
 		if env.Type == "telemetry" {
-			var t telemetry.TelemetryFrame
-			if err := json.Unmarshal(raw, &t); err == nil {
-				t.Raw = raw
-				if t.DeviceID == "" {
-					t.DeviceID = c.DeviceID
-				}
-				if c.Hub.telemetryRepo != nil {
-					if err := c.Hub.telemetryRepo.Save(context.Background(), c.DeviceID, raw, t); err != nil {
-						if c.log != nil {
-							c.log.Warn("telemetry save failed", "deviceId", c.DeviceID, "err", err)
-						}
-					}
-				}
-				c.Hub.BroadcastTelemetry(raw)
+			c.processTelemetry(raw)
+		}
+	}
+}
+
+func (c *Client) processTelemetry(raw []byte) {
+	var t telemetry.TelemetryFrame
+	if err := json.Unmarshal(raw, &t); err != nil {
+		return
+	}
+	t.Raw = raw
+	if t.DeviceID == "" {
+		t.DeviceID = c.DeviceID
+	}
+	if c.Hub.telemetryRepo != nil {
+		if err := c.Hub.telemetryRepo.Save(context.Background(), c.DeviceID, raw, t); err != nil {
+			if c.log != nil {
+				c.log.Warn("telemetry save failed", "deviceId", c.DeviceID, "err", err)
 			}
 		}
-		// Non-telemetry messages are handled by hub registration/onDisconnect
 	}
+	c.Hub.BroadcastTelemetry(raw)
+}
+
+func (c *Client) writeCompressed(frame command.CommandFrame) error {
+	data, err := json.Marshal(frame)
+	if err != nil {
+		return c.Conn.WriteJSON(frame)
+	}
+	compressed, didCompress, _ := c.Hub.compression.CompressMessage(data)
+	if didCompress {
+		c.Hub.compression.RecordCompression(len(data), len(compressed))
+		compFrame := CompressedFrame{
+			Type:         frame.Type,
+			Compressed:   true,
+			OriginalSize: len(data),
+			Data:         compressed,
+		}
+		return c.Conn.WriteJSON(compFrame)
+	}
+	return c.Conn.WriteJSON(frame)
 }
 
 // WritePump pumps outgoing messages to the WebSocket connection.
 // Applies rate limiting and compression as configured.
+// Non-telemetry messages are handled by hub registration/onDisconnect.
 func (c *Client) WritePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
 		closeConn(c.Conn, c.log, "writePump")
 	}()
+
 	for {
 		select {
 		case frame, ok := <-c.Send:
 			setWriteDeadline(c.Conn, time.Now().Add(writeTimeout), c.log)
+
 			if !ok {
 				if err := c.Conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
 					if c.log != nil {
 						c.log.Warn("close message failed", "err", err)
 					}
 				}
+
 				return
 			}
 
@@ -231,46 +262,18 @@ func (c *Client) WritePump() {
 						"deviceId", c.DeviceID,
 						"dispatchId", frame.DispatchID,
 					)
+
 					continue // Skip this message but don't close connection
 				}
 			}
 
 			// Compress message if needed and configured (G4: 60% bandwidth reduction)
 			if c.Hub.compression != nil {
-				data, err := json.Marshal(frame)
-				if err == nil {
-					compressed, didCompress, _ := c.Hub.compression.CompressMessage(data)
-					if didCompress {
-						// Track compression metrics for G4 verification
-						c.Hub.compression.RecordCompression(len(data), len(compressed))
-						
-						// Send compressed frame with compression metadata
-						compFrame := CompressedFrame{
-							Type:         frame.Type,
-							Compressed:   true,
-							OriginalSize: len(data),
-							Data:         compressed,
-						}
-						if err := c.Conn.WriteJSON(compFrame); err != nil {
-							return
-						}
-					} else {
-						// Send uncompressed
-						if err := c.Conn.WriteJSON(frame); err != nil {
-							return
-						}
-					}
-				} else {
-					// Fallback to uncompressed on marshal error
-					if err := c.Conn.WriteJSON(frame); err != nil {
-						return
-					}
-				}
-			} else {
-				// No compression configured
-				if err := c.Conn.WriteJSON(frame); err != nil {
+				if err := c.writeCompressed(frame); err != nil {
 					return
 				}
+			} else if err := c.Conn.WriteJSON(frame); err != nil {
+				return
 			}
 
 			c.RecordMessageSent()
@@ -282,6 +285,7 @@ func (c *Client) WritePump() {
 			}
 		case <-ticker.C:
 			setWriteDeadline(c.Conn, time.Now().Add(writeTimeout), c.log)
+
 			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
