@@ -38,6 +38,7 @@ func (h *HealthHandler) Ready(c *gin.Context) {
 			"ready":  false,
 			"reason": "database unreachable",
 		})
+
 		return
 	}
 

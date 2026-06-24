@@ -22,8 +22,8 @@ type CompressionConfig struct {
 // DefaultCompressionConfig returns the default compression configuration.
 func DefaultCompressionConfig() *CompressionConfig {
 	return &CompressionConfig{
-		Threshold:        1024,
-		Level:            gzip.DefaultCompression,
+		Threshold:         1024,
+		Level:             gzip.DefaultCompression,
 		EnableCompression: true,
 	}
 }
@@ -51,6 +51,7 @@ func NewCompression(log *slog.Logger, cfg *CompressionConfig) *Compression {
 	if cfg == nil {
 		cfg = DefaultCompressionConfig()
 	}
+
 	return &Compression{
 		log:    log,
 		config: cfg,
@@ -66,22 +67,26 @@ func (c *Compression) CompressMessage(data []byte) ([]byte, bool, error) {
 	}
 
 	var buf bytes.Buffer
+
 	writer, err := gzip.NewWriterLevel(&buf, c.config.Level)
 	if err != nil {
 		c.log.Warn("failed to create gzip writer", "err", err)
 		c.incrementBypassed()
+
 		return data, false, nil
 	}
 
 	if _, err := writer.Write(data); err != nil {
 		c.log.Warn("failed to write data to gzip", "err", err)
 		c.incrementBypassed()
+
 		return data, false, nil
 	}
 
 	if err := writer.Close(); err != nil {
 		c.log.Warn("failed to close gzip writer", "err", err)
 		c.incrementBypassed()
+
 		return data, false, nil
 	}
 
@@ -94,7 +99,7 @@ func (c *Compression) CompressMessage(data []byte) ([]byte, bool, error) {
 	}
 
 	c.incrementCompressed(len(data), len(compressed))
-	
+
 	// Calculate compression ratio for G4 verification
 	return compressed, true, nil
 }
@@ -115,6 +120,7 @@ func (c *Compression) DecompressMessage(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = reader.Close() }()
 
 	return io.ReadAll(reader)
@@ -126,6 +132,7 @@ func (c *Compression) CompressJSON(v interface{}) ([]byte, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
+
 	return c.CompressMessage(data)
 }
 
@@ -138,15 +145,18 @@ func (c *Compression) ShouldCompress(size int) bool {
 func (c *Compression) GetMetrics() CompressionMetrics {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+
 	return c.metrics
 }
 
 func (c *Compression) incrementCompressed(original, compressed int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	c.metrics.TotalCompressed++
 	c.metrics.OriginalBytes += int64(original)
 	c.metrics.CompressedBytes += int64(compressed)
+
 	if c.metrics.OriginalBytes > 0 {
 		c.metrics.CompressionRatio = float64(c.metrics.CompressedBytes) / float64(c.metrics.OriginalBytes)
 	}
@@ -155,6 +165,7 @@ func (c *Compression) incrementCompressed(original, compressed int) {
 func (c *Compression) incrementBypassed() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	c.metrics.TotalBypassed++
 }
 
@@ -165,15 +176,16 @@ func IsCompressed(data []byte) bool {
 
 // CompressedFrame represents a WebSocket frame with compression metadata.
 type CompressedFrame struct {
-	Type       string `json:"type"`
-	Compressed bool   `json:"compressed"`
-	OriginalSize int  `json:"originalSize"`
-	Data       []byte `json:"data"`
+	Type         string `json:"type"`
+	Data         []byte `json:"data"`
+	OriginalSize int    `json:"originalSize"`
+	Compressed   bool   `json:"compressed"`
 }
 
 // WrapCompressedFrame creates a compressed frame wrapper.
 func WrapCompressedFrame(frameType string, data []byte, cfg *CompressionConfig) (*CompressedFrame, error) {
 	comp := NewCompression(nil, cfg)
+
 	compressed, didCompress, err := comp.CompressMessage(data)
 	if err != nil {
 		return nil, err

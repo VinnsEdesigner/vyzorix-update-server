@@ -13,15 +13,15 @@ import (
 // RateLimiter provides token bucket rate limiting with automatic cleanup.
 // Uses a background goroutine to prevent memory leaks from stale entries.
 type RateLimiter struct {
-	buckets     map[string]*bucket
-	Capacity    int
-	Refill      time.Duration
+	ctx             context.Context
+	buckets         map[string]*bucket
+	cancel          context.CancelFunc
+	logger          *slog.Logger
+	Capacity        int
+	Refill          time.Duration
 	CleanupInterval time.Duration
-	TTL          time.Duration
-	mu           sync.RWMutex
-	ctx         context.Context
-	cancel      context.CancelFunc
-	logger      *slog.Logger
+	TTL             time.Duration
+	mu              sync.RWMutex
 }
 
 type bucket struct {
@@ -78,7 +78,7 @@ func NewRateLimiterWithOptions(capacity int, refill time.Duration, opts ...RateL
 		Capacity:        capacity,
 		Refill:          refill,
 		CleanupInterval: DefaultCleanupInterval,
-		TTL:              DefaultBucketTTL,
+		TTL:             DefaultBucketTTL,
 		ctx:             ctx,
 		cancel:          cancel,
 		logger:          slog.Default(),
@@ -115,12 +115,14 @@ func (l *RateLimiter) cleanup() {
 	defer l.mu.Unlock()
 
 	now := time.Now()
+
 	var removed int
 
 	for key, b := range l.buckets {
 		// Check if bucket is idle beyond TTL.
 		if now.Sub(b.last) > l.TTL {
 			delete(l.buckets, key)
+
 			removed++
 		}
 	}
@@ -144,8 +146,10 @@ func (l *RateLimiter) Middleware() gin.HandlerFunc {
 		if !l.Allow(c.ClientIP()) {
 			c.JSON(429, map[string]string{"error": "rate_limited", "message": "too many requests"})
 			c.Abort()
+
 			return
 		}
+
 		c.Next()
 	}
 }
@@ -157,6 +161,7 @@ func (l *RateLimiter) Allow(key string) bool {
 
 	now := time.Now()
 	b := l.buckets[key]
+
 	if b == nil {
 		b = &bucket{tokens: l.Capacity, last: now}
 		l.buckets[key] = b
@@ -182,6 +187,7 @@ func (l *RateLimiter) Allow(key string) bool {
 	}
 
 	b.tokens--
+
 	return true
 }
 

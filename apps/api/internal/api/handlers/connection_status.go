@@ -12,8 +12,8 @@ import (
 
 // ConnectionStatusHandler handles WebSocket connection status requests.
 type ConnectionStatusHandler struct {
-	log  *slog.Logger
-	hub  *hub.Hub
+	log *slog.Logger
+	hub *hub.Hub
 }
 
 // NewConnectionStatusHandler creates a new ConnectionStatusHandler.
@@ -38,21 +38,21 @@ type DeviceConnectionStatus struct {
 
 // ConnectionStatusResponse represents the response for connection status queries.
 type ConnectionStatusResponse struct {
-	DeviceID          string                  `json:"deviceId"`
-	Online            bool                    `json:"online"`
-	ConnectedAt       int64                   `json:"connectedAt,omitempty"`
-	UptimeSeconds     int64                   `json:"uptimeSeconds,omitempty"`
-	ClientMetrics     *hub.ClientMetrics     `json:"clientMetrics,omitempty"`
-	QueueMetrics      *hub.QueueMetrics       `json:"queueMetrics,omitempty"`
+	ClientMetrics      *hub.ClientMetrics      `json:"clientMetrics,omitempty"`
+	QueueMetrics       *hub.QueueMetrics       `json:"queueMetrics,omitempty"`
 	RateLimiterMetrics *hub.RateLimiterMetrics `json:"rateLimiterMetrics,omitempty"`
+	DeviceID           string                  `json:"deviceId"`
+	ConnectedAt        int64                   `json:"connectedAt,omitempty"`
+	UptimeSeconds      int64                   `json:"uptimeSeconds,omitempty"`
+	Online             bool                    `json:"online"`
 }
 
 // AllConnectionsResponse represents the status of all connected devices.
 type AllConnectionsResponse struct {
-	TotalConnected  int                      `json:"totalConnected"`
-	TotalQueued     int                      `json:"totalQueued"`
-	Devices         []DeviceConnectionStatus `json:"devices"`
-	QueueMetrics    hub.QueueMetrics        `json:"queueMetrics"`
+	Devices        []DeviceConnectionStatus `json:"devices"`
+	QueueMetrics   hub.QueueMetrics         `json:"queueMetrics"`
+	TotalConnected int                      `json:"totalConnected"`
+	TotalQueued    int                      `json:"totalQueued"`
 }
 
 // GetStatus handles GET /v1/device/:id/connection-status
@@ -64,15 +64,16 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 			"error":   "bad_request",
 			"message": "device id is required",
 		})
+
 		return
 	}
 
 	// Get client from hub
 	client := h.hub.GetClient(deviceID)
-	
+
 	response := ConnectionStatusResponse{
 		DeviceID: deviceID,
-		Online:  client != nil,
+		Online:   client != nil,
 	}
 
 	if client != nil {
@@ -86,6 +87,7 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 	// Get queue status for this device
 	{
 		response.QueueMetrics = &hub.QueueMetrics{}
+
 		if queueSize := h.hub.QueueSize(deviceID); queueSize >= 0 {
 			// Get full metrics if available
 			if qm, ok := h.hub.QueueMetrics(); ok {
@@ -104,9 +106,10 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 	clients := h.hub.Clients()
 
 	devices := make([]DeviceConnectionStatus, 0, len(clients))
+
 	for deviceID, client := range clients {
 		metrics := client.GetMetrics()
-		
+
 		status := DeviceConnectionStatus{
 			DeviceID:         deviceID,
 			Online:           true,
@@ -115,10 +118,10 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 			MessagesSent:     metrics.MessagesSent,
 			MessagesReceived: metrics.MessagesReceived,
 		}
-		
+
 		// Get queue size for this device
 		status.QueueSize = h.hub.QueueSize(deviceID)
-		
+
 		devices = append(devices, status)
 	}
 
@@ -135,7 +138,7 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 		TotalConnected: len(devices),
 		TotalQueued:    totalQueued,
 		Devices:        devices,
-		QueueMetrics:    queueMetrics,
+		QueueMetrics:   queueMetrics,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -145,11 +148,12 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 // Returns aggregate WebSocket metrics.
 func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 	clients := h.hub.Clients()
-	
+
 	// Aggregate metrics
 	var totalMessagesSent, totalMessagesReceived int64
+
 	var totalConnectAttempts, totalConnectSuccesses, totalConnectFailures int64
-	
+
 	for _, client := range clients {
 		metrics := client.GetMetrics()
 		totalMessagesSent += int64(metrics.MessagesSent)
@@ -166,9 +170,9 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"timestamp":          time.Now().Unix(),
-		"totalConnected":    len(clients),
-		"totalQueued":        h.hub.TotalQueuedMessages(),
+		"timestamp":      time.Now().Unix(),
+		"totalConnected": len(clients),
+		"totalQueued":    h.hub.TotalQueuedMessages(),
 		"aggregateMetrics": gin.H{
 			"totalMessagesSent":     totalMessagesSent,
 			"totalMessagesReceived": totalMessagesReceived,
@@ -189,6 +193,7 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 			"error":   "bad_request",
 			"message": "device id is required",
 		})
+
 		return
 	}
 
@@ -199,6 +204,7 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 			"error":   "unauthorized",
 			"message": "authentication required",
 		})
+
 		return
 	}
 
@@ -208,6 +214,7 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 			"error":   "forbidden",
 			"message": "admin or operator role required",
 		})
+
 		return
 	}
 
@@ -218,20 +225,21 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 			"error":   "not_found",
 			"message": "device not connected",
 		})
+
 		return
 	}
 
 	// Remove from hub (this will close the connection via ReadPump defer)
 	h.hub.Unregister(client)
-	
+
 	h.log.Info("device disconnected by operator",
 		"deviceId", deviceID,
 		"operatorId", op.ID,
 	)
 
 	c.JSON(http.StatusOK, gin.H{
-		"deviceId":  deviceID,
+		"deviceId":     deviceID,
 		"disconnected": true,
-		"operatorId": op.ID,
+		"operatorId":   op.ID,
 	})
 }

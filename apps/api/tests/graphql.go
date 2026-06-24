@@ -16,33 +16,33 @@ const (
 
 // GraphQLTestQuery represents a GraphQL query for testing.
 type GraphQLTestQuery struct {
+	Variables     map[string]interface{} `json:"variables,omitempty"`
 	Query         string                 `json:"query"`
 	OperationName string                 `json:"operationName,omitempty"`
-	Variables     map[string]interface{} `json:"variables,omitempty"`
 }
 
 // GraphQLResponse represents a GraphQL response.
 type GraphQLResponse struct {
-	Data   interface{} `json:"data,omitempty"`
+	Data   interface{}    `json:"data,omitempty"`
 	Errors []GraphQLError `json:"errors,omitempty"`
 }
 
 // GraphQLError represents a GraphQL error.
 type GraphQLError struct {
-	Message    string `json:"message"`
-	Code      string `json:"code,omitempty"`
-	Path      string `json:"path,omitempty"`
+	Message string `json:"message"`
+	Code    string `json:"code,omitempty"`
+	Path    string `json:"path,omitempty"`
 }
 
 // GraphQLTestResult holds test results for GraphQL endpoints.
 type GraphQLTestResult struct {
+	Error        error
+	Variables    map[string]interface{}
+	Response     *GraphQLResponse
 	Name         string
 	Query        string
-	Variables    map[string]interface{}
-	ExpectedData bool
-	Response     *GraphQLResponse
 	Duration     time.Duration
-	Error        error
+	ExpectedData bool
 }
 
 // TestGraphQLHealth checks if the GraphQL endpoint is healthy.
@@ -51,6 +51,7 @@ func TestGraphQLHealth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GraphQL endpoint not reachable: %v", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -59,10 +60,12 @@ func TestGraphQLHealth(t *testing.T) {
 
 	// Try an introspection query
 	introspectionQuery := `{"query":"{ __schema { queryType { name } } }"}`
+
 	resp, err = http.Post(GraphQLEndpoint, "application/json", bytes.NewBufferString(introspectionQuery))
 	if err != nil {
 		t.Fatalf("Introspection query failed: %v", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -87,9 +90,11 @@ func TestGraphQLQueryDevices(t *testing.T) {
 	if result.Error != nil {
 		t.Errorf("Query failed: %v", result.Error)
 	}
+
 	if result.Response == nil {
 		t.Fatal("No response received")
 	}
+
 	if len(result.Response.Errors) > 0 {
 		t.Errorf("GraphQL errors: %v", result.Response.Errors)
 	}
@@ -128,7 +133,7 @@ func TestGraphQLMutationSendCommand(t *testing.T) {
 		}`,
 		Variables: map[string]interface{}{
 			"deviceId": "test-device-001",
-			"command":   "RESTART_APP",
+			"command":  "RESTART_APP",
 		},
 	}
 
@@ -283,6 +288,7 @@ func TestGraphQLPlaygroundAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Playground endpoint not reachable: %v", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -305,6 +311,7 @@ func TestGraphQLInvalidQuery(t *testing.T) {
 	if result.Response == nil {
 		t.Fatal("Expected a response even for invalid queries")
 	}
+
 	if len(result.Response.Errors) == 0 {
 		t.Log("Warning: Expected GraphQL errors for invalid query")
 	}
@@ -352,6 +359,7 @@ func executeGraphQLQuery(t *testing.T, query GraphQLTestQuery) GraphQLTestResult
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Second}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return GraphQLTestResult{
@@ -361,6 +369,7 @@ func executeGraphQLQuery(t *testing.T, query GraphQLTestQuery) GraphQLTestResult
 			Error:    fmt.Errorf("request failed: %w", err),
 		}
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	var gqlResp GraphQLResponse
@@ -396,22 +405,27 @@ func BenchmarkGraphQLQueryDevices(b *testing.B) {
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
+
 	queryJSON, err := json.Marshal(query)
 	if err != nil {
 		b.Fatalf("failed to marshal query: %v", err)
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		req, err := http.NewRequest("POST", GraphQLEndpoint, bytes.NewBuffer(queryJSON))
 		if err != nil {
 			b.Fatalf("failed to create request: %v", err)
 		}
+
 		req.Header.Set("Content-Type", "application/json")
+
 		resp, err := client.Do(req)
 		if err != nil {
 			b.Fatalf("request failed: %v", err)
 		}
+
 		_, _ = io.Copy(io.Discard, resp.Body)
 		_ = resp.Body.Close()
 	}
@@ -435,22 +449,27 @@ func BenchmarkGraphQLQueryTelemetryHistory(b *testing.B) {
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
+
 	queryJSON, err := json.Marshal(query)
 	if err != nil {
 		b.Fatalf("failed to marshal query: %v", err)
 	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		req, err := http.NewRequest("POST", GraphQLEndpoint, bytes.NewBuffer(queryJSON))
 		if err != nil {
 			b.Fatalf("failed to create request: %v", err)
 		}
+
 		req.Header.Set("Content-Type", "application/json")
+
 		resp, err := client.Do(req)
 		if err != nil {
 			b.Fatalf("request failed: %v", err)
 		}
+
 		_, _ = io.Copy(io.Discard, resp.Body)
 		_ = resp.Body.Close()
 	}

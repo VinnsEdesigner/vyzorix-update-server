@@ -2,9 +2,9 @@ package auth
 
 import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,7 +13,7 @@ import (
 type MFAHandler struct {
 	authService  *appauth.AuthService
 	operatorRepo operator.Repository
-	presenter  *response.Presenter
+	presenter    *response.Presenter
 }
 
 // NewMFAHandler creates a new MFAHandler.
@@ -86,6 +86,7 @@ func (h *MFAHandler) VerifySetupMFA(c *gin.Context) {
 		Code  string `json:"code"`
 		Token string `json:"token"` // TOTP code to verify
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "")
 		return
@@ -113,6 +114,7 @@ func (h *MFAHandler) EnableMFA(c *gin.Context) {
 		Code  string `json:"code"`
 		Token string `json:"token"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "")
 		return
@@ -153,6 +155,7 @@ func (h *MFAHandler) DisableMFA(c *gin.Context) {
 	var req struct {
 		Code string `json:"code"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "")
 		return
@@ -178,6 +181,7 @@ func (h *MFAHandler) VerifyBackupCode(c *gin.Context) {
 	var req struct {
 		Code string `json:"code"`
 	}
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "")
 		return

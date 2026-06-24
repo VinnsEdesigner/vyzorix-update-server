@@ -33,6 +33,7 @@ func (p *Presenter) LoginSuccess(c *gin.Context, operatorID string) {
 	if p.ipIntelligence != nil {
 		p.ipIntelligence.RecordAuthSuccess(c)
 	}
+
 	if p.auditLogger != nil {
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -47,6 +48,7 @@ func (p *Presenter) LoginFailure(c *gin.Context, email, reason string) {
 	if p.ipIntelligence != nil {
 		p.ipIntelligence.RecordAuthFailure(c)
 	}
+
 	if p.auditLogger != nil {
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

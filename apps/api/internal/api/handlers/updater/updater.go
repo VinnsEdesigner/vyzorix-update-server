@@ -21,15 +21,15 @@ type VersionManifest struct {
 	APKSHA256    string `json:"apk_sha256"`
 	ReleaseNotes string `json:"release_notes"`
 	VersionCode  int    `json:"version_code"`
-	APKSizeBytes int64 `json:"apk_size_bytes"`
+	APKSizeBytes int64  `json:"apk_size_bytes"`
 }
 
 // Handler handles OTA update distribution endpoints.
 type Handler struct {
 	log     *slog.Logger
-	config  config.Config
 	dataDir string
 	binDir  string
+	config  config.Config
 }
 
 // NewHandler creates a new UpdaterHandler.
@@ -89,19 +89,23 @@ func (h *Handler) CheckUpdate(c *gin.Context) {
 	h.log.Info("update check", "version_code", versionCode)
 
 	var version VersionManifest
+
 	data, err := os.ReadFile(filepath.Join(h.dataDir, "version.json"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "cannot read version file"})
 		return
 	}
+
 	if err := json.Unmarshal(data, &version); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "invalid version file"})
 		return
 	}
 
 	clientCode := 0
+
 	if versionCode != "" {
 		var parseErr error
+
 		clientCode, parseErr = strconv.Atoi(versionCode)
 		if parseErr != nil {
 			h.log.Warn("invalid client version code", "versionCode", versionCode, "err", parseErr)
@@ -125,10 +129,12 @@ func (h *Handler) DownloadProgress(c *gin.Context) {
 		BytesLoaded int64  `json:"bytesLoaded"`
 		TotalBytes  int64  `json:"totalBytes"`
 	}
+
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid request"})
 		return
 	}
+
 	h.log.Info("download progress", "deviceId", req.DeviceID, "filename", req.Filename, "progress", req.Progress)
 	c.JSON(http.StatusOK, gin.H{"recorded": true})
 }
@@ -153,12 +159,14 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 		c.Header("Content-Type", "application/vnd.android.package-archive")
 		c.Header("Cache-Control", "no-store")
 		c.File(fpath)
+
 		return
 	}
 
 	if c.Request.Method == http.MethodHead {
 		c.Header("Content-Type", "application/vnd.android.package-archive")
 		c.File(fpath)
+
 		return
 	}
 

@@ -42,6 +42,7 @@ func New() string {
 				time.Sleep(time.Microsecond)
 				now = time.Now().UnixMilli()
 			}
+
 			lastTimestamp = now
 			counter = 0
 		}
@@ -93,7 +94,9 @@ func ExtractTime(uuidStr string) (time.Time, error) {
 	}
 
 	timestampHex := uuidStr[0:8] + uuidStr[9:13]
+
 	var timestamp int64
+
 	_, err := fmt.Sscanf(timestampHex, "%012x", &timestamp)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("uuid: failed to parse timestamp: %w", err)
@@ -112,8 +115,10 @@ func parseV7(s string) error {
 			if c != '-' {
 				return fmt.Errorf("uuid: invalid hyphen position at %d", i)
 			}
+
 			continue
 		}
+
 		if !isHexChar(c) {
 			return fmt.Errorf("uuid: invalid hex char at %d", i)
 		}

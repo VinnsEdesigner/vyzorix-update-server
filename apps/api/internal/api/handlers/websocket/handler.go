@@ -1,85 +1,83 @@
+// Package websocket provides WebSocket handler implementations.
 package websocket
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
-	"time"
 
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/telemetry"
-	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	config "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
+	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 )
 
 // StreamHandler handles WebSocket connections for device streaming.
+// This is the main entry point for the device streaming API.
 type StreamHandler struct {
-	log             *slog.Logger
-	hub             *hub.Hub
-	originValidator *infraauth.OriginValidator
-	upgrader        websocket.Upgrader
-	hmacVerifier    cryptohmac.Verifier
-	config          config.Config
+	log           *slog.Logger
+	hub           *hub.Hub
+	upgrader      *StreamUpgrader
+	messageRouter *MessageRouter
+	presenter     *Presenter
+	config        config.Config
 }
 
-// NewStreamHandler creates a new StreamHandler.
-func NewStreamHandler(log *slog.Logger, cfg config.Config, h *hub.Hub, hmacVerifier cryptohmac.Verifier) *StreamHandler {
-	originValidator := infraauth.NewOriginValidator(cfg.AllowedOrigins)
-	originValidator.SetLogger(log)
+// NewStreamHandler creates a new StreamHandler with all dependencies.
+func NewStreamHandler(
+	log *slog.Logger,
+	cfg config.Config,
+	h *hub.Hub,
+	hmacVerifier cryptohmac.Verifier,
+	auditLogger *audit.Logger,
+) *StreamHandler {
+	upgrader := NewStreamUpgrader(log, cfg, hmacVerifier)
+	messageRouter := NewMessageRouter(h, log)
+	presenter := NewPresenter(auditLogger, log)
 
 	return &StreamHandler{
-		log:             log,
-		hub:             h,
-		originValidator: originValidator,
-		config:          cfg,
-		hmacVerifier:    hmacVerifier,
-		upgrader: websocket.Upgrader{
-			CheckOrigin:      originValidator.CheckOrigin(),
-			HandshakeTimeout: 10 * time.Second,
-		},
+		log:           log,
+		config:        cfg,
+		hub:           h,
+		upgrader:      upgrader,
+		messageRouter: messageRouter,
+		presenter:     presenter,
 	}
 }
 
 // Handle handles GET /v1/device/:id/stream.
+// This is the HTTP entry point that upgrades to WebSocket.
 func (h *StreamHandler) Handle(c *gin.Context) {
-	id := c.Param("id")
-	if id == "" {
+	deviceID := c.Param("id")
+	if deviceID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device id required"})
 		return
 	}
 
-	// HMAC verification for WebSocket upgrade if enforced
-	if h.config.EnforceHMAC {
-		body, err := h.hmacVerifier.ReadAndVerifyHTTP(c.Request)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Invalid request"})
-			return
-		}
-		_ = body // Body consumed for verification
-	}
-
-	// Perform WebSocket upgrade
-	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
+	// Attempt WebSocket upgrade
+	_, client, err := h.upgrader.Upgrade(c, deviceID)
 	if err != nil {
-		h.log.Warn("websocket upgrade failed", "deviceId", id, "err", err)
+		// Log failure via presenter
+		if h.config.EnforceHMAC {
+			h.presenter.LogHMACFailed(c.Request.Context(), deviceID)
+		} else {
+			h.presenter.LogUpgradeFailed(c.Request.Context(), deviceID, err.Error())
+		}
+
 		return
 	}
 
+	// Set hub on client
+	client.Hub = h.hub
+
 	// Register client with hub
-	client := &hub.Client{
-		DeviceID: id,
-		Conn:     conn,
-		Send:     make(chan command.CommandFrame, 32),
-		Hub:      h.hub,
-	}
 	h.hub.Register(client)
 
-	h.log.Info("device connected via websocket", "deviceId", id)
+	// Log connection and audit
+	h.presenter.LogConnect(c.Request.Context(), deviceID)
+	h.presenter.AuditDeviceConnect(c.Request.Context(), deviceID)
 
 	// Start pumps - ReadPump blocks, so run WritePump in goroutine
 	go client.WritePump()
@@ -103,66 +101,7 @@ func (h *StreamHandler) GetClient(deviceID string) *hub.Client {
 
 // DisconnectClient forcefully disconnects a client by device ID.
 func (h *StreamHandler) DisconnectClient(deviceID string) {
-	client := h.hub.GetClient(deviceID)
-	if client != nil {
-		h.hub.Unregister(client)
-		if err := client.Conn.Close(); err != nil {
-			h.log.Warn("client close failed", "deviceId", deviceID, "err", err)
-		}
-	}
-}
-
-// HandleIncomingMessage processes incoming WebSocket messages from devices.
-func (h *StreamHandler) HandleIncomingMessage(client *hub.Client, raw []byte) error {
-	var env struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(raw, &env); err != nil {
-		h.log.Warn("bad ws frame", "deviceId", client.DeviceID, "err", err)
-		return err
-	}
-
-	switch env.Type {
-	case "telemetry":
-		return h.handleTelemetry(client, raw)
-	case "pong":
-		return h.handlePong(client)
-	case "status":
-		return h.handleStatus(client, raw)
-	default:
-		h.log.Warn("unknown ws message type", "deviceId", client.DeviceID, "type", env.Type)
-	}
-
-	return nil
-}
-
-// handleTelemetry processes telemetry frames from devices.
-func (h *StreamHandler) handleTelemetry(client *hub.Client, raw []byte) error {
-	var t telemetry.TelemetryFrame
-	if err := json.Unmarshal(raw, &t); err != nil {
-		return err
-	}
-	t.Raw = raw
-	if t.DeviceID == "" {
-		t.DeviceID = client.DeviceID
-	}
-
-	// Broadcast to dashboard
-	h.hub.BroadcastTelemetry(raw)
-
-	h.log.Debug("telemetry received", "deviceId", client.DeviceID, "riskScore", t.RiskScore)
-	return nil
-}
-
-// handlePong handles ping/pong heartbeat responses.
-func (h *StreamHandler) handlePong(client *hub.Client) error {
-	return nil
-}
-
-// handleStatus processes status updates from devices.
-func (h *StreamHandler) handleStatus(client *hub.Client, raw []byte) error {
-	h.log.Info("status update", "deviceId", client.DeviceID)
-	return nil
+	h.messageRouter.DisconnectClient(deviceID)
 }
 
 // SendToClient sends a command frame to a specific device.

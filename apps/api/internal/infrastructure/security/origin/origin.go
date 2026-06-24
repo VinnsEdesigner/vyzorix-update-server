@@ -77,6 +77,7 @@ func (v *Validator) Validate(origin string) bool {
 	}
 
 	normalized = strings.ToLower(origin)
+
 	return v.allowedOrigins[normalized]
 }
 
@@ -123,6 +124,7 @@ func (v *Validator) CheckOrigin() func(*http.Request) bool {
 				if r.URL != nil {
 					path = r.URL.Path
 				}
+
 				v.log.Warn("websocket origin rejected",
 					"origin", origin,
 					"reason", reason,
@@ -150,6 +152,7 @@ func (v *Validator) AllowedOrigins() []string {
 	for origin := range v.allowedOrigins {
 		origins = append(origins, origin)
 	}
+
 	return origins
 }
 

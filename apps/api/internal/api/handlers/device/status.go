@@ -33,7 +33,9 @@ func (h *StatusHandler) Handle(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
 			return
 		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
+
 		return
 	}
 

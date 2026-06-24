@@ -50,6 +50,7 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		// Return generic error to prevent email enumeration
 		h.presenter.LoginFailure(c, req.Email, "invalid email or password")
 		h.presenter.Unauthorized(c, "invalid email or password")
+
 		return
 	}
 
@@ -73,6 +74,7 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		default:
 			h.presenter.InternalError(c, "an error occurred")
 		}
+
 		return
 	}
 

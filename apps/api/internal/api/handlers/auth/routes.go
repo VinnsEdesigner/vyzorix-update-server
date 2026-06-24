@@ -4,29 +4,29 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
-	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
 )
 
 // Dependencies holds all auth handler dependencies.
 type Dependencies struct {
+	OperatorRepo   operator.Repository
 	AuthService    *auth.AuthService
 	SessionManager *infraauth.SessionManager
-	Config         config.Config
 	GoogleVerifier *infraauth.GoogleTokenVerifier
 	ClientService  *client.Service
 	EmailService   *emailService.Service
 	Lockout        *middleware.Lockout
-	OperatorRepo   operator.Repository
 	AuditLogger    *audit.Logger
 	IPIntelligence *middleware.IPIntelligence
 	Presenter      *response.Presenter
+	Config         config.Config
 }
 
 // AllHandlers holds references to all auth handlers.
@@ -72,31 +72,31 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 	publicAuth.Use(middleware.NoCache())
 	{
 		// Login with validation
-		publicAuth.POST("/login", middleware.POST(), 
-			middleware.ValidationMiddleware(&middleware.LoginSchema{}), 
+		publicAuth.POST("/login", middleware.POST(),
+			middleware.ValidationMiddleware(&middleware.LoginSchema{}),
 			h.Login.Handle,
 		)
-		
+
 		// Register with validation
-		publicAuth.POST("/register", middleware.POST(), 
-			middleware.ValidationMiddleware(&middleware.RegisterSchema{}), 
+		publicAuth.POST("/register", middleware.POST(),
+			middleware.ValidationMiddleware(&middleware.RegisterSchema{}),
 			h.Register.Handle,
 		)
-		
+
 		// Password reset with validation
-		publicAuth.POST("/forgot-password", middleware.POST(), 
-			middleware.ValidationMiddleware(&middleware.ForgotPasswordSchema{}), 
+		publicAuth.POST("/forgot-password", middleware.POST(),
+			middleware.ValidationMiddleware(&middleware.ForgotPasswordSchema{}),
 			h.PasswordReset.ForgotPassword,
 		)
-		publicAuth.POST("/reset-password", middleware.POST(), 
-			middleware.ValidationMiddleware(&middleware.ResetPasswordSchema{}), 
+		publicAuth.POST("/reset-password", middleware.POST(),
+			middleware.ValidationMiddleware(&middleware.ResetPasswordSchema{}),
 			h.PasswordReset.ResetPassword,
 		)
-		publicAuth.POST("/resend-password-reset", middleware.POST(), 
-			middleware.ValidationMiddleware(&middleware.ForgotPasswordSchema{}), 
+		publicAuth.POST("/resend-password-reset", middleware.POST(),
+			middleware.ValidationMiddleware(&middleware.ForgotPasswordSchema{}),
 			h.PasswordReset.ResendPasswordReset,
 		)
-		
+
 		// Email verification
 		publicAuth.POST("/verify-email", middleware.POST(), h.EmailVerify.VerifyEmail)
 		publicAuth.POST("/resend-verification", middleware.POST(), h.EmailVerify.ResendVerification)

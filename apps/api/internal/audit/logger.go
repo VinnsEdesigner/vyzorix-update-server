@@ -43,6 +43,7 @@ func (l *Logger) LogEvent(ctx context.Context, entry *Entry) {
 	if entry.ID == "" {
 		entry.ID = uuid.New()
 	}
+
 	if entry.CreatedAt.IsZero() {
 		entry.CreatedAt = time.Now()
 	}
@@ -60,10 +61,10 @@ func (l *Logger) LogEvent(ctx context.Context, entry *Entry) {
 func (l *Logger) LoginSuccess(ctx context.Context, operatorID, ipAddress, userAgent string) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,
-		Action:    ActionLoginSuccess,
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
-		Result:    ResultSuccess,
+		Action:     ActionLoginSuccess,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     ResultSuccess,
 	})
 }
 
@@ -71,11 +72,11 @@ func (l *Logger) LoginSuccess(ctx context.Context, operatorID, ipAddress, userAg
 func (l *Logger) LoginFailed(ctx context.Context, operatorID, ipAddress, userAgent, reason string) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,
-		Action:    ActionLoginFailed,
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
-		Result:    ResultFailure,
-		Metadata:  map[string]string{"reason": reason},
+		Action:     ActionLoginFailed,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     ResultFailure,
+		Metadata:   map[string]string{"reason": reason},
 	})
 }
 
@@ -83,10 +84,10 @@ func (l *Logger) LoginFailed(ctx context.Context, operatorID, ipAddress, userAge
 func (l *Logger) Logout(ctx context.Context, operatorID, ipAddress, userAgent string) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,
-		Action:    ActionLogout,
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
-		Result:    ResultSuccess,
+		Action:     ActionLogout,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     ResultSuccess,
 	})
 }
 
@@ -94,10 +95,10 @@ func (l *Logger) Logout(ctx context.Context, operatorID, ipAddress, userAgent st
 func (l *Logger) Register(ctx context.Context, operatorID, ipAddress, userAgent string) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,
-		Action:    ActionRegister,
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
-		Result:    ResultSuccess,
+		Action:     ActionRegister,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     ResultSuccess,
 	})
 }
 
@@ -105,10 +106,10 @@ func (l *Logger) Register(ctx context.Context, operatorID, ipAddress, userAgent 
 func (l *Logger) PasswordChange(ctx context.Context, operatorID, ipAddress, userAgent string) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,
-		Action:    ActionPasswordChange,
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
-		Result:    ResultSuccess,
+		Action:     ActionPasswordChange,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     ResultSuccess,
 	})
 }
 
@@ -116,10 +117,10 @@ func (l *Logger) PasswordChange(ctx context.Context, operatorID, ipAddress, user
 func (l *Logger) AccountLocked(ctx context.Context, operatorID, ipAddress string, attempts int) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,
-		Action:    ActionAccountLocked,
-		IPAddress: ipAddress,
-		Result:    ResultBlocked,
-		Metadata:  map[string]string{"attempts": fmt.Sprintf("%d", attempts)},
+		Action:     ActionAccountLocked,
+		IPAddress:  ipAddress,
+		Result:     ResultBlocked,
+		Metadata:   map[string]string{"attempts": fmt.Sprintf("%d", attempts)},
 	})
 }
 
@@ -127,11 +128,11 @@ func (l *Logger) AccountLocked(ctx context.Context, operatorID, ipAddress string
 func (l *Logger) SessionRevoked(ctx context.Context, operatorID, ipAddress, userAgent, reason string) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,
-		Action:    ActionSessionRevoked,
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
-		Result:    ResultSuccess,
-		Metadata:  map[string]string{"reason": reason},
+		Action:     ActionSessionRevoked,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     ResultSuccess,
+		Metadata:   map[string]string{"reason": reason},
 	})
 }
 

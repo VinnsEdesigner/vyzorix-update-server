@@ -84,11 +84,13 @@ func (v *Verifier) Verify(token string) (*GoogleClaims, error) {
 		Kid string `json:"kid"`
 		Alg string `json:"alg"`
 	}
+
 	headerBytes, err := base64RawURLDecode(parts[0])
 	if err != nil {
 		return nil, fmt.Errorf("%w: invalid header", ErrInvalidGoogleToken)
 	}
-	if err := json.Unmarshal(headerBytes, &header); err != nil {
+
+	if err = json.Unmarshal(headerBytes, &header); err != nil {
 		return nil, fmt.Errorf("%w: invalid header", ErrInvalidGoogleToken)
 	}
 
@@ -101,7 +103,7 @@ func (v *Verifier) Verify(token string) (*GoogleClaims, error) {
 		return nil, err
 	}
 
-	if err := v.verifySignature(parts[0]+"."+parts[1], parts[2], key); err != nil {
+	if err = v.verifySignature(parts[0]+"."+parts[1], parts[2], key); err != nil {
 		return nil, fmt.Errorf("%w: signature verification failed", ErrInvalidGoogleToken)
 	}
 
@@ -109,6 +111,7 @@ func (v *Verifier) Verify(token string) (*GoogleClaims, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: invalid claims", ErrInvalidGoogleToken)
 	}
+
 	var claims GoogleClaims
 	if err := json.Unmarshal(claimsBytes, &claims); err != nil {
 		return nil, fmt.Errorf("%w: invalid claims", ErrInvalidGoogleToken)
@@ -136,28 +139,34 @@ func (v *Verifier) getKey(kid string) (*rsa.PublicKey, error) {
 			return key, nil
 		}
 		v.keysMu.RUnlock()
+
 		return nil, err
 	}
 
 	v.keysMu.RLock()
 	defer v.keysMu.RUnlock()
+
 	if key, ok := v.keys[kid]; ok {
 		return key, nil
 	}
+
 	return nil, fmt.Errorf("%w: key not found: %s", ErrInvalidGoogleToken, kid)
 }
 
 func (v *Verifier) refreshKeys() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	req, err := http.NewRequestWithContext(ctx, "GET", v.jwksURL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create JWKS request: %w", err)
 	}
+
 	resp, err := v.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to fetch JWKS: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -186,14 +195,17 @@ func (v *Verifier) refreshKeys() error {
 		if k.Kty != "RSA" || k.Use != "sig" {
 			continue
 		}
+
 		pubKey, err := parseRSAPublicKey(k.N, k.E)
 		if err != nil {
 			continue
 		}
+
 		v.keys[k.Kid] = pubKey
 	}
 
 	v.lastFetch = time.Now()
+
 	return nil
 }
 
@@ -221,12 +233,14 @@ func (v *Verifier) verifyClaims(claims *GoogleClaims) error {
 	}
 
 	validIssuer := false
+
 	for _, iss := range googleIssuers {
 		if claims.Iss == iss {
 			validIssuer = true
 			break
 		}
 	}
+
 	if !validIssuer {
 		return ErrGoogleTokenBadIssuer
 	}
@@ -243,12 +257,14 @@ func parseRSAPublicKey(nStr, eStr string) (*rsa.PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	eBytes, err := base64RawURLDecode(eStr)
 	if err != nil {
 		return nil, err
 	}
 
 	n := new(big.Int).SetBytes(nBytes)
+
 	e := 0
 	for _, b := range eBytes {
 		e = e<<8 + int(b)
@@ -260,6 +276,7 @@ func parseRSAPublicKey(nStr, eStr string) (*rsa.PublicKey, error) {
 func base64RawURLDecode(s string) ([]byte, error) {
 	s = strings.ReplaceAll(s, "-", "+")
 	s = strings.ReplaceAll(s, "_", "/")
+
 	switch len(s) % 4 {
 	case 1:
 		s += "==="
@@ -268,6 +285,7 @@ func base64RawURLDecode(s string) ([]byte, error) {
 	case 3:
 		s += "="
 	}
+
 	return base64.StdEncoding.DecodeString(s)
 }
 
@@ -283,13 +301,16 @@ func GetGoogleUserInfo(ctx context.Context, accessToken string) (*GoogleUserInfo
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
 	client := &http.Client{Timeout: 10 * time.Second}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {

@@ -1,0 +1,120 @@
+// Package wire provides dependency injection utilities for the API server.
+package wire
+
+import (
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
+	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
+	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
+	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
+	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
+	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
+	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
+	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	"log/slog"
+)
+
+// HandlerDependencies contains all dependencies needed by handlers.
+type HandlerDependencies struct {
+	OperatorRepo   operator.Repository
+	FCMNotifier    fcm.Notifier
+	AuditLogger    *audit.Logger
+	IPIntelligence *middleware.IPIntelligence
+	ClientService  *client.Service
+	EmailService   *emailService.Service
+	Lockout        *middleware.Lockout
+	DB             *storage.SQLite
+	AuthService    *auth.AuthService
+	GoogleVerifier *infraauth.GoogleTokenVerifier
+	Presenter      *response.Presenter
+	DeviceService  *device.Service
+	Hub            *hub.Hub
+	CommandService *command.Service
+	SessionManager *infraauth.SessionManager
+	Log            *slog.Logger
+	HmacVerifier   *cryptohmac.Verifier
+	Config         config.Config
+}
+
+// HandlerSet contains all handler instances.
+type HandlerSet struct {
+	Auth             *authhandlers.AllHandlers
+	DeviceRegister   *devicehandlers.RegisterHandler
+	DeviceStatus     *devicehandlers.StatusHandler
+	DeviceUpdater    *devicehandlers.UpdaterHandler
+	DeviceList       *devicehandlers.ListHandler
+	Command          *cmdhandlers.ExecuteHandler
+	Stream           *websockethandlers.StreamHandler
+	TelemetryHistory *handlers.TelemetryHistoryHandler
+	ConnectionStatus *handlers.ConnectionStatusHandler
+	AdminClients     *admin.ClientsHandler
+	Updater          *updaterhandlers.Handler
+}
+
+// WireHandlers creates and wires all handler instances.
+func WireHandlers(deps HandlerDependencies) *HandlerSet {
+	hs := &HandlerSet{}
+
+	// Auth handlers
+	hs.Auth = authhandlers.NewAllHandlers(&authhandlers.Dependencies{
+		AuthService:    deps.AuthService,
+		SessionManager: deps.SessionManager,
+		Config:         deps.Config,
+		GoogleVerifier: deps.GoogleVerifier,
+		ClientService:  deps.ClientService,
+		EmailService:   deps.EmailService,
+		Lockout:        deps.Lockout,
+		OperatorRepo:   deps.OperatorRepo,
+		AuditLogger:    deps.AuditLogger,
+		IPIntelligence: deps.IPIntelligence,
+		Presenter:      deps.Presenter,
+	})
+
+	// Device handlers
+	hs.DeviceRegister = devicehandlers.NewRegisterHandler(deps.DeviceService)
+	hs.DeviceStatus = devicehandlers.NewStatusHandler(deps.DeviceService)
+	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deps.DeviceService)
+	hs.DeviceList = devicehandlers.NewListHandler(deps.DeviceService, deps.Hub)
+
+	// Command handler
+	hs.Command = cmdhandlers.NewExecuteHandler(deps.CommandService, deps.DeviceService, deps.Hub, deps.FCMNotifier)
+
+	// WebSocket handler
+	hs.Stream = websockethandlers.NewStreamHandler(deps.Log, deps.Config, deps.Hub, *deps.HmacVerifier, deps.AuditLogger)
+
+	// Telemetry history handler
+	var telemetryRepo *storage.TelemetryRepository
+	if deps.DB != nil {
+		telemetryRepo = storage.NewTelemetryRepository(deps.DB.DB())
+	}
+
+	hs.TelemetryHistory = handlers.NewTelemetryHistoryHandler(
+		deps.Log,
+		telemetryRepo,
+		nil,
+	)
+
+	// Connection status handler
+	hs.ConnectionStatus = handlers.NewConnectionStatusHandler(deps.Log, deps.Hub)
+
+	// Admin handlers
+	hs.AdminClients = admin.NewClientsHandler(deps.ClientService)
+
+	// Updater handlers
+	hs.Updater = updaterhandlers.NewHandler(deps.Log, deps.Config)
+
+	return hs
+}

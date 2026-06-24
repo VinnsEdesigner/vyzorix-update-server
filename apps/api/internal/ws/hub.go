@@ -20,60 +20,60 @@ var ErrRateLimited = errors.New("rate limit exceeded")
 
 // Hub manages WebSocket connections and routes messages between devices and dashboard.
 type Hub struct {
-	log            *slog.Logger
-	deviceRepo     device.Repository
-	telemetryRepo  telemetry.Repository
-	clients        map[string]*Client
-	register       chan *Client
-	unreg          chan *Client
-	broadcast      chan []byte
-	messageQueue   *MessageQueue
-	rateLimiter    *RateLimiter
+	telemetryRepo   telemetry.Repository
+	deviceRepo      device.Repository
+	broadcast       chan []byte
+	clients         map[string]*Client
+	register        chan *Client
+	unreg           chan *Client
+	log             *slog.Logger
+	messageQueue    *MessageQueue
+	rateLimiter     *RateLimiter
 	telemetryFilter *TelemetryFilter
-	compression    *Compression
-	latencyConfig  *LatencyConfig
-	mu             sync.RWMutex
-	metrics        HubMetrics
-	metricsMu      sync.RWMutex
+	compression     *Compression
+	latencyConfig   *LatencyConfig
+	metrics         HubMetrics
+	mu              sync.RWMutex
+	metricsMu       sync.RWMutex
 }
 
 // HubMetrics holds metrics for the WebSocket hub.
 type HubMetrics struct {
-	TotalClientsConnected int64 `json:"totalClientsConnected"`
-	TotalMessagesSent    int64 `json:"totalMessagesSent"`
-	TotalMessagesReceived int64 `json:"totalMessagesReceived"`
-	TotalConnectAttempts int64 `json:"totalConnectAttempts"`
-	TotalConnectSuccesses int64 `json:"totalConnectSuccesses"`
-	TotalConnectFailures int64 `json:"totalConnectFailures"`
-	LatencyMetrics       LatencyMetrics `json:"latencyMetrics"` // G6: sub-500ms latency tracking
+	LatencyMetrics        LatencyMetrics `json:"latencyMetrics"`
+	TotalClientsConnected int64          `json:"totalClientsConnected"`
+	TotalMessagesSent     int64          `json:"totalMessagesSent"`
+	TotalMessagesReceived int64          `json:"totalMessagesReceived"`
+	TotalConnectAttempts  int64          `json:"totalConnectAttempts"`
+	TotalConnectSuccesses int64          `json:"totalConnectSuccesses"`
+	TotalConnectFailures  int64          `json:"totalConnectFailures"`
 }
 
 // HubConfig holds configuration for the Hub.
 type HubConfig struct {
-	MessageQueue   *MessageQueueConfig
-	RateLimiter   *RateLimiterConfig
-	Compression   *CompressionConfig
-	Filter        *TelemetryFilterConfig
-	Latency       *LatencyConfig
+	MessageQueue *MessageQueueConfig
+	RateLimiter  *RateLimiterConfig
+	Compression  *CompressionConfig
+	Filter       *TelemetryFilterConfig
+	Latency      *LatencyConfig
 }
 
 // LatencyConfig holds configuration for latency tracking.
 type LatencyConfig struct {
-	Enabled           bool
-	MaxLatencyMS      int // Maximum acceptable latency in milliseconds (G6: sub-500ms)
-	SampleRate        float64 // Percentage of messages to track (0.01 = 1%)
+	Enabled      bool
+	MaxLatencyMS int     // Maximum acceptable latency in milliseconds (G6: sub-500ms)
+	SampleRate   float64 // Percentage of messages to track (0.01 = 1%)
 }
 
 // New creates a new Hub instance.
 func New(log *slog.Logger, deviceRepo device.Repository, telemetryRepo telemetry.Repository, db interface{}, cfg *HubConfig) *Hub {
 	h := &Hub{
-		log:            log,
-		deviceRepo:     deviceRepo,
-		telemetryRepo:  telemetryRepo,
-		clients:        make(map[string]*Client),
-		register:       make(chan *Client),
-		unreg:          make(chan *Client),
-		broadcast:      make(chan []byte, 256),
+		log:           log,
+		deviceRepo:    deviceRepo,
+		telemetryRepo: telemetryRepo,
+		clients:       make(map[string]*Client),
+		register:      make(chan *Client),
+		unreg:         make(chan *Client),
+		broadcast:     make(chan []byte, 256),
 	}
 
 	// Initialize with defaults if no config
@@ -85,12 +85,14 @@ func New(log *slog.Logger, deviceRepo device.Repository, telemetryRepo telemetry
 	if cfg.Compression == nil {
 		cfg.Compression = DefaultCompressionConfig()
 	}
+
 	h.compression = NewCompression(log, cfg.Compression)
 
 	// Initialize telemetry filter
 	if cfg.Filter == nil {
 		cfg.Filter = DefaultTelemetryFilterConfig()
 	}
+
 	h.telemetryFilter = NewTelemetryFilter(log, cfg.Filter)
 
 	// Initialize latency tracking (G6: sub-500ms latency)
@@ -101,6 +103,7 @@ func New(log *slog.Logger, deviceRepo device.Repository, telemetryRepo telemetry
 			SampleRate:   0.1, // 10% sampling
 		}
 	}
+
 	h.latencyConfig = cfg.Latency
 
 	return h
@@ -108,16 +111,18 @@ func New(log *slog.Logger, deviceRepo device.Repository, telemetryRepo telemetry
 
 // LatencyMetrics holds latency tracking metrics.
 type LatencyMetrics struct {
-	TotalMessages     int64   `json:"totalMessages"`
-	TotalLatencyMS    int64   `json:"totalLatencyMs"`
-	MinLatencyMS      int64   `json:"minLatencyMs"`
-	MaxLatencyMS      int64   `json:"maxLatencyMs"`
-	ExceededCount     int64   `json:"exceededCount"` // Count of messages exceeding MaxLatencyMS
-	LastExceededAt    int64   `json:"lastExceededAt"`
-	LastExceededID    string  `json:"lastExceededId"`
-	AverageLatencyMS  float64 `json:"averageLatencyMs"`
-	P95LatencyMS      float64 `json:"p95LatencyMs"`
-	P99LatencyMS      float64 `json:"p99LatencyMs"`
+	LastExceededID     string  `json:"lastExceededId"`
+	TotalMessages      int64   `json:"totalMessages"`
+	SuccessfulMessages int64   `json:"successfulMessages"`
+	FailedMessages     int64   `json:"failedMessages"`
+	TotalLatencyMS     int64   `json:"totalLatencyMs"`
+	MinLatencyMS       int64   `json:"minLatencyMs"`
+	MaxLatencyMS       int64   `json:"maxLatencyMs"`
+	ExceededCount      int64   `json:"exceededCount"`
+	LastExceededAt     int64   `json:"lastExceededAt"`
+	AverageLatencyMS   float64 `json:"averageLatencyMs"`
+	P95LatencyMS       float64 `json:"p95LatencyMs"`
+	P99LatencyMS       float64 `json:"p99LatencyMs"`
 }
 
 // SetMessageQueue sets the message queue on the hub.
@@ -156,10 +161,12 @@ func (h *Hub) Run(ctx context.Context) {
 			h.mu.Lock()
 			if old := h.clients[c.DeviceID]; old != nil {
 				close(old.Send)
+
 				if err := old.Conn.Close(); err != nil {
 					h.log.Warn("old conn close failed", "deviceId", c.DeviceID, "err", err)
 				}
 			}
+
 			c.log = h.log
 			h.clients[c.DeviceID] = c
 			h.mu.Unlock()
@@ -187,6 +194,7 @@ func (h *Hub) Run(ctx context.Context) {
 			if h.clients[c.DeviceID] == c {
 				delete(h.clients, c.DeviceID)
 				close(c.Send)
+
 				if err := h.deviceRepo.SetOnline(context.Background(), c.DeviceID, false); err != nil {
 					h.log.Warn("set offline failed", "deviceId", c.DeviceID, "err", err)
 				}
@@ -203,6 +211,7 @@ func (h *Hub) Run(ctx context.Context) {
 				}
 			}
 			h.mu.RUnlock()
+
 			_ = raw // prevent unused variable warning from channel receive
 		}
 	}
@@ -218,6 +227,7 @@ func (h *Hub) Unregister(c *Client) { h.unreg <- c }
 func (h *Hub) Online(deviceID string) bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
+
 	return h.clients[deviceID] != nil
 }
 
@@ -225,10 +235,12 @@ func (h *Hub) Online(deviceID string) bool {
 func (h *Hub) Clients() map[string]*Client {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
+
 	out := make(map[string]*Client, len(h.clients))
 	for k, v := range h.clients {
 		out[k] = v
 	}
+
 	return out
 }
 
@@ -236,6 +248,7 @@ func (h *Hub) Clients() map[string]*Client {
 func (h *Hub) GetClient(deviceID string) *Client {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
+
 	return h.clients[deviceID]
 }
 
@@ -243,6 +256,7 @@ func (h *Hub) GetClient(deviceID string) *Client {
 func (h *Hub) ClientCount() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
+
 	return len(h.clients)
 }
 
@@ -273,10 +287,10 @@ func (h *Hub) BroadcastTelemetryToFiltered(senderDeviceID string, raw []byte) {
 
 		// Check if this client is subscribed to the sender's telemetry
 		if h.telemetryFilter.ShouldForward(clientID, senderDeviceID) {
+			// Client buffer full, skip
 			select {
 			case c.Send <- command.CommandFrame{Type: "telemetry", Args: raw}:
 			default:
-				// Client buffer full, skip
 			}
 		}
 	}
@@ -287,6 +301,7 @@ func (h *Hub) Subscribe(clientID, deviceID string) bool {
 	if h.telemetryFilter == nil {
 		return false
 	}
+
 	return h.telemetryFilter.Subscribe(clientID, deviceID)
 }
 
@@ -295,6 +310,7 @@ func (h *Hub) Unsubscribe(clientID, deviceID string) bool {
 	if h.telemetryFilter == nil {
 		return false
 	}
+
 	return h.telemetryFilter.Unsubscribe(clientID, deviceID)
 }
 
@@ -303,6 +319,7 @@ func (h *Hub) GetSubscriptions(clientID string) []string {
 	if h.telemetryFilter == nil {
 		return nil
 	}
+
 	return h.telemetryFilter.GetSubscriptions(clientID)
 }
 
@@ -312,7 +329,7 @@ func (h *Hub) GetSubscriptions(clientID string) []string {
 // Returns true if the message was either sent or queued.
 func (h *Hub) Send(deviceID string, frame command.CommandFrame) bool {
 	startTime := time.Now()
-	
+
 	h.mu.RLock()
 	c := h.clients[deviceID]
 	h.mu.RUnlock()
@@ -325,8 +342,10 @@ func (h *Hub) Send(deviceID string, frame command.CommandFrame) bool {
 			if h.latencyConfig != nil && h.latencyConfig.Enabled {
 				h.trackLatency(deviceID, frame.DispatchID, startTime, success)
 			}
+
 			return success
 		}
+
 		return false
 	}
 
@@ -335,6 +354,7 @@ func (h *Hub) Send(deviceID string, frame command.CommandFrame) bool {
 		if h.latencyConfig != nil && h.latencyConfig.Enabled {
 			h.trackLatency(deviceID, frame.DispatchID, startTime, true)
 		}
+
 		return true
 	default:
 		// Client buffer full - try queue if available
@@ -344,8 +364,10 @@ func (h *Hub) Send(deviceID string, frame command.CommandFrame) bool {
 			if h.latencyConfig != nil && h.latencyConfig.Enabled {
 				h.trackLatency(deviceID, frame.DispatchID, startTime, success)
 			}
+
 			return success
 		}
+
 		return false
 	}
 }
@@ -367,12 +389,17 @@ func (h *Hub) trackLatency(deviceID, dispatchID string, startTime time.Time, suc
 	defer h.metricsMu.Unlock()
 
 	h.metrics.LatencyMetrics.TotalMessages++
+	if success {
+		h.metrics.LatencyMetrics.SuccessfulMessages++
+	} else {
+		h.metrics.LatencyMetrics.FailedMessages++
+	}
 	h.metrics.LatencyMetrics.TotalLatencyMS += latencyMS
-
 	// Update min/max
 	if h.metrics.LatencyMetrics.MinLatencyMS == 0 || latencyMS < h.metrics.LatencyMetrics.MinLatencyMS {
 		h.metrics.LatencyMetrics.MinLatencyMS = latencyMS
 	}
+
 	if latencyMS > h.metrics.LatencyMetrics.MaxLatencyMS {
 		h.metrics.LatencyMetrics.MaxLatencyMS = latencyMS
 	}
@@ -406,6 +433,7 @@ func (h *Hub) SendWithDeliveryConfirmation(deviceID string, frame command.Comman
 		if h.messageQueue != nil {
 			return h.messageQueue.EnqueueWithConfirmation(deviceID, frame), nil
 		}
+
 		return false, nil
 	}
 
@@ -424,6 +452,7 @@ func (h *Hub) SendWithDeliveryConfirmation(deviceID string, frame command.Comman
 			if h.messageQueue != nil {
 				return h.messageQueue.EnqueueWithConfirmation(deviceID, frame), nil
 			}
+
 			return false, fmt.Errorf("delivery confirmation timeout")
 		}
 	default:
@@ -431,6 +460,7 @@ func (h *Hub) SendWithDeliveryConfirmation(deviceID string, frame command.Comman
 		if h.messageQueue != nil {
 			return h.messageQueue.EnqueueWithConfirmation(deviceID, frame), nil
 		}
+
 		return false, nil
 	}
 }
@@ -440,6 +470,7 @@ func (h *Hub) QueueMetrics() (QueueMetrics, bool) {
 	if h.messageQueue == nil {
 		return QueueMetrics{}, false
 	}
+
 	return h.messageQueue.GetMetrics(), true
 }
 
@@ -448,6 +479,7 @@ func (h *Hub) QueueSize(deviceID string) int {
 	if h.messageQueue == nil {
 		return 0
 	}
+
 	return h.messageQueue.QueueSize(deviceID)
 }
 
@@ -456,5 +488,6 @@ func (h *Hub) TotalQueuedMessages() int {
 	if h.messageQueue == nil {
 		return 0
 	}
+
 	return h.messageQueue.TotalQueuedMessages()
 }

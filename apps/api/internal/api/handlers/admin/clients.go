@@ -102,9 +102,9 @@ func (h *ClientsHandler) RotateKey(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":     true,
-		"message":     "Key rotated. Client must fetch new credentials.",
-		"clientId":    clientID,
-		"keyVersion":  keyVersion,
+		"success":    true,
+		"message":    "Key rotated. Client must fetch new credentials.",
+		"clientId":   clientID,
+		"keyVersion": keyVersion,
 	})
 }

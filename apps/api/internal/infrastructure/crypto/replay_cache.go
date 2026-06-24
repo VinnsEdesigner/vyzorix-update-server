@@ -17,12 +17,12 @@ const (
 // ReplayCache provides thread-safe replay attack protection using a token bucket approach.
 // It stores signatures with timestamps and automatically cleans up expired entries.
 type ReplayCache struct {
-	mu              sync.RWMutex
 	entries         map[string]time.Time
+	stopCh          chan struct{}
 	maxSize         int
 	ttl             time.Duration
 	cleanupInterval time.Duration
-	stopCh          chan struct{}
+	mu              sync.RWMutex
 }
 
 // ReplayCacheOption configures the ReplayCache.
@@ -95,6 +95,7 @@ func (rc *ReplayCache) cleanup() {
 	for sig, timestamp := range rc.entries {
 		if timestamp.Before(cutoff) {
 			delete(rc.entries, sig)
+
 			removed++
 		}
 	}
@@ -123,6 +124,7 @@ func (rc *ReplayCache) Use(signature string) bool {
 
 	// Mark signature as seen.
 	rc.entries[signature] = time.Now()
+
 	return true
 }
 
@@ -134,8 +136,8 @@ func (rc *ReplayCache) evictOldest(n int) {
 
 	// Find n oldest entries.
 	type entry struct {
-		sig      string
 		timestamp time.Time
+		sig       string
 	}
 
 	oldest := make([]entry, 0, n)
@@ -149,7 +151,7 @@ func (rc *ReplayCache) evictOldest(n int) {
 			if oldest[i].timestamp.After(oldest[j].timestamp) {
 				oldest[i], oldest[j] = oldest[j], oldest[i]
 			}
-	}
+		}
 	}
 
 	// Remove oldest n.
@@ -167,6 +169,7 @@ func (rc *ReplayCache) Stop() {
 func (rc *ReplayCache) Len() int {
 	rc.mu.RLock()
 	defer rc.mu.RUnlock()
+
 	return len(rc.entries)
 }
 
@@ -174,20 +177,21 @@ func (rc *ReplayCache) Len() int {
 func (rc *ReplayCache) Stats() ReplayCacheStats {
 	rc.mu.RLock()
 	defer rc.mu.RUnlock()
+
 	return ReplayCacheStats{
-		Entries:        len(rc.entries),
-		MaxSize:        rc.maxSize,
-		TTL:            rc.ttl,
-		CleanupInt:     rc.cleanupInterval,
+		Entries:    len(rc.entries),
+		MaxSize:    rc.maxSize,
+		TTL:        rc.ttl,
+		CleanupInt: rc.cleanupInterval,
 	}
 }
 
 // ReplayCacheStats contains cache statistics.
 type ReplayCacheStats struct {
-	Entries     int           `json:"entries"`
-	MaxSize     int           `json:"max_size"`
-	TTL         time.Duration `json:"ttl"`
-	CleanupInt  time.Duration `json:"cleanup_interval"`
+	Entries    int           `json:"entries"`
+	MaxSize    int           `json:"max_size"`
+	TTL        time.Duration `json:"ttl"`
+	CleanupInt time.Duration `json:"cleanup_interval"`
 }
 
 // Clear removes all entries from the cache.
