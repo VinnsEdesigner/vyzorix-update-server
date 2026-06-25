@@ -300,34 +300,34 @@ src/
 ├── ui/                              # UI LAYER
 │   ├── pages/                       # Route pages
 │   │   ├── dashboard/
-│   │   │   ├── dashboard.tsx        # Main dashboard page
+│   │   │   ├── dashboard-page.tsx        # Main dashboard page
 │   │   │   ├── dashboard-overview.tsx
 │   │   │   ├── dashboard-metrics.tsx
 │   │   │   ├── dashboard-commands.tsx
 │   │   │   └── dashboard-logs.tsx
 │   │   ├── commands/
-│   │   │   ├── commands.tsx
+│   │   │   ├── commands-page.tsx
 │   │   │   ├── commands-send.tsx
 │   │   │   ├── commands-pending.tsx
 │   │   │   └── commands-history.tsx
 │   │   ├── logs/
-│   │   │   └── logs.tsx
+│   │   │   └── logs-page.tsx
 │   │   ├── device/
-│   │   │   ├── device.tsx
+│   │   │   ├── device-page.tsx
 │   │   │   ├── device-overview.tsx
 │   │   │   ├── device-telemetry.tsx
 │   │   │   ├── device-commands.tsx
 │   │   │   └── device-history.tsx
 │   │   ├── diagnostics/
-│   │   │   ├── diagnostics.tsx
+│   │   │   ├── diagnostics-page.tsx
 │   │   │   ├── diagnostics-inspector.tsx
 │   │   │   └── diagnostics-timeline.tsx
 │   │   ├── alerts/
-│   │   │   ├── alerts.tsx
+│   │   │   ├── alerts-page.tsx
 │   │   │   ├── alerts-active.tsx
 │   │   │   └── alerts-history.tsx
 │   │   └── updates/
-│   │       └── updates.tsx
+│   │       └── updates-page.tsx
 │   │
 │   ├── components/                  # Reusable components
 │   │   ├── ui/                     # Base UI components
@@ -357,11 +357,11 @@ src/
 │   │   │
 │   │   └── shared/                 # Shared feature components
 │   │       ├── section/
-│   │       │   ├── section.tsx
+│   │       │   ├── section-container.tsx
 │   │       │   ├── section-header.tsx
 │   │       │   └── section-content.tsx
 │   │       ├── metric-card/
-│   │       │   ├── metric-card.tsx
+│   │       │   ├── metric-card-display.tsx
 │   │       │   ├── metric-card-grid.tsx
 │   │       │   └── metric-progress.tsx
 │   │       ├── connection-status/
@@ -383,7 +383,11 @@ src/
 │   └── index.ts                    # UI layer exports
 │
 ├── hooks/                          # PRESENTATION LAYER
+│   ├── auth/
+│   │   ├── use-auth.ts
+│   │   └── use-signed-api.ts
 │   ├── device/
+│   │   ├── use-device-stream.ts
 │   │   ├── use-device.ts
 │   │   ├── use-devices.ts
 │   │   ├── use-device-telemetry.ts
@@ -414,64 +418,66 @@ src/
 │   │   ├── use-search.ts
 │   │   ├── use-device-selector.ts
 │   │   └── use-time-range.ts
-│   └── index.ts                    # Hooks exports
+│   ├── use-mobile.tsx
+│   ├── use-operator.ts
+│   └── use-server-health.ts
 │
 ├── domain/                         # DOMAIN LAYER
 │   ├── device/
-│   │   ├── types.ts               # Device, DeviceStatus, etc.
-│   │   ├── transforms.ts          # deviceFromGraphQL, etc.
-│   │   └── validation.ts          # validateDeviceId, etc.
+│   │   ├── device-types.ts        # Device, DeviceStatus, etc.
+│   │   ├── device-transforms.ts   # deviceFromGraphQL, etc.
+│   │   └── device-validation.ts   # validateDeviceId, etc.
 │   │
 │   ├── commands/
-│   │   ├── types.ts               # Command, CommandStatus, etc.
-│   │   ├── presets.ts             # PRESET_COMMANDS array
-│   │   ├── transforms.ts          # commandFromAPI, etc.
-│   │   └── validation.ts           # validateCommand, etc.
+│   │   ├── command-types.ts      # Command, CommandStatus, etc.
+│   │   ├── command-presets.ts     # PRESET_COMMANDS array
+│   │   ├── command-transforms.ts  # commandFromAPI, etc.
+│   │   └── command-validation.ts  # validateCommand, etc.
 │   │
 │   ├── logs/
-│   │   ├── types.ts               # LogEntry, LogType, etc.
-│   │   ├── transforms.ts          # logFromAPI, etc.
-│   │   ├── filters.ts            # filterByType, etc.
-│   │   └── formatters.ts          # formatTimestamp, etc.
+│   │   ├── log-types.ts           # LogEntry, LogType, etc.
+│   │   ├── log-transforms.ts      # logFromAPI, etc.
+│   │   ├── log-filters.ts         # filterByType, etc.
+│   │   └── log-formatters.ts      # formatTimestamp, etc.
 │   │
 │   ├── telemetry/
-│   │   ├── types.ts               # TelemetryFrame, MetricStats, etc.
-│   │   ├── transforms.ts          # telemetryFromAPI, etc.
-│   │   └── aggregation.ts         # calculateStats, etc.
+│   │   ├── telemetry-types.ts     # TelemetryFrame, MetricStats, etc.
+│   │   ├── telemetry-transforms.ts # telemetryFromAPI, etc.
+│   │   └── telemetry-aggregation.ts # calculateStats, etc.
 │   │
 │   ├── alerts/
-│   │   ├── types.ts               # Alert, AlertSeverity, etc.
-│   │   ├── transforms.ts          # alertFromAPI, etc.
-│   │   └── priority.ts           # calculatePriority, etc.
+│   │   ├── alert-types.ts         # Alert, AlertSeverity, etc.
+│   │   ├── alert-transforms.ts    # alertFromAPI, etc.
+│   │   └── alert-priority.ts      # calculatePriority, etc.
 │   │
 │   ├── export/
-│   │   ├── types.ts               # ExportFormat, ExportScope, etc.
-│   │   ├── formatters.ts          # toCSV, toJSON, toXML
-│   │   ├── filename.ts           # generateFilename
-│   │   └── validation.ts          # validateExportOptions
+│   │   ├── export-types.ts        # ExportFormat, ExportScope, etc.
+│   │   ├── export-formatters.ts   # toCSV, toJSON, toXML
+│   │   ├── export-filename.ts     # generateFilename
+│   │   └── export-validation.ts   # validateExportOptions
 │   │
 │   ├── common/
-│   │   ├── pagination.ts         # Pagination type helpers
-│   │   ├── date.ts               # Date formatting utilities
-│   │   └── error.ts              # Domain error types
+│   │   ├── pagination.ts          # Pagination type helpers
+│   │   ├── date.ts                # Date formatting utilities
+│   │   └── error.ts               # Domain error types
 │   │
-│   └── index.ts                    # Domain exports
+│   └── index.ts                   # Domain exports
 │
 └── lib/
     └── api/                        # DATA LAYER
         ├── graphql/
         │   ├── client.ts          # GraphQL client setup
         │   ├── queries/
-        │   │   ├── device.ts
-        │   │   ├── commands.ts
-        │   │   ├── logs.ts
-        │   │   └── telemetry.ts
+        │   │   ├── device-queries.ts
+        │   │   ├── command-queries.ts
+        │   │   ├── log-queries.ts
+        │   │   └── telemetry-queries.ts
         │   ├── mutations/
-        │   │   ├── device.ts
-        │   │   ├── commands.ts
-        │   │   └── alerts.ts
+        │   │   ├── device-mutations.ts
+        │   │   ├── command-mutations.ts
+        │   │   └── alert-mutations.ts
         │   ├── subscriptions/
-        │   │   └── logs.ts
+        │   │   └── log-subscriptions.ts
         │   └── types/
         │       └── responses.ts   # Raw GraphQL response types
         │
@@ -923,7 +929,7 @@ export const useDevices = (
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { graphqlClient } from "@/lib/api/graphql/client";
-import { SEND_COMMAND } from "@/lib/api/graphql/mutations/commands";
+import { SEND_COMMAND } from "@/lib/api/graphql/mutations/command-mutations";
 import { validateCommandResponse } from "@/domain/commands";
 import type { CommandResponse } from "@/domain/commands";
 
@@ -1321,7 +1327,7 @@ export const alertFromRaw = (raw: RawAlert): Alert => ({
 #### Step 2: Data Layer
 
 ```typescript
-// src/lib/api/graphql/queries/alerts.ts
+// src/lib/api/graphql/queries/alert-queries.ts
 
 import { gql } from "@apollo/client";
 
@@ -1358,7 +1364,7 @@ export const GET_ALERTS = gql`
 
 import { useQuery } from "@tanstack/react-query";
 import { graphqlClient } from "@/lib/api/graphql/client";
-import { GET_ALERTS } from "@/lib/api/graphql/queries/alerts";
+import { GET_ALERTS } from "@/lib/api/graphql/queries/alert-queries";
 import { alertFromRaw } from "@/domain/alerts";
 import type { Alert, AlertStatus } from "@/domain/alerts";
 

@@ -158,25 +158,25 @@ UI Layer ────────► Presentation Layer ────────
 apps/web/src/
 │
 ├── domain/                          # DOMAIN LAYER (NEW)
-│   ├── shared/
+│   ├── common/
 │   │   ├── pagination.ts            # Pagination types & helpers
-│   │   ├── errors.ts                # Domain error types
+│   │   ├── error.ts                # Domain error types
 │   │   └── types.ts                 # Shared domain types
 │   │
 │   ├── commands/
-│   │   ├── types.ts                 # Command, CommandStatus, PresetCommand
-│   │   ├── transforms.ts            # commandFromRaw(), commandToApi()
-│   │   ├── validation.ts            # validateCommand(), validateStatus()
-│   │   └── presets.ts               # Preset command definitions
+│   │   ├── command-types.ts         # Command, CommandStatus, PresetCommand
+│   │   ├── command-transforms.ts    # commandFromRaw(), commandToApi()
+│   │   ├── command-validation.ts    # validateCommand(), validateStatus()
+│   │   └── command-presets.ts       # Preset command definitions
 │   │
 │   ├── logs/
-│   │   ├── types.ts                 # LogEntry, LogLevel, LogSource
-│   │   ├── transforms.ts            # logFromRaw()
-│   │   └── validation.ts            # validateLogEntry()
+│   │   ├── log-types.ts             # LogEntry, LogLevel, LogSource
+│   │   ├── log-transforms.ts        # logFromRaw()
+│   │   └── log-validation.ts        # validateLogEntry()
 │   │
 │   └── devices/                     # Shared device domain types
-│       ├── types.ts                 # Device basic types
-│       └── transforms.ts            # deviceBasicFromRaw()
+│       ├── device-types.ts          # Device basic types
+│       └── device-transforms.ts      # deviceBasicFromRaw()
 │
 ├── lib/
 │   └── api/
@@ -185,12 +185,12 @@ apps/web/src/
 │       │   ├── query-client.ts      # (EXISTING)
 │       │   │
 │       │   ├── queries/             # DATA LAYER - GraphQL Queries
-│       │   │   ├── commands.ts      # GET_COMMANDS, GET_PENDING_COMMANDS
-│       │   │   ├── logs.ts          # GET_LOG_ENTRIES, GET_LOG_STATS
+│       │   │   ├── command-queries.ts      # GET_COMMANDS, GET_PENDING_COMMANDS
+│       │   │   ├── log-queries.ts          # GET_LOG_ENTRIES, GET_LOG_STATS
 │       │   │   └── devices.ts       # GET_DEVICES, GET_DEVICE, GET_DEVICE_COUNT
 │       │   │
 │       │   ├── mutations/           # DATA LAYER - GraphQL Mutations
-│       │   │   ├── commands.ts      # SEND_COMMAND, CANCEL_COMMAND, RETRY_COMMAND
+│       │   │   ├── command-mutations.ts      # SEND_COMMAND, CANCEL_COMMAND, RETRY_COMMAND
 │       │   │   └── index.ts
 │       │   │
 │       │   ├── fragments/           # GraphQL fragments
@@ -205,8 +205,8 @@ apps/web/src/
 │       └── rest/                    # DATA LAYER - REST Fallback
 │           ├── client.ts            # Base REST client
 │           ├── endpoints.ts         # (EXISTING)
-│           ├── commands.ts          # REST endpoints for commands
-│           └── logs.ts              # REST endpoints for logs
+│           ├── command-rest.ts          # REST endpoints for commands
+│           └── log-rest.ts              # REST endpoints for logs
 │
 ├── hooks/                           # PRESENTATION LAYER
 │   │
@@ -298,11 +298,11 @@ apps/web/src/
     ├── dashboard.logs.tsx           # NEW - /dashboard/logs
     ├── dashboard.metrics.tsx        # NEW - /dashboard/metrics
     │
-    ├── commands.tsx                 # NEW - /commands (standalone)
+    ├── commands-page.tsx            # NEW - /commands (standalone)
     ├── commands.pending.tsx         # NEW - /commands/pending
     ├── commands.history.tsx         # NEW - /commands/history
     │
-    ├── logs.tsx                     # MODIFIED - standalone logs page
+    ├── logs-page.tsx                # MODIFIED - standalone logs page
     │
     ├── device.tsx                   # MODIFIED - add commands tab
     ├── device.$imei.commands.tsx    # NEW - /device/:imei/commands
@@ -587,10 +587,10 @@ Quick access to command sending (redirects to `/commands` page).
 ├─────────────────────────────────────────────────────────────────────┤
 │  ┌─ SEND COMMAND ────────────────────────────────────────────┐   │
 │  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │   │
-│  │  │ GET_STATUS  │ │ REBOOT       │ │ CLEAR_BUFFER │       │   │
+│  │  │ FORCE_SPEAKER │ │ RESET_AUDIO_HAL │ │ TOGGLE_CAPTURE │       │   │
 │  │  └──────────────┘ └──────────────┘ └──────────────┘       │   │
 │  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │   │
-│  │  │ WAKE_UPDATER│ │ SOFT_REBOOT  │ │ STOP_DAEMON │       │   │
+│  │  │ REINIT_PROJECTION │ │ DUMP_FLIGHT_DATA │ │ UPLOAD_CRASH_ZIP │       │   │
 │  │  └──────────────┘ └──────────────┘ └──────────────┘       │   │
 │  └──────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
@@ -640,7 +640,7 @@ Real-time WebSocket event stream for debugging.
 │  ┌─ SEND COMMAND ────────────────────────────────────────────┐   │
 │  │  Select a command to send:                                 │   │
 │  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │   │
-│  │  │ GET_STATUS  │ │ REBOOT       │ │ CLEAR_BUFFER │       │   │
+│  │  │ FORCE_SPEAKER │ │ RESET_AUDIO_HAL │ │ TOGGLE_CAPTURE │       │   │
 │  │  └──────────────┘ └──────────────┘ └──────────────┘       │   │
 │  └──────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
@@ -692,7 +692,7 @@ Device Page (tabs):
 
 **Request:**
 ```json
-{ "command": "GET_STATUS" }
+{ "command": "FORCE_SPEAKER" }
 ```
 
 **Response (200 OK):**
@@ -721,7 +721,7 @@ Device Page (tabs):
   "commands": [
     {
       "dispatchId": "abc123def456",
-      "command": "GET_STATUS",
+      "command": "FORCE_SPEAKER",
       "status": "delivered",
       "sentAt": 1718900000000,
       "deliveredAt": 1718900000234,
@@ -902,12 +902,14 @@ export interface PresetCommand {
 }
 
 export const PRESET_COMMANDS: PresetCommand[] = [
-  { id: "GET_STATUS", label: "Get Status", description: "Request device status", danger: "low" },
-  { id: "REBOOT", label: "Reboot", description: "Full device restart", danger: "high" },
-  { id: "CLEAR_BUFFER", label: "Clear Buffer", description: "Clear audio buffer", danger: "low" },
-  { id: "WAKE_UPDATER", label: "Wake Updater", description: "Wake updater service", danger: "low" },
-  { id: "SOFT_REBOOT", label: "Soft Reboot", description: "Restart app only", danger: "high" },
-  { id: "STOP_DAEMON", label: "Stop Daemon", description: "Stop audio service", danger: "high" },
+  { id: "FORCE_SPEAKER", label: "Force Speaker", description: "Force speaker on", danger: "low" },
+  { id: "RESET_AUDIO_HAL", label: "Reset Audio HAL", description: "Soft HAL reset", danger: "medium" },
+  { id: "TOGGLE_CAPTURE", label: "Toggle Capture", description: "Start/stop capture", danger: "low" },
+  { id: "REINIT_PROJECTION", label: "Reinit Projection", description: "Re-initiate projection", danger: "medium" },
+  { id: "DUMP_FLIGHT_DATA", label: "Dump Flight Data", description: "Gather metrics", danger: "low" },
+  { id: "UPLOAD_CRASH_ZIP", label: "Upload Crash Zip", description: "Upload crash logs", danger: "low" },
+  { id: "SET_LOG_LEVEL", label: "Set Log Level", description: "Modify log level", danger: "low" },
+  { id: "WAKE_UP_UPDATER", label: "Wake Updater", description: "Run update checker", danger: "low" },
 ];
 ```
 
@@ -1072,7 +1074,7 @@ export const LOG_ENTRY_FRAGMENT = gql`
 ```typescript
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { graphqlClient } from "@/lib/api/graphql/client";
-import { GET_COMMANDS, SEND_COMMAND } from "@/lib/api/graphql/queries/commands";
+import { GET_COMMANDS, SEND_COMMAND } from "@/lib/api/graphql/queries/command-queries";
 import { commandFromRaw } from "@/domain/commands";
 import type { Command, CommandStatus } from "@/domain/commands";
 
@@ -1128,7 +1130,7 @@ export { usePendingCommands } from "./use-pending-commands";
 ```typescript
 import { useQuery } from "@tanstack/react-query";
 import { graphqlClient } from "@/lib/api/graphql/client";
-import { GET_LOGS } from "@/lib/api/graphql/queries/logs";
+import { GET_LOGS } from "@/lib/api/graphql/queries/log-queries";
 import { logFromRaw } from "@/domain/logs";
 import type { LogEntry, LogEventType } from "@/domain/logs";
 
@@ -1363,26 +1365,26 @@ export { LogFilters } from "./log-filters";
 | File | Purpose |
 |------|---------|
 | `domain/shared/pagination.ts` | Pagination types |
-| `domain/shared/errors.ts` | Domain error types |
+| `domain/common/error.ts` | Domain error types |
 | `domain/shared/types.ts` | Shared types |
-| `domain/commands/types.ts` | Command types |
+| `domain/commands/command-types.ts` | Command types |
 | `domain/commands/transforms.ts` | commandFromRaw() |
 | `domain/commands/validation.ts` | validateCommand() |
 | `domain/commands/presets.ts` | Preset definitions |
-| `domain/logs/types.ts` | Log types |
+| `domain/logs/log-types.ts` | Log types |
 | `domain/logs/transforms.ts` | logFromRaw() |
 | `domain/logs/validation.ts` | validateLogEntry() |
-| `domain/devices/types.ts` | Device types |
+| `domain/devices/device-types.ts` | Device types |
 | `domain/devices/transforms.ts` | deviceFromRaw() |
 
 #### Data Layer - GraphQL (6 new files)
 
 | File | Purpose |
 |------|---------|
-| `lib/api/graphql/queries/commands.ts` | Command queries |
-| `lib/api/graphql/queries/logs.ts` | Log queries |
+| `lib/api/graphql/queries/command-queries.ts` | Command queries |
+| `lib/api/graphql/queries/log-queries.ts` | Log queries |
 | `lib/api/graphql/queries/devices.ts` | Device queries |
-| `lib/api/graphql/mutations/commands.ts` | Command mutations |
+| `lib/api/graphql/mutations/command-mutations.ts` | Command mutations |
 | `lib/api/graphql/fragments/command.fragment.ts` | Command fragment |
 | `lib/api/graphql/fragments/log-entry.fragment.ts` | Log fragment |
 
@@ -1390,8 +1392,8 @@ export { LogFilters } from "./log-filters";
 
 | File | Purpose |
 |------|---------|
-| `lib/api/rest/commands.ts` | REST endpoints |
-| `lib/api/rest/logs.ts` | REST endpoints |
+| `lib/api/rest/command-rest.ts` | REST endpoints |
+| `lib/api/rest/log-rest.ts` | REST endpoints |
 
 #### Presentation Layer - Hooks (12 new files)
 
@@ -1470,10 +1472,10 @@ export { LogFilters } from "./log-filters";
 | `routes/dashboard.commands.pending.tsx` | **NEW** | Pending queue |
 | `routes/dashboard.commands.history.tsx` | **NEW** | History |
 | `routes/dashboard.logs.tsx` | **NEW** | Logs tab |
-| `routes/commands.tsx` | **NEW** | Send commands |
+| `routes/commands-page.tsx` | **NEW** | Send commands |
 | `routes/commands.pending.tsx` | **NEW** | Pending |
 | `routes/commands.history.tsx` | **NEW** | History |
-| `routes/logs.tsx` | **MODIFIED** | Standalone logs |
+| `routes/logs-page.tsx` | **MODIFIED** | Standalone logs |
 | `routes/device.tsx` | **MODIFIED** | Add Commands tab |
 | `routes/device.$imei.commands.tsx` | **NEW** | Device commands |
 | `routes/device.$imei.commands.pending.tsx` | **NEW** | Device pending |
@@ -1507,8 +1509,8 @@ export { LogFilters } from "./log-filters";
 ### Phase 2: Domain & Data Layer (Day 1-2)
 1. Create `domain/commands/` files
 2. Create `domain/logs/` files
-3. Create `lib/api/graphql/queries/commands.ts`
-4. Create `lib/api/graphql/queries/logs.ts`
+3. Create `lib/api/graphql/queries/command-queries.ts`
+4. Create `lib/api/graphql/queries/log-queries.ts`
 5. Create GraphQL fragments
 
 ### Phase 3: Presentation Layer - Hooks (Day 2)
@@ -1541,16 +1543,20 @@ export { LogFilters } from "./log-filters";
 
 ---
 
-## 22. Preset Commands Reference
+## 22. Device Commands Reference
 
-| ID | Label | Description | Danger |
-|----|-------|-------------|--------|
-| `GET_STATUS` | Get Status | Request device status | Low |
-| `REBOOT` | Reboot | Full device restart | High |
-| `CLEAR_BUFFER` | Clear Buffer | Clear audio buffer | Low |
-| `WAKE_UPDATER` | Wake Updater | Wake updater service | Low |
-| `SOFT_REBOOT` | Soft Reboot | Restart app only | High |
-| `STOP_DAEMON` | Stop Daemon | Stop audio service | High |
+All commands are HMAC-SHA256 signed. See `COMMAND_SECURITY.md` for signing specification.
+
+| Command | Parameters | Description |
+|---------|------------|-------------|
+| `FORCE_SPEAKER` | None | Force speaker on with reassertion loop |
+| `RESET_AUDIO_HAL` | None | Soft HAL reset via BT stream cycling |
+| `TOGGLE_CAPTURE` | `active` (boolean) | Start/stop AudioRecord read loops |
+| `REINIT_PROJECTION` | None | Re-initiate media projection via notification |
+| `DUMP_FLIGHT_DATA` | None | Gather local metrics → JSON postback |
+| `UPLOAD_CRASH_ZIP` | None | Zip SQLite logs → POST binary |
+| `SET_LOG_LEVEL` | `level` (string) | Dynamically modify Logger minLogLevel |
+| `WAKE_UP_UPDATER` | None | Override WorkManager delays → run UpdateChecker |
 
 ---
 
