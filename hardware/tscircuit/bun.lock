@@ -5,9 +5,10 @@
     "": {
       "name": "usb-c-flashlight",
       "dependencies": {
+        "@tsci/dhvll.ESP32_WROOM_32": "^0.1.0",
+        "@tsci/seveibar.esp32-s3-mini-1-n8": "^0.1.0",
         "@tsci/seveibar.push-button": "^0.1.1",
         "@tsci/seveibar.smd-usb-c": "^0.0.2",
-        "@tsci/seveibar.usb-c-flashlight": "^0.0.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -220,11 +221,13 @@
 
     "@thednp/dommatrix": ["@thednp/dommatrix@3.0.4", "", {}, "sha512-xpKtQZqFOuAPfQDbePIh9f48YKfmULV7z9C+anPBSHiOG4P+T3ct7Cx2AZOoUeXbxiDkz7SONANy1bB7p2uysg=="],
 
+    "@tsci/dhvll.ESP32_WROOM_32": ["@tsci/dhvll.ESP32_WROOM_32@0.1.0", "https://npm.tscircuit.com/package_files/download?package_name=dhvll%2Fesp32_wroom_32&package_file_id=d755bc90-02f9-4e9a-bf5b-67d11f226e0e&package_release_version=0.1.0&file_path=dist%2Fpackage.tgz", {}, "sha512-JG4itZgKm2aBl9M2oGtVIRGeSPB2Mr1isfXjXemUvAKBRXBfIEWWlUF6RpvNadWMOIca2+Lil2TwyLdLIZwn7w=="],
+
+    "@tsci/seveibar.esp32-s3-mini-1-n8": ["@tsci/seveibar.esp32-s3-mini-1-n8@0.1.0", "https://npm.tscircuit.com/package_files/download?package_name=seveibar%2Fesp32-s3-mini-1-n8&package_file_id=19fdf973-a65e-4b66-861c-dbd05f1ce106&package_release_version=0.1.0&file_path=dist%2Fpackage.tgz", {}, "sha512-o+jQRyPOSmocAUFaqBsu9B4owLAB9yR8JlxeF41DAeUo4l6iepCSh39LWmDE16XIo7Hmax9ss5qVHClveeIchQ=="],
+
     "@tsci/seveibar.push-button": ["@tsci/seveibar.push-button@0.1.1", "https://npm.tscircuit.com/package_files/download?package_name=seveibar%2Fpush-button&package_file_id=a84de949-2166-4c6e-970a-cd4f9b6c6654&package_release_version=0.1.1&file_path=dist%2Fpackage.tgz", {}, "sha512-7+5GnhR2flKwOBID945A4tVt5c2BTgn8b7XD14EuBI3BrLFCDUNcMtiCjb5Wt9llJO7tILU4F4695OpVyMNndg=="],
 
     "@tsci/seveibar.smd-usb-c": ["@tsci/seveibar.smd-usb-c@0.0.2", "https://npm.tscircuit.com/package_files/download?package_name=seveibar%2Fsmd-usb-c&package_file_id=366110d7-1ec3-46e1-9764-6e3852282173&package_release_version=0.0.2&file_path=dist%2Fpackage.tgz", {}, "sha512-QYRnUB5inPf+nnAkxRdfS+h40b5WTDBc4LCzociXcmqbvibTHqsduVcpi6XT3bufjSWaHvom88f8LwAo+bDq7Q=="],
-
-    "@tsci/seveibar.usb-c-flashlight": ["@tsci/seveibar.usb-c-flashlight@0.0.1", "https://npm.tscircuit.com/package_files/download?package_name=seveibar%2Fusb-c-flashlight&package_file_id=fbf901b8-cd50-4b63-a242-9e391a3c5759&package_release_version=0.0.1&file_path=dist%2Fpackage.tgz", {}, "sha512-DyMOg5WOkOndaHOVEHj/rNW8c+u4e6jTKAYMnFATowKTQIFTSsA7iAk2BA1M8xHK5a4Z3y3yZtq+MxM4JqNXCA=="],
 
     "@tscircuit/alphabet": ["@tscircuit/alphabet@0.0.25", "", { "peerDependencies": { "typescript": "^5.0.0" } }, "sha512-PWLjptI6AlLEtF/wjN1N8uC+n3G7vtg0j3xKE1fgWHDhahtnlQRqHDrtPSLlkIR9aJjRfjplzLuaUEaCRvJmZA=="],
 
