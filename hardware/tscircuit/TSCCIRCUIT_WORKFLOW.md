@@ -16,7 +16,8 @@
 6. [Building & Debugging](#6-building--debugging)
 7. [Publishing to Registry](#7-publishing-to-registry)
 8. [Troubleshooting](#8-troubleshooting)
-9. [Best Practices](#9-best-practices)
+9. [Manufacturing-Ready Design (Lessons Learned)](#9-manufacturing-ready-design-lessons-learned)
+10. [Best Practices](#10-best-practices)
 
 ---
 
@@ -602,9 +603,156 @@ Some custom footprints don't have 3D models:
 
 ---
 
-## 9. Best Practices
+## 9. Manufacturing-Ready Design (Lessons Learned)
 
-### 9.1 Component Organization
+### 9.1 Component Placement Rules
+
+**CRITICAL FOR PRODUCTION:** These issues will cause manufacturing failures if not addressed:
+
+#### Rule 1: Minimum Component Spacing
+```
+6x6mm pushbuttons need >10mm center-to-center separation
+Standard pushbuttons are 6x6mm - they WILL overlap if placed too close!
+```
+
+**WRONG:**
+```tsx
+// These buttons are 6x6mm - placing at same Y with 8mm X spacing causes overlap!
+<PushButton name="BTN_RESET" pcbX={-10} pcbY={-15} />
+<PushButton name="BTN_BOOT"  pcbX={-2}  pcbY={-15} />  // OVERLAPS!
+```
+
+**CORRECT:**
+```tsx
+// Buttons on opposite corners
+<PushButton name="BTN_RESET" pcbX={-18} pcbY={-15} />
+<PushButton name="BTN_BOOT"  pcbX={18}  pcbY={-15} />  // OK - far apart
+```
+
+#### Rule 2: Board Boundary Clearance
+```
+Components must be >2mm inside board edges
+Default pushbutton is 6x6mm, so center must be >5mm from edge
+```
+
+**WRONG:**
+```tsx
+// Component at -20 on 50mm board (40mm height)
+// 6mm component extends 3mm, hits edge at -17mm boundary
+<PushButton name="BTN" pcbY={-20} />  // Component extends to -23mm - OUT OF BOARD!
+```
+
+**CORRECT:**
+```tsx
+// Keep buttons at least 2mm inside
+<PushButton name="BTN" pcbY={-15} />  // 6mm component extends to -18mm, board edge at -20mm - OK
+```
+
+#### Rule 3: Courtyard Overlap Prevention
+```
+Even if physical pads don't touch, overlapping courtyards cause DRC errors
+Pushbutton courtyards need minimum 2mm separation
+```
+
+### 9.2 Build Error Resolution Guide
+
+| Error Message | Cause | Fix |
+|--------------|-------|-----|
+| `pcb_plated_hole overlaps` | Components too close | Separate by >10mm |
+| `Courtyard overlaps` | Component spacing < 2mm | Increase separation |
+| `extends outside board boundaries` | Too close to edge | Move 2mm inward |
+| `pads too close (0mm)` | Pins touching | Spread components |
+| `clearance: 0.014mm < 0.1mm` | Near-minimum spacing | Move components apart |
+
+### 9.3 Component Size Reference
+
+| Component Type | Typical Size | Min Separation |
+|---------------|--------------|---------------|
+| 0603 SMD | 1.5mm x 0.8mm | 0.5mm |
+| 0805 SMD | 2.0mm x 1.2mm | 0.5mm |
+| Pushbutton 6x6 | 6mm x 6mm | 10mm |
+| DIP 4-pin | 4mm x 3mm | 3mm |
+| USB-C | 10mm x 4mm | 2mm |
+
+### 9.4 Verification Commands
+
+Always run these checks before considering a design production-ready:
+
+```bash
+# 1. Clean build (no errors)
+bun x tsci build --svgs --pcb-png --3d --kicad-project
+
+# 2. Netlist validation
+bun x tsci check netlist
+# Expected: Errors: 0
+
+# 3. Pin specification check
+bun x tsci check pin_specification
+# Note: Warnings about "underspecified" are OK for unused pins
+
+# 4. Routing difficulty (optional)
+bun x tsci check routing-difficulty
+# Check for high probability-of-failure regions
+```
+
+### 9.5 JLCPCB Compatibility
+
+For production manufacturing, ensure:
+
+1. **Footprint matching:** Use exact JLCPCB footprints
+   ```tsx
+   // The "footprint does not match" warning means:
+   // - IoU < 0.5: Significantly different - fix for production
+   // - IoU > 0.8: Close enough for prototype
+   ```
+
+2. **Supplier part numbers:** Always include
+   ```tsx
+   supplierPartNumbers={{ jlcpcb: ["C14663"] }}
+   ```
+
+3. **Standard footprints:** Prefer 0603, 0805 over exotic sizes
+
+4. **Board dimensions:** Standard JLCPCB sizes are cheaper
+   - 50mm x 50mm
+   - 100mm x 100mm
+   - Avoid irregular shapes unless necessary
+
+### 9.6 Production Checklist
+
+- [ ] Build completes with 0 errors
+- [ ] Netlist check: 0 errors
+- [ ] No "extends outside board" warnings
+- [ ] No "pad overlap" warnings
+- [ ] No "courtyard overlap" warnings
+- [ ] Clearance > 0.1mm between pads
+- [ ] All components within board boundaries
+- [ ] JLCPCB part numbers assigned
+- [ ] Schematic readable and logical
+- [ ] Test points added for critical nets (optional)
+
+### 9.7 Footprint Pitfalls
+
+**Avoid these common mistakes:**
+
+```tsx
+// WRONG - These footprints don't exist in TSCircuit
+footprint="6x6x5mm_tactile_switch"
+footprint="1x4_2.54mm"
+footprint="dip_4"
+
+// CORRECT - Use registered footprints
+footprint="pushbutton"      // For tactile switches
+footprint="dip_4"           // Standard DIP-4 package
+footprint="0603"            // Standard SMD
+footprint="0805"            // Standard SMD
+```
+
+---
+
+## 10. Best Practices
+
+### 10.1 Component Organization
 
 ```tsx
 // Group by function
@@ -625,7 +773,7 @@ export default () => (
 )
 ```
 
-### 9.2 Net Naming Convention
+### 10.2 Net Naming Convention
 
 ```
 VBUS     - Main power rail (5V from USB)
@@ -635,7 +783,7 @@ NET_SCL  - I2C clock
 NET_SDA  - I2C data
 ```
 
-### 9.3 Component Positioning
+### 10.3 Component Positioning
 
 - Place related components near each other
 - Leave room for routing
@@ -643,14 +791,14 @@ NET_SDA  - I2C data
 - Use schX/schY for schematic layout
 - Use pcbX/pcbY for PCB layout
 
-### 9.4 Supplier Part Numbers
+### 10.4 Supplier Part Numbers
 
 Always include JLCPCB part numbers for production:
 ```tsx
 supplierPartNumbers={{ jlcpcb: ["C14663"] }}
 ```
 
-### 9.5 Documentation
+### 10.5 Documentation
 
 ```tsx
 /**
@@ -663,7 +811,7 @@ supplierPartNumbers={{ jlcpcb: ["C14663"] }}
  */
 ```
 
-### 9.6 Version Control
+### 10.6 Version Control
 
 ```bash
 # Initialize git
@@ -705,5 +853,5 @@ git push origin main --tags
 
 ---
 
-*Document Version: 1.0*  
+*Document Version: 2.0 - Manufacturing-Ready Edition*  
 *Last Updated: June 26, 2026*
