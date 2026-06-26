@@ -258,3 +258,8 @@ func (s *Service) CancelCommandByDispatchID(ctx context.Context, dispatchID stri
 
 	return s.commandRepo.Delete(ctx, cmd.ID)
 }
+
+// CommandRepo returns the command repository for use by other services.
+func (s *Service) CommandRepo() command.Repository {
+	return s.commandRepo
+}

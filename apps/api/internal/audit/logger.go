@@ -217,3 +217,56 @@ func (l *Logger) AdminAction(ctx context.Context, operatorID, action, resourceTy
 		Metadata:     metadata,
 	})
 }
+
+// UpdatePushed logs an update push event.
+func (l *Logger) UpdatePushed(ctx context.Context, operatorID, pushID, version string, deviceCount int, ipAddress, userAgent string) {
+	l.LogEvent(ctx, &Entry{
+		OperatorID:   operatorID,
+		Action:       ActionUpdatePushed,
+		ResourceType: "update_push",
+		ResourceID:   pushID,
+		IPAddress:    ipAddress,
+		UserAgent:    userAgent,
+		Result:       ResultSuccess,
+		Metadata: map[string]string{
+			"version":     version,
+			"device_count": fmt.Sprintf("%d", deviceCount),
+		},
+	})
+}
+
+// UpdateCancelled logs an update cancellation event.
+func (l *Logger) UpdateCancelled(ctx context.Context, operatorID, pushID, ipAddress, userAgent string) {
+	l.LogEvent(ctx, &Entry{
+		OperatorID:   operatorID,
+		Action:       ActionUpdateCancelled,
+		ResourceType: "update_push",
+		ResourceID:   pushID,
+		IPAddress:    ipAddress,
+		UserAgent:    userAgent,
+		Result:       ResultSuccess,
+	})
+}
+
+// UpdateSyncStarted logs an update sync start event.
+func (l *Logger) UpdateSyncStarted(ctx context.Context, operatorID, ipAddress, userAgent string) {
+	l.LogEvent(ctx, &Entry{
+		OperatorID: operatorID,
+		Action:    ActionUpdateSyncStarted,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+		Result:    ResultSuccess,
+	})
+}
+
+// UpdateSyncFailed logs an update sync failure event.
+func (l *Logger) UpdateSyncFailed(ctx context.Context, operatorID, ipAddress, userAgent, reason string) {
+	l.LogEvent(ctx, &Entry{
+		OperatorID: operatorID,
+		Action:    ActionUpdateSyncFailed,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+		Result:    ResultFailure,
+		Metadata:  map[string]string{"reason": reason},
+	})
+}

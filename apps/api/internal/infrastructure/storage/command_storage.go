@@ -345,6 +345,78 @@ func (r *CommandRepository) FindPendingByDeviceID(ctx context.Context, deviceID 
 	return commands, rows.Err()
 }
 
+// FindHistoryByDeviceID retrieves paginated command history for a device with time range filtering.
+func (r *CommandRepository) FindHistoryByDeviceID(ctx context.Context, deviceID string, status string, startTime, endTime time.Time, limit, offset int) ([]*command.Command, int, error) {
+	// Build query with optional status filter
+	baseQuery := `FROM commands WHERE device_id = ? AND created_at >= ? AND created_at <= ?`
+	args := []interface{}{deviceID, startTime.UnixMilli(), endTime.UnixMilli()}
+
+	if status != "" && status != "all" {
+		baseQuery += ` AND status = ?`
+		args = append(args, status)
+	}
+
+	// Get total count
+	countQuery := `SELECT COUNT(*) ` + baseQuery
+	var total int
+	err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results - include failure_reason
+	query := `SELECT id, device_id, dispatch_id, command, args, status, delivered_at, completed_at, created_at, updated_at, failure_reason ` + baseQuery + ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	args = append(args, limit, offset)
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	var commands []*command.Command
+
+	for rows.Next() {
+		var cmd command.Command
+
+		var argsJSON []byte
+
+		var deliveredAt, completedAt sql.NullInt64
+
+		var failureReason sql.NullString
+
+		err := rows.Scan(
+			&cmd.ID, &cmd.DeviceID, &cmd.DispatchID, &cmd.Command, &argsJSON,
+			&cmd.Status, &deliveredAt, &completedAt, &cmd.CreatedAt, &cmd.UpdatedAt,
+			&failureReason,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		if argsJSON != nil {
+			_ = json.Unmarshal(argsJSON, &cmd.Args)
+		}
+
+		if deliveredAt.Valid {
+			cmd.DeliveredAt = &deliveredAt.Int64
+		}
+
+		if completedAt.Valid {
+			cmd.CompletedAt = &completedAt.Int64
+		}
+
+		if failureReason.Valid {
+			cmd.FailureReason = failureReason.String
+		}
+
+		commands = append(commands, &cmd)
+	}
+
+	return commands, total, rows.Err()
+}
+
 // Count returns the total number of commands.
 func (r *CommandRepository) Count(ctx context.Context) (int, error) {
 	var count int

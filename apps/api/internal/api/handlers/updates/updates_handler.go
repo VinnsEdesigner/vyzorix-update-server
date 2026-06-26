@@ -1,0 +1,113 @@
+package updates
+
+import (
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	"github.com/gin-gonic/gin"
+)
+
+// UpdatesHandler coordinates all updates handlers.
+type UpdatesHandler struct {
+	service         *updates.Service
+	versionsHandler *UpdatesVersionsHandler
+	pushHandler     *UpdatesPushHandler
+	historyHandler  *UpdatesHistoryHandler
+	syncHandler     *UpdatesSyncHandler
+	rateLimiters    *middleware.UpdatesRateLimiterMiddleware
+	adminAuth       *middleware.UpdatesAdminAuth
+	auditLogger     *audit.Logger
+}
+
+// NewUpdatesHandler creates a new UpdatesHandler with all sub-handlers.
+func NewUpdatesHandler(service *updates.Service, rateLimiters *middleware.UpdatesRateLimiterMiddleware, auditLogger *audit.Logger) *UpdatesHandler {
+	return &UpdatesHandler{
+		service:          service,
+		versionsHandler:  NewUpdatesVersionsHandler(service),
+		pushHandler:      NewUpdatesPushHandler(service, auditLogger),
+		historyHandler:   NewUpdatesHistoryHandler(service, auditLogger),
+		syncHandler:      NewUpdatesSyncHandler(service, auditLogger),
+		rateLimiters:     rateLimiters,
+		adminAuth:        middleware.NewUpdatesAdminAuth(),
+		auditLogger:      auditLogger,
+	}
+}
+
+// RegisterRoutes registers all updates routes.
+func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth) {
+	updatesGroup := rg.Group("/updates")
+	updatesGroup.Use(cookieAuth.Middleware())
+
+	// Apply rate limiting per endpoint if configured
+	if h.rateLimiters != nil {
+		// Status and versions - rate limited
+		updatesGroup.GET("/status",
+			h.rateLimiters.StatusLimit(),
+			h.versionsHandler.GetStatus)
+		updatesGroup.GET("/versions",
+			h.rateLimiters.VersionsLimit(),
+			h.versionsHandler.GetVersions)
+		updatesGroup.GET("/changelog",
+			h.rateLimiters.ChangelogLimit(),
+			h.versionsHandler.GetChangelog)
+		updatesGroup.GET("/export",
+			h.rateLimiters.VersionsLimit(),
+			h.versionsHandler.Export)
+
+		// Push - rate limited + admin only
+		updatesGroup.POST("/push",
+			h.rateLimiters.PushLimit(),
+			h.adminAuth.RequireAdmin(),
+			h.pushHandler.PushUpdate)
+
+		// History - rate limited
+		updatesGroup.GET("/history",
+			h.rateLimiters.HistoryLimit(),
+			h.historyHandler.GetHistory)
+		updatesGroup.GET("/history/:pushId",
+			h.rateLimiters.HistoryLimit(),
+			h.historyHandler.GetPushDetail)
+		updatesGroup.POST("/history/:pushId/cancel",
+			h.rateLimiters.CancelLimit(),
+			h.historyHandler.CancelPush)
+
+		// Sync - rate limited + admin only
+		updatesGroup.POST("/sync",
+			h.rateLimiters.SyncLimit(),
+			h.adminAuth.RequireAdmin(),
+			h.syncHandler.Sync)
+		updatesGroup.GET("/sync/status",
+			h.rateLimiters.SyncLimit(),
+			h.syncHandler.GetSyncStatus)
+	} else {
+		// No rate limiting configured
+		// Push - admin only
+		updatesGroup.POST("/push",
+			h.adminAuth.RequireAdmin(),
+			h.pushHandler.PushUpdate)
+		// Sync - admin only
+		updatesGroup.POST("/sync",
+			h.adminAuth.RequireAdmin(),
+			h.syncHandler.Sync)
+		// Cancel - admin only
+		updatesGroup.POST("/history/:pushId/cancel",
+			h.adminAuth.RequireAdmin(),
+			h.historyHandler.CancelPush)
+
+		// Remaining routes without rate limiting
+		updatesGroup.GET("/status", h.versionsHandler.GetStatus)
+		updatesGroup.GET("/versions", h.versionsHandler.GetVersions)
+		updatesGroup.GET("/changelog", h.versionsHandler.GetChangelog)
+		updatesGroup.GET("/export", h.versionsHandler.Export)
+		updatesGroup.GET("/history", h.historyHandler.GetHistory)
+		updatesGroup.GET("/history/:pushId", h.historyHandler.GetPushDetail)
+		updatesGroup.GET("/sync/status", h.syncHandler.GetSyncStatus)
+	}
+}
+
+// Stop stops all rate limiter cleanup goroutines.
+func (h *UpdatesHandler) Stop() {
+	if h.rateLimiters != nil {
+		h.rateLimiters.Stop()
+	}
+}

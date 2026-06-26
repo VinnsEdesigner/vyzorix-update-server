@@ -148,6 +148,8 @@ var migrations = []Migration{
 	{Apply: migrateCreateRefreshTokens, Name: "create_refresh_tokens_table", Version: 25},
 	{Apply: migrateCreateNotificationAuditLog, Name: "create_notification_audit_log_table", Version: 26},
 	{Apply: migrateAddDevicesColumns, Name: "add_devices_columns", Version: 27},
+	{Apply: migrateCreateUpdateSyncStatus, Name: "create_update_sync_status_table", Version: 28},
+	{Apply: migrateDashboardDeviceLogs, Name: "create_dashboard_device_logs_table", Version: 29},
 }
 
 // runMigrations applies all pending migrations.
