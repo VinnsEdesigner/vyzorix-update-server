@@ -25,16 +25,17 @@ const (
 
 // Command represents a command to be sent to a device.
 type Command struct {
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeliveredAt *int64
-	CompletedAt *int64
-	ID          string
-	DeviceID    string
-	DispatchID  string
-	Command     string
-	Status      Status
-	Args        []byte
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DeliveredAt   *int64
+	CompletedAt   *int64
+	ID            string
+	DeviceID      string
+	DispatchID    string
+	Command       string
+	Status        Status
+	FailureReason string
+	Args          []byte
 }
 
 // CommandFrame is the internal representation of a command for the WebSocket hub.

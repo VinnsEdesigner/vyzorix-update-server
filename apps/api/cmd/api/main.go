@@ -19,7 +19,10 @@ import (
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
+	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/logging"
@@ -72,7 +75,18 @@ func main() {
 		rateLimiter, authLimiter, accountLockout, wsHub, fcmNotifier)
 
 	if cfg.EnableGraphQL {
-		if regErr := apiServer.RegisterGraphQL(deviceService, commandService, telemetryRepo, wsHub); regErr != nil {
+		// Create dashboard services for GraphQL
+		historyService := cmdapp.NewHistoryService(commandRepo, deviceRepo)
+		logsRepo := storage.NewLogsRepository(db.DB())
+		metricsRepo := storage.NewMetricsRepository(db.DB())
+		logsSvc := logs.NewService(logsRepo, log)
+		metricsSvc := appmetrics.NewService(metricsRepo)
+		dashboardSvc := dashboard.NewService(deviceRepo, commandRepo)
+
+		if regErr := apiServer.RegisterGraphQL(
+			deviceService, commandService, historyService, dashboardSvc,
+			logsSvc, metricsSvc, telemetryRepo, logsRepo, metricsRepo, wsHub,
+		); regErr != nil {
 			log.Error("failed to register GraphQL", "err", regErr)
 		}
 	}

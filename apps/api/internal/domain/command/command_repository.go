@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"time"
 )
 
 // Repository defines the interface for command data access.
@@ -20,6 +21,9 @@ type Repository interface {
 
 	// FindPendingByDeviceID retrieves pending commands for a device.
 	FindPendingByDeviceID(ctx context.Context, deviceID string) ([]*Command, error)
+
+	// FindHistoryByDeviceID retrieves paginated command history for a device with time range filtering.
+	FindHistoryByDeviceID(ctx context.Context, deviceID string, status string, startTime, endTime time.Time, limit, offset int) ([]*Command, int, error)
 
 	// Create creates a new command.
 	Create(ctx context.Context, cmd *Command) error
