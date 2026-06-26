@@ -10,6 +10,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
+	dashboardhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/dashboard"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
 	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
@@ -18,14 +19,17 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
+	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
+	infraMetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
@@ -51,7 +55,7 @@ type ServerConfig struct {
 	DB             *storage.SQLite
 	Lockout        *middleware.Lockout
 	DeviceService  *device.Service
-	Metrics        *metrics.Metrics
+	Metrics        *infraMetrics.Metrics
 	AuditLogger    *audit.Logger
 	Config         config.Config
 }
@@ -60,10 +64,13 @@ type ServerConfig struct {
 type Server struct {
 	encryptKeyFn            func(clientID string) ([]byte, bool)
 	authHandlers            *authhandlers.AllHandlers
+	hub                     *hub.Hub
+	engine                  *gin.Engine
+	log                     *slog.Logger
+	deviceStatusHandler     *devicehandlers.StatusHandler
+	sessionManager          *infraauth.SessionManager
 	rateLimiter             *middleware.RateLimiter
 	authLimiter             *middleware.RateLimiter
-	AuditLogger             *audit.Logger
-	log                     *slog.Logger
 	cookieAuth              *middleware.CookieAuth
 	signatureVerifier       *middleware.SignatureVerifier
 	lockout                 *middleware.Lockout
@@ -73,10 +80,10 @@ type Server struct {
 	ipIntelligence          *middleware.IPIntelligence
 	hmacVerifier            *cryptohmac.Verifier
 	mwFactory               *middleware.MiddlewareFactory
-	engine                  *gin.Engine
-	deviceStatusHandler     *devicehandlers.StatusHandler
+	db                      *storage.SQLite
+	dashboardRateLimiter    *middleware.DashboardRateLimiterMiddleware
+	AuditLogger             *audit.Logger
 	deviceRegisterHandler   *devicehandlers.RegisterHandler
-	sessionManager          *infraauth.SessionManager
 	deviceUpdaterHandler    *devicehandlers.UpdaterHandler
 	deviceListHandler       *devicehandlers.ListHandler
 	commandHandler          *cmdhandlers.ExecuteHandler
@@ -85,9 +92,12 @@ type Server struct {
 	connectionStatusHandler *handlers.ConnectionStatusHandler
 	adminClientsHandler     *admin.ClientsHandler
 	updaterHandler          *updaterhandlers.Handler
-	metricsHandler          *metrics.MetricsHandler
-	db                      *storage.SQLite
-	hub                     *hub.Hub
+	metricsHandler          *infraMetrics.MetricsHandler
+	commandHistoryHandler   *cmdhandlers.HistoryHandler
+	deviceLogsHandler       *devicehandlers.LogsHandler
+	deviceMetricsHandler    *devicehandlers.MetricsHandler
+	deviceTelemetryHandler  *devicehandlers.TelemetryHandler
+	dashboardStatsHandler   *dashboardhandlers.StatsHandler
 	config                  config.Config
 }
 
@@ -147,8 +157,8 @@ func NewServer(cfg *ServerConfig) *Server {
 
 	// Initialize metrics handler
 	if cfg.Metrics != nil {
-		s.metricsHandler = metrics.NewMetricsHandler(cfg.Metrics)
-		s.engine.Use(metrics.Middleware(cfg.Metrics))
+		s.metricsHandler = infraMetrics.NewMetricsHandler(cfg.Metrics)
+		s.engine.Use(infraMetrics.Middleware(cfg.Metrics))
 	}
 
 	s.setupRoutes()
@@ -203,11 +213,69 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 
 	// Updater handlers
 	s.updaterHandler = updaterhandlers.NewHandler(cfg.Log, cfg.Config)
+
+	// Dashboard command handlers - wire up new handlers
+	s.wireDashboardHandlers(cfg)
+
+	// Initialize dashboard rate limiter
+	s.dashboardRateLimiter = middleware.NewDashboardRateLimiterMiddleware(nil)
 }
 
 // Routes returns the Gin engine for serving.
 func (s *Server) Routes() http.Handler {
 	return s.engine
+}
+
+// wireDashboardHandlers creates and assigns dashboard command handler instances.
+func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
+	// Create repositories
+	var logsRepo *storage.LogsRepository
+	var metricsRepo *storage.MetricsRepository
+
+	if cfg.DB != nil {
+		logsRepo = storage.NewLogsRepository(cfg.DB.DB())
+		metricsRepo = storage.NewMetricsRepository(cfg.DB.DB())
+	}
+
+	// Create services
+	var historySvc *command.HistoryService
+	var logsSvc *logs.Service
+	var metricsSvc *appmetrics.Service
+	var dashboardSvc *dashboard.Service
+
+	if cfg.CommandService != nil && cfg.DeviceService != nil {
+		historySvc = command.NewHistoryService(cfg.CommandService.CommandRepo(), cfg.DeviceService.DeviceRepo())
+	}
+
+	if logsRepo != nil {
+		logsSvc = logs.NewService(logsRepo)
+	}
+
+	if metricsRepo != nil {
+		metricsSvc = appmetrics.NewService(metricsRepo)
+	}
+
+	if cfg.CommandService != nil && cfg.DeviceService != nil {
+		dashboardSvc = dashboard.NewService(cfg.DeviceService.DeviceRepo(), cfg.CommandService.CommandRepo())
+	}
+
+	// Create handlers
+	if historySvc != nil {
+		s.commandHistoryHandler = cmdhandlers.NewHistoryHandler(historySvc, cfg.Log)
+	}
+
+	if logsSvc != nil && cfg.DeviceService != nil {
+		s.deviceLogsHandler = devicehandlers.NewLogsHandler(logsSvc, cfg.DeviceService.DeviceRepo(), cfg.Log)
+	}
+
+	if metricsSvc != nil && cfg.DeviceService != nil {
+		s.deviceMetricsHandler = devicehandlers.NewMetricsHandler(metricsSvc, cfg.DeviceService.DeviceRepo(), cfg.Log)
+		s.deviceTelemetryHandler = devicehandlers.NewTelemetryHandler(metricsSvc, cfg.DeviceService.DeviceRepo(), cfg.Log)
+	}
+
+	if dashboardSvc != nil {
+		s.dashboardStatsHandler = dashboardhandlers.NewStatsHandler(dashboardSvc, cfg.Log)
+	}
 }
 
 // Handlers are defined in server_handlers.go

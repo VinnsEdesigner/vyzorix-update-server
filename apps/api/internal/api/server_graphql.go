@@ -11,7 +11,10 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/subscription"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
+	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
@@ -24,7 +27,13 @@ import (
 func (s *Server) RegisterGraphQL(
 	deviceService *device.Service,
 	commandService *command.Service,
+	historyService *command.HistoryService,
+	dashboardSvc *dashboard.Service,
+	logsSvc *logs.Service,
+	metricsSvc *appmetrics.Service,
 	telemetryRepo *storage.TelemetryRepository,
+	logsRepo *storage.LogsRepository,
+	metricsRepo *storage.MetricsRepository,
 	wsHub *hub.Hub,
 ) error {
 	// Get auth services from server config
@@ -41,8 +50,14 @@ func (s *Server) RegisterGraphQL(
 	res := resolver.NewResolver(
 		deviceService,
 		commandService,
+		historyService,
+		dashboardSvc,
+		logsSvc,
+		metricsSvc,
 		wsHub,
 		telemetryRepo,
+		logsRepo,
+		metricsRepo,
 		nil, // FCM notifier
 		authMw,
 		gqlPresenter,
