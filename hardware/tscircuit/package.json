@@ -1,0 +1,29 @@
+{
+  "name": "@tsci/vinnsedesigner.vyzorix-hardware",
+  "version": "0.0.1",
+  "description": "Vyzorix IoT device module - USB-C power, status LED, reset/boot buttons, and decoupling capacitors for production hardware",
+  "module": "index.tsx",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.17",
+    "tscircuit": "^0.0.1963"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "dev": "tsci dev",
+    "start": "tsci dev",
+    "build": "tsci build",
+    "build:prod": "tsci build --svgs --pcb-png --3d",
+    "push": "tsci push"
+  },
+  "dependencies": {
+    "@tsci/seveibar.push-button": "^0.1.1",
+    "@tsci/seveibar.smd-usb-c": "^0.0.2"
+  },
+  "keywords": ["tscircuit", "iot", "esp32", "usb-c", "hardware", "pcb"],
+  "author": "@vinnsedesigner",
+  "license": "MIT"
+}

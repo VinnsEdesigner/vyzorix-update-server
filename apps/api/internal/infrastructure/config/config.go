@@ -77,8 +77,8 @@ func LoadSigningConfig() SigningConfig {
 
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
-	TokenSecret              string
-	PublicDir                string
+	JWTSecret                string
+	EmailFrom                string
 	GitHubOAuthClientID      string
 	GitHubOAuthClientSecret  string
 	FirebaseCreds            string
@@ -91,18 +91,20 @@ type Config struct {
 	DataDir                  string
 	GoogleOAuthClientSecret  string
 	GoogleOAuthClientID      string
-	JWTSecret                string
-	EmailFromName            string
-	EmailFrom                string
+	PublicDir                string
+	GitHubReleaseToken       string
+	GitHubReleaseRepo        string
 	ResendAPIKey             string
 	Env                      string
+	TokenSecret              string
+	EmailFromName            string
 	AllowedOrigins           []string
-	JWTDuration              time.Duration
 	PasswordResetTokenExpiry time.Duration
-	EmailVerifyTokenExpiry   time.Duration
 	HMACWindow               time.Duration
 	SessionMaxAge            int
 	NonceCacheTTL            time.Duration
+	EmailVerifyTokenExpiry   time.Duration
+	JWTDuration              time.Duration
 	EnforceHMAC              bool
 	EnableGraphQL            bool
 }
@@ -160,6 +162,8 @@ func Load() (Config, error) {
 		GoogleOAuthClientSecret:  os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
 		GitHubOAuthClientID:      os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
 		GitHubOAuthClientSecret:  os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
+		GitHubReleaseRepo:        os.Getenv("GITHUB_RELEASE_REPO"),
+		GitHubReleaseToken:       os.Getenv("GITHUB_RELEASE_TOKEN"),
 		BaseURL:                  get("BASE_URL", "http://localhost:3000"),
 		FrontendURL:              get("FRONTEND_URL", "http://localhost:5173"),
 		ResendAPIKey:             os.Getenv("RESEND_API_KEY"),

@@ -9,12 +9,14 @@ import (
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
 	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
+	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	updatesapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -31,21 +33,22 @@ import (
 type HandlerDependencies struct {
 	OperatorRepo   operator.Repository
 	FCMNotifier    fcm.Notifier
-	AuditLogger    *audit.Logger
-	IPIntelligence *middleware.IPIntelligence
+	AuthService    *auth.AuthService
+	DeviceService  *device.Service
 	ClientService  *client.Service
 	EmailService   *emailService.Service
 	Lockout        *middleware.Lockout
 	DB             *storage.SQLite
-	AuthService    *auth.AuthService
+	AuditLogger    *audit.Logger
 	GoogleVerifier *infraauth.GoogleTokenVerifier
 	Presenter      *response.Presenter
-	DeviceService  *device.Service
+	IPIntelligence *middleware.IPIntelligence
 	Hub            *hub.Hub
 	CommandService *command.Service
 	SessionManager *infraauth.SessionManager
 	Log            *slog.Logger
 	HmacVerifier   *cryptohmac.Verifier
+	UpdatesStorage *storage.UpdatesStorage
 	Config         config.Config
 }
 
@@ -62,6 +65,7 @@ type HandlerSet struct {
 	ConnectionStatus *handlers.ConnectionStatusHandler
 	AdminClients     *admin.ClientsHandler
 	Updater          *updaterhandlers.Handler
+	Updates          *updateshandlers.UpdatesHandler
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -115,6 +119,35 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 
 	// Updater handlers
 	hs.Updater = updaterhandlers.NewHandler(deps.Log, deps.Config)
+
+	// Updates handlers
+	if deps.UpdatesStorage != nil && deps.DeviceService != nil {
+		// Create sub-services
+		versionsStatusSvc := updatesapplication.NewVersionsStatusService(deps.UpdatesStorage)
+		versionsListSvc := updatesapplication.NewVersionsListService(deps.UpdatesStorage)
+		changelogSvc := updatesapplication.NewChangelogService(deps.UpdatesStorage)
+		exportSvc := updatesapplication.NewExportService(deps.UpdatesStorage)
+		pushSvc := updatesapplication.NewPushService(deps.UpdatesStorage)
+		historySvc := updatesapplication.NewHistoryService(deps.UpdatesStorage)
+		syncSvc := updatesapplication.NewSyncService(deps.UpdatesStorage, nil) // GitHub sync can be nil for now
+
+		// Create main service with all sub-services
+		updatesService := updatesapplication.NewService(
+			deps.UpdatesStorage,
+			versionsStatusSvc,
+			versionsListSvc,
+			changelogSvc,
+			exportSvc,
+			pushSvc,
+			historySvc,
+			syncSvc,
+		)
+
+		// Create rate limiter middleware for updates endpoints
+		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(nil)
+
+		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, updatesRateLimiters, deps.AuditLogger)
+	}
 
 	return hs
 }

@@ -9,7 +9,10 @@ import (
 	gqlmiddleware "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/validator"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
+	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
@@ -18,10 +21,16 @@ import (
 // Resolver is the root GraphQL resolver.
 type Resolver struct {
 	// Services
-	DeviceService  *device.Service
-	CommandService *cmdapp.Service
-	Hub            *hub.Hub
-	TelemetryRepo  *storage.TelemetryRepository
+	DeviceService   *device.Service
+	CommandService  *cmdapp.Service
+	HistoryService  *cmdapp.HistoryService
+	DashboardSvc    *dashboard.Service
+	LogsSvc         *logs.Service
+	MetricsSvc       *appmetrics.Service
+	Hub             *hub.Hub
+	TelemetryRepo   *storage.TelemetryRepository
+	LogsRepo        *storage.LogsRepository
+	MetricsRepo     *storage.MetricsRepository
 	FCMNotifier    fcm.Notifier
 
 	// Middleware
@@ -38,8 +47,14 @@ type Resolver struct {
 func NewResolver(
 	deviceService *device.Service,
 	commandService *cmdapp.Service,
+	historyService *cmdapp.HistoryService,
+	dashboardSvc *dashboard.Service,
+	logsSvc *logs.Service,
+	metricsSvc *appmetrics.Service,
 	hub *hub.Hub,
 	telemetryRepo *storage.TelemetryRepository,
+	logsRepo *storage.LogsRepository,
+	metricsRepo *storage.MetricsRepository,
 	fcmNotifier fcm.Notifier,
 	authMiddleware *gqlmiddleware.AuthMiddleware,
 	presenter *gqladapters.Presenter,
@@ -47,8 +62,14 @@ func NewResolver(
 	return &Resolver{
 		DeviceService:  deviceService,
 		CommandService: commandService,
-		Hub:            hub,
-		TelemetryRepo:  telemetryRepo,
+		HistoryService: historyService,
+		DashboardSvc:   dashboardSvc,
+		LogsSvc:        logsSvc,
+		MetricsSvc:     metricsSvc,
+		Hub:             hub,
+		TelemetryRepo:   telemetryRepo,
+		LogsRepo:        logsRepo,
+		MetricsRepo:     metricsRepo,
 		FCMNotifier:    fcmNotifier,
 		AuthMiddleware: authMiddleware,
 		Presenter:      presenter,
