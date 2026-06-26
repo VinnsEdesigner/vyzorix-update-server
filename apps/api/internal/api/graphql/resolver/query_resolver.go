@@ -5,6 +5,9 @@ import (
 	"time"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
+	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
+	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/graphql-go/graphql"
 )
 
@@ -424,4 +427,336 @@ func (r *Resolver) GetAllConnections(p graphql.ResolveParams) (interface{}, erro
 	}
 
 	return result, nil
+}
+
+// ============================================================
+// Dashboard Commands & Logs Query Resolvers
+// ============================================================
+
+// GetDeviceMetrics resolves the deviceMetrics query.
+func (r *Resolver) GetDeviceMetrics(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	imei, ok := p.Args["imei"].(string)
+	if !ok || imei == "" {
+		return nil, r.Presenter.BadRequestError("device IMEI is required")
+	}
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	// Verify device ownership
+	_, err := r.DeviceService.GetDeviceByOperator(ctx, imei, op.ID)
+	if err != nil {
+		return nil, r.Presenter.NotFoundError("device not found")
+	}
+
+	// Get metrics from service
+	if r.MetricsSvc == nil {
+		return nil, r.Presenter.InternalError("metrics service not available")
+	}
+
+	rangeVal, _ := p.Args["range"].(string)
+	if rangeVal == "" {
+		rangeVal = "6h"
+	}
+
+	req := &appmetrics.GetMetricsRequest{
+		DeviceID:   imei,
+		Range:      rangeVal,
+	}
+
+	if startTime, ok := p.Args["startTime"].(int64); ok && startTime > 0 {
+		req.StartTime = startTime
+	}
+
+	if endTime, ok := p.Args["endTime"].(int64); ok && endTime > 0 {
+		req.EndTime = endTime
+	}
+
+	if resolution, ok := p.Args["resolution"].(string); ok {
+		req.Resolution = resolution
+	}
+
+	resp, err := r.MetricsSvc.GetDeviceMetrics(ctx, req)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get device metrics")
+	}
+
+	// Convert to GraphQL response format
+	return map[string]interface{}{
+		"device": map[string]interface{}{
+			"imei":       resp.Device.IMEI,
+			"deviceName": resp.Device.IMEI, // Would need to fetch actual device name
+		},
+		"timeRange": map[string]interface{}{
+			"start":      resp.TimeRange.Start,
+			"end":        resp.TimeRange.End,
+			"range":      resp.TimeRange.Range,
+			"resolution": resp.TimeRange.Resolution,
+		},
+		"metrics": map[string]interface{}{
+			"riskScore": map[string]interface{}{
+				"current":   resp.Metrics.RiskScore.Current,
+				"avg":       resp.Metrics.RiskScore.Avg,
+				"min":       resp.Metrics.RiskScore.Min,
+				"max":       resp.Metrics.RiskScore.Max,
+				"unit":      resp.Metrics.RiskScore.Unit,
+				"chart":     r.convertChartPoints(resp.Metrics.RiskScore.Chart),
+				"threshold": resp.Metrics.RiskScore.Threshold,
+			},
+			"thermalTemp": map[string]interface{}{
+				"current":   resp.Metrics.ThermalTemp.Current,
+				"avg":       resp.Metrics.ThermalTemp.Avg,
+				"min":       resp.Metrics.ThermalTemp.Min,
+				"max":       resp.Metrics.ThermalTemp.Max,
+				"unit":      resp.Metrics.ThermalTemp.Unit,
+				"chart":     r.convertChartPoints(resp.Metrics.ThermalTemp.Chart),
+				"threshold": resp.Metrics.ThermalTemp.Threshold,
+			},
+			"bufferLevel": map[string]interface{}{
+				"current":   resp.Metrics.BufferLevel.Current,
+				"avg":       resp.Metrics.BufferLevel.Avg,
+				"min":       resp.Metrics.BufferLevel.Min,
+				"max":       resp.Metrics.BufferLevel.Max,
+				"unit":      resp.Metrics.BufferLevel.Unit,
+				"chart":     r.convertChartPoints(resp.Metrics.BufferLevel.Chart),
+				"threshold": resp.Metrics.BufferLevel.Threshold,
+			},
+			"uptime": map[string]interface{}{
+				"current":   resp.Metrics.Uptime.Current,
+				"avg":       0,
+				"min":       0,
+				"max":       0,
+				"unit":      "s",
+				"chart":     []interface{}{},
+				"threshold": map[string]interface{}{"warning": 0, "critical": 0},
+			},
+		},
+		"events": r.convertThresholdEvents(resp.Events),
+	}, nil
+}
+
+// GetDeviceLogs resolves the deviceLogs query.
+func (r *Resolver) GetDeviceLogs(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	imei, ok := p.Args["imei"].(string)
+	if !ok || imei == "" {
+		return nil, r.Presenter.BadRequestError("device IMEI is required")
+	}
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	// Verify device ownership
+	_, err := r.DeviceService.GetDeviceByOperator(ctx, imei, op.ID)
+	if err != nil {
+		return nil, r.Presenter.NotFoundError("device not found")
+	}
+
+	if r.LogsSvc == nil {
+		return nil, r.Presenter.InternalError("logs service not available")
+	}
+
+	eventType, _ := p.Args["type"].(string)
+	limit, _ := p.Args["limit"].(int)
+	if limit <= 0 {
+		limit = 100
+	}
+	cursor, _ := p.Args["cursor"].(string)
+
+	req := &logs.ListLogsRequest{
+		DeviceID:  imei,
+		EventType: eventType,
+		Limit:     limit,
+		Cursor:    cursor,
+	}
+
+	if startTime, ok := p.Args["startTime"].(int64); ok && startTime > 0 {
+		req.StartTime = startTime
+	}
+
+	if endTime, ok := p.Args["endTime"].(int64); ok && endTime > 0 {
+		req.EndTime = endTime
+	}
+
+	resp, err := r.LogsSvc.GetDeviceLogs(ctx, req)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get device logs")
+	}
+
+	return map[string]interface{}{
+		"events": r.convertLogEvents(resp.Events),
+		"pagination": map[string]interface{}{
+			"limit":      resp.Pagination.Limit,
+			"hasMore":    resp.Pagination.HasMore,
+			"nextCursor": resp.Pagination.NextCursor,
+		},
+	}, nil
+}
+
+// GetDeviceCommandHistory resolves the deviceCommandHistory query.
+func (r *Resolver) GetDeviceCommandHistory(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	imei, ok := p.Args["imei"].(string)
+	if !ok || imei == "" {
+		return nil, r.Presenter.BadRequestError("device IMEI is required")
+	}
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	// Verify device ownership
+	_, err := r.DeviceService.GetDeviceByOperator(ctx, imei, op.ID)
+	if err != nil {
+		return nil, r.Presenter.NotFoundError("device not found")
+	}
+
+	if r.HistoryService == nil {
+		return nil, r.Presenter.InternalError("history service not available")
+	}
+
+	status, _ := p.Args["status"].(string)
+	page, _ := p.Args["page"].(int)
+	limit, _ := p.Args["limit"].(int)
+
+	req := &cmdapp.GetHistoryRequest{
+		DeviceID: imei,
+		Status:  status,
+		Page:    page,
+		Limit:   limit,
+	}
+
+	if startTime, ok := p.Args["startTime"].(int64); ok && startTime > 0 {
+		req.StartTime = startTime
+	}
+
+	if endTime, ok := p.Args["endTime"].(int64); ok && endTime > 0 {
+		req.EndTime = endTime
+	}
+
+	resp, err := r.HistoryService.GetHistory(ctx, req)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get command history")
+	}
+
+	return map[string]interface{}{
+		"commands": r.convertCommandHistory(resp.Commands),
+		"pagination": map[string]interface{}{
+			"page":       resp.Pagination.Page,
+			"limit":      resp.Pagination.Limit,
+			"total":      resp.Pagination.Total,
+			"totalPages": resp.Pagination.TotalPages,
+			"hasMore":    resp.Pagination.HasMore,
+		},
+	}, nil
+}
+
+// GetDashboardStats resolves the dashboardStats query.
+func (r *Resolver) GetDashboardStats(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	if r.DashboardSvc == nil {
+		return nil, r.Presenter.InternalError("dashboard service not available")
+	}
+
+	stats, err := r.DashboardSvc.GetDashboardStats(ctx)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get dashboard stats")
+	}
+
+	return map[string]interface{}{
+		"devices": map[string]interface{}{
+			"total":  stats.Devices.Total,
+			"online": stats.Devices.Online,
+			"offline": stats.Devices.Offline,
+		},
+		"commands": map[string]interface{}{
+			"totalToday": stats.Commands.TotalToday,
+			"pending":   stats.Commands.Pending,
+			"failed":    stats.Commands.Failed,
+		},
+		"activity": map[string]interface{}{
+			"last24h": map[string]interface{}{
+				"commands":        stats.Activity.Last24h.Commands,
+				"registrations":   stats.Activity.Last24h.Registrations,
+				"deregistrations": stats.Activity.Last24h.Deregistrations,
+			},
+		},
+	}, nil
+}
+
+// Helper functions for converting response types
+
+func (r *Resolver) convertChartPoints(points []appmetrics.MetricPointDTO) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(points))
+	for _, p := range points {
+		result = append(result, map[string]interface{}{
+			"timestamp": p.Timestamp,
+			"value":     p.Value,
+		})
+	}
+	return result
+}
+
+func (r *Resolver) convertThresholdEvents(events []appmetrics.ThresholdEventDTO) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(events))
+	for _, e := range events {
+		result = append(result, map[string]interface{}{
+			"timestamp": e.Timestamp,
+			"type":      e.Type,
+			"metric":    e.Metric,
+			"value":     e.Value,
+			"threshold": e.Threshold,
+		})
+	}
+	return result
+}
+
+func (r *Resolver) convertLogEvents(events []logs.LogEvent) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(events))
+	for _, e := range events {
+		result = append(result, map[string]interface{}{
+			"id":        e.ID,
+			"type":      e.Type,
+			"timestamp": e.Timestamp,
+			"data":      e.Data,
+		})
+	}
+	return result
+}
+
+func (r *Resolver) convertCommandHistory(commands []cmdapp.CommandEntry) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(commands))
+	for _, c := range commands {
+		entry := map[string]interface{}{
+			"dispatchId": c.DispatchID,
+			"commandId":  c.ID,
+			"deviceId":   "", // Would need device ID from context
+			"command":    c.Command,
+			"status":    c.Status,
+			"createdAt": time.UnixMilli(c.CreatedAt).Format(time.RFC3339),
+		}
+		if c.DeliveredAt > 0 {
+			entry["deliveredAt"] = time.UnixMilli(c.DeliveredAt).Format(time.RFC3339)
+		}
+		if c.CompletedAt > 0 {
+			entry["completedAt"] = time.UnixMilli(c.CompletedAt).Format(time.RFC3339)
+		}
+		result = append(result, entry)
+	}
+	return result
 }

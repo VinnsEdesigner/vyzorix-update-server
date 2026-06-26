@@ -13,7 +13,10 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/validator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
+	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
@@ -31,7 +34,13 @@ type Config struct {
 	SessionManager *infraauth.SessionManager
 	DeviceService  *device.Service
 	CommandService *command.Service
+	HistoryService *command.HistoryService
+	DashboardSvc   *dashboard.Service
+	LogsSvc       *logs.Service
+	MetricsSvc     *appmetrics.Service
 	TelemetryRepo  *storage.TelemetryRepository
+	LogsRepo      *storage.LogsRepository
+	MetricsRepo    *storage.MetricsRepository
 	Hub            *hub.Hub
 	FCMNotifier    fcm.Notifier
 	Log            *slog.Logger
@@ -55,8 +64,14 @@ func NewServer(cfg *Config) (*Server, error) {
 	res := resolver.NewResolver(
 		cfg.DeviceService,
 		cfg.CommandService,
+		cfg.HistoryService,
+		cfg.DashboardSvc,
+		cfg.LogsSvc,
+		cfg.MetricsSvc,
 		cfg.Hub,
 		cfg.TelemetryRepo,
+		cfg.LogsRepo,
+		cfg.MetricsRepo,
 		cfg.FCMNotifier,
 		authMw,
 		presenter,

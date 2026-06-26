@@ -306,3 +306,13 @@ func (s *Service) ListByOperatorPaginated(ctx context.Context, operatorID string
 
 	return allDevices[offset:end], nil
 }
+
+// GetRepo returns the device repository for use by other services.
+func (s *Service) GetRepo() device.Repository {
+	return s.deviceRepo
+}
+
+// DeviceRepo returns the device repository (alias for GetRepo).
+func (s *Service) DeviceRepo() device.Repository {
+	return s.deviceRepo
+}
