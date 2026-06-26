@@ -14,8 +14,15 @@ import (
 // setupRoutes configures all API routes on the Gin engine.
 func (s *Server) setupRoutes() {
 	s.engine.HandleMethodNotAllowed = true
+	s.setupGlobalMiddleware()
+	s.setupStaticRoutes()
+	s.setupPublicRoutes()
+	s.setupAuthenticatedRoutes()
+	s.setupDashboardRoutes()
+	s.setupMethodHandlers()
+}
 
-	// Global middleware
+func (s *Server) setupGlobalMiddleware() {
 	s.engine.Use(s.mwFactory.RequestID())
 	s.engine.Use(s.mwFactory.Logger())
 	s.engine.Use(s.mwFactory.CORS())
@@ -25,90 +32,116 @@ func (s *Server) setupRoutes() {
 	s.engine.Use(s.mwFactory.DisableConnect())
 	s.engine.Use(s.mwFactory.ErrorHandler())
 
-	// Static assets
-	s.engine.Static("/assets", filepath.Join(s.config.PublicDir, "assets"))
-
-	// Health & static endpoints
-	s.engine.GET("/health", s.healthHandler)
-	s.engine.GET("/healthz", s.healthHandler)
-
-	if s.metricsHandler != nil {
-		s.engine.GET("/metrics", s.metricsHandler.Handle)
-	}
-
-	s.engine.GET("/api/v1/version", s.versionHandler)
-	s.engine.GET("/api/v1/changelog", s.changelogHandler)
-	s.engine.GET("/api/v1/apk/*name", s.apkHandler)
-	s.engine.GET("/bin/*name", s.binHandler)
-	s.engine.GET("/api/v1/check-update", s.updaterHandler.CheckUpdate)
-	s.engine.POST("/api/v1/download-progress", s.updaterHandler.DownloadProgress)
-
-	// SSR Proxy
 	ssrConfig := infraConfig.LoadSSRConfig()
 	if ssrConfig.EnableSSR {
 		s.engine.Use(s.mwFactory.SSRProxy(ssrConfig))
 	} else {
 		s.log.Warn("SSR disabled - serving static HTML files only")
 	}
+}
 
-	// Public endpoints
+func (s *Server) setupStaticRoutes() {
+	s.engine.Static("/assets", filepath.Join(s.config.PublicDir, "assets"))
+	s.engine.GET("/health", s.healthHandler)
+	s.engine.GET("/healthz", s.healthHandler)
+	if s.metricsHandler != nil {
+		s.engine.GET("/metrics", s.metricsHandler.Handle)
+	}
+	s.engine.GET("/api/v1/version", s.versionHandler)
+	s.engine.GET("/api/v1/changelog", s.changelogHandler)
+	s.engine.GET("/api/v1/apk/*name", s.apkHandler)
+	s.engine.GET("/bin/*name", s.binHandler)
+	s.engine.GET("/api/v1/check-update", s.updaterHandler.CheckUpdate)
+	s.engine.POST("/api/v1/download-progress", s.updaterHandler.DownloadProgress)
+}
+
+func (s *Server) setupPublicRoutes() {
 	public := s.engine.Group("")
 	public.Use(s.rateLimiter.Middleware())
 	public.GET("/", s.dashboardHandler)
+	s.setupAuthRoutes(public)
+	s.setupDevicePublicRoutes(public)
+}
 
-	// Auth routes
+func (s *Server) setupAuthRoutes(public *gin.RouterGroup) {
 	authGroup := public.Group("/v1/auth")
 	authGroup.Use(s.authLimiter.Middleware())
-
 	if s.ipIntelligence != nil {
 		authGroup.Use(s.ipIntelligence.Middleware())
 	}
-
 	authGroup.Use(s.mwFactory.PreventUserEnum())
-
 	if s.lockout != nil && s.lockout.IsEnabled() {
 		authGroup.Use(s.mwFactory.Lockout())
 	}
-
 	if s.csrfProtector != nil && s.csrfProtector.Config.Enabled {
 		authGroup.Use(s.mwFactory.CSRF())
 	}
-
 	if s.turnstileVerifier != nil && s.turnstileVerifier.Config.Enabled {
 		authGroup.Use(s.mwFactory.Turnstile())
 	}
-
 	s.authHandlers.RegisterRoutes(authGroup, s.cookieAuth)
+}
 
-	// Device registration (public)
+func (s *Server) setupDevicePublicRoutes(public *gin.RouterGroup) {
 	public.POST("/v1/device/register",
 		middleware.ValidationMiddleware(&middleware.DeviceRegisterSchema{}),
 		s.deviceRegisterHandler.Handle,
 	)
 	public.GET("/v1/device/:id/status", s.deviceStatusHandler.Handle)
+}
 
-	// Authenticated routes
+func (s *Server) setupAuthenticatedRoutes() {
+	public := s.engine.Group("")
 	r := public.Group("/v1")
 	r.Use(s.authLimiter.Middleware())
 	r.Use(s.cookieAuth.Middleware())
-
 	if s.revocationList != nil {
 		r.Use(middleware.AuthRevocationMiddleware(s.revocationList))
 	}
+	s.setupDashboardRoutes(r)
+	s.setupAdminRoutes(r)
+	s.setupDeviceManagementRoutes(r)
+	s.setupCommandManagementRoutes(r)
+	s.setupTelemetryRoutes(r)
+	s.setupConnectionsRoutes(r)
+}
 
-	// Dashboard
-	r.GET("/dashboard/devices", s.deviceListHandler.Handle)
-	r.GET("/dashboard/devices/operator", s.deviceListHandler.ListByOperator)
+func (s *Server) setupDashboardRoutes(r ...*gin.RouterGroup) {
+	var router *gin.RouterGroup
+	if len(r) > 0 {
+		router = r[0]
+	} else {
+		router = s.engine.Group("/v1")
+	}
+	router.GET("/dashboard/devices", s.deviceListHandler.Handle)
+	router.GET("/dashboard/devices/operator", s.deviceListHandler.ListByOperator)
+	if s.commandHistoryHandler != nil {
+		s.commandHistoryHandler.RegisterRoutes(router, s.dashboardRateLimiter)
+	}
+	if s.deviceLogsHandler != nil {
+		s.deviceLogsHandler.RegisterRoutes(router, s.dashboardRateLimiter)
+	}
+	if s.deviceMetricsHandler != nil {
+		s.deviceMetricsHandler.RegisterMetricsRoutes(router, s.dashboardRateLimiter)
+	}
+	if s.deviceTelemetryHandler != nil {
+		s.deviceTelemetryHandler.RegisterTelemetryRoutes(router, s.dashboardRateLimiter)
+	}
+	if s.dashboardStatsHandler != nil {
+		s.dashboardStatsHandler.RegisterRoutes(router)
+	}
+}
 
-	// Admin clients
+func (s *Server) setupAdminRoutes(r *gin.RouterGroup) {
 	adminClients := r.Group("/admin/clients")
 	adminClients.GET("", s.adminClientsHandler.List)
 	adminClients.GET("/:clientId", s.adminClientsHandler.Get)
 	adminClients.PATCH("/:clientId", s.adminClientsHandler.Update)
 	adminClients.DELETE("/:clientId", s.adminClientsHandler.Delete)
 	adminClients.POST("/:clientId/rotate-key", s.adminClientsHandler.RotateKey)
+}
 
-	// Device management
+func (s *Server) setupDeviceManagementRoutes(r *gin.RouterGroup) {
 	deviceMgmt := r.Group("/device")
 	deviceMgmt.Use(middleware.RequestSigningMiddleware(s.signatureVerifier))
 	deviceMgmt.Use(middleware.MandatoryEncryptionMiddleware(s.encryptKeyFn))
@@ -129,43 +162,43 @@ func (s *Server) setupRoutes() {
 	deviceMgmt.GET("/:id/stream", s.streamHandler.Handle)
 	deviceMgmt.GET("/:id/connection-status", s.connectionStatusHandler.GetStatus)
 	deviceMgmt.POST("/:id/disconnect", s.connectionStatusHandler.DisconnectDevice)
+}
 
-	// Command management
+func (s *Server) setupCommandManagementRoutes(r *gin.RouterGroup) {
 	commandMgmt := r.Group("/command")
 	commandMgmt.Use(middleware.RequestSigningMiddleware(s.signatureVerifier))
 	commandMgmt.Use(middleware.MandatoryEncryptionMiddleware(s.encryptKeyFn))
 	commandMgmt.GET("/:dispatchId/status", s.commandHandler.GetStatus)
 	commandMgmt.POST("/:dispatchId/retry", s.commandHandler.Retry)
 	commandMgmt.DELETE("/:dispatchId", s.commandHandler.Cancel)
+}
 
-	// Telemetry
+func (s *Server) setupTelemetryRoutes(r *gin.RouterGroup) {
 	telemetry := r.Group("/telemetry")
 	telemetry.GET("/history", s.telemetryHistoryHandler.Query)
 	telemetry.GET("/history/export", s.telemetryHistoryHandler.ExportJSON)
 	telemetry.GET("/latest/:deviceId", s.telemetryHistoryHandler.GetLatest)
 	telemetry.GET("/stats/:deviceId", s.telemetryHistoryHandler.GetStats)
 	telemetry.DELETE("/cleanup", s.telemetryHistoryHandler.CleanupOld)
+}
 
-	// Connections
+func (s *Server) setupConnectionsRoutes(r *gin.RouterGroup) {
 	connections := r.Group("/connections")
 	connections.GET("", s.connectionStatusHandler.GetAllStatus)
 	connections.GET("/metrics", s.connectionStatusHandler.GetMetrics)
+}
 
-	// Method Not Allowed handler
+func (s *Server) setupMethodHandlers() {
 	s.engine.NoMethod(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.URL.Path, "/v1/") || strings.HasPrefix(c.Request.URL.Path, "/api/") {
 			c.JSON(http.StatusMethodNotAllowed, gin.H{
 				"error":   "method_not_allowed",
 				"message": "the requested method is not allowed for this endpoint",
 			})
-
 			return
 		}
-
 		s.dashboardHandler(c)
 	})
-
-	// SPA fallback
 	s.engine.NoRoute(func(c *gin.Context) {
 		s.dashboardHandler(c)
 	})
