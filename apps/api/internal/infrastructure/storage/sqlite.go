@@ -139,6 +139,15 @@ var migrations = []Migration{
 	{Apply: migrateCreateAccountLockouts, Name: "create_account_lockouts", Version: 17},
 	{Apply: migrateCreateAuditLogs, Name: "create_audit_logs", Version: 18},
 	{Apply: migrateCreateMessageQueue, Name: "create_message_queue_table", Version: 19},
+	// v20-v27: New tables for enterprise features
+	{Apply: migrateCreateEvents, Name: "create_events_table", Version: 20},
+	{Apply: migrateCreateInboxAndRegistration, Name: "create_inbox_and_registration_tables", Version: 21},
+	{Apply: migrateCreateDeviceLogsAndEvents, Name: "create_device_logs_and_events_tables", Version: 22},
+	{Apply: migrateCreateUpdateTables, Name: "create_update_tables", Version: 23},
+	{Apply: migrateCreateOperatorSettings, Name: "create_operator_settings_table", Version: 24},
+	{Apply: migrateCreateRefreshTokens, Name: "create_refresh_tokens_table", Version: 25},
+	{Apply: migrateCreateNotificationAuditLog, Name: "create_notification_audit_log_table", Version: 26},
+	{Apply: migrateAddDevicesColumns, Name: "add_devices_columns", Version: 27},
 }
 
 // runMigrations applies all pending migrations.
