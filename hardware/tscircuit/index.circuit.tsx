@@ -24,6 +24,14 @@ export default () => (
   <board width="100mm" height="90mm" autorouterVersion="v4" layers={2}>
     
     {/* ======================================== */}
+    {/* MOUNTING HOLES - M3 x 4 corners */}
+    {/* ======================================== */}
+    <hole pcbX={-45} pcbY={40} outerDiameter={3.2} holeDiameter={3.2} />
+    <hole pcbX={45} pcbY={40} outerDiameter={3.2} holeDiameter={3.2} />
+    <hole pcbX={-45} pcbY={-40} outerDiameter={3.2} holeDiameter={3.2} />
+    <hole pcbX={45} pcbY={-40} outerDiameter={3.2} holeDiameter={3.2} />
+    
+    {/* ======================================== */}
     {/* NETS */}
     {/* ======================================== */}
     <net name="GND" />
@@ -37,8 +45,8 @@ export default () => (
     {/* ======================================== */}
     {/* POWER INPUT - LEFT */}
     {/* ======================================== */}
-    <TerminalBlock2P name="VIN_P" pcbX={-44} pcbY={25} pcbRotation={90} />
-    <TerminalBlock2P name="VIN_N" pcbX={-44} pcbY={-38} pcbRotation={90} />
+    <TerminalBlock2P name="VIN_P" pcbX={-44} pcbY={25} pcbRotation={90} doNotPopulate={true} />
+    <TerminalBlock2P name="VIN_N" pcbX={-44} pcbY={-38} pcbRotation={90} doNotPopulate={true} />
     
     <capacitor name="C_IN1" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-34} pcbY={25} />
     <capacitor name="C_IN2" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-34} pcbY={17} />
@@ -80,8 +88,8 @@ export default () => (
     <capacitor name="C_OUT3" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={35} pcbY={9} />
     <capacitor name="C_FILT" capacitance="10uF" maxVoltageRating="50V" footprint="0805" {...jlcpcb("C14663")} pcbX={35} pcbY={2} />
     
-    <TerminalBlock2P name="VOUT_P" pcbX={46} pcbY={25} pcbRotation={90} />
-    <TerminalBlock2P name="VOUT_N" pcbX={46} pcbY={-35} pcbRotation={90} />
+    <TerminalBlock2P name="VOUT_P" pcbX={46} pcbY={25} pcbRotation={90} doNotPopulate={true} />
+    <TerminalBlock2P name="VOUT_N" pcbX={46} pcbY={-35} pcbRotation={90} doNotPopulate={true} />
     
     {/* ======================================== */}
     {/* CONTROLLER - BOTTOM */}
@@ -165,6 +173,7 @@ export default () => (
     {/* Q3 is PNP: pin1=collector, pin2=emitter, pin3=base */}
     {/* Q4 is NPN: pin1=collector, pin3=base, pin2=emitter */}
     <trace from="U1.HO" to="Q3.pin3" />
+    <trace from="U1.HO" to="Q4.pin3" />
     <trace from="Q3.pin2" to="net.BOOT" />
     <trace from="Q4.pin2" to="net.GND" />
     <trace from="Q3.pin1" to="R_PULLUP_HS.pin1" />
@@ -176,6 +185,7 @@ export default () => (
     {/* Q5 is PNP: pin1=collector, pin2=emitter, pin3=base */}
     {/* Q6 is NPN: pin1=collector, pin3=base, pin2=emitter */}
     <trace from="U1.LO" to="Q5.pin3" />
+    <trace from="U1.LO" to="Q6.pin3" />
     <trace from="Q5.pin2" to="net.VCC" />
     <trace from="Q6.pin2" to="net.GND" />
     <trace from="Q5.pin1" to="R_PULLUP_LS.pin1" />
@@ -237,5 +247,6 @@ export default () => (
     <pcbnotetext text="12V→40V BOOST CONVERTER" pcbX={0} pcbY={44} fontSize={2} anchorAlignment="center" />
     <pcbnotetext text="10A / 400W MAX" pcbX={0} pcbY={40} fontSize={1.2} anchorAlignment="center" />
     <pcbnotetext text="VinnsEdesigner 2026" pcbX={0} pcbY={-46} fontSize={0.7} anchorAlignment="center" />
+    <pcbnotetext text="MOUNT M3 HOLES" pcbX={0} pcbY={-42} fontSize={0.5} anchorAlignment="center" />
   </board>
 )
