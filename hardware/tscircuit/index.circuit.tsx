@@ -1,5 +1,5 @@
 /**
- * 12V to 40V Boost Converter - Clean Professional Layout
+ * 12V to 40V Boost Converter  Layout
  * 
  * High-power synchronous boost converter
  * Input: 12V, Output: 40V @ 10A (400W)
