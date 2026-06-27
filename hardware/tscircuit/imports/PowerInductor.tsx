@@ -24,6 +24,10 @@ export const PowerInductor = (props: ChipProps<typeof inductorPinLabels> & {
 }) => (
   <chip
     pinLabels={inductorPinLabels}
+    pinAttributes={{
+      "1": { requiresPower: true },
+      "2": { requiresPower: true },
+    }}
     manufacturerPartNumber="SRN8040-220M"
     supplierPartNumbers={{ jlcpcb: ["C84824"] }}
     footprint={

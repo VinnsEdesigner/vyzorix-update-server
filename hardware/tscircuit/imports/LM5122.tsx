@@ -44,6 +44,22 @@ const lm5122PinLabels = {
 export const LM5122 = (props: ChipProps<typeof lm5122PinLabels>) => (
   <chip
     pinLabels={lm5122PinLabels}
+    pinAttributes={{
+      VIN: { requiresPower: true, mustBeConnected: true },
+      VCC: { requiresPower: true, mustBeConnected: true },
+      SW: { mustBeConnected: true },
+      HPFM: { mustBeConnected: true },
+      HO: { mustBeConnected: true },
+      LO: { mustBeConnected: true },
+      FB: { mustBeConnected: true },
+      COMP: { mustBeConnected: true },
+      RT: { mustBeConnected: true },
+      EN: { mustBeConnected: true },
+      SS: { mustBeConnected: true },
+      CS: { mustBeConnected: true },
+      AGND: { requiresGround: true },
+      PGND: { requiresGround: true },
+    }}
     manufacturerPartNumber="LM5122Q1MHX"
     supplierPartNumbers={{ jlcpcb: ["C94911"] }}
     footprint={

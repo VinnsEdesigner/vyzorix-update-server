@@ -23,6 +23,10 @@ const schottkyPinLabels = {
 export const MBR1040 = (props: ChipProps<typeof schottkyPinLabels>) => (
   <chip
     pinLabels={schottkyPinLabels}
+    pinAttributes={{
+      A: { requiresPower: true },
+      K: { requiresPower: true },
+    }}
     manufacturerPartNumber="MBR1040"
     supplierPartNumbers={{ jlcpcb: ["C11377"] }}
     footprint={

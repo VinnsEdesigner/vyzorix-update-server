@@ -25,6 +25,11 @@ const mosfetPinLabels = {
 export const CSD18537NQ5A = (props: ChipProps<typeof mosfetPinLabels>) => (
   <chip
     pinLabels={mosfetPinLabels}
+    pinAttributes={{
+      G: { mustBeConnected: true },
+      D: { requiresPower: true },
+      S: { requiresPower: true },
+    }}
     manufacturerPartNumber="CSD18537NQ5A"
     supplierPartNumbers={{ jlcpcb: ["C141250"] }}
     footprint={
