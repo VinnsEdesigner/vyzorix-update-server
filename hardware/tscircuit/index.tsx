@@ -1,67 +1,68 @@
 import { SmdUsbC } from "@tsci/seveibar.smd-usb-c"
-import { PushButton } from "@tsci/seveibar.push-button"
-import { ESP32_WROOM_32 } from "@tsci/dhvll.ESP32_WROOM_32"
 
 /**
- * Vyzorix IoT Device Module - Production Schematic
+ * Vyzorix Power Module - Production Schematic
  * 
- * MCU: ESP32-WROOM-32 (C95209)
- * Power: USB-C 5V with LDO regulation
  * Features:
- * - USB-C power delivery with ESD protection
- * - 3.3V LDO regulator (AMS1117-3.3)
- * - Status LED on GPIO2
- * - Reset (EN) and Boot (GPIO0) buttons with pull-ups
- * - UART programming header
+ * - USB-C power input (5V/3A)
+ * - 3.3V LDO regulation (AMS1117-3.3)
+ * - Status LED indicators
+ * - MCU interface header
  * 
- * Board: 50mm x 40mm
+ * Board: 30mm x 25mm
  * JLCPCB Basic Parts Assembly
  * 
  * @author @vinnsedesigner
  */
 export default () => {
   return (
-    <board width="50mm" height="40mm" gpu>
+    <board width="30mm" height="25mm">
       {/* ============================================ */}
-      {/* POWER RAILS                                 */}
+      {/* POWER RAIL BUSES                            */}
       {/* ============================================ */}
-      <net name="VBUS" />      {/* 5V from USB */}
-      <net name="V3_3" />      {/* 3.3V regulated */}
-      <net name="GND" />        {/* Ground */}
+      <net name="VBUS" />
+      <net name="V33" />
+      <net name="GND" />
 
       {/* ============================================ */}
-      {/* USB-C Power Connector                       */}
+      {/* USB-C Power Input                           */}
       {/* ============================================ */}
       <SmdUsbC
-        name="USB_C"
-        pcbX={-18}
+        name="J1"
+        pcbX={-10}
         pcbY={5}
-        schX={-22}
+        schX={-20}
         schY={-5}
       />
-      <trace from=".USB_C .GND1" to="net.GND" />
-      <trace from=".USB_C .GND2" to="net.GND" />
-      <trace from=".USB_C .VBUS1" to="net.VBUS" />
-      <trace from=".USB_C .VBUS2" to="net.VBUS" />
+      <trace from=".J1 .VBUS1" to="net.VBUS" label="VBUS" />
+      <trace from=".J1 .VBUS2" to="net.VBUS" label="VBUS" />
+      <trace from=".J1 .GND1" to="net.GND" label="GND" />
+      <trace from=".J1 .GND2" to="net.GND" label="GND" />
 
       {/* ============================================ */}
-      {/* LDO Regulator - 3.3V                        */}
+      {/* LDO Regulator U1 - 3.3V @ 800mA            */}
       {/* ============================================ */}
       <chip
         name="U1"
         footprint="SOT223"
         manufacturerPartNumber="AMS1117-3.3"
-        pcbX={-10}
+        pinLabels={{
+          "1": ["VOUT"],
+          "2": ["GND"],
+          "3": ["VIN"],
+          "4": ["GND"]
+        }}
+        pcbX={-2}
         pcbY={5}
-        schX={-15}
-        schY={-5}
+        schX={-5}
+        schY={-2}
       />
-      <trace from=".U1 .IN" to="net.VBUS" />
-      <trace from=".U1 .OUT" to="net.V3_3" />
-      <trace from=".U1 .GND" to="net.GND" />
+      <trace from=".U1 .VIN" to="net.VBUS" label="VIN" />
+      <trace from=".U1 .VOUT" to="net.V33" label="VOUT" />
+      <trace from=".U1 .GND" to="net.GND" label="GND" />
 
       {/* ============================================ */}
-      {/* Input Capacitor - 10uF                      */}
+      {/* Input Capacitor C1 - 10uF                   */}
       {/* ============================================ */}
       <capacitor
         name="C1"
@@ -69,151 +70,33 @@ export default () => {
         capacitance="10uF"
         voltageRating="16V"
         supplierPartNumbers={{ jlcpcb: ["C28346"] }}
-        pcbX={-14}
-        pcbY={8}
-        schX={-18}
-        schY={0}
+        pcbX={-6}
+        pcbY={2}
+        schX={-10}
+        schY={3}
       />
-      <trace from=".C1 .pos" to="net.VBUS" />
-      <trace from=".C1 .neg" to="net.GND" />
+      <trace from=".C1 .pos" to="net.VBUS" label="VBUS" />
+      <trace from=".C1 .neg" to="net.GND" label="GND" />
 
       {/* ============================================ */}
-      {/* Output Capacitor - 100nF                    */}
+      {/* Output Capacitor C2 - 22uF                   */}
       {/* ============================================ */}
       <capacitor
         name="C2"
         footprint="0603"
-        capacitance="100nF"
+        capacitance="22uF"
         voltageRating="16V"
-        supplierPartNumbers={{ jlcpcb: ["C14663"] }}
-        pcbX={-10}
-        pcbY={10}
-        schX={-12}
-        schY={0}
+        supplierPartNumbers={{ jlcpcb: ["C1154"] }}
+        pcbX={2}
+        pcbY={2}
+        schX={2}
+        schY={3}
       />
-      <trace from=".C2 .pos" to="net.V3_3" />
-      <trace from=".C2 .neg" to="net.GND" />
+      <trace from=".C2 .pos" to="net.V33" label="V33" />
+      <trace from=".C2 .neg" to="net.GND" label="GND" />
 
       {/* ============================================ */}
-      {/* ESP32-WROOM-32 Module                       */}
-      {/* ============================================ */}
-      <ESP32_WROOM_32
-        name="ESP32"
-        pcbX={0}
-        pcbY={0}
-        schX={0}
-        schY={0}
-      />
-      {/* Power to ESP32 - pin2 is 3V3, pin15 is GND1 */}
-      <trace from=".ESP32 .pin2" to="net.V3_3" label="V3.3" />
-      <trace from=".ESP32 .pin15" to="net.GND" label="GND" />
-
-      {/* ============================================ */}
-      {/* Status LED Circuit (GPIO2)                   */}
-      {/* ============================================ */}
-      <resistor
-        name="R1"
-        footprint="0603"
-        resistance="330R"
-        supplierPartNumbers={{ jlcpcb: ["C25104"] }}
-        pcbX={15}
-        pcbY={10}
-        schX={12}
-        schY={8}
-      />
-      <trace from=".R1 .pin1" to="net.V3_3" />
-      <trace from=".R1 .pin2" to=".LED_STATUS .pos" />
-
-      <led
-        name="LED_STATUS"
-        footprint="0603"
-        ledColor="blue"
-        supplierPartNumbers={{ jlcpcb: ["C433"] }}
-        pcbX={18}
-        pcbY={10}
-        schX={16}
-        schY={8}
-      />
-      <trace from=".LED_STATUS .neg" to="net.GND" />
-      <trace from=".ESP32 .pin26" to=".R1 .pin1" label="GPIO2/LED" />
-
-      {/* ============================================ */}
-      {/* Reset Button (EN) - Active Low              */}
-      {/* ============================================ */}
-      <resistor
-        name="R2"
-        footprint="0603"
-        resistance="10K"
-        supplierPartNumbers={{ jlcpcb: ["C25804"] }}
-        pcbX={-10}
-        pcbY={-8}
-        schX={-10}
-        schY={-10}
-      />
-      <trace from=".R2 .pin1" to="net.V3_3" />
-      <trace from=".R2 .pin2" to=".BTN_RESET .pin1" />
-
-      <PushButton
-        name="BTN_RESET"
-        footprint="pushbutton"
-        supplierPartNumbers={{ jlcpcb: ["C110153"] }}
-        pcbX={-14}
-        pcbY={-12}
-        schX={-14}
-        schY={-14}
-      />
-      <trace from=".BTN_RESET .pin1" to=".R2 .pin2" />
-      <trace from=".BTN_RESET .pin2" to="net.GND" />
-      <trace from=".ESP32 .pin3" to=".BTN_RESET .pin1" label="EN" />
-
-      {/* ============================================ */}
-      {/* Boot Button (GPIO0) - Pulled High           */}
-      {/* ============================================ */}
-      <resistor
-        name="R3"
-        footprint="0603"
-        resistance="10K"
-        supplierPartNumbers={{ jlcpcb: ["C25804"] }}
-        pcbX={10}
-        pcbY={-12}
-        schX={10}
-        schY={-14}
-      />
-      <trace from=".R3 .pin1" to="net.V3_3" />
-      <trace from=".R3 .pin2" to=".BTN_BOOT .pin1" />
-
-      <PushButton
-        name="BTN_BOOT"
-        footprint="pushbutton"
-        supplierPartNumbers={{ jlcpcb: ["C110153"] }}
-        pcbX={14}
-        pcbY={-12}
-        schX={14}
-        schY={-14}
-      />
-      <trace from=".BTN_BOOT .pin1" to=".R3 .pin2" />
-      <trace from=".BTN_BOOT .pin2" to="net.GND" />
-      <trace from=".ESP32 .pin25" to=".BTN_BOOT .pin1" label="GPIO0" />
-
-      {/* ============================================ */}
-      {/* Programming Header - UART                    */}
-      {/* ============================================ */}
-      <chip
-        name="JP1"
-        footprint="1x4_2.54mm"
-        manufacturerPartNumber="CONN-4P-2.54mm"
-        pcbX={18}
-        pcbY={0}
-        schX={18}
-        schY={0}
-      />
-      <trace from=".JP1 .pin1" to=".ESP32 .pin27" label="TX" />
-      <trace from=".JP1 .pin2" to=".ESP32 .pin28" label="RX" />
-      <trace from=".JP1 .pin3" to="net.GND" label="GND" />
-      <trace from=".JP1 .pin4" to="net.V3_3" label="V3.3" />
-
-      {/* ============================================ */}
-      {/* Additional Decoupling Capacitor              */}
+      {/* Decoupling Capacitor C3 - 100nF            */}
       {/* ============================================ */}
       <capacitor
         name="C3"
@@ -221,13 +104,65 @@ export default () => {
         capacitance="100nF"
         voltageRating="16V"
         supplierPartNumbers={{ jlcpcb: ["C14663"] }}
-        pcbX={-5}
-        pcbY={-10}
-        schX={-5}
-        schY={-12}
+        pcbX={5}
+        pcbY={2}
+        schX={8}
+        schY={3}
       />
-      <trace from=".C3 .pos" to="net.V3_3" />
-      <trace from=".C3 .neg" to="net.GND" />
+      <trace from=".C3 .pos" to="net.V33" label="V33" />
+      <trace from=".C3 .neg" to="net.GND" label="GND" />
+
+      {/* ============================================ */}
+      {/* Status LED D1 - Power Indicator             */}
+      {/* ============================================ */}
+      <resistor
+        name="R1"
+        footprint="0603"
+        resistance="330R"
+        supplierPartNumbers={{ jlcpcb: ["C25104"] }}
+        pcbX={10}
+        pcbY={5}
+        schX={12}
+        schY={3}
+      />
+      <trace from=".R1 .pin1" to="net.V33" label="V33" />
+
+      <led
+        name="D1"
+        footprint="0603"
+        ledColor="green"
+        supplierPartNumbers={{ jlcpcb: ["C433"] }}
+        pcbX={13}
+        pcbY={5}
+        schX={16}
+        schY={3}
+      />
+      <trace from=".D1 .pos" to=".R1 .pin2" />
+      <trace from=".D1 .neg" to="net.GND" label="GND" />
+
+      {/* ============================================ */}
+      {/* MCU Interface Header J2 - 4-pin            */}
+      {/* ============================================ */}
+      <chip
+        name="J2"
+        footprint="dip_4"
+        manufacturerPartNumber="CONN-4P-2.54mm"
+        pinLabels={{
+          "1": ["VBUS"],
+          "2": ["V33"],
+          "3": ["GND"],
+          "4": ["DP"]
+        }}
+        pcbX={8}
+        pcbY={-5}
+        schX={15}
+        schY={-3}
+      />
+      <trace from=".J2 .VBUS" to="net.VBUS" label="VBUS" />
+      <trace from=".J2 .V33" to="net.V33" label="V33" />
+      <trace from=".J2 .GND" to="net.GND" label="GND" />
+      <trace from=".J2 .DP" to=".J1 .DP1" label="DP" />
+      <trace from=".J1 .DM1" to=".J2 .pin4" label="DM" />
     </board>
   )
 }
