@@ -40,7 +40,7 @@ export const SmdUsbC = (props: ChipProps<typeof usbCPinLabels>) => (
         <smtpad portHints={["pin2"]} pcbX="-1.8mm" pcbY="2.5mm" width="0.6mm" height="1.2mm" shape="rect" />
         
         {/* Shield wings - through hole style */}
-        <platedhole portHints={["pin7"]} pcbX="-3.2mm" pcbY="0mm" outerDiameter="1.8mm" holeDiameter="1.2mm" shape="rect" />
+        <platedhole portHints={["pin7"]} pcbX="-3.2mm" pcbY="0mm" outerWidth="1.8mm" outerHeight="1.8mm" holeWidth="1.2mm" holeHeight="1.2mm" shape="oval" />
         
         {/* USB Data lines */}
         <smtpad portHints={["pin5"]} pcbX="0.8mm" pcbY="-2.5mm" width="0.5mm" height="1mm" shape="rect" />
