@@ -21,15 +21,15 @@ import { SchottkyDiode } from "./imports/SchottkyDiode"
 const jlcpcb = (pn: string) => ({ supplierPartNumbers: { jlcpcb: [pn] } })
 
 export default () => (
-  <board width="100mm" height="90mm" autorouterVersion="v4" layers={2}>
+  <board width="140mm" height="110mm" autorouterVersion="v5" layers={2} traceWidth="0.25mm" viaDiameter="0.6mm" viaDrillDiameter="0.3mm">
     
     {/* ======================================== */}
     {/* MOUNTING HOLES - M3 x 4 corners */}
     {/* ======================================== */}
-    <hole pcbX={-45} pcbY={40} outerDiameter={3.2} holeDiameter={3.2} />
-    <hole pcbX={45} pcbY={40} outerDiameter={3.2} holeDiameter={3.2} />
-    <hole pcbX={-45} pcbY={-40} outerDiameter={3.2} holeDiameter={3.2} />
-    <hole pcbX={45} pcbY={-40} outerDiameter={3.2} holeDiameter={3.2} />
+    <hole pcbX={-65} pcbY={50} outerDiameter={3.2} holeDiameter={3.2} />
+    <hole pcbX={65} pcbY={50} outerDiameter={3.2} holeDiameter={3.2} />
+    <hole pcbX={-65} pcbY={-50} outerDiameter={3.2} holeDiameter={3.2} />
+    <hole pcbX={65} pcbY={-50} outerDiameter={3.2} holeDiameter={3.2} />
     
     {/* ======================================== */}
     {/* NETS */}
@@ -43,53 +43,58 @@ export default () => (
     <net name="ISENSE" />
     
     {/* ======================================== */}
+    {/* COPPER POURS - GND planes for clean routing */}
+    {/* ======================================== */}
+    <copperpour name="GND_POUR_TOP" connectsTo="net.GND" layer="top" />
+    
+    {/* ======================================== */}
     {/* POWER INPUT - LEFT */}
     {/* ======================================== */}
-    <TerminalBlock2P name="VIN_P" pcbX={-44} pcbY={25} pcbRotation={90} doNotPopulate={true} />
-    <TerminalBlock2P name="VIN_N" pcbX={-44} pcbY={-38} pcbRotation={90} doNotPopulate={true} />
+    <TerminalBlock2P name="VIN_P" pcbX={-60} pcbY={35} pcbRotation={90} doNotPopulate={true} />
+    <TerminalBlock2P name="VIN_N" pcbX={-60} pcbY={-40} pcbRotation={90} doNotPopulate={true} />
     
-    <capacitor name="C_IN1" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-34} pcbY={25} />
-    <capacitor name="C_IN2" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-34} pcbY={17} />
-    <capacitor name="C_IN3" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-34} pcbY={9} />
-    <capacitor name="C_BYP" capacitance="100nF" maxVoltageRating="50V" footprint="0603" {...jlcpcb("C14663")} pcbX={-34} pcbY={2} />
+    <capacitor name="C_IN1" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-50} pcbY={35} />
+    <capacitor name="C_IN2" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-50} pcbY={25} />
+    <capacitor name="C_IN3" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-50} pcbY={15} />
+    <capacitor name="C_BYP" capacitance="100nF" maxVoltageRating="50V" footprint="0603" {...jlcpcb("C14663")} pcbX={-50} pcbY={5} />
     
-    <PowerInductor name="L1" inductance="22uH" pcbX={-15} pcbY={10} />
+    <PowerInductor name="L1" inductance="22uH" pcbX={-30} pcbY={20} />
     
     {/* ======================================== */}
     {/* SWITCHING STAGE - CENTER */}
     {/* ======================================== */}
-    <CSD18537NQ5A name="Q1" pcbX={0} pcbY={26} />
-    <resistor name="R_G1" resistance="10R" footprint="0603" {...jlcpcb("C25804")} pcbX={8} pcbY={22} />
-    <MBR1040 name="D1" pcbX={18} pcbY={20} pcbRotation={270} />
+    <CSD18537NQ5A name="Q1" pcbX={-10} pcbY={35} />
+    <resistor name="R_G1" resistance="10R" footprint="0603" {...jlcpcb("C25804")} pcbX={5} pcbY={35} />
+    <MBR1040 name="D1" pcbX={15} pcbY={30} pcbRotation={270} />
     
-    <CSD18537NQ5A name="Q2" pcbX={0} pcbY={-22} />
-    <resistor name="R_G2" resistance="10R" footprint="0603" {...jlcpcb("C25804")} pcbX={8} pcbY={-22} />
-    <resistor name="R_CS" resistance="0.02R" tolerance="1%" footprint="2512" {...jlcpcb("C76748")} pcbX={0} pcbY={-38} />
+    <CSD18537NQ5A name="Q2" pcbX={-10} pcbY={-35} />
+    <resistor name="R_G2" resistance="10R" footprint="0603" {...jlcpcb("C25804")} pcbX={5} pcbY={-35} />
+    <resistor name="R_CS" resistance="0.02R" tolerance="1%" footprint="2512" {...jlcpcb("C76748")} pcbX={-10} pcbY={-48} />
     
     {/* ======================================== */}
     {/* GATE DRIVERS */}
     {/* ======================================== */}
-    <transistor name="Q3" type="pnp" footprint="sot23" pcbX={14} pcbY={30} pcbRotation={90} />
-    <transistor name="Q4" type="npn" footprint="sot23" pcbX={14} pcbY={14} pcbRotation={90} />
-    <resistor name="R_PULLUP_HS" resistance="10k" footprint="0603" {...jlcpcb("C25804")} pcbX={20} pcbY={28} />
+    <transistor name="Q3" type="pnp" footprint="sot23" pcbX={20} pcbY={42} pcbRotation={90} />
+    <transistor name="Q4" type="npn" footprint="sot23" pcbX={30} pcbY={35} pcbRotation={90} />
+    <resistor name="R_PULLUP_HS" resistance="10k" footprint="0603" {...jlcpcb("C25804")} pcbX={30} pcbY={35} />
     
-    <SchottkyDiode name="D_BOOT" pcbX={-10} pcbY={32} />
-    <capacitor name="C_BOOT" capacitance="1uF" maxVoltageRating="50V" footprint="0805" {...jlcpcb("C14663")} pcbX={-18} pcbY={32} />
+    <SchottkyDiode name="D_BOOT" pcbX={-20} pcbY={45} />
+    <capacitor name="C_BOOT" capacitance="1uF" maxVoltageRating="50V" footprint="0805" {...jlcpcb("C14663")} pcbX={-35} pcbY={45} />
     
-    <transistor name="Q5" type="pnp" footprint="sot23" pcbX={14} pcbY={-10} pcbRotation={90} />
-    <transistor name="Q6" type="npn" footprint="sot23" pcbX={14} pcbY={-20} pcbRotation={90} />
-    <resistor name="R_PULLUP_LS" resistance="10k" footprint="0603" {...jlcpcb("C25804")} pcbX={20} pcbY={-8} />
+    <transistor name="Q5" type="pnp" footprint="sot23" pcbX={20} pcbY={-20} pcbRotation={90} />
+    <transistor name="Q6" type="npn" footprint="sot23" pcbX={20} pcbY={-35} pcbRotation={90} />
+    <resistor name="R_PULLUP_LS" resistance="10k" footprint="0603" {...jlcpcb("C25804")} pcbX={30} pcbY={-28} />
     
     {/* ======================================== */}
     {/* POWER OUTPUT - RIGHT */}
     {/* ======================================== */}
-    <capacitor name="C_OUT1" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={35} pcbY={25} />
-    <capacitor name="C_OUT2" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={35} pcbY={17} />
-    <capacitor name="C_OUT3" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={35} pcbY={9} />
-    <capacitor name="C_FILT" capacitance="10uF" maxVoltageRating="50V" footprint="0805" {...jlcpcb("C14663")} pcbX={35} pcbY={2} />
+    <capacitor name="C_OUT1" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={50} pcbY={35} />
+    <capacitor name="C_OUT2" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={50} pcbY={25} />
+    <capacitor name="C_OUT3" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={50} pcbY={15} />
+    <capacitor name="C_FILT" capacitance="10uF" maxVoltageRating="50V" footprint="0805" {...jlcpcb("C14663")} pcbX={50} pcbY={5} />
     
-    <TerminalBlock2P name="VOUT_P" pcbX={46} pcbY={25} pcbRotation={90} doNotPopulate={true} />
-    <TerminalBlock2P name="VOUT_N" pcbX={46} pcbY={-35} pcbRotation={90} doNotPopulate={true} />
+    <TerminalBlock2P name="VOUT_P" pcbX={60} pcbY={35} pcbRotation={90} doNotPopulate={true} />
+    <TerminalBlock2P name="VOUT_N" pcbX={60} pcbY={-40} pcbRotation={90} doNotPopulate={true} />
     
     {/* ======================================== */}
     {/* CONTROLLER - BOTTOM */}
@@ -121,13 +126,13 @@ export default () => (
     <trace from="C_IN3.pin1" to="C_BYP.pin1" />
     <trace from="C_BYP.pin1" to="net.VIN" />
     
-    {/* GND Path */}
+    {/* GND Path - use bottom layer for clean routing */}
     <trace from="VIN_N.pin1" to="net.GND" />
     <trace from="VIN_N.pin2" to="net.GND" />
-    <trace from="C_IN1.pin2" to="C_IN2.pin2" />
-    <trace from="C_IN2.pin2" to="C_IN3.pin2" />
-    <trace from="C_IN3.pin2" to="C_BYP.pin2" />
-    <trace from="C_BYP.pin2" to="net.GND" />
+    <trace from="C_IN1.pin2" to="C_IN2.pin2" toLayer="bottom" />
+    <trace from="C_IN2.pin2" to="C_IN3.pin2" toLayer="bottom" />
+    <trace from="C_IN3.pin2" to="C_BYP.pin2" toLayer="bottom" />
+    <trace from="C_BYP.pin2" to="net.GND" toLayer="bottom" />
     
     {/* VIN to VCC */}
     <trace from="net.VIN" to="net.VCC" />
@@ -152,11 +157,11 @@ export default () => (
     <trace from="C_OUT3.pin1" to="C_FILT.pin1" />
     <trace from="C_FILT.pin1" to="net.VOUT" />
     
-    {/* Output GND */}
-    <trace from="C_OUT1.pin2" to="C_OUT2.pin2" />
-    <trace from="C_OUT2.pin2" to="C_OUT3.pin2" />
-    <trace from="C_OUT3.pin2" to="C_FILT.pin2" />
-    <trace from="C_FILT.pin2" to="net.GND" />
+    {/* Output GND - use bottom layer */}
+    <trace from="C_OUT1.pin2" to="C_OUT2.pin2" toLayer="bottom" />
+    <trace from="C_OUT2.pin2" to="C_OUT3.pin2" toLayer="bottom" />
+    <trace from="C_OUT3.pin2" to="C_FILT.pin2" toLayer="bottom" />
+    <trace from="C_FILT.pin2" to="net.GND" toLayer="bottom" />
     
     {/* Output Connectors */}
     <trace from="net.VOUT" to="VOUT_P.pin1" />
