@@ -22,6 +22,10 @@ export const StatusLed = (props: ChipProps<typeof ledPinLabels> & {
 }) => (
   <chip
     pinLabels={ledPinLabels}
+    pinAttributes={{
+      A: { requiresPower: true },
+      K: { requiresPower: true },
+    }}
     manufacturerPartNumber="LTST-C171"
     supplierPartNumbers={{ jlcpcb: ["C83994"] }}
     footprint={
