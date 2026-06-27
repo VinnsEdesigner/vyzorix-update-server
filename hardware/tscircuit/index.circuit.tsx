@@ -15,6 +15,8 @@ import { CSD18537NQ5A } from "./imports/CSD18537NQ5A"
 import { MBR1040 } from "./imports/MBR1040"
 import { PowerInductor } from "./imports/PowerInductor"
 import { TerminalBlock2P } from "./imports/TerminalBlock2P"
+import { StatusLed } from "./imports/StatusLed"
+import { SchottkyDiode } from "./imports/SchottkyDiode"
 
 const jlcpcb = (pn: string) => ({ supplierPartNumbers: { jlcpcb: [pn] } })
 
@@ -36,21 +38,21 @@ export default () => (
     {/* POWER INPUT - LEFT */}
     {/* ======================================== */}
     <TerminalBlock2P name="VIN_P" pcbX={-44} pcbY={25} pcbRotation={90} />
-    <TerminalBlock2P name="VIN_N" pcbX={-44} pcbY={-35} pcbRotation={90} />
+    <TerminalBlock2P name="VIN_N" pcbX={-44} pcbY={-38} pcbRotation={90} />
     
     <capacitor name="C_IN1" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-34} pcbY={25} />
     <capacitor name="C_IN2" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-34} pcbY={17} />
     <capacitor name="C_IN3" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-34} pcbY={9} />
     <capacitor name="C_BYP" capacitance="100nF" maxVoltageRating="50V" footprint="0603" {...jlcpcb("C14663")} pcbX={-34} pcbY={2} />
     
-    <PowerInductor name="L1" inductance="22uH" pcbX={-15} pcbY={16} />
+    <PowerInductor name="L1" inductance="22uH" pcbX={-15} pcbY={10} />
     
     {/* ======================================== */}
     {/* SWITCHING STAGE - CENTER */}
     {/* ======================================== */}
-    <CSD18537NQ5A name="Q1" pcbX={0} pcbY={22} />
+    <CSD18537NQ5A name="Q1" pcbX={0} pcbY={26} />
     <resistor name="R_G1" resistance="10R" footprint="0603" {...jlcpcb("C25804")} pcbX={8} pcbY={22} />
-    <MBR1040 name="D1" pcbX={18} pcbY={22} pcbRotation={270} />
+    <MBR1040 name="D1" pcbX={18} pcbY={20} pcbRotation={270} />
     
     <CSD18537NQ5A name="Q2" pcbX={0} pcbY={-22} />
     <resistor name="R_G2" resistance="10R" footprint="0603" {...jlcpcb("C25804")} pcbX={8} pcbY={-22} />
@@ -60,10 +62,10 @@ export default () => (
     {/* GATE DRIVERS */}
     {/* ======================================== */}
     <transistor name="Q3" type="pnp" footprint="sot23" pcbX={14} pcbY={30} pcbRotation={90} />
-    <transistor name="Q4" type="npn" footprint="sot23" pcbX={14} pcbY={20} pcbRotation={90} />
+    <transistor name="Q4" type="npn" footprint="sot23" pcbX={14} pcbY={14} pcbRotation={90} />
     <resistor name="R_PULLUP_HS" resistance="10k" footprint="0603" {...jlcpcb("C25804")} pcbX={20} pcbY={28} />
     
-    <diode name="D_BOOT" pcbX={-10} pcbY={32} />
+    <SchottkyDiode name="D_BOOT" pcbX={-10} pcbY={32} />
     <capacitor name="C_BOOT" capacitance="1uF" maxVoltageRating="50V" footprint="0805" {...jlcpcb("C14663")} pcbX={-18} pcbY={32} />
     
     <transistor name="Q5" type="pnp" footprint="sot23" pcbX={14} pcbY={-10} pcbRotation={90} />
@@ -93,11 +95,11 @@ export default () => (
     <resistor name="R_COMP" resistance="10k" footprint="0603" {...jlcpcb("C25804")} pcbX={-20} pcbY={-44} />
     <capacitor name="C_COMP" capacitance="10nF" maxVoltageRating="25V" footprint="0603" {...jlcpcb("C14663")} pcbX={-12} pcbY={-44} />
     <resistor name="R_EN" resistance="10k" footprint="0603" {...jlcpcb("C25804")} pcbX={-38} pcbY={-44} />
-    <capacitor name="C_EN" capacitance="1nF" maxVoltageRating="25V" footprint="0603" {...jlcpcb("C14663")} pcbX={-38} pcbY={-36} />
+    <capacitor name="C_EN" capacitance="1nF" maxVoltageRating="25V" footprint="0603" {...jlcpcb("C14663")} pcbX={-38} pcbY={-34} />
     <resistor name="R_LED_IN" resistance="1k" footprint="0603" {...jlcpcb("C25104")} pcbX={-30} pcbY={-44} />
-    <led name="LED_IN" footprint="0805" {...jlcpcb("C83994")} pcbX={-30} pcbY={-36} />
+    <StatusLed name="LED_IN" pcbX={-35} pcbY={-38} />
     <resistor name="R_LED_OUT" resistance="3.3k" footprint="0603" {...jlcpcb("C25104")} pcbX={20} pcbY={-22} />
-    <led name="LED_OUT" footprint="0805" {...jlcpcb("C83994")} pcbX={20} pcbY={-30} />
+    <StatusLed name="LED_OUT" pcbX={20} pcbY={-30} />
     
     {/* ======================================== */}
     {/* TRACES */}
@@ -105,6 +107,7 @@ export default () => (
     
     {/* VIN Power Path */}
     <trace from="VIN_P.pin1" to="C_IN1.pin1" />
+    <trace from="VIN_P.pin2" to="net.VIN" />
     <trace from="C_IN1.pin1" to="C_IN2.pin1" />
     <trace from="C_IN2.pin1" to="C_IN3.pin1" />
     <trace from="C_IN3.pin1" to="C_BYP.pin1" />

@@ -22,6 +22,10 @@ const terminal2PinLabels = {
 export const TerminalBlock2P = (props: ChipProps<typeof terminal2PinLabels>) => (
   <chip
     pinLabels={terminal2PinLabels}
+    pinAttributes={{
+      "1": { requiresPower: true, mustBeConnected: true },
+      "2": { requiresPower: true, mustBeConnected: true },
+    }}
     manufacturerPartNumber="KF301-2P"
     supplierPartNumbers={{ jlcpcb: ["C9176"] }}
     footprint={
