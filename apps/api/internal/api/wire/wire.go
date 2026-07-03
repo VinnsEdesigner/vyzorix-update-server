@@ -68,6 +68,12 @@ type ServerResult struct {
 	SessionManager    *infraauth.SessionManager
 }
 
+// Server combines ServerDependencies and ServerResult for wire-compatible return.
+type Server struct {
+	Dependencies *ServerDependencies
+	Result       *ServerResult
+}
+
 // WireServer wires all server dependencies.
 func WireServer(deps ServerDependencies) *ServerResult {
 	result := &ServerResult{}
