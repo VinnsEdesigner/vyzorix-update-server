@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -167,4 +168,58 @@ func extractVersionFromTag(tag string) string {
 		return tag[1:]
 	}
 	return tag
+}
+
+// FetchAssetChecksum fetches the SHA256 checksum for an asset from a checksums file.
+// It looks for common checksum file names like SHA256SUMS, checksums.txt, etc.
+func (c *Client) FetchAssetChecksum(ctx context.Context, releaseTag, assetName string) (string, error) {
+	checksumFiles := []string{"SHA256SUMS", "SHA256SUMS.txt", "checksums.txt", "checksums.txt.sha256"}
+
+	for _, filename := range checksumFiles {
+		url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s", c.owner, c.repo, releaseTag, filename)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		if err != nil {
+			continue
+		}
+		req.Header.Set("User-Agent", "Vyzorix-Update-Server")
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			continue
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			continue
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			continue
+		}
+
+		// Parse checksum file - format is typically: "sha256  filename" or "sha256 *filename"
+		content := string(body)
+		lines := strings.Split(content, "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			// Handle both "sha256  filename" and "sha256 *filename" formats
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				checksum := parts[0]
+				name := parts[len(parts)-1] // Last field is the filename
+				// Remove any leading * for globs
+				name = strings.TrimPrefix(name, "*")
+				if name == assetName {
+					return checksum, nil
+				}
+			}
+		}
+	}
+
+	return "", fmt.Errorf("checksum not found for asset %s", assetName)
 }
