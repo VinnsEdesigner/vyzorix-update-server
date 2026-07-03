@@ -21,6 +21,16 @@ const (
 	StatusCompleted Status = "completed"
 	// StatusFailed indicates the command has failed.
 	StatusFailed Status = "failed"
+	// StatusCancelled indicates the command was cancelled.
+	StatusCancelled Status = "cancelled"
+)
+
+// Command type constants.
+const (
+	// TypeWakeUpUpdater is sent to wake a device to check for updates.
+	TypeWakeUpUpdater = "WAKE_UP_UPDATER"
+	// TypeCheckUpdate is sent to trigger an update check on a device.
+	TypeCheckUpdate = "CHECK_UPDATE"
 )
 
 // Command represents a command to be sent to a device.
@@ -72,7 +82,7 @@ func (c *Command) IsFailed() bool {
 
 // IsFinished returns true if the command is in a terminal state.
 func (c *Command) IsFinished() bool {
-	return c.Status == StatusCompleted || c.Status == StatusFailed
+	return c.Status == StatusCompleted || c.Status == StatusFailed || c.Status == StatusCancelled
 }
 
 // DeliveredAtTime returns the DeliveredAt as a time.Time.
