@@ -150,6 +150,7 @@ var migrations = []Migration{
 	{Apply: migrateAddDevicesColumns, Name: "add_devices_columns", Version: 27},
 	{Apply: migrateCreateUpdateSyncStatus, Name: "create_update_sync_status_table", Version: 28},
 	{Apply: migrateDashboardDeviceLogs, Name: "create_dashboard_device_logs_table", Version: 29},
+	{Apply: migrateTelemetryUptime, Name: "add_telemetry_uptime_column", Version: 30},
 }
 
 // runMigrations applies all pending migrations.
