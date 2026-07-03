@@ -7,7 +7,7 @@ import (
 
 // RegisterTelemetryRoutes registers the device telemetry routes.
 func (h *TelemetryHandler) RegisterTelemetryRoutes(r *gin.RouterGroup, rateLimiter *middleware.DashboardRateLimiterMiddleware) {
-	r.GET("/device/:id/telemetry",
+	r.GET("/device/:imei/telemetry",
 		rateLimiter.DeviceMetricsLimit(),
 		h.GetTelemetry)
 }

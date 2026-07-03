@@ -29,12 +29,12 @@ func NewMetricsHandler(metricsSvc *metrics.Service, devRepo device.Repository, l
 	}
 }
 
-// GetMetrics handles GET /v1/device/:id/metrics.
+// GetMetrics handles GET /v1/device/:imei/metrics.
 // Returns aggregated metrics for chart visualization.
 func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	deviceID := c.Param("id")
+	deviceID := c.Param("imei")
 	if deviceID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Device ID is required"})
 		return
@@ -72,12 +72,12 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// ExportMetrics handles GET /v1/device/:id/metrics/export.
+// ExportMetrics handles GET /v1/device/:imei/metrics/export.
 // Exports metrics data in JSON or CSV format.
 func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	deviceID := c.Param("id")
+	deviceID := c.Param("imei")
 	if deviceID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Device ID is required"})
 		return

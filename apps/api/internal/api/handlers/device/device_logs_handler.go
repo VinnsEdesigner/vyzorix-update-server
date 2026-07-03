@@ -25,12 +25,12 @@ func NewLogsHandler(logsSvc *logs.Service, devRepo device.Repository, logger *sl
 	}
 }
 
-// GetLogs handles GET /v1/device/:id/logs.
+// GetLogs handles GET /v1/device/:imei/logs.
 // Returns event logs for a device with cursor-based pagination.
 func (h *LogsHandler) GetLogs(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	deviceID := c.Param("id")
+	deviceID := c.Param("imei")
 	if deviceID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Device ID is required"})
 		return
