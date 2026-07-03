@@ -60,4 +60,11 @@ type Repository interface {
 
 	// DeleteOldCommands removes commands older than the given timestamp.
 	DeleteOldCommands(ctx context.Context, olderThan int64) (int64, error)
+
+	// FindByDispatchPrefix retrieves all commands whose dispatch_id starts with the given prefix.
+	// Used by CancelPush to cancel all commands for a specific push ID.
+	FindByDispatchPrefix(ctx context.Context, prefix string) ([]*Command, error)
+
+	// CancelByDispatchPrefix marks all pending commands whose dispatch_id starts with the given prefix as cancelled.
+	CancelByDispatchPrefix(ctx context.Context, prefix string) (int64, error)
 }

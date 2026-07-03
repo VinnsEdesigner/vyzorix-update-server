@@ -66,6 +66,11 @@ func (h *UpdatesSyncHandler) Sync(c *gin.Context) {
 	c.JSON(http.StatusAccepted, result)
 }
 
+// SyncVersions is an alias for Sync to match expected handler names.
+func (h *UpdatesSyncHandler) SyncVersions(c *gin.Context) {
+	h.Sync(c)
+}
+
 // GetSyncStatus handles GET /v1/updates/sync/status.
 func (h *UpdatesSyncHandler) GetSyncStatus(c *gin.Context) {
 	status, err := h.service.GetSyncStatus(c.Request.Context())

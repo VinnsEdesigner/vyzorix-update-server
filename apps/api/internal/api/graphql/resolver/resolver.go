@@ -13,6 +13,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
@@ -27,6 +28,7 @@ type Resolver struct {
 	DashboardSvc    *dashboard.Service
 	LogsSvc         *logs.Service
 	MetricsSvc       *appmetrics.Service
+		UpdatesSvc      *updates.Service
 	Hub             *hub.Hub
 	TelemetryRepo   *storage.TelemetryRepository
 	LogsRepo        *storage.LogsRepository
@@ -51,6 +53,7 @@ func NewResolver(
 	dashboardSvc *dashboard.Service,
 	logsSvc *logs.Service,
 	metricsSvc *appmetrics.Service,
+	updatesSvc *updates.Service,
 	hub *hub.Hub,
 	telemetryRepo *storage.TelemetryRepository,
 	logsRepo *storage.LogsRepository,
@@ -66,6 +69,7 @@ func NewResolver(
 		DashboardSvc:   dashboardSvc,
 		LogsSvc:        logsSvc,
 		MetricsSvc:     metricsSvc,
+		UpdatesSvc:    updatesSvc,
 		Hub:             hub,
 		TelemetryRepo:   telemetryRepo,
 		LogsRepo:        logsRepo,

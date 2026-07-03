@@ -631,3 +631,355 @@ var ActivityStatsType = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
+
+// ============================================================
+// Updates API Types
+// ============================================================
+
+// UpdateVersionType represents an update version in the GraphQL schema.
+var UpdateVersionType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "UpdateVersion",
+	Description: "An available update version",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique version identifier",
+		},
+		"version": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Version string (e.g. v1.2.0)",
+		},
+		"releaseType": &graphql.Field{
+			Type:        graphql.NewNonNull(ReleaseTypeEnum),
+			Description: "Release type (MAJOR, MINOR, PATCH)",
+		},
+		"releaseNotes": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Release notes for this version",
+		},
+		"apkFilename": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "APK filename",
+		},
+		"apkSize": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "APK size in bytes",
+		},
+		"sha256": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "SHA256 hash of the APK",
+		},
+		"releasedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "Release timestamp",
+		},
+		"createdAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the version was added to the system",
+		},
+	},
+})
+
+// ChangelogEntryType represents a changelog entry.
+var ChangelogEntryType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "ChangelogEntry",
+	Description: "A changelog entry for a release",
+	Fields: graphql.Fields{
+		"version": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Version this changelog entry belongs to",
+		},
+		"date": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Release date",
+		},
+		"type": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Change type (added, changed, fixed, removed)",
+		},
+		"notes": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Change notes",
+		},
+	},
+})
+
+// SyncStatusType represents the GitHub sync status.
+var SyncStatusType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "SyncStatus",
+	Description: "GitHub sync status information",
+	Fields: graphql.Fields{
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Sync status: idle, syncing, synced, error",
+		},
+		"lastSyncAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the last sync completed",
+		},
+		"nextSyncAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the next scheduled sync will run",
+		},
+		"versionsFound": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "Number of versions found in last sync",
+		},
+		"error": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Error message if sync failed",
+		},
+	},
+})
+
+// UpdateStatusType represents the overall update system status.
+var UpdateStatusType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "UpdateStatus",
+	Description: "Overall update system status",
+	Fields: graphql.Fields{
+		"sync": &graphql.Field{
+			Type:        graphql.NewNonNull(SyncStatusType),
+			Description: "GitHub sync status",
+		},
+		"latest": &graphql.Field{
+			Type:        UpdateVersionType,
+			Description: "Latest available version",
+		},
+		"device": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Device current version",
+		},
+		"version": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Device current version (alias for device)",
+		},
+		"apkFilename": &graphql.Field{
+			Type:        graphql.String,
+			Description: "APK filename for the update",
+		},
+		"sha256": &graphql.Field{
+			Type:        graphql.String,
+			Description: "SHA256 hash for the update",
+		},
+	},
+})
+
+// PushDeviceType represents a device in an update push.
+var PushDeviceType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "PushDevice",
+	Description: "A device included in an update push",
+	Fields: graphql.Fields{
+		"deviceId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Device identifier",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(DevicePushStatusEnum),
+			Description: "Push status for this device",
+		},
+		"acknowledgedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the device acknowledged the update",
+		},
+		"error": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Error message if push failed for this device",
+		},
+	},
+})
+
+// UpdatePushType represents an update push.
+var UpdatePushType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "UpdatePush",
+	Description: "An update push to devices",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique push identifier",
+		},
+		"version": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Version being pushed",
+		},
+		"installType": &graphql.Field{
+			Type:        graphql.NewNonNull(InstallTypeEnum),
+			Description: "Install type (immediate or scheduled)",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(UpdateStatusEnum),
+			Description: "Push status",
+		},
+		"initiatedBy": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Operator ID who initiated the push",
+		},
+		"initiatedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the push was initiated",
+		},
+		"completedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the push completed",
+		},
+		"deviceCount": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Total number of devices in this push",
+		},
+		"devices": &graphql.Field{
+			Type:        graphql.NewList(graphql.NewNonNull(PushDeviceType)),
+			Description: "Devices in this push",
+		},
+	},
+})
+
+// PushHistoryEntryType represents a single push history entry.
+var PushHistoryEntryType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "PushHistoryEntry",
+	Description: "A single push history entry",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Push identifier",
+		},
+		"version": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Version pushed",
+		},
+		"installType": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Install type",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Push status",
+		},
+		"initiatedBy": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Operator who initiated",
+		},
+		"initiatedAt": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "When initiated (Unix ms)",
+		},
+		"completedAt": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "When completed (Unix ms)",
+		},
+		"deviceCount": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Total device count",
+		},
+		"pending": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Devices still pending",
+		},
+		"acknowledged": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Devices that acknowledged",
+		},
+		"failed": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Devices that failed",
+		},
+	},
+})
+
+// PushHistoryConnectionType represents paginated push history.
+var PushHistoryConnectionType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "PushHistoryConnection",
+	Description: "Paginated push history",
+	Fields: graphql.Fields{
+		"pushes": &graphql.Field{
+			Type:        graphql.NewList(graphql.NewNonNull(PushHistoryEntryType)),
+			Description: "Push history entries",
+		},
+		"pagination": &graphql.Field{
+			Type:        graphql.NewNonNull(PaginationType),
+			Description: "Pagination info",
+		},
+	},
+})
+
+// PushUpdateResponseType represents the response from pushing an update.
+var PushUpdateResponseType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "PushUpdateResponse",
+	Description: "Response from pushing an update",
+	Fields: graphql.Fields{
+		"pushId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Created push ID",
+		},
+		"version": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Version being pushed",
+		},
+		"installType": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Install type",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Push status",
+		},
+		"initiatedBy": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Operator who initiated",
+		},
+		"initiatedAt": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "When initiated (Unix ms)",
+		},
+		"deviceCount": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Total devices",
+		},
+	},
+})
+
+// SyncResponseType represents the response from triggering a sync.
+var SyncResponseType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "SyncResponse",
+	Description: "Response from triggering a GitHub sync",
+	Fields: graphql.Fields{
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Sync status",
+		},
+		"startedAt": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "When sync started (Unix ms)",
+		},
+		"message": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Status message",
+		},
+		"versionsFound": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "Versions found in this sync",
+		},
+	},
+})
+
+// CancelPushResponseType represents the response from cancelling a push.
+var CancelPushResponseType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "CancelPushResponse",
+	Description: "Response from cancelling a push",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Push ID",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "New status (cancelled)",
+		},
+		"cancelledAt": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "When cancelled (Unix ms)",
+		},
+		"cancelledBy": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Who cancelled",
+		},
+	},
+})

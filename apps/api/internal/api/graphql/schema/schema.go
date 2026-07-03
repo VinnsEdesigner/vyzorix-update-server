@@ -22,7 +22,7 @@ func buildQueryType(res *resolver.Resolver) *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name:   "Query",
 		Fields: mergeFields(deviceQueries(res), commandQueries(res), telemetryQueries(res),
-			connectionQueries(res), dashboardQueries(res)),
+			connectionQueries(res), dashboardQueries(res), updatesQueries(res)),
 	})
 }
 
@@ -172,6 +172,58 @@ func dashboardQueries(res *resolver.Resolver) graphql.Fields {
 	}
 }
 
+func updatesQueries(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"updatesStatus": &graphql.Field{
+			Type:        UpdateStatusType,
+			Description: "Get overall update system status",
+			Resolve:     res.GetUpdatesStatus,
+		},
+		"updatesVersions": &graphql.Field{
+			Type:        graphql.NewList(graphql.NewNonNull(UpdateVersionType)),
+			Description: "List all available update versions",
+			Args: graphql.FieldConfigArgument{
+				"status": &graphql.ArgumentConfig{Type: graphql.String},
+				"limit":  &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
+				"offset": &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
+			},
+			Resolve: res.GetUpdatesVersions,
+		},
+		"updatesChangelog": &graphql.Field{
+			Type:        graphql.NewList(graphql.NewNonNull(ChangelogEntryType)),
+			Description: "Get changelog entries",
+			Args: graphql.FieldConfigArgument{
+				"version": &graphql.ArgumentConfig{Type: graphql.String},
+				"limit":   &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 50},
+			},
+			Resolve: res.GetUpdatesChangelog,
+		},
+		"updatesHistory": &graphql.Field{
+			Type:        PushHistoryConnectionType,
+			Description: "Get push history with pagination",
+			Args: graphql.FieldConfigArgument{
+				"status": &graphql.ArgumentConfig{Type: graphql.String},
+				"page":   &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
+				"limit":  &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
+			},
+			Resolve: res.GetUpdatesHistory,
+		},
+		"updatesHistoryDetail": &graphql.Field{
+			Type:        UpdatePushType,
+			Description: "Get detailed push information",
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			},
+			Resolve: res.GetUpdatesHistoryDetail,
+		},
+		"updatesSyncStatus": &graphql.Field{
+			Type:        SyncStatusType,
+			Description: "Get GitHub sync status",
+			Resolve:     res.GetUpdatesSyncStatus,
+		},
+	}
+}
+
 func mergeFields(maps ...graphql.Fields) graphql.Fields {
 	result := make(graphql.Fields)
 	for _, m := range maps {
@@ -186,79 +238,138 @@ func mergeFields(maps ...graphql.Fields) graphql.Fields {
 func buildMutationType(res *resolver.Resolver) *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name: "Mutation",
-		Fields: graphql.Fields{
-			// Device mutations
-			"updateFCMToken": &graphql.Field{
-				Type:        DeviceType,
-				Description: "Update FCM token for a device",
-				Args: graphql.FieldConfigArgument{
-					"deviceId": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.ID),
-					},
-					"token": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.String),
-					},
-				},
-				Resolve: res.UpdateFCMToken,
-			},
-			"deleteDevice": &graphql.Field{
-				Type:        graphql.Boolean,
-				Description: "Delete a device",
-				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.ID),
-					},
-				},
-				Resolve: res.DeleteDevice,
-			},
-			// Command mutations
-			"sendCommand": &graphql.Field{
-				Type:        CommandResultType,
-				Description: "Send a command to a device",
-				Args: graphql.FieldConfigArgument{
-					"deviceId": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.ID),
-					},
-					"command": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.String),
-					},
-					"args": &graphql.ArgumentConfig{
-						Type: JSONScalar,
-					},
-				},
-				Resolve: res.SendCommand,
-			},
-			"retryCommand": &graphql.Field{
-				Type:        CommandType,
-				Description: "Retry a failed command",
-				Args: graphql.FieldConfigArgument{
-					"dispatchId": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.ID),
-					},
-				},
-				Resolve: res.RetryCommand,
-			},
-			"cancelCommand": &graphql.Field{
-				Type:        graphql.Boolean,
-				Description: "Cancel a pending command",
-				Args: graphql.FieldConfigArgument{
-					"dispatchId": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.ID),
-					},
-				},
-				Resolve: res.CancelCommand,
-			},
-			// Device control mutations
-			"disconnectDevice": &graphql.Field{
-				Type:        graphql.Boolean,
-				Description: "Force disconnect a device",
-				Args: graphql.FieldConfigArgument{
-					"deviceId": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.ID),
-					},
-				},
-				Resolve: res.DisconnectDevice,
-			},
-		},
+		Fields: mergeMutationFields(
+			deviceMutations(res),
+			commandMutations(res),
+			updatesMutations(res),
+		),
 	})
+}
+
+func deviceMutations(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"updateFCMToken": &graphql.Field{
+			Type:        DeviceType,
+			Description: "Update FCM token for a device",
+			Args: graphql.FieldConfigArgument{
+				"deviceId": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+				},
+				"token": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+			},
+			Resolve: res.UpdateFCMToken,
+		},
+		"deleteDevice": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Delete a device",
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+				},
+			},
+			Resolve: res.DeleteDevice,
+		},
+		"disconnectDevice": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Force disconnect a device",
+			Args: graphql.FieldConfigArgument{
+				"deviceId": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+				},
+			},
+			Resolve: res.DisconnectDevice,
+		},
+	}
+}
+
+func commandMutations(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"sendCommand": &graphql.Field{
+			Type:        CommandResultType,
+			Description: "Send a command to a device",
+			Args: graphql.FieldConfigArgument{
+				"deviceId": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+				},
+				"command": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+				"args": &graphql.ArgumentConfig{
+					Type: JSONScalar,
+				},
+			},
+			Resolve: res.SendCommand,
+		},
+		"retryCommand": &graphql.Field{
+			Type:        CommandType,
+			Description: "Retry a failed command",
+			Args: graphql.FieldConfigArgument{
+				"dispatchId": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+				},
+			},
+			Resolve: res.RetryCommand,
+		},
+		"cancelCommand": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Cancel a pending command",
+			Args: graphql.FieldConfigArgument{
+				"dispatchId": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+				},
+			},
+			Resolve: res.CancelCommand,
+		},
+	}
+}
+
+func updatesMutations(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"pushUpdate": &graphql.Field{
+			Type:        PushUpdateResponseType,
+			Description: "Push an update to devices",
+			Args: graphql.FieldConfigArgument{
+				"version": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+				"deviceIds": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.ID))),
+				},
+				"installType": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+				"scheduledAt": &graphql.ArgumentConfig{
+					Type: graphql.Int,
+				},
+			},
+			Resolve: res.PushUpdate,
+		},
+		"cancelUpdate": &graphql.Field{
+			Type:        CancelPushResponseType,
+			Description: "Cancel a pending update push",
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+				},
+			},
+			Resolve: res.CancelUpdate,
+		},
+		"syncFromGitHub": &graphql.Field{
+			Type:        SyncResponseType,
+			Description: "Trigger a GitHub sync",
+			Resolve:     res.SyncFromGitHub,
+		},
+	}
+}
+
+func mergeMutationFields(maps ...graphql.Fields) graphql.Fields {
+	result := make(graphql.Fields)
+	for _, m := range maps {
+		for k, v := range m {
+			result[k] = v
+		}
+	}
+	return result
 }
