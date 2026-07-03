@@ -7,7 +7,7 @@ import (
 
 // RegisterRoutes registers the device logs routes.
 func (h *LogsHandler) RegisterRoutes(r *gin.RouterGroup, rateLimiter *middleware.DashboardRateLimiterMiddleware) {
-	r.GET("/device/:id/logs",
+	r.GET("/device/:imei/logs",
 		rateLimiter.DeviceLogsLimit(),
 		h.GetLogs)
 }
