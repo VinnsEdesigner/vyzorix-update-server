@@ -15,6 +15,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
@@ -35,6 +36,7 @@ func (s *Server) RegisterGraphQL(
 	logsRepo *storage.LogsRepository,
 	metricsRepo *storage.MetricsRepository,
 	wsHub *hub.Hub,
+	updatesSvc *updates.Service,
 ) error {
 	// Get auth services from server config
 	authService := s.getAuthService()
@@ -54,6 +56,7 @@ func (s *Server) RegisterGraphQL(
 		dashboardSvc,
 		logsSvc,
 		metricsSvc,
+		updatesSvc,
 		wsHub,
 		telemetryRepo,
 		logsRepo,

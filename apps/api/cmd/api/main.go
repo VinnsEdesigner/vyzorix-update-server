@@ -23,7 +23,9 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/logging"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
@@ -83,9 +85,41 @@ func main() {
 		metricsSvc := appmetrics.NewService(metricsRepo)
 		dashboardSvc := dashboard.NewService(deviceRepo, commandRepo)
 
+		// Create UpdatesService for GraphQL
+		updatesStorage := storage.NewUpdatesStorage(db.DB())
+		versionsStatusSvc := updatesapp.NewVersionsStatusService(updatesStorage)
+		versionsListSvc := updatesapp.NewVersionsListService(updatesStorage)
+		changelogSvc := updatesapp.NewChangelogService(updatesStorage)
+		exportSvc := updatesapp.NewExportService(updatesStorage)
+		updatesHistorySvc := updatesapp.NewHistoryService(updatesStorage)
+
+		// GitHub sync
+		var githubSyncSvc *github.SyncService
+		if cfg.GitHubReleaseToken != "" && cfg.GitHubReleaseRepo != "" {
+			githubClient := github.NewClient("VinnsEdesigner", cfg.GitHubReleaseRepo, cfg.GitHubReleaseToken)
+			githubSyncSvc = github.NewSyncService(githubClient, updatesStorage, log)
+		}
+		syncSvc := updatesapp.NewSyncService(updatesStorage, githubSyncSvc)
+
+		// PushService needs Hub, FCM, CommandService, DeviceService
+		pushSvc := updatesapp.NewPushService(updatesStorage, deviceService, wsHub, fcmNotifier, commandService, log)
+
+		// Create main UpdatesService
+		updatesSvc := updatesapp.NewService(
+			updatesStorage,
+			versionsStatusSvc,
+			versionsListSvc,
+			changelogSvc,
+			exportSvc,
+			pushSvc,
+			updatesHistorySvc,
+			syncSvc,
+		)
+
 		if regErr := apiServer.RegisterGraphQL(
 			deviceService, commandService, historyService, dashboardSvc,
 			logsSvc, metricsSvc, telemetryRepo, logsRepo, metricsRepo, wsHub,
+			updatesSvc,
 		); regErr != nil {
 			log.Error("failed to register GraphQL", "err", regErr)
 		}
