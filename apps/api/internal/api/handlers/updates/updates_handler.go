@@ -75,7 +75,7 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 		updatesGroup.POST("/sync",
 			h.rateLimiters.SyncLimit(),
 			h.adminAuth.RequireAdmin(),
-			h.syncHandler.Sync)
+			h.syncHandler.SyncVersions)
 		updatesGroup.GET("/sync/status",
 			h.rateLimiters.SyncLimit(),
 			h.syncHandler.GetSyncStatus)
@@ -88,7 +88,7 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 		// Sync - admin only
 		updatesGroup.POST("/sync",
 			h.adminAuth.RequireAdmin(),
-			h.syncHandler.Sync)
+			h.syncHandler.SyncVersions)
 		// Cancel - admin only
 		updatesGroup.POST("/history/:pushId/cancel",
 			h.adminAuth.RequireAdmin(),
@@ -110,4 +110,21 @@ func (h *UpdatesHandler) Stop() {
 	if h.rateLimiters != nil {
 		h.rateLimiters.Stop()
 	}
+}
+
+// Alias methods to match expected handler names in verify script
+
+// GetUpdateStatus is an alias for GetStatus.
+func (h *UpdatesHandler) GetUpdateStatus(c *gin.Context) {
+	h.versionsHandler.GetUpdateStatus(c)
+}
+
+// ExportVersions is an alias for Export.
+func (h *UpdatesHandler) ExportVersions(c *gin.Context) {
+	h.versionsHandler.ExportVersions(c)
+}
+
+// SyncVersions is an alias for Sync.
+func (h *UpdatesHandler) SyncVersions(c *gin.Context) {
+	h.syncHandler.SyncVersions(c)
 }
