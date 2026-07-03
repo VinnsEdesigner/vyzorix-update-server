@@ -44,29 +44,30 @@ func (s *Service) GetDashboardStats(ctx context.Context) (*DashboardStatsRespons
 		return nil, fmt.Errorf("failed to count pending commands: %w", err)
 	}
 
-	totalCount, err := s.commandRepo.Count(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to count commands: %w", err)
-	}
-
-	// Get today's commands count
+	// Get last 24h time range
 	now := time.Now()
-	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	last24h := now.Add(-24 * time.Hour)
 
-	// Count commands created today using a simple approach
-	todayCommands, _, err := s.commandRepo.FindHistoryByDeviceID(ctx, "", "all", startOfDay, now, 1000, 0)
-	
-	var todayCount int
-	if err != nil || todayCommands == nil {
-		// Estimate: assume proportional to time of day
-		todayCount = int(float64(totalCount) * (float64(now.Hour()) / 24.0))
-	} else {
-		todayCount = len(todayCommands)
+	// Count commands in last 24 hours
+	commandsLast24h, _, err := s.commandRepo.FindHistoryByDeviceID(ctx, "", "all", last24h, now, 10000, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commands from last 24h: %w", err)
+	}
+	commandsLast24hCount := len(commandsLast24h)
+
+	// Count failed commands in last 24 hours
+	failedCount := 0
+	for _, cmd := range commandsLast24h {
+		if cmd.Status == command.StatusFailed {
+			failedCount++
+		}
 	}
 
-	// Count failed commands (using FindHistoryByDeviceID but filtering status)
-	// This is a simplified approach - in production you'd want a dedicated count method
-	failedCount := 0
+	// Count registrations and deregistrations from device events in last 24h
+	// This would require access to device events or logs - for now use placeholder
+	// In production, query device_events table for registration/deregistration events
+	registrations := 0
+	deregistrations := 0
 
 	return &DashboardStatsResponse{
 		Devices: DevicesStats{
@@ -75,15 +76,15 @@ func (s *Service) GetDashboardStats(ctx context.Context) (*DashboardStatsRespons
 			Offline: len(allDevices) - onlineCount,
 		},
 		Commands: CommandsStats{
-			TotalToday: todayCount,
-			Pending:    pendingCount,
-			Failed:     failedCount,
+			TotalToday: commandsLast24hCount,
+			Pending:   pendingCount,
+			Failed:    failedCount,
 		},
 		Activity: ActivityStats{
 			Last24h: ActivityDetail{
-				Commands:        todayCount,
-				Registrations:   0, // Would require counting registrations in last 24h
-				Deregistrations: 0, // Would require counting deregistrations in last 24h
+				Commands:        commandsLast24hCount,
+				Registrations:  registrations,
+				Deregistrations: deregistrations,
 			},
 		},
 	}, nil
