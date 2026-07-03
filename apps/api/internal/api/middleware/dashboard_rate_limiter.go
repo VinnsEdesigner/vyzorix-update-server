@@ -30,6 +30,12 @@ type DashboardRateLimits struct {
 	// POST /v1/device/:imei/command: 10 requests per minute
 	SendCommandLimit int
 	SendCommandRefill time.Duration
+
+	// Diagnostics endpoints: 30 requests per minute
+	DeviceInspectLimit int
+	DeviceInspectRefill time.Duration
+	DeviceTimelineLimit int
+	DeviceTimelineRefill time.Duration
 }
 
 // DefaultDashboardRateLimits returns the default rate limits per the spec.
@@ -54,6 +60,12 @@ func DefaultDashboardRateLimits() *DashboardRateLimits {
 		// POST /v1/device/:imei/command: 10 per minute
 		SendCommandLimit:  10,
 		SendCommandRefill: time.Minute,
+
+		// Diagnostics: 30 per minute
+		DeviceInspectLimit:   30,
+		DeviceInspectRefill:  time.Minute,
+		DeviceTimelineLimit:  30,
+		DeviceTimelineRefill: time.Minute,
 	}
 }
 
@@ -64,6 +76,8 @@ type DashboardRateLimiterMiddleware struct {
 	deviceMetricsLimiter  *RateLimiter
 	metricsExportLimiter  *RateLimiter
 	sendCommandLimiter    *RateLimiter
+	deviceInspectLimiter   *RateLimiter
+	deviceTimelineLimiter *RateLimiter
 }
 
 // NewDashboardRateLimiterMiddleware creates a new dashboard rate limiter middleware.
@@ -78,6 +92,8 @@ func NewDashboardRateLimiterMiddleware(limits *DashboardRateLimits) *DashboardRa
 		deviceMetricsLimiter:  NewRateLimiter(limits.DeviceMetricsLimit, limits.DeviceMetricsRefill),
 		metricsExportLimiter:  NewRateLimiter(limits.MetricsExportLimit, limits.MetricsExportRefill),
 		sendCommandLimiter:    NewRateLimiter(limits.SendCommandLimit, limits.SendCommandRefill),
+		deviceInspectLimiter:  NewRateLimiter(limits.DeviceInspectLimit, limits.DeviceInspectRefill),
+		deviceTimelineLimiter: NewRateLimiter(limits.DeviceTimelineLimit, limits.DeviceTimelineRefill),
 	}
 }
 
@@ -106,6 +122,16 @@ func (m *DashboardRateLimiterMiddleware) SendCommandLimit() gin.HandlerFunc {
 	return dashboardRateLimitMiddleware(m.sendCommandLimiter)
 }
 
+// DeviceInspectLimit returns the rate limiter middleware for GET /v1/device/:imei/inspect.
+func (m *DashboardRateLimiterMiddleware) DeviceInspectLimit() gin.HandlerFunc {
+	return dashboardRateLimitMiddleware(m.deviceInspectLimiter)
+}
+
+// DeviceTimelineLimit returns the rate limiter middleware for GET /v1/device/:imei/timeline.
+func (m *DashboardRateLimiterMiddleware) DeviceTimelineLimit() gin.HandlerFunc {
+	return dashboardRateLimitMiddleware(m.deviceTimelineLimiter)
+}
+
 // Stop stops all rate limiter cleanup goroutines.
 func (m *DashboardRateLimiterMiddleware) Stop() {
 	m.commandHistoryLimiter.Stop()
@@ -113,16 +139,20 @@ func (m *DashboardRateLimiterMiddleware) Stop() {
 	m.deviceMetricsLimiter.Stop()
 	m.metricsExportLimiter.Stop()
 	m.sendCommandLimiter.Stop()
+	m.deviceInspectLimiter.Stop()
+	m.deviceTimelineLimiter.Stop()
 }
 
 // Stats returns statistics for all rate limiters.
 func (m *DashboardRateLimiterMiddleware) Stats() map[string]RateLimiterStats {
 	return map[string]RateLimiterStats{
-		"command_history": m.commandHistoryLimiter.Stats(),
-		"device_logs":     m.deviceLogsLimiter.Stats(),
-		"device_metrics":  m.deviceMetricsLimiter.Stats(),
-		"metrics_export":  m.metricsExportLimiter.Stats(),
-		"send_command":    m.sendCommandLimiter.Stats(),
+		"command_history":  m.commandHistoryLimiter.Stats(),
+		"device_logs":      m.deviceLogsLimiter.Stats(),
+		"device_metrics":   m.deviceMetricsLimiter.Stats(),
+		"metrics_export":   m.metricsExportLimiter.Stats(),
+		"send_command":     m.sendCommandLimiter.Stats(),
+		"device_inspect":    m.deviceInspectLimiter.Stats(),
+		"device_timeline":   m.deviceTimelineLimiter.Stats(),
 	}
 }
 
@@ -140,6 +170,11 @@ func dashboardRateLimitMiddleware(limiter *RateLimiter) gin.HandlerFunc {
 		// Also include device ID in key for device-specific endpoints
 		if deviceID := c.Param("id"); deviceID != "" {
 			key = key + ":device:" + deviceID
+		}
+
+		// Include IMEI if present
+		if imei := c.Param("imei"); imei != "" {
+			key = key + ":imei:" + imei
 		}
 
 		if !limiter.Allow(key) {

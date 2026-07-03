@@ -15,6 +15,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
+	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -86,6 +87,8 @@ func main() {
 		logsSvc := logs.NewService(logsRepo, deps.Log)
 		metricsSvc := appmetrics.NewService(metricsRepo)
 		dashboardSvc := dashboard.NewService(deviceRepo, commandRepo, logsRepo)
+		diagnosticsRepo := storage.NewDiagnosticsRepository(db)
+		diagnosticsSvc := diagnosticsapp.NewService(diagnosticsRepo, deviceRepo, deps.Hub)
 
 		if regErr := apiServer.RegisterGraphQL(
 			deps.DeviceService,
@@ -99,6 +102,7 @@ func main() {
 			metricsRepo,
 			deps.Hub,
 			deps.UpdatesService,
+			diagnosticsSvc,
 		); regErr != nil {
 			log.Error("failed to register GraphQL", "err", regErr)
 			PrintWarning("GraphQL", "Registration failed")

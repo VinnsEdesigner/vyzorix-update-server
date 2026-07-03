@@ -14,6 +14,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
+	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
@@ -30,7 +31,6 @@ import (
 
 // Config holds the GraphQL server configuration.
 type Config struct {
-	// Service dependencies
 	AuthService    *auth.AuthService
 	SessionManager *infraauth.SessionManager
 	DeviceService  *device.Service
@@ -40,6 +40,7 @@ type Config struct {
 	LogsSvc       *logs.Service
 	MetricsSvc     *appmetrics.Service
 	UpdatesSvc    *updates.Service
+	DiagnosticsSvc *diagnosticsapp.Service
 	TelemetryRepo  *storage.TelemetryRepository
 	LogsRepo      *storage.LogsRepository
 	MetricsRepo    *storage.MetricsRepository
@@ -71,6 +72,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		cfg.LogsSvc,
 		cfg.MetricsSvc,
 		cfg.UpdatesSvc,
+		cfg.DiagnosticsSvc,
 		cfg.Hub,
 		cfg.TelemetryRepo,
 		cfg.LogsRepo,
