@@ -2,6 +2,7 @@
 package session
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -27,9 +28,32 @@ var (
 	ErrDecryptionFailed = errors.New("cookie decryption failed")
 )
 
+// Repository defines the interface for session persistence.
+type Repository interface {
+	FindByID(ctx context.Context, id string) (*Session, error)
+	FindByOperatorID(ctx context.Context, operatorID string) ([]*Session, error)
+	Create(ctx context.Context, s *Session) error
+	Delete(ctx context.Context, id string) error
+	DeleteByOperatorID(ctx context.Context, operatorID string) error
+	DeleteExpired(ctx context.Context) (int, error)
+	Extend(ctx context.Context, id string, newExpiry time.Time) error
+	RevokeAllOperatorSessions(ctx context.Context, operatorID string) error
+}
+
+// Session represents an authentication session.
+type Session struct {
+	ID         string
+	OperatorID string
+	ExpiresAt  time.Time
+	CreatedAt  time.Time
+	IPAddress  string
+	UserAgent  string
+}
+
 // Manager handles encrypted session cookies for HttpOnly cookie auth.
 type Manager struct {
 	encryptionKey []byte
+	sessionRepo   Repository
 }
 
 // NewManager creates a new session manager with the given secret.
@@ -43,6 +67,11 @@ func NewManager(secret string) *Manager {
 	return &Manager{
 		encryptionKey: key,
 	}
+}
+
+// SetRepository sets the session repository for session management.
+func (sm *Manager) SetRepository(repo Repository) {
+	sm.sessionRepo = repo
 }
 
 // EncryptOperatorID encrypts an operator ID for storage in a cookie value.
@@ -162,4 +191,36 @@ func (sm *Manager) ExtractFromCookie(cookieValue string) (string, error) {
 func HashOperatorID(operatorID string) string {
 	h := sha512.Sum512([]byte(operatorID))
 	return hex.EncodeToString(h[:])
+}
+
+// ListActiveSessions returns all active (non-expired) sessions for an operator.
+func (sm *Manager) ListActiveSessions(ctx context.Context, operatorID string) ([]*Session, error) {
+	if sm.sessionRepo == nil {
+		return nil, errors.New("session repository not configured")
+	}
+
+	sessions, err := sm.sessionRepo.FindByOperatorID(ctx, operatorID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter out expired sessions
+	active := make([]*Session, 0, len(sessions))
+	now := time.Now()
+	for _, s := range sessions {
+		if s.ExpiresAt.After(now) {
+			active = append(active, s)
+		}
+	}
+
+	return active, nil
+}
+
+// RevokeSession revokes a specific session by ID.
+func (sm *Manager) RevokeSession(ctx context.Context, sessionID string) error {
+	if sm.sessionRepo == nil {
+		return errors.New("session repository not configured")
+	}
+
+	return sm.sessionRepo.Delete(ctx, sessionID)
 }

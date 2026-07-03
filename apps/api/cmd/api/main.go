@@ -23,7 +23,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
@@ -72,9 +72,35 @@ func main() {
 
 	ssrConfig, ssrManager := initSSR(log)
 
+	// Create UpdatesService (needed for REST API, optionally used by GraphQL)
+	updatesStorage := storage.NewUpdatesStorage(db.DB())
+	versionsStatusSvc := updatesapp.NewVersionsStatusService(updatesStorage)
+	versionsListSvc := updatesapp.NewVersionsListService(updatesStorage)
+	changelogSvc := updatesapp.NewChangelogService(updatesStorage)
+	exportSvc := updatesapp.NewExportService(updatesStorage)
+	updatesHistorySvc := updatesapp.NewHistoryService(updatesStorage)
+
+	var githubSyncSvc *github.SyncService
+	if cfg.GitHubReleaseToken != "" && cfg.GitHubReleaseRepo != "" {
+		githubClient := github.NewClient("VinnsEdesigner", cfg.GitHubReleaseRepo, cfg.GitHubReleaseToken)
+		githubSyncSvc = github.NewSyncService(githubClient, updatesStorage, log)
+	}
+	syncSvc := updatesapp.NewSyncService(updatesStorage, githubSyncSvc)
+	pushSvc := updatesapp.NewPushService(updatesStorage, deviceService, wsHub, fcmNotifier, commandService, log)
+	updatesSvc := updatesapp.NewService(
+		updatesStorage,
+		versionsStatusSvc,
+		versionsListSvc,
+		changelogSvc,
+		exportSvc,
+		pushSvc,
+		updatesHistorySvc,
+		syncSvc,
+	)
+
 	apiServer := createAPIServer(cfg, log, db, operatorRepo, sessionManager, googleVerifier,
 		authService, deviceService, clientService, commandService, emailSvc,
-		rateLimiter, authLimiter, accountLockout, wsHub, fcmNotifier)
+		rateLimiter, authLimiter, accountLockout, wsHub, fcmNotifier, updatesSvc)
 
 	if cfg.EnableGraphQL {
 		// Create dashboard services for GraphQL
@@ -84,37 +110,6 @@ func main() {
 		logsSvc := logs.NewService(logsRepo, log)
 		metricsSvc := appmetrics.NewService(metricsRepo)
 		dashboardSvc := dashboard.NewService(deviceRepo, commandRepo)
-
-		// Create UpdatesService for GraphQL
-		updatesStorage := storage.NewUpdatesStorage(db.DB())
-		versionsStatusSvc := updatesapp.NewVersionsStatusService(updatesStorage)
-		versionsListSvc := updatesapp.NewVersionsListService(updatesStorage)
-		changelogSvc := updatesapp.NewChangelogService(updatesStorage)
-		exportSvc := updatesapp.NewExportService(updatesStorage)
-		updatesHistorySvc := updatesapp.NewHistoryService(updatesStorage)
-
-		// GitHub sync
-		var githubSyncSvc *github.SyncService
-		if cfg.GitHubReleaseToken != "" && cfg.GitHubReleaseRepo != "" {
-			githubClient := github.NewClient("VinnsEdesigner", cfg.GitHubReleaseRepo, cfg.GitHubReleaseToken)
-			githubSyncSvc = github.NewSyncService(githubClient, updatesStorage, log)
-		}
-		syncSvc := updatesapp.NewSyncService(updatesStorage, githubSyncSvc)
-
-		// PushService needs Hub, FCM, CommandService, DeviceService
-		pushSvc := updatesapp.NewPushService(updatesStorage, deviceService, wsHub, fcmNotifier, commandService, log)
-
-		// Create main UpdatesService
-		updatesSvc := updatesapp.NewService(
-			updatesStorage,
-			versionsStatusSvc,
-			versionsListSvc,
-			changelogSvc,
-			exportSvc,
-			pushSvc,
-			updatesHistorySvc,
-			syncSvc,
-		)
 
 		if regErr := apiServer.RegisterGraphQL(
 			deviceService, commandService, historyService, dashboardSvc,
@@ -269,7 +264,8 @@ func createAPIServer(cfg config.Config, log *slog.Logger, db *storage.SQLite,
 	deviceService *device.Service, clientService *client.Service,
 	commandService *cmdapp.Service, emailSvc *emailService.Service,
 	rateLimiter *middleware.RateLimiter, authLimiter *middleware.RateLimiter,
-	accountLockout *middleware.Lockout, wsHub *hub.Hub, fcmNotifier fcm.Notifier) *api.Server {
+	accountLockout *middleware.Lockout, wsHub *hub.Hub, fcmNotifier fcm.Notifier,
+	updatesSvc *updatesapp.Service) *api.Server {
 	PrintSection("Server")
 	PrintStatus("Go Server", "Starting on "+cfg.Port)
 
@@ -292,6 +288,7 @@ func createAPIServer(cfg config.Config, log *slog.Logger, db *storage.SQLite,
 		Hub:             wsHub,
 		FCMNotifier:     fcmNotifier,
 		DB:             db,
+                UpdatesService:   updatesSvc,
 		Lockout:         accountLockout,
 		OperatorRepo:   operatorRepo,
 		Metrics:        appMetrics,
