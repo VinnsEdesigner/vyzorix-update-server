@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	infraConfig "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 
@@ -230,9 +231,9 @@ func (s *Server) setupUpdatesRoutes(r *gin.RouterGroup) {
 }
 
 func (s *Server) setupDiagnosticsRoutes(r *gin.RouterGroup) {
-	if s.diagnosticsHandler != nil {
+	if s.diagnosticsInspectHandler != nil || s.diagnosticsTimelineHandler != nil {
 		diagnosticsGroup := r.Group("/device")
-		s.diagnosticsHandler.RegisterRoutes(diagnosticsGroup)
+		diagnostics.RegisterRoutes(diagnosticsGroup, s.diagnosticsInspectHandler, s.diagnosticsTimelineHandler)
 	}
 }
 

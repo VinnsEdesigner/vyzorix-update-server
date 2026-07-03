@@ -33,8 +33,8 @@ func (r *DiagnosticsRepository) GetTimelineEvents(ctx context.Context, deviceID 
 	
 	args := []interface{}{deviceID}
 	
-	// Apply event type filter if specified
-	if filter.EventType != "" && filter.EventType != "all" {
+	// Apply event type filter if specified (empty means no filter)
+	if filter.EventType != "" {
 		query += " AND event_type = ?"
 		args = append(args, filter.EventType)
 	}
@@ -73,7 +73,7 @@ func (r *DiagnosticsRepository) GetTimelineEvents(ctx context.Context, deviceID 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	
 	var events []diagnostics.TimelineEvent
 	for rows.Next() {
@@ -138,7 +138,7 @@ func (r *DiagnosticsRepository) RecordEvent(ctx context.Context, event *diagnost
 		INSERT INTO device_events (id, device_id, event_type, timestamp, data)
 		VALUES (?, ?, ?, ?, ?)`
 	
-	_, err = r.db.ExecContext(ctx, query, event.ID, event.ID, event.Type, event.Timestamp, dataBytes)
+	_, err = r.db.ExecContext(ctx, query, event.ID, event.DeviceID, event.Type, event.Timestamp, dataBytes)
 	return err
 }
 
@@ -199,7 +199,7 @@ func (r *DiagnosticsRepository) GetLastTelemetry(ctx context.Context, deviceID s
 	
 	err := r.db.QueryRowContext(ctx, query, deviceID).Scan(&timestamp, &frameData)
 	if err == sql.ErrNoRows {
-		return nil, nil
+		return nil, diagnostics.ErrNoTelemetryData
 	}
 	if err != nil {
 		return nil, err
@@ -208,11 +208,14 @@ func (r *DiagnosticsRepository) GetLastTelemetry(ctx context.Context, deviceID s
 	// Parse frame data to extract telemetry info
 	var data map[string]any
 	if len(frameData) > 0 {
-		json.Unmarshal(frameData, &data)
+		if err := json.Unmarshal(frameData, &data); err != nil {
+			data = nil
+		}
 	}
 	
 	return &diagnostics.TimelineEvent{
 		ID:        "",
+		DeviceID:  deviceID,
 		Type:      diagnostics.EventTypeTelemetry,
 		Timestamp: timestamp,
 		Data:      data,
@@ -245,6 +248,9 @@ func (r *DiagnosticsRepository) encodeCursor(t time.Time, id string) string {
 		I string `json:"i"`
 	}{t.Format(time.RFC3339Nano), id}
 	
-	data, _ := json.Marshal(cursor)
+	data, err := json.Marshal(cursor)
+	if err != nil {
+		return ""
+	}
 	return base64.StdEncoding.EncodeToString(data)
 }
