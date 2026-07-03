@@ -1,0 +1,168 @@
+package inbox
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
+	"github.com/gin-gonic/gin"
+)
+
+// Handler handles inbox-related HTTP requests.
+type Handler struct {
+	service *inbox.Service
+}
+
+// NewHandler creates a new InboxHandler.
+func NewHandler(service *inbox.Service) *Handler {
+	return &Handler{service: service}
+}
+
+// GetInbox handles GET /v1/device/inbox.
+// Returns paginated list of inbox entries.
+func (h *Handler) GetInbox(c *gin.Context) {
+	status := c.DefaultQuery("status", "pending")
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	result, err := h.service.GetInbox(c.Request.Context(), status, page, limit)
+	if err != nil {
+		if se := inbox.AsServiceError(err); se != nil {
+			c.JSON(se.Status, se.ToErrorResponse())
+			return
+		}
+		c.JSON(http.StatusInternalServerError, inbox.ErrorResponse{
+			Code:    "internal_error",
+			Message: "Failed to get inbox",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// GetInboxEntry handles GET /v1/device/inbox/:imei.
+// Returns a single inbox entry by IMEI.
+func (h *Handler) GetInboxEntry(c *gin.Context) {
+	imei := c.Param("imei")
+	if imei == "" {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "IMEI is required",
+		})
+		return
+	}
+
+	result, err := h.service.GetInboxEntry(c.Request.Context(), imei)
+	if err != nil {
+		if se := inbox.AsServiceError(err); se != nil {
+			c.JSON(se.Status, se.ToErrorResponse())
+			return
+		}
+		c.JSON(http.StatusInternalServerError, inbox.ErrorResponse{
+			Code:    "internal_error",
+			Message: "Failed to get inbox entry",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// AckInbox handles POST /v1/device/inbox/:imei/ack.
+// Acknowledges (approves or rejects) an inbox entry.
+func (h *Handler) AckInbox(c *gin.Context) {
+	imei := c.Param("imei")
+	if imei == "" {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "IMEI is required",
+		})
+		return
+	}
+
+	var req inbox.AckRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "Invalid request body",
+		})
+		return
+	}
+
+	if req.Action != "approve" && req.Action != "reject" {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "Action must be 'approve' or 'reject'",
+		})
+		return
+	}
+
+	operator := middleware.GetOperatorFromContext(c)
+	operatorID := ""
+	if operator != nil {
+		operatorID = operator.ID
+	}
+
+	result, err := h.service.AckInbox(c.Request.Context(), imei, req.Action, operatorID, req.Notes)
+	if err != nil {
+		if se := inbox.AsServiceError(err); se != nil {
+			c.JSON(se.Status, se.ToErrorResponse())
+			return
+		}
+		c.JSON(http.StatusInternalServerError, inbox.ErrorResponse{
+			Code:    "internal_error",
+			Message: "Failed to acknowledge inbox entry",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// CreateInboxRequest handles POST /v1/device/inbox.
+// Creates a new inbox entry (used by device registration flow).
+func (h *Handler) CreateInboxRequest(c *gin.Context) {
+	var req inbox.InboxRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "Invalid request body",
+		})
+		return
+	}
+
+	if req.IMEI == "" {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "IMEI is required",
+		})
+		return
+	}
+
+	result, err := h.service.CreateInboxRequest(c.Request.Context(), &req)
+	if err != nil {
+		if se := inbox.AsServiceError(err); se != nil {
+			c.JSON(se.Status, se.ToErrorResponse())
+			return
+		}
+		c.JSON(http.StatusInternalServerError, inbox.ErrorResponse{
+			Code:    "internal_error",
+			Message: "Failed to create inbox entry",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, result)
+}

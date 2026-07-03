@@ -15,6 +15,7 @@ import (
 	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
+	inboxhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
@@ -22,6 +23,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
@@ -101,7 +103,8 @@ type Server struct {
 	deviceMetricsHandler    *devicehandlers.MetricsHandler
 	deviceTelemetryHandler  *devicehandlers.TelemetryHandler
 	dashboardStatsHandler   *dashboardhandlers.StatsHandler
-        updatesHandler          *updateshandlers.UpdatesHandler
+	updatesHandler          *updateshandlers.UpdatesHandler
+	inboxHandler            *inboxhandlers.Handler
 	config                  config.Config
 }
 
@@ -280,10 +283,32 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	if dashboardSvc != nil {
 		s.dashboardStatsHandler = dashboardhandlers.NewStatsHandler(dashboardSvc, cfg.Log)
 	}
-        if cfg.UpdatesService != nil {
-                updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(middleware.DefaultUpdatesRateLimits())
-                s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
-        }
+
+	// Updates handler
+	if cfg.UpdatesService != nil {
+		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(middleware.DefaultUpdatesRateLimits())
+		s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
+	}
+
+	// Inbox handler
+	s.wireInboxHandler(cfg)
+}
+
+// wireInboxHandler creates and assigns the inbox handler.
+func (s *Server) wireInboxHandler(cfg *ServerConfig) {
+	if cfg.DB == nil || cfg.DeviceService == nil {
+		return
+	}
+
+	// Create inbox repository
+	inboxRepo := storage.NewInboxRepository(cfg.DB.DB())
+	regLogRepo := storage.NewRegistrationLogRepository(cfg.DB.DB())
+
+	// Create inbox service with device service integration
+	inboxService := inbox.NewService(inboxRepo, regLogRepo, nil)
+
+	// Create handler
+	s.inboxHandler = inboxhandlers.NewHandler(inboxService)
 }
 
 // Handlers are defined in server_handlers.go
