@@ -9,14 +9,16 @@ import (
 // This table stores device event logs with cursor-based pagination support.
 func migrateDashboardDeviceLogs(db *sql.DB) error {
 	// Create device_logs table for device event logs
+	// NOTE: Using INTEGER for timestamp (Unix milliseconds) for SQLite compatibility
+	// NOTE: Using TEXT for data (JSON) since SQLite doesn't have native JSONB
 	_, err := db.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS device_logs (
-			id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+			id TEXT PRIMARY KEY,
 			device_id TEXT NOT NULL,
 			event_type TEXT NOT NULL,
-			timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			data JSONB,
-			CONSTRAINT fk_device_logs_device FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
+			timestamp INTEGER NOT NULL,
+			data TEXT,
+			FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
 		)
 	`)
 	if err != nil {
