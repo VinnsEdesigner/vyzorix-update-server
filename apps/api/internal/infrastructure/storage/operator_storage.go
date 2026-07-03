@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 )
 
 // Ensure OperatorRepository implements operator.Repository.
@@ -25,6 +26,28 @@ type OperatorRepository struct {
 func NewOperatorRepository(db *sql.DB) *OperatorRepository {
 	return &OperatorRepository{db: db}
 }
+// getQuerier returns the transaction from context if available, otherwise the db.
+func (r *OperatorRepository) getQuerier(ctx context.Context) Querier {
+if tx, ok := transaction.TxFromContext(ctx); ok {
+return tx
+}
+return r.db
+}
+
+// queryRow is a helper that uses transaction-aware querier.
+func (r *OperatorRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+}
+
+// queryRows is a helper that uses transaction-aware querier.
+func (r *OperatorRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+}
+
+// exec is a helper that uses transaction-aware querier.
+func (r *OperatorRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+return r.getQuerier(ctx).ExecContext(ctx, query, args...)
+}
 
 // FindByID retrieves an operator by ID.
 func (r *OperatorRepository) FindByID(ctx context.Context, id string) (*operator.Operator, error) {
@@ -37,7 +60,7 @@ func (r *OperatorRepository) FindByID(ctx context.Context, id string) (*operator
 
 	var googleID, githubID, mfaSecret, mfaBackupCodes sql.NullString
 
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.queryRow(ctx, query, id).Scan(
 		&op.ID, &op.Email, &op.Name, &op.PasswordHash, &op.Role,
 		&googleID, &githubID, &mfaSecret, &op.MFAEnabled, &mfaBackupCodes,
 		&op.EmailVerified, &op.CreatedAt, &op.UpdatedAt,
@@ -78,7 +101,7 @@ func (r *OperatorRepository) FindByEmail(ctx context.Context, email string) (*op
 
 	var googleID, githubID, mfaSecret sql.NullString
 
-	err := r.db.QueryRowContext(ctx, query, strings.ToLower(email)).Scan(
+	err := r.queryRow(ctx, query, strings.ToLower(email)).Scan(
 		&op.ID, &op.Email, &op.Name, &op.PasswordHash, &op.Role,
 		&googleID, &githubID, &mfaSecret, &op.MFAEnabled, &op.EmailVerified,
 		&op.CreatedAt, &op.UpdatedAt,
@@ -110,7 +133,7 @@ func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string
 
 	var googleIDVal, githubID, mfaSecret, mfaBackupCodes sql.NullString
 
-	err := r.db.QueryRowContext(ctx, query, googleID).Scan(
+	err := r.queryRow(ctx, query, googleID).Scan(
 		&op.ID, &op.Email, &op.Name, &op.PasswordHash, &op.Role,
 		&googleIDVal, &githubID, &mfaSecret, &op.MFAEnabled, &mfaBackupCodes,
 		&op.EmailVerified, &op.CreatedAt, &op.UpdatedAt,
@@ -146,7 +169,7 @@ func (r *OperatorRepository) FindByGitHubID(ctx context.Context, githubID string
 
 	var googleID, githubIDVal, mfaSecret, mfaBackupCodes sql.NullString
 
-	err := r.db.QueryRowContext(ctx, query, githubID).Scan(
+	err := r.queryRow(ctx, query, githubID).Scan(
 		&op.ID, &op.Email, &op.Name, &op.PasswordHash, &op.Role,
 		&googleID, &githubIDVal, &mfaSecret, &op.MFAEnabled, &mfaBackupCodes,
 		&op.EmailVerified, &op.CreatedAt, &op.UpdatedAt,
@@ -178,7 +201,7 @@ func (r *OperatorRepository) Create(ctx context.Context, op *operator.Operator) 
 		                       mfa_secret, mfa_enabled, email_verified, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err := r.exec(ctx, query,
 		op.ID, strings.ToLower(op.Email), op.Name, op.PasswordHash, op.Role,
 		nullString(op.GoogleID), nullString(op.GitHubID), nullString(op.MFASecret),
 		op.MFAEnabled, op.EmailVerified, op.CreatedAt, op.UpdatedAt,
@@ -195,7 +218,7 @@ func (r *OperatorRepository) Update(ctx context.Context, op *operator.Operator) 
 		    mfa_secret = ?, mfa_enabled = ?, email_verified = ?, updated_at = ?
 		WHERE id = ?`
 
-	result, err := r.db.ExecContext(ctx, query,
+	result, err := r.exec(ctx, query,
 		strings.ToLower(op.Email), op.Name, op.PasswordHash, op.Role,
 		nullString(op.GoogleID), nullString(op.GitHubID), nullString(op.MFASecret),
 		op.MFAEnabled, op.EmailVerified, time.Now(), op.ID,
@@ -218,7 +241,7 @@ func (r *OperatorRepository) Update(ctx context.Context, op *operator.Operator) 
 
 // Delete deletes an operator.
 func (r *OperatorRepository) Delete(ctx context.Context, id string) error {
-	result, err := r.db.ExecContext(ctx, "DELETE FROM operators WHERE id = ?", id)
+	result, err := r.exec(ctx, "DELETE FROM operators WHERE id = ?", id)
 	if err != nil {
 		return err
 	}
@@ -238,7 +261,7 @@ func (r *OperatorRepository) Delete(ctx context.Context, id string) error {
 // Count returns the total number of operators.
 func (r *OperatorRepository) Count(ctx context.Context) (int, error) {
 	var count int
-	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM operators").Scan(&count)
+	err := r.queryRow(ctx, "SELECT COUNT(*) FROM operators").Scan(&count)
 
 	return count, err
 }
@@ -250,7 +273,7 @@ func (r *OperatorRepository) List(ctx context.Context, limit, offset int) ([]*op
 		       mfa_secret, mfa_enabled, email_verified, created_at, updated_at 
 		FROM operators ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.queryRows(ctx, query, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -279,7 +302,7 @@ func (r *OperatorRepository) List(ctx context.Context, limit, offset int) ([]*op
 	}
 
 	var total int
-	if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM operators").Scan(&total); err != nil {
+	if err := r.queryRow(ctx, "SELECT COUNT(*) FROM operators").Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
@@ -288,7 +311,7 @@ func (r *OperatorRepository) List(ctx context.Context, limit, offset int) ([]*op
 
 // UpdatePassword updates the password hash for an operator.
 func (r *OperatorRepository) UpdatePassword(ctx context.Context, id, passwordHash string) error {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		"UPDATE operators SET password_hash = ?, updated_at = ? WHERE id = ?",
 		passwordHash, time.Now(), id,
 	)
@@ -310,7 +333,7 @@ func (r *OperatorRepository) UpdatePassword(ctx context.Context, id, passwordHas
 
 // UpdateMFA updates MFA settings for an operator.
 func (r *OperatorRepository) UpdateMFA(ctx context.Context, id, secret string, enabled bool) error {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		"UPDATE operators SET mfa_secret = ?, mfa_enabled = ?, updated_at = ? WHERE id = ?",
 		secret, enabled, time.Now(), id,
 	)
@@ -343,7 +366,7 @@ func (r *OperatorRepository) UpdateOperatorMFA(ctx context.Context, operatorID, 
 		backupCodesJSON = string(data)
 	}
 
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		"UPDATE operators SET mfa_secret = ?, mfa_enabled = 1, mfa_backup_codes = ?, updated_at = ? WHERE id = ?",
 		mfaSecret, backupCodesJSON, time.Now(), operatorID,
 	)
@@ -365,7 +388,7 @@ func (r *OperatorRepository) UpdateOperatorMFA(ctx context.Context, operatorID, 
 
 // VerifyEmail marks an operator's email as verified.
 func (r *OperatorRepository) VerifyEmail(ctx context.Context, id string) error {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		"UPDATE operators SET email_verified = 1, updated_at = ? WHERE id = ?",
 		time.Now(), id,
 	)
@@ -387,7 +410,7 @@ func (r *OperatorRepository) VerifyEmail(ctx context.Context, id string) error {
 
 // UpdateEmailVerified updates the email verified status for an operator.
 func (r *OperatorRepository) UpdateEmailVerified(ctx context.Context, id string, verified bool) error {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		"UPDATE operators SET email_verified = ?, updated_at = ? WHERE id = ?",
 		verified, time.Now(), id,
 	)
@@ -409,7 +432,7 @@ func (r *OperatorRepository) UpdateEmailVerified(ctx context.Context, id string,
 
 // UpdateGoogleID updates the Google ID for an operator.
 func (r *OperatorRepository) UpdateGoogleID(ctx context.Context, id, googleID string) error {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		"UPDATE operators SET google_id = ?, updated_at = ? WHERE id = ?",
 		googleID, time.Now(), id,
 	)
@@ -431,7 +454,7 @@ func (r *OperatorRepository) UpdateGoogleID(ctx context.Context, id, googleID st
 
 // UpdateGitHubID updates the GitHub ID for an operator.
 func (r *OperatorRepository) UpdateGitHubID(ctx context.Context, id, githubID string) error {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		"UPDATE operators SET github_id = ?, updated_at = ? WHERE id = ?",
 		githubID, time.Now(), id,
 	)
@@ -453,7 +476,7 @@ func (r *OperatorRepository) UpdateGitHubID(ctx context.Context, id, githubID st
 
 // UpdateName updates the display name for an operator.
 func (r *OperatorRepository) UpdateName(ctx context.Context, id, name string) error {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		"UPDATE operators SET name = ?, updated_at = ? WHERE id = ?",
 		strings.TrimSpace(name), time.Now(), id,
 	)
@@ -475,7 +498,7 @@ func (r *OperatorRepository) UpdateName(ctx context.Context, id, name string) er
 
 // UpdateThresholds updates the alert thresholds for an operator.
 func (r *OperatorRepository) UpdateThresholds(ctx context.Context, id string, th operator.Thresholds) error {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		`UPDATE operators SET risk_warn = ?, risk_crit = ?, thermal_warn = ?, thermal_crit = ?, 
 		 buffer_warn = ?, buffer_crit = ?, updated_at = ? WHERE id = ?`,
 		th.RiskWarn, th.RiskCrit, th.ThermalWarn, th.ThermalCrit,
@@ -499,7 +522,7 @@ func (r *OperatorRepository) UpdateThresholds(ctx context.Context, id string, th
 
 // UpdateClientSettings updates the client preferences for an operator.
 func (r *OperatorRepository) UpdateClientSettings(ctx context.Context, id string, cs operator.ClientSettings) error {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		`UPDATE operators SET strict_hmac = ?, auto_reconnect = ?, notifications_enabled = ?, 
 		 updated_at = ? WHERE id = ?`,
 		cs.StrictHmac, cs.AutoReconnect, cs.NotificationsEnabled, time.Now(), id,
@@ -522,7 +545,7 @@ func (r *OperatorRepository) UpdateClientSettings(ctx context.Context, id string
 
 // ResetSettings resets all settings to defaults for an operator.
 func (r *OperatorRepository) ResetSettings(ctx context.Context, id string) error {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		`UPDATE operators SET 
 		 risk_warn = 50, risk_crit = 75, thermal_warn = 45, thermal_crit = 55, 
 		 buffer_warn = 50, buffer_crit = 80,
@@ -550,7 +573,7 @@ func (r *OperatorRepository) ResetSettings(ctx context.Context, id string) error
 func (r *OperatorRepository) GetEmailVerified(ctx context.Context, id string) (bool, error) {
 	var verified int
 
-	err := r.db.QueryRowContext(ctx,
+	err := r.queryRow(ctx,
 		"SELECT email_verified FROM operators WHERE id = ?",
 		id,
 	).Scan(&verified)
@@ -567,7 +590,7 @@ func (r *OperatorRepository) GetEmailVerified(ctx context.Context, id string) (b
 
 // DisableMFA disables MFA for an operator by clearing the MFA secret and backup codes.
 func (r *OperatorRepository) DisableMFA(ctx context.Context, id string) error {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		"UPDATE operators SET mfa_secret = '', mfa_enabled = 0, mfa_backup_codes = '', updated_at = ? WHERE id = ?",
 		time.Now(), id,
 	)
@@ -591,7 +614,7 @@ func (r *OperatorRepository) DisableMFA(ctx context.Context, id string) error {
 func (r *OperatorRepository) GetSetting(ctx context.Context, key string) (string, error) {
 	var value string
 
-	err := r.db.QueryRowContext(ctx,
+	err := r.queryRow(ctx,
 		`SELECT value FROM settings WHERE key = ?`, key,
 	).Scan(&value)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -603,7 +626,7 @@ func (r *OperatorRepository) GetSetting(ctx context.Context, key string) (string
 
 // SetSetting updates or inserts a setting value.
 func (r *OperatorRepository) SetSetting(ctx context.Context, key, value string) error {
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.exec(ctx,
 		`INSERT OR REPLACE INTO settings(key, value, updated_at) VALUES(?, ?, ?)`,
 		key, value, time.Now().UTC().UnixMilli(),
 	)

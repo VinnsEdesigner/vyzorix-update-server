@@ -96,3 +96,8 @@ func (p *Presenter) UnauthorizedError() error {
 func (p *Presenter) ForbiddenError(message string) error {
 	return gqlerrors.Forbidden("%s", message)
 }
+
+// ConflictError returns a GraphQL conflict error.
+func (p *Presenter) ConflictError(message string) error {
+	return gqlerrors.Conflict("%s", message)
+}

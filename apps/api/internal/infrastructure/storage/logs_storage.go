@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/logs"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/uuid"
 )
 
@@ -22,6 +23,28 @@ type LogsRepository struct {
 // NewLogsRepository creates a new LogsRepository.
 func NewLogsRepository(db *sql.DB) *LogsRepository {
 	return &LogsRepository{db: db}
+}
+// getQuerier returns the transaction from context if available, otherwise the db.
+func (r *LogsRepository) getQuerier(ctx context.Context) Querier {
+if tx, ok := transaction.TxFromContext(ctx); ok {
+return tx
+}
+return r.db
+}
+
+// queryRow is a helper that uses transaction-aware querier.
+func (r *LogsRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+}
+
+// queryRows is a helper that uses transaction-aware querier.
+func (r *LogsRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+}
+
+// exec is a helper that uses transaction-aware querier.
+func (r *LogsRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+return r.getQuerier(ctx).ExecContext(ctx, query, args...)
 }
 
 // CreateLog creates a new device log entry.
@@ -44,7 +67,7 @@ func (r *LogsRepository) CreateLog(ctx context.Context, log *logs.DeviceLog) err
 		INSERT INTO device_logs (id, device_id, event_type, timestamp, data)
 		VALUES (?, ?, ?, ?, ?)`
 
-	_, err = r.db.ExecContext(ctx, query,
+	_, err = r.exec(ctx, query,
 		id, log.DeviceID, log.EventType, log.Timestamp.UnixMilli(), dataJSON,
 	)
 
@@ -61,7 +84,7 @@ func (r *LogsRepository) GetLogByID(ctx context.Context, id string) (*logs.Devic
 	var timestamp int64
 	var data []byte
 
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.queryRow(ctx, query, id).Scan(
 		&log.ID, &log.DeviceID, &log.EventType, &timestamp, &data,
 	)
 
@@ -122,7 +145,7 @@ func (r *LogsRepository) ListLogs(ctx context.Context, deviceID string, eventTyp
 	query := `SELECT id, device_id, event_type, timestamp, data ` + baseQuery + ` ORDER BY timestamp DESC, id DESC LIMIT ?`
 	args = append(args, limit+1)
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.queryRows(ctx, query, args...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -187,7 +210,7 @@ func (r *LogsRepository) CountLogs(ctx context.Context, deviceID string, eventTy
 	}
 
 	var count int
-	err := r.db.QueryRowContext(ctx, query, args...).Scan(&count)
+	err := r.queryRow(ctx, query, args...).Scan(&count)
 
 	return count, err
 }

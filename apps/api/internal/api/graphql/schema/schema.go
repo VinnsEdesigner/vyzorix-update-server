@@ -21,9 +21,32 @@ func BuildSchema(res *resolver.Resolver) (graphql.Schema, error) {
 func buildQueryType(res *resolver.Resolver) *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name:   "Query",
-		Fields: mergeFields(deviceQueries(res), commandQueries(res), telemetryQueries(res),
+		Fields: mergeFields(inboxQueries(res), deviceQueries(res), commandQueries(res), telemetryQueries(res),
 			connectionQueries(res), dashboardQueries(res), updatesQueries(res)),
 	})
+}
+
+func inboxQueries(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"inbox": &graphql.Field{
+			Type:        InboxListResponseType,
+			Description: "Get paginated inbox entries",
+			Args: graphql.FieldConfigArgument{
+				"status": &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: "pending"},
+				"page":   &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
+				"limit":  &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
+			},
+			Resolve: res.GetInbox,
+		},
+		"inboxEntry": &graphql.Field{
+			Type:        InboxEntryType,
+			Description: "Get a single inbox entry by IMEI",
+			Args: graphql.FieldConfigArgument{
+				"imei": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			},
+			Resolve: res.GetInboxEntry,
+		},
+	}
 }
 
 func deviceQueries(res *resolver.Resolver) graphql.Fields {
@@ -248,11 +271,46 @@ func buildMutationType(res *resolver.Resolver) *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name: "Mutation",
 		Fields: mergeMutationFields(
+			inboxMutations(res),
 			deviceMutations(res),
 			commandMutations(res),
 			updatesMutations(res),
 		),
 	})
+}
+
+func inboxMutations(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"ackInbox": &graphql.Field{
+			Type:        AckResultType,
+			Description: "Acknowledge (approve/reject) an inbox entry",
+			Args: graphql.FieldConfigArgument{
+				"imei": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+				"action": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(AckActionEnum),
+				},
+				"notes": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+			},
+			Resolve: res.AckInbox,
+		},
+		"deregisterDevice": &graphql.Field{
+			Type:        DeregisterResultType,
+			Description: "Deregister a device (soft delete with 30-day retention)",
+			Args: graphql.FieldConfigArgument{
+				"imei": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+				"hard": &graphql.ArgumentConfig{
+					Type: graphql.Boolean,
+				},
+			},
+			Resolve: res.DeregisterDeviceGraphQL,
+		},
+	}
 }
 
 func deviceMutations(res *resolver.Resolver) graphql.Fields {

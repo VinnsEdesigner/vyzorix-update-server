@@ -8,6 +8,8 @@ import (
 type InboxEntry struct {
 	ID                string     `json:"id"`
 	IMEI              string     `json:"imei"`
+	DeviceName        string     `json:"deviceName,omitempty"`
+	DeviceClass       string     `json:"deviceClass,omitempty"`
 	Model             string     `json:"model"`
 	Manufacturer      string     `json:"manufacturer"`
 	OSVersion         string     `json:"osVersion"`
@@ -19,6 +21,7 @@ type InboxEntry struct {
 	Notes             string     `json:"notes,omitempty"`
 	OperatorID        string     `json:"operatorId,omitempty"`
 	CreatedAt         int64      `json:"createdAt"`
+	UpdatedAt         int64      `json:"updatedAt,omitempty"`
 	ApprovedAt        *int64     `json:"approvedAt,omitempty"`
 	RejectedAt        *int64     `json:"rejectedAt,omitempty"`
 }

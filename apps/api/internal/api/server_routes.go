@@ -92,6 +92,10 @@ func (s *Server) setupDevicePublicRoutes(public *gin.RouterGroup) {
 	if s.inboxHandler != nil {
 		public.POST("/v1/device/inbox", s.inboxHandler.CreateInboxRequest)
 	}
+	// Public confirm endpoint - device confirms registration after receiving commandSecret
+	if s.deviceConfirmHandler != nil {
+		public.POST("/v1/device/confirm", s.deviceConfirmHandler.Handle)
+	}
 }
 
 func (s *Server) setupAuthenticatedRoutes() {
@@ -172,17 +176,24 @@ func (s *Server) setupDeviceManagementRoutes(r *gin.RouterGroup) {
 }
 
 func (s *Server) setupDeviceInboxRoutes(r *gin.RouterGroup) {
-	if s.inboxHandler != nil {
+	if s.inboxHandler != nil && s.deviceRegRateLimiter != nil {
 		deviceInbox := r.Group("/device")
-		s.inboxHandler.RegisterRoutes(deviceInbox)
+		// Apply rate limiting per spec Section 11.1
+		deviceInbox.GET("/inbox", s.deviceRegRateLimiter.InboxListLimit(), s.inboxHandler.GetInbox)
+		deviceInbox.GET("/inbox/:imei", s.deviceRegRateLimiter.InboxGetLimit(), s.inboxHandler.GetInboxEntry)
+		deviceInbox.POST("/inbox/:imei/ack", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.AckInbox)
+		// Note: POST /v1/device/inbox is public (used by devices for registration)
+		s.inboxHandler.RegisterPublicRoutes(deviceInbox)
 	}
 }
 
 func (s *Server) setupDevicesRoutes(r *gin.RouterGroup) {
-	if s.devicesHandler != nil {
+	if s.devicesHandler != nil && s.deviceRegRateLimiter != nil {
 		devices := r.Group("/devices")
-		devices.GET("", s.devicesHandler.GetDevices)
-		devices.GET("/:imei", s.devicesHandler.GetDeviceDetail)
+		// Apply rate limiting per spec Section 11.1
+		devices.GET("", s.deviceRegRateLimiter.DevicesListLimit(), s.devicesHandler.GetDevices)
+		devices.GET("/:imei", s.deviceRegRateLimiter.DevicesGetLimit(), s.devicesHandler.GetDeviceDetail)
+		devices.DELETE("/:imei", s.deviceRegRateLimiter.DevicesDeleteLimit(), s.devicesHandler.DeregisterDevice)
 	}
 }
 

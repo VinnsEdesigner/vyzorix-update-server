@@ -48,10 +48,11 @@ type FCMMetrics struct {
 }
 
 type SilentWake struct {
-	Token      string
-	Command    string
-	DispatchID string
-	DeviceID   string
+	Token          string
+	Command        string
+	CommandSecret  string
+	DispatchID     string
+	DeviceID       string
 	// Priority sets the FCM message priority (high or normal)
 	Priority string
 }
@@ -61,22 +62,43 @@ type Notifier interface {
 	GetMetrics() FCMMetrics
 }
 
-// SafeNotifier wraps a Notifier with graceful degradation.
+// SafeNotifier wraps a Notifier with graceful degradation and circuit breaker.
 // If FCM fails, it logs the error but doesn't propagate it,
 // allowing the service to continue operating.
+// Bug 50 fix: Includes circuit breaker to prevent cascading failures.
 type SafeNotifier struct {
-	Notifier Notifier
+	Notifier      Notifier
+	circuitBreaker *CircuitBreaker
 }
 
-// SendSilentWake attempts to send via FCM, logging failures but not failing the caller.
+// NewSafeNotifier creates a SafeNotifier with optional circuit breaker.
+func NewSafeNotifier(notifier Notifier) *SafeNotifier {
+	return &SafeNotifier{
+		Notifier:      notifier,
+		circuitBreaker: NewCircuitBreaker(DefaultCircuitBreakerConfig()),
+	}
+}
+
+// SendSilentWake attempts to send via FCM with circuit breaker protection.
 // Returns nil if FCM is disabled or fails, allowing the service to continue.
 func (s *SafeNotifier) SendSilentWake(ctx context.Context, wake SilentWake) error {
 	if s.Notifier == nil {
 		return nil // Graceful degradation: no notifier configured
 	}
 
+	// Bug 50 fix: Check circuit breaker before attempting FCM call
+	if s.circuitBreaker != nil && !s.circuitBreaker.Allow() {
+		s.Notifier.GetMetrics() // Trigger any side effects
+		return nil // Fail fast but gracefully
+	}
+
 	err := s.Notifier.SendSilentWake(ctx, wake)
 	if err != nil {
+		// Record failure in circuit breaker
+		if s.circuitBreaker != nil {
+			s.circuitBreaker.RecordFailure()
+		}
+
 		// Log the error but don't propagate - graceful degradation.
 		if errors.Is(err, ErrDisabled) {
 			// Not an error - FCM is intentionally disabled.
@@ -87,7 +109,20 @@ func (s *SafeNotifier) SendSilentWake(ctx context.Context, wake SilentWake) erro
 		return nil
 	}
 
+	// Record success in circuit breaker
+	if s.circuitBreaker != nil {
+		s.circuitBreaker.RecordSuccess()
+	}
+
 	return nil
+}
+
+// CircuitBreakerState returns the current state of the circuit breaker.
+func (s *SafeNotifier) CircuitBreakerState() string {
+	if s.circuitBreaker == nil {
+		return "disabled"
+	}
+	return s.circuitBreaker.State().String()
 }
 
 // EnhancedNotifier wraps Client with retry logic, metrics, and token validation.
@@ -156,15 +191,17 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 				Priority: priority,
 				TTL:      ptr24Hours(),
 				Data: map[string]string{
-					"action":      "WAKE_DAEMON",
-					"command":     wake.Command,
-					"dispatch_id": wake.DispatchID,
+					"action":         "WAKE_DAEMON",
+					"command":        wake.Command,
+					"command_secret": wake.CommandSecret,
+					"dispatch_id":    wake.DispatchID,
 				},
 			},
 			Data: map[string]string{
-				"action":      "WAKE_DAEMON",
-				"command":     wake.Command,
-				"dispatch_id": wake.DispatchID,
+				"action":         "WAKE_DAEMON",
+				"command":        wake.Command,
+				"command_secret": wake.CommandSecret,
+				"dispatch_id":    wake.DispatchID,
 			},
 		}
 

@@ -5,12 +5,17 @@ import "time"
 // InboxRequest represents an incoming device registration request.
 type InboxRequest struct {
 	IMEI              string `json:"imei"`
+	DeviceName        string `json:"deviceName"`
+	DeviceClass       string `json:"deviceClass"`
 	Model             string `json:"model"`
 	Manufacturer      string `json:"manufacturer"`
 	OSVersion         string `json:"osVersion"`
 	AppVersion        string `json:"appVersion"`
 	FCMToken          string `json:"fcmToken"`
 	FirebaseInstallID string `json:"firebaseInstallId"`
+	// IdempotencyKey is an optional client-provided key to prevent duplicate registrations.
+	// If provided, duplicate requests with the same key will return the existing entry.
+	IdempotencyKey string `json:"idempotencyKey,omitempty"`
 }
 
 // InboxListResponse represents the response for GET /v1/device/inbox.
@@ -21,20 +26,22 @@ type InboxListResponse struct {
 
 // InboxEntryResponse represents an inbox entry in API responses.
 type InboxEntryResponse struct {
-	ID                string  `json:"id"`
-	IMEI              string  `json:"imei"`
-	Model             string  `json:"model"`
-	Manufacturer      string  `json:"manufacturer"`
-	OSVersion         string  `json:"osVersion"`
-	AppVersion        string  `json:"appVersion"`
-	FCMToken          string  `json:"fcmToken"`
-	FirebaseInstallID string  `json:"firebaseInstallId"`
-	Status            string  `json:"status"`
-	CreatedAt         int64   `json:"createdAt"`
-	ApprovedAt        *int64  `json:"approvedAt,omitempty"`
-	RejectedAt        *int64  `json:"rejectedAt,omitempty"`
-	CommandSecret     string  `json:"commandSecret,omitempty"`
-	Notes             string  `json:"notes,omitempty"`
+	ID                 string  `json:"id"`
+	IMEI               string  `json:"imei"`
+	DeviceName         string  `json:"deviceName,omitempty"`
+	DeviceClass        string  `json:"deviceClass,omitempty"`
+	Model              string  `json:"model"`
+	Manufacturer       string  `json:"manufacturer"`
+	OSVersion          string  `json:"osVersion"`
+	AppVersion         string  `json:"appVersion"`
+	FCMToken           string  `json:"fcmToken"`
+	FirebaseInstallID  string  `json:"firebaseInstallId"`
+	Status             string  `json:"status"`
+	CreatedAt          int64   `json:"createdAt"`
+	ApprovedAt         *int64  `json:"approvedAt,omitempty"`
+	RejectedAt         *int64  `json:"rejectedAt,omitempty"`
+	Notes              string  `json:"notes,omitempty"`
+	OperatorID         string  `json:"operatorId,omitempty"`
 }
 
 // AckRequest represents the request for POST /v1/device/inbox/:imei/ack.
@@ -50,7 +57,7 @@ type AckResponse struct {
 	Status        string  `json:"status"`
 	ApprovedAt    *int64  `json:"approvedAt,omitempty"`
 	RejectedAt    *int64  `json:"rejectedAt,omitempty"`
-	CommandSecret string  `json:"commandSecret,omitempty"`
+	CommandSecret string  `json:"commandSecret,omitempty"` // Returned on approval per spec - device needs this if FCM fails
 	FCMPushSent   bool    `json:"fcmPushSent"`
 	Notes         string  `json:"notes,omitempty"`
 }

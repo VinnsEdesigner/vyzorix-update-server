@@ -93,7 +93,7 @@ func (h *ListHandler) Handle(c *gin.Context) {
 			Online:      isOnline,
 			LastSeen:    d.LastSeen,
 			AppVersion:  d.AppVersion,
-			DeviceClass: d.DeviceClass,
+			DeviceClass: d.Model, // Use Model as DeviceClass
 		})
 
 		// Stop if we have enough results.
@@ -103,11 +103,11 @@ func (h *ListHandler) Handle(c *gin.Context) {
 	}
 
 	result := gin.H{"devices": devices}
-	if response.Total > offset+len(devices) {
+	if response.Pagination.Total > offset+len(devices) {
 		result["nextCursor"] = offset + len(devices)
 	}
 
-	result["total"] = response.Total
+	result["total"] = response.Pagination.Total
 
 	c.JSON(http.StatusOK, result)
 }
