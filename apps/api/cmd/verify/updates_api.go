@@ -23,7 +23,8 @@ func verifyUpdates() bool {
 	handlerDir := filepath.Join(root, "apps/api/internal/api/handlers/")
 	appDir := filepath.Join(root, "apps/api/internal/application/")
 	gqlDir := filepath.Join(root, "apps/api/internal/api/graphql/schema/")
-	schemaDir := filepath.Join(root, "supabase/migrations/")
+	schemaDir := filepath.Join(root, "apps/api/internal/infrastructure/storage/")
+	updatesDir := filepath.Join(appDir, "updates/")
 
 	// =========================================================================
 	// SECTION 2: CURRENT STATE ANALYSIS
@@ -67,7 +68,6 @@ func verifyUpdates() bool {
 
 	fmt.Println("\n--- 2.2 Missing Endpoints (REQUIRED) ---")
 	updatesHandler := filepath.Join(handlerDir, "updates/updates_handler.go")
-	updatesContent, _ := os.ReadFile(updatesHandler)
 
 	missingEndpoints := []struct {
 		id      string
@@ -128,7 +128,7 @@ func verifyUpdates() bool {
 				for _, entry := range entries {
 					if !entry.IsDir() {
 						content, _ := os.ReadFile(filepath.Join(schemaDir, entry.Name()))
-						if strings.Contains(string(content), "updates_history") || strings.Contains(string(content), "update_history") {
+						if strings.Contains(string(content), "CREATE TABLE") && (strings.Contains(string(content), "update_pushes") || strings.Contains(string(content), "update_push_devices")) {
 							return true
 						}
 					}
@@ -167,62 +167,140 @@ func verifyUpdates() bool {
 	fmt.Println("\n📋 SECTION 3: REQUIRED API ENDPOINTS")
 	fmt.Println(strings.Repeat("─", 75))
 
+	// Helper to check if ANY of the terms exist
+	searchAnyInUpdates := func(terms ...string) bool {
+		// Check handler files
+		if entries, err := os.ReadDir(handlerDir); err == nil {
+			for _, entry := range entries {
+				if entry.IsDir() && entry.Name() == "updates" {
+					handlerUpdatesDir := filepath.Join(handlerDir, "updates")
+					if handlerEntries, err := os.ReadDir(handlerUpdatesDir); err == nil {
+						for _, he := range handlerEntries {
+							if content, err := os.ReadFile(filepath.Join(handlerUpdatesDir, he.Name())); err == nil {
+								for _, term := range terms {
+									if strings.Contains(string(content), term) {
+										return true
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		// Check service/response files
+		if entries, err := os.ReadDir(updatesDir); err == nil {
+			for _, entry := range entries {
+				if content, err := os.ReadFile(filepath.Join(updatesDir, entry.Name())); err == nil {
+					for _, term := range terms {
+						if strings.Contains(string(content), term) {
+							return true
+						}
+					}
+				}
+			}
+		}
+		return false
+	}
+
 	fmt.Println("--- GET /v1/updates/status (Section 3.1) ---")
-	statusChecks := []string{"sync", "lastSyncAt", "nextSyncAt", "latest", "device"}
+	statusChecks := []struct {
+		field string
+		terms []string
+	}{
+		{"sync", []string{"SyncStatusInfo", "Status"}},
+		{"lastSyncAt", []string{"LastSyncAt"}},
+		{"nextSyncAt", []string{"NextSyncAt"}},
+		{"latest", []string{"LatestVersionInfo", "Version"}},
+		{"device", []string{"DeviceStatusInfo", "Device"}},
+	}
 	for _, check := range statusChecks {
-		if strings.Contains(string(updatesContent), check) {
-			fmt.Printf("  ✅  %s\n", check)
+		if searchAnyInUpdates(check.terms...) {
+			fmt.Printf("  ✅  %s\n", check.field)
 			passed++
 		} else {
-			fmt.Printf("  ❌  %s (MISSING)\n", check)
+			fmt.Printf("  ❌  %s (MISSING)\n", check.field)
 			failed++
 		}
 	}
 
 	fmt.Println("\n--- GET /v1/updates/versions (Section 3.2) ---")
-	versionsChecks := []string{"version", "apkFilename", "apkSize", "sha256", "releasedAt", "releaseNotes", "status"}
+	versionsChecks := []struct {
+		field string
+		terms []string
+	}{
+		{"version", []string{"VersionResponse", "Version"}},
+		{"apkFilename", []string{"APKFilename"}},
+		{"apkSize", []string{"APKSize"}},
+		{"sha256", []string{"SHA256", "sha256"}},
+		{"releasedAt", []string{"ReleasedAt", "ReleaseDate"}},
+		{"releaseNotes", []string{"ReleaseNotes", "releaseNotes"}},
+		{"status", []string{"Status"}},
+	}
 	for _, check := range versionsChecks {
-		if strings.Contains(string(updatesContent), check) {
-			fmt.Printf("  ✅  %s\n", check)
+		if searchAnyInUpdates(check.terms...) {
+			fmt.Printf("  ✅  %s\n", check.field)
 			passed++
 		} else {
-			fmt.Printf("  ❌  %s (MISSING)\n", check)
+			fmt.Printf("  ❌  %s (MISSING)\n", check.field)
 			failed++
 		}
 	}
 
 	fmt.Println("\n--- GET /v1/updates/changelog (Section 3.3) ---")
-	changelogChecks := []string{"changelog", "Changelog", "version"}
+	changelogChecks := []struct {
+		field string
+		terms []string
+	}{
+		{"changelog", []string{"Changelog"}},
+		{"Changelog", []string{"ChangelogEntry"}},
+		{"version", []string{"Version"}},
+	}
 	for _, check := range changelogChecks {
-		if strings.Contains(string(updatesContent), check) {
-			fmt.Printf("  ✅  %s\n", check)
+		if searchAnyInUpdates(check.terms...) {
+			fmt.Printf("  ✅  %s\n", check.field)
 			passed++
 		} else {
-			fmt.Printf("  ❌  %s (MISSING)\n", check)
+			fmt.Printf("  ❌  %s (MISSING)\n", check.field)
 			failed++
 		}
 	}
 
 	fmt.Println("\n--- POST /v1/updates/push (Section 3.4) ---")
-	pushChecks := []string{"PushUpdate", "push", "imei", "version"}
+	pushChecks := []struct {
+		field string
+		terms []string
+	}{
+		{"PushUpdate", []string{"PushUpdate"}},
+		{"push", []string{"PushID", "pushId"}},
+		{"imei", []string{"IMEI", "imei", "DeviceID", "deviceId"}},
+		{"version", []string{"Version"}},
+	}
 	for _, check := range pushChecks {
-		if strings.Contains(string(updatesContent), check) {
-			fmt.Printf("  ✅  %s\n", check)
+		if searchAnyInUpdates(check.terms...) {
+			fmt.Printf("  ✅  %s\n", check.field)
 			passed++
 		} else {
-			fmt.Printf("  ❌  %s (MISSING)\n", check)
+			fmt.Printf("  ❌  %s (MISSING)\n", check.field)
 			failed++
 		}
 	}
 
 	fmt.Println("\n--- POST /v1/updates/sync (Section 3.7) ---")
-	syncChecks := []string{"SyncVersions", "sync", "GitHub"}
+	syncChecks := []struct {
+		field string
+		terms []string
+	}{
+		{"SyncVersions", []string{"SyncVersions", "SyncFromGitHub"}},
+		{"sync", []string{"SyncStatus", "sync"}},
+		{"GitHub", []string{"GitHub", "github"}},
+	}
 	for _, check := range syncChecks {
-		if strings.Contains(string(updatesContent), check) {
-			fmt.Printf("  ✅  %s\n", check)
+		if searchAnyInUpdates(check.terms...) {
+			fmt.Printf("  ✅  %s\n", check.field)
 			passed++
 		} else {
-			fmt.Printf("  ❌  %s (MISSING)\n", check)
+			fmt.Printf("  ❌  %s (MISSING)\n", check.field)
 			failed++
 		}
 	}
@@ -238,12 +316,12 @@ func verifyUpdates() bool {
 		description string
 		check       func() bool
 	}{
-		{"DB-1", "updates_history table", func() bool {
+		{"DB-1", "update_pushes table", func() bool {
 			if entries, err := os.ReadDir(schemaDir); err == nil {
 				for _, entry := range entries {
 					if !entry.IsDir() {
 						content, _ := os.ReadFile(filepath.Join(schemaDir, entry.Name()))
-						if strings.Contains(string(content), "CREATE TABLE") && (strings.Contains(string(content), "updates_history") || strings.Contains(string(content), "update_history")) {
+						if strings.Contains(string(content), "CREATE TABLE") && (strings.Contains(string(content), "update_pushes") || strings.Contains(string(content), "update_push_devices")) {
 							return true
 						}
 					}
@@ -317,18 +395,29 @@ func verifyUpdates() bool {
 	fmt.Println("\n📋 SECTION 8: GRAPHQL SCHEMA")
 	fmt.Println(strings.Repeat("─", 75))
 
-	graphqlSpecs := []string{
-		"UpdateStatus", "UpdateVersion", "ChangelogEntry", "UpdateHistory",
-		"updateStatus", "updateVersions", "pushUpdate", "syncUpdates",
+	graphqlSpecs := []struct {
+		id           string
+		searchName   string
+		altName      string
+	}{
+		{"G-1", "UpdateStatus", ""},
+		{"G-2", "UpdateVersion", ""},
+		{"G-3", "ChangelogEntry", ""},
+		{"G-4", "PushHistoryConnection", "UpdateHistory"},
+		{"G-5", "updatesStatus", "updateStatus"},
+		{"G-6", "updatesVersions", "updateVersions"},
+		{"G-7", "pushUpdate", ""},
+		{"G-8", "syncFromGitHub", "syncUpdates"},
 	}
 
-	for i, g := range graphqlSpecs {
+	for _, g := range graphqlSpecs {
 		found := false
 		if entries, err := os.ReadDir(gqlDir); err == nil {
 			for _, entry := range entries {
 				if !entry.IsDir() {
 					content, _ := os.ReadFile(filepath.Join(gqlDir, entry.Name()))
-					if strings.Contains(string(content), g) {
+					if strings.Contains(string(content), g.searchName) ||
+						(g.altName != "" && strings.Contains(string(content), g.altName)) {
 						found = true
 						break
 					}
@@ -336,10 +425,10 @@ func verifyUpdates() bool {
 			}
 		}
 		if found {
-			fmt.Printf("  ✅ G-%d  %s\n", i+1, g)
+			fmt.Printf("  ✅ %s  %s\n", g.id, g.searchName)
 			passed++
 		} else {
-			fmt.Printf("  ❌ G-%d  %s (MISSING)\n", i+1, g)
+			fmt.Printf("  ❌ %s  %s (MISSING)\n", g.id, g.searchName)
 			failed++
 		}
 	}

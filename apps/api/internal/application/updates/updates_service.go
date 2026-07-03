@@ -51,6 +51,11 @@ func (s *Service) GetStatus(ctx context.Context) (*GetStatusResponse, error) {
 	return s.versionsStatusSvc.GetStatus(ctx)
 }
 
+// GetUpdateStatus is an alias for GetStatus to match expected method names.
+func (s *Service) GetUpdateStatus(ctx context.Context) (*GetStatusResponse, error) {
+	return s.GetStatus(ctx)
+}
+
 // GetVersions returns paginated versions.
 func (s *Service) GetVersions(ctx context.Context, status string, page, limit int) (*ListVersionsResponse, error) {
 	return s.versionsListSvc.GetVersions(ctx, status, page, limit)
