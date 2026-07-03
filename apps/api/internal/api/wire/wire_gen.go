@@ -6,25 +6,18 @@
 package wire
 
 import (
-	"log/slog"
-
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
-
-	"github.com/gin-gonic/gin"
 )
 
 // Injector is the main injector function that wire will implement.
+// This is a placeholder - wire gen does not fully work with this project.
 func Injector(cfg config.Config) (
-	*slog.Logger,
 	*storage.SQLite,
 	*storage.OperatorRepository,
 	*storage.DeviceRepository,
 	*storage.CommandRepository,
 	*storage.SessionRepository,
-	*storage.EmailVerificationRepository,
-	*storage.PasswordResetRepository,
-	*gin.Engine,
 ) {
 	panic("unimplemented: wire will generate this")
 }
