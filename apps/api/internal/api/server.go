@@ -14,7 +14,7 @@ import (
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
 	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
-        updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
+	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
@@ -23,7 +23,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
-        updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -289,3 +289,62 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 // Handlers are defined in server_handlers.go
 // Routes are defined in server_routes.go
 // GraphQL is defined in server_graphql.go
+
+// ServerConfigWithDeps is the config for NewServerWithDeps using pre-wired dependencies.
+type ServerConfigWithDeps struct {
+	Config          config.Config
+	Log             *slog.Logger
+	DB              *storage.SQLite
+	Engine          *gin.Engine
+	Middleware      *wire.MiddlewareSet
+	HandlerSet      *wire.HandlerSet
+	SessionManager  *infraauth.SessionManager
+	Hub             *hub.Hub
+	AuditLogger     *audit.Logger
+	UpdatesService  *updatesapp.Service
+}
+
+// NewServerWithDeps creates a Server using pre-wired dependencies from wire.
+func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
+	if cfg.Config.Env == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	s := &Server{
+		engine:        cfg.Engine,
+		mwFactory:     cfg.Middleware.Factory,
+		rateLimiter:   cfg.Middleware.RateLimiter,
+		authLimiter:   cfg.Middleware.AuthLimiter,
+		config:        cfg.Config,
+		log:           cfg.Log,
+		cookieAuth:    cfg.Middleware.CookieAuth,
+		lockout:       cfg.Middleware.Lockout,
+		csrfProtector: cfg.Middleware.CSRFProtector,
+		turnstileVerifier: cfg.Middleware.TurnstileVerifier,
+		revocationList:    cfg.Middleware.RevocationList,
+		ipIntelligence:     cfg.Middleware.IPIntelligence,
+		hmacVerifier:       cfg.Middleware.HmacVerifier,
+		sessionManager:     cfg.SessionManager,
+		db:                 cfg.DB,
+		hub:                cfg.Hub,
+		AuditLogger:         cfg.AuditLogger,
+	}
+
+	// Wire handlers from HandlerSet
+	s.authHandlers = cfg.HandlerSet.Auth
+	s.deviceRegisterHandler = cfg.HandlerSet.DeviceRegister
+	s.deviceStatusHandler = cfg.HandlerSet.DeviceStatus
+	s.deviceUpdaterHandler = cfg.HandlerSet.DeviceUpdater
+	s.deviceListHandler = cfg.HandlerSet.DeviceList
+	s.commandHandler = cfg.HandlerSet.Command
+	s.streamHandler = cfg.HandlerSet.Stream
+	s.telemetryHistoryHandler = cfg.HandlerSet.TelemetryHistory
+	s.connectionStatusHandler = cfg.HandlerSet.ConnectionStatus
+	s.adminClientsHandler = cfg.HandlerSet.AdminClients
+	s.updaterHandler = cfg.HandlerSet.Updater
+	s.updatesHandler = cfg.HandlerSet.Updates
+
+	s.setupRoutes()
+
+	return s
+}

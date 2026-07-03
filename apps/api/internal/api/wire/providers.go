@@ -486,6 +486,7 @@ func ProvideServerDependencies(
 	rateLimiter *middleware.RateLimiter,
 	lockout *middleware.Lockout,
 	ipIntelligence *middleware.IPIntelligence,
+	updatesService *updatesapp.Service,
 ) *ServerDependencies {
 	return &ServerDependencies{
 		FCMNotifier:     fcmNotifier,
@@ -508,6 +509,8 @@ func ProvideServerDependencies(
 		AuditLogger:     auditLogger,
 		Config:          cfg,
 		UpdatesStorage:  updatesStorage,
+		UpdatesService:  updatesService,
+		TelemetryRepo:   telemetryRepo,
 	}
 }
 
