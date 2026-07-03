@@ -23,6 +23,7 @@ import (
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
@@ -127,9 +128,30 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		versionsListSvc := updatesapplication.NewVersionsListService(deps.UpdatesStorage)
 		changelogSvc := updatesapplication.NewChangelogService(deps.UpdatesStorage)
 		exportSvc := updatesapplication.NewExportService(deps.UpdatesStorage)
-		pushSvc := updatesapplication.NewPushService(deps.UpdatesStorage)
 		historySvc := updatesapplication.NewHistoryService(deps.UpdatesStorage)
-		syncSvc := updatesapplication.NewSyncService(deps.UpdatesStorage, nil) // GitHub sync can be nil for now
+
+		// GitHub sync: create client from config if token/repo are configured.
+		var githubSyncSvc *github.SyncService
+		if deps.Config.GitHubReleaseToken != "" && deps.Config.GitHubReleaseRepo != "" {
+			githubClient := github.NewClient(
+				"VinnsEdesigner", // owner - could be made configurable
+				deps.Config.GitHubReleaseRepo,
+				deps.Config.GitHubReleaseToken,
+			)
+			githubSyncSvc = github.NewSyncService(githubClient, deps.UpdatesStorage, deps.Log)
+		}
+		syncSvc := updatesapplication.NewSyncService(deps.UpdatesStorage, githubSyncSvc)
+
+		// PushService needs Hub (for WSS), FCM (for offline wake), CommandService (for persistence),
+		// and DeviceService (for FCM token lookup). All wired from deps.
+		pushSvc := updatesapplication.NewPushService(
+			deps.UpdatesStorage,
+			deps.DeviceService,
+			deps.Hub,
+			deps.FCMNotifier,
+			deps.CommandService,
+			deps.Log,
+		)
 
 		// Create main service with all sub-services
 		updatesService := updatesapplication.NewService(
