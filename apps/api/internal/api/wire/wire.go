@@ -11,6 +11,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	infraConfig "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -28,26 +29,28 @@ import (
 
 // ServerDependencies contains all dependencies needed to create a Server.
 type ServerDependencies struct {
-	FCMNotifier    fcm.Notifier
-	OperatorRepo   operator.Repository
-	RateLimiter    *middleware.RateLimiter
-	Hub            *hub.Hub
-	AuthService    *auth.AuthService
-	AuthLimiter    *middleware.RateLimiter
-	IPIntelligence *middleware.IPIntelligence
-	Log            *slog.Logger
-	SessionManager *infraauth.SessionManager
-	GoogleVerifier *infraauth.GoogleTokenVerifier
-	EmailService   *emailService.Service
-	CommandService *command.Service
-	ClientService  *client.Service
-	DB             *storage.SQLite
-	Lockout        *middleware.Lockout
-	DeviceService  *device.Service
-	Metrics        *metrics.Metrics
-	AuditLogger    *audit.Logger
-	Config         infraConfig.Config
-	UpdatesStorage *storage.UpdatesStorage
+	FCMNotifier     fcm.Notifier
+	OperatorRepo    operator.Repository
+	RateLimiter     *middleware.RateLimiter
+	Hub             *hub.Hub
+	AuthService     *auth.AuthService
+	AuthLimiter     *middleware.RateLimiter
+	IPIntelligence  *middleware.IPIntelligence
+	Log             *slog.Logger
+	SessionManager  *infraauth.SessionManager
+	GoogleVerifier  *infraauth.GoogleTokenVerifier
+	EmailService    *emailService.Service
+	CommandService  *command.Service
+	ClientService   *client.Service
+	DB              *storage.SQLite
+	Lockout         *middleware.Lockout
+	DeviceService   *device.Service
+	Metrics         *metrics.Metrics
+	AuditLogger     *audit.Logger
+	Config          infraConfig.Config
+	UpdatesStorage  *storage.UpdatesStorage
+	UpdatesService  *updatesapp.Service
+	TelemetryRepo   *storage.TelemetryRepository
 }
 
 // ServerResult contains the fully wired server components.
