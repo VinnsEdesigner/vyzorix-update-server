@@ -36,10 +36,16 @@ func (r *TelemetryRepository) Save(ctx context.Context, deviceID string, raw []b
 
 	now := time.Now().UnixMilli()
 
+	// Use uptime from frame if available, otherwise 0
+	uptime := frame.Uptime
+	if uptime == 0 {
+		uptime = 0 // Default to 0 if not provided
+	}
+
 	_, err = tx.ExecContext(ctx,
-		`INSERT INTO telemetry(id, device_id, received_at, payload, risk_score, buffer_level, thermal_temp) 
-		 VALUES(?,?,?,?,?,?,?)`,
-		telemetryID, deviceID, now, string(raw), frame.RiskScore, frame.BufferLevel, frame.ThermalTemp,
+		`INSERT INTO telemetry(id, device_id, received_at, payload, risk_score, buffer_level, thermal_temp, uptime) 
+		 VALUES(?,?,?,?,?,?,?,?)`,
+		telemetryID, deviceID, now, string(raw), frame.RiskScore, frame.BufferLevel, frame.ThermalTemp, uptime,
 	)
 	if err != nil {
 		return err
@@ -67,7 +73,7 @@ func (r *TelemetryRepository) List(ctx context.Context, deviceID string, limit i
 	}
 
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, device_id, received_at, payload, risk_score, buffer_level, thermal_temp 
+		`SELECT id, device_id, received_at, payload, risk_score, buffer_level, thermal_temp, COALESCE(uptime, 0) 
 		 FROM telemetry WHERE device_id = ? ORDER BY received_at DESC LIMIT ?`,
 		deviceID, limit,
 	)
@@ -82,7 +88,7 @@ func (r *TelemetryRepository) List(ctx context.Context, deviceID string, limit i
 		var e telemetry.TelemetryEntry
 
 		var receivedAt int64
-		if err := rows.Scan(&e.ID, &e.DeviceID, &receivedAt, &e.Payload, &e.RiskScore, &e.BufferLevel, &e.ThermalTemp); err != nil {
+		if err := rows.Scan(&e.ID, &e.DeviceID, &receivedAt, &e.Payload, &e.RiskScore, &e.BufferLevel, &e.ThermalTemp, &e.Uptime); err != nil {
 			return nil, err
 		}
 
@@ -104,7 +110,7 @@ func (r *TelemetryRepository) ListSince(ctx context.Context, deviceID string, si
 	}
 
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, device_id, received_at, payload, risk_score, buffer_level, thermal_temp 
+		`SELECT id, device_id, received_at, payload, risk_score, buffer_level, thermal_temp, COALESCE(uptime, 0) 
 		 FROM telemetry WHERE device_id = ? AND received_at > ? ORDER BY received_at DESC LIMIT ?`,
 		deviceID, sinceTimestamp, limit,
 	)
@@ -119,7 +125,7 @@ func (r *TelemetryRepository) ListSince(ctx context.Context, deviceID string, si
 		var e telemetry.TelemetryEntry
 
 		var receivedAt int64
-		if err := rows.Scan(&e.ID, &e.DeviceID, &receivedAt, &e.Payload, &e.RiskScore, &e.BufferLevel, &e.ThermalTemp); err != nil {
+		if err := rows.Scan(&e.ID, &e.DeviceID, &receivedAt, &e.Payload, &e.RiskScore, &e.BufferLevel, &e.ThermalTemp, &e.Uptime); err != nil {
 			return nil, err
 		}
 
