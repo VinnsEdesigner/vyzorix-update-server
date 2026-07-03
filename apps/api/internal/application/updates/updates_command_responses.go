@@ -74,7 +74,7 @@ type DeviceStatusInfo struct {
 // GetStatusResponse represents the response for GET /v1/updates/status.
 type GetStatusResponse struct {
 	Latest LatestVersionInfo `json:"latest,omitempty"`
-	Device DeviceStatusInfo  `json:"device"`
+	Device *DeviceStatusInfo `json:"device,omitempty"`
 	Sync   SyncStatusInfo    `json:"sync"`
 }
 

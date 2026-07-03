@@ -15,6 +15,7 @@ type SyncService struct {
 	client *Client
 	repo   updates.Repository
 	logger *slog.Logger
+	skipSHA256 bool // For testing or when checksums not available
 }
 
 // VersionAsset represents APK asset information.
@@ -50,7 +51,7 @@ func (s *SyncService) SyncFromGitHub(ctx context.Context) (*SyncResult, error) {
 		Status:    "syncing",
 	}
 
-	s.logger.Info("Starting GitHub sync")
+	s.logger.InfoContext(ctx, "Starting GitHub sync")
 
 	releases, err := s.client.FetchReleases(ctx)
 	if err != nil {
@@ -64,12 +65,15 @@ func (s *SyncService) SyncFromGitHub(ctx context.Context) (*SyncResult, error) {
 	s.logger.Info("Fetched GitHub releases", "count", len(releases))
 
 	versionsSynced := 0
+	var latestVersion *updates.UpdateVersion
+	var latestReleaseDate int64
+
 	for _, release := range releases {
 		if !s.shouldProcessRelease(release) {
 			continue
 		}
 
-		asset, err := s.findAPKAsset(release)
+		asset, err := s.findAPKAsset(ctx, release)
 		if err != nil {
 			s.logger.Warn("No APK asset found for release", "release", release.TagName)
 			continue
@@ -101,15 +105,20 @@ func (s *SyncService) SyncFromGitHub(ctx context.Context) (*SyncResult, error) {
 			}
 		}
 		versionsSynced++
+
+		// Track the version with the most recent release date
+		if latestVersion == nil || version.ReleaseDate > latestReleaseDate {
+			latestVersion = version
+			latestReleaseDate = version.ReleaseDate
+		}
 	}
 
-	// Update latest flag
-	if versionsSynced > 0 {
-		latest, err := s.repo.GetLatestVersion(ctx)
-		if err == nil && latest != nil {
-			if err := s.repo.UpdateLatestFlag(ctx, latest.ID); err != nil {
-				s.logger.Warn("Failed to update latest flag", "error", err)
-			}
+	// Update latest flag based on release date, not GitHub's "Latest" flag
+	if latestVersion != nil {
+		if err := s.repo.UpdateLatestFlag(ctx, latestVersion.ID); err != nil {
+			s.logger.Warn("Failed to update latest flag", "error", err)
+		} else {
+			s.logger.Info("Updated latest version", "version", latestVersion.Version, "released", latestReleaseDate)
 		}
 	}
 
@@ -117,7 +126,7 @@ func (s *SyncService) SyncFromGitHub(ctx context.Context) (*SyncResult, error) {
 	result.VersionsFound = versionsSynced
 	result.Message = fmt.Sprintf("Successfully synced %d versions", versionsSynced)
 
-	s.logger.Info("GitHub sync completed", "versions", versionsSynced)
+	s.logger.InfoContext(ctx, "GitHub sync completed", "versions", versionsSynced)
 
 	return result, nil
 }
@@ -139,16 +148,31 @@ func (s *SyncService) shouldProcessRelease(release GitHubRelease) bool {
 	return true
 }
 
-// findAPKAsset finds the APK asset in a release.
-func (s *SyncService) findAPKAsset(release GitHubRelease) (*VersionAsset, error) {
+// findAPKAsset finds the APK asset in a release and fetches its SHA256 checksum.
+func (s *SyncService) findAPKAsset(ctx context.Context, release GitHubRelease) (*VersionAsset, error) {
 	for _, asset := range release.Assets {
 		if strings.HasSuffix(strings.ToLower(asset.Name), ".apk") {
-			return &VersionAsset{
+			versionAsset := &VersionAsset{
 				Name:               asset.Name,
 				BrowserDownloadURL: asset.BrowserDownloadURL,
 				Size:               asset.Size,
-				SHA256:             "", // SHA256 would need to be fetched separately
-			}, nil
+			}
+
+			// Try to fetch SHA256 checksum if not in skip mode
+			if !s.skipSHA256 {
+				sha256, err := s.client.FetchAssetChecksum(ctx, release.TagName, asset.Name)
+				if err != nil {
+					// Log warning but don't fail - checksum is optional
+					s.logger.Warn("Failed to fetch SHA256 for asset",
+						"asset", asset.Name,
+						"release", release.TagName,
+						"error", err)
+				} else {
+					versionAsset.SHA256 = sha256
+				}
+			}
+
+			return versionAsset, nil
 		}
 	}
 	return nil, fmt.Errorf("no APK asset found")
@@ -169,6 +193,8 @@ func (s *SyncService) createUpdateVersion(release GitHubRelease, asset *VersionA
 		notes = release.Name
 	}
 
+	// NOTE: IsLatest is NOT set here. The latest version is determined by release date
+	// during the sync process to avoid relying on GitHub's manually-set "Latest" flag.
 	return &updates.UpdateVersion{
 		Version:      extractVersionFromTag(release.TagName),
 		APKFilename:  asset.Name,
@@ -177,7 +203,7 @@ func (s *SyncService) createUpdateVersion(release GitHubRelease, asset *VersionA
 		ReleaseNotes: notes,
 		ReleaseType:  releaseType,
 		ReleaseDate:  publishedTime.UnixMilli(),
-		IsLatest:     release.Latest,
+		IsLatest:     false, // Will be set correctly during sync based on release date
 		CreatedAt:    time.Now().UnixMilli(),
 		UpdatedAt:    time.Now().UnixMilli(),
 	}

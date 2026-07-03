@@ -56,11 +56,11 @@ func (s *VersionsStatusService) GetStatus(ctx context.Context) (*GetStatusRespon
 		}
 	}
 
+	// NOTE: Device status requires a deviceId which is not part of this endpoint.
+	// Device update status should be retrieved via device-specific endpoints or
+	// by passing a deviceId query parameter to this endpoint in the future.
 	return &GetStatusResponse{
 		Sync:   syncStatus,
 		Latest: latestInfo,
-		Device: DeviceStatusInfo{
-			NeedsUpdate: false,
-		},
 	}, nil
 }

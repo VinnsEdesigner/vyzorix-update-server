@@ -17,8 +17,8 @@ import (
 
 // GitHubWebhookHandler handles GitHub webhook events for auto-syncing.
 type GitHubWebhookHandler struct {
-	service      *updates.Service
 	webhookSecret string
+	service      *updates.Service
 	auditLogger  *audit.Logger
 	log          *slog.Logger
 }
@@ -26,8 +26,8 @@ type GitHubWebhookHandler struct {
 // NewGitHubWebhookHandler creates a new GitHub webhook handler.
 func NewGitHubWebhookHandler(service *updates.Service, webhookSecret string, auditLogger *audit.Logger, log *slog.Logger) *GitHubWebhookHandler {
 	return &GitHubWebhookHandler{
-		service:      service,
 		webhookSecret: webhookSecret,
+		service:      service,
 		auditLogger:  auditLogger,
 		log:          log,
 	}
