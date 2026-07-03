@@ -189,6 +189,7 @@ var migrations = []Migration{
 	{Apply: migrateInboxIMEIUnique, Name: "add_inbox_imei_unique_constraint", Version: 31},
 	{Apply: migrateRegistrationAuditFields, Name: "add_registration_audit_fields", Version: 32},
 	{Apply: migrateIdempotencyRecords, Name: "create_idempotency_records_table", Version: 33},
+	{Apply: migrateDeviceEvents, Name: "create_device_events_table", Version: 34},
 }
 
 // runMigrations applies all pending migrations.
