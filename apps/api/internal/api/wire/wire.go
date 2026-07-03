@@ -47,6 +47,7 @@ type ServerDependencies struct {
 	Metrics        *metrics.Metrics
 	AuditLogger    *audit.Logger
 	Config         infraConfig.Config
+	UpdatesStorage *storage.UpdatesStorage
 }
 
 // ServerResult contains the fully wired server components.
@@ -122,6 +123,7 @@ func WireServer(deps ServerDependencies) *ServerResult {
 		Log:            deps.Log,
 		HmacVerifier:   result.HmacVerifier,
 		DB:             deps.DB,
+		UpdatesStorage: deps.UpdatesStorage,
 	}
 	result.HandlerSet = WireHandlers(handlerDeps)
 

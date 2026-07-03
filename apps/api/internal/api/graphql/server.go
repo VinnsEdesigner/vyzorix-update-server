@@ -17,6 +17,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
@@ -38,6 +39,7 @@ type Config struct {
 	DashboardSvc   *dashboard.Service
 	LogsSvc       *logs.Service
 	MetricsSvc     *appmetrics.Service
+	UpdatesSvc    *updates.Service
 	TelemetryRepo  *storage.TelemetryRepository
 	LogsRepo      *storage.LogsRepository
 	MetricsRepo    *storage.MetricsRepository
@@ -68,6 +70,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		cfg.DashboardSvc,
 		cfg.LogsSvc,
 		cfg.MetricsSvc,
+		cfg.UpdatesSvc,
 		cfg.Hub,
 		cfg.TelemetryRepo,
 		cfg.LogsRepo,
