@@ -88,6 +88,10 @@ func (s *Server) setupDevicePublicRoutes(public *gin.RouterGroup) {
 		s.deviceRegisterHandler.Handle,
 	)
 	public.GET("/v1/device/:id/status", s.deviceStatusHandler.Handle)
+	// Public inbox endpoint - device submits registration request
+	if s.inboxHandler != nil {
+		public.POST("/v1/device/inbox", s.inboxHandler.CreateInboxRequest)
+	}
 }
 
 func (s *Server) setupAuthenticatedRoutes() {
@@ -102,6 +106,7 @@ func (s *Server) setupAuthenticatedRoutes() {
 	s.setupAdminRoutes(r)
 	s.setupDeviceManagementRoutes(r)
 	s.setupDeviceInboxRoutes(r)
+	s.setupDevicesRoutes(r)
 	s.setupCommandManagementRoutes(r)
 	s.setupTelemetryRoutes(r)
 	s.setupConnectionsRoutes(r)
@@ -170,6 +175,14 @@ func (s *Server) setupDeviceInboxRoutes(r *gin.RouterGroup) {
 	if s.inboxHandler != nil {
 		deviceInbox := r.Group("/device")
 		s.inboxHandler.RegisterRoutes(deviceInbox)
+	}
+}
+
+func (s *Server) setupDevicesRoutes(r *gin.RouterGroup) {
+	if s.devicesHandler != nil {
+		devices := r.Group("/devices")
+		devices.GET("", s.devicesHandler.GetDevices)
+		devices.GET("/:imei", s.devicesHandler.GetDeviceDetail)
 	}
 }
 
