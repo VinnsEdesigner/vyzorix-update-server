@@ -176,3 +176,23 @@ var DevicePushStatusEnum = graphql.NewEnum(graphql.EnumConfig{
 		},
 	},
 })
+
+// TimelineEventTypeEnum for timeline event types.
+var TimelineEventTypeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "TimelineEventType",
+	Description: "Type of device timeline event",
+	Values: graphql.EnumValueConfigMap{
+		"TELEMETRY": &graphql.EnumValueConfig{Value: "TELEMETRY"},
+		"COMMAND_SENT": &graphql.EnumValueConfig{Value: "COMMAND_SENT"},
+		"COMMAND_ACK": &graphql.EnumValueConfig{Value: "COMMAND_ACK"},
+		"COMMAND_FAILED": &graphql.EnumValueConfig{Value: "COMMAND_FAILED"},
+		"CONNECTION_OPEN": &graphql.EnumValueConfig{Value: "CONNECTION_OPEN"},
+		"CONNECTION_LOST": &graphql.EnumValueConfig{Value: "CONNECTION_LOST"},
+		"FCM_FALLBACK": &graphql.EnumValueConfig{Value: "FCM_FALLBACK"},
+		"RECONNECTED": &graphql.EnumValueConfig{Value: "RECONNECTED"},
+		"THRESHOLD_BREACH": &graphql.EnumValueConfig{Value: "THRESHOLD_BREACH"},
+		"REGISTERED": &graphql.EnumValueConfig{Value: "REGISTERED"},
+		"DEREGISTERED": &graphql.EnumValueConfig{Value: "DEREGISTERED"},
+		"ERROR": &graphql.EnumValueConfig{Value: "ERROR"},
+	},
+})
