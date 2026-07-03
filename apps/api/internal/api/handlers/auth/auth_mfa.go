@@ -227,3 +227,56 @@ func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 
 	h.presenter.OK(c, gin.H{"backup_codes": backupCodes})
 }
+
+// VerifyMFA handles POST /v1/auth/mfa/verify - Main MFA verification during login.
+// This is the critical endpoint for completing login after MFA challenge.
+func (h *MFAHandler) VerifyMFA(c *gin.Context) {
+	var req struct {
+		OperatorID string `json:"operator_id" binding:"required"`
+		Code      string `json:"code" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.presenter.BadRequest(c, "operator_id and code are required")
+		return
+	}
+
+	// Verify the MFA code
+	session, err := h.authService.VerifyMFACode(c.Request.Context(), req.OperatorID, req.Code)
+	if err != nil {
+		// Log the failed attempt
+		h.presenter.Unauthorized(c, "Invalid MFA code")
+		return
+	}
+
+	// Create session cookie (critical - must not fail silently)
+	if h.authService.GetSessionManager() != nil {
+		cookie, cookieErr := h.authService.GetSessionManager().CreateCookie(req.OperatorID)
+		if cookieErr != nil {
+			h.presenter.InternalError(c, "Failed to create session")
+			return
+		}
+		h.presenter.SetSessionCookie(c, cookie)
+	}
+
+	// Get operator details
+	op, err := h.operatorRepo.FindByID(c.Request.Context(), req.OperatorID)
+	if err != nil {
+		h.presenter.InternalError(c, "Failed to get operator details")
+		return
+	}
+
+	// Return success with session info and tokens
+	h.presenter.OK(c, gin.H{
+		"success":      true,
+		"session_id":   session.ID,
+		"access_token": session.ID, // For API compatibility
+		"operator": gin.H{
+			"id":         op.ID,
+			"email":      op.Email,
+			"name":       op.Name,
+			"role":       op.Role,
+			"mfa_enabled": op.MFAEnabled,
+		},
+	})
+}

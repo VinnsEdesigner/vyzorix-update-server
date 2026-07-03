@@ -28,6 +28,7 @@ export const StatusLed = (props: ChipProps<typeof ledPinLabels> & {
     }}
     manufacturerPartNumber="LTST-C171"
     supplierPartNumbers={{ jlcpcb: ["C83994"] }}
+    schWidth={1.35}
     footprint={
       <footprint>
         {/* Anode pad (left) */}
