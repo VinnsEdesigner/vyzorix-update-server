@@ -41,6 +41,214 @@ var DeviceType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+// IdentityInfoType represents device identity information.
+var IdentityInfoType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "IdentityInfo",
+	Description: "Device identity information",
+	Fields: graphql.Fields{
+		"imei": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Device IMEI",
+		},
+		"deviceName": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device display name",
+		},
+		"model": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device model",
+		},
+		"manufacturer": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device manufacturer",
+		},
+	},
+})
+
+// SoftwareInfoType represents device software information.
+var SoftwareInfoType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "SoftwareInfo",
+	Description: "Device software information",
+	Fields: graphql.Fields{
+		"osVersion": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Operating system version",
+		},
+		"appVersion": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Application version",
+		},
+		"securityPatch": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Security patch level",
+		},
+		"buildId": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Build identifier",
+		},
+	},
+})
+
+// RegistrationInfoType represents device registration information.
+var RegistrationInfoType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "RegistrationInfo",
+	Description: "Device registration information",
+	Fields: graphql.Fields{
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(DeviceStatusEnum),
+			Description: "Device registration status",
+		},
+		"registeredAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "Registration timestamp",
+		},
+		"fcmTokenValid": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Whether FCM token is valid",
+		},
+		"fcmTokenRefreshedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "FCM token last refresh timestamp",
+		},
+		"commandSecretSet": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Whether command secret is configured",
+		},
+	},
+})
+
+// ConnectionInfoType represents device connection information.
+var ConnectionInfoType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "ConnectionInfo",
+	Description: "Device connection information",
+	Fields: graphql.Fields{
+		"webSocketStatus": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "WebSocket connection status",
+		},
+		"connectedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "WebSocket connection timestamp",
+		},
+		"fcmStatus": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "FCM status",
+		},
+		"lastSeen": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "Last seen timestamp",
+		},
+		"clientIp": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Client IP address",
+		},
+		"protocol": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Connection protocol",
+		},
+	},
+})
+
+// TelemetryInfoType represents device telemetry statistics.
+var TelemetryInfoType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "TelemetryInfo",
+	Description: "Device telemetry statistics",
+	Fields: graphql.Fields{
+		"lastTimestamp": &graphql.Field{
+			Type:        graphql.NewNonNull(DateTimeScalar),
+			Description: "Last telemetry timestamp",
+		},
+		"framesToday": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Number of frames received today",
+		},
+		"avgLatencyMs": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "Average WebSocket latency in milliseconds",
+		},
+		"totalBytesToday": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Total bytes transferred today",
+		},
+		"sessionsToday": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Number of sessions today",
+		},
+	},
+})
+
+// DeviceInspectionType represents full device inspection data.
+var DeviceInspectionType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "DeviceInspection",
+	Description: "Full device inspection data for diagnostics",
+	Fields: graphql.Fields{
+		"identity": &graphql.Field{
+			Type:        graphql.NewNonNull(IdentityInfoType),
+			Description: "Device identity information",
+		},
+		"software": &graphql.Field{
+			Type:        graphql.NewNonNull(SoftwareInfoType),
+			Description: "Device software information",
+		},
+		"registration": &graphql.Field{
+			Type:        graphql.NewNonNull(RegistrationInfoType),
+			Description: "Device registration information",
+		},
+		"connection": &graphql.Field{
+			Type:        graphql.NewNonNull(ConnectionInfoType),
+			Description: "Device connection information",
+		},
+		"telemetry": &graphql.Field{
+			Type:        graphql.NewNonNull(TelemetryInfoType),
+			Description: "Device telemetry statistics",
+		},
+	},
+})
+
+// TimelineEventType represents a single event in the device timeline.
+var TimelineEventType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "TimelineEvent",
+	Description: "A timeline event for a device",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Event unique identifier",
+		},
+		"type": &graphql.Field{
+			Type:        graphql.NewNonNull(TimelineEventTypeEnum),
+			Description: "Event type",
+		},
+		"timestamp": &graphql.Field{
+			Type:        graphql.NewNonNull(DateTimeScalar),
+			Description: "Event timestamp",
+		},
+		"data": &graphql.Field{
+			Type:        JSONScalar,
+			Description: "Additional event data",
+		},
+	},
+})
+
+// TimelineConnectionType represents paginated timeline results.
+var TimelineConnectionType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "TimelineConnection",
+	Description: "Paginated timeline connection",
+	Fields: graphql.Fields{
+		"events": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(TimelineEventType))),
+			Description: "Timeline events",
+		},
+		"hasMore": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Whether there are more results",
+		},
+		"nextCursor": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Cursor for next page",
+		},
+	},
+})
+
 // TelemetryEntryType represents a telemetry data point.
 var TelemetryEntryType = graphql.NewObject(graphql.ObjectConfig{
 	Name:        "TelemetryEntry",
