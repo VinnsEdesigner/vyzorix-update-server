@@ -81,10 +81,12 @@ func (s *Service) GetDeviceMetrics(ctx context.Context, req *GetMetricsRequest) 
 	currentRiskScore := float64(0)
 	currentThermal := float64(0)
 	currentBuffer := float64(0)
+	currentUptime := int64(0)
 	if latest != nil {
 		currentRiskScore = latest.RiskScore
 		currentThermal = latest.ThermalTemp
 		currentBuffer = latest.BufferLevel
+		currentUptime = latest.Uptime
 	}
 
 	// Build response
@@ -136,10 +138,10 @@ func (s *Service) GetDeviceMetrics(ctx context.Context, req *GetMetricsRequest) 
 				},
 			},
 			Uptime: MetricDataDTO{
-				Current: 0,
+				Current: float64(currentUptime),
 				Avg:     0,
 				Min:     0,
-				Max:     0,
+				Max:    0,
 				Unit:    "s",
 				Chart:   []MetricPointDTO{},
 				Threshold: ThresholdDTO{
