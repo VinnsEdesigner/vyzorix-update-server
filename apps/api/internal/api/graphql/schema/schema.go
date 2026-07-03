@@ -221,6 +221,15 @@ func updatesQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get GitHub sync status",
 			Resolve:     res.GetUpdatesSyncStatus,
 		},
+		// Spec-compliant aliases
+		"updateHistory": &graphql.Field{
+			Type:        UpdateHistoryType,
+			Description: "Get a single update history record by ID (spec-compliant name)",
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			},
+			Resolve: res.GetUpdatesHistoryDetail,
+		},
 	}
 }
 
@@ -359,6 +368,12 @@ func updatesMutations(res *resolver.Resolver) graphql.Fields {
 		"syncFromGitHub": &graphql.Field{
 			Type:        SyncResponseType,
 			Description: "Trigger a GitHub sync",
+			Resolve:     res.SyncFromGitHub,
+		},
+		// Spec-compliant alias
+		"syncUpdates": &graphql.Field{
+			Type:        SyncResponseType,
+			Description: "Sync updates from GitHub (spec-compliant name)",
 			Resolve:     res.SyncFromGitHub,
 		},
 	}
