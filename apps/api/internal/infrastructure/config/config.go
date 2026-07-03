@@ -94,6 +94,7 @@ type Config struct {
 	PublicDir                string
 	GitHubReleaseToken       string
 	GitHubReleaseRepo        string
+	GitHubWebhookSecret      string
 	ResendAPIKey             string
 	Env                      string
 	TokenSecret              string
@@ -164,6 +165,7 @@ func Load() (Config, error) {
 		GitHubOAuthClientSecret:  os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
 		GitHubReleaseRepo:        os.Getenv("GITHUB_RELEASE_REPO"),
 		GitHubReleaseToken:       os.Getenv("GITHUB_RELEASE_TOKEN"),
+			GitHubWebhookSecret:      os.Getenv("GITHUB_WEBHOOK_SECRET"),
 		BaseURL:                  get("BASE_URL", "http://localhost:3000"),
 		FrontendURL:              get("FRONTEND_URL", "http://localhost:5173"),
 		ResendAPIKey:             os.Getenv("RESEND_API_KEY"),

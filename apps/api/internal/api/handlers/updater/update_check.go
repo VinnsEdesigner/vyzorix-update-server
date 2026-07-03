@@ -1,7 +1,10 @@
 package updater
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -147,6 +150,7 @@ func (h *Handler) serveJSON(c *gin.Context, path string) {
 }
 
 // serveAPK serves an APK file with proper headers and Range support.
+// Security: Verifies APK hash if X-APK-SHA256 header is provided by client.
 func (h *Handler) serveAPK(c *gin.Context, filename string) {
 	if filename == "" || strings.ContainsAny(filename, "/\\") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid filename"})
@@ -154,6 +158,29 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 	}
 
 	fpath := filepath.Join(h.binDir, filename)
+
+	// Verify APK hash if client provides expected SHA256
+	if clientHash := c.GetHeader("X-APK-SHA256"); clientHash != "" {
+		actualHash, err := h.computeFileHash(fpath)
+		if err != nil {
+			h.log.Error("failed to compute APK hash", "error", err, "file", fpath)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to verify APK integrity"})
+			return
+		}
+
+		// Constant-time comparison to prevent timing attacks
+		if !secureCompare(clientHash, actualHash) {
+			h.log.Warn("APK hash mismatch", "expected", clientHash, "actual", actualHash)
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "hash_mismatch",
+				"message": "APK integrity check failed",
+				"expected": clientHash,
+			})
+			return
+		}
+
+		h.log.Info("APK hash verified", "file", filename, "hash", actualHash[:16]+"...")
+	}
 
 	if c.Request.Method == http.MethodGet {
 		c.Header("Content-Type", "application/vnd.android.package-archive")
@@ -171,4 +198,33 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 	}
 
 	c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "GET or HEAD required"})
+}
+
+// computeFileHash computes the SHA256 hash of a file.
+func (h *Handler) computeFileHash(fpath string) (string, error) {
+	file, err := os.Open(fpath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// secureCompare performs a constant-time comparison of two strings.
+// This prevents timing attacks when comparing sensitive values like hashes.
+func secureCompare(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	var result byte
+	for i := 0; i < len(a); i++ {
+		result |= a[i] ^ b[i]
+	}
+	return result == 0
 }
