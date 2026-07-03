@@ -40,6 +40,7 @@ var EventCategory = map[TimelineEventType]string{
 // TimelineEvent represents a single event in the device timeline.
 type TimelineEvent struct {
 	ID        string            `json:"id"`
+	DeviceID  string            `json:"deviceId"`
 	Type      TimelineEventType `json:"type"`
 	Timestamp time.Time         `json:"timestamp"`
 	Data      map[string]any    `json:"data,omitempty"`

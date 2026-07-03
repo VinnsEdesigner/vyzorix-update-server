@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -497,4 +498,54 @@ func (h *Hub) TotalQueuedMessages() int {
 	}
 
 	return h.messageQueue.TotalQueuedMessages()
+}
+
+// ConnectionInfo holds WebSocket connection information for a device.
+type ConnectionInfo struct {
+	Connected   bool
+	ConnectedAt time.Time
+	ClientIP    string
+}
+
+// GetConnectionInfo retrieves WebSocket connection information for a device.
+func (h *Hub) GetConnectionInfo(deviceID string) *ConnectionInfo {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	c, ok := h.clients[deviceID]
+	if !ok || c == nil {
+		return nil
+	}
+
+	// Check actual connection state, not just presence in map
+	isConnected := c.IsConnected()
+	if !isConnected {
+		return nil
+	}
+
+	info := &ConnectionInfo{
+		Connected:   true,
+		ConnectedAt: time.Unix(c.connectedAt, 0),
+	}
+
+	if c.Conn != nil {
+		info.ClientIP = c.Conn.RemoteAddr().String()
+		if idx := strings.LastIndex(info.ClientIP, ":"); idx > 0 {
+			info.ClientIP = info.ClientIP[:idx]
+		}
+	}
+
+	return info
+}
+
+// GetAverageLatency returns the average latency in milliseconds for a device.
+func (h *Hub) GetAverageLatency(deviceID string) int {
+	h.metricsMu.RLock()
+	defer h.metricsMu.RUnlock()
+
+	if h.metrics.LatencyMetrics.TotalMessages == 0 {
+		return 0
+	}
+
+	return int(h.metrics.LatencyMetrics.AverageLatencyMS)
 }

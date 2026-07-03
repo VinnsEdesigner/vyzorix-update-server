@@ -15,5 +15,6 @@ type Repository interface {
 	GetTelemetryStats(ctx context.Context, deviceID string) (*TelemetryInfo, error)
 	
 	// GetLastTelemetry retrieves the most recent telemetry data for a device.
+	// Returns ErrNoTelemetryData if no telemetry exists for the device.
 	GetLastTelemetry(ctx context.Context, deviceID string) (*TimelineEvent, error)
 }
