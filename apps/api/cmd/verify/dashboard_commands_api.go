@@ -1,5 +1,6 @@
 // Package verify provides verification for SERVER_BACKEND_DASHBOARD_COMMANDS_API.md
 // This script verifies ALL server-side requirements from the Dashboard Commands API specification.
+// FRONTEND SPECIFICATIONS HAVE BEEN REMOVED - Server-side only.
 package main
 
 import (

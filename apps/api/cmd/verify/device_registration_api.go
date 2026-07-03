@@ -1,4 +1,6 @@
 // Package verify provides verification for SERVER_BACKEND_DEVICE_REGISTRATION_API.md
+// This script verifies ALL server-side requirements from the Device Registration API specification.
+// FRONTEND SPECIFICATIONS HAVE BEEN REMOVED - Server-side only.
 package main
 
 import (
