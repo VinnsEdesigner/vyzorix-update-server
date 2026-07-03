@@ -7,7 +7,7 @@ import (
 
 // RegisterRoutes registers the command history routes.
 func (h *HistoryHandler) RegisterRoutes(r *gin.RouterGroup, rateLimiter *middleware.DashboardRateLimiterMiddleware) {
-	r.GET("/device/:id/commands",
+	r.GET("/device/:imei/commands",
 		rateLimiter.CommandHistoryLimit(),
 		h.GetHistory)
 }
