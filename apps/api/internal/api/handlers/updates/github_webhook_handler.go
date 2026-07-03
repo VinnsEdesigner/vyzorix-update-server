@@ -17,10 +17,10 @@ import (
 
 // GitHubWebhookHandler handles GitHub webhook events for auto-syncing.
 type GitHubWebhookHandler struct {
-	webhookSecret string
+	log          *slog.Logger
 	service      *updates.Service
 	auditLogger  *audit.Logger
-	log          *slog.Logger
+	webhookSecret string
 }
 
 // NewGitHubWebhookHandler creates a new GitHub webhook handler.
