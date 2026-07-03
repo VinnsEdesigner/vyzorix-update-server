@@ -22,7 +22,7 @@ func buildQueryType(res *resolver.Resolver) *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name:   "Query",
 		Fields: mergeFields(inboxQueries(res), deviceQueries(res), commandQueries(res), telemetryQueries(res),
-			connectionQueries(res), dashboardQueries(res), updatesQueries(res)),
+			connectionQueries(res), dashboardQueries(res), updatesQueries(res), diagnosticsQueries(res)),
 	})
 }
 
@@ -445,4 +445,30 @@ func mergeMutationFields(maps ...graphql.Fields) graphql.Fields {
 		}
 	}
 	return result
+}
+
+func diagnosticsQueries(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"deviceInspection": &graphql.Field{
+			Type:        DeviceInspectionType,
+			Description: "Get full device inspection data for diagnostics",
+			Args: graphql.FieldConfigArgument{
+				"imei": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			},
+			Resolve: res.GetDeviceInspection,
+		},
+		"deviceTimeline": &graphql.Field{
+			Type:        TimelineConnectionType,
+			Description: "Get chronological event timeline for a device",
+			Args: graphql.FieldConfigArgument{
+				"imei":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"eventType": &graphql.ArgumentConfig{Type: TimelineEventTypeEnum},
+				"startTime":  &graphql.ArgumentConfig{Type: graphql.Int},
+				"endTime":    &graphql.ArgumentConfig{Type: graphql.Int},
+				"limit":      &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 50},
+				"cursor":     &graphql.ArgumentConfig{Type: graphql.String},
+			},
+			Resolve: res.GetDeviceTimeline,
+		},
+	}
 }

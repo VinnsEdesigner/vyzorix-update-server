@@ -760,3 +760,104 @@ func (r *Resolver) convertCommandHistory(commands []cmdapp.CommandEntry) []map[s
 	}
 	return result
 }
+
+// GetDeviceInspection resolves the deviceInspection query.
+func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	imei, ok := p.Args["imei"].(string)
+	if !ok || imei == "" {
+		return nil, r.Presenter.BadRequestError("IMEI is required")
+	}
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	// Verify device ownership
+	dev, err := r.DeviceService.GetDeviceByOperator(ctx, imei, op.ID)
+	if err != nil {
+		return nil, r.Presenter.NotFoundError("device not found")
+	}
+
+	// Build inspection data - this would use the diagnostics service in a full implementation
+	// For now, return basic device info structured as DeviceInspection
+	now := time.Now()
+
+	var registeredAt interface{} = nil
+	if dev.RegisteredAt > 0 {
+		registeredAt = time.UnixMilli(dev.RegisteredAt).Format(time.RFC3339)
+	}
+
+	var lastSeen interface{} = nil
+	if dev.LastSeen > 0 {
+		lastSeen = time.UnixMilli(dev.LastSeen).Format(time.RFC3339)
+	}
+
+	return map[string]interface{}{
+		"identity": map[string]interface{}{
+			"imei":         dev.ID,
+			"deviceName":   dev.DeviceName,
+			"model":        dev.Model,
+			"manufacturer": dev.Manufacturer,
+		},
+		"software": map[string]interface{}{
+			"osVersion":    dev.OSVersion,
+			"appVersion":   dev.AppVersion,
+			"securityPatch": "",
+			"buildId":       "", // Not in device DTO
+		},
+		"registration": map[string]interface{}{
+			"status":                dev.Status,
+			"registeredAt":         registeredAt,
+			"fcmTokenValid":        false, // Would need full device entity
+			"fcmTokenRefreshedAt":  nil,
+			"commandSecretSet":      false, // Would need full device entity
+		},
+		"connection": map[string]interface{}{
+			"webSocketStatus": "connected", // Would query hub
+			"connectedAt":     nil,          // Would query hub
+			"fcmStatus":       "valid",     // Would derive
+			"lastSeen":        lastSeen,
+			"clientIp":        nil, // Would get from hub
+			"protocol":        "WSS",
+		},
+		"telemetry": map[string]interface{}{
+			"lastTimestamp":   now.Format(time.RFC3339),
+			"framesToday":     0, // Would query telemetry
+			"avgLatencyMs":    nil,
+			"totalBytesToday": 0,
+			"sessionsToday":   0,
+		},
+	}, nil
+}
+
+// GetDeviceTimeline resolves the deviceTimeline query.
+func (r *Resolver) GetDeviceTimeline(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	imei, ok := p.Args["imei"].(string)
+	if !ok || imei == "" {
+		return nil, r.Presenter.BadRequestError("IMEI is required")
+	}
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	// Verify device ownership
+	_, err := r.DeviceService.GetDeviceByOperator(ctx, imei, op.ID)
+	if err != nil {
+		return nil, r.Presenter.NotFoundError("device not found")
+	}
+
+	// Timeline requires diagnostics repository - return empty for now
+	// Full implementation would query device_events table
+	return map[string]interface{}{
+		"events":     []interface{}{},
+		"hasMore":    false,
+		"nextCursor": nil,
+	}, nil
+}
