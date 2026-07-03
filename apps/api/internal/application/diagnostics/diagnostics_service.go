@@ -12,6 +12,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	ws "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 )
 
@@ -29,16 +30,18 @@ type Service struct {
 	inspectCache   map[string]*InspectCacheEntry
 	cacheMu        sync.RWMutex
 	cacheTTL       time.Duration
+	cfg            config.DiagnosticsConfig
 }
 
 // NewService creates a new diagnostics service.
-func NewService(diagnosticsRepo diagnostics.Repository, deviceRepo device.Repository, hub *ws.Hub) *Service {
+func NewService(diagnosticsRepo diagnostics.Repository, deviceRepo device.Repository, hub *ws.Hub, cfg config.DiagnosticsConfig) *Service {
 	s := &Service{
 		diagnosticsRepo: diagnosticsRepo,
 		deviceRepo:      deviceRepo,
 		hub:             hub,
 		inspectCache:   make(map[string]*InspectCacheEntry),
-		cacheTTL:       10 * time.Second,
+		cacheTTL:       time.Duration(cfg.InspectionCacheTTLSeconds) * time.Second,
+		cfg:            cfg,
 	}
 	// Start cache cleanup goroutine
 	go s.cleanupCache()
@@ -410,7 +413,7 @@ func (s *Service) determineDeviceStatus(dev *device.Device) string {
 	}
 	if dev.RegisteredAt > 0 {
 		// Device is registered
-		if dev.LastSeen > 0 && time.Since(time.UnixMilli(dev.LastSeen)) > 5*time.Minute {
+		if dev.LastSeen > 0 && time.Since(time.UnixMilli(dev.LastSeen)) > time.Duration(s.cfg.OfflineThresholdMinutes)*time.Minute {
 			return "offline"
 		}
 		return "registered"
@@ -423,7 +426,7 @@ func (s *Service) determineWebSocketStatus(dev *device.Device, wsConnected bool)
 	if wsConnected {
 		return "connected"
 	}
-	if dev.LastSeen > 0 && time.Since(time.UnixMilli(dev.LastSeen)) < 5*time.Minute {
+	if dev.LastSeen > 0 && time.Since(time.UnixMilli(dev.LastSeen)) < time.Duration(s.cfg.OfflineThresholdMinutes)*time.Minute {
 		return "connected" // Might be using FCM
 	}
 	return "disconnected"
@@ -435,7 +438,7 @@ func (s *Service) determineFCMStatus(dev *device.Device) string {
 		return "not_set"
 	}
 	if dev.FCMTokenRefreshedAt != nil && *dev.FCMTokenRefreshedAt > 0 {
-		if time.Since(time.UnixMilli(*dev.FCMTokenRefreshedAt)) > 30*24*time.Hour {
+		if time.Since(time.UnixMilli(*dev.FCMTokenRefreshedAt)) > time.Duration(s.cfg.FCMTokenExpiryDays)*24*time.Hour {
 			return "invalid"
 		}
 	}

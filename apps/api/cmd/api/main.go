@@ -88,7 +88,7 @@ func main() {
 		metricsSvc := appmetrics.NewService(metricsRepo)
 		dashboardSvc := dashboard.NewService(deviceRepo, commandRepo, logsRepo)
 		diagnosticsRepo := storage.NewDiagnosticsRepository(db)
-		diagnosticsSvc := diagnosticsapp.NewService(diagnosticsRepo, deviceRepo, deps.Hub)
+		diagnosticsSvc := diagnosticsapp.NewService(diagnosticsRepo, deviceRepo, deps.Hub, cfg.DiagnosticsConfig)
 
 		if regErr := apiServer.RegisterGraphQL(
 			deps.DeviceService,
