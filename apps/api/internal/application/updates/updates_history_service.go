@@ -64,9 +64,14 @@ func (s *HistoryService) GetHistory(ctx context.Context, status string, page, li
 
 // getPushVersionString retrieves the version string for a push.
 func (s *HistoryService) getPushVersionString(ctx context.Context, push *updates.UpdatePush) string {
-	version, err := s.repo.GetVersionByVersion(ctx, push.VersionID)
+	// Use GetVersionByID since push.VersionID is the version ID, not the version string
+	version, err := s.repo.GetVersionByID(ctx, push.VersionID)
 	if err != nil {
-		return push.VersionID
+		// Fallback: try by version string in case VersionID contains version
+		version, err = s.repo.GetVersionByVersion(ctx, push.VersionID)
+		if err != nil {
+			return push.VersionID
+		}
 	}
 	return version.Version
 }

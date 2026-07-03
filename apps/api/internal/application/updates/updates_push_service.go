@@ -102,15 +102,19 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 	}
 
 	var (
+		// DeviceIDs contains ALL requested device IDs (per spec)
 		deviceIDs      = make([]string, 0, len(req.DeviceIDs))
 		failedDevices  = make([]FailedDevice, 0)
 		pendingCount   = 0
 		sentCount      = 0
-		acknowledged   = 0
+		acknowledged   = 0 // Acknowledged count is updated asynchronously by device responses
 		failedCount    = 0
 	)
 
 	for _, deviceID := range req.DeviceIDs {
+		// Add to deviceIDs list immediately (per spec - all requested devices)
+		deviceIDs = append(deviceIDs, deviceID)
+
 		// Create per-device push record.
 		devicePush := &updates.UpdatePushDevice{
 			PushID:     push.ID,
@@ -129,6 +133,9 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 			continue
 		}
 
+		// Increment pending count since device was successfully registered
+		pendingCount++
+
 		// Dispatch the update command to the device.
 		notifyErr := s.dispatchUpdateCommand(ctx, deviceID, push.ID, version.Version, payloadBytes)
 		if notifyErr != nil {
@@ -136,15 +143,16 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 				DeviceID: deviceID,
 				Reason:   notifyErr.Error(),
 			})
-			failedCount++
+			failedCount++ // Count as failed
+			pendingCount-- // No longer pending
 			// Mark device push as failed but keep it in the push so operators can see it.
 			_ = s.repo.UpdatePushDeviceStatus(ctx, devicePush.ID, updates.DevicePushStatusFailed, notifyErr.Error())
 			continue
 		}
 
-		// Command dispatched successfully.
-		deviceIDs = append(deviceIDs, deviceID)
+		// Command dispatched successfully - move from pending to sent.
 		sentCount++
+		pendingCount-- // No longer pending
 		_ = s.repo.UpdatePushDeviceStatus(ctx, devicePush.ID, updates.DevicePushStatusSent, "")
 	}
 
@@ -164,10 +172,10 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 		InstallType:   req.InstallType,
 		InitiatedBy:   initiatedBy,
 		Status:        string(push.Status),
-		DeviceIDs:     deviceIDs,
+		DeviceIDs:     deviceIDs, // All requested device IDs (per spec)
 		FailedDevices: failedDevices,
 		Devices: PushDeviceCounts{
-			Total:        len(deviceIDs) + len(failedDevices),
+			Total:        len(deviceIDs),
 			Pending:      pendingCount,
 			Sent:         sentCount,
 			Acknowledged: acknowledged,
