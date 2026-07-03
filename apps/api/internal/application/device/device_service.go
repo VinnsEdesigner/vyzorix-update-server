@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
@@ -315,4 +316,153 @@ func (s *Service) GetRepo() device.Repository {
 // DeviceRepo returns the device repository (alias for GetRepo).
 func (s *Service) DeviceRepo() device.Repository {
 	return s.deviceRepo
+}
+
+// ListQuery represents query parameters for listing devices.
+type ListQuery struct {
+	Status string
+	Search string
+	Page   int
+	Limit  int
+}
+
+// GetDevices returns a paginated list of devices with optional filtering.
+func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.DeviceListResponse, error) {
+	if query.Page < 1 {
+		query.Page = 1
+	}
+	if query.Limit < 1 || query.Limit > 100 {
+		query.Limit = 20
+	}
+
+	offset := (query.Page - 1) * query.Limit
+
+	// Get all devices and filter
+	allDevices, total, err := s.deviceRepo.List(ctx, 10000, 0) // Get all for filtering
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply filters
+	var filtered []*device.Device
+	for _, d := range allDevices {
+		// Apply status filter
+		if query.Status != "" && query.Status != "all" {
+			isOnline := d.Online
+			if query.Status == "online" && !isOnline {
+				continue
+			}
+			if query.Status == "offline" && isOnline {
+				continue
+			}
+		}
+
+		// Apply search filter
+		if query.Search != "" {
+			// Search by ID (IMEI) or other fields
+			searchLower := toLower(query.Search)
+			idMatch := contains(toLower(d.ID), searchLower)
+			classMatch := contains(toLower(d.DeviceClass), searchLower)
+			if !idMatch && !classMatch {
+				continue
+			}
+		}
+
+		filtered = append(filtered, d)
+	}
+
+	// Calculate pagination
+	total = len(filtered)
+	totalPages := 0
+	if total > 0 {
+		totalPages = (total + query.Limit - 1) / query.Limit
+	}
+
+	// Apply pagination
+	start := offset
+	if start > len(filtered) {
+		start = len(filtered)
+	}
+	end := start + query.Limit
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	paged := filtered[start:end]
+
+	// Build response
+	devices := make([]dto.DeviceResponse, 0, len(paged))
+	for _, d := range paged {
+		status := "offline"
+		if d.Online {
+			status = "online"
+		}
+		devices = append(devices, dto.DeviceResponse{
+			ID:                d.ID,
+			FirebaseInstallID: d.FirebaseInstallID,
+			AppVersion:        d.AppVersion,
+			DeviceClass:       d.DeviceClass,
+			Online:            d.Online,
+			RegisteredAt:      d.RegisteredAt,
+			LastSeen:          d.LastSeen,
+		})
+		_ = status // suppress unused warning
+	}
+
+	return &dto.DeviceListResponse{
+		Devices:    devices,
+		Total:      total,
+		Limit:      query.Limit,
+		Offset:      offset,
+		Page:       query.Page,
+		TotalPages: totalPages,
+	}, nil
+}
+
+// GetDeviceDetail returns detailed device information.
+func (s *Service) GetDeviceDetail(ctx context.Context, deviceID string) (*dto.DeviceDetailResponse, error) {
+	d, err := s.deviceRepo.FindByID(ctx, deviceID)
+	if err != nil {
+		if err == device.ErrNotFound {
+			return nil, device.ErrNotFound
+		}
+		return nil, err
+	}
+
+	// Determine status
+	status := "offline"
+	if d.Online {
+		status = "online"
+	}
+
+	// Check FCM token validity (non-empty is considered valid)
+	fcmValid := d.FCMToken != ""
+
+	// Check if command secret is set
+	commandSet := d.CommandSecretHash != ""
+
+	resp := &dto.DeviceDetailResponse{
+		ID:               d.ID,
+		IMEI:             d.ID,
+		DeviceName:       d.DeviceClass,
+		Model:            d.DeviceClass,
+		Manufacturer:     "",
+		OSVersion:        "",
+		AppVersion:       d.AppVersion,
+		SecurityPatch:    "",
+		Status:           status,
+		RegisteredAt:     d.RegisteredAt,
+		LastSeen:         d.LastSeen,
+		FCMTokenValid:    fcmValid,
+		CommandSecretSet: commandSet,
+	}
+
+	return resp, nil
+}
+
+func toLower(s string) string {
+	return strings.ToLower(s)
+}
+
+func contains(s, substr string) bool {
+	return strings.Contains(s, substr)
 }

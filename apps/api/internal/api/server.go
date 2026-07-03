@@ -91,6 +91,7 @@ type Server struct {
 	deviceRegisterHandler   *devicehandlers.RegisterHandler
 	deviceUpdaterHandler    *devicehandlers.UpdaterHandler
 	deviceListHandler       *devicehandlers.ListHandler
+	devicesHandler          *devicehandlers.DevicesHandler
 	commandHandler          *cmdhandlers.ExecuteHandler
 	streamHandler           *websockethandlers.StreamHandler
 	telemetryHistoryHandler *handlers.TelemetryHistoryHandler
@@ -361,6 +362,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.deviceStatusHandler = cfg.HandlerSet.DeviceStatus
 	s.deviceUpdaterHandler = cfg.HandlerSet.DeviceUpdater
 	s.deviceListHandler = cfg.HandlerSet.DeviceList
+	s.devicesHandler = cfg.HandlerSet.Devices
 	s.commandHandler = cfg.HandlerSet.Command
 	s.streamHandler = cfg.HandlerSet.Stream
 	s.telemetryHistoryHandler = cfg.HandlerSet.TelemetryHistory

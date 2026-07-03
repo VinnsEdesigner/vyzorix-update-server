@@ -50,10 +50,38 @@ type DeviceResponse struct {
 
 // DeviceListResponse represents a list of devices.
 type DeviceListResponse struct {
-	Devices []DeviceResponse `json:"devices"`
-	Total   int              `json:"total"`
-	Limit   int              `json:"limit"`
-	Offset  int              `json:"offset"`
+	Devices    []DeviceResponse `json:"devices"`
+	Total      int              `json:"total"`
+	Limit      int              `json:"limit"`
+	Offset     int              `json:"offset"`
+	Page       int              `json:"page"`
+	TotalPages int              `json:"totalPages"`
+}
+
+// DeviceDetailResponse represents detailed device info per spec.
+type DeviceDetailResponse struct {
+	ID                string `json:"id"`
+	IMEI              string `json:"imei"`
+	DeviceName        string `json:"deviceName"`
+	Model             string `json:"model"`
+	Manufacturer      string `json:"manufacturer"`
+	OSVersion         string `json:"osVersion"`
+	AppVersion        string `json:"appVersion"`
+	SecurityPatch     string `json:"securityPatch"`
+	Status            string `json:"status"`
+	RegisteredAt      int64  `json:"registeredAt"`
+	LastSeen          int64  `json:"lastSeen"`
+	FCMTokenValid     bool   `json:"fcmTokenValid"`
+	CommandSecretSet  bool   `json:"commandSecretSet"`
+	Connection        *ConnectionInfo `json:"connection,omitempty"`
+}
+
+// ConnectionInfo represents WebSocket connection details.
+type ConnectionInfo struct {
+	WebSocketStatus string `json:"webSocketStatus"`
+	ConnectedAt     int64  `json:"connectedAt"`
+	Protocol        string `json:"protocol"`
+	ClientIP        string `json:"clientIp"`
 }
 
 // SendCommandRequest represents a command request.

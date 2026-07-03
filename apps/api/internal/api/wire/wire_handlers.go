@@ -60,6 +60,7 @@ type HandlerSet struct {
 	DeviceStatus     *devicehandlers.StatusHandler
 	DeviceUpdater    *devicehandlers.UpdaterHandler
 	DeviceList       *devicehandlers.ListHandler
+	Devices          *devicehandlers.DevicesHandler
 	Command          *cmdhandlers.ExecuteHandler
 	Stream           *websockethandlers.StreamHandler
 	TelemetryHistory *handlers.TelemetryHistoryHandler
@@ -67,7 +68,7 @@ type HandlerSet struct {
 	AdminClients     *admin.ClientsHandler
 	Updater          *updaterhandlers.Handler
 	Updates          *updateshandlers.UpdatesHandler
-	UpdatesService  *updatesapplication.Service
+	UpdatesService   *updatesapplication.Service
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -94,6 +95,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	hs.DeviceStatus = devicehandlers.NewStatusHandler(deps.DeviceService)
 	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deps.DeviceService)
 	hs.DeviceList = devicehandlers.NewListHandler(deps.DeviceService, deps.Hub)
+	hs.Devices = devicehandlers.NewDevicesHandler(deps.DeviceService)
 
 	// Command handler
 	hs.Command = cmdhandlers.NewExecuteHandler(deps.CommandService, deps.DeviceService, deps.Hub, deps.FCMNotifier)
