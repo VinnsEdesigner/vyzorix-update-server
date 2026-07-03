@@ -111,6 +111,8 @@ type Server struct {
 	inboxHandler            *inboxhandlers.Handler
 	deviceConfirmHandler    *devicehandlers.ConfirmHandler
 	diagnosticsHandler      *diagnosticshandlers.Handler
+	diagnosticsInspectHandler *diagnosticshandlers.InspectHandler
+	diagnosticsTimelineHandler *diagnosticshandlers.TimelineHandler
 	config                  config.Config
 }
 
@@ -344,7 +346,7 @@ func (s *Server) wireConfirmHandler(cfg *ServerConfig) {
 	s.deviceConfirmHandler = devicehandlers.NewConfirmHandler(cfg.DeviceService)
 }
 
-// wireDiagnosticsHandler creates and assigns the diagnostics handler.
+// wireDiagnosticsHandler creates and assigns the diagnostics handlers.
 func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
 	if cfg.DB == nil || cfg.DeviceService == nil {
 		return
@@ -356,8 +358,24 @@ func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
 	// Create diagnostics service
 	diagnosticsService := diagnosticsapp.NewService(diagnosticsRepo, cfg.DeviceService.DeviceRepo(), s.hub)
 
-	// Create handler
-	s.diagnosticsHandler = diagnosticshandlers.NewHandler(diagnosticsService)
+	// Get rate limiters
+	var inspectLimit, timelineLimit func(c *gin.Context)
+	if s.dashboardRateLimiter != nil {
+		inspectLimit = s.dashboardRateLimiter.DeviceInspectLimit()
+		timelineLimit = s.dashboardRateLimiter.DeviceTimelineLimit()
+	}
+
+	// Create inspect handler
+	s.diagnosticsInspectHandler = diagnosticshandlers.NewInspectHandler(diagnosticsService, inspectLimit)
+
+	// Create timeline handler
+	s.diagnosticsTimelineHandler = diagnosticshandlers.NewTimelineHandler(diagnosticsService, timelineLimit)
+
+	// Create combined handler for backwards compatibility
+	s.diagnosticsHandler = &diagnosticshandlers.Handler{
+		InspectHandler:   s.diagnosticsInspectHandler,
+		TimelineHandler: s.diagnosticsTimelineHandler,
+	}
 }
 
 // Handlers are defined in server_handlers.go

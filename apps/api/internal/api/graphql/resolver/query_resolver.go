@@ -8,6 +8,7 @@ import (
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/graphql-go/graphql"
 )
 
@@ -775,60 +776,79 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device ownership
-	dev, err := r.DeviceService.GetDeviceByOperator(ctx, imei, op.ID)
+	_, err := r.DeviceService.GetDeviceByOperator(ctx, imei, op.ID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
 
-	// Build inspection data - this would use the diagnostics service in a full implementation
-	// For now, return basic device info structured as DeviceInspection
-	now := time.Now()
+	if r.DiagnosticsSvc == nil {
+		return nil, r.Presenter.InternalError("diagnostics service not available")
+	}
+
+	inspection, err := r.DiagnosticsSvc.GetDeviceInspection(ctx, imei)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get device inspection")
+	}
 
 	var registeredAt interface{} = nil
-	if dev.RegisteredAt > 0 {
-		registeredAt = time.UnixMilli(dev.RegisteredAt).Format(time.RFC3339)
+	if inspection.Registration.RegisteredAt != nil {
+		registeredAt = inspection.Registration.RegisteredAt.Format(time.RFC3339)
 	}
 
 	var lastSeen interface{} = nil
-	if dev.LastSeen > 0 {
-		lastSeen = time.UnixMilli(dev.LastSeen).Format(time.RFC3339)
+	if inspection.Connection.LastSeen != nil {
+		lastSeen = inspection.Connection.LastSeen.Format(time.RFC3339)
+	}
+
+	var connectedAt interface{} = nil
+	if inspection.Connection.ConnectedAt != nil {
+		connectedAt = inspection.Connection.ConnectedAt.Format(time.RFC3339)
+	}
+
+	var fcmTokenRefreshedAt interface{} = nil
+	if inspection.Registration.FCMTokenRefreshedAt != nil {
+		fcmTokenRefreshedAt = inspection.Registration.FCMTokenRefreshedAt.Format(time.RFC3339)
+	}
+
+	var lastTimestamp interface{} = nil
+	if !inspection.Telemetry.LastTimestamp.IsZero() {
+		lastTimestamp = inspection.Telemetry.LastTimestamp.Format(time.RFC3339)
 	}
 
 	return map[string]interface{}{
 		"identity": map[string]interface{}{
-			"imei":         dev.ID,
-			"deviceName":   dev.DeviceName,
-			"model":        dev.Model,
-			"manufacturer": dev.Manufacturer,
+			"imei":         inspection.Identity.IMEI,
+			"deviceName":   inspection.Identity.DeviceName,
+			"model":        inspection.Identity.Model,
+			"manufacturer": inspection.Identity.Manufacturer,
 		},
 		"software": map[string]interface{}{
-			"osVersion":    dev.OSVersion,
-			"appVersion":   dev.AppVersion,
-			"securityPatch": "",
-			"buildId":       "", // Not in device DTO
+			"osVersion":    inspection.Software.OSVersion,
+			"appVersion":   inspection.Software.AppVersion,
+			"securityPatch": inspection.Software.SecurityPatch,
+			"buildId":       inspection.Software.BuildID,
 		},
 		"registration": map[string]interface{}{
-			"status":                dev.Status,
-			"registeredAt":         registeredAt,
-			"fcmTokenValid":        false, // Would need full device entity
-			"fcmTokenRefreshedAt":  nil,
-			"commandSecretSet":      false, // Would need full device entity
+			"status":               inspection.Registration.Status,
+			"registeredAt":        registeredAt,
+			"fcmTokenValid":       inspection.Registration.FCMTokenValid,
+			"fcmTokenRefreshedAt": fcmTokenRefreshedAt,
+			"commandSecretSet":     inspection.Registration.CommandSecretSet,
 		},
 		"connection": map[string]interface{}{
-			"webSocketStatus": "connected", // Would query hub
-			"connectedAt":     nil,          // Would query hub
-			"fcmStatus":       "valid",     // Would derive
+			"webSocketStatus": inspection.Connection.WebSocketStatus,
+			"connectedAt":     connectedAt,
+			"fcmStatus":       inspection.Connection.FCMStatus,
 			"lastSeen":        lastSeen,
-			"clientIp":        nil, // Would get from hub
-			"protocol":        "WSS",
+			"clientIp":        inspection.Connection.ClientIP,
+			"protocol":        inspection.Connection.Protocol,
 		},
 		"telemetry": map[string]interface{}{
-			"lastTimestamp":   now.Format(time.RFC3339),
-			"framesToday":     0, // Would query telemetry
-			"avgLatencyMs":    nil,
-			"totalBytesToday": 0,
-			"sessionsToday":   0,
+			"lastTimestamp":   lastTimestamp,
+			"framesToday":     inspection.Telemetry.FramesToday,
+			"avgLatencyMs":   inspection.Telemetry.AvgLatencyMs,
+			"totalBytesToday": inspection.Telemetry.TotalBytesToday,
+			"sessionsToday":   inspection.Telemetry.SessionsToday,
 		},
 	}, nil
 }
@@ -847,17 +867,48 @@ func (r *Resolver) GetDeviceTimeline(p graphql.ResolveParams) (interface{}, erro
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device ownership
 	_, err := r.DeviceService.GetDeviceByOperator(ctx, imei, op.ID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
 
-	// Timeline requires diagnostics repository - return empty for now
-	// Full implementation would query device_events table
+	if r.DiagnosticsSvc == nil {
+		return nil, r.Presenter.InternalError("diagnostics service not available")
+	}
+
+	eventType, _ := p.Args["eventType"].(string)
+	startTime, _ := p.Args["startTime"].(int64)
+	endTime, _ := p.Args["endTime"].(int64)
+	limit, _ := p.Args["limit"].(int)
+	cursor, _ := p.Args["cursor"].(string)
+
+	req := &diagnosticsapp.TimelineRequest{
+		IMEI:      imei,
+		EventType: eventType,
+		StartTime: startTime,
+		EndTime:   endTime,
+		Limit:     limit,
+		Cursor:    cursor,
+	}
+
+	resp, err := r.DiagnosticsSvc.GetDeviceTimeline(ctx, imei, req)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get device timeline")
+	}
+
+	events := make([]map[string]interface{}, 0, len(resp.Events))
+	for _, e := range resp.Events {
+		events = append(events, map[string]interface{}{
+			"id":        e.ID,
+			"type":      e.Type,
+			"timestamp": time.UnixMilli(e.Timestamp).Format(time.RFC3339),
+			"data":      e.Data,
+		})
+	}
+
 	return map[string]interface{}{
-		"events":     []interface{}{},
-		"hasMore":    false,
-		"nextCursor": nil,
+		"events":     events,
+		"hasMore":    resp.Pagination.HasMore,
+		"nextCursor": resp.Pagination.NextCursor,
 	}, nil
 }
