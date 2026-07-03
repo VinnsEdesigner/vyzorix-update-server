@@ -23,12 +23,12 @@ func NewHistoryHandler(historySvc *command.HistoryService, logger *slog.Logger) 
 	}
 }
 
-// GetHistory handles GET /v1/device/:id/commands.
+// GetHistory handles GET /v1/device/:imei/commands.
 // Returns paginated command history for a device.
 func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	deviceID := c.Param("id")
+	deviceID := c.Param("imei")
 	if deviceID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Device ID is required"})
 		return

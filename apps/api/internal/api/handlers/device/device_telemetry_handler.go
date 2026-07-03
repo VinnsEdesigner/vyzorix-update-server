@@ -26,12 +26,12 @@ func NewTelemetryHandler(metricsSvc *metrics.Service, devRepo device.Repository,
 	}
 }
 
-// GetTelemetry handles GET /v1/device/:id/telemetry.
+// GetTelemetry handles GET /v1/device/:imei/telemetry.
 // Returns raw telemetry frames.
 func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	deviceID := c.Param("id")
+	deviceID := c.Param("imei")
 	if deviceID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Device ID is required"})
 		return
