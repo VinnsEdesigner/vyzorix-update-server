@@ -163,13 +163,23 @@ func (r *LogsRepository) ListLogs(ctx context.Context, deviceID string, eventTyp
 }
 
 // CountLogs counts logs matching the criteria.
+// If deviceID is empty, counts across all devices.
 func (r *LogsRepository) CountLogs(ctx context.Context, deviceID string, eventType string, startTime, endTime time.Time) (int, error) {
 	// Convert time to milliseconds for INTEGER column
 	startMs := startTime.UnixMilli()
 	endMs := endTime.UnixMilli()
 
-	query := `SELECT COUNT(*) FROM device_logs WHERE device_id = ? AND timestamp >= ? AND timestamp <= ?`
-	args := []interface{}{deviceID, startMs, endMs}
+	var query string
+	var args []interface{}
+
+	if deviceID == "" {
+		// Global count - no device filter
+		query = `SELECT COUNT(*) FROM device_logs WHERE timestamp >= ? AND timestamp <= ?`
+		args = []interface{}{startMs, endMs}
+	} else {
+		query = `SELECT COUNT(*) FROM device_logs WHERE device_id = ? AND timestamp >= ? AND timestamp <= ?`
+		args = []interface{}{deviceID, startMs, endMs}
+	}
 
 	if eventType != "" {
 		query += ` AND event_type = ?`
