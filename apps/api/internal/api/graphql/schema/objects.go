@@ -1031,3 +1031,127 @@ var CancelPushResponseType = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
+
+// InboxEntryType represents a device registration request in the inbox.
+var InboxEntryType = graphql.NewObject(graphql.ObjectConfig{
+Name:        "InboxEntry",
+Description: "A device registration request",
+Fields: graphql.Fields{
+"id": &graphql.Field{
+Type:        graphql.NewNonNull(graphql.ID),
+Description: "Unique inbox entry ID",
+},
+"imei": &graphql.Field{
+Type:        graphql.NewNonNull(graphql.String),
+Description: "Device IMEI",
+},
+"model": &graphql.Field{
+Type:        graphql.String,
+Description: "Device model",
+},
+"manufacturer": &graphql.Field{
+Type:        graphql.String,
+Description: "Device manufacturer",
+},
+"osVersion": &graphql.Field{
+Type:        graphql.String,
+Description: "Device OS version",
+},
+"appVersion": &graphql.Field{
+Type:        graphql.String,
+Description: "App version",
+},
+"fcmToken": &graphql.Field{
+Type:        graphql.String,
+Description: "Firebase Cloud Messaging token",
+},
+"firebaseInstallId": &graphql.Field{
+Type:        graphql.String,
+Description: "Firebase Install ID",
+},
+"status": &graphql.Field{
+Type:        graphql.NewNonNull(graphql.String),
+Description: "Status: pending, approved, rejected",
+},
+"notes": &graphql.Field{
+Type:        graphql.String,
+Description: "Operator notes",
+},
+"operatorId": &graphql.Field{
+Type:        graphql.String,
+Description: "Handling operator ID",
+},
+"createdAt": &graphql.Field{
+Type:        graphql.NewNonNull(graphql.Int),
+Description: "When created (Unix ms)",
+},
+"approvedAt": &graphql.Field{
+Type:        graphql.Int,
+Description: "When approved (Unix ms)",
+},
+"rejectedAt": &graphql.Field{
+Type:        graphql.Int,
+Description: "When rejected (Unix ms)",
+},
+},
+})
+
+// InboxListResponseType represents a paginated inbox list response.
+var InboxListResponseType = graphql.NewObject(graphql.ObjectConfig{
+Name:        "InboxListResponse",
+Description: "Paginated inbox list response",
+Fields: graphql.Fields{
+"requests": &graphql.Field{
+Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(InboxEntryType))),
+Description: "Inbox entries",
+},
+"pagination": &graphql.Field{
+Type:        graphql.NewNonNull(PaginationType),
+Description: "Pagination info",
+},
+},
+})
+
+// RegistrationLogType represents an audit log entry for registration actions.
+var RegistrationLogType = graphql.NewObject(graphql.ObjectConfig{
+Name:        "RegistrationLog",
+Description: "Audit log entry for registration actions",
+Fields: graphql.Fields{
+"id": &graphql.Field{
+Type:        graphql.NewNonNull(graphql.ID),
+Description: "Log entry ID",
+},
+"deviceId": &graphql.Field{
+Type:        graphql.String,
+Description: "Device ID",
+},
+"imei": &graphql.Field{
+Type:        graphql.String,
+Description: "Device IMEI",
+},
+"action": &graphql.Field{
+Type:        graphql.NewNonNull(graphql.String),
+Description: "Action type",
+},
+"operatorId": &graphql.Field{
+Type:        graphql.String,
+Description: "Operator ID",
+},
+"clientIp": &graphql.Field{
+Type:        graphql.String,
+Description: "Client IP address",
+},
+"userAgent": &graphql.Field{
+Type:        graphql.String,
+Description: "User agent string",
+},
+"details": &graphql.Field{
+Type:        graphql.String,
+Description: "Additional details",
+},
+"timestamp": &graphql.Field{
+Type:        graphql.NewNonNull(graphql.Int),
+Description: "When the action occurred (Unix ms)",
+},
+},
+})
