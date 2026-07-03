@@ -108,6 +108,56 @@ type Config struct {
 	JWTDuration              time.Duration
 	EnforceHMAC              bool
 	EnableGraphQL            bool
+	DiagnosticsConfig         DiagnosticsConfig
+}
+
+// DiagnosticsConfig holds configuration for the diagnostics API.
+type DiagnosticsConfig struct {
+	OfflineThresholdMinutes     int
+	FCMTokenExpiryDays          int
+	InspectionCacheTTLSeconds   int
+	TelemetryRetentionDays       int
+}
+
+// DefaultDiagnosticsConfig returns default diagnostics configuration.
+func DefaultDiagnosticsConfig() DiagnosticsConfig {
+	return DiagnosticsConfig{
+		OfflineThresholdMinutes:   5,
+		FCMTokenExpiryDays:        30,
+		InspectionCacheTTLSeconds: 10,
+		TelemetryRetentionDays:    7,
+	}
+}
+
+// LoadDiagnosticsConfig loads diagnostics configuration from environment.
+func LoadDiagnosticsConfig() DiagnosticsConfig {
+	cfg := DefaultDiagnosticsConfig()
+
+	if v := os.Getenv("DIAG_OFFLINE_THRESHOLD_MINUTES"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			cfg.OfflineThresholdMinutes = n
+		}
+	}
+
+	if v := os.Getenv("DIAG_FCM_TOKEN_EXPIRY_DAYS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			cfg.FCMTokenExpiryDays = n
+		}
+	}
+
+	if v := os.Getenv("DIAG_INSPECTION_CACHE_TTL_SECONDS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			cfg.InspectionCacheTTLSeconds = n
+		}
+	}
+
+	if v := os.Getenv("DIAG_TELEMETRY_RETENTION_DAYS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			cfg.TelemetryRetentionDays = n
+		}
+	}
+
+	return cfg
 }
 
 // Load reads configuration from environment variables and returns a Config struct.
@@ -175,6 +225,7 @@ func Load() (Config, error) {
 		EmailVerifyTokenExpiry:   emailVerifyExpiry,
 		PasswordResetTokenExpiry: passwordResetExpiry,
 		EnableGraphQL:            getBool("ENABLE_GRAPHQL", true), // Enabled by default
+		DiagnosticsConfig:         LoadDiagnosticsConfig(),
 	}
 
 	enforceDefault := strings.EqualFold(c.Env, "production")
