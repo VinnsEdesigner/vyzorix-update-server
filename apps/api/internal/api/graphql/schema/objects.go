@@ -900,6 +900,54 @@ var PushHistoryConnectionType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+// UpdateHistoryType represents a single update push history record.
+var UpdateHistoryType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "UpdateHistory",
+	Description: "An update push history record",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique push identifier",
+		},
+		"version": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Version that was pushed",
+		},
+		"installType": &graphql.Field{
+			Type:        graphql.NewNonNull(InstallTypeEnum),
+			Description: "Install type (immediate or scheduled)",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(UpdateStatusEnum),
+			Description: "Push status",
+		},
+		"initiatedBy": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Operator who initiated the push",
+		},
+		"initiatedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the push was initiated",
+		},
+		"completedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the push completed",
+		},
+		"cancelledAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the push was cancelled",
+		},
+		"deviceCount": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Total devices in this push",
+		},
+		"devices": &graphql.Field{
+			Type:        graphql.NewList(graphql.NewNonNull(PushDeviceType)),
+			Description: "Devices in this push",
+		},
+	},
+})
+
 // PushUpdateResponseType represents the response from pushing an update.
 var PushUpdateResponseType = graphql.NewObject(graphql.ObjectConfig{
 	Name:        "PushUpdateResponse",
