@@ -59,10 +59,10 @@ func (r *MetricsRepository) GetTelemetryFrames(ctx context.Context, deviceID str
 	return frames, rows.Err()
 }
 
-// GetLatestTelemetry retrieves the most recent telemetry frame for a device.
+// // GetLatestTelemetry retrieves the most recent telemetry frame for a device.
 func (r *MetricsRepository) GetLatestTelemetry(ctx context.Context, deviceID string) (*metrics.TelemetryFrame, error) {
 	query := `
-		SELECT device_id, risk_score, thermal_temp, buffer_level, received_at
+		SELECT device_id, risk_score, thermal_temp, buffer_level, received_at, COALESCE(uptime, 0)
 		FROM telemetry
 		WHERE device_id = ?
 		ORDER BY received_at DESC
@@ -73,7 +73,7 @@ func (r *MetricsRepository) GetLatestTelemetry(ctx context.Context, deviceID str
 
 	err := r.db.QueryRowContext(ctx, query, deviceID).Scan(
 		&frame.DeviceID, &frame.RiskScore, &frame.ThermalTemp,
-		&frame.BufferLevel, &timestamp,
+		&frame.BufferLevel, &timestamp, &frame.Uptime,
 	)
 
 	if err == sql.ErrNoRows {
@@ -85,7 +85,6 @@ func (r *MetricsRepository) GetLatestTelemetry(ctx context.Context, deviceID str
 	}
 
 	frame.Timestamp = time.UnixMilli(timestamp)
-	frame.Uptime = 0 // Not available in current telemetry schema
 	return &frame, nil
 }
 
