@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/metrics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 )
 
 // Ensure MetricsRepository implements metrics.Repository.
@@ -20,6 +21,28 @@ type MetricsRepository struct {
 func NewMetricsRepository(db *sql.DB) *MetricsRepository {
 	return &MetricsRepository{db: db}
 }
+// getQuerier returns the transaction from context if available, otherwise the db.
+func (r *MetricsRepository) getQuerier(ctx context.Context) Querier {
+if tx, ok := transaction.TxFromContext(ctx); ok {
+return tx
+}
+return r.db
+}
+
+// queryRow is a helper that uses transaction-aware querier.
+func (r *MetricsRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+}
+
+// queryRows is a helper that uses transaction-aware querier.
+func (r *MetricsRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+}
+
+// exec is a helper that uses transaction-aware querier.
+func (r *MetricsRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+return r.getQuerier(ctx).ExecContext(ctx, query, args...)
+}
 
 // GetTelemetryFrames retrieves raw telemetry frames for a device within a time range.
 func (r *MetricsRepository) GetTelemetryFrames(ctx context.Context, deviceID string, startTime, endTime time.Time, limit int) ([]*metrics.TelemetryFrame, error) {
@@ -30,7 +53,7 @@ func (r *MetricsRepository) GetTelemetryFrames(ctx context.Context, deviceID str
 		ORDER BY received_at DESC
 		LIMIT ?`
 
-	rows, err := r.db.QueryContext(ctx, query, deviceID, startTime.UnixMilli(), endTime.UnixMilli(), limit)
+	rows, err := r.queryRows(ctx, query, deviceID, startTime.UnixMilli(), endTime.UnixMilli(), limit)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +94,7 @@ func (r *MetricsRepository) GetLatestTelemetry(ctx context.Context, deviceID str
 	var frame metrics.TelemetryFrame
 	var timestamp int64
 
-	err := r.db.QueryRowContext(ctx, query, deviceID).Scan(
+	err := r.queryRow(ctx, query, deviceID).Scan(
 		&frame.DeviceID, &frame.RiskScore, &frame.ThermalTemp,
 		&frame.BufferLevel, &timestamp, &frame.Uptime,
 	)
@@ -109,7 +132,7 @@ func (r *MetricsRepository) GetAggregatedMetrics(ctx context.Context, deviceID s
 		GROUP BY bucket
 		ORDER BY bucket ASC`
 
-	rows, err := r.db.QueryContext(ctx, query, deviceID, startTime.UnixMilli(), endTime.UnixMilli())
+	rows, err := r.queryRows(ctx, query, deviceID, startTime.UnixMilli(), endTime.UnixMilli())
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +175,7 @@ func (r *MetricsRepository) GetMetricStats(ctx context.Context, deviceID string,
 
 	var stats metrics.MetricStats
 
-	err := r.db.QueryRowContext(ctx, query, deviceID, startTime.UnixMilli(), endTime.UnixMilli()).Scan(
+	err := r.queryRow(ctx, query, deviceID, startTime.UnixMilli(), endTime.UnixMilli()).Scan(
 		&stats.Avg, &stats.Min, &stats.Max,
 	)
 
@@ -167,7 +190,7 @@ func (r *MetricsRepository) GetMetricStats(ctx context.Context, deviceID string,
 	// Get the current (latest) value
 	var current float64
 	currentQuery := `SELECT ` + column + ` FROM telemetry WHERE device_id = ? AND received_at >= ? AND received_at <= ? ORDER BY received_at DESC LIMIT 1`
-	err = r.db.QueryRowContext(ctx, currentQuery, deviceID, startTime.UnixMilli(), endTime.UnixMilli()).Scan(&current)
+	err = r.queryRow(ctx, currentQuery, deviceID, startTime.UnixMilli(), endTime.UnixMilli()).Scan(&current)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -188,7 +211,7 @@ func (r *MetricsRepository) GetThresholdBreachEvents(ctx context.Context, device
 		AND risk_score >= ?
 		ORDER BY received_at ASC`
 
-	riskRows, scanErr := r.db.QueryContext(ctx, riskQuery,
+	riskRows, scanErr := r.queryRows(ctx, riskQuery,
 		thresholds.RiskScoreWarning,
 		deviceID, startTime.UnixMilli(), endTime.UnixMilli(),
 		thresholds.RiskScoreWarning,
@@ -222,7 +245,7 @@ func (r *MetricsRepository) GetThresholdBreachEvents(ctx context.Context, device
 		AND thermal_temp >= ?
 		ORDER BY received_at ASC`
 
-	thermalRows, scanErr := r.db.QueryContext(ctx, thermalQuery,
+	thermalRows, scanErr := r.queryRows(ctx, thermalQuery,
 		thresholds.ThermalWarning,
 		deviceID, startTime.UnixMilli(), endTime.UnixMilli(),
 		thresholds.ThermalWarning,
@@ -257,7 +280,7 @@ func (r *MetricsRepository) GetThresholdBreachEvents(ctx context.Context, device
 		AND buffer_level <= ?
 		ORDER BY received_at ASC`
 
-	bufferRows, scanErr := r.db.QueryContext(ctx, bufferQuery,
+	bufferRows, scanErr := r.queryRows(ctx, bufferQuery,
 		thresholds.BufferWarning,
 		deviceID, startTime.UnixMilli(), endTime.UnixMilli(),
 		thresholds.BufferWarning,

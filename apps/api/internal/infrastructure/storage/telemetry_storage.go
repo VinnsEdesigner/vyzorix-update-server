@@ -7,6 +7,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/telemetry"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 )
 
 // Ensure TelemetryRepository implements telemetry.Repository.
@@ -20,6 +21,28 @@ type TelemetryRepository struct {
 // NewTelemetryRepository creates a new TelemetryRepository.
 func NewTelemetryRepository(db *sql.DB) *TelemetryRepository {
 	return &TelemetryRepository{db: db}
+}
+// getQuerier returns the transaction from context if available, otherwise the db.
+func (r *TelemetryRepository) getQuerier(ctx context.Context) Querier {
+if tx, ok := transaction.TxFromContext(ctx); ok {
+return tx
+}
+return r.db
+}
+
+// queryRow is a helper that uses transaction-aware querier.
+func (r *TelemetryRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+}
+
+// queryRows is a helper that uses transaction-aware querier.
+func (r *TelemetryRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+}
+
+// exec is a helper that uses transaction-aware querier.
+func (r *TelemetryRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+return r.getQuerier(ctx).ExecContext(ctx, query, args...)
 }
 
 // Save saves a telemetry frame for a device.
@@ -72,7 +95,7 @@ func (r *TelemetryRepository) List(ctx context.Context, deviceID string, limit i
 		limit = 5000
 	}
 
-	rows, err := r.db.QueryContext(ctx,
+	rows, err := r.queryRows(ctx,
 		`SELECT id, device_id, received_at, payload, risk_score, buffer_level, thermal_temp, COALESCE(uptime, 0) 
 		 FROM telemetry WHERE device_id = ? ORDER BY received_at DESC LIMIT ?`,
 		deviceID, limit,
@@ -109,7 +132,7 @@ func (r *TelemetryRepository) ListSince(ctx context.Context, deviceID string, si
 		limit = 5000
 	}
 
-	rows, err := r.db.QueryContext(ctx,
+	rows, err := r.queryRows(ctx,
 		`SELECT id, device_id, received_at, payload, risk_score, buffer_level, thermal_temp, COALESCE(uptime, 0) 
 		 FROM telemetry WHERE device_id = ? AND received_at > ? ORDER BY received_at DESC LIMIT ?`,
 		deviceID, sinceTimestamp, limit,
@@ -139,7 +162,7 @@ func (r *TelemetryRepository) ListSince(ctx context.Context, deviceID string, si
 // Count returns the number of telemetry entries for a device.
 func (r *TelemetryRepository) Count(ctx context.Context, deviceID string) (int, error) {
 	var count int
-	err := r.db.QueryRowContext(ctx,
+	err := r.queryRow(ctx,
 		`SELECT COUNT(*) FROM telemetry WHERE device_id = ?`,
 		deviceID,
 	).Scan(&count)
@@ -149,7 +172,7 @@ func (r *TelemetryRepository) Count(ctx context.Context, deviceID string) (int, 
 
 // DeleteOlderThan removes telemetry entries older than the given timestamp.
 func (r *TelemetryRepository) DeleteOlderThan(ctx context.Context, olderThanTimestamp int64) (int64, error) {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		`DELETE FROM telemetry WHERE received_at < ?`,
 		olderThanTimestamp,
 	)

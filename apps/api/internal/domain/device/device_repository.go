@@ -8,14 +8,22 @@ import (
 type Repository interface {
 	// FindByID retrieves a device by ID.
 	FindByID(ctx context.Context, id string) (*Device, error)
-	
+
+	// FindByIMEI retrieves a device by IMEI (device ID).
+	FindByIMEI(ctx context.Context, imei string) (*Device, error)
+
 	// FindByFirebaseInstallID retrieves a device by Firebase install ID.
 	FindByFirebaseInstallID(ctx context.Context, fid string) (*Device, error)
-	
+
 	// FindByIDAndOperator retrieves a device by ID and verifies ownership.
 	// Returns ErrNotFound if device doesn't exist or doesn't belong to operator.
 	// This is used for DOA (Data Ownership Attribution) checks.
 	FindByIDAndOperator(ctx context.Context, id, operatorID string) (*Device, error)
+
+	// FindByIMEIAndOperator retrieves a device by IMEI and verifies ownership.
+	// Returns ErrNotFound if device doesn't exist or doesn't belong to operator.
+	// This is used for DOA (Data Ownership Attribution) checks on deregistration.
+	FindByIMEIAndOperator(ctx context.Context, imei, operatorID string) (*Device, error)
 	
 	// Create creates a new device.
 	Create(ctx context.Context, d *Device) error
@@ -56,7 +64,20 @@ type Repository interface {
 	
 	// Count returns the total number of devices.
 	Count(ctx context.Context) (int, error)
-	
+
 	// CountByOperator returns the number of devices for an operator.
 	CountByOperator(ctx context.Context, operatorID string) (int, error)
+
+	// SoftDelete marks a device as deregistered (soft delete).
+	// Sets deregistered_at and deletion_scheduled_at for 30-day retention.
+	SoftDelete(ctx context.Context, id string, deregisteredAt, deletionScheduledAt int64) error
+
+	// SoftDeleteByIMEI marks a device as deregistered by IMEI.
+	SoftDeleteByIMEI(ctx context.Context, imei string, deregisteredAt, deletionScheduledAt int64) error
+
+	// ListActive returns all non-deregistered devices.
+	ListActive(ctx context.Context, limit, offset int) ([]*Device, int, error)
+
+	// ListActiveByOperator returns all non-deregistered devices for an operator.
+	ListActiveByOperator(ctx context.Context, operatorID string) ([]*Device, error)
 }

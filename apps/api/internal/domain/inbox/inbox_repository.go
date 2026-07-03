@@ -18,11 +18,18 @@ type Repository interface {
 	// List retrieves paginated inbox entries with optional status filter.
 	List(ctx context.Context, status string, limit, offset int) ([]*InboxEntry, int, error)
 
+	// ListByOperator retrieves paginated inbox entries for a specific operator with optional status filter.
+	ListByOperator(ctx context.Context, operatorID, status string, limit, offset int) ([]*InboxEntry, int, error)
+
 	// Update updates an existing inbox entry.
 	Update(ctx context.Context, e *InboxEntry) error
 
 	// Delete deletes an inbox entry by ID.
 	Delete(ctx context.Context, id string) error
+
+	// DeleteByIMEI deletes all inbox entries for a given IMEI.
+	// Used when device re-registers to clean up stale entries.
+	DeleteByIMEI(ctx context.Context, imei string) error
 
 	// ExistsByIMEI checks if an inbox entry exists for the given IMEI.
 	ExistsByIMEI(ctx context.Context, imei string) (bool, error)

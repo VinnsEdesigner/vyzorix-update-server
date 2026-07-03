@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/inbox"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 )
 
 // Ensure InboxRepository implements inbox.Repository.
@@ -21,46 +23,70 @@ func NewInboxRepository(db *sql.DB) *InboxRepository {
 	return &InboxRepository{db: db}
 }
 
+// getQuerier returns the transaction from context if available, otherwise the db.
+func (r *InboxRepository) getQuerier(ctx context.Context) Querier {
+	if tx, ok := transaction.TxFromContext(ctx); ok {
+		return tx
+	}
+	return r.db
+}
+
+// queryRow is a helper that uses transaction-aware querier.
+func (r *InboxRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+}
+
+// queryRows is a helper that uses transaction-aware querier.
+func (r *InboxRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+}
+
+// exec is a helper that uses transaction-aware querier.
+func (r *InboxRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return r.getQuerier(ctx).ExecContext(ctx, query, args...)
+}
+
 // Create creates a new inbox entry.
 func (r *InboxRepository) Create(ctx context.Context, e *inbox.InboxEntry) error {
+	now := time.Now().UnixMilli()
 	query := `
 		INSERT INTO inbox_requests (
 			id, device_imei, firebase_install_id, fcm_token, device_name,
-			os_version, app_version, device_class, device_model, status,
+			manufacturer, os_version, app_version, device_class, device_model, status,
 			reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
 			command_secret, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err := r.db.ExecContext(ctx, query,
-		e.ID, e.IMEI, e.FirebaseInstallID, e.FCMToken, "",
-		e.OSVersion, e.AppVersion, "", e.Model, e.Status,
-		e.OperatorID, e.ApprovedAt, "", "",
-		e.CommandSecret, e.CreatedAt, e.CreatedAt)
+	_, err := r.exec(ctx, query,
+		e.ID, e.IMEI, e.FirebaseInstallID, e.FCMToken, e.DeviceName,
+		e.Manufacturer, e.OSVersion, e.AppVersion, e.DeviceClass, e.Model, e.Status,
+		"", nil, "", "",
+		e.CommandSecret, e.CreatedAt, now)
 	return err
 }
 
 // GetByID retrieves an inbox entry by ID.
 func (r *InboxRepository) GetByID(ctx context.Context, id string) (*inbox.InboxEntry, error) {
 	query := `
-		SELECT id, device_imei, firebase_install_id, fcm_token, device_model,
-			   os_version, app_version, device_class, manufacturer, status,
+		SELECT id, device_imei, firebase_install_id, fcm_token, device_name,
+			   manufacturer, os_version, app_version, device_class, device_model, status,
 			   reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
 			   command_secret, created_at, updated_at
 		FROM inbox_requests WHERE id = ?`
 
-	return r.scanEntry(r.db.QueryRowContext(ctx, query, id))
+	return r.scanEntry(r.queryRow(ctx, query, id))
 }
 
 // GetByIMEI retrieves an inbox entry by IMEI.
 func (r *InboxRepository) GetByIMEI(ctx context.Context, imei string) (*inbox.InboxEntry, error) {
 	query := `
-		SELECT id, device_imei, firebase_install_id, fcm_token, device_model,
-			   os_version, app_version, device_class, manufacturer, status,
+		SELECT id, device_imei, firebase_install_id, fcm_token, device_name,
+			   manufacturer, os_version, app_version, device_class, device_model, status,
 			   reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
 			   command_secret, created_at, updated_at
 		FROM inbox_requests WHERE device_imei = ?`
 
-	return r.scanEntry(r.db.QueryRowContext(ctx, query, imei))
+	return r.scanEntry(r.queryRow(ctx, query, imei))
 }
 
 // List retrieves paginated inbox entries with optional status filter.
@@ -89,14 +115,14 @@ func (r *InboxRepository) List(ctx context.Context, status string, limit, offset
 	// Get total count
 	var total int
 	countQuery := "SELECT COUNT(*) FROM inbox_requests " + whereClause
-	if err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+	if err := r.queryRow(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
 	// Get entries
 	listQuery := `
-		SELECT id, device_imei, firebase_install_id, fcm_token, device_model,
-			   os_version, app_version, device_class, manufacturer, status,
+		SELECT id, device_imei, firebase_install_id, fcm_token, device_name,
+			   manufacturer, os_version, app_version, device_class, device_model, status,
 			   reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
 			   command_secret, created_at, updated_at
 		FROM inbox_requests
@@ -105,11 +131,82 @@ func (r *InboxRepository) List(ctx context.Context, status string, limit, offset
 		LIMIT ? OFFSET ?`
 
 	args = append(args, limit, offset)
-	rows, err := r.db.QueryContext(ctx, listQuery, args...)
+	rows, err := r.queryRows(ctx, listQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
+
+	var entries []*inbox.InboxEntry
+	for rows.Next() {
+		entry, err := r.scanEntryRows(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		entries = append(entries, entry)
+	}
+
+	return entries, total, rows.Err()
+}
+
+// ListByOperator retrieves paginated inbox entries for a specific operator with optional status filter.
+func (r *InboxRepository) ListByOperator(ctx context.Context, operatorID, status string, limit, offset int) ([]*inbox.InboxEntry, int, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	// Build WHERE clause based on status:
+	// - "pending": show ALL pending entries (no operator filter - any operator can see pending)
+	// - "approved"/"rejected": show entries with that status AND reviewed_by = operatorID
+	// - "all"/"": show pending entries + entries reviewed by this operator
+	var whereClause string
+	var args []interface{}
+
+	statusLower := strings.ToLower(status)
+	switch statusLower {
+	case "pending":
+		// Show pending entries that are either unassigned (reviewed_by IS NULL)
+		// or assigned to this specific operator
+		// This ensures operators only see pending entries they can work on
+		whereClause = "WHERE status = ? AND (reviewed_by IS NULL OR reviewed_by = ?)"
+		args = append(args, inbox.StatusPending, operatorID)
+	case "approved", "rejected":
+		// Show entries with this status that were reviewed by this operator
+		whereClause = "WHERE status = ? AND reviewed_by = ?"
+		args = append(args, statusLower, operatorID)
+	default:
+		// "all" or empty: show pending entries (unassigned or mine) + entries reviewed by this operator
+		whereClause = "WHERE (status = ? AND (reviewed_by IS NULL OR reviewed_by = ?)) OR reviewed_by = ?"
+		args = append(args, inbox.StatusPending, operatorID, operatorID)
+	}
+
+	// Get total count
+	var total int
+	countQuery := "SELECT COUNT(*) FROM inbox_requests " + whereClause
+	if err := r.queryRow(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	// Get entries
+	listQuery := `
+		SELECT id, device_imei, firebase_install_id, fcm_token, device_name,
+			   manufacturer, os_version, app_version, device_class, device_model, status,
+			   reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
+			   command_secret, created_at, updated_at
+		FROM inbox_requests
+		` + whereClause + `
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?`
+
+	args = append(args, limit, offset)
+	rows, err := r.queryRows(ctx, listQuery, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = rows.Close() }()
 
 	var entries []*inbox.InboxEntry
 	for rows.Next() {
@@ -125,34 +222,60 @@ func (r *InboxRepository) List(ctx context.Context, status string, limit, offset
 
 // Update updates an existing inbox entry.
 func (r *InboxRepository) Update(ctx context.Context, e *inbox.InboxEntry) error {
+	now := time.Now().UnixMilli()
 	query := `
 		UPDATE inbox_requests SET
 			device_imei = ?, firebase_install_id = ?, fcm_token = ?,
-			device_name = ?, os_version = ?, app_version = ?,
+			device_name = ?, manufacturer = ?, os_version = ?, app_version = ?,
 			device_class = ?, device_model = ?, status = ?,
 			reviewed_by = ?, reviewed_at = ?, reviewed_reason = ?,
 			rejection_reason = ?, command_secret = ?, updated_at = ?
 		WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, query,
+	// Map entity fields to schema columns:
+	// reviewed_at: store ApprovedAt if approved, RejectedAt if rejected
+	// reviewed_reason: store notes when approved
+	// rejection_reason: store notes when rejected
+	var reviewedAt *int64
+	var reviewedReason, rejectionReason string
+
+	switch e.Status {
+	case inbox.StatusApproved:
+		reviewedAt = e.ApprovedAt
+		reviewedReason = e.Notes
+		rejectionReason = ""
+	case inbox.StatusRejected:
+		reviewedAt = e.RejectedAt
+		reviewedReason = ""
+		rejectionReason = e.Notes
+	}
+
+	_, err := r.exec(ctx, query,
 		e.IMEI, e.FirebaseInstallID, e.FCMToken,
-		"", e.OSVersion, e.AppVersion,
-		"", e.Model, e.Status,
-		e.OperatorID, e.ApprovedAt, "",
-		e.Notes, e.CommandSecret, e.CreatedAt, e.ID)
+		e.DeviceName, e.Manufacturer, e.OSVersion, e.AppVersion,
+		e.DeviceClass, e.Model, e.Status,
+		e.OperatorID, reviewedAt, reviewedReason,
+		rejectionReason, e.CommandSecret, now, e.ID)
 	return err
 }
 
 // Delete deletes an inbox entry by ID.
 func (r *InboxRepository) Delete(ctx context.Context, id string) error {
-	_, err := r.db.ExecContext(ctx, "DELETE FROM inbox_requests WHERE id = ?", id)
+	_, err := r.exec(ctx, "DELETE FROM inbox_requests WHERE id = ?", id)
+	return err
+}
+
+// DeleteByIMEI deletes all inbox entries for a given IMEI.
+// Used when device re-registers to clean up stale entries.
+func (r *InboxRepository) DeleteByIMEI(ctx context.Context, imei string) error {
+	_, err := r.exec(ctx, "DELETE FROM inbox_requests WHERE device_imei = ?", imei)
 	return err
 }
 
 // ExistsByIMEI checks if an inbox entry exists for the given IMEI.
 func (r *InboxRepository) ExistsByIMEI(ctx context.Context, imei string) (bool, error) {
 	var exists bool
-	err := r.db.QueryRowContext(ctx,
+	err := r.queryRow(ctx,
 		"SELECT EXISTS(SELECT 1 FROM inbox_requests WHERE device_imei = ?)", imei).Scan(&exists)
 	return exists, err
 }
@@ -160,7 +283,7 @@ func (r *InboxRepository) ExistsByIMEI(ctx context.Context, imei string) (bool, 
 // ExistsByFirebaseInstallID checks if an inbox entry exists for the given Firebase install ID.
 func (r *InboxRepository) ExistsByFirebaseInstallID(ctx context.Context, firebaseInstallID string) (bool, error) {
 	var exists bool
-	err := r.db.QueryRowContext(ctx,
+	err := r.queryRow(ctx,
 		"SELECT EXISTS(SELECT 1 FROM inbox_requests WHERE firebase_install_id = ?)", firebaseInstallID).Scan(&exists)
 	return exists, err
 }
@@ -178,7 +301,7 @@ func (r *InboxRepository) Count(ctx context.Context, status string) (int, error)
 		args = append(args, status)
 	}
 
-	err := r.db.QueryRowContext(ctx, query, args...).Scan(&count)
+	err := r.queryRow(ctx, query, args...).Scan(&count)
 	return count, err
 }
 
@@ -186,13 +309,19 @@ func (r *InboxRepository) Count(ctx context.Context, status string) (int, error)
 func (r *InboxRepository) scanEntry(row *sql.Row) (*inbox.InboxEntry, error) {
 	var e inbox.InboxEntry
 	var reviewedAt sql.NullInt64
-	var commandSecret, notes, model, osVersion, appVersion, manufacturer sql.NullString
+	var reviewedReason, rejectionReason sql.NullString
+	var commandSecret sql.NullString
+	var updatedAt int64
 
+	// SELECT order: id, device_imei, firebase_install_id, fcm_token, device_name,
+	//               manufacturer, os_version, app_version, device_class, device_model, status,
+	//               reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
+	//               command_secret, created_at, updated_at
 	err := row.Scan(
-		&e.ID, &e.IMEI, &e.FirebaseInstallID, &e.FCMToken, &model,
-		&osVersion, &appVersion, &manufacturer, &e.Status,
-		&e.OperatorID, &reviewedAt, &notes, &e.Notes,
-		&commandSecret, &e.CreatedAt, &e.CreatedAt,
+		&e.ID, &e.IMEI, &e.FirebaseInstallID, &e.FCMToken, &e.DeviceName,
+		&e.Manufacturer, &e.OSVersion, &e.AppVersion, &e.DeviceClass, &e.Model, &e.Status,
+		&e.OperatorID, &reviewedAt, &reviewedReason, &rejectionReason,
+		&commandSecret, &e.CreatedAt, &updatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, inbox.ErrInboxNotFound
@@ -201,15 +330,17 @@ func (r *InboxRepository) scanEntry(row *sql.Row) (*inbox.InboxEntry, error) {
 		return nil, err
 	}
 
-	e.Model = model.String
-	e.Manufacturer = manufacturer.String
-	e.OSVersion = osVersion.String
-	e.AppVersion = appVersion.String
-	e.Notes = notes.String
+	e.UpdatedAt = updatedAt
 	e.CommandSecret = commandSecret.String
 
-	if reviewedAt.Valid {
-		e.ApprovedAt = &reviewedAt.Int64
+	// DB schema has single reviewed_at column - use ApprovedAt for approved status
+	// RejectedAt remains nil since there's no separate column
+	if e.Status == inbox.StatusApproved {
+		e.ApprovedAt = nullInt64ToPtr(reviewedAt)
+		e.Notes = reviewedReason.String
+	} else if e.Status == inbox.StatusRejected {
+		e.RejectedAt = nullInt64ToPtr(reviewedAt)
+		e.Notes = rejectionReason.String
 	}
 
 	return &e, nil
@@ -219,28 +350,44 @@ func (r *InboxRepository) scanEntry(row *sql.Row) (*inbox.InboxEntry, error) {
 func (r *InboxRepository) scanEntryRows(rows *sql.Rows) (*inbox.InboxEntry, error) {
 	var e inbox.InboxEntry
 	var reviewedAt sql.NullInt64
-	var commandSecret, notes, model, osVersion, appVersion, manufacturer sql.NullString
+	var reviewedReason, rejectionReason sql.NullString
+	var commandSecret sql.NullString
+	var updatedAt int64
 
+	// SELECT order: id, device_imei, firebase_install_id, fcm_token, device_name,
+	//               manufacturer, os_version, app_version, device_class, device_model, status,
+	//               reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
+	//               command_secret, created_at, updated_at
 	err := rows.Scan(
-		&e.ID, &e.IMEI, &e.FirebaseInstallID, &e.FCMToken, &model,
-		&osVersion, &appVersion, &manufacturer, &e.Status,
-		&e.OperatorID, &reviewedAt, &notes, &e.Notes,
-		&commandSecret, &e.CreatedAt, &e.CreatedAt,
+		&e.ID, &e.IMEI, &e.FirebaseInstallID, &e.FCMToken, &e.DeviceName,
+		&e.Manufacturer, &e.OSVersion, &e.AppVersion, &e.DeviceClass, &e.Model, &e.Status,
+		&e.OperatorID, &reviewedAt, &reviewedReason, &rejectionReason,
+		&commandSecret, &e.CreatedAt, &updatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	e.Model = model.String
-	e.Manufacturer = manufacturer.String
-	e.OSVersion = osVersion.String
-	e.AppVersion = appVersion.String
-	e.Notes = notes.String
+	e.UpdatedAt = updatedAt
 	e.CommandSecret = commandSecret.String
 
-	if reviewedAt.Valid {
-		e.ApprovedAt = &reviewedAt.Int64
+	// DB schema has single reviewed_at column - use ApprovedAt for approved status
+	// RejectedAt remains nil since there's no separate column
+	if e.Status == inbox.StatusApproved {
+		e.ApprovedAt = nullInt64ToPtr(reviewedAt)
+		e.Notes = reviewedReason.String
+	} else if e.Status == inbox.StatusRejected {
+		e.RejectedAt = nullInt64ToPtr(reviewedAt)
+		e.Notes = rejectionReason.String
 	}
 
 	return &e, nil
+}
+
+// nullInt64ToPtr converts sql.NullInt64 to *int64.
+func nullInt64ToPtr(n sql.NullInt64) *int64 {
+	if n.Valid {
+		return &n.Int64
+	}
+	return nil
 }

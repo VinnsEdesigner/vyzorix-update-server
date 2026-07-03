@@ -1155,3 +1155,107 @@ Description: "When the action occurred (Unix ms)",
 },
 },
 })
+
+// DeviceConnectionType represents WebSocket connection info for a device.
+var DeviceConnectionType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "DeviceConnection",
+	Description: "WebSocket connection information for a device",
+	Fields: graphql.Fields{
+		"webSocketStatus": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "WebSocket connection status",
+		},
+		"connectedAt": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "When connection was established (Unix ms)",
+		},
+		"protocol": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Connection protocol (WSS/WEBSOCKET)",
+		},
+		"clientIp": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Client IP address",
+		},
+	},
+})
+
+// DeviceListConnectionType represents a paginated list of devices.
+var DeviceListConnectionType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "DeviceListConnection",
+	Description: "Paginated list of devices",
+	Fields: graphql.Fields{
+		"devices": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.String))),
+			Description: "List of devices",
+		},
+		"pagination": &graphql.Field{
+			Type:        graphql.NewNonNull(PaginationType),
+			Description: "Pagination information",
+		},
+	},
+})
+
+// AckResultType represents the result of acknowledging an inbox entry.
+var AckResultType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "AckResult",
+	Description: "Result of acknowledging an inbox entry",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Inbox entry ID",
+		},
+		"imei": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Device IMEI",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(InboxStatusEnum),
+			Description: "New status after acknowledgement",
+		},
+		"approvedAt": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "When approved (Unix ms)",
+		},
+		"rejectedAt": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "When rejected (Unix ms)",
+		},
+		"commandSecret": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Generated command secret (if approved)",
+		},
+		"fcmPushSent": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Whether FCM push was sent",
+		},
+		"notes": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Operator notes",
+		},
+	},
+})
+
+// DeregisterResultType represents the result of deregistering a device.
+var DeregisterResultType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "DeregisterResult",
+	Description: "Result of deregistering a device",
+	Fields: graphql.Fields{
+		"imei": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Device IMEI",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Deregistration status",
+		},
+		"deregisteredAt": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "When deregistered (Unix ms)",
+		},
+		"retentionUntil": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "When device data will be permanently deleted (Unix ms)",
+		},
+	},
+})
