@@ -16,6 +16,7 @@ import (
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
 	inboxhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/inbox"
+	diagnosticshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
@@ -27,6 +28,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -108,6 +110,7 @@ type Server struct {
 	updatesHandler          *updateshandlers.UpdatesHandler
 	inboxHandler            *inboxhandlers.Handler
 	deviceConfirmHandler    *devicehandlers.ConfirmHandler
+	diagnosticsHandler      *diagnosticshandlers.Handler
 	config                  config.Config
 }
 
@@ -298,6 +301,9 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 
 	// Device confirm handler
 	s.wireConfirmHandler(cfg)
+
+	// Diagnostics handler
+	s.wireDiagnosticsHandler(cfg)
 }
 
 // wireInboxHandler creates and assigns the inbox handler.
@@ -336,6 +342,22 @@ func (s *Server) wireConfirmHandler(cfg *ServerConfig) {
 
 	// Create confirm handler
 	s.deviceConfirmHandler = devicehandlers.NewConfirmHandler(cfg.DeviceService)
+}
+
+// wireDiagnosticsHandler creates and assigns the diagnostics handler.
+func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
+	if cfg.DB == nil || cfg.DeviceService == nil {
+		return
+	}
+
+	// Create diagnostics repository
+	diagnosticsRepo := storage.NewDiagnosticsRepository(cfg.DB.DB())
+
+	// Create diagnostics service
+	diagnosticsService := diagnosticsapp.NewService(diagnosticsRepo, cfg.DeviceService.DeviceRepo(), s.hub)
+
+	// Create handler
+	s.diagnosticsHandler = diagnosticshandlers.NewHandler(diagnosticsService)
 }
 
 // Handlers are defined in server_handlers.go

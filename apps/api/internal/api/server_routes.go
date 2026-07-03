@@ -115,6 +115,7 @@ func (s *Server) setupAuthenticatedRoutes() {
 	s.setupTelemetryRoutes(r)
 	s.setupConnectionsRoutes(r)
 	s.setupUpdatesRoutes(r)
+	s.setupDiagnosticsRoutes(r)
 }
 
 func (s *Server) setupDashboardRoutes(r ...*gin.RouterGroup) {
@@ -225,6 +226,13 @@ func (s *Server) setupUpdatesRoutes(r *gin.RouterGroup) {
 	if s.updatesHandler != nil {
 		updatesGroup := r.Group("/updates")
 		s.updatesHandler.RegisterRoutes(updatesGroup, s.cookieAuth)
+	}
+}
+
+func (s *Server) setupDiagnosticsRoutes(r *gin.RouterGroup) {
+	if s.diagnosticsHandler != nil {
+		diagnosticsGroup := r.Group("/device")
+		s.diagnosticsHandler.RegisterRoutes(diagnosticsGroup)
 	}
 }
 
