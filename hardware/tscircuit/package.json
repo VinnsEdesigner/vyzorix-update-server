@@ -23,5 +23,8 @@
     "typescript": "^5.0.0",
     "vitest": "^4.1.9"
   },
-  "author": "vinnsedesigner"
+  "author": "vinnsedesigner",
+  "dependencies": {
+    "bun": "^1.3.14"
+  }
 }

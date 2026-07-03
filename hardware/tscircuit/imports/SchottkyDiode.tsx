@@ -27,6 +27,7 @@ export const SchottkyDiode = (props: ChipProps<typeof diodePinLabels>) => (
     }}
     manufacturerPartNumber="MBRS140"
     supplierPartNumbers={{ jlcpcb: ["C96789"] }}
+    schWidth={1.35}
     footprint={
       <footprint>
         {/* Anode pad (left) */}

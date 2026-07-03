@@ -32,6 +32,8 @@ export const CSD18537NQ5A = (props: ChipProps<typeof mosfetPinLabels>) => (
     }}
     manufacturerPartNumber="CSD18537NQ5A"
     supplierPartNumbers={{ jlcpcb: ["C141250"] }}
+    schWidth={1.39}
+    schHeight={0.4}
     footprint={
       <footprint>
         {/* Gate pad (top center) */}
