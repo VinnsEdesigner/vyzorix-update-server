@@ -259,8 +259,8 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 		metricsSvc = appmetrics.NewService(metricsRepo)
 	}
 
-	if cfg.CommandService != nil && cfg.DeviceService != nil {
-		dashboardSvc = dashboard.NewService(cfg.DeviceService.DeviceRepo(), cfg.CommandService.CommandRepo())
+	if cfg.CommandService != nil && cfg.DeviceService != nil && logsRepo != nil {
+		dashboardSvc = dashboard.NewService(cfg.DeviceService.DeviceRepo(), cfg.CommandService.CommandRepo(), logsRepo)
 	}
 
 	// Create handlers

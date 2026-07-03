@@ -7,19 +7,22 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/logs"
 )
 
 // Service handles dashboard operations.
 type Service struct {
 	deviceRepo  device.Repository
 	commandRepo command.Repository
+	logsRepo    logs.Repository
 }
 
 // NewService creates a new dashboard service.
-func NewService(deviceRepo device.Repository, commandRepo command.Repository) *Service {
+func NewService(deviceRepo device.Repository, commandRepo command.Repository, logsRepo logs.Repository) *Service {
 	return &Service{
 		deviceRepo:  deviceRepo,
 		commandRepo: commandRepo,
+		logsRepo:    logsRepo,
 	}
 }
 
@@ -63,11 +66,20 @@ func (s *Service) GetDashboardStats(ctx context.Context) (*DashboardStatsRespons
 		}
 	}
 
-	// Count registrations and deregistrations from device events in last 24h
-	// This would require access to device events or logs - for now use placeholder
-	// In production, query device_events table for registration/deregistration events
-	registrations := 0
-	deregistrations := 0
+	// Count registrations and deregistrations from device logs in last 24h
+	var registrations, deregistrations int
+	if s.logsRepo != nil {
+		registrations, err = s.logsRepo.CountLogs(ctx, "", logs.EventTypeRegistration, last24h, now)
+		if err != nil {
+			// Log error but don't fail the entire request
+			registrations = 0
+		}
+
+		deregistrations, err = s.logsRepo.CountLogs(ctx, "", logs.EventTypeDeregistration, last24h, now)
+		if err != nil {
+			deregistrations = 0
+		}
+	}
 
 	return &DashboardStatsResponse{
 		Devices: DevicesStats{
