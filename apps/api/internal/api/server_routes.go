@@ -101,6 +101,7 @@ func (s *Server) setupAuthenticatedRoutes() {
 	s.setupDashboardRoutes(r)
 	s.setupAdminRoutes(r)
 	s.setupDeviceManagementRoutes(r)
+	s.setupDeviceInboxRoutes(r)
 	s.setupCommandManagementRoutes(r)
 	s.setupTelemetryRoutes(r)
 	s.setupConnectionsRoutes(r)
@@ -163,6 +164,13 @@ func (s *Server) setupDeviceManagementRoutes(r *gin.RouterGroup) {
 	deviceMgmt.GET("/:id/stream", s.streamHandler.Handle)
 	deviceMgmt.GET("/:id/connection-status", s.connectionStatusHandler.GetStatus)
 	deviceMgmt.POST("/:id/disconnect", s.connectionStatusHandler.DisconnectDevice)
+}
+
+func (s *Server) setupDeviceInboxRoutes(r *gin.RouterGroup) {
+	if s.inboxHandler != nil {
+		deviceInbox := r.Group("/device")
+		s.inboxHandler.RegisterRoutes(deviceInbox)
+	}
 }
 
 func (s *Server) setupCommandManagementRoutes(r *gin.RouterGroup) {
