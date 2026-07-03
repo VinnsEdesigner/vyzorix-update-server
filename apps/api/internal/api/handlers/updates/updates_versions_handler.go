@@ -90,6 +90,16 @@ func (h *UpdatesVersionsHandler) GetChangelog(c *gin.Context) {
 	c.JSON(http.StatusOK, changelog)
 }
 
+// GetUpdateStatus is an alias for GetStatus to match expected handler names.
+func (h *UpdatesVersionsHandler) GetUpdateStatus(c *gin.Context) {
+	h.GetStatus(c)
+}
+
+// ExportVersions is an alias for Export to match expected handler names.
+func (h *UpdatesVersionsHandler) ExportVersions(c *gin.Context) {
+	h.Export(c)
+}
+
 // Export handles GET /v1/updates/export.
 func (h *UpdatesVersionsHandler) Export(c *gin.Context) {
 	format := c.DefaultQuery("format", "json")

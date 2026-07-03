@@ -67,6 +67,7 @@ type HandlerSet struct {
 	AdminClients     *admin.ClientsHandler
 	Updater          *updaterhandlers.Handler
 	Updates          *updateshandlers.UpdatesHandler
+	UpdatesService  *updatesapplication.Service
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -169,6 +170,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(nil)
 
 		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, updatesRateLimiters, deps.AuditLogger)
+		hs.UpdatesService = updatesService
 	}
 
 	return hs
