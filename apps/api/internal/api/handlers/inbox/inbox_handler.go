@@ -20,7 +20,7 @@ func NewHandler(service *inbox.Service) *Handler {
 }
 
 // GetInbox handles GET /v1/device/inbox.
-// Returns paginated list of inbox entries.
+// Returns paginated list of inbox entries for the authenticated operator.
 func (h *Handler) GetInbox(c *gin.Context) {
 	status := c.DefaultQuery("status", "pending")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -36,16 +36,17 @@ func (h *Handler) GetInbox(c *gin.Context) {
 		limit = 100
 	}
 
-	result, err := h.service.GetInbox(c.Request.Context(), status, page, limit)
+	// Get operator from context (set by auth middleware)
+	operator := middleware.GetOperatorFromContext(c)
+	operatorID := ""
+	if operator != nil {
+		operatorID = operator.ID
+	}
+
+	result, err := h.service.GetInbox(c.Request.Context(), operatorID, status, page, limit)
 	if err != nil {
-		if se := inbox.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
-			return
-		}
-		c.JSON(http.StatusInternalServerError, inbox.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to get inbox",
-		})
+		se := inbox.ToServiceError(err)
+		c.JSON(se.Status, se.ToErrorResponse())
 		return
 	}
 
@@ -66,14 +67,8 @@ func (h *Handler) GetInboxEntry(c *gin.Context) {
 
 	result, err := h.service.GetInboxEntry(c.Request.Context(), imei)
 	if err != nil {
-		if se := inbox.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
-			return
-		}
-		c.JSON(http.StatusInternalServerError, inbox.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to get inbox entry",
-		})
+		se := inbox.ToServiceError(err)
+		c.JSON(se.Status, se.ToErrorResponse())
 		return
 	}
 
@@ -115,16 +110,11 @@ func (h *Handler) AckInbox(c *gin.Context) {
 		operatorID = operator.ID
 	}
 
+	// Timeout is handled by middleware (Bug 49)
 	result, err := h.service.AckInbox(c.Request.Context(), imei, req.Action, operatorID, req.Notes)
 	if err != nil {
-		if se := inbox.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
-			return
-		}
-		c.JSON(http.StatusInternalServerError, inbox.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to acknowledge inbox entry",
-		})
+		se := inbox.ToServiceError(err)
+		c.JSON(se.Status, se.ToErrorResponse())
 		return
 	}
 
@@ -151,18 +141,55 @@ func (h *Handler) CreateInboxRequest(c *gin.Context) {
 		return
 	}
 
+	// Timeout and idempotency are handled by middleware (Bug 49, Bug 45)
 	result, err := h.service.CreateInboxRequest(c.Request.Context(), &req)
 	if err != nil {
-		if se := inbox.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
-			return
-		}
-		c.JSON(http.StatusInternalServerError, inbox.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to create inbox entry",
-		})
+		se := inbox.ToServiceError(err)
+		c.JSON(se.Status, se.ToErrorResponse())
 		return
 	}
 
 	c.JSON(http.StatusCreated, result)
+}
+
+// UpdateInboxEntryRequest represents the request for PATCH /v1/device/inbox/:imei.
+type UpdateInboxEntryRequest struct {
+	Notes string `json:"notes,omitempty"`
+}
+
+// UpdateInboxEntry handles PATCH /v1/device/inbox/:imei.
+// Updates an inbox entry (e.g., add operator notes).
+func (h *Handler) UpdateInboxEntry(c *gin.Context) {
+	imei := c.Param("imei")
+	if imei == "" {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "IMEI is required",
+		})
+		return
+	}
+
+	var req UpdateInboxEntryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "Invalid request body",
+		})
+		return
+	}
+
+	operator := middleware.GetOperatorFromContext(c)
+	operatorID := ""
+	if operator != nil {
+		operatorID = operator.ID
+	}
+
+	result, err := h.service.UpdateInboxEntry(c.Request.Context(), imei, operatorID, req.Notes)
+	if err != nil {
+		se := inbox.ToServiceError(err)
+		c.JSON(se.Status, se.ToErrorResponse())
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }

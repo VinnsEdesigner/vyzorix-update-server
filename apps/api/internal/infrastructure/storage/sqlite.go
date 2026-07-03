@@ -10,6 +10,8 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 )
 
 // Config holds SQLite configuration.
@@ -107,6 +109,39 @@ func (s *SQLite) BeginTx() (*sql.Tx, error) {
 	return s.db.Begin()
 }
 
+// WithTx executes a function within a transaction.
+// If the function returns an error, the transaction is rolled back.
+// If the function succeeds, the transaction is committed.
+func (s *SQLite) WithTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Attach transaction to context
+	txCtx := transaction.ContextWithTx(ctx, tx)
+
+	// Execute function with transaction context
+	if err := fn(txCtx); err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return fmt.Errorf("tx failed: %v, rollback failed: %w", err, rbErr)
+		}
+		return err
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// TxManager returns a transaction.TXManager implementation.
+func (s *SQLite) TxManager() transaction.TxManager {
+	return s
+}
+
 // =============================================================================
 // Migrations
 // =============================================================================
@@ -151,6 +186,9 @@ var migrations = []Migration{
 	{Apply: migrateCreateUpdateSyncStatus, Name: "create_update_sync_status_table", Version: 28},
 	{Apply: migrateDashboardDeviceLogs, Name: "create_dashboard_device_logs_table", Version: 29},
 	{Apply: migrateTelemetryUptime, Name: "add_telemetry_uptime_column", Version: 30},
+	{Apply: migrateInboxIMEIUnique, Name: "add_inbox_imei_unique_constraint", Version: 31},
+	{Apply: migrateRegistrationAuditFields, Name: "add_registration_audit_fields", Version: 32},
+	{Apply: migrateIdempotencyRecords, Name: "create_idempotency_records_table", Version: 33},
 }
 
 // runMigrations applies all pending migrations.

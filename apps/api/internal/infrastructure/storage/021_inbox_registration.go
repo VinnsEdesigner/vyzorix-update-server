@@ -15,6 +15,7 @@ func migrateCreateInboxAndRegistration(db *sql.DB) error {
 			firebase_install_id      TEXT NOT NULL,
 			fcm_token               TEXT,
 			device_name             TEXT,
+			manufacturer            TEXT,
 			os_version              TEXT,
 			app_version             TEXT,
 			device_class            TEXT,

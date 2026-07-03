@@ -13,7 +13,10 @@ import (
 	"google.golang.org/api/option"
 )
 
-var ErrDisabled = errors.New("fcm notifier disabled: FIREBASE_CREDENTIALS is empty")
+var (
+	ErrDisabled          = errors.New("fcm notifier disabled: FIREBASE_CREDENTIALS is empty")
+	ErrFCMCircuitOpen   = errors.New("fcm circuit breaker is open")
+)
 
 type Client struct {
 	log      *slog.Logger

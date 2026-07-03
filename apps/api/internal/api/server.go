@@ -87,6 +87,7 @@ type Server struct {
 	mwFactory               *middleware.MiddlewareFactory
 	db                      *storage.SQLite
 	dashboardRateLimiter    *middleware.DashboardRateLimiterMiddleware
+	deviceRegRateLimiter   *middleware.DeviceRegistrationRateLimiterMiddleware
 	AuditLogger             *audit.Logger
 	deviceRegisterHandler   *devicehandlers.RegisterHandler
 	deviceUpdaterHandler    *devicehandlers.UpdaterHandler
@@ -106,6 +107,7 @@ type Server struct {
 	dashboardStatsHandler   *dashboardhandlers.StatsHandler
 	updatesHandler          *updateshandlers.UpdatesHandler
 	inboxHandler            *inboxhandlers.Handler
+	deviceConfirmHandler    *devicehandlers.ConfirmHandler
 	config                  config.Config
 }
 
@@ -293,6 +295,9 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 
 	// Inbox handler
 	s.wireInboxHandler(cfg)
+
+	// Device confirm handler
+	s.wireConfirmHandler(cfg)
 }
 
 // wireInboxHandler creates and assigns the inbox handler.
@@ -305,11 +310,32 @@ func (s *Server) wireInboxHandler(cfg *ServerConfig) {
 	inboxRepo := storage.NewInboxRepository(cfg.DB.DB())
 	regLogRepo := storage.NewRegistrationLogRepository(cfg.DB.DB())
 
-	// Create inbox service with device service integration
-	inboxService := inbox.NewService(inboxRepo, regLogRepo, nil)
+	// Create inbox service with FCM notifier (SafeNotifier for graceful degradation)
+	// and device service for creating devices on approval and device lookup
+	var fcmNotifier inbox.FCMNotifier
+	if cfg.FCMNotifier != nil {
+		fcmNotifier = &fcm.SafeNotifier{Notifier: cfg.FCMNotifier}
+	}
+	inboxService := inbox.NewService(inboxRepo, regLogRepo, cfg.DeviceService, cfg.DeviceService, fcmNotifier, s.log)
+
+	// Enable ACID transactions for enterprise production
+	inboxService.WithTxManager(cfg.DB)
+
+	// Create device registration rate limiter
+	s.deviceRegRateLimiter = middleware.NewDeviceRegistrationRateLimiterMiddleware(nil)
 
 	// Create handler
 	s.inboxHandler = inboxhandlers.NewHandler(inboxService)
+}
+
+// wireConfirmHandler creates and assigns the device confirm handler.
+func (s *Server) wireConfirmHandler(cfg *ServerConfig) {
+	if cfg.DeviceService == nil {
+		return
+	}
+
+	// Create confirm handler
+	s.deviceConfirmHandler = devicehandlers.NewConfirmHandler(cfg.DeviceService)
 }
 
 // Handlers are defined in server_handlers.go

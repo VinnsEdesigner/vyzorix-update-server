@@ -37,51 +37,67 @@ type UpdateFCMTokenRequest struct {
 	FCMToken string `json:"fcm_token"`
 }
 
-// DeviceResponse represents a device in responses.
+// DeviceResponse represents a device in responses per spec.
 type DeviceResponse struct {
-	ID                string `json:"id"`
-	FirebaseInstallID string `json:"firebase_install_id"`
-	AppVersion        string `json:"app_version"`
-	DeviceClass       string `json:"device_class"`
-	Online            bool   `json:"online"`
-	RegisteredAt      int64  `json:"registered_at"`
-	LastSeen          int64  `json:"last_seen"`
+	ID           string `json:"id"`
+	IMEI         string `json:"imei"`
+	DeviceName   string `json:"deviceName,omitempty"`
+	Model        string `json:"model,omitempty"`
+	Manufacturer string `json:"manufacturer,omitempty"`
+	OSVersion    string `json:"osVersion,omitempty"`
+	AppVersion   string `json:"appVersion,omitempty"`
+	Status       string `json:"status"`
+	Online       bool   `json:"online"`
+	RegisteredAt int64  `json:"registeredAt,omitempty"`
+	LastSeen     int64  `json:"lastSeen,omitempty"`
 }
 
-// DeviceListResponse represents a list of devices.
+// DeregisterResponse represents the response for DELETE /v1/devices/:imei.
+type DeregisterResponse struct {
+	IMEI           string `json:"imei"`
+	Status         string `json:"status"`
+	DeregisteredAt int64  `json:"deregisteredAt"`
+	RetentionUntil int64  `json:"retentionUntil,omitempty"`
+}
+
+// DeviceListResponse represents a list of devices per spec.
 type DeviceListResponse struct {
 	Devices    []DeviceResponse `json:"devices"`
-	Total      int              `json:"total"`
-	Limit      int              `json:"limit"`
-	Offset     int              `json:"offset"`
-	Page       int              `json:"page"`
-	TotalPages int              `json:"totalPages"`
+	Pagination PaginationInfo `json:"pagination"`
+}
+
+// PaginationInfo represents pagination in responses per spec.
+type PaginationInfo struct {
+	Page       int `json:"page"`
+	Limit      int `json:"limit"`
+	Total      int `json:"total"`
+	TotalPages int `json:"totalPages"`
 }
 
 // DeviceDetailResponse represents detailed device info per spec.
 type DeviceDetailResponse struct {
-	ID                string `json:"id"`
-	IMEI              string `json:"imei"`
-	DeviceName        string `json:"deviceName"`
-	Model             string `json:"model"`
-	Manufacturer      string `json:"manufacturer"`
-	OSVersion         string `json:"osVersion"`
-	AppVersion        string `json:"appVersion"`
-	SecurityPatch     string `json:"securityPatch"`
-	Status            string `json:"status"`
-	RegisteredAt      int64  `json:"registeredAt"`
-	LastSeen          int64  `json:"lastSeen"`
-	FCMTokenValid     bool   `json:"fcmTokenValid"`
-	CommandSecretSet  bool   `json:"commandSecretSet"`
+	ID                string          `json:"id"`
+	IMEI              string          `json:"imei"`
+	DeviceName        string          `json:"deviceName,omitempty"`
+	Model             string          `json:"model,omitempty"`
+	Manufacturer      string          `json:"manufacturer,omitempty"`
+	OSVersion         string          `json:"osVersion,omitempty"`
+	AppVersion        string          `json:"appVersion,omitempty"`
+	SecurityPatch     string          `json:"securityPatch,omitempty"`
+	Status            string          `json:"status"`
+	RegisteredAt      int64           `json:"registeredAt,omitempty"`
+	LastSeen          int64           `json:"lastSeen,omitempty"`
+	FCMTokenValid     bool            `json:"fcmTokenValid"`
+	CommandSecretSet  bool            `json:"commandSecretSet"`
 	Connection        *ConnectionInfo `json:"connection,omitempty"`
 }
 
-// ConnectionInfo represents WebSocket connection details.
+// ConnectionInfo represents WebSocket connection details per spec.
 type ConnectionInfo struct {
 	WebSocketStatus string `json:"webSocketStatus"`
-	ConnectedAt     int64  `json:"connectedAt"`
-	Protocol        string `json:"protocol"`
-	ClientIP        string `json:"clientIp"`
+	ConnectedAt     int64  `json:"connectedAt,omitempty"`
+	Protocol        string `json:"protocol,omitempty"`
+	ClientIP        string `json:"clientIp,omitempty"`
 }
 
 // SendCommandRequest represents a command request.

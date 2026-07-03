@@ -6,8 +6,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/refresh_token"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/refresh_token"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 )
 
 // Ensure SessionRepository implements session.Repository.
@@ -281,7 +282,30 @@ var _ refresh_token.Repository = (*RefreshTokenRepository)(nil)
 
 // RefreshTokenRepository implements refresh_token.Repository using SQLite.
 type RefreshTokenRepository struct {
-	db *sql.DB
+db *sql.DB
+}
+
+// getQuerier returns the transaction from context if available, otherwise the db.
+func (r *RefreshTokenRepository) getQuerier(ctx context.Context) Querier {
+	if tx, ok := transaction.TxFromContext(ctx); ok {
+		return tx
+	}
+	return r.db
+}
+
+// queryRow is a helper that uses transaction-aware querier.
+func (r *RefreshTokenRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+}
+
+// queryRows is a helper that uses transaction-aware querier.
+func (r *RefreshTokenRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+}
+
+// exec is a helper that uses transaction-aware querier.
+func (r *RefreshTokenRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return r.getQuerier(ctx).ExecContext(ctx, query, args...)
 }
 
 // NewRefreshTokenRepository creates a new RefreshTokenRepository.
