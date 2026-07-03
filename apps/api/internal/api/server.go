@@ -14,6 +14,7 @@ import (
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
 	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
+        updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
@@ -22,6 +23,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
+        updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -58,6 +60,7 @@ type ServerConfig struct {
 	Metrics        *infraMetrics.Metrics
 	AuditLogger    *audit.Logger
 	Config         config.Config
+	UpdatesService *updatesapp.Service
 }
 
 // Server is the main API server.
@@ -98,6 +101,7 @@ type Server struct {
 	deviceMetricsHandler    *devicehandlers.MetricsHandler
 	deviceTelemetryHandler  *devicehandlers.TelemetryHandler
 	dashboardStatsHandler   *dashboardhandlers.StatsHandler
+        updatesHandler          *updateshandlers.UpdatesHandler
 	config                  config.Config
 }
 
@@ -276,6 +280,10 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	if dashboardSvc != nil {
 		s.dashboardStatsHandler = dashboardhandlers.NewStatsHandler(dashboardSvc, cfg.Log)
 	}
+        if cfg.UpdatesService != nil {
+                updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(nil)
+                s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, updatesRateLimiters, cfg.AuditLogger)
+        }
 }
 
 // Handlers are defined in server_handlers.go
