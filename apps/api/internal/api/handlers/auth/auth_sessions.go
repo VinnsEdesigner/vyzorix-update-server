@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"

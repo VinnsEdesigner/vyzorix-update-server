@@ -104,6 +104,7 @@ func (s *Server) setupAuthenticatedRoutes() {
 	s.setupCommandManagementRoutes(r)
 	s.setupTelemetryRoutes(r)
 	s.setupConnectionsRoutes(r)
+	s.setupUpdatesRoutes(r)
 }
 
 func (s *Server) setupDashboardRoutes(r ...*gin.RouterGroup) {
@@ -186,6 +187,13 @@ func (s *Server) setupConnectionsRoutes(r *gin.RouterGroup) {
 	connections := r.Group("/connections")
 	connections.GET("", s.connectionStatusHandler.GetAllStatus)
 	connections.GET("/metrics", s.connectionStatusHandler.GetMetrics)
+}
+
+func (s *Server) setupUpdatesRoutes(r *gin.RouterGroup) {
+	if s.updatesHandler != nil {
+		updatesGroup := r.Group("/updates")
+		s.updatesHandler.RegisterRoutes(updatesGroup, s.cookieAuth)
+	}
 }
 
 func (s *Server) setupMethodHandlers() {
