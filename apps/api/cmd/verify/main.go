@@ -12,8 +12,8 @@ func getRoot() string {
 	// Get the current working directory
 	cwd, _ := os.Getwd()
 
-	// Navigate to project root (from apps/api/cmd/verify)
-	return filepath.Join(cwd, "..", "..", "..", "..")
+	// Navigate to project root (from apps/api/cmd/verify going up 2 levels to vyzorix-update-server)
+	return filepath.Join(cwd, "..", "..")
 }
 
 func main() {

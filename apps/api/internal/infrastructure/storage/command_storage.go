@@ -493,3 +493,65 @@ func (r *CommandRepository) DeleteOldCommands(ctx context.Context, olderThan int
 
 	return result.RowsAffected()
 }
+
+// FindByDispatchPrefix retrieves all commands whose dispatch_id starts with the given prefix.
+func (r *CommandRepository) FindByDispatchPrefix(ctx context.Context, prefix string) ([]*command.Command, error) {
+	query := `
+		SELECT id, device_id, dispatch_id, command, args, status,
+		       delivered_at, completed_at, created_at, updated_at
+		FROM commands WHERE dispatch_id LIKE ? || '%'
+		ORDER BY created_at ASC`
+
+	rows, err := r.db.QueryContext(ctx, query, prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	var commands []*command.Command
+
+	for rows.Next() {
+		var cmd command.Command
+		var argsJSON []byte
+		var deliveredAt, completedAt sql.NullInt64
+
+		err := rows.Scan(
+			&cmd.ID, &cmd.DeviceID, &cmd.DispatchID, &cmd.Command, &argsJSON,
+			&cmd.Status, &deliveredAt, &completedAt, &cmd.CreatedAt, &cmd.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if argsJSON != nil {
+			_ = json.Unmarshal(argsJSON, &cmd.Args)
+		}
+
+		if deliveredAt.Valid {
+			cmd.DeliveredAt = &deliveredAt.Int64
+		}
+
+		if completedAt.Valid {
+			cmd.CompletedAt = &completedAt.Int64
+		}
+
+		commands = append(commands, &cmd)
+	}
+
+	return commands, rows.Err()
+}
+
+// CancelByDispatchPrefix marks all pending commands whose dispatch_id starts with the given prefix as cancelled.
+func (r *CommandRepository) CancelByDispatchPrefix(ctx context.Context, prefix string) (int64, error) {
+	now := time.Now()
+	result, err := r.db.ExecContext(ctx,
+		`UPDATE commands SET status = ?, updated_at = ? WHERE dispatch_id LIKE ? || '%' AND status = 'pending'`,
+		command.StatusCancelled, now, prefix,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected()
+}
