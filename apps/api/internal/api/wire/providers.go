@@ -412,8 +412,8 @@ func ProvideMiddlewareSet(
 }
 
 // WireInjector is the provider set for dependency injection.
+// Note: config.Config is passed as an argument to Injector, not provided here.
 var WireInjector = wire.NewSet(
-	ProvideConfig,
 	ProvideLogger,
 	ProvideSQLite,
 	ProvideDB,
@@ -450,5 +450,76 @@ var WireInjector = wire.NewSet(
 	ProvideGinEngine,
 	ProvideHandlerSet,
 	ProvideMiddlewareSet,
+	ProvideServerDependencies,
+	ProvideServerResult,
+	ProvideServer,
 	wire.Bind(new(operator.Repository), new(*storage.OperatorRepository)),
 )
+
+// ProvideServerDependencies creates ServerDependencies from all required components.
+func ProvideServerDependencies(
+	cfg config.Config,
+	log *slog.Logger,
+	sqlite *storage.SQLite,
+	auditLogger *audit.Logger,
+	sessionManager *infraauth.SessionManager,
+	googleVerifier *infraauth.GoogleTokenVerifier,
+	operatorRepo *storage.OperatorRepository,
+	deviceRepo *storage.DeviceRepository,
+	commandRepo *storage.CommandRepository,
+	sessionRepo *storage.SessionRepository,
+	clientRepo *storage.ClientRepository,
+	telemetryRepo *storage.TelemetryRepository,
+	updatesStorage *storage.UpdatesStorage,
+	emailVerifyRepo *storage.EmailVerificationRepository,
+	passwordResetRepo *storage.PasswordResetRepository,
+	hasher *passwordpkg.Argon2idHasher,
+	authService *auth.AuthService,
+	deviceService *device.Service,
+	clientService *client.Service,
+	commandService *cmdapp.Service,
+	emailService *emailService.Service,
+	metrics *metrics.Metrics,
+	hubResult *HubResult,
+	fcmNotifier fcm.Notifier,
+	factory *middleware.MiddlewareFactory,
+	rateLimiter *middleware.RateLimiter,
+	lockout *middleware.Lockout,
+	ipIntelligence *middleware.IPIntelligence,
+) *ServerDependencies {
+	return &ServerDependencies{
+		FCMNotifier:     fcmNotifier,
+		OperatorRepo:    operatorRepo,
+		RateLimiter:     rateLimiter,
+		Hub:             hubResult.Hub,
+		AuthService:     authService,
+		AuthLimiter:     middleware.NewRateLimiter(5, time.Minute),
+		IPIntelligence:  ipIntelligence,
+		Log:             log,
+		SessionManager:  sessionManager,
+		GoogleVerifier:  googleVerifier,
+		EmailService:    emailService,
+		CommandService:  commandService,
+		ClientService:   clientService,
+		DB:              sqlite,
+		Lockout:         lockout,
+		DeviceService:   deviceService,
+		Metrics:         metrics,
+		AuditLogger:     auditLogger,
+		Config:          cfg,
+		UpdatesStorage:  updatesStorage,
+	}
+}
+
+// ProvideServerResult provides the wired server result by calling WireServer.
+func ProvideServerResult(deps *ServerDependencies) *ServerResult {
+	return WireServer(*deps)
+}
+
+// ProvideServer combines ServerDependencies and ServerResult into a single struct.
+func ProvideServer(deps *ServerDependencies, result *ServerResult) *Server {
+	return &Server{
+		Dependencies: deps,
+		Result:       result,
+	}
+}
