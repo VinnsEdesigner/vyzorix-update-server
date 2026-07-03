@@ -92,24 +92,28 @@ func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 
 	format := c.DefaultQuery("format", "json")
 
-	req := &metrics.GetTelemetryRequest{
-		DeviceID: deviceID,
-	}
-
+	// Calculate time range from range parameter (default: 24h)
+	now := time.Now()
+	var startTime, endTime time.Time
+	
 	if st := c.Query("startTime"); st != "" {
-		req.StartTime, _ = strconv.ParseInt(st, 10, 64)
-	}
-	if et := c.Query("endTime"); et != "" {
-		req.EndTime, _ = strconv.ParseInt(et, 10, 64)
+		startTime = time.UnixMilli(parseInt64(st))
+		endTime = now
+	} else if et := c.Query("endTime"); et != "" {
+		endTime = time.UnixMilli(parseInt64(et))
+		startTime = endTime.Add(-24 * time.Hour) // Default to 24h range
+	} else {
+		// Default to last 24 hours as per spec
+		endTime = now
+		startTime = endTime.Add(-24 * time.Hour)
 	}
 
-	limit := 10000
-	if l := c.Query("limit"); l != "" {
-		if parsed, parseErr := strconv.Atoi(l); parseErr == nil && parsed > 0 {
-			limit = parsed
-		}
+	req := &metrics.GetTelemetryRequest{
+		DeviceID:  deviceID,
+		StartTime: startTime.UnixMilli(),
+		EndTime:   endTime.UnixMilli(),
+		Limit:     10000,
 	}
-	req.Limit = limit
 
 	response, err := h.metricsSvc.GetTelemetry(ctx, req)
 	if err != nil {
@@ -126,6 +130,9 @@ func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 		h.writeCSV(c, response)
 	default:
+		// For JSON, still provide as file download
+		c.Header("Content-Type", "application/json")
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 		c.JSON(http.StatusOK, response)
 	}
 }
