@@ -29,4 +29,5 @@ type TelemetryEntry struct {
 	RiskScore   int       `json:"riskScore"`
 	BufferLevel int       `json:"bufferLevel"`
 	ThermalTemp float64   `json:"thermalTemp"`
+	Uptime      int64     `json:"uptime"`
 }
