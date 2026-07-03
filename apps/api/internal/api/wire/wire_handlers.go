@@ -169,7 +169,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		// Create rate limiter middleware for updates endpoints
 		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(nil)
 
-		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, updatesRateLimiters, deps.AuditLogger)
+		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, updatesRateLimiters, deps.AuditLogger, deps.Config.GitHubWebhookSecret)
 		hs.UpdatesService = updatesService
 	}
 
