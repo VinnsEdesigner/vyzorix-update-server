@@ -45,7 +45,8 @@ func Injector(cfg config.Config) (*Server, error) {
 	rateLimiter := ProvideRateLimiter()
 	lockout := ProvideLockout()
 	ipIntelligence := ProvideIPIntelligence(middlewareFactory)
-	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, middlewareFactory, rateLimiter, lockout, ipIntelligence)
+	updatesService := ProvideUpdatesService(updatesStorage, service, hubResult, notifier, commandService, logger, cfg)
+	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService)
 	serverResult := ProvideServerResult(serverDependencies)
 	server := ProvideServer(serverDependencies, serverResult)
 	return server, nil
