@@ -282,7 +282,7 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	}
         if cfg.UpdatesService != nil {
                 updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(middleware.DefaultUpdatesRateLimits())
-                s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, updatesRateLimiters, cfg.AuditLogger)
+                s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
         }
 }
 

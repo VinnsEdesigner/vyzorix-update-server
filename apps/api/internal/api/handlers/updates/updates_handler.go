@@ -1,6 +1,8 @@
 package updates
 
 import (
+	"log/slog"
+
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
@@ -9,18 +11,20 @@ import (
 
 // UpdatesHandler coordinates all updates handlers.
 type UpdatesHandler struct {
-	service         *updates.Service
-	versionsHandler *UpdatesVersionsHandler
-	pushHandler     *UpdatesPushHandler
-	historyHandler  *UpdatesHistoryHandler
-	syncHandler     *UpdatesSyncHandler
-	rateLimiters    *middleware.UpdatesRateLimiterMiddleware
-	adminAuth       *middleware.UpdatesAdminAuth
-	auditLogger     *audit.Logger
+	service           *updates.Service
+	versionsHandler   *UpdatesVersionsHandler
+	pushHandler       *UpdatesPushHandler
+	historyHandler    *UpdatesHistoryHandler
+	syncHandler       *UpdatesSyncHandler
+	webhookHandler    *GitHubWebhookHandler
+	rateLimiters      *middleware.UpdatesRateLimiterMiddleware
+	adminAuth         *middleware.UpdatesAdminAuth
+	auditLogger       *audit.Logger
+	webhookSecret     string
 }
 
 // NewUpdatesHandler creates a new UpdatesHandler with all sub-handlers.
-func NewUpdatesHandler(service *updates.Service, rateLimiters *middleware.UpdatesRateLimiterMiddleware, auditLogger *audit.Logger) *UpdatesHandler {
+func NewUpdatesHandler(service *updates.Service, rateLimiters *middleware.UpdatesRateLimiterMiddleware, auditLogger *audit.Logger, webhookSecret string) *UpdatesHandler {
 	return &UpdatesHandler{
 		service:          service,
 		versionsHandler:  NewUpdatesVersionsHandler(service),
@@ -30,7 +34,13 @@ func NewUpdatesHandler(service *updates.Service, rateLimiters *middleware.Update
 		rateLimiters:     rateLimiters,
 		adminAuth:        middleware.NewUpdatesAdminAuth(),
 		auditLogger:      auditLogger,
+		webhookSecret:    webhookSecret,
 	}
+}
+
+// InitWebhookHandler initializes the webhook handler after service is set.
+func (h *UpdatesHandler) InitWebhookHandler(log *slog.Logger) {
+	h.webhookHandler = NewGitHubWebhookHandler(h.service, h.webhookSecret, h.auditLogger, log)
 }
 
 // RegisterRoutes registers all updates routes.
@@ -79,6 +89,14 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 		updatesGroup.GET("/sync/status",
 			h.rateLimiters.SyncLimit(),
 			h.syncHandler.GetSyncStatus)
+
+		// Webhook - no cookie auth (uses HMAC signature), admin only for info endpoint
+		if h.webhookHandler != nil {
+			updatesGroup.POST("/webhook/github",
+				h.webhookHandler.HandleWebhook)
+			updatesGroup.GET("/webhook/info",
+				h.webhookHandler.GetWebhookInfo)
+		}
 	} else {
 		// No rate limiting configured
 		// Push - admin only
@@ -102,6 +120,14 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 		updatesGroup.GET("/history", h.historyHandler.GetHistory)
 		updatesGroup.GET("/history/:pushId", h.historyHandler.GetPushDetail)
 		updatesGroup.GET("/sync/status", h.syncHandler.GetSyncStatus)
+
+		// Webhook - no cookie auth (uses HMAC signature)
+		if h.webhookHandler != nil {
+			updatesGroup.POST("/webhook/github",
+				h.webhookHandler.HandleWebhook)
+			updatesGroup.GET("/webhook/info",
+				h.webhookHandler.GetWebhookInfo)
+		}
 	}
 }
 
