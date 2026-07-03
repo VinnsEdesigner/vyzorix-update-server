@@ -17,11 +17,12 @@ import { PowerInductor } from "./imports/PowerInductor"
 import { TerminalBlock2P } from "./imports/TerminalBlock2P"
 import { StatusLed } from "./imports/StatusLed"
 import { SchottkyDiode } from "./imports/SchottkyDiode"
+import { SOT23NPN } from "./imports/SOT23NPN"
 
 const jlcpcb = (pn: string) => ({ supplierPartNumbers: { jlcpcb: [pn] } })
 
 export default () => (
-  <board width="100mm" height="90mm" autorouterVersion="v4" layers={2}>
+  <board width="100mm" height="90mm" autorouterVersion="v5" layers={2}>
     
     {/* ======================================== */}
     {/* NETS */}
@@ -33,19 +34,28 @@ export default () => (
     <net name="VCC" />
     <net name="BOOT" />
     <net name="ISENSE" />
+    <net name="HO_GATE" schDisplayLabel="HO" />
+    <net name="LO_GATE" schDisplayLabel="LO" />
+    <net name="GATE_DRIVE_HS" schDisplayLabel="HS_GATE" />
+    <net name="GATE_DRIVE_LS" schDisplayLabel="LS_GATE" />
+    <net name="FB_NET" schDisplayLabel="FB" />
+    <net name="COMP_NET" schDisplayLabel="COMP" />
+    <net name="RT_NET" schDisplayLabel="RT" />
+    <net name="EN_NET" schDisplayLabel="EN" />
+    <net name="SS_NET" schDisplayLabel="SS" />
     
     {/* ======================================== */}
     {/* POWER INPUT - LEFT */}
     {/* ======================================== */}
-    <TerminalBlock2P name="VIN_P" pcbX={-44} pcbY={25} pcbRotation={90} />
-    <TerminalBlock2P name="VIN_N" pcbX={-44} pcbY={-38} pcbRotation={90} />
+    <TerminalBlock2P name="VIN_P" pcbX={-44} pcbY={25} pcbRotation={90} doNotPopulate />
+    <TerminalBlock2P name="VIN_N" pcbX={-44} pcbY={-38} pcbRotation={90} doNotPopulate />
     
     <capacitor name="C_IN1" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-34} pcbY={25} />
     <capacitor name="C_IN2" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-34} pcbY={17} />
     <capacitor name="C_IN3" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={-34} pcbY={9} />
     <capacitor name="C_BYP" capacitance="100nF" maxVoltageRating="50V" footprint="0603" {...jlcpcb("C14663")} pcbX={-34} pcbY={2} />
     
-    <PowerInductor name="L1" inductance="22uH" pcbX={-15} pcbY={10} />
+    <PowerInductor name="L1" inductance="22uH" pcbX={-15} pcbY={10} doNotPopulate />
     
     {/* ======================================== */}
     {/* SWITCHING STAGE - CENTER */}
@@ -62,14 +72,14 @@ export default () => (
     {/* GATE DRIVERS */}
     {/* ======================================== */}
     <transistor name="Q3" type="pnp" footprint="sot23" pcbX={14} pcbY={30} pcbRotation={90} />
-    <transistor name="Q4" type="npn" footprint="sot23" pcbX={14} pcbY={14} pcbRotation={90} />
+    <SOT23NPN name="Q4" pcbX={12.8} pcbY={14} pcbRotation={90} />
     <resistor name="R_PULLUP_HS" resistance="10k" footprint="0603" {...jlcpcb("C25804")} pcbX={20} pcbY={28} />
     
     <SchottkyDiode name="D_BOOT" pcbX={-10} pcbY={32} />
     <capacitor name="C_BOOT" capacitance="1uF" maxVoltageRating="50V" footprint="0805" {...jlcpcb("C14663")} pcbX={-18} pcbY={32} />
     
     <transistor name="Q5" type="pnp" footprint="sot23" pcbX={14} pcbY={-10} pcbRotation={90} />
-    <transistor name="Q6" type="npn" footprint="sot23" pcbX={14} pcbY={-20} pcbRotation={90} />
+    <SOT23NPN name="Q6" pcbX={14} pcbY={-20} pcbRotation={90} />
     <resistor name="R_PULLUP_LS" resistance="10k" footprint="0603" {...jlcpcb("C25804")} pcbX={20} pcbY={-8} />
     
     {/* ======================================== */}
@@ -80,8 +90,8 @@ export default () => (
     <capacitor name="C_OUT3" capacitance="100uF" maxVoltageRating="50V" footprint="1206" {...jlcpcb("C19540")} pcbX={35} pcbY={9} />
     <capacitor name="C_FILT" capacitance="10uF" maxVoltageRating="50V" footprint="0805" {...jlcpcb("C14663")} pcbX={35} pcbY={2} />
     
-    <TerminalBlock2P name="VOUT_P" pcbX={46} pcbY={25} pcbRotation={90} />
-    <TerminalBlock2P name="VOUT_N" pcbX={46} pcbY={-35} pcbRotation={90} />
+    <TerminalBlock2P name="VOUT_P" pcbX={46} pcbY={25} pcbRotation={90} doNotPopulate />
+    <TerminalBlock2P name="VOUT_N" pcbX={46} pcbY={-35} pcbRotation={90} doNotPopulate />
     
     {/* ======================================== */}
     {/* CONTROLLER - BOTTOM */}
@@ -105,131 +115,147 @@ export default () => (
     {/* TRACES */}
     {/* ======================================== */}
     
-    {/* VIN Power Path */}
-    <trace from="VIN_P.pin1" to="C_IN1.pin1" />
-    <trace from="VIN_P.pin2" to="net.VIN" />
-    <trace from="C_IN1.pin1" to="C_IN2.pin1" />
-    <trace from="C_IN2.pin1" to="C_IN3.pin1" />
-    <trace from="C_IN3.pin1" to="C_BYP.pin1" />
-    <trace from="C_BYP.pin1" to="net.VIN" />
+    {/* VIN Power Path - 10A input current, need ~3mm trace width */}
+    <trace from="VIN_P.pin1" to="C_IN1.pin1" width="3mm" width="0.3mm" />
+    <trace from="VIN_P.pin2" to="net.VIN" width="3mm" width="0.3mm" />
+    <trace from="C_IN1.pin1" to="C_IN2.pin1" width="3mm" width="0.3mm" />
+    <trace from="C_IN2.pin1" to="C_IN3.pin1" width="3mm" width="0.3mm" />
+    <trace from="C_IN3.pin1" to="C_BYP.pin1" width="3mm" width="0.3mm" />
+    <trace from="C_BYP.pin1" to="net.VIN" width="3mm" width="0.3mm" />
     
-    {/* GND Path */}
-    <trace from="VIN_N.pin1" to="net.GND" />
-    <trace from="VIN_N.pin2" to="net.GND" />
-    <trace from="C_IN1.pin2" to="C_IN2.pin2" />
-    <trace from="C_IN2.pin2" to="C_IN3.pin2" />
-    <trace from="C_IN3.pin2" to="C_BYP.pin2" />
-    <trace from="C_BYP.pin2" to="net.GND" />
+    {/* GND Path - Heavy ground traces */}
+    <trace from="VIN_N.pin1" to="net.GND" width="3mm" width="0.3mm" />
+    <trace from="VIN_N.pin2" to="net.GND" width="3mm" width="0.3mm" />
+    <trace from="C_IN1.pin2" to="C_IN2.pin2" width="3mm" width="0.3mm" />
+    <trace from="C_IN2.pin2" to="C_IN3.pin2" width="3mm" width="0.3mm" />
+    <trace from="C_IN3.pin2" to="C_BYP.pin2" width="3mm" width="0.3mm" />
+    <trace from="C_BYP.pin2" to="net.GND" width="3mm" width="0.3mm" />
     
     {/* VIN to VCC */}
-    <trace from="net.VIN" to="net.VCC" />
-    <trace from="net.VIN" to="L1.pin1" />
+    <trace from="net.VIN" to="net.VCC" width="3mm" width="0.3mm" />
+    <trace from="net.VIN" to="L1.pin1" width="3mm" width="0.3mm" />
     
-    {/* PHASE Node */}
-    <trace from="L1.pin2" to="Q2.D" />
-    <trace from="Q2.D" to="net.PHASE" />
-    <trace from="net.PHASE" to="Q1.S" />
-    <trace from="net.PHASE" to="D1.A" />
+    {/* PHASE Node - High current switching node, ~2.5mm */}
+    <trace from="L1.pin2" to="Q2.D" width="2.5mm" width="0.3mm" />
+    <trace from="Q2.D" to="net.PHASE" width="2.5mm" width="0.3mm" />
+    <trace from="net.PHASE" to="Q1.S" width="2.5mm" width="0.3mm" />
+    <trace from="net.PHASE" to="D1.A" width="2.5mm" width="0.3mm" />
     
-    {/* Current Sense */}
-    <trace from="Q2.S" to="R_CS.pin1" />
-    <trace from="R_CS.pin1" to="net.ISENSE" />
-    <trace from="R_CS.pin2" to="net.GND" />
+    {/* Current Sense - Can be thinner */}
+    <trace from="Q2.S" to="R_CS.pin1" width="2mm" width="0.3mm" />
+    <trace from="R_CS.pin1" to="net.ISENSE" width="2mm" width="0.3mm" />
+    <trace from="R_CS.pin2" to="net.GND" width="2mm" width="0.3mm" />
     
-    {/* Output Node */}
-    <trace from="Q1.D" to="D1.K" />
-    <trace from="D1.K" to="C_OUT1.pin1" />
-    <trace from="C_OUT1.pin1" to="C_OUT2.pin1" />
-    <trace from="C_OUT2.pin1" to="C_OUT3.pin1" />
-    <trace from="C_OUT3.pin1" to="C_FILT.pin1" />
-    <trace from="C_FILT.pin1" to="net.VOUT" />
+    {/* Output Node - 10A output, ~3mm trace width */}
+    <trace from="Q1.D" to="D1.K" width="3mm" width="0.3mm" />
+    <trace from="D1.K" to="C_OUT1.pin1" width="3mm" width="0.3mm" />
+    <trace from="C_OUT1.pin1" to="C_OUT2.pin1" width="3mm" width="0.3mm" />
+    <trace from="C_OUT2.pin1" to="C_OUT3.pin1" width="3mm" width="0.3mm" />
+    <trace from="C_OUT3.pin1" to="C_FILT.pin1" width="3mm" width="0.3mm" />
+    <trace from="C_FILT.pin1" to="net.VOUT" width="3mm" width="0.3mm" />
     
     {/* Output GND */}
-    <trace from="C_OUT1.pin2" to="C_OUT2.pin2" />
-    <trace from="C_OUT2.pin2" to="C_OUT3.pin2" />
-    <trace from="C_OUT3.pin2" to="C_FILT.pin2" />
-    <trace from="C_FILT.pin2" to="net.GND" />
+    <trace from="C_OUT1.pin2" to="C_OUT2.pin2" width="3mm" width="0.3mm" />
+    <trace from="C_OUT2.pin2" to="C_OUT3.pin2" width="3mm" width="0.3mm" />
+    <trace from="C_OUT3.pin2" to="C_FILT.pin2" width="3mm" width="0.3mm" />
+    <trace from="C_FILT.pin2" to="net.GND" width="3mm" width="0.3mm" />
     
     {/* Output Connectors */}
-    <trace from="net.VOUT" to="VOUT_P.pin1" />
-    <trace from="VOUT_P.pin2" to="VOUT_N.pin2" />
-    <trace from="VOUT_N.pin1" to="net.GND" />
+    <trace from="net.VOUT" to="VOUT_P.pin1" width="3mm" width="0.3mm" />
+    <trace from="VOUT_P.pin2" to="VOUT_N.pin2" width="3mm" width="0.3mm" />
+    <trace from="VOUT_N.pin1" to="net.GND" width="3mm" width="0.3mm" />
     
     {/* Bootstrap - diode anode to VOUT, cathode to boot cap */}
-    <trace from="net.VOUT" to="D_BOOT.pin1" />
-    <trace from="D_BOOT.pin2" to="C_BOOT.pin1" />
-    <trace from="C_BOOT.pin1" to="net.BOOT" />
-    <trace from="C_BOOT.pin2" to="net.GND" />
+    <trace from="net.VOUT" to="D_BOOT.pin1" width="1mm" width="0.3mm" />
+    <trace from="D_BOOT.pin2" to="C_BOOT.pin1" width="1mm" width="0.3mm" />
+    <trace from="C_BOOT.pin1" to="net.BOOT" width="1mm" width="0.3mm" />
+    <trace from="C_BOOT.pin2" to="net.GND" width="1mm" width="0.3mm" />
     
     {/* High-Side Gate Drive - Totem pole driver */}
     {/* Q3 is PNP: pin1=collector, pin2=emitter, pin3=base */}
-    {/* Q4 is NPN: pin1=collector, pin3=base, pin2=emitter */}
-    <trace from="U1.HO" to="Q3.pin3" />
-    <trace from="Q3.pin2" to="net.BOOT" />
-    <trace from="Q4.pin2" to="net.GND" />
-    <trace from="Q3.pin1" to="R_PULLUP_HS.pin1" />
-    <trace from="Q4.pin1" to="R_PULLUP_HS.pin1" />
-    <trace from="R_PULLUP_HS.pin2" to="R_G1.pin1" />
-    <trace from="R_G1.pin2" to="Q1.G" />
+    {/* Q4 is NPN: pin1=C, pin2=B, pin3=E */}
+    <trace from="U1.HO" to="net.HO_GATE" width="0.5mm" width="0.3mm" />
+    <trace from="net.HO_GATE" to="Q3.pin3" width="0.5mm" width="0.3mm" />
+    {/* Q4 base driven from HO (NPN needs base current to turn ON) */}
+    <trace from="net.HO_GATE" to="Q4.B" width="0.5mm" width="0.3mm" />
+    <trace from="Q3.pin2" to="net.BOOT" width="0.5mm" width="0.3mm" />
+    <trace from="Q4.E" to="net.GND" width="0.5mm" width="0.3mm" />
+    <trace from="Q3.pin1" to="net.GATE_DRIVE_HS" width="1mm" width="0.3mm" />
+    <trace from="Q4.C" to="net.GATE_DRIVE_HS" width="1mm" width="0.3mm" />
+    <trace from="net.GATE_DRIVE_HS" to="R_PULLUP_HS.pin1" width="1mm" width="0.3mm" />
+    <trace from="R_PULLUP_HS.pin2" to="net.GATE_DRIVE_HS" width="1mm" width="0.3mm" />
+    <trace from="R_G1.pin1" to="net.GATE_DRIVE_HS" width="1mm" width="0.3mm" />
+    <trace from="R_G1.pin2" to="Q1.G" width="1mm" width="0.3mm" />
     
     {/* Low-Side Gate Drive - Totem pole driver */}
     {/* Q5 is PNP: pin1=collector, pin2=emitter, pin3=base */}
-    {/* Q6 is NPN: pin1=collector, pin3=base, pin2=emitter */}
-    <trace from="U1.LO" to="Q5.pin3" />
-    <trace from="Q5.pin2" to="net.VCC" />
-    <trace from="Q6.pin2" to="net.GND" />
-    <trace from="Q5.pin1" to="R_PULLUP_LS.pin1" />
-    <trace from="Q6.pin1" to="R_PULLUP_LS.pin1" />
-    <trace from="R_PULLUP_LS.pin2" to="R_G2.pin1" />
-    <trace from="R_G2.pin2" to="Q2.G" />
+    {/* Q6 is NPN: pin1=C, pin2=B, pin3=E */}
+    <trace from="U1.LO" to="net.LO_GATE" width="0.5mm" width="0.3mm" />
+    <trace from="net.LO_GATE" to="Q5.pin3" width="0.5mm" width="0.3mm" />
+    {/* Q6 base driven from LO (NPN needs base current to turn ON) */}
+    <trace from="net.LO_GATE" to="Q6.B" width="0.5mm" width="0.3mm" />
+    <trace from="Q5.pin2" to="net.VCC" width="0.5mm" width="0.3mm" />
+    <trace from="Q6.E" to="net.GND" width="0.5mm" width="0.3mm" />
+    <trace from="Q5.pin1" to="net.GATE_DRIVE_LS" width="1mm" width="0.3mm" />
+    <trace from="Q6.C" to="net.GATE_DRIVE_LS" width="1mm" width="0.3mm" />
+    <trace from="net.GATE_DRIVE_LS" to="R_PULLUP_LS.pin1" width="1mm" width="0.3mm" />
+    <trace from="R_PULLUP_LS.pin2" to="net.GATE_DRIVE_LS" width="1mm" width="0.3mm" />
+    <trace from="R_G2.pin1" to="net.GATE_DRIVE_LS" width="1mm" width="0.3mm" />
+    <trace from="R_G2.pin2" to="Q2.G" width="1mm" width="0.3mm" />
     
     {/* Switching Node Sense */}
-    <trace from="U1.SW" to="net.PHASE" />
-    <trace from="U1.HPFM" to="net.GND" />
+    <trace from="U1.SW" to="net.PHASE" width="2.5mm" width="0.3mm" />
+    <trace from="U1.HPFM" to="net.GND" width="0.3mm" width="0.3mm" />
     
     {/* Controller Power */}
-    <trace from="net.VCC" to="U1.VIN" />
-    <trace from="net.VCC" to="U1.VCC" />
-    <trace from="U1.PGND" to="net.GND" />
-    <trace from="U1.AGND" to="net.GND" />
+    <trace from="net.VCC" to="U1.VIN" width="2mm" width="0.3mm" />
+    <trace from="net.VCC" to="U1.VCC" width="2mm" width="0.3mm" />
+    <trace from="U1.PGND" to="net.GND" width="2mm" width="0.3mm" />
+    <trace from="U1.AGND" to="net.GND" width="2mm" width="0.3mm" />
     
     {/* Soft Start */}
-    <trace from="U1.SS" to="C_SS.pin1" />
-    <trace from="C_SS.pin2" to="net.GND" />
+    <trace from="U1.SS" to="net.SS_NET" width="0.3mm" width="0.3mm" />
+    <trace from="net.SS_NET" to="C_SS.pin1" width="0.3mm" />
+    <trace from="C_SS.pin2" to="net.GND" width="0.3mm" />
     
     {/* Timing */}
-    <trace from="U1.RT" to="R_RT.pin1" />
-    <trace from="R_RT.pin2" to="net.GND" />
+    <trace from="U1.RT" to="net.RT_NET" width="0.3mm" />
+    <trace from="net.RT_NET" to="R_RT.pin1" width="0.3mm" />
+    <trace from="R_RT.pin2" to="net.GND" width="0.3mm" />
     
     {/* Current Sense to Controller */}
-    <trace from="U1.CS" to="net.ISENSE" />
+    <trace from="U1.CS" to="net.ISENSE" width="0.3mm" />
     
     {/* Feedback */}
-    <trace from="net.VOUT" to="R_FB1.pin1" />
-    <trace from="R_FB1.pin2" to="R_FB2.pin1" />
-    <trace from="R_FB2.pin2" to="net.GND" />
-    <trace from="R_FB1.pin2" to="U1.FB" />
+    <trace from="net.VOUT" to="R_FB1.pin1" width="0.3mm" />
+    <trace from="R_FB1.pin2" to="net.FB_NET" width="0.3mm" />
+    <trace from="net.FB_NET" to="R_FB2.pin1" width="0.3mm" />
+    <trace from="R_FB2.pin2" to="net.GND" width="0.3mm" />
+    <trace from="net.FB_NET" to="U1.FB" width="0.3mm" />
     
     {/* Compensation */}
-    <trace from="U1.COMP" to="R_COMP.pin1" />
-    <trace from="R_COMP.pin2" to="C_COMP.pin1" />
-    <trace from="C_COMP.pin2" to="net.GND" />
+    <trace from="U1.COMP" to="net.COMP_NET" width="0.3mm" />
+    <trace from="net.COMP_NET" to="R_COMP.pin1" width="0.3mm" />
+    <trace from="R_COMP.pin2" to="net.COMP_NET" width="0.3mm" />
+    <trace from="C_COMP.pin1" to="net.COMP_NET" width="0.3mm" />
+    <trace from="C_COMP.pin2" to="net.GND" width="0.3mm" />
     
     {/* Enable */}
-    <trace from="U1.EN" to="R_EN.pin1" />
-    <trace from="R_EN.pin2" to="net.VIN" />
-    <trace from="R_EN.pin1" to="C_EN.pin1" />
-    <trace from="C_EN.pin2" to="net.GND" />
+    <trace from="U1.EN" to="net.EN_NET" width="0.3mm" />
+    <trace from="net.EN_NET" to="R_EN.pin1" width="0.3mm" />
+    <trace from="R_EN.pin2" to="net.VIN" width="0.3mm" />
+    <trace from="net.EN_NET" to="C_EN.pin1" width="0.3mm" />
+    <trace from="C_EN.pin2" to="net.GND" width="0.3mm" />
     
     {/* Input LED */}
-    <trace from="net.VIN" to="R_LED_IN.pin1" />
-    <trace from="R_LED_IN.pin2" to="LED_IN.pin1" />
-    <trace from="LED_IN.pin2" to="net.GND" />
+    <trace from="net.VIN" to="R_LED_IN.pin1" width="0.3mm" />
+    <trace from="R_LED_IN.pin2" to="LED_IN.pin1" width="0.3mm" />
+    <trace from="LED_IN.pin2" to="net.GND" width="0.3mm" />
     
     {/* Output LED */}
-    <trace from="net.VOUT" to="R_LED_OUT.pin1" />
-    <trace from="R_LED_OUT.pin2" to="LED_OUT.pin1" />
-    <trace from="LED_OUT.pin2" to="net.GND" />
+    <trace from="net.VOUT" to="R_LED_OUT.pin1" width="0.3mm" />
+    <trace from="R_LED_OUT.pin2" to="LED_OUT.pin1" width="0.3mm" />
+    <trace from="LED_OUT.pin2" to="net.GND" width="0.3mm" />
     
     {/* ======================================== */}
     {/* SILKSCREEN LABELS */}

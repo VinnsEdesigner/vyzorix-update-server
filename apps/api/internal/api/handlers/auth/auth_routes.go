@@ -44,6 +44,7 @@ type AllHandlers struct {
 	Admin         *AdminHandler
 	ClientCreds   *ClientCredentialsHandler
 	Lockout       *LockoutHandler
+	Sessions      *SessionsHandler
 }
 
 // NewAllHandlers creates all auth handlers with proper dependencies.
@@ -62,6 +63,7 @@ func NewAllHandlers(deps *Dependencies) *AllHandlers {
 		Admin:         NewAdminHandler(deps.AuthService, deps.Presenter),
 		ClientCreds:   NewClientCredentialsHandler(deps.AuthService, deps.ClientService, deps.Presenter),
 		Lockout:       NewLockoutHandler(deps.AuthService, deps.Lockout, deps.Presenter),
+		Sessions:      NewSessionsHandler(deps.AuthService, deps.SessionManager, deps.Presenter),
 	}
 }
 
@@ -143,10 +145,23 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		mfa.GET("/status", h.MFA.GetMFAStatus)
 		mfa.POST("/enroll", h.MFA.EnrollMFA)
 		mfa.POST("/verify-setup", h.MFA.VerifySetupMFA)
+		mfa.POST("/verify", h.MFA.VerifyMFA) // Main MFA verification during login
 		mfa.POST("/enable", h.MFA.EnableMFA)
 		mfa.POST("/disable", h.MFA.DisableMFA)
 		mfa.POST("/verify-backup", h.MFA.VerifyBackupCode)
 		mfa.POST("/regenerate-backup-codes", h.MFA.RegenerateBackupCodes)
+	}
+
+	// Session management endpoints
+	sessions := rg.Group("/sessions")
+	sessions.Use(cookieAuth.Middleware())
+	sessions.Use(middleware.NoCache())
+	{
+		sessions.GET("", h.Sessions.ListSessions)
+		sessions.GET("/concurrent", h.Sessions.CheckConcurrent)
+		sessions.DELETE("/:id", h.Sessions.RevokeSession)
+		sessions.DELETE("", h.Sessions.RevokeAllExceptCurrent)
+		sessions.POST("/revoke-all", h.Sessions.RevokeAllDevices)
 	}
 
 	// Client credentials (require authentication)
