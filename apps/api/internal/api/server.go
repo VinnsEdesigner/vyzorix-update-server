@@ -281,7 +281,7 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 		s.dashboardStatsHandler = dashboardhandlers.NewStatsHandler(dashboardSvc, cfg.Log)
 	}
         if cfg.UpdatesService != nil {
-                updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(nil)
+                updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(middleware.DefaultUpdatesRateLimits())
                 s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, updatesRateLimiters, cfg.AuditLogger)
         }
 }
