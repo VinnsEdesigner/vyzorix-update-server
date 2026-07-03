@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/password_reset"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 )
 
 // Ensure PasswordResetRepository implements password_reset.Repository.
@@ -21,10 +22,32 @@ type PasswordResetRepository struct {
 func NewPasswordResetRepository(db *sql.DB) *PasswordResetRepository {
 	return &PasswordResetRepository{db: db}
 }
+// getQuerier returns the transaction from context if available, otherwise the db.
+func (r *PasswordResetRepository) getQuerier(ctx context.Context) Querier {
+if tx, ok := transaction.TxFromContext(ctx); ok {
+return tx
+}
+return r.db
+}
+
+// queryRow is a helper that uses transaction-aware querier.
+func (r *PasswordResetRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+}
+
+// queryRows is a helper that uses transaction-aware querier.
+func (r *PasswordResetRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+}
+
+// exec is a helper that uses transaction-aware querier.
+func (r *PasswordResetRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+return r.getQuerier(ctx).ExecContext(ctx, query, args...)
+}
 
 // Create creates a new password reset token.
 func (r *PasswordResetRepository) Create(ctx context.Context, token *password_reset.PasswordResetToken) error {
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.exec(ctx,
 		`INSERT INTO password_reset_tokens(id, operator_id, token_hash, expires_at, used_at, created_at)
 		 VALUES(?, ?, ?, ?, ?, ?)`,
 		token.ID, token.OperatorID, token.TokenHash, token.ExpiresAt.UnixMilli(), nil, token.CreatedAt.UnixMilli(),
@@ -41,7 +64,7 @@ func (r *PasswordResetRepository) FindByTokenHash(ctx context.Context, tokenHash
 
 	var usedAt *int64
 
-	err := r.db.QueryRowContext(ctx,
+	err := r.queryRow(ctx,
 		`SELECT id, operator_id, token_hash, expires_at, used_at, created_at
 		 FROM password_reset_tokens WHERE token_hash = ?`,
 		tokenHash,
@@ -68,7 +91,7 @@ func (r *PasswordResetRepository) FindByTokenHash(ctx context.Context, tokenHash
 
 // MarkUsed marks a token as used.
 func (r *PasswordResetRepository) MarkUsed(ctx context.Context, id string) error {
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.exec(ctx,
 		`UPDATE password_reset_tokens SET used_at = ? WHERE id = ?`,
 		time.Now().UTC().UnixMilli(), id,
 	)
@@ -78,7 +101,7 @@ func (r *PasswordResetRepository) MarkUsed(ctx context.Context, id string) error
 
 // DeleteByOperator removes all tokens for an operator.
 func (r *PasswordResetRepository) DeleteByOperator(ctx context.Context, operatorID string) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM password_reset_tokens WHERE operator_id = ?`, operatorID)
+	_, err := r.exec(ctx, `DELETE FROM password_reset_tokens WHERE operator_id = ?`, operatorID)
 	return err
 }
 
@@ -90,7 +113,7 @@ func (r *PasswordResetRepository) GetResendTracker(ctx context.Context, emailHas
 
 	var lockoutUntil *int64
 
-	err := r.db.QueryRowContext(ctx,
+	err := r.queryRow(ctx,
 		`SELECT id, email_hash, resend_count, last_resend_at, lockout_until, created_at, updated_at
 		 FROM password_reset_resend_tracker WHERE email_hash = ?`,
 		emailHash,
@@ -125,7 +148,7 @@ func (r *PasswordResetRepository) UpsertResendTracker(ctx context.Context, track
 		lockoutUntil = &lt
 	}
 
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.exec(ctx,
 		`INSERT INTO password_reset_resend_tracker(id, email_hash, resend_count, last_resend_at, lockout_until, created_at, updated_at)
 		 VALUES(?, ?, ?, ?, ?, ?, ?)
 		 ON CONFLICT(email_hash) DO UPDATE SET
@@ -142,7 +165,7 @@ func (r *PasswordResetRepository) UpsertResendTracker(ctx context.Context, track
 
 // DeleteResendTracker removes a resend tracker by email hash.
 func (r *PasswordResetRepository) DeleteResendTracker(ctx context.Context, emailHash string) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM password_reset_resend_tracker WHERE email_hash = ?`, emailHash)
+	_, err := r.exec(ctx, `DELETE FROM password_reset_resend_tracker WHERE email_hash = ?`, emailHash)
 	return err
 }
 
@@ -150,7 +173,7 @@ func (r *PasswordResetRepository) DeleteResendTracker(ctx context.Context, email
 func (r *PasswordResetRepository) CleanupResendTrackers(ctx context.Context, maxAgeHours int) (int64, error) {
 	cutoff := time.Now().UTC().Add(-time.Duration(maxAgeHours) * time.Hour).UnixMilli()
 
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		`DELETE FROM password_reset_resend_tracker WHERE updated_at < ? AND lockout_until IS NULL`,
 		cutoff,
 	)

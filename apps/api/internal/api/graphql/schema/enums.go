@@ -5,6 +5,62 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
+// InboxStatusEnum represents the status of an inbox entry.
+var InboxStatusEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "InboxStatus",
+	Description: "Status of an inbox entry",
+	Values: graphql.EnumValueConfigMap{
+		"PENDING": &graphql.EnumValueConfig{
+			Value:       "pending",
+			Description: "Registration request is pending",
+		},
+		"APPROVED": &graphql.EnumValueConfig{
+			Value:       "approved",
+			Description: "Registration request was approved",
+		},
+		"REJECTED": &graphql.EnumValueConfig{
+			Value:       "rejected",
+			Description: "Registration request was rejected",
+		},
+	},
+})
+
+// DeviceStatusEnum represents the status of a device.
+var DeviceStatusEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "DeviceStatus",
+	Description: "Status of a device",
+	Values: graphql.EnumValueConfigMap{
+		"ONLINE": &graphql.EnumValueConfig{
+			Value:       "online",
+			Description: "Device is currently online",
+		},
+		"OFFLINE": &graphql.EnumValueConfig{
+			Value:       "offline",
+			Description: "Device is offline",
+		},
+		"DEREGISTERED": &graphql.EnumValueConfig{
+			Value:       "deregistered",
+			Description: "Device has been deregistered",
+		},
+	},
+})
+
+// AckActionEnum represents the action for acknowledging an inbox entry.
+var AckActionEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "AckAction",
+	Description: "Action to take on an inbox entry",
+	Values: graphql.EnumValueConfigMap{
+		"APPROVE": &graphql.EnumValueConfig{
+			Value:       "approve",
+			Description: "Approve the registration request",
+		},
+		"REJECT": &graphql.EnumValueConfig{
+			Value:       "reject",
+			Description: "Reject the registration request",
+		},
+	},
+})
+
 // CommandStatusEnum represents the status of a command.
 var CommandStatusEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name:        "CommandStatus",

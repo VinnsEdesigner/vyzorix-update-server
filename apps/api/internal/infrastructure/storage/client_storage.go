@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/client"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/password"
 )
 
@@ -75,6 +76,29 @@ func NewClientRepository(db *sql.DB) *ClientRepository {
 	return &ClientRepository{db: db}
 }
 
+// getQuerier returns the transaction from context if available, otherwise the db.
+func (r *ClientRepository) getQuerier(ctx context.Context) Querier {
+	if tx, ok := transaction.TxFromContext(ctx); ok {
+		return tx
+	}
+	return r.db
+}
+
+// queryRow is a helper that uses transaction-aware querier.
+func (r *ClientRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+}
+
+// queryRows is a helper that uses transaction-aware querier.
+func (r *ClientRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+}
+
+// exec is a helper that uses transaction-aware querier.
+func (r *ClientRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return r.getQuerier(ctx).ExecContext(ctx, query, args...)
+}
+
 // FindByID retrieves a client by ID.
 func (r *ClientRepository) FindByID(ctx context.Context, id string) (*client.Client, error) {
 	query := `SELECT id, operator_id, name, platform, client_secret_hash, hmac_key, 
@@ -88,7 +112,7 @@ func (r *ClientRepository) FindByID(ctx context.Context, id string) (*client.Cli
 
 	var lastRequestAt sql.NullInt64
 
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.queryRow(ctx, query, id).Scan(
 		&c.ID, &c.OperatorID, &c.Name, &c.Platform, &c.ClientSecretHash, &c.HmacKey,
 		&allowedOrigins, &allowedPaths, &c.RateLimit, &c.IsActive, &c.RequestCount,
 		&lastRequestAt, &c.CreatedAt, &c.UpdatedAt,
@@ -124,7 +148,7 @@ func (r *ClientRepository) FindByOperatorID(ctx context.Context, operatorID stri
 		last_request_at, created_at, updated_at 
 		FROM api_clients WHERE operator_id = ?`
 
-	rows, err := r.db.QueryContext(ctx, query, operatorID)
+	rows, err := r.queryRows(ctx, query, operatorID)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +196,7 @@ func (r *ClientRepository) FindAll(ctx context.Context, limit, offset int) ([]*c
 	var total int
 
 	countQuery := `SELECT COUNT(*) FROM api_clients`
-	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&total); err != nil {
+	if err := r.queryRow(ctx, countQuery).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
@@ -181,7 +205,7 @@ func (r *ClientRepository) FindAll(ctx context.Context, limit, offset int) ([]*c
 		last_request_at, created_at, updated_at 
 		FROM api_clients ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.queryRows(ctx, query, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -271,7 +295,7 @@ func (r *ClientRepository) Create(ctx context.Context, c *client.Client, secret 
 		allowed_origins, allowed_paths, rate_limit, is_active, request_count, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err = r.db.ExecContext(ctx, query,
+	_, err = r.exec(ctx, query,
 		c.ID, c.OperatorID, c.Name, c.Platform, c.ClientSecretHash, c.HmacKey,
 		string(originsJSON), string(pathsJSON), c.RateLimit, c.IsActive, 0,
 		c.CreatedAt.UnixMilli(), c.UpdatedAt.UnixMilli(),
@@ -302,7 +326,7 @@ func (r *ClientRepository) Update(ctx context.Context, c *client.Client) error {
 		is_active = ?, updated_at = ?
 		WHERE id = ?`
 
-	_, err = r.db.ExecContext(ctx, query,
+	_, err = r.exec(ctx, query,
 		c.Name, string(originsJSON), string(pathsJSON), c.RateLimit,
 		c.IsActive, now, c.ID,
 	)
@@ -312,7 +336,7 @@ func (r *ClientRepository) Update(ctx context.Context, c *client.Client) error {
 
 // Delete deletes a client.
 func (r *ClientRepository) Delete(ctx context.Context, id string) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM api_clients WHERE id = ?`, id)
+	_, err := r.exec(ctx, `DELETE FROM api_clients WHERE id = ?`, id)
 	return err
 }
 
@@ -335,7 +359,7 @@ func (r *ClientRepository) RotateSigningKey(ctx context.Context, clientID string
 	// Get current max version
 	var maxVersion int
 
-	err := r.db.QueryRowContext(ctx, `
+	err := r.queryRow(ctx, `
 		SELECT COALESCE(MAX(version), 0) FROM signing_keys WHERE client_id = ?
 	`, clientID).Scan(&maxVersion)
 	if err != nil {
@@ -352,7 +376,7 @@ func (r *ClientRepository) RotateSigningKey(ctx context.Context, clientID string
 		expiresAt = &expiresAtVal
 	}
 
-	_, err = r.db.ExecContext(ctx, `
+	_, err = r.exec(ctx, `
 		INSERT INTO signing_keys (id, client_id, key_hash, version, issued_at, expires_at, is_active)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`, keyID, clientID, keyHash, maxVersion+1, now, expiresAt, true)
@@ -361,7 +385,7 @@ func (r *ClientRepository) RotateSigningKey(ctx context.Context, clientID string
 	}
 
 	// Deactivate old keys
-	_, _ = r.db.ExecContext(ctx, `
+	_, _ = r.exec(ctx, `
 		UPDATE signing_keys SET is_active = 0 WHERE client_id = ? AND id != ?
 	`, clientID, keyID)
 
@@ -382,7 +406,7 @@ func (r *ClientRepository) ValidateSigningKey(ctx context.Context, clientID, sig
 
 	var key client.SigningKey
 
-	err := r.db.QueryRowContext(ctx, `
+	err := r.queryRow(ctx, `
 		SELECT id, client_id, key_hash, version, issued_at, expires_at, is_active
 		FROM signing_keys
 		WHERE client_id = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > ?)
@@ -417,7 +441,7 @@ func (r *ClientRepository) GetHmacKey(ctx context.Context, clientID string) (str
 
 	var isActive bool
 
-	err := r.db.QueryRowContext(ctx, query, clientID).Scan(&hmacKey, &isActive)
+	err := r.queryRow(ctx, query, clientID).Scan(&hmacKey, &isActive)
 	if err != nil || !isActive {
 		return "", false
 	}

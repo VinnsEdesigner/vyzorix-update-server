@@ -120,6 +120,15 @@ type Metrics struct {
 	APIClientCreationsTotal *Counter
 	APIRequestsTotal        *Counter
 
+	// Device registration metrics (Bug 46).
+	DeviceRegistrationAttemptsTotal *Counter
+	DeviceRegistrationSuccessTotal  *Counter
+	DeviceRegistrationFailuresTotal *Counter
+	InboxApprovalTotal              *Counter
+	InboxRejectionTotal             *Counter
+	DeviceDeregistrationsTotal     *Counter
+	DeviceReRegistrationsTotal     *Counter
+
 	// System metrics.
 	UptimeSeconds *Gauge
 }
@@ -127,21 +136,28 @@ type Metrics struct {
 // New creates a new metrics instance.
 func New() *Metrics {
 	return &Metrics{
-		HTTPRequestsTotal:       new(Counter),
-		HTTPRequestDuration:     NewHistogram([]int64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000}),
-		HTTPRequestsInFlight:    new(Gauge),
-		LoginAttemptsTotal:      new(Counter),
-		LoginFailuresTotal:      new(Counter),
-		RegisterAttemptsTotal:   new(Counter),
-		CSRFFailuresTotal:       new(Counter),
-		SigningFailuresTotal:    new(Counter),
-		RateLimitHitsTotal:      new(Counter),
-		AccountLockoutsTotal:    new(Counter),
-		ActiveSessions:          new(Gauge),
-		SessionRevocationsTotal: new(Counter),
-		APIClientCreationsTotal: new(Counter),
-		APIRequestsTotal:        new(Counter),
-		UptimeSeconds:           new(Gauge),
+		HTTPRequestsTotal:              new(Counter),
+		HTTPRequestDuration:          NewHistogram([]int64{5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000}),
+		HTTPRequestsInFlight:          new(Gauge),
+		LoginAttemptsTotal:            new(Counter),
+		LoginFailuresTotal:            new(Counter),
+		RegisterAttemptsTotal:         new(Counter),
+		CSRFFailuresTotal:             new(Counter),
+		SigningFailuresTotal:          new(Counter),
+		RateLimitHitsTotal:            new(Counter),
+		AccountLockoutsTotal:          new(Counter),
+		ActiveSessions:                new(Gauge),
+		SessionRevocationsTotal:      new(Counter),
+		APIClientCreationsTotal:       new(Counter),
+		APIRequestsTotal:              new(Counter),
+		DeviceRegistrationAttemptsTotal: new(Counter),
+		DeviceRegistrationSuccessTotal:  new(Counter),
+		DeviceRegistrationFailuresTotal: new(Counter),
+		InboxApprovalTotal:            new(Counter),
+		InboxRejectionTotal:           new(Counter),
+		DeviceDeregistrationsTotal:    new(Counter),
+		DeviceReRegistrationsTotal:    new(Counter),
+		UptimeSeconds:                 new(Gauge),
 	}
 }
 
@@ -167,21 +183,28 @@ func Get() *Metrics {
 // Collect returns all metrics in Prometheus text format.
 func (m *Metrics) Collect() map[string]any {
 	return map[string]any{
-		"http_requests_total":         m.HTTPRequestsTotal.Value(),
-		"http_request_duration_count": m.HTTPRequestDuration.count.Load(),
-		"http_requests_in_flight":     m.HTTPRequestsInFlight.Value(),
-		"login_attempts_total":        m.LoginAttemptsTotal.Value(),
-		"login_failures_total":        m.LoginFailuresTotal.Value(),
-		"register_attempts_total":     m.RegisterAttemptsTotal.Value(),
-		"csrf_failures_total":         m.CSRFFailuresTotal.Value(),
-		"signing_failures_total":      m.SigningFailuresTotal.Value(),
-		"rate_limit_hits_total":       m.RateLimitHitsTotal.Value(),
-		"account_lockouts_total":      m.AccountLockoutsTotal.Value(),
-		"active_sessions":             m.ActiveSessions.Value(),
-		"session_revocations_total":   m.SessionRevocationsTotal.Value(),
-		"api_client_creations_total":  m.APIClientCreationsTotal.Value(),
-		"api_requests_total":          m.APIRequestsTotal.Value(),
-		"uptime_seconds":              m.UptimeSeconds.Value(),
+		"http_requests_total":              m.HTTPRequestsTotal.Value(),
+		"http_request_duration_count":     m.HTTPRequestDuration.count.Load(),
+		"http_requests_in_flight":         m.HTTPRequestsInFlight.Value(),
+		"login_attempts_total":             m.LoginAttemptsTotal.Value(),
+		"login_failures_total":             m.LoginFailuresTotal.Value(),
+		"register_attempts_total":          m.RegisterAttemptsTotal.Value(),
+		"csrf_failures_total":              m.CSRFFailuresTotal.Value(),
+		"signing_failures_total":           m.SigningFailuresTotal.Value(),
+		"rate_limit_hits_total":            m.RateLimitHitsTotal.Value(),
+		"account_lockouts_total":           m.AccountLockoutsTotal.Value(),
+		"active_sessions":                  m.ActiveSessions.Value(),
+		"session_revocations_total":        m.SessionRevocationsTotal.Value(),
+		"api_client_creations_total":       m.APIClientCreationsTotal.Value(),
+		"api_requests_total":               m.APIRequestsTotal.Value(),
+		"device_registration_attempts_total":  m.DeviceRegistrationAttemptsTotal.Value(),
+		"device_registration_success_total":   m.DeviceRegistrationSuccessTotal.Value(),
+		"device_registration_failures_total":   m.DeviceRegistrationFailuresTotal.Value(),
+		"inbox_approval_total":             m.InboxApprovalTotal.Value(),
+		"inbox_rejection_total":            m.InboxRejectionTotal.Value(),
+		"device_deregistrations_total":     m.DeviceDeregistrationsTotal.Value(),
+		"device_re_registrations_total":    m.DeviceReRegistrationsTotal.Value(),
+		"uptime_seconds":                   m.UptimeSeconds.Value(),
 	}
 }
 
@@ -249,4 +272,39 @@ func (m *Metrics) RecordSessionChange(revoked bool) {
 	} else {
 		m.ActiveSessions.Inc()
 	}
+}
+
+// RecordDeviceRegistrationAttempt records a device registration attempt (Bug 46).
+func (m *Metrics) RecordDeviceRegistrationAttempt() {
+	m.DeviceRegistrationAttemptsTotal.Inc()
+}
+
+// RecordDeviceRegistrationSuccess records a successful device registration.
+func (m *Metrics) RecordDeviceRegistrationSuccess() {
+	m.DeviceRegistrationSuccessTotal.Inc()
+}
+
+// RecordDeviceRegistrationFailure records a failed device registration.
+func (m *Metrics) RecordDeviceRegistrationFailure() {
+	m.DeviceRegistrationFailuresTotal.Inc()
+}
+
+// RecordInboxApproval records an inbox approval.
+func (m *Metrics) RecordInboxApproval() {
+	m.InboxApprovalTotal.Inc()
+}
+
+// RecordInboxRejection records an inbox rejection.
+func (m *Metrics) RecordInboxRejection() {
+	m.InboxRejectionTotal.Inc()
+}
+
+// RecordDeviceDeregistration records a device deregistration.
+func (m *Metrics) RecordDeviceDeregistration() {
+	m.DeviceDeregistrationsTotal.Inc()
+}
+
+// RecordDeviceReRegistration records a device re-registration (after deregistration).
+func (m *Metrics) RecordDeviceReRegistration() {
+	m.DeviceReRegistrationsTotal.Inc()
 }

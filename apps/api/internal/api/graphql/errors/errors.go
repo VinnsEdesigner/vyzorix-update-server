@@ -16,6 +16,7 @@ const (
 	CodeValidation    = "VALIDATION_ERROR"
 	CodeRateLimited   = "RATE_LIMITED"
 	CodeAlreadyExists = "ALREADY_EXISTS"
+	CodeConflict      = "CONFLICT"
 )
 
 // Error represents a GraphQL-specific error with code and message.
@@ -116,4 +117,8 @@ func Internal(format string, args ...interface{}) *Error {
 
 func Validation(format string, args ...interface{}) *Error {
 	return New(CodeValidation, fmt.Sprintf(format, args...))
+}
+
+func Conflict(format string, args ...interface{}) *Error {
+	return New(CodeConflict, fmt.Sprintf(format, args...))
 }

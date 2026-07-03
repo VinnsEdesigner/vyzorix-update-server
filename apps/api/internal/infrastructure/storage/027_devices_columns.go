@@ -9,6 +9,7 @@ import (
 func migrateAddDevicesColumns(db *sql.DB) error {
 	cols := []string{
 		`ALTER TABLE devices ADD COLUMN device_name TEXT`,
+		`ALTER TABLE devices ADD COLUMN manufacturer TEXT`,
 		`ALTER TABLE devices ADD COLUMN os_version TEXT`,
 		`ALTER TABLE devices ADD COLUMN security_patch TEXT`,
 		`ALTER TABLE devices ADD COLUMN build_id TEXT`,

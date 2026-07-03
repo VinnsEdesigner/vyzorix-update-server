@@ -11,6 +11,7 @@ import (
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	inboxapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
@@ -29,6 +30,7 @@ type Resolver struct {
 	LogsSvc         *logs.Service
 	MetricsSvc       *appmetrics.Service
 		UpdatesSvc      *updates.Service
+	InboxService   *inboxapp.Service
 	Hub             *hub.Hub
 	TelemetryRepo   *storage.TelemetryRepository
 	LogsRepo        *storage.LogsRepository

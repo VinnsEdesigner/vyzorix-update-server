@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 )
 
 // Ensure CommandRepository implements command.Repository.
@@ -23,6 +24,29 @@ func NewCommandRepository(db *sql.DB) *CommandRepository {
 	return &CommandRepository{db: db}
 }
 
+// getQuerier returns the transaction from context if available, otherwise the db.
+func (r *CommandRepository) getQuerier(ctx context.Context) Querier {
+	if tx, ok := transaction.TxFromContext(ctx); ok {
+		return tx
+	}
+	return r.db
+}
+
+// queryRow is a helper that uses transaction-aware querier.
+func (r *CommandRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+}
+
+// queryRows is a helper that uses transaction-aware querier.
+func (r *CommandRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+}
+
+// exec is a helper that uses transaction-aware querier.
+func (r *CommandRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return r.getQuerier(ctx).ExecContext(ctx, query, args...)
+}
+
 // FindByID retrieves a command by ID.
 func (r *CommandRepository) FindByID(ctx context.Context, id string) (*command.Command, error) {
 	query := `
@@ -36,7 +60,7 @@ func (r *CommandRepository) FindByID(ctx context.Context, id string) (*command.C
 
 	var deliveredAt, completedAt sql.NullInt64
 
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.queryRow(ctx, query, id).Scan(
 		&cmd.ID, &cmd.DeviceID, &cmd.DispatchID, &cmd.Command, &argsJSON,
 		&cmd.Status, &deliveredAt, &completedAt, &cmd.CreatedAt, &cmd.UpdatedAt,
 	)
@@ -77,7 +101,7 @@ func (r *CommandRepository) FindByDispatchID(ctx context.Context, deviceID, disp
 
 	var deliveredAt, completedAt sql.NullInt64
 
-	err := r.db.QueryRowContext(ctx, query, dispatchID, deviceID).Scan(
+	err := r.queryRow(ctx, query, dispatchID, deviceID).Scan(
 		&cmd.ID, &cmd.DeviceID, &cmd.DispatchID, &cmd.Command, &argsJSON,
 		&cmd.Status, &deliveredAt, &completedAt, &cmd.CreatedAt, &cmd.UpdatedAt,
 	)
@@ -118,7 +142,7 @@ func (r *CommandRepository) FindByDispatchIDOnly(ctx context.Context, dispatchID
 
 	var deliveredAt, completedAt sql.NullInt64
 
-	err := r.db.QueryRowContext(ctx, query, dispatchID).Scan(
+	err := r.queryRow(ctx, query, dispatchID).Scan(
 		&cmd.ID, &cmd.DeviceID, &cmd.DispatchID, &cmd.Command, &argsJSON,
 		&cmd.Status, &deliveredAt, &completedAt, &cmd.CreatedAt, &cmd.UpdatedAt,
 	)
@@ -153,7 +177,7 @@ func (r *CommandRepository) FindByDeviceID(ctx context.Context, deviceID string,
 		       delivered_at, completed_at, created_at, updated_at 
 		FROM commands WHERE device_id = ? ORDER BY created_at DESC LIMIT ?`
 
-	rows, err := r.db.QueryContext(ctx, query, deviceID, limit)
+	rows, err := r.queryRows(ctx, query, deviceID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +229,7 @@ func (r *CommandRepository) Create(ctx context.Context, cmd *command.Command) er
 		INSERT INTO commands (id, device_id, dispatch_id, command, args, status, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err = r.db.ExecContext(ctx, query,
+	_, err = r.exec(ctx, query,
 		cmd.ID, cmd.DeviceID, cmd.DispatchID, cmd.Command, argsJSON,
 		cmd.Status, cmd.CreatedAt, cmd.UpdatedAt,
 	)
@@ -233,7 +257,7 @@ func (r *CommandRepository) UpdateStatus(ctx context.Context, id string, status 
 		args = []interface{}{status, now, id}
 	}
 
-	result, err := r.db.ExecContext(ctx, query, args...)
+	result, err := r.exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -252,7 +276,7 @@ func (r *CommandRepository) UpdateStatus(ctx context.Context, id string, status 
 
 // Delete deletes a command.
 func (r *CommandRepository) Delete(ctx context.Context, id string) error {
-	result, err := r.db.ExecContext(ctx, "DELETE FROM commands WHERE id = ?", id)
+	result, err := r.exec(ctx, "DELETE FROM commands WHERE id = ?", id)
 	if err != nil {
 		return err
 	}
@@ -271,7 +295,7 @@ func (r *CommandRepository) Delete(ctx context.Context, id string) error {
 
 // DeleteByDeviceID deletes all commands for a device.
 func (r *CommandRepository) DeleteByDeviceID(ctx context.Context, deviceID string) error {
-	_, err := r.db.ExecContext(ctx, "DELETE FROM commands WHERE device_id = ?", deviceID)
+	_, err := r.exec(ctx, "DELETE FROM commands WHERE device_id = ?", deviceID)
 	return err
 }
 
@@ -288,7 +312,7 @@ func (r *CommandRepository) Update(ctx context.Context, cmd *command.Command) er
 		return err
 	}
 
-	_, err = r.db.ExecContext(ctx, query,
+	_, err = r.exec(ctx, query,
 		cmd.DeviceID, cmd.DispatchID, cmd.Command, argsJSON,
 		cmd.Status, cmd.DeliveredAt, cmd.CompletedAt, cmd.UpdatedAt, cmd.ID)
 
@@ -303,7 +327,7 @@ func (r *CommandRepository) FindPendingByDeviceID(ctx context.Context, deviceID 
 		FROM commands WHERE device_id = ? AND status = 'pending'
 		ORDER BY created_at ASC`
 
-	rows, err := r.db.QueryContext(ctx, query, deviceID)
+	rows, err := r.queryRows(ctx, query, deviceID)
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +383,7 @@ func (r *CommandRepository) FindHistoryByDeviceID(ctx context.Context, deviceID 
 	// Get total count
 	countQuery := `SELECT COUNT(*) ` + baseQuery
 	var total int
-	err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total)
+	err := r.queryRow(ctx, countQuery, args...).Scan(&total)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -368,7 +392,7 @@ func (r *CommandRepository) FindHistoryByDeviceID(ctx context.Context, deviceID 
 	query := `SELECT id, device_id, dispatch_id, command, args, status, delivered_at, completed_at, created_at, updated_at, failure_reason ` + baseQuery + ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.queryRows(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -420,7 +444,7 @@ func (r *CommandRepository) FindHistoryByDeviceID(ctx context.Context, deviceID 
 // Count returns the total number of commands.
 func (r *CommandRepository) Count(ctx context.Context) (int, error) {
 	var count int
-	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM commands").Scan(&count)
+	err := r.queryRow(ctx, "SELECT COUNT(*) FROM commands").Scan(&count)
 
 	return count, err
 }
@@ -428,7 +452,7 @@ func (r *CommandRepository) Count(ctx context.Context) (int, error) {
 // CountPending returns the number of pending commands.
 func (r *CommandRepository) CountPending(ctx context.Context) (int, error) {
 	var count int
-	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM commands WHERE status = 'pending'").Scan(&count)
+	err := r.queryRow(ctx, "SELECT COUNT(*) FROM commands WHERE status = 'pending'").Scan(&count)
 
 	return count, err
 }
@@ -440,7 +464,7 @@ func (r *CommandRepository) MarkWake(ctx context.Context, dispatchID string, err
 		wakeSent = 0
 	}
 
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.exec(ctx,
 		`UPDATE commands SET wake_sent = ?, failure_reason = ? WHERE dispatch_id = ?`,
 		wakeSent, errText, dispatchID,
 	)
@@ -451,7 +475,7 @@ func (r *CommandRepository) MarkWake(ctx context.Context, dispatchID string, err
 // MarkDelivered marks a command as delivered by dispatch ID.
 func (r *CommandRepository) MarkDelivered(ctx context.Context, dispatchID string) error {
 	now := time.Now()
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.exec(ctx,
 		`UPDATE commands SET status = ?, delivered_at = ?, updated_at = ? WHERE dispatch_id = ?`,
 		command.StatusDelivered, now.UnixMilli(), now, dispatchID,
 	)
@@ -462,7 +486,7 @@ func (r *CommandRepository) MarkDelivered(ctx context.Context, dispatchID string
 // MarkCompleted marks a command as completed by dispatch ID with result.
 func (r *CommandRepository) MarkCompleted(ctx context.Context, dispatchID, result string) error {
 	now := time.Now()
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.exec(ctx,
 		`UPDATE commands SET status = ?, completed_at = ?, updated_at = ?, failure_reason = ? WHERE dispatch_id = ?`,
 		command.StatusCompleted, now.UnixMilli(), now, result, dispatchID,
 	)
@@ -473,7 +497,7 @@ func (r *CommandRepository) MarkCompleted(ctx context.Context, dispatchID, resul
 // MarkFailed marks a command as failed by dispatch ID with error message.
 func (r *CommandRepository) MarkFailed(ctx context.Context, dispatchID, errMsg string) error {
 	now := time.Now()
-	_, err := r.db.ExecContext(ctx,
+	_, err := r.exec(ctx,
 		`UPDATE commands SET status = ?, completed_at = ?, updated_at = ?, failure_reason = ? WHERE dispatch_id = ?`,
 		command.StatusFailed, now.UnixMilli(), now, errMsg, dispatchID,
 	)
@@ -483,7 +507,7 @@ func (r *CommandRepository) MarkFailed(ctx context.Context, dispatchID, errMsg s
 
 // DeleteOldCommands removes commands older than the given timestamp.
 func (r *CommandRepository) DeleteOldCommands(ctx context.Context, olderThan int64) (int64, error) {
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		`DELETE FROM commands WHERE created_at < ?`,
 		olderThan,
 	)
@@ -502,7 +526,7 @@ func (r *CommandRepository) FindByDispatchPrefix(ctx context.Context, prefix str
 		FROM commands WHERE dispatch_id LIKE ? || '%'
 		ORDER BY created_at ASC`
 
-	rows, err := r.db.QueryContext(ctx, query, prefix)
+	rows, err := r.queryRows(ctx, query, prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -545,7 +569,7 @@ func (r *CommandRepository) FindByDispatchPrefix(ctx context.Context, prefix str
 // CancelByDispatchPrefix marks all pending commands whose dispatch_id starts with the given prefix as cancelled.
 func (r *CommandRepository) CancelByDispatchPrefix(ctx context.Context, prefix string) (int64, error) {
 	now := time.Now()
-	result, err := r.db.ExecContext(ctx,
+	result, err := r.exec(ctx,
 		`UPDATE commands SET status = ?, updated_at = ? WHERE dispatch_id LIKE ? || '%' AND status = 'pending'`,
 		command.StatusCancelled, now, prefix,
 	)
