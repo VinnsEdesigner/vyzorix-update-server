@@ -356,7 +356,7 @@ func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
 	diagnosticsRepo := storage.NewDiagnosticsRepository(cfg.DB.DB())
 
 	// Create diagnostics service
-	diagnosticsService := diagnosticsapp.NewService(diagnosticsRepo, cfg.DeviceService.DeviceRepo(), s.hub)
+	diagnosticsService := diagnosticsapp.NewService(diagnosticsRepo, cfg.DeviceService.DeviceRepo(), s.hub, cfg.Config.DiagnosticsConfig)
 
 	// Get rate limiters
 	var inspectLimit, timelineLimit func(c *gin.Context)
