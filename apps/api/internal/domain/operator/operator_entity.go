@@ -65,6 +65,7 @@ type Operator struct {
 	ClientSettings ClientSettings `json:"client"`
 	MFAEnabled     bool
 	EmailVerified  bool
+	FCMToken       string `json:"fcmToken,omitempty"` // FCM token for push notifications
 }
 
 // IsSuperAdmin returns true if the operator is a super admin.
