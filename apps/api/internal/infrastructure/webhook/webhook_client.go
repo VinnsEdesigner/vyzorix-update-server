@@ -23,6 +23,7 @@ const (
 	EventTypeUpdateAvailable    EventType = "update_available"
 	EventTypeCommandFailed      EventType = "command_failed"
 	EventTypeRegistrationRequest EventType = "registration_request"
+	EventTypeError              EventType = "error"
 )
 
 // Payload represents a webhook payload.
