@@ -23,6 +23,7 @@ import (
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	eventapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/event"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -33,9 +34,11 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/logging"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
+	infranotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/notification"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	passwordpkg "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/password"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
 	"github.com/gin-gonic/gin"
@@ -138,13 +141,32 @@ func ProvideEventProcessor(
 
 	// Create processor with broadcaster
 	processor := eventapp.NewProcessor(eventRepo, deviceRepo, broadcaster, log)
-	
+
 	// Wire operator repository for per-operator threshold fetching
 	processor.SetOperatorRepo(operatorRepo)
-	
+
 	hubResult.Hub.SetEventProcessor(processor)
-	
+
 	return processor
+}
+
+// ProvideNotificationService creates the notification service.
+func ProvideNotificationService(
+	operatorRepo *storage.OperatorRepository,
+	emailSvc *emailService.Service,
+	webhookClient *webhook.Client,
+	auditRepo *infranotification.Repository,
+	log *slog.Logger,
+) *appnotification.Service {
+	return appnotification.NewService(operatorRepo, emailSvc, webhookClient, auditRepo, log)
+}
+
+// WireNotificationServiceToProcessor wires the notification service to the event processor.
+func WireNotificationServiceToProcessor(
+	processor *eventapp.Processor,
+	notificationSvc *appnotification.Service,
+) {
+	processor.SetNotificationService(notificationSvc)
 }
 
 // ProvideEmailVerificationRepository creates the email verification repository.

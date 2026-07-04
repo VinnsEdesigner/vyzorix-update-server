@@ -6,9 +6,11 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/event"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -24,12 +26,13 @@ type EventBroadcaster interface {
 
 // Processor processes and emits real-time events.
 type Processor struct {
-	repo         event.Repository
-	deviceRepo   device.Repository
-	operatorRepo operator.Repository
-	broadcaster  EventBroadcaster
-	log          *slog.Logger
-	thresholds   *ThresholdConfig
+	repo               event.Repository
+	deviceRepo         device.Repository
+	operatorRepo       operator.Repository
+	broadcaster        EventBroadcaster
+	notificationSvc    *notification.Service
+	log                *slog.Logger
+	thresholds         *ThresholdConfig
 }
 
 // ThresholdConfig holds event emission thresholds.
@@ -68,6 +71,11 @@ func NewProcessor(repo event.Repository, deviceRepo device.Repository, broadcast
 // SetOperatorRepo sets the operator repository for fetching per-operator thresholds.
 func (p *Processor) SetOperatorRepo(repo operator.Repository) {
 	p.operatorRepo = repo
+}
+
+// SetNotificationService sets the notification service for sending alerts.
+func (p *Processor) SetNotificationService(svc *notification.Service) {
+	p.notificationSvc = svc
 }
 
 // SetThresholds updates the threshold configuration.
@@ -115,6 +123,20 @@ func (p *Processor) ProcessDeviceConnected(ctx context.Context, deviceID string,
 		}
 	}
 
+	// Send notification for device online event
+	if p.notificationSvc != nil && operatorID != "" {
+		notifData := notification.EventData{
+			EventType:  notification.EventTypeDeviceOnline,
+			DeviceID:   deviceID,
+			DeviceName: getDeviceName(device),
+			OperatorID: operatorID,
+			Timestamp:  evt.Timestamp,
+		}
+		if err := p.notificationSvc.SendNotification(ctx, notifData); err != nil {
+			p.log.Warn("failed to send device online notification", "deviceId", deviceID, "err", err)
+		}
+	}
+
 	return nil
 }
 
@@ -157,6 +179,20 @@ func (p *Processor) ProcessDeviceDisconnected(ctx context.Context, deviceID stri
 			if err := p.broadcaster.BroadcastOperatorEvent(deviceID, operatorID, evt); err != nil {
 				p.log.Warn("failed to broadcast operator event", "deviceId", deviceID, "err", err)
 			}
+		}
+	}
+
+	// Send notification for device offline event
+	if p.notificationSvc != nil && operatorID != "" {
+		notifData := notification.EventData{
+			EventType:  notification.EventTypeDeviceOffline,
+			DeviceID:   deviceID,
+			DeviceName: getDeviceName(device),
+			OperatorID: operatorID,
+			Timestamp:  evt.Timestamp,
+		}
+		if err := p.notificationSvc.SendNotification(ctx, notifData); err != nil {
+			p.log.Warn("failed to send device offline notification", "deviceId", deviceID, "err", err)
 		}
 	}
 
@@ -213,6 +249,43 @@ func (p *Processor) ProcessTelemetry(ctx context.Context, deviceID string, telem
 				if err := p.broadcaster.BroadcastOperatorEvent(deviceID, operatorID, evt); err != nil {
 					p.log.Warn("failed to broadcast operator threshold event", "deviceId", deviceID, "err", err)
 				}
+			}
+		}
+
+		// Send notification for threshold breach
+		if p.notificationSvc != nil && operatorID != "" && evt.Type == event.EventTypeThresholdBreach {
+			// Extract alert details from event data
+			alertType := ""
+			currentValue := ""
+			thresholdValue := ""
+
+			if v, ok := evt.Data["riskScore"]; ok {
+				alertType = "Risk Score"
+				currentValue = fmt.Sprintf("%.0f", v)
+			} else if v, ok := evt.Data["thermalTemp"]; ok {
+				alertType = "Thermal Temperature"
+				currentValue = fmt.Sprintf("%.1f°C", v)
+			} else if v, ok := evt.Data["bufferLevel"]; ok {
+				alertType = "Buffer Level"
+				currentValue = fmt.Sprintf("%.0f%%", v)
+			}
+
+			if v, ok := evt.Data["threshold"]; ok {
+				thresholdValue = fmt.Sprintf("%v", v)
+			}
+
+			notifData := notification.EventData{
+				EventType:    notification.EventTypeThresholdBreach,
+				DeviceID:     deviceID,
+				DeviceName:   getDeviceName(device),
+				OperatorID:   operatorID,
+				AlertType:    alertType,
+				CurrentValue: currentValue,
+				Threshold:    thresholdValue,
+				Timestamp:    evt.Timestamp,
+			}
+			if err := p.notificationSvc.SendNotification(ctx, notifData); err != nil {
+				p.log.Warn("failed to send threshold breach notification", "deviceId", deviceID, "err", err)
 			}
 		}
 	}
@@ -394,6 +467,18 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 	}
 
 	return events
+}
+
+// getDeviceName extracts the device name from a device entity.
+func getDeviceName(d *device.Device) string {
+	if d == nil {
+		return ""
+	}
+	// Try to get name from metadata or use ID as fallback
+	if d.DeviceName != "" {
+		return d.DeviceName
+	}
+	return d.ID
 }
 
 // generateEventID generates a unique event ID.
