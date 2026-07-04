@@ -1,0 +1,58 @@
+package auth
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+)
+
+// ValidatePasswordPolicy validates a new password against operator's security policy.
+func (s *AuthService) ValidatePasswordPolicy(ctx context.Context, op *operator.Operator, newPassword string) error {
+	settings := op.SecuritySettings
+
+	if settings.PasswordHistoryCount > 0 {
+		if err := s.checkPasswordHistory(ctx, op.ID, newPassword, settings.PasswordHistoryCount); err != nil {
+			return err
+		}
+	}
+
+	if settings.PasswordMinAgeDays > 0 {
+		elapsed := time.Since(op.UpdatedAt)
+		minAge := time.Duration(settings.PasswordMinAgeDays) * 24 * time.Hour
+		if elapsed < minAge {
+			return fmt.Errorf("%w: password cannot be changed for %d days", application.ErrPasswordPolicy, settings.PasswordMinAgeDays)
+		}
+	}
+
+	return nil
+}
+
+func (s *AuthService) checkPasswordHistory(ctx context.Context, operatorID, newPassword string, historyCount int) error {
+	op, err := s.operatorRepo.FindByID(ctx, operatorID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.passwordHasher.Verify(newPassword, op.PasswordHash); err == nil {
+		return fmt.Errorf("%w: cannot reuse current password", application.ErrPasswordPolicy)
+	}
+
+	return nil
+}
+
+// IsPasswordExpired checks if operator's password has expired.
+func (s *AuthService) IsPasswordExpired(ctx context.Context, op *operator.Operator) (bool, error) {
+	settings := op.SecuritySettings
+
+	if settings.PasswordMaxAgeDays <= 0 {
+		return false, nil
+	}
+
+	maxAge := time.Duration(settings.PasswordMaxAgeDays) * 24 * time.Hour
+	elapsed := time.Since(op.UpdatedAt)
+
+	return elapsed > maxAge, nil
+}
