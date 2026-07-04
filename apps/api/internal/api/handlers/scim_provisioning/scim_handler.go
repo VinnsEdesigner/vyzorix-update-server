@@ -1,4 +1,4 @@
-package scimprovision
+package scimprovisioning
 
 import (
 	"net/http"

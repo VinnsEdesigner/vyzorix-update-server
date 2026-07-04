@@ -30,6 +30,7 @@ type LDAPUser struct {
 }
 
 // AuthenticateLDAP authenticates a user against LDAP/AD.
+// Requires ldap library dependency to be added for actual LDAP connectivity.
 func (s *AuthService) AuthenticateLDAP(ctx context.Context, cfg *LDAPConfig, username, password string) (*LDAPUser, error) {
 	if cfg == nil || cfg.Server == "" {
 		return nil, fmt.Errorf("LDAP not configured")
@@ -43,13 +44,8 @@ func (s *AuthService) AuthenticateLDAP(ctx context.Context, cfg *LDAPConfig, use
 		addr = fmt.Sprintf("ldaps://%s", addr)
 	}
 
-	// In production, use ldap.DialURL and perform bind
-	// For now, return a placeholder that indicates LDAP is configured but not connected
-	// This allows the service to be built without requiring ldap library
-
-	_ = addr
-
-	// Simulated check - in production, use ldap library:
+	// LDAP authentication requires ldap package:
+	// import "github.com/go-ldap/ldap/v3"
 	// conn, err := ldap.DialURL(addr)
 	// if err != nil { return nil, err }
 	// defer conn.Close()
@@ -59,7 +55,8 @@ func (s *AuthService) AuthenticateLDAP(ctx context.Context, cfg *LDAPConfig, use
 	// sr, err := conn.Search(searchRequest)
 	// if err != nil { return nil, err }
 	// if len(sr.Entries) != 1 { return nil, ErrInvalidCredentials }
-	// entry := sr.Entries[0]
+
+	_ = addr // silence unused warning until ldap package is added
 
 	return &LDAPUser{
 		UID:   username,
