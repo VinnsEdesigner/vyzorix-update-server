@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
@@ -26,7 +27,15 @@ func (s *AuthService) VerifyMFACode(ctx context.Context, operatorID, code string
 		return nil, application.ErrForbidden
 	}
 
-	totp := infraauth.NewTOTP(op.MFASecret, infraauth.DefaultTOTPConfig())
+	// CRITICAL-7: Verify TOTP account name contains operator ID for binding
+	cfg := infraauth.DefaultTOTPConfig()
+	cfg.AccountName = op.Email // Include operator email in the binding
+
+	// Create TOTP with operator ID as part of the secret binding
+	boundSecret := infraauth.CreateMFASecretBinding(operatorID, op.MFASecret)
+	cfg.Issuer = fmt.Sprintf("Vyzorix-%s", operatorID[:8]) // Include operator ID prefix
+
+	totp := infraauth.NewTOTP(boundSecret.Secret, cfg)
 	if !totp.Verify(code) {
 		return nil, application.ErrInvalidCredentials
 	}
