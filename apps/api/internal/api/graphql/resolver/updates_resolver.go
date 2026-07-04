@@ -2,6 +2,7 @@
 package resolver
 
 import (
+	"strings"
 	"time"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
@@ -16,6 +17,7 @@ import (
 // GetUpdatesStatus resolves the updatesStatus query.
 func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
+	deviceID, _ := p.Args["deviceId"].(string)
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -31,6 +33,24 @@ func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error
 		return nil, r.Presenter.InternalError("failed to get update status")
 	}
 
+	var currentVersion string
+	var needsUpdate bool
+
+	// If deviceId is provided, get device-specific status
+	if deviceID != "" && r.DeviceService != nil {
+		dev, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+		if err == nil && dev != nil {
+			currentVersion = dev.AppVersion
+			// Compare versions to determine if update is needed
+			if status.Latest.Version != "" && currentVersion != "" {
+				needsUpdate = currentVersion != status.Latest.Version
+			}
+		}
+	} else if status.Device != nil {
+		currentVersion = status.Device.CurrentVersion
+		needsUpdate = status.Device.NeedsUpdate
+	}
+
 	result := map[string]interface{}{
 		"sync": map[string]interface{}{
 			"status":        status.Sync.Status,
@@ -39,8 +59,11 @@ func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error
 			"versionsFound": nil,
 			"error":         status.Sync.Error,
 		},
-		"device":      status.Device.CurrentVersion,
-		"version":     status.Device.CurrentVersion,
+		"device": map[string]interface{}{
+			"currentVersion": currentVersion,
+			"needsUpdate":   needsUpdate,
+		},
+		"version":     currentVersion,
 		"apkFilename": nil,
 		"sha256":      nil,
 	}
@@ -49,7 +72,7 @@ func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error
 		result["latest"] = map[string]interface{}{
 			"id":           "",
 			"version":      status.Latest.Version,
-			"releaseType":  "patch",
+			"releaseType":  strings.ToUpper(string(status.Latest.ReleaseType)),
 			"releaseNotes": nil,
 			"apkFilename":  status.Latest.APKFilename,
 			"apkSize":      status.Latest.APKSize,
@@ -97,18 +120,22 @@ func (r *Resolver) GetUpdatesVersions(p graphql.ResolveParams) (interface{}, err
 		entry := map[string]interface{}{
 			"id":           v.Version,
 			"version":      v.Version,
-			"releaseType":  "patch",
+			"releaseType":  strings.ToUpper(string(v.ReleaseType)),
 			"releaseNotes": v.ReleaseNotes,
 			"apkFilename":  v.APKFilename,
 			"apkSize":      v.APKSize,
 			"sha256":       v.SHA256,
 			"releasedAt":   formatDateTimeInt64(v.ReleasedAt),
 			"createdAt":    nil,
+			"isLatest":     v.IsLatest,
 		}
 		result = append(result, entry)
 	}
 
-	return result, nil
+	return map[string]interface{}{
+		"versions":   result,
+		"pagination": r.paginationToMap(resp.Pagination),
+	}, nil
 }
 
 // GetUpdatesChangelog resolves the updatesChangelog query.
@@ -180,12 +207,15 @@ func (r *Resolver) GetUpdatesHistory(p graphql.ResolveParams) (interface{}, erro
 			"id":           push.ID,
 			"version":      push.Version,
 			"installType":  push.InstallType,
+			"scheduledAt":  formatDateTimeInt64Ptr(push.ScheduledAt),
 			"status":       push.Status,
 			"initiatedBy":  push.InitiatedBy,
 			"initiatedAt":  push.InitiatedAt,
-			"completedAt":  push.CompletedAt,
+			"completedAt":  formatDateTimeInt64Ptr(push.CompletedAt),
+			"cancelledAt":  formatDateTimeInt64Ptr(push.CancelledAt),
 			"deviceCount":  push.DeviceCount,
 			"pending":      push.Devices.Pending,
+			"sent":         push.Devices.Sent,
 			"acknowledged": push.Devices.Acknowledged,
 			"failed":       push.Devices.Failed,
 		}
@@ -229,23 +259,28 @@ func (r *Resolver) GetUpdatesHistoryDetail(p graphql.ResolveParams) (interface{}
 	devices := make([]map[string]interface{}, 0, len(push.Devices))
 	for _, d := range push.Devices {
 		devices = append(devices, map[string]interface{}{
+			"id":             d.ID,
 			"deviceId":       d.DeviceID,
+			"deviceName":     d.DeviceName,
 			"status":         d.Status,
+			"sentAt":         formatDateTimeInt64Ptr(d.SentAt),
 			"acknowledgedAt": formatDateTimeInt64Ptr(d.AcknowledgedAt),
 			"error":          d.Error,
 		})
 	}
 
 	return map[string]interface{}{
-		"id":          push.ID,
-		"version":     push.Version,
-		"installType": push.InstallType,
-		"status":      push.Status,
-		"initiatedBy": push.InitiatedBy,
-		"initiatedAt": formatDateTimeInt64(push.InitiatedAt),
-		"completedAt": formatDateTimeInt64Ptr(push.CompletedAt),
-		"deviceCount": len(push.Devices),
-		"devices":     devices,
+		"id":           push.ID,
+		"version":      push.Version,
+		"installType":  push.InstallType,
+		"scheduledAt":  formatDateTimeInt64Ptr(push.ScheduledAt),
+		"status":       push.Status,
+		"initiatedBy":  push.InitiatedBy,
+		"initiatedAt":  formatDateTimeInt64(push.InitiatedAt),
+		"completedAt":  formatDateTimeInt64Ptr(push.CompletedAt),
+		"cancelledAt":  formatDateTimeInt64Ptr(push.CancelledAt),
+		"deviceCount":  len(push.Devices),
+		"devices":      devices,
 	}, nil
 }
 
@@ -330,14 +365,20 @@ func (r *Resolver) PushUpdate(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.InternalError("failed to push update: " + err.Error())
 	}
 
+	var schedAt interface{}
+	if resp.ScheduledAt != nil && *resp.ScheduledAt > 0 {
+		schedAt = *resp.ScheduledAt
+	}
+
 	return map[string]interface{}{
-		"pushId":      resp.PushID,
-		"version":     resp.Version,
-		"installType": resp.InstallType,
-		"status":      resp.Status,
-		"initiatedBy": resp.InitiatedBy,
-		"initiatedAt": resp.InitiatedAt,
-		"deviceCount": len(resp.DeviceIDs),
+		"pushId":       resp.PushID,
+		"version":      resp.Version,
+		"installType":  resp.InstallType,
+		"scheduledAt":  schedAt,
+		"status":       resp.Status,
+		"initiatedBy":  resp.InitiatedBy,
+		"initiatedAt":  resp.InitiatedAt,
+		"deviceCount":  len(resp.DeviceIDs),
 	}, nil
 }
 

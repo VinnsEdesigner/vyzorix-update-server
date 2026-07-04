@@ -94,7 +94,11 @@ func (h *Hub) SubscribeTelemetry(operatorID, deviceID string, callback subscript
 	subMgr.mu.Lock()
 	defer subMgr.mu.Unlock()
 
-	key := operatorID + ":" + deviceID
+	// If deviceID is empty, subscribe to all devices for this operator
+	key := operatorID
+	if deviceID != "" {
+		key = operatorID + ":" + deviceID
+	}
 
 	wrapper := callbackWrapper{
 		id:       nextCallbackID(),

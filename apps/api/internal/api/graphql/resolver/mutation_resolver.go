@@ -37,7 +37,7 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 	}
 
 	// Verify device ownership - returns *dto.DeviceResponse
-	dev, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+	_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -51,8 +51,13 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 	// Log via presenter
 	r.Presenter.FCMTokenUpdate(ctx, op.ID, deviceID)
 
-	// Return the updated device as a map
-	return r.deviceDTOToMap(dev), nil
+	// Fetch updated device to return fresh data
+	updatedDev, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+	if err != nil {
+		return nil, r.Presenter.NotFoundError("device not found")
+	}
+
+	return r.deviceDTOToMap(updatedDev), nil
 }
 
 // DeleteDevice resolves the deleteDevice mutation.
@@ -150,6 +155,17 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 
 	// If not sent via WebSocket, try FCM
 	if delivery == "queued" && r.FCMNotifier != nil {
+		// First verify ownership before sending FCM
+		_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+		if err != nil {
+			// nolint: nilerr // Device not owned - return queued response, not error
+			return map[string]interface{}{
+				"dispatchId":   cmdResp.DispatchID,
+				"commandId":    cmdResp.CommandID,
+				"status":       delivery,
+				"deviceOnline": false,
+			}, nil
+		}
 		dev, _ := r.DeviceService.GetDevice(ctx, deviceID)
 		if dev != nil && dev.FCMToken != "" {
 			wake := fcm.SilentWake{
@@ -250,7 +266,11 @@ func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 	// Log via presenter
 	r.Presenter.CommandCancel(ctx, op.ID, cmd.CommandID)
 
-	return true, nil
+	return map[string]interface{}{
+		"dispatchId":  dispatchID,
+		"cancelledAt": time.Now().UnixMilli(),
+		"status":      "cancelled",
+	}, nil
 }
 
 // DisconnectDevice resolves the disconnectDevice mutation.
@@ -406,6 +426,20 @@ func (r *Resolver) UpdateMyNotifications(p graphql.ResolveParams) (interface{}, 
 		notifInput.Webhook = webhookInput
 	}
 
+	if push, ok := input["push"].(map[string]interface{}); ok {
+		pushInput := &domainoperator.PushNotificationInput{}
+		if v, ok := push["thresholdBreach"].(bool); ok {
+			pushInput.ThresholdBreach = &v
+		}
+		if v, ok := push["deviceOffline"].(bool); ok {
+			pushInput.DeviceOffline = &v
+		}
+		if v, ok := push["deviceOnline"].(bool); ok {
+			pushInput.DeviceOnline = &v
+		}
+		notifInput.Push = pushInput
+	}
+
 	notifications, err := r.NotificationSvc.UpdateNotifications(ctx, op.ID, notifInput)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to update notifications")
@@ -430,10 +464,7 @@ func (r *Resolver) TestWebhook(p graphql.ResolveParams) (interface{}, error) {
 
 	result, err := r.WebhookClient.Test(ctx, url)
 	if err != nil {
-		return map[string]interface{}{
-			"success": false,
-			"error":  err.Error(),
-		}, nil
+		return nil, r.Presenter.InternalError("webhook test failed: " + err.Error())
 	}
 
 	return result, nil

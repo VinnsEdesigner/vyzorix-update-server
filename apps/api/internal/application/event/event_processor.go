@@ -524,13 +524,15 @@ func getDeviceName(d *device.Device) string {
 }
 
 // isThresholdBreachEvent returns true if the event type is a threshold breach or alert.
+// nolint:exhaustive // We only care about threshold breach events, not all event types
 func isThresholdBreachEvent(evtType event.EventType) bool {
 	switch evtType {
 	case event.EventTypeThresholdBreach, event.EventTypeRiskScoreAlert,
 		event.EventTypeThermalAlert, event.EventTypeBufferLevelAlert:
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 // generateEventID generates a unique event ID.
