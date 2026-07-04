@@ -7,7 +7,12 @@
 package wire
 
 import (
+	"database/sql"
+	"time"
+
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	infranotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/notification"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 )
 
 // Injectors from wire_gen.go:
@@ -25,6 +30,7 @@ func Injector(cfg config.Config) (*Server, error) {
 	verifier := ProvideGoogleVerifier(cfg)
 	operatorRepository := ProvideOperatorRepository(db)
 	deviceRepository := ProvideDeviceRepository(db)
+	eventRepository := ProvideEventRepository(db)
 	commandRepository := ProvideCommandRepository(db)
 	sessionRepository := ProvideSessionRepository(db)
 	clientRepository := ProvideClientRepository(db)
@@ -46,8 +52,27 @@ func Injector(cfg config.Config) (*Server, error) {
 	lockout := ProvideLockout()
 	ipIntelligence := ProvideIPIntelligence(middlewareFactory)
 	updatesService := ProvideUpdatesService(updatesStorage, service, hubResult, notifier, commandService, logger, cfg)
+	// Create webhook client for notifications
+	webhookClient := ProvideWebhookClient()
+	// Create notification repository for audit logging
+	notificationRepository := ProvideNotificationAuditRepository(db)
+	// Create notification service
+	notificationService := ProvideNotificationService(operatorRepository, emailService, webhookClient, notificationRepository, logger)
+	// Create event processor and wire notification service
+	eventProcessor := ProvideEventProcessor(eventRepository, deviceRepository, operatorRepository, hubResult, logger)
+	WireNotificationServiceToProcessor(eventProcessor, notificationService)
 	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService)
 	serverResult := ProvideServerResult(serverDependencies)
 	server := ProvideServer(serverDependencies, serverResult)
 	return server, nil
+}
+
+// ProvideWebhookClient creates a webhook client for notifications.
+func ProvideWebhookClient() *webhook.Client {
+	return webhook.NewClient(10 * time.Second)
+}
+
+// ProvideNotificationAuditRepository creates the notification audit repository.
+func ProvideNotificationAuditRepository(db *sql.DB) *infranotification.Repository {
+	return infranotification.NewRepository(db)
 }
