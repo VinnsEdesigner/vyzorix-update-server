@@ -54,6 +54,14 @@ type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+// RefreshTokenResponse represents a token refresh response.
+type RefreshTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresAt    int64  `json:"expires_at"`
+	SessionID    string `json:"session_id"`
+}
+
 // LogoutRequest represents a logout request.
 type LogoutRequest struct {
 	AllDevices bool `json:"all_devices"`
