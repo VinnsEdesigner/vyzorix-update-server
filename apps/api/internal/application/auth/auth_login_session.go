@@ -189,10 +189,30 @@ func (s *AuthService) CreateSession(ctx context.Context, operatorID string) (*se
 	return sess, nil
 }
 
-// Logout destroys a session.
+// Logout destroys a session and revokes associated refresh tokens.
+// HIGH-3: Now revokes refresh tokens on logout for security.
 func (s *AuthService) Logout(ctx context.Context, sessionID string) error {
+	// Get operator ID before deleting session for refresh token revocation
+	var operatorID string
+	if sess, err := s.sessionRepo.FindByID(ctx, sessionID); err == nil && sess != nil {
+		operatorID = sess.OperatorID
+	}
+
+	// Add to revocation list for audit
 	_ = s.sessionRepo.AddSessionRevocation(ctx, sessionID, "operator_logout")
-	return s.sessionRepo.Delete(ctx, sessionID)
+
+	// Delete the session
+	if err := s.sessionRepo.Delete(ctx, sessionID); err != nil {
+		return err
+	}
+
+	// HIGH-3: Revoke all refresh tokens for this operator on logout
+	// This ensures stolen refresh tokens can't be used after logout
+	if operatorID != "" {
+		_ = s.RevokeAllRefreshTokens(ctx, operatorID)
+	}
+
+	return nil
 }
 
 // LogoutAll destroys all sessions for an operator.
