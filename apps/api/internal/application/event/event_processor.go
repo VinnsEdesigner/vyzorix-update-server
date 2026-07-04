@@ -11,6 +11,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/event"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 )
 
 // EventBroadcaster broadcasts events to subscribed clients.
@@ -23,11 +24,12 @@ type EventBroadcaster interface {
 
 // Processor processes and emits real-time events.
 type Processor struct {
-	repo        event.Repository
-	deviceRepo  device.Repository
-	broadcaster EventBroadcaster
-	log         *slog.Logger
-	thresholds  *ThresholdConfig
+	repo         event.Repository
+	deviceRepo   device.Repository
+	operatorRepo operator.Repository
+	broadcaster  EventBroadcaster
+	log          *slog.Logger
+	thresholds   *ThresholdConfig
 }
 
 // ThresholdConfig holds event emission thresholds.
@@ -35,9 +37,9 @@ type ThresholdConfig struct {
 	RiskScoreWarning  int
 	RiskScoreCritical int
 	ThermalWarning    float64
-	ThermalCritical  float64
-	BufferWarning    int
-	BufferCritical   int
+	ThermalCritical   float64
+	BufferWarning     int
+	BufferCritical    int
 }
 
 // DefaultThresholdConfig returns default threshold configuration.
@@ -48,7 +50,7 @@ func DefaultThresholdConfig() *ThresholdConfig {
 		ThermalWarning:    45.0,
 		ThermalCritical:   60.0,
 		BufferWarning:     30,
-		BufferCritical:   10,
+		BufferCritical:    10,
 	}
 }
 
@@ -61,6 +63,11 @@ func NewProcessor(repo event.Repository, deviceRepo device.Repository, broadcast
 		log:         log,
 		thresholds:  DefaultThresholdConfig(),
 	}
+}
+
+// SetOperatorRepo sets the operator repository for fetching per-operator thresholds.
+func (p *Processor) SetOperatorRepo(repo operator.Repository) {
+	p.operatorRepo = repo
 }
 
 // SetThresholds updates the threshold configuration.
@@ -157,6 +164,7 @@ func (p *Processor) ProcessDeviceDisconnected(ctx context.Context, deviceID stri
 }
 
 // ProcessTelemetry processes telemetry data and emits events for threshold breaches.
+// It fetches operator-specific thresholds to ensure each operator's custom settings are used.
 func (p *Processor) ProcessTelemetry(ctx context.Context, deviceID string, telemetryData map[string]any) error {
 	device, err := p.deviceRepo.FindByID(ctx, deviceID)
 	if err != nil {
@@ -168,8 +176,28 @@ func (p *Processor) ProcessTelemetry(ctx context.Context, deviceID string, telem
 		operatorID = device.OperatorID
 	}
 
-	// Check for threshold breaches
-	events := p.checkThresholds(deviceID, operatorID, telemetryData)
+	// Get operator-specific thresholds
+	thresholds := p.thresholds // Start with defaults
+	if operatorID != "" && p.operatorRepo != nil {
+		opThresholds, err := p.operatorRepo.GetThresholds(ctx, operatorID)
+		if err != nil {
+			p.log.Warn("failed to get operator thresholds, using defaults", "operatorId", operatorID, "err", err)
+		} else {
+			// Convert operator thresholds to ThresholdConfig
+			// Note: operator.Thresholds uses int for thermal values, ThresholdConfig uses float64
+			thresholds = &ThresholdConfig{
+				RiskScoreWarning:  opThresholds.RiskWarn,
+				RiskScoreCritical: opThresholds.RiskCrit,
+				ThermalWarning:    float64(opThresholds.ThermalWarn),
+				ThermalCritical:   float64(opThresholds.ThermalCrit),
+				BufferWarning:     opThresholds.BufferWarn,
+				BufferCritical:    opThresholds.BufferCrit,
+			}
+		}
+	}
+
+	// Check for threshold breaches using operator-specific thresholds
+	events := p.checkThresholdsWithConfig(deviceID, operatorID, telemetryData, thresholds)
 
 	// Store and broadcast events
 	for _, evt := range events {
@@ -279,13 +307,14 @@ func (p *Processor) ProcessError(ctx context.Context, deviceID string, errMsg st
 	return nil
 }
 
-// checkThresholds checks telemetry against thresholds and returns breach events.
-func (p *Processor) checkThresholds(deviceID, operatorID string, data map[string]any) []*event.Event {
+// checkThresholdsWithConfig checks telemetry against provided thresholds and returns breach events.
+// This ensures operator-specific thresholds are used for accurate alerting.
+func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data map[string]any, thresholds *ThresholdConfig) []*event.Event {
 	var events []*event.Event
 
 	// Check risk score
 	if riskScore, ok := data["riskScore"].(float64); ok {
-		if riskScore >= float64(p.thresholds.RiskScoreCritical) {
+		if riskScore >= float64(thresholds.RiskScoreCritical) {
 			events = append(events, &event.Event{
 				ID:         generateEventID(),
 				DeviceID:   deviceID,
@@ -293,10 +322,10 @@ func (p *Processor) checkThresholds(deviceID, operatorID string, data map[string
 				Type:       event.EventTypeRiskScoreAlert,
 				Severity:   event.SeverityCritical,
 				Timestamp:  time.Now(),
-				Data:       map[string]any{"riskScore": riskScore, "threshold": p.thresholds.RiskScoreCritical},
+				Data:       map[string]any{"riskScore": riskScore, "threshold": thresholds.RiskScoreCritical},
 				Source:     "server",
 			})
-		} else if riskScore >= float64(p.thresholds.RiskScoreWarning) {
+		} else if riskScore >= float64(thresholds.RiskScoreWarning) {
 			events = append(events, &event.Event{
 				ID:         generateEventID(),
 				DeviceID:   deviceID,
@@ -304,7 +333,7 @@ func (p *Processor) checkThresholds(deviceID, operatorID string, data map[string
 				Type:       event.EventTypeThresholdBreach,
 				Severity:   event.SeverityWarning,
 				Timestamp:  time.Now(),
-				Data:       map[string]any{"riskScore": riskScore, "threshold": p.thresholds.RiskScoreWarning},
+				Data:       map[string]any{"riskScore": riskScore, "threshold": thresholds.RiskScoreWarning},
 				Source:     "server",
 			})
 		}
@@ -312,7 +341,7 @@ func (p *Processor) checkThresholds(deviceID, operatorID string, data map[string
 
 	// Check thermal temp
 	if thermalTemp, ok := data["thermalTemp"].(float64); ok {
-		if thermalTemp >= p.thresholds.ThermalCritical {
+		if thermalTemp >= thresholds.ThermalCritical {
 			events = append(events, &event.Event{
 				ID:         generateEventID(),
 				DeviceID:   deviceID,
@@ -320,10 +349,10 @@ func (p *Processor) checkThresholds(deviceID, operatorID string, data map[string
 				Type:       event.EventTypeThermalAlert,
 				Severity:   event.SeverityCritical,
 				Timestamp:  time.Now(),
-				Data:       map[string]any{"thermalTemp": thermalTemp, "threshold": p.thresholds.ThermalCritical},
+				Data:       map[string]any{"thermalTemp": thermalTemp, "threshold": thresholds.ThermalCritical},
 				Source:     "server",
 			})
-		} else if thermalTemp >= p.thresholds.ThermalWarning {
+		} else if thermalTemp >= thresholds.ThermalWarning {
 			events = append(events, &event.Event{
 				ID:         generateEventID(),
 				DeviceID:   deviceID,
@@ -331,7 +360,7 @@ func (p *Processor) checkThresholds(deviceID, operatorID string, data map[string
 				Type:       event.EventTypeThresholdBreach,
 				Severity:   event.SeverityWarning,
 				Timestamp:  time.Now(),
-				Data:       map[string]any{"thermalTemp": thermalTemp, "threshold": p.thresholds.ThermalWarning},
+				Data:       map[string]any{"thermalTemp": thermalTemp, "threshold": thresholds.ThermalWarning},
 				Source:     "server",
 			})
 		}
@@ -339,7 +368,7 @@ func (p *Processor) checkThresholds(deviceID, operatorID string, data map[string
 
 	// Check buffer level
 	if bufferLevel, ok := data["bufferLevel"].(float64); ok {
-		if bufferLevel <= float64(p.thresholds.BufferCritical) {
+		if bufferLevel <= float64(thresholds.BufferCritical) {
 			events = append(events, &event.Event{
 				ID:         generateEventID(),
 				DeviceID:   deviceID,
@@ -347,10 +376,10 @@ func (p *Processor) checkThresholds(deviceID, operatorID string, data map[string
 				Type:       event.EventTypeBufferLevelAlert,
 				Severity:   event.SeverityCritical,
 				Timestamp:  time.Now(),
-				Data:       map[string]any{"bufferLevel": bufferLevel, "threshold": p.thresholds.BufferCritical},
+				Data:       map[string]any{"bufferLevel": bufferLevel, "threshold": thresholds.BufferCritical},
 				Source:     "server",
 			})
-		} else if bufferLevel <= float64(p.thresholds.BufferWarning) {
+		} else if bufferLevel <= float64(thresholds.BufferWarning) {
 			events = append(events, &event.Event{
 				ID:         generateEventID(),
 				DeviceID:   deviceID,
@@ -358,7 +387,7 @@ func (p *Processor) checkThresholds(deviceID, operatorID string, data map[string
 				Type:       event.EventTypeThresholdBreach,
 				Severity:   event.SeverityWarning,
 				Timestamp:  time.Now(),
-				Data:       map[string]any{"bufferLevel": bufferLevel, "threshold": p.thresholds.BufferWarning},
+				Data:       map[string]any{"bufferLevel": bufferLevel, "threshold": thresholds.BufferWarning},
 				Source:     "server",
 			})
 		}

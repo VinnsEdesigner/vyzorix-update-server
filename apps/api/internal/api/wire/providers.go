@@ -128,6 +128,7 @@ func ProvideUpdatesStorage(db *sql.DB) *storage.UpdatesStorage {
 func ProvideEventProcessor(
 	eventRepo *storage.EventRepository,
 	deviceRepo *storage.DeviceRepository,
+	operatorRepo *storage.OperatorRepository,
 	hubResult *HubResult,
 	log *slog.Logger,
 ) *eventapp.Processor {
@@ -137,6 +138,10 @@ func ProvideEventProcessor(
 
 	// Create processor with broadcaster
 	processor := eventapp.NewProcessor(eventRepo, deviceRepo, broadcaster, log)
+	
+	// Wire operator repository for per-operator threshold fetching
+	processor.SetOperatorRepo(operatorRepo)
+	
 	hubResult.Hub.SetEventProcessor(processor)
 	
 	return processor
