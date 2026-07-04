@@ -193,6 +193,7 @@ var migrations = []Migration{
 	{Apply: migrateDeviceEventsExtended, Name: "add_device_events_extended_columns", Version: 35},
 	{Apply: migrateOperatorFCMToken, Name: "add_operator_fcm_token_column", Version: 36},
 	{Apply: migrateCreateOAuthStates, Name: "create_oauth_states_table", Version: 37},
+	{Apply: migrateAddMFASecretMAC, Name: "add_mfa_secret_mac_column", Version: 38},
 }
 
 // runMigrations applies all pending migrations.
@@ -331,6 +332,7 @@ func migrateCreateOperators(db *sql.DB) error {
 			password_hash TEXT,
 			role TEXT NOT NULL DEFAULT 'operator',
 			mfa_secret TEXT,
+			mfa_secret_mac TEXT,
 			mfa_enabled INTEGER NOT NULL DEFAULT 0,
 			backup_codes TEXT,
 			email_verified INTEGER NOT NULL DEFAULT 0,
@@ -436,6 +438,17 @@ func migrateAddOperatorsGitHubID(db *sql.DB) error {
 		// Column may already exist
 		if !isColumnExistsError(err) {
 			return fmt.Errorf("failed to add github_id column: %w", err)
+		}
+	}
+	return nil
+}
+
+func migrateAddMFASecretMAC(db *sql.DB) error {
+	_, err := db.ExecContext(context.Background(), `ALTER TABLE operators ADD COLUMN mfa_secret_mac TEXT`)
+	if err != nil {
+		// Column may already exist
+		if !isColumnExistsError(err) {
+			return fmt.Errorf("failed to add mfa_secret_mac column: %w", err)
 		}
 	}
 	return nil

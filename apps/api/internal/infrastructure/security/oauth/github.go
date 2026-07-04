@@ -99,7 +99,7 @@ func FetchGitHubUserProfile(ctx context.Context, accessToken string) (*GitHubUse
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		return nil, fmt.Errorf("GitHub user API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -131,7 +131,7 @@ func FetchGitHubEmails(ctx context.Context, accessToken string) ([]GitHubEmailIn
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		return nil, fmt.Errorf("GitHub emails API returned status %d: %s", resp.StatusCode, string(body))
 	}
 

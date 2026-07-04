@@ -37,10 +37,10 @@ type Repository interface {
 	UpdatePassword(ctx context.Context, id, passwordHash string) error
 	
 	// UpdateMFA updates MFA settings for an operator.
-	UpdateMFA(ctx context.Context, id, secret string, enabled bool) error
+	UpdateMFA(ctx context.Context, id, secret, secretMAC string, enabled bool) error
 	
-	// UpdateOperatorMFA updates the MFA secret and backup codes for an operator.
-	UpdateOperatorMFA(ctx context.Context, operatorID, mfaSecret string, backupCodes []string) error
+	// UpdateOperatorMFA updates the MFA secret, MAC, and backup codes for an operator.
+	UpdateOperatorMFA(ctx context.Context, operatorID, mfaSecret, mfaSecretMAC string, backupCodes []string) error
 	
 	// VerifyEmail marks an operator's email as verified.
 	VerifyEmail(ctx context.Context, id string) error

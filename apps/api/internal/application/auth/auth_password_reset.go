@@ -9,6 +9,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/password_reset"
 )
@@ -128,6 +129,11 @@ func (s *AuthService) ResetPassword(ctx context.Context, token, _email string, n
 	// Validate password.
 	if err := ValidatePassword(newPassword, DefaultPasswordPolicy); err != nil {
 		return application.ErrInvalidInput
+	}
+
+	// Check if password was breached (using k-anonymity to avoid sending password to external API)
+	if breached, _ := infraauth.CheckPasswordBreached(newPassword); breached {
+		return application.ErrPasswordBreached
 	}
 
 	// Hash the token.
