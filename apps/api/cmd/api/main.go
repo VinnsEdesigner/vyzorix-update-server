@@ -13,6 +13,8 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
@@ -20,6 +22,7 @@ import (
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/logging"
+	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/ssr"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 )
@@ -90,6 +93,12 @@ func main() {
 		diagnosticsRepo := storage.NewDiagnosticsRepository(db)
 		diagnosticsSvc := diagnosticsapp.NewService(diagnosticsRepo, deviceRepo, deps.Hub, cfg.DiagnosticsConfig)
 
+		// Create settings-related services for GraphQL
+		settingsService := auth.NewClientSettingsService(deps.OperatorRepo)
+		thresholdService := appoperator.NewThresholdService(deps.OperatorRepo)
+		notificationSvc := appoperator.NewNotificationService(deps.OperatorRepo)
+		webhookClient := infrawebhook.NewClient(10 * time.Second)
+
 		if regErr := apiServer.RegisterGraphQL(
 			deps.DeviceService,
 			deps.CommandService,
@@ -103,6 +112,11 @@ func main() {
 			deps.Hub,
 			deps.UpdatesService,
 			diagnosticsSvc,
+			deps.OperatorRepo,
+			settingsService,
+			thresholdService,
+			notificationSvc,
+			webhookClient,
 		); regErr != nil {
 			log.Error("failed to register GraphQL", "err", regErr)
 			PrintWarning("GraphQL", "Registration failed")

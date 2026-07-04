@@ -172,8 +172,8 @@ func ProvideAuthService(
 }
 
 // ProvideDeviceService creates the device service.
-func ProvideDeviceService(deviceRepo *storage.DeviceRepository, operatorRepo *storage.OperatorRepository) *device.Service {
-	return device.NewService(deviceRepo, operatorRepo)
+func ProvideDeviceService(deviceRepo *storage.DeviceRepository, operatorRepo *storage.OperatorRepository, log *slog.Logger) *device.Service {
+	return device.NewService(deviceRepo, operatorRepo, log)
 }
 
 // ProvideClientService creates the client service.

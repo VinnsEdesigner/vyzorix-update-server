@@ -270,3 +270,48 @@ func (l *Logger) UpdateSyncFailed(ctx context.Context, operatorID, ipAddress, us
 		Metadata:  map[string]string{"reason": reason},
 	})
 }
+
+// SettingsChanged logs a settings change event.
+func (l *Logger) SettingsChanged(ctx context.Context, operatorID, section, action, ipAddress, userAgent string, metadata map[string]string) {
+	l.LogEvent(ctx, &Entry{
+		OperatorID: operatorID,
+		Action:     ActionSettingsChanged,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     ResultSuccess,
+		Metadata: map[string]string{
+			"section": section,
+			"action":  action,
+		},
+	})
+}
+
+// WebhookTest logs a webhook test event.
+func (l *Logger) WebhookTest(ctx context.Context, operatorID, url, ipAddress, userAgent string, success bool, responseTimeMs int64) {
+	result := ResultSuccess
+	if !success {
+		result = ResultFailure
+	}
+	l.LogEvent(ctx, &Entry{
+		OperatorID: operatorID,
+		Action:     ActionWebhookTest,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     result,
+		Metadata: map[string]string{
+			"webhook_url":      url,
+			"response_time_ms": fmt.Sprintf("%d", responseTimeMs),
+		},
+	})
+}
+
+// WebhookSecretRotated logs a webhook secret rotation event.
+func (l *Logger) WebhookSecretRotated(ctx context.Context, operatorID, ipAddress, userAgent string) {
+	l.LogEvent(ctx, &Entry{
+		OperatorID: operatorID,
+		Action:     ActionWebhookSecretRotated,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     ResultSuccess,
+	})
+}

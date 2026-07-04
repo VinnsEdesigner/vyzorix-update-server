@@ -17,9 +17,35 @@ type Thresholds struct {
 
 // ClientSettings holds operator preferences that control dashboard behavior.
 type ClientSettings struct {
-	StrictHmac           bool `json:"strictHmac"`
-	AutoReconnect        bool `json:"autoReconnect"`
-	NotificationsEnabled bool `json:"notificationsEnabled"`
+	ServerURL           string `json:"serverUrl"`
+	DeviceID            string `json:"deviceId"`
+	RequestTimeoutMs    int    `json:"requestTimeoutMs"`
+	AutoReconnect       bool   `json:"autoReconnect"`
+	StrictHmac          bool   `json:"strictHmac"`
+	LogBufferLimit      int    `json:"logBufferLimit"`
+	SignalHistoryLimit  int    `json:"signalHistoryLimit"`
+	NotificationsEnabled bool   `json:"notificationsEnabled"`
+}
+
+// OperatorSettings represents all settings for an operator.
+type OperatorSettings struct {
+	Client        ClientSettings      `json:"client"`
+	Thresholds    Thresholds          `json:"thresholds"`
+	Notifications *NotificationSettings `json:"notifications"`
+}
+
+// DefaultClientSettings returns default client settings.
+func DefaultClientSettings() *ClientSettings {
+	return &ClientSettings{
+		ServerURL:           "",
+		DeviceID:            "",
+		RequestTimeoutMs:    8000,
+		AutoReconnect:       true,
+		StrictHmac:          false,
+		LogBufferLimit:      500,
+		SignalHistoryLimit:  240,
+		NotificationsEnabled: true,
+	}
 }
 
 // Operator represents a system operator (user).

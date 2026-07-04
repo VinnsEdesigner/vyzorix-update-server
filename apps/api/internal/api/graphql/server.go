@@ -12,6 +12,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/subscription"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/validator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
@@ -20,9 +21,11 @@ import (
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/gin-gonic/gin"
@@ -31,23 +34,28 @@ import (
 
 // Config holds the GraphQL server configuration.
 type Config struct {
-	AuthService    *auth.AuthService
-	SessionManager *infraauth.SessionManager
-	DeviceService  *device.Service
-	CommandService *command.Service
-	HistoryService *command.HistoryService
-	DashboardSvc   *dashboard.Service
-	LogsSvc       *logs.Service
-	MetricsSvc     *appmetrics.Service
-	UpdatesSvc    *updates.Service
-	DiagnosticsSvc *diagnosticsapp.Service
-	TelemetryRepo  *storage.TelemetryRepository
-	LogsRepo      *storage.LogsRepository
-	MetricsRepo    *storage.MetricsRepository
-	Hub            *hub.Hub
-	FCMNotifier    fcm.Notifier
-	Log            *slog.Logger
-	AuditLogger    *audit.Logger
+	AuthService     *auth.AuthService
+	SessionManager  *infraauth.SessionManager
+	DeviceService   *device.Service
+	CommandService  *command.Service
+	HistoryService  *command.HistoryService
+	DashboardSvc    *dashboard.Service
+	LogsSvc        *logs.Service
+	MetricsSvc      *appmetrics.Service
+	UpdatesSvc     *updates.Service
+	DiagnosticsSvc  *diagnosticsapp.Service
+	TelemetryRepo   *storage.TelemetryRepository
+	LogsRepo       *storage.LogsRepository
+	MetricsRepo     *storage.MetricsRepository
+	Hub             *hub.Hub
+	FCMNotifier     fcm.Notifier
+	Log             *slog.Logger
+	AuditLogger     *audit.Logger
+	OperatorRepo    operator.Repository
+	SettingsService *auth.ClientSettingsService
+	ThresholdSvc    *appoperator.ThresholdService
+	NotificationSvc *appoperator.NotificationService
+	WebhookClient   *infrawebhook.Client
 }
 
 // Server provides GraphQL HTTP handling.
@@ -80,6 +88,11 @@ func NewServer(cfg *Config) (*Server, error) {
 		cfg.FCMNotifier,
 		authMw,
 		presenter,
+		cfg.OperatorRepo,
+		cfg.SettingsService,
+		cfg.ThresholdSvc,
+		cfg.NotificationSvc,
+		cfg.WebhookClient,
 	)
 
 	// Create handler
