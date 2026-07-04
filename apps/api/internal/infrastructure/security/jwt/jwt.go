@@ -17,6 +17,7 @@ var (
 	ErrInvalidToken        = errors.New("invalid token")
 	ErrExpiredToken        = errors.New("token has expired")
 	ErrTokenIDGeneration   = errors.New("failed to generate token ID")
+	ErrInvalidJWTSecret    = errors.New("JWT secret must be at least 32 characters for proper security")
 )
 
 // OperatorClaims are the JWT claims for an authenticated operator.
@@ -36,7 +37,13 @@ type Manager struct {
 }
 
 // NewManager creates a new JWT manager.
-func NewManager(secret string, expiry time.Duration, issuer string) *Manager {
+// CRITICAL-5 FIX: Validates JWT secret on creation to fail fast if secret is weak.
+func NewManager(secret string, expiry time.Duration, issuer string) (*Manager, error) {
+	// CRITICAL-5: Validate secret length - minimum 32 characters for proper security
+	if len(secret) < 32 {
+		return nil, ErrInvalidJWTSecret
+	}
+
 	h := sha256.New()
 	h.Write([]byte(secret))
 
@@ -44,7 +51,7 @@ func NewManager(secret string, expiry time.Duration, issuer string) *Manager {
 		secret: h.Sum(nil),
 		expiry: expiry,
 		issuer: issuer,
-	}
+	}, nil
 }
 
 // Generate creates a new JWT token for an operator.

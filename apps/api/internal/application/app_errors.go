@@ -14,6 +14,7 @@ var (
 	ErrEmailAlreadyVerified = errors.New("email already verified")
 	ErrEmailExists      = errors.New("email already exists")
 	ErrUserExists      = errors.New("user already exists")
+	ErrPasswordBreached = errors.New("password found in data breach, please choose another")
 	ErrOAuthFailed     = errors.New("oauth authentication failed")
 	ErrOperatorNotFound = errors.New("not_found")
 

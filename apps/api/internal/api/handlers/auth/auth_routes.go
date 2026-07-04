@@ -1,6 +1,10 @@
 package auth
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
+
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
@@ -10,6 +14,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/ratelimit"
 
 	"github.com/gin-gonic/gin"
 )
@@ -159,11 +164,14 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		mfa.GET("/status", h.MFA.GetMFAStatus)
 		mfa.POST("/enroll", h.MFA.EnrollMFA)
 		mfa.POST("/verify-setup", h.MFA.VerifySetupMFA)
-		mfa.POST("/verify", h.MFA.VerifyMFA) // Main MFA verification during login
 		mfa.POST("/enable", h.MFA.EnableMFA)
 		mfa.POST("/disable", h.MFA.DisableMFA)
 		mfa.POST("/verify-backup", h.MFA.VerifyBackupCode)
 		mfa.POST("/regenerate-backup-codes", h.MFA.RegenerateBackupCodes)
+
+		// MFA Verify - CRITICAL: rate limited by operator_id to prevent brute force
+		// 3 attempts per minute per operator_id
+		mfa.POST("/verify", mfaRateLimitMiddleware(), h.MFA.VerifyMFA)
 	}
 
 	// Session management endpoints
@@ -188,4 +196,27 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		clientCreds.GET("/:clientId", h.ClientCreds.Get)
 		clientCreds.DELETE("/:clientId", h.ClientCreds.Delete)
 	}
+}
+
+// mfaRateLimitMiddleware returns a rate limiting middleware for MFA verify endpoint.
+// Uses operator_id as key to prevent brute force attacks on TOTP codes.
+// Allows 3 attempts per minute per operator_id.
+func mfaRateLimitMiddleware() gin.HandlerFunc {
+	return ratelimit.MFAVerifyLimiter.Middleware(ratelimit.Config{
+		KeyFunc: func(c *gin.Context) string {
+			// Extract operator_id from request body for rate limiting
+			// Must restore body after reading since Gin doesn't support body rewind
+			bodyBytes, _ := io.ReadAll(c.Request.Body)
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			var req struct {
+				OperatorID string `json:"operator_id"`
+			}
+			if err := json.Unmarshal(bodyBytes, &req); err == nil && req.OperatorID != "" {
+				return "mfa_verify:" + req.OperatorID
+			}
+			// Fallback to IP if operator_id not available
+			return "mfa_verify:ip:" + c.ClientIP()
+		},
+	})
 }
