@@ -3,6 +3,9 @@ package webhook
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -128,7 +131,7 @@ func (c *Client) Test(ctx context.Context, url string) (*TestResult, error) {
 	}, nil
 }
 
-// Send sends a webhook notification.
+// Send sends a webhook notification with HMAC signature.
 func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload) error {
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -146,6 +149,13 @@ func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "Vyzorix-Webhook/1.0")
 	req.Header.Set("X-Vyzorix-Event", string(payload.Type))
+
+	// Add HMAC signature if secret is provided
+	if secret != "" {
+		signature := computeHMAC(body, secret)
+		req.Header.Set("X-Vyzorix-Signature", signature)
+		req.Header.Set("X-Vyzorix-Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -168,4 +178,11 @@ func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload)
 	}
 
 	return nil
+}
+
+// computeHMAC computes HMAC-SHA256 signature of the payload.
+func computeHMAC(payload []byte, secret string) string {
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write(payload)
+	return hex.EncodeToString(h.Sum(nil))
 }
