@@ -88,7 +88,7 @@ func (r *RegistrationLogRepository) ListByDeviceID(ctx context.Context, deviceID
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var logs []*inbox.RegistrationLog
 	for rows.Next() {
@@ -121,12 +121,12 @@ func (r *RegistrationLogRepository) ListByIMEI(ctx context.Context, imei string,
 	for rows.Next() {
 		var id string
 		if err := rows.Scan(&id); err != nil {
-			rows.Close()
+			func() { _ = rows.Close() }()
 			return nil, 0, err
 		}
 		inboxIDs = append(inboxIDs, id)
 	}
-	rows.Close()
+	func() { _ = rows.Close() }()
 
 	if len(inboxIDs) == 0 {
 		return []*inbox.RegistrationLog{}, 0, nil
@@ -164,7 +164,7 @@ func (r *RegistrationLogRepository) ListByIMEI(ctx context.Context, imei string,
 	if err != nil {
 		return nil, 0, err
 	}
-	defer logRows.Close()
+	defer func() { _ = logRows.Close() }()
 
 	var logs []*inbox.RegistrationLog
 	for logRows.Next() {
@@ -207,7 +207,7 @@ func (r *RegistrationLogRepository) ListByOperator(ctx context.Context, operator
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var logs []*inbox.RegistrationLog
 	for rows.Next() {

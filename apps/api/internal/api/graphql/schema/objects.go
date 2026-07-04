@@ -1467,3 +1467,231 @@ var DeregisterResultType = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
+
+// ClientSettingsType represents client settings.
+var ClientSettingsType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "ClientSettings",
+	Description: "Client settings for dashboard behavior",
+	Fields: graphql.Fields{
+		"serverUrl": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Server URL for device connection",
+		},
+		"deviceId": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Default device ID",
+		},
+		"requestTimeoutMs": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Request timeout in milliseconds",
+		},
+		"autoReconnect": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Auto reconnect on disconnect",
+		},
+		"strictHmac": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Require strict HMAC validation",
+		},
+		"logBufferLimit": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Maximum log buffer size",
+		},
+		"signalHistoryLimit": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Signal history retention limit",
+		},
+	},
+})
+
+// ThresholdsType represents alert thresholds.
+var ThresholdsType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "Thresholds",
+	Description: "Alert thresholds for device telemetry",
+	Fields: graphql.Fields{
+		"riskWarn": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Risk warning threshold (0-100)",
+		},
+		"riskCrit": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Risk critical threshold (0-100)",
+		},
+		"thermalWarn": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Thermal warning threshold (0-100)",
+		},
+		"thermalCrit": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Thermal critical threshold (0-100)",
+		},
+		"bufferWarn": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Buffer warning threshold (0-100)",
+		},
+		"bufferCrit": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Buffer critical threshold (0-100)",
+		},
+	},
+})
+
+// NotificationTypesType represents notification type flags.
+var NotificationTypesType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "NotificationTypes",
+	Description: "Notification type preferences",
+	Fields: graphql.Fields{
+		"thresholdBreach": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Notify on threshold breach",
+		},
+		"deviceOffline": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Notify when device goes offline",
+		},
+		"deviceOnline": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Notify when device comes online",
+		},
+		"updateAvailable": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Notify when update is available",
+		},
+		"commandFailed": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Notify when command fails",
+		},
+		"registrationRequest": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Notify on registration requests",
+		},
+	},
+})
+
+// WebhookSettingsType represents webhook notification settings.
+var WebhookSettingsType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "WebhookSettings",
+	Description: "Webhook notification configuration",
+	Fields: graphql.Fields{
+		"enabled": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Whether webhook is enabled",
+		},
+		"url": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Webhook URL",
+		},
+		"secret": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Webhook secret (hidden)",
+		},
+		"types": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.String))),
+			Description: "Notification types to send",
+		},
+	},
+})
+
+// NotificationSettingsType represents notification settings.
+var NotificationSettingsType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "NotificationSettings",
+	Description: "Notification preferences",
+	Fields: graphql.Fields{
+		"enabled": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Whether notifications are enabled",
+		},
+		"channels": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(graphql.String))),
+			Description: "Enabled notification channels",
+		},
+		"email": &graphql.Field{
+			Type:        graphql.NewNonNull(NotificationTypesType),
+			Description: "Email notification preferences",
+		},
+		"push": &graphql.Field{
+			Type:        graphql.NewNonNull(NotificationTypesType),
+			Description: "Push notification preferences",
+		},
+		"webhook": &graphql.Field{
+			Type:        graphql.NewNonNull(WebhookSettingsType),
+			Description: "Webhook notification settings",
+		},
+	},
+})
+
+// OperatorSettingsType represents all operator settings.
+var OperatorSettingsType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "OperatorSettings",
+	Description: "Complete operator settings",
+	Fields: graphql.Fields{
+		"client": &graphql.Field{
+			Type:        graphql.NewNonNull(ClientSettingsType),
+			Description: "Client settings",
+		},
+		"thresholds": &graphql.Field{
+			Type:        graphql.NewNonNull(ThresholdsType),
+			Description: "Alert thresholds",
+		},
+		"notifications": &graphql.Field{
+			Type:        graphql.NewNonNull(NotificationSettingsType),
+			Description: "Notification settings",
+		},
+	},
+})
+
+// ThresholdUpdateResultType represents the result of updating thresholds.
+var ThresholdUpdateResultType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "ThresholdUpdateResult",
+	Description: "Result of updating thresholds",
+	Fields: graphql.Fields{
+		"riskWarn": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Risk warning threshold",
+		},
+		"riskCrit": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Risk critical threshold",
+		},
+		"thermalWarn": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Thermal warning threshold",
+		},
+		"thermalCrit": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Thermal critical threshold",
+		},
+		"bufferWarn": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Buffer warning threshold",
+		},
+		"bufferCrit": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Buffer critical threshold",
+		},
+	},
+})
+
+// WebhookTestResultType represents the result of testing a webhook.
+var WebhookTestResultType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "WebhookTestResult",
+	Description: "Result of testing a webhook endpoint",
+	Fields: graphql.Fields{
+		"success": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Whether the webhook test was successful",
+		},
+		"statusCode": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "HTTP status code from webhook",
+		},
+		"responseTime": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "Response time in milliseconds",
+		},
+		"error": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Error message if test failed",
+		},
+	},
+})

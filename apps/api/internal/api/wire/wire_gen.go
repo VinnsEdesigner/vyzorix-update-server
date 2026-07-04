@@ -34,7 +34,7 @@ func Injector(cfg config.Config) (*Server, error) {
 	passwordResetRepository := ProvidePasswordResetRepository(db)
 	argon2idHasher := ProvidePasswordHasher()
 	authService := ProvideAuthService(operatorRepository, sessionRepository, emailVerificationRepository, passwordResetRepository, argon2idHasher)
-	service := ProvideDeviceService(deviceRepository, operatorRepository)
+	service := ProvideDeviceService(deviceRepository, operatorRepository, logger)
 	clientService := ProvideClientService(clientRepository)
 	commandService := ProvideCommandService(commandRepository, deviceRepository)
 	emailService := ProvideEmailService()

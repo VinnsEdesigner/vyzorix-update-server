@@ -16,17 +16,18 @@ import (
 
 // Dependencies holds all auth handler dependencies.
 type Dependencies struct {
-	OperatorRepo   operator.Repository
-	AuthService    *auth.AuthService
-	SessionManager *infraauth.SessionManager
-	GoogleVerifier *infraauth.GoogleTokenVerifier
-	ClientService  *client.Service
-	EmailService   *emailService.Service
-	Lockout        *middleware.Lockout
-	AuditLogger    *audit.Logger
-	IPIntelligence *middleware.IPIntelligence
-	Presenter      *response.Presenter
-	Config         config.Config
+	OperatorRepo        operator.Repository
+	AuthService         *auth.AuthService
+	SessionManager      *infraauth.SessionManager
+	GoogleVerifier      *infraauth.GoogleTokenVerifier
+	ClientService       *client.Service
+	EmailService        *emailService.Service
+	Lockout             *middleware.Lockout
+	AuditLogger         *audit.Logger
+	IPIntelligence      *middleware.IPIntelligence
+	Presenter           *response.Presenter
+	Config              config.Config
+	SettingsRateLimiter *middleware.SettingsRateLimiterMiddleware
 }
 
 // AllHandlers holds references to all auth handlers.
@@ -49,6 +50,12 @@ type AllHandlers struct {
 
 // NewAllHandlers creates all auth handlers with proper dependencies.
 func NewAllHandlers(deps *Dependencies) *AllHandlers {
+	// Create settings rate limiter if not provided
+	settingsRateLimiter := deps.SettingsRateLimiter
+	if settingsRateLimiter == nil {
+		settingsRateLimiter = middleware.NewSettingsRateLimiterMiddleware(nil)
+	}
+
 	return &AllHandlers{
 		AuthService:   deps.AuthService,
 		Login:         NewLoginHandler(deps.AuthService, deps.Presenter),
@@ -59,7 +66,7 @@ func NewAllHandlers(deps *Dependencies) *AllHandlers {
 		PasswordReset: NewPasswordResetHandler(deps.AuthService, deps.EmailService, deps.Presenter),
 		MFA:           NewMFAHandler(deps.AuthService, deps.OperatorRepo, deps.Presenter),
 		OAuth:         NewOAuthHandler(deps.AuthService, deps.SessionManager, deps.Config, deps.GoogleVerifier, deps.Presenter),
-		Settings:      NewSettingsHandler(deps.AuthService, deps.Presenter),
+		Settings:      NewSettingsHandler(deps.AuthService, deps.OperatorRepo, deps.Presenter, settingsRateLimiter),
 		Admin:         NewAdminHandler(deps.AuthService, deps.Presenter),
 		ClientCreds:   NewClientCredentialsHandler(deps.AuthService, deps.ClientService, deps.Presenter),
 		Lockout:       NewLockoutHandler(deps.AuthService, deps.Lockout, deps.Presenter),
@@ -119,7 +126,14 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 	{
 		authenticated.GET("/me", h.Me.Handle)
 		authenticated.PATCH("/me", h.Settings.UpdateName)
+		authenticated.GET("/me/settings", h.Settings.GetSettings)
 		authenticated.PATCH("/me/settings", h.Settings.UpdateSettings)
+		authenticated.GET("/me/thresholds", h.Settings.GetThresholds)
+		authenticated.PATCH("/me/thresholds", h.Settings.UpdateThresholds)
+		authenticated.GET("/me/notifications", h.Settings.GetNotifications)
+		authenticated.PATCH("/me/notifications", h.Settings.UpdateNotifications)
+		authenticated.POST("/me/notifications/webhook/test", h.Settings.TestWebhook)
+		authenticated.POST("/me/notifications/webhook/rotate", h.Settings.RotateWebhookSecret)
 		authenticated.POST("/logout", h.Logout.Handle)
 		authenticated.GET("/lockout/status", h.Lockout.GetLockoutStatus)
 		authenticated.GET("/admin/operators", h.Admin.ListOperators)

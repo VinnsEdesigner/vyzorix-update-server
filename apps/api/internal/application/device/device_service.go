@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -29,16 +30,22 @@ var (
 type Service struct {
 	deviceRepo   device.Repository
 	operatorRepo operator.Repository
+	logger       *slog.Logger
 }
 
 // NewService creates a new DeviceService.
 func NewService(
 	deviceRepo device.Repository,
 	operatorRepo operator.Repository,
+	logger *slog.Logger,
 ) *Service {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return &Service{
 		deviceRepo:   deviceRepo,
 		operatorRepo: operatorRepo,
+		logger:       logger,
 	}
 }
 
@@ -601,7 +608,17 @@ func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, 
 		// Return error to prevent silent duplicate creation (Bug 33 fix)
 		if existing.IsDeregistered() {
 			// Device was deregistered - allow re-registration
-			// Proceed to create new device
+			// MUST delete the old device first to avoid primary key constraint
+			if err := s.deviceRepo.Delete(ctx, entry.IMEI); err != nil {
+				s.logger.Error("failed to delete old deregistered device for re-registration",
+					"imei", entry.IMEI,
+					"error", err,
+				)
+				return nil, fmt.Errorf("failed to cleanup old device: %w", err)
+			}
+			s.logger.Info("deleted old deregistered device for re-registration",
+				"imei", entry.IMEI,
+			)
 		} else {
 			// Device is active - this is a conflict
 			return nil, ErrDeviceAlreadyApproved
