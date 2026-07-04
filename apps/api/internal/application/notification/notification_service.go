@@ -25,6 +25,7 @@ const (
 	EventTypeUpdateAvailable     EventType = "update_available"
 	EventTypeCommandFailed       EventType = "command_failed"
 	EventTypeRegistrationRequest  EventType = "registration_request"
+	EventTypeError               EventType = "error"
 )
 
 // EventData contains the data for a notification event.
@@ -42,6 +43,7 @@ type EventData struct {
 	FailureReason string
 	UpdateVersion string
 	RequesterName string
+	ErrorMessage  string
 	Timestamp     time.Time
 }
 
@@ -111,6 +113,7 @@ func (s *Service) SendNotification(ctx context.Context, data EventData) error {
 		FailureReason: data.FailureReason,
 		UpdateVersion: data.UpdateVersion,
 		RequesterName: data.RequesterName,
+		ErrorMessage:  data.ErrorMessage,
 		Timestamp:     data.Timestamp.Format("2006-01-02 15:04:05 MST"),
 		BaseURL:       "https://app.vyzorix.com",
 	}
@@ -195,6 +198,8 @@ func (s *Service) sendEmail(ctx context.Context, data EventData, emailData email
 		err = s.emailService.SendUpdateAvailableEmail(ctx, data.OperatorEmail, emailData)
 	case EventTypeRegistrationRequest:
 		err = s.emailService.SendRegistrationRequestEmail(ctx, data.OperatorEmail, emailData)
+	case EventTypeError:
+		err = s.emailService.SendErrorAlertEmail(ctx, data.OperatorEmail, emailData)
 	default:
 		s.logger.Warn("unknown event type for email", "eventType", data.EventType)
 		return nil
@@ -240,6 +245,7 @@ func (s *Service) sendWebhook(ctx context.Context, data EventData, settings *ope
 			"failureReason": data.FailureReason,
 			"updateVersion": data.UpdateVersion,
 			"requesterName": data.RequesterName,
+			"errorMessage":  data.ErrorMessage,
 		},
 	}
 
