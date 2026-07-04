@@ -150,6 +150,9 @@ func (s *Service) shouldSendEmail(settings *operator.NotificationSettings, event
 		return settings.Email.CommandFailed
 	case EventTypeRegistrationRequest:
 		return settings.Email.RegistrationRequest
+	case EventTypeError:
+		// Error events are always sent if notifications are enabled
+		return true
 	default:
 		return false
 	}
