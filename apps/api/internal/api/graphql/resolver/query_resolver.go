@@ -13,6 +13,80 @@ import (
 )
 
 // ============================================================
+// Settings Query Resolvers
+// ============================================================
+
+// GetMySettings resolves the mySettings query.
+func (r *Resolver) GetMySettings(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	settings, err := r.OperatorRepo.GetOperatorSettings(ctx, op.ID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get settings")
+	}
+
+	return map[string]interface{}{
+		"client": map[string]interface{}{
+			"serverUrl":           settings.Client.ServerURL,
+			"deviceId":            settings.Client.DeviceID,
+			"requestTimeoutMs":    settings.Client.RequestTimeoutMs,
+			"autoReconnect":      settings.Client.AutoReconnect,
+			"strictHmac":         settings.Client.StrictHmac,
+			"logBufferLimit":     settings.Client.LogBufferLimit,
+			"signalHistoryLimit":  settings.Client.SignalHistoryLimit,
+		},
+		"thresholds": map[string]interface{}{
+			"riskWarn":    settings.Thresholds.RiskWarn,
+			"riskCrit":    settings.Thresholds.RiskCrit,
+			"thermalWarn": settings.Thresholds.ThermalWarn,
+			"thermalCrit": settings.Thresholds.ThermalCrit,
+			"bufferWarn":  settings.Thresholds.BufferWarn,
+			"bufferCrit":  settings.Thresholds.BufferCrit,
+		},
+		"notifications": settings.Notifications,
+	}, nil
+}
+
+// GetMyThresholds resolves the myThresholds query.
+func (r *Resolver) GetMyThresholds(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	thresholds, err := r.ThresholdService.GetThresholds(ctx, op.ID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get thresholds")
+	}
+
+	return thresholds, nil
+}
+
+// GetMyNotifications resolves the myNotifications query.
+func (r *Resolver) GetMyNotifications(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	notifications, err := r.NotificationSvc.GetNotifications(ctx, op.ID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get notifications")
+	}
+
+	return notifications, nil
+}
+
+// ============================================================
 // Query Resolvers
 // ============================================================
 

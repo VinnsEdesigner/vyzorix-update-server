@@ -37,6 +37,10 @@ const (
 	ActionUpdateCancelled   Action = "update_cancelled"
 	ActionUpdateSyncStarted Action = "update_sync_started"
 	ActionUpdateSyncFailed  Action = "update_sync_failed"
+	// Settings-specific audit actions.
+	ActionSettingsChanged     Action = "settings_changed"
+	ActionWebhookTest        Action = "webhook_test"
+	ActionWebhookSecretRotated Action = "webhook_secret_rotated"
 )
 
 // Result represents the outcome of an action.

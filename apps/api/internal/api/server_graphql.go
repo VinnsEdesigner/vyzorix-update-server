@@ -10,6 +10,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/subscription"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
@@ -17,7 +18,9 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
@@ -39,6 +42,11 @@ func (s *Server) RegisterGraphQL(
 	wsHub *hub.Hub,
 	updatesSvc *updates.Service,
 	diagnosticsSvc *diagnosticsapp.Service,
+	operatorRepo operator.Repository,
+	settingsService *appsvc.ClientSettingsService,
+	thresholdService *appoperator.ThresholdService,
+	notificationSvc *appoperator.NotificationService,
+	webhookClient *infrawebhook.Client,
 ) error {
 	// Get auth services from server config
 	authService := s.getAuthService()
@@ -67,6 +75,11 @@ func (s *Server) RegisterGraphQL(
 		nil, // FCM notifier
 		authMw,
 		gqlPresenter,
+		operatorRepo,
+		settingsService,
+		thresholdService,
+		notificationSvc,
+		webhookClient,
 	)
 
 	// Build schema
