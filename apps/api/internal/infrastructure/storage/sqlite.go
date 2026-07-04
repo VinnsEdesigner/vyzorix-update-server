@@ -192,6 +192,7 @@ var migrations = []Migration{
 	{Apply: migrateDeviceEvents, Name: "create_device_events_table", Version: 34},
 	{Apply: migrateDeviceEventsExtended, Name: "add_device_events_extended_columns", Version: 35},
 	{Apply: migrateOperatorFCMToken, Name: "add_operator_fcm_token_column", Version: 36},
+	{Apply: migrateCreateOAuthStates, Name: "create_oauth_states_table", Version: 37},
 }
 
 // runMigrations applies all pending migrations.
@@ -568,6 +569,31 @@ func migrateCreateMessageQueue(db *sql.DB) error {
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_message_queue_device_expires 
 		ON message_queue(device_id, expires_at)
+	`)
+
+	return err
+}
+
+func migrateCreateOAuthStates(db *sql.DB) error {
+	// CRITICAL-8: Persist OAuth state to database to prevent CSRF attacks
+	_, err := db.ExecContext(context.Background(), `
+		CREATE TABLE IF NOT EXISTS oauth_states (
+			id TEXT PRIMARY KEY,
+			state TEXT NOT NULL,
+			redirect_url TEXT NOT NULL,
+			provider TEXT NOT NULL,
+			expires_at INTEGER NOT NULL,
+			created_at INTEGER NOT NULL
+		)
+	`)
+	if err != nil {
+		return err
+	}
+
+	// Create index for state lookups and cleanup
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_oauth_states_expires 
+		ON oauth_states(expires_at)
 	`)
 
 	return err
