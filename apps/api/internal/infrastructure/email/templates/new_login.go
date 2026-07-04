@@ -2,7 +2,7 @@
 package templates
 
 // NewLoginEmail is the HTML template for new login notification emails.
-// MEDIUM-10: Added for login notification feature.
+// 10: Added for login notification feature.
 const NewLoginEmail = `
 <!DOCTYPE html>
 <html>

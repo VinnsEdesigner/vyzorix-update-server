@@ -65,7 +65,7 @@ type Data struct {
 }
 
 // LoginNotificationData contains data for new login notification emails.
-// MEDIUM-10: Added for login notification feature.
+// 10: Added for login notification feature.
 type LoginNotificationData struct {
 	OperatorName string
 	IPAddress    string
@@ -240,7 +240,7 @@ func (s *Service) SendErrorAlertEmail(ctx context.Context, to string, data Notif
 }
 
 // SendNewLoginNotificationEmail sends a new login notification email to the operator.
-// MEDIUM-10: Added for login notification feature.
+// 10: Added for login notification feature.
 func (s *Service) SendNewLoginNotificationEmail(ctx context.Context, to string, data LoginNotificationData) error {
 	if s.apiKey == "" {
 		return errors.New("RESEND_API_KEY not configured")

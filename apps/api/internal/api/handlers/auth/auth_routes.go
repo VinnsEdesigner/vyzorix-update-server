@@ -175,7 +175,7 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		mfa.POST("/regenerate-backup-codes", h.MFA.RegenerateBackupCodes)
 
 		// MFA Verify - CRITICAL: rate limited by operator_id to prevent brute force
-		// MEDIUM-3: Also apply lockout middleware to check for locked accounts
+		// 3: Also apply lockout middleware to check for locked accounts
 		// 3 attempts per minute per operator_id
 		mfa.POST("/verify", h.Lockout.Middleware(), mfaRateLimitMiddleware(), h.MFA.VerifyMFA)
 	}
