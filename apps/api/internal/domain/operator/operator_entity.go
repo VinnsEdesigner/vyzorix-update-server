@@ -64,6 +64,7 @@ type Operator struct {
 	Thresholds     Thresholds     `json:"thresholds"`
 	ClientSettings ClientSettings `json:"client"`
 	MFAEnabled     bool
+	MFARequired    bool           // HIGH-6: Forces MFA for this operator
 	EmailVerified  bool
 	FCMToken       string `json:"fcmToken,omitempty"` // FCM token for push notifications
 }

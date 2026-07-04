@@ -34,7 +34,8 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		return nil, nil, application.ErrInvalidCredentials
 	}
 
-	if op.HasMFA() {
+	// HIGH-6: If MFA is required for this operator, enforce it
+	if op.MFARequired || op.HasMFA() {
 		return &dto.LoginResponse{
 			OperatorID: op.ID,
 			Email:      op.Email,
