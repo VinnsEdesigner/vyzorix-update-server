@@ -172,7 +172,34 @@ func (s *AuthService) RegisterAsSuperAdmin(ctx context.Context, req *dto.Registe
 }
 
 // CreateSession creates a new session for an operator.
+// If the operator has reached their max concurrent sessions limit,
+// the oldest session is revoked.
 func (s *AuthService) CreateSession(ctx context.Context, operatorID string) (*session.Session, error) {
+	// Get operator security settings for session limit
+	op, err := s.operatorRepo.FindByID(ctx, operatorID)
+	if err != nil {
+		return nil, err
+	}
+
+	maxSessions := 5 // default
+	settings := op.SecuritySettings
+	if settings.MaxConcurrentSessions > 0 {
+		maxSessions = settings.MaxConcurrentSessions
+	}
+
+	// Count active sessions
+	activeSessions, err := s.sessionRepo.ListActiveByOperator(ctx, operatorID)
+	if err != nil {
+		return nil, err
+	}
+
+	// If at limit, revoke the oldest session
+	if len(activeSessions) >= maxSessions {
+		oldest := activeSessions[0]
+		_ = s.sessionRepo.AddSessionRevocation(ctx, oldest.ID, "max_sessions_reached")
+		_ = s.sessionRepo.Delete(ctx, oldest.ID)
+	}
+
 	now := time.Now()
 	id := shared.GenerateID()
 

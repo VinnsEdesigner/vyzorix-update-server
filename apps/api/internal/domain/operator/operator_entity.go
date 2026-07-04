@@ -29,9 +29,30 @@ type ClientSettings struct {
 
 // OperatorSettings represents all settings for an operator.
 type OperatorSettings struct {
-	Client        ClientSettings      `json:"client"`
-	Thresholds    Thresholds          `json:"thresholds"`
+	Client        ClientSettings        `json:"client"`
+	Thresholds    Thresholds            `json:"thresholds"`
 	Notifications *NotificationSettings `json:"notifications"`
+	Security      SecuritySettings      `json:"security"`
+}
+
+// SecuritySettings holds security-related settings per operator.
+type SecuritySettings struct {
+	MaxConcurrentSessions int  `json:"maxConcurrentSessions"` // 0 = unlimited
+	PasswordMinAgeDays   int  `json:"passwordMinAgeDays"`    // 0 = no minimum
+	PasswordMaxAgeDays   int  `json:"passwordMaxAgeDays"`    // 0 = no expiry
+	PasswordHistoryCount int  `json:"passwordHistoryCount"`   // remember N passwords
+	SessionPinRequired   bool `json:"sessionPinRequired"`    // require PIN for sensitive ops
+}
+
+// DefaultSecuritySettings returns default security settings.
+func DefaultSecuritySettings() SecuritySettings {
+	return SecuritySettings{
+		MaxConcurrentSessions: 3,
+		PasswordMinAgeDays:    0,
+		PasswordMaxAgeDays:    90,
+		PasswordHistoryCount: 5,
+		SessionPinRequired:    false,
+	}
 }
 
 // DefaultClientSettings returns default client settings.
@@ -61,10 +82,12 @@ type Operator struct {
 	Name           string
 	Email          string
 	BackupCodes    []string
-	Thresholds     Thresholds     `json:"thresholds"`
-	ClientSettings ClientSettings `json:"client"`
+	Thresholds     Thresholds      `json:"thresholds"`
+	ClientSettings ClientSettings  `json:"client"`
+	SecuritySettings SecuritySettings `json:"security"`
 	MFAEnabled     bool
-	MFARequired    bool           // 6: Forces MFA for this operator
+	MFARequired    bool
+	Permissions    []Permission
 	EmailVerified  bool
 	FCMToken       string `json:"fcmToken,omitempty"` // FCM token for push notifications
 }
