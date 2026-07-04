@@ -126,6 +126,26 @@ func GenerateBackupCodes(count int) ([]string, error) {
 	return totp.GenerateBackupCodes(count)
 }
 
+// MFASecretBinding contains the TOTP secret and its cryptographic binding.
+type MFASecretBinding = totp.MFASecretBinding
+
+// CreateMFASecretBinding creates a cryptographically bound MFA secret for an operator.
+// CRITICAL-7: The MAC binds the secret to the operator ID, preventing token theft attacks.
+func CreateMFASecretBinding(operatorID, secret string) MFASecretBinding {
+	return totp.CreateMFASecretBinding(operatorID, secret)
+}
+
+// VerifyMFASecretBinding verifies that a TOTP code was generated using the bound secret.
+// CRITICAL-7: Rejects codes if the operator ID doesn't match the binding.
+func VerifyMFASecretBinding(operatorID string, binding MFASecretBinding) bool {
+	return totp.VerifyMFASecretBinding(operatorID, binding)
+}
+
+// GenerateBoundSecret generates a new MFA secret bound to an operator.
+func GenerateBoundSecret(operatorID string) (MFASecretBinding, error) {
+	return totp.GenerateBoundSecret(operatorID)
+}
+
 // ValidateBackupCode validates a backup code.
 func ValidateBackupCode(stored []string, code string) int {
 	return totp.ValidateBackupCode(stored, code)
