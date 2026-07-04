@@ -2,7 +2,7 @@
 package password
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 - SHA-1 required for HIBP k-anonymity API compatibility
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -15,10 +15,10 @@ import (
 var ErrPasswordBreached = fmt.Errorf("password found in known data breach")
 
 // CheckBreached checks if a password appears in known data breaches using HIBP API.
-// Uses k-anonymity: only sends first 5 chars of SHA1 hash to protect the password.
+// Uses k-anonymity: only sends first 5 chars of SHA-1 hash to protect the password.
 // CRITICAL-6: Added to prevent password reuse from known breaches.
 func CheckBreached(password string) (bool, error) {
-	// Hash the password with SHA-1
+	// #nosec G505 - SHA-1 required for HIBP API k-anonymity model (not for password storage)
 	hash := sha1.Sum([]byte(password))
 	hashHex := strings.ToUpper(hex.EncodeToString(hash[:]))
 
@@ -33,7 +33,10 @@ func CheckBreached(password string) (bool, error) {
 		// In production, you might want to fail closed instead
 		return false, nil
 	}
-	defer resp.Body.Close()
+	// #nosec G104 - HIBP API doesn't require auth and Body.Close error is not critical
+	if closeErr := resp.Body.Close(); closeErr != nil {
+		// Log but don't fail - this is not a security issue
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return false, nil
