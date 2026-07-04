@@ -176,17 +176,16 @@ func (s *Service) MarkCompleted(ctx context.Context, commandID string) error {
 	return s.commandRepo.Update(ctx, cmd)
 }
 
-// MarkFailed marks a command as failed.
-func (s *Service) MarkFailed(ctx context.Context, commandID string) error {
+// MarkFailed marks a command as failed with an error message.
+func (s *Service) MarkFailed(ctx context.Context, commandID string, failureReason string) error {
+	// Get the command to verify it exists and get dispatch_id
 	cmd, err := s.commandRepo.FindByID(ctx, commandID)
 	if err != nil {
 		return err
 	}
 
-	cmd.Status = command.StatusFailed
-	cmd.UpdatedAt = time.Now()
-
-	return s.commandRepo.Update(ctx, cmd)
+	// Use repository's MarkFailed which sets failure_reason properly
+	return s.commandRepo.MarkFailed(ctx, cmd.DispatchID, failureReason)
 }
 
 // CancelCommand cancels a pending command.
