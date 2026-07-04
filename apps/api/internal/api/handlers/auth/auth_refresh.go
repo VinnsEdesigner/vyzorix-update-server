@@ -31,7 +31,7 @@ func NewRefreshHandler(authService *auth.AuthService, presenter *response.Presen
 // Handle processes the refresh token request.
 // POST /v1/auth/refresh
 // Request: { "refresh_token": "..." }
-// Response: { "access_token": "...", "refresh_token": "...", "expires_at": 1234567890, "session_id": "..." }
+// Response: { "access_token": "...", "refresh_token": "...", "expires_at": 1234567890, "session_id": "..." }.
 func (h *RefreshHandler) Handle(c *gin.Context) {
 	var req dto.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
