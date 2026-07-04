@@ -5,6 +5,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
@@ -16,11 +17,17 @@ type MFAHandler struct {
 	authService  *appauth.AuthService
 	operatorRepo operator.Repository
 	presenter    *response.Presenter
+	auditLogger  *audit.Logger
 }
 
 // NewMFAHandler creates a new MFAHandler.
 func NewMFAHandler(authService *appauth.AuthService, operatorRepo operator.Repository, presenter *response.Presenter) *MFAHandler {
 	return &MFAHandler{authService: authService, operatorRepo: operatorRepo, presenter: presenter}
+}
+
+// SetAuditLogger sets the audit logger for MFA operations.
+func (h *MFAHandler) SetAuditLogger(logger *audit.Logger) {
+	h.auditLogger = logger
 }
 
 // getOperatorFromSession extracts operator ID from session cookie.
@@ -234,6 +241,7 @@ func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 // This is the critical endpoint for completing login after MFA challenge.
 // CRITICAL-2 FIX: Re-validate operator state between MFA verification and session creation
 // CRITICAL-3 FIX: Add refresh_token to response for proper token management.
+// MEDIUM-2 FIX: Added audit logging for MFA verify attempts.
 func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	var req struct {
 		OperatorID string `json:"operator_id" binding:"required"`
@@ -245,10 +253,18 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		return
 	}
 
+	// MEDIUM-2: Log MFA verify attempt
+	if h.auditLogger != nil {
+		h.auditLogger.MFAVerifyAttempt(c.Request.Context(), req.OperatorID, c.ClientIP(), c.GetHeader("User-Agent"))
+	}
+
 	// Verify the MFA code first
 	session, err := h.authService.VerifyMFACode(c.Request.Context(), req.OperatorID, req.Code)
 	if err != nil {
-		// Log the failed attempt
+		// MEDIUM-2: Log failed MFA attempt
+		if h.auditLogger != nil {
+			h.auditLogger.MFAVerifyFailed(c.Request.Context(), req.OperatorID, c.ClientIP())
+		}
 		h.presenter.Unauthorized(c, "Invalid MFA code")
 		return
 	}
@@ -295,6 +311,11 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	}
 
 	// Return success with session info and tokens
+	// MEDIUM-2: Log MFA verify success
+	if h.auditLogger != nil {
+		h.auditLogger.MFAVerifySuccess(c.Request.Context(), req.OperatorID, session.ID, c.ClientIP())
+	}
+
 	h.presenter.OK(c, gin.H{
 		"success":       true,
 		"session_id":    session.ID,
