@@ -54,17 +54,18 @@ func DefaultCircuitBreakerConfig() CircuitBreakerConfig {
 }
 
 // CircuitBreaker implements the circuit breaker pattern for FCM calls.
-// Bug 50 fix: Prevents cascading failures when FCM is unavailable.
+// Prevents cascading failures when FCM is unavailable.
 type CircuitBreaker struct {
+	mu sync.RWMutex
+
+	state CircuitState
+
 	config  CircuitBreakerConfig
-	state   CircuitState
-	mu      sync.RWMutex
+	lastFailureTime time.Time
 
 	failures       int
-	successes     int
-	halfOpenCalls int
-
-	lastFailureTime time.Time
+	successes      int
+	halfOpenCalls  int
 }
 
 // NewCircuitBreaker creates a new CircuitBreaker with the given config.
