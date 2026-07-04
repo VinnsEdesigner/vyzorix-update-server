@@ -404,6 +404,21 @@ func (p *Processor) ProcessError(ctx context.Context, deviceID string, errMsg st
 		}
 	}
 
+	// Send notification for error events
+	if p.notificationSvc != nil && operatorID != "" {
+		notifData := notification.EventData{
+			EventType:    notification.EventTypeError,
+			DeviceID:     deviceID,
+			DeviceName:   getDeviceName(device),
+			OperatorID:   operatorID,
+			ErrorMessage: errMsg,
+			Timestamp:    evt.Timestamp,
+		}
+		if err := p.notificationSvc.SendNotification(ctx, notifData); err != nil {
+			p.log.Warn("failed to send error notification", "deviceId", deviceID, "err", err)
+		}
+	}
+
 	return nil
 }
 
