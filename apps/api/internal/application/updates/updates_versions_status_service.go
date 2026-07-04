@@ -49,6 +49,7 @@ func (s *VersionsStatusService) GetStatus(ctx context.Context) (*GetStatusRespon
 	if latest != nil {
 		latestInfo = LatestVersionInfo{
 			Version:     latest.Version,
+			ReleaseType: string(latest.ReleaseType),
 			APKFilename: latest.APKFilename,
 			APKSize:     latest.APKSize,
 			SHA256:      latest.SHA256,

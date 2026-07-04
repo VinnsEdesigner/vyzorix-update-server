@@ -30,6 +30,7 @@ type ClientMetrics struct {
 	ConnectFailures    int32 `json:"connectFailures"`
 	LastConnectedAt    int64 `json:"lastConnectedAt"`    // Unix timestamp
 	LastDisconnectedAt int64 `json:"lastDisconnectedAt"` // Unix timestamp
+	LastMessageAt      int64 `json:"lastMessageAt"`      // Unix timestamp of last message received
 	MessagesSent       int32 `json:"messagesSent"`
 	MessagesReceived   int32 `json:"messagesReceived"`
 	PongMissedCount    int32 `json:"pongMissedCount"`
@@ -97,9 +98,10 @@ func (c *Client) RecordMessageSent() {
 	atomic.AddInt32(&c.metrics.MessagesSent, 1)
 }
 
-// RecordMessageReceived records a message received.
+// RecordMessageReceived records a message received and updates LastMessageAt.
 func (c *Client) RecordMessageReceived() {
 	atomic.AddInt32(&c.metrics.MessagesReceived, 1)
+	atomic.StoreInt64(&c.metrics.LastMessageAt, time.Now().Unix())
 }
 
 // RecordPongMissed records a missed pong (connection issue).

@@ -288,7 +288,8 @@ func (r *Resolver) GetTelemetryHistory(p graphql.ResolveParams) (interface{}, er
 	result := make([]map[string]interface{}, 0, len(entries))
 
 	for _, entry := range entries {
-		if entry.ReceivedAt.UnixMilli() <= endTime {
+		ts := entry.ReceivedAt.UnixMilli()
+		if ts >= startTime && ts <= endTime {
 			result = append(result, map[string]interface{}{
 				"id":          entry.ID,
 				"deviceId":    entry.DeviceID,
@@ -457,11 +458,16 @@ func (r *Resolver) GetConnectionStatus(p graphql.ResolveParams) (interface{}, er
 
 	metrics := client.GetMetrics()
 
+	var lastMsgAt interface{}
+	if metrics.LastMessageAt > 0 {
+		lastMsgAt = time.Unix(metrics.LastMessageAt, 0).Format(time.RFC3339)
+	}
+
 	return map[string]interface{}{
 		"deviceId":      deviceID,
 		"connected":     client.IsConnected(),
 		"connectedAt":   time.Unix(metrics.LastConnectedAt, 0).Format(time.RFC3339),
-		"lastMessageAt": nil,
+		"lastMessageAt": lastMsgAt,
 		"uptimeSeconds": client.Uptime(),
 	}, nil
 }
@@ -492,11 +498,16 @@ func (r *Resolver) GetAllConnections(p graphql.ResolveParams) (interface{}, erro
 		client := clients[deviceID]
 		metrics := client.GetMetrics()
 
+		var lastMsgAt interface{}
+		if metrics.LastMessageAt > 0 {
+			lastMsgAt = time.Unix(metrics.LastMessageAt, 0).Format(time.RFC3339)
+		}
+
 		result = append(result, map[string]interface{}{
 			"deviceId":      deviceID,
 			"connected":     client.IsConnected(),
 			"connectedAt":   time.Unix(metrics.LastConnectedAt, 0).Format(time.RFC3339),
-			"lastMessageAt": nil,
+			"lastMessageAt": lastMsgAt,
 			"uptimeSeconds": client.Uptime(),
 		})
 	}

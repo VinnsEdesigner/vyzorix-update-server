@@ -200,10 +200,13 @@ func updatesQueries(res *resolver.Resolver) graphql.Fields {
 		"updatesStatus": &graphql.Field{
 			Type:        UpdateStatusType,
 			Description: "Get overall update system status",
-			Resolve:     res.GetUpdatesStatus,
+			Args: graphql.FieldConfigArgument{
+				"deviceId": &graphql.ArgumentConfig{Type: graphql.ID},
+			},
+			Resolve: res.GetUpdatesStatus,
 		},
 		"updatesVersions": &graphql.Field{
-			Type:        graphql.NewList(graphql.NewNonNull(UpdateVersionType)),
+			Type:        UpdateVersionListType,
 			Description: "List all available update versions",
 			Args: graphql.FieldConfigArgument{
 				"status": &graphql.ArgumentConfig{Type: graphql.String},
@@ -380,7 +383,7 @@ func commandMutations(res *resolver.Resolver) graphql.Fields {
 			Resolve: res.RetryCommand,
 		},
 		"cancelCommand": &graphql.Field{
-			Type:        graphql.Boolean,
+			Type:        CancelCommandResponseType,
 			Description: "Cancel a pending command",
 			Args: graphql.FieldConfigArgument{
 				"dispatchId": &graphql.ArgumentConfig{

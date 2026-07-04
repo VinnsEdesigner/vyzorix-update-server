@@ -885,6 +885,62 @@ var UpdateVersionType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        DateTimeScalar,
 			Description: "When the version was added to the system",
 		},
+		"isLatest": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Whether this is the latest version",
+		},
+	},
+})
+
+// DeviceUpdateStatusType represents the device's update status.
+var DeviceUpdateStatusType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "DeviceUpdateStatus",
+	Description: "Device current version and update status",
+	Fields: graphql.Fields{
+		"currentVersion": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Current version installed on device",
+		},
+		"needsUpdate": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Whether device needs an update",
+		},
+	},
+})
+
+// UpdateVersionListType represents a paginated list of update versions.
+var UpdateVersionListType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "UpdateVersionList",
+	Description: "Paginated list of update versions",
+	Fields: graphql.Fields{
+		"versions": &graphql.Field{
+			Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(UpdateVersionType))),
+			Description: "List of versions",
+		},
+		"pagination": &graphql.Field{
+			Type:        PaginationType,
+			Description: "Pagination information",
+		},
+	},
+})
+
+// CancelCommandResponseType represents the response from cancelling a command.
+var CancelCommandResponseType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "CancelCommandResponse",
+	Description: "Response when cancelling a command",
+	Fields: graphql.Fields{
+		"dispatchId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "The dispatch ID of the cancelled command",
+		},
+		"cancelledAt": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Timestamp when the command was cancelled",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Status of the cancellation",
+		},
 	},
 })
 
@@ -954,8 +1010,8 @@ var UpdateStatusType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "Latest available version",
 		},
 		"device": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.String),
-			Description: "Device current version",
+			Type:        graphql.NewNonNull(DeviceUpdateStatusType),
+			Description: "Device current version and update status",
 		},
 		"version": &graphql.Field{
 			Type:        graphql.NewNonNull(graphql.String),
@@ -977,13 +1033,25 @@ var PushDeviceType = graphql.NewObject(graphql.ObjectConfig{
 	Name:        "PushDevice",
 	Description: "A device included in an update push",
 	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Push device entry ID",
+		},
 		"deviceId": &graphql.Field{
 			Type:        graphql.NewNonNull(graphql.ID),
 			Description: "Device identifier",
 		},
+		"deviceName": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device name (if available)",
+		},
 		"status": &graphql.Field{
 			Type:        graphql.NewNonNull(DevicePushStatusEnum),
 			Description: "Push status for this device",
+		},
+		"sentAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the update was sent to this device",
 		},
 		"acknowledgedAt": &graphql.Field{
 			Type:        DateTimeScalar,
@@ -1013,6 +1081,10 @@ var UpdatePushType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.NewNonNull(InstallTypeEnum),
 			Description: "Install type (immediate or scheduled)",
 		},
+		"scheduledAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the push is scheduled (null for immediate)",
+		},
 		"status": &graphql.Field{
 			Type:        graphql.NewNonNull(UpdateStatusEnum),
 			Description: "Push status",
@@ -1028,6 +1100,10 @@ var UpdatePushType = graphql.NewObject(graphql.ObjectConfig{
 		"completedAt": &graphql.Field{
 			Type:        DateTimeScalar,
 			Description: "When the push completed",
+		},
+		"cancelledAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the push was cancelled",
 		},
 		"deviceCount": &graphql.Field{
 			Type:        graphql.NewNonNull(graphql.Int),
@@ -1173,6 +1249,10 @@ var PushUpdateResponseType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.NewNonNull(graphql.String),
 			Description: "Install type",
 		},
+		"scheduledAt": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "When scheduled (Unix ms, null for immediate)",
+		},
 		"status": &graphql.Field{
 			Type:        graphql.NewNonNull(graphql.String),
 			Description: "Push status",
@@ -1268,10 +1348,6 @@ Description: "Device OS version",
 "appVersion": &graphql.Field{
 Type:        graphql.String,
 Description: "App version",
-},
-"fcmToken": &graphql.Field{
-Type:        graphql.String,
-Description: "Firebase Cloud Messaging token",
 },
 "firebaseInstallId": &graphql.Field{
 Type:        graphql.String,
