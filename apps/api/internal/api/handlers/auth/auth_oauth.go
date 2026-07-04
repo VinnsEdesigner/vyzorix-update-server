@@ -121,19 +121,19 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 
 	// 8: Validate state from database if repository is configured
 	var redirectURL string
-	if h.oauthStateRepo != nil {
-		var err error
-		redirectURL, state, err = h.oauthStateRepo.Validate(c.Request.Context(), state)
-		if err != nil {
-			h.presenter.BadRequest(c, "invalid or expired OAuth state")
-			return
-		}
-		// Delete the state after successful validation (one-time use)
-		_ = h.oauthStateRepo.Delete(c.Request.Context(), state)
-	} else {
-		// Fallback: use state as redirect URL directly (legacy behavior)
-		redirectURL = state
+	if h.oauthStateRepo == nil {
+		h.presenter.InternalError(c, "OAuth state repository not configured")
+		return
 	}
+
+	var err error
+	redirectURL, state, err = h.oauthStateRepo.Validate(c.Request.Context(), state)
+	if err != nil {
+		h.presenter.BadRequest(c, "invalid or expired OAuth state")
+		return
+	}
+	// Delete the state after successful validation (one-time use)
+	_ = h.oauthStateRepo.Delete(c.Request.Context(), state)
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
@@ -261,18 +261,21 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	// 8: Validate state from database if repository is configured
+	// 8: Validate state from database - REQUIRED for CSRF protection
 	var redirectURL string
-	if h.oauthStateRepo != nil {
-		var err error
-		redirectURL, state, err = h.oauthStateRepo.Validate(c.Request.Context(), state)
-		if err != nil {
-			h.presenter.BadRequest(c, "invalid or expired OAuth state")
-			return
-		}
-		// Delete the state after successful validation (one-time use)
-		_ = h.oauthStateRepo.Delete(c.Request.Context(), state)
+	if h.oauthStateRepo == nil {
+		h.presenter.InternalError(c, "OAuth state repository not configured")
+		return
 	}
+
+	var err error
+	redirectURL, state, err = h.oauthStateRepo.Validate(c.Request.Context(), state)
+	if err != nil {
+		h.presenter.BadRequest(c, "invalid or expired OAuth state")
+		return
+	}
+	// Delete the state after successful validation (one-time use)
+	_ = h.oauthStateRepo.Delete(c.Request.Context(), state)
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()

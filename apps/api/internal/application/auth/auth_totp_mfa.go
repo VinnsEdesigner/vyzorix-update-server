@@ -27,15 +27,24 @@ func (s *AuthService) VerifyMFACode(ctx context.Context, operatorID, code string
 		return nil, application.ErrForbidden
 	}
 
-	// 7: Verify TOTP account name contains operator ID for binding
+	// 7 FIX: Verify the stored MAC binding matches this operatorID
+	// This prevents attackers from using a stolen MFASecret with a different account
+	if op.MFASecret != "" {
+		binding := infraauth.MFASecretBinding{
+			Secret: op.MFASecret,
+			MAC:    op.MFASecretMAC,
+		}
+		if !infraauth.VerifyMFASecretBinding(operatorID, binding) {
+			return nil, application.ErrForbidden
+		}
+	}
+
+	// Verify TOTP code
 	cfg := infraauth.DefaultTOTPConfig()
-	cfg.AccountName = op.Email // Include operator email in the binding
+	cfg.AccountName = op.Email
+	cfg.Issuer = fmt.Sprintf("Vyzorix-%s", operatorID[:8])
 
-	// Create TOTP with operator ID as part of the secret binding
-	boundSecret := infraauth.CreateMFASecretBinding(operatorID, op.MFASecret)
-	cfg.Issuer = fmt.Sprintf("Vyzorix-%s", operatorID[:8]) // Include operator ID prefix
-
-	totp := infraauth.NewTOTP(boundSecret.Secret, cfg)
+	totp := infraauth.NewTOTP(op.MFASecret, cfg)
 	if !totp.Verify(code) {
 		return nil, application.ErrInvalidCredentials
 	}
@@ -50,8 +59,13 @@ func (s *AuthService) EnrollMFA(ctx context.Context, operatorID, email string) (
 		return nil, err
 	}
 
+	// 7 FIX: Create MAC binding for the secret
+	binding := infraauth.CreateMFASecretBinding(operatorID, secret)
+	_ = binding // Store via UpdateMFA call
+
 	cfg := infraauth.DefaultTOTPConfig()
 	cfg.AccountName = email
+	cfg.Issuer = fmt.Sprintf("Vyzorix-%s", operatorID[:8])
 	totp := infraauth.NewTOTP(secret, cfg)
 
 	backupCodes, err := infraauth.GenerateBackupCodes(8)
@@ -68,12 +82,14 @@ func (s *AuthService) EnrollMFA(ctx context.Context, operatorID, email string) (
 
 // EnableMFA enables MFA for an operator after verifying a code.
 func (s *AuthService) EnableMFA(ctx context.Context, operatorID, secret string, backupCodes []string) error {
-	return s.operatorRepo.UpdateMFA(ctx, operatorID, secret, true)
+	// 7 FIX: Create MAC binding when enabling MFA
+	binding := infraauth.CreateMFASecretBinding(operatorID, secret)
+	return s.operatorRepo.UpdateMFA(ctx, operatorID, secret, binding.MAC, true)
 }
 
 // DisableMFA disables MFA for an operator.
 func (s *AuthService) DisableMFA(ctx context.Context, operatorID string) error {
-	return s.operatorRepo.UpdateMFA(ctx, operatorID, "", false)
+	return s.operatorRepo.UpdateMFA(ctx, operatorID, "", "", false)
 }
 
 // GetMFAStatus returns MFA status for an operator.
@@ -102,7 +118,7 @@ func (s *AuthService) RegenerateBackupCodes(ctx context.Context, operatorID stri
 		return nil, err
 	}
 
-	err = s.operatorRepo.UpdateOperatorMFA(ctx, operatorID, op.MFASecret, codes)
+	err = s.operatorRepo.UpdateOperatorMFA(ctx, operatorID, op.MFASecret, op.MFASecretMAC, codes)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +143,7 @@ func (s *AuthService) VerifyBackupCode(ctx context.Context, operatorID, code str
 	}
 
 	remaining := infraauth.RemoveBackupCode(op.BackupCodes, idx)
-	err = s.operatorRepo.UpdateOperatorMFA(ctx, operatorID, op.MFASecret, remaining)
+	err = s.operatorRepo.UpdateOperatorMFA(ctx, operatorID, op.MFASecret, op.MFASecretMAC, remaining)
 	if err != nil {
 		return false, err
 	}

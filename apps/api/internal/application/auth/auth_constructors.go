@@ -54,6 +54,7 @@ type AuthService struct {
 	sessionTTL         time.Duration
 	refreshTokenExpiry time.Duration
 	ldapConfig        *LDAPConfig
+	deviceStore        *DeviceStore // In-memory device fingerprint store
 }
 
 // NewAuthService creates a new AuthService.

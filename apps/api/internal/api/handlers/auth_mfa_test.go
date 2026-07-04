@@ -108,7 +108,8 @@ func TestMFAHandler_EnableMFA_NoCookie(t *testing.T) {
 func TestMFAHandler_DisableMFA_NoCookie(t *testing.T) {
 	handler := auth.NewMFAHandler(nil, nil, nil)
 
-	body := map[string]string{"token": "123456"}
+	// FIX: Use "code" field name matching the handler's expected JSON field
+	body := map[string]string{"code": "123456"}
 	bodyBytes, _ := json.Marshal(body)
 
 	w := httptest.NewRecorder()

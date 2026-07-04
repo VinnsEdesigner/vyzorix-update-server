@@ -65,6 +65,7 @@ type ServerConfig struct {
 	AuditLogger    *audit.Logger
 	Config         config.Config
 	UpdatesService *updatesapp.Service
+	OAuthStateRepo authhandlers.OAuthStateProvider
 }
 
 // Server is the main API server.
@@ -199,6 +200,7 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		AuditLogger:    cfg.AuditLogger,
 		IPIntelligence: mwSet.IPIntelligence,
 		Presenter:      presenter,
+		OAuthStateRepo: cfg.OAuthStateRepo,
 	})
 
 	// Device handlers
