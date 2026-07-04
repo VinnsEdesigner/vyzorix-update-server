@@ -1,6 +1,12 @@
 # Binary (built from source)
 vyzorix-server
 vyzorix-server-old
+vyzorix-server-new
+vyzorix-server-clean
+vyzorix-update-server
+bin/
+*.server
+.server.pid
 
 # Built frontend assets (generated during build)
 public/assets/*.js
@@ -17,3 +23,11 @@ public/assets/*.js.map
 go/bin/
 go*.tar.gz
 go*.tar.gz.*
+
+# Test scripts
+test_api.sh
+security_test.sh
+scripts/full_server_scan.sh
+
+# Build output
+dist/
