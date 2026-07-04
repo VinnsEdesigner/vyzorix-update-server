@@ -239,9 +239,9 @@ func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 
 // VerifyMFA handles POST /v1/auth/mfa/verify - Main MFA verification during login.
 // This is the critical endpoint for completing login after MFA challenge.
-// CRITICAL-2 FIX: Re-validate operator state between MFA verification and session creation
-// CRITICAL-3 FIX: Add refresh_token to response for proper token management.
-// MEDIUM-2 FIX: Added audit logging for MFA verify attempts.
+// 2 FIX: Re-validate operator state between MFA verification and session creation
+// 3 FIX: Add refresh_token to response for proper token management.
+// 2 FIX: Added audit logging for MFA verify attempts.
 func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	var req struct {
 		OperatorID string `json:"operator_id" binding:"required"`
@@ -253,7 +253,7 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		return
 	}
 
-	// MEDIUM-2: Log MFA verify attempt
+	// 2: Log MFA verify attempt
 	if h.auditLogger != nil {
 		h.auditLogger.MFAVerifyAttempt(c.Request.Context(), req.OperatorID, c.ClientIP(), c.GetHeader("User-Agent"))
 	}
@@ -261,7 +261,7 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	// Verify the MFA code first
 	session, err := h.authService.VerifyMFACode(c.Request.Context(), req.OperatorID, req.Code)
 	if err != nil {
-		// MEDIUM-2: Log failed MFA attempt
+		// 2: Log failed MFA attempt
 		if h.auditLogger != nil {
 			h.auditLogger.MFAVerifyFailed(c.Request.Context(), req.OperatorID, c.ClientIP())
 		}
@@ -269,7 +269,7 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		return
 	}
 
-	// CRITICAL-2: Re-validate operator state before session creation
+	// 2: Re-validate operator state before session creation
 	// This prevents race conditions where operator could be:
 	// - Deleted between MFA verify and session creation
 	// - MFA disabled
@@ -286,7 +286,7 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		return
 	}
 
-	// CRITICAL-2 END: Operator state validated, safe to create session
+	// 2 END: Operator state validated, safe to create session
 
 	// Create session cookie (critical - must not fail silently)
 	if h.authService.GetSessionManager() != nil {
@@ -298,7 +298,7 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		h.presenter.SetSessionCookie(c, cookie)
 	}
 
-	// CRITICAL-3: Issue refresh token for proper session management
+	// 3: Issue refresh token for proper session management
 	var refreshToken string
 	var expiresAt int64
 	if h.authService != nil {
@@ -311,7 +311,7 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	}
 
 	// Return success with session info and tokens
-	// MEDIUM-2: Log MFA verify success
+	// 2: Log MFA verify success
 	if h.auditLogger != nil {
 		h.auditLogger.MFAVerifySuccess(c.Request.Context(), req.OperatorID, session.ID, c.ClientIP())
 	}
@@ -320,8 +320,8 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		"success":       true,
 		"session_id":    session.ID,
 		"access_token":  session.ID, // For API compatibility
-		"refresh_token": refreshToken, // CRITICAL-3: Add refresh token
-		"expires_at":    expiresAt,    // CRITICAL-3: Add expiry time
+		"refresh_token": refreshToken, // 3: Add refresh token
+		"expires_at":    expiresAt,    // 3: Add expiry time
 		"operator": gin.H{
 			"id":          op.ID,
 			"email":       op.Email,

@@ -317,7 +317,7 @@ func (l *Logger) WebhookSecretRotated(ctx context.Context, operatorID, ipAddress
 }
 
 // MFAVerifyAttempt logs an MFA verification attempt.
-// MEDIUM-2: Added for audit compliance.
+// 2: Added for audit compliance.
 func (l *Logger) MFAVerifyAttempt(ctx context.Context, operatorID, ipAddress, userAgent string) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,
@@ -329,7 +329,7 @@ func (l *Logger) MFAVerifyAttempt(ctx context.Context, operatorID, ipAddress, us
 }
 
 // MFAVerifySuccess logs a successful MFA verification.
-// MEDIUM-2: Added for audit compliance.
+// 2: Added for audit compliance.
 func (l *Logger) MFAVerifySuccess(ctx context.Context, operatorID, sessionID, ipAddress string) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,
@@ -341,7 +341,7 @@ func (l *Logger) MFAVerifySuccess(ctx context.Context, operatorID, sessionID, ip
 }
 
 // MFAVerifyFailed logs a failed MFA verification attempt.
-// MEDIUM-2: Added for audit compliance.
+// 2: Added for audit compliance.
 func (l *Logger) MFAVerifyFailed(ctx context.Context, operatorID, ipAddress string) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,

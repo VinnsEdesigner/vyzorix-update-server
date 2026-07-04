@@ -185,7 +185,7 @@ func RemoveBackupCode(codes []string, index int) []string {
 }
 
 // CreateMFASecretBinding creates a cryptographically bound MFA secret for an operator.
-// CRITICAL-7: The MAC binds the secret to the operator ID, preventing token theft attacks.
+// 7: The MAC binds the secret to the operator ID, preventing token theft attacks.
 func CreateMFASecretBinding(operatorID, secret string) MFASecretBinding {
 	mac := hmac.New(sha512.New, []byte(operatorID))
 	mac.Write([]byte(secret))
@@ -196,7 +196,7 @@ func CreateMFASecretBinding(operatorID, secret string) MFASecretBinding {
 }
 
 // VerifyMFASecretBinding verifies that a TOTP code was generated using the bound secret.
-// CRITICAL-7: Rejects codes if the operator ID doesn't match the binding.
+// 7: Rejects codes if the operator ID doesn't match the binding.
 func VerifyMFASecretBinding(operatorID string, binding MFASecretBinding) bool {
 	expectedMAC := CreateMFASecretBinding(operatorID, binding.Secret)
 	return hmac.Equal([]byte(binding.MAC), []byte(expectedMAC.MAC))

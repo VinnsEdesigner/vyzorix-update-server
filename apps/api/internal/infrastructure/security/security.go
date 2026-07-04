@@ -37,7 +37,7 @@ var ErrInvalidToken = jwt.ErrInvalidToken
 var ErrExpiredToken = jwt.ErrExpiredToken
 
 // NewJWTManager creates a new JWT manager.
-// CRITICAL-5 FIX: Returns error if secret validation fails.
+// 5 FIX: Returns error if secret validation fails.
 func NewJWTManager(secret string, expiry time.Duration, issuer string) (*jwt.Manager, error) {
 	return jwt.NewManager(secret, expiry, issuer)
 }
@@ -60,7 +60,7 @@ func ValidatePassword(pwd string, policy password.Policy) error {
 }
 
 // CheckPasswordBreached checks if a password was found in known data breaches.
-// CRITICAL-6: Added to prevent password reuse from known breaches.
+// 6: Added to prevent password reuse from known breaches.
 func CheckPasswordBreached(pwd string) (bool, error) {
 	return password.CheckBreached(pwd)
 }
@@ -130,13 +130,13 @@ func GenerateBackupCodes(count int) ([]string, error) {
 type MFASecretBinding = totp.MFASecretBinding
 
 // CreateMFASecretBinding creates a cryptographically bound MFA secret for an operator.
-// CRITICAL-7: The MAC binds the secret to the operator ID, preventing token theft attacks.
+// 7: The MAC binds the secret to the operator ID, preventing token theft attacks.
 func CreateMFASecretBinding(operatorID, secret string) MFASecretBinding {
 	return totp.CreateMFASecretBinding(operatorID, secret)
 }
 
 // VerifyMFASecretBinding verifies that a TOTP code was generated using the bound secret.
-// CRITICAL-7: Rejects codes if the operator ID doesn't match the binding.
+// 7: Rejects codes if the operator ID doesn't match the binding.
 func VerifyMFASecretBinding(operatorID string, binding MFASecretBinding) bool {
 	return totp.VerifyMFASecretBinding(operatorID, binding)
 }

@@ -575,7 +575,7 @@ func migrateCreateMessageQueue(db *sql.DB) error {
 }
 
 func migrateCreateOAuthStates(db *sql.DB) error {
-	// CRITICAL-8: Persist OAuth state to database to prevent CSRF attacks
+	// 8: Persist OAuth state to database to prevent CSRF attacks
 	_, err := db.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS oauth_states (
 			id TEXT PRIMARY KEY,

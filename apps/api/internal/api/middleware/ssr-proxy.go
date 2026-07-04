@@ -166,7 +166,7 @@ func handleAuthenticatedRequest(c *gin.Context, log *slog.Logger, path string, p
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
-	// CRITICAL-5 FIX: Handle error from JWT manager creation
+	// 5 FIX: Handle error from JWT manager creation
 	jwtManager, err := infraauth.NewJWTManager(jwtSecret, 0, "")
 	if err != nil {
 		log.Error("SSR failed - invalid JWT secret configuration", "path", path, "ip", c.ClientIP(), "err", err)

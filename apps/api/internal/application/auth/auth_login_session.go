@@ -34,7 +34,7 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		return nil, nil, application.ErrInvalidCredentials
 	}
 
-	// HIGH-6: If MFA is required for this operator, enforce it
+	// 6: If MFA is required for this operator, enforce it
 	if op.MFARequired || op.HasMFA() {
 		return &dto.LoginResponse{
 			OperatorID: op.ID,
@@ -68,7 +68,7 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest, va
 		if err := ValidatePassword(req.Password, DefaultPasswordPolicy); err != nil {
 			return nil, err
 		}
-		// CRITICAL-6: Check if password was found in known data breaches
+		// 6: Check if password was found in known data breaches
 		if breached, _ := infraauth.CheckPasswordBreached(req.Password); breached {
 			return nil, application.ErrPasswordBreached
 		}
@@ -191,7 +191,7 @@ func (s *AuthService) CreateSession(ctx context.Context, operatorID string) (*se
 }
 
 // Logout destroys a session and revokes associated refresh tokens.
-// HIGH-3: Now revokes refresh tokens on logout for security.
+// 3: Now revokes refresh tokens on logout for security.
 func (s *AuthService) Logout(ctx context.Context, sessionID string) error {
 	// Get operator ID before deleting session for refresh token revocation
 	var operatorID string
@@ -207,7 +207,7 @@ func (s *AuthService) Logout(ctx context.Context, sessionID string) error {
 		return err
 	}
 
-	// HIGH-3: Revoke all refresh tokens for this operator on logout
+	// 3: Revoke all refresh tokens for this operator on logout
 	// This ensures stolen refresh tokens can't be used after logout
 	if operatorID != "" {
 		_ = s.RevokeAllRefreshTokens(ctx, operatorID)
