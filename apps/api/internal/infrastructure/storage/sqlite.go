@@ -191,6 +191,7 @@ var migrations = []Migration{
 	{Apply: migrateIdempotencyRecords, Name: "create_idempotency_records_table", Version: 33},
 	{Apply: migrateDeviceEvents, Name: "create_device_events_table", Version: 34},
 	{Apply: migrateDeviceEventsExtended, Name: "add_device_events_extended_columns", Version: 35},
+	{Apply: migrateOperatorFCMToken, Name: "add_operator_fcm_token_column", Version: 36},
 }
 
 // runMigrations applies all pending migrations.
