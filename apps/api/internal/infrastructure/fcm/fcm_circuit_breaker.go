@@ -115,6 +115,8 @@ func (cb *CircuitBreaker) RecordSuccess() {
 		if cb.successes >= cb.config.SuccessThreshold {
 			cb.transitionTo(CircuitStateClosed)
 		}
+	case CircuitStateOpen:
+		// Already open, stay open until timer expires
 	}
 }
 
@@ -134,6 +136,8 @@ func (cb *CircuitBreaker) RecordFailure() {
 	case CircuitStateHalfOpen:
 		// Any failure in half-open state opens the circuit
 		cb.transitionTo(CircuitStateOpen)
+	case CircuitStateOpen:
+		// Already open, do nothing
 	}
 }
 
