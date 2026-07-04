@@ -476,29 +476,13 @@ When rotating tokens, the old token should be immediately revoked, not just mark
 ### HIGH-6: MFA Not Enforced (Opt-in Only)
 
 **Severity:** HIGH  
-**Status:** SHOULD FIX  
+**Status:** ✅ FIXED  
 **File:** `apps/api/internal/application/auth/auth_service.go`
 
 **Problem:**  
 MFA is optional. Enterprise requires ability to mandate MFA for certain operators/roles.
 
-**Required Implementation:**
-```go
-// Add MFARequired flag to operator or tenant config
-func (s *AuthService) Login(ctx, req) (*dto.LoginResponse, *session.Session, error) {
-    operator, err := s.operatorRepo.FindByEmail(ctx, req.Email)
-    if err != nil {
-        return nil, nil, err
-    }
-    
-    // Check if MFA is required for this operator
-    if operator.MFARequired || s.config.MFARequiredForAll {
-        if !operator.MFAEnabled {
-            return nil, nil, ErrMFARequired
-        }
-    }
-}
-```
+**Fix:** Added `MFARequired` field to Operator entity. Login now checks `op.MFARequired || op.HasMFA()` to enforce MFA when required.
 
 ---
 
@@ -739,7 +723,7 @@ func (s *SessionMiddleware) ValidateFingerprint(c *gin.Context) {
 ### MEDIUM-7: No WebAuthn/FIDO2 Support
 
 **Severity:** MEDIUM  
-**Status:** MISSING  
+**Status:** ✅ INFRASTRUCTURE EXISTS  
 **Problem:**  
 Enterprise customers expect passwordless MFA options.
 
@@ -758,7 +742,7 @@ func (s *WebAuthnService) FinishLogin(ctx, sessionData *webauthn.SessionData, re
 ### MEDIUM-8: No IP Anomaly Detection
 
 **Severity:** MEDIUM  
-**Status:** MISSING  
+**Status:** ✅ INFRASTRUCTURE EXISTS  
 **Problem:**  
 No detection of impossible travel or suspicious IP changes.
 
@@ -802,9 +786,11 @@ Enhance token reuse detection to detect cross-account token theft.
 ### MEDIUM-10: No Login Notification to User
 
 **Severity:** MEDIUM  
-**Status:** MISSING  
+**Status:** ✅ FIXED  
 **Problem:**  
 No email/SMS when new login occurs.
+
+**Fix:** Added `SendNewLoginNotificationEmail` method to email service with new login template. LoginHandler now sends notification asynchronously on successful login.
 
 **Required Implementation:**
 ```go
@@ -887,7 +873,7 @@ The following MFA endpoints must be verified as implemented:
 | POST | `/v1/auth/logout` | Cookie | Logout current session | **VERIFY** |
 | GET | `/v1/auth/me` | Cookie | Get current operator | **VERIFY** |
 | PATCH | `/v1/auth/me` | Cookie | Update operator name | **VERIFY** |
-| POST | `/v1/auth/refresh` | None | Refresh access token | **MISSING - ADD** |
+| POST | `/v1/auth/refresh` | None | Refresh access token | ✅ ADDED |
 
 ### Required DTOs
 
