@@ -50,9 +50,11 @@ func (s *ExportService) ExportVersions(ctx context.Context, format, version stri
 
 		vr := VersionResponse{
 			Version:      v.Version,
+			ReleaseType:  string(v.ReleaseType),
 			Status:       statusStr,
 			ReleasedAt:   v.ReleaseDate,
 			ReleaseNotes: v.ReleaseNotes,
+			IsLatest:     v.IsLatest,
 		}
 		if includeApkInfo {
 			vr.APKFilename = v.APKFilename

@@ -126,6 +126,7 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 			UptimeSeconds:    client.Uptime(),
 			MessagesSent:     metrics.MessagesSent,
 			MessagesReceived: metrics.MessagesReceived,
+			LastMessageAt:   metrics.LastMessageAt,
 		}
 
 		// Get queue size for this device

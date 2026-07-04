@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 )
 
@@ -18,7 +19,7 @@ import (
 func (r *Resolver) deviceToMap(_ context.Context, dev *device.Device) map[string]interface{} {
 	return map[string]interface{}{
 		"id":       dev.ID,
-		"name":     "",
+		"name":     dev.DeviceName,
 		"online":   r.Hub != nil && r.Hub.Online(dev.ID),
 		"lastSeen": time.UnixMilli(dev.LastSeen).Format(time.RFC3339),
 		"version":  dev.AppVersion,
@@ -29,7 +30,7 @@ func (r *Resolver) deviceToMap(_ context.Context, dev *device.Device) map[string
 func (r *Resolver) deviceDTOToMap(dev *dto.DeviceResponse) map[string]interface{} {
 	return map[string]interface{}{
 		"id":       dev.ID,
-		"name":     "",
+		"name":     dev.DeviceName,
 		"online":   r.Hub != nil && r.Hub.Online(dev.ID),
 		"lastSeen": time.UnixMilli(dev.LastSeen).Format(time.RFC3339),
 		"version":  dev.AppVersion,
@@ -68,5 +69,15 @@ func (r *Resolver) commandToMap(cmd dto.CommandResponse) map[string]interface{} 
 		"args":       args,
 		"status":     cmd.Status,
 		"createdAt":  cmd.CreatedAt.Format(time.RFC3339),
+	}
+}
+
+// paginationToMap converts updates.Pagination to a GraphQL map.
+func (r *Resolver) paginationToMap(p updates.Pagination) map[string]interface{} {
+	return map[string]interface{}{
+		"total":    p.Total,
+		"limit":    p.Limit,
+		"offset":   (p.Page - 1) * p.Limit,
+		"hasMore":  p.Page < p.TotalPages,
 	}
 }

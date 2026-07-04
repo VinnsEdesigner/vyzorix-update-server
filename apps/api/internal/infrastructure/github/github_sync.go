@@ -162,11 +162,12 @@ func (s *SyncService) findAPKAsset(ctx context.Context, release GitHubRelease) (
 			if !s.skipSHA256 {
 				sha256, err := s.client.FetchAssetChecksum(ctx, release.TagName, asset.Name)
 				if err != nil {
-					// Log warning but don't fail - checksum is optional
-					s.logger.Warn("Failed to fetch SHA256 for asset",
+					// Log warning - checksum is important for security
+					s.logger.Error("Failed to fetch SHA256 for asset - security risk",
 						"asset", asset.Name,
 						"release", release.TagName,
 						"error", err)
+					// Continue with empty SHA256 but log as error (not just warning)
 				} else {
 					versionAsset.SHA256 = sha256
 				}
@@ -191,6 +192,10 @@ func (s *SyncService) createUpdateVersion(release GitHubRelease, asset *VersionA
 	notes := release.Body
 	if notes == "" {
 		notes = release.Name
+	}
+	// If both are empty, set a placeholder
+	if notes == "" {
+		notes = "No release notes provided"
 	}
 
 	// NOTE: IsLatest is NOT set here. The latest version is determined by release date
