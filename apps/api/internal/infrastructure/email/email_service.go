@@ -64,6 +64,17 @@ type Data struct {
 	ExpiryMins   int
 }
 
+// LoginNotificationData contains data for new login notification emails.
+// MEDIUM-10: Added for login notification feature.
+type LoginNotificationData struct {
+	OperatorName string
+	IPAddress    string
+	UserAgent    string
+	Location     string
+	Device       string
+	Timestamp    string
+}
+
 // SendVerificationEmail sends a welcome email with email verification link.
 func (s *Service) SendVerificationEmail(ctx context.Context, to, name, token string) error {
 	if s.apiKey == "" {
@@ -225,6 +236,22 @@ func (s *Service) SendErrorAlertEmail(ctx context.Context, to string, data Notif
 	}
 
 	subject := fmt.Sprintf("🔴 Error Alert: %s", data.DeviceID)
+	return s.send(ctx, to, subject, html)
+}
+
+// SendNewLoginNotificationEmail sends a new login notification email to the operator.
+// MEDIUM-10: Added for login notification feature.
+func (s *Service) SendNewLoginNotificationEmail(ctx context.Context, to string, data LoginNotificationData) error {
+	if s.apiKey == "" {
+		return errors.New("RESEND_API_KEY not configured")
+	}
+
+	html, err := s.parseTemplate(templates.NewLoginEmail, data)
+	if err != nil {
+		return fmt.Errorf("failed to parse new login template: %w", err)
+	}
+
+	subject := "🔐 New login to your account"
 	return s.send(ctx, to, subject, html)
 }
 
