@@ -13,6 +13,9 @@ type Repository interface {
 	// FindByOperatorID retrieves all sessions for an operator.
 	FindByOperatorID(ctx context.Context, operatorID string) ([]*Session, error)
 
+	// ListActiveByOperator retrieves active (non-expired) sessions for an operator, ordered by creation time.
+	ListActiveByOperator(ctx context.Context, operatorID string) ([]*Session, error)
+
 	// Create creates a new session.
 	Create(ctx context.Context, s *Session) error
 
