@@ -28,6 +28,12 @@ type ResendRateLimitResult struct {
 	TotalSent   int
 }
 
+// MaxResendCount is the maximum number of password reset requests allowed.
+const MaxResendCount = 5
+
+// ResendLockoutDuration is how long the lockout lasts after exceeding MaxResendCount.
+const ResendLockoutDuration = 15 * time.Minute
+
 // GeneratePasswordResetToken generates a password reset token.
 func (s *AuthService) GeneratePasswordResetToken(ctx context.Context, email string) (string, error) {
 	// Normalize email.
@@ -194,94 +200,91 @@ func (s *AuthService) CheckResendRateLimit(ctx context.Context, email string) (*
 		return nil, err
 	}
 
-	canResend, waitSeconds, totalSent := s.calculateResendCount(tracker)
-
-	if !canResend {
-		lockedUntil := time.Now().Add(time.Duration(waitSeconds) * time.Second)
+	// Check if currently locked out
+	if tracker.IsLockedOut() {
 		return &ResendRateLimitResult{
 			Allowed:     false,
-			LockedUntil: &lockedUntil,
-			RetryAfter:  waitSeconds,
-			TotalSent:   totalSent,
+			LockedUntil: tracker.LockoutUntil,
+			RetryAfter:  int(time.Until(*tracker.LockoutUntil).Seconds()),
+			TotalSent:   tracker.ResendCount,
 		}, nil
 	}
 
 	return &ResendRateLimitResult{
 		Allowed:    true,
 		RetryAfter: 0,
-		TotalSent:  totalSent,
+		TotalSent:  tracker.ResendCount,
 	}, nil
 }
 
 // UpdateResendTracker updates the resend tracker for an email.
 func (s *AuthService) UpdateResendTracker(ctx context.Context, email string) error {
 	emailHash := hashEmailForTracker(email)
+	now := time.Now().UTC()
+
+	var newCount int
+	var lockoutUntil *time.Time
 
 	// Get existing tracker.
 	tracker, err := s.passwordResetRepo.GetResendTracker(ctx, emailHash)
 	if err != nil {
 		if err == password_reset.ErrNotFound {
 			// Create new tracker.
-			tracker = &password_reset.ResendTracker{
-				ID:           shared.GenerateID(),
-				EmailHash:    emailHash,
-				ResendCount:  1,
-				LastResendAt: time.Now(),
-				CreatedAt:    time.Now(),
-				UpdatedAt:    time.Now(),
-			}
-
-			return s.passwordResetRepo.UpsertResendTracker(ctx, tracker)
+			newCount = 1
+		} else {
+			return err
 		}
-
-		return err
+	} else {
+		newCount, lockoutUntil = s.calculateResendCount(tracker)
 	}
 
-	// Update existing tracker.
-	tracker.ResendCount++
-	tracker.LastResendAt = time.Now()
-	tracker.UpdatedAt = time.Now()
+	// Generate ID for tracker.
+	id := shared.GenerateID()
 
-	return s.passwordResetRepo.UpsertResendTracker(ctx, tracker)
+	newTracker := &password_reset.ResendTracker{
+		ID:           id,
+		EmailHash:    emailHash,
+		ResendCount:  newCount,
+		LastResendAt: now,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+
+	if lockoutUntil != nil {
+		newTracker.LockoutUntil = lockoutUntil
+	}
+
+	// If tracker exists, preserve created_at.
+	if tracker != nil && !tracker.IsLockedOut() {
+		newTracker.ID = tracker.ID
+		newTracker.CreatedAt = tracker.CreatedAt
+	}
+
+	return s.passwordResetRepo.UpsertResendTracker(ctx, newTracker)
 }
 
 // calculateResendCount calculates the resend count and wait time.
-func (s *AuthService) calculateResendCount(tracker *password_reset.ResendTracker) (bool, int, int) {
+func (s *AuthService) calculateResendCount(tracker *password_reset.ResendTracker) (int, *time.Time) {
+	if tracker != nil && tracker.IsLockedOut() {
+		return tracker.ResendCount, tracker.LockoutUntil
+	}
+
+	var newCount int
 	if tracker == nil {
-		return true, 0, 0
+		newCount = 1
+	} else {
+		newCount = tracker.ResendCount + 1
 	}
 
-	count := tracker.ResendCount
-	elapsed := time.Since(tracker.LastResendAt)
-
-	switch count {
-	case 0:
-		return true, 0, 0
-	case 1:
-		wait := 30*time.Second - elapsed
-		if wait <= 0 {
-			return true, 0, 1
+	if newCount > MaxResendCount {
+		lockout := time.Now().UTC().Add(ResendLockoutDuration)
+		if tracker != nil {
+			return tracker.ResendCount, &lockout
 		}
-		return false, int(wait.Seconds()), 1
-	case 2:
-		wait := 60*time.Second - elapsed
-		if wait <= 0 {
-			return true, 0, 2
-		}
-		return false, int(wait.Seconds()), 2
-	case 3:
-		wait := 2*time.Minute - elapsed
-		if wait <= 0 {
-			return true, 0, 3
-		}
-		return false, int(wait.Seconds()), 3
-	default:
-		wait := 5*time.Minute - elapsed
-		if wait <= 0 {
-			return true, 0, count
-		}
-		return false, int(wait.Seconds()), count
+		return 0, &lockout
 	}
+
+	return newCount, nil
 }
 
 // DeleteResendTracker deletes the resend tracker for an email.
