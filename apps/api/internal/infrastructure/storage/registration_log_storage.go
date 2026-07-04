@@ -120,13 +120,18 @@ func (r *RegistrationLogRepository) ListByIMEI(ctx context.Context, imei string,
 	}
 	for rows.Next() {
 		var id string
-		if err := rows.Scan(&id); err != nil {
-			func() { _ = rows.Close() }()
-			return nil, 0, err
+		if scanErr := rows.Scan(&id); scanErr != nil {
+			_ = rows.Close()
+			return nil, 0, scanErr
 		}
 		inboxIDs = append(inboxIDs, id)
 	}
-	func() { _ = rows.Close() }()
+	// Check rows.Err() after iteration
+	if rowsErr := rows.Err(); rowsErr != nil {
+		_ = rows.Close()
+		return nil, 0, rowsErr
+	}
+	_ = rows.Close()
 
 	if len(inboxIDs) == 0 {
 		return []*inbox.RegistrationLog{}, 0, nil
@@ -146,8 +151,8 @@ func (r *RegistrationLogRepository) ListByIMEI(ctx context.Context, imei string,
 	// Get total count
 	var total int
 	countQuery := "SELECT COUNT(*) FROM registration_logs WHERE inbox_request_id IN (" + placeholders + ")"
-	if err := r.queryRow(ctx, countQuery, args...).Scan(&total); err != nil {
-		return nil, 0, err
+	if scanErr := r.queryRow(ctx, countQuery, args...).Scan(&total); scanErr != nil {
+		return nil, 0, scanErr
 	}
 
 	// Get logs
@@ -168,9 +173,9 @@ func (r *RegistrationLogRepository) ListByIMEI(ctx context.Context, imei string,
 
 	var logs []*inbox.RegistrationLog
 	for logRows.Next() {
-		log, err := r.scanLog(logRows)
-		if err != nil {
-			return nil, 0, err
+		log, scanErr := r.scanLog(logRows)
+		if scanErr != nil {
+			return nil, 0, scanErr
 		}
 		logs = append(logs, log)
 	}
