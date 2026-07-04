@@ -53,7 +53,6 @@ type AuthService struct {
 	sessionManager    *infraSession.Manager
 	sessionTTL         time.Duration
 	refreshTokenExpiry time.Duration
-	ldapConfig        *LDAPConfig
 }
 
 // NewAuthService creates a new AuthService.
