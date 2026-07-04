@@ -22,12 +22,24 @@ import (
 
 // OAuthHandler handles OAuth endpoints.
 type OAuthHandler struct {
-	authService *appsvc.AuthService
-	sessionMgr  *infraauth.SessionManager
-	googleVer   *infraauth.GoogleTokenVerifier
-	logger      *slog.Logger
-	presenter   *response.Presenter
-	config      config.Config
+	authService       *appsvc.AuthService
+	sessionMgr        *infraauth.SessionManager
+	googleVer         *infraauth.GoogleTokenVerifier
+	logger            *slog.Logger
+	presenter         *response.Presenter
+	config            config.Config
+	oauthStateRepo    OAuthStateProvider
+}
+
+// OAuthStateProvider interface for OAuth state operations.
+// CRITICAL-8: This interface allows persisting OAuth state to prevent CSRF attacks.
+type OAuthStateProvider interface {
+	// Create stores a new OAuth state and returns the state ID
+	Create(ctx context.Context, state, redirectURL, provider string) (string, error)
+	// Validate retrieves and validates an OAuth state, returning the redirect URL and state
+	Validate(ctx context.Context, state string) (redirectURL string, stateID string, err error)
+	// Delete removes an OAuth state after use
+	Delete(ctx context.Context, stateID string) error
 }
 
 // NewOAuthHandler creates a new OAuthHandler.
@@ -39,6 +51,12 @@ func NewOAuthHandler(authService *appsvc.AuthService, sessionMgr *infraauth.Sess
 		googleVer:   googleVer,
 		presenter:   presenter,
 	}
+}
+
+// WithOAuthStateRepo sets the OAuth state repository for persistent state storage.
+func (h *OAuthHandler) WithOAuthStateRepo(repo OAuthStateProvider) *OAuthHandler {
+	h.oauthStateRepo = repo
+	return h
 }
 
 // WithLogger sets the logger for the handler.
@@ -67,13 +85,21 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 	}
 	state := hex.EncodeToString(stateBytes)
 
+	// CRITICAL-8: Persist OAuth state to database if repository is configured
+	if h.oauthStateRepo != nil {
+		if _, err := h.oauthStateRepo.Create(c.Request.Context(), state, frontendURL, "google"); err != nil {
+			h.presenter.InternalError(c, "failed to create OAuth state")
+			return
+		}
+	}
+
 	callbackURL := h.config.BaseURL + "/v1/auth/google/callback"
 	googleURL := fmt.Sprintf(
 		"https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=%s&access_type=offline&state=%s",
 		url.QueryEscape(h.config.GoogleOAuthClientID),
 		url.QueryEscape(callbackURL),
 		url.QueryEscape("openid email profile"),
-		url.QueryEscape(state+":"+frontendURL),
+		url.QueryEscape(state),
 	)
 	c.Redirect(http.StatusTemporaryRedirect, googleURL)
 }
@@ -88,10 +114,25 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Validate state format (should be hex:url)
 	if state == "" {
 		h.presenter.BadRequest(c, "missing state parameter")
 		return
+	}
+
+	// CRITICAL-8: Validate state from database if repository is configured
+	var redirectURL string
+	if h.oauthStateRepo != nil {
+		var err error
+		redirectURL, state, err = h.oauthStateRepo.Validate(c.Request.Context(), state)
+		if err != nil {
+			h.presenter.BadRequest(c, "invalid or expired OAuth state")
+			return
+		}
+		// Delete the state after successful validation (one-time use)
+		_ = h.oauthStateRepo.Delete(c.Request.Context(), state)
+	} else {
+		// Fallback: use state as redirect URL directly (legacy behavior)
+		redirectURL = state
 	}
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
@@ -154,17 +195,15 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 
 	http.SetCookie(c.Writer, cookie)
 
-	// Redirect to frontend
-	frontendURL := h.config.FrontendURL
-	if frontendURL == "" {
-		frontendURL = "http://localhost:5173"
+	// Redirect to frontend with stored redirect URL
+	if redirectURL == "" {
+		redirectURL = h.config.FrontendURL
+		if redirectURL == "" {
+			redirectURL = "http://localhost:5173"
+		}
 	}
 
-	if state != "" {
-		frontendURL = state
-	}
-
-	redirectURL := fmt.Sprintf("%s/auth/callback?oauth=success&new=%t", frontendURL, result.IsNew)
+	redirectURL = fmt.Sprintf("%s/auth/callback?oauth=success&new=%t", redirectURL, result.IsNew)
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
@@ -175,6 +214,11 @@ func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 		return
 	}
 
+	frontendURL := h.config.FrontendURL
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173"
+	}
+
 	callbackURL := h.config.BaseURL + "/v1/auth/github/callback"
 
 	state := c.Query("state")
@@ -182,6 +226,14 @@ func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 		b := make([]byte, 16)
 		_, _ = rand.Read(b)
 		state = hex.EncodeToString(b)
+	}
+
+	// CRITICAL-8: Persist OAuth state to database if repository is configured
+	if h.oauthStateRepo != nil {
+		if _, err := h.oauthStateRepo.Create(c.Request.Context(), state, frontendURL, "github"); err != nil {
+			h.presenter.InternalError(c, "failed to create OAuth state")
+			return
+		}
 	}
 
 	githubURL := fmt.Sprintf(
@@ -202,6 +254,24 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	if code == "" {
 		h.presenter.BadRequest(c, "missing authorization code from GitHub")
 		return
+	}
+
+	if state == "" {
+		h.presenter.BadRequest(c, "missing state parameter")
+		return
+	}
+
+	// CRITICAL-8: Validate state from database if repository is configured
+	var redirectURL string
+	if h.oauthStateRepo != nil {
+		var err error
+		redirectURL, state, err = h.oauthStateRepo.Validate(c.Request.Context(), state)
+		if err != nil {
+			h.presenter.BadRequest(c, "invalid or expired OAuth state")
+			return
+		}
+		// Delete the state after successful validation (one-time use)
+		_ = h.oauthStateRepo.Delete(c.Request.Context(), state)
 	}
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
@@ -265,17 +335,15 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 
 	http.SetCookie(c.Writer, cookie)
 
-	// Redirect to frontend
-	frontendURL := h.config.FrontendURL
-	if frontendURL == "" {
-		frontendURL = "http://localhost:5173"
+	// Redirect to frontend with stored redirect URL if available
+	if redirectURL == "" {
+		redirectURL = h.config.FrontendURL
+		if redirectURL == "" {
+			redirectURL = "http://localhost:5173"
+		}
 	}
 
-	if state != "" {
-		frontendURL = state
-	}
-
-	redirectURL := fmt.Sprintf("%s/auth/callback?oauth=success&new=%t&provider=github", frontendURL, result.IsNew)
+	redirectURL = fmt.Sprintf("%s/auth/callback?oauth=success&new=%t&provider=github", redirectURL, result.IsNew)
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
