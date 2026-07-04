@@ -27,7 +27,7 @@ func (s *AuthService) VerifyMFACode(ctx context.Context, operatorID, code string
 		return nil, application.ErrForbidden
 	}
 
-	// CRITICAL-7: Verify TOTP account name contains operator ID for binding
+	// 7: Verify TOTP account name contains operator ID for binding
 	cfg := infraauth.DefaultTOTPConfig()
 	cfg.AccountName = op.Email // Include operator email in the binding
 

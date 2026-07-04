@@ -117,7 +117,7 @@ func (r *OAuthStateRepositoryImpl) GetByState(ctx context.Context, state string)
 }
 
 // Validate retrieves and validates an OAuth state for the OAuth handler.
-// CRITICAL-8: This ensures the state was created by our server and hasn't been tampered with.
+// 8: This ensures the state was created by our server and hasn't been tampered with.
 func (r *OAuthStateRepositoryImpl) Validate(ctx context.Context, state string) (redirectURL string, stateID string, err error) {
 	oauth, err := r.GetByState(ctx, state)
 	if err != nil {
