@@ -26,10 +26,10 @@ func NewService(deviceRepo device.Repository, commandRepo command.Repository, lo
 	}
 }
 
-// GetDashboardStats retrieves aggregated dashboard statistics.
-func (s *Service) GetDashboardStats(ctx context.Context) (*DashboardStatsResponse, error) {
-	// Get device stats
-	allDevices, _, err := s.deviceRepo.List(ctx, 0, 0)
+// GetDashboardStats retrieves aggregated dashboard statistics for an operator.
+func (s *Service) GetDashboardStats(ctx context.Context, operatorID string) (*DashboardStatsResponse, error) {
+	// Get device stats filtered by operator
+	allDevices, err := s.deviceRepo.ListByOperator(ctx, operatorID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list devices: %w", err)
 	}

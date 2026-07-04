@@ -520,6 +520,26 @@ func (r *OperatorRepository) UpdateThresholds(ctx context.Context, id string, th
 	return nil
 }
 
+// GetThresholds retrieves the alert thresholds for an operator.
+func (r *OperatorRepository) GetThresholds(ctx context.Context, id string) (operator.Thresholds, error) {
+	row := r.queryRow(ctx,
+		`SELECT risk_warn, risk_crit, thermal_warn, thermal_crit, buffer_warn, buffer_crit 
+		 FROM operators WHERE id = ?`,
+		id,
+	)
+
+	var th operator.Thresholds
+	err := row.Scan(&th.RiskWarn, &th.RiskCrit, &th.ThermalWarn, &th.ThermalCrit, &th.BufferWarn, &th.BufferCrit)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return operator.Thresholds{}, operator.ErrNotFound
+		}
+		return operator.Thresholds{}, err
+	}
+
+	return th, nil
+}
+
 // UpdateClientSettings updates the client preferences for an operator.
 func (r *OperatorRepository) UpdateClientSettings(ctx context.Context, id string, cs operator.ClientSettings) error {
 	result, err := r.exec(ctx,

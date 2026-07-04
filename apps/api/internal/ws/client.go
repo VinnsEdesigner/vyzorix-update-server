@@ -210,6 +210,22 @@ func (c *Client) processTelemetry(raw []byte) {
 		}
 	}
 	c.Hub.BroadcastTelemetry(raw)
+
+	// Process telemetry for threshold breach events
+	if c.Hub.eventProcessor != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		telemetryData := map[string]any{
+			"riskScore":   t.RiskScore,
+			"thermalTemp": t.ThermalTemp,
+			"bufferLevel": t.BufferLevel,
+		}
+		if err := c.Hub.eventProcessor.ProcessTelemetry(ctx, c.DeviceID, telemetryData); err != nil {
+			if c.log != nil {
+				c.log.Warn("telemetry event processing failed", "deviceId", c.DeviceID, "err", err)
+			}
+		}
+	}
 }
 
 func (c *Client) writeCompressed(frame command.CommandFrame) error {
