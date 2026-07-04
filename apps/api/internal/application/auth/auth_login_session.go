@@ -10,6 +10,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 )
 
 // Login authenticates an operator and creates a session.
@@ -65,6 +66,10 @@ func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest, va
 	if validatePassword {
 		if err := ValidatePassword(req.Password, DefaultPasswordPolicy); err != nil {
 			return nil, err
+		}
+		// CRITICAL-6: Check if password was found in known data breaches
+		if breached, _ := infraauth.CheckPasswordBreached(req.Password); breached {
+			return nil, application.ErrPasswordBreached
 		}
 	}
 

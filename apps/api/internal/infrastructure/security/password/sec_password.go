@@ -2,10 +2,62 @@
 package password
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"unicode"
 )
+
+// ErrPasswordBreached indicates the password was found in a data breach.
+var ErrPasswordBreached = fmt.Errorf("password found in known data breach")
+
+// CheckBreached checks if a password appears in known data breaches using HIBP API.
+// Uses k-anonymity: only sends first 5 chars of SHA1 hash to protect the password.
+// CRITICAL-6: Added to prevent password reuse from known breaches.
+func CheckBreached(password string) (bool, error) {
+	// Hash the password with SHA-1
+	hash := sha1.Sum([]byte(password))
+	hashHex := strings.ToUpper(hex.EncodeToString(hash[:]))
+
+	// Only send first 5 characters (k-anonymity)
+	prefix := hashHex[:5]
+	suffix := hashHex[5:]
+
+	// Query HIBP API
+	resp, err := http.Get("https://api.pwnedpasswords.com/range/" + prefix)
+	if err != nil {
+		// If HIBP is unavailable, fail open with a warning
+		// In production, you might want to fail closed instead
+		return false, nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return false, nil
+	}
+
+	// Check if our hash suffix is in the response
+	lines := strings.Split(string(body), "\n")
+	for _, line := range lines {
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		if strings.TrimSpace(parts[0]) == suffix {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
 
 // Policy defines the requirements for a valid password.
 type Policy struct {

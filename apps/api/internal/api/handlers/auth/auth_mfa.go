@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"time"
+
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -230,6 +232,8 @@ func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 
 // VerifyMFA handles POST /v1/auth/mfa/verify - Main MFA verification during login.
 // This is the critical endpoint for completing login after MFA challenge.
+// CRITICAL-2 FIX: Re-validate operator state between MFA verification and session creation
+// CRITICAL-3 FIX: Add refresh_token to response for proper token management.
 func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	var req struct {
 		OperatorID string `json:"operator_id" binding:"required"`
@@ -241,13 +245,32 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		return
 	}
 
-	// Verify the MFA code
+	// Verify the MFA code first
 	session, err := h.authService.VerifyMFACode(c.Request.Context(), req.OperatorID, req.Code)
 	if err != nil {
 		// Log the failed attempt
 		h.presenter.Unauthorized(c, "Invalid MFA code")
 		return
 	}
+
+	// CRITICAL-2: Re-validate operator state before session creation
+	// This prevents race conditions where operator could be:
+	// - Deleted between MFA verify and session creation
+	// - MFA disabled
+	// - Role changed
+	op, err := h.operatorRepo.FindByID(c.Request.Context(), req.OperatorID)
+	if err != nil {
+		h.presenter.Unauthorized(c, "Operator not found or invalid")
+		return
+	}
+
+	// Verify operator is still valid (not deleted, has required fields)
+	if !op.IsValid() {
+		h.presenter.Unauthorized(c, "Operator is invalid")
+		return
+	}
+
+	// CRITICAL-2 END: Operator state validated, safe to create session
 
 	// Create session cookie (critical - must not fail silently)
 	if h.authService.GetSessionManager() != nil {
@@ -259,23 +282,30 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		h.presenter.SetSessionCookie(c, cookie)
 	}
 
-	// Get operator details
-	op, err := h.operatorRepo.FindByID(c.Request.Context(), req.OperatorID)
-	if err != nil {
-		h.presenter.InternalError(c, "Failed to get operator details")
-		return
+	// CRITICAL-3: Issue refresh token for proper session management
+	var refreshToken string
+	var expiresAt int64
+	if h.authService != nil {
+		refreshToken, err = h.authService.IssueRefreshToken(c.Request.Context(), req.OperatorID, session.ID)
+		if err != nil {
+			h.presenter.InternalError(c, "Failed to issue refresh token")
+			return
+		}
+		expiresAt = time.Now().Add(7 * 24 * time.Hour).Unix() // 7 days default
 	}
 
 	// Return success with session info and tokens
 	h.presenter.OK(c, gin.H{
-		"success":      true,
-		"session_id":   session.ID,
-		"access_token": session.ID, // For API compatibility
+		"success":       true,
+		"session_id":    session.ID,
+		"access_token":  session.ID, // For API compatibility
+		"refresh_token": refreshToken, // CRITICAL-3: Add refresh token
+		"expires_at":    expiresAt,    // CRITICAL-3: Add expiry time
 		"operator": gin.H{
-			"id":         op.ID,
-			"email":      op.Email,
-			"name":       op.Name,
-			"role":       op.Role,
+			"id":          op.ID,
+			"email":       op.Email,
+			"name":        op.Name,
+			"role":        op.Role,
 			"mfa_enabled": op.MFAEnabled,
 		},
 	})

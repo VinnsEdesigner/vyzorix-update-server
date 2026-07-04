@@ -37,7 +37,8 @@ var ErrInvalidToken = jwt.ErrInvalidToken
 var ErrExpiredToken = jwt.ErrExpiredToken
 
 // NewJWTManager creates a new JWT manager.
-func NewJWTManager(secret string, expiry time.Duration, issuer string) *jwt.Manager {
+// CRITICAL-5 FIX: Returns error if secret validation fails.
+func NewJWTManager(secret string, expiry time.Duration, issuer string) (*jwt.Manager, error) {
 	return jwt.NewManager(secret, expiry, issuer)
 }
 
@@ -57,6 +58,15 @@ var UserPasswordPolicy = password.UserPolicy
 func ValidatePassword(pwd string, policy password.Policy) error {
 	return password.Validate(pwd, policy)
 }
+
+// CheckPasswordBreached checks if a password was found in known data breaches.
+// CRITICAL-6: Added to prevent password reuse from known breaches.
+func CheckPasswordBreached(pwd string) (bool, error) {
+	return password.CheckBreached(pwd)
+}
+
+// ErrPasswordBreached indicates the password was found in a data breach.
+var ErrPasswordBreached = password.ErrPasswordBreached
 
 // PasswordStrength returns a score from 0-5 based on password complexity.
 func PasswordStrength(pwd string) int {

@@ -81,12 +81,15 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 	// Clear failed attempts on successful login
 	h.presenter.LoginSuccess(c, result.OperatorID)
 
-	// Create session cookie using session manager from authService
+	// CRITICAL-4 FIX: Create session cookie - must not fail silently
+	// If cookie creation fails, return error instead of success
 	if session != nil && h.authService.GetSessionManager() != nil {
 		cookie, err := h.authService.GetSessionManager().CreateCookie(result.OperatorID)
-		if err == nil {
-			h.presenter.SetSessionCookie(c, cookie)
+		if err != nil {
+			h.presenter.InternalError(c, "Failed to create session")
+			return
 		}
+		h.presenter.SetSessionCookie(c, cookie)
 	}
 
 	h.presenter.OK(c, result)

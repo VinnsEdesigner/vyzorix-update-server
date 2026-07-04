@@ -166,7 +166,13 @@ func handleAuthenticatedRequest(c *gin.Context, log *slog.Logger, path string, p
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
-	jwtManager := infraauth.NewJWTManager(jwtSecret, 0, "")
+	// CRITICAL-5 FIX: Handle error from JWT manager creation
+	jwtManager, err := infraauth.NewJWTManager(jwtSecret, 0, "")
+	if err != nil {
+		log.Error("SSR failed - invalid JWT secret configuration", "path", path, "ip", c.ClientIP(), "err", err)
+		c.Redirect(http.StatusTemporaryRedirect, "/login")
+		return
+	}
 	claims, err := jwtManager.Verify(tokenCookie)
 	if err != nil {
 		log.Warn("SSR access denied - invalid JWT", "path", path, "ip", c.ClientIP(), "err", err)
