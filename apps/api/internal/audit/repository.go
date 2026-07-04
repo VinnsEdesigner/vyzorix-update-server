@@ -41,6 +41,10 @@ const (
 	ActionSettingsChanged     Action = "settings_changed"
 	ActionWebhookTest        Action = "webhook_test"
 	ActionWebhookSecretRotated Action = "webhook_secret_rotated"
+	// MFA-specific audit actions.
+	ActionMFAVerifyAttempt   Action = "mfa_verify_attempt"
+	ActionMFAVerifySuccess   Action = "mfa_verify_success"
+	ActionMFAVerifyFailed    Action = "mfa_verify_failed"
 )
 
 // Result represents the outcome of an action.
@@ -50,6 +54,7 @@ const (
 	ResultSuccess Result = "success"
 	ResultFailure Result = "failure"
 	ResultBlocked Result = "blocked"
+	ResultPending Result = "pending"
 )
 
 // Entry represents a single audit log entry.
