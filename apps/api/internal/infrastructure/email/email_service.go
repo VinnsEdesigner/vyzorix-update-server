@@ -26,6 +26,7 @@ type NotificationData struct {
 	FailureReason string
 	UpdateVersion string
 	RequesterName string
+	ErrorMessage  string
 	Timestamp     string
 	BaseURL       string
 }
@@ -205,6 +206,65 @@ func (s *Service) SendRegistrationRequestEmail(ctx context.Context, to string, d
 	subject := fmt.Sprintf("📋 Registration Request: %s", data.RequesterName)
 	return s.send(ctx, to, subject, html)
 }
+
+// SendErrorAlertEmail sends an error alert email.
+func (s *Service) SendErrorAlertEmail(ctx context.Context, to string, data NotificationData) error {
+        if s.apiKey == "" {
+                return errors.New("RESEND_API_KEY not configured")
+        }
+
+        html, err := s.parseTemplate(errorAlertEmailTemplate, data)
+        if err != nil {
+                return fmt.Errorf("failed to parse error alert template: %w", err)
+        }
+
+        subject := fmt.Sprintf("🔴 Error Alert: %s", data.DeviceID)
+        return s.send(ctx, to, subject, html)
+}
+
+// errorAlertEmailTemplate is the HTML template for error alerts.
+const errorAlertEmailTemplate = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Alert</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { background: #dc3545; color: white; padding: 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { padding: 20px; }
+        .alert-box { background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; padding: 15px; margin: 15px 0; }
+        .alert-title { font-weight: bold; color: #721c24; margin-bottom: 10px; }
+        .alert-value { font-family: monospace; background: white; padding: 8px; border-radius: 4px; margin: 5px 0; }
+        .footer { background: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔴 Error Alert</h1>
+        </div>
+        <div class="content">
+            <p>Hello {{.OperatorName}},</p>
+            <p>An error event has been detected on your device. Please investigate immediately.</p>
+            <div class="alert-box">
+                <div class="alert-title">Error Details:</div>
+                <div class="alert-value"><strong>Device ID:</strong> {{.DeviceID}}</div>
+                <div class="alert-value"><strong>Device Name:</strong> {{.DeviceName}}</div>
+                <div class="alert-value"><strong>Error Message:</strong> {{.ErrorMessage}}</div>
+                <div class="alert-value"><strong>Time:</strong> {{.Timestamp}}</div>
+            </div>
+            <p>Please check your device and take appropriate action.</p>
+        </div>
+        <div class="footer">
+            <p>Vyzorix Update Server</p>
+            <p>This is an automated alert. Do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>`
 
 // send sends an email via the Resend API.
 func (s *Service) send(ctx context.Context, to, subject, html string) error {
