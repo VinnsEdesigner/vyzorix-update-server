@@ -10,6 +10,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
+	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
@@ -17,15 +18,17 @@ import (
 
 // LoginHandler handles POST /v1/auth/login.
 type LoginHandler struct {
-	authService *auth.AuthService
-	presenter   *response.Presenter
+	authService  *auth.AuthService
+	presenter    *response.Presenter
+	emailService *emailService.Service
 }
 
 // NewLoginHandler creates a new LoginHandler.
-func NewLoginHandler(authService *auth.AuthService, presenter *response.Presenter) *LoginHandler {
+func NewLoginHandler(authService *auth.AuthService, presenter *response.Presenter, emailService *emailService.Service) *LoginHandler {
 	return &LoginHandler{
-		authService: authService,
-		presenter:   presenter,
+		authService:  authService,
+		presenter:    presenter,
+		emailService: emailService,
 	}
 }
 
@@ -58,6 +61,10 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
+	// Get IP and user agent for login notification
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
 	result, session, err := h.authService.Login(ctx, &req)
 	if err != nil {
 		// Record failed attempt for IP intelligence
@@ -77,6 +84,21 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 
 		return
 	}
+
+	// MEDIUM-10: Send login notification email asynchronously
+	go func() {
+		if h.emailService != nil && result != nil {
+			loginData := emailService.LoginNotificationData{
+				OperatorName: result.Name,
+				IPAddress:    ipAddress,
+				UserAgent:    userAgent,
+				Location:     "Unknown", // Could integrate with IP geolocation service
+				Device:       userAgent,
+				Timestamp:    time.Now().Format(time.RFC1123),
+			}
+			_ = h.emailService.SendNewLoginNotificationEmail(context.Background(), result.Email, loginData)
+		}
+	}()
 
 	// Clear failed attempts on successful login
 	h.presenter.LoginSuccess(c, result.OperatorID)
