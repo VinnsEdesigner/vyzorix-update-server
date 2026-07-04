@@ -4,6 +4,7 @@ package jwt
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -37,15 +38,17 @@ type Manager struct {
 }
 
 // NewManager creates a new JWT manager.
-// 5 FIX: Validates JWT secret on creation to fail fast if secret is weak.
+// Validates JWT secret on creation to fail fast if secret is weak.
 func NewManager(secret string, expiry time.Duration, issuer string) (*Manager, error) {
-	// 5: Validate secret length - minimum 32 characters for proper security
+	// Validate secret length - minimum 32 characters for proper security
 	if len(secret) < 32 {
 		return nil, ErrInvalidJWTSecret
 	}
 
-	h := sha256.New()
-	h.Write([]byte(secret))
+	h := sha512.New()
+	if _, err := h.Write([]byte(secret)); err != nil {
+		return nil, fmt.Errorf("failed to hash secret: %w", err)
+	}
 
 	return &Manager{
 		secret: h.Sum(nil),

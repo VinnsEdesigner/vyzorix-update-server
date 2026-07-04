@@ -149,8 +149,11 @@ func (h *MFAHandler) EnableMFA(c *gin.Context) {
 		return
 	}
 
+	// 7 FIX: Create MAC binding for the secret
+	binding := infraauth.CreateMFASecretBinding(opID, req.Token)
+
 	// Enable MFA and save backup codes using UpdateOperatorMFA
-	err = h.operatorRepo.UpdateOperatorMFA(c.Request.Context(), opID, req.Token, backupCodes)
+	err = h.operatorRepo.UpdateOperatorMFA(c.Request.Context(), opID, req.Token, binding.MAC, backupCodes)
 	if err != nil {
 		h.presenter.InternalError(c, "")
 		return
@@ -166,13 +169,25 @@ func (h *MFAHandler) DisableMFA(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.presenter.BadRequest(c, "")
+		h.presenter.BadRequest(c, "code is required")
+		return
+	}
+
+	if req.Code == "" {
+		h.presenter.BadRequest(c, "MFA code is required to disable MFA")
 		return
 	}
 
 	opID, err := h.getOperatorFromSession(c)
 	if err != nil {
 		h.presenter.Unauthorized(c, "")
+		return
+	}
+
+	// Verify TOTP code before disabling MFA
+	_, err = h.authService.VerifyMFACode(c.Request.Context(), opID, req.Code)
+	if err != nil {
+		h.presenter.Unauthorized(c, "Invalid MFA code")
 		return
 	}
 

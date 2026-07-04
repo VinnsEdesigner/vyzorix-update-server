@@ -188,6 +188,7 @@ func (sm *Manager) ExtractFromCookie(cookieValue string) (string, error) {
 }
 
 // HashOperatorID creates a SHA-512 hash of an operator ID for database lookups.
+// Uses SHA-512 for stronger security.
 func HashOperatorID(operatorID string) string {
 	h := sha512.Sum512([]byte(operatorID))
 	return hex.EncodeToString(h[:])

@@ -79,6 +79,7 @@ type Operator struct {
 	GoogleID       string
 	ID             string
 	MFASecret      string
+	MFASecretMAC   string // HMAC of MFA secret keyed by operator ID for binding verification
 	Name           string
 	Email          string
 	BackupCodes    []string

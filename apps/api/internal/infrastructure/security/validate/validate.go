@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"unicode"
+	"unicode/utf8"
 )
 
 const (
@@ -450,13 +451,7 @@ func Sanitize(s string, maxLen int) string {
 
 // ContainsInvalidUTF8 checks if a string contains invalid UTF-8 sequences.
 func ContainsInvalidUTF8(s string) bool {
-	for _, r := range s {
-		if r == 0xFFFD {
-			return true
-		}
-	}
-
-	return []byte(s) == nil && s != ""
+	return !utf8.ValidString(s)
 }
 
 // ContainsControlCharacters checks for Unicode control characters.

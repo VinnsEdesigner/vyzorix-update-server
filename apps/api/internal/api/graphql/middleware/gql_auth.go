@@ -74,9 +74,16 @@ func (m *AuthMiddleware) authenticateSession(ctx context.Context, cookieHeader s
 		return nil, gqlerrors.ErrUnauthorized
 	}
 
-	_, op, err := m.AuthService.ValidateSession(ctx, operatorID)
+	// 11 FIX: ValidateSession expects sessionID, not operatorID - use sessionID directly
+	_, op, err := m.AuthService.ValidateSession(ctx, sessionID)
 	if err != nil || op == nil {
-		m.Log.Debug("session validation failed", "operatorID", operatorID, "err", err)
+		m.Log.Debug("session validation failed", "sessionID", sessionID, "err", err)
+		return nil, gqlerrors.ErrUnauthorized
+	}
+
+	// Additional check: ensure decrypted operatorID matches session's operator
+	if op.ID != operatorID {
+		m.Log.Debug("operator ID mismatch in session", "decrypted", operatorID, "session", op.ID)
 		return nil, gqlerrors.ErrUnauthorized
 	}
 

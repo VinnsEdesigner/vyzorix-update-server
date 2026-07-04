@@ -33,6 +33,7 @@ type Dependencies struct {
 	Presenter           *response.Presenter
 	Config              config.Config
 	SettingsRateLimiter *middleware.SettingsRateLimiterMiddleware
+	OAuthStateRepo      OAuthStateProvider
 }
 
 // AllHandlers holds references to all auth handlers.
@@ -72,7 +73,7 @@ func NewAllHandlers(deps *Dependencies) *AllHandlers {
 		PasswordReset: NewPasswordResetHandler(deps.AuthService, deps.EmailService, deps.Presenter),
 		Refresh:       NewRefreshHandler(deps.AuthService, deps.Presenter), // MISSING endpoint - added
 		MFA:           NewMFAHandler(deps.AuthService, deps.OperatorRepo, deps.Presenter),
-		OAuth:         NewOAuthHandler(deps.AuthService, deps.SessionManager, deps.Config, deps.GoogleVerifier, deps.Presenter),
+		OAuth:         NewOAuthHandler(deps.AuthService, deps.SessionManager, deps.Config, deps.GoogleVerifier, deps.Presenter).WithOAuthStateRepo(deps.OAuthStateRepo),
 		Settings:      NewSettingsHandler(deps.AuthService, deps.OperatorRepo, deps.Presenter, settingsRateLimiter),
 		Admin:         NewAdminHandler(deps.AuthService, deps.Presenter),
 		ClientCreds:   NewClientCredentialsHandler(deps.AuthService, deps.ClientService, deps.Presenter),

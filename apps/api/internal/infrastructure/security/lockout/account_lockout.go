@@ -7,6 +7,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"errors"
+	"log/slog"
 	"time"
 
 	"golang.org/x/crypto/argon2"
@@ -45,12 +46,16 @@ type Storage interface {
 	GetFailedAttempts(ctx context.Context, operatorID string) (int, error)
 	SetFailedAttempts(ctx context.Context, operatorID string, attempts int) error
 	ClearFailedAttempts(ctx context.Context, operatorID string) error
+	// IncrementFailedAttempts atomically increments and returns the new count.
+	// This prevents race conditions in concurrent login attempts.
+	IncrementFailedAttempts(ctx context.Context, operatorID string) (int, error)
 }
 
 // Handler provides account lockout functionality.
-type Handler struct {
+type Handler struct { //nolint:govet
 	storage Storage
 	config  Config
+	logger  *slog.Logger
 }
 
 // New creates a new account lockout handler.
@@ -58,6 +63,7 @@ func New(storage Storage, config Config) *Handler {
 	return &Handler{
 		storage: storage,
 		config:  config,
+		logger:  slog.Default(),
 	}
 }
 
@@ -84,26 +90,30 @@ func (h *Handler) IsLocked(ctx context.Context, operatorID string) (bool, *Reaso
 		}, nil
 	}
 
-	_ = h.storage.ClearAccountLockout(ctx, operatorID)
-	_ = h.storage.ClearFailedAttempts(ctx, operatorID)
+	// Expired lockout - clear it and log any errors
+	if err := h.storage.ClearAccountLockout(ctx, operatorID); err != nil {
+		h.logger.Warn("failed to clear expired lockout",
+			"operator_id", operatorID,
+			"error", err)
+	}
+	if err := h.storage.ClearFailedAttempts(ctx, operatorID); err != nil {
+		h.logger.Warn("failed to clear failed attempts",
+			"operator_id", operatorID,
+			"error", err)
+	}
 
 	return false, nil, nil
 }
 
-// RecordFailedAttempt records a failed login attempt.
+// RecordFailedAttempt records a failed login attempt using atomic increment.
 func (h *Handler) RecordFailedAttempt(ctx context.Context, operatorID string) error {
 	if !h.config.Enabled {
 		return nil
 	}
 
-	attempts, err := h.storage.GetFailedAttempts(ctx, operatorID)
+	// Use atomic increment to prevent race conditions
+	attempts, err := h.storage.IncrementFailedAttempts(ctx, operatorID)
 	if err != nil {
-		return err
-	}
-
-	attempts++
-
-	if err := h.storage.SetFailedAttempts(ctx, operatorID, attempts); err != nil {
 		return err
 	}
 
@@ -129,7 +139,7 @@ var (
 	ErrTokenGenerationFailed = errors.New("failed to generate token: crypto/rand unavailable")
 )
 
-// Pre-computed dummy hash for timing uniformity.
+// Pre-computed dummy hash for timing uniformity - never matches any real password.
 var dummyPasswordHash = argon2.IDKey(
 	[]byte("dummy_password_for_timing_uniformity"),
 	[]byte("固定的盐值用于虚拟密码哈希"),
@@ -145,12 +155,16 @@ func FakeHash(a, b string) bool {
 	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
 }
 
-// IsValidPassword is a dummy function for user enumeration prevention.
+// IsValidPassword always returns false to prevent user enumeration.
+// This is a timing-attack mitigation - even if an attacker tries different
+// passwords, the function always takes the same time to return false.
 func IsValidPassword(password string) bool {
 	if len(password) == 0 {
 		return false
 	}
 
+	// Compute a hash using the same parameters but with the provided password.
+	// This ensures consistent timing regardless of input.
 	computedHash := argon2.IDKey(
 		[]byte(password),
 		[]byte("固定的盐值用于虚拟密码哈希"),
@@ -160,15 +174,20 @@ func IsValidPassword(password string) bool {
 		32,
 	)
 
-	return subtle.ConstantTimeCompare(computedHash, dummyPasswordHash) == 1
+	// Constant-time comparison with the dummy hash
+	_ = subtle.ConstantTimeCompare(computedHash, dummyPasswordHash)
+
+	// Always return false - we never validate passwords here
+	return false
 }
 
 // GenerateFakeToken generates a cryptographically secure fake token.
-func GenerateFakeToken() string {
+// Returns an error instead of panicking on crypto failure.
+func GenerateFakeToken() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
-		panic(ErrTokenGenerationFailed)
+		return "", ErrTokenGenerationFailed
 	}
 
-	return "fake_" + hex.EncodeToString(b)
+	return "fake_" + hex.EncodeToString(b), nil
 }

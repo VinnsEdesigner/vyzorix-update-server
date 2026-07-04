@@ -26,11 +26,25 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		return nil, nil, err
 	}
 
+	// Prevent nil pointer dereference if FindByEmail returns (nil, nil)
+	if op == nil {
+		_ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
+		return nil, nil, application.ErrInvalidCredentials
+	}
+
 	if op.PasswordHash == "" {
 		return nil, nil, application.ErrInvalidCredentials
 	}
 
+	// Verify password with proper error handling
 	if err = s.passwordHasher.Verify(req.Password, op.PasswordHash); err != nil {
+		// Only return ErrInvalidCredentials for wrong password
+		// For other crypto errors, still return generic error to prevent info leak
+		if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" ||
+		   err.Error() == "crypto/scrypt: password hash does not match" ||
+		   err.Error() == "crypto/argon2: invalid hash" {
+			return nil, nil, application.ErrInvalidCredentials
+		}
 		return nil, nil, application.ErrInvalidCredentials
 	}
 

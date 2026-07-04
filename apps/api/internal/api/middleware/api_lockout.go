@@ -189,19 +189,40 @@ func LockoutMiddleware(lockout *Lockout) func(c *gin.Context) {
 // LoadLockoutConfig loads lockout configuration from environment variables.
 func LoadLockoutConfig() LockoutConfig {
 	enabled := os.Getenv("ACCOUNT_LOCKOUT_ENABLED") == "true"
-	maxAttempts := 5
 
+	// Clamp maxAttempts to reasonable bounds [1, 20]
+	maxAttempts := 5
 	if v := os.Getenv("ACCOUNT_LOCKOUT_ATTEMPTS"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+		if n, err := strconv.Atoi(v); err == nil && n >= 1 {
 			maxAttempts = n
+			if maxAttempts > 20 {
+				maxAttempts = 20
+			}
 		}
 	}
 
+	// Clamp duration to reasonable bounds [1 second, 24 hours]
 	duration := time.Hour
-
 	if v := os.Getenv("ACCOUNT_LOCKOUT_DURATION"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+		if n, err := strconv.Atoi(v); err == nil && n >= 1 {
 			duration = time.Duration(n) * time.Second
+			if duration > 24*time.Hour {
+				duration = 24 * time.Hour
+			}
+		}
+	}
+
+	// Clamp max lockout duration to [1 hour, 7 days]
+	maxLockoutDuration := 24 * time.Hour
+	if v := os.Getenv("ACCOUNT_LOCKOUT_MAX_DURATION"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 1 {
+			maxLockoutDuration = time.Duration(n) * time.Second
+			if maxLockoutDuration < time.Hour {
+				maxLockoutDuration = time.Hour
+			}
+			if maxLockoutDuration > 7*24*time.Hour {
+				maxLockoutDuration = 7 * 24 * time.Hour
+			}
 		}
 	}
 
@@ -209,6 +230,6 @@ func LoadLockoutConfig() LockoutConfig {
 		Enabled:            enabled,
 		MaxAttempts:        maxAttempts,
 		LockoutDuration:    duration,
-		MaxLockoutDuration: 24 * time.Hour,
+		MaxLockoutDuration: maxLockoutDuration,
 	}
 }
