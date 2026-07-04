@@ -674,7 +674,7 @@ func (r *Resolver) GetDashboardStats(p graphql.ResolveParams) (interface{}, erro
 		return nil, r.Presenter.InternalError("dashboard service not available")
 	}
 
-	stats, err := r.DashboardSvc.GetDashboardStats(ctx)
+	stats, err := r.DashboardSvc.GetDashboardStats(ctx, op.ID)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to get dashboard stats")
 	}
@@ -749,13 +749,16 @@ func (r *Resolver) convertCommandHistory(commands []cmdapp.CommandEntry) []map[s
 			"deviceId":   "", // Would need device ID from context
 			"command":    c.Command,
 			"status":    c.Status,
-			"createdAt": time.UnixMilli(c.CreatedAt).Format(time.RFC3339),
+			"sentAt":    time.UnixMilli(c.SentAt).Format(time.RFC3339),
 		}
 		if c.DeliveredAt > 0 {
 			entry["deliveredAt"] = time.UnixMilli(c.DeliveredAt).Format(time.RFC3339)
 		}
 		if c.CompletedAt > 0 {
 			entry["completedAt"] = time.UnixMilli(c.CompletedAt).Format(time.RFC3339)
+		}
+		if c.LatencyMs > 0 {
+			entry["latencyMs"] = c.LatencyMs
 		}
 		result = append(result, entry)
 	}

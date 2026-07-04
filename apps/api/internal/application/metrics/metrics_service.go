@@ -6,16 +6,21 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/metrics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 )
 
 // Service handles metrics operations.
 type Service struct {
-	metricsRepo metrics.Repository
+	metricsRepo  metrics.Repository
+	operatorRepo operator.Repository
 }
 
 // NewService creates a new metrics service.
-func NewService(metricsRepo metrics.Repository) *Service {
-	return &Service{metricsRepo: metricsRepo}
+func NewService(metricsRepo metrics.Repository, operatorRepo operator.Repository) *Service {
+	return &Service{
+		metricsRepo:  metricsRepo,
+		operatorRepo: operatorRepo,
+	}
 }
 
 // GetDeviceMetrics retrieves aggregated metrics for chart visualization.
@@ -29,14 +34,11 @@ func (s *Service) GetDeviceMetrics(ctx context.Context, req *GetMetricsRequest) 
 		return nil, fmt.Errorf("failed to get latest telemetry: %w", err)
 	}
 
-	// Default thresholds (these would come from operator settings in production)
-	thresholds := &metrics.ThresholdPreset{
-		RiskScoreWarning:  70,
-		RiskScoreCritical: 90,
-		ThermalWarning:    80,
-		ThermalCritical:   95,
-		BufferWarning:     30,
-		BufferCritical:    10,
+	// Get thresholds from operator settings
+	thresholds, err := s.getOperatorThresholds(ctx, req.OperatorID)
+	if err != nil {
+		// Fall back to defaults if operator settings can't be fetched
+		thresholds = defaultThresholds()
 	}
 
 	// Get stats for each metric
@@ -296,6 +298,39 @@ func (s *Service) convertThresholdEvents(events []*metrics.MetricThresholdEvent)
 		})
 	}
 	return result
+}
+
+// getOperatorThresholds retrieves thresholds from operator settings.
+func (s *Service) getOperatorThresholds(ctx context.Context, operatorID string) (*metrics.ThresholdPreset, error) {
+	if operatorID == "" || s.operatorRepo == nil {
+		return defaultThresholds(), nil
+	}
+
+	thresholds, err := s.operatorRepo.GetThresholds(ctx, operatorID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metrics.ThresholdPreset{
+		RiskScoreWarning:  float64(thresholds.RiskWarn),
+		RiskScoreCritical: float64(thresholds.RiskCrit),
+		ThermalWarning:    float64(thresholds.ThermalWarn),
+		ThermalCritical:   float64(thresholds.ThermalCrit),
+		BufferWarning:     float64(thresholds.BufferWarn),
+		BufferCritical:    float64(thresholds.BufferCrit),
+	}, nil
+}
+
+// defaultThresholds returns default threshold values.
+func defaultThresholds() *metrics.ThresholdPreset {
+	return &metrics.ThresholdPreset{
+		RiskScoreWarning:  70,
+		RiskScoreCritical: 85,
+		ThermalWarning:    45,
+		ThermalCritical:   50,
+		BufferWarning:     30,
+		BufferCritical:    15,
+	}
 }
 
 // calculateStats computes statistics from a slice of values.

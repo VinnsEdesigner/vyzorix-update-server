@@ -60,6 +60,9 @@ type Repository interface {
 	// UpdateThresholds updates the alert thresholds for an operator.
 	UpdateThresholds(ctx context.Context, id string, th Thresholds) error
 
+	// GetThresholds retrieves the alert thresholds for an operator.
+	GetThresholds(ctx context.Context, id string) (Thresholds, error)
+
 	// UpdateClientSettings updates the client preferences for an operator.
 	UpdateClientSettings(ctx context.Context, id string, cs ClientSettings) error
 

@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/gin-gonic/gin"
 )
@@ -23,13 +24,20 @@ func NewStatsHandler(dashboardSvc *dashboard.Service, logger *slog.Logger) *Stat
 }
 
 // GetStats handles GET /v1/dashboard/stats.
-// Returns aggregated dashboard statistics.
+// Returns aggregated dashboard statistics for the operator.
 func (h *StatsHandler) GetStats(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	response, err := h.dashboardSvc.GetDashboardStats(ctx)
+	// Extract operator for DOA check - stats are operator-scoped
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
+		return
+	}
+
+	response, err := h.dashboardSvc.GetDashboardStats(ctx, op.ID)
 	if err != nil {
-		h.logger.Error("Failed to get dashboard stats", "error", err)
+		h.logger.Error("Failed to get dashboard stats", "operatorID", op.ID, "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to retrieve dashboard stats"})
 		return
 	}

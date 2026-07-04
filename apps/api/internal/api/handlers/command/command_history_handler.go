@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/gin-gonic/gin"
 )
@@ -27,6 +28,13 @@ func NewHistoryHandler(historySvc *command.HistoryService, logger *slog.Logger) 
 // Returns paginated command history for a device.
 func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Extract operator for DOA check
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
+		return
+	}
 
 	deviceID := c.Param("imei")
 	if deviceID == "" {
@@ -72,12 +80,13 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	}
 
 	req := &command.GetHistoryRequest{
-		DeviceID:  deviceID,
-		Status:    status,
-		Page:      page,
-		Limit:     limit,
-		StartTime: startTime,
-		EndTime:   endTime,
+		DeviceID:   deviceID,
+		OperatorID: op.ID,
+		Status:     status,
+		Page:       page,
+		Limit:      limit,
+		StartTime:  startTime,
+		EndTime:    endTime,
 	}
 
 	resp, err := h.historySvc.GetHistory(ctx, req)

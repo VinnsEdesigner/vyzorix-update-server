@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/gin-gonic/gin"
@@ -30,15 +31,23 @@ func NewLogsHandler(logsSvc *logs.Service, devRepo device.Repository, logger *sl
 func (h *LogsHandler) GetLogs(c *gin.Context) {
 	ctx := c.Request.Context()
 
+	// Extract operator for DOA check
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
+		return
+	}
+
 	deviceID := c.Param("imei")
 	if deviceID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Device ID is required"})
 		return
 	}
 
-	_, err := h.devRepo.FindByID(ctx, deviceID)
+	// DOA check - verify operator owns this device
+	_, err := h.devRepo.FindByIDAndOperator(ctx, deviceID, op.ID)
 	if err != nil {
-		h.logger.Warn("Device not found", "deviceID", deviceID, "error", err)
+		h.logger.Warn("Device not found or not owned", "deviceID", deviceID, "operatorID", op.ID, "error", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Device not found"})
 		return
 	}

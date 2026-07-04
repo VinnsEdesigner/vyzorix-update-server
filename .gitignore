@@ -54,3 +54,17 @@ __pycache__/
 # tscircuit skill (downloaded reference)
 hardware/tscircuit_skill/
 
+
+# Go
+tools/
+.go-version
+
+# Go workspace
+*.sum
+
+# Go binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
