@@ -104,4 +104,7 @@ type Repository interface {
 
 	// RotateWebhookSecret generates a new webhook secret for an operator.
 	RotateWebhookSecret(ctx context.Context, operatorID string) (string, error)
+
+	// UpdateFCMToken updates the FCM token for an operator.
+	UpdateFCMToken(ctx context.Context, operatorID, fcmToken string) error
 }
