@@ -24,6 +24,12 @@ func NewLockoutHandler(authService *appauth.AuthService, lockout *middleware.Loc
 	}
 }
 
+// Middleware returns a Gin middleware that checks lockout status.
+// MEDIUM-3: Exposed so other handlers can use it.
+func (h *LockoutHandler) Middleware() gin.HandlerFunc {
+	return middleware.LockoutMiddleware(h.lockout)
+}
+
 // GetLockoutStatus handles GET /v1/auth/lockout/status.
 func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
 	sessionID, err := h.getSessionFromCookie(c)
