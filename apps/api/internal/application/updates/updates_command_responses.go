@@ -21,12 +21,14 @@ type PaginationResponse struct {
 // VersionResponse represents a version in API responses.
 type VersionResponse struct {
 	Version      string `json:"version"`
+	ReleaseType  string `json:"releaseType"`
 	Status       string `json:"status"`
 	APKFilename  string `json:"apkFilename"`
 	SHA256       string `json:"sha256"`
 	ReleaseNotes string `json:"releaseNotes,omitempty"`
 	APKSize      int64  `json:"apkSize"`
 	ReleasedAt   int64  `json:"releasedAt"`
+	IsLatest     bool   `json:"isLatest"`
 }
 
 // ListVersionsResponse represents the response for GET /v1/updates/versions.
@@ -59,6 +61,7 @@ type SyncStatusInfo struct {
 // LatestVersionInfo represents the latest version information.
 type LatestVersionInfo struct {
 	Version     string `json:"version"`
+	ReleaseType string `json:"releaseType"`
 	APKFilename string `json:"apkFilename"`
 	SHA256      string `json:"sha256"`
 	ReleasedAt  int64  `json:"releasedAt"`
@@ -92,6 +95,7 @@ type PushUpdateResponse struct {
 	PushID        string           `json:"pushId"`
 	Version       string           `json:"version"`
 	InstallType   string           `json:"installType"`
+	ScheduledAt   *int64           `json:"scheduledAt,omitempty"`
 	InitiatedBy   string           `json:"initiatedBy"`
 	Status        string           `json:"status"`
 	DeviceIDs     []string         `json:"deviceIds"`
@@ -145,24 +149,27 @@ type ListHistoryResponse struct {
 
 // PushDetailDevice represents a device in push detail response.
 type PushDetailDevice struct {
+	ID             string `json:"id"`
 	DeviceID       string `json:"deviceId"`
 	DeviceName     string `json:"deviceName,omitempty"`
 	Status         string `json:"status"`
+	SentAt         *int64 `json:"sentAt,omitempty"`
 	AcknowledgedAt *int64 `json:"acknowledgedAt,omitempty"`
 	Error          string `json:"error,omitempty"`
 }
 
 // PushDetailResponse represents the response for GET /v1/updates/history/:pushId.
 type PushDetailResponse struct {
-	ScheduledAt *int64             `json:"scheduledAt,omitempty"`
-	CompletedAt *int64             `json:"completedAt,omitempty"`
-	ID          string             `json:"id"`
-	Version     string             `json:"version"`
-	InstallType string             `json:"installType"`
-	Status      string             `json:"status"`
-	InitiatedBy string             `json:"initiatedBy"`
-	Devices     []PushDetailDevice `json:"devices"`
-	InitiatedAt int64              `json:"initiatedAt"`
+	ID           string             `json:"id"`
+	Version      string             `json:"version"`
+	InstallType  string             `json:"installType"`
+	ScheduledAt  *int64             `json:"scheduledAt,omitempty"`
+	CompletedAt  *int64             `json:"completedAt,omitempty"`
+	CancelledAt  *int64             `json:"cancelledAt,omitempty"`
+	Status       string             `json:"status"`
+	InitiatedBy  string             `json:"initiatedBy"`
+	InitiatedAt  int64              `json:"initiatedAt"`
+	Devices      []PushDetailDevice `json:"devices"`
 }
 
 // ExportResponse represents the response for GET /v1/updates/export.

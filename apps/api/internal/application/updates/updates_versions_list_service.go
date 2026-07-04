@@ -45,12 +45,14 @@ func (s *VersionsListService) GetVersions(ctx context.Context, status string, pa
 
 		versionResponses = append(versionResponses, VersionResponse{
 			Version:      v.Version,
+			ReleaseType:  string(v.ReleaseType),
 			APKFilename:  v.APKFilename,
 			APKSize:      v.APKSize,
 			SHA256:       v.SHA256,
 			ReleasedAt:   v.ReleaseDate,
 			ReleaseNotes: v.ReleaseNotes,
 			Status:       versionStatus,
+			IsLatest:     v.IsLatest,
 		})
 	}
 

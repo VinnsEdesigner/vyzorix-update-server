@@ -53,20 +53,19 @@ func (r *Resolver) GetInbox(p graphql.ResolveParams) (interface{}, error) {
 	requests := make([]map[string]interface{}, 0, len(result.Requests))
 	for _, req := range result.Requests {
 		requests = append(requests, map[string]interface{}{
-			"id":                  req.ID,
-			"imei":                req.IMEI,
-			"model":               req.Model,
-			"manufacturer":        req.Manufacturer,
-			"osVersion":           req.OSVersion,
-			"appVersion":          req.AppVersion,
-			"fcmToken":            req.FCMToken,
+			"id":                   req.ID,
+			"imei":                 req.IMEI,
+			"model":                req.Model,
+			"manufacturer":         req.Manufacturer,
+			"osVersion":            req.OSVersion,
+			"appVersion":           req.AppVersion,
 			"firebaseInstallId":    req.FirebaseInstallID,
-			"status":              req.Status,
-			"createdAt":           req.CreatedAt,
-			"approvedAt":          req.ApprovedAt,
-			"rejectedAt":          req.RejectedAt,
-			"notes":               req.Notes,
-			"operatorId":          req.OperatorID,
+			"status":               req.Status,
+			"createdAt":            req.CreatedAt,
+			"approvedAt":           req.ApprovedAt,
+			"rejectedAt":           req.RejectedAt,
+			"notes":                req.Notes,
+			"operatorId":           req.OperatorID,
 		})
 	}
 
@@ -110,20 +109,19 @@ func (r *Resolver) GetInboxEntry(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	return map[string]interface{}{
-		"id":                  entry.ID,
-		"imei":                entry.IMEI,
-		"model":               entry.Model,
-		"manufacturer":        entry.Manufacturer,
-		"osVersion":           entry.OSVersion,
-		"appVersion":          entry.AppVersion,
-		"fcmToken":            entry.FCMToken,
-		"firebaseInstallId":   entry.FirebaseInstallID,
-		"status":              entry.Status,
-		"createdAt":           entry.CreatedAt,
-		"approvedAt":          entry.ApprovedAt,
-		"rejectedAt":          entry.RejectedAt,
-		"notes":               entry.Notes,
-		"operatorId":          entry.OperatorID,
+		"id":                   entry.ID,
+		"imei":                 entry.IMEI,
+		"model":                entry.Model,
+		"manufacturer":         entry.Manufacturer,
+		"osVersion":            entry.OSVersion,
+		"appVersion":           entry.AppVersion,
+		"firebaseInstallId":    entry.FirebaseInstallID,
+		"status":               entry.Status,
+		"createdAt":            entry.CreatedAt,
+		"approvedAt":           entry.ApprovedAt,
+		"rejectedAt":           entry.RejectedAt,
+		"notes":                entry.Notes,
+		"operatorId":           entry.OperatorID,
 	}, nil
 }
 
