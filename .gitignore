@@ -36,8 +36,8 @@ dist-ssr
 *.db-*
 /data/*
 !/data/.gitkeep
-/bin/*
-!/bin/.gitkeep
+apps/api/bin/
+apps/api/vyzorix-server*
 .env
 /db/*
 !/db/.gitkeep
@@ -68,3 +68,10 @@ tools/
 *.dll
 *.so
 *.dylib
+
+# Compiled Vyzorix server binaries
+vyzorix-server
+vyzorix-server-clean
+vyzorix-server-new
+vyzorix-server-old
+vyzorix-update-server
