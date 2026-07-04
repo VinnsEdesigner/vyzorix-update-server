@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"time"
 
@@ -1208,21 +1209,39 @@ func (s *AuthService) UpdateSettings(ctx context.Context, operatorID string, req
 		}
 
 		op.Name = name
+		if err := s.operatorRepo.Update(ctx, op); err != nil {
+			return nil, err
+		}
 	}
 
+	// Update thresholds in operator_settings table
 	if req.Thresholds != nil {
+		if err := s.operatorRepo.UpdateThresholds(ctx, operatorID, *req.Thresholds); err != nil {
+			return nil, err
+		}
 		op.Thresholds = *req.Thresholds
 	}
 
+	// Update client settings in operator_settings table with validation
 	if req.Client != nil {
+		// Validate client settings
+		if req.Client.RequestTimeoutMs < 500 || req.Client.RequestTimeoutMs > 60000 {
+			return nil, fmt.Errorf("requestTimeoutMs must be between 500 and 60000")
+		}
+		if req.Client.LogBufferLimit < 50 || req.Client.LogBufferLimit > 5000 {
+			return nil, fmt.Errorf("logBufferLimit must be between 50 and 5000")
+		}
+		if req.Client.SignalHistoryLimit < 30 || req.Client.SignalHistoryLimit > 2000 {
+			return nil, fmt.Errorf("signalHistoryLimit must be between 30 and 2000")
+		}
+
+		if err := s.operatorRepo.UpdateClientSettings(ctx, operatorID, *req.Client); err != nil {
+			return nil, err
+		}
 		op.ClientSettings = *req.Client
 	}
 
 	op.UpdatedAt = time.Now()
-
-	if err := s.operatorRepo.Update(ctx, op); err != nil {
-		return nil, err
-	}
 
 	return op, nil
 }
@@ -1238,13 +1257,43 @@ func (s *AuthService) ResetSettings(ctx context.Context, operatorID string) (*op
 		return nil, err
 	}
 
-	op.Thresholds = operator.Thresholds{}
-	op.ClientSettings = operator.ClientSettings{}
-	op.UpdatedAt = time.Now()
-
-	if err := s.operatorRepo.Update(ctx, op); err != nil {
+	// Reset thresholds to defaults in operator_settings table
+	defaultThresholds := operator.Thresholds{
+		RiskWarn:    70,
+		RiskCrit:    85,
+		ThermalWarn: 45,
+		ThermalCrit: 50,
+		BufferWarn:  30,
+		BufferCrit:  15,
+	}
+	if err := s.operatorRepo.UpdateThresholds(ctx, operatorID, defaultThresholds); err != nil {
 		return nil, err
 	}
+
+	// Reset client settings to defaults in operator_settings table
+	defaultClientSettings := operator.ClientSettings{
+		ServerURL:         "",
+		DeviceID:          "",
+		RequestTimeoutMs:  8000,
+		AutoReconnect:     true,
+		StrictHmac:       false,
+		LogBufferLimit:    500,
+		SignalHistoryLimit: 240,
+		NotificationsEnabled: true,
+	}
+	if err := s.operatorRepo.UpdateClientSettings(ctx, operatorID, defaultClientSettings); err != nil {
+		return nil, err
+	}
+
+	// Reset notifications to defaults
+	defaultNotifications := operator.DefaultNotificationSettings()
+	if err := s.operatorRepo.UpdateNotifications(ctx, operatorID, defaultNotifications); err != nil {
+		return nil, err
+	}
+
+	op.Thresholds = defaultThresholds
+	op.ClientSettings = defaultClientSettings
+	op.UpdatedAt = time.Now()
 
 	return op, nil
 }

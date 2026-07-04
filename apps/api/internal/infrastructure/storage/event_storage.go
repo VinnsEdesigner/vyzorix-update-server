@@ -54,7 +54,9 @@ func (r *EventRepository) StoreBatch(ctx context.Context, events []*event.Event)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
 	stmt, err := tx.PrepareContext(ctx, `
 		INSERT INTO device_events (id, device_id, event_type, timestamp, data, severity, source, operator_id)
@@ -62,7 +64,9 @@ func (r *EventRepository) StoreBatch(ctx context.Context, events []*event.Event)
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer func() {
+		_ = stmt.Close()
+	}()
 
 	for _, evt := range events {
 		dataBytes, err := json.Marshal(evt.Data)
@@ -149,7 +153,7 @@ func (r *EventRepository) GetByDevice(ctx context.Context, deviceID string, filt
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	events, err := r.scanEvents(rows)
 	if err != nil {
@@ -198,7 +202,7 @@ func (r *EventRepository) GetByDevices(ctx context.Context, deviceIDs []string, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	events, err := r.scanEvents(rows)
 	if err != nil {
@@ -238,7 +242,7 @@ func (r *EventRepository) GetByType(ctx context.Context, eventType event.EventTy
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	events, err := r.scanEvents(rows)
 	if err != nil {
@@ -273,12 +277,12 @@ func (r *EventRepository) GetByOperator(ctx context.Context, operatorID string, 
 	for rows.Next() {
 		var id string
 		if err := rows.Scan(&id); err != nil {
-			rows.Close()
+			func() { _ = rows.Close() }()
 			return nil, err
 		}
 		deviceIDs = append(deviceIDs, id)
 	}
-	rows.Close()
+	func() { _ = rows.Close() }()
 
 	if len(deviceIDs) == 0 {
 		return &event.EventResult{Events: []event.Event{}}, nil
@@ -303,7 +307,7 @@ func (r *EventRepository) GetRecent(ctx context.Context, limit int) ([]event.Eve
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	return r.scanEvents(rows)
 }
@@ -325,7 +329,7 @@ func (r *EventRepository) GetRecentByDevice(ctx context.Context, deviceID string
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	return r.scanEvents(rows)
 }

@@ -8,6 +8,8 @@ import (
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	gqlmiddleware "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/validator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
@@ -16,30 +18,37 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
+	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 )
 
 // Resolver is the root GraphQL resolver.
 type Resolver struct {
-	DeviceService    *device.Service
-	CommandService   *cmdapp.Service
-	HistoryService   *cmdapp.HistoryService
-	DashboardSvc     *dashboard.Service
-	LogsSvc          *logs.Service
-	MetricsSvc       *appmetrics.Service
-	UpdatesSvc       *updates.Service
-	InboxService     *inboxapp.Service
-	DiagnosticsSvc   *diagnostics.Service
-	Hub              *hub.Hub
-	TelemetryRepo    *storage.TelemetryRepository
-	LogsRepo         *storage.LogsRepository
-	MetricsRepo      *storage.MetricsRepository
-	FCMNotifier      fcm.Notifier
-	AuthMiddleware   *gqlmiddleware.AuthMiddleware
-	Presenter        *gqladapters.Presenter
-	Validator        *validator.Validator
+	DeviceService     *device.Service
+	CommandService    *cmdapp.Service
+	HistoryService    *cmdapp.HistoryService
+	DashboardSvc      *dashboard.Service
+	LogsSvc           *logs.Service
+	MetricsSvc        *appmetrics.Service
+	UpdatesSvc        *updates.Service
+	InboxService      *inboxapp.Service
+	DiagnosticsSvc    *diagnostics.Service
+	Hub               *hub.Hub
+	TelemetryRepo     *storage.TelemetryRepository
+	LogsRepo          *storage.LogsRepository
+	MetricsRepo       *storage.MetricsRepository
+	FCMNotifier       fcm.Notifier
+	AuthMiddleware    *gqlmiddleware.AuthMiddleware
+	Presenter         *gqladapters.Presenter
+	Validator         *validator.Validator
+	OperatorRepo      operator.Repository
+	SettingsService   *auth.ClientSettingsService
+	ThresholdService  *appoperator.ThresholdService
+	NotificationSvc   *appoperator.NotificationService
+	WebhookClient     *infrawebhook.Client
 }
 
 // NewResolver creates a new GraphQL resolver.
@@ -59,24 +68,34 @@ func NewResolver(
 	fcmNotifier fcm.Notifier,
 	authMiddleware *gqlmiddleware.AuthMiddleware,
 	presenter *gqladapters.Presenter,
+	operatorRepo operator.Repository,
+	settingsService *auth.ClientSettingsService,
+	thresholdService *appoperator.ThresholdService,
+	notificationSvc *appoperator.NotificationService,
+	webhookClient *infrawebhook.Client,
 ) *Resolver {
 	return &Resolver{
-		DeviceService:   deviceService,
-		CommandService: commandService,
-		HistoryService: historyService,
-		DashboardSvc:   dashboardSvc,
-		LogsSvc:        logsSvc,
-		MetricsSvc:     metricsSvc,
-		UpdatesSvc:     updatesSvc,
-		DiagnosticsSvc: diagnosticsSvc,
-		Hub:            hub,
-		TelemetryRepo:  telemetryRepo,
-		LogsRepo:       logsRepo,
-		MetricsRepo:    metricsRepo,
-		FCMNotifier:    fcmNotifier,
-		AuthMiddleware: authMiddleware,
-		Presenter:      presenter,
-		Validator:      validator.New(),
+		DeviceService:    deviceService,
+		CommandService:   commandService,
+		HistoryService:   historyService,
+		DashboardSvc:     dashboardSvc,
+		LogsSvc:         logsSvc,
+		MetricsSvc:      metricsSvc,
+		UpdatesSvc:      updatesSvc,
+		DiagnosticsSvc:   diagnosticsSvc,
+		Hub:             hub,
+		TelemetryRepo:   telemetryRepo,
+		LogsRepo:        logsRepo,
+		MetricsRepo:     metricsRepo,
+		FCMNotifier:     fcmNotifier,
+		AuthMiddleware:  authMiddleware,
+		Presenter:       presenter,
+		Validator:       validator.New(),
+		OperatorRepo:    operatorRepo,
+		SettingsService: settingsService,
+		ThresholdService: thresholdService,
+		NotificationSvc: notificationSvc,
+		WebhookClient:   webhookClient,
 	}
 }
 

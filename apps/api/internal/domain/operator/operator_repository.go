@@ -92,4 +92,16 @@ type Repository interface {
 
 	// SetHMACWindowSeconds updates the HMAC timestamp window.
 	SetHMACWindowSeconds(ctx context.Context, seconds int) error
+
+	// GetOperatorSettings retrieves all settings for an operator.
+	GetOperatorSettings(ctx context.Context, operatorID string) (*OperatorSettings, error)
+
+	// GetNotifications retrieves notification settings for an operator.
+	GetNotifications(ctx context.Context, operatorID string) (*NotificationSettings, error)
+
+	// UpdateNotifications updates notification settings for an operator.
+	UpdateNotifications(ctx context.Context, operatorID string, settings *NotificationSettings) error
+
+	// RotateWebhookSecret generates a new webhook secret for an operator.
+	RotateWebhookSecret(ctx context.Context, operatorID string) (string, error)
 }

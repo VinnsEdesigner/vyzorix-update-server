@@ -248,6 +248,8 @@ func (r *InboxRepository) Update(ctx context.Context, e *inbox.InboxEntry) error
 		reviewedAt = e.RejectedAt
 		reviewedReason = ""
 		rejectionReason = e.Notes
+	default:
+		// StatusPending - no review yet, leave defaults
 	}
 
 	_, err := r.exec(ctx, query,
