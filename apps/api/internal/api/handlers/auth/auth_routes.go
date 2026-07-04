@@ -64,7 +64,7 @@ func NewAllHandlers(deps *Dependencies) *AllHandlers {
 
 	return &AllHandlers{
 		AuthService:   deps.AuthService,
-		Login:         NewLoginHandler(deps.AuthService, deps.Presenter),
+		Login:         NewLoginHandler(deps.AuthService, deps.Presenter, deps.EmailService),
 		Register:      NewRegisterHandler(deps.AuthService, deps.EmailService, deps.Presenter),
 		Logout:        NewLogoutHandler(deps.AuthService, deps.Presenter),
 		Me:            NewMeHandler(deps.AuthService, deps.Presenter),
