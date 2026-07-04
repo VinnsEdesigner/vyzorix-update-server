@@ -146,14 +146,15 @@ func (r *DiagnosticsRepository) RecordEvent(ctx context.Context, event *diagnost
 func (r *DiagnosticsRepository) GetTelemetryStats(ctx context.Context, deviceID string) (*diagnostics.TelemetryInfo, error) {
 	now := time.Now()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	startOfDayMs := startOfDay.UnixMilli()
 	
 	// Count frames today
 	framesQuery := `
 		SELECT COUNT(*) FROM telemetry 
-		WHERE device_id = ? AND timestamp >= ?`
+		WHERE device_id = ? AND received_at >= ?`
 	
 	var framesToday int
-	err := r.db.QueryRowContext(ctx, framesQuery, deviceID, startOfDay).Scan(&framesToday)
+	err := r.db.QueryRowContext(ctx, framesQuery, deviceID, startOfDayMs).Scan(&framesToday)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -161,21 +162,21 @@ func (r *DiagnosticsRepository) GetTelemetryStats(ctx context.Context, deviceID 
 	// Get total bytes today (from telemetry size estimate)
 	bytesQuery := `
 		SELECT COALESCE(SUM(length(frame_data)), 0) FROM telemetry 
-		WHERE device_id = ? AND timestamp >= ?`
+		WHERE device_id = ? AND received_at >= ?`
 	
 	var totalBytesToday int64
-	err = r.db.QueryRowContext(ctx, bytesQuery, deviceID, startOfDay).Scan(&totalBytesToday)
+	err = r.db.QueryRowContext(ctx, bytesQuery, deviceID, startOfDayMs).Scan(&totalBytesToday)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 	
 	// Count sessions today (distinct connection sessions based on telemetry)
 	sessionsQuery := `
-		SELECT COUNT(DISTINCT strftime('%Y-%m-%d %H', timestamp)) FROM telemetry 
-		WHERE device_id = ? AND timestamp >= ?`
+		SELECT COUNT(DISTINCT strftime('%Y-%m-%d %H', datetime(received_at/1000, 'unixepoch'))) FROM telemetry 
+		WHERE device_id = ? AND received_at >= ?`
 	
 	var sessionsToday int
-	err = r.db.QueryRowContext(ctx, sessionsQuery, deviceID, startOfDay).Scan(&sessionsToday)
+	err = r.db.QueryRowContext(ctx, sessionsQuery, deviceID, startOfDayMs).Scan(&sessionsToday)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -190,14 +191,14 @@ func (r *DiagnosticsRepository) GetTelemetryStats(ctx context.Context, deviceID 
 // GetLastTelemetry retrieves the most recent telemetry data for a device.
 func (r *DiagnosticsRepository) GetLastTelemetry(ctx context.Context, deviceID string) (*diagnostics.TimelineEvent, error) {
 	query := `
-		SELECT timestamp, frame_data FROM telemetry 
+		SELECT received_at, frame_data FROM telemetry 
 		WHERE device_id = ? 
-		ORDER BY timestamp DESC LIMIT 1`
+		ORDER BY received_at DESC LIMIT 1`
 	
-	var timestamp time.Time
+	var receivedAtMs int64
 	var frameData []byte
 	
-	err := r.db.QueryRowContext(ctx, query, deviceID).Scan(&timestamp, &frameData)
+	err := r.db.QueryRowContext(ctx, query, deviceID).Scan(&receivedAtMs, &frameData)
 	if err == sql.ErrNoRows {
 		return nil, diagnostics.ErrNoTelemetryData
 	}
@@ -217,7 +218,7 @@ func (r *DiagnosticsRepository) GetLastTelemetry(ctx context.Context, deviceID s
 		ID:        "",
 		DeviceID:  deviceID,
 		Type:      diagnostics.EventTypeTelemetry,
-		Timestamp: timestamp,
+		Timestamp: time.UnixMilli(receivedAtMs),
 		Data:      data,
 	}, nil
 }

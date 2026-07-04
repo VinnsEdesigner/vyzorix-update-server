@@ -85,7 +85,7 @@ func main() {
 		logsRepo := storage.NewLogsRepository(db)
 		metricsRepo := storage.NewMetricsRepository(db)
 		logsSvc := logs.NewService(logsRepo, deps.Log)
-		metricsSvc := appmetrics.NewService(metricsRepo)
+		metricsSvc := appmetrics.NewService(metricsRepo, deps.OperatorRepo)
 		dashboardSvc := dashboard.NewService(deviceRepo, commandRepo, logsRepo)
 		diagnosticsRepo := storage.NewDiagnosticsRepository(db)
 		diagnosticsSvc := diagnosticsapp.NewService(diagnosticsRepo, deviceRepo, deps.Hub, cfg.DiagnosticsConfig)

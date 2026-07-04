@@ -17,6 +17,7 @@ const (
 // GetMetricsRequest represents the request for GET /v1/device/:imei/metrics.
 type GetMetricsRequest struct {
 	DeviceID   string `param:"imei" validate:"required"`
+	OperatorID string // Required for fetching operator thresholds
 	Range      string `query:"range"`
 	Resolution string `query:"resolution"`
 	StartTime  int64  `query:"startTime"`

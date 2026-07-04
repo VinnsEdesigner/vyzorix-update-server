@@ -21,6 +21,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	eventapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/event"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
@@ -113,9 +114,32 @@ func ProvideTelemetryRepository(db *sql.DB) *storage.TelemetryRepository {
 	return storage.NewTelemetryRepository(db)
 }
 
+// ProvideEventRepository creates the event repository.
+func ProvideEventRepository(db *sql.DB) *storage.EventRepository {
+	return storage.NewEventRepository(db)
+}
+
 // ProvideUpdatesStorage creates the updates storage.
 func ProvideUpdatesStorage(db *sql.DB) *storage.UpdatesStorage {
 	return storage.NewUpdatesStorage(db)
+}
+
+// ProvideEventProcessor creates the event processor and wires it to the hub.
+func ProvideEventProcessor(
+	eventRepo *storage.EventRepository,
+	deviceRepo *storage.DeviceRepository,
+	hubResult *HubResult,
+	log *slog.Logger,
+) *eventapp.Processor {
+	// Create broadcaster first
+	broadcaster := eventapp.NewBroadcaster(log)
+	hubResult.Hub.SetDashboardBroadcaster(broadcaster)
+
+	// Create processor with broadcaster
+	processor := eventapp.NewProcessor(eventRepo, deviceRepo, broadcaster, log)
+	hubResult.Hub.SetEventProcessor(processor)
+	
+	return processor
 }
 
 // ProvideEmailVerificationRepository creates the email verification repository.
@@ -427,7 +451,9 @@ var WireInjector = wire.NewSet(
 	ProvideSessionRepository,
 	ProvideClientRepository,
 	ProvideTelemetryRepository,
+	ProvideEventRepository,
 	ProvideUpdatesStorage,
+	ProvideEventProcessor,
 	ProvideEmailVerificationRepository,
 	ProvidePasswordResetRepository,
 	ProvideAuthService,
