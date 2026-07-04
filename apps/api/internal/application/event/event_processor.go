@@ -252,8 +252,8 @@ func (p *Processor) ProcessTelemetry(ctx context.Context, deviceID string, telem
 			}
 		}
 
-		// Send notification for threshold breach
-		if p.notificationSvc != nil && operatorID != "" && evt.Type == event.EventTypeThresholdBreach {
+		// Send notification for threshold breach (all types: breach, risk, thermal, buffer)
+		if p.notificationSvc != nil && operatorID != "" && isThresholdBreachEvent(evt.Type) {
 			// Extract alert details from event data
 			alertType := ""
 			currentValue := ""
@@ -328,6 +328,33 @@ func (p *Processor) ProcessCommandEvent(ctx context.Context, deviceID string, co
 			if err := p.broadcaster.BroadcastOperatorEvent(deviceID, operatorID, evt); err != nil {
 				p.log.Warn("failed to broadcast operator command event", "deviceId", deviceID, "err", err)
 			}
+		}
+	}
+
+	// Send notification for command failures
+	if p.notificationSvc != nil && operatorID != "" && commandType == event.EventTypeCommandFailed {
+		commandName := ""
+		failureReason := ""
+		if v, ok := metadata["commandName"].(string); ok {
+			commandName = v
+		}
+		if v, ok := metadata["reason"].(string); ok {
+			failureReason = v
+		} else if v, ok := metadata["error"].(string); ok {
+			failureReason = v
+		}
+
+		notifData := notification.EventData{
+			EventType:      notification.EventTypeCommandFailed,
+			DeviceID:       deviceID,
+			DeviceName:     getDeviceName(device),
+			OperatorID:     operatorID,
+			CommandName:    commandName,
+			FailureReason: failureReason,
+			Timestamp:      evt.Timestamp,
+		}
+		if err := p.notificationSvc.SendNotification(ctx, notifData); err != nil {
+			p.log.Warn("failed to send command failed notification", "deviceId", deviceID, "err", err)
 		}
 	}
 
@@ -479,6 +506,16 @@ func getDeviceName(d *device.Device) string {
 		return d.DeviceName
 	}
 	return d.ID
+}
+
+// isThresholdBreachEvent returns true if the event type is a threshold breach or alert.
+func isThresholdBreachEvent(evtType event.EventType) bool {
+	switch evtType {
+	case event.EventTypeThresholdBreach, event.EventTypeRiskScoreAlert,
+		event.EventTypeThermalAlert, event.EventTypeBufferLevelAlert:
+		return true
+	}
+	return false
 }
 
 // generateEventID generates a unique event ID.
