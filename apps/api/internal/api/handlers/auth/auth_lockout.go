@@ -25,7 +25,7 @@ func NewLockoutHandler(authService *appauth.AuthService, lockout *middleware.Loc
 }
 
 // Middleware returns a Gin middleware that checks lockout status.
-// MEDIUM-3: Exposed so other handlers can use it.
+// 3: Exposed so other handlers can use it.
 func (h *LockoutHandler) Middleware() gin.HandlerFunc {
 	return middleware.LockoutMiddleware(h.lockout)
 }

@@ -32,7 +32,7 @@ type OAuthHandler struct {
 }
 
 // OAuthStateProvider interface for OAuth state operations.
-// CRITICAL-8: This interface allows persisting OAuth state to prevent CSRF attacks.
+// 8: This interface allows persisting OAuth state to prevent CSRF attacks.
 type OAuthStateProvider interface {
 	// Create stores a new OAuth state and returns the state ID
 	Create(ctx context.Context, state, redirectURL, provider string) (string, error)
@@ -85,7 +85,7 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 	}
 	state := hex.EncodeToString(stateBytes)
 
-	// CRITICAL-8: Persist OAuth state to database if repository is configured
+	// 8: Persist OAuth state to database if repository is configured
 	if h.oauthStateRepo != nil {
 		if _, err := h.oauthStateRepo.Create(c.Request.Context(), state, frontendURL, "google"); err != nil {
 			h.presenter.InternalError(c, "failed to create OAuth state")
@@ -119,7 +119,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// CRITICAL-8: Validate state from database if repository is configured
+	// 8: Validate state from database if repository is configured
 	var redirectURL string
 	if h.oauthStateRepo != nil {
 		var err error
@@ -228,7 +228,7 @@ func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 		state = hex.EncodeToString(b)
 	}
 
-	// CRITICAL-8: Persist OAuth state to database if repository is configured
+	// 8: Persist OAuth state to database if repository is configured
 	if h.oauthStateRepo != nil {
 		if _, err := h.oauthStateRepo.Create(c.Request.Context(), state, frontendURL, "github"); err != nil {
 			h.presenter.InternalError(c, "failed to create OAuth state")
@@ -261,7 +261,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	// CRITICAL-8: Validate state from database if repository is configured
+	// 8: Validate state from database if repository is configured
 	var redirectURL string
 	if h.oauthStateRepo != nil {
 		var err error

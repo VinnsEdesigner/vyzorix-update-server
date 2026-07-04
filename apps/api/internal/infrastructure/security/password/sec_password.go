@@ -16,7 +16,7 @@ var ErrPasswordBreached = fmt.Errorf("password found in known data breach")
 
 // CheckBreached checks if a password appears in known data breaches using HIBP API.
 // Uses k-anonymity: only sends first 5 chars of SHA-1 hash to protect the password.
-// CRITICAL-6: Added to prevent password reuse from known breaches.
+// 6: Added to prevent password reuse from known breaches.
 func CheckBreached(password string) (bool, error) {
 	// #nosec G505 - SHA-1 required for HIBP API k-anonymity model (not for password storage)
 	hash := sha1.Sum([]byte(password))

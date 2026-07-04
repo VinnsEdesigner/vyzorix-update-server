@@ -85,7 +85,7 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// MEDIUM-10: Send login notification email asynchronously
+	// 10: Send login notification email asynchronously
 	go func() {
 		if h.emailService != nil && result != nil {
 			loginData := emailService.LoginNotificationData{
@@ -103,7 +103,7 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 	// Clear failed attempts on successful login
 	h.presenter.LoginSuccess(c, result.OperatorID)
 
-	// CRITICAL-4 FIX: Create session cookie - must not fail silently
+	// 4 FIX: Create session cookie - must not fail silently
 	// If cookie creation fails, return error instead of success
 	if session != nil && h.authService.GetSessionManager() != nil {
 		cookie, err := h.authService.GetSessionManager().CreateCookie(result.OperatorID)
