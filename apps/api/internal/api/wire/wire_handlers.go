@@ -55,6 +55,7 @@ type HandlerDependencies struct {
 	HmacVerifier   *cryptohmac.Verifier
 	UpdatesStorage *storage.UpdatesStorage
 	Config         config.Config
+	OAuthStateRepo authhandlers.OAuthStateProvider
 }
 
 // HandlerSet contains all handler instances.
@@ -94,6 +95,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		AuditLogger:    deps.AuditLogger,
 		IPIntelligence: deps.IPIntelligence,
 		Presenter:      deps.Presenter,
+		OAuthStateRepo: deps.OAuthStateRepo,
 	})
 
 	// Device handlers

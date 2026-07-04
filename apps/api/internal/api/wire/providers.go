@@ -423,6 +423,7 @@ func ProvideHandlerSet(
 		AuditLogger:    auditLogger,
 		IPIntelligence: ipIntelligence,
 		Presenter:      presenter,
+		OAuthStateRepo: nil, // Will be set via WithOAuthStateRepo if needed
 	})
 
 	hs.DeviceRegister = devicehandlers.NewRegisterHandler(deviceService)

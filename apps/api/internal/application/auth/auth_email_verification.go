@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -66,7 +67,22 @@ func (s *AuthService) ResendVerification(ctx context.Context, email string) erro
 		return application.ErrEmailAlreadyVerified
 	}
 
+	// Delete old verification tokens
 	_ = s.emailVerifyRepo.DeleteByOperator(ctx, op.ID)
+
+	// Create new verification token
+	token, err := s.CreateEmailVerification(ctx, op.ID)
+	if err != nil {
+		return err
+	}
+
+	// Log the token for email sending (actual email sending should be done at handler level)
+	// This is the standard pattern: service creates token, handler sends email
+	slog.Default().Info("email_verification_resent",
+		"operator_id", op.ID,
+		"email", email,
+		"token_hint", token[:8]+"...", // Only log partial token for debugging
+	)
 
 	return nil
 }

@@ -217,7 +217,7 @@ func IsValidPassword(pwd string) bool {
 }
 
 // GenerateFakeToken generates a fake token for timing attacks.
-func GenerateFakeToken() string {
+func GenerateFakeToken() (string, error) {
 	return lockout.GenerateFakeToken()
 }
 
