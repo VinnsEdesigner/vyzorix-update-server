@@ -35,17 +35,11 @@ func (s *AuthService) ValidatePasswordPolicy(ctx context.Context, op *operator.O
 
 // checkPasswordHistory checks if the new password was used recently.
 func (s *AuthService) checkPasswordHistory(ctx context.Context, operatorID, newPassword string, historyCount int) error {
-	// Get recent passwords for this operator from audit or stored hashes
-	// For simplicity, we check against a limited history stored in operator record
-	// In production, this would query a password_history table
-
-	// Get operator to check stored password hashes
 	op, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
 		return err
 	}
 
-	// Check current password
 	if err := s.passwordHasher.Verify(newPassword, op.PasswordHash); err == nil {
 		return fmt.Errorf("%w: cannot reuse current password", application.ErrPasswordPolicy)
 	}
