@@ -252,7 +252,11 @@ func (r *CommandRepository) UpdateStatus(ctx context.Context, id string, status 
 	case command.StatusCompleted:
 		query = "UPDATE commands SET status = ?, completed_at = ?, updated_at = ? WHERE id = ?"
 		args = []interface{}{status, now.UnixMilli(), now, id}
+	case command.StatusFailed:
+		query = "UPDATE commands SET status = ?, updated_at = ? WHERE id = ?"
+		args = []interface{}{status, now, id}
 	default:
+		// StatusPending, StatusCancelled and other statuses - no timestamp fields
 		query = "UPDATE commands SET status = ?, updated_at = ? WHERE id = ?"
 		args = []interface{}{status, now, id}
 	}
