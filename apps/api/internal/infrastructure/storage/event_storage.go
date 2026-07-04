@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/event"
 )
 
@@ -114,7 +115,7 @@ func (r *EventRepository) GetByID(ctx context.Context, id string) (*event.Event,
 		&evt.OperatorID,
 	)
 	if err == sql.ErrNoRows {
-		return nil, nil
+		return nil, domain.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -276,13 +277,18 @@ func (r *EventRepository) GetByOperator(ctx context.Context, operatorID string, 
 	var deviceIDs []string
 	for rows.Next() {
 		var id string
-		if err := rows.Scan(&id); err != nil {
-			func() { _ = rows.Close() }()
-			return nil, err
+		if scanErr := rows.Scan(&id); scanErr != nil {
+			_ = rows.Close()
+			return nil, scanErr
 		}
 		deviceIDs = append(deviceIDs, id)
 	}
-	func() { _ = rows.Close() }()
+	// Check rows.Err() after iteration
+	if rowsErr := rows.Err(); rowsErr != nil {
+		_ = rows.Close()
+		return nil, rowsErr
+	}
+	_ = rows.Close()
 
 	if len(deviceIDs) == 0 {
 		return &event.EventResult{Events: []event.Event{}}, nil
