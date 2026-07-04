@@ -24,12 +24,13 @@ func NewHistoryService(commandRepo command.Repository, devRepo device.Repository
 
 // GetHistoryRequest represents a request for command history.
 type GetHistoryRequest struct {
-	DeviceID  string
-	Status    string
-	Page      int
-	Limit     int
-	StartTime int64
-	EndTime   int64
+	DeviceID   string
+	OperatorID string
+	Status     string
+	Page       int
+	Limit      int
+	StartTime  int64
+	EndTime    int64
 }
 
 // HistoryResponse represents paginated command history.
@@ -40,14 +41,15 @@ type HistoryResponse struct {
 
 // CommandEntry represents a command in history.
 type CommandEntry struct {
-	ID            string `json:"id"`
+	ID            string `json:"id,omitempty"`
 	DispatchID    string `json:"dispatchId"`
 	Command       string `json:"command"`
 	Status        string `json:"status"`
 	FailureReason string `json:"failureReason,omitempty"`
-	CreatedAt     int64  `json:"createdAt"`
+	SentAt        int64  `json:"sentAt"`
 	DeliveredAt   int64  `json:"deliveredAt,omitempty"`
 	CompletedAt   int64  `json:"completedAt,omitempty"`
+	LatencyMs     int64  `json:"latencyMs,omitempty"`
 }
 
 // PaginationInfo represents pagination metadata.
@@ -61,8 +63,11 @@ type PaginationInfo struct {
 
 // GetHistory retrieves paginated command history for a device.
 func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest) (*HistoryResponse, error) {
-	// Validate device
-	if _, err := s.devRepo.FindByID(ctx, req.DeviceID); err != nil {
+	// Validate device ownership (DOA check)
+	if _, err := s.devRepo.FindByIDAndOperator(ctx, req.DeviceID, req.OperatorID); err != nil {
+		if err == device.ErrNotFound {
+			return nil, err
+		}
 		return nil, err
 	}
 
@@ -101,17 +106,20 @@ func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest)
 	// Build response
 	entries := make([]CommandEntry, 0, len(commands))
 	for _, cmd := range commands {
+		sentAt := cmd.CreatedAt.UnixMilli()
 		entry := CommandEntry{
 			ID:            cmd.ID,
 			DispatchID:    cmd.DispatchID,
 			Command:       string(cmd.Command),
 			Status:        string(cmd.Status),
-			CreatedAt:     cmd.CreatedAt.UnixMilli(),
+			SentAt:        sentAt,
 			FailureReason: cmd.FailureReason,
 		}
 
 		if cmd.DeliveredAt != nil {
 			entry.DeliveredAt = *cmd.DeliveredAt
+			// Calculate latency: time from sent to delivered
+			entry.LatencyMs = *cmd.DeliveredAt - sentAt
 		}
 		if cmd.CompletedAt != nil {
 			entry.CompletedAt = *cmd.CompletedAt

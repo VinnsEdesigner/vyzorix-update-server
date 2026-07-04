@@ -190,6 +190,7 @@ var migrations = []Migration{
 	{Apply: migrateRegistrationAuditFields, Name: "add_registration_audit_fields", Version: 32},
 	{Apply: migrateIdempotencyRecords, Name: "create_idempotency_records_table", Version: 33},
 	{Apply: migrateDeviceEvents, Name: "create_device_events_table", Version: 34},
+	{Apply: migrateDeviceEventsExtended, Name: "add_device_events_extended_columns", Version: 35},
 }
 
 // runMigrations applies all pending migrations.
@@ -278,10 +279,11 @@ func migrateCreateTelemetry(db *sql.DB) error {
 			id TEXT PRIMARY KEY,
 			device_id TEXT NOT NULL,
 			received_at INTEGER NOT NULL,
-			payload TEXT NOT NULL,
+			frame_data TEXT,
 			risk_score INTEGER,
 			buffer_level INTEGER,
 			thermal_temp REAL,
+			uptime INTEGER DEFAULT 0,
 			FOREIGN KEY(device_id) REFERENCES devices(id) ON DELETE CASCADE
 		)
 	`)
@@ -302,13 +304,12 @@ func migrateCreateCommands(db *sql.DB) error {
 			id TEXT PRIMARY KEY,
 			dispatch_id TEXT NOT NULL UNIQUE,
 			device_id TEXT NOT NULL,
-			type TEXT NOT NULL,
+			command TEXT NOT NULL,
 			args TEXT,
 			created_at INTEGER NOT NULL,
-			expires_at INTEGER NOT NULL,
+			updated_at INTEGER NOT NULL,
 			delivered_at INTEGER,
 			completed_at INTEGER,
-			failed_at INTEGER,
 			status TEXT NOT NULL DEFAULT 'pending',
 			failure_reason TEXT,
 			wake_sent INTEGER NOT NULL DEFAULT 0,

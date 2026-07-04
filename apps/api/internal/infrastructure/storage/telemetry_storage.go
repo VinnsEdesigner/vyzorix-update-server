@@ -66,7 +66,7 @@ func (r *TelemetryRepository) Save(ctx context.Context, deviceID string, raw []b
 	}
 
 	_, err = tx.ExecContext(ctx,
-		`INSERT INTO telemetry(id, device_id, received_at, payload, risk_score, buffer_level, thermal_temp, uptime) 
+		`INSERT INTO telemetry(id, device_id, received_at, frame_data, risk_score, buffer_level, thermal_temp, uptime) 
 		 VALUES(?,?,?,?,?,?,?,?)`,
 		telemetryID, deviceID, now, string(raw), frame.RiskScore, frame.BufferLevel, frame.ThermalTemp, uptime,
 	)

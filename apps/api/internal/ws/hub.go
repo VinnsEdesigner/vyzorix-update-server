@@ -19,10 +19,24 @@ import (
 // ErrRateLimited is returned when a client exceeds rate limits.
 var ErrRateLimited = errors.New("rate limit exceeded")
 
+// EventProcessor handles real-time event processing.
+type EventProcessor interface {
+	ProcessDeviceConnected(ctx context.Context, deviceID string, metadata map[string]any) error
+	ProcessDeviceDisconnected(ctx context.Context, deviceID string, reason string, metadata map[string]any) error
+	ProcessTelemetry(ctx context.Context, deviceID string, telemetryData map[string]any) error
+}
+
+// DashboardBroadcaster sends events to dashboard clients.
+type DashboardBroadcaster interface {
+	BroadcastToDashboard(deviceID string, operatorID string, eventType string, data []byte) error
+}
+
 // Hub manages WebSocket connections and routes messages between devices and dashboard.
 type Hub struct {
 	telemetryRepo   telemetry.Repository
 	deviceRepo      device.Repository
+	eventProcessor  EventProcessor
+	dashboardBroadcaster DashboardBroadcaster
 	broadcast       chan []byte
 	clients         map[string]*Client
 	register        chan *Client
@@ -136,6 +150,16 @@ func (h *Hub) SetRateLimiter(rl *RateLimiter) {
 	h.rateLimiter = rl
 }
 
+// SetEventProcessor sets the event processor on the hub.
+func (h *Hub) SetEventProcessor(ep EventProcessor) {
+	h.eventProcessor = ep
+}
+
+// SetDashboardBroadcaster sets the dashboard broadcaster on the hub.
+func (h *Hub) SetDashboardBroadcaster(db DashboardBroadcaster) {
+	h.dashboardBroadcaster = db
+}
+
 // Compression returns the hub's compression handler.
 func (h *Hub) Compression() *Compression {
 	return h.compression
@@ -192,6 +216,17 @@ func (h *Hub) Run(ctx context.Context) {
 				}
 			}
 
+			// Emit device connected event
+			if h.eventProcessor != nil {
+				metadata := map[string]any{
+					"clientIP": c.Conn.RemoteAddr().String(),
+					"timestamp": time.Now().UnixMilli(),
+				}
+				if err := h.eventProcessor.ProcessDeviceConnected(ctx, c.DeviceID, metadata); err != nil {
+					h.log.Warn("failed to emit device connected event", "deviceId", c.DeviceID, "err", err)
+				}
+			}
+
 			h.log.Info("device websocket online", "deviceId", c.DeviceID)
 
 		case c := <-h.unreg:
@@ -206,6 +241,16 @@ func (h *Hub) Run(ctx context.Context) {
 					h.log.Warn("set offline failed", "deviceId", c.DeviceID, "err", err)
 				}
 				cancel()
+
+				// Emit device disconnected event
+				if h.eventProcessor != nil {
+					metadata := map[string]any{
+						"timestamp": time.Now().UnixMilli(),
+					}
+					if err := h.eventProcessor.ProcessDeviceDisconnected(ctx, c.DeviceID, "client_disconnect", metadata); err != nil {
+						h.log.Warn("failed to emit device disconnected event", "deviceId", c.DeviceID, "err", err)
+					}
+				}
 			}
 			h.mu.Unlock()
 			h.log.Info("device websocket offline", "deviceId", c.DeviceID)
@@ -498,6 +543,57 @@ func (h *Hub) TotalQueuedMessages() int {
 	}
 
 	return h.messageQueue.TotalQueuedMessages()
+}
+
+// BroadcastEvent emits an event to all subscribed dashboard clients.
+func (h *Hub) BroadcastEvent(evtType string, data []byte) error {
+	if h.dashboardBroadcaster == nil {
+		return nil
+	}
+
+	// Broadcast to all connected dashboards
+	return h.dashboardBroadcaster.BroadcastToDashboard("", "", evtType, data)
+}
+
+// EmitDeviceConnected emits a device connected event.
+func (h *Hub) EmitDeviceConnected(deviceID string) error {
+	if h.eventProcessor == nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return h.eventProcessor.ProcessDeviceConnected(ctx, deviceID, nil)
+}
+
+// EmitDeviceDisconnected emits a device disconnected event.
+func (h *Hub) EmitDeviceDisconnected(deviceID string) error {
+	if h.eventProcessor == nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return h.eventProcessor.ProcessDeviceDisconnected(ctx, deviceID, "ws_disconnect", nil)
+}
+
+// EmitThresholdBreach emits a threshold breach event.
+func (h *Hub) EmitThresholdBreach(deviceID string, metric string, value float64) error {
+	if h.eventProcessor == nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	metadata := map[string]any{
+		"metric": metric,
+		"value":  value,
+	}
+
+	return h.eventProcessor.ProcessTelemetry(ctx, deviceID, metadata)
 }
 
 // ConnectionInfo holds WebSocket connection information for a device.
