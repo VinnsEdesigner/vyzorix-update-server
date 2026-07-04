@@ -53,6 +53,7 @@ type AuthService struct {
 	sessionManager    *infraSession.Manager
 	sessionTTL         time.Duration
 	refreshTokenExpiry time.Duration
+	ldapConfig        *LDAPConfig
 }
 
 // NewAuthService creates a new AuthService.
@@ -85,6 +86,7 @@ func NewAuthServiceWithRefresh(
 	refreshTokenRepo RefreshTokenRepository,
 	refreshTokenExpiry time.Duration,
 	jwtManager *infraauth.JWTManager,
+	ldapConfig *LDAPConfig,
 ) *AuthService {
 	return &AuthService{
 		operatorRepo:       operatorRepo,
@@ -96,7 +98,13 @@ func NewAuthServiceWithRefresh(
 		refreshTokenRepo:   refreshTokenRepo,
 		refreshTokenExpiry: refreshTokenExpiry,
 		jwtManager:         jwtManager,
+		ldapConfig:         ldapConfig,
 	}
+}
+
+// SetLDAPConfig sets the LDAP configuration for the auth service.
+func (s *AuthService) SetLDAPConfig(cfg *LDAPConfig) {
+	s.ldapConfig = cfg
 }
 
 // SetJWTManager sets the JWT manager for the auth service.
