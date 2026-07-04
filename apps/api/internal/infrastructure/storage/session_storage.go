@@ -80,6 +80,39 @@ func (r *SessionRepository) FindByOperatorID(ctx context.Context, operatorID str
 	return sessions, rows.Err()
 }
 
+// ListActiveByOperator retrieves active (non-expired) sessions for an operator, ordered by creation time.
+func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID string) ([]*session.Session, error) {
+	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent 
+		FROM auth_sessions 
+		WHERE operator_id = ? AND expires_at > ?
+		ORDER BY created_at ASC`
+
+	rows, err := r.db.QueryContext(ctx, query, operatorID, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	var sessions []*session.Session
+
+	for rows.Next() {
+		var s session.Session
+
+		var ipAddress, userAgent sql.NullString
+
+		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent); err != nil {
+			return nil, err
+		}
+
+		s.IPAddress = ipAddress.String
+		s.UserAgent = userAgent.String
+		sessions = append(sessions, &s)
+	}
+
+	return sessions, rows.Err()
+}
+
 // Create creates a new session.
 func (r *SessionRepository) Create(ctx context.Context, s *session.Session) error {
 	query := `INSERT INTO auth_sessions (id, operator_id, expires_at, created_at, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)`
