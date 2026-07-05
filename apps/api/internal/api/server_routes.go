@@ -120,6 +120,7 @@ func (s *Server) setupAuthenticatedRoutes() {
 	s.setupConnectionsRoutes(r)
 	s.setupUpdatesRoutes(r)
 	s.setupDiagnosticsRoutes(r)
+	s.setupAPIKeysRoutes(r)
 }
 
 func (s *Server) setupDashboardRoutes(r ...*gin.RouterGroup) {
@@ -237,6 +238,13 @@ func (s *Server) setupDiagnosticsRoutes(r *gin.RouterGroup) {
 	if s.diagnosticsInspectHandler != nil || s.diagnosticsTimelineHandler != nil {
 		diagnosticsGroup := r.Group("/device")
 		diagnostics.RegisterRoutes(diagnosticsGroup, s.diagnosticsInspectHandler, s.diagnosticsTimelineHandler)
+	}
+}
+
+func (s *Server) setupAPIKeysRoutes(r *gin.RouterGroup) {
+	if s.apiKeysHandler != nil {
+		authGroup := r.Group("/auth")
+		s.apiKeysHandler.RegisterRoutes(authGroup)
 	}
 }
 
