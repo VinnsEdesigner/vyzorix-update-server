@@ -9,9 +9,9 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/password_reset"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 )
 
 // PasswordResetToken represents a password reset token.
@@ -23,10 +23,10 @@ type PasswordResetToken struct {
 
 // ResendRateLimitResult holds the result of a resend rate limit check.
 type ResendRateLimitResult struct {
-	Allowed     bool
 	LockedUntil *time.Time
 	RetryAfter  int
 	TotalSent   int
+	Allowed     bool
 }
 
 // MaxResendCount is the maximum number of password reset requests allowed.

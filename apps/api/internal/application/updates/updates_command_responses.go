@@ -101,7 +101,7 @@ type PushUpdateResponse struct {
 	DeviceIDs     []string         `json:"deviceIds"`
 	FailedDevices []FailedDevice   `json:"failedDevices,omitempty"`
 	Devices       PushDeviceCounts `json:"devices"`
-	InitiatedAt   int64           `json:"initiatedAt"`
+	InitiatedAt   int64            `json:"initiatedAt"`
 }
 
 // FailedDevice represents a device that failed to be added to a push.
@@ -160,16 +160,16 @@ type PushDetailDevice struct {
 
 // PushDetailResponse represents the response for GET /v1/updates/history/:pushId.
 type PushDetailResponse struct {
-	ID           string             `json:"id"`
-	Version      string             `json:"version"`
-	InstallType  string             `json:"installType"`
-	ScheduledAt  *int64             `json:"scheduledAt,omitempty"`
-	CompletedAt  *int64             `json:"completedAt,omitempty"`
-	CancelledAt  *int64             `json:"cancelledAt,omitempty"`
-	Status       string             `json:"status"`
-	InitiatedBy  string             `json:"initiatedBy"`
-	InitiatedAt  int64              `json:"initiatedAt"`
-	Devices      []PushDetailDevice `json:"devices"`
+	ScheduledAt *int64             `json:"scheduledAt,omitempty"`
+	CompletedAt *int64             `json:"completedAt,omitempty"`
+	CancelledAt *int64             `json:"cancelledAt,omitempty"`
+	ID          string             `json:"id"`
+	Version     string             `json:"version"`
+	InstallType string             `json:"installType"`
+	Status      string             `json:"status"`
+	InitiatedBy string             `json:"initiatedBy"`
+	Devices     []PushDetailDevice `json:"devices"`
+	InitiatedAt int64              `json:"initiatedAt"`
 }
 
 // ExportResponse represents the response for GET /v1/updates/export.

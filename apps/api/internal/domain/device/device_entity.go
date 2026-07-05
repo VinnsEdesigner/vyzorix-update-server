@@ -10,28 +10,27 @@ var ErrNotFound = errors.New("device not found")
 
 // Device represents a registered device.
 type Device struct {
-	UpdatedAt             time.Time
-	CreatedAt             time.Time
-	Metadata              map[string]string
-	OperatorID            string
-	DeviceClass           string
-	CommandSecretHash     string
-	ID                    string
-	AppVersion            string
-	FCMToken              string
-	FirebaseInstallID     string
-	RegisteredAt          int64
-	LastSeen              int64
-	Online                bool
-	// Additional fields per spec
-	DeviceName            string // device_name column
-	Manufacturer          string // manufacturer column (stored via model)
-	Model                string // model column
-	OSVersion            string // os_version column
-	SecurityPatch        string // security_patch column
-	DeregisteredAt        *int64 // deregistered_at column (UnixMilli)
-	DeletionScheduledAt   *int64 // deletion_scheduled_at column (UnixMilli)
-	FCMTokenRefreshedAt   *int64 // fcm_token_refreshed_at column (UnixMilli)
+	UpdatedAt           time.Time
+	CreatedAt           time.Time
+	Metadata            map[string]string
+	FCMTokenRefreshedAt *int64
+	DeletionScheduledAt *int64
+	DeregisteredAt      *int64
+	Model               string
+	OSVersion           string
+	FCMToken            string
+	FirebaseInstallID   string
+	OperatorID          string
+	DeviceClass         string
+	CommandSecretHash   string
+	DeviceName          string
+	Manufacturer        string
+	ID                  string
+	AppVersion          string
+	SecurityPatch       string
+	LastSeen            int64
+	RegisteredAt        int64
+	Online              bool
 }
 
 // IsOnline returns true if the device is currently online.

@@ -19,32 +19,32 @@ import (
 type EventType string
 
 const (
-	EventTypeThresholdBreach      EventType = "threshold_breach"
+	EventTypeThresholdBreach     EventType = "threshold_breach"
 	EventTypeDeviceOffline       EventType = "device_offline"
 	EventTypeDeviceOnline        EventType = "device_online"
 	EventTypeUpdateAvailable     EventType = "update_available"
 	EventTypeCommandFailed       EventType = "command_failed"
-	EventTypeRegistrationRequest  EventType = "registration_request"
+	EventTypeRegistrationRequest EventType = "registration_request"
 	EventTypeError               EventType = "error"
 )
 
 // EventData contains the data for a notification event.
 type EventData struct {
-	EventType     EventType
-	DeviceID      string
-	DeviceName    string
+	Timestamp     time.Time
+	AlertType     string
+	Threshold     string
 	OperatorID    string
 	OperatorEmail string
 	OperatorName  string
-	AlertType     string
+	EventType     EventType
 	CurrentValue  string
-	Threshold     string
+	DeviceName    string
 	CommandName   string
 	FailureReason string
 	UpdateVersion string
 	RequesterName string
 	ErrorMessage  string
-	Timestamp     time.Time
+	DeviceID      string
 }
 
 // Service handles sending notifications based on operator preferences.
@@ -241,10 +241,10 @@ func (s *Service) sendWebhook(ctx context.Context, data EventData, settings *ope
 		OperatorID: data.OperatorID,
 		Data: map[string]interface{}{
 			"deviceName":    data.DeviceName,
-			"alertType":    data.AlertType,
-			"currentValue": data.CurrentValue,
-			"threshold":    data.Threshold,
-			"commandName":  data.CommandName,
+			"alertType":     data.AlertType,
+			"currentValue":  data.CurrentValue,
+			"threshold":     data.Threshold,
+			"commandName":   data.CommandName,
 			"failureReason": data.FailureReason,
 			"updateVersion": data.UpdateVersion,
 			"requesterName": data.RequesterName,

@@ -29,28 +29,28 @@ import (
 
 // ServerDependencies contains all dependencies needed to create a Server.
 type ServerDependencies struct {
-	FCMNotifier     fcm.Notifier
-	OperatorRepo    operator.Repository
-	RateLimiter     *middleware.RateLimiter
-	Hub             *hub.Hub
-	AuthService     *auth.AuthService
-	AuthLimiter     *middleware.RateLimiter
-	IPIntelligence  *middleware.IPIntelligence
-	Log             *slog.Logger
-	SessionManager  *infraauth.SessionManager
-	GoogleVerifier  *infraauth.GoogleTokenVerifier
-	EmailService    *emailService.Service
-	CommandService  *command.Service
-	ClientService   *client.Service
-	DB              *storage.SQLite
-	Lockout         *middleware.Lockout
-	DeviceService   *device.Service
-	Metrics         *metrics.Metrics
-	AuditLogger     *audit.Logger
-	Config          infraConfig.Config
-	UpdatesStorage  *storage.UpdatesStorage
-	UpdatesService  *updatesapp.Service
-	TelemetryRepo   *storage.TelemetryRepository
+	FCMNotifier    fcm.Notifier
+	OperatorRepo   operator.Repository
+	EmailService   *emailService.Service
+	CommandService *command.Service
+	AuthService    *auth.AuthService
+	AuthLimiter    *middleware.RateLimiter
+	IPIntelligence *middleware.IPIntelligence
+	Log            *slog.Logger
+	SessionManager *infraauth.SessionManager
+	GoogleVerifier *infraauth.GoogleTokenVerifier
+	RateLimiter    *middleware.RateLimiter
+	Hub            *hub.Hub
+	ClientService  *client.Service
+	DB             *storage.SQLite
+	Lockout        *middleware.Lockout
+	DeviceService  *device.Service
+	Metrics        *metrics.Metrics
+	AuditLogger    *audit.Logger
+	TelemetryRepo  *storage.TelemetryRepository
+	UpdatesStorage *storage.UpdatesStorage
+	UpdatesService *updatesapp.Service
+	Config         infraConfig.Config
 }
 
 // ServerResult contains the fully wired server components.

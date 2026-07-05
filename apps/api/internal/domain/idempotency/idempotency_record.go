@@ -9,17 +9,17 @@ import (
 
 // IdempotencyRecord represents a recorded idempotency key with its response.
 type IdempotencyRecord struct {
-	ID            string    `json:"id"`              // Primary key (idempotency key)
-	Method        string    `json:"method"`          // HTTP method (POST, etc)
-	Path          string    `json:"path"`            // Request path
-	Hash          string    `json:"hash"`            // Hash of request body
-	StatusCode    int       `json:"statusCode"`      // Response status code
-	ResponseBody  []byte    `json:"responseBody"`    // Cached response body
-	CreatedAt     time.Time `json:"createdAt"`       // When the record was created
-	ExpiresAt     time.Time `json:"expiresAt"`       // When the record expires
-	ContentType   string    `json:"contentType"`     // Response content type
-	ClientIP      string    `json:"clientIp"`        // Client IP for audit
-	UserAgent     string    `json:"userAgent"`       // User agent for audit
+	CreatedAt    time.Time `json:"createdAt"`
+	ExpiresAt    time.Time `json:"expiresAt"`
+	ID           string    `json:"id"`
+	Method       string    `json:"method"`
+	Path         string    `json:"path"`
+	Hash         string    `json:"hash"`
+	ContentType  string    `json:"contentType"`
+	ClientIP     string    `json:"clientIp"`
+	UserAgent    string    `json:"userAgent"`
+	ResponseBody []byte    `json:"responseBody"`
+	StatusCode   int       `json:"statusCode"`
 }
 
 // IsExpired returns true if the record has expired.
