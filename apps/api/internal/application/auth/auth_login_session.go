@@ -324,12 +324,12 @@ func (s *AuthService) ChangePassword(ctx context.Context, operatorID, oldPasswor
 		return err
 	}
 
-	if err := s.passwordHasher.Verify(oldPassword, op.PasswordHash); err != nil {
+	if verifyErr := s.passwordHasher.Verify(oldPassword, op.PasswordHash); verifyErr != nil {
 		return application.ErrInvalidCredentials
 	}
 
-	if err := ValidatePassword(newPassword, DefaultPasswordPolicy); err != nil {
-		return err
+	if validateErr := ValidatePassword(newPassword, DefaultPasswordPolicy); validateErr != nil {
+		return validateErr
 	}
 
 	hash, err := s.passwordHasher.Hash(newPassword)

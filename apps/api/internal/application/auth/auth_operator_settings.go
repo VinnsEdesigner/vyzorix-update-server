@@ -96,7 +96,7 @@ func (s *AuthService) UpdateSettings(ctx context.Context, operatorID string, req
 
 // ResetSettings resets operator settings to defaults.
 func (s *AuthService) ResetSettings(ctx context.Context, operatorID string) (*operator.Operator, error) {
-	op, err := s.operatorRepo.FindByID(ctx, operatorID)
+	_, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
 		if err == operator.ErrNotFound {
 			return nil, application.ErrUnauthorized
@@ -104,12 +104,12 @@ func (s *AuthService) ResetSettings(ctx context.Context, operatorID string) (*op
 		return nil, err
 	}
 
-	if err := s.operatorRepo.ResetSettings(ctx, operatorID); err != nil {
-		return nil, err
+	if resetErr := s.operatorRepo.ResetSettings(ctx, operatorID); resetErr != nil {
+		return nil, resetErr
 	}
 
 	// Reload operator to get fresh data
-	op, err = s.operatorRepo.FindByID(ctx, operatorID)
+	op, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
 		return nil, err
 	}

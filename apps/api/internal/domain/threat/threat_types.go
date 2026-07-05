@@ -53,7 +53,8 @@ const (
 
 // LoginContext contains data about a login attempt for threat evaluation.
 // All fields should be validated and sanitized before use.
-type LoginContext struct { //
+type LoginContext struct {
+	LastLogin     *LastLoginInfo
 	OperatorID     string
 	IPAddress     string
 	Location      string
@@ -61,15 +62,14 @@ type LoginContext struct { //
 	DeviceFinger  string
 	FailedAttempts int
 	Timestamp     time.Time
-	LastLogin     *LastLoginInfo
 }
 
 // LastLoginInfo stores information about the previous login.
 type LastLoginInfo struct {
-	Timestamp    time.Time
 	IPAddress   string
 	Location    string
 	DeviceFinger string
+	Timestamp    time.Time
 }
 
 // DetectionRule defines a rule for detecting threats.

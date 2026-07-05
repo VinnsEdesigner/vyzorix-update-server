@@ -88,7 +88,7 @@ type Config struct {
 	Port                     string
 	BaseURL                  string
 	DatabaseURL              string
-	DataDir                  string
+	DataDir                   string
 	GoogleOAuthClientSecret  string
 	GoogleOAuthClientID      string
 	PublicDir                string
@@ -98,17 +98,19 @@ type Config struct {
 	ResendAPIKey             string
 	Env                      string
 	TokenSecret              string
+	APIKeys                  map[string]string // key_id -> key_value (supports rotation)
+	APIKeyPrefix             string
 	EmailFromName            string
 	AllowedOrigins           []string
 	PasswordResetTokenExpiry time.Duration
 	HMACWindow               time.Duration
-	SessionMaxAge            int
-	NonceCacheTTL            time.Duration
+	SessionMaxAge             int
+	NonceCacheTTL             time.Duration
 	EmailVerifyTokenExpiry   time.Duration
 	JWTDuration              time.Duration
 	EnforceHMAC              bool
 	EnableGraphQL            bool
-	DiagnosticsConfig         DiagnosticsConfig
+	DiagnosticsConfig        DiagnosticsConfig
 }
 
 // DiagnosticsConfig holds configuration for the diagnostics API.
@@ -203,6 +205,7 @@ func Load() (Config, error) {
 		PublicDir:                get("VYZORIX_PUBLIC_DIR", "./public"),
 		FirebaseCreds:            os.Getenv("FIREBASE_CREDENTIALS"),
 		TokenSecret:              os.Getenv("TOKEN_SECRET"),
+		APIKeyPrefix:            get("API_KEY_PREFIX", "vxyz"),
 		JWTSecret:                os.Getenv("JWT_SECRET"),
 		SessionSecret:            os.Getenv("SESSION_SECRET"),
 		SessionMaxAge:            sessionMaxAge,
@@ -215,7 +218,7 @@ func Load() (Config, error) {
 		GitHubOAuthClientSecret:  os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
 		GitHubReleaseRepo:        os.Getenv("GITHUB_RELEASE_REPO"),
 		GitHubReleaseToken:       os.Getenv("GITHUB_RELEASE_TOKEN"),
-			GitHubWebhookSecret:      os.Getenv("GITHUB_WEBHOOK_SECRET"),
+		GitHubWebhookSecret:      os.Getenv("GITHUB_WEBHOOK_SECRET"),
 		BaseURL:                  get("BASE_URL", "http://localhost:3000"),
 		FrontendURL:              get("FRONTEND_URL", "http://localhost:5173"),
 		ResendAPIKey:             os.Getenv("RESEND_API_KEY"),
@@ -225,8 +228,12 @@ func Load() (Config, error) {
 		EmailVerifyTokenExpiry:   emailVerifyExpiry,
 		PasswordResetTokenExpiry: passwordResetExpiry,
 		EnableGraphQL:            getBool("ENABLE_GRAPHQL", true), // Enabled by default
-		DiagnosticsConfig:         LoadDiagnosticsConfig(),
+		DiagnosticsConfig:        LoadDiagnosticsConfig(),
 	}
+
+	// Load API keys (supports multiple for rotation)
+	// Format: API_KEY_<id>=<key_value> (e.g., API_KEY_primary=abc123, API_KEY_backup=def456)
+	c.APIKeys = loadAPIKeys()
 
 	enforceDefault := strings.EqualFold(c.Env, "production")
 	c.EnforceHMAC = getBool("ENFORCE_HMAC", enforceDefault)
@@ -242,6 +249,10 @@ func Load() (Config, error) {
 
 	if strings.TrimSpace(c.DatabaseURL) == "" {
 		return c, errors.New("DATABASE_URL is required")
+	}
+
+	if len(c.APIKeys) == 0 {
+		return c, errors.New("at least one API_KEY_* is required - all endpoints except /health and /healthz are protected")
 	}
 
 	if c.Env == "production" && c.TokenSecret == "" {
@@ -338,4 +349,28 @@ func parseIntEnv(key string, fallback int) int {
 		}
 	}
 	return fallback
+}
+
+// loadAPIKeys loads API keys from environment variables.
+// Supports multiple keys for rotation: API_KEY_<id>=<value>
+// Example: API_KEY_primary=abc123, API_KEY_backup=def456.
+func loadAPIKeys() map[string]string {
+	keys := make(map[string]string)
+	prefix := "API_KEY_"
+
+	for _, env := range os.Environ() {
+		if !strings.HasPrefix(env, prefix) {
+			continue
+		}
+		// Parse KEY=VALUE
+		if idx := strings.Index(env, "="); idx > 0 {
+			keyID := env[len(prefix):idx]
+			keyValue := env[idx+1:]
+			if keyID != "" && keyValue != "" {
+				keys[keyID] = keyValue
+			}
+		}
+	}
+
+	return keys
 }

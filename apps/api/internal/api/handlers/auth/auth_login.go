@@ -26,7 +26,6 @@ type LoginHandler struct {
 }
 
 // LoginLockout provides login attempt tracking with device fingerprinting.
-// 9 FIX: Added mutex to prevent concurrent map writes (CRITICAL).
 type LoginLockout struct {
 	attempts map[string]*LoginAttemptInfo
 	mu       sync.RWMutex

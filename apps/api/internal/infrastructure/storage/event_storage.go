@@ -144,7 +144,7 @@ func (r *EventRepository) GetByDevice(ctx context.Context, deviceID string, filt
 		WHERE device_id = ?`
 	args := make([]interface{}, 0, 1); args = append(args, deviceID)
 
-	r.appendFilterConditions(query, filter, &args)
+	r.appendFilterConditions(&query, filter, &args)
 
 	query += " ORDER BY timestamp DESC"
 	query += " LIMIT ? OFFSET ?"
@@ -182,10 +182,10 @@ func (r *EventRepository) GetByDevices(ctx context.Context, deviceIDs []string, 
 	}
 
 	placeholders := make([]string, len(deviceIDs))
-	args := make([]interface{}, len(deviceIDs))
+	args := make([]interface{}, 0, len(deviceIDs)+2)
 	for i, id := range deviceIDs {
 		placeholders[i] = "?"
-		args[i] = id
+		args = append(args, id)
 	}
 
 	query := `
@@ -193,7 +193,7 @@ func (r *EventRepository) GetByDevices(ctx context.Context, deviceIDs []string, 
 		FROM device_events
 		WHERE device_id IN (` + strings.Join(placeholders, ",") + ")"
 
-	r.appendFilterConditions(query, filter, &args)
+	r.appendFilterConditions(&query, filter, &args)
 
 	query += " ORDER BY timestamp DESC"
 	query += " LIMIT ? OFFSET ?"
@@ -233,7 +233,7 @@ func (r *EventRepository) GetByType(ctx context.Context, eventType event.EventTy
 		WHERE event_type = ?`
 	args := make([]interface{}, 0, 1); args = append(args, string(eventType))
 
-	r.appendFilterConditions(query, filter, &args)
+	r.appendFilterConditions(&query, filter, &args)
 
 	query += " ORDER BY timestamp DESC"
 	query += " LIMIT ? OFFSET ?"
@@ -273,22 +273,20 @@ func (r *EventRepository) GetByOperator(ctx context.Context, operatorID string, 
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = rows.Close() }()
 
 	var deviceIDs []string
 	for rows.Next() {
 		var id string
 		if scanErr := rows.Scan(&id); scanErr != nil {
-			_ = rows.Close()
 			return nil, scanErr
 		}
 		deviceIDs = append(deviceIDs, id)
 	}
 	// Check rows.Err() after iteration
 	if rowsErr := rows.Err(); rowsErr != nil {
-		_ = rows.Close()
 		return nil, rowsErr
 	}
-	_ = rows.Close()
 
 	if len(deviceIDs) == 0 {
 		return &event.EventResult{Events: []event.Event{}}, nil
@@ -362,14 +360,14 @@ func (r *EventRepository) DeleteOld(ctx context.Context, olderThan time.Time) (i
 }
 
 // appendFilterConditions appends filter conditions to the query.
-func (r *EventRepository) appendFilterConditions(query string, filter *event.EventFilter, args *[]interface{}) {
+func (r *EventRepository) appendFilterConditions(query *string, filter *event.EventFilter, args *[]interface{}) {
 	if len(filter.EventTypes) > 0 {
 		placeholders := make([]string, len(filter.EventTypes))
 		for i, et := range filter.EventTypes {
 			placeholders[i] = "?"
 			*args = append(*args, string(et))
 		}
-		query += " AND event_type IN (" + strings.Join(placeholders, ",") + ")"
+		*query += " AND event_type IN (" + strings.Join(placeholders, ",") + ")"
 	}
 
 	if len(filter.Severities) > 0 {
@@ -378,17 +376,17 @@ func (r *EventRepository) appendFilterConditions(query string, filter *event.Eve
 			placeholders[i] = "?"
 			*args = append(*args, string(s))
 		}
-		query += " AND severity IN (" + strings.Join(placeholders, ",") + ")"
+		*query += " AND severity IN (" + strings.Join(placeholders, ",") + ")"
 	}
 
 	if !filter.StartTime.IsZero() {
 		*args = append(*args, filter.StartTime)
-		query += " AND timestamp >= ?"
+		*query += " AND timestamp >= ?"
 	}
 
 	if !filter.EndTime.IsZero() {
 		*args = append(*args, filter.EndTime)
-		query += " AND timestamp <= ?"
+		*query += " AND timestamp <= ?"
 	}
 }
 

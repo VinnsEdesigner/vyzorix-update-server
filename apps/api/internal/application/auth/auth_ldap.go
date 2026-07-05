@@ -50,14 +50,13 @@ func (s *AuthService) AuthenticateLDAP(ctx context.Context, cfg *LDAPConfig, use
 	defer func() { _ = conn.Close() }()
 
 	if cfg.UseTLS {
-		err = conn.StartTLS(nil)
-		if err != nil && !cfg.SkipVerify {
-			return nil, fmt.Errorf("failed to start TLS: %w", err)
+		if tlsErr := conn.StartTLS(nil); tlsErr != nil && !cfg.SkipVerify {
+			return nil, fmt.Errorf("failed to start TLS: %w", tlsErr)
 		}
 	}
 
-	if err := conn.Bind(cfg.BindDN, cfg.BindPass); err != nil {
-		return nil, fmt.Errorf("failed to bind with service account: %w", err)
+	if bindErr := conn.Bind(cfg.BindDN, cfg.BindPass); bindErr != nil {
+		return nil, fmt.Errorf("failed to bind with service account: %w", bindErr)
 	}
 
 	filter := cfg.UserFilter

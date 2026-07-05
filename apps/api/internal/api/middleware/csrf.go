@@ -53,11 +53,10 @@ type CSRFToken struct {
 }
 
 // CSRFTokenStore manages CSRF tokens in memory.
-//
 type CSRFTokenStore struct {
-	mu     sync.RWMutex
-	tokens map[string]*CSRFToken
 	stop   chan struct{}
+	tokens map[string]*CSRFToken
+	mu     sync.RWMutex
 }
 
 // NewCSRFTokenStore creates a new CSRF token store.
