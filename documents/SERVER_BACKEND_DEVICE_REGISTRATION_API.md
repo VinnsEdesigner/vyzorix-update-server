@@ -39,7 +39,7 @@ This document maps out the server-side requirements to support the Device Regist
 | Device Inbox | Pending registration requests | GET /v1/device/inbox |
 | Inbox Entry | Single request details | GET /v1/device/inbox/:imei |
 | Acknowledge | Approve/reject registration | POST /v1/device/inbox/:imei/ack |
-| Deregister | Remove device | DELETE /v1/device/:imei |
+| Deregister | Remove device | DELETE /v1/devices/:imei |
 | Register | Register new device | POST /v1/device/register |
 | Confirm | Device confirms registration | POST /v1/device/confirm |
 | Devices List | All registered devices | GET /v1/devices |
@@ -55,18 +55,14 @@ This document maps out the server-side requirements to support the Device Regist
 |----------|--------|---------|-------|
 | POST /v1/device/inbox | EXISTS | InboxHandler.HandleInboxRequest | Device sends registration request |
 | POST /v1/device/confirm | EXISTS | ConfirmHandler.Handle | Device confirms registration |
-| GET /v1/device/:imei | EXISTS | DeviceHandler.Get | Get device info |
-| DELETE /v1/device/:imei | EXISTS | DeviceHandler.Deregister | Deregister device |
-
-### 2.2 Missing Endpoints
-
-| Endpoint | Status | Notes |
-|----------|--------|-------|
-| GET /v1/device/inbox | MISSING | List all pending requests |
-| GET /v1/device/inbox/:imei | MISSING | Get single request |
-| POST /v1/device/inbox/:imei/ack | MISSING | Approve/reject request |
-| GET /v1/devices | MISSING | List all registered devices |
-| POST /v1/device/register | PARTIAL | May need updates |
+| GET /v1/device/:imei/status | EXISTS | StatusHandler.Handle | Get device status (public) |
+| GET /v1/devices | EXISTS | DevicesHandler.GetDevices | List all registered devices |
+| GET /v1/devices/:imei | EXISTS | DevicesHandler.GetDeviceDetail | Get single device info |
+| DELETE /v1/devices/:imei | EXISTS | DevicesHandler.DeregisterDevice | Deregister device |
+| GET /v1/device/inbox | EXISTS | InboxHandler.GetInbox | List pending requests |
+| GET /v1/device/inbox/:imei | EXISTS | InboxHandler.GetInboxEntry | Get single request |
+| POST /v1/device/inbox/:imei/ack | EXISTS | InboxHandler.AckInbox | Approve/reject request |
+| POST /v1/device/register | EXISTS | RegisterHandler.Handle | Register new device |
 
 ### 2.3 Existing Domain Entities
 
