@@ -12,12 +12,9 @@ import (
 
 // TimeoutConfig holds configuration for the timeout middleware.
 type TimeoutConfig struct {
-	// DefaultTimeout is the default timeout for requests without a specific route timeout.
+	RouteTimeouts  map[string]time.Duration
+	SkipPaths      []string
 	DefaultTimeout time.Duration
-	// RouteTimeouts allows setting specific timeouts per route pattern.
-	RouteTimeouts map[string]time.Duration
-	// SkipPaths are paths that should not have a timeout applied.
-	SkipPaths []string
 }
 
 // DefaultTimeoutConfig returns the default timeout configuration.
@@ -25,7 +22,7 @@ func DefaultTimeoutConfig() TimeoutConfig {
 	return TimeoutConfig{
 		DefaultTimeout: 30 * time.Second,
 		RouteTimeouts:  make(map[string]time.Duration),
-		SkipPaths:     []string{},
+		SkipPaths:      []string{},
 	}
 }
 

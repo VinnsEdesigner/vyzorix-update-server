@@ -11,16 +11,16 @@ import (
 
 // DashboardEventMessage represents an event message sent to dashboard clients.
 type DashboardEventMessage struct {
-	Type string      `json:"type"`
 	Event *event.Event `json:"event"`
+	Type  string       `json:"type"`
 }
 
 // DashboardClient represents a connected dashboard WebSocket client.
 type DashboardClient struct {
+	Send       chan []byte
+	Subscribed map[string]bool
 	ID         string
 	OperatorID string
-	Send       chan []byte
-	Subscribed map[string]bool // deviceID -> subscribed
 	mu         sync.RWMutex
 }
 
@@ -68,16 +68,16 @@ func (c *DashboardClient) GetSubscriptions() []string {
 
 // Broadcaster manages dashboard client connections and broadcasts events.
 type Broadcaster struct {
-	clients  map[string]*DashboardClient // clientID -> client
-	operatorClients map[string][]string // operatorID -> []clientID
-	log      *slog.Logger
-	mu       sync.RWMutex
+	clients         map[string]*DashboardClient // clientID -> client
+	operatorClients map[string][]string         // operatorID -> []clientID
+	log             *slog.Logger
+	mu              sync.RWMutex
 }
 
 // NewBroadcaster creates a new event broadcaster.
 func NewBroadcaster(log *slog.Logger) *Broadcaster {
 	return &Broadcaster{
-		clients:        make(map[string]*DashboardClient),
+		clients:         make(map[string]*DashboardClient),
 		operatorClients: make(map[string][]string),
 		log:             log,
 	}

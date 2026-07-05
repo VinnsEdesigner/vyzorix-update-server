@@ -18,30 +18,30 @@ type EventType string
 
 const (
 	EventTypeThresholdBreach     EventType = "threshold_breach"
-	EventTypeDeviceOffline      EventType = "device_offline"
-	EventTypeDeviceOnline       EventType = "device_online"
-	EventTypeUpdateAvailable    EventType = "update_available"
-	EventTypeCommandFailed      EventType = "command_failed"
+	EventTypeDeviceOffline       EventType = "device_offline"
+	EventTypeDeviceOnline        EventType = "device_online"
+	EventTypeUpdateAvailable     EventType = "update_available"
+	EventTypeCommandFailed       EventType = "command_failed"
 	EventTypeRegistrationRequest EventType = "registration_request"
-	EventTypeError              EventType = "error"
+	EventTypeError               EventType = "error"
 )
 
 // Payload represents a webhook payload.
 type Payload struct {
-	Type      EventType              `json:"type"`
-	Timestamp time.Time              `json:"timestamp"`
-	DeviceID  string                `json:"deviceId,omitempty"`
-	OperatorID string                `json:"operatorId,omitempty"`
-	Data      map[string]interface{} `json:"data,omitempty"`
+	Timestamp  time.Time              `json:"timestamp"`
+	Data       map[string]interface{} `json:"data,omitempty"`
+	Type       EventType              `json:"type"`
+	DeviceID   string                 `json:"deviceId,omitempty"`
+	OperatorID string                 `json:"operatorId,omitempty"`
 }
 
 // TestResult represents the result of a webhook test.
 type TestResult struct {
-	Success     bool   `json:"success"`
-	StatusCode  int    `json:"statusCode,omitempty"`
+	Error        string `json:"error,omitempty"`
+	Message      string `json:"message,omitempty"`
+	StatusCode   int    `json:"statusCode,omitempty"`
 	ResponseTime int64  `json:"responseTime"`
-	Error       string `json:"error,omitempty"`
-	Message     string `json:"message,omitempty"`
+	Success      bool   `json:"success"`
 }
 
 // Client is a webhook client for sending notifications.
@@ -72,7 +72,7 @@ func (c *Client) Test(ctx context.Context, url string) (*TestResult, error) {
 		Type:      EventTypeThresholdBreach,
 		Timestamp: time.Now(),
 		Data: map[string]interface{}{
-			"test": true,
+			"test":    true,
 			"message": "This is a test webhook from Vyzorix",
 		},
 	}
@@ -80,9 +80,9 @@ func (c *Client) Test(ctx context.Context, url string) (*TestResult, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return &TestResult{
-			Success:     false,
-			Error:       "marshal_error",
-			Message:     err.Error(),
+			Success:      false,
+			Error:        "marshal_error",
+			Message:      err.Error(),
 			ResponseTime: time.Since(start).Milliseconds(),
 		}, nil
 	}
@@ -90,9 +90,9 @@ func (c *Client) Test(ctx context.Context, url string) (*TestResult, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return &TestResult{
-			Success:     false,
-			Error:       "request_error",
-			Message:     err.Error(),
+			Success:      false,
+			Error:        "request_error",
+			Message:      err.Error(),
 			ResponseTime: time.Since(start).Milliseconds(),
 		}, nil
 	}

@@ -14,12 +14,12 @@ const (
 
 // LockoutState represents the lockout status of an operator.
 type LockoutState struct {
-	IsLocked   bool
-	Reason     LockoutReason
-	LockedAt   *time.Time
-	LockedBy   string
-	ExpiresAt  *time.Time
-	Attempts   int
+	LockedAt  *time.Time
+	ExpiresAt *time.Time
+	Reason    LockoutReason
+	LockedBy  string
+	Attempts  int
+	IsLocked  bool
 }
 
 // IsActive returns true if the lockout is currently enforced.

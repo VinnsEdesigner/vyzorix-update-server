@@ -26,22 +26,22 @@ type InboxListResponse struct {
 
 // InboxEntryResponse represents an inbox entry in API responses.
 type InboxEntryResponse struct {
-	ID                 string  `json:"id"`
-	IMEI               string  `json:"imei"`
-	DeviceName         string  `json:"deviceName,omitempty"`
-	DeviceClass        string  `json:"deviceClass,omitempty"`
-	Model              string  `json:"model"`
-	Manufacturer       string  `json:"manufacturer"`
-	OSVersion          string  `json:"osVersion"`
-	AppVersion         string  `json:"appVersion"`
-	FCMToken           string  `json:"fcmToken"`
-	FirebaseInstallID  string  `json:"firebaseInstallId"`
-	Status             string  `json:"status"`
-	CreatedAt          int64   `json:"createdAt"`
-	ApprovedAt         *int64  `json:"approvedAt,omitempty"`
-	RejectedAt         *int64  `json:"rejectedAt,omitempty"`
-	Notes              string  `json:"notes,omitempty"`
-	OperatorID         string  `json:"operatorId,omitempty"`
+	ApprovedAt        *int64 `json:"approvedAt,omitempty"`
+	RejectedAt        *int64 `json:"rejectedAt,omitempty"`
+	Model             string `json:"model"`
+	FirebaseInstallID string `json:"firebaseInstallId"`
+	ID                string `json:"id"`
+	Manufacturer      string `json:"manufacturer"`
+	OSVersion         string `json:"osVersion"`
+	AppVersion        string `json:"appVersion"`
+	FCMToken          string `json:"fcmToken"`
+	DeviceClass       string `json:"deviceClass,omitempty"`
+	Status            string `json:"status"`
+	OperatorID        string `json:"operatorId,omitempty"`
+	DeviceName        string `json:"deviceName,omitempty"`
+	IMEI              string `json:"imei"`
+	Notes             string `json:"notes,omitempty"`
+	CreatedAt         int64  `json:"createdAt"`
 }
 
 // AckRequest represents the request for POST /v1/device/inbox/:imei/ack.
@@ -52,14 +52,14 @@ type AckRequest struct {
 
 // AckResponse represents the response for POST /v1/device/inbox/:imei/ack.
 type AckResponse struct {
-	ID            string  `json:"id"`
-	IMEI          string  `json:"imei"`
-	Status        string  `json:"status"`
-	ApprovedAt    *int64  `json:"approvedAt,omitempty"`
-	RejectedAt    *int64  `json:"rejectedAt,omitempty"`
-	CommandSecret string  `json:"commandSecret,omitempty"` // Returned on approval per spec - device needs this if FCM fails
-	FCMPushSent   bool    `json:"fcmPushSent"`
-	Notes         string  `json:"notes,omitempty"`
+	ApprovedAt    *int64 `json:"approvedAt,omitempty"`
+	RejectedAt    *int64 `json:"rejectedAt,omitempty"`
+	ID            string `json:"id"`
+	IMEI          string `json:"imei"`
+	Status        string `json:"status"`
+	CommandSecret string `json:"commandSecret,omitempty"`
+	Notes         string `json:"notes,omitempty"`
+	FCMPushSent   bool   `json:"fcmPushSent"`
 }
 
 // PaginationResponse represents pagination info in responses.
@@ -72,38 +72,38 @@ type PaginationResponse struct {
 
 // DeviceListResponse represents the response for GET /v1/devices.
 type DeviceListResponse struct {
-	Devices    []DeviceResponse `json:"devices"`
+	Devices    []DeviceResponse   `json:"devices"`
 	Pagination PaginationResponse `json:"pagination"`
 }
 
 // DeviceResponse represents a device in API responses.
 type DeviceResponse struct {
-	ID           string  `json:"id"`
-	IMEI         string  `json:"imei"`
-	DeviceName   string  `json:"deviceName,omitempty"`
-	Model        string  `json:"model,omitempty"`
-	Manufacturer string  `json:"manufacturer,omitempty"`
-	OSVersion    string  `json:"osVersion,omitempty"`
-	AppVersion   string  `json:"appVersion,omitempty"`
-	Status       string  `json:"status"`
-	Online       bool    `json:"online"`
-	LastSeen     int64   `json:"lastSeen,omitempty"`
-	RegisteredAt *int64  `json:"registeredAt,omitempty"`
+	RegisteredAt *int64 `json:"registeredAt,omitempty"`
+	ID           string `json:"id"`
+	IMEI         string `json:"imei"`
+	DeviceName   string `json:"deviceName,omitempty"`
+	Model        string `json:"model,omitempty"`
+	Manufacturer string `json:"manufacturer,omitempty"`
+	OSVersion    string `json:"osVersion,omitempty"`
+	AppVersion   string `json:"appVersion,omitempty"`
+	Status       string `json:"status"`
+	LastSeen     int64  `json:"lastSeen,omitempty"`
+	Online       bool   `json:"online"`
 }
 
 // DeregisterResponse represents the response for DELETE /v1/device/:imei.
 type DeregisterResponse struct {
-	IMEI            string `json:"imei"`
-	Status          string `json:"status"`
-	DeregisteredAt  int64  `json:"deregisteredAt"`
-	RetentionUntil  int64  `json:"retentionUntil"`
+	IMEI           string `json:"imei"`
+	Status         string `json:"status"`
+	DeregisteredAt int64  `json:"deregisteredAt"`
+	RetentionUntil int64  `json:"retentionUntil"`
 }
 
 // ErrorResponse represents an error response.
 type ErrorResponse struct {
+	Details interface{} `json:"details,omitempty"`
 	Code    string      `json:"error"`
 	Message string      `json:"message"`
-	Details interface{} `json:"details,omitempty"`
 }
 
 // NewTimestamp creates a new timestamp in milliseconds.

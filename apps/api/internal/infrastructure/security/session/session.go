@@ -52,8 +52,8 @@ type Session struct {
 
 // Manager handles encrypted session cookies for HttpOnly cookie auth.
 type Manager struct {
-	encryptionKey []byte
 	sessionRepo   Repository
+	encryptionKey []byte
 }
 
 // NewManager creates a new session manager with the given secret.
