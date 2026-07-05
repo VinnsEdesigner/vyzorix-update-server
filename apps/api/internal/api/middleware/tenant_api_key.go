@@ -172,8 +172,9 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 		}
 
 		// Store key info in context for downstream use
+		// CRITICAL: Also set operator_id for handlers that check it (like keys_handler.go)
+		c.Set("operator_id", key.OperatorID)
 		c.Set("api_key_id", key.ID)
-		c.Set("api_key_operator_id", key.OperatorID)
 		c.Set("api_key_scope", string(key.Scope))
 		c.Set("api_key_name", key.Name)
 		c.Set("auth_type", "tenant_api_key")
@@ -205,9 +206,21 @@ func extractAPIKeyFromHeader(c *gin.Context) string {
 	return ""
 }
 
+// ScopeEnforcementFunc is a function that determines required scope based on HTTP method
+type ScopeEnforcementFunc func(method string) domain.Scope
+
 // ScopeEnforcement returns a middleware that enforces scope based on HTTP method.
-func (t *TenantAPIKeyAuth) ScopeEnforcement(requiredScope domain.Scope) gin.HandlerFunc {
+// It uses a scope determination function so different routes can have different requirements.
+func (t *TenantAPIKeyAuth) ScopeEnforcement(scopeFn ScopeEnforcementFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Only enforce scope for API key auth (not session auth)
+		authType, exists := c.Get("auth_type")
+		if !exists || authType != "tenant_api_key" {
+			// Session auth - skip scope enforcement
+			c.Next()
+			return
+		}
+
 		scopeVal, exists := c.Get("api_key_scope")
 		if !exists {
 			c.Next()
@@ -219,11 +232,15 @@ func (t *TenantAPIKeyAuth) ScopeEnforcement(requiredScope domain.Scope) gin.Hand
 			c.Next()
 			return
 		}
-		scope := domain.Scope(scopeStr)
-		if !hasScope(scope, requiredScope) {
+
+		// Determine required scope based on HTTP method
+		requiredScope := scopeFn(c.Request.Method)
+		keyScope := domain.Scope(scopeStr)
+
+		if !hasScope(keyScope, requiredScope) {
 			c.JSON(http.StatusForbidden, gin.H{
 				"error":   "insufficient_scope",
-				"message": "insufficient scope for this operation",
+				"message": "API key scope insufficient for this operation",
 			})
 			c.Abort()
 			return
@@ -247,8 +264,8 @@ func hasScope(keyScope, requiredScope domain.Scope) bool {
 	}
 }
 
-// methodToScope converts an HTTP method to the required scope.
-func methodToScope(method string) domain.Scope {
+// MethodToScope converts an HTTP method to the required scope.
+func MethodToScope(method string) domain.Scope {
 	switch method {
 	case "GET", "HEAD", "OPTIONS":
 		return domain.ScopeRead
