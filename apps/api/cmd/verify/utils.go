@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	
 	"os"
 	"path/filepath"
 	"strings"
@@ -68,33 +68,9 @@ func getFileSize(path string) int64 {
 	return info.Size()
 }
 
-func verifySettings() bool {
-	fmt.Println("\n" + strings.Repeat("=", 80))
-	fmt.Println("  SERVER_BACKEND_SETTINGS_API.md VERIFICATION")
-	fmt.Println(strings.Repeat("=", 80))
-	return true
-}
 
-func verifyUpdates() bool {
-	fmt.Println("\n" + strings.Repeat("=", 80))
-	fmt.Println("  SERVER_BACKEND_UPDATES_API.md VERIFICATION")
-	fmt.Println(strings.Repeat("=", 80))
-	return true
-}
 
-func verifyWebSocket() bool {
-	fmt.Println("\n" + strings.Repeat("=", 80))
-	fmt.Println("  REALTIME_WEBSOCKET_ARCHITECTURE.md VERIFICATION")
-	fmt.Println(strings.Repeat("=", 80))
-	return true
-}
 
-func verifyDashboardCommands() bool {
-	fmt.Println("\n" + strings.Repeat("=", 80))
-	fmt.Println("  SERVER_BACKEND_DASHBOARD_COMMANDS_API.md VERIFICATION")
-	fmt.Println(strings.Repeat("=", 80))
-	return true
-}
 
 func formatPath(base, rel string) string {
 	return filepath.Join(base, rel)
