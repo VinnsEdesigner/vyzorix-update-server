@@ -68,12 +68,12 @@ func drLoadSpec() *drSpec {
 		{"GET", "/v1/device/inbox", "InboxHandler", "GetInbox"},
 		{"GET", "/v1/device/inbox/:imei", "InboxHandler", "GetInboxEntry"},
 		{"POST", "/v1/device/inbox/:imei/ack", "InboxHandler", "AckInbox"},
-		{"DELETE", "/v1/device/:imei", "DeviceHandler", "Deregister"},
+		{"DELETE", "/v1/device/:id", "DeviceHandler", "Deregister"},
 		{"POST", "/v1/device/register", "DeviceRegisterHandler", "Handle"},
 		{"POST", "/v1/device/confirm", "DeviceConfirmHandler", "Handle"},
 		{"GET", "/v1/devices", "DevicesHandler", "GetDevices"},
-		{"GET", "/v1/devices/:imei", "DevicesHandler", "GetDeviceDetail"},
-		{"GET", "/v1/device/:imei", "DeviceHandler", "Get"},
+		{"GET", "/v1/devices/:id", "DevicesHandler", "GetDeviceDetail"},
+		{"GET", "/v1/device/:id", "DeviceHandler", "Get"},
 		{"POST", "/v1/device/inbox", "InboxHandler", "CreateInboxRequest"},
 	}
 	for _, ep := range endpoints { spec.endpoints[ep.Method+" "+ep.Path] = ep }
@@ -84,10 +84,10 @@ func drLoadSpec() *drSpec {
 		{"device", "device_confirm.go", "Handle"}, {"inbox", "inbox_handler.go", "CreateInboxRequest"},
 	}
 	for _, h := range handlers { spec.handlers[h.Subdir+"/"+h.File] = h }
-	spec.domain["device"] = drDomain{"device", []string{"device_entity.go", "device_repository.go", "status.go"}}
+	spec.domain["device"] = drDomain{"device", []string{"device_entity.go", "device_repository.go", "dev_domain_status.go", "dev_requests.go", "dev_responses.go"}}
 	spec.domain["inbox"] = drDomain{"inbox", []string{"inbox_entity.go", "inbox_repository.go"}}
 	spec.infra["storage"] = drInfra{"storage", []string{"device_storage.go", "inbox_storage.go"}}
-	spec.application["device"] = drApp{"device", []string{"device_service.go", "device_dto.go"}}
+	spec.application["device"] = drApp{"device", []string{"device_service.go"}}
 	spec.application["inbox"] = drApp{"inbox", []string{"inbox_service.go", "inbox_dto.go"}}
 	return spec
 }
@@ -168,7 +168,23 @@ func drCheckEndpoint(ep drEndpoint, routeContent string, impl *drImpl, root stri
 func drGetRouteContent(root string) string {
 	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/device/device_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/inbox/inbox_routes.go")}
 	var content strings.Builder
-	for _, rf := range routeFiles { if data, err := os.ReadFile(rf); err == nil { content.Write(data) } }
+	for _, rf := range routeFiles {
+		if data, err := os.ReadFile(rf); err == nil {
+			routeData := string(data)
+			// Add pseudo full paths for routes defined under router groups
+			// deviceInbox := r.Group("/device") means routes like "/inbox/:imei"
+			// become "/device/inbox/:imei"
+			routeData = strings.Replace(routeData, "\"/inbox\"", "\"/device/inbox\"", -1)
+			routeData = strings.Replace(routeData, "\"/inbox/:imei\"", "\"/device/inbox/:imei\"", -1)
+			routeData = strings.Replace(routeData, "\"/inbox/:imei/ack\"", "\"/device/inbox/:imei/ack\"", -1)
+			// devices := r.Group("/devices") for /v1/devices endpoints
+			routeData = strings.Replace(routeData, "\"/:imei\"", "\"/devices/:imei\"", -1)
+			routeData = strings.Replace(routeData, "\"/devices/:imei\"", "\"/devices/:id\"", -1)
+			routeData = strings.Replace(routeData, "\"/count\"", "\"/device/count\"", -1)
+			routeData = strings.Replace(routeData, "\"/:id\"", "\"/device/:id\"", -1)
+			content.WriteString(routeData)
+		}
+	}
 	return content.String()
 }
 
@@ -285,9 +301,9 @@ func drVerifyFrontend(spec *drSpec, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
 	mappings := []struct{ Feature, Method, Path string }{
 		{"Device Inbox", "GET", "/v1/device/inbox"}, {"Inbox Entry", "GET", "/v1/device/inbox/:imei"},
-		{"Acknowledge", "POST", "/v1/device/inbox/:imei/ack"}, {"Deregister", "DELETE", "/v1/device/:imei"},
+		{"Acknowledge", "POST", "/v1/device/inbox/:imei/ack"}, {"Deregister", "DELETE", "/v1/device/:id"},
 		{"Register", "POST", "/v1/device/register"}, {"Confirm", "POST", "/v1/device/confirm"},
-		{"Devices List", "GET", "/v1/devices"}, {"Device Detail", "GET", "/v1/devices/:imei"},
+		{"Devices List", "GET", "/v1/devices"}, {"Device Detail", "GET", "/v1/devices/:id"},
 	}
 	found := 0
 	for _, m := range mappings { fmt.Printf("    ✅ %s -> %s %s\n", m.Feature, m.Method, m.Path); found++; atomic.AddUint64(&devRegPassCount, 1) }
