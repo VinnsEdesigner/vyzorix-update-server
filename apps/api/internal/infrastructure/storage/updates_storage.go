@@ -388,7 +388,10 @@ func (s *UpdatesStorage) UpdatePushDeviceStatus(ctx context.Context, id string, 
 	if status == updates.DevicePushStatusSent {
 		sentAt = &now
 	}
-	if status == updates.DevicePushStatusAcknowledged {
+	if status == updates.DevicePushStatusAcknowledged || status == updates.DevicePushStatusInProgress {
+		ackAt = &now
+	}
+	if status == updates.DevicePushStatusCompleted {
 		ackAt = &now
 	}
 	_, err := s.db.ExecContext(ctx, `
@@ -404,6 +407,53 @@ func (s *UpdatesStorage) CountPushDevicesByStatus(ctx context.Context, pushID st
 		SELECT COUNT(*) FROM update_push_devices WHERE push_id = ? AND status = ?
 	`, pushID, status).Scan(&count)
 	return count, err
+}
+
+func (s *UpdatesStorage) GetPushDeviceByPushAndDevice(ctx context.Context, pushID, deviceID string) (*updates.UpdatePushDevice, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT id, push_id, device_id, status, sent_at, acknowledged_at, error, retry_count, created_at, updated_at
+		FROM update_push_devices WHERE push_id = ? AND device_id = ?
+	`, pushID, deviceID)
+
+	var d updates.UpdatePushDevice
+	var sentAt, ackAt sql.NullInt64
+	var errMsg sql.NullString
+	err := row.Scan(&d.ID, &d.PushID, &d.DeviceID, &d.Status, &sentAt, &ackAt, &errMsg, &d.RetryCount, &d.CreatedAt, &d.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, updates.ErrPushNotFound
+		}
+		return nil, err
+	}
+	if sentAt.Valid {
+		d.SentAt = &sentAt.Int64
+	}
+	if ackAt.Valid {
+		d.AcknowledgedAt = &ackAt.Int64
+	}
+	if errMsg.Valid {
+		d.Error = errMsg.String
+	}
+	return &d, nil
+}
+
+func (s *UpdatesStorage) UpdatePushDeviceStatusByDispatch(ctx context.Context, dispatchID, deviceID string, status updates.DevicePushStatus, errorMsg string) error {
+	// Find the push device by looking up the command with the given dispatch_id
+	// The dispatch_id for update push is the push_id itself
+	// We need to find the device's push record by device_id and then update by id
+	var devicePushID string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT upd.id FROM update_push_devices upd
+		JOIN update_pushes up ON upd.push_id = up.id
+		WHERE up.id = ? AND upd.device_id = ?
+	`, dispatchID, deviceID).Scan(&devicePushID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return updates.ErrPushNotFound
+		}
+		return err
+	}
+	return s.UpdatePushDeviceStatus(ctx, devicePushID, status, errorMsg)
 }
 
 func (s *UpdatesStorage) scanPushDeviceRows(rows *sql.Rows) (*updates.UpdatePushDevice, error) {

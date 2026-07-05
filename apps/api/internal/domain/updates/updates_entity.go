@@ -38,7 +38,9 @@ type DevicePushStatus string
 const (
 	DevicePushStatusPending      DevicePushStatus = "pending"
 	DevicePushStatusSent         DevicePushStatus = "sent"
+	DevicePushStatusInProgress  DevicePushStatus = "in_progress"
 	DevicePushStatusAcknowledged DevicePushStatus = "acknowledged"
+	DevicePushStatusCompleted   DevicePushStatus = "completed"
 	DevicePushStatusFailed       DevicePushStatus = "failed"
 )
 
@@ -117,7 +119,7 @@ type UpdatePushDevice struct {
 
 // IsTerminal returns true if the device push status is final.
 func (d *UpdatePushDevice) IsTerminal() bool {
-	return d.Status == DevicePushStatusAcknowledged || d.Status == DevicePushStatusFailed
+	return d.Status == DevicePushStatusCompleted || d.Status == DevicePushStatusFailed
 }
 
 // SyncState represents the current sync state.

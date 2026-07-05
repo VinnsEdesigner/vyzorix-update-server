@@ -365,12 +365,14 @@ func ProvideUpdatesService(
 // ProvideUpdatesHandler creates the updates handler.
 func ProvideUpdatesHandler(
 	updatesService *updatesapp.Service,
+	pushService *updatesapp.PushService,
 	auditLogger *audit.Logger,
 	cfg config.Config,
 ) *updateshandlers.UpdatesHandler {
 	updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(nil)
 	return updateshandlers.NewUpdatesHandler(
 		updatesService,
+		pushService,
 		updatesRateLimiters,
 		auditLogger,
 		cfg.GitHubWebhookSecret,
