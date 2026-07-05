@@ -17,7 +17,6 @@ type RefreshTokenResult struct {
 }
 
 // RotateRefreshToken rotates a refresh token, revoking the old one and issuing a new one.
-// 10 FIX: Added cross-account token theft detection.
 func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken string) (*RefreshTokenResult, error) {
 	// Check if refresh token repository is configured
 	if s.refreshTokenRepo == nil {

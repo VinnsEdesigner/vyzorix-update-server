@@ -64,8 +64,8 @@ func (r *OAuthStateRepositoryImpl) Create(ctx context.Context, state, redirectUR
 
 	// Generate unique ID
 	idBytes := make([]byte, 16)
-	if _, err := rand.Read(idBytes); err != nil {
-		return "", err
+	if _, randErr := rand.Read(idBytes); randErr != nil {
+		return "", randErr
 	}
 	id := hex.EncodeToString(idBytes)
 

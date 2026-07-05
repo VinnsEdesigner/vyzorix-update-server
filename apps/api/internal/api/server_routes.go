@@ -33,6 +33,9 @@ func (s *Server) setupGlobalMiddleware() {
 	s.engine.Use(s.mwFactory.DisableConnect())
 	s.engine.Use(s.mwFactory.ErrorHandler())
 
+	// Apply API key authentication to all routes except /health and /healthz
+	s.engine.Use(s.apiKeyAuth.SkipCheck("/health", "/healthz"))
+
 	ssrConfig := infraConfig.LoadSSRConfig()
 	if ssrConfig.EnableSSR {
 		s.engine.Use(s.mwFactory.SSRProxy(ssrConfig))

@@ -65,7 +65,7 @@ func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 	}
 
 	if err = c.ShouldBindJSON(&req); err != nil {
-		h.presenter.BadRequest(c, "Invalid request body")
+		h.presenter.BadRequest(c, "Invalid request body: "+err.Error())
 		return
 	}
 
@@ -212,8 +212,8 @@ func (h *ClientCredentialsHandler) Update(c *gin.Context) {
 		Active        *bool    `json:"active"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		h.presenter.BadRequest(c, "Invalid request body")
+	if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
+		h.presenter.BadRequest(c, "Invalid request body: "+bindErr.Error())
 		return
 	}
 
@@ -238,7 +238,7 @@ func (h *ClientCredentialsHandler) Update(c *gin.Context) {
 		clientResp.RateLimit = *req.RateLimit
 	}
 	if req.Active != nil {
-		clientResp.Active = *req.Active
+		clientResp.IsActive = *req.Active
 	}
 
 	// Note: In a real implementation, you'd call a service method to update

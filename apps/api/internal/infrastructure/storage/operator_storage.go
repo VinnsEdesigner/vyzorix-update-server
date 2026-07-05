@@ -998,9 +998,9 @@ func (r *OperatorRepository) GetNotifications(ctx context.Context, operatorID st
 	if webhookURL.Valid {
 		ns.Webhook.URL = webhookURL.String
 	}
-	// SECURITY FIX: Don't expose secret in GET responses - only return placeholder if set
+	// Don't expose secret in GET responses - only return placeholder if set
 	if webhookSecret.Valid && webhookSecret.String != "" {
-		ns.Webhook.Secret = "••••••••" // Masked placeholder
+		ns.Webhook.Secret = "••••••••"
 	} else {
 		ns.Webhook.Secret = ""
 	}
@@ -1058,7 +1058,7 @@ func (r *OperatorRepository) UpdateNotifications(ctx context.Context, operatorID
 		webhookTypesJSON = []byte("[]")
 	}
 
-	// SECURITY FIX: Hash webhook secret before storing
+	// Hash webhook secret before storing
 	var hashedSecret string
 	if settings.Webhook.Secret != "" && settings.Webhook.Secret != "••••••••" {
 		// Only hash if it's a new secret (not the masked placeholder)

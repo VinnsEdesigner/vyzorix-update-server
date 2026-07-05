@@ -372,7 +372,7 @@ func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.Device
 	offset := (query.Page - 1) * query.Limit
 
 	// Get all devices and filter
-	allDevices, total, err := s.deviceRepo.List(ctx, 10000, 0) // Get all for filtering
+	allDevices, _, err := s.deviceRepo.List(ctx, 10000, 0) // Get all for filtering
 	if err != nil {
 		return nil, err
 	}
@@ -406,7 +406,7 @@ func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.Device
 	}
 
 	// Calculate pagination
-	total = len(filtered)
+	total := len(filtered)
 	totalPages := 0
 	if total > 0 {
 		totalPages = (total + query.Limit - 1) / query.Limit

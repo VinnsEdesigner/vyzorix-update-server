@@ -52,7 +52,7 @@ func (r *TelemetryRepository) Save(ctx context.Context, deviceID string, raw []b
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback() //
+	defer func() { _ = tx.Rollback() }() //
 
 	// Generate UUIDv7 for the telemetry entry
 	telemetryID := shared.GenerateID()
@@ -103,7 +103,7 @@ func (r *TelemetryRepository) List(ctx context.Context, deviceID string, limit i
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close() //
+	defer func() { _ = rows.Close() }() //
 
 	var entries []telemetry.TelemetryEntry
 
@@ -140,7 +140,7 @@ func (r *TelemetryRepository) ListSince(ctx context.Context, deviceID string, si
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close() //
+	defer func() { _ = rows.Close() }() //
 
 	var entries []telemetry.TelemetryEntry
 
