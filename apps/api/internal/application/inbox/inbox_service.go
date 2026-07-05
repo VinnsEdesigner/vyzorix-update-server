@@ -950,14 +950,9 @@ func (s *Service) ResendApproval(ctx context.Context, imei, operatorID string) (
 		return nil, ErrInboxNotApproved
 	}
 
-	// Get the device to retrieve command secret (use deviceLookup if available)
-	var deviceHash string
-	if s.deviceLookup != nil {
-		device, err := s.deviceLookup.GetDeviceByIMEI(ctx, imei)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get device: %w", err)
-		}
-		deviceHash = device.CommandSecretHash
+	// Validate we have a command secret to resend
+	if entry.CommandSecret == "" {
+		return nil, fmt.Errorf("command secret not found for approved entry")
 	}
 
 	// Try to send FCM notification
@@ -966,7 +961,7 @@ func (s *Service) ResendApproval(ctx context.Context, imei, operatorID string) (
 		wake := fcm.SilentWake{
 			Token:         entry.FCMToken,
 			Command:       "REGISTRATION_APPROVED",
-			CommandSecret: deviceHash, // Note: Device needs plaintext secret - this is a security consideration
+			CommandSecret: entry.CommandSecret, // Plaintext secret stored in inbox entry
 			DispatchID:    entry.ID,
 			DeviceID:      entry.IMEI,
 			Priority:      "high",
@@ -983,6 +978,11 @@ func (s *Service) ResendApproval(ctx context.Context, imei, operatorID string) (
 
 	// Log the resend action
 	s.logRegistrationAction(ctx, entry, "resend_approval", operatorID, "")
+
+	s.logger.Info("resent approval notification",
+		"imei", entry.IMEI,
+		"fcm_push_sent", fcmPushSent,
+	)
 
 	return &ResendResponse{
 		IMEI:        entry.IMEI,
