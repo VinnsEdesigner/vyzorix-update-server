@@ -1015,74 +1015,16 @@ func (r *OperatorRepository) GetNotifications(ctx context.Context, operatorID st
 
 // UpdateNotifications updates notification settings for an operator.
 func (r *OperatorRepository) UpdateNotifications(ctx context.Context, operatorID string, settings *operator.NotificationSettings) error {
-	// VALIDATION: Validate webhook URL if webhook is enabled (URL must be non-empty when enabled)
-	if settings.Webhook.Enabled && settings.Webhook.URL == "" {
-		return fmt.Errorf("webhook URL is required when webhook is enabled")
+	if err := r.validateNotificationSettings(settings); err != nil {
+		return err
 	}
 
-	// Validate webhook URL format if provided
-	if settings.Webhook.URL != "" {
-		parsedURL, err := url.Parse(settings.Webhook.URL)
-		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
-			return fmt.Errorf("invalid webhook URL: must be a valid HTTP/HTTPS URL")
-		}
-		if parsedURL.Host == "" {
-			return fmt.Errorf("invalid webhook URL: missing host")
-		}
-	}
-
-	// Determine channels
-	notifyEmail := ""
-	for _, ch := range settings.Channels {
-		if ch == "email" {
-			notifyEmail = "true"
-			break
-		}
-	}
-
-	// Determine push and webhook enabled from channels
-	notifyPush := 0
-	notifyWebhook := 0
-	for _, ch := range settings.Channels {
-		if ch == "push" {
-			notifyPush = 1
-		}
-		if ch == "webhook" {
-			notifyWebhook = 1
-		}
-	}
-
-	// Serialize webhook types
-	webhookTypesJSON, err := json.Marshal(settings.Webhook.Types)
+	notifyEmail := r.determineNotifyEmail(settings.Channels)
+	notifyPush, notifyWebhook := r.determineChannelFlags(settings.Channels)
+	webhookTypesJSON := r.serializeWebhookTypes(settings.Webhook.Types)
+	hashedSecret, err := r.hashWebhookSecret(ctx, operatorID, settings.Webhook.Secret)
 	if err != nil {
-		webhookTypesJSON = []byte("[]")
-	}
-
-	// Hash webhook secret before storing
-	var hashedSecret string
-	if settings.Webhook.Secret != "" && settings.Webhook.Secret != "••••••••" {
-		// Only hash if it's a new secret (not the masked placeholder)
-		hashed, hashErr := password.HashSecret(settings.Webhook.Secret)
-		if hashErr != nil {
-			return fmt.Errorf("failed to hash webhook secret: %w", hashErr)
-		}
-		hashedSecret = hashed
-	} else if settings.Webhook.Secret == "" {
-		// Allow clearing the secret
-		hashedSecret = ""
-	} else {
-		// Masked placeholder - keep existing secret
-		// Need to fetch existing secret to preserve it
-		existing, getErr := r.GetNotifications(ctx, operatorID)
-		if getErr == nil && existing != nil {
-			hashedSecret = existing.Webhook.Secret
-			// If existing is also masked, use empty
-			if hashedSecret == "••••••••" {
-				hashedSecret = ""
-			}
-		} else {
-			hashedSecret = ""
-		}
+		return err
 	}
 
 	query := `
@@ -1202,6 +1144,80 @@ func (r *OperatorRepository) UpdateFCMToken(ctx context.Context, operatorID, fcm
 	}
 
 	return nil
+}
+
+// validateNotificationSettings validates notification settings.
+func (r *OperatorRepository) validateNotificationSettings(settings *operator.NotificationSettings) error {
+	if settings.Webhook.Enabled && settings.Webhook.URL == "" {
+		return fmt.Errorf("webhook URL is required when webhook is enabled")
+	}
+
+	if settings.Webhook.URL != "" {
+		parsedURL, err := url.Parse(settings.Webhook.URL)
+		if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+			return fmt.Errorf("invalid webhook URL: must be a valid HTTP/HTTPS URL")
+		}
+		if parsedURL.Host == "" {
+			return fmt.Errorf("invalid webhook URL: missing host")
+		}
+	}
+	return nil
+}
+
+// determineNotifyEmail determines if email notifications are enabled.
+func (r *OperatorRepository) determineNotifyEmail(channels []string) string {
+	for _, ch := range channels {
+		if ch == "email" {
+			return "true"
+		}
+	}
+	return ""
+}
+
+// determineChannelFlags determines push and webhook enabled flags from channels.
+func (r *OperatorRepository) determineChannelFlags(channels []string) (notifyPush, notifyWebhook int) {
+	for _, ch := range channels {
+		if ch == "push" {
+			notifyPush = 1
+		}
+		if ch == "webhook" {
+			notifyWebhook = 1
+		}
+	}
+	return
+}
+
+// serializeWebhookTypes serializes webhook types to JSON.
+func (r *OperatorRepository) serializeWebhookTypes(types []string) []byte {
+	webhookTypesJSON, err := json.Marshal(types)
+	if err != nil {
+		return []byte("[]")
+	}
+	return webhookTypesJSON
+}
+
+// hashWebhookSecret hashes the webhook secret before storing.
+func (r *OperatorRepository) hashWebhookSecret(ctx context.Context, operatorID, secret string) (string, error) {
+	if secret != "" && secret != "••••••••" {
+		hashed, err := password.HashSecret(secret)
+		if err != nil {
+			return "", fmt.Errorf("failed to hash webhook secret: %w", err)
+		}
+		return hashed, nil
+	}
+
+	if secret == "" {
+		return "", nil
+	}
+
+	// Masked placeholder - keep existing secret
+	existing, err := r.GetNotifications(ctx, operatorID)
+	if err == nil && existing != nil {
+		if existing.Webhook.Secret != "••••••••" {
+			return existing.Webhook.Secret, nil
+		}
+	}
+	return "", nil
 }
 
 // generateWebhookSecret generates a secure random secret for webhooks.
