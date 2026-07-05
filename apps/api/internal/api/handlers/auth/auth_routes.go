@@ -149,16 +149,25 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		authenticated.POST("/me/notifications/webhook/rotate", h.Settings.RotateWebhookSecret)
 		authenticated.POST("/logout", h.Logout.Handle)
 		authenticated.GET("/lockout/status", h.Lockout.GetLockoutStatus)
-		authenticated.GET("/admin/operators", h.Admin.ListOperators)
-		authenticated.POST("/admin/operators", h.Admin.CreateOperator)
-		authenticated.GET("/admin/operators/:id", h.Admin.GetOperator)
-		authenticated.PATCH("/admin/operators/:id", h.Admin.UpdateOperator)
-		authenticated.DELETE("/admin/operators/:id", h.Admin.DeleteOperator)
 	}
 
-	// Admin lockout management
+	// SuperAdmin-only operator management routes
+	adminOperators := rg.Group("/admin")
+	adminOperators.Use(cookieAuth.Middleware())
+	adminOperators.Use(middleware.RequireSuperAdmin())
+	adminOperators.Use(middleware.NoCache())
+	{
+		adminOperators.GET("/operators", h.Admin.ListOperators)
+		adminOperators.POST("/operators", h.Admin.CreateOperator)
+		adminOperators.GET("/operators/:id", h.Admin.GetOperator)
+		adminOperators.PATCH("/operators/:id", h.Admin.UpdateOperator)
+		adminOperators.DELETE("/operators/:id", h.Admin.DeleteOperator)
+	}
+
+	// Admin lockout management (SuperAdmin only)
 	adminLockout := rg.Group("/admin/lockout")
 	adminLockout.Use(cookieAuth.Middleware())
+	adminLockout.Use(middleware.RequireSuperAdmin())
 	adminLockout.Use(middleware.NoCache())
 	{
 		adminLockout.POST("/unlock/:operator_id", h.Lockout.UnlockAccount)

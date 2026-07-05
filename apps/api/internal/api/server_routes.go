@@ -155,6 +155,7 @@ func (s *Server) setupAuthenticatedRoutes() {
 
 	// DEVICE routes: HMAC authentication only (no session/API key)
 	// These are device-initiated requests that use HMAC signatures
+	// Note: /command and /fcm-token require HMAC, but /count and /:imei are operator endpoints
 	s.setupDeviceManagementRoutes(r)
 }
 
@@ -185,7 +186,9 @@ func (s *Server) setupDashboardRoutes(r ...*gin.RouterGroup) {
 }
 
 func (s *Server) setupAdminRoutes(r *gin.RouterGroup) {
+	// SuperAdmin-only client management routes
 	adminClients := r.Group("/admin/clients")
+	adminClients.Use(middleware.RequireSuperAdmin())
 	adminClients.GET("", s.adminClientsHandler.List)
 	adminClients.GET("/:clientId", s.adminClientsHandler.Get)
 	adminClients.PATCH("/:clientId", s.adminClientsHandler.Update)
