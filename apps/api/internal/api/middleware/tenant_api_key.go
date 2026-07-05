@@ -11,6 +11,102 @@ import (
 	"github.com/google/uuid"
 )
 
+// =============================================================================
+// AUTHENTICATION BOUNDARY DEFINITIONS
+// Based on MULTI_CLIENT_API_KEY_SYSTEM.md Section 2 - Endpoint Authentication
+// =============================================================================
+
+// PathType defines the authentication boundary for a path
+type PathType int
+
+const (
+	PathTypeUnknown PathType = iota
+	PathTypePublic           // No auth required
+	PathTypeInfrastructure   // Env API Key (TokenSecret)
+	PathTypeSessionOnly      // Session Cookie required
+	PathTypeDeviceAuth       // HMAC Signature
+	PathTypeTenant           // Session OR API Key + Scope
+)
+
+// PathBoundary maps path patterns to their authentication requirements
+var PathBoundaries = map[string]PathType{
+	// PUBLIC - No auth required
+	"/health":                       PathTypePublic,
+	"/healthz":                      PathTypePublic, // Protected at route level
+	"/v1/auth/":                     PathTypePublic,
+	"/v1/device/register":           PathTypePublic,
+	"/v1/device/public/":            PathTypePublic,
+	"/v1/device/inbox":             PathTypePublic,
+	"/v1/device/confirm":            PathTypePublic,
+	"/metrics":                      PathTypePublic, // Prometheus scraping
+
+	// INFRASTRUCTURE - Env API Key (TokenSecret) - handled at route level
+	// /admin/*, /internal/*
+
+	// SESSION ONLY - Session Cookie required
+	"/bin/":           PathTypeSessionOnly,
+	"/v1/dashboard/":  PathTypeSessionOnly,
+	"/v1/api-keys/":   PathTypeSessionOnly,
+	"/api/v1/apk/":   PathTypeSessionOnly,
+
+	// DEVICE AUTH - HMAC Signature - handled by device middleware
+	// /v1/device/:imei/command, /v1/device/:imei/fcm-token
+
+	// TENANT - Session OR API Key + Scope (default)
+	"/v1/devices/":            PathTypeTenant,
+	"/v1/device/":             PathTypeTenant,
+	"/v1/command/":            PathTypeTenant,
+	"/v1/telemetry/":          PathTypeTenant,
+	"/v1/updates/":            PathTypeTenant,
+	"/v1/device/diagnostics/": PathTypeTenant,
+}
+
+// ClassifyPath determines the PathType for a given path
+func ClassifyPath(path string) PathType {
+	// Check exact matches first
+	if pt, ok := PathBoundaries[path]; ok {
+		return pt
+	}
+
+	// Check prefix matches
+	for prefix, pt := range PathBoundaries {
+		if strings.HasPrefix(path, prefix) {
+			return pt
+		}
+	}
+
+	return PathTypeTenant // Default to TENANT
+}
+
+// IsPublicPath returns true if the path is PUBLIC (no auth required)
+func IsPublicPath(path string) bool {
+	return ClassifyPath(path) == PathTypePublic
+}
+
+// IsInfrastructurePath returns true if the path is INFRASTRUCTURE (Env API Key)
+func IsInfrastructurePath(path string) bool {
+	return ClassifyPath(path) == PathTypeInfrastructure
+}
+
+// IsSessionOnlyPath returns true if the path requires Session Cookie
+func IsSessionOnlyPath(path string) bool {
+	return ClassifyPath(path) == PathTypeSessionOnly
+}
+
+// IsDeviceAuthPath returns true if the path requires HMAC authentication
+func IsDeviceAuthPath(path string) bool {
+	return ClassifyPath(path) == PathTypeDeviceAuth
+}
+
+// IsTenantPath returns true if the path is TENANT (Session OR API Key + Scope)
+func IsTenantPath(path string) bool {
+	return ClassifyPath(path) == PathTypeTenant
+}
+
+// =============================================================================
+// TENANT API KEY AUTHENTICATION MIDDLEWARE
+// =============================================================================
+
 // TenantAPIKeyAuth provides tenant API key authentication middleware.
 type TenantAPIKeyAuth struct {
 	service   *keys.Service
@@ -26,12 +122,20 @@ func NewTenantAPIKeyAuth(service *keys.Service, keyPrefix string) *TenantAPIKeyA
 }
 
 // Middleware returns the Gin middleware function for tenant API key authentication.
+// This handles TENANT paths: Session OR API Key + Scope
 func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
+		pathType := ClassifyPath(path)
 
-		// Skip authentication for public paths
-		if isPublicPath(path) {
+		// Skip for non-tenant paths (let other middleware handle)
+		if pathType != PathTypeTenant {
+			c.Next()
+			return
+		}
+
+		// Check if already authenticated via session
+		if _, exists := c.Get("operator_id"); exists {
 			c.Next()
 			return
 		}
@@ -41,7 +145,7 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 		if apiKey == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   "api_key_required",
-				"message": "X-API-Key header is required",
+				"message": "X-API-Key header or session required",
 			})
 			return
 		}
@@ -75,31 +179,6 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 
 		c.Next()
 	}
-}
-
-// isPublicPath returns true if the path is public and doesn't require API key auth.
-func isPublicPath(path string) bool {
-	publicPrefixes := []string{
-		"/health",
-		
-		// metrics is public for Prometheus scraping
-		// healthz is infrastructure-protected via load balancer
-		"/v1/metrics",
-		"/v1/auth/",
-		"/v1/device/register",
-		"/v1/device/inbox",
-		"/v1/device/confirm",
-		"/v1/device/public/",
-		"/admin/",
-		"/internal/",
-	}
-
-	for _, prefix := range publicPrefixes {
-		if strings.HasPrefix(path, prefix) {
-			return true
-		}
-	}
-	return false
 }
 
 // extractAPIKeyFromHeader extracts the API key from the X-API-Key header.
