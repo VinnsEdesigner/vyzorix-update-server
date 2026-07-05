@@ -100,6 +100,11 @@ type Config struct {
 	TokenSecret              string
 	APIKeys                  map[string]string // key_id -> key_value (supports rotation)
 	APIKeyPrefix             string
+	MonthlyKeyLimit          int
+	MaxKeyNameLength         int
+	RequireKeyName           bool
+	AllowKeyRenaming         bool
+	EnableUsageTracking      bool
 	EmailFromName            string
 	AllowedOrigins           []string
 	PasswordResetTokenExpiry time.Duration
@@ -206,6 +211,11 @@ func Load() (Config, error) {
 		FirebaseCreds:            os.Getenv("FIREBASE_CREDENTIALS"),
 		TokenSecret:              os.Getenv("TOKEN_SECRET"),
 		APIKeyPrefix:            get("API_KEY_PREFIX", "vxyz"),
+		MonthlyKeyLimit:         20,
+		MaxKeyNameLength:        64,
+		RequireKeyName:          true,
+		AllowKeyRenaming:        true,
+		EnableUsageTracking:     true,
 		JWTSecret:                os.Getenv("JWT_SECRET"),
 		SessionSecret:            os.Getenv("SESSION_SECRET"),
 		SessionMaxAge:            sessionMaxAge,

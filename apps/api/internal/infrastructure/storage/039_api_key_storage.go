@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -41,10 +42,12 @@ type APIKeyRepository interface {
 	GetByID(ctx context.Context, id string) (*APIKey, error)
 	GetByKeyHash(ctx context.Context, keyHash string) (*APIKey, error)
 	ListByOperator(ctx context.Context, operatorID string, limit, offset int) ([]*APIKey, int, error)
+	ListAll(ctx context.Context, limit, offset int) ([]*APIKey, int, error)
 	Update(ctx context.Context, key *APIKey) error
 	Revoke(ctx context.Context, id string) error
 	Delete(ctx context.Context, id string) error
 	CountByOperatorThisMonth(ctx context.Context, operatorID string) (int, error)
+	CountAll(ctx context.Context) (int, error)
 	IncrementRequestCount(ctx context.Context, id string) error
 }
 
@@ -112,7 +115,7 @@ func (r *APIKeyRepositoryImpl) ListByOperator(ctx context.Context, operatorID st
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var keys []*APIKey
 	for rows.Next() {
@@ -156,13 +159,14 @@ func (r *APIKeyRepositoryImpl) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-// CountByOperatorThisMonth counts API keys created by an operator this month.
+// CountByOperatorThisMonth counts active API keys created by an operator this month.
+// Revoked keys don't count toward the monthly limit since they've been replaced.
 func (r *APIKeyRepositoryImpl) CountByOperatorThisMonth(ctx context.Context, operatorID string) (int, error) {
 	// Get start of current month
 	now := currentTimeMillis()
 	monthStart := getMonthStartMillis(now)
 
-	query := `SELECT COUNT(*) FROM api_keys WHERE operator_id = ? AND created_at >= ?`
+	query := `SELECT COUNT(*) FROM api_keys WHERE operator_id = ? AND created_at >= ? AND is_active = 1`
 	var count int
 	if err := r.db.QueryRowContext(ctx, query, operatorID, monthStart).Scan(&count); err != nil {
 		return 0, err
@@ -234,6 +238,60 @@ func (r *APIKeyRepositoryImpl) scanAPIKeyFromRows(rows *sql.Rows) (*APIKey, erro
 	}
 
 	return &key, nil
+}
+
+// ListAll returns all API keys across all operators with pagination.
+func (r *APIKeyRepositoryImpl) ListAll(ctx context.Context, limit, offset int) ([]*APIKey, int, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	// Get total count
+	var total int
+	countQuery := `SELECT COUNT(*) FROM api_keys WHERE is_active = 1`
+	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("failed to count all keys: %w", err)
+	}
+
+	// Get keys
+	query := `
+		SELECT id, operator_id, name, key_prefix, key_hash, scope, expires_at,
+		       is_active, request_count, last_request_at, created_at, updated_at, revoked_at
+		FROM api_keys
+		WHERE is_active = 1
+		ORDER BY created_at DESC
+		LIMIT ? OFFSET ?
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to list all keys: %w", err)
+	}
+	defer rows.Close()
+
+	var keys []*APIKey
+	for rows.Next() {
+		key, err := r.scanAPIKeyFromRows(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		keys = append(keys, key)
+	}
+
+	return keys, total, nil
+}
+
+// CountAll returns the total number of active API keys across all operators.
+func (r *APIKeyRepositoryImpl) CountAll(ctx context.Context) (int, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM api_keys WHERE is_active = 1`
+	if err := r.db.QueryRowContext(ctx, query).Scan(&count); err != nil {
+		return 0, fmt.Errorf("failed to count all keys: %w", err)
+	}
+	return count, nil
 }
 
 // SetupAPIKeysTable creates the api_keys table if it doesn't exist.
