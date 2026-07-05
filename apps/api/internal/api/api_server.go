@@ -65,6 +65,7 @@ type ServerConfig struct {
 	AuditLogger    *audit.Logger
 	RateLimiter    *middleware.RateLimiter
 	UpdatesService *updatesapp.Service
+	PushService    *updatesapp.PushService
 	Config         config.Config
 }
 
@@ -298,7 +299,7 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	// Updates handler
 	if cfg.UpdatesService != nil {
 		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(middleware.DefaultUpdatesRateLimits())
-		s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
+		s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, cfg.PushService, updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
 	}
 
 	// Inbox handler

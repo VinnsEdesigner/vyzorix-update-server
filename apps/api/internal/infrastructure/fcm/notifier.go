@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -48,13 +49,19 @@ type FCMMetrics struct {
 }
 
 type SilentWake struct {
-	Token          string
-	Command        string
-	CommandSecret  string
-	DispatchID     string
-	DeviceID       string
-	// Priority sets the FCM message priority (high or normal)
-	Priority string
+	Token       string
+	Command     string
+	DispatchID  string
+	DeviceID    string
+	Priority    string
+	// CommandSecret is used for registration approval (device authorization)
+	CommandSecret string
+	// APK download info for update commands (sent via FCM data payload)
+	APKFilename string
+	SHA256     string
+	APKSize    int64
+	// DownloadURL is the full URL for APK download (optional, device can construct from filename)
+	DownloadURL string
 }
 
 type Notifier interface {
@@ -190,19 +197,9 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 			Android: &messaging.AndroidConfig{
 				Priority: priority,
 				TTL:      ptr24Hours(),
-				Data: map[string]string{
-					"action":         "WAKE_DAEMON",
-					"command":        wake.Command,
-					"command_secret": wake.CommandSecret,
-					"dispatch_id":    wake.DispatchID,
-				},
+				Data: buildFCMData(wake),
 			},
-			Data: map[string]string{
-				"action":         "WAKE_DAEMON",
-				"command":        wake.Command,
-				"command_secret": wake.CommandSecret,
-				"dispatch_id":    wake.DispatchID,
-			},
+			Data: buildFCMData(wake),
 		}
 
 		result, err := client.Send(ctx, msg)
@@ -422,17 +419,9 @@ func (c *Client) SendSilentWake(ctx context.Context, wake SilentWake) error {
 		Android: &messaging.AndroidConfig{
 			Priority: "high",
 			TTL:      ptr24Hours(),
-			Data: map[string]string{
-				"action":      "WAKE_DAEMON",
-				"command":     wake.Command,
-				"dispatch_id": wake.DispatchID,
-			},
+			Data:     buildFCMData(wake),
 		},
-		Data: map[string]string{
-			"action":      "WAKE_DAEMON",
-			"command":     wake.Command,
-			"dispatch_id": wake.DispatchID,
-		},
+		Data: buildFCMData(wake),
 	}
 
 	result, err := client.Send(ctx, msg)
@@ -453,4 +442,33 @@ func (c *Client) SendSilentWake(ctx context.Context, wake SilentWake) error {
 func ptr24Hours() *time.Duration {
 	d := 24 * time.Hour
 	return &d
+}
+
+// buildFCMData constructs the data payload for FCM messages.
+// Includes APK info for update commands and CommandSecret for registration.
+func buildFCMData(wake SilentWake) map[string]string {
+	data := map[string]string{
+		"action":      "WAKE_DAEMON",
+		"command":     wake.Command,
+		"dispatch_id": wake.DispatchID,
+		"device_id":   wake.DeviceID,
+	}
+
+	// Include CommandSecret for registration approval
+	if wake.CommandSecret != "" {
+		data["command_secret"] = wake.CommandSecret
+	}
+
+	// Include APK info for update commands
+	if wake.APKFilename != "" {
+		data["apkFilename"] = wake.APKFilename
+		data["sha256"] = wake.SHA256
+		data["apkSize"] = strconv.FormatInt(wake.APKSize, 10)
+		// Include download URL if provided, otherwise device can construct from filename
+		if wake.DownloadURL != "" {
+			data["downloadUrl"] = wake.DownloadURL
+		}
+	}
+
+	return data
 }

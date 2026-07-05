@@ -17,6 +17,7 @@ type UpdatesHandler struct {
 	historyHandler    *UpdatesHistoryHandler
 	syncHandler       *UpdatesSyncHandler
 	webhookHandler    *GitHubWebhookHandler
+	deviceStatusHandler *DeviceStatusHandler
 	rateLimiters      *middleware.UpdatesRateLimiterMiddleware
 	adminAuth         *middleware.UpdatesAdminAuth
 	auditLogger       *audit.Logger
@@ -24,13 +25,14 @@ type UpdatesHandler struct {
 }
 
 // NewUpdatesHandler creates a new UpdatesHandler with all sub-handlers.
-func NewUpdatesHandler(service *updates.Service, rateLimiters *middleware.UpdatesRateLimiterMiddleware, auditLogger *audit.Logger, webhookSecret string) *UpdatesHandler {
+func NewUpdatesHandler(service *updates.Service, pushService *updates.PushService, rateLimiters *middleware.UpdatesRateLimiterMiddleware, auditLogger *audit.Logger, webhookSecret string) *UpdatesHandler {
 	return &UpdatesHandler{
 		service:          service,
 		versionsHandler:  NewUpdatesVersionsHandler(service),
 		pushHandler:      NewUpdatesPushHandler(service, auditLogger),
 		historyHandler:   NewUpdatesHistoryHandler(service, auditLogger),
 		syncHandler:      NewUpdatesSyncHandler(service, auditLogger),
+		deviceStatusHandler: NewDeviceStatusHandler(pushService),
 		rateLimiters:     rateLimiters,
 		adminAuth:        middleware.NewUpdatesAdminAuth(),
 		auditLogger:      auditLogger,
@@ -45,6 +47,12 @@ func (h *UpdatesHandler) InitWebhookHandler(log *slog.Logger) {
 
 // RegisterRoutes registers all updates routes.
 func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth) {
+	// Device callback endpoint - public (no auth required, device identifies itself)
+	// This must be registered BEFORE the cookie auth middleware is applied
+	if h.deviceStatusHandler != nil {
+		rg.POST("/v1/updates/device-status", h.deviceStatusHandler.HandleDeviceUpdateStatus)
+	}
+
 	updatesGroup := rg.Group("/updates")
 	updatesGroup.Use(cookieAuth.Middleware())
 
