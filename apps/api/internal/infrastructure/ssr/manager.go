@@ -42,7 +42,7 @@ func NewManager(cfg config.SSRConfig, logger *slog.Logger, webDir, publicDir str
 
 	// Discover SSR script path.
 	ssrScript := filepath.Join(filepath.Dir(os.Args[0]), "ssr-server.js")
-	//nolint:gosec // G703 - path is validated and falls back to safe default.
+	//
 	if _, err := os.Stat(ssrScript); os.IsNotExist(err) {
 		ssrScript = "./ssr-server.js"
 	}

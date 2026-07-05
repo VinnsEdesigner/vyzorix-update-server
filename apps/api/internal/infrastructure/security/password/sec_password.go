@@ -41,7 +41,7 @@ func CheckBreached(password string) (bool, error) {
 		// Fail closed: if we cannot verify, treat as potentially breached for security
 		return true, fmt.Errorf("unable to verify password against breach database: %w", err)
 	}
-	defer resp.Body.Close() //nolint:errcheck
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		// Fail closed: any non-200 response means we couldn't verify

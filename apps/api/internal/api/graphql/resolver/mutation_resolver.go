@@ -158,7 +158,7 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 		// First verify ownership before sending FCM
 		_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
 		if err != nil {
-			// nolint: nilerr // Device not owned - return queued response, not error
+			//
 			return map[string]interface{}{
 				"dispatchId":   cmdResp.DispatchID,
 				"commandId":    cmdResp.CommandID,

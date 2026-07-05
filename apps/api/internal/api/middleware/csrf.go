@@ -53,7 +53,7 @@ type CSRFToken struct {
 }
 
 // CSRFTokenStore manages CSRF tokens in memory.
-//nolint:govet // Field arrangement is intentional for cleanup goroutine management.
+//
 type CSRFTokenStore struct {
 	mu     sync.RWMutex
 	tokens map[string]*CSRFToken

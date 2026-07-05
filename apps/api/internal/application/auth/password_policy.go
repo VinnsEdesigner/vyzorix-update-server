@@ -30,7 +30,7 @@ func (s *AuthService) ValidatePasswordPolicy(ctx context.Context, op *operator.O
 	return nil
 }
 
-func (s *AuthService) checkPasswordHistory(ctx context.Context, operatorID, newPassword string, historyCount int) error {
+func (s *AuthService) checkPasswordHistory(ctx context.Context, operatorID, newPassword string, _ int) error {
 	op, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
 		return err
