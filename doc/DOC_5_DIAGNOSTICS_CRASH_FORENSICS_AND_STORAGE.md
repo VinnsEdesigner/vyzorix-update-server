@@ -11,28 +11,28 @@ The following mapping outlines the chronological pipeline tracking app launches,
 
 ```text
   [PASSIVE OBSERVERS]
-    AppLaunchObserver (UsageStats MOVE_TO_FOREGROUND)
-    WindowTransitionTracker (TYPE_WINDOWS_CHANGED <500ms)
-    PackageStateObserver (Tracks fresh app installs)
-    SoftRebootTracker (SystemClock.uptimeMillis() checks; forensic instrument per ADR-0002 — does NOT trigger recovery)
-    PipelineHealthChecker (audio-pipeline observable proxy for GPU visual stasis; absorbs former RendererFailureDetector)
-         
-          (Pushed as serialized, type-safe events)
+   ├── AppLaunchObserver (UsageStats MOVE_TO_FOREGROUND)
+   ├── WindowTransitionTracker (TYPE_WINDOWS_CHANGED <500ms)
+   ├── PackageStateObserver (Tracks fresh app installs)
+   ├── SoftRebootTracker (SystemClock.uptimeMillis() checks; forensic instrument per ADR-0002 — does NOT trigger recovery)
+   └── PipelineHealthChecker (audio-pipeline observable proxy for GPU visual stasis; absorbs former RendererFailureDetector)
+         │
+         ▼ (Pushed as serialized, type-safe events)
    LogStreamCollector (In-memory structured logger aggregator)
-         
-          (Continuous background write stream)
+         │
+         ▼ (Continuous background write stream)
    RollingLogWriter (Writes UTC formatted trace logs)
-         
-          (File limit check: current_session.log > 2MB?)
+         │
+         ▼ (File limit check: current_session.log > 2MB?)
    LogFileRotator
-         
-          YES: Renames to crash_bundle_TIMESTAMP.log & purges if count > 10
-          NO: Appends and flushes descriptors
-         
-          (Triggered on demand or post crash re-start)
+         │
+         ├── YES: Renames to crash_bundle_TIMESTAMP.log & purges if count > 10
+         └── NO: Appends and flushes descriptors
+         │
+         ▼ (Triggered on demand or post crash re-start)
    CrashSnapshotExporter (Compresses directory to encrypted ZIP archive)
-         
-          (Secure file URI generated via FileProvider)
+         │
+         ▼ (Secure file URI generated via FileProvider)
    DiagnosticContentProvider (Shares zip securely to system intents)
 ```
 
@@ -44,10 +44,10 @@ The `crash` package manages unhandled JVM exceptions, heuristic indicators of na
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/crash/
- GlobalExceptionHandler.kt
- NativeCrashMarker.kt
- SoftRebootTracker.kt
- LastKnownStateDumper.kt
+├── GlobalExceptionHandler.kt
+├── NativeCrashMarker.kt
+├── SoftRebootTracker.kt
+└── LastKnownStateDumper.kt
 ```
 
 ### 2.1 `GlobalExceptionHandler.kt`
@@ -76,21 +76,21 @@ The `diagnostics` package passive monitors on-device events, analyzes window tra
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/diagnostics/
- RoutingLogCollector.kt
- AudioPolicySnapshot.kt
- NokiaC22Compatibility.kt
- CrashTraceStore.kt
- SoftRebootDetector.kt
- RuntimeEventTimeline.kt
- LogStreamCollector.kt
- RuntimeTraceAssembler.kt
- DiagnosticCompression.kt
- EventCorrelationEngine.kt
+├── RoutingLogCollector.kt
+├── AudioPolicySnapshot.kt
+├── NokiaC22Compatibility.kt
+├── CrashTraceStore.kt
+├── SoftRebootDetector.kt
+├── RuntimeEventTimeline.kt
+├── LogStreamCollector.kt
+├── RuntimeTraceAssembler.kt
+├── DiagnosticCompression.kt
+├── EventCorrelationEngine.kt
 # NOTE: SystemHealthScorer.kt removed — folded into core/services/foreground/DaemonStatusAggregator (ADR-0007).
- system/
-     AppLaunchObserver.kt
-     WindowTransitionTracker.kt
-     PackageStateObserver.kt
+└── system/
+    ├── AppLaunchObserver.kt
+    ├── WindowTransitionTracker.kt
+    └── PackageStateObserver.kt
     # NOTE: SoftRebootPredictor.kt removed — policy folded into RecoveryCoordinator (ADR-0007).
     # NOTE: RendererFailureDetector.kt removed — folded into PipelineHealthChecker.
     #       SoftRebootTracker.kt is in services/crash/, not here (it is a measurement instrument, not a signal).
@@ -171,14 +171,14 @@ The `storage` package manages file writing, handles file rotation limits, and pu
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/storage/
- RuntimeCheckpointWriter.kt
- PersistentEventQueue.kt
- CrashBundleRetentionPolicy.kt
- logs/
-     LogFileRotator.kt
-     CrashSnapshotExporter.kt
-     TimestampedLogFormatter.kt
-     RuntimeSessionIndexer.kt
+├── RuntimeCheckpointWriter.kt
+├── PersistentEventQueue.kt
+├── CrashBundleRetentionPolicy.kt
+└── logs/
+    ├── LogFileRotator.kt
+    ├── CrashSnapshotExporter.kt
+    ├── TimestampedLogFormatter.kt
+    └── RuntimeSessionIndexer.kt
 ```
 
 ### 4.1 `RuntimeCheckpointWriter.kt`

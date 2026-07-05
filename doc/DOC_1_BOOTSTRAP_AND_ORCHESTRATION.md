@@ -11,40 +11,40 @@ The following mapping outlines the complete lifecycle from a cold system reboot 
 
 ```text
                      DEVICE COLD BOOT / SYSTEM COMPLETED REBOOT
-                                         
-                                         
+                                         │
+                                         ▼
                       [RECEIVE_BOOT_COMPLETED Broadcast]
-                                         
-                                         
+                                         │
+                                         ▼
                                    BootReceiver
-                                         
-                                         
+                                         │
+                                         ▼
                                  BootStateRestorer
-                                         
-                 
-                                                                
+                                         │
+                 ┌───────────────────────┴───────────────────────┐
+                 │                                               │
     Is Accessibility Enabled?                       Is Accessibility Disabled?
-                                                                
-                  (YES: Bypasses UI Setup)                       (NO: Re-engagement)
+                 │                                               │
+                 ▼ (YES: Bypasses UI Setup)                      ▼ (NO: Re-engagement)
        HeadlessBootSequence                         AccessibilityRecoveryHandler
-                                                                
-                                                                
+                 │                                               │
+                 ▼                                               ▼
      VyzorixAppInitializer                           UiRecoveryDaemon (Settings Intent)
-                                                                
-                                                                
+                 │                                               │
+                 ▼                                               ▼
     Keystore & Room DB Init                            User Re-enables Service
-                                                                
-                 
-                                         
-                                         
+                 │                                               │
+                 └───────────────────────┬───────────────────────┘
+                                         │
+                                         ▼
                              PersistentAudioService
                              (foregroundServiceType)
-                                         
-                                         
+                                         │
+                                         ▼
                              DaemonLifecycleManager
-                                         
-                 
-                                                               
+                                         │
+                 ┌───────────────────────┼───────────────────────┐
+                 ▼                       ▼                       ▼
        [Route Managers]       [Projection Managers]    [Playback & Capture]
 ```
 
@@ -56,12 +56,12 @@ The `:app` module acts as the aggregation root. It configures the Gradle build r
 
 ```text
 app/src/main/kotlin/com/vyzorix/audiorouter/
- VyzorixApplication.kt
- VyzorixAppInitializer.kt
- BuildInfo.kt
- ProcessEntryGuard.kt
- StrictModeInitializer.kt
- StartupProfiler.kt
+├── VyzorixApplication.kt
+├── VyzorixAppInitializer.kt
+├── BuildInfo.kt
+├── ProcessEntryGuard.kt
+├── StrictModeInitializer.kt
+└── StartupProfiler.kt
 ```
 
 ### 2.1 `VyzorixApplication.kt`
@@ -104,11 +104,11 @@ The `:core:ui` module contains translucent, short-lived trampoline activities de
 
 ```text
 core/ui/src/main/kotlin/com/vyzorix/audiorouter/ui/
- BootstrapActivity.kt
- ProjectionPermissionActivity.kt
- CrashSafeActivity.kt
- HeadlessModeLauncher.kt
- UiExitController.kt
+├── BootstrapActivity.kt
+├── ProjectionPermissionActivity.kt
+├── CrashSafeActivity.kt
+├── HeadlessModeLauncher.kt
+└── UiExitController.kt
 ```
 
 ### 3.1 `BootstrapActivity.kt`
@@ -143,13 +143,13 @@ Manages early-stage authorization checks, state transitions, and state restorati
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/bootstrap/
- TrampolineService.kt
- BootstrapCoordinator.kt
- PermissionStateMachine.kt
- ServiceTrampoline.kt
- SelfDestructController.kt
- LauncherIconHider.kt
- BootStateRestorer.kt
+├── TrampolineService.kt
+├── BootstrapCoordinator.kt
+├── PermissionStateMachine.kt
+├── ServiceTrampoline.kt
+├── SelfDestructController.kt
+├── LauncherIconHider.kt
+└── BootStateRestorer.kt
 ```
 
 ### 4.1 `TrampolineService.kt`
@@ -197,11 +197,11 @@ The `managers` submodule coordinates individual subsystems (routing, capture, an
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/managers/
- AudioRouteManager.kt
- MediaProjectionSession.kt
- DaemonLifecycleManager.kt
- SpeakerForceManager.kt
- RecoveryOrchestrator.kt
+├── AudioRouteManager.kt
+├── MediaProjectionSession.kt
+├── DaemonLifecycleManager.kt
+├── SpeakerForceManager.kt
+└── RecoveryOrchestrator.kt
 ```
 
 ### 5.1 `AudioRouteManager.kt`
@@ -236,21 +236,21 @@ The `foreground` submodule manages persistent background execution, RemoteViews 
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/foreground/
- PersistentAudioService.kt
- ServiceNotification.kt
- ServiceNotificationDashboard.kt
- SilentKeepAliveService.kt
+├── PersistentAudioService.kt
+├── ServiceNotification.kt
+├── ServiceNotificationDashboard.kt
+├── SilentKeepAliveService.kt
 # NOTE: ServiceHeartbeat.kt folded into LivenessProbe (ADR-0007).
- LivenessProbe.kt
- PipelineHealthChecker.kt
- RecoveryCoordinator.kt
- signals/ (Layer B — see ADR-0007)
- BootReceiver.kt
- actions/
-     NotificationActionReceiver.kt
-     QuickToggleAction.kt
-     RestartPipelineAction.kt
-     EmergencyStopAction.kt
+├── LivenessProbe.kt
+├── PipelineHealthChecker.kt
+├── RecoveryCoordinator.kt
+├── signals/ (Layer B — see ADR-0007)
+├── BootReceiver.kt
+└── actions/
+    ├── NotificationActionReceiver.kt
+    ├── QuickToggleAction.kt
+    ├── RestartPipelineAction.kt
+    └── EmergencyStopAction.kt
 ```
 
 ### 6.1 `PersistentAudioService.kt`
@@ -304,10 +304,10 @@ The `headless` submodule manages operations without displaying active window sur
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/headless/
- HeadlessDaemonController.kt
- HeadlessBootSequence.kt
- SilentPermissionFlow.kt
- InvisibleRecoveryCoordinator.kt
+├── HeadlessDaemonController.kt
+├── HeadlessBootSequence.kt
+├── SilentPermissionFlow.kt
+└── InvisibleRecoveryCoordinator.kt
 ```
 
 ### 7.1 `HeadlessDaemonController.kt`
@@ -334,11 +334,11 @@ The `receivers` submodule listens for system-wide broadcasts and adjusts backgro
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/receivers/
- NoOpReceiver.kt
- StatusRefreshReceiver.kt
- PackageChangeReceiver.kt
- MediaButtonReceiver.kt
- ScreenStateReceiver.kt
+├── NoOpReceiver.kt
+├── StatusRefreshReceiver.kt
+├── PackageChangeReceiver.kt
+├── MediaButtonReceiver.kt
+└── ScreenStateReceiver.kt
 ```
 
 ### 8.1 `NoOpReceiver.kt`
@@ -369,8 +369,8 @@ Exposes secure sharing boundaries for logs via Content URIs.
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/provider/
- DiagnosticContentProvider.kt
- AuthorityDefinitions.kt
+├── DiagnosticContentProvider.kt
+└── AuthorityDefinitions.kt
 ```
 
 ### 9.1 `DiagnosticContentProvider.kt`
@@ -389,11 +389,11 @@ Coordinates IPC bindings, command execution, and response routing back to the co
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/ipc/
- AudioRouterBinder.kt
- ServiceConnectionManager.kt
- RemoteCommandDispatcher.kt
- RemoteCommandExecutor.kt
- RemoteCommandResultDispatcher.kt
+├── AudioRouterBinder.kt
+├── ServiceConnectionManager.kt
+├── RemoteCommandDispatcher.kt
+├── RemoteCommandExecutor.kt
+└── RemoteCommandResultDispatcher.kt
 ```
 
 ### 10.1 `AudioRouterBinder.kt`
