@@ -70,11 +70,12 @@ type ServerConfig struct {
 
 // Server is the main API server.
 type Server struct {
-	encryptKeyFn               func(clientID string) ([]byte, bool)
+	AuditLogger                *audit.Logger
+	revocationList             *infraauth.RevocationList
+	log                        *slog.Logger
+	apiKeyAuth                 *middleware.APIKeyAuth
 	authHandlers               *authhandlers.AllHandlers
 	hub                        *hub.Hub
-	engine                     *gin.Engine
-	log                        *slog.Logger
 	deviceStatusHandler        *devicehandlers.StatusHandler
 	sessionManager             *infraauth.SessionManager
 	rateLimiter                *middleware.RateLimiter
@@ -84,16 +85,16 @@ type Server struct {
 	lockout                    *middleware.Lockout
 	csrfProtector              *middleware.CSRFProtector
 	turnstileVerifier          *middleware.TurnstileVerifier
-	revocationList             *infraauth.RevocationList
+	deviceRegisterHandler      *devicehandlers.RegisterHandler
 	ipIntelligence             *middleware.IPIntelligence
 	hmacVerifier               *cryptohmac.Verifier
 	mwFactory                  *middleware.MiddlewareFactory
 	db                         *storage.SQLite
 	dashboardRateLimiter       *middleware.DashboardRateLimiterMiddleware
 	deviceRegRateLimiter       *middleware.DeviceRegistrationRateLimiterMiddleware
-	AuditLogger                *audit.Logger
-	deviceRegisterHandler      *devicehandlers.RegisterHandler
-	deviceUpdaterHandler       *devicehandlers.UpdaterHandler
+	engine                     *gin.Engine
+	encryptKeyFn               func(clientID string) ([]byte, bool)
+	dashboardStatsHandler      *dashboardhandlers.StatsHandler
 	deviceListHandler          *devicehandlers.ListHandler
 	devicesHandler             *devicehandlers.DevicesHandler
 	commandHandler             *cmdhandlers.ExecuteHandler
@@ -107,7 +108,7 @@ type Server struct {
 	deviceLogsHandler          *devicehandlers.LogsHandler
 	deviceMetricsHandler       *devicehandlers.MetricsHandler
 	deviceTelemetryHandler     *devicehandlers.TelemetryHandler
-	dashboardStatsHandler      *dashboardhandlers.StatsHandler
+	deviceUpdaterHandler       *devicehandlers.UpdaterHandler
 	updatesHandler             *updateshandlers.UpdatesHandler
 	inboxHandler               *inboxhandlers.Handler
 	deviceConfirmHandler       *devicehandlers.ConfirmHandler
@@ -115,7 +116,6 @@ type Server struct {
 	diagnosticsInspectHandler  *diagnosticshandlers.InspectHandler
 	diagnosticsTimelineHandler *diagnosticshandlers.TimelineHandler
 	config                     config.Config
-	apiKeyAuth                 *middleware.APIKeyAuth
 }
 
 // NewServer creates a new API server with wired-up dependencies.
