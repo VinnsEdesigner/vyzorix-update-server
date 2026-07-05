@@ -90,18 +90,14 @@ func checkSSRHealth(log *slog.Logger, ssrConfig config.SSRConfig, client *http.C
 }
 
 func setupProxyDirector(proxy *httputil.ReverseProxy, ssrServerURL *url.URL) {
-	originalDirector := proxy.Director
-	proxy.Director = func(req *http.Request) {
-		req.URL.Scheme = ssrServerURL.Scheme
-		req.URL.Host = ssrServerURL.Host
-		req.Header.Set("X-Forwarded-Host", req.Host)
-		req.Header.Set("X-Forwarded-Proto", ssrServerURL.Scheme)
-		req.Header.Set("X-Forwarded-For", req.RemoteAddr)
-		req.Header.Set("X-Original-Host", req.Host)
-		req.Header.Set("X-Original-URI", req.RequestURI)
-		if originalDirector != nil {
-			originalDirector(req)
-		}
+	proxy.Rewrite = func(r *httputil.ProxyRequest) {
+		r.Out.URL.Scheme = ssrServerURL.Scheme
+		r.Out.URL.Host = ssrServerURL.Host
+		r.Out.Header.Set("X-Forwarded-Host", ssrServerURL.Host)
+		r.Out.Header.Set("X-Forwarded-Proto", ssrServerURL.Scheme)
+		r.Out.Header.Set("X-Forwarded-For", r.In.RemoteAddr)
+		r.Out.Header.Set("X-Original-Host", r.In.Host)
+		r.Out.Header.Set("X-Original-URI", r.In.RequestURI)
 	}
 }
 

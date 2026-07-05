@@ -640,8 +640,8 @@ func isValidFCMToken(token string) bool {
 	// FCM tokens are generally alphanumeric with : and _ allowed
 	// Pattern: alphanumeric, colon, underscore, hyphen
 	for _, c := range token {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
-			c == ':' || c == '_' || c == '-' || c == '.') {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') &&
+			c != ':' && c != '_' && c != '-' && c != '.' {
 			return false
 		}
 	}
@@ -657,8 +657,8 @@ func isValidFirebaseInstallID(id string) bool {
 	}
 	// Must be alphanumeric with specific allowed characters
 	for _, c := range id {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
-			c == '-' || c == '_') {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') &&
+			c != '-' && c != '_' {
 			return false
 		}
 	}
