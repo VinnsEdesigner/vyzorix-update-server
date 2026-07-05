@@ -49,8 +49,9 @@ func (h *UpdatesHandler) InitWebhookHandler(log *slog.Logger) {
 func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth) {
 	// Device callback endpoint - public (no auth required, device identifies itself)
 	// This must be registered BEFORE the cookie auth middleware is applied
+	// Note: rg is already at /v1/updates path, so we use /device-status directly
 	if h.deviceStatusHandler != nil {
-		rg.POST("/v1/updates/device-status", h.deviceStatusHandler.HandleDeviceUpdateStatus)
+		rg.POST("/device-status", h.deviceStatusHandler.HandleDeviceUpdateStatus)
 	}
 
 	updatesGroup := rg.Group("/updates")
