@@ -70,15 +70,19 @@ func uLoadSpec() *uSpec {
 		{"GET", "/v1/updates/changelog", "UpdatesHandler", "GetChangelog"},
 		{"POST", "/v1/updates/push", "UpdatesHandler", "PushUpdate"},
 		{"GET", "/v1/updates/history", "UpdatesHandler", "GetHistory"},
+		{"GET", "/v1/updates/history/:pushId", "UpdatesHandler", "GetHistoryByPushId"},
+		{"POST", "/v1/updates/history/:pushId/cancel", "UpdatesHandler", "CancelPush"},
 		{"GET", "/v1/updates/export", "UpdatesHandler", "ExportUpdates"},
 		{"POST", "/v1/updates/sync", "UpdatesHandler", "SyncUpdates"},
+		{"GET", "/v1/updates/sync/status", "UpdatesHandler", "GetSyncStatus"},
 	}
 	for _, ep := range endpoints { spec.endpoints[ep.Method+" "+ep.Path] = ep }
 	handlers := []uHandler{
 		{"updates", "updates_handler.go", "GetStatus"}, {"updates", "updates_handler.go", "GetVersions"},
 		{"updates", "updates_handler.go", "GetChangelog"}, {"updates", "updates_handler.go", "PushUpdate"},
-		{"updates", "updates_handler.go", "GetHistory"}, {"updates", "updates_handler.go", "ExportUpdates"},
-		{"updates", "updates_handler.go", "SyncUpdates"},
+		{"updates", "updates_handler.go", "GetHistory"}, {"updates", "updates_handler.go", "GetHistoryByPushId"},
+		{"updates", "updates_handler.go", "CancelPush"}, {"updates", "updates_handler.go", "ExportUpdates"},
+		{"updates", "updates_handler.go", "SyncUpdates"}, {"updates", "updates_handler.go", "GetSyncStatus"},
 	}
 	for _, h := range handlers { spec.handlers[h.Subdir+"/"+h.File] = h }
 	spec.domain["update"] = uDomain{"update", []string{"update_entity.go", "update_repository.go"}}

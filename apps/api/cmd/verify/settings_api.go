@@ -71,19 +71,22 @@ func sLoadSpec() *sSpec {
 		{"PATCH", "/v1/auth/me", "AuthHandler", "UpdateMe"},
 		{"GET", "/v1/auth/me/settings", "SettingsHandler", "GetSettings"},
 		{"PATCH", "/v1/auth/me/settings", "SettingsHandler", "PatchSettings"},
+		{"POST", "/v1/auth/me/settings/reset", "SettingsHandler", "ResetSettings"},
 		{"GET", "/v1/auth/me/thresholds", "SettingsThresholdsHandler", "GetThresholds"},
 		{"PATCH", "/v1/auth/me/thresholds", "SettingsThresholdsHandler", "UpdateThresholds"},
 		{"GET", "/v1/auth/me/notifications", "SettingsNotificationsHandler", "GetNotifications"},
 		{"PATCH", "/v1/auth/me/notifications", "SettingsNotificationsHandler", "UpdateNotifications"},
 		{"POST", "/v1/auth/me/notifications/webhook/test", "SettingsNotificationsHandler", "TestWebhook"},
+		{"POST", "/v1/auth/me/notifications/webhook/rotate", "SettingsNotificationsHandler", "RotateWebhookSecret"},
 	}
 	for _, ep := range endpoints { spec.endpoints[ep.Method+" "+ep.Path] = ep }
 	handlers := []sHandler{
 		{"auth", "auth_me_handler.go", "GetMe"}, {"auth", "auth_me_handler.go", "UpdateMe"},
 		{"auth", "auth_settings_handler.go", "GetSettings"}, {"auth", "auth_settings_handler.go", "PatchSettings"},
+		{"auth", "auth_settings_handler.go", "ResetSettings"},
 		{"auth", "auth_settings_handler.go", "GetThresholds"}, {"auth", "auth_settings_handler.go", "UpdateThresholds"},
 		{"auth", "auth_settings_handler.go", "GetNotifications"}, {"auth", "auth_settings_handler.go", "UpdateNotifications"},
-		{"auth", "auth_settings_handler.go", "TestWebhook"},
+		{"auth", "auth_settings_handler.go", "TestWebhook"}, {"auth", "auth_settings_handler.go", "RotateWebhookSecret"},
 	}
 	for _, h := range handlers { spec.handlers[h.Subdir+"/"+h.File] = h }
 	spec.domain["operator"] = sDomain{"operator", []string{"operator_entity.go", "settings.go", "thresholds.go", "notifications.go"}}
