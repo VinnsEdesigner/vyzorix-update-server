@@ -51,22 +51,22 @@ This document maps out the server-side requirements to support the Dashboard, Co
 
 | Endpoint | Status | Handler |
 |----------|--------|---------|
-| POST /v1/device/:id/command | EXISTS | ExecuteHandler.Handle |
-| GET /v1/device/:id/commands/pending | EXISTS | GetPending |
+| POST /v1/device/:imei/command | EXISTS | ExecuteHandler.Handle |
+| GET /v1/device/:imei/commands/pending | EXISTS | GetPending |
 | GET /v1/command/:dispatchId/status | EXISTS | GetStatus |
 | POST /v1/command/:dispatchId/retry | EXISTS | Retry |
 | DELETE /v1/command/:dispatchId | EXISTS | Cancel |
 
-### 2.2 Missing Endpoints
+### 2.2 Implemented Endpoints
 
-| Endpoint | Status |
-|----------|--------|
-| GET /v1/device/:imei/commands | MISSING |
-| GET /v1/device/:imei/logs | MISSING |
-| GET /v1/device/:imei/metrics | MISSING |
-| GET /v1/device/:imei/telemetry | MISSING |
-| GET /v1/device/:imei/metrics/export | MISSING |
-| GET /v1/dashboard/stats | MISSING |
+| Endpoint | Status | Handler |
+|----------|--------|---------|
+| GET /v1/device/:imei/commands | EXISTS | command_history_handler.go |
+| GET /v1/device/:imei/logs | EXISTS | device_logs_handler.go |
+| GET /v1/device/:imei/metrics | EXISTS | device_metrics_handler.go |
+| GET /v1/device/:imei/telemetry | EXISTS | device_telemetry_handler.go |
+| GET /v1/device/:imei/metrics/export | EXISTS | device_metrics_handler.go ExportMetrics |
+| GET /v1/dashboard/stats | EXISTS | dashboard_handler.go |
 
 ---
 

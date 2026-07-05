@@ -74,7 +74,7 @@ Push Update ──────► FCM/WSS ──────► Device
 |----------|--------|---------|-------|
 | GET /api/v1/version | EXISTS | VersionHandler | Current APK version |
 | GET /api/v1/apk/:filename | EXISTS | APKHandler | Serve APK file |
-| POST /v1/device/:id/command (WAKE_UP_UPDATER) | EXISTS | CommandHandler | Wake device for update |
+| POST /v1/device/:imei/command (WAKE_UP_UPDATER) | EXISTS | CommandHandler | Wake device for update |
 
 ### 2.2 Missing Endpoints
 

@@ -91,7 +91,7 @@ func (s *Server) setupDevicePublicRoutes(public *gin.RouterGroup) {
 		middleware.ValidationMiddleware(&middleware.DeviceRegisterSchema{}),
 		s.deviceRegisterHandler.Handle,
 	)
-	public.GET("/v1/device/:id/status", s.deviceStatusHandler.Handle)
+	public.GET("/v1/device/:imei/status", s.deviceStatusHandler.Handle)
 	// Public inbox endpoint - device submits registration request
 	if s.inboxHandler != nil {
 		public.POST("/v1/device/inbox", s.inboxHandler.CreateInboxRequest)
@@ -163,21 +163,21 @@ func (s *Server) setupDeviceManagementRoutes(r *gin.RouterGroup) {
 	deviceMgmt.Use(middleware.MandatoryEncryptionMiddleware(s.encryptKeyFn))
 	deviceMgmt.Use(s.requireHMAC())
 	deviceMgmt.GET("/count", s.deviceListHandler.Count)
-	deviceMgmt.GET("/:id", s.deviceListHandler.GetDevice)
-	deviceMgmt.PATCH("/:id/fcm-token",
+	deviceMgmt.GET("/:imei", s.deviceListHandler.GetDevice)
+	deviceMgmt.PATCH("/:imei/fcm-token",
 		middleware.ValidationMiddleware(&middleware.FCMTokenUpdateSchema{}),
 		s.deviceUpdaterHandler.UpdateFCMToken,
 	)
-	deviceMgmt.POST("/:id/command",
+	deviceMgmt.POST("/:imei/command",
 		middleware.ValidationMiddleware(&middleware.CommandExecuteSchema{}),
 		s.commandHandler.Handle,
 		s.requireStrictHMAC(),
 	)
-	deviceMgmt.GET("/:id/commands/pending", s.commandHandler.GetPending)
-	deviceMgmt.DELETE("/:id", s.deviceUpdaterHandler.Delete)
-	deviceMgmt.GET("/:id/stream", s.streamHandler.Handle)
-	deviceMgmt.GET("/:id/connection-status", s.connectionStatusHandler.GetStatus)
-	deviceMgmt.POST("/:id/disconnect", s.connectionStatusHandler.DisconnectDevice)
+	deviceMgmt.GET("/:imei/commands/pending", s.commandHandler.GetPending)
+	deviceMgmt.DELETE("/:imei", s.deviceUpdaterHandler.Delete)
+	deviceMgmt.GET("/:imei/stream", s.streamHandler.Handle)
+	deviceMgmt.GET("/:imei/connection-status", s.connectionStatusHandler.GetStatus)
+	deviceMgmt.POST("/:imei/disconnect", s.connectionStatusHandler.DisconnectDevice)
 }
 
 func (s *Server) setupDeviceInboxRoutes(r *gin.RouterGroup) {

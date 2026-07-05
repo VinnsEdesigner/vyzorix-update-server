@@ -66,17 +66,24 @@ This document outlines what needs to be fixed in docs and the one real code gap.
 
 ## High Priority Fixes
 
-### 5. Parameter Naming Standardization (DCL-002) - DOCUMENTATION
+### 5. Parameter Naming Standardization (DCL-002) - ✅ FIXED
 
 **Problem:** Backend uses `:id` for some device endpoints, frontend uses `:imei`
 
-**Status:** Mixed - some endpoints use `:id`, some use `:imei`
+**Status:** ✅ FIXED - All endpoints now use `:imei`
 
-**Files to Update:**
-- `documents/SERVER_BACKEND_DASHBOARD_COMMANDS_API.md` - Standardize on `:imei`
-- `documents/DASHBOARD_COMMANDS_LOGS.md` - Document actual paths
+**Files Updated:**
+- `apps/api/internal/api/server_routes.go` - Changed all `:id` to `:imei`
+- `apps/api/internal/api/handlers/device/dev_status.go` - Uses `:imei`
+- `apps/api/internal/api/handlers/device/device_list.go` - Uses `:imei`
+- `apps/api/internal/api/handlers/device/device_updater.go` - Uses `:imei`
+- `apps/api/internal/api/handlers/command/command_execute.go` - Uses `:imei`
+- `documents/SERVER_BACKEND_DASHBOARD_COMMANDS_API.md` - Fixed `:id` → `:imei`
+- `documents/SERVER_BACKEND_DIAGNOSTICS_API.md` - Fixed `:id` → `:imei`
+- `documents/SERVER_BACKEND_UPDATES_API.md` - Fixed `:id` → `:imei`
+- `documents/MULTI_CLIENT_API_KEY_SYSTEM.md` - Fixed `:id` → `:imei`
 
-**Canonical Convention:** Use `:imei` for all device-specific REST endpoints
+**Canonical Convention:** Use `:imei` for all device-specific REST endpoints ✅
 
 ---
 

