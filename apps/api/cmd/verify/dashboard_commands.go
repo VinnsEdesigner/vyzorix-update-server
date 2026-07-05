@@ -166,11 +166,9 @@ func dScanImpl(root string) *dImpl {
 		routes:      make(map[string]bool),
 	}
 
-	scanFiles := func(dir string, ext string, collect map[string]bool) {
-		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() {
-				return nil
-			}
+	scanFiles := func(dir string, ext string, collect map[string]bool) error {
+		return filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() { return err }
 			rel, _ := filepath.Rel(root, p)
 			collect[rel] = true
 			if strings.HasSuffix(p, ext) {
@@ -182,9 +180,9 @@ func dScanImpl(root string) *dImpl {
 		})
 	}
 
-	scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain)
-	scanFiles(filepath.Join(root, "apps/api/internal/infrastructure/storage"), ".go", impl.infra)
-	scanFiles(filepath.Join(root, "apps/api/internal/application"), ".go", impl.application)
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain); err != nil { return impl }
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/infrastructure/storage"), ".go", impl.infra); err != nil { return impl }
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/application"), ".go", impl.application); err != nil { return impl }
 
 	handlerDirs := []string{
 		filepath.Join(root, "apps/api/internal/api/handlers/command"),
@@ -193,10 +191,8 @@ func dScanImpl(root string) *dImpl {
 	}
 
 	for _, dir := range handlerDirs {
-		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") {
-				return nil
-			}
+		if err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") { return err }
 			data, _ := os.ReadFile(p)
 			impl.paths[p] = true
 			fset := token.NewFileSet()
@@ -209,7 +205,7 @@ func dScanImpl(root string) *dImpl {
 				}
 			}
 			return nil
-		})
+		}); err != nil { return impl }
 	}
 
 	routeFiles := []string{
@@ -276,7 +272,7 @@ func dVerifyEndpoints(spec *dSpec, impl *dImpl, root string) {
 	fmt.Printf("\n    Registered endpoints: %d/%d\n", found, len(spec.endpoints))
 }
 
-func dCheckEndpoint(ep dEndpoint, routeContent string, impl *dImpl, root string) bool {
+func dCheckEndpoint(ep dEndpoint, routeContent string, _ *dImpl, root string) bool {
 	paths := []string{
 		ep.path,
 		strings.TrimPrefix(ep.path, "/v1"),
@@ -311,17 +307,21 @@ func dFindHandler(hType, root string) string {
 		filepath.Join(root, "apps/api/internal/api/handlers/dashboard"),
 	}
 
+	var found string
 	for _, dir := range handlerDirs {
-		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") {
-				return nil
-			}
+		walkErr := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil { return err }
+			if info.IsDir() || !strings.HasSuffix(p, ".go") { return nil }
 			data, _ := os.ReadFile(p)
 			if typePattern.Match(data) {
-				return nil
+				found = p
+				return filepath.SkipDir
 			}
 			return nil
 		})
+		if walkErr == nil && found != "" {
+			return found
+		}
 	}
 
 	return ""
@@ -344,21 +344,21 @@ func dGetRouteContent(root string) string {
 			// Add pseudo full paths for routes defined under router groups
 			// commandMgmt := r.Group("/command") means routes like "/:dispatchId/status"
 			// become "/command/:dispatchId/status"
-			routeData = strings.Replace(routeData, "\"/:dispatchId/status\"", "\"/command/:dispatchId/status\"", -1)
-			routeData = strings.Replace(routeData, "\"/:dispatchId/retry\"", "\"/command/:dispatchId/retry\"", -1)
-			routeData = strings.Replace(routeData, "\"/:dispatchId\"", "\"/command/:dispatchId\"", -1)
+			routeData = strings.ReplaceAll(routeData, "\"/:dispatchId/status\"", "\"/command/:dispatchId/status\"")
+			routeData = strings.ReplaceAll(routeData, "\"/:dispatchId/retry\"", "\"/command/:dispatchId/retry\"")
+			routeData = strings.ReplaceAll(routeData, "\"/:dispatchId\"", "\"/command/:dispatchId\"")
 			// deviceMgmt := r.Group("/device") means routes like "/:id/command"
 			// become "/device/:id/command"
-			routeData = strings.Replace(routeData, "\"/:id/command\"", "\"/device/:id/command\"", -1)
-			routeData = strings.Replace(routeData, "\"/:id/commands/pending\"", "\"/device/:id/commands/pending\"", -1)
-			routeData = strings.Replace(routeData, "\"/:id\"", "\"/device/:id\"", -1)
+			routeData = strings.ReplaceAll(routeData, "\"/:id/command\"", "\"/device/:id/command\"")
+			routeData = strings.ReplaceAll(routeData, "\"/:id/commands/pending\"", "\"/device/:id/commands/pending\"")
+			routeData = strings.ReplaceAll(routeData, "\"/:id\"", "\"/device/:id\"")
 			content.WriteString(routeData)
 		}
 	}
 	return content.String()
 }
 
-func dVerifyHandlers(spec *dSpec, impl *dImpl, root string) {
+func dVerifyHandlers(spec *dSpec, _ *dImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  HANDLER VERIFICATION (Section 6)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -387,7 +387,7 @@ func dVerifyHandlers(spec *dSpec, impl *dImpl, root string) {
 	_ = found
 }
 
-func dVerifyDomain(spec *dSpec, impl *dImpl, root string) {
+func dVerifyDomain(spec *dSpec, _ *dImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION (Section 4, 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -424,7 +424,7 @@ func dVerifyDomain(spec *dSpec, impl *dImpl, root string) {
 	fmt.Printf("\n    Domain files: %d/%d found\n", found, total)
 }
 
-func dVerifyInfra(spec *dSpec, impl *dImpl, root string) {
+func dVerifyInfra(spec *dSpec, _ *dImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  INFRASTRUCTURE VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -449,7 +449,7 @@ func dVerifyInfra(spec *dSpec, impl *dImpl, root string) {
 	_ = found
 }
 
-func dVerifyApplication(spec *dSpec, impl *dImpl, root string) {
+func dVerifyApplication(spec *dSpec, _ *dImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  APPLICATION LAYER VERIFICATION (Section 5, 7)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -486,7 +486,7 @@ func dVerifyApplication(spec *dSpec, impl *dImpl, root string) {
 	fmt.Printf("\n    Application files: %d/%d found\n", found, total)
 }
 
-func dVerifyRoutes(spec *dSpec, impl *dImpl, root string) {
+func dVerifyRoutes(_ *dSpec, _ *dImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  ROUTE REGISTRATION VERIFICATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -517,7 +517,7 @@ func dVerifyRoutes(spec *dSpec, impl *dImpl, root string) {
 	_ = found
 }
 
-func dVerifySchema(spec *dSpec, impl *dImpl, root string) {
+func dVerifySchema(_ *dSpec, _ *dImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 4)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -541,7 +541,7 @@ func dVerifySchema(spec *dSpec, impl *dImpl, root string) {
 	_ = schemasFound
 }
 
-func dVerifyStructure(spec *dSpec, impl *dImpl, root string) {
+func dVerifyStructure(_ *dSpec, _ *dImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -575,7 +575,7 @@ func dVerifyStructure(spec *dSpec, impl *dImpl, root string) {
 	fmt.Printf("\n    Directories verified: %d/%d\n", found, len(keyPaths))
 }
 
-func dVerifyFrontend(spec *dSpec, root string) {
+func dVerifyFrontend(_ *dSpec, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FRONTEND REQUIREMENTS MAPPING (Section 1.2)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")

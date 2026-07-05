@@ -30,25 +30,25 @@ type authSpec struct {
 
 type middlewareSpec struct {
 	name  string
-	order int
 	type_ string
+	order int
 }
 
 type sessionConfigSpec struct {
-	JWTExpiryMin       int
-	RefreshExpiryDays  int
-	SessionTimeoutMin  int
-	MaxSessions        int
-	RotationPolicy     string
-	StorageType        string
+	JWTExpiryMin      int
+	RefreshExpiryDays int
+	SessionTimeoutMin int
+	MaxSessions       int
+	RotationPolicy    string
+	StorageType       string
 }
 
 type endpointSpec struct {
 	method       string
-	path        string
-	handler     string
+	path         string
+	handler      string
 	requiresAuth bool
-	description string
+	description  string
 }
 
 type handlerSpec struct {
@@ -557,7 +557,7 @@ func verifyAuthEndpoints(spec *authSpec, impl *authImplementation) {
 	}
 }
 
-func verifyAuthDomain(spec *authSpec, impl *authImplementation, root string) {
+func verifyAuthDomain(spec *authSpec, impl *authImplementation, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION (Section 4 of Spec)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -591,7 +591,7 @@ func verifyAuthDomain(spec *authSpec, impl *authImplementation, root string) {
 	fmt.Printf("    Domain files: %d/%d found\n", totalFilesFound, totalFilesExpected)
 }
 
-func verifyAuthInfrastructure(spec *authSpec, impl *authImplementation, root string) {
+func verifyAuthInfrastructure(spec *authSpec, impl *authImplementation, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  INFRASTRUCTURE VERIFICATION (Section 7 of Spec)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -619,7 +619,7 @@ func verifyAuthInfrastructure(spec *authSpec, impl *authImplementation, root str
 	}
 }
 
-func verifyAuthMiddleware(spec *authSpec, impl *authImplementation, root string) {
+func verifyAuthMiddleware(spec *authSpec, impl *authImplementation, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  MIDDLEWARE VERIFICATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -635,7 +635,7 @@ func verifyAuthMiddleware(spec *authSpec, impl *authImplementation, root string)
 	}
 }
 
-func verifyAuthApplication(spec *authSpec, impl *authImplementation, root string) {
+func verifyAuthApplication(spec *authSpec, impl *authImplementation, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  APPLICATION LAYER VERIFICATION (Section 5 of Spec)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -680,7 +680,7 @@ func verifyAuthApplication(spec *authSpec, impl *authImplementation, root string
 	fmt.Printf("\n    Application files: %d/%d core files\n", appFilesFound, appFilesExpected)
 }
 
-func verifyAuthSecurity(spec *authSpec, impl *authImplementation, root string) {
+func verifyAuthSecurity(_ *authSpec, impl *authImplementation, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  SECURITY VERIFICATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -714,7 +714,7 @@ func verifyAuthSecurity(spec *authSpec, impl *authImplementation, root string) {
 	}
 }
 
-func verifyAuthDatabaseSchema(spec *authSpec, root string) {
+func verifyAuthDatabaseSchema(_ *authSpec, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 8 of Spec)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -770,7 +770,7 @@ func verifyAuthDatabaseSchema(spec *authSpec, root string) {
 	}
 }
 
-func verifyAuthErrorCodes(spec *authSpec, impl *authImplementation, root string) {
+func verifyAuthErrorCodes(_ *authSpec, _ *authImplementation, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  ERROR CODES VERIFICATION (Appendix of Spec)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -826,7 +826,7 @@ func scanErrorCodes(content string, codes map[string]bool) {
 	}
 }
 
-func verifyAuthRoutes(spec *authSpec, impl *authImplementation, root string) {
+func verifyAuthRoutes(_ *authSpec, _ *authImplementation, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  ROUTE REGISTRATION VERIFICATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -887,8 +887,8 @@ func verifyAuthRoutes(spec *authSpec, impl *authImplementation, root string) {
 	}
 }
 
-// verifyAuthDomainMethods checks for domain entity methods (Section 4.1)
-func verifyAuthDomainMethods(spec *authSpec, impl *authImplementation, root string) {
+// verifyAuthDomainMethods checks for domain entity methods (Section 4.1).
+func verifyAuthDomainMethods(_ *authSpec, _ *authImplementation, root string) {
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 fmt.Printf("\n  DOMAIN ENTITY METHODS VERIFICATION (Section 4.1 of Spec)")
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -910,8 +910,8 @@ fmt.Printf("    ⚠️  Operator.%s() - method not found\n", method)
 fmt.Printf("    Operator methods: %d/%d\n", methodsFound, len(operatorMethods))
 }
 
-// verifyAuthRepositoryMethods checks for repository interface methods (Section 4.3, 4.4)
-func verifyAuthRepositoryMethods(spec *authSpec, impl *authImplementation, root string) {
+// verifyAuthRepositoryMethods checks for repository interface methods (Section 4.3, 4.4).
+func verifyAuthRepositoryMethods(_ *authSpec, _ *authImplementation, root string) {
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 fmt.Printf("\n  REPOSITORY INTERFACE METHODS (Section 4.3, 4.4 of Spec)")
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -945,8 +945,8 @@ sessionMethodsFound++
 fmt.Printf("    Session Repository: %d/%d methods\n", sessionMethodsFound, len(sessionRepoMethods))
 }
 
-// verifyAuthApplicationMethods checks for AuthService methods (Section 5.1)
-func verifyAuthApplicationMethods(spec *authSpec, impl *authImplementation, root string) {
+// verifyAuthApplicationMethods checks for AuthService methods (Section 5.1).
+func verifyAuthApplicationMethods(_ *authSpec, _ *authImplementation, root string) {
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 fmt.Printf("\n  AUTH SERVICE METHODS (Section 5.1 of Spec)")
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -973,8 +973,8 @@ methodsFound++
 fmt.Printf("    AuthService methods: %d/%d found\n", methodsFound, len(authServiceMethods))
 }
 
-// verifyAuthDatabaseIndexes checks for database indexes (Section 8.2)
-func verifyAuthDatabaseIndexes(spec *authSpec, root string) {
+// verifyAuthDatabaseIndexes checks for database indexes (Section 8.2).
+func verifyAuthDatabaseIndexes(_ *authSpec, _ string) {
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 fmt.Printf("\n  DATABASE INDEXES (Section 8.2 of Spec)")
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -985,8 +985,8 @@ fmt.Printf("    Note: Index verification requires SQL migration files\n")
 atomic.AddUint64(&authPassCount, 1)
 }
 
-// verifyAuthFileStructure checks the complete file structure (Section 9)
-func verifyAuthFileStructure(spec *authSpec, root string) {
+// verifyAuthFileStructure checks the complete file structure (Section 9).
+func verifyAuthFileStructure(_ *authSpec, root string) {
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 9 of Spec)")
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -1004,8 +1004,8 @@ fmt.Printf("    Key structure files verified: %d/%d\n", filesFound, len(keyFiles
 atomic.AddUint64(&authPassCount, 1)
 }
 
-// verifyAuthFrontendRequirements checks frontend requirement mappings (Section 1.2)
-func verifyAuthFrontendRequirements(spec *authSpec, root string) {
+// verifyAuthFrontendRequirements checks frontend requirement mappings (Section 1.2).
+func verifyAuthFrontendRequirements(spec *authSpec, _ string) {
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 fmt.Printf("\n  FRONTEND REQUIREMENTS MAPPING (Section 1.2 of Spec)")
 fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -1034,8 +1034,8 @@ atomic.AddUint64(&authPassCount, 1)
 }
 
 
-// verifyAuthSessionConfig verifies session configuration matches spec Section 7.3
-func verifyAuthSessionConfig(spec *authSpec, impl *authImplementation, root string) {
+// verifyAuthSessionConfig verifies session configuration matches spec Section 7.3.
+func verifyAuthSessionConfig(spec *authSpec, _ *authImplementation, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  SESSION CONFIGURATION VERIFICATION (Section 7.3 of Spec)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")

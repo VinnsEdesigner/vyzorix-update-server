@@ -54,21 +54,21 @@ const (
 // LoginContext contains data about a login attempt for threat evaluation.
 // All fields should be validated and sanitized before use.
 type LoginContext struct {
-	LastLogin     *LastLoginInfo
+	Timestamp      time.Time
+	LastLogin      *LastLoginInfo
 	OperatorID     string
-	IPAddress     string
-	Location      string
-	UserAgent     string
-	DeviceFinger  string
+	IPAddress      string
+	Location       string
+	UserAgent      string
+	DeviceFinger   string
 	FailedAttempts int
-	Timestamp     time.Time
 }
 
 // LastLoginInfo stores information about the previous login.
 type LastLoginInfo struct {
 	Timestamp    time.Time
-	IPAddress   string
-	Location    string
+	IPAddress    string
+	Location     string
 	DeviceFinger string
 }
 
