@@ -337,10 +337,11 @@ func (r *InboxRepository) scanEntry(row *sql.Row) (*inbox.InboxEntry, error) {
 
 	// DB schema has single reviewed_at column - use ApprovedAt for approved status
 	// RejectedAt remains nil since there's no separate column
-	if e.Status == inbox.StatusApproved {
+	switch e.Status {
+	case inbox.StatusApproved:
 		e.ApprovedAt = nullInt64ToPtr(reviewedAt)
 		e.Notes = reviewedReason.String
-	} else if e.Status == inbox.StatusRejected {
+	case inbox.StatusRejected:
 		e.RejectedAt = nullInt64ToPtr(reviewedAt)
 		e.Notes = rejectionReason.String
 	}
@@ -375,10 +376,11 @@ func (r *InboxRepository) scanEntryRows(rows *sql.Rows) (*inbox.InboxEntry, erro
 
 	// DB schema has single reviewed_at column - use ApprovedAt for approved status
 	// RejectedAt remains nil since there's no separate column
-	if e.Status == inbox.StatusApproved {
+	switch e.Status {
+	case inbox.StatusApproved:
 		e.ApprovedAt = nullInt64ToPtr(reviewedAt)
 		e.Notes = reviewedReason.String
-	} else if e.Status == inbox.StatusRejected {
+	case inbox.StatusRejected:
 		e.RejectedAt = nullInt64ToPtr(reviewedAt)
 		e.Notes = rejectionReason.String
 	}

@@ -6,24 +6,24 @@ import (
 
 // InboxEntry represents a device registration request in the inbox.
 type InboxEntry struct {
-	ID                string     `json:"id"`
-	IMEI              string     `json:"imei"`
-	DeviceName        string     `json:"deviceName,omitempty"`
-	DeviceClass       string     `json:"deviceClass,omitempty"`
-	Model             string     `json:"model"`
-	Manufacturer      string     `json:"manufacturer"`
-	OSVersion         string     `json:"osVersion"`
-	AppVersion        string     `json:"appVersion"`
-	FCMToken          string     `json:"fcmToken"`
-	FirebaseInstallID string     `json:"firebaseInstallId"`
+	ApprovedAt        *int64      `json:"approvedAt,omitempty"`
+	RejectedAt        *int64      `json:"rejectedAt,omitempty"`
+	FCMToken          string      `json:"fcmToken"`
+	FirebaseInstallID string      `json:"firebaseInstallId"`
+	Model             string      `json:"model"`
+	Manufacturer      string      `json:"manufacturer"`
+	OSVersion         string      `json:"osVersion"`
+	AppVersion        string      `json:"appVersion"`
+	ID                string      `json:"id"`
+	DeviceClass       string      `json:"deviceClass,omitempty"`
 	Status            InboxStatus `json:"status"`
-	CommandSecret     string     `json:"commandSecret,omitempty"`
-	Notes             string     `json:"notes,omitempty"`
-	OperatorID        string     `json:"operatorId,omitempty"`
-	CreatedAt         int64      `json:"createdAt"`
-	UpdatedAt         int64      `json:"updatedAt,omitempty"`
-	ApprovedAt        *int64     `json:"approvedAt,omitempty"`
-	RejectedAt        *int64     `json:"rejectedAt,omitempty"`
+	CommandSecret     string      `json:"commandSecret,omitempty"`
+	Notes             string      `json:"notes,omitempty"`
+	OperatorID        string      `json:"operatorId,omitempty"`
+	IMEI              string      `json:"imei"`
+	DeviceName        string      `json:"deviceName,omitempty"`
+	UpdatedAt         int64       `json:"updatedAt,omitempty"`
+	CreatedAt         int64       `json:"createdAt"`
 }
 
 // CreatedAtTime returns the CreatedAt as a time.Time.
@@ -71,15 +71,15 @@ func (e *InboxEntry) CanBeAcknowledged() bool {
 
 // RegistrationLog represents an audit log entry for registration actions.
 type RegistrationLog struct {
-	ID           string    `json:"id"`
-	DeviceID     string    `json:"deviceId"`
-	IMEI         string    `json:"imei"`
-	Action       string    `json:"action"` // registered, approved, rejected, deregistered
-	OperatorID   string    `json:"operatorId"`
-	ClientIP     string    `json:"clientIp"`
-	UserAgent    string    `json:"userAgent"`
-	Details      string    `json:"details,omitempty"`
-	Timestamp    int64     `json:"timestamp"`
+	ID         string `json:"id"`
+	DeviceID   string `json:"deviceId"`
+	IMEI       string `json:"imei"`
+	Action     string `json:"action"` // registered, approved, rejected, deregistered
+	OperatorID string `json:"operatorId"`
+	ClientIP   string `json:"clientIp"`
+	UserAgent  string `json:"userAgent"`
+	Details    string `json:"details,omitempty"`
+	Timestamp  int64  `json:"timestamp"`
 }
 
 // TimestampTime returns the Timestamp as a time.Time.

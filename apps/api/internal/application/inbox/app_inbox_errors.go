@@ -7,26 +7,26 @@ import (
 
 // Service errors for the inbox package.
 var (
-	ErrInboxNotFound              = errors.New("inbox entry not found")
-	ErrInboxNotPending            = errors.New("inbox entry is not pending, cannot acknowledge")
-	ErrInvalidIMEI                = errors.New("invalid IMEI format")
-	ErrInvalidFCMToken            = errors.New("invalid FCM token format")
-	ErrInvalidFirebaseInstallID   = errors.New("invalid Firebase install ID format")
-	ErrAlreadyExists              = errors.New("device already exists in inbox")
-	ErrAlreadyRegistered          = errors.New("device already registered as confirmed device")
-	ErrDeviceAlreadyExists        = errors.New("device already registered, use re-registration flow")
-	ErrSecretGeneration           = errors.New("failed to generate command secret")
-	ErrInvalidAckAction           = errors.New("invalid acknowledge action, must be 'approve' or 'reject'")
-	ErrFCMNotification           = errors.New("failed to send FCM notification")
-	ErrUnauthorized              = errors.New("operator not authorized to perform this action")
+	ErrInboxNotFound            = errors.New("inbox entry not found")
+	ErrInboxNotPending          = errors.New("inbox entry is not pending, cannot acknowledge")
+	ErrInvalidIMEI              = errors.New("invalid IMEI format")
+	ErrInvalidFCMToken          = errors.New("invalid FCM token format")
+	ErrInvalidFirebaseInstallID = errors.New("invalid Firebase install ID format")
+	ErrAlreadyExists            = errors.New("device already exists in inbox")
+	ErrAlreadyRegistered        = errors.New("device already registered as confirmed device")
+	ErrDeviceAlreadyExists      = errors.New("device already registered, use re-registration flow")
+	ErrSecretGeneration         = errors.New("failed to generate command secret")
+	ErrInvalidAckAction         = errors.New("invalid acknowledge action, must be 'approve' or 'reject'")
+	ErrFCMNotification          = errors.New("failed to send FCM notification")
+	ErrUnauthorized             = errors.New("operator not authorized to perform this action")
 )
 
 // ServiceError represents an error with code and HTTP status.
 type ServiceError struct {
+	Details interface{} `json:"details,omitempty"`
 	Code    string      `json:"error"`
 	Message string      `json:"message"`
 	Status  int         `json:"-"`
-	Details interface{} `json:"details,omitempty"`
 }
 
 // Error implements the error interface.

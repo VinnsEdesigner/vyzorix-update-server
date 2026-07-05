@@ -58,8 +58,8 @@ type RefreshTokenRequest struct {
 type RefreshTokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
-	ExpiresAt    int64  `json:"expires_at"`
 	SessionID    string `json:"session_id"`
+	ExpiresAt    int64  `json:"expires_at"`
 }
 
 // LogoutRequest represents a logout request.
