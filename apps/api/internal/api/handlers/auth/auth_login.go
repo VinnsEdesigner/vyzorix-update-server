@@ -28,17 +28,17 @@ type LoginHandler struct {
 // LoginLockout provides login attempt tracking with device fingerprinting.
 // 9 FIX: Added mutex to prevent concurrent map writes (CRITICAL).
 type LoginLockout struct {
-	mu       sync.RWMutex
 	attempts map[string]*LoginAttemptInfo
+	mu       sync.RWMutex
 }
 
 // LoginAttemptInfo tracks login attempts with device fingerprint.
 type LoginAttemptInfo struct {
-	Count       int
 	FirstAt     time.Time
+	LockedUntil *time.Time
 	LastIP      string
 	UserAgent   string
-	LockedUntil *time.Time
+	Count       int
 }
 
 // NewLoginLockout creates a new login lockout tracker.
@@ -189,8 +189,8 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 
 	// Attempt login with device fingerprint for hardened verification
 	result, session, err := h.authService.LoginWithDevice(ctx, &req, &auth.DeviceInfo{
-		IPAddress:        ipAddress,
-		UserAgent:        userAgent,
+		IPAddress:         ipAddress,
+		UserAgent:         userAgent,
 		DeviceFingerprint: deviceFingerprint,
 	})
 
@@ -226,11 +226,11 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 			if h.emailService != nil && result != nil {
 				loginData := emailService.LoginNotificationData{
 					OperatorName: result.Name,
-					IPAddress:   ipAddress,
-					UserAgent:   userAgent,
-					Location:    "Unknown",
-					Device:      userAgent,
-					Timestamp:   time.Now().Format(time.RFC1123),
+					IPAddress:    ipAddress,
+					UserAgent:    userAgent,
+					Location:     "Unknown",
+					Device:       userAgent,
+					Timestamp:    time.Now().Format(time.RFC1123),
 				}
 				_ = h.emailService.SendNewLoginNotificationEmail(context.Background(), result.Email, loginData)
 			}

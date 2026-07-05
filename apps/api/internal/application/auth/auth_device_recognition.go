@@ -23,18 +23,18 @@ type DeviceInfo struct {
 
 // KnownDevice represents a previously used device.
 type KnownDevice struct {
-	Fingerprint  string
-	IPAddresses  map[string]bool
-	UserAgents   map[string]bool
-	FirstSeenAt  time.Time
-	LastSeenAt   time.Time
-	IsTrusted    bool
+	FirstSeenAt time.Time
+	LastSeenAt  time.Time
+	IPAddresses map[string]bool
+	UserAgents  map[string]bool
+	Fingerprint string
+	IsTrusted   bool
 }
 
 // DeviceStore manages known devices per operator.
 type DeviceStore struct {
-	mu       sync.RWMutex
-	devices  map[string]map[string]*KnownDevice // operatorID -> fingerprint -> device
+	devices map[string]map[string]*KnownDevice
+	mu      sync.RWMutex
 }
 
 // NewDeviceStore creates a new device store.
@@ -186,7 +186,7 @@ func (s *AuthService) ShouldNotifyLogin(ctx context.Context, operatorID, ipAddre
 // This is the hardened version that:
 // 1. Tracks device fingerprints
 // 2. Only sends notifications for new/unusual logins
-// 3. Performs strict verification for remembered devices
+// 3. Performs strict verification. for remembered devices.
 func (s *AuthService) LoginWithDevice(ctx context.Context, req *dto.LoginRequest, device *DeviceInfo) (*dto.LoginResponse, *session.Session, error) {
 	email := strings.ToLower(strings.TrimSpace(req.Email))
 
@@ -217,8 +217,8 @@ func (s *AuthService) LoginWithDevice(ctx context.Context, req *dto.LoginRequest
 		// Only return ErrInvalidCredentials for wrong password
 		// Propagate other errors (crypto failures, corrupted hashes) for proper logging
 		if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" ||
-		   err.Error() == "crypto/scrypt: password hash does not match" ||
-		   err.Error() == "crypto/argon2: invalid hash" {
+			err.Error() == "crypto/scrypt: password hash does not match" ||
+			err.Error() == "crypto/argon2: invalid hash" {
 			return nil, nil, application.ErrInvalidCredentials
 		}
 		// For other unexpected errors, log and return a generic error
