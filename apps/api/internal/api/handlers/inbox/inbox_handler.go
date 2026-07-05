@@ -96,18 +96,23 @@ func (h *Handler) AckInbox(c *gin.Context) {
 		return
 	}
 
-	if req.Action != "approve" && req.Action != "reject" {
+	// Validate action - support all 3 actions from 5-state model
+	if req.Action != "acknowledge" && req.Action != "approve" && req.Action != "reject" {
 		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
 			Code:    "bad_request",
-			Message: "Action must be 'approve' or 'reject'",
+			Message: "Action must be 'acknowledge', 'approve', or 'reject'",
 		})
 		return
 	}
 
-	operator := middleware.GetOperatorFromContext(c)
-	operatorID := ""
-	if operator != nil {
-		operatorID = operator.ID
+	// For acknowledge action, no operator ID needed (device-side action)
+	// For approve/reject actions, get operator ID from context
+	var operatorID string
+	if req.Action != "acknowledge" {
+		operator := middleware.GetOperatorFromContext(c)
+		if operator != nil {
+			operatorID = operator.ID
+		}
 	}
 
 	// Timeout is handled by middleware (Bug 49)
