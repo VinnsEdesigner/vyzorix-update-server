@@ -2,11 +2,11 @@
 
 ```
 .github/
- workflows/
-    android_build.yml              # Standard CI: Build and lint on PR
-    release.yml                    # Release: Build signed APK, create tag
-    push_update_bin.yml            # Push APK binary + version.json to server repo
-    lint.yml                       # Static analysis on every push
+├── workflows/
+│   ├── android_build.yml              # Standard CI: Build and lint on PR
+│   ├── release.yml                    # Release: Build signed APK, create tag
+│   ├── push_update_bin.yml            # Push APK binary + version.json to server repo
+│   └── lint.yml                       # Static analysis on every push
 ```
 
 ## `android_build.yml` (Standard CI)
@@ -190,7 +190,7 @@ jobs:
 
 This is the critical workflow that connects the main codebase to the server repo. It runs after a release tag is pushed, downloads the signed and downloaded apk from artifacts , generates version.json, and pushes both to the server repository.
 
-```yaml ( the file needs to be corrected though, tye builds instead of downloading , it was just because of earlier structure but after, i felt it's just backward )
+```yaml ( the file needs to be corrected though, tye builds instead of downloading , it was just because of earlier structure but after, i felt it's just backward 😅)
 name: Push Update to Server Repo
 
 on:
@@ -519,56 +519,56 @@ The bypass is safe because:
 
 ```
 Developer pushes tag: git tag v2.1.0 && git push origin v2.1.0
-    
-    
+    │
+    ▼
 release.yml triggers
-    
-     Builds signed release APK
-     Extracts version info
-     Creates GitHub Release with APK artifact
-     Completes
-    
-    
+    │
+    ├── Builds signed release APK
+    ├── Extracts version info
+    ├── Creates GitHub Release with APK artifact
+    └── Completes
+    │
+    ▼
 push_update_bin.yml triggers (workflow_run: completed)
-    
-     downloads from release artifact
-     Computes SHA-256 checksum
-     Generates version.json
-     Checks out server repo
-     Copies APK to server-repo/bin/
-     Updates server-repo/api/v1/version.json
-     Updates server-repo/api/v1/changelog.json
-     Pushes to server repo main branch
-     Triggers Render deploy
-    
-    
+    │
+    ├── downloads from release artifact
+    ├── Computes SHA-256 checksum
+    ├── Generates version.json
+    ├── Checks out server repo
+    ├── Copies APK to server-repo/bin/
+    ├── Updates server-repo/api/v1/version.json
+    ├── Updates server-repo/api/v1/changelog.json
+    ├── Pushes to server repo main branch
+    └── Triggers Render deploy
+    │
+    ▼
 server-repo deploy.yml triggers (push: main)
-    
-     Validates APK files
-     Triggers Render deployment
-     Waits for health check
-    
-    
+    │
+    ├── Validates APK files
+    ├── Triggers Render deployment
+    └── Waits for health check
+    │
+    ▼
 Render auto-deploys (autoDeploy: true)
-    
-     Pulls latest from main branch
-     Builds Docker container
-     Deploys to production
-     Health check passes
-    
-    
+    │
+    ├── Pulls latest from main branch
+    ├── Builds Docker container
+    ├── Deploys to production
+    └── Health check passes
+    │
+    ▼
 VyzorixAudioRouter daemon on device
-    
-     NetworkStateMonitor detects internet
-     UpdateChecker polls /api/v1/version
-     Compares versions -> UPDATE AVAILABLE
-     Shows notification to user
-     User taps "Download"
-     UpdateDownloader fetches APK
-     Verifies SHA-256 checksum
-     UpdateInstaller triggers ACTION_INSTALL_PACKAGE
-     System shows "Install this update?" dialog
-     User confirms -> APK installed
-     Daemon restarts with new version
-     BootStateRestorer resumes from last known state
+    │
+    ├── NetworkStateMonitor detects internet
+    ├── UpdateChecker polls /api/v1/version
+    ├── Compares versions -> UPDATE AVAILABLE
+    ├── Shows notification to user
+    ├── User taps "Download"
+    ├── UpdateDownloader fetches APK
+    ├── Verifies SHA-256 checksum
+    ├── UpdateInstaller triggers ACTION_INSTALL_PACKAGE
+    ├── System shows "Install this update?" dialog
+    ├── User confirms -> APK installed
+    ├── Daemon restarts with new version
+    └── BootStateRestorer resumes from last known state
 ```
