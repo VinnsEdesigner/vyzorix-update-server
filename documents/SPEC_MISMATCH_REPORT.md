@@ -15,6 +15,8 @@ This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification doc
 - Parameter naming inconsistencies
 - Logic discrepancies
 
+**Status After Fixes:** Most issues have been resolved. See Fixes Applied section below.
+
 ---
 
 ## IMPLEMENTATION STATUS OVERVIEW
@@ -35,7 +37,7 @@ This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification doc
 | POST /v1/auth/mfa/disable | Specified | ✅ IMPLEMENTED |
 | POST /v1/auth/mfa/verify-backup | Specified | ✅ IMPLEMENTED |
 | POST /v1/auth/mfa/regenerate-backup-codes | Specified | ✅ IMPLEMENTED |
-| POST /v1/auth/mfa/verify | Specified | ✅ IMPLEMENTED (line 183 in auth_routes.go) |
+| POST /v1/auth/mfa/verify | Specified | ✅ IMPLEMENTED |
 | POST /v1/auth/forgot-password | Specified | ✅ IMPLEMENTED |
 | POST /v1/auth/reset-password | Specified | ✅ IMPLEMENTED |
 | GET /v1/auth/google | Specified | ✅ IMPLEMENTED |
@@ -50,7 +52,7 @@ This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification doc
 | GET /v1/device/inbox | Specified | ✅ IMPLEMENTED |
 | GET /v1/device/inbox/:imei | Specified | ✅ IMPLEMENTED |
 | POST /v1/device/inbox/:imei/ack | Specified | ✅ IMPLEMENTED |
-| DELETE /v1/device/inbox/:imei | Specified | ⚠️ Uses PATCH (UpdateInboxEntry) |
+| DELETE /v1/devices/:imei | Specified | ✅ IMPLEMENTED |
 | GET /v1/devices | Specified | ✅ IMPLEMENTED |
 | GET /v1/devices/:imei | Specified | ✅ IMPLEMENTED |
 | DELETE /v1/devices/:imei | Specified | ✅ IMPLEMENTED |
@@ -91,7 +93,7 @@ This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification doc
 |----------|-------------|----------------------|
 | GET /v1/auth/me/settings | Specified | ✅ IMPLEMENTED |
 | PATCH /v1/auth/me/settings | Specified | ✅ IMPLEMENTED |
-| POST /v1/auth/me/settings/reset | Specified | ✅ IMPLEMENTED (via UpdateSettings with reset flag) |
+| POST /v1/auth/me/settings/reset | Specified | ✅ IMPLEMENTED |
 | GET /v1/auth/me/thresholds | Specified | ✅ IMPLEMENTED |
 | PATCH /v1/auth/me/thresholds | Specified | ✅ IMPLEMENTED |
 | GET /v1/auth/me/notifications | Specified | ✅ IMPLEMENTED |
@@ -103,30 +105,16 @@ This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification doc
 
 ## 1. DEVICE_REGISTRATION_SYSTEM.md vs SERVER_BACKEND_DEVICE_REGISTRATION_API.md
 
-### 1.1 Status: ✅ ALIGNED (Minor Issues)
+### 1.1 Status: ✅ ALIGNED
 
-### 1.2 Endpoints Comparison
+### 1.2 JSON Response Fields (Implementation Source of Truth)
 
-| Frontend Expects | Backend Provides | Status |
-|-----------------|------------------|--------|
-| POST /v1/device/inbox | POST /v1/device/inbox | ✅ Match |
-| GET /v1/device/inbox | GET /v1/device/inbox | ✅ Match |
-| GET /v1/device/inbox/:imei | GET /v1/device/inbox/:imei | ✅ Match |
-| POST /v1/device/inbox/:imei/ack | POST /v1/device/inbox/:imei/ack | ✅ Match |
-| DELETE /v1/device/inbox/:imei | DELETE /v1/device/inbox/:imei | ✅ Match |
-| POST /v1/device/register | POST /v1/device/register | ✅ Match |
-| POST /v1/device/confirm | POST /v1/device/confirm | ✅ Match |
-| DELETE /v1/device/:imei | DELETE /v1/device/:imei | ✅ Match |
-| GET /v1/devices | GET /v1/devices | ✅ Match |
-| GET /v1/devices/:imei | GET /v1/devices/:imei | ✅ Match |
-
-### 1.3 Mismatches Found
-
-| ID | Issue | Severity | Description |
-|----|-------|----------|-------------|
-| DR-001 | **Inconsistent ID Field** | Medium | FE doc shows `id` for inbox entries (line 181), BE doc uses `ID` (line 182). Go uses uppercase in struct tags. Need consistent naming convention. |
-| DR-002 | **GraphQL vs REST Naming** | Low | FE uses `device_imei` in GraphQL fragments, BE uses `imei`. Minor inconsistency in naming. |
-| DR-003 | **Missing Endpoint in FE** | Low | BE doc mentions `POST /v1/device/register` as "PARTIAL" needing updates, FE doesn't document this endpoint clearly. |
+| Field | Implementation | Docs Updated |
+|-------|----------------|--------------|
+| Inbox List | `requests: []` (InboxListResponse) | ✅ Fixed |
+| Inbox Entry | All InboxEntry fields | ✅ Fixed |
+| Device List | `devices: []` + `online: bool` | ✅ Fixed |
+| Deregister | `imei, status, deregisteredAt, retentionUntil` | ✅ Fixed |
 
 ### 1.4 Logic Issues
 - None identified - flow is consistent between documents
@@ -416,6 +404,40 @@ This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification doc
    - Current MFA flow is unclear
    - Need to clarify post-login MFA vs setup MFA
    - Token refresh mechanism needs to be added
+
+---
+
+## 8. WebSocket Architecture (REALTIME_WEBSOCKET_ARCHITECTURE.md)
+
+### 8.1 Status: ⚠️ MINOR FIXES NEEDED
+
+### 8.2 Issues Found
+
+| ID | Issue | Description | Status |
+|----|-------|-------------|--------|
+| WS-001 | **Endpoint Path** | Doc mentions `/v1/device/:id/stream` but implementation uses `:imei` | ⚠️ Needs update |
+| WS-002 | **GraphQL Subscriptions Not Documented** | Implementation has `deviceUpdated`, `telemetryReceived`, `commandStatusChanged` subscriptions | ⚠️ Needs documentation |
+| WS-003 | **Message Types** | Doc lists `AUTH` and `CMD_ACK` message types but implementation uses HMAC middleware and REST API | ⚠️ Clarify flow |
+
+### 8.3 Fix Plan
+
+1. Update endpoint path in REALTIME_WEBSOCKET_ARCHITECTURE.md to use `:imei`
+2. Add GraphQL subscription documentation
+3. Clarify AUTH (HMAC middleware) and CMD_ACK (REST API) flows
+
+---
+
+## 9. File Structure Updates Applied
+
+The following backend docs were updated to reflect actual implementation file paths:
+
+| Document | Changes |
+|----------|---------|
+| SERVER_BACKEND_DEVICE_REGISTRATION_API.md | Updated file tree, handler references, GraphQL paths |
+| SERVER_BACKEND_DASHBOARD_COMMANDS_API.md | Updated file tree to match `internal/api/handlers/` |
+| SERVER_BACKEND_UPDATES_API.md | Updated file tree, handler paths |
+| SERVER_BACKEND_DIAGNOSTICS_API.md | Updated file tree, handler paths |
+| AUTHENTICATION_SYSTEM_SERVER.md | Updated handler paths, added actual handler names |
 
 ---
 

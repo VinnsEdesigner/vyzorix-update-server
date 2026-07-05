@@ -482,46 +482,48 @@ CREATE INDEX idx_registration_logs_device ON registration_logs(device_id, create
 ```
 apps/api/internal/
 ├── api/
-│   ├── handlers/
-│   │   ├── inbox/
-│   │   │   ├── inbox_handler.go         # NEW - inbox handlers
-│   │   │   └── inbox_routes.go         # NEW - route registration
-│   │   ├── device/
-│   │   │   ├── device_handler.go       # EXISTS - update
-│   │   │   ├── device_list_handler.go  # NEW - list devices
-│   │   │   └── device_routes.go        # NEW - route registration
-│   │   └── router.go                   # MODIFIED
-│   └── middleware/
+│   ├── server_routes.go                # Route registration
+│   ├── api_server.go                   # Server setup
+│   ├── wire/
+│   │   ├── providers.go               # Dependency providers
+│   │   └── wire_handlers.go           # Handler wiring
+│   └── handlers/
+│       ├── inbox/
+│       │   ├── inbox_handler.go        # InboxHandler
+│       │   └── inbox_routes.go        # (included in handler)
+│       ├── device/
+│       │   ├── devices_handler.go      # DevicesHandler (GetDevices, GetDeviceDetail)
+│       │   ├── device_list.go          # ListHandler (Count)
+│       │   ├── device_updater.go       # UpdaterHandler (Delete, Update)
+│       │   ├── device_confirm.go       # ConfirmHandler
+│       │   ├── device_register.go      # RegisterHandler
+│       │   ├── dev_status.go          # StatusHandler
+│       │   ├── device_logs_handler.go  # LogsHandler
+│       │   ├── device_metrics_handler.go # MetricsHandler
+│       │   └── device_telemetry_handler.go # TelemetryHandler
+│       ├── websocket/
+│       │   ├── websocket_handler.go    # StreamHandler
+│       │   ├── stream_message.go       # MessageRouter
+│       │   ├── websocket_presenter.go  # WebSocket presenter
+│       │   └── websocket_stream.go    # HTTP→WS upgrade
 │       └── ...
 ├── application/
 │   ├── inbox/
-│   │   ├── inbox_service.go            # NEW
-│   │   ├── inbox_dto.go                # NEW
-│   │   └── inbox_errors.go             # NEW
-│   ├── device/
-│   │   ├── device_service.go          # EXISTS - update
-│   │   ├── device_dto.go               # NEW
-│   │   └── device_register.go         # EXISTS - update
-│   └── registration/
-│       ├── registration_service.go     # NEW - registration orchestration
-│       └── registration_dto.go         # NEW
+│   │   └── inbox_service.go           # InboxService
+│   └── device/
+│       └── device_service.go           # DeviceService
 ├── domain/
 │   ├── inbox/
-│   │   ├── inbox_entity.go             # NEW
-│   │   ├── inbox_repository.go         # NEW
-│   │   └── inbox_errors.go             # NEW
+│   │   ├── inbox_entity.go             # InboxEntry, InboxListResponse
+│   │   └── inbox_repository.go        # Repository interface
 │   └── device/
-│       ├── device_entity.go            # EXISTS
-│       ├── device_repository.go        # EXISTS - update
-│       └── device_status.go            # EXISTS
-├── infrastructure/
-│   └── storage/
-│       ├── inbox_storage.go            # NEW
-│       ├── device_storage.go           # EXISTS - update
-│       └── registration_log_storage.go # NEW
-└── fcm/
-    └── fcm_notifier.go                 # EXISTS - update
+│       ├── device_entity.go           # Device entity
+│       └── device_repository.go        # Repository interface
+└── infrastructure/
+    └── storage/
+        └── device_storage.go           # Storage implementation
 ```
+
 
 ---
 
@@ -529,7 +531,7 @@ apps/api/internal/
 
 ### 7.1 Inbox Handler
 
-**File:** `api/handlers/inbox/inbox.go`
+**File:** `internal/api/handlers/inbox/inbox_handler.go`
 
 ```go
 package inbox
@@ -633,7 +635,7 @@ func (h *Handler) AckInbox(c *gin.Context) {
 
 ### 7.2 Devices Handler
 
-**File:** `api/handlers/device/devices.go`
+**File:** `internal/api/handlers/device/devices_handler.go`
 
 ```go
 package device
@@ -1055,32 +1057,30 @@ type Mutation {
 | application/inbox/inbox_errors.go | NEW | Service errors |
 | application/device/device_service.go | MODIFIED | Add list/filter methods |
 
-#### Handler Layer (3 NEW, 2 MODIFIED)
+#### Handler Layer (EXISTING - Updated)
 
-| File | Status | Purpose |
-|------|--------|---------|
-| api/handlers/inbox/inbox_handler.go | NEW | Inbox handlers |
-| api/handlers/device/device_list_handler.go | NEW | List/deregister handlers |
-| api/handlers/inbox/inbox_routes.go | NEW | Inbox route registration |
-| api/handlers/device/device_routes.go | MODIFIED | Add device routes (or extend api/server_routes.go) |
-| api/server_routes.go | MODIFIED | Wire new handlers |
+| File | Handler | Purpose |
+|------|---------|---------|
+| internal/api/handlers/inbox/inbox_handler.go | InboxHandler | GetInboxRequest, GetInboxEntry, UpdateInboxEntry |
+| internal/api/handlers/device/devices_handler.go | DevicesHandler | GetDevices, GetDeviceDetail, DeregisterDevice |
+| internal/api/handlers/device/device_list.go | ListHandler | Count |
+| internal/api/handlers/device/device_updater.go | UpdaterHandler | Delete, Update |
+| internal/api/server_routes.go | (routes) | Route registration |
 
-#### Infrastructure (3 NEW, 1 MODIFIED)
+#### Infrastructure (EXISTING)
 
-| File | Status | Purpose |
-|------|--------|---------|
-| infrastructure/storage/inbox_storage.go | NEW | Inbox repository |
-| infrastructure/storage/registration_log_storage.go | NEW | Audit log |
-| infrastructure/storage/device_storage.go | MODIFIED | Add new queries |
-| infrastructure/storage/migrations/ | NEW | SQL migrations |
+| File | Purpose |
+|------|---------|
+| internal/infrastructure/storage/device_storage.go | Device & inbox storage |
+| internal/infrastructure/storage/migrations/ | SQL migrations |
 
-#### GraphQL (2 NEW, 2 MODIFIED)
+#### GraphQL (EXISTING - Updated)
 
-| File | Status | Purpose |
-|------|--------|---------|
-| api/graphql/schema/objects.go | MODIFIED | Add inbox/device types |
-| api/graphql/schema/resolver.go | MODIFIED | Add resolvers |
-| api/graphql/schema/schema.go | MODIFIED | Add root types |
+| File | Purpose |
+|------|---------|
+| internal/api/graphql/schema/objects.go | Add inbox/device types |
+| internal/api/graphql/resolver/ | Add resolvers |
+| internal/api/graphql/schema/schema.go | Add root types |
 
 ---
 

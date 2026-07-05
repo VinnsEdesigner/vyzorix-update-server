@@ -573,36 +573,25 @@ INSERT INTO update_sync_status (id, status) VALUES ('singleton', 'idle');
 ```
 apps/api/internal/
 ├── api/
-│   ├── handlers/
-│   │   ├── updates/
-│   │   │   ├── updates_versions_handler.go     # NEW - versions handlers
-│   │   │   ├── updates_push_handler.go         # NEW - push handlers
-│   │   │   ├── updates_history_handler.go     # NEW - history handlers
-│   │   │   ├── updates_sync_handler.go         # NEW - sync handlers
-│   │   │   └── updates_routes.go              # NEW - updates routes
-│   │   └── router.go                          # MODIFIED - add updates
-│   └── middleware/
-│       └── ...
+│   ├── server_routes.go                      # Route registration
+│   └── handlers/
+│       ├── updates/
+│       │   ├── updates_versions_handler.go   # UpdatesVersionsHandler
+│       │   ├── updates_push_handler.go       # UpdatesPushHandler
+│       │   ├── updates_history_handler.go    # UpdatesHistoryHandler
+│       │   ├── updates_sync_handler.go       # UpdatesSyncHandler
+│       │   └── updates_handler.go            # UpdatesHandler
+│       └── updater/
+│           └── update_check.go               # UpdateCheckHandler
 ├── application/
 │   └── updates/
-│       ├── updates_service.go                  # NEW - main updates service
-│       ├── updates_versions_service.go         # NEW - version management
-│       ├── updates_push_service.go             # NEW - push management
-│       ├── updates_history_service.go          # NEW - history management
-│       ├── updates_sync_service.go             # NEW - GitHub sync
-│       └── updates_dto.go                     # NEW - request/response DTOs
+│       └── updates_service.go                # UpdatesService
 ├── domain/
 │   └── updates/
-│       ├── updates_entity.go                  # NEW - update entities
-│       ├── updates_repository.go              # NEW - repository interface
-│       └── updates_errors.go                  # NEW - domain errors
-├── infrastructure/
-│   ├── storage/
-│   │   ├── updates_storage.go                 # NEW - updates queries
-│   │   └── migrations/                       # NEW - SQL migrations
-│   └── github/
-│       ├── github_client.go                   # NEW - GitHub API client
-│       └── github_sync.go                    # NEW - GitHub sync logic
+│       └── updates_entity.go                # Update entities
+└── infrastructure/
+    └── storage/
+        └── updates_storage.go               # Updates storage
 ```
 
 ---
@@ -611,7 +600,7 @@ apps/api/internal/
 
 ### 6.1 Versions Handler
 
-**File:** `api/handlers/updates/updates_versions_handler.go`
+**File:** `internal/api/handlers/updates/updates_versions_handler.go`
 
 ```go
 package updates
