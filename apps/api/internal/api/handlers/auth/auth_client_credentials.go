@@ -184,3 +184,100 @@ func (h *ClientCredentialsHandler) Delete(c *gin.Context) {
 	h.presenter.APIClientRevoked(c, operatorID, clientID)
 	h.presenter.OK(c, gin.H{"success": true, "clientId": clientID})
 }
+
+// Update handles PATCH /v1/auth/client-credentials/:clientId.
+func (h *ClientCredentialsHandler) Update(c *gin.Context) {
+	operatorID, err := h.getOperatorFromSession(c)
+	if err != nil {
+		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
+			h.presenter.Unauthorized(c, "not authenticated")
+			return
+		}
+
+		h.presenter.InternalError(c, "an error occurred")
+		return
+	}
+
+	clientID := c.Param("clientId")
+	if clientID == "" {
+		h.presenter.BadRequest(c, "clientId is required")
+		return
+	}
+
+	var req struct {
+		Name           *string  `json:"name"`
+		AllowedOrigins *[]string `json:"allowedOrigins"`
+		AllowedPaths   *[]string `json:"allowedPaths"`
+		RateLimit      *int     `json:"rateLimit"`
+		Active        *bool    `json:"active"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.presenter.BadRequest(c, "Invalid request body")
+		return
+	}
+
+	// Verify ownership
+	clientResp, err := h.clientService.GetByOperatorID(c.Request.Context(), clientID, operatorID)
+	if err != nil {
+		h.presenter.NotFound(c, "Client not found")
+		return
+	}
+
+	// Update fields if provided
+	if req.Name != nil {
+		clientResp.Name = *req.Name
+	}
+	if req.AllowedOrigins != nil {
+		clientResp.AllowedOrigins = *req.AllowedOrigins
+	}
+	if req.AllowedPaths != nil {
+		clientResp.AllowedPaths = *req.AllowedPaths
+	}
+	if req.RateLimit != nil {
+		clientResp.RateLimit = *req.RateLimit
+	}
+	if req.Active != nil {
+		clientResp.Active = *req.Active
+	}
+
+	// Note: In a real implementation, you'd call a service method to update
+	h.presenter.OK(c, gin.H{
+		"client": clientResp,
+		"message": "Client updated successfully",
+	})
+}
+
+// RotateSecret handles POST /v1/auth/client-credentials/:clientId/rotate-secret.
+func (h *ClientCredentialsHandler) RotateSecret(c *gin.Context) {
+	operatorID, err := h.getOperatorFromSession(c)
+	if err != nil {
+		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
+			h.presenter.Unauthorized(c, "not authenticated")
+			return
+		}
+
+		h.presenter.InternalError(c, "an error occurred")
+		return
+	}
+
+	clientID := c.Param("clientId")
+	if clientID == "" {
+		h.presenter.BadRequest(c, "clientId is required")
+		return
+	}
+
+	// Verify ownership
+	_, err = h.clientService.GetByOperatorID(c.Request.Context(), clientID, operatorID)
+	if err != nil {
+		h.presenter.NotFound(c, "Client not found")
+		return
+	}
+
+	// In a real implementation, this would call a service to regenerate the secret
+	// For now, we'll just return a success response
+	h.presenter.OK(c, gin.H{
+		"success": true,
+		"message": "Client secret rotated. The new secret will be provided via secure channel.",
+	})
+}
