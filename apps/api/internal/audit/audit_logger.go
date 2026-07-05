@@ -229,7 +229,7 @@ func (l *Logger) UpdatePushed(ctx context.Context, operatorID, pushID, version s
 		UserAgent:    userAgent,
 		Result:       ResultSuccess,
 		Metadata: map[string]string{
-			"version":     version,
+			"version":      version,
 			"device_count": fmt.Sprintf("%d", deviceCount),
 		},
 	})
@@ -252,10 +252,10 @@ func (l *Logger) UpdateCancelled(ctx context.Context, operatorID, pushID, ipAddr
 func (l *Logger) UpdateSyncStarted(ctx context.Context, operatorID, ipAddress, userAgent string) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,
-		Action:    ActionUpdateSyncStarted,
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
-		Result:    ResultSuccess,
+		Action:     ActionUpdateSyncStarted,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     ResultSuccess,
 	})
 }
 
@@ -263,11 +263,11 @@ func (l *Logger) UpdateSyncStarted(ctx context.Context, operatorID, ipAddress, u
 func (l *Logger) UpdateSyncFailed(ctx context.Context, operatorID, ipAddress, userAgent, reason string) {
 	l.LogEvent(ctx, &Entry{
 		OperatorID: operatorID,
-		Action:    ActionUpdateSyncFailed,
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
-		Result:    ResultFailure,
-		Metadata:  map[string]string{"reason": reason},
+		Action:     ActionUpdateSyncFailed,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     ResultFailure,
+		Metadata:   map[string]string{"reason": reason},
 	})
 }
 
@@ -348,5 +348,85 @@ func (l *Logger) MFAVerifyFailed(ctx context.Context, operatorID, ipAddress stri
 		Action:     ActionMFAVerifyFailed,
 		IPAddress:  ipAddress,
 		Result:     ResultFailure,
+	})
+}
+
+// APIKeyCreated logs an API key creation event.
+func (l *Logger) APIKeyCreated(ctx context.Context, operatorID, keyID, keyName, keyPrefix, scope, ipAddress, userAgent string) {
+	l.LogEvent(ctx, &Entry{
+		OperatorID:   operatorID,
+		Action:       ActionAPIKeyCreated,
+		ResourceType: "api_key",
+		ResourceID:   keyID,
+		IPAddress:    ipAddress,
+		UserAgent:    userAgent,
+		Result:       ResultSuccess,
+		Metadata: map[string]string{
+			"key_name":   keyName,
+			"key_prefix": keyPrefix,
+			"scope":      scope,
+		},
+	})
+}
+
+// APIKeyUpdated logs an API key update event.
+func (l *Logger) APIKeyUpdated(ctx context.Context, operatorID, keyID, keyName, changes, ipAddress, userAgent string) {
+	l.LogEvent(ctx, &Entry{
+		OperatorID:   operatorID,
+		Action:       ActionAPIKeyUpdated,
+		ResourceType: "api_key",
+		ResourceID:   keyID,
+		IPAddress:    ipAddress,
+		UserAgent:    userAgent,
+		Result:       ResultSuccess,
+		Metadata: map[string]string{
+			"key_name": keyName,
+			"changes":  changes,
+		},
+	})
+}
+
+// APIKeyRevoked logs an API key revocation event.
+func (l *Logger) APIKeyRevoked(ctx context.Context, operatorID, keyID, keyName, ipAddress, userAgent string) {
+	l.LogEvent(ctx, &Entry{
+		OperatorID:   operatorID,
+		Action:       ActionAPIKeyRevoked,
+		ResourceType: "api_key",
+		ResourceID:   keyID,
+		IPAddress:    ipAddress,
+		UserAgent:    userAgent,
+		Result:       ResultSuccess,
+		Metadata: map[string]string{
+			"key_name": keyName,
+		},
+	})
+}
+
+// APIKeyRotated logs an API key rotation event.
+func (l *Logger) APIKeyRotated(ctx context.Context, operatorID, keyID, keyName, ipAddress, userAgent string) {
+	l.LogEvent(ctx, &Entry{
+		OperatorID:   operatorID,
+		Action:       ActionAPIKeyRotated,
+		ResourceType: "api_key",
+		ResourceID:   keyID,
+		IPAddress:    ipAddress,
+		UserAgent:    userAgent,
+		Result:       ResultSuccess,
+		Metadata: map[string]string{
+			"key_name": keyName,
+		},
+	})
+}
+
+// APIKeyFailed logs a failed API key authentication attempt.
+func (l *Logger) APIKeyFailed(ctx context.Context, ipAddress, userAgent, reason string) {
+	l.LogEvent(ctx, &Entry{
+		Action:    ActionAPIKeyFailed,
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+		Result:    ResultFailure,
+		Metadata: map[string]string{
+			"reason": reason,
+		},
 	})
 }

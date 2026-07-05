@@ -1,4 +1,4 @@
-package api_key
+package keys
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/api_key"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	infraStorage "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/argon2"
@@ -51,15 +51,15 @@ func NewService(repo infraStorage.APIKeyRepository, config Config) *Service {
 }
 
 // GenerateKey generates a new API key and returns the full key (only time it's available).
-func (s *Service) GenerateKey(ctx context.Context, operatorID string, req *api_key.CreateAPIKeyRequest) (*api_key.APIKeyWithFullKey, error) {
+func (s *Service) GenerateKey(ctx context.Context, operatorID string, req *domain.CreateAPIKeyRequest) (*domain.APIKeyWithFullKey, error) {
 	// Validate name
 	if len(req.Name) > s.config.MaxNameLength {
-		return nil, api_key.ErrKeyNameTooLong
+		return nil, domain.ErrKeyNameTooLong
 	}
 
 	// Validate scope
 	if !req.Scope.IsValid() {
-		return nil, api_key.ErrInvalidScope
+		return nil, domain.ErrInvalidScope
 	}
 
 	// Check monthly limit
@@ -68,7 +68,7 @@ func (s *Service) GenerateKey(ctx context.Context, operatorID string, req *api_k
 		return nil, fmt.Errorf("failed to count keys: %w", err)
 	}
 	if count >= s.config.MaxPerMonth {
-		return nil, api_key.ErrMonthlyLimitExceeded
+		return nil, domain.ErrMonthlyLimitExceeded
 	}
 
 	// Generate the full key
@@ -90,7 +90,7 @@ func (s *Service) GenerateKey(ctx context.Context, operatorID string, req *api_k
 	var expiresAt *time.Time
 	if req.ExpiresInDays != nil && *req.ExpiresInDays > 0 {
 		if *req.ExpiresInDays > s.config.MaxExpiryDays {
-			return nil, api_key.ErrInvalidExpiryDays
+			return nil, domain.ErrInvalidExpiryDays
 		}
 		exp := time.Now().AddDate(0, 0, *req.ExpiresInDays)
 		expiresAt = &exp
@@ -114,13 +114,13 @@ func (s *Service) GenerateKey(ctx context.Context, operatorID string, req *api_k
 		return nil, fmt.Errorf("failed to create key: %w", err)
 	}
 
-	return &api_key.APIKeyWithFullKey{
-		APIKey: api_key.APIKey{
+	return &domain.APIKeyWithFullKey{
+		APIKey: domain.APIKey{
 			ID:         key.ID,
 			OperatorID: key.OperatorID,
 			Name:       key.Name,
 			KeyPrefix:  key.KeyPrefix,
-			Scope:      api_key.Scope(key.Scope),
+			Scope:      domain.Scope(key.Scope),
 			ExpiresAt:  fromMillis(key.ExpiresAt),
 			IsActive:   key.IsActive,
 			CreatedAt:  fromMillisVal(key.CreatedAt),
@@ -130,36 +130,42 @@ func (s *Service) GenerateKey(ctx context.Context, operatorID string, req *api_k
 }
 
 // ValidateKey validates an API key and returns the key if valid.
-func (s *Service) ValidateKey(ctx context.Context, fullKey string) (*api_key.APIKey, error) {
+func (s *Service) ValidateKey(ctx context.Context, fullKey string) (*domain.APIKey, error) {
 	keyHash := hashKeyValue(fullKey)
 
 	key, err := s.repo.GetByKeyHash(ctx, keyHash)
 	if err != nil {
-		return nil, api_key.ErrInvalidAPIKey
+		return nil, domain.ErrInvalidAPIKey
 	}
 
 	apiKey := toDomainAPIKey(key)
 
 	if !apiKey.IsValid() {
 		if apiKey.IsExpired() {
-			return nil, api_key.ErrAPIKeyExpired
+			return nil, domain.ErrAPIKeyExpired
 		}
 		if !apiKey.IsActive {
-			return nil, api_key.ErrAPIKeyRevoked
+			return nil, domain.ErrAPIKeyRevoked
 		}
-		return nil, api_key.ErrAPIKeyInactive
+		return nil, domain.ErrAPIKeyInactive
 	}
 
 	return apiKey, nil
 }
 
 // IncrementUsage increments the request counter for an API key.
+// VerifyKey verifies a key against a stored hash.
+func (s *Service) VerifyKey(fullKey, keyHash string) bool {
+	hashedKey := hashKeyValue(fullKey)
+	return hashedKey == keyHash
+}
+
 func (s *Service) IncrementUsage(ctx context.Context, keyID string) error {
 	return s.repo.IncrementRequestCount(ctx, keyID)
 }
 
 // ListKeys lists all API keys for an operator.
-func (s *Service) ListKeys(ctx context.Context, operatorID string, page, limit int) (*api_key.ListAPIKeysResponse, error) {
+func (s *Service) ListKeys(ctx context.Context, operatorID string, page, limit int) (*domain.ListAPIKeysResponse, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -180,16 +186,16 @@ func (s *Service) ListKeys(ctx context.Context, operatorID string, page, limit i
 		return nil, fmt.Errorf("failed to count monthly keys: %w", err)
 	}
 
-	responses := make([]api_key.APIKeyResponse, len(keys))
+	responses := make([]domain.APIKeyResponse, len(keys))
 	for i, key := range keys {
 		responses[i] = toDomainAPIKey(key).ToResponse()
 	}
 
 	totalPages := (total + limit - 1) / limit
 
-	return &api_key.ListAPIKeysResponse{
+	return &domain.ListAPIKeysResponse{
 		Keys: responses,
-		Pagination: api_key.Pagination{
+		Pagination: domain.Pagination{
 			Page:       page,
 			Limit:      limit,
 			Total:      total,
@@ -201,36 +207,36 @@ func (s *Service) ListKeys(ctx context.Context, operatorID string, page, limit i
 }
 
 // GetKey gets a single API key by ID.
-func (s *Service) GetKey(ctx context.Context, operatorID, keyID string) (*api_key.APIKey, error) {
+func (s *Service) GetKey(ctx context.Context, operatorID, keyID string) (*domain.APIKey, error) {
 	key, err := s.repo.GetByID(ctx, keyID)
 	if err != nil {
-		return nil, api_key.ErrAPIKeyNotFound
+		return nil, domain.ErrAPIKeyNotFound
 	}
 
 	// Ensure the key belongs to the operator
 	if key.OperatorID != operatorID {
-		return nil, api_key.ErrAPIKeyNotFound
+		return nil, domain.ErrAPIKeyNotFound
 	}
 
 	return toDomainAPIKey(key), nil
 }
 
 // UpdateKey updates an API key (name and/or scope).
-func (s *Service) UpdateKey(ctx context.Context, operatorID, keyID string, req *api_key.UpdateAPIKeyRequest) (*api_key.APIKey, error) {
+func (s *Service) UpdateKey(ctx context.Context, operatorID, keyID string, req *domain.UpdateAPIKeyRequest) (*domain.APIKey, error) {
 	key, err := s.repo.GetByID(ctx, keyID)
 	if err != nil {
-		return nil, api_key.ErrAPIKeyNotFound
+		return nil, domain.ErrAPIKeyNotFound
 	}
 
 	// Ensure the key belongs to the operator
 	if key.OperatorID != operatorID {
-		return nil, api_key.ErrAPIKeyNotFound
+		return nil, domain.ErrAPIKeyNotFound
 	}
 
 	// Validate name if provided
 	if req.Name != nil {
 		if len(*req.Name) > s.config.MaxNameLength {
-			return nil, api_key.ErrKeyNameTooLong
+			return nil, domain.ErrKeyNameTooLong
 		}
 		key.Name = *req.Name
 	}
@@ -238,7 +244,7 @@ func (s *Service) UpdateKey(ctx context.Context, operatorID, keyID string, req *
 	// Validate scope if provided
 	if req.Scope != nil {
 		if !req.Scope.IsValid() {
-			return nil, api_key.ErrInvalidScope
+			return nil, domain.ErrInvalidScope
 		}
 		key.Scope = string(*req.Scope)
 	}
@@ -256,12 +262,12 @@ func (s *Service) UpdateKey(ctx context.Context, operatorID, keyID string, req *
 func (s *Service) RevokeKey(ctx context.Context, operatorID, keyID string) error {
 	key, err := s.repo.GetByID(ctx, keyID)
 	if err != nil {
-		return api_key.ErrAPIKeyNotFound
+		return domain.ErrAPIKeyNotFound
 	}
 
 	// Ensure the key belongs to the operator
 	if key.OperatorID != operatorID {
-		return api_key.ErrAPIKeyNotFound
+		return domain.ErrAPIKeyNotFound
 	}
 
 	return s.repo.Revoke(ctx, keyID)
@@ -273,15 +279,15 @@ func (s *Service) ForceRevokeKey(ctx context.Context, keyID string) error {
 }
 
 // RotateKey rotates an API key, generating a new key and invalidating the old one.
-func (s *Service) RotateKey(ctx context.Context, operatorID, keyID string) (*api_key.APIKeyWithFullKey, error) {
+func (s *Service) RotateKey(ctx context.Context, operatorID, keyID string) (*domain.APIKeyWithFullKey, error) {
 	key, err := s.repo.GetByID(ctx, keyID)
 	if err != nil {
-		return nil, api_key.ErrAPIKeyNotFound
+		return nil, domain.ErrAPIKeyNotFound
 	}
 
 	// Ensure the key belongs to the operator
 	if key.OperatorID != operatorID {
-		return nil, api_key.ErrAPIKeyNotFound
+		return nil, domain.ErrAPIKeyNotFound
 	}
 
 	// Revoke the old key
@@ -290,9 +296,9 @@ func (s *Service) RotateKey(ctx context.Context, operatorID, keyID string) (*api
 	}
 
 	// Generate a new key with the same settings
-	req := &api_key.CreateAPIKeyRequest{
+	req := &domain.CreateAPIKeyRequest{
 		Name:          key.Name,
-		Scope:         api_key.Scope(key.Scope),
+		Scope:         domain.Scope(key.Scope),
 		ExpiresInDays: fromMillisToDays(key.ExpiresAt),
 	}
 
@@ -302,7 +308,7 @@ func (s *Service) RotateKey(ctx context.Context, operatorID, keyID string) (*api
 		return nil, fmt.Errorf("failed to count keys: %w", err)
 	}
 	if count >= s.config.MaxPerMonth {
-		return nil, api_key.ErrMonthlyLimitExceeded
+		return nil, domain.ErrMonthlyLimitExceeded
 	}
 
 	// Generate the new key
@@ -336,13 +342,13 @@ func (s *Service) RotateKey(ctx context.Context, operatorID, keyID string) (*api
 		return nil, fmt.Errorf("failed to create new key: %w", err)
 	}
 
-	return &api_key.APIKeyWithFullKey{
-		APIKey: api_key.APIKey{
+	return &domain.APIKeyWithFullKey{
+		APIKey: domain.APIKey{
 			ID:         newKey.ID,
 			OperatorID: newKey.OperatorID,
 			Name:       newKey.Name,
 			KeyPrefix:  newKey.KeyPrefix,
-			Scope:      api_key.Scope(newKey.Scope),
+			Scope:      domain.Scope(newKey.Scope),
 			ExpiresAt:  fromMillis(newKey.ExpiresAt),
 			IsActive:   newKey.IsActive,
 			CreatedAt:  fromMillisVal(newKey.CreatedAt),
@@ -376,13 +382,13 @@ func hashKeyValue(key string) string {
 }
 
 // toDomainAPIKey converts an infrastructure API key to a domain API key.
-func toDomainAPIKey(key *infraStorage.APIKey) *api_key.APIKey {
-	domain := &api_key.APIKey{
+func toDomainAPIKey(key *infraStorage.APIKey) *domain.APIKey {
+	domain := &domain.APIKey{
 		ID:           key.ID,
 		OperatorID:   key.OperatorID,
 		Name:         key.Name,
 		KeyPrefix:    key.KeyPrefix,
-		Scope:        api_key.Scope(key.Scope),
+		Scope:        domain.Scope(key.Scope),
 		IsActive:     key.IsActive,
 		RequestCount: key.RequestCount,
 		CreatedAt:    fromMillisVal(key.CreatedAt),
@@ -444,5 +450,52 @@ func fromMillisToDays(ms *int64) *int {
 
 // IsValidScope checks if a string is a valid scope.
 func IsValidScope(s string) bool {
-	return api_key.Scope(strings.ToLower(s)).IsValid()
+	return domain.Scope(strings.ToLower(s)).IsValid()
+}
+
+// ListAllKeys lists all API keys across all operators (super admin only).
+func (s *Service) ListAllKeys(ctx context.Context, page, limit int) (*domain.ListAllAPIKeysResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	offset := (page - 1) * limit
+
+	keys, total, err := s.repo.ListAll(ctx, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list all keys: %w", err)
+	}
+
+	responses := make([]domain.APIKeyResponse, len(keys))
+	for i, key := range keys {
+		responses[i] = toDomainAPIKey(key).ToResponse()
+	}
+
+	totalPages := (total + limit - 1) / limit
+
+	return &domain.ListAllAPIKeysResponse{
+		Keys: responses,
+		Pagination: domain.Pagination{
+			Page:       page,
+			Limit:      limit,
+			Total:      total,
+			TotalPages: totalPages,
+		},
+	}, nil
+}
+
+// GetGlobalStats returns global API key statistics (super admin only).
+func (s *Service) GetGlobalStats(ctx context.Context) (*domain.GlobalAPIKeyStats, error) {
+	totalActive, err := s.repo.CountAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count all keys: %w", err)
+	}
+
+	return &domain.GlobalAPIKeyStats{
+		TotalActiveKeys: totalActive,
+		MaxPerMonth:    s.config.MaxPerMonth,
+	}, nil
 }

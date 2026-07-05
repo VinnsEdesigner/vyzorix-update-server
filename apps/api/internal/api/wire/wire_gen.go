@@ -10,8 +10,10 @@ import (
 	"database/sql"
 	"time"
 
+	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	infranotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/notification"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 )
 
@@ -61,7 +63,9 @@ func Injector(cfg config.Config) (*Server, error) {
 	// Create event processor and wire notification service
 	eventProcessor := ProvideEventProcessor(eventRepository, deviceRepository, operatorRepository, hubResult, logger)
 	WireNotificationServiceToProcessor(eventProcessor, notificationService)
-	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService)
+	apiKeyRepository := ProvideAPIKeyRepository(db)
+	apiKeyService := ProvideAPIKeyService(apiKeyRepository, cfg)
+	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService, apiKeyService)
 	serverResult := ProvideServerResult(serverDependencies)
 	server := ProvideServer(serverDependencies, serverResult)
 	return server, nil
@@ -75,4 +79,21 @@ func ProvideWebhookClient() *webhook.Client {
 // ProvideNotificationAuditRepository creates the notification audit repository.
 func ProvideNotificationAuditRepository(db *sql.DB) *infranotification.Repository {
 	return infranotification.NewRepository(db)
+}
+
+// ProvideAPIKeyRepository provides the API key repository.
+func ProvideAPIKeyRepository(db *sql.DB) storage.APIKeyRepository {
+	return storage.NewAPIKeyRepository(db)
+}
+
+// ProvideAPIKeyService provides the API key service.
+func ProvideAPIKeyService(repo storage.APIKeyRepository, cfg config.Config) *keys.Service {
+	return keys.NewService(repo, keys.Config{
+		Prefix:            cfg.APIKeyPrefix,
+		MaxPerMonth:       cfg.MonthlyKeyLimit,
+		MaxNameLength:     cfg.MaxKeyNameLength,
+		DefaultExpiryDays: 0,
+		MaxExpiryDays:     365,
+		PrefixLength:      8,
+	})
 }

@@ -8,7 +8,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
-	apikeyshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/api_keys"
+	adminkeyshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
+	authapikeyshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	dashboardhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/dashboard"
@@ -20,7 +21,7 @@ import (
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
-	api_key "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/api_key"
+	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
@@ -69,7 +70,7 @@ type ServerConfig struct {
 	UpdatesService *updatesapp.Service
 	PushService    *updatesapp.PushService
 	Config         config.Config
-	APIKeyService  *api_key.Service
+	APIKeyService  *keys.Service
 }
 
 // Server is the main API server.
@@ -77,7 +78,7 @@ type Server struct {
 	AuditLogger                *audit.Logger
 	revocationList             *infraauth.RevocationList
 	log                        *slog.Logger
-	apiKeyAuth                 *middleware.APIKeyAuth
+	apiKeyAuth                 *middleware.TenantAPIKeyAuth
 	authHandlers               *authhandlers.AllHandlers
 	hub                        *hub.Hub
 	deviceStatusHandler        *devicehandlers.StatusHandler
@@ -120,7 +121,8 @@ type Server struct {
 	diagnosticsInspectHandler  *diagnosticshandlers.InspectHandler
 	diagnosticsTimelineHandler *diagnosticshandlers.TimelineHandler
 	config                     config.Config
-	apiKeysHandler             *apikeyshandlers.Handler
+	apiKeysHandler             *authapikeyshandlers.Handler
+	superAdminAPIKeys          *adminkeyshandlers.SuperAdminHandler
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -174,7 +176,8 @@ func NewServer(cfg *ServerConfig) *Server {
 
 	// Initialize API keys handler
 	if cfg.APIKeyService != nil {
-		s.apiKeysHandler = apikeyshandlers.NewHandler(cfg.APIKeyService)
+		s.apiKeysHandler = authapikeyshandlers.NewHandler(cfg.APIKeyService)
+		s.superAdminAPIKeys = adminkeyshandlers.NewSuperAdminHandler(cfg.APIKeyService)
 	}
 
 	// Start Hub if available
@@ -407,6 +410,7 @@ type ServerConfigWithDeps struct {
 	AuditLogger    *audit.Logger
 	UpdatesService *updatesapp.Service
 	Config         config.Config
+	APIKeyService  *keys.Service
 }
 
 // NewServerWithDeps creates a Server using pre-wired dependencies from wire.
@@ -433,7 +437,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		db:                cfg.DB,
 		hub:               cfg.Hub,
 		AuditLogger:       cfg.AuditLogger,
-		apiKeyAuth:        middleware.NewAPIKeyAuth(cfg.Config.APIKeys, cfg.Config.APIKeyPrefix),
+		apiKeyAuth:        middleware.NewTenantAPIKeyAuth(cfg.APIKeyService, cfg.Config.APIKeyPrefix),
 	}
 
 	// Wire handlers from HandlerSet

@@ -72,6 +72,7 @@ func main() {
 		Hub:            deps.Hub,
 		AuditLogger:    deps.AuditLogger,
 		UpdatesService: deps.UpdatesService,
+		APIKeyService:  deps.APIKeyService,
 	})
 
 	// Register GraphQL if enabled
