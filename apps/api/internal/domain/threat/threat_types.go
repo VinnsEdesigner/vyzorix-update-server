@@ -66,10 +66,10 @@ type LoginContext struct {
 
 // LastLoginInfo stores information about the previous login.
 type LastLoginInfo struct {
+	Timestamp    time.Time
 	IPAddress   string
 	Location    string
 	DeviceFinger string
-	Timestamp    time.Time
 }
 
 // DetectionRule defines a rule for detecting threats.

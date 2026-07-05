@@ -400,69 +400,92 @@ func (s *Service) ackInboxWithoutTx(ctx context.Context, imei string, action str
 
 // CreateInboxRequest creates a new inbox entry from a device registration request.
 func (s *Service) CreateInboxRequest(ctx context.Context, req *InboxRequest) (*InboxEntryResponse, error) {
-	// Validate IMEI format (15 digits)
-	if !isValidIMEI(req.IMEI) {
+	if err := s.validateInboxRequest(req); err != nil {
 		metrics.Get().RecordDeviceRegistrationFailure()
-		return nil, ErrInvalidIMEI
+		return nil, err
 	}
 
-	// Validate FCM token format if provided
+	existingInboxEntry, err := s.checkDeviceAndInboxStatus(ctx, req.IMEI)
+	if err != nil {
+		return nil, err
+	}
+
+	entry, err := s.createInboxEntry(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	s.logAndRecordMetrics(ctx, req.IMEI, entry, existingInboxEntry)
+
+	return s.buildInboxEntryResponse(entry), nil
+}
+
+// validateInboxRequest validates the inbox request input.
+func (s *Service) validateInboxRequest(req *InboxRequest) error {
+	if !isValidIMEI(req.IMEI) {
+		return ErrInvalidIMEI
+	}
 	if req.FCMToken != "" && !isValidFCMToken(req.FCMToken) {
-		return nil, ErrInvalidFCMToken
+		return ErrInvalidFCMToken
 	}
-
-	// Validate FirebaseInstallID format if provided (Bug 47 hardening)
 	if req.FirebaseInstallID != "" && !isValidFirebaseInstallID(req.FirebaseInstallID) {
-		return nil, ErrInvalidFirebaseInstallID
+		return ErrInvalidFirebaseInstallID
 	}
+	return nil
+}
 
-	// FIX Bug 38: Check device status FIRST before inbox exists check
-	// If device exists and is NOT deregistered, reject with ErrDeviceAlreadyExists
-	// If device doesn't exist OR is deregistered, allow re-registration
+// checkDeviceAndInboxStatus checks device and inbox status for the request.
+func (s *Service) checkDeviceAndInboxStatus(ctx context.Context, imei string) (*inbox.InboxEntry, error) {
 	if s.deviceLookup != nil {
-		existingDevice, err := s.deviceLookup.GetDeviceByIMEI(ctx, req.IMEI)
-		if err != nil && err != device.ErrNotFound {
-			return nil, fmt.Errorf("failed to check existing device: %w", err)
-		}
-		if existingDevice != nil {
-			// Device already registered - check if it's deregistered and can be re-registered
-			if !existingDevice.IsDeregistered() {
-				return nil, ErrDeviceAlreadyExists
-			}
-			// Device is deregistered - allow re-registration, clean up old inbox entry below
-			s.logger.Info("device re-registration allowed for deregistered device",
-				"imei", req.IMEI,
-				"deregistered_at", existingDevice.DeregisteredAt,
-			)
+		if err := s.checkDeviceStatus(ctx, imei); err != nil {
+			return nil, err
 		}
 	}
 
-	// Check if there's a stale InboxEntry from a previous registration attempt
-	// This could be from:
-	// - A previous pending request that was never approved
-	// - An approved request where device got deregistered
-	// - An incomplete registration flow
-	existingInboxEntry, err := s.repo.GetByIMEI(ctx, req.IMEI)
+	return s.cleanupStaleInboxEntry(ctx, imei)
+}
+
+// checkDeviceStatus checks if device exists and is not already registered.
+func (s *Service) checkDeviceStatus(ctx context.Context, imei string) error {
+	existingDevice, err := s.deviceLookup.GetDeviceByIMEI(ctx, imei)
+	if err != nil && err != device.ErrNotFound {
+		return fmt.Errorf("failed to check existing device: %w", err)
+	}
+	if existingDevice != nil && !existingDevice.IsDeregistered() {
+		return ErrDeviceAlreadyExists
+	}
+	if existingDevice != nil {
+		s.logger.Info("device re-registration allowed for deregistered device",
+			"imei", imei,
+			"deregistered_at", existingDevice.DeregisteredAt,
+		)
+	}
+	return nil
+}
+
+// cleanupStaleInboxEntry cleans up stale inbox entries.
+func (s *Service) cleanupStaleInboxEntry(ctx context.Context, imei string) (*inbox.InboxEntry, error) {
+	existingInboxEntry, err := s.repo.GetByIMEI(ctx, imei)
 	if err != nil && err != inbox.ErrInboxNotFound {
 		return nil, fmt.Errorf("failed to check existing inbox entry: %w", err)
 	}
 	if existingInboxEntry != nil {
-		// Stale entry found - check if it's blocking or can be reused
 		if existingInboxEntry.IsPending() {
-			// There's already a pending request - don't create duplicate
 			return nil, ErrAlreadyExists
 		}
-		// Entry is approved/rejected - it's stale, delete it to allow fresh registration
-		// (device was deregistered or this is a new registration cycle)
 		s.logger.Info("cleaning up stale inbox entry for re-registration",
-			"imei", req.IMEI,
+			"imei", imei,
 			"old_status", existingInboxEntry.Status,
 		)
-		if err := s.repo.DeleteByIMEI(ctx, req.IMEI); err != nil {
+		if err := s.repo.DeleteByIMEI(ctx, imei); err != nil {
 			return nil, fmt.Errorf("failed to clean up stale inbox entry: %w", err)
 		}
 	}
+	return existingInboxEntry, nil
+}
 
+// createInboxEntry creates the inbox entry in the repository.
+func (s *Service) createInboxEntry(ctx context.Context, req *InboxRequest) (*inbox.InboxEntry, error) {
 	now := time.Now()
 	entry := &inbox.InboxEntry{
 		ID:                generateID(),
@@ -484,21 +507,23 @@ func (s *Service) CreateInboxRequest(ctx context.Context, req *InboxRequest) (*I
 		metrics.Get().RecordDeviceRegistrationFailure()
 		return nil, fmt.Errorf("failed to create inbox entry: %w", err)
 	}
+	return entry, nil
+}
 
-	// Log the registration request
+// logAndRecordMetrics logs and records metrics for the registration.
+func (s *Service) logAndRecordMetrics(ctx context.Context, imei string, entry *inbox.InboxEntry, existingInboxEntry *inbox.InboxEntry) {
 	s.logRegistrationAction(ctx, entry, "pending", "", "")
-
-	// Record success metrics (Bug 46)
 	metrics.Get().RecordDeviceRegistrationSuccess()
 
-	// Check if this was a re-registration
-	if existingInboxEntry != nil || (s.deviceLookup != nil) {
-		// Could be re-registration - check device status
-		if d, err := s.deviceLookup.GetDeviceByIMEI(ctx, req.IMEI); err == nil && d != nil && d.IsDeregistered() {
+	if existingInboxEntry != nil || s.deviceLookup != nil {
+		if d, err := s.deviceLookup.GetDeviceByIMEI(ctx, imei); err == nil && d != nil && d.IsDeregistered() {
 			metrics.Get().RecordDeviceReRegistration()
 		}
 	}
+}
 
+// buildInboxEntryResponse builds the response from the entry.
+func (s *Service) buildInboxEntryResponse(entry *inbox.InboxEntry) *InboxEntryResponse {
 	return &InboxEntryResponse{
 		ID:                entry.ID,
 		IMEI:              entry.IMEI,
@@ -512,7 +537,7 @@ func (s *Service) CreateInboxRequest(ctx context.Context, req *InboxRequest) (*I
 		FirebaseInstallID: entry.FirebaseInstallID,
 		Status:            string(entry.Status),
 		CreatedAt:         entry.CreatedAt,
-	}, nil
+	}
 }
 
 // logRegistrationAction logs a registration action to the audit log.
