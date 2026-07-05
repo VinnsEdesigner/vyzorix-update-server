@@ -24,87 +24,112 @@ func (s *NotificationService) GetNotifications(ctx context.Context, operatorID s
 
 // UpdateNotifications updates notification settings for an operator.
 func (s *NotificationService) UpdateNotifications(ctx context.Context, operatorID string, input *operator.NotificationInput) (*operator.NotificationSettings, error) {
-	// Get current notifications
 	notifications, err := s.operatorRepo.GetNotifications(ctx, operatorID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Apply updates
-	if input.Enabled != nil {
-		notifications.Enabled = *input.Enabled
+	s.applyNotificationUpdates(input, notifications)
+
+	err = s.validateNotificationSettings(notifications)
+	if err != nil {
+		return nil, err
 	}
 
-	if input.Channels != nil {
-		notifications.Channels = *input.Channels
-	}
-
-	if input.Email != nil {
-		if input.Email.ThresholdBreach != nil {
-			notifications.Email.ThresholdBreach = *input.Email.ThresholdBreach
-		}
-		if input.Email.DeviceOffline != nil {
-			notifications.Email.DeviceOffline = *input.Email.DeviceOffline
-		}
-		if input.Email.DeviceOnline != nil {
-			notifications.Email.DeviceOnline = *input.Email.DeviceOnline
-		}
-		if input.Email.UpdateAvailable != nil {
-			notifications.Email.UpdateAvailable = *input.Email.UpdateAvailable
-		}
-		if input.Email.CommandFailed != nil {
-			notifications.Email.CommandFailed = *input.Email.CommandFailed
-		}
-		if input.Email.RegistrationRequest != nil {
-			notifications.Email.RegistrationRequest = *input.Email.RegistrationRequest
-		}
-	}
-
-	if input.Push != nil {
-		if input.Push.ThresholdBreach != nil {
-			notifications.Push.ThresholdBreach = *input.Push.ThresholdBreach
-		}
-		if input.Push.DeviceOffline != nil {
-			notifications.Push.DeviceOffline = *input.Push.DeviceOffline
-		}
-		if input.Push.DeviceOnline != nil {
-			notifications.Push.DeviceOnline = *input.Push.DeviceOnline
-		}
-		if input.Push.UpdateAvailable != nil {
-			notifications.Push.UpdateAvailable = *input.Push.UpdateAvailable
-		}
-		if input.Push.CommandFailed != nil {
-			notifications.Push.CommandFailed = *input.Push.CommandFailed
-		}
-		if input.Push.RegistrationRequest != nil {
-			notifications.Push.RegistrationRequest = *input.Push.RegistrationRequest
-		}
-	}
-
-	if input.Webhook != nil {
-		if input.Webhook.Enabled != nil {
-			notifications.Webhook.Enabled = *input.Webhook.Enabled
-		}
-		if input.Webhook.URL != nil {
-			notifications.Webhook.URL = *input.Webhook.URL
-		}
-		if input.Webhook.Types != nil {
-			notifications.Webhook.Types = input.Webhook.Types
-		}
-	}
-
-	// Validate webhook URL if enabled
-	if notifications.Webhook.Enabled && notifications.Webhook.URL == "" {
-		return nil, errors.New("webhook URL is required when webhook is enabled")
-	}
-
-	// Save
 	err = s.operatorRepo.UpdateNotifications(ctx, operatorID, notifications)
 	if err != nil {
 		return nil, err
 	}
 
 	return notifications, nil
+}
+
+// applyNotificationUpdates applies input updates to notification settings.
+func (s *NotificationService) applyNotificationUpdates(input *operator.NotificationInput, notifications *operator.NotificationSettings) {
+	if input.Enabled != nil {
+		notifications.Enabled = *input.Enabled
+	}
+	if input.Channels != nil {
+		notifications.Channels = *input.Channels
+	}
+
+	s.applyEmailUpdates(input.Email, &notifications.Email)
+	s.applyPushUpdates(input.Push, &notifications.Push)
+	s.applyWebhookUpdates(input.Webhook, &notifications.Webhook)
+}
+
+// applyEmailUpdates applies email notification updates.
+func (s *NotificationService) applyEmailUpdates(input *operator.EmailNotificationInput, email *operator.EmailNotifications) {
+	if input == nil {
+		return
+	}
+	if input.ThresholdBreach != nil {
+		email.ThresholdBreach = *input.ThresholdBreach
+	}
+	if input.DeviceOffline != nil {
+		email.DeviceOffline = *input.DeviceOffline
+	}
+	if input.DeviceOnline != nil {
+		email.DeviceOnline = *input.DeviceOnline
+	}
+	if input.UpdateAvailable != nil {
+		email.UpdateAvailable = *input.UpdateAvailable
+	}
+	if input.CommandFailed != nil {
+		email.CommandFailed = *input.CommandFailed
+	}
+	if input.RegistrationRequest != nil {
+		email.RegistrationRequest = *input.RegistrationRequest
+	}
+}
+
+// applyPushUpdates applies push notification updates.
+func (s *NotificationService) applyPushUpdates(input *operator.PushNotificationInput, push *operator.PushNotifications) {
+	if input == nil {
+		return
+	}
+	if input.ThresholdBreach != nil {
+		push.ThresholdBreach = *input.ThresholdBreach
+	}
+	if input.DeviceOffline != nil {
+		push.DeviceOffline = *input.DeviceOffline
+	}
+	if input.DeviceOnline != nil {
+		push.DeviceOnline = *input.DeviceOnline
+	}
+	if input.UpdateAvailable != nil {
+		push.UpdateAvailable = *input.UpdateAvailable
+	}
+	if input.CommandFailed != nil {
+		push.CommandFailed = *input.CommandFailed
+	}
+	if input.RegistrationRequest != nil {
+		push.RegistrationRequest = *input.RegistrationRequest
+	}
+}
+
+// applyWebhookUpdates applies webhook notification updates.
+func (s *NotificationService) applyWebhookUpdates(input *operator.WebhookNotificationInput, webhook *operator.WebhookNotifications) {
+	if input == nil {
+		return
+	}
+	if input.Enabled != nil {
+		webhook.Enabled = *input.Enabled
+	}
+	if input.URL != nil {
+		webhook.URL = *input.URL
+	}
+	if input.Types != nil {
+		webhook.Types = input.Types
+	}
+}
+
+// validateNotificationSettings validates the notification settings.
+func (s *NotificationService) validateNotificationSettings(notifications *operator.NotificationSettings) error {
+	if notifications.Webhook.Enabled && notifications.Webhook.URL == "" {
+		return errors.New("webhook URL is required when webhook is enabled")
+	}
+	return nil
 }
 
 // RotateWebhookSecret rotates the webhook secret for an operator.
