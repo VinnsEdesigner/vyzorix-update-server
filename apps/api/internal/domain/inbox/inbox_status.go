@@ -1,38 +1,96 @@
 package inbox
 
 // InboxStatus represents the status of an inbox entry.
+// Implements the 5-state model from SPEC:
+// UNREGISTERED -> PENDING -> ACKNOWLEDGED -> APPROVING -> REGISTERED
+//                                         ↘ REJECTED ↗
 type InboxStatus string
 
 const (
-	StatusPending  InboxStatus = "pending"
-	StatusApproved InboxStatus = "approved"
-	StatusRejected InboxStatus = "rejected"
+	StatusPending      InboxStatus = "pending"      // Initial state after device registration
+	StatusAcknowledged InboxStatus = "acknowledged"  // Device has acknowledged the request
+	StatusApproving    InboxStatus = "approving"    // Operator is approving, commandSecret being generated
+	StatusApproved     InboxStatus = "approved"     // Fully approved, device can confirm
+	StatusRejected     InboxStatus = "rejected"    // Rejected by operator
+	StatusExpired      InboxStatus = "expired"      // Auto-cleanup after 30 days
 )
 
-// AckAction represents the action to take on an inbox entry.
+// DeviceAckAction represents actions a device can take.
+type DeviceAckAction string
+
+const (
+	DeviceAckActionAcknowledge DeviceAckAction = "acknowledge" // Device acknowledges receipt
+)
+
+// OperatorAction represents actions an operator can take.
+type OperatorAction string
+
+const (
+	OperatorActionApprove OperatorAction = "approve" // Operator approves registration
+	OperatorActionReject OperatorAction = "reject"  // Operator rejects registration
+	OperatorActionDelete OperatorAction = "delete"  // Operator deletes entry
+)
+
+// AckAction represents the action for legacy compatibility.
+// Deprecated: Use DeviceAckAction or OperatorAction instead.
 type AckAction string
 
 const (
 	AckActionApprove AckAction = "approve"
-	AckActionReject  AckAction = "reject"
+	AckActionReject AckAction = "reject"
 )
 
 // IsValid checks if the status is a valid inbox status.
 func (s InboxStatus) IsValid() bool {
 	switch s {
-	case StatusPending, StatusApproved, StatusRejected:
+	case StatusPending, StatusAcknowledged, StatusApproving, StatusApproved, StatusRejected, StatusExpired:
 		return true
 	default:
 		return false
 	}
 }
 
-// IsValid checks if the action is a valid acknowledge action.
-func (a AckAction) IsValid() bool {
-	switch a {
-	case AckActionApprove, AckActionReject:
-		return true
-	default:
-		return false
-	}
+// IsPending checks if the entry is in pending state.
+func (s InboxStatus) IsPending() bool {
+	return s == StatusPending
+}
+
+// IsAcknowledged checks if the entry has been acknowledged by the device.
+func (s InboxStatus) IsAcknowledged() bool {
+	return s == StatusAcknowledged
+}
+
+// IsApproving checks if the entry is in the approving phase.
+func (s InboxStatus) IsApproving() bool {
+	return s == StatusApproving
+}
+
+// IsApproved checks if the entry has been fully approved.
+func (s InboxStatus) IsApproved() bool {
+	return s == StatusApproved
+}
+
+// IsRejected checks if the entry has been rejected.
+func (s InboxStatus) IsRejected() bool {
+	return s == StatusRejected
+}
+
+// CanBeAcknowledged checks if the entry can be acknowledged by device.
+func (s InboxStatus) CanBeAcknowledged() bool {
+	return s == StatusPending
+}
+
+// CanBeApproved checks if the entry can be approved by operator.
+func (s InboxStatus) CanBeApproved() bool {
+	return s == StatusAcknowledged
+}
+
+// CanBeRejected checks if the entry can be rejected.
+func (s InboxStatus) CanBeRejected() bool {
+	return s == StatusPending || s == StatusAcknowledged
+}
+
+// CanTransitionToApproving checks if the entry can transition to approving state.
+func (s InboxStatus) CanTransitionToApproving() bool {
+	return s == StatusAcknowledged
 }

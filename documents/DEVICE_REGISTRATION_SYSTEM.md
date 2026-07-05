@@ -228,25 +228,31 @@ UNREGISTERED ──────────────────────�
 │  PENDING  │
 └─────┬─────┘
       │
-      │  POST /v1/device/inbox/:imei/ack (device acknowledges)
+      │  POST /v1/device/inbox/:imei/ack (action=acknowledge)
       ▼
 ┌──────────────┐   Device has seen the request
 │ ACKNOWLEDGED│
 └──────┬───────┘
        │
-       │  POST /v1/device/register (operator clicks Register)
+       │  POST /v1/device/inbox/:imei/ack (action=approve)
        ▼
 ┌──────────┐    Server validating, generating commandSecret, FCM push
 │ APPROVING│
 └──────┬───┘
        │
-       │  POST /v1/device/confirm (device confirms)
+       │  (Automatic transition after commandSecret generation)
        ▼
+┌────────────┐
+│ APPROVED   │ ◄── Device can now call POST /v1/device/confirm
+└─────┬──────┘
+      │
+      │  POST /v1/device/confirm (device confirms)
+      ▼
 ┌────────────┐
 │ REGISTERED │ ◄─────────────────────────────────────────────
 └────────────┘
        │
-       │  (on failure/rejection)
+       │  (on rejection at any step)
        ▼
 ┌───────────┐
 │ REJECTED  │ ◄── Operator clicks Dismiss
@@ -258,6 +264,9 @@ UNREGISTERED ──────────────────────�
 │ EXPIRED   │ ◄── No action taken
 └───────────┘
 ```
+
+> **Note:** This implements the full 5-state model from SPEC. commandSecret is generated
+> during the APPROVING state (intermediate) and sent to device via FCM push.
 
 ### 3.2 Device States
 
@@ -284,7 +293,7 @@ REGISTERED ───────────────────────
 │ ONLINE  │
 └────┬────┘
      │
-     │  DELETE /v1/devices/:imei (operator deregisters)
+     │  DELETE /v1/device/:imei (operator deregisters)
      ▼
 ┌──────────────┐
 │ DEREGISTERED │ ◄── Terminal state
@@ -337,7 +346,7 @@ REGISTERED ───────────────────────
 **Query Parameters:**
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| `status` | string | all | Filter: pending, acknowledged, approving, rejected |
+| `status` | string | all | Filter: pending, acknowledged, approved, rejected |
 | `page` | int | 1 | Page number |
 | `limit` | int | 20 | Items per page |
 
@@ -399,21 +408,41 @@ REGISTERED ───────────────────────
 ---
 
 #### `POST /v1/device/inbox/:imei/ack`
-**Purpose:** Device acknowledges receipt of registration request
+**Purpose:** Handles inbox acknowledgement based on action type (5-state model)
 
 **Request:**
 ```json
 {
-  "imei": "861234567890123",
-  "status": "seen"
+  "action": "acknowledge",  // Device acknowledges (PENDING -> ACKNOWLEDGED)
+  "notes": "Optional notes"
+}
+```
+OR
+```json
+{
+  "action": "approve",  // Operator approves (ACKNOWLEDGED -> APPROVING -> APPROVED)
+  "notes": "Optional operator notes"
+}
+```
+OR
+```json
+{
+  "action": "reject",  // Operator rejects (PENDING/ACKNOWLEDGED -> REJECTED)
+  "notes": "Reason for rejection"
 }
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "status": "acknowledged",
-  "updatedAt": 1718900100000
+  "id": "entry_123",
+  "imei": "861234567890123",
+  "status": "acknowledged",  // or "approved", "rejected"
+  "acknowledgedAt": 1718900100000,  // Only on acknowledge
+  "approvedAt": 1718900200000,  // Only on approval
+  "commandSecret": "abc123...",  // Only on approval
+  "fcmPushSent": true,  // Whether FCM notification was sent
+  "notes": "Optional operator notes"
 }
 ```
 
@@ -831,10 +860,17 @@ CREATE TABLE inbox_entries (
     security_patch TEXT,
     build_id TEXT,
     status TEXT NOT NULL DEFAULT 'pending' 
-        CHECK (status IN ('pending', 'acknowledged', 'approving', 'rejected', 'expired')),
+        CHECK (status IN ('pending', 'acknowledged', 'approving', 'approved', 'rejected', 'expired')),
+    acknowledged_at INTEGER,  -- When device acknowledged
+    approving_at INTEGER,     -- When operator started approving
+    approved_at INTEGER,      -- When fully approved
+    rejected_at INTEGER,       -- When rejected
     received_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
     updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
     expires_at INTEGER GENERATED ALWAYS AS (received_at + 30 * 24 * 60 * 60 * 1000) STORED,
+    command_secret TEXT,      -- Generated during APPROVING state
+    operator_id TEXT,         -- Operator who approved/rejected
+    notes TEXT,
     
     CONSTRAINT fk_device FOREIGN KEY (imei) REFERENCES devices(imei) ON DELETE CASCADE
 );

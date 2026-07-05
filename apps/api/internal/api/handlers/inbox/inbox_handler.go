@@ -193,3 +193,31 @@ func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 
 	c.JSON(http.StatusOK, result)
 }
+
+// ResendApproval handles POST /v1/device/inbox/:imei/resend.
+// Resends the FCM notification to a device that was approved but may have missed the notification.
+func (h *Handler) ResendApproval(c *gin.Context) {
+	imei := c.Param("imei")
+	if imei == "" {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "IMEI is required",
+		})
+		return
+	}
+
+	operator := middleware.GetOperatorFromContext(c)
+	operatorID := ""
+	if operator != nil {
+		operatorID = operator.ID
+	}
+
+	result, err := h.service.ResendApproval(c.Request.Context(), imei, operatorID)
+	if err != nil {
+		se := inbox.ToServiceError(err)
+		c.JSON(se.Status, se.ToErrorResponse())
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
