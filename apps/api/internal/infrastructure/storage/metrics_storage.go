@@ -39,10 +39,6 @@ func (r *MetricsRepository) queryRows(ctx context.Context, query string, args ..
 return r.getQuerier(ctx).QueryContext(ctx, query, args...)
 }
 
-// exec is a helper that uses transaction-aware querier.
-func (r *MetricsRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-return r.getQuerier(ctx).ExecContext(ctx, query, args...)
-}
 
 // GetTelemetryFrames retrieves raw telemetry frames for a device within a time range.
 func (r *MetricsRepository) GetTelemetryFrames(ctx context.Context, deviceID string, startTime, endTime time.Time, limit int) ([]*metrics.TelemetryFrame, error) {

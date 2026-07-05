@@ -88,7 +88,7 @@ func (b *Builder) CopyAssets() error {
 	}
 
 	// Ensure public directory exists.
-	//nolint:gosec,G302.
+	//
 	if err := os.MkdirAll(b.publicDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create public dir: %w", err)
 	}

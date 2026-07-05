@@ -55,17 +55,17 @@ func TestServer_RateLimiterExists(t *testing.T) {
 
 	// Simulate rate limiter middleware.
 	r.Use(func(c *gin.Context) {
-		c.Next() //nolint:staticcheck // SA5011: c is never nil in Gin middleware context
+		c.Next() //
 	})
 
 	// Route registration - handler is always valid.
-	//nolint:staticcheck // SA5011: gin.Engine.GET is safe to call.
+	//
 	_ = r.GET("/test", func(c *gin.Context) {
 		c.String(200, "ok")
 	})
 
 	// Verify the engine was created successfully.
-	//nolint:staticcheck // SA5011: gin.New() never returns nil.
+	//
 	if r == nil {
 		t.Error("Engine should not be nil")
 	}
