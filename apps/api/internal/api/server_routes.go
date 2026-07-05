@@ -122,6 +122,17 @@ func (s *Server) setupAuthenticatedRoutes() {
 	if s.revocationList != nil {
 		r.Use(middleware.AuthRevocationMiddleware(s.revocationList))
 	}
+
+	// Apply API key authentication middleware for TENANT paths
+	// This allows both session auth AND API key auth for tenant endpoints
+	if s.apiKeyAuth != nil {
+		r.Use(s.apiKeyAuth.Middleware())
+		// Apply API key rate limiting after auth
+		if s.apiKeyRateLimiter != nil {
+			r.Use(middleware.APIKeyRateLimitMiddleware(s.apiKeyRateLimiter))
+		}
+	}
+
 	s.setupDashboardRoutes(r)
 	s.setupAdminRoutes(r)
 	s.setupDeviceManagementRoutes(r)

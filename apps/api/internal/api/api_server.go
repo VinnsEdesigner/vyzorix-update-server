@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
@@ -79,6 +80,7 @@ type Server struct {
 	revocationList             *infraauth.RevocationList
 	log                        *slog.Logger
 	apiKeyAuth                 *middleware.TenantAPIKeyAuth
+	apiKeyRateLimiter       *middleware.InMemoryRateLimiter
 	authHandlers               *authhandlers.AllHandlers
 	hub                        *hub.Hub
 	deviceStatusHandler        *devicehandlers.StatusHandler
@@ -438,6 +440,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		hub:               cfg.Hub,
 		AuditLogger:       cfg.AuditLogger,
 		apiKeyAuth:        middleware.NewTenantAPIKeyAuth(cfg.APIKeyService, cfg.Config.APIKeyPrefix),
+                apiKeyRateLimiter:   middleware.NewInMemoryRateLimiter(100, time.Minute),
 	}
 
 	// Wire handlers from HandlerSet
