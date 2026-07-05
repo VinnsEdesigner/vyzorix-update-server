@@ -227,3 +227,43 @@ func (h *SessionsHandler) RevokeAllDevices(c *gin.Context) {
 		"message":        "All sessions revoked. Please login again.",
 	})
 }
+
+// GetSession handles GET /v1/auth/sessions/:id - Get a specific session by ID.
+func (h *SessionsHandler) GetSession(c *gin.Context) {
+	operatorID, err := h.getOperatorID(c)
+	if err != nil {
+		h.presenter.Unauthorized(c, "")
+		return
+	}
+
+	sessionID := c.Param("id")
+	if sessionID == "" {
+		h.presenter.BadRequest(c, "Session ID is required")
+		return
+	}
+
+	// Get all sessions and find the one with matching ID
+	sessions, err := h.sessionManager.ListActiveSessions(c.Request.Context(), operatorID)
+	if err != nil {
+		h.presenter.InternalError(c, "Failed to list sessions")
+		return
+	}
+
+	currentSessionID, _ := c.Cookie("vyz_session")
+
+	for _, sess := range sessions {
+		if sess.ID == sessionID {
+			h.presenter.OK(c, gin.H{
+				"id":          sess.ID,
+				"ip_address":  sess.IPAddress,
+				"user_agent":  sess.UserAgent,
+				"created_at":   sess.CreatedAt,
+				"expires_at":   sess.ExpiresAt,
+				"is_current":  sess.ID == currentSessionID,
+			})
+			return
+		}
+	}
+
+	h.presenter.NotFound(c, "Session not found")
+}

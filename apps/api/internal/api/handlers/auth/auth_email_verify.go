@@ -92,6 +92,41 @@ func (h *EmailVerifyHandler) PollVerification(c *gin.Context) {
 	h.presenter.OK(c, gin.H{"status": status, "email": email})
 }
 
+// VerifyEmailGet handles GET /v1/auth/verify-email (alternative to POST).
+func (h *EmailVerifyHandler) VerifyEmailGet(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		h.presenter.BadRequest(c, "token query parameter is required")
+		return
+	}
+
+	result, err := h.authService.VerifyEmail(c.Request.Context(), token)
+	if err != nil {
+		h.presenter.Unauthorized(c, "invalid or expired verification token")
+		return
+	}
+
+	h.presenter.OK(c, gin.H{"verified": true, "email": result.Email})
+}
+
+// ResendVerificationGet handles GET /v1/auth/resend-verification (alternative to POST).
+func (h *EmailVerifyHandler) ResendVerificationGet(c *gin.Context) {
+	email := c.Query("email")
+	if email == "" {
+		h.presenter.BadRequest(c, "email query parameter is required")
+		return
+	}
+
+	// Delete old verification tokens and create/send new one
+	err := h.authService.ResendVerification(c.Request.Context(), email)
+	if err != nil {
+		h.presenter.InternalError(c, "failed to resend verification email")
+		return
+	}
+
+	h.presenter.OK(c, gin.H{"message": "If that email exists, a verification email has been sent."})
+}
+
 // CancelVerification handles POST /v1/auth/cancel-verification.
 func (h *EmailVerifyHandler) CancelVerification(c *gin.Context) {
 	var req struct {

@@ -116,7 +116,9 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 
 		// Email verification
 		publicAuth.POST("/verify-email", middleware.POST(), h.EmailVerify.VerifyEmail)
+		publicAuth.GET("/verify-email", middleware.GET(), h.EmailVerify.VerifyEmailGet)
 		publicAuth.POST("/resend-verification", middleware.POST(), h.EmailVerify.ResendVerification)
+		publicAuth.GET("/resend-verification", middleware.GET(), h.EmailVerify.ResendVerificationGet)
 		publicAuth.POST("/cancel-verification", middleware.POST(), h.EmailVerify.CancelVerification)
 		publicAuth.GET("/poll-verification", middleware.GET(), h.EmailVerify.PollVerification)
 
@@ -191,6 +193,7 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		sessions.DELETE("/:id", h.Sessions.RevokeSession)
 		sessions.DELETE("", h.Sessions.RevokeAllExceptCurrent)
 		sessions.POST("/revoke-all", h.Sessions.RevokeAllDevices)
+		sessions.GET("/:id", h.Sessions.GetSession) // GET specific session
 	}
 
 	// Client credentials (require authentication)
@@ -202,6 +205,8 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		clientCreds.GET("", h.ClientCreds.List)
 		clientCreds.GET("/:clientId", h.ClientCreds.Get)
 		clientCreds.DELETE("/:clientId", h.ClientCreds.Delete)
+		clientCreds.PATCH("/:clientId", h.ClientCreds.Update) // Update client
+		clientCreds.POST("/:clientId/rotate-secret", h.ClientCreds.RotateSecret) // Rotate secret
 	}
 }
 
