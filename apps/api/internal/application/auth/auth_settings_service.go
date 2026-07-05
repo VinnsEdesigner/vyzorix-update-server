@@ -25,8 +25,8 @@ type ClientSettingsInput struct {
 	DeviceID           *string `json:"deviceId,omitempty"`
 	RequestTimeoutMs   *int    `json:"requestTimeoutMs,omitempty"`
 	AutoReconnect      *bool   `json:"autoReconnect,omitempty"`
-	StrictHmac        *bool   `json:"strictHmac,omitempty"`
-	LogBufferLimit    *int    `json:"logBufferLimit,omitempty"`
+	StrictHmac         *bool   `json:"strictHmac,omitempty"`
+	LogBufferLimit     *int    `json:"logBufferLimit,omitempty"`
 	SignalHistoryLimit *int    `json:"signalHistoryLimit,omitempty"`
 }
 
@@ -51,7 +51,7 @@ func (s *ClientSettingsService) GetSettings(ctx context.Context, operatorID stri
 	return &SettingsResponse{
 		Thresholds:    settings.Thresholds,
 		Notifications: settings.Notifications,
-		Client:       &settings.Client,
+		Client:        &settings.Client,
 	}, nil
 }
 
@@ -135,7 +135,7 @@ func (s *ClientSettingsService) UpdateClientSettings(ctx context.Context, operat
 	return &SettingsResponse{
 		Thresholds:    thresholds,
 		Notifications: notifications,
-		Client:       &currentSettings.Client,
+		Client:        &currentSettings.Client,
 	}, nil
 }
 
@@ -151,7 +151,7 @@ func (s *ClientSettingsService) ResetSettings(ctx context.Context, operatorID st
 
 // SettingsResponse represents the complete settings response.
 type SettingsResponse struct {
-	Thresholds    operator.Thresholds           `json:"thresholds"`
 	Notifications *operator.NotificationSettings `json:"notifications"`
-	Client        *operator.ClientSettings     `json:"client,omitempty"`
+	Client        *operator.ClientSettings       `json:"client,omitempty"`
+	Thresholds    operator.Thresholds            `json:"thresholds"`
 }

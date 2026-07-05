@@ -63,7 +63,7 @@ type DeregisterResponse struct {
 // DeviceListResponse represents a list of devices per spec.
 type DeviceListResponse struct {
 	Devices    []DeviceResponse `json:"devices"`
-	Pagination PaginationInfo `json:"pagination"`
+	Pagination PaginationInfo   `json:"pagination"`
 }
 
 // PaginationInfo represents pagination in responses per spec.
@@ -76,28 +76,28 @@ type PaginationInfo struct {
 
 // DeviceDetailResponse represents detailed device info per spec.
 type DeviceDetailResponse struct {
-	ID                string          `json:"id"`
-	IMEI              string          `json:"imei"`
-	DeviceName        string          `json:"deviceName,omitempty"`
-	Model             string          `json:"model,omitempty"`
-	Manufacturer      string          `json:"manufacturer,omitempty"`
-	OSVersion         string          `json:"osVersion,omitempty"`
-	AppVersion        string          `json:"appVersion,omitempty"`
-	SecurityPatch     string          `json:"securityPatch,omitempty"`
-	Status            string          `json:"status"`
-	RegisteredAt      int64           `json:"registeredAt,omitempty"`
-	LastSeen          int64           `json:"lastSeen,omitempty"`
-	FCMTokenValid     bool            `json:"fcmTokenValid"`
-	CommandSecretSet  bool            `json:"commandSecretSet"`
-	Connection        *ConnectionInfo `json:"connection,omitempty"`
+	Connection       *ConnectionInfo `json:"connection,omitempty"`
+	AppVersion       string          `json:"appVersion,omitempty"`
+	DeviceName       string          `json:"deviceName,omitempty"`
+	Model            string          `json:"model,omitempty"`
+	Manufacturer     string          `json:"manufacturer,omitempty"`
+	OSVersion        string          `json:"osVersion,omitempty"`
+	ID               string          `json:"id"`
+	SecurityPatch    string          `json:"securityPatch,omitempty"`
+	Status           string          `json:"status"`
+	IMEI             string          `json:"imei"`
+	RegisteredAt     int64           `json:"registeredAt,omitempty"`
+	LastSeen         int64           `json:"lastSeen,omitempty"`
+	FCMTokenValid    bool            `json:"fcmTokenValid"`
+	CommandSecretSet bool            `json:"commandSecretSet"`
 }
 
 // ConnectionInfo represents WebSocket connection details per spec.
 type ConnectionInfo struct {
 	WebSocketStatus string `json:"webSocketStatus"`
-	ConnectedAt     int64  `json:"connectedAt,omitempty"`
 	Protocol        string `json:"protocol,omitempty"`
 	ClientIP        string `json:"clientIp,omitempty"`
+	ConnectedAt     int64  `json:"connectedAt,omitempty"`
 }
 
 // SendCommandRequest represents a command request.

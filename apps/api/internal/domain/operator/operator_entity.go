@@ -17,31 +17,31 @@ type Thresholds struct {
 
 // ClientSettings holds operator preferences that control dashboard behavior.
 type ClientSettings struct {
-	ServerURL           string `json:"serverUrl"`
-	DeviceID            string `json:"deviceId"`
-	RequestTimeoutMs    int    `json:"requestTimeoutMs"`
-	AutoReconnect       bool   `json:"autoReconnect"`
-	StrictHmac          bool   `json:"strictHmac"`
-	LogBufferLimit      int    `json:"logBufferLimit"`
-	SignalHistoryLimit  int    `json:"signalHistoryLimit"`
+	ServerURL            string `json:"serverUrl"`
+	DeviceID             string `json:"deviceId"`
+	RequestTimeoutMs     int    `json:"requestTimeoutMs"`
+	LogBufferLimit       int    `json:"logBufferLimit"`
+	SignalHistoryLimit   int    `json:"signalHistoryLimit"`
+	AutoReconnect        bool   `json:"autoReconnect"`
+	StrictHmac           bool   `json:"strictHmac"`
 	NotificationsEnabled bool   `json:"notificationsEnabled"`
 }
 
 // OperatorSettings represents all settings for an operator.
 type OperatorSettings struct {
+	Notifications *NotificationSettings `json:"notifications"`
 	Client        ClientSettings        `json:"client"`
 	Thresholds    Thresholds            `json:"thresholds"`
-	Notifications *NotificationSettings `json:"notifications"`
 	Security      SecuritySettings      `json:"security"`
 }
 
 // SecuritySettings holds security-related settings per operator.
 type SecuritySettings struct {
 	MaxConcurrentSessions int  `json:"maxConcurrentSessions"` // 0 = unlimited
-	PasswordMinAgeDays   int  `json:"passwordMinAgeDays"`    // 0 = no minimum
-	PasswordMaxAgeDays   int  `json:"passwordMaxAgeDays"`    // 0 = no expiry
-	PasswordHistoryCount int  `json:"passwordHistoryCount"`   // remember N passwords
-	SessionPinRequired   bool `json:"sessionPinRequired"`    // require PIN for sensitive ops
+	PasswordMinAgeDays    int  `json:"passwordMinAgeDays"`    // 0 = no minimum
+	PasswordMaxAgeDays    int  `json:"passwordMaxAgeDays"`    // 0 = no expiry
+	PasswordHistoryCount  int  `json:"passwordHistoryCount"`  // remember N passwords
+	SessionPinRequired    bool `json:"sessionPinRequired"`    // require PIN for sensitive ops
 }
 
 // DefaultSecuritySettings returns default security settings.
@@ -50,7 +50,7 @@ func DefaultSecuritySettings() SecuritySettings {
 		MaxConcurrentSessions: 3,
 		PasswordMinAgeDays:    0,
 		PasswordMaxAgeDays:    90,
-		PasswordHistoryCount: 5,
+		PasswordHistoryCount:  5,
 		SessionPinRequired:    false,
 	}
 }
@@ -58,39 +58,39 @@ func DefaultSecuritySettings() SecuritySettings {
 // DefaultClientSettings returns default client settings.
 func DefaultClientSettings() *ClientSettings {
 	return &ClientSettings{
-		ServerURL:           "",
-		DeviceID:            "",
-		RequestTimeoutMs:    8000,
-		AutoReconnect:       true,
-		StrictHmac:          false,
-		LogBufferLimit:      500,
-		SignalHistoryLimit:  240,
+		ServerURL:            "",
+		DeviceID:             "",
+		RequestTimeoutMs:     8000,
+		AutoReconnect:        true,
+		StrictHmac:           false,
+		LogBufferLimit:       500,
+		SignalHistoryLimit:   240,
 		NotificationsEnabled: true,
 	}
 }
 
 // Operator represents a system operator (user).
 type Operator struct {
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	GitHubID       string
-	PasswordHash   string
-	Role           OperatorRole
-	GoogleID       string
-	ID             string
-	MFASecret      string
-	MFASecretMAC   string // HMAC of MFA secret keyed by operator ID for binding verification
-	Name           string
-	Email          string
-	BackupCodes    []string
-	Thresholds     Thresholds      `json:"thresholds"`
-	ClientSettings ClientSettings  `json:"client"`
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	Email            string
+	FCMToken         string `json:"fcmToken,omitempty"`
+	Role             OperatorRole
+	GoogleID         string
+	ID               string
+	MFASecret        string
+	MFASecretMAC     string
+	Name             string
+	GitHubID         string
+	PasswordHash     string
+	BackupCodes      []string
+	Permissions      []Permission
+	ClientSettings   ClientSettings   `json:"client"`
+	Thresholds       Thresholds       `json:"thresholds"`
 	SecuritySettings SecuritySettings `json:"security"`
-	MFAEnabled     bool
-	MFARequired    bool
-	Permissions    []Permission
-	EmailVerified  bool
-	FCMToken       string `json:"fcmToken,omitempty"` // FCM token for push notifications
+	MFAEnabled       bool
+	MFARequired      bool
+	EmailVerified    bool
 }
 
 // IsSuperAdmin returns true if the operator is a super admin.

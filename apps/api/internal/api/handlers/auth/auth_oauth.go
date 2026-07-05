@@ -22,13 +22,13 @@ import (
 
 // OAuthHandler handles OAuth endpoints.
 type OAuthHandler struct {
-	authService       *appsvc.AuthService
-	sessionMgr        *infraauth.SessionManager
-	googleVer         *infraauth.GoogleTokenVerifier
-	logger            *slog.Logger
-	presenter         *response.Presenter
-	config            config.Config
-	oauthStateRepo    OAuthStateProvider
+	oauthStateRepo OAuthStateProvider
+	authService    *appsvc.AuthService
+	sessionMgr     *infraauth.SessionManager
+	googleVer      *infraauth.GoogleTokenVerifier
+	logger         *slog.Logger
+	presenter      *response.Presenter
+	config         config.Config
 }
 
 // OAuthStateProvider interface for OAuth state operations.

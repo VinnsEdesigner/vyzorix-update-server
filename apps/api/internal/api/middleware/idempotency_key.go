@@ -10,28 +10,24 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/idempotency"
+	"github.com/gin-gonic/gin"
 )
 
 // IdempotencyConfig holds configuration for idempotency middleware.
 type IdempotencyConfig struct {
-	// Repository for storing idempotency records.
 	Repository idempotency.Repository
-	// TTL is how long idempotency records are kept (default 24 hours).
-	TTL time.Duration
-	// HeaderName is the header containing the idempotency key (default "Idempotency-Key").
 	HeaderName string
-	// Paths that support idempotency.
-	Paths []string
+	Paths      []string
+	TTL        time.Duration
 }
 
 // DefaultIdempotencyConfig returns the default idempotency configuration.
 func DefaultIdempotencyConfig() IdempotencyConfig {
 	return IdempotencyConfig{
-		TTL:       24 * time.Hour,
+		TTL:        24 * time.Hour,
 		HeaderName: "Idempotency-Key",
-		Paths:     []string{"/v1/device/inbox"},
+		Paths:      []string{"/v1/device/inbox"},
 	}
 }
 
@@ -61,8 +57,8 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 
 		// Only apply to POST/PATCH/PUT methods
 		if c.Request.Method != http.MethodPost &&
-		   c.Request.Method != http.MethodPatch &&
-		   c.Request.Method != http.MethodPut {
+			c.Request.Method != http.MethodPatch &&
+			c.Request.Method != http.MethodPut {
 			c.Next()
 			return
 		}
@@ -116,7 +112,7 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 		recorder := &responseRecorder{
 			ResponseWriter: c.Writer,
 			statusCode:     http.StatusOK,
-			body:          bytes.NewBuffer(nil),
+			body:           bytes.NewBuffer(nil),
 		}
 		c.Writer = recorder
 
@@ -153,9 +149,9 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 // responseRecorder captures the response for idempotency storage.
 type responseRecorder struct {
 	gin.ResponseWriter
-	statusCode  int
-	contentType string
 	body        *bytes.Buffer
+	contentType string
+	statusCode  int
 }
 
 func (r *responseRecorder) WriteHeader(code int) {

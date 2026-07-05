@@ -93,21 +93,21 @@ func (s *Service) GetInbox(ctx context.Context, operatorID, status string, page,
 	responses := make([]InboxEntryResponse, 0, len(entries))
 	for _, e := range entries {
 		responses = append(responses, InboxEntryResponse{
-			ID:                 e.ID,
-			IMEI:               e.IMEI,
-			DeviceName:         e.DeviceName,
-			DeviceClass:        e.DeviceClass,
-			Model:              e.Model,
-			Manufacturer:       e.Manufacturer,
-			OSVersion:          e.OSVersion,
-			AppVersion:         e.AppVersion,
-			FCMToken:           e.FCMToken,
-			FirebaseInstallID:  e.FirebaseInstallID,
-			Status:             string(e.Status),
-			CreatedAt:          e.CreatedAt,
-			ApprovedAt:         e.ApprovedAt,
-			RejectedAt:         e.RejectedAt,
-			OperatorID:         e.OperatorID,
+			ID:                e.ID,
+			IMEI:              e.IMEI,
+			DeviceName:        e.DeviceName,
+			DeviceClass:       e.DeviceClass,
+			Model:             e.Model,
+			Manufacturer:      e.Manufacturer,
+			OSVersion:         e.OSVersion,
+			AppVersion:        e.AppVersion,
+			FCMToken:          e.FCMToken,
+			FirebaseInstallID: e.FirebaseInstallID,
+			Status:            string(e.Status),
+			CreatedAt:         e.CreatedAt,
+			ApprovedAt:        e.ApprovedAt,
+			RejectedAt:        e.RejectedAt,
+			OperatorID:        e.OperatorID,
 		})
 	}
 
@@ -138,22 +138,22 @@ func (s *Service) GetInboxEntry(ctx context.Context, imei string) (*InboxEntryRe
 	}
 
 	return &InboxEntryResponse{
-		ID:                 entry.ID,
-		IMEI:               entry.IMEI,
-		DeviceName:         entry.DeviceName,
-		DeviceClass:        entry.DeviceClass,
-		Model:              entry.Model,
-		Manufacturer:       entry.Manufacturer,
-		OSVersion:          entry.OSVersion,
-		AppVersion:         entry.AppVersion,
+		ID:                entry.ID,
+		IMEI:              entry.IMEI,
+		DeviceName:        entry.DeviceName,
+		DeviceClass:       entry.DeviceClass,
+		Model:             entry.Model,
+		Manufacturer:      entry.Manufacturer,
+		OSVersion:         entry.OSVersion,
+		AppVersion:        entry.AppVersion,
 		FCMToken:          entry.FCMToken,
-		FirebaseInstallID:  entry.FirebaseInstallID,
-		Status:             string(entry.Status),
-		CreatedAt:          entry.CreatedAt,
-		ApprovedAt:         entry.ApprovedAt,
-		RejectedAt:         entry.RejectedAt,
-		Notes:              entry.Notes,
-		OperatorID:         entry.OperatorID,
+		FirebaseInstallID: entry.FirebaseInstallID,
+		Status:            string(entry.Status),
+		CreatedAt:         entry.CreatedAt,
+		ApprovedAt:        entry.ApprovedAt,
+		RejectedAt:        entry.RejectedAt,
+		Notes:             entry.Notes,
+		OperatorID:        entry.OperatorID,
 	}, nil
 }
 
@@ -465,19 +465,19 @@ func (s *Service) CreateInboxRequest(ctx context.Context, req *InboxRequest) (*I
 
 	now := time.Now()
 	entry := &inbox.InboxEntry{
-		ID:                 generateID(),
-		IMEI:               req.IMEI,
-		DeviceName:         req.DeviceName,
-		DeviceClass:        req.DeviceClass,
-		Model:              req.Model,
-		Manufacturer:       req.Manufacturer,
-		OSVersion:          req.OSVersion,
-		AppVersion:         req.AppVersion,
-		FCMToken:           req.FCMToken,
-		FirebaseInstallID:  req.FirebaseInstallID,
-		Status:             inbox.StatusPending,
-		CreatedAt:          now.UnixMilli(),
-		UpdatedAt:          now.UnixMilli(),
+		ID:                generateID(),
+		IMEI:              req.IMEI,
+		DeviceName:        req.DeviceName,
+		DeviceClass:       req.DeviceClass,
+		Model:             req.Model,
+		Manufacturer:      req.Manufacturer,
+		OSVersion:         req.OSVersion,
+		AppVersion:        req.AppVersion,
+		FCMToken:          req.FCMToken,
+		FirebaseInstallID: req.FirebaseInstallID,
+		Status:            inbox.StatusPending,
+		CreatedAt:         now.UnixMilli(),
+		UpdatedAt:         now.UnixMilli(),
 	}
 
 	if err := s.repo.Create(ctx, entry); err != nil {
@@ -522,15 +522,15 @@ func (s *Service) logRegistrationAction(ctx context.Context, entry *inbox.InboxE
 	}
 
 	log := &inbox.RegistrationLog{
-		ID:          generateID(),
-		DeviceID:    "",
-		IMEI:        entry.IMEI,
-		Action:      action,
-		OperatorID:  operatorID,
-		Details:     details,
-		Timestamp:   time.Now().UnixMilli(),
-		ClientIP:    extractClientIP(ctx),
-		UserAgent:   extractUserAgent(ctx),
+		ID:         generateID(),
+		DeviceID:   "",
+		IMEI:       entry.IMEI,
+		Action:     action,
+		OperatorID: operatorID,
+		Details:    details,
+		Timestamp:  time.Now().UnixMilli(),
+		ClientIP:   extractClientIP(ctx),
+		UserAgent:  extractUserAgent(ctx),
 	}
 
 	_ = s.logRepo.Create(ctx, log)
