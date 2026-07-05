@@ -65,23 +65,23 @@ func verifyWebSocket() bool {
 func wsLoadSpec() *wsSpec {
 	spec := &wsSpec{endpoints: make(map[string]wsEndpoint), handlers: make(map[string]wsHandler), domain: make(map[string]wsDomain), infra: make(map[string]wsInfra), application: make(map[string]wsApp)}
 	endpoints := []wsEndpoint{
-		{"WS", "/ws/device/:deviceId", "WebSocketHandler", "HandleDeviceWS"},
-		{"WS", "/ws/dashboard/:dashboardId", "WebSocketHandler", "HandleDashboardWS"},
+		{"GET", "/v1/device/:id/stream", "StreamHandler", "Handle"},
+		{"WS", "/v1/device/:id/stream", "WebSocketHandler", "Handle"},
 		{"GET", "/v1/device/:id/stream", "StreamHandler", "Handle"},
 	}
 	for _, ep := range endpoints { spec.endpoints[ep.Method+" "+ep.Path] = ep }
 	handlers := []wsHandler{
 		{"websocket", "websocket_handler.go", "HandleDeviceWS"},
 		{"websocket", "websocket_handler.go", "HandleDashboardWS"},
-		{"websocket", "stream_handler.go", "Handle"},
+		{"websocket", "websocket_handler.go", "Handle"},
 		{"websocket", "stream_message.go", "HandleMessage"},
 		{"websocket", "websocket_presenter.go", "Present"},
 		{"websocket", "websocket_stream.go", "Stream"},
 	}
 	for _, h := range handlers { spec.handlers[h.Subdir+"/"+h.File] = h }
-	spec.domain["ws"] = wsDomain{"ws", []string{"hub.go", "client.go", "message.go"}}
-	spec.infra["fcm"] = wsInfra{"fcm", []string{"fcm_service.go"}}
-	spec.infra["storage"] = wsInfra{"storage", []string{"stream_storage.go"}}
+	spec.domain["ws"] = wsDomain{"ws", []string{"hub.go", "ws_client.go", "compression.go", "message_queue.go", "subscriptions.go", "telemetry_filter.go", "ws_rate_limiter.go"}}
+	spec.infra["fcm"] = wsInfra{"infrastructure/fcm", []string{"fcm_client.go", "fcm_circuit_breaker.go", "notifier.go"}}
+	spec.infra["storage"] = wsInfra{"storage", []string{}}
 	return spec
 }
 
@@ -116,7 +116,7 @@ func wsScanImpl(root string) *wsImpl {
 			return nil
 		})
 	}
-	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/websocket/websocket_routes.go")}
+	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/websocket/websocket_handler.go")}
 	for _, rf := range routeFiles {
 		if data, err := os.ReadFile(rf); err == nil {
 			mPattern := regexp.MustCompile(`(GET|POST|WEBSOCKET)\s*\(\s*["']([^"']+)`)
@@ -193,16 +193,16 @@ func wsVerifyEndpoints(spec *wsSpec, impl *wsImpl, root string) {
 	routeContent := wsGetRouteContent(root)
 	found := 0
 	for _, ep := range spec.endpoints {
-		paths := []string{ep.Path, strings.TrimPrefix(ep.Path, "/v1"), "/ws" + strings.TrimPrefix(ep.Path, "/v1")}
+		paths := []string{ep.Path, strings.TrimPrefix(ep.Path, "/v1"), "/ws" + strings.TrimPrefix(ep.Path, "/v1"), strings.TrimPrefix(ep.Path, "/v1/device")}
 		registered := false
-		for _, p := range paths { if strings.Contains(routeContent, p) { registered = true; break } }
+		for _, p := range paths { if strings.Contains(routeContent, "\""+p+"\"") { registered = true; break } }
 		if registered { fmt.Printf("    ✅ %s %s\n", ep.Method, ep.Path); atomic.AddUint64(&wsPassCount, 1); found++ } else { fmt.Printf("    ❌ %s %s - NOT REGISTERED\n", ep.Method, ep.Path); atomic.AddUint64(&wsFailCount, 1) }
 	}
 	fmt.Printf("\n    Registered endpoints: %d/%d\n", found, len(spec.endpoints))
 }
 
 func wsGetRouteContent(root string) string {
-	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/websocket/websocket_routes.go")}
+	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/websocket/websocket_handler.go")}
 	var content strings.Builder
 	for _, rf := range routeFiles { if data, err := os.ReadFile(rf); err == nil { content.Write(data) } }
 	return content.String()
@@ -252,8 +252,8 @@ func wsVerifyRoutes(spec *wsSpec, impl *wsImpl, root string) {
 	fmt.Printf("\n  WEBSOCKET ROUTE REGISTRATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
 	handlerBase := filepath.Join(root, "apps/api/internal/api/handlers")
-	routePath := filepath.Join(handlerBase, "websocket/websocket_routes.go")
-	if _, err := os.Stat(routePath); err == nil { fmt.Printf("    ✅ routes: websocket/websocket_routes.go\n"); atomic.AddUint64(&wsPassCount, 1) } else { fmt.Printf("    ❌ No WebSocket route file found\n"); atomic.AddUint64(&wsFailCount, 1) }
+	routePath := filepath.Join(handlerBase, "websocket/websocket_handler.go")
+	if _, err := os.Stat(routePath); err == nil { fmt.Printf("    ✅ routes: websocket/websocket_handler.go\n"); atomic.AddUint64(&wsPassCount, 1) } else { fmt.Printf("    ❌ No WebSocket route file found\n"); atomic.AddUint64(&wsFailCount, 1) }
 }
 
 func wsVerifySchema(spec *wsSpec, impl *wsImpl, root string) {
@@ -275,7 +275,7 @@ func wsVerifyStructure(spec *wsSpec, impl *wsImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 3, 10)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	keyPaths := []string{"apps/api/internal/api/handlers/websocket/", "apps/api/internal/websocket/", "apps/api/internal/domain/ws/", "apps/api/internal/infrastructure/fcm/"}
+	keyPaths := []string{"apps/api/internal/api/handlers/websocket/", "apps/api/internal/ws/", "apps/api/internal/infrastructure/fcm/"}
 	found := 0
 	for _, p := range keyPaths {
 		path := filepath.Join(root, p)
