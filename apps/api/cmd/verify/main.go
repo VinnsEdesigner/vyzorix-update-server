@@ -29,8 +29,10 @@ func main() {
 		{"AUTHENTICATION_SYSTEM_SERVER.md", verifyAuth},
 		{"SERVER_BACKEND_SETTINGS_API.md", verifySettings},
 		{"SERVER_BACKEND_UPDATES_API.md", verifyUpdates},
+		{"SERVER_BACKEND_DASHBOARD_COMMANDS_API.md", verifyDashboard},
 		{"REALTIME_WEBSOCKET_ARCHITECTURE.md", verifyWebSocket},
-		{"SERVER_BACKEND_DASHBOARD_COMMANDS_API.md", verifyDashboardCommands},
+		{"SERVER_BACKEND_DEVICE_REGISTRATION_API.md", verifyDeviceRegistration},
+		{"SERVER_BACKEND_DIAGNOSTICS_API.md", verifyDiagnostics},
 	}
 	
 	results := make(map[string]bool)
