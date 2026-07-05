@@ -28,8 +28,8 @@ type DeviceUpdateStatusRequest struct {
 
 // DeviceUpdateStatusResponse represents response to device callback.
 type DeviceUpdateStatusResponse struct {
+	Message      string `json:"message,omitempty"`
 	Acknowledged bool   `json:"acknowledged"`
-	Message     string `json:"message,omitempty"`
 }
 
 // HandleDeviceUpdateStatus handles POST /v1/updates/device-status.
@@ -46,8 +46,8 @@ func (h *DeviceStatusHandler) HandleDeviceUpdateStatus(c *gin.Context) {
 	// Validate status value
 	validStatuses := map[string]domainupdates.DevicePushStatus{
 		"in_progress": domainupdates.DevicePushStatusInProgress,
-		"completed":  domainupdates.DevicePushStatusCompleted,
-		"failed":     domainupdates.DevicePushStatusFailed,
+		"completed":   domainupdates.DevicePushStatusCompleted,
+		"failed":      domainupdates.DevicePushStatusFailed,
 	}
 
 	status, ok := validStatuses[req.Status]

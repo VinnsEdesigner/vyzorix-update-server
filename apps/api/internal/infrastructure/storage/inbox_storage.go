@@ -242,6 +242,8 @@ func (r *InboxRepository) Update(ctx context.Context, e *inbox.InboxEntry) error
 	switch e.Status {
 	case inbox.StatusPending:
 		e.ApprovedAt = nil
+	case inbox.StatusAcknowledged, inbox.StatusApproving, inbox.StatusExpired:
+		// These statuses don't set approval/rejection fields
 	case inbox.StatusApproved:
 		reviewedAt = e.ApprovedAt
 		reviewedReason = e.Notes
@@ -342,6 +344,8 @@ func (r *InboxRepository) scanEntry(row *sql.Row) (*inbox.InboxEntry, error) {
 	switch e.Status {
 	case inbox.StatusPending:
 		e.ApprovedAt = nil
+	case inbox.StatusAcknowledged, inbox.StatusApproving, inbox.StatusExpired:
+		// These statuses don't set approval/rejection fields
 	case inbox.StatusApproved:
 		e.ApprovedAt = nullInt64ToPtr(reviewedAt)
 		e.Notes = reviewedReason.String
@@ -383,6 +387,8 @@ func (r *InboxRepository) scanEntryRows(rows *sql.Rows) (*inbox.InboxEntry, erro
 	switch e.Status {
 	case inbox.StatusPending:
 		e.ApprovedAt = nil
+	case inbox.StatusAcknowledged, inbox.StatusApproving, inbox.StatusExpired:
+		// These statuses don't set approval/rejection fields
 	case inbox.StatusApproved:
 		e.ApprovedAt = nullInt64ToPtr(reviewedAt)
 		e.Notes = reviewedReason.String

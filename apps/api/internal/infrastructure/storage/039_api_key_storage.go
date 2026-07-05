@@ -21,19 +21,19 @@ func getMonthStartMillis(nowMillis int64) int64 {
 
 // APIKey represents an API key in the system.
 type APIKey struct {
-	ID           string
+	LastRequest  *int64
+	ExpiresAt    *int64
+	RevokedAt    *int64
 	OperatorID   string
 	Name         string
-	KeyPrefix    string // First 8 chars for display
-	KeyHash      string // Argon2id hash of full key
-	Scope        string // read, write, or admin
-	ExpiresAt    *int64 // Unix ms, NULL = never
-	IsActive     bool
+	KeyPrefix    string
+	KeyHash      string
+	Scope        string
+	ID           string
 	RequestCount int64
-	LastRequest  *int64 // Unix ms
-	CreatedAt    int64  // Unix ms
-	UpdatedAt    int64  // Unix ms
-	RevokedAt    *int64 // Unix ms when revoked
+	CreatedAt    int64
+	UpdatedAt    int64
+	IsActive     bool
 }
 
 // APIKeyRepository defines the interface for API key operations.
@@ -270,7 +270,7 @@ func (r *APIKeyRepositoryImpl) ListAll(ctx context.Context, limit, offset int) (
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to list all keys: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var keys []*APIKey
 	for rows.Next() {

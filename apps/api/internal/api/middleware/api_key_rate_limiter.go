@@ -11,24 +11,24 @@ import (
 
 // RateLimitResult represents the result of a rate limit check.
 type RateLimitResult struct {
-	Allowed    bool
-	Remaining  int
 	ResetAt    time.Time
+	Remaining  int
 	RetryAfter int
+	Allowed    bool
 }
 
 // InMemoryRateLimiter implements an in-memory rate limiter for API keys.
 // This is a fallback for deployments without Redis.
 type InMemoryRateLimiter struct {
-	mu     sync.RWMutex
 	data   map[string]*windowedCounter
 	limit  int
 	window time.Duration
+	mu     sync.RWMutex
 }
 
 type windowedCounter struct {
-	count     int64
 	windowEnd time.Time
+	count     int64
 }
 
 // NewInMemoryRateLimiter creates a new in-memory rate limiter.

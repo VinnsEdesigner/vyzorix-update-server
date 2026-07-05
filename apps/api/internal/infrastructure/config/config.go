@@ -77,9 +77,9 @@ func LoadSigningConfig() SigningConfig {
 
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
-	JWTSecret                string
-	EmailFrom                string
-	GitHubOAuthClientID      string
+	APIKeys                  map[string]string
+	ResendAPIKey             string
+	TokenSecret              string
 	GitHubOAuthClientSecret  string
 	FirebaseCreds            string
 	SessionSecret            string
@@ -87,43 +87,43 @@ type Config struct {
 	BinDir                   string
 	Port                     string
 	BaseURL                  string
-	DatabaseURL              string
-	DataDir                   string
+	EmailFrom                string
+	DataDir                  string
 	GoogleOAuthClientSecret  string
 	GoogleOAuthClientID      string
 	PublicDir                string
 	GitHubReleaseToken       string
 	GitHubReleaseRepo        string
 	GitHubWebhookSecret      string
-	ResendAPIKey             string
+	JWTSecret                string
+	GitHubOAuthClientID      string
 	Env                      string
-	TokenSecret              string
-	APIKeys                  map[string]string // key_id -> key_value (supports rotation)
+	DatabaseURL              string
 	APIKeyPrefix             string
-	MonthlyKeyLimit          int
-	MaxKeyNameLength         int
-	RequireKeyName           bool
-	AllowKeyRenaming         bool
-	EnableUsageTracking      bool
 	EmailFromName            string
 	AllowedOrigins           []string
-	PasswordResetTokenExpiry time.Duration
+	DiagnosticsConfig        DiagnosticsConfig
+	NonceCacheTTL            time.Duration
+	MonthlyKeyLimit          int
+	MaxKeyNameLength         int
+	SessionMaxAge            int
 	HMACWindow               time.Duration
-	SessionMaxAge             int
-	NonceCacheTTL             time.Duration
+	PasswordResetTokenExpiry time.Duration
 	EmailVerifyTokenExpiry   time.Duration
 	JWTDuration              time.Duration
+	EnableUsageTracking      bool
+	AllowKeyRenaming         bool
 	EnforceHMAC              bool
 	EnableGraphQL            bool
-	DiagnosticsConfig        DiagnosticsConfig
+	RequireKeyName           bool
 }
 
 // DiagnosticsConfig holds configuration for the diagnostics API.
 type DiagnosticsConfig struct {
-	OfflineThresholdMinutes     int
-	FCMTokenExpiryDays          int
-	InspectionCacheTTLSeconds   int
-	TelemetryRetentionDays       int
+	OfflineThresholdMinutes   int
+	FCMTokenExpiryDays        int
+	InspectionCacheTTLSeconds int
+	TelemetryRetentionDays    int
 }
 
 // DefaultDiagnosticsConfig returns default diagnostics configuration.
@@ -210,12 +210,12 @@ func Load() (Config, error) {
 		PublicDir:                get("VYZORIX_PUBLIC_DIR", "./public"),
 		FirebaseCreds:            os.Getenv("FIREBASE_CREDENTIALS"),
 		TokenSecret:              os.Getenv("TOKEN_SECRET"),
-		APIKeyPrefix:            get("API_KEY_PREFIX", "vxyz"),
-		MonthlyKeyLimit:         20,
-		MaxKeyNameLength:        64,
-		RequireKeyName:          true,
-		AllowKeyRenaming:        true,
-		EnableUsageTracking:     true,
+		APIKeyPrefix:             get("API_KEY_PREFIX", "vxyz"),
+		MonthlyKeyLimit:          20,
+		MaxKeyNameLength:         64,
+		RequireKeyName:           true,
+		AllowKeyRenaming:         true,
+		EnableUsageTracking:      true,
 		JWTSecret:                os.Getenv("JWT_SECRET"),
 		SessionSecret:            os.Getenv("SESSION_SECRET"),
 		SessionMaxAge:            sessionMaxAge,
