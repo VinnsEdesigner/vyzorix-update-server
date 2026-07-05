@@ -344,17 +344,19 @@ REGISTERED ───────────────────────
 **Response (200 OK):**
 ```json
 {
-  "entries": [
+  "requests": [
     {
-      "id": "uuid-v4",
+      "id": "inb_abc123",
       "imei": "861234567890123",
       "deviceName": "Pixel 8 Pro",
       "model": "Pixel 8",
       "manufacturer": "Google",
       "osVersion": "Android 14",
       "appVersion": "2.1.0",
+      "fcmToken": "firebase_token_here",
+      "firebaseInstallId": "firebase_install_id",
       "status": "pending",
-      "receivedAt": 1718900000000,
+      "createdAt": 1718900000000,
       "updatedAt": 1718900000000
     }
   ],
@@ -375,20 +377,19 @@ REGISTERED ───────────────────────
 **Response (200 OK):**
 ```json
 {
-  "id": "uuid-v4",
+  "id": "inb_abc123",
   "imei": "861234567890123",
   "deviceName": "Pixel 8 Pro",
   "model": "Pixel 8",
   "manufacturer": "Google",
   "osVersion": "Android 14",
   "appVersion": "2.1.0",
-  "fcmToken": "dGhpcyBpcyBhIGZjIGtleTohZGkh",
-  "firmware": "oriole-user 14 UP1A.231005.007...",
-  "securityPatch": "2024-03-01",
-  "buildId": "UP1A.231005.007",
+  "fcmToken": "firebase_token_here",
+  "firebaseInstallId": "firebase_install_id",
   "status": "pending",
-  "receivedAt": 1718900000000,
-  "updatedAt": 1718900000000
+  "createdAt": 1718900000000,
+  "updatedAt": 1718900000000,
+  "notes": null
 }
 ```
 
@@ -509,7 +510,8 @@ REGISTERED ───────────────────────
       "appVersion": "2.1.0",
       "status": "online",
       "registeredAt": 1718900300000,
-      "lastSeen": 1718900500000
+      "lastSeen": 1718900500000,
+      "online": true
     }
   ],
   "pagination": {
@@ -554,8 +556,10 @@ REGISTERED ───────────────────────
 **Response (200 OK):**
 ```json
 {
+  "imei": "861234567890123",
   "status": "deregistered",
-  "message": "Device has been deregistered"
+  "deregisteredAt": 1718900500000,
+  "retentionUntil": 1719505300000
 }
 ```
 
