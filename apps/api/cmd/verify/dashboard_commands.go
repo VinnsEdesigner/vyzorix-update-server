@@ -285,7 +285,7 @@ func dCheckEndpoint(ep dEndpoint, routeContent string, impl *dImpl, root string)
 	}
 
 	for _, p := range paths {
-		if strings.Contains(routeContent, p) {
+		if strings.Contains(routeContent, "\""+p+"\"") {
 			return true
 		}
 	}
