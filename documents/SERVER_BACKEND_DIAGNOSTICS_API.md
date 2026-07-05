@@ -300,31 +300,21 @@ ALTER TABLE devices ADD COLUMN IF NOT EXISTS fcm_token_refreshed_at TIMESTAMPTZ;
 ```
 apps/api/internal/
 ├── api/
-│   ├── handlers/
-│   │   ├── diagnostics/
-│   │   │   ├── diagnostics_inspect_handler.go  # NEW - inspection handler
-│   │   │   ├── diagnostics_timeline_handler.go  # NEW - timeline handler
-│   │   │   └── diagnostics_routes.go           # NEW - diagnostics routes
-│   │   └── router.go                          # MODIFIED - add diagnostics
-│   └── middleware/
-│       └── ...
+│   ├── server_routes.go                         # Route registration
+│   └── handlers/
+│       └── diagnostics/
+│           ├── diagnostics_inspect_handler.go   # InspectHandler
+│           ├── diagnostics_timeline_handler.go  # TimelineHandler
+│           └── diagnostics_routes.go           # (included)
 ├── application/
 │   └── diagnostics/
-│       ├── diagnostics_service.go              # NEW - inspection + timeline logic
-│       └── diagnostics_dto.go                  # NEW - request/response DTOs
+│       └── diagnostics_service.go               # DiagnosticsService
 ├── domain/
-│   ├── diagnostics/
-│   │   ├── diagnostics_types.go              # NEW - diagnostic types
-│   │   ├── diagnostics_repository.go         # NEW - repository interface
-│   │   └── diagnostics_errors.go            # NEW - domain errors
-│   └── device/
-│       └── device_repository.go              # EXISTS - may need new methods
-├── infrastructure/
-│   └── storage/
-│       ├── diagnostics_storage.go            # NEW - diagnostics queries
-│       └── device_storage.go                 # EXISTS - add stats query
-└── ws/
-    └── hub.go                                # EXISTS - may expose connection info
+│   └── diagnostics/
+│       └── diagnostics_types.go                 # Diagnostic types
+└── infrastructure/
+    └── storage/
+        └── diagnostics_storage.go               # Diagnostics storage
 ```
 
 ---
@@ -333,7 +323,7 @@ apps/api/internal/
 
 ### 6.1 Inspect Handler
 
-**File:** `api/handlers/diagnostics/diagnostics_inspect_handler.go`
+**File:** `internal/api/handlers/diagnostics/diagnostics_inspect_handler.go`
 
 ```go
 package diagnostics

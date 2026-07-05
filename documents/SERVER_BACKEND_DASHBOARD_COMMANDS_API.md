@@ -197,50 +197,38 @@ CREATE INDEX idx_event_type ON device_logs(event_type);
 
 ## 5. Backend File Structure
 
+```
 apps/api/internal/
-  api/handlers/
-    command/
-      command_history_handler.go   # NEW - command history handler
-      command_history_routes.go    # NEW - route registration
-    device/
-      device_logs_handler.go       # NEW - logs handler
-      device_logs_routes.go        # NEW - route registration
-      device_metrics_handler.go    # NEW - metrics handler
-      device_metrics_routes.go     # NEW - route registration
-      device_telemetry_handler.go  # NEW - telemetry handler
-      device_telemetry_routes.go   # NEW - route registration
-    dashboard/
-      dashboard_stats_handler.go  # NEW - dashboard stats handler
-      dashboard_stats_routes.go    # NEW - route registration
-    router.go                      # MODIFIED - add routes
-  application/
-    command/
-      command_service.go           # MODIFIED - add history methods
-      command_dto.go              # Command DTOs
-    logs/                          # NEW
-      logs_service.go
-      logs_dto.go
-    metrics/                       # NEW
-      metrics_service.go
-      metrics_dto.go
-    dashboard/                     # NEW
-      dashboard_service.go
-      dashboard_dto.go
-  domain/
-    command/
-      command_repository.go         # MODIFIED - add history query
-      command_entity.go            # Command entity
-    logs/                          # NEW
-      logs_entity.go
-      logs_repository.go
-      logs_errors.go
-    metrics/                       # NEW
-      metrics_entity.go
-      metrics_repository.go
-  infrastructure/storage/
-    logs_storage.go                # NEW - logs repository
-    metrics_storage.go             # NEW - metrics repository
-    command_storage.go             # MODIFIED - add history query
+├── api/
+│   ├── server_routes.go          # Route registration
+│   └── handlers/
+│       ├── command/
+│       │   ├── command_history_handler.go  # CommandHistoryHandler
+│       │   └── command_history_routes.go  # (included)
+│       ├── device/
+│       │   ├── device_logs_handler.go     # LogsHandler
+│       │   ├── device_logs_routes.go     # (included)
+│       │   ├── device_metrics_handler.go   # MetricsHandler
+│       │   ├── device_metrics_routes.go   # (included)
+│       │   ├── device_telemetry_handler.go # TelemetryHandler
+│       │   └── device_telemetry_routes.go # (included)
+│       └── dashboard/
+│           ├── dashboard_stats_handler.go # DashboardStatsHandler
+│           └── dashboard_stats_routes.go   # (included)
+├── application/
+│   ├── command/
+│   │   └── command_service.go     # CommandService
+│   └── dashboard/
+│       └── dashboard_service.go   # DashboardService
+├── domain/
+│   ├── command/
+│   │   └── command_entity.go      # Command entity
+│   └── device/
+│       └── device_entity.go       # Device entity
+└── infrastructure/
+    └── storage/
+        └── device_storage.go      # Storage (commands, logs, metrics)
+```
 
 ---
 

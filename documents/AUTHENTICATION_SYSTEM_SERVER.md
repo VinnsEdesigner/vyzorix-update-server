@@ -698,15 +698,14 @@ apps/api/internal/
         └── operator_storage.go      # EXISTS
 ```
 
-### 9.2 Files to Add/Modify
+### 9.2 Files (Actual Implementation)
 
-| Category | File | Status | Action |
-|----------|------|--------|--------|
-| Handler | `handlers/auth/auth_mfa_verify.go` | **MISSING** | CREATE |
-| Handler | `handlers/auth/auth_refresh.go` | **MISSING** | CREATE |
-| Routes | `handlers/auth/auth_routes.go` | **EXISTS** | ADD new routes |
-| DTO | `application/dto/auth_dto.go` | **EXISTS** | ADD new DTOs |
-| Service | `application/auth/auth_service.go` | **EXISTS** | ADD refresh method |
+| Category | File | Handler/Service |
+|----------|------|----------------|
+| Handler | `internal/api/handlers/auth/auth_mfa.go` | AuthMfaHandler |
+| Handler | `internal/api/handlers/auth/auth_refresh.go` | RefreshHandler |
+| Handler | `internal/api/handlers/auth/auth_routes.go` | Route registration |
+| Service | `internal/application/auth/auth_service.go` | AuthService |
 
 ---
 
