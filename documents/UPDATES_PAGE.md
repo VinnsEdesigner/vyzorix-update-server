@@ -285,6 +285,53 @@ export interface UpdatePush {
 | `lib/api/graphql/api-response-types.ts` | MODIFIED | Add update types |
 | `lib/api/rest/updates.ts` | NEW | REST fallback endpoints |
 
+### 12.2 REST API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v1/updates/status` | GET | Get update system status |
+| `/v1/updates/versions` | GET | Get all available versions |
+| `/v1/updates/changelog` | GET | Get release changelog |
+| `/v1/updates/push` | POST | Push update to devices |
+| `/v1/updates/history` | GET | Get update push history |
+| `/v1/updates/history/:pushId` | GET | Get push detail |
+| `/v1/updates/history/:pushId/cancel` | POST | Cancel pending update |
+| `/v1/updates/export` | GET | Export version data |
+| `/v1/updates/sync` | POST | Sync versions from GitHub |
+
+### 12.3 REST Implementation
+
+```typescript
+// lib/api/rest/updates.ts
+
+const BASE = "/v1/updates";
+
+export async function fetchUpdateHistory(
+  serverUrl: string,
+  page = 1,
+  limit = 20
+): Promise<{ pushes: UpdatePush[]; pagination: Pagination }> {
+  const res = await fetch(
+    join(serverUrl, `${BASE}/history?page=${page}&limit=${limit}`),
+    { credentials: "include" }
+  );
+  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
+  return res.json();
+}
+
+export async function cancelUpdate(
+  serverUrl: string,
+  pushId: string
+): Promise<UpdatePush> {
+  const res = await fetch(join(serverUrl, `${BASE}/history/${pushId}/cancel`), {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`Cancel update failed: ${res.status}`);
+  return res.json();
+}
+```
+
 ---
 
 ## 13. Presentation Layer - Hooks

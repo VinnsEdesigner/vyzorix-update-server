@@ -734,11 +734,13 @@ Device Page (tabs):
 
 ---
 
-#### `DELETE /v1/device/:imei/command/:dispatchId`
+#### `DELETE /v1/command/:dispatchId`
+
+Cancel a pending command. Note: This endpoint is at the command root level, not nested under device.
 
 **Response:**
 ```json
-{ "dispatchId": "abc123def456", "status": "cancelled" }
+{ "dispatchId": "abc123def456", "status": "cancelled", "cancelled": true, "serverTime": 1718900600 }
 ```
 
 ---
