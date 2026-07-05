@@ -27,7 +27,7 @@ func (s *AuthService) VerifyMFACode(ctx context.Context, operatorID, code string
 		return nil, application.ErrForbidden
 	}
 
-	// 7 FIX: Verify the stored MAC binding matches this operatorID
+	// Verify the stored MAC binding matches this operatorID
 	// This prevents attackers from using a stolen MFASecret with a different account
 	if op.MFASecret != "" {
 		binding := infraauth.MFASecretBinding{
@@ -59,7 +59,6 @@ func (s *AuthService) EnrollMFA(ctx context.Context, operatorID, email string) (
 		return nil, err
 	}
 
-	// 7 FIX: Create MAC binding for the secret
 	binding := infraauth.CreateMFASecretBinding(operatorID, secret)
 	_ = binding // Store via UpdateMFA call
 
@@ -82,7 +81,6 @@ func (s *AuthService) EnrollMFA(ctx context.Context, operatorID, email string) (
 
 // EnableMFA enables MFA for an operator after verifying a code.
 func (s *AuthService) EnableMFA(ctx context.Context, operatorID, secret string, backupCodes []string) error {
-	// 7 FIX: Create MAC binding when enabling MFA
 	binding := infraauth.CreateMFASecretBinding(operatorID, secret)
 	return s.operatorRepo.UpdateMFA(ctx, operatorID, secret, binding.MAC, true)
 }

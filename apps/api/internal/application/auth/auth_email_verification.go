@@ -132,7 +132,10 @@ func (s *AuthService) PollVerification(ctx context.Context, token string) (strin
 	}
 
 	op, err := s.operatorRepo.FindByID(ctx, ev.OperatorID)
-	if err != nil || op == nil {
+	if err != nil {
+		return "waiting", "", err
+	}
+	if op == nil {
 		return "waiting", "", nil
 	}
 

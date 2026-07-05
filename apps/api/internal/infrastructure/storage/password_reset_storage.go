@@ -35,10 +35,6 @@ func (r *PasswordResetRepository) queryRow(ctx context.Context, query string, ar
 return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
 }
 
-// queryRows is a helper that uses transaction-aware querier.
-func (r *PasswordResetRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-return r.getQuerier(ctx).QueryContext(ctx, query, args...)
-}
 
 // exec is a helper that uses transaction-aware querier.
 func (r *PasswordResetRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {

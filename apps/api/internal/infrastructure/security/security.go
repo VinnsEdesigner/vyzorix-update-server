@@ -37,7 +37,6 @@ var ErrInvalidToken = jwt.ErrInvalidToken
 var ErrExpiredToken = jwt.ErrExpiredToken
 
 // NewJWTManager creates a new JWT manager.
-// 5 FIX: Returns error if secret validation fails.
 func NewJWTManager(secret string, expiry time.Duration, issuer string) (*jwt.Manager, error) {
 	return jwt.NewManager(secret, expiry, issuer)
 }

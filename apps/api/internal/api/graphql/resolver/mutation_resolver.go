@@ -158,13 +158,12 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 		// First verify ownership before sending FCM
 		_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
 		if err != nil {
-			//
 			return map[string]interface{}{
 				"dispatchId":   cmdResp.DispatchID,
 				"commandId":    cmdResp.CommandID,
 				"status":       delivery,
 				"deviceOnline": false,
-			}, nil
+			}, err
 		}
 		dev, _ := r.DeviceService.GetDevice(ctx, deviceID)
 		if dev != nil && dev.FCMToken != "" {

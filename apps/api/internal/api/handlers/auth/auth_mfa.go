@@ -149,7 +149,6 @@ func (h *MFAHandler) EnableMFA(c *gin.Context) {
 		return
 	}
 
-	// 7 FIX: Create MAC binding for the secret
 	binding := infraauth.CreateMFASecretBinding(opID, req.Token)
 
 	// Enable MFA and save backup codes using UpdateOperatorMFA
@@ -253,10 +252,6 @@ func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 }
 
 // VerifyMFA handles POST /v1/auth/mfa/verify - Main MFA verification during login.
-// This is the critical endpoint for completing login after MFA challenge.
-// 2 FIX: Re-validate operator state between MFA verification and session creation
-// 3 FIX: Add refresh_token to response for proper token management.
-// 2 FIX: Added audit logging for MFA verify attempts.
 func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	var req struct {
 		OperatorID string `json:"operator_id" binding:"required"`

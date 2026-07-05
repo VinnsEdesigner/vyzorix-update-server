@@ -118,20 +118,18 @@ func (r *RegistrationLogRepository) ListByIMEI(ctx context.Context, imei string,
 	if err != nil {
 		return nil, 0, err
 	}
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var id string
 		if scanErr := rows.Scan(&id); scanErr != nil {
-			_ = rows.Close()
 			return nil, 0, scanErr
 		}
 		inboxIDs = append(inboxIDs, id)
 	}
 	// Check rows.Err() after iteration
 	if rowsErr := rows.Err(); rowsErr != nil {
-		_ = rows.Close()
 		return nil, 0, rowsErr
 	}
-	_ = rows.Close()
 
 	if len(inboxIDs) == 0 {
 		return []*inbox.RegistrationLog{}, 0, nil
