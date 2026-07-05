@@ -46,8 +46,20 @@ func (s *Server) setupGlobalMiddleware() {
 
 func (s *Server) setupStaticRoutes() {
 	s.engine.Static("/assets", filepath.Join(s.config.PublicDir, "assets"))
-	s.engine.GET("/health", s.healthHandler)
-	s.engine.GET("/healthz", s.healthHandler)
+
+	// /health - public, simple 200 OK with no body
+	s.engine.GET("/health", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	// /healthz - server access token protected (INFRASTRUCTURE-protected)
+	// Requires X-Vyzorix-Token header with valid TokenSecret
+	auth := middleware.Authenticator{
+		TokenSecret:       s.config.TokenSecret,
+		DevelopmentBypass:  s.config.Env != "production",
+	}
+	s.engine.GET("/healthz", auth.Middleware(), s.healthHandler)
+
 	if s.metricsHandler != nil {
 		s.engine.GET("/metrics", s.metricsHandler.Handle)
 	}
