@@ -155,10 +155,10 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		ExpiresIn    int    `json:"expires_in"`
 	}
 
-	if err := postJSON(ctx, tokenURL, tokenReq, &tokenResp); err != nil {
-		h.presenter.BadGateway(c, "failed to exchange code with Google")
-		return
-	}
+	if postErr := postJSON(ctx, tokenURL, tokenReq, &tokenResp); postErr != nil {
+			h.presenter.BadGateway(c, "failed to exchange code with Google")
+			return
+		}
 
 	// Verify ID token
 	googleClaims, err := h.googleVer.Verify(tokenResp.IDToken)

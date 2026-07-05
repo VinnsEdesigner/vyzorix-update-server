@@ -26,16 +26,6 @@ func DefaultTimeoutConfig() TimeoutConfig {
 	}
 }
 
-// timeoutResponseWriter wraps gin.ResponseWriter to detect if headers were written.
-type timeoutResponseWriter struct {
-	gin.ResponseWriter
-	timeoutOccurred bool
-}
-
-func (w *timeoutResponseWriter) WriteHeader(code int) {
-	w.ResponseWriter.WriteHeader(code)
-}
-
 // GinTimeout returns a Gin middleware that applies request timeouts.
 // This is the enterprise-grade solution for Bug 49 - timeouts at middleware level.
 func GinTimeout(config TimeoutConfig) func(c *gin.Context) {
@@ -61,9 +51,6 @@ func GinTimeout(config TimeoutConfig) func(c *gin.Context) {
 		// Replace request context with timeout context
 		c.Request = c.Request.WithContext(ctx)
 
-		// Wrap response writer to detect timeout
-		wrapped := &timeoutResponseWriter{ResponseWriter: c.Writer}
-
 		// Process request in goroutine to allow timeout detection
 		done := make(chan struct{})
 		go func() {
@@ -77,7 +64,6 @@ func GinTimeout(config TimeoutConfig) func(c *gin.Context) {
 			// Request completed normally
 		case <-ctx.Done():
 			// Timeout occurred
-			wrapped.timeoutOccurred = true
 			c.Abort()
 			if !c.Writer.Written() {
 				c.JSON(http.StatusGatewayTimeout, gin.H{

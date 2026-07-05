@@ -74,7 +74,6 @@ func (m *AuthMiddleware) authenticateSession(ctx context.Context, cookieHeader s
 		return nil, gqlerrors.ErrUnauthorized
 	}
 
-	// 11 FIX: ValidateSession expects sessionID, not operatorID - use sessionID directly
 	_, op, err := m.AuthService.ValidateSession(ctx, sessionID)
 	if err != nil || op == nil {
 		m.Log.Debug("session validation failed", "sessionID", sessionID, "err", err)

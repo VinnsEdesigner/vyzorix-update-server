@@ -52,10 +52,10 @@ type Storage interface {
 }
 
 // Handler provides account lockout functionality.
-type Handler struct { //
+type Handler struct {
+	logger  *slog.Logger
 	storage Storage
 	config  Config
-	logger  *slog.Logger
 }
 
 // New creates a new account lockout handler.

@@ -115,6 +115,7 @@ type Server struct {
 	diagnosticsInspectHandler  *diagnosticshandlers.InspectHandler
 	diagnosticsTimelineHandler *diagnosticshandlers.TimelineHandler
 	config                     config.Config
+	apiKeyAuth                 *middleware.APIKeyAuth
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -422,6 +423,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		db:                cfg.DB,
 		hub:               cfg.Hub,
 		AuditLogger:       cfg.AuditLogger,
+		apiKeyAuth:        middleware.NewAPIKeyAuth(cfg.Config.APIKeys, cfg.Config.APIKeyPrefix),
 	}
 
 	// Wire handlers from HandlerSet
