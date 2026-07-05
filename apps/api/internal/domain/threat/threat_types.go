@@ -53,7 +53,7 @@ const (
 
 // LoginContext contains data about a login attempt for threat evaluation.
 // All fields should be validated and sanitized before use.
-type LoginContext struct { //nolint:govet
+type LoginContext struct { //
 	OperatorID     string
 	IPAddress     string
 	Location      string

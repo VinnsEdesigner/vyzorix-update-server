@@ -174,7 +174,7 @@ func (pm *ProcessManager) startInternalLocked(scriptPath string) error {
 
 // startProcess starts the SSR subprocess.
 func (pm *ProcessManager) startProcess(scriptPath string) error {
-	//nolint:gosec.
+	//
 	pm.cmd = exec.Command("node", scriptPath)
 	pm.cmd.Stdout = os.Stdout
 	pm.cmd.Stderr = os.Stderr

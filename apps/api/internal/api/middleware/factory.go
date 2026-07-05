@@ -15,7 +15,7 @@ import (
 
 // MiddlewareFactory creates and configures all middleware with their dependencies.
 // This centralizes middleware creation and reduces coupling in server.go.
-//nolint:govet // Field alignment requires reordering interface fields which breaks the type layout.
+//
 type MiddlewareFactory struct {
 	ssrCleanup          func()
 	allowedOrigins      []string

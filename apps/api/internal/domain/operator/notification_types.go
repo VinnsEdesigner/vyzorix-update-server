@@ -30,8 +30,8 @@ type WebhookNotifications struct {
 
 // NotificationSettings holds all notification preferences for an operator.
 type NotificationSettings struct {
-	Webhook  WebhookNotifications `json:"webhook"`
 	Channels []string             `json:"channels"`
+	Webhook  WebhookNotifications `json:"webhook"`
 	Email    EmailNotifications   `json:"email"`
 	Push     PushNotifications    `json:"push"`
 	Enabled  bool                 `json:"enabled"`
