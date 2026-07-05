@@ -415,7 +415,9 @@ func migrateAddCommandsColumns(db *sql.DB) error {
 		`ALTER TABLE commands ADD COLUMN failure_reason TEXT`,
 	}
 	for _, col := range cols {
-		db.ExecContext(context.Background(), col) //nolint:errcheck
+		if _, err := db.ExecContext(context.Background(), col); err != nil {
+			return err
+		}
 	}
 
 	return nil
