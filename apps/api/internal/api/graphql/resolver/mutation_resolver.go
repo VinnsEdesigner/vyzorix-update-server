@@ -369,12 +369,23 @@ func (r *Resolver) UpdateMyNotifications(p graphql.ResolveParams) (interface{}, 
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Parse notification input
 	input, ok := p.Args["input"].(map[string]interface{})
 	if !ok {
 		return nil, r.Presenter.BadRequestError("invalid input")
 	}
 
+	notifInput := r.parseNotificationInput(input)
+
+	notifications, err := r.NotificationSvc.UpdateNotifications(ctx, op.ID, notifInput)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to update notifications")
+	}
+
+	return notifications, nil
+}
+
+// parseNotificationInput extracts notification settings from GraphQL input.
+func (r *Resolver) parseNotificationInput(input map[string]interface{}) *domainoperator.NotificationInput {
 	notifInput := &domainoperator.NotificationInput{}
 
 	if v, ok := input["enabled"].(bool); ok {
@@ -391,60 +402,77 @@ func (r *Resolver) UpdateMyNotifications(p graphql.ResolveParams) (interface{}, 
 		notifInput.Channels = &ch
 	}
 
-	if email, ok := input["email"].(map[string]interface{}); ok {
-		emailInput := &domainoperator.EmailNotificationInput{}
-		if v, ok := email["thresholdBreach"].(bool); ok {
-			emailInput.ThresholdBreach = &v
-		}
-		if v, ok := email["deviceOffline"].(bool); ok {
-			emailInput.DeviceOffline = &v
-		}
-		if v, ok := email["deviceOnline"].(bool); ok {
-			emailInput.DeviceOnline = &v
-		}
-		notifInput.Email = emailInput
+	notifInput.Email = r.parseEmailNotification(input["email"])
+	notifInput.Webhook = r.parseWebhookNotification(input["webhook"])
+	notifInput.Push = r.parsePushNotification(input["push"])
+
+	return notifInput
+}
+
+// parseEmailNotification parses email notification settings.
+func (r *Resolver) parseEmailNotification(email interface{}) *domainoperator.EmailNotificationInput {
+	emailMap, ok := email.(map[string]interface{})
+	if !ok {
+		return nil
 	}
 
-	if webhook, ok := input["webhook"].(map[string]interface{}); ok {
-		webhookInput := &domainoperator.WebhookNotificationInput{}
-		if v, ok := webhook["enabled"].(bool); ok {
-			webhookInput.Enabled = &v
-		}
-		if v, ok := webhook["url"].(string); ok {
-			webhookInput.URL = &v
-		}
-		if v, ok := webhook["types"].([]interface{}); ok {
-			types := make([]string, 0, len(v))
-			for _, t := range v {
-				if str, ok := t.(string); ok {
-					types = append(types, str)
-				}
+	emailInput := &domainoperator.EmailNotificationInput{}
+	if v, ok := emailMap["thresholdBreach"].(bool); ok {
+		emailInput.ThresholdBreach = &v
+	}
+	if v, ok := emailMap["deviceOffline"].(bool); ok {
+		emailInput.DeviceOffline = &v
+	}
+	if v, ok := emailMap["deviceOnline"].(bool); ok {
+		emailInput.DeviceOnline = &v
+	}
+	return emailInput
+}
+
+// parseWebhookNotification parses webhook notification settings.
+func (r *Resolver) parseWebhookNotification(webhook interface{}) *domainoperator.WebhookNotificationInput {
+	webhookMap, ok := webhook.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	webhookInput := &domainoperator.WebhookNotificationInput{}
+	if v, ok := webhookMap["enabled"].(bool); ok {
+		webhookInput.Enabled = &v
+	}
+	if v, ok := webhookMap["url"].(string); ok {
+		webhookInput.URL = &v
+	}
+	if v, ok := webhookMap["types"].([]interface{}); ok {
+		types := make([]string, 0, len(v))
+		for _, t := range v {
+			if str, ok := t.(string); ok {
+				types = append(types, str)
 			}
-			webhookInput.Types = types
 		}
-		notifInput.Webhook = webhookInput
+		webhookInput.Types = types
+	}
+	return webhookInput
+}
+
+// parsePushNotification parses push notification settings.
+func (r *Resolver) parsePushNotification(push interface{}) *domainoperator.PushNotificationInput {
+	pushMap, ok := push.(map[string]interface{})
+	if !ok {
+		return nil
 	}
 
-	if push, ok := input["push"].(map[string]interface{}); ok {
-		pushInput := &domainoperator.PushNotificationInput{}
-		if v, ok := push["thresholdBreach"].(bool); ok {
-			pushInput.ThresholdBreach = &v
-		}
-		if v, ok := push["deviceOffline"].(bool); ok {
-			pushInput.DeviceOffline = &v
-		}
-		if v, ok := push["deviceOnline"].(bool); ok {
-			pushInput.DeviceOnline = &v
-		}
-		notifInput.Push = pushInput
+	pushInput := &domainoperator.PushNotificationInput{}
+	if v, ok := pushMap["thresholdBreach"].(bool); ok {
+		pushInput.ThresholdBreach = &v
 	}
-
-	notifications, err := r.NotificationSvc.UpdateNotifications(ctx, op.ID, notifInput)
-	if err != nil {
-		return nil, r.Presenter.InternalError("failed to update notifications")
+	if v, ok := pushMap["deviceOffline"].(bool); ok {
+		pushInput.DeviceOffline = &v
 	}
-
-	return notifications, nil
+	if v, ok := pushMap["deviceOnline"].(bool); ok {
+		pushInput.DeviceOnline = &v
+	}
+	return pushInput
 }
 
 // TestWebhook resolves the testWebhook mutation.
