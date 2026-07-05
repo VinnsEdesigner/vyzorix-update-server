@@ -75,8 +75,8 @@ The Diagnostics Inspector requires the following device data:
 
 | Endpoint | Status | Handler | Notes |
 |----------|--------|---------|-------|
-| GET /v1/device/:id | EXISTS | DeviceHandler.Get | Basic device info |
-| GET /v1/device/:id/commands/pending | EXISTS | GetPending | Pending commands |
+| GET /v1/device/:imei | EXISTS | DeviceHandler.Get | Basic device info |
+| GET /v1/device/:imei/commands/pending | EXISTS | GetPending | Pending commands |
 | WebSocket /ws | EXISTS | WebSocketHandler | Real-time telemetry |
 
 ### 2.2 Missing Endpoints

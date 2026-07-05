@@ -72,7 +72,7 @@ Different endpoint types use different authentication methods. API keys (databas
 | **PUBLIC** | `/health` | None | Liveness probe |
 | **PUBLIC** | `/v1/auth/*` | None | Login, register, password reset |
 | **PUBLIC** | `/v1/device/register` | None | Device self-registration |
-| **PUBLIC** | `/v1/device/:id/status` | None | Public device status |
+| **PUBLIC** | `/v1/device/:imei/status` | None | Public device status |
 | **PUBLIC** | `/v1/device/inbox` | None | Device inbox submission |
 | **PUBLIC** | `/v1/device/confirm` | None | Device confirmation |
 | **INFRASTRUCTURE** | `/healthz` | Env API Key | Readiness probe |
@@ -83,10 +83,10 @@ Different endpoint types use different authentication methods. API keys (databas
 | **SESSION ONLY** | `/v1/dashboard/*` | Session Cookie | Dashboard data |
 | **SESSION ONLY** | `/v1/api-keys/*` | Session Cookie | API key management |
 | **SESSION ONLY** | `/api/v1/apk/*` | Session Cookie | APK downloads |
-| **DEVICE AUTH** | `/v1/device/:id/command` | HMAC Signature | Device receives commands |
-| **DEVICE AUTH** | `/v1/device/:id/fcm-token` | HMAC Signature | Device updates FCM |
+| **DEVICE AUTH** | `/v1/device/:imei/command` | HMAC Signature | Device receives commands |
+| **DEVICE AUTH** | `/v1/device/:imei/fcm-token` | HMAC Signature | Device updates FCM |
 | **TENANT** | `/v1/devices/*` | Session OR API Key + Scope | Device listing, deregistration |
-| **TENANT** | `/v1/device/:id/*` | Session OR API Key + Scope | Device management |
+| **TENANT** | `/v1/device/:imei/*` | Session OR API Key + Scope | Device management |
 | **TENANT** | `/v1/command/*` | Session OR API Key + Scope | Command dispatch |
 | **TENANT** | `/v1/telemetry/*` | Session OR API Key + Scope | Telemetry queries |
 | **TENANT** | `/v1/updates/*` | Session OR API Key + Scope | Update pushes, sync |
@@ -126,8 +126,8 @@ Different endpoint types use different authentication methods. API keys (databas
                         │ No
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              IS PATH /v1/device/:id/command OR             │
-│              /v1/device/:id/fcm-token ?                    │
+│              IS PATH /v1/device/:imei/command OR             │
+│              /v1/device/:imei/fcm-token ?                    │
 │  if YES → Check HMAC Signature                            │
 │           if valid → Allow                                 │
 │           if invalid → 401                                │

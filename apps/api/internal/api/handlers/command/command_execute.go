@@ -46,11 +46,11 @@ func (h *ExecuteHandler) verifyDeviceOwnership(ctx context.Context, deviceID, op
 	return err
 }
 
-// Handle handles POST /v1/device/:id/command.
+// Handle handles POST /v1/device/:imei/command.
 func (h *ExecuteHandler) Handle(c *gin.Context) {
-	deviceID := c.Param("id")
-	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device id required"})
+	imei := c.Param("imei")
+	if imei == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device imei required"})
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 
 	// Verify the device belongs to this operator (DOA check)
 	// This returns the same error whether device doesn't exist OR isn't owned by operator
-	if err := h.verifyDeviceOwnership(c.Request.Context(), deviceID, op.ID); err != nil {
+	if err := h.verifyDeviceOwnership(c.Request.Context(), imei, op.ID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
 		return
 	}
@@ -108,7 +108,7 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 
 	// Use command service for proper command creation and idempotency
 	cmdReq := &dto.SendCommandRequest{
-		DeviceID:   deviceID,
+		DeviceID:   imei,
 		Command:    req.Command,
 		Args:       req.Args,
 		DispatchID: req.DispatchID,
@@ -116,7 +116,7 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 
 	cmdResp, err := h.commandService.SendCommand(c.Request.Context(), cmdReq)
 	if err != nil {
-		h.log.Error("failed to send command", "error", err, "deviceId", deviceID)
+		h.log.Error("failed to send command", "error", err, "deviceId", imei)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to send command"})
 
 		return
@@ -128,8 +128,8 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 	// Check if device is online via WebSocket and send
 	delivery := "queued"
 
-	if h.hub != nil && h.hub.Online(deviceID) {
-		if sent := h.hub.Send(deviceID, frame); sent {
+	if h.hub != nil && h.hub.Online(imei) {
+		if sent := h.hub.Send(imei, frame); sent {
 			delivery = "sent"
 			// Mark as delivered
 			if err := h.commandService.MarkDelivered(c.Request.Context(), cmdResp.CommandID); err != nil {
@@ -140,16 +140,16 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 
 	// If not sent via WebSocket, try FCM wake for offline devices
 	if delivery == "queued" && h.fcmNotifier != nil {
-		device, err := h.deviceService.GetDevice(c.Request.Context(), deviceID)
+		device, err := h.deviceService.GetDevice(c.Request.Context(), imei)
 		if err == nil && device.FCMToken != "" {
 			wake := fcm.SilentWake{
 				Token:      device.FCMToken,
 				Command:    req.Command,
 				DispatchID: cmdResp.DispatchID,
-				DeviceID:   deviceID,
+				DeviceID:   imei,
 			}
 			if err := h.fcmNotifier.SendSilentWake(c.Request.Context(), wake); err != nil {
-				h.log.Warn("fcm wake failed", "deviceId", deviceID, "err", err)
+				h.log.Warn("fcm wake failed", "deviceId", imei, "err", err)
 			} else {
 				delivery = "queued_fcm"
 			}
@@ -235,11 +235,11 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 	})
 }
 
-// GetPending handles GET /v1/device/:id/commands/pending.
+// GetPending handles GET /v1/device/:imei/commands/pending.
 func (h *ExecuteHandler) GetPending(c *gin.Context) {
-	deviceID := c.Param("id")
-	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device id required"})
+	imei := c.Param("imei")
+	if imei == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device imei required"})
 		return
 	}
 
@@ -250,14 +250,14 @@ func (h *ExecuteHandler) GetPending(c *gin.Context) {
 		return
 	}
 
-	if err := h.verifyDeviceOwnership(c.Request.Context(), deviceID, op.ID); err != nil {
+	if err := h.verifyDeviceOwnership(c.Request.Context(), imei, op.ID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
 		return
 	}
 
-	pendingCmds, err := h.commandService.GetPendingCommands(c.Request.Context(), deviceID)
+	pendingCmds, err := h.commandService.GetPendingCommands(c.Request.Context(), imei)
 	if err != nil {
-		h.log.Error("failed to get pending commands", "error", err, "deviceId", deviceID)
+		h.log.Error("failed to get pending commands", "error", err, "deviceId", imei)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to get pending commands"})
 
 		return
