@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	domain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
+	domain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -16,37 +16,37 @@ import (
 // Based on MULTI_CLIENT_API_KEY_SYSTEM.md Section 2 - Endpoint Authentication
 // =============================================================================
 
-// PathType defines the authentication boundary for a path
+// PathType defines the authentication boundary for a path.
 type PathType int
 
 const (
-	PathTypeUnknown PathType = iota
-	PathTypePublic           // No auth required
-	PathTypeInfrastructure   // Env API Key (TokenSecret)
-	PathTypeSessionOnly      // Session Cookie required
-	PathTypeDeviceAuth       // HMAC Signature
-	PathTypeTenant           // Session OR API Key + Scope
+	PathTypeUnknown        PathType = iota
+	PathTypePublic                  // No auth required
+	PathTypeInfrastructure          // Env API Key (TokenSecret)
+	PathTypeSessionOnly             // Session Cookie required
+	PathTypeDeviceAuth              // HMAC Signature
+	PathTypeTenant                  // Session OR API Key + Scope
 )
 
-// PathBoundary maps path patterns to their authentication requirements
+// PathBoundary maps path patterns to their authentication requirements.
 var PathBoundaries = map[string]PathType{
 	// PUBLIC - No auth required
-	"/health":                  PathTypePublic,
-	"/v1/auth/":                PathTypePublic,
-	"/v1/device/register":      PathTypePublic,
-	"/v1/device/public/":      PathTypePublic,
-	"/v1/device/inbox":        PathTypePublic,
-	"/v1/device/confirm":      PathTypePublic,
-	"/metrics":                PathTypePublic, // Prometheus scraping
+	"/health":             PathTypePublic,
+	"/v1/auth/":           PathTypePublic,
+	"/v1/device/register": PathTypePublic,
+	"/v1/device/public/":  PathTypePublic,
+	"/v1/device/inbox":    PathTypePublic,
+	"/v1/device/confirm":  PathTypePublic,
+	"/metrics":            PathTypePublic, // Prometheus scraping
 
 	// INFRASTRUCTURE - TokenSecret (env var) - handled at route level
 	// /admin/*, /internal/*, /healthz
 
 	// SESSION ONLY - Session Cookie required (no API key)
-	"/bin/":                   PathTypeSessionOnly,
-	"/v1/dashboard/":          PathTypeSessionOnly,
-	"/v1/api-keys/":           PathTypeSessionOnly,
-	"/api/v1/apk/":           PathTypeSessionOnly,
+	"/bin/":          PathTypeSessionOnly,
+	"/v1/dashboard/": PathTypeSessionOnly,
+	"/v1/api-keys/":  PathTypeSessionOnly,
+	"/api/v1/apk/":   PathTypeSessionOnly,
 
 	// DEVICE AUTH - HMAC Signature - handled by device middleware
 	// /v1/device/:imei/command, /v1/device/:imei/fcm-token
@@ -54,14 +54,14 @@ var PathBoundaries = map[string]PathType{
 
 	// TENANT - Session OR API Key + Scope
 	"/v1/devices/":            PathTypeTenant,
-	"/v1/command/":           PathTypeTenant,
-	"/v1/telemetry/":         PathTypeTenant,
-	"/v1/updates/":           PathTypeTenant,
-	"/v1/connections/":       PathTypeTenant,
-	"/v1/device/diagnostics/":PathTypeTenant,
+	"/v1/command/":            PathTypeTenant,
+	"/v1/telemetry/":          PathTypeTenant,
+	"/v1/updates/":            PathTypeTenant,
+	"/v1/connections/":        PathTypeTenant,
+	"/v1/device/diagnostics/": PathTypeTenant,
 }
 
-// ClassifyPath determines the PathType for a given path
+// ClassifyPath determines the PathType for a given path.
 func ClassifyPath(path string) PathType {
 	// Check exact matches first
 	if pt, ok := PathBoundaries[path]; ok {
@@ -78,27 +78,27 @@ func ClassifyPath(path string) PathType {
 	return PathTypeTenant // Default to TENANT
 }
 
-// IsPublicPath returns true if the path is PUBLIC (no auth required)
+// IsPublicPath returns true if the path is PUBLIC (no auth required).
 func IsPublicPath(path string) bool {
 	return ClassifyPath(path) == PathTypePublic
 }
 
-// IsInfrastructurePath returns true if the path is INFRASTRUCTURE (Env API Key)
+// IsInfrastructurePath returns true if the path is INFRASTRUCTURE (Env API Key).
 func IsInfrastructurePath(path string) bool {
 	return ClassifyPath(path) == PathTypeInfrastructure
 }
 
-// IsSessionOnlyPath returns true if the path requires Session Cookie
+// IsSessionOnlyPath returns true if the path requires Session Cookie.
 func IsSessionOnlyPath(path string) bool {
 	return ClassifyPath(path) == PathTypeSessionOnly
 }
 
-// IsDeviceAuthPath returns true if the path requires HMAC authentication
+// IsDeviceAuthPath returns true if the path requires HMAC authentication.
 func IsDeviceAuthPath(path string) bool {
 	return ClassifyPath(path) == PathTypeDeviceAuth
 }
 
-// IsTenantPath returns true if the path is TENANT (Session OR API Key + Scope)
+// IsTenantPath returns true if the path is TENANT (Session OR API Key + Scope).
 func IsTenantPath(path string) bool {
 	return ClassifyPath(path) == PathTypeTenant
 }
@@ -122,7 +122,7 @@ func NewTenantAPIKeyAuth(service *keys.Service, keyPrefix string) *TenantAPIKeyA
 }
 
 // Middleware returns the Gin middleware function for tenant API key authentication.
-// This handles TENANT paths: Session OR API Key + Scope
+// This handles TENANT paths: Session OR API Key + Scope.
 func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
@@ -206,7 +206,7 @@ func extractAPIKeyFromHeader(c *gin.Context) string {
 	return ""
 }
 
-// ScopeEnforcementFunc is a function that determines required scope based on HTTP method
+// ScopeEnforcementFunc is a function that determines required scope based on HTTP method.
 type ScopeEnforcementFunc func(method string) domain.Scope
 
 // ScopeEnforcement returns a middleware that enforces scope based on HTTP method.

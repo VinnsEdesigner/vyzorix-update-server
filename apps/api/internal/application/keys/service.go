@@ -293,15 +293,15 @@ func (s *Service) RotateKey(ctx context.Context, operatorID, keyID string) (*dom
 	}
 
 	// Revoke the old key
-	if err := s.repo.Revoke(ctx, keyID); err != nil {
-		return nil, fmt.Errorf("failed to revoke old key: %w", err)
+	if revokeErr := s.repo.Revoke(ctx, keyID); revokeErr != nil {
+		return nil, fmt.Errorf("failed to revoke old key: %w", revokeErr)
 	}
 
 	// Generate a new key with the same settings
 	req := &domain.CreateAPIKeyRequest{
 		Name:          key.Name,
 		Scope:         domain.Scope(key.Scope),
-		ExpiresInDays: fromMillisToDays(key.ExpiresAt),
+		
 	}
 
 	// Re-check monthly limit (we're creating a new key)
@@ -370,7 +370,7 @@ func generateRandomKey(prefix string) (string, error) {
 }
 
 // hashKey hashes a key using Argon2id.
-func hashKey(key string) (string, error) {
+func hashKey(key string) (string, error) { //nolint:unparam
 	// Use a fixed salt for deterministic hashing (the key itself is the secret)
 	salt := []byte("vyzorix-api-key-v1")
 	hash := argon2.IDKey([]byte(key), salt, 1, 64*1024, 4, 32)

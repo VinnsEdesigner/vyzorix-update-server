@@ -41,18 +41,18 @@ func (s Scope) CanDelete() bool {
 
 // APIKey represents a multi-tenant API key.
 type APIKey struct {
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	ExpiresAt    *time.Time `json:"expires_at"`
+	LastRequest  *time.Time `json:"last_request"`
+	RevokedAt    *time.Time `json:"revoked_at"`
 	ID           string     `json:"id"`
 	OperatorID   string     `json:"operator_id"`
 	Name         string     `json:"name"`
-	KeyPrefix    string     `json:"key_prefix"`    // First 8 chars for display: "vxyz_a1b2"
-	Scope        Scope      `json:"scope"`         // Key permissions scope
-	ExpiresAt    *time.Time `json:"expires_at"`    // nil = never expires
+	KeyPrefix    string     `json:"key_prefix"`
+	Scope        Scope      `json:"scope"`
+	RequestCount int64      `json:"request_count"`
 	IsActive     bool       `json:"is_active"`
-	RequestCount int64      `json:"request_count"` // Total requests made with this key
-	LastRequest  *time.Time `json:"last_request"`  // Last time key was used
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
-	RevokedAt    *time.Time `json:"revoked_at"`
 }
 
 // IsExpired returns true if the key has expired.
@@ -70,9 +70,9 @@ func (k *APIKey) IsValid() bool {
 
 // CreateAPIKeyRequest represents a request to create a new API key.
 type CreateAPIKeyRequest struct {
+	ExpiresInDays *int   `json:"expires_in_days"`
 	Name          string `json:"name" binding:"required,max=64"`
 	Scope         Scope  `json:"scope" binding:"required"`
-	ExpiresInDays *int   `json:"expires_in_days"` // nil = no expiration
 }
 
 // UpdateAPIKeyRequest represents a request to update an API key.
@@ -82,23 +82,23 @@ type UpdateAPIKeyRequest struct {
 }
 
 // APIKeyWithFullKey represents an API key response with the full key (only returned on create/rotate).
-type APIKeyWithFullKey struct {
+type APIKeyWithFullKey struct { //nolint:fieldalignment
 	APIKey
 	FullKey string `json:"api_key"` // The full key - only shown once!
 }
 
 // APIKeyResponse represents an API key in responses (without the full key).
 type APIKeyResponse struct {
+	CreatedAt    time.Time  `json:"created_at"`
+	ExpiresAt    *time.Time `json:"expires_at"`
+	LastRequest  *time.Time `json:"last_request_at"`
+	RevokedAt    *time.Time `json:"revoked_at"`
 	ID           string     `json:"id"`
 	Name         string     `json:"name"`
 	KeyPrefix    string     `json:"key_prefix"`
 	Scope        Scope      `json:"scope"`
-	ExpiresAt    *time.Time `json:"expires_at"`
-	IsActive     bool       `json:"is_active"`
 	RequestCount int64      `json:"request_count"`
-	LastRequest  *time.Time `json:"last_request_at"`
-	CreatedAt    time.Time  `json:"created_at"`
-	RevokedAt    *time.Time `json:"revoked_at"`
+	IsActive     bool       `json:"is_active"`
 }
 
 // ToResponse converts an APIKey to an APIKeyResponse.
@@ -147,19 +147,19 @@ type GlobalAPIKeyStats struct {
 
 // API key errors.
 var (
-	ErrAPIKeyNotFound        = errors.New("api key not found")
-	ErrAPIKeyExpired         = errors.New("api key has expired")
-	ErrAPIKeyRevoked         = errors.New("api key has been revoked")
-	ErrAPIKeyInactive        = errors.New("api key is inactive")
-	ErrInvalidScope          = errors.New("invalid scope")
-	ErrMonthlyLimitExceeded  = errors.New("monthly key creation limit exceeded")
-	ErrKeyNameConflict       = errors.New("key with this name already exists")
-	ErrInsufficientScope     = errors.New("insufficient scope for this operation")
-	ErrRateLimitExceeded     = errors.New("rate limit exceeded")
-	ErrAPIKeyRequired        = errors.New("api key required")
-	ErrInvalidAPIKey         = errors.New("invalid api key")
-	ErrKeyNameTooLong        = errors.New("key name exceeds maximum length of 64 characters")
-	ErrInvalidExpiryDays     = errors.New("invalid expiry days")
+	ErrAPIKeyNotFound       = errors.New("api key not found")
+	ErrAPIKeyExpired        = errors.New("api key has expired")
+	ErrAPIKeyRevoked        = errors.New("api key has been revoked")
+	ErrAPIKeyInactive       = errors.New("api key is inactive")
+	ErrInvalidScope         = errors.New("invalid scope")
+	ErrMonthlyLimitExceeded = errors.New("monthly key creation limit exceeded")
+	ErrKeyNameConflict      = errors.New("key with this name already exists")
+	ErrInsufficientScope    = errors.New("insufficient scope for this operation")
+	ErrRateLimitExceeded    = errors.New("rate limit exceeded")
+	ErrAPIKeyRequired       = errors.New("api key required")
+	ErrInvalidAPIKey        = errors.New("invalid api key")
+	ErrKeyNameTooLong       = errors.New("key name exceeds maximum length of 64 characters")
+	ErrInvalidExpiryDays    = errors.New("invalid expiry days")
 )
 
 // ErrorCode returns the error code for an error.

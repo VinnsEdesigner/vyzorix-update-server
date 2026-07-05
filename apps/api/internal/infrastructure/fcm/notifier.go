@@ -49,19 +49,16 @@ type FCMMetrics struct {
 }
 
 type SilentWake struct {
-	Token       string
-	Command     string
-	DispatchID  string
-	DeviceID    string
-	Priority    string
-	// CommandSecret is used for registration approval (device authorization)
+	Token         string
+	Command       string
+	DispatchID    string
+	DeviceID      string
+	Priority      string
 	CommandSecret string
-	// APK download info for update commands (sent via FCM data payload)
-	APKFilename string
-	SHA256     string
-	APKSize    int64
-	// DownloadURL is the full URL for APK download (optional, device can construct from filename)
-	DownloadURL string
+	APKFilename   string
+	SHA256        string
+	DownloadURL   string
+	APKSize       int64
 }
 
 type Notifier interface {
@@ -74,14 +71,14 @@ type Notifier interface {
 // allowing the service to continue operating.
 // Includes circuit breaker to prevent cascading failures.
 type SafeNotifier struct {
-	Notifier      Notifier
+	Notifier       Notifier
 	circuitBreaker *CircuitBreaker
 }
 
 // NewSafeNotifier creates a SafeNotifier with optional circuit breaker.
 func NewSafeNotifier(notifier Notifier) *SafeNotifier {
 	return &SafeNotifier{
-		Notifier:      notifier,
+		Notifier:       notifier,
 		circuitBreaker: NewCircuitBreaker(DefaultCircuitBreakerConfig()),
 	}
 }
@@ -96,7 +93,7 @@ func (s *SafeNotifier) SendSilentWake(ctx context.Context, wake SilentWake) erro
 	// Check circuit breaker before attempting FCM call
 	if s.circuitBreaker != nil && !s.circuitBreaker.Allow() {
 		s.Notifier.GetMetrics() // Trigger any side effects
-		return nil // Fail fast but gracefully
+		return nil              // Fail fast but gracefully
 	}
 
 	err := s.Notifier.SendSilentWake(ctx, wake)
@@ -197,7 +194,7 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 			Android: &messaging.AndroidConfig{
 				Priority: priority,
 				TTL:      ptr24Hours(),
-				Data: buildFCMData(wake),
+				Data:     buildFCMData(wake),
 			},
 			Data: buildFCMData(wake),
 		}
