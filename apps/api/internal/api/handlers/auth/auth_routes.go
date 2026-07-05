@@ -22,18 +22,18 @@ import (
 // Dependencies holds all auth handler dependencies.
 type Dependencies struct {
 	OperatorRepo        operator.Repository
-	AuthService         *auth.AuthService
-	SessionManager      *infraauth.SessionManager
+	OAuthStateRepo      OAuthStateProvider
+	Lockout             *middleware.Lockout
 	GoogleVerifier      *infraauth.GoogleTokenVerifier
 	ClientService       *client.Service
 	EmailService        *emailService.Service
-	Lockout             *middleware.Lockout
+	SessionManager      *infraauth.SessionManager
 	AuditLogger         *audit.Logger
 	IPIntelligence      *middleware.IPIntelligence
 	Presenter           *response.Presenter
-	Config              config.Config
 	SettingsRateLimiter *middleware.SettingsRateLimiterMiddleware
-	OAuthStateRepo      OAuthStateProvider
+	AuthService         *auth.AuthService
+	Config              config.Config
 }
 
 // AllHandlers holds references to all auth handlers.

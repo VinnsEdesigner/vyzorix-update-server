@@ -46,15 +46,15 @@ type AuthService struct {
 	operatorRepo       operator.Repository
 	sessionRepo        session.Repository
 	emailVerifyRepo    email_verification.Repository
-	passwordResetRepo password_reset.Repository
-	passwordHasher    PasswordHasher
+	passwordResetRepo  password_reset.Repository
+	passwordHasher     PasswordHasher
 	refreshTokenRepo   RefreshTokenRepository
-	jwtManager        *infraauth.JWTManager
-	sessionManager    *infraSession.Manager
+	jwtManager         *infraauth.JWTManager
+	sessionManager     *infraSession.Manager
+	ldapConfig         *LDAPConfig
+	deviceStore        *DeviceStore
 	sessionTTL         time.Duration
 	refreshTokenExpiry time.Duration
-	ldapConfig        *LDAPConfig
-	deviceStore        *DeviceStore // In-memory device fingerprint store
 }
 
 // NewAuthService creates a new AuthService.

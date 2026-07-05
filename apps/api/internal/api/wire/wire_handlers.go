@@ -14,10 +14,10 @@ import (
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
-	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	updatesapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -38,43 +38,43 @@ import (
 type HandlerDependencies struct {
 	OperatorRepo   operator.Repository
 	FCMNotifier    fcm.Notifier
-	AuthService    *auth.AuthService
-	DeviceService  *device.Service
-	ClientService  *client.Service
+	OAuthStateRepo authhandlers.OAuthStateProvider
+	Presenter      *response.Presenter
+	Hub            *hub.Hub
 	EmailService   *emailService.Service
 	Lockout        *middleware.Lockout
 	DB             *storage.SQLite
 	AuditLogger    *audit.Logger
 	GoogleVerifier *infraauth.GoogleTokenVerifier
-	Presenter      *response.Presenter
+	DeviceService  *device.Service
 	IPIntelligence *middleware.IPIntelligence
-	Hub            *hub.Hub
+	ClientService  *client.Service
 	CommandService *command.Service
 	SessionManager *infraauth.SessionManager
 	Log            *slog.Logger
 	HmacVerifier   *cryptohmac.Verifier
 	UpdatesStorage *storage.UpdatesStorage
+	AuthService    *auth.AuthService
 	Config         config.Config
-	OAuthStateRepo authhandlers.OAuthStateProvider
 }
 
 // HandlerSet contains all handler instances.
 type HandlerSet struct {
-	Auth               *authhandlers.AllHandlers
-	DeviceRegister     *devicehandlers.RegisterHandler
-	DeviceStatus       *devicehandlers.StatusHandler
-	DeviceUpdater      *devicehandlers.UpdaterHandler
-	DeviceList         *devicehandlers.ListHandler
-	Devices            *devicehandlers.DevicesHandler
-	Command            *cmdhandlers.ExecuteHandler
-	Stream             *websockethandlers.StreamHandler
-	TelemetryHistory   *handlers.TelemetryHistoryHandler
-	ConnectionStatus   *handlers.ConnectionStatusHandler
-	AdminClients       *admin.ClientsHandler
-	Updater            *updaterhandlers.Handler
-	Updates            *updateshandlers.UpdatesHandler
-	UpdatesService     *updatesapplication.Service
-	ThresholdHandler   *operatorhandlers.ThresholdHandler
+	Auth                *authhandlers.AllHandlers
+	DeviceRegister      *devicehandlers.RegisterHandler
+	DeviceStatus        *devicehandlers.StatusHandler
+	DeviceUpdater       *devicehandlers.UpdaterHandler
+	DeviceList          *devicehandlers.ListHandler
+	Devices             *devicehandlers.DevicesHandler
+	Command             *cmdhandlers.ExecuteHandler
+	Stream              *websockethandlers.StreamHandler
+	TelemetryHistory    *handlers.TelemetryHistoryHandler
+	ConnectionStatus    *handlers.ConnectionStatusHandler
+	AdminClients        *admin.ClientsHandler
+	Updater             *updaterhandlers.Handler
+	Updates             *updateshandlers.UpdatesHandler
+	UpdatesService      *updatesapplication.Service
+	ThresholdHandler    *operatorhandlers.ThresholdHandler
 	NotificationHandler *operatorhandlers.NotificationHandler
 }
 

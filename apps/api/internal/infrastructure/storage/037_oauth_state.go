@@ -13,12 +13,12 @@ import (
 
 // OAuthState represents an OAuth state for CSRF protection.
 type OAuthState struct {
-	ID          string
-	State       string // Encrypted state value
-	RedirectURL string
-	Provider    string // "google" or "github"
 	ExpiresAt   time.Time
 	CreatedAt   time.Time
+	ID          string
+	State       string
+	RedirectURL string
+	Provider    string
 }
 
 // Ensure OAuthStateRepositoryImpl implements OAuthStateRepository interface.
