@@ -8,15 +8,15 @@ import (
 
 // AuditEntry represents a notification audit log entry.
 type AuditEntry struct {
+	SentAt     time.Time `json:"sentAt"`
 	ID         string    `json:"id"`
 	OperatorID string    `json:"operatorId"`
 	EventType  string    `json:"eventType"`
 	Channel    string    `json:"channel"`
 	DeviceID   string    `json:"deviceId,omitempty"`
 	Payload    string    `json:"payload,omitempty"`
-	Success    bool      `json:"success"`
 	ErrorMsg   string    `json:"errorMsg,omitempty"`
-	SentAt     time.Time `json:"sentAt"`
+	Success    bool      `json:"success"`
 }
 
 // Repository handles notification audit log operations.

@@ -65,7 +65,7 @@ type Notifier interface {
 // SafeNotifier wraps a Notifier with graceful degradation and circuit breaker.
 // If FCM fails, it logs the error but doesn't propagate it,
 // allowing the service to continue operating.
-// Bug 50 fix: Includes circuit breaker to prevent cascading failures.
+// TODO: Bug 50 fix: Includes circuit breaker to prevent cascading failures.
 type SafeNotifier struct {
 	Notifier      Notifier
 	circuitBreaker *CircuitBreaker
@@ -86,7 +86,7 @@ func (s *SafeNotifier) SendSilentWake(ctx context.Context, wake SilentWake) erro
 		return nil // Graceful degradation: no notifier configured
 	}
 
-	// Bug 50 fix: Check circuit breaker before attempting FCM call
+	// TODO: Bug 50 fix: Check circuit breaker before attempting FCM call
 	if s.circuitBreaker != nil && !s.circuitBreaker.Allow() {
 		s.Notifier.GetMetrics() // Trigger any side effects
 		return nil // Fail fast but gracefully

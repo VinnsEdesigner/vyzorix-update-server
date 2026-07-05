@@ -33,23 +33,23 @@ type DashboardBroadcaster interface {
 
 // Hub manages WebSocket connections and routes messages between devices and dashboard.
 type Hub struct {
-	telemetryRepo   telemetry.Repository
-	deviceRepo      device.Repository
-	eventProcessor  EventProcessor
+	telemetryRepo        telemetry.Repository
+	deviceRepo           device.Repository
+	eventProcessor       EventProcessor
 	dashboardBroadcaster DashboardBroadcaster
-	broadcast       chan []byte
-	clients         map[string]*Client
-	register        chan *Client
-	unreg           chan *Client
-	log             *slog.Logger
-	messageQueue    *MessageQueue
-	rateLimiter     *RateLimiter
-	telemetryFilter *TelemetryFilter
-	compression     *Compression
-	latencyConfig   *LatencyConfig
-	metrics         HubMetrics
-	mu              sync.RWMutex
-	metricsMu       sync.RWMutex
+	broadcast            chan []byte
+	clients              map[string]*Client
+	register             chan *Client
+	unreg                chan *Client
+	log                  *slog.Logger
+	messageQueue         *MessageQueue
+	rateLimiter          *RateLimiter
+	telemetryFilter      *TelemetryFilter
+	compression          *Compression
+	latencyConfig        *LatencyConfig
+	metrics              HubMetrics
+	mu                   sync.RWMutex
+	metricsMu            sync.RWMutex
 }
 
 // HubMetrics holds metrics for the WebSocket hub.
@@ -219,7 +219,7 @@ func (h *Hub) Run(ctx context.Context) {
 			// Emit device connected event
 			if h.eventProcessor != nil {
 				metadata := map[string]any{
-					"clientIP": c.Conn.RemoteAddr().String(),
+					"clientIP":  c.Conn.RemoteAddr().String(),
 					"timestamp": time.Now().UnixMilli(),
 				}
 				if err := h.eventProcessor.ProcessDeviceConnected(ctx, c.DeviceID, metadata); err != nil {
@@ -598,9 +598,9 @@ func (h *Hub) EmitThresholdBreach(deviceID string, metric string, value float64)
 
 // ConnectionInfo holds WebSocket connection information for a device.
 type ConnectionInfo struct {
-	Connected   bool
 	ConnectedAt time.Time
 	ClientIP    string
+	Connected   bool
 }
 
 // GetConnectionInfo retrieves WebSocket connection information for a device.

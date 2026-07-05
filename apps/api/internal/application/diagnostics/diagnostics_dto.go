@@ -8,33 +8,33 @@ type InspectRequest struct {
 
 // TimelineRequest represents the request for device timeline.
 type TimelineRequest struct {
-	IMEI     string `json:"imei" form:"imei"`
+	IMEI      string `json:"imei" form:"imei"`
 	EventType string `json:"eventType" form:"eventType"`
+	Cursor    string `json:"cursor" form:"cursor"`
 	StartTime int64  `json:"startTime" form:"startTime"`
 	EndTime   int64  `json:"endTime" form:"endTime"`
 	Limit     int    `json:"limit" form:"limit"`
-	Cursor    string `json:"cursor" form:"cursor"`
 }
 
 // TimelineResponse represents the response for device timeline.
 type TimelineResponse struct {
-	Events     []EventDTO      `json:"events"`
-	Pagination PaginationDTO   `json:"pagination"`
+	Pagination PaginationDTO `json:"pagination"`
+	Events     []EventDTO    `json:"events"`
 }
 
 // EventDTO represents a timeline event in the response.
 type EventDTO struct {
+	Data      map[string]any `json:"data,omitempty"`
 	ID        string         `json:"id"`
 	Type      string         `json:"type"`
 	Timestamp int64          `json:"timestamp"`
-	Data      map[string]any `json:"data,omitempty"`
 }
 
 // PaginationDTO represents pagination info in the response.
 type PaginationDTO struct {
+	NextCursor string `json:"nextCursor,omitempty"`
 	Limit      int    `json:"limit"`
 	HasMore    bool   `json:"hasMore"`
-	NextCursor string `json:"nextCursor,omitempty"`
 }
 
 // ErrorResponse represents an error response.
@@ -48,10 +48,10 @@ type ErrorResponse struct {
 
 // HTTPInspectionResponse is the HTTP API response for device inspection.
 type HTTPInspectionResponse struct {
+	Connection   HTTPConnectionInfo   `json:"connection"`
 	Identity     HTTPIdentityInfo     `json:"identity"`
 	Software     HTTPSoftwareInfo     `json:"software"`
 	Registration HTTPRegistrationInfo `json:"registration"`
-	Connection   HTTPConnectionInfo   `json:"connection"`
 	Telemetry    HTTPTelemetryInfo    `json:"telemetry"`
 }
 
@@ -75,19 +75,19 @@ type HTTPSoftwareInfo struct {
 type HTTPRegistrationInfo struct {
 	Status              string `json:"status"`
 	RegisteredAt        int64  `json:"registeredAt,omitempty"`
-	FCMTokenValid       bool   `json:"fcmTokenValid"`
 	FCMTokenRefreshedAt int64  `json:"fcmTokenRefreshedAt,omitempty"`
+	FCMTokenValid       bool   `json:"fcmTokenValid"`
 	CommandSecretSet    bool   `json:"commandSecretSet"`
 }
 
 // HTTPConnectionInfo contains connection info for HTTP API with int64 timestamps.
 type HTTPConnectionInfo struct {
 	WebSocketStatus string `json:"webSocketStatus"`
-	ConnectedAt     int64  `json:"connectedAt,omitempty"`
 	FCMStatus       string `json:"fcmStatus"`
-	LastSeen        int64  `json:"lastSeen,omitempty"`
 	ClientIP        string `json:"clientIp,omitempty"`
 	Protocol        string `json:"protocol"`
+	ConnectedAt     int64  `json:"connectedAt,omitempty"`
+	LastSeen        int64  `json:"lastSeen,omitempty"`
 }
 
 // HTTPTelemetryInfo contains telemetry stats for HTTP API with int64 timestamps.

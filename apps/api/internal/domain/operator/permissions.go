@@ -4,29 +4,29 @@ package operator
 type Permission string
 
 const (
-	// Device permissions
+	// Device permissions.
 	PermissionDeviceRead   Permission = "device:read"
 	PermissionDeviceWrite  Permission = "device:write"
 	PermissionDeviceDelete Permission = "device:delete"
 
-	// Operator management permissions
+	// Operator management permissions.
 	PermissionOperatorRead   Permission = "operator:read"
 	PermissionOperatorWrite  Permission = "operator:write"
 	PermissionOperatorDelete Permission = "operator:delete"
 
-	// Update management permissions
+	// Update management permissions.
 	PermissionUpdateRead   Permission = "update:read"
 	PermissionUpdateWrite  Permission = "update:write"
 	PermissionUpdateDelete Permission = "update:delete"
 
-	// Audit log permissions
+	// Audit log permissions.
 	PermissionAuditRead Permission = "audit:read"
 
-	// Settings permissions
+	// Settings permissions.
 	PermissionSettingsRead  Permission = "settings:read"
 	PermissionSettingsWrite Permission = "settings:write"
 
-	// Admin permissions
+	// Admin permissions.
 	PermissionAdminLockout     Permission = "admin:lockout"
 	PermissionAdminImpersonate Permission = "admin:impersonate"
 )
