@@ -182,7 +182,7 @@ func ValidateIdempotencyKey(key string) error {
 	}
 	// Allow alphanumeric, hyphens, underscores
 	for _, c := range key {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' && c != '_' {
 			return fmt.Errorf("idempotency key contains invalid characters")
 		}
 	}

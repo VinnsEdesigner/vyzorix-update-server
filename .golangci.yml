@@ -1,0 +1,53 @@
+version: 2
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  skip-dirs:
+    - tools
+    - docs
+    - data
+    - ".git"
+    - ".*-test" 
+    - "**/*_test.go"
+    - "**/testdata/**"
+    - "**/test/**"
+    - "**/.git/**"
+    - "**/node_modules/**"
+    - "**/Icons/**"
+    - "**/hardware/**"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - unconvert
+    - unparam
+    - gocritic
+    - gosec
+    - bodyclose
+    - noctx
+    - dogsled
+    - errorlint
+    - dupword
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  govet:
+    enable-all: true
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

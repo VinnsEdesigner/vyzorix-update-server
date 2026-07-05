@@ -19,7 +19,9 @@ func migrateAddDevicesColumns(db *sql.DB) error {
 	}
 
 	for _, col := range cols {
-		db.ExecContext(context.Background(), col) //nolint:errcheck
+		if _, err := db.ExecContext(context.Background(), col); err != nil {
+			return err
+		}
 	}
 
 	return nil
