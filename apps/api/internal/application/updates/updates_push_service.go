@@ -137,7 +137,7 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 		pendingCount++
 
 		// Dispatch the update command to the device.
-		notifyErr := s.dispatchUpdateCommand(ctx, deviceID, push.ID, version.Version, payloadBytes)
+		notifyErr := s.dispatchUpdateCommand(ctx, deviceID, push.ID, version.Version, version.APKFilename, version.SHA256, version.APKSize, payloadBytes)
 		if notifyErr != nil {
 			failedDevices = append(failedDevices, FailedDevice{
 				DeviceID: deviceID,
@@ -188,7 +188,7 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 // dispatchUpdateCommand sends the update command to a device.
 // It first tries WebSocket (if device is online), then falls back to FCM.
 // The command is also always persisted via CommandService for reliability.
-func (s *PushService) dispatchUpdateCommand(ctx context.Context, deviceID, pushID, version string, payload []byte) error {
+func (s *PushService) dispatchUpdateCommand(ctx context.Context, deviceID, pushID, version string, apkFilename, sha256 string, apkSize int64, payload []byte) error {
 	// Build the command frame.
 	frame := command.CommandFrame{
 		Type:       UpdateCommandType,
@@ -237,6 +237,11 @@ func (s *PushService) dispatchUpdateCommand(ctx context.Context, deviceID, pushI
 				DispatchID:  cmdResp.DispatchID,
 				DeviceID:    deviceID,
 				Priority:    "high",
+				APKFilename: apkFilename,
+				SHA256:     sha256,
+				APKSize:    apkSize,
+				// Device should prepend its server base URL to construct full download URL
+				DownloadURL: "/api/v1/apk/" + apkFilename,
 			}
 			if fcmErr := s.fcmNotifier.SendSilentWake(ctx, wake); fcmErr != nil {
 				s.logger.Warn("FCM wake failed for update",
@@ -262,7 +267,91 @@ func (s *PushService) UpdatePushDeviceStatus(ctx context.Context, id string, sta
 	return s.repo.UpdatePushDeviceStatus(ctx, id, status, errorMsg)
 }
 
+// UpdateDeviceStatusByDispatch updates a push device status by dispatch_id (push_id) and device_id.
+// This is called by device callbacks with the dispatch_id and device_id.
+func (s *PushService) UpdateDeviceStatusByDispatch(ctx context.Context, dispatchID, deviceID string, status updates.DevicePushStatus, errorMsg string) error {
+	// Find the push device record using push_id and device_id
+	devicePush, err := s.repo.GetPushDeviceByPushAndDevice(ctx, dispatchID, deviceID)
+	if err != nil {
+		if err == updates.ErrPushNotFound {
+			return updates.ErrDeviceNotFound
+		}
+		return err
+	}
+
+	// Update the device status
+	if err := s.repo.UpdatePushDeviceStatus(ctx, devicePush.ID, status, errorMsg); err != nil {
+		return err
+	}
+
+	// Check if all devices are done and update push status
+	// Don't fail the device callback if push completion check fails
+	if err := s.checkPushCompletion(ctx, dispatchID); err != nil {
+		s.logger.Warn("failed to check push completion",
+			"dispatchId", dispatchID, "err", err)
+		// Don't return error - device status was already updated successfully
+	}
+
+	return nil
+}
+
 // Hub returns the hub for direct use by tests.
 func (s *PushService) Hub() *ws.Hub {
 	return s.hub
+}
+
+// checkPushCompletion checks if all devices in a push have completed
+// and updates the push status accordingly.
+func (s *PushService) checkPushCompletion(ctx context.Context, pushID string) error {
+	devices, err := s.repo.GetPushDevices(ctx, pushID)
+	if err != nil {
+		return err
+	}
+
+	var pendingCount, inProgressCount, completedCount, failedCount int
+	for _, d := range devices {
+		switch d.Status {
+		case updates.DevicePushStatusPending, updates.DevicePushStatusSent:
+			pendingCount++
+		case updates.DevicePushStatusInProgress:
+			inProgressCount++
+		case updates.DevicePushStatusAcknowledged: // Legacy status
+			inProgressCount++
+		case updates.DevicePushStatusCompleted:
+			completedCount++
+		case updates.DevicePushStatusFailed:
+			failedCount++
+		}
+	}
+
+	total := len(devices)
+	allTerminal := pendingCount == 0 && inProgressCount == 0
+
+	if allTerminal {
+		// Determine push status based on device outcomes
+		var pushStatus updates.UpdateStatus
+		if failedCount == 0 {
+			pushStatus = updates.UpdateStatusCompleted
+		} else if completedCount == 0 {
+			pushStatus = updates.UpdateStatusFailed
+		} else {
+			// Mixed results - some succeeded, some failed
+			pushStatus = updates.UpdateStatusCompleted // Partial success
+		}
+
+		if err := s.repo.UpdatePushStatus(ctx, pushID, pushStatus); err != nil {
+			s.logger.Warn("failed to update push status",
+				"pushId", pushID, "status", pushStatus, "err", err)
+			return err
+		}
+
+		s.logger.Info("push completed",
+			"pushId", pushID,
+			"total", total,
+			"completed", completedCount,
+			"failed", failedCount,
+			"status", pushStatus)
+	}
+
+	return nil
 }
