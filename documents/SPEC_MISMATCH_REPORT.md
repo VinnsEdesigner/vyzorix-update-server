@@ -1,19 +1,103 @@
-# Spec Mismatch Report: Frontend vs Backend Documentation Analysis
+# Spec Mismatch Report: Frontend vs Backend Documentation vs Implementation Analysis
 
 > **Date:** 2026-07-05
 > **Project:** Vyzorix Update Server
-> **Purpose:** Identify mismatches, wrong logics, and inconsistencies between frontend and backend spec documents
+> **Purpose:** Identify mismatches, wrong logics, and inconsistencies between frontend specs, backend specs, and actual implementation
 
 ---
 
 ## Executive Summary
 
-This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification documents to identify:
-- Endpoint mismatches
-- Missing/inconsistent field definitions
-- Data type discrepancies
-- Logic inconsistencies
-- Security requirement gaps
+This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification documents AND cross-references them with the actual Go implementation to identify:
+- Endpoint mismatches between FE and BE specs
+- Implementation gaps (spec says should exist but code doesn't)
+- Implementation extras (code exists but spec doesn't mention)
+- Parameter naming inconsistencies
+- Logic discrepancies
+
+---
+
+## IMPLEMENTATION STATUS OVERVIEW
+
+### Authentication (AUTHENTICATION_SYSTEM.md vs AUTHENTICATION_SYSTEM_SERVER.md)
+| Endpoint | Spec Status | Implementation Status |
+|----------|-------------|----------------------|
+| POST /v1/auth/login | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/register | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/logout | Specified | ✅ IMPLEMENTED |
+| GET /v1/auth/me | Specified | ✅ IMPLEMENTED |
+| PATCH /v1/auth/me | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/refresh | Specified | ✅ IMPLEMENTED (RefreshHandler) |
+| GET /v1/auth/mfa/status | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/mfa/enroll | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/mfa/verify-setup | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/mfa/enable | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/mfa/disable | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/mfa/verify-backup | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/mfa/regenerate-backup-codes | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/mfa/verify | Specified | ✅ IMPLEMENTED (line 183 in auth_routes.go) |
+| POST /v1/auth/forgot-password | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/reset-password | Specified | ✅ IMPLEMENTED |
+| GET /v1/auth/google | Specified | ✅ IMPLEMENTED |
+| GET /v1/auth/google/callback | Specified | ✅ IMPLEMENTED |
+| GET /v1/auth/github | Specified | ✅ IMPLEMENTED |
+| GET /v1/auth/github/callback | Specified | ✅ IMPLEMENTED |
+
+### Device Management (DEVICE_REGISTRATION_SYSTEM.md vs SERVER_BACKEND_DEVICE_REGISTRATION_API.md)
+| Endpoint | Spec Status | Implementation Status |
+|----------|-------------|----------------------|
+| POST /v1/device/inbox | Specified | ✅ IMPLEMENTED (public route) |
+| GET /v1/device/inbox | Specified | ✅ IMPLEMENTED |
+| GET /v1/device/inbox/:imei | Specified | ✅ IMPLEMENTED |
+| POST /v1/device/inbox/:imei/ack | Specified | ✅ IMPLEMENTED |
+| DELETE /v1/device/inbox/:imei | Specified | ⚠️ Uses PATCH (UpdateInboxEntry) |
+| GET /v1/devices | Specified | ✅ IMPLEMENTED |
+| GET /v1/devices/:imei | Specified | ✅ IMPLEMENTED |
+| DELETE /v1/devices/:imei | Specified | ✅ IMPLEMENTED |
+
+### Dashboard/Commands (DASHBOARD_COMMANDS_LOGS.md vs SERVER_BACKEND_DASHBOARD_COMMANDS_API.md)
+| Endpoint | Spec Status | Implementation Status |
+|----------|-------------|----------------------|
+| POST /v1/device/:id/command | Specified | ✅ IMPLEMENTED (uses :id) |
+| GET /v1/device/:id/commands/pending | Specified | ✅ IMPLEMENTED (uses :id) |
+| GET /v1/device/:imei/commands | Specified | ✅ IMPLEMENTED (command_history_handler.go) |
+| GET /v1/device/:imei/logs | Specified | ✅ IMPLEMENTED (device_logs_handler.go) |
+| GET /v1/device/:imei/metrics | Specified | ✅ IMPLEMENTED (device_metrics_handler.go) |
+| GET /v1/device/:imei/telemetry | Specified | ✅ IMPLEMENTED (device_telemetry_handler.go) |
+| GET /v1/device/:imei/metrics/export | Specified | ⚠️ MISSING from code |
+| GET /v1/dashboard/stats | Specified | ✅ IMPLEMENTED |
+| DELETE /v1/command/:dispatchId | Specified | ✅ IMPLEMENTED |
+
+### Updates (UPDATES_PAGE.md vs SERVER_BACKEND_UPDATES_API.md)
+| Endpoint | Spec Status | Implementation Status |
+|----------|-------------|----------------------|
+| GET /v1/updates/status | Specified | ✅ IMPLEMENTED |
+| GET /v1/updates/versions | Specified | ✅ IMPLEMENTED |
+| GET /v1/updates/changelog | Specified | ✅ IMPLEMENTED |
+| POST /v1/updates/push | Specified | ✅ IMPLEMENTED |
+| GET /v1/updates/history | Specified | ✅ IMPLEMENTED |
+| GET /v1/updates/export | Specified | ✅ IMPLEMENTED |
+| POST /v1/updates/sync | Specified | ✅ IMPLEMENTED |
+| POST /v1/updates/history/:pushId/cancel | Specified | ✅ IMPLEMENTED |
+
+### Diagnostics (DIAGNOSTICS_PAGE.md vs SERVER_BACKEND_DIAGNOSTICS_API.md)
+| Endpoint | Spec Status | Implementation Status |
+|----------|-------------|----------------------|
+| GET /v1/device/:imei/inspect | Specified | ✅ IMPLEMENTED |
+| GET /v1/device/:imei/timeline | Specified | ✅ IMPLEMENTED |
+
+### Settings (SETTINGS_PAGE.md vs SERVER_BACKEND_SETTINGS_API.md)
+| Endpoint | Spec Status | Implementation Status |
+|----------|-------------|----------------------|
+| GET /v1/auth/me/settings | Specified | ✅ IMPLEMENTED |
+| PATCH /v1/auth/me/settings | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/me/settings/reset | Specified | ✅ IMPLEMENTED (via UpdateSettings with reset flag) |
+| GET /v1/auth/me/thresholds | Specified | ✅ IMPLEMENTED |
+| PATCH /v1/auth/me/thresholds | Specified | ✅ IMPLEMENTED |
+| GET /v1/auth/me/notifications | Specified | ✅ IMPLEMENTED |
+| PATCH /v1/auth/me/notifications | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/me/notifications/webhook/test | Specified | ✅ IMPLEMENTED |
+| POST /v1/auth/me/notifications/webhook/rotate | Specified | ✅ IMPLEMENTED |
 
 ---
 
@@ -209,85 +293,105 @@ This report analyzes 6 pairs of Frontend (FE) and Backend (BE) specification doc
 
 ## Summary of Critical Issues
 
-### Critical (Must Fix Before Implementation)
+### UPDATED: Issues vs Actual Implementation Status
 
-| ID | Doc Pair | Issue |
-|----|----------|-------|
-| DCL-001 | Dashboard/Commands | Command cancel path mismatch |
-| SP-001 | Settings | Settings base path mismatch |
-| AU-001 | Authentication | MFA verify endpoint missing |
-| AU-002 | Authentication | Refresh token endpoint missing |
+> **IMPORTANT:** After code review, many "missing" endpoints are actually IMPLEMENTED in the Go code. The issues below are primarily DOCUMENTATION MISMATCHES between FE and BE specs, not implementation gaps.
 
-### High Priority
+### Critical Issues (Doc vs Doc, NOT Implementation)
 
-| ID | Doc Pair | Issue |
-|----|----------|-------|
-| DCL-002 | Dashboard/Commands | Parameter naming inconsistency (id vs imei) |
-| DCL-004 | Dashboard/Commands | Missing REST cancel command endpoint |
-| SP-002 | Settings | Webhook rotate endpoint missing from FE |
-| SP-003 | Settings | Settings reset endpoint missing from FE |
-| AU-004 | Authentication | MFA flow step mismatch |
+| ID | Doc Pair | Issue | Actual Status |
+|----|----------|-------|---------------|
+| DCL-001 | Dashboard/Commands | Command cancel path mismatch | ✅ IMPLEMENTED (code exists) - doc mismatch |
+| SP-001 | Settings | Settings base path mismatch | ✅ IMPLEMENTED (code exists) - FE doc wrong path |
+| AU-001 | Authentication | MFA verify endpoint | ✅ IMPLEMENTED (line 183 auth_routes.go) |
+| AU-002 | Authentication | Refresh token endpoint | ✅ IMPLEMENTED (RefreshHandler exists) |
 
-### Medium Priority
+### High Priority (Documentation Fixes)
 
-| ID | Doc Pair | Issue |
-|----|----------|-------|
-| DR-001 | Device Registration | Inbox entry ID field naming |
-| UP-001 | Updates | Cancel update endpoint missing from FE |
-| SP-004 | Settings | Threshold validation rules not documented |
+| ID | Doc Pair | Issue | Action Needed |
+|----|----------|-------|---------------|
+| DCL-002 | Dashboard/Commands | Parameter naming inconsistency (id vs imei) | Standardize docs to use `:imei` |
+| DCL-004 | Dashboard/Commands | REST cancel endpoint not documented | Add to BE spec |
+| SP-002 | Settings | Webhook rotate endpoint missing from FE doc | Add to FE doc |
+| SP-003 | Settings | Settings reset endpoint missing from FE doc | Add to FE doc |
+| AU-004 | Authentication | MFA flow step mismatch | Clarify setup vs verify flow in docs |
 
-### Low Priority
+### Medium Priority (Documentation Fixes)
+
+| ID | Doc Pair | Issue | Action Needed |
+|----|----------|-------|---------------|
+| DR-001 | Device Registration | Inbox entry ID field naming | Standardize to lowercase `id` |
+| UP-001 | Updates | Cancel update endpoint missing from FE doc | Add to FE doc |
+| SP-004 | Settings | Threshold validation rules not documented | Add validation rules to FE doc |
+
+### Low Priority (Minor)
 
 | ID | Doc Pair | Issue |
 |----|----------|-------|
 | DR-002 | Device Registration | GraphQL vs REST naming |
 | UP-002 | Updates | Version status values |
 | UP-003 | Updates | Sync status values |
-| DI-001 | Diagnostics | Missing RECONNECTED event type |
+| DI-001 | Diagnostics | Missing RECONNECTED event type in FE |
 | DI-002 | Diagnostics | buildId field in UI |
 | AU-003 | Authentication | OAuth callback path |
 
 ---
 
+## ACTUAL IMPLEMENTATION GAPS (Real Issues Found)
+
+### 1. Metrics Export Missing
+| Issue | Status | Location |
+|-------|--------|----------|
+| GET /v1/device/:imei/metrics/export | ❌ MISSING | Specified in BE doc but NOT in code |
+
+**File:** `internal/api/handlers/device/device_metrics_handler.go`
+**Fix:** Add ExportMetrics handler method
+
+### 2. Inbox DELETE vs PATCH
+| Issue | Status | Location |
+|-------|--------|----------|
+| DELETE /v1/device/inbox/:imei | ⚠️ Uses PATCH | Code uses UpdateInboxEntry (PATCH) instead of DELETE |
+
+**File:** `internal/api/handlers/inbox/inbox_routes.go` line 12
+**Fix:** Change to proper DELETE or clarify the route
+
+---
+
 ## Fix Plan
 
-### Phase 1: Critical Fixes (Do First)
+### Phase 1: Documentation Fixes Only (No Code Changes Needed)
 
 1. **Settings Path Fix (SP-001)**
-   - Decision: Use backend path `/v1/auth/me/*` as canonical
-   - Update FE doc to change BASE from `/v1/settings` to `/v1/auth/me`
+   - Update FE doc `SETTINGS_PAGE.md` to use `/v1/auth/me/*` paths
+   - Implementation already correct
 
 2. **Dashboard Command Cancel (DCL-001)**
-   - Decision: Use backend path `/v1/command/:dispatchId` for cancel
-   - Update FE doc to reflect correct cancel endpoint path
+   - Update FE doc to reflect correct cancel endpoint path `/v1/command/:dispatchId`
+   - Implementation already correct
 
-3. **Authentication MFA (AU-001, AU-002)**
-   - Add `POST /v1/auth/mfa/verify` endpoint to backend
-   - Add `POST /v1/auth/refresh` endpoint to backend
+3. **Update Auth Flow Documentation (AU-001, AU-002, AU-004)**
+   - Both endpoints exist in code
+   - Update FE doc to document MFA verify flow and refresh endpoint
 
-### Phase 2: High Priority Fixes
+### Phase 2: Documentation Additions
 
-4. **Parameter Naming (DCL-002)**
-   - Standardize on `:imei` for all device-specific endpoints
-   - Update backend to use `:imei` instead of `:id` for consistency
+4. **Add Missing Endpoints to FE Docs**
+   - Webhook rotate → Add to SETTINGS_PAGE.md
+   - Settings reset → Add to SETTINGS_PAGE.md  
+   - Updates cancel → Add to UPDATES_PAGE.md
 
-5. **Settings Endpoints (SP-002, SP-003)**
-   - Add webhook rotate and settings reset to FE documentation
+5. **Standardize Parameter Naming**
+   - Change all `:id` to `:imei` in FE and BE docs for device endpoints
 
-6. **MFA Flow (AU-004)**
-   - Clarify MFA flow: setup (verify-setup) vs login (verify)
-   - Document when each endpoint is used
+### Phase 3: Code Implementation Gaps
 
-### Phase 3: Documentation Cleanup
+6. **Add Metrics Export (REAL GAP)**
+   - File: `internal/api/handlers/device/device_metrics_handler.go`
+   - Add `ExportMetrics` method for `GET /v1/device/:imei/metrics/export`
 
-7. **Update FE Docs with Missing Endpoints**
-   - Add cancel update endpoint for Updates
-   - Add webhook rotate endpoint for Settings
-   - Add RECONNECTED event type for Diagnostics
-
-8. **Add Validation Rules**
-   - Document threshold validation rules in Settings FE doc
-   - Document sync status values in Updates FE doc
+7. **Clarify Inbox DELETE**
+   - Option A: Implement actual DELETE functionality
+   - Option B: Update route to use PATCH and update docs
 
 ---
 
