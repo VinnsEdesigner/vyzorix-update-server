@@ -9,7 +9,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	// Inbox endpoints - authenticated operators
 	rg.GET("/inbox", h.GetInbox)
 	rg.GET("/inbox/:imei", h.GetInboxEntry)
-	rg.PATCH("/inbox/:imei", h.UpdateInboxEntry) // TODO: Bug 37: Update notes/annotations
+	rg.PATCH("/inbox/:imei", h.UpdateInboxEntry) // FR-37: notes/annotations update (implemented)
 	rg.POST("/inbox/:imei/ack", h.AckInbox)
 }
 
