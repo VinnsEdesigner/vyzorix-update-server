@@ -284,7 +284,7 @@ REGISTERED ───────────────────────
 │ ONLINE  │
 └────┬────┘
      │
-     │  DELETE /v1/device/:imei (operator deregisters)
+     │  DELETE /v1/devices/:imei (operator deregisters)
      ▼
 ┌──────────────┐
 │ DEREGISTERED │ ◄── Terminal state
@@ -485,7 +485,7 @@ REGISTERED ───────────────────────
 
 ---
 
-#### `GET /v1/device`
+#### `GET /v1/devices`
 **Purpose:** List all registered devices
 
 **Query Parameters:**
@@ -523,7 +523,7 @@ REGISTERED ───────────────────────
 
 ---
 
-#### `GET /v1/device/:imei`
+#### `GET /v1/devices/:imei`
 **Purpose:** Get single device details
 
 **Response (200 OK):**
@@ -548,7 +548,7 @@ REGISTERED ───────────────────────
 
 ---
 
-#### `DELETE /v1/device/:imei`
+#### `DELETE /v1/devices/:imei`
 **Purpose:** Deregister device
 
 **Response (200 OK):**

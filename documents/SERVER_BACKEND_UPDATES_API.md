@@ -76,17 +76,19 @@ Push Update ──────► FCM/WSS ──────► Device
 | GET /api/v1/apk/:filename | EXISTS | APKHandler | Serve APK file |
 | POST /v1/device/:imei/command (WAKE_UP_UPDATER) | EXISTS | CommandHandler | Wake device for update |
 
-### 2.2 Missing Endpoints
+### 2.2 Implemented Endpoints
 
-| Endpoint | Status |
-|----------|--------|
-| GET /v1/updates/status | MISSING |
-| GET /v1/updates/versions | MISSING |
-| GET /v1/updates/changelog | MISSING |
-| POST /v1/updates/push | MISSING |
-| GET /v1/updates/history | MISSING |
-| GET /v1/updates/export | MISSING |
-| POST /v1/updates/sync | MISSING |
+| Endpoint | Status | Handler |
+|----------|--------|---------|
+| GET /v1/updates/status | EXISTS | versions_handler.go GetStatus |
+| GET /v1/updates/versions | EXISTS | versions_handler.go GetVersions |
+| GET /v1/updates/changelog | EXISTS | versions_handler.go GetChangelog |
+| POST /v1/updates/push | EXISTS | push_handler.go PushUpdate |
+| GET /v1/updates/history | EXISTS | history_handler.go GetHistory |
+| GET /v1/updates/history/:pushId | EXISTS | history_handler.go GetPushDetail |
+| POST /v1/updates/history/:pushId/cancel | EXISTS | history_handler.go CancelPush |
+| GET /v1/updates/export | EXISTS | versions_handler.go Export |
+| POST /v1/updates/sync | EXISTS | sync_handler.go SyncVersions |
 
 ### 2.3 Data Sources
 
