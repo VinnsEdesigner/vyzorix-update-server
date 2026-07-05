@@ -612,10 +612,13 @@ export interface Settings {
 |----------|--------|-------------|
 | `/v1/auth/me/settings` | GET | Get current settings |
 | `/v1/auth/me/settings` | PATCH | Update settings |
+| `/v1/auth/me/settings` | POST | Reset settings to defaults |
 | `/v1/auth/me/thresholds` | GET | Get thresholds |
 | `/v1/auth/me/thresholds` | PATCH | Update thresholds |
 | `/v1/auth/me/notifications` | GET | Get notification settings |
 | `/v1/auth/me/notifications` | PATCH | Update notification settings |
+| `/v1/auth/me/notifications/webhook/test` | POST | Test webhook endpoint |
+| `/v1/auth/me/notifications/webhook/rotate` | POST | Rotate webhook secret |
 
 ### 12.2 REST Implementation
 
@@ -657,6 +660,29 @@ export async function updateThresholds(
     body: JSON.stringify(thresholds),
   });
   if (!res.ok) throw new Error(`Thresholds update failed: ${res.status}`);
+  return res.json();
+}
+
+export async function testWebhook(
+  serverUrl: string,
+  url: string
+): Promise<{ success: boolean; statusCode?: number; responseTime?: number; error?: string }> {
+  const res = await fetch(join(serverUrl, `${BASE}/notifications/webhook/test`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ url }),
+  });
+  if (!res.ok) throw new Error(`Webhook test failed: ${res.status}`);
+  return res.json();
+}
+
+export async function rotateWebhookSecret(serverUrl: string): Promise<{ secret: string }> {
+  const res = await fetch(join(serverUrl, `${BASE}/notifications/webhook/rotate`), {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`Webhook secret rotation failed: ${res.status}`);
   return res.json();
 }
 ```
