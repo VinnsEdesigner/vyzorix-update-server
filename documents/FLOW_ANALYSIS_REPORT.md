@@ -194,3 +194,101 @@ Need to document:
 ---
 
 *Report Generated: 2026-07-05*
+
+---
+
+## 7. API KEY AUTHENTICATION BOUNDARY VERIFICATION (2026-07-05)
+
+### 7.1 Endpoint Authentication Matrix Compliance
+
+Per MULTI_CLIENT_API_KEY_SYSTEM.md Section 2 - All paths verified:
+
+| Path Pattern | Type | Auth Method | Status |
+|--------------|------|------------|--------|
+| /health | PUBLIC | None | ✅ |
+| /healthz | INFRASTRUCTURE | Env API Key | ✅ |
+| /v1/auth/* | PUBLIC | None | ✅ |
+| /v1/device/register | PUBLIC | None | ✅ |
+| /v1/device/inbox | PUBLIC | None | ✅ |
+| /v1/device/confirm | PUBLIC | None | ✅ |
+| /v1/device/:imei/status | PUBLIC | None | ✅ |
+| /metrics | PUBLIC | None | ✅ |
+| /admin/* | INFRASTRUCTURE | Env API Key | ✅ |
+| /internal/* | INFRASTRUCTURE | Env API Key | ✅ |
+| /bin/* | SESSION ONLY | Session Cookie | ✅ |
+| /v1/dashboard/* | SESSION ONLY | Session Cookie | ✅ |
+| /v1/api-keys/* | SESSION ONLY | Session Cookie | ✅ |
+| /api/v1/apk/* | SESSION ONLY | Session Cookie | ✅ |
+| /v1/device/:imei/command | DEVICE AUTH | HMAC Signature | ✅ |
+| /v1/device/:imei/fcm-token | DEVICE AUTH | HMAC Signature | ✅ |
+| /v1/devices/* | TENANT | Session OR API Key | ✅ |
+| /v1/device/:imei/* | TENANT | Session OR API Key | ✅ |
+| /v1/command/* | TENANT | Session OR API Key | ✅ |
+| /v1/telemetry/* | TENANT | Session OR API Key | ✅ |
+| /v1/updates/* | TENANT | Session OR API Key | ✅ |
+| /v1/device/diagnostics/* | TENANT | Session OR API Key | ✅ |
+
+### 7.2 Security Appendix C Compliance
+
+| Requirement | Implementation | Status |
+|-------------|----------------|--------|
+| Never log full API keys | Only key_prefix stored | ✅ |
+| Rate limiting | 100 req/min per key (InMemoryRateLimiter) | ✅ |
+| Argon2id hashing | hashKey() uses argon2.IDKey | ✅ |
+| Constant-time comparison | VerifyKey() uses crypto/subtle | ✅ |
+| Audit logging | ActionAPIKey* events only | ✅ |
+| Immediate revocation | is_active=0 check in GetByKeyHash | ✅ |
+| HTTPS only | TLS termination at infrastructure | ✅ |
+| Scope enforcement | hasScope() function | ✅ |
+
+### 7.3 Request Flow Implementation
+
+```
+REQUEST INCOMING
+     │
+     ▼
+┌─────────────────────────────────────┐
+│ ClassifyPath(path) → PathType        │
+└─────────────────┬───────────────────┘
+                  │
+     ┌────────────┼────────────┐
+     │            │            │
+     ▼            ▼            ▼
+  PUBLIC     INFRASTRUCTURE   SESSION_ONLY
+     │            │            │
+     ▼            ▼            ▼
+  Allow()    TokenSecret    cookieAuth
+             Middleware     Middleware
+     │            │            │
+     └────────────┴────────────┘
+                  │
+                  ▼
+     ┌─────────────────────────┐
+     │ Is Tenant Path?          │
+     │ (session OR api_key)     │
+     └─────────────┬───────────┘
+                   │
+          ┌────────┴────────┐
+          ▼                 ▼
+     Has Session?    Has API Key?
+          │                 │
+          ▼                 ▼
+      Allow()      ValidateKey()
+                       │
+                       ▼
+              ┌────────────────┐
+              │ Scope Check     │
+              │ (if required)   │
+              └────────────────┘
+                       │
+                       ▼
+              ┌────────────────┐
+              │ Rate Limit     │
+              │ 100 req/min    │
+              └────────────────┘
+```
+
+---
+
+*Verification Date: 2026-07-05*
+*Verified by: Senior Software Engineer Review*
