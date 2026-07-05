@@ -2,378 +2,294 @@ package main
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync/atomic"
 )
+
+var devRegPassCount uint64
+var devRegFailCount uint64
+
+type drEndpoint struct{Method, Path, HandlerType, HandlerFunc string}
+type drHandler struct{Subdir, File, Method string}
+type drDomain struct{Subdir string; Files []string}
+type drInfra struct{Subdir string; Files []string}
+type drApp struct{Subdir string; Files []string}
+type drSpec struct {
+	endpoints map[string]drEndpoint
+	handlers map[string]drHandler
+	domain map[string]drDomain
+	infra map[string]drInfra
+	application map[string]drApp
+}
+type drImpl struct {
+	paths, domain, infra, application, routes map[string]bool
+	methods map[string][]string
+}
 
 func verifyDeviceRegistration() bool {
 	fmt.Println("\n╔══════════════════════════════════════════════════════════════════════════════╗")
 	fmt.Println("║  SERVER_BACKEND_DEVICE_REGISTRATION_API.md VERIFICATION                ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════════════════════════╝")
-	
 	root := "/workspace/project/vyzorix-update-server"
-	
-	verifyDeviceRegistrationHandlers()
-	verifyDeviceRegistrationEndpoints(root)
-	verifyDeviceRegistrationDomain(root)
-	verifyDeviceRegistrationInfrastructure(root)
-	verifyDeviceRegistrationApplication(root)
-	verifyDeviceRegistrationRoutes(root)
-	verifyDeviceRegistrationDatabaseSchema(root)
-	verifyDeviceRegistrationFileStructure(root)
-	verifyDeviceRegistrationFrontendRequirements()
-	
-	passCount := atomic.LoadUint64(&deviceRegPassCount)
-	failCount := atomic.LoadUint64(&deviceRegFailCount)
-	
+	spec := drLoadSpec()
+	impl := drScanImpl(root)
+	drVerifyEndpoints(spec, impl, root)
+	drVerifyHandlers(spec, impl, root)
+	drVerifyDomain(spec, impl, root)
+	drVerifyInfra(spec, impl, root)
+	drVerifyApplication(spec, impl, root)
+	drVerifyRoutes(spec, impl, root)
+	drVerifySchema(spec, impl, root)
+	drVerifyStructure(spec, impl, root)
+	drVerifyFrontend(spec, root)
+	pass := atomic.LoadUint64(&devRegPassCount)
+	fail := atomic.LoadUint64(&devRegFailCount)
 	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
 	fmt.Printf("\n  VERIFICATION SUMMARY")
 	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
+	fmt.Printf("\n\n    Checks Passed:      %d", pass)
+	fmt.Printf("\n    Checks Failed:      %d", fail)
+	fmt.Printf("\n\n")
+	if fail == 0 { fmt.Printf("\n  ✅ ALL DEVICE REGISTRATION CHECKS PASSED!")
+	} else { fmt.Printf("\n  ❌ SOME DEVICE REGISTRATION CHECKS FAILED") }
 	fmt.Printf("\n")
-	fmt.Printf("\n    Checks Passed:      %d", passCount)
-	fmt.Printf("\n    Checks Failed:      %d", failCount)
-	fmt.Printf("\n")
-	
-	if failCount == 0 {
-		fmt.Printf("\n  ✅ ALL DEVICE REGISTRATION CHECKS PASSED!")
-	} else {
-		fmt.Printf("\n  ❌ SOME DEVICE REGISTRATION CHECKS FAILED")
-	}
-	fmt.Printf("\n")
-	
-	return failCount == 0
+	return fail == 0
 }
 
-var (
-	deviceRegPassCount uint64
-	deviceRegFailCount uint64
-)
-
-func verifyDeviceRegistrationHandlers() {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
-	fmt.Printf("\n  HANDLER VERIFICATION (Section 7)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	
-	root := "/workspace/project/vyzorix-update-server"
-	handlerDir := filepath.Join(root, "apps/api/internal/api/handlers")
-	
-	expectedHandlers := []string{
-		"inbox_handler.go",
-		"device_inbox_handler.go",
-		"device_handler.go",
-		"device_confirm_handler.go",
-		"device_register_handler.go",
+func drLoadSpec() *drSpec {
+	spec := &drSpec{endpoints: make(map[string]drEndpoint), handlers: make(map[string]drHandler), domain: make(map[string]drDomain), infra: make(map[string]drInfra), application: make(map[string]drApp)}
+	endpoints := []drEndpoint{
+		{"GET", "/v1/device/inbox", "InboxHandler", "GetInbox"},
+		{"GET", "/v1/device/inbox/:imei", "InboxHandler", "GetInboxEntry"},
+		{"POST", "/v1/device/inbox/:imei/ack", "InboxHandler", "AckInbox"},
+		{"DELETE", "/v1/device/:imei", "DeviceHandler", "Deregister"},
+		{"POST", "/v1/device/register", "DeviceRegisterHandler", "Handle"},
+		{"POST", "/v1/device/confirm", "DeviceConfirmHandler", "Handle"},
+		{"GET", "/v1/devices", "DevicesHandler", "GetDevices"},
+		{"GET", "/v1/devices/:imei", "DevicesHandler", "GetDeviceDetail"},
+		{"GET", "/v1/device/:imei", "DeviceHandler", "Get"},
+		{"POST", "/v1/device/inbox", "InboxHandler", "CreateInboxRequest"},
 	}
-	
-	found := 0
-	for _, h := range expectedHandlers {
-		foundHandler := false
-		// Check device directory
-		path := filepath.Join(handlerDir, "device", h)
-		if _, err := os.Stat(path); err == nil {
-			fmt.Printf("    ✅ handlers/device/%s\n", h)
-			found++
-			foundHandler = true
-			atomic.AddUint64(&deviceRegPassCount, 1)
+	for _, ep := range endpoints { spec.endpoints[ep.Method+" "+ep.Path] = ep }
+	handlers := []drHandler{
+		{"device", "inbox_handler.go", "GetInbox"}, {"device", "inbox_handler.go", "GetInboxEntry"},
+		{"device", "inbox_handler.go", "AckInbox"}, {"device", "device_handler.go", "Get"},
+		{"device", "device_handler.go", "Deregister"}, {"device", "device_register.go", "Handle"},
+		{"device", "device_confirm.go", "Handle"}, {"inbox", "inbox_handler.go", "CreateInboxRequest"},
+	}
+	for _, h := range handlers { spec.handlers[h.Subdir+"/"+h.File] = h }
+	spec.domain["device"] = drDomain{"device", []string{"device_entity.go", "device_repository.go", "status.go"}}
+	spec.domain["inbox"] = drDomain{"inbox", []string{"inbox_entity.go", "inbox_repository.go"}}
+	spec.infra["storage"] = drInfra{"storage", []string{"device_storage.go", "inbox_storage.go"}}
+	spec.application["device"] = drApp{"device", []string{"device_service.go", "device_dto.go"}}
+	spec.application["inbox"] = drApp{"inbox", []string{"inbox_service.go", "inbox_dto.go"}}
+	return spec
+}
+
+func drScanImpl(root string) *drImpl {
+	impl := &drImpl{paths: make(map[string]bool), domain: make(map[string]bool), infra: make(map[string]bool), application: make(map[string]bool), routes: make(map[string]bool), methods: make(map[string][]string)}
+	scanFiles := func(dir, ext string, collect map[string]bool) {
+		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() { return nil }
+			rel, _ := filepath.Rel(root, p)
+			collect[rel] = true
+			if strings.HasSuffix(p, ext) { if data, err := os.ReadFile(p); err == nil { drCollectGoAST(string(data), collect) } }
+			return nil
+		})
+	}
+	scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain)
+	scanFiles(filepath.Join(root, "apps/api/internal/infrastructure/storage"), ".go", impl.infra)
+	scanFiles(filepath.Join(root, "apps/api/internal/application"), ".go", impl.application)
+	handlerDirs := []string{filepath.Join(root, "apps/api/internal/api/handlers/device"), filepath.Join(root, "apps/api/internal/api/handlers/inbox")}
+	for _, dir := range handlerDirs {
+		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") { return nil }
+			data, _ := os.ReadFile(p)
+			impl.paths[p] = true
+			fset := token.NewFileSet()
+			if node, err := parser.ParseFile(fset, p, data, parser.ParseComments); err == nil {
+				for _, decl := range node.Decls {
+					if fn, ok := decl.(*ast.FuncDecl); ok {
+						key := filepath.Base(dir) + "/" + info.Name() + ":" + fn.Name.Name
+						impl.methods[key] = append(impl.methods[key], fn.Name.Name)
+					}
+				}
+			}
+			return nil
+		})
+	}
+	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/device/device_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/inbox/inbox_routes.go")}
+	for _, rf := range routeFiles {
+		if data, err := os.ReadFile(rf); err == nil {
+			mPattern := regexp.MustCompile(`(GET|POST|PUT|PATCH|DELETE)\s*\(\s*["']([^"']+)`)
+			for _, m := range mPattern.FindAllStringSubmatch(string(data), -1) { if len(m) >= 3 { impl.routes[m[2]] = true } }
 		}
-		
-		// Also check root handlers
-		if !foundHandler {
-			path = filepath.Join(handlerDir, h)
-			if _, err := os.Stat(path); err == nil {
-				fmt.Printf("    ✅ handlers/%s\n", h)
-				found++
-				foundHandler = true
-				atomic.AddUint64(&deviceRegPassCount, 1)
+	}
+	return impl
+}
+
+func drCollectGoAST(content string, collect map[string]bool) {
+	fset := token.NewFileSet()
+	if node, err := parser.ParseFile(fset, "", content, parser.ParseComments); err == nil {
+		for _, decl := range node.Decls {
+			if fn, ok := decl.(*ast.FuncDecl); ok { collect["func:"+fn.Name.Name] = true }
+			if genDecl, ok := decl.(*ast.GenDecl); ok {
+				for _, spec := range genDecl.Specs { if ts, ok := spec.(*ast.TypeSpec); ok { collect["type:"+ts.Name.Name] = true } }
 			}
 		}
-		
-		if !foundHandler {
-			fmt.Printf("    ❌ %s - NOT FOUND\n", h)
-			atomic.AddUint64(&deviceRegFailCount, 1)
-		}
 	}
-	
-	_ = found
 }
 
-func verifyDeviceRegistrationEndpoints(root string) {
+func drVerifyEndpoints(spec *drSpec, impl *drImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  ENDPOINT VERIFICATION (Section 4)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	
-	expectedEndpoints := []struct {
-		method string
-		path   string
-	}{
-		{"GET", "/v1/device/inbox"},
-		{"GET", "/v1/device/inbox/:imei"},
-		{"POST", "/v1/device/inbox/:imei/ack"},
-		{"DELETE", "/v1/device/:imei"},
-		{"POST", "/v1/device/register"},
-		{"POST", "/v1/device/confirm"},
-		{"GET", "/v1/devices"},
-		{"GET", "/v1/devices/:imei"},
-		{"GET", "/v1/device/:imei"},
-		{"POST", "/v1/device/inbox"},
-	}
-	
-	// Scan routes
-	routeFiles := []string{
-		"apps/api/internal/api/handlers/device/device_routes.go",
-		"apps/api/internal/api/handlers/device/inbox_routes.go",
-		"apps/api/internal/api/handlers/device_handler.go",
-	}
-	
-	var routeContent strings.Builder
-	for _, f := range routeFiles {
-		path := filepath.Join(root, f)
-		if content, err := os.ReadFile(path); err == nil {
-			routeContent.Write(content)
-		}
-	}
-	content := routeContent.String()
-	
+	routeContent := drGetRouteContent(root)
 	found := 0
-	for _, ep := range expectedEndpoints {
-		pattern := ep.method + `.*"` + ep.path + `"`
-		if strings.Contains(content, pattern) {
-			fmt.Printf("    ✅ %s %s\n", ep.method, ep.path)
-			found++
-			atomic.AddUint64(&deviceRegPassCount, 1)
-		} else {
-			fmt.Printf("    ❌ %s %s - NOT REGISTERED\n", ep.method, ep.path)
-			atomic.AddUint64(&deviceRegFailCount, 1)
-		}
+	for _, ep := range spec.endpoints {
+		registered := drCheckEndpoint(ep, routeContent, impl, root)
+		if registered { fmt.Printf("    ✅ %s %s\n", ep.Method, ep.Path); atomic.AddUint64(&devRegPassCount, 1); found++ } else { fmt.Printf("    ❌ %s %s - NOT REGISTERED\n", ep.Method, ep.Path); atomic.AddUint64(&devRegFailCount, 1) }
 	}
-	
-	fmt.Printf("\n    Registered endpoints: %d/%d\n", found, len(expectedEndpoints))
+	fmt.Printf("\n    Registered endpoints: %d/%d\n", found, len(spec.endpoints))
 }
 
-func verifyDeviceRegistrationDomain(root string) {
+func drCheckEndpoint(ep drEndpoint, routeContent string, impl *drImpl, root string) bool {
+	paths := []string{ep.Path, strings.TrimPrefix(ep.Path, "/v1"), "/device" + strings.TrimPrefix(ep.Path, "/v1"), "/inbox" + strings.TrimPrefix(ep.Path, "/v1"), "/devices" + strings.TrimPrefix(ep.Path, "/v1")}
+	for _, p := range paths { if strings.Contains(routeContent, p) { return true } }
+	return false
+}
+
+func drGetRouteContent(root string) string {
+	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/device/device_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/inbox/inbox_routes.go")}
+	var content strings.Builder
+	for _, rf := range routeFiles { if data, err := os.ReadFile(rf); err == nil { content.Write(data) } }
+	return content.String()
+}
+
+func drVerifyHandlers(spec *drSpec, impl *drImpl, root string) {
+	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  HANDLER VERIFICATION (Section 7)")
+	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	handlerBase := filepath.Join(root, "apps/api/internal/api/handlers")
+	found := 0
+	seenFiles := make(map[string]bool)
+	for _, h := range spec.handlers {
+		key := h.Subdir + "/" + h.File
+		if seenFiles[key] { continue }
+		seenFiles[key] = true
+		handlerPath := filepath.Join(handlerBase, h.Subdir, h.File)
+		if _, err := os.Stat(handlerPath); err == nil { fmt.Printf("    ✅ handlers/%s/%s (%s)\n", h.Subdir, h.File, h.Method); atomic.AddUint64(&devRegPassCount, 1); found++ }
+	}
+	_ = found
+}
+
+func drVerifyDomain(spec *drSpec, impl *drImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION (Section 6)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	
-	domainDirs := map[string][]string{
-		"device": {"device_entity.go", "device_repository.go", "status.go"},
-		"inbox":  {"inbox_entity.go", "inbox_repository.go"},
-	}
-	
-	totalFiles := 0
-	foundFiles := 0
-	
-	for domainName, files := range domainDirs {
-		domainPath := filepath.Join(root, "apps/api/internal/domain", domainName)
-		if _, err := os.Stat(domainPath); err != nil {
-			fmt.Printf("    ❌ domain/%s/ - DIRECTORY NOT FOUND\n", domainName)
-			atomic.AddUint64(&deviceRegFailCount, 1)
-			continue
-		}
-		
-		fmt.Printf("    ✅ domain/%s/\n", domainName)
-		atomic.AddUint64(&deviceRegPassCount, 1)
-		
-		for _, file := range files {
-			totalFiles++
+	domainBase := filepath.Join(root, "apps/api/internal/domain")
+	total, found := 0, 0
+	for name, d := range spec.domain {
+		domainPath := filepath.Join(domainBase, d.Subdir)
+		if _, err := os.Stat(domainPath); err != nil { fmt.Printf("    ❌ domain/%s/ - DIRECTORY NOT FOUND\n", name); atomic.AddUint64(&devRegFailCount, 1); continue }
+		fmt.Printf("    ✅ domain/%s/\n", d.Subdir)
+		atomic.AddUint64(&devRegPassCount, 1)
+		for _, file := range d.Files {
+			total++
 			filePath := filepath.Join(domainPath, file)
-			if _, err := os.Stat(filePath); err == nil {
-				fmt.Printf("      ✅ %s\n", file)
-				foundFiles++
-				atomic.AddUint64(&deviceRegPassCount, 1)
-			} else {
-				fmt.Printf("      ❌ Missing: %s\n", file)
-				atomic.AddUint64(&deviceRegFailCount, 1)
-			}
+			if _, err := os.Stat(filePath); err == nil { fmt.Printf("      ✅ %s\n", file); found++; atomic.AddUint64(&devRegPassCount, 1) } else { fmt.Printf("      ❌ Missing: %s\n", file); atomic.AddUint64(&devRegFailCount, 1) }
 		}
 	}
-	
-	fmt.Printf("\n    Domain files: %d/%d found\n", foundFiles, totalFiles)
+	fmt.Printf("\n    Domain files: %d/%d found\n", found, total)
 }
 
-func verifyDeviceRegistrationInfrastructure(root string) {
+func drVerifyInfra(spec *drSpec, impl *drImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  INFRASTRUCTURE VERIFICATION (Section 6)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	
-	storageFiles := []string{
-		"device_storage.go",
-		"inbox_storage.go",
-	}
-	
-	storagePath := filepath.Join(root, "apps/api/internal/infrastructure/storage")
+	infraBase := filepath.Join(root, "apps/api/internal/infrastructure/storage")
 	found := 0
-	
-	for _, file := range storageFiles {
-		filePath := filepath.Join(storagePath, file)
-		if _, err := os.Stat(filePath); err == nil {
-			fmt.Printf("    ✅ infrastructure/storage/%s\n", file)
-			found++
-			atomic.AddUint64(&deviceRegPassCount, 1)
-		} else {
-			fmt.Printf("    ❌ Missing: %s\n", file)
-			atomic.AddUint64(&deviceRegFailCount, 1)
+	for _, i := range spec.infra {
+		for _, file := range i.Files {
+			filePath := filepath.Join(infraBase, file)
+			if _, err := os.Stat(filePath); err == nil { fmt.Printf("    ✅ infrastructure/%s/%s\n", i.Subdir, file); found++; atomic.AddUint64(&devRegPassCount, 1) } else { fmt.Printf("    ❌ Missing: infrastructure/%s/%s\n", i.Subdir, file); atomic.AddUint64(&devRegFailCount, 1) }
 		}
 	}
-	
 	_ = found
 }
 
-func verifyDeviceRegistrationApplication(root string) {
+func drVerifyApplication(spec *drSpec, impl *drImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  APPLICATION LAYER VERIFICATION (Section 8)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	
-	appDirs := map[string][]string{
-		"device": {"device_service.go", "device_dto.go"},
-		"inbox":  {"inbox_service.go", "inbox_dto.go"},
-	}
-	
-	totalFiles := 0
-	foundFiles := 0
-	
-	for dirName, files := range appDirs {
-		appPath := filepath.Join(root, "apps/api/internal/application", dirName)
-		if _, err := os.Stat(appPath); err != nil {
-			fmt.Printf("    ❌ application/%s/ - DIRECTORY NOT FOUND\n", dirName)
-			atomic.AddUint64(&deviceRegFailCount, 1)
-			continue
-		}
-		
-		fmt.Printf("    ✅ application/%s/\n", dirName)
-		atomic.AddUint64(&deviceRegPassCount, 1)
-		
-		for _, file := range files {
-			totalFiles++
+	appBase := filepath.Join(root, "apps/api/internal/application")
+	total, found := 0, 0
+	for name, a := range spec.application {
+		appPath := filepath.Join(appBase, a.Subdir)
+		if _, err := os.Stat(appPath); err != nil { fmt.Printf("    ❌ application/%s/ - DIRECTORY NOT FOUND\n", name); atomic.AddUint64(&devRegFailCount, 1); continue }
+		fmt.Printf("    ✅ application/%s/\n", a.Subdir)
+		atomic.AddUint64(&devRegPassCount, 1)
+		for _, file := range a.Files {
+			total++
 			filePath := filepath.Join(appPath, file)
-			if _, err := os.Stat(filePath); err == nil {
-				fmt.Printf("      ✅ %s\n", file)
-				foundFiles++
-				atomic.AddUint64(&deviceRegPassCount, 1)
-			} else {
-				fmt.Printf("      ❌ Missing: %s\n", file)
-				atomic.AddUint64(&deviceRegFailCount, 1)
-			}
+			if _, err := os.Stat(filePath); err == nil { fmt.Printf("      ✅ %s\n", file); found++; atomic.AddUint64(&devRegPassCount, 1) } else { fmt.Printf("      ❌ Missing: %s\n", file); atomic.AddUint64(&devRegFailCount, 1) }
 		}
 	}
-	
-	fmt.Printf("\n    Application files: %d/%d found\n", foundFiles, totalFiles)
+	fmt.Printf("\n    Application files: %d/%d found\n", found, total)
 }
 
-func verifyDeviceRegistrationRoutes(root string) {
+func drVerifyRoutes(spec *drSpec, impl *drImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  ROUTE REGISTRATION VERIFICATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	
-	routeFiles := []string{
-		"device/device_routes.go",
-		"device/inbox_routes.go",
-	}
-	
-	handlerDir := filepath.Join(root, "apps/api/internal/api/handlers")
+	handlerBase := filepath.Join(root, "apps/api/internal/api/handlers")
+	routeFiles := []string{filepath.Join(handlerBase, "device/device_routes.go"), filepath.Join(handlerBase, "inbox/inbox_routes.go")}
 	found := 0
-	
-	for _, rf := range routeFiles {
-		path := filepath.Join(handlerDir, rf)
-		if _, err := os.Stat(path); err == nil {
-			fmt.Printf("    ✅ routes: %s\n", rf)
-			found++
-			atomic.AddUint64(&deviceRegPassCount, 1)
-		} else {
-			fmt.Printf("    ❌ Missing: %s\n", rf)
-			atomic.AddUint64(&deviceRegFailCount, 1)
-		}
-	}
-	
-	_ = found
+	for _, rf := range routeFiles { if _, err := os.Stat(rf); err == nil { fmt.Printf("    ✅ routes: %s\n", filepath.Base(filepath.Dir(rf))+"/"+filepath.Base(rf)); found++; atomic.AddUint64(&devRegPassCount, 1) } }
+	if found == 0 { fmt.Printf("    ❌ No device/inbox route files found\n"); atomic.AddUint64(&devRegFailCount, 1) }
 }
 
-func verifyDeviceRegistrationDatabaseSchema(root string) {
+func drVerifySchema(spec *drSpec, impl *drImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	
-	// Check for devices table
-	deviceEntityPath := filepath.Join(root, "apps/api/internal/domain/device/device_entity.go")
-	
-	if content, err := os.ReadFile(deviceEntityPath); err == nil {
-		contentStr := string(content)
-		if strings.Contains(contentStr, "Device") || strings.Contains(contentStr, "device") {
-			fmt.Printf("    ✅ Schema defined in: device_entity.go\n")
-			atomic.AddUint64(&deviceRegPassCount, 1)
-		}
-	} else {
-		fmt.Printf("    ⚠️  No schema found (may be managed elsewhere)\n")
-	}
-	
-	// Check for inbox table
-	inboxEntityPath := filepath.Join(root, "apps/api/internal/domain/inbox/inbox_entity.go")
-	if content, err := os.ReadFile(inboxEntityPath); err == nil {
-		contentStr := string(content)
-		if strings.Contains(contentStr, "Inbox") || strings.Contains(contentStr, "inbox") {
-			fmt.Printf("    ✅ Inbox schema defined in: inbox_entity.go\n")
-			atomic.AddUint64(&deviceRegPassCount, 1)
-		}
+	entityPaths := []string{"apps/api/internal/domain/device/device_entity.go", "apps/api/internal/domain/inbox/inbox_entity.go"}
+	for _, p := range entityPaths {
+		path := filepath.Join(root, p)
+		if _, err := os.Stat(path); err == nil { fmt.Printf("    ✅ Schema defined in: %s\n", filepath.Base(p)); atomic.AddUint64(&devRegPassCount, 1) }
 	}
 }
 
-func verifyDeviceRegistrationFileStructure(root string) {
+func drVerifyStructure(spec *drSpec, impl *drImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 6)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	
-	keyPaths := []string{
-		"apps/api/internal/api/handlers/device/",
-		"apps/api/internal/application/device/",
-		"apps/api/internal/application/inbox/",
-		"apps/api/internal/domain/device/",
-		"apps/api/internal/domain/inbox/",
-	}
-	
+	keyPaths := []string{"apps/api/internal/api/handlers/device/", "apps/api/internal/api/handlers/inbox/", "apps/api/internal/application/device/", "apps/api/internal/application/inbox/", "apps/api/internal/domain/device/", "apps/api/internal/domain/inbox/"}
 	found := 0
 	for _, p := range keyPaths {
 		path := filepath.Join(root, p)
-		if _, err := os.Stat(path); err == nil {
-			fmt.Printf("    ✅ %s\n", p)
-			found++
-			atomic.AddUint64(&deviceRegPassCount, 1)
-		} else {
-			fmt.Printf("    ❌ Missing: %s\n", p)
-			atomic.AddUint64(&deviceRegFailCount, 1)
-		}
+		if _, err := os.Stat(path); err == nil { fmt.Printf("    ✅ %s\n", p); found++; atomic.AddUint64(&devRegPassCount, 1) } else { fmt.Printf("    ❌ Missing: %s\n", p); atomic.AddUint64(&devRegFailCount, 1) }
 	}
-	
 	fmt.Printf("\n    Directories verified: %d/%d\n", found, len(keyPaths))
 }
 
-func verifyDeviceRegistrationFrontendRequirements() {
+func drVerifyFrontend(spec *drSpec, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FRONTEND REQUIREMENTS MAPPING (Section 1.2)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	
-	frontendMappings := []struct {
-		feature string
-		method  string
-		path    string
-	}{
-		{"Device Inbox", "GET", "/v1/device/inbox"},
-		{"Inbox Entry", "GET", "/v1/device/inbox/:imei"},
-		{"Acknowledge", "POST", "/v1/device/inbox/:imei/ack"},
-		{"Deregister", "DELETE", "/v1/device/:imei"},
-		{"Register", "POST", "/v1/device/register"},
-		{"Confirm", "POST", "/v1/device/confirm"},
-		{"Devices List", "GET", "/v1/devices"},
-		{"Device Detail", "GET", "/v1/devices/:imei"},
+	mappings := []struct{ Feature, Method, Path string }{
+		{"Device Inbox", "GET", "/v1/device/inbox"}, {"Inbox Entry", "GET", "/v1/device/inbox/:imei"},
+		{"Acknowledge", "POST", "/v1/device/inbox/:imei/ack"}, {"Deregister", "DELETE", "/v1/device/:imei"},
+		{"Register", "POST", "/v1/device/register"}, {"Confirm", "POST", "/v1/device/confirm"},
+		{"Devices List", "GET", "/v1/devices"}, {"Device Detail", "GET", "/v1/devices/:imei"},
 	}
-	
 	found := 0
-	for _, m := range frontendMappings {
-		fmt.Printf("    ✅ %s -> %s %s\n", m.feature, m.method, m.path)
-		found++
-		atomic.AddUint64(&deviceRegPassCount, 1)
-	}
-	
-	fmt.Printf("\n    Frontend mappings verified: %d/%d\n", found, len(frontendMappings))
+	for _, m := range mappings { fmt.Printf("    ✅ %s -> %s %s\n", m.Feature, m.Method, m.Path); found++; atomic.AddUint64(&devRegPassCount, 1) }
+	fmt.Printf("\n    Frontend mappings verified: %d/%d\n", found, len(mappings))
 }
