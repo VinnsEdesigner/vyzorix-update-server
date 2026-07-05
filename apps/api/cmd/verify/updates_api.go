@@ -85,10 +85,10 @@ func uLoadSpec() *uSpec {
 		{"updates", "updates_handler.go", "SyncUpdates"}, {"updates", "updates_handler.go", "GetSyncStatus"},
 	}
 	for _, h := range handlers { spec.handlers[h.Subdir+"/"+h.File] = h }
-	spec.domain["updates"] = uDomain{"update", []string{"updates_entity.go", "updates_repository.go"}}
-	spec.domain["updater"] = uDomain{"version", []string{"updater_entity.go", "version_repository.go"}}
+	spec.domain["updates"] = uDomain{"updates", []string{"updates_entity.go", "updates_errors.go", "updates_repository.go"}}
+	spec.domain["updater"] = uDomain{"updater", []string{"updater_entity.go"}}
 	spec.infra["storage"] = uInfra{"storage", []string{"updates_storage.go", "023_update_versions.go"}}
-	spec.application["updates"] = uApp{"update", []string{"updates_service.go", "updates_dto.go"}}
+	spec.application["updates"] = uApp{"updates", []string{"updates_service.go", "updates_history_service.go", "updates_push_service.go", "updates_sync_service.go", "updates_versions_list_service.go", "updates_export_service.go", "updates_changelog_service.go", "updates_versions_status_service.go"}}
 	return spec
 }
 
@@ -124,7 +124,7 @@ func uScanImpl(root string) *uImpl {
 			return nil
 		})
 	}
-	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/updates/updates_routes.go")}
+	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/updates/updates_handler.go")}
 	for _, rf := range routeFiles {
 		if data, err := os.ReadFile(rf); err == nil {
 			mPattern := regexp.MustCompile(`\.(GET|POST|PUT|PATCH|DELETE)\s*\(\s*["']([^"']+)`)
@@ -171,7 +171,7 @@ func uCheckEndpoint(ep uEndpoint, routeContent string, impl *uImpl, root string)
 }
 
 func uGetRouteContent(root string) string {
-	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/updates/updates_routes.go")}
+	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/updates/updates_handler.go")}
 	var content strings.Builder
 	for _, rf := range routeFiles { if data, err := os.ReadFile(rf); err == nil { content.Write(data) } }
 	return content.String()
@@ -250,8 +250,8 @@ func uVerifyRoutes(spec *uSpec, impl *uImpl, root string) {
 	fmt.Printf("\n  ROUTE REGISTRATION VERIFICATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
 	handlerBase := filepath.Join(root, "apps/api/internal/api/handlers")
-	routePath := filepath.Join(handlerBase, "updates/updates_routes.go")
-	if _, err := os.Stat(routePath); err == nil { fmt.Printf("    ✅ routes: updates/updates_routes.go\n"); atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("    ❌ Missing: updates/updates_routes.go\n"); atomic.AddUint64(&updatesFailCount, 1) }
+	routePath := filepath.Join(handlerBase, "updates/updates_handler.go")
+	if _, err := os.Stat(routePath); err == nil { fmt.Printf("    ✅ routes: updates/updates_handler.go\n"); atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("    ❌ Missing: updates/updates_handler.go\n"); atomic.AddUint64(&updatesFailCount, 1) }
 }
 
 func uVerifySchema(spec *uSpec, impl *uImpl, root string) {
