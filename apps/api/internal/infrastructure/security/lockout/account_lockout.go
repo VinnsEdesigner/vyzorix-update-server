@@ -52,7 +52,7 @@ type Storage interface {
 }
 
 // Handler provides account lockout functionality.
-type Handler struct { //nolint:govet
+type Handler struct { //
 	storage Storage
 	config  Config
 	logger  *slog.Logger

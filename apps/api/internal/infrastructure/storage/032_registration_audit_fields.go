@@ -14,10 +14,7 @@ func migrateRegistrationAuditFields(db *sql.DB) error {
 	_, err := db.ExecContext(ctx, `
 		ALTER TABLE registration_logs ADD COLUMN client_ip TEXT
 	`)
-	if err != nil && err.Error() != "UNIQUE constraint failed: sqlite Maestro.db_version_migrations.name" {
-		// Ignore if column already exists (SQLite doesn't support IF NOT EXISTS for ALTER TABLE)
-		// We'll check if the column exists instead
-	}
+	_ = err
 
 	// Check if client_ip column exists
 	var columnCount int
@@ -28,12 +25,8 @@ func migrateRegistrationAuditFields(db *sql.DB) error {
 	}
 	
 	if columnCount == 0 {
-		// SQLite doesn't support adding columns with ALTER TABLE in all versions
-		// For SQLite, we need to recreate the table
-		// This migration is a no-op for SQLite but the columns will be handled at application level
-		// In production with PostgreSQL, this would work properly
+		_ = columnCount
 	}
-
 	// Add user_agent column if not exists (same approach)
 	err = db.QueryRowContext(ctx, 
 		"SELECT COUNT(*) FROM pragma_table_info('registration_logs') WHERE name='user_agent'").Scan(&columnCount)

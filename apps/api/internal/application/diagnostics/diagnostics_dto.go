@@ -18,8 +18,8 @@ type TimelineRequest struct {
 
 // TimelineResponse represents the response for device timeline.
 type TimelineResponse struct {
-	Pagination PaginationDTO `json:"pagination"`
 	Events     []EventDTO    `json:"events"`
+	Pagination PaginationDTO `json:"pagination"`
 }
 
 // EventDTO represents a timeline event in the response.

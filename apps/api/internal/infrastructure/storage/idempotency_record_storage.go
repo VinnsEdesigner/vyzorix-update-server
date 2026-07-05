@@ -48,7 +48,7 @@ func (r *IdempotencyRepository) Get(ctx context.Context, key string) (*idempoten
 		&record.UserAgent,
 	)
 	if err == sql.ErrNoRows {
-		// nolint: nilnil // Not found is signaled by nil record with nil error
+		//
 		return nil, nil
 	}
 	if err != nil {
