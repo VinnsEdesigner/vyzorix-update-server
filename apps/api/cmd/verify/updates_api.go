@@ -70,10 +70,10 @@ func uLoadSpec() *uSpec {
 		{"GET", "/v1/updates/changelog", "UpdatesHandler", "GetChangelog"},
 		{"POST", "/v1/updates/push", "UpdatesHandler", "PushUpdate"},
 		{"GET", "/v1/updates/history", "UpdatesHandler", "GetHistory"},
-		{"GET", "/v1/updates/history/:pushId", "UpdatesHandler", "GetHistoryByPushId"},
-		{"POST", "/v1/updates/history/:pushId/cancel", "UpdatesHandler", "CancelPush"},
-		{"GET", "/v1/updates/export", "UpdatesHandler", "ExportUpdates"},
-		{"POST", "/v1/updates/sync", "UpdatesHandler", "SyncUpdates"},
+		{"GET", "/v1/updates/history/:pushId", "UpdatesHistoryHandler", "GetPushDetail"},
+		{"POST", "/v1/updates/history/:pushId/cancel", "UpdatesHistoryHandler", "CancelPush"},
+		{"GET", "/v1/updates/export", "UpdatesVersionsHandler", "Export"},
+		{"POST", "/v1/updates/sync", "UpdatesSyncHandler", "SyncVersions"},
 		{"GET", "/v1/updates/sync/status", "UpdatesHandler", "GetSyncStatus"},
 	}
 	for _, ep := range endpoints { spec.endpoints[ep.Method+" "+ep.Path] = ep }
@@ -85,10 +85,10 @@ func uLoadSpec() *uSpec {
 		{"updates", "updates_handler.go", "SyncUpdates"}, {"updates", "updates_handler.go", "GetSyncStatus"},
 	}
 	for _, h := range handlers { spec.handlers[h.Subdir+"/"+h.File] = h }
-	spec.domain["update"] = uDomain{"update", []string{"update_entity.go", "update_repository.go"}}
-	spec.domain["version"] = uDomain{"version", []string{"version_entity.go", "version_repository.go"}}
-	spec.infra["storage"] = uInfra{"storage", []string{"update_storage.go", "version_storage.go"}}
-	spec.application["update"] = uApp{"update", []string{"update_service.go", "update_dto.go"}}
+	spec.domain["updates"] = uDomain{"update", []string{"updates_entity.go", "updates_repository.go"}}
+	spec.domain["updater"] = uDomain{"version", []string{"updater_entity.go", "version_repository.go"}}
+	spec.infra["storage"] = uInfra{"storage", []string{"updates_storage.go", "023_update_versions.go"}}
+	spec.application["updates"] = uApp{"update", []string{"updates_service.go", "updates_dto.go"}}
 	return spec
 }
 
@@ -162,8 +162,11 @@ func uVerifyEndpoints(spec *uSpec, impl *uImpl, root string) {
 func uCheckEndpoint(ep uEndpoint, routeContent string, impl *uImpl, root string) bool {
 	pathVariants := []string{ep.Path, strings.TrimPrefix(ep.Path, "/v1"), "/updates" + strings.TrimPrefix(ep.Path, "/v1")}
 	for _, p := range pathVariants { if strings.Contains(routeContent, "\""+p+"\"") { return true } }
-	handlerPath := filepath.Join(root, "apps/api/internal/api/handlers/updates/updates_handler.go")
-	if data, err := os.ReadFile(handlerPath); err == nil { if strings.Contains(string(data), ep.HandlerFunc) { return true } }
+	handlerDir := filepath.Join(root, "apps/api/internal/api/handlers/updates")
+	handlerFiles := []string{"updates_handler.go", "updates_history_handler.go", "updates_versions_handler.go", "updates_sync_handler.go"}
+	for _, f := range handlerFiles {
+		if data, err := os.ReadFile(handlerDir + "/" + f); err == nil { if strings.Contains(string(data), ep.HandlerFunc) { return true } }
+	}
 	return false
 }
 
@@ -255,7 +258,7 @@ func uVerifySchema(spec *uSpec, impl *uImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 4)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	entityPaths := []string{"apps/api/internal/domain/update/update_entity.go", "apps/api/internal/domain/version/version_entity.go"}
+	entityPaths := []string{"apps/api/internal/domain/updates/update_entity.go", "apps/api/internal/domain/updater/version_entity.go"}
 	for _, p := range entityPaths {
 		path := filepath.Join(root, p)
 		if _, err := os.Stat(path); err == nil { fmt.Printf("    ✅ Schema defined in: %s\n", filepath.Base(p)); atomic.AddUint64(&updatesPassCount, 1) }
@@ -266,7 +269,7 @@ func uVerifyStructure(spec *uSpec, impl *uImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	keyPaths := []string{"apps/api/internal/api/handlers/updates/", "apps/api/internal/application/update/", "apps/api/internal/domain/update/", "apps/api/internal/domain/version/"}
+	keyPaths := []string{"apps/api/internal/api/handlers/updates/", "apps/api/internal/application/updates/", "apps/api/internal/domain/updates/", "apps/api/internal/domain/updater/"}
 	found := 0
 	for _, p := range keyPaths {
 		path := filepath.Join(root, p)

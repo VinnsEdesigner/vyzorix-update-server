@@ -161,7 +161,7 @@ func drVerifyEndpoints(spec *drSpec, impl *drImpl, root string) {
 
 func drCheckEndpoint(ep drEndpoint, routeContent string, impl *drImpl, root string) bool {
 	paths := []string{ep.Path, strings.TrimPrefix(ep.Path, "/v1"), "/device" + strings.TrimPrefix(ep.Path, "/v1"), "/inbox" + strings.TrimPrefix(ep.Path, "/v1"), "/devices" + strings.TrimPrefix(ep.Path, "/v1")}
-	for _, p := range paths { if strings.Contains(routeContent, p) { return true } }
+	for _, p := range paths { if strings.Contains(routeContent, "\""+p+"\"") { return true } }
 	return false
 }
 
