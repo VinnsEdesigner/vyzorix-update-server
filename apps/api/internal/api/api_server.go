@@ -8,6 +8,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
+	apikeyshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/api_keys"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	dashboardhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/dashboard"
@@ -19,6 +20,7 @@ import (
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
+	api_key "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/api_key"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
@@ -67,6 +69,7 @@ type ServerConfig struct {
 	UpdatesService *updatesapp.Service
 	PushService    *updatesapp.PushService
 	Config         config.Config
+	APIKeyService  *api_key.Service
 }
 
 // Server is the main API server.
@@ -117,6 +120,7 @@ type Server struct {
 	diagnosticsInspectHandler  *diagnosticshandlers.InspectHandler
 	diagnosticsTimelineHandler *diagnosticshandlers.TimelineHandler
 	config                     config.Config
+	apiKeysHandler             *apikeyshandlers.Handler
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -167,6 +171,11 @@ func NewServer(cfg *ServerConfig) *Server {
 	// Create presenter and wire handlers
 	presenter := response.NewPresenter(cfg.AuthService, cfg.AuditLogger, cfg.IPIntelligence)
 	s.wireHandlers(cfg, presenter, mwSet)
+
+	// Initialize API keys handler
+	if cfg.APIKeyService != nil {
+		s.apiKeysHandler = apikeyshandlers.NewHandler(cfg.APIKeyService)
+	}
 
 	// Start Hub if available
 	if cfg.Hub != nil {
