@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// StatusHandler handles GET /v1/device/:id/status.
+// StatusHandler handles GET /v1/device/:imei/status.
 type StatusHandler struct {
 	deviceService *device.Service
 }
@@ -21,13 +21,13 @@ func NewStatusHandler(deviceService *device.Service) *StatusHandler {
 
 // Handle processes the device status request.
 func (h *StatusHandler) Handle(c *gin.Context) {
-	deviceID := c.Param("id")
-	if deviceID == "" {
+	imei := c.Param("imei")
+	if imei == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 		return
 	}
 
-	status, err := h.deviceService.GetStatus(c.Request.Context(), deviceID)
+	status, err := h.deviceService.GetStatus(c.Request.Context(), imei)
 	if err != nil {
 		if err == application.ErrDeviceNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})

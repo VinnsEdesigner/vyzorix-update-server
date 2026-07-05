@@ -169,15 +169,15 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 	})
 }
 
-// GetDevice handles GET /v1/device/:id.
+// GetDevice handles GET /v1/device/:imei.
 func (h *ListHandler) GetDevice(c *gin.Context) {
-	deviceID := c.Param("id")
-	if deviceID == "" {
+	imei := c.Param("imei")
+	if imei == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 		return
 	}
 
-	d, err := h.deviceService.GetDevice(c.Request.Context(), deviceID)
+	d, err := h.deviceService.GetDevice(c.Request.Context(), imei)
 	if err != nil {
 		if err == devicedomain.ErrNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
