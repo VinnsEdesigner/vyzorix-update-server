@@ -25,6 +25,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -543,6 +544,7 @@ func ProvideServerDependencies(
 	lockout *middleware.Lockout,
 	ipIntelligence *middleware.IPIntelligence,
 	updatesService *updatesapp.Service,
+	apiKeyService *keys.Service,
 ) *ServerDependencies {
 	return &ServerDependencies{
 		FCMNotifier:     fcmNotifier,
@@ -567,6 +569,7 @@ func ProvideServerDependencies(
 		UpdatesStorage:  updatesStorage,
 		UpdatesService:  updatesService,
 		TelemetryRepo:   telemetryRepo,
+		APIKeyService:   apiKeyService,
 	}
 }
 

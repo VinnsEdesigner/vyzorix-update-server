@@ -34,7 +34,7 @@ func (s *Server) setupGlobalMiddleware() {
 	s.engine.Use(s.mwFactory.ErrorHandler())
 
 	// Apply API key authentication to all routes except /health and /healthz
-	s.engine.Use(s.apiKeyAuth.SkipCheck("/health", "/healthz"))
+	// Public paths handled internally by TenantAPIKeyAuth
 
 	ssrConfig := infraConfig.LoadSSRConfig()
 	if ssrConfig.EnableSSR {
@@ -156,6 +156,13 @@ func (s *Server) setupAdminRoutes(r *gin.RouterGroup) {
 	adminClients.PATCH("/:clientId", s.adminClientsHandler.Update)
 	adminClients.DELETE("/:clientId", s.adminClientsHandler.Delete)
 	adminClients.POST("/:clientId/rotate-key", s.adminClientsHandler.RotateKey)
+
+	// Super admin API key management routes
+	if s.superAdminAPIKeys != nil {
+		adminAPIKeys := r.Group("/admin/api-keys")
+		adminAPIKeys.Use(middleware.RequireSuperAdmin())
+		s.superAdminAPIKeys.RegisterRoutes(adminAPIKeys)
+	}
 }
 
 func (s *Server) setupDeviceManagementRoutes(r *gin.RouterGroup) {
