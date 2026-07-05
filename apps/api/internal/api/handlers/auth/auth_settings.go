@@ -21,13 +21,13 @@ import (
 
 // SettingsAuditEvent represents an audit event for settings changes.
 type SettingsAuditEvent struct {
+	Changes   map[string]interface{} `json:"changes,omitempty"`
 	Action    string                 `json:"action"`
 	Section   string                 `json:"section"`
-	Changes   map[string]interface{} `json:"changes,omitempty"`
 	IPAddress string                 `json:"ipAddress"`
 	UserAgent string                 `json:"userAgent"`
-	Success   bool                   `json:"success"`
 	Error     string                 `json:"error,omitempty"`
+	Success   bool                   `json:"success"`
 }
 
 // SettingsHandler handles /me settings endpoints.
@@ -384,10 +384,10 @@ func (h *SettingsHandler) GetNotifications(c *gin.Context) {
 
 // NotificationUpdateRequest represents notification settings update request.
 type NotificationUpdateRequest struct {
-	Enabled  *bool                      `json:"enabled,omitempty"`
-	Channels *[]string                  `json:"channels,omitempty"`
-	Email    *operator.EmailNotifications `json:"email,omitempty"`
-	Push     *operator.PushNotifications `json:"push,omitempty"`
+	Enabled  *bool                          `json:"enabled,omitempty"`
+	Channels *[]string                      `json:"channels,omitempty"`
+	Email    *operator.EmailNotifications   `json:"email,omitempty"`
+	Push     *operator.PushNotifications    `json:"push,omitempty"`
 	Webhook  *operator.WebhookNotifications `json:"webhook,omitempty"`
 }
 
@@ -440,8 +440,8 @@ func (h *SettingsHandler) UpdateNotifications(c *gin.Context) {
 
 	// Track changes for audit
 	changes := map[string]interface{}{
-		"enabled":   notifications.Enabled,
-		"channels":  notifications.Channels,
+		"enabled":  notifications.Enabled,
+		"channels": notifications.Channels,
 	}
 
 	// Save updated notifications
@@ -533,10 +533,10 @@ func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 
 	if err != nil {
 		h.presenter.OK(c, gin.H{
-			"success":       false,
-			"error":         "webhook_timeout",
-			"message":       "Webhook did not respond within 10 seconds",
-			"responseTime":  responseTime,
+			"success":      false,
+			"error":        "webhook_timeout",
+			"message":      "Webhook did not respond within 10 seconds",
+			"responseTime": responseTime,
 		})
 		return
 	}

@@ -12,11 +12,11 @@ import (
 // LDAPConfig holds LDAP server configuration.
 type LDAPConfig struct {
 	Server     string
-	Port       int
 	BaseDN     string
 	BindDN     string
 	BindPass   string
 	UserFilter string
+	Port       int
 	UseTLS     bool
 	SkipVerify bool
 }
@@ -47,7 +47,7 @@ func (s *AuthService) AuthenticateLDAP(ctx context.Context, cfg *LDAPConfig, use
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to LDAP server: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	if cfg.UseTLS {
 		err = conn.StartTLS(nil)
@@ -88,7 +88,7 @@ func (s *AuthService) AuthenticateLDAP(ctx context.Context, cfg *LDAPConfig, use
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect for user bind: %w", err)
 	}
-	defer userConn.Close()
+	defer func() { _ = userConn.Close() }()
 
 	if cfg.UseTLS {
 		_ = userConn.StartTLS(nil)

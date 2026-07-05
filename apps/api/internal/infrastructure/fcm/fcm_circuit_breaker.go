@@ -56,16 +56,13 @@ func DefaultCircuitBreakerConfig() CircuitBreakerConfig {
 // CircuitBreaker implements the circuit breaker pattern for FCM calls.
 // Prevents cascading failures when FCM is unavailable.
 type CircuitBreaker struct {
-	mu sync.RWMutex
-
-	state CircuitState
-
-	config  CircuitBreakerConfig
 	lastFailureTime time.Time
-
-	failures       int
-	successes      int
-	halfOpenCalls  int
+	config          CircuitBreakerConfig
+	state           CircuitState
+	failures        int
+	successes       int
+	halfOpenCalls   int
+	mu              sync.RWMutex
 }
 
 // NewCircuitBreaker creates a new CircuitBreaker with the given config.
@@ -168,14 +165,14 @@ func (cb *CircuitBreaker) transitionTo(state CircuitState) {
 
 // CircuitBreakerClient wraps an FCMClient with circuit breaker protection.
 type CircuitBreakerClient struct {
-	client        *Client
+	client         *Client
 	circuitBreaker *CircuitBreaker
 }
 
 // NewCircuitBreakerClient creates a new CircuitBreakerClient.
 func NewCircuitBreakerClient(client *Client) *CircuitBreakerClient {
 	return &CircuitBreakerClient{
-		client:        client,
+		client:         client,
 		circuitBreaker: NewCircuitBreaker(DefaultCircuitBreakerConfig()),
 	}
 }

@@ -12,11 +12,11 @@ import (
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	dashboardhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/dashboard"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
-	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
-	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
-	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
-	inboxhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/inbox"
 	diagnosticshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/diagnostics"
+	inboxhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/inbox"
+	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
+	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
+	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
@@ -24,11 +24,11 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
-	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
-	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
+	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -47,74 +47,74 @@ import (
 type ServerConfig struct {
 	FCMNotifier    fcm.Notifier
 	OperatorRepo   operator.Repository
-	RateLimiter    *middleware.RateLimiter
-	Hub            *hub.Hub
-	AuthService    *auth.AuthService
+	OAuthStateRepo authhandlers.OAuthStateProvider
+	EmailService   *emailService.Service
+	ClientService  *client.Service
 	AuthLimiter    *middleware.RateLimiter
 	IPIntelligence *middleware.IPIntelligence
 	Log            *slog.Logger
 	SessionManager *infraauth.SessionManager
 	GoogleVerifier *infraauth.GoogleTokenVerifier
-	EmailService   *emailService.Service
+	Hub            *hub.Hub
 	CommandService *command.Service
-	ClientService  *client.Service
+	AuthService    *auth.AuthService
 	DB             *storage.SQLite
 	Lockout        *middleware.Lockout
 	DeviceService  *device.Service
 	Metrics        *infraMetrics.Metrics
 	AuditLogger    *audit.Logger
-	Config         config.Config
+	RateLimiter    *middleware.RateLimiter
 	UpdatesService *updatesapp.Service
-	OAuthStateRepo authhandlers.OAuthStateProvider
+	Config         config.Config
 }
 
 // Server is the main API server.
 type Server struct {
-	encryptKeyFn            func(clientID string) ([]byte, bool)
-	authHandlers            *authhandlers.AllHandlers
-	hub                     *hub.Hub
-	engine                  *gin.Engine
-	log                     *slog.Logger
-	deviceStatusHandler     *devicehandlers.StatusHandler
-	sessionManager          *infraauth.SessionManager
-	rateLimiter             *middleware.RateLimiter
-	authLimiter             *middleware.RateLimiter
-	cookieAuth              *middleware.CookieAuth
-	signatureVerifier       *middleware.SignatureVerifier
-	lockout                 *middleware.Lockout
-	csrfProtector           *middleware.CSRFProtector
-	turnstileVerifier       *middleware.TurnstileVerifier
-	revocationList          *infraauth.RevocationList
-	ipIntelligence          *middleware.IPIntelligence
-	hmacVerifier            *cryptohmac.Verifier
-	mwFactory               *middleware.MiddlewareFactory
-	db                      *storage.SQLite
-	dashboardRateLimiter    *middleware.DashboardRateLimiterMiddleware
-	deviceRegRateLimiter   *middleware.DeviceRegistrationRateLimiterMiddleware
-	AuditLogger             *audit.Logger
-	deviceRegisterHandler   *devicehandlers.RegisterHandler
-	deviceUpdaterHandler    *devicehandlers.UpdaterHandler
-	deviceListHandler       *devicehandlers.ListHandler
-	devicesHandler          *devicehandlers.DevicesHandler
-	commandHandler          *cmdhandlers.ExecuteHandler
-	streamHandler           *websockethandlers.StreamHandler
-	telemetryHistoryHandler *handlers.TelemetryHistoryHandler
-	connectionStatusHandler *handlers.ConnectionStatusHandler
-	adminClientsHandler     *admin.ClientsHandler
-	updaterHandler          *updaterhandlers.Handler
-	metricsHandler          *infraMetrics.MetricsHandler
-	commandHistoryHandler   *cmdhandlers.HistoryHandler
-	deviceLogsHandler       *devicehandlers.LogsHandler
-	deviceMetricsHandler    *devicehandlers.MetricsHandler
-	deviceTelemetryHandler  *devicehandlers.TelemetryHandler
-	dashboardStatsHandler   *dashboardhandlers.StatsHandler
-	updatesHandler          *updateshandlers.UpdatesHandler
-	inboxHandler            *inboxhandlers.Handler
-	deviceConfirmHandler    *devicehandlers.ConfirmHandler
-	diagnosticsHandler      *diagnosticshandlers.Handler
-	diagnosticsInspectHandler *diagnosticshandlers.InspectHandler
+	encryptKeyFn               func(clientID string) ([]byte, bool)
+	authHandlers               *authhandlers.AllHandlers
+	hub                        *hub.Hub
+	engine                     *gin.Engine
+	log                        *slog.Logger
+	deviceStatusHandler        *devicehandlers.StatusHandler
+	sessionManager             *infraauth.SessionManager
+	rateLimiter                *middleware.RateLimiter
+	authLimiter                *middleware.RateLimiter
+	cookieAuth                 *middleware.CookieAuth
+	signatureVerifier          *middleware.SignatureVerifier
+	lockout                    *middleware.Lockout
+	csrfProtector              *middleware.CSRFProtector
+	turnstileVerifier          *middleware.TurnstileVerifier
+	revocationList             *infraauth.RevocationList
+	ipIntelligence             *middleware.IPIntelligence
+	hmacVerifier               *cryptohmac.Verifier
+	mwFactory                  *middleware.MiddlewareFactory
+	db                         *storage.SQLite
+	dashboardRateLimiter       *middleware.DashboardRateLimiterMiddleware
+	deviceRegRateLimiter       *middleware.DeviceRegistrationRateLimiterMiddleware
+	AuditLogger                *audit.Logger
+	deviceRegisterHandler      *devicehandlers.RegisterHandler
+	deviceUpdaterHandler       *devicehandlers.UpdaterHandler
+	deviceListHandler          *devicehandlers.ListHandler
+	devicesHandler             *devicehandlers.DevicesHandler
+	commandHandler             *cmdhandlers.ExecuteHandler
+	streamHandler              *websockethandlers.StreamHandler
+	telemetryHistoryHandler    *handlers.TelemetryHistoryHandler
+	connectionStatusHandler    *handlers.ConnectionStatusHandler
+	adminClientsHandler        *admin.ClientsHandler
+	updaterHandler             *updaterhandlers.Handler
+	metricsHandler             *infraMetrics.MetricsHandler
+	commandHistoryHandler      *cmdhandlers.HistoryHandler
+	deviceLogsHandler          *devicehandlers.LogsHandler
+	deviceMetricsHandler       *devicehandlers.MetricsHandler
+	deviceTelemetryHandler     *devicehandlers.TelemetryHandler
+	dashboardStatsHandler      *dashboardhandlers.StatsHandler
+	updatesHandler             *updateshandlers.UpdatesHandler
+	inboxHandler               *inboxhandlers.Handler
+	deviceConfirmHandler       *devicehandlers.ConfirmHandler
+	diagnosticsHandler         *diagnosticshandlers.Handler
+	diagnosticsInspectHandler  *diagnosticshandlers.InspectHandler
 	diagnosticsTimelineHandler *diagnosticshandlers.TimelineHandler
-	config                  config.Config
+	config                     config.Config
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -375,7 +375,7 @@ func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
 
 	// Create combined handler for backwards compatibility
 	s.diagnosticsHandler = &diagnosticshandlers.Handler{
-		InspectHandler:   s.diagnosticsInspectHandler,
+		InspectHandler:  s.diagnosticsInspectHandler,
 		TimelineHandler: s.diagnosticsTimelineHandler,
 	}
 }
@@ -386,16 +386,16 @@ func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
 
 // ServerConfigWithDeps is the config for NewServerWithDeps using pre-wired dependencies.
 type ServerConfigWithDeps struct {
-	Config          config.Config
-	Log             *slog.Logger
-	DB              *storage.SQLite
-	Engine          *gin.Engine
-	Middleware      *wire.MiddlewareSet
-	HandlerSet      *wire.HandlerSet
-	SessionManager  *infraauth.SessionManager
-	Hub             *hub.Hub
-	AuditLogger     *audit.Logger
-	UpdatesService  *updatesapp.Service
+	Log            *slog.Logger
+	DB             *storage.SQLite
+	Engine         *gin.Engine
+	Middleware     *wire.MiddlewareSet
+	HandlerSet     *wire.HandlerSet
+	SessionManager *infraauth.SessionManager
+	Hub            *hub.Hub
+	AuditLogger    *audit.Logger
+	UpdatesService *updatesapp.Service
+	Config         config.Config
 }
 
 // NewServerWithDeps creates a Server using pre-wired dependencies from wire.
@@ -405,23 +405,23 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	}
 
 	s := &Server{
-		engine:        cfg.Engine,
-		mwFactory:     cfg.Middleware.Factory,
-		rateLimiter:   cfg.Middleware.RateLimiter,
-		authLimiter:   cfg.Middleware.AuthLimiter,
-		config:        cfg.Config,
-		log:           cfg.Log,
-		cookieAuth:    cfg.Middleware.CookieAuth,
-		lockout:       cfg.Middleware.Lockout,
-		csrfProtector: cfg.Middleware.CSRFProtector,
+		engine:            cfg.Engine,
+		mwFactory:         cfg.Middleware.Factory,
+		rateLimiter:       cfg.Middleware.RateLimiter,
+		authLimiter:       cfg.Middleware.AuthLimiter,
+		config:            cfg.Config,
+		log:               cfg.Log,
+		cookieAuth:        cfg.Middleware.CookieAuth,
+		lockout:           cfg.Middleware.Lockout,
+		csrfProtector:     cfg.Middleware.CSRFProtector,
 		turnstileVerifier: cfg.Middleware.TurnstileVerifier,
 		revocationList:    cfg.Middleware.RevocationList,
-		ipIntelligence:     cfg.Middleware.IPIntelligence,
-		hmacVerifier:       cfg.Middleware.HmacVerifier,
-		sessionManager:     cfg.SessionManager,
-		db:                 cfg.DB,
-		hub:                cfg.Hub,
-		AuditLogger:         cfg.AuditLogger,
+		ipIntelligence:    cfg.Middleware.IPIntelligence,
+		hmacVerifier:      cfg.Middleware.HmacVerifier,
+		sessionManager:    cfg.SessionManager,
+		db:                cfg.DB,
+		hub:               cfg.Hub,
+		AuditLogger:       cfg.AuditLogger,
 	}
 
 	// Wire handlers from HandlerSet

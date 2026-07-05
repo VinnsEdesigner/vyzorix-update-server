@@ -7,18 +7,18 @@ import "time"
 type TimelineEventType string
 
 const (
-	EventTypeTelemetry        TimelineEventType = "TELEMETRY"
-	EventTypeCommandSent       TimelineEventType = "COMMAND_SENT"
-	EventTypeCommandAck        TimelineEventType = "COMMAND_ACK"
-	EventTypeCommandFailed     TimelineEventType = "COMMAND_FAILED"
-	EventTypeConnectionOpen    TimelineEventType = "CONNECTION_OPEN"
-	EventTypeConnectionLost    TimelineEventType = "CONNECTION_LOST"
-	EventTypeFCMFallback      TimelineEventType = "FCM_FALLBACK"
-	EventTypeReconnected      TimelineEventType = "RECONNECTED"
-	EventTypeThresholdBreach   TimelineEventType = "THRESHOLD_BREACH"
-	EventTypeRegistered        TimelineEventType = "REGISTERED"
-	EventTypeDeregistered     TimelineEventType = "DEREGISTERED"
-	EventTypeError             TimelineEventType = "ERROR"
+	EventTypeTelemetry       TimelineEventType = "TELEMETRY"
+	EventTypeCommandSent     TimelineEventType = "COMMAND_SENT"
+	EventTypeCommandAck      TimelineEventType = "COMMAND_ACK"
+	EventTypeCommandFailed   TimelineEventType = "COMMAND_FAILED"
+	EventTypeConnectionOpen  TimelineEventType = "CONNECTION_OPEN"
+	EventTypeConnectionLost  TimelineEventType = "CONNECTION_LOST"
+	EventTypeFCMFallback     TimelineEventType = "FCM_FALLBACK"
+	EventTypeReconnected     TimelineEventType = "RECONNECTED"
+	EventTypeThresholdBreach TimelineEventType = "THRESHOLD_BREACH"
+	EventTypeRegistered      TimelineEventType = "REGISTERED"
+	EventTypeDeregistered    TimelineEventType = "DEREGISTERED"
+	EventTypeError           TimelineEventType = "ERROR"
 )
 
 // EventCategory maps event types to frontend categories.
@@ -29,21 +29,21 @@ var EventCategory = map[TimelineEventType]string{
 	EventTypeCommandFailed:   "command",
 	EventTypeConnectionOpen:  "connection",
 	EventTypeConnectionLost:  "connection",
-	EventTypeFCMFallback:    "connection",
-	EventTypeReconnected:    "connection",
+	EventTypeFCMFallback:     "connection",
+	EventTypeReconnected:     "connection",
 	EventTypeThresholdBreach: "error",
-	EventTypeRegistered:     "connection",
-	EventTypeDeregistered:   "connection",
+	EventTypeRegistered:      "connection",
+	EventTypeDeregistered:    "connection",
 	EventTypeError:           "error",
 }
 
 // TimelineEvent represents a single event in the device timeline.
 type TimelineEvent struct {
+	Timestamp time.Time         `json:"timestamp"`
+	Data      map[string]any    `json:"data,omitempty"`
 	ID        string            `json:"id"`
 	DeviceID  string            `json:"deviceId"`
 	Type      TimelineEventType `json:"type"`
-	Timestamp time.Time         `json:"timestamp"`
-	Data      map[string]any    `json:"data,omitempty"`
 }
 
 // DeviceInspection represents the full device inspection data.
@@ -73,10 +73,10 @@ type SoftwareInfo struct {
 
 // RegistrationInfo contains device registration information.
 type RegistrationInfo struct {
-	Status              string     `json:"status"`
 	RegisteredAt        *time.Time `json:"registeredAt,omitempty"`
-	FCMTokenValid       bool      `json:"fcmTokenValid"`
 	FCMTokenRefreshedAt *time.Time `json:"fcmTokenRefreshedAt,omitempty"`
+	Status              string     `json:"status"`
+	FCMTokenValid       bool       `json:"fcmTokenValid"`
 	CommandSecretSet    bool       `json:"commandSecretSet"`
 }
 
@@ -92,32 +92,32 @@ type ConnectionInfo struct {
 
 // TelemetryInfo contains device telemetry statistics.
 type TelemetryInfo struct {
-	LastTimestamp time.Time `json:"lastTimestamp"`
-	FramesToday  int       `json:"framesToday"`
-	AvgLatencyMs int       `json:"avgLatencyMs,omitempty"`
-	TotalBytesToday int64  `json:"totalBytesToday"`
-	SessionsToday int      `json:"sessionsToday"`
+	LastTimestamp   time.Time `json:"lastTimestamp"`
+	FramesToday     int       `json:"framesToday"`
+	AvgLatencyMs    int       `json:"avgLatencyMs,omitempty"`
+	TotalBytesToday int64     `json:"totalBytesToday"`
+	SessionsToday   int       `json:"sessionsToday"`
 }
 
 // TimelineResult contains the paginated timeline result.
 type TimelineResult struct {
+	NextCursor string          `json:"nextCursor,omitempty"`
 	Events     []TimelineEvent `json:"events"`
 	HasMore    bool            `json:"hasMore"`
-	NextCursor string          `json:"nextCursor,omitempty"`
 }
 
 // TimelineFilter contains filter parameters for timeline queries.
 type TimelineFilter struct {
-	EventType string
 	StartTime time.Time
 	EndTime   time.Time
-	Limit     int
+	EventType string
 	Cursor    string
+	Limit     int
 }
 
 // WebSocketConnectionInfo holds WebSocket connection state.
 type WebSocketConnectionInfo struct {
-	Connected   bool
 	ConnectedAt time.Time
 	ClientIP    string
+	Connected   bool
 }

@@ -7,28 +7,28 @@ import "time"
 type EventType string
 
 const (
-	// Device connection events
+	// Device connection events.
 	EventTypeDeviceConnected    EventType = "DEVICE_CONNECTED"
 	EventTypeDeviceDisconnected EventType = "DEVICE_DISCONNECTED"
 	EventTypeDeviceReconnected  EventType = "DEVICE_RECONNECTED"
 
-	// Telemetry events
-	EventTypeTelemetryReceived    EventType = "TELEMETRY_RECEIVED"
-	EventTypeThresholdBreach      EventType = "THRESHOLD_BREACH"
-	EventTypeRiskScoreAlert       EventType = "RISK_SCORE_ALERT"
-	EventTypeThermalAlert         EventType = "THERMAL_ALERT"
-	EventTypeBufferLevelAlert     EventType = "BUFFER_LEVEL_ALERT"
+	// Telemetry events.
+	EventTypeTelemetryReceived EventType = "TELEMETRY_RECEIVED"
+	EventTypeThresholdBreach   EventType = "THRESHOLD_BREACH"
+	EventTypeRiskScoreAlert    EventType = "RISK_SCORE_ALERT"
+	EventTypeThermalAlert      EventType = "THERMAL_ALERT"
+	EventTypeBufferLevelAlert  EventType = "BUFFER_LEVEL_ALERT"
 
-	// Command events
-	EventTypeCommandSent      EventType = "COMMAND_SENT"
-	EventTypeCommandDelivered EventType = "COMMAND_DELIVERED"
-	EventTypeCommandFailed    EventType = "COMMAND_FAILED"
+	// Command events.
+	EventTypeCommandSent         EventType = "COMMAND_SENT"
+	EventTypeCommandDelivered    EventType = "COMMAND_DELIVERED"
+	EventTypeCommandFailed       EventType = "COMMAND_FAILED"
 	EventTypeCommandAcknowledged EventType = "COMMAND_ACKNOWLEDGED"
 
-	// System events
-	EventTypeFCMFallback     EventType = "FCM_FALLBACK"
-	EventTypeDeviceOffline   EventType = "DEVICE_OFFLINE"
-	EventTypeDeviceOnline    EventType = "DEVICE_ONLINE"
+	// System events.
+	EventTypeFCMFallback    EventType = "FCM_FALLBACK"
+	EventTypeDeviceOffline  EventType = "DEVICE_OFFLINE"
+	EventTypeDeviceOnline   EventType = "DEVICE_ONLINE"
 	EventTypeError          EventType = "ERROR"
 	EventTypeRegistration   EventType = "REGISTRATION"
 	EventTypeDeregistration EventType = "DEREGISTRATION"
@@ -45,25 +45,25 @@ const (
 
 // Event represents a real-time event in the system.
 type Event struct {
-	ID          string            `json:"id"`
-	DeviceID    string            `json:"deviceId"`
-	OperatorID  string            `json:"operatorId,omitempty"`
-	Type        EventType         `json:"type"`
-	Severity    Severity          `json:"severity"`
-	Timestamp   time.Time         `json:"timestamp"`
-	Data        map[string]any   `json:"data,omitempty"`
-	Source      string            `json:"source"` // "device", "server", "dashboard"
+	ID         string         `json:"id"`
+	DeviceID   string         `json:"deviceId"`
+	OperatorID string         `json:"operatorId,omitempty"`
+	Type       EventType      `json:"type"`
+	Severity   Severity       `json:"severity"`
+	Timestamp  time.Time      `json:"timestamp"`
+	Data       map[string]any `json:"data,omitempty"`
+	Source     string         `json:"source"` // "device", "server", "dashboard"
 }
 
 // EventFilter contains filter parameters for querying events.
 type EventFilter struct {
-	DeviceIDs   []string
-	EventTypes  []EventType
-	Severities  []Severity
-	StartTime   time.Time
-	EndTime     time.Time
-	Limit       int
-	Offset      int
+	StartTime  time.Time
+	EndTime    time.Time
+	DeviceIDs  []string
+	EventTypes []EventType
+	Severities []Severity
+	Limit      int
+	Offset     int
 }
 
 // EventResult contains the result of an event query.

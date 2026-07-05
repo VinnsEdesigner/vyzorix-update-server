@@ -2,39 +2,39 @@ package operator
 
 // EmailNotifications holds email notification preferences.
 type EmailNotifications struct {
-	ThresholdBreach    bool `json:"thresholdBreach"`
-	DeviceOffline      bool `json:"deviceOffline"`
-	DeviceOnline       bool `json:"deviceOnline"`
-	UpdateAvailable    bool `json:"updateAvailable"`
-	CommandFailed      bool `json:"commandFailed"`
+	ThresholdBreach     bool `json:"thresholdBreach"`
+	DeviceOffline       bool `json:"deviceOffline"`
+	DeviceOnline        bool `json:"deviceOnline"`
+	UpdateAvailable     bool `json:"updateAvailable"`
+	CommandFailed       bool `json:"commandFailed"`
 	RegistrationRequest bool `json:"registrationRequest"`
 }
 
 // PushNotifications holds push notification preferences.
 type PushNotifications struct {
-	ThresholdBreach    bool `json:"thresholdBreach"`
-	DeviceOffline      bool `json:"deviceOffline"`
-	DeviceOnline       bool `json:"deviceOnline"`
-	UpdateAvailable    bool `json:"updateAvailable"`
-	CommandFailed      bool `json:"commandFailed"`
+	ThresholdBreach     bool `json:"thresholdBreach"`
+	DeviceOffline       bool `json:"deviceOffline"`
+	DeviceOnline        bool `json:"deviceOnline"`
+	UpdateAvailable     bool `json:"updateAvailable"`
+	CommandFailed       bool `json:"commandFailed"`
 	RegistrationRequest bool `json:"registrationRequest"`
 }
 
 // WebhookNotifications holds webhook notification configuration.
 type WebhookNotifications struct {
-	Enabled bool   `json:"enabled"`
-	URL     string `json:"url"`
-	Secret  string `json:"secret,omitempty"`
+	URL     string   `json:"url"`
+	Secret  string   `json:"secret,omitempty"`
 	Types   []string `json:"types"`
+	Enabled bool     `json:"enabled"`
 }
 
 // NotificationSettings holds all notification preferences for an operator.
 type NotificationSettings struct {
-	Enabled   bool                  `json:"enabled"`
-	Channels  []string              `json:"channels"`
-	Email     EmailNotifications    `json:"email"`
-	Push      PushNotifications     `json:"push"`
-	Webhook   WebhookNotifications  `json:"webhook"`
+	Webhook  WebhookNotifications `json:"webhook"`
+	Channels []string             `json:"channels"`
+	Email    EmailNotifications   `json:"email"`
+	Push     PushNotifications    `json:"push"`
+	Enabled  bool                 `json:"enabled"`
 }
 
 // DefaultNotificationSettings returns default notification settings.
@@ -70,10 +70,10 @@ func DefaultNotificationSettings() *NotificationSettings {
 // NotificationType constants.
 const (
 	NotificationTypeThresholdBreach     = "threshold_breach"
-	NotificationTypeDeviceOffline      = "device_offline"
-	NotificationTypeDeviceOnline       = "device_online"
-	NotificationTypeUpdateAvailable    = "update_available"
-	NotificationTypeCommandFailed      = "command_failed"
+	NotificationTypeDeviceOffline       = "device_offline"
+	NotificationTypeDeviceOnline        = "device_online"
+	NotificationTypeUpdateAvailable     = "update_available"
+	NotificationTypeCommandFailed       = "command_failed"
 	NotificationTypeRegistrationRequest = "registration_request"
 )
 
