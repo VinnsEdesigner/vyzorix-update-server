@@ -5,6 +5,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
+	apikeyshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/api_keys"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
@@ -13,6 +14,7 @@ import (
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/api_key"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
@@ -56,6 +58,7 @@ type HandlerDependencies struct {
 	UpdatesStorage *storage.UpdatesStorage
 	AuthService    *auth.AuthService
 	Config         config.Config
+	APIKeyService  *api_key.Service
 }
 
 // HandlerSet contains all handler instances.
@@ -76,6 +79,8 @@ type HandlerSet struct {
 	UpdatesService      *updatesapplication.Service
 	ThresholdHandler    *operatorhandlers.ThresholdHandler
 	NotificationHandler *operatorhandlers.NotificationHandler
+		APIKeys            *apikeyshandlers.Handler
+		SuperAdminAPIKeys  *apikeyshandlers.SuperAdminHandler
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -191,6 +196,12 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	notificationSvc := appoperator.NewNotificationService(deps.OperatorRepo)
 	webhookClient := infrawebhook.NewClient(10 * time.Second)
 	hs.NotificationHandler = operatorhandlers.NewNotificationHandler(notificationSvc, webhookClient)
+
+	// API Keys handlers
+	if deps.APIKeyService != nil {
+		hs.APIKeys = apikeyshandlers.NewHandler(deps.APIKeyService)
+		hs.SuperAdminAPIKeys = apikeyshandlers.NewSuperAdminHandler(deps.APIKeyService)
+	}
 
 	return hs
 }
