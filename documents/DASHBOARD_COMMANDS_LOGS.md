@@ -711,7 +711,7 @@ Device Page (tabs):
 **Query Parameters:**
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| `status` | string | all | Filter: pending, delivered, failed |
+| `status` | string | all | Filter: pending, delivered, completed, failed |
 | `page` | int | 1 | Page number |
 | `limit` | int | 20 | Items per page |
 
@@ -807,7 +807,7 @@ Cancel a pending command. Note: This endpoint is at the command root level, not 
 ### 15.1 Types
 
 ```graphql
-enum CommandStatus { PENDING, DELIVERED, FAILED, CANCELLED }
+enum CommandStatus { PENDING, DELIVERED, COMPLETED, FAILED, CANCELLED }
 enum LogEventType { CONNECTED, DISCONNECTED, TELEMETRY, COMMAND_SENT, COMMAND_ACK, ERROR, WARNING }
 
 type Command {
@@ -883,6 +883,7 @@ type CancelCommandResponse {
 export enum CommandStatus {
   PENDING = "PENDING",
   DELIVERED = "DELIVERED",
+  COMPLETED = "COMPLETED",
   FAILED = "FAILED",
   CANCELLED = "CANCELLED",
 }
@@ -1282,6 +1283,7 @@ export const CommandsHistory = ({ imei }: CommandsHistoryProps) => {
             { value: "all", label: "All" },
             { value: "pending", label: "Pending" },
             { value: "delivered", label: "Delivered" },
+            { value: "completed", label: "Completed" },
             { value: "failed", label: "Failed" },
           ]}
         />
