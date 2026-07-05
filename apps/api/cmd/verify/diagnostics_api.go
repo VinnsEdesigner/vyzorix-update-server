@@ -59,20 +59,20 @@ func diLoadSpec() *diSpec {
 
 func diScanImpl(root string) *diImpl {
 	impl := &diImpl{paths: make(map[string]bool), domain: make(map[string]bool), infra: make(map[string]bool), application: make(map[string]bool), routes: make(map[string]bool), methods: make(map[string][]string)}
-	scanFiles := func(dir, ext string, collect map[string]bool) {
-		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() { return nil }
+	scanFiles := func(dir, ext string, collect map[string]bool) error {
+		return filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() { return err }
 			rel, _ := filepath.Rel(root, p)
 			collect[rel] = true
 			if strings.HasSuffix(p, ext) { if data, err := os.ReadFile(p); err == nil { diCollectGoAST(string(data), collect) } }
 			return nil
 		})
 	}
-	scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain)
-	scanFiles(filepath.Join(root, "apps/api/internal/infrastructure/storage"), ".go", impl.infra)
-	scanFiles(filepath.Join(root, "apps/api/internal/application"), ".go", impl.application)
-	filepath.Walk(filepath.Join(root, "apps/api/internal/api/handlers/diagnostics"), func(p string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") { return nil }
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain); err != nil { return impl }
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/infrastructure/storage"), ".go", impl.infra); err != nil { return impl }
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/application"), ".go", impl.application); err != nil { return impl }
+	if err := filepath.Walk(filepath.Join(root, "apps/api/internal/api/handlers/diagnostics"), func(p string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") { return err }
 		data, _ := os.ReadFile(p)
 		impl.paths[p] = true
 		fset := token.NewFileSet()
@@ -82,7 +82,7 @@ func diScanImpl(root string) *diImpl {
 			}
 		}
 		return nil
-	})
+	}); err != nil { return impl }
 	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/diagnostics/diagnostics_routes.go")}
 	for _, rf := range routeFiles { if data, err := os.ReadFile(rf); err == nil { mPattern := regexp.MustCompile(`\.(GET|POST|PUT|PATCH|DELETE)\s*\(\s*["']([^"']+)`); for _, m := range mPattern.FindAllStringSubmatch(string(data), -1) { if len(m) >= 3 { impl.routes[m[2]] = true } } } }
 	return impl
@@ -111,7 +111,7 @@ func diVerifyEndpoints(spec *diSpec, impl *diImpl, root string) {
 	fmt.Printf("\n    Registered endpoints: %d/%d\n", found, len(spec.endpoints))
 }
 
-func diCheckEndpoint(ep diEndpoint, routeContent string, impl *diImpl, root string) bool {
+func diCheckEndpoint(ep diEndpoint, routeContent string, _ *diImpl, root string) bool {
 	pathVariants := []string{ep.Path, strings.TrimPrefix(ep.Path, "/v1"), ":imei/inspect", ":imei/timeline"}
 	for _, p := range pathVariants { if strings.Contains(routeContent, "\""+p+"\"") { return true } }
 	handlerPath := filepath.Join(root, "apps/api/internal/api/handlers/diagnostics")
@@ -128,7 +128,7 @@ func diGetRouteContent(root string) string {
 	return content.String()
 }
 
-func diVerifyHandlers(spec *diSpec, impl *diImpl, root string) {
+func diVerifyHandlers(spec *diSpec, _ *diImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  HANDLER VERIFICATION (Section 6)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -146,7 +146,7 @@ func diVerifyHandlers(spec *diSpec, impl *diImpl, root string) {
 	}
 }
 
-func diVerifyDomain(spec *diSpec, impl *diImpl, root string) {
+func diVerifyDomain(_ *diSpec, _ *diImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -158,7 +158,7 @@ func diVerifyDomain(spec *diSpec, impl *diImpl, root string) {
 	}
 }
 
-func diVerifyInfra(spec *diSpec, impl *diImpl, root string) {
+func diVerifyInfra(_ *diSpec, _ *diImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  INFRASTRUCTURE VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -166,7 +166,7 @@ func diVerifyInfra(spec *diSpec, impl *diImpl, root string) {
 	if _, err := os.Stat(infraPath); err == nil { fmt.Printf("    ✅ infrastructure/storage/\n"); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("    ❌ infrastructure/storage/ - NOT FOUND\n"); atomic.AddUint64(&diagFailCount, 1) }
 }
 
-func diVerifyApplication(spec *diSpec, impl *diImpl, root string) {
+func diVerifyApplication(_ *diSpec, _ *diImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  APPLICATION LAYER VERIFICATION (Section 7)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -174,7 +174,7 @@ func diVerifyApplication(spec *diSpec, impl *diImpl, root string) {
 	if _, err := os.Stat(appPath); err == nil { fmt.Printf("    ✅ application/diagnostics/\n"); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("    ❌ application/diagnostics/ - DIRECTORY NOT FOUND\n"); atomic.AddUint64(&diagFailCount, 1) }
 }
 
-func diVerifyRoutes(spec *diSpec, impl *diImpl, root string) {
+func diVerifyRoutes(_ *diSpec, _ *diImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  ROUTE REGISTRATION VERIFICATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -182,17 +182,17 @@ func diVerifyRoutes(spec *diSpec, impl *diImpl, root string) {
 	if _, err := os.Stat(routePath); err == nil { fmt.Printf("    ✅ diagnostics/diagnostics_routes.go\n"); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("    ❌ diagnostics/diagnostics_routes.go - NOT FOUND\n"); atomic.AddUint64(&diagFailCount, 1) }
 }
 
-func diVerifySchema(spec *diSpec, root string) {
+func diVerifySchema(_ *diSpec, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 4)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
 	schemaFound := false
-	filepath.Walk(filepath.Join(root, "apps/api/internal/domain"), func(p string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() { return nil }
+	if err := filepath.Walk(filepath.Join(root, "apps/api/internal/domain"), func(p string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() { return err }
 		if strings.Contains(p, "timeline") || strings.Contains(p, "diagnostics") {
 			if _, err := os.Stat(p); err == nil { data, _ := os.ReadFile(p); if strings.Contains(string(data), "Timeline") || strings.Contains(string(data), "timeline") { fmt.Printf("    ✅ Timeline schema defined in: %s\n", filepath.Base(p)); schemaFound = true; atomic.AddUint64(&diagPassCount, 1); return nil } }
 		}
 		return nil
-	})
+	}); err != nil { return }
 	if !schemaFound { fmt.Printf("    ⚠️  Timeline schema not found in domain files\n") }
 }

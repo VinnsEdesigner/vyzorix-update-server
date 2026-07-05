@@ -76,15 +76,14 @@ func LoadIPIntelligenceConfig() IPIntelligenceConfig {
 }
 
 // IPIntelligence provides IP-based threat detection.
-//
 type IPIntelligence struct {
-	mu          sync.RWMutex
-	config      IPIntelligenceConfig
+	stopCleanup chan struct{}
 	failures    map[string]*ipFailureRecord
 	blocked     map[string]time.Time
 	whitelist   map[string]bool
-	stopCleanup chan struct{}
+	config      IPIntelligenceConfig
 	cleanupWg   sync.WaitGroup
+	mu          sync.RWMutex
 }
 
 type ipFailureRecord struct {

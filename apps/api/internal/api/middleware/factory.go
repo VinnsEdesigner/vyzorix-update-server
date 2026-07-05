@@ -15,26 +15,25 @@ import (
 
 // MiddlewareFactory creates and configures all middleware with their dependencies.
 // This centralizes middleware creation and reduces coupling in server.go.
-//
 type MiddlewareFactory struct {
-	ssrCleanup          func()
-	allowedOrigins      []string
-	authRateLimitPerMin int
-	rateLimitPerMinute  int
-	hmacWindow          time.Duration
-	enforceHMAC         bool
-	jwtSecret           string
-	publicDir           string
 	clientService       ClientServiceProvider
+	revocationList      *infraauth.RevocationList
+	turnstile           *TurnstileVerifier
+	lockout             *Lockout
+	log                 *slog.Logger
+	csrfProtector       *CSRFProtector
+	authService         *appsvc.AuthService
+	signatureVerifier   *SignatureVerifier
+	ssrCleanup          func()
 	ipIntelligence      *IPIntelligence
 	sessionManager      *infraauth.SessionManager
-	authService         *appsvc.AuthService
-	revocationList      *infraauth.RevocationList
-	signatureVerifier   *SignatureVerifier
-	turnstile           *TurnstileVerifier
-	csrfProtector       *CSRFProtector
-	log                 *slog.Logger
-	lockout             *Lockout
+	publicDir           string
+	jwtSecret           string
+	allowedOrigins      []string
+	authRateLimitPerMin int
+	hmacWindow          time.Duration
+	rateLimitPerMinute  int
+	enforceHMAC         bool
 }
 
 // ClientServiceProvider interface for client service dependency.

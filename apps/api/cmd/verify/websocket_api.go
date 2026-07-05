@@ -87,21 +87,21 @@ func wsLoadSpec() *wsSpec {
 
 func wsScanImpl(root string) *wsImpl {
 	impl := &wsImpl{paths: make(map[string]bool), domain: make(map[string]bool), infra: make(map[string]bool), application: make(map[string]bool), routes: make(map[string]bool), methods: make(map[string][]string)}
-	scanFiles := func(dir, ext string, collect map[string]bool) {
-		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() { return nil }
+	scanFiles := func(dir, ext string, collect map[string]bool) error {
+		return filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() { return err }
 			rel, _ := filepath.Rel(root, p)
 			collect[rel] = true
 			if strings.HasSuffix(p, ext) { if data, err := os.ReadFile(p); err == nil { wsCollectGoAST(string(data), collect) } }
 			return nil
 		})
 	}
-	scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain)
-	scanFiles(filepath.Join(root, "apps/api/internal/infrastructure"), ".go", impl.infra)
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain); err != nil { return impl }
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/infrastructure"), ".go", impl.infra); err != nil { return impl }
 	handlerDirs := []string{filepath.Join(root, "apps/api/internal/api/handlers/websocket")}
 	for _, dir := range handlerDirs {
-		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") { return nil }
+		if err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") { return err }
 			data, _ := os.ReadFile(p)
 			impl.paths[p] = true
 			fset := token.NewFileSet()
@@ -114,7 +114,7 @@ func wsScanImpl(root string) *wsImpl {
 				}
 			}
 			return nil
-		})
+		}); err != nil { return impl }
 	}
 	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/websocket/websocket_handler.go")}
 	for _, rf := range routeFiles {
@@ -138,7 +138,7 @@ func wsCollectGoAST(content string, collect map[string]bool) {
 	}
 }
 
-func wsVerifyHub(spec *wsSpec, impl *wsImpl, root string) {
+func wsVerifyHub(_ *wsSpec, _ *wsImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  WEBSOCKET HUB VERIFICATION (Section 2.2)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -171,7 +171,7 @@ func wsVerifyHub(spec *wsSpec, impl *wsImpl, root string) {
 	}
 }
 
-func wsVerifyHandlers(spec *wsSpec, impl *wsImpl, root string) {
+func wsVerifyHandlers(_ *wsSpec, _ *wsImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  WEBSOCKET HANDLER VERIFICATION (Section 4)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -186,7 +186,7 @@ func wsVerifyHandlers(spec *wsSpec, impl *wsImpl, root string) {
 	_ = found
 }
 
-func wsVerifyEndpoints(spec *wsSpec, impl *wsImpl, root string) {
+func wsVerifyEndpoints(spec *wsSpec, _ *wsImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  ENDPOINT VERIFICATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -208,7 +208,7 @@ func wsGetRouteContent(root string) string {
 	return content.String()
 }
 
-func wsVerifyDomain(spec *wsSpec, impl *wsImpl, root string) {
+func wsVerifyDomain(spec *wsSpec, _ *wsImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -227,7 +227,7 @@ func wsVerifyDomain(spec *wsSpec, impl *wsImpl, root string) {
 	_ = found
 }
 
-func wsVerifyInfra(spec *wsSpec, impl *wsImpl, root string) {
+func wsVerifyInfra(_ *wsSpec, _ *wsImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  WEBSOCKET INFRASTRUCTURE (Section 4)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -247,7 +247,7 @@ func wsVerifyInfra(spec *wsSpec, impl *wsImpl, root string) {
 	}
 }
 
-func wsVerifyRoutes(spec *wsSpec, impl *wsImpl, root string) {
+func wsVerifyRoutes(_ *wsSpec, _ *wsImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  WEBSOCKET ROUTE REGISTRATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -256,7 +256,7 @@ func wsVerifyRoutes(spec *wsSpec, impl *wsImpl, root string) {
 	if _, err := os.Stat(routePath); err == nil { fmt.Printf("    ✅ routes: websocket/websocket_handler.go\n"); atomic.AddUint64(&wsPassCount, 1) } else { fmt.Printf("    ❌ No WebSocket route file found\n"); atomic.AddUint64(&wsFailCount, 1) }
 }
 
-func wsVerifySchema(spec *wsSpec, impl *wsImpl, root string) {
+func wsVerifySchema(_ *wsSpec, _ *wsImpl, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  WEBSOCKET MESSAGE TYPES (Section 6)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -271,7 +271,7 @@ func wsVerifySchema(spec *wsSpec, impl *wsImpl, root string) {
 	}
 }
 
-func wsVerifyStructure(spec *wsSpec, impl *wsImpl, root string) {
+func wsVerifyStructure(_ *wsSpec, _ *wsImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 3, 10)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -285,7 +285,7 @@ func wsVerifyStructure(spec *wsSpec, impl *wsImpl, root string) {
 	fmt.Printf("\n    Directories verified: %d/%d\n", found, len(keyPaths))
 }
 
-func wsVerifyMessages(spec *wsSpec, impl *wsImpl, root string) {
+func wsVerifyMessages(_ *wsSpec, _ *wsImpl, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  MESSAGE PROTOCOLS VERIFICATION (Section 1.4)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")

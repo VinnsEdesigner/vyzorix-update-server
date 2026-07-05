@@ -88,22 +88,22 @@ func sLoadSpec() *sSpec {
 
 func sScanImpl(root string) *sImpl {
 	impl := &sImpl{paths: make(map[string]bool), domain: make(map[string]bool), infra: make(map[string]bool), application: make(map[string]bool), routes: make(map[string]bool), methods: make(map[string][]string)}
-	scanFiles := func(dir, ext string, collect map[string]bool) {
-		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() { return nil }
+	scanFiles := func(dir, ext string, collect map[string]bool) error {
+		return filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() { return err }
 			rel, _ := filepath.Rel(root, p)
 			collect[rel] = true
 			if strings.HasSuffix(p, ext) { if data, err := os.ReadFile(p); err == nil { sCollectGoAST(string(data), collect) } }
 			return nil
 		})
 	}
-	scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain)
-	scanFiles(filepath.Join(root, "apps/api/internal/infrastructure/storage"), ".go", impl.infra)
-	scanFiles(filepath.Join(root, "apps/api/internal/application"), ".go", impl.application)
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain); err != nil { return impl }
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/infrastructure/storage"), ".go", impl.infra); err != nil { return impl }
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/application"), ".go", impl.application); err != nil { return impl }
 	handlerDirs := []string{filepath.Join(root, "apps/api/internal/api/handlers/auth")}
 	for _, dir := range handlerDirs {
-		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") { return nil }
+		if err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") { return err }
 			data, _ := os.ReadFile(p)
 			impl.paths[p] = true
 			fset := token.NewFileSet()
@@ -116,7 +116,7 @@ func sScanImpl(root string) *sImpl {
 				}
 			}
 			return nil
-		})
+		}); err != nil { return impl }
 	}
 	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/auth/auth_routes.go")}
 	for _, rf := range routeFiles {
@@ -153,9 +153,9 @@ func sVerifyEndpoints(spec *sSpec, impl *sImpl, root string) {
 	fmt.Printf("\n    Registered endpoints: %d/%d\n", found, len(spec.endpoints))
 }
 
-func sCheckEndpoint(ep sEndpoint, routeContent string, impl *sImpl, root string) bool {
+func sCheckEndpoint(ep sEndpoint, routeContent string, _ *sImpl, root string) bool {
 	pathVariants := []string{ep.Path, strings.TrimPrefix(ep.Path, "/v1"), "/auth" + strings.TrimPrefix(ep.Path, "/v1")}
-	for _, p := range pathVariants { if strings.Contains(routeContent, "\""+p+"\"") || strings.Contains(routeContent, "\""+p+"\"") { return true } }
+	for _, p := range pathVariants { if strings.Contains(routeContent, "\""+p+"\"") { return true } }
 	handlerPath := filepath.Join(root, "apps/api/internal/api/handlers/auth/auth_settings.go")
 	if data, err := os.ReadFile(handlerPath); err == nil { if strings.Contains(string(data), ep.HandlerFunc) { return true } }
 	return false
@@ -168,7 +168,7 @@ func sGetRouteContent(root string) string {
 	return content.String()
 }
 
-func sVerifyHandlers(spec *sSpec, impl *sImpl, root string) {
+func sVerifyHandlers(_ *sSpec, _ *sImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  HANDLER VERIFICATION (Section 6)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -183,7 +183,7 @@ func sVerifyHandlers(spec *sSpec, impl *sImpl, root string) {
 	} else { fmt.Printf("    ❌ handlers/auth/auth_settings.go - NOT FOUND\n"); atomic.AddUint64(&settingsFailCount, 1) }
 }
 
-func sVerifyDomain(spec *sSpec, impl *sImpl, root string) {
+func sVerifyDomain(_ *sSpec, _ *sImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -193,7 +193,7 @@ func sVerifyDomain(spec *sSpec, impl *sImpl, root string) {
 	for _, f := range files { fp := filepath.Join(domainPath, f); if _, err := os.Stat(fp); err == nil { fmt.Printf("      ✅ %s\n", f); atomic.AddUint64(&settingsPassCount, 1) } else { fmt.Printf("      ❌ Missing: %s\n", f); atomic.AddUint64(&settingsFailCount, 1) } }
 }
 
-func sVerifyInfra(spec *sSpec, impl *sImpl, root string) {
+func sVerifyInfra(_ *sSpec, _ *sImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  INFRASTRUCTURE VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -201,7 +201,7 @@ func sVerifyInfra(spec *sSpec, impl *sImpl, root string) {
 	if _, err := os.Stat(infraPath); err == nil { fmt.Printf("    ✅ infrastructure/storage/operator_storage.go\n"); atomic.AddUint64(&settingsPassCount, 1) } else { fmt.Printf("    ❌ infrastructure/storage/operator_storage.go - NOT FOUND\n"); atomic.AddUint64(&settingsFailCount, 1) }
 }
 
-func sVerifyApplication(spec *sSpec, impl *sImpl, root string) {
+func sVerifyApplication(_ *sSpec, _ *sImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  APPLICATION LAYER VERIFICATION (Section 7)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -209,7 +209,7 @@ func sVerifyApplication(spec *sSpec, impl *sImpl, root string) {
 	if _, err := os.Stat(appPath); err == nil { fmt.Printf("    ✅ application/auth/\n"); atomic.AddUint64(&settingsPassCount, 1) } else { fmt.Printf("    ❌ application/auth/ - DIRECTORY NOT FOUND\n"); atomic.AddUint64(&settingsFailCount, 1) }
 }
 
-func sVerifyRoutes(spec *sSpec, impl *sImpl, root string) {
+func sVerifyRoutes(_ *sSpec, _ *sImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  ROUTE REGISTRATION VERIFICATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -217,7 +217,7 @@ func sVerifyRoutes(spec *sSpec, impl *sImpl, root string) {
 	if _, err := os.Stat(routePath); err == nil { fmt.Printf("    ✅ auth/auth_routes.go (contains settings routes)\n"); atomic.AddUint64(&settingsPassCount, 1) } else { fmt.Printf("    ❌ auth/auth_routes.go - NOT FOUND\n"); atomic.AddUint64(&settingsFailCount, 1) }
 }
 
-func sVerifySchema(spec *sSpec, impl *sImpl, root string) {
+func sVerifySchema(_ *sSpec, _ *sImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 4)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -225,7 +225,7 @@ func sVerifySchema(spec *sSpec, impl *sImpl, root string) {
 	if _, err := os.Stat(entityPath); err == nil { fmt.Printf("    ✅ Schema defined in operator_entity.go\n"); atomic.AddUint64(&settingsPassCount, 1) } else { fmt.Printf("    ❌ operator_entity.go NOT FOUND\n"); atomic.AddUint64(&settingsFailCount, 1) }
 }
 
-func sVerifyStructure(spec *sSpec, impl *sImpl, root string) {
+func sVerifyStructure(_ *sSpec, _ *sImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -236,7 +236,7 @@ func sVerifyStructure(spec *sSpec, impl *sImpl, root string) {
 	}
 }
 
-func sVerifySettingsResponse(spec *sSpec, root string) {
+func sVerifySettingsResponse(_ *sSpec, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  SETTINGS RESPONSE STRUCTURE (Section 3.1)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -244,7 +244,7 @@ func sVerifySettingsResponse(spec *sSpec, root string) {
 	for _, f := range fields { fmt.Printf("    ✅ %s\n", f); atomic.AddUint64(&settingsPassCount, 1) }
 }
 
-func sVerifyNotifications(spec *sSpec, root string) {
+func sVerifyNotifications(_ *sSpec, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  NOTIFICATION CHANNELS (Section 3.5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -252,7 +252,7 @@ func sVerifyNotifications(spec *sSpec, root string) {
 	for _, c := range channels { fmt.Printf("      ✅ %s\n", c); atomic.AddUint64(&settingsPassCount, 1) }
 }
 
-func sVerifyFrontend(spec *sSpec, root string) {
+func sVerifyFrontend(_ *sSpec, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FRONTEND REQUIREMENTS MAPPING (Section 1.2)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")

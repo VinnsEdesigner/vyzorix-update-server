@@ -94,22 +94,22 @@ func uLoadSpec() *uSpec {
 
 func uScanImpl(root string) *uImpl {
 	impl := &uImpl{paths: make(map[string]bool), methods: make(map[string][]string), domain: make(map[string]bool), infra: make(map[string]bool), application: make(map[string]bool), routes: make(map[string]bool)}
-	scanFiles := func(dir, ext string, collect map[string]bool) {
-		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() { return nil }
+	scanFiles := func(dir, ext string, collect map[string]bool) error {
+		return filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() { return err }
 			rel, _ := filepath.Rel(root, p)
 			collect[rel] = true
 			if strings.HasSuffix(p, ext) { if data, err := os.ReadFile(p); err == nil { uCollectGoAST(string(data), collect) } }
 			return nil
 		})
 	}
-	scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain)
-	scanFiles(filepath.Join(root, "apps/api/internal/infrastructure/storage"), ".go", impl.infra)
-	scanFiles(filepath.Join(root, "apps/api/internal/application"), ".go", impl.application)
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain); err != nil { return impl }
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/infrastructure/storage"), ".go", impl.infra); err != nil { return impl }
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/application"), ".go", impl.application); err != nil { return impl }
 	handlerDirs := []string{filepath.Join(root, "apps/api/internal/api/handlers/updates")}
 	for _, dir := range handlerDirs {
-		filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") { return nil }
+		if err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") { return err }
 			data, _ := os.ReadFile(p)
 			impl.paths[p] = true
 			fset := token.NewFileSet()
@@ -122,7 +122,7 @@ func uScanImpl(root string) *uImpl {
 				}
 			}
 			return nil
-		})
+		}); err != nil { return impl }
 	}
 	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/updates/updates_handler.go")}
 	for _, rf := range routeFiles {
@@ -159,7 +159,7 @@ func uVerifyEndpoints(spec *uSpec, impl *uImpl, root string) {
 	fmt.Printf("\n    Registered endpoints: %d/%d\n", found, len(spec.endpoints))
 }
 
-func uCheckEndpoint(ep uEndpoint, routeContent string, impl *uImpl, root string) bool {
+func uCheckEndpoint(ep uEndpoint, routeContent string, _ *uImpl, root string) bool {
 	pathVariants := []string{ep.Path, strings.TrimPrefix(ep.Path, "/v1"), "/updates" + strings.TrimPrefix(ep.Path, "/v1")}
 	for _, p := range pathVariants { if strings.Contains(routeContent, "\""+p+"\"") { return true } }
 	handlerDir := filepath.Join(root, "apps/api/internal/api/handlers/updates")
@@ -177,7 +177,7 @@ func uGetRouteContent(root string) string {
 	return content.String()
 }
 
-func uVerifyHandlers(spec *uSpec, impl *uImpl, root string) {
+func uVerifyHandlers(spec *uSpec, _ *uImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  HANDLER VERIFICATION (Section 6)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -190,7 +190,7 @@ func uVerifyHandlers(spec *uSpec, impl *uImpl, root string) {
 	_ = found
 }
 
-func uVerifyDomain(spec *uSpec, impl *uImpl, root string) {
+func uVerifyDomain(spec *uSpec, _ *uImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -210,7 +210,7 @@ func uVerifyDomain(spec *uSpec, impl *uImpl, root string) {
 	fmt.Printf("\n    Domain files: %d/%d found\n", found, total)
 }
 
-func uVerifyInfra(spec *uSpec, impl *uImpl, root string) {
+func uVerifyInfra(spec *uSpec, _ *uImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  INFRASTRUCTURE VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -225,7 +225,7 @@ func uVerifyInfra(spec *uSpec, impl *uImpl, root string) {
 	_ = found
 }
 
-func uVerifyApplication(spec *uSpec, impl *uImpl, root string) {
+func uVerifyApplication(spec *uSpec, _ *uImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  APPLICATION LAYER VERIFICATION (Section 7)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -245,7 +245,7 @@ func uVerifyApplication(spec *uSpec, impl *uImpl, root string) {
 	fmt.Printf("\n    Application files: %d/%d found\n", found, total)
 }
 
-func uVerifyRoutes(spec *uSpec, impl *uImpl, root string) {
+func uVerifyRoutes(_ *uSpec, _ *uImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  ROUTE REGISTRATION VERIFICATION")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -254,7 +254,7 @@ func uVerifyRoutes(spec *uSpec, impl *uImpl, root string) {
 	if _, err := os.Stat(routePath); err == nil { fmt.Printf("    ✅ routes: updates/updates_handler.go\n"); atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("    ❌ Missing: updates/updates_handler.go\n"); atomic.AddUint64(&updatesFailCount, 1) }
 }
 
-func uVerifySchema(spec *uSpec, impl *uImpl, root string) {
+func uVerifySchema(_ *uSpec, _ *uImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 4)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -265,7 +265,7 @@ func uVerifySchema(spec *uSpec, impl *uImpl, root string) {
 	}
 }
 
-func uVerifyStructure(spec *uSpec, impl *uImpl, root string) {
+func uVerifyStructure(_ *uSpec, _ *uImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
@@ -278,7 +278,7 @@ func uVerifyStructure(spec *uSpec, impl *uImpl, root string) {
 	fmt.Printf("\n    Directories verified: %d/%d\n", found, len(keyPaths))
 }
 
-func uVerifyFrontend(spec *uSpec, root string) {
+func uVerifyFrontend(_ *uSpec, _ string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FRONTEND REQUIREMENTS MAPPING (Section 1.2)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
