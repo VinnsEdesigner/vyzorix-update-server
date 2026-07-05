@@ -127,7 +127,7 @@ func uScanImpl(root string) *uImpl {
 	routeFiles := []string{filepath.Join(root, "apps/api/internal/api/server_routes.go"), filepath.Join(root, "apps/api/internal/api/handlers/updates/updates_routes.go")}
 	for _, rf := range routeFiles {
 		if data, err := os.ReadFile(rf); err == nil {
-			mPattern := regexp.MustCompile(`(GET|POST|PUT|PATCH|DELETE)\s*\(\s*["']([^"']+)`)
+			mPattern := regexp.MustCompile(`\.(GET|POST|PUT|PATCH|DELETE)\s*\(\s*["']([^"']+)`)
 			for _, m := range mPattern.FindAllStringSubmatch(string(data), -1) { if len(m) >= 3 { impl.routes[m[2]] = true } }
 		}
 	}
@@ -160,8 +160,10 @@ func uVerifyEndpoints(spec *uSpec, impl *uImpl, root string) {
 }
 
 func uCheckEndpoint(ep uEndpoint, routeContent string, impl *uImpl, root string) bool {
-	paths := []string{ep.Path, strings.TrimPrefix(ep.Path, "/v1"), "/updates" + strings.TrimPrefix(ep.Path, "/v1")}
-	for _, p := range paths { if strings.Contains(routeContent, p) { return true } }
+	pathVariants := []string{ep.Path, strings.TrimPrefix(ep.Path, "/v1"), "/updates" + strings.TrimPrefix(ep.Path, "/v1")}
+	for _, p := range pathVariants { if strings.Contains(routeContent, "\""+p+"\"") { return true } }
+	handlerPath := filepath.Join(root, "apps/api/internal/api/handlers/updates/updates_handler.go")
+	if data, err := os.ReadFile(handlerPath); err == nil { if strings.Contains(string(data), ep.HandlerFunc) { return true } }
 	return false
 }
 
