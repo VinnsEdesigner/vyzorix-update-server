@@ -76,7 +76,7 @@ func LoadIPIntelligenceConfig() IPIntelligenceConfig {
 }
 
 // IPIntelligence provides IP-based threat detection.
-//nolint:govet // Field alignment requires reordering interface/map fields which breaks the type layout.
+//
 type IPIntelligence struct {
 	mu          sync.RWMutex
 	config      IPIntelligenceConfig

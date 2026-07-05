@@ -36,10 +36,6 @@ func (r *EmailVerificationRepository) queryRow(ctx context.Context, query string
 	return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
 }
 
-// queryRows is a helper that uses transaction-aware querier.
-func (r *EmailVerificationRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-	return r.getQuerier(ctx).QueryContext(ctx, query, args...)
-}
 
 // exec is a helper that uses transaction-aware querier.
 func (r *EmailVerificationRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
