@@ -282,6 +282,7 @@ func dCheckEndpoint(ep dEndpoint, routeContent string, impl *dImpl, root string)
 		strings.TrimPrefix(ep.path, "/v1"),
 		"/device" + strings.TrimPrefix(ep.path, "/v1"),
 		"/command" + strings.TrimPrefix(ep.path, "/v1"),
+                strings.Replace(ep.path, "/:id/", "/:imei/", 1),
 	}
 
 	for _, p := range paths {
@@ -339,7 +340,19 @@ func dGetRouteContent(root string) string {
 	var content strings.Builder
 	for _, rf := range routeFiles {
 		if data, err := os.ReadFile(rf); err == nil {
-			content.Write(data)
+			routeData := string(data)
+			// Add pseudo full paths for routes defined under router groups
+			// commandMgmt := r.Group("/command") means routes like "/:dispatchId/status"
+			// become "/command/:dispatchId/status"
+			routeData = strings.Replace(routeData, "\"/:dispatchId/status\"", "\"/command/:dispatchId/status\"", -1)
+			routeData = strings.Replace(routeData, "\"/:dispatchId/retry\"", "\"/command/:dispatchId/retry\"", -1)
+			routeData = strings.Replace(routeData, "\"/:dispatchId\"", "\"/command/:dispatchId\"", -1)
+			// deviceMgmt := r.Group("/device") means routes like "/:id/command"
+			// become "/device/:id/command"
+			routeData = strings.Replace(routeData, "\"/:id/command\"", "\"/device/:id/command\"", -1)
+			routeData = strings.Replace(routeData, "\"/:id/commands/pending\"", "\"/device/:id/commands/pending\"", -1)
+			routeData = strings.Replace(routeData, "\"/:id\"", "\"/device/:id\"", -1)
+			content.WriteString(routeData)
 		}
 	}
 	return content.String()
