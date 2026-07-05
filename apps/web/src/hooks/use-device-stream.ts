@@ -17,7 +17,7 @@ const HISTORY_LIMIT = 240;
 
 export const useDeviceStream = (
   serverUrl: string,
-  deviceId: string,
+  imei: string,
   enabled: boolean = true,
 ): DeviceStreamState => {
   const [state, setState] = useState<WsState>("idle");
@@ -29,14 +29,14 @@ export const useDeviceStream = (
   const stopRef = useRef(false);
 
   useEffect(() => {
-    if (!enabled || !serverUrl || !deviceId) {
+    if (!enabled || !serverUrl || !imei) {
       setState("idle");
       return;
     }
     stopRef.current = false;
 
     const connect = (): void => {
-      const url = wsUrl(serverUrl, `/v1/device/${encodeURIComponent(deviceId)}/stream`);
+      const url = wsUrl(serverUrl, `/v1/device/${encodeURIComponent(imei)}/stream`);
       if (!url) return;
       setState(retryRef.current === 0 ? "connecting" : "reconnecting");
       logger.info("ws", `connect → ${url}`);
@@ -47,7 +47,6 @@ export const useDeviceStream = (
         setError(String(e));
         setState("disconnected");
         logger.error("ws", `construct failed · ${String(e)}`);
-        scheduleRetry();
         return;
       }
       wsRef.current = ws;
@@ -56,7 +55,7 @@ export const useDeviceStream = (
         retryRef.current = 0;
         setState("connected");
         setError(undefined);
-        logger.info("ws", `open · device=${deviceId}`);
+        logger.info("ws", `open · imei=${imei}`);
       };
       ws.onmessage = (ev) => {
         try {
@@ -111,7 +110,7 @@ export const useDeviceStream = (
       wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [serverUrl, deviceId, enabled]);
+  }, [serverUrl, imei, enabled]);
 
   return { state, lastTelemetry, telemetryHistory: history, error };
 };

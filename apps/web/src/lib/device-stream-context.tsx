@@ -11,8 +11,8 @@ import { useVyzorixConfig } from "./vyzorix-config";
 const Ctx = createContext<DeviceStreamState | null>(null);
 
 export const DeviceStreamProvider = ({ children }: { children: ReactNode }): ReactElement => {
-  const { serverUrl, deviceId, autoReconnect } = useVyzorixConfig();
-  const state = useDeviceStream(serverUrl, deviceId, autoReconnect);
+  const { serverUrl, deviceId: imei, autoReconnect } = useVyzorixConfig();
+  const state = useDeviceStream(serverUrl, imei, autoReconnect);
   return <Ctx.Provider value={state}>{children}</Ctx.Provider>;
 };
 
