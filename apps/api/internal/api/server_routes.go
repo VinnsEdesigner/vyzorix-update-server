@@ -117,33 +117,45 @@ func (s *Server) setupDevicePublicRoutes(public *gin.RouterGroup) {
 func (s *Server) setupAuthenticatedRoutes() {
 	public := s.engine.Group("")
 	r := public.Group("/v1")
-	r.Use(s.authLimiter.Middleware())
-	r.Use(s.cookieAuth.Middleware())
-	if s.revocationList != nil {
-		r.Use(middleware.AuthRevocationMiddleware(s.revocationList))
-	}
 
+	// TENANT routes: Session OR API Key + Scope
+	// These are routes that operators access with their session or API keys
+	tenantGroup := r.Group("")
+	tenantGroup.Use(s.authLimiter.Middleware())
+	tenantGroup.Use(s.cookieAuth.Middleware())
+	if s.revocationList != nil {
+		tenantGroup.Use(middleware.AuthRevocationMiddleware(s.revocationList))
+	}
 	// Apply API key authentication middleware for TENANT paths
 	// This allows both session auth AND API key auth for tenant endpoints
 	if s.apiKeyAuth != nil {
-		r.Use(s.apiKeyAuth.Middleware())
+		tenantGroup.Use(s.apiKeyAuth.Middleware())
 		// Apply API key rate limiting after auth
 		if s.apiKeyRateLimiter != nil {
-			r.Use(middleware.APIKeyRateLimitMiddleware(s.apiKeyRateLimiter))
+			tenantGroup.Use(middleware.APIKeyRateLimitMiddleware(s.apiKeyRateLimiter))
 		}
 	}
 
-	s.setupDashboardRoutes(r)
-	s.setupAdminRoutes(r)
+	s.setupDashboardRoutes(tenantGroup)
+	s.setupDeviceInboxRoutes(tenantGroup)
+	s.setupDevicesRoutes(tenantGroup)
+	s.setupCommandManagementRoutes(tenantGroup)
+	s.setupTelemetryRoutes(tenantGroup)
+	s.setupConnectionsRoutes(tenantGroup)
+	s.setupUpdatesRoutes(tenantGroup)
+	s.setupDiagnosticsRoutes(tenantGroup)
+
+	// API Keys management: SESSION ONLY (no API key auth for managing keys)
+	// These routes manage API keys - shouldn't use API key auth
+	s.setupAPIKeysRoutes(tenantGroup)
+
+	// ADMIN routes: SuperAdmin session required (NO API key auth)
+	// These require valid session AND SuperAdmin role
+	s.setupAdminRoutes(tenantGroup)
+
+	// DEVICE routes: HMAC authentication only (no session/API key)
+	// These are device-initiated requests that use HMAC signatures
 	s.setupDeviceManagementRoutes(r)
-	s.setupDeviceInboxRoutes(r)
-	s.setupDevicesRoutes(r)
-	s.setupCommandManagementRoutes(r)
-	s.setupTelemetryRoutes(r)
-	s.setupConnectionsRoutes(r)
-	s.setupUpdatesRoutes(r)
-	s.setupDiagnosticsRoutes(r)
-	s.setupAPIKeysRoutes(r)
 }
 
 func (s *Server) setupDashboardRoutes(r ...*gin.RouterGroup) {

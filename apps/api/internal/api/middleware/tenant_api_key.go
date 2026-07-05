@@ -31,34 +31,34 @@ const (
 // PathBoundary maps path patterns to their authentication requirements
 var PathBoundaries = map[string]PathType{
 	// PUBLIC - No auth required
-	"/health":                       PathTypePublic,
-	"/healthz":                      PathTypePublic, // Protected at route level
-	"/v1/auth/":                     PathTypePublic,
-	"/v1/device/register":           PathTypePublic,
-	"/v1/device/public/":            PathTypePublic,
-	"/v1/device/inbox":             PathTypePublic,
-	"/v1/device/confirm":            PathTypePublic,
-	"/metrics":                      PathTypePublic, // Prometheus scraping
+	"/health":                  PathTypePublic,
+	"/v1/auth/":                PathTypePublic,
+	"/v1/device/register":      PathTypePublic,
+	"/v1/device/public/":      PathTypePublic,
+	"/v1/device/inbox":        PathTypePublic,
+	"/v1/device/confirm":      PathTypePublic,
+	"/metrics":                PathTypePublic, // Prometheus scraping
 
-	// INFRASTRUCTURE - Env API Key (TokenSecret) - handled at route level
-	// /admin/*, /internal/*
+	// INFRASTRUCTURE - TokenSecret (env var) - handled at route level
+	// /admin/*, /internal/*, /healthz
 
-	// SESSION ONLY - Session Cookie required
-	"/bin/":           PathTypeSessionOnly,
-	"/v1/dashboard/":  PathTypeSessionOnly,
-	"/v1/api-keys/":   PathTypeSessionOnly,
-	"/api/v1/apk/":   PathTypeSessionOnly,
+	// SESSION ONLY - Session Cookie required (no API key)
+	"/bin/":                   PathTypeSessionOnly,
+	"/v1/dashboard/":          PathTypeSessionOnly,
+	"/v1/api-keys/":           PathTypeSessionOnly,
+	"/api/v1/apk/":           PathTypeSessionOnly,
 
 	// DEVICE AUTH - HMAC Signature - handled by device middleware
 	// /v1/device/:imei/command, /v1/device/:imei/fcm-token
+	// These are under /device/ but use HMAC, not session/API key
 
-	// TENANT - Session OR API Key + Scope (default)
+	// TENANT - Session OR API Key + Scope
 	"/v1/devices/":            PathTypeTenant,
-	"/v1/device/":             PathTypeTenant,
-	"/v1/command/":            PathTypeTenant,
-	"/v1/telemetry/":          PathTypeTenant,
-	"/v1/updates/":            PathTypeTenant,
-	"/v1/device/diagnostics/": PathTypeTenant,
+	"/v1/command/":           PathTypeTenant,
+	"/v1/telemetry/":         PathTypeTenant,
+	"/v1/updates/":           PathTypeTenant,
+	"/v1/connections/":       PathTypeTenant,
+	"/v1/device/diagnostics/":PathTypeTenant,
 }
 
 // ClassifyPath determines the PathType for a given path
@@ -130,6 +130,13 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 
 		// Skip for non-tenant paths (let other middleware handle)
 		if pathType != PathTypeTenant {
+			c.Next()
+			return
+		}
+
+		// Skip admin and API key management paths - these require session only
+		if strings.HasPrefix(path, "/v1/admin/") ||
+			strings.HasPrefix(path, "/v1/api-keys/") {
 			c.Next()
 			return
 		}
