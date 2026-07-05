@@ -1,11 +1,11 @@
-package api_keys
+package admin
 
 import (
 	"net/http"
 	"strconv"
 
-	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/api_key"
-	apikeydomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/api_key"
+	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
+	apikeydomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,25 +20,34 @@ func NewSuperAdminHandler(service *apikeyapp.Service) *SuperAdminHandler {
 }
 
 // RegisterRoutes registers the super admin API key routes.
+// Note: The /admin/api-keys prefix is already added by the caller in setupAdminRoutes.
 func (h *SuperAdminHandler) RegisterRoutes(r *gin.RouterGroup) {
-	keys := r.Group("/admin/api-keys")
-	{
-		keys.GET("", h.ListAllKeys)
-		keys.GET("/operator/:operatorId", h.GetOperatorKeys)
-		keys.DELETE("/:keyId", h.ForceRevokeKey)
-		keys.GET("/stats", h.GetGlobalStats)
-		keys.GET("/stats/operator/:operatorId", h.GetOperatorStats)
-	}
+	// r is already the /admin/api-keys group from setupAdminRoutes
+	r.GET("", h.ListAllKeys)
+	r.GET("/operator/:operatorId", h.GetOperatorKeys)
+	r.DELETE("/:keyId", h.ForceRevokeKey)
+	r.GET("/stats", h.GetGlobalStats)
+	r.GET("/stats/operator/:operatorId", h.GetOperatorStats)
 }
 
 // ListAllKeys lists all API keys across all operators (super admin only).
 func (h *SuperAdminHandler) ListAllKeys(c *gin.Context) {
-	_, _ = strconv.Atoi(c.DefaultQuery("page", "1"))
-	_, _ = strconv.Atoi(c.DefaultQuery("limit", "20"))
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 
-	c.JSON(http.StatusNotImplemented, gin.H{
-		"error":   "not_implemented",
-		"message": "use /admin/api-keys/operator/:operatorId instead",
+	result, err := h.service.ListAllKeys(c.Request.Context(), page, limit)
+	if err != nil {
+		status := apikeydomain.HTTPStatusCode(err)
+		c.JSON(status, gin.H{
+			"error":   apikeydomain.ErrorCode(err),
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"keys":       result.Keys,
+		"pagination": result.Pagination,
 	})
 }
 
@@ -51,7 +60,7 @@ func (h *SuperAdminHandler) GetOperatorKeys(c *gin.Context) {
 
 	result, err := h.service.ListKeys(c.Request.Context(), operatorID, page, limit)
 	if err != nil {
-		status := getHTTPStatus(err)
+		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{
 			"error":   apikeydomain.ErrorCode(err),
 			"message": err.Error(),
@@ -73,7 +82,7 @@ func (h *SuperAdminHandler) ForceRevokeKey(c *gin.Context) {
 
 	err := h.service.ForceRevokeKey(c.Request.Context(), keyID)
 	if err != nil {
-		status := getHTTPStatus(err)
+		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{
 			"error":   apikeydomain.ErrorCode(err),
 			"message": err.Error(),
@@ -86,9 +95,19 @@ func (h *SuperAdminHandler) ForceRevokeKey(c *gin.Context) {
 
 // GetGlobalStats returns global API key statistics (super admin only).
 func (h *SuperAdminHandler) GetGlobalStats(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{
-		"error":   "not_implemented",
-		"message": "statistics endpoint not yet implemented",
+	stats, err := h.service.GetGlobalStats(c.Request.Context())
+	if err != nil {
+		status := apikeydomain.HTTPStatusCode(err)
+		c.JSON(status, gin.H{
+			"error":   apikeydomain.ErrorCode(err),
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"total_active_keys": stats.TotalActiveKeys,
+		"max_per_month":    stats.MaxPerMonth,
 	})
 }
 
@@ -101,7 +120,7 @@ func (h *SuperAdminHandler) GetOperatorStats(c *gin.Context) {
 
 	result, err := h.service.ListKeys(c.Request.Context(), operatorID, page, limit)
 	if err != nil {
-		status := getHTTPStatus(err)
+		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{
 			"error":   apikeydomain.ErrorCode(err),
 			"message": err.Error(),

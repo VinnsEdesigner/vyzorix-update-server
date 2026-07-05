@@ -1,11 +1,11 @@
-package api_keys
+package auth
 
 import (
 	"net/http"
 	"strconv"
 
-	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/api_key"
-	apikeydomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/api_key"
+	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
+	apikeydomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,11 +34,19 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 
 // CreateKey creates a new API key.
 func (h *Handler) CreateKey(c *gin.Context) {
-	operatorID, exists := c.Get("operator_id")
+	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "unauthorized",
 			"message": "operator not found",
+		})
+		return
+	}
+	operatorID, ok := operatorIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "unauthorized",
+			"message": "invalid operator id",
 		})
 		return
 	}
@@ -52,9 +60,9 @@ func (h *Handler) CreateKey(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.GenerateKey(c.Request.Context(), operatorID.(string), &req)
+	result, err := h.service.GenerateKey(c.Request.Context(), operatorID, &req)
 	if err != nil {
-		status := getHTTPStatus(err)
+		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{
 			"error":   apikeydomain.ErrorCode(err),
 			"message": err.Error(),
@@ -76,7 +84,7 @@ func (h *Handler) CreateKey(c *gin.Context) {
 
 // ListKeys lists all API keys for the authenticated operator.
 func (h *Handler) ListKeys(c *gin.Context) {
-	operatorID, exists := c.Get("operator_id")
+	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "unauthorized",
@@ -84,13 +92,21 @@ func (h *Handler) ListKeys(c *gin.Context) {
 		})
 		return
 	}
+	operatorID, ok := operatorIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "unauthorized",
+			"message": "invalid operator id",
+		})
+		return
+	}
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 
-	result, err := h.service.ListKeys(c.Request.Context(), operatorID.(string), page, limit)
+	result, err := h.service.ListKeys(c.Request.Context(), operatorID, page, limit)
 	if err != nil {
-		status := getHTTPStatus(err)
+		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{
 			"error":   apikeydomain.ErrorCode(err),
 			"message": err.Error(),
@@ -108,7 +124,7 @@ func (h *Handler) ListKeys(c *gin.Context) {
 
 // GetKey gets a single API key by ID.
 func (h *Handler) GetKey(c *gin.Context) {
-	operatorID, exists := c.Get("operator_id")
+	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "unauthorized",
@@ -116,12 +132,20 @@ func (h *Handler) GetKey(c *gin.Context) {
 		})
 		return
 	}
+	operatorID, ok := operatorIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "unauthorized",
+			"message": "invalid operator id",
+		})
+		return
+	}
 
 	keyID := c.Param("keyId")
 
-	key, err := h.service.GetKey(c.Request.Context(), operatorID.(string), keyID)
+	key, err := h.service.GetKey(c.Request.Context(), operatorID, keyID)
 	if err != nil {
-		status := getHTTPStatus(err)
+		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{
 			"error":   apikeydomain.ErrorCode(err),
 			"message": err.Error(),
@@ -134,11 +158,19 @@ func (h *Handler) GetKey(c *gin.Context) {
 
 // UpdateKey updates an API key (rename, change scope).
 func (h *Handler) UpdateKey(c *gin.Context) {
-	operatorID, exists := c.Get("operator_id")
+	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "unauthorized",
 			"message": "operator not found",
+		})
+		return
+	}
+	operatorID, ok := operatorIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "unauthorized",
+			"message": "invalid operator id",
 		})
 		return
 	}
@@ -154,9 +186,9 @@ func (h *Handler) UpdateKey(c *gin.Context) {
 		return
 	}
 
-	key, err := h.service.UpdateKey(c.Request.Context(), operatorID.(string), keyID, &req)
+	key, err := h.service.UpdateKey(c.Request.Context(), operatorID, keyID, &req)
 	if err != nil {
-		status := getHTTPStatus(err)
+		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{
 			"error":   apikeydomain.ErrorCode(err),
 			"message": err.Error(),
@@ -169,7 +201,7 @@ func (h *Handler) UpdateKey(c *gin.Context) {
 
 // RevokeKey revokes an API key.
 func (h *Handler) RevokeKey(c *gin.Context) {
-	operatorID, exists := c.Get("operator_id")
+	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "unauthorized",
@@ -177,12 +209,20 @@ func (h *Handler) RevokeKey(c *gin.Context) {
 		})
 		return
 	}
+	operatorID, ok := operatorIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "unauthorized",
+			"message": "invalid operator id",
+		})
+		return
+	}
 
 	keyID := c.Param("keyId")
 
-	err := h.service.RevokeKey(c.Request.Context(), operatorID.(string), keyID)
+	err := h.service.RevokeKey(c.Request.Context(), operatorID, keyID)
 	if err != nil {
-		status := getHTTPStatus(err)
+		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{
 			"error":   apikeydomain.ErrorCode(err),
 			"message": err.Error(),
@@ -195,7 +235,7 @@ func (h *Handler) RevokeKey(c *gin.Context) {
 
 // RotateKey rotates an API key, generating a new key and invalidating the old one.
 func (h *Handler) RotateKey(c *gin.Context) {
-	operatorID, exists := c.Get("operator_id")
+	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "unauthorized",
@@ -203,12 +243,20 @@ func (h *Handler) RotateKey(c *gin.Context) {
 		})
 		return
 	}
+	operatorID, ok := operatorIDVal.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "unauthorized",
+			"message": "invalid operator id",
+		})
+		return
+	}
 
 	keyID := c.Param("keyId")
 
-	result, err := h.service.RotateKey(c.Request.Context(), operatorID.(string), keyID)
+	result, err := h.service.RotateKey(c.Request.Context(), operatorID, keyID)
 	if err != nil {
-		status := getHTTPStatus(err)
+		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{
 			"error":   apikeydomain.ErrorCode(err),
 			"message": err.Error(),
@@ -228,22 +276,4 @@ func (h *Handler) RotateKey(c *gin.Context) {
 	})
 }
 
-// getHTTPStatus returns the appropriate HTTP status for an error.
-func getHTTPStatus(err error) int {
-	switch err {
-	case apikeydomain.ErrAPIKeyNotFound:
-		return http.StatusNotFound
-	case apikeydomain.ErrAPIKeyExpired, apikeydomain.ErrAPIKeyRevoked, apikeydomain.ErrAPIKeyInactive:
-		return http.StatusUnauthorized
-	case apikeydomain.ErrInsufficientScope:
-		return http.StatusForbidden
-	case apikeydomain.ErrMonthlyLimitExceeded, apikeydomain.ErrKeyNameConflict:
-		return http.StatusForbidden
-	case apikeydomain.ErrRateLimitExceeded:
-		return http.StatusTooManyRequests
-	case apikeydomain.ErrAPIKeyRequired, apikeydomain.ErrInvalidScope, apikeydomain.ErrKeyNameTooLong, apikeydomain.ErrInvalidExpiryDays:
-		return http.StatusBadRequest
-	default:
-		return http.StatusInternalServerError
-	}
-}
+

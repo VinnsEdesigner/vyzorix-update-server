@@ -11,6 +11,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -51,6 +52,7 @@ type ServerDependencies struct {
 	UpdatesStorage *storage.UpdatesStorage
 	UpdatesService *updatesapp.Service
 	Config         infraConfig.Config
+	APIKeyService  *keys.Service
 }
 
 // ServerResult contains the fully wired server components.
@@ -133,6 +135,7 @@ func WireServer(deps ServerDependencies) *ServerResult {
 		HmacVerifier:   result.HmacVerifier,
 		DB:             deps.DB,
 		UpdatesStorage: deps.UpdatesStorage,
+		APIKeyService:  deps.APIKeyService,
 	}
 	result.HandlerSet = WireHandlers(handlerDeps)
 
