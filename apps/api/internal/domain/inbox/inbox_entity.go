@@ -5,7 +5,7 @@ import (
 )
 
 // InboxEntry represents a device registration request in the inbox.
-// Implements the 5-state model: PENDING -> ACKNOWLEDGED -> APPROVING -> APPROVED -> REGISTERED
+// Implements the 5-state model: PENDING -> ACKNOWLEDGED -> APPROVING -> APPROVED -> REGISTERED.
 type InboxEntry struct {
 	AcknowledgedAt     *int64      `json:"acknowledgedAt,omitempty"`     // When device acknowledged
 	ApprovingAt       *int64      `json:"approvingAt,omitempty"`        // When operator started approving

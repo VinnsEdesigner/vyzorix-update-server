@@ -161,7 +161,7 @@ func (s *Service) GetInboxEntry(ctx context.Context, imei string) (*InboxEntryRe
 // Implements the 5-state model from SPEC:
 // - action=acknowledge: Device acknowledges receipt (PENDING -> ACKNOWLEDGED)
 // - action=approve: Operator approves registration (ACKNOWLEDGED -> APPROVING -> APPROVED)
-// - action=reject: Operator rejects registration (PENDING/ACKNOWLEDGED -> REJECTED)
+// - action=reject: Operator rejects registration (PENDING/ACKNOWLEDGED -> REJECTED).
 func (s *Service) AckInbox(ctx context.Context, imei string, action string, operatorID, notes string) (*AckResponse, error) {
 	// Validate action
 	if action == string(inbox.DeviceAckActionAcknowledge) {

@@ -32,18 +32,18 @@ import (
 type ServerDependencies struct {
 	FCMNotifier    fcm.Notifier
 	OperatorRepo   operator.Repository
-	EmailService   *emailService.Service
-	CommandService *command.Service
+	RateLimiter    *middleware.RateLimiter
+	DB             *storage.SQLite
 	AuthService    *auth.AuthService
 	AuthLimiter    *middleware.RateLimiter
 	IPIntelligence *middleware.IPIntelligence
 	Log            *slog.Logger
 	SessionManager *infraauth.SessionManager
 	GoogleVerifier *infraauth.GoogleTokenVerifier
-	RateLimiter    *middleware.RateLimiter
+	EmailService   *emailService.Service
 	Hub            *hub.Hub
 	ClientService  *client.Service
-	DB             *storage.SQLite
+	CommandService *command.Service
 	Lockout        *middleware.Lockout
 	DeviceService  *device.Service
 	Metrics        *metrics.Metrics
@@ -51,8 +51,8 @@ type ServerDependencies struct {
 	TelemetryRepo  *storage.TelemetryRepository
 	UpdatesStorage *storage.UpdatesStorage
 	UpdatesService *updatesapp.Service
-	Config         infraConfig.Config
 	APIKeyService  *keys.Service
+	Config         infraConfig.Config
 }
 
 // ServerResult contains the fully wired server components.
