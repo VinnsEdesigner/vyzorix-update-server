@@ -83,8 +83,8 @@ The Diagnostics Inspector requires the following device data:
 
 | Endpoint | Status |
 |----------|--------|
-| GET /v1/device/:imei/inspect | MISSING |
-| GET /v1/device/:imei/timeline | MISSING |
+| GET /v1/device/:imei/inspect | EXISTS | diagnostics_inspect_handler.go |
+| GET /v1/device/:imei/timeline | EXISTS | diagnostics_timeline_handler.go |
 
 ### 2.3 Data Availability
 

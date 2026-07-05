@@ -148,7 +148,7 @@ apps/api/internal/
 | POST | `/v1/auth/logout` | Cookie | Logout current session | **EXISTS** |
 | GET | `/v1/auth/me` | Cookie | Get current operator | **EXISTS** |
 | PATCH | `/v1/auth/me` | Cookie | Update operator name | **EXISTS** |
-| POST | `/v1/auth/refresh` | None | Refresh access token | **MISSING** |
+| POST | `/v1/auth/refresh` | None | Refresh access token | **EXISTS** |
 
 ### 3.2 MFA Endpoints
 
