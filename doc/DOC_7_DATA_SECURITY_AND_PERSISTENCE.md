@@ -18,23 +18,23 @@ The following mapping outlines the sequential steps executed when the database i
 
 ```text
                      VYZORIXAPPINITIALIZER INITIATION
-                                    
-                                    
+                                    │
+                                    ▼
                 KeystoreManager.getOrGenerateMasterKey()
-                                    
-                                     (Talks directly to TEE/SecureElement)
+                                    │
+                                    ▼ (Talks directly to TEE/SecureElement)
                        [Hardware-backed Keystore]
-                                    
-                                     (Returns KeySpec wrapper)
+                                    │
+                                    ▼ (Returns KeySpec wrapper)
                   CryptoHelper.decryptDatabasePasscode()
-                                    
-                                     (Decrypts AES-GCM-NoPadding passcode)
+                                    │
+                                    ▼ (Decrypts AES-GCM-NoPadding passcode)
                    SupportFactory (SQLCipher Driver)
-                                    
-                                     (Binds 256-bit AES master passcode)
+                                    │
+                                    ▼ (Binds 256-bit AES master passcode)
                     SecureSupportHelper (Room DB Build)
-                                    
-                                     (Transparent decrypt on disk)
+                                    │
+                                    ▼ (Transparent decrypt on disk)
                    AppDatabase (SQLite Secure tables)
 ```
 
@@ -44,38 +44,38 @@ The per-device `command_secret` follows an analogous but **separate** initializa
 
 ```text
               FIRST DEVICE REGISTRATION (after Accessibility grant)
-                                    
-                                    
+                                    │
+                                    ▼
                FcmTokenManager.registerDevice()
                POST /v1/device/register over HTTPS/WSS
-                                    
-                                     (Server response includes command_secret)
+                                    │
+                                    ▼ (Server response includes command_secret)
                   DeviceSecretStore.put(secret: String)
-                                    
-                                     (Delegates to TokenEncryptor.encrypt())
+                                    │
+                                    ▼ (Delegates to TokenEncryptor.encrypt())
                        TokenEncryptor (AES-GCM)
-                                    
-                                     (Key sourced from KeystoreManager)
+                                    │
+                                    ▼ (Key sourced from KeystoreManager)
                        [Hardware-backed Keystore]
-                                    
-                                     (Encrypted blob; never plaintext on disk)
+                                    │
+                                    ▼ (Encrypted blob; never plaintext on disk)
                   DataStore: device_secret.preferences_pb
 
 
               SUBSEQUENT COMMAND VALIDATION (per command)
-                                    
-                                    
+                                    │
+                                    ▼
           CommandHmacValidator.validate(frame, ???)
-                                    
-                                     (Decrypt-on-demand)
+                                    │
+                                    ▼ (Decrypt-on-demand)
                 DeviceSecretStore.getSecret()
-                                    
-                                     (TokenEncryptor.decrypt())
+                                    │
+                                    ▼ (TokenEncryptor.decrypt())
                     plaintext command_secret
                   (scoped to validate() call only;
                    not retained in any field/property)
-                                    
-                                    
+                                    │
+                                    ▼
                HMAC-SHA256(canonical_string, secret)
                   (see COMMAND_SECURITY.md §3)
 ```
@@ -90,24 +90,24 @@ The following mapping outlines how background tasks (such as update checks and l
 
 ```text
                           SCHEDULED BACKGROUND TASK
-                                      
-                                      
+                                      │
+                                      ▼
                                 TaskScheduler
-                                      
-                                      
+                                      │
+                                      ▼
                             TaskSchedulerFactory
-                                      
-                                      
+                                      │
+                                      ▼
                               WorkerConstraints
-                                      
-               
-                                                            
+                                      │
+               ┌──────────────────────┴──────────────────────┐
+               │                                             │
       Constraints Met?                                Constraints Not Met?
-                                                            
-                (YES: EXECUTE)                               (NO: DEFER)
+               │                                             │
+               ▼ (YES: EXECUTE)                              ▼ (NO: DEFER)
          DeferredTaskWorker                              Queue in WorkManager
-                                                            
-                                                            
+               │                                             │
+               ▼                                             ▼
        Execute Operation                             Retry on Constraint Change
         (Update/Sync)                                (Network/Battery Active)
 ```
@@ -124,13 +124,13 @@ core/common/src/main/kotlin/com/vyzorix/audiorouter/common/utils/CryptoHelper.kt
 core/data/src/main/kotlin/com/vyzorix/audiorouter/data/database/SecureSupportHelper.kt
 core/data/src/main/kotlin/com/vyzorix/audiorouter/data/datastore/DeviceSecretStore.kt
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/security/
- ServicePermissionVerifier.kt
+├── ServicePermissionVerifier.kt
 # NOTE: ProjectionTokenValidator.kt folded into ProjectionTokenManager (ADR-0006).
- AccessibilityIntegrityChecker.kt
- SafeIntentSanitizer.kt
- TokenEncryptor.kt
- CommandHmacValidator.kt   # consumer of DeviceSecretStore; spec in COMMAND_SECURITY.md
- NonceCache.kt             # replay protection for HMAC-validated commands
+├── AccessibilityIntegrityChecker.kt
+├── SafeIntentSanitizer.kt
+├── TokenEncryptor.kt
+├── CommandHmacValidator.kt   # consumer of DeviceSecretStore; spec in COMMAND_SECURITY.md
+└── NonceCache.kt             # replay protection for HMAC-validated commands
 ```
 
 Note on layout: `KeystoreManager` is the canonical location for hardware-backed key management (it is in `core/common/utils/`, not `services/security/`). The pre-existing `services/security/KeystoreManager.kt` reference in older docs is stale; the canonical path is the one listed above. See the repo-tree comment on `services/security/`.
@@ -209,12 +209,12 @@ The `permissions` package proactively requests dynamic and special system-level 
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/permissions/
- PermissionStateRepository.kt
- PermissionRecoveryDaemon.kt
- OverlayPermissionManager.kt
- NotificationPermissionManager.kt
- ProjectionGrantCache.kt
- PermissionAutoGranter.kt
+├── PermissionStateRepository.kt
+├── PermissionRecoveryDaemon.kt
+├── OverlayPermissionManager.kt
+├── NotificationPermissionManager.kt
+├── ProjectionGrantCache.kt
+└── PermissionAutoGranter.kt
 ```
 
 ### 4.1 `PermissionStateRepository.kt`
@@ -249,17 +249,17 @@ The `scheduler` package coordinates WorkManager tasks, registers wakeup alarms, 
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/scheduler/
- TaskScheduler.kt
- TaskSchedulerFactory.kt
- WakeupAlarmCoordinator.kt
- DeferredStartupQueue.kt
- IdleStateCoordinator.kt
- DeferredTaskWorker.kt
- WorkerFactory.kt
- WorkerConstraints.kt
- ForegroundLaunchWindow.kt
- WakeLockCoordinator.kt
- AlarmRecoveryBridge.kt
+├── TaskScheduler.kt
+├── TaskSchedulerFactory.kt
+├── WakeupAlarmCoordinator.kt
+├── DeferredStartupQueue.kt
+├── IdleStateCoordinator.kt
+├── DeferredTaskWorker.kt
+├── WorkerFactory.kt
+├── WorkerConstraints.kt
+├── ForegroundLaunchWindow.kt
+├── WakeLockCoordinator.kt
+└── AlarmRecoveryBridge.kt
 ```
 
 ### 5.1 `TaskScheduler.kt`

@@ -9,52 +9,52 @@ The reference for the VyzorixAudioRouter service. It maps every component's role
 ## 1. Module Dependency Graph
 
 ```
-
-                         app/ (APK Module)                        
-  - VyzorixApplication.kt                                         
-  - VyzorixAppInitializer.kt                                      
-  - BootstrapActivity.kt, ProjectionPermissionActivity.kt         
-  - AppExitDispatcher.kt                                          
-  - AndroidManifest.xml (Permissions, Receivers, Providers)       
-  - Resources (Layouts, Drawables, XML configs)                   
-
-                                depends on
-           
-                                                 
-  
- core/services/        core/ui/         core/common/    
- (Orchestration)    (Trampoline UI)      (Utilities)    
-                                                        
- - accessibility/   - Activities       - constants/     
- - audio/           - Layouts          - enums/         
- - bootstrap/       - Themes           - extensions/    
- - capture/                            - model/         
- - foreground/       - logging/       
- - diagnostics/                         - concurrency/   
- - managers/                            - audio/         
- - monitoring/                          - device/        
- - playback/                            - utils/         
- - updates/                            
- - voip/                                        
- - scheduler/                         
- - resilience/                                           
- - stability/                 
- - state/                      core/data/   core/audioengine
- - storage/                   (Persistence)   (Native)    
- - testing/                                               
- - security/                  - database/    - cpp/       
- - compat/                    - dao/         - include/   
- - provider/                  - entity/      - JNI Bridge 
- - receivers/                 - converters/  - Pipeline   
- - fallback/                  - repository/  - Safety     
- - headless/                  
- - ipc/                     
- - metrics/                 
- - oem/                     
- - permissions/
+┌─────────────────────────────────────────────────────────────────┐
+│                         app/ (APK Module)                        │
+│  - VyzorixApplication.kt                                         │
+│  - VyzorixAppInitializer.kt                                      │
+│  - BootstrapActivity.kt, ProjectionPermissionActivity.kt         │
+│  - AppExitDispatcher.kt                                          │
+│  - AndroidManifest.xml (Permissions, Receivers, Providers)       │
+│  - Resources (Layouts, Drawables, XML configs)                   │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │ depends on
+           ┌───────────────────┼───────────────────┐
+           ▼                   ▼                   ▼
+┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│ core/services/   │ │    core/ui/      │ │  core/common/    │
+│ (Orchestration)  │ │ (Trampoline UI)  │ │   (Utilities)    │
+│                  │ │                  │ │                  │
+│ - accessibility/ │ │ - Activities     │ │ - constants/     │
+│ - audio/         │ │ - Layouts        │ │ - enums/         │
+│ - bootstrap/     │ │ - Themes         │ │ - extensions/    │
+│ - capture/       │ │                  │ │ - model/         │
+│ - foreground/    │ └────────┬─────────┘ │ - logging/       │
+│ - diagnostics/   │          │           │ - concurrency/   │
+│ - managers/      │          │           │ - audio/         │
+│ - monitoring/    │          │           │ - device/        │
+│ - playback/      │          │           │ - utils/         │
+│ - updates/       │          │           └────────┬─────────┘
+│ - voip/          │          │                    │
+│ - scheduler/     │          │          ┌─────────┴─────────┐
+│ - resilience/    │          │          ▼                   ▼
+│ - stability/     │          │ ┌──────────────┐ ┌──────────────┐
+│ - state/         │          │ │  core/data/  │ │core/audioengine│
+│ - storage/       │          │ │ (Persistence)│ │  (Native)    │
+│ - testing/       │          │ │              │ │              │
+│ - security/      │          │ │ - database/  │ │ - cpp/       │
+│ - compat/        │          │ │ - dao/       │ │ - include/   │
+│ - provider/      │          │ │ - entity/    │ │ - JNI Bridge │
+│ - receivers/     │          │ │ - converters/│ │ - Pipeline   │
+│ - fallback/      │          │ │ - repository/│ │ - Safety     │
+│ - headless/      │          │ └──────────────┘ └──────────────┘
+│ - ipc/           │          │
+│ - metrics/       │          │
+│ - oem/           │          │
+│ - permissions/
 | -fcm/
-| -websocket/                
-          
+| -websocket/      │          │
+└──────────────────┘          │
 ```
 
 ### Dependency Rules
@@ -78,215 +78,215 @@ The reference for the VyzorixAudioRouter service. It maps every component's role
 ## 2. Complete Startup Sequence (Corrected — Accessibility-First, No Icon Tap)
 
 ```
-T+0s    
-          USER ACTION: Install APK via file manager/APK       
-          SYSTEM ACTION: App registers on launcher            
-          IMPORTANT: User NEVER taps launcher icon            
-          (Tapping icon triggers soft reboot on Nokia C22)    
-                                                              
-          USER ACTION: Opens Settings -> Accessibility        
-          - Sees "VyzorixAudioRouter" in the services list    
-          - Taps it -> sees two toggles:                      
-            1. "Enable VyzorixAudioRouter" (top)              
-            2. "Create overlay shortcut" (bottom)             
-          USER: Taps "Enable" -> Grants Accessibility         
-        
-                                   
-                                   
-T+1s    
-          SYSTEM ACTION: RouterAccessibilityService bound     
-          - onServiceConnected() fires                        
-          - AccessibilityStateTracker.markEnabled()           
-          - LauncherIconHider.nukeLauncherIcon()              
-            - Calls PackageManager.setComponentEnabledSetting 
-            - Disables BootstrapActivity permanently          
-            - Launcher icon disappears from user's view       
-          - AppInfoConfig.hideOpenButton()                    
-            - Removes CATEGORY_LAUNCHER intent filter         
-            - Settings -> Apps now shows only:                
-              [Uninstall] [Disable] (no "Open" button)       
-          - Triggers VyzorixAppInitializer.execute()          
-        
-                                   
-                                   
-T+2s    
-          INITIALIZATION: VyzorixAppInitializer               
-          1. NotificationChannelManager.createChannels()      
-             - Creates "daemon_primary" (IMPORTANCE_LOW)      
-             - Creates "diagnostics" (IMPORTANCE_MIN)         
-             - Creates "updates" (IMPORTANCE_DEFAULT)         
-          2. AppDatabase.getInstance() + Migrations        
-          3. KeystoreManager.initialize()                     
-          4. AppConfig.load()                                 
-          5. PermissionAutoGranter.requestAll()               
-             - POST_NOTIFICATIONS (auto-granted on enable)    
-             - SYSTEM_ALERT_WINDOW (overlay, if user enabled) 
-             - REQUEST_INSTALL_PACKAGES (for future updates)  
-             - Verifies manifest-granted:                     
-               MODIFY_AUDIO_SETTINGS, RECEIVE_BOOT_COMPLETED, 
-               FOREGROUND_SERVICE, INTERNET, ACCESS_NETWORK   
-        
-                                   
-                                   
-T+3s    
-          BOOTSTRAP: TrampolineService starts                 
-          - BootstrapCoordinator.begin()                      
-          - PermissionStateMachine.initState(ACCESS_GRANTED)  
-          - Checks: MediaProjection token cached?             
-            - YES: Jump to T+6s                               
-            - NO: Proceed to T+4s                             
-        
-                                   
-                                   
-T+4s    
-          PERMISSION RE-GRANT BY AUTOMATION DEEMON            
-          - ProjectionPermissionActivity.launch()             
-          - DialogRecognitionEngine parses target node tree   
-          - AccessibilityGestureQueue clicks "Start Now"      
-          - Token passed to ProjectionTokenManager            
-          - Activity.finish() immediately (<100ms duration)   
-          - PermissionStateMachine.update(MEDIA_PROJECTION)   
-          - AppExitDispatcher.teardownAll()                   
-        
-                                   
-                                   
-T+5s    
-          OVERLAY SHORTCUT (if user enabled it)               
-          - OverlayShortcutController.create()                
-          - Draws TYPE_APPLICATION_OVERLAY window             
-          - Contains enable/disable toggle button             
-          - Responds to tap by toggling Accessibility service 
-          - Uses SYSTEM_ALERT_WINDOW permission               
-        
-                                   
-                                   
-T+6s    
-          DAEMON LAUNCH: HeadlessBootSequence.execute()       
-          - PersistentAudioService.startForeground()          
-          - ServiceNotificationDashboard.postInitial()        
-          - DaemonLifecycleManager.startAll()                 
-            Order matters (see Section 7: Lifecycle Graph)    
-        
-                                   
-                                   
-T+7s    
-          AUDIO ENGINE: Route War Begins                      
-          1. AudioRouteWatcher.queryDevices()                 
-             - Result: DEVICE_OUT_WIRED_HEADSET active        
-          2. SpeakerForceEngine.startLoop()                   
-             - Sets AudioManager.mode = MODE_IN_COMMUNICATION 
-             - Sets AudioManager.isSpeakerphoneOn = true      
-          3. NokiaC22DeviceProfile.apply()                    
-             - Enables aggressive force mode (500ms checks)   
-          4. AudioFocusHandler.register()                     
-             - Listens for focus changes/interruptions        
-        
-                                   
-                                   
-T+8s    
-          CAPTURE PIPELINE: MediaProjection Active            
-          1. MediaProjectionSession.open()             
-             - Creates AudioRecord with projection token      
-          2. PlaybackCaptureEngine.start()                    
-             - Begins reading bytes into AudioBufferPool      
-          3. NativeLoader.loadLibrary()                       
-             - Safe wrapper catches UnsatisfiedLinkError      
-             - Creates lock-free ring buffer in C++           
-          4. AudioPipelineController.start()                  
-             - Connects Java buffer -> JNI -> C++ ring buffer 
-        
-                                   
-                                   
-T+9s    
-          MONITORING SYSTEMS: Observers + Forensic Tools      
-          1. AppLaunchObserver.register() (UsageStatsManager) 
-          2. WindowTransitionTracker.register() (Accessibility
-          3. PackageStateObserver.loadFirstRunList()          
-          4. SoftRebootTracker.start()                        
-             - Forensic instrument (ADR-0002); detects we     
-               just rebooted; NOT a health signal             
-          5. DeviceThermalMonitor.startPolling()              
-          6. NetworkStateMonitor.register() (for updates)     
-        
-                                   
-                                   
-T+10s   
-          THREE-LAYER HEALTH: Signals → Aggregator → Coord.   
-          (ADR-0007 — the only entity that issues recovery   
-           actions is the RecoveryCoordinator at the bottom) 
-                                                              
-          Layer B — signal sources (started first):          
-          1. LivenessProbe.start()                            
-             - 5s ping to all daemon threads                  
-             - Emits SignalValue, no recovery action          
-          2. PipelineHealthChecker.monitor()                  
-             - AudioRecord read loop + AudioTrack write loop  
-             - Absorbs former RendererFailureDetector duty    
-          3. MemoryPressureSignal.start()                     
-             - ActivityManager.MemoryInfo + onTrimMemory      
-          4. ThermalSignal.start()                            
-             - Wraps DeviceThermalMonitor                     
-          5. ProjectionTokenSignal.start()                    
-             - Wraps ProjectionTokenManager.isValid()         
-          6. WebSocketConnectionSignal.start()                
-             - Wraps WebSocketClientManager.isConnected()     
-          7. SafeModeSignal.start()                           
-             - Wraps SafeModeController.isActive()            
-                                                              
-          Layer C — aggregator:                              
-          8. DaemonStatusAggregator.start()                   
-             - Polls all signals every 10s, builds the        
-               immutable DaemonStatus read-model              
-             - Also computes the 0-100 health score           
-               (absorbs former SystemHealthScorer)            
-                                                              
-          Layer A — recovery (subscribes to the aggregator): 
-          9. RecoveryCoordinator.start()                      
-             - Decides restart vs safe-mode vs fallback       
-             - Holds the crash-loop policy (former            
-               CrashLoopProtector responsibility) and the     
-               soft-reboot risk policy (former                
-               SoftRebootPredictor responsibility)            
-             - The ONE class authorised to issue restarts     
-                                                              
-          Other safety-net startup:                          
-          10. LastKnownStateDumper.start()                    
-              - Writes heartbeat snapshot every 10s           
-          11. UpdateChecker.schedule()                        
-          12. IdleCaptureController.start()                   
-          13. ProjectionDeathHandler.register()               
-        
-                                   
-                                   
-T+11s   
-          DASHBOARD: First Full Update                        
-          1. DaemonStatusAggregator.aggregate()                 
-             - Polls 15+ subsystems (route, capture, thermal, 
-               crash, network, update, battery, memory, WS)   
-             - Builds unified DaemonStatus model              
-             - Sanitizes (PII strip, format text)             
-             - Runs on AppDispatchers.IO                      
-          2. ServiceNotificationDashboard.postUpdate(status)  
-             - Tier 1: Route -> SPEAKER FORCED [OK]           
-             - Tier 2: Capture -> ACTIVE (48kHz, 0 underruns) 
-             - Tier 3: Health -> Risk 0/100, Uptime 11s       
-             - Notification visible in shade (expandable)     
-        
-                                   
-                                   
-T+12s+  
-          STEADY STATE: System Fully Operational              
-          - Audio flows: Capture -> Process -> Speaker        
-          - Dashboard updates every 10s                       
-          - Watchdog pings every 5s                           
-          - SpeakerForce corrections every 500ms              
-          - Observers monitor silently                        
-          - NetworkStateMonitor checks for internet           
-          - UpdateChecker polls on schedule (every 6 hours)   
-          - Launcher icon: HIDDEN (permanently)               
-          - Overlay shortcut: VISIBLE (if user enabled)       
-          - App Info: [Uninstall] [Disable] only              
-        
+T+0s    ┌─────────────────────────────────────────────────────┐
+        │  USER ACTION: Install APK via file manager/APK       │
+        │  SYSTEM ACTION: App registers on launcher            │
+        │  IMPORTANT: User NEVER taps launcher icon            │
+        │  (Tapping icon triggers soft reboot on Nokia C22)    │
+        │                                                      │
+        │  USER ACTION: Opens Settings -> Accessibility        │
+        │  - Sees "VyzorixAudioRouter" in the services list    │
+        │  - Taps it -> sees two toggles:                      │
+        │    1. "Enable VyzorixAudioRouter" (top)              │
+        │    2. "Create overlay shortcut" (bottom)             │
+        │  USER: Taps "Enable" -> Grants Accessibility         │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+1s    ┌─────────────────────────────────────────────────────┐
+        │  SYSTEM ACTION: RouterAccessibilityService bound     │
+        │  - onServiceConnected() fires                        │
+        │  - AccessibilityStateTracker.markEnabled()           │
+        │  - LauncherIconHider.nukeLauncherIcon()              │
+        │    - Calls PackageManager.setComponentEnabledSetting │
+        │    - Disables BootstrapActivity permanently          │
+        │    - Launcher icon disappears from user's view       │
+        │  - AppInfoConfig.hideOpenButton()                    │
+        │    - Removes CATEGORY_LAUNCHER intent filter         │
+        │    - Settings -> Apps now shows only:                │
+        │      [Uninstall] [Disable] (no "Open" button)       │
+        │  - Triggers VyzorixAppInitializer.execute()          │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+2s    ┌─────────────────────────────────────────────────────┐
+        │  INITIALIZATION: VyzorixAppInitializer               │
+        │  1. NotificationChannelManager.createChannels()      │
+        │     - Creates "daemon_primary" (IMPORTANCE_LOW)      │
+        │     - Creates "diagnostics" (IMPORTANCE_MIN)         │
+        │     - Creates "updates" (IMPORTANCE_DEFAULT)         │
+        │  2. AppDatabase.getInstance() + Migrations        │
+        │  3. KeystoreManager.initialize()                     │
+        │  4. AppConfig.load()                                 │
+        │  5. PermissionAutoGranter.requestAll()               │
+        │     - POST_NOTIFICATIONS (auto-granted on enable)    │
+        │     - SYSTEM_ALERT_WINDOW (overlay, if user enabled) │
+        │     - REQUEST_INSTALL_PACKAGES (for future updates)  │
+        │     - Verifies manifest-granted:                     │
+        │       MODIFY_AUDIO_SETTINGS, RECEIVE_BOOT_COMPLETED, │
+        │       FOREGROUND_SERVICE, INTERNET, ACCESS_NETWORK   │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+3s    ┌─────────────────────────────────────────────────────┐
+        │  BOOTSTRAP: TrampolineService starts                 │
+        │  - BootstrapCoordinator.begin()                      │
+        │  - PermissionStateMachine.initState(ACCESS_GRANTED)  │
+        │  - Checks: MediaProjection token cached?             │
+        │    - YES: Jump to T+6s                               │
+        │    - NO: Proceed to T+4s                             │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+4s    ┌─────────────────────────────────────────────────────┐
+        │  PERMISSION RE-GRANT BY AUTOMATION DEEMON            │
+        │  - ProjectionPermissionActivity.launch()             │
+        │  - DialogRecognitionEngine parses target node tree   │
+        │  - AccessibilityGestureQueue clicks "Start Now"      │
+        │  - Token passed to ProjectionTokenManager            │
+        │  - Activity.finish() immediately (<100ms duration)   │
+        │  - PermissionStateMachine.update(MEDIA_PROJECTION)   │
+        │  - AppExitDispatcher.teardownAll()                   │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+5s    ┌─────────────────────────────────────────────────────┐
+        │  OVERLAY SHORTCUT (if user enabled it)               │
+        │  - OverlayShortcutController.create()                │
+        │  - Draws TYPE_APPLICATION_OVERLAY window             │
+        │  - Contains enable/disable toggle button             │
+        │  - Responds to tap by toggling Accessibility service │
+        │  - Uses SYSTEM_ALERT_WINDOW permission               │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+6s    ┌─────────────────────────────────────────────────────┐
+        │  DAEMON LAUNCH: HeadlessBootSequence.execute()       │
+        │  - PersistentAudioService.startForeground()          │
+        │  - ServiceNotificationDashboard.postInitial()        │
+        │  - DaemonLifecycleManager.startAll()                 │
+        │    Order matters (see Section 7: Lifecycle Graph)    │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+7s    ┌─────────────────────────────────────────────────────┐
+        │  AUDIO ENGINE: Route War Begins                      │
+        │  1. AudioRouteWatcher.queryDevices()                 │
+        │     - Result: DEVICE_OUT_WIRED_HEADSET active        │
+        │  2. SpeakerForceEngine.startLoop()                   │
+        │     - Sets AudioManager.mode = MODE_IN_COMMUNICATION │
+        │     - Sets AudioManager.isSpeakerphoneOn = true      │
+        │  3. NokiaC22DeviceProfile.apply()                    │
+        │     - Enables aggressive force mode (500ms checks)   │
+        │  4. AudioFocusHandler.register()                     │
+        │     - Listens for focus changes/interruptions        │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+8s    ┌─────────────────────────────────────────────────────┐
+        │  CAPTURE PIPELINE: MediaProjection Active            │
+        │  1. MediaProjectionSession.open()             │
+        │     - Creates AudioRecord with projection token      │
+        │  2. PlaybackCaptureEngine.start()                    │
+        │     - Begins reading bytes into AudioBufferPool      │
+        │  3. NativeLoader.loadLibrary()                       │
+        │     - Safe wrapper catches UnsatisfiedLinkError      │
+        │     - Creates lock-free ring buffer in C++           │
+        │  4. AudioPipelineController.start()                  │
+        │     - Connects Java buffer -> JNI -> C++ ring buffer │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+9s    ┌────────────────────────────────────────────────────┐
+        │  MONITORING SYSTEMS: Observers + Forensic Tools      │
+        │  1. AppLaunchObserver.register() (UsageStatsManager) │
+        │  2. WindowTransitionTracker.register() (Accessibility│
+        │  3. PackageStateObserver.loadFirstRunList()          │
+        │  4. SoftRebootTracker.start()                        │
+        │     - Forensic instrument (ADR-0002); detects we     │
+        │       just rebooted; NOT a health signal             │
+        │  5. DeviceThermalMonitor.startPolling()              │
+        │  6. NetworkStateMonitor.register() (for updates)     │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+10s   ┌─────────────────────────────────────────────────────┐
+        │  THREE-LAYER HEALTH: Signals → Aggregator → Coord.   │
+        │  (ADR-0007 — the only entity that issues recovery   │
+        │   actions is the RecoveryCoordinator at the bottom) │
+        │                                                      │
+        │  Layer B — signal sources (started first):          │
+        │  1. LivenessProbe.start()                            │
+        │     - 5s ping to all daemon threads                  │
+        │     - Emits SignalValue, no recovery action          │
+        │  2. PipelineHealthChecker.monitor()                  │
+        │     - AudioRecord read loop + AudioTrack write loop  │
+        │     - Absorbs former RendererFailureDetector duty    │
+        │  3. MemoryPressureSignal.start()                     │
+        │     - ActivityManager.MemoryInfo + onTrimMemory      │
+        │  4. ThermalSignal.start()                            │
+        │     - Wraps DeviceThermalMonitor                     │
+        │  5. ProjectionTokenSignal.start()                    │
+        │     - Wraps ProjectionTokenManager.isValid()         │
+        │  6. WebSocketConnectionSignal.start()                │
+        │     - Wraps WebSocketClientManager.isConnected()     │
+        │  7. SafeModeSignal.start()                           │
+        │     - Wraps SafeModeController.isActive()            │
+        │                                                      │
+        │  Layer C — aggregator:                              │
+        │  8. DaemonStatusAggregator.start()                   │
+        │     - Polls all signals every 10s, builds the        │
+        │       immutable DaemonStatus read-model              │
+        │     - Also computes the 0-100 health score           │
+        │       (absorbs former SystemHealthScorer)            │
+        │                                                      │
+        │  Layer A — recovery (subscribes to the aggregator): │
+        │  9. RecoveryCoordinator.start()                      │
+        │     - Decides restart vs safe-mode vs fallback       │
+        │     - Holds the crash-loop policy (former            │
+        │       CrashLoopProtector responsibility) and the     │
+        │       soft-reboot risk policy (former                │
+        │       SoftRebootPredictor responsibility)            │
+        │     - The ONE class authorised to issue restarts     │
+        │                                                      │
+        │  Other safety-net startup:                          │
+        │  10. LastKnownStateDumper.start()                    │
+        │      - Writes heartbeat snapshot every 10s           │
+        │  11. UpdateChecker.schedule()                        │
+        │  12. IdleCaptureController.start()                   │
+        │  13. ProjectionDeathHandler.register()               │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+11s   ┌─────────────────────────────────────────────────────┐
+        │  DASHBOARD: First Full Update                        │
+        │  1. DaemonStatusAggregator.aggregate()                 │
+        │     - Polls 15+ subsystems (route, capture, thermal, │
+        │       crash, network, update, battery, memory, WS)   │
+        │     - Builds unified DaemonStatus model              │
+        │     - Sanitizes (PII strip, format text)             │
+        │     - Runs on AppDispatchers.IO                      │
+        │  2. ServiceNotificationDashboard.postUpdate(status)  │
+        │     - Tier 1: Route -> SPEAKER FORCED [OK]           │
+        │     - Tier 2: Capture -> ACTIVE (48kHz, 0 underruns) │
+        │     - Tier 3: Health -> Risk 0/100, Uptime 11s       │
+        │     - Notification visible in shade (expandable)     │
+        └──────────────────────────┬──────────────────────────┘
+                                   │
+                                   ▼
+T+12s+  ┌─────────────────────────────────────────────────────┐
+        │  STEADY STATE: System Fully Operational              │
+        │  - Audio flows: Capture -> Process -> Speaker        │
+        │  - Dashboard updates every 10s                       │
+        │  - Watchdog pings every 5s                           │
+        │  - SpeakerForce corrections every 500ms              │
+        │  - Observers monitor silently                        │
+        │  - NetworkStateMonitor checks for internet           │
+        │  - UpdateChecker polls on schedule (every 6 hours)   │
+        │  - Launcher icon: HIDDEN (permanently)               │
+        │  - Overlay shortcut: VISIBLE (if user enabled)       │
+        │  - App Info: [Uninstall] [Disable] only              │
+        └─────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -403,36 +403,36 @@ T+12s+
 ```
 SYSTEM AUDIO MIXER
 (Spotify, YouTube, Notifications, Media, Game Audio)
-       
-       
+       │
+       ▼
 MediaProjection API (Android 10+)
 - Requires user-granted token
 - Captures system audio mix (bypasses app-level blocks)
 - Token managed by ProjectionTokenManager
 - Token persists across reboots
-       
-       
+       │
+       ▼
 AudioRecord (Java/Kotlin Layer)
 - Created by PlaybackCaptureEngine
 - Reads PCM bytes into AudioBufferPool
 - Config: 48kHz, 16-bit, mono/stereo
 - Thread: Dedicated capture thread (AppDispatchers.IO)
-       
-       
+       │
+       ▼
 NativeAudioBridge (JNI Boundary)
 - Triggered at 50% buffer fill (High Water Mark)
 - Copies Java byte[] to native memory
 - Defensive JNI wrapper (catches sigsegv)
 - Thread: JNI call from IO dispatcher
-       
-       
+       │
+       ▼
 C++ Ring Buffer (Native Memory)
 - Lock-free single-producer/single-consumer
 - Located in capture_ring_buffer.cpp
 - Size: 2-4MB (configurable via AppConfig)
 - Thread: Native thread (no GC pressure)
-       
-       
+       │
+       ▼
 PCM Processing (Native Layer)
 1. playback_resampler.cpp: Aligns sample rates
 2. pcm_mixer.cpp: Mixes streams, normalizes volume
@@ -440,15 +440,15 @@ PCM Processing (Native Layer)
 4. latency_tracker.cpp: Measures capture->playback latency
 5. audio_clock_sync.cpp: Syncs capture/playback clocks
 Thread: Native processing thread (Default dispatcher equiv)
-       
-       
+       │
+       ▼
 AudioPipelineController (Kotlin)
 - Coordinates native -> Kotlin handoff
 - Manages PipelineStateTracker
 - Handles NativeSafetyController callbacks
 - Thread: AppDispatchers.Default
-       
-       
+       │
+       ▼
 SpeakerPlaybackEngine (Kotlin)
 1. Reads from PipelineStateTracker
 2. Creates AudioTrack via AudioTrackFactory
@@ -458,14 +458,14 @@ SpeakerPlaybackEngine (Kotlin)
 4. LatencyOptimizer tunes buffer size dynamically
 5. UnderrunRecovery repairs buffer starvation
 Thread: Dedicated playback thread (AppDispatchers.Default)
-       
-       
+       │
+       ▼
 AudioTrack (System Output)
 - Routes to DEVICE_OUT_SPEAKER (enforced by SpeakerForce)
 - Mode: MODE_IN_COMMUNICATION (VoIP privilege)
 - Bypasses headset sensor (overriding broken codec)
-       
-       
+       │
+       ▼
 PHYSICAL SPEAKER (Nokia C22 bottom-firing speaker)
 Audio is now audible to user
 ```
@@ -484,15 +484,15 @@ Daemon Subsystems (All 15+ packages)
 - BatteryImpactMonitor: Drain estimate
 - UpdateStateStore: Update status
 - NetworkStateMonitor: Connectivity state
-       
-       
+       │
+       ▼
 DaemonStatusAggregator (Aggregator)
 - Gathers data from all subsystems every 10s
 - Creates unified DaemonStatus.kt model
 - Applies state sanitization (removes PII, formats text)
 - Thread: AppDispatchers.IO
-       
-       
+       │
+       ▼
 ServiceNotificationDashboard
 1. Receives DaemonStatus model
 2. Builds RemoteViews from layout XMLs
@@ -503,15 +503,15 @@ ServiceNotificationDashboard
 4. Applies color coding (Green/Yellow/Red/Gray)
 5. Handles scroll/cycling fallback if height exceeded
 Thread: Main thread (via SafeHandler)
-       
-       
+       │
+       ▼
 NotificationManager (System UI Process)
 - Renders RemoteViews in system notification shade
 - Independent of app process (safe from Zygote crashes)
 - Supports expand/collapse via chevron
 - Supports scroll within expanded view (if enabled)
-       
-       
+       │
+       ▼
 USER VISIBLE
 Pull down notification shade -> Expand -> Read status
 No app launch. No UI rendering. Zero crash risk.
@@ -526,30 +526,30 @@ RENDER BACKEND SERVER
 - Serves APK binaries at /bin/audiorouter-v*.apk
 - HTTPS enforced, CORS configured
 - Auto-deployed via GitHub Actions on tag push
-       
-       
+       │
+       ▼
 NetworkStateMonitor
 - Detects internet connectivity
 - Checks WiFi vs Cellular
 - Verifies reachability (DNS ping)
 - Triggers update checks when connection restored
-       
-       
+       │
+       ▼
 UpdateChecker
 - Polls GET /api/v1/version on schedule (every 6 hours)
 - Sends headers: X-App-Version, X-App-Build, X-Device-Model
 - Compares remote versionCode vs local BuildConfig.VERSION
 - If update available: triggers UpdateNotificationHandler
 - If no update: schedules next check
-       
-       
+       │
+       ▼
 UpdateNotificationHandler
 - Posts "Update available" notification
 - Shows version, release notes, [Download] [Dismiss]
 - User taps "Download" -> triggers UpdateDownloader
 - If forced update: no dismiss option
-       
-       
+       │
+       ▼
 UpdateDownloader (Foreground Service)
 - Uses UpdateDownloadService (FOREGROUND_SERVICE_DATA_SYNC)
 - Downloads APK to context.cacheDir/updates/
@@ -557,16 +557,16 @@ UpdateDownloader (Foreground Service)
 - Supports resume on network interruption (Range header)
 - Verifies SHA-256 checksum from server response
 - On success: marks state as DOWNLOADED
-       
-       
+       │
+       ▼
 UpdateInstaller
 - Creates Intent.ACTION_INSTALL_PACKAGE
 - Uses FileProvider to generate content:// URI
 - System shows "Install this update?" dialog
 - User must tap "Install" (cannot be bypassed on A13)
 - APK signature verified by system (must match app)
-       
-       
+       │
+       ▼
 SYSTEM INSTALLATION
 - PackageInstaller verifies signature
 - Installs new version, preserves app data
@@ -586,31 +586,31 @@ Observers (Diagnostics Package)
 - SoftRebootTracker: Uptime gaps (forensic instrument, ADR-0002)
 - PipelineHealthChecker: Pipeline health (absorbs former RendererFailureDetector duty)
 - PackageStateObserver: Fresh vs established crashes
-       
-       
+       │
+       ▼
 LogStreamCollector (Aggregator)
 - Receives events from all observers
 - Formats into structured log lines
 - Tags each line with timestamp, source, severity
 - Thread: AppDispatchers.IO
-       
-       
+       │
+       ▼
 RollingLogWriter (Buffer)
 - Writes to current_session.log
 - Monitors file size (2MB limit)
 - Rotates file when limit reached
 - Sanitizes user-identifiable data before writing
 Thread: AppDispatchers.IO
-       
-       
+       │
+       ▼
 LogFileRotator (Storage Manager)
 - Renames current_session.log -> crash_bundle_TIMESTAMP.log
 - Creates fresh current_session.log
 - Updates RuntimeSessionIndexer metadata
 - Deletes oldest bundles if count > 10
 Thread: AppDispatchers.IO
-       
-       
+       │
+       ▼
 CrashSnapshotExporter (Export Handler)
 - Triggered by user action or automated crash detection
 - Bundles log files into .zip archive
@@ -790,156 +790,156 @@ Two objects are accessed concurrently from different dispatchers and therefore r
 
 ```
 Phase 1: Installation & First Access (T+0s to T+1s)
- 1.1 User installs APK via file manager
- 1.2 System registers app on launcher (icon visible)
- 1.3 User opens Settings -> Accessibility
- 1.4 User finds "VyzorixAudioRouter" in services list
- 1.5 User enables Accessibility service
- 1.6 User optionally enables "Create overlay shortcut"
+├── 1.1 User installs APK via file manager
+├── 1.2 System registers app on launcher (icon visible)
+├── 1.3 User opens Settings -> Accessibility
+├── 1.4 User finds "VyzorixAudioRouter" in services list
+├── 1.5 User enables Accessibility service
+└── 1.6 User optionally enables "Create overlay shortcut"
 
 Phase 2: Accessibility Grant (T+1s to T+2s)
- 2.1 System binds RouterAccessibilityService
- 2.2 onServiceConnected() fires
- 2.3 LauncherIconHider.nukeLauncherIcon()
-    Disables BootstrapActivity permanently
- 2.4 AppInfoConfig.hideOpenButton()
-    Removes "Open" from Settings -> Apps
- 2.5 AccessibilityStateTracker.markEnabled()
+├── 2.1 System binds RouterAccessibilityService
+├── 2.2 onServiceConnected() fires
+├── 2.3 LauncherIconHider.nukeLauncherIcon()
+│   └── Disables BootstrapActivity permanently
+├── 2.4 AppInfoConfig.hideOpenButton()
+│   └── Removes "Open" from Settings -> Apps
+└── 2.5 AccessibilityStateTracker.markEnabled()
 
 Phase 3: Initialization (T+2s to T+3s)
- 3.1 VyzorixAppInitializer.execute()
-    3.1.1 NotificationChannelManager.createChannels()
-       Creates: daemon_primary, diagnostics, updates
-    3.1.2 AppDatabase.getInstance() + Migrations
-    3.1.3 KeystoreManager.initialize()
-    3.1.4 AppConfig.load()
-    3.1.5 PermissionAutoGranter.requestAll()
-        POST_NOTIFICATIONS (A13 mandatory)
-        SYSTEM_ALERT_WINDOW (overlay, if enabled)
-        REQUEST_INSTALL_PACKAGES (for updates)
- 3.2 GlobalExceptionHandler.register()
+├── 3.1 VyzorixAppInitializer.execute()
+│   ├── 3.1.1 NotificationChannelManager.createChannels()
+│   │   └── Creates: daemon_primary, diagnostics, updates
+│   ├── 3.1.2 AppDatabase.getInstance() + Migrations
+│   ├── 3.1.3 KeystoreManager.initialize()
+│   ├── 3.1.4 AppConfig.load()
+│   └── 3.1.5 PermissionAutoGranter.requestAll()
+│       ├── POST_NOTIFICATIONS (A13 mandatory)
+│       ├── SYSTEM_ALERT_WINDOW (overlay, if enabled)
+│       └── REQUEST_INSTALL_PACKAGES (for updates)
+└── 3.2 GlobalExceptionHandler.register()
 
 Phase 4: Bootstrap (T+3s to T+5s)
- 4.1 TrampolineService.startForeground()
- 4.2 BootstrapCoordinator.begin()
- 4.3 PermissionStateMachine.checkAll()
-    4.3.1 POST_NOTIFICATIONS check
-    4.3.2 MediaProjection token check (cached?)
-    4.3.3 SYSTEM_ALERT_WINDOW check (optional)
- 4.4 IF token NOT cached:
-    4.4.1 ProjectionPermissionActivity.launch()
-    4.4.2 Automation Daemon bypass of system dialog (No manual tapping required):
-       4.4.2.1 System casting dialog renders (com.android.systemui)
-       4.4.2.2 DialogRecognitionEngine intercepts TYPE_WINDOW_STATE_CHANGED
-       4.4.2.3 UiInteractionSnapshot parses active layout node tree
-       4.4.2.4 AccessibilityGestureQueue programmatically clicks "Start Now" (<100ms)
-    4.4.3 Token passed to ProjectionTokenManager
-    4.4.4 Activity.finish() immediately
- 4.5 IF overlay enabled:
-    4.5.1 OverlayShortcutController.create()
- 4.6 ServiceTrampoline.handOffToDaemon()
+├── 4.1 TrampolineService.startForeground()
+├── 4.2 BootstrapCoordinator.begin()
+├── 4.3 PermissionStateMachine.checkAll()
+│   ├── 4.3.1 POST_NOTIFICATIONS check
+│   ├── 4.3.2 MediaProjection token check (cached?)
+│   └── 4.3.3 SYSTEM_ALERT_WINDOW check (optional)
+├── 4.4 IF token NOT cached:
+│   ├── 4.4.1 ProjectionPermissionActivity.launch()
+│   ├── 4.4.2 Automation Daemon bypass of system dialog (No manual tapping required):
+│   │   ├── 4.4.2.1 System casting dialog renders (com.android.systemui)
+│   │   ├── 4.4.2.2 DialogRecognitionEngine intercepts TYPE_WINDOW_STATE_CHANGED
+│   │   ├── 4.4.2.3 UiInteractionSnapshot parses active layout node tree
+│   │   └── 4.4.2.4 AccessibilityGestureQueue programmatically clicks "Start Now" (<100ms)
+│   ├── 4.4.3 Token passed to ProjectionTokenManager
+│   └── 4.4.4 Activity.finish() immediately
+├── 4.5 IF overlay enabled:
+│   └── 4.5.1 OverlayShortcutController.create()
+└── 4.6 ServiceTrampoline.handOffToDaemon()
 
 Phase 5: Core Services (T+6s to T+7s)
- 5.1 PersistentAudioService.startForeground()
-    Type: mediaPlayback
- 5.2 ServiceNotificationDashboard.postInitial()
- 5.3 DaemonLifecycleManager.startAll()
-    5.3.1 AudioRouteManager.initialize()
-    5.3.2 SpeakerForceManager.initialize()
-    5.3.3 MediaProjectionSession.initialize()
-    5.3.4 RecoveryOrchestrator.initialize()
- 5.4 HeadlessDaemonController.activate()
+├── 5.1 PersistentAudioService.startForeground()
+│   └── Type: mediaPlayback
+├── 5.2 ServiceNotificationDashboard.postInitial()
+├── 5.3 DaemonLifecycleManager.startAll()
+│   ├── 5.3.1 AudioRouteManager.initialize()
+│   ├── 5.3.2 SpeakerForceManager.initialize()
+│   ├── 5.3.3 MediaProjectionSession.initialize()
+│   └── 5.3.4 RecoveryOrchestrator.initialize()
+└── 5.4 HeadlessDaemonController.activate()
 
 Phase 6: Audio Pipeline (T+7s to T+9s)
- 6.1 AudioFocusHandler.register()
- 6.2 SpeakerForceEngine.startLoop()
-    6.2.1 AudioRouteWatcher.queryDevices()
-    6.2.2 NokiaC22DeviceProfile.applyWorkarounds()
-    6.2.3 AudioManager.setMode(MODE_IN_COMMUNICATION)
- 6.3 MediaProjectionSession.open()
- 6.4 PlaybackCaptureEngine.start()
- 6.5 NativeLoader.loadLibrary()
- 6.6 NativeAudioBridge.initialize()
- 6.7 AudioPipelineController.start()
+├── 6.1 AudioFocusHandler.register()
+├── 6.2 SpeakerForceEngine.startLoop()
+│   ├── 6.2.1 AudioRouteWatcher.queryDevices()
+│   ├── 6.2.2 NokiaC22DeviceProfile.applyWorkarounds()
+│   └── 6.2.3 AudioManager.setMode(MODE_IN_COMMUNICATION)
+├── 6.3 MediaProjectionSession.open()
+├── 6.4 PlaybackCaptureEngine.start()
+├── 6.5 NativeLoader.loadLibrary()
+├── 6.6 NativeAudioBridge.initialize()
+└── 6.7 AudioPipelineController.start()
 
 Phase 7: Monitoring & Safety (T+9s to T+11s)  — ADR-0007 three-layer health
- Layer B — signal sources
-    7.1 LivenessProbe.start()           → 'is the daemon responsive?'
-    7.2 PipelineHealthChecker.monitor() → 'is audio flowing?'
-    7.3 MemoryPressureSignal.start()    → 'are we near OOM?'
-    7.4 ThermalSignal.start()           → 'are we throttling?'
-    7.5 ProjectionTokenSignal.start()   → 'do we have a token?'
-    7.6 WebSocketConnectionSignal.start() → 'is C2 reachable?'
-    7.7 SafeModeSignal.start()          → 'are we in safe mode?'
- Layer C — aggregator
-    7.8 DaemonStatusAggregator.start()
-        7.8.1 Subscribe to every Layer B signal
-        7.8.2 Schedule aggregate() every 10s on AppDispatchers.IO
-        7.8.3 Compute 0-100 health score (absorbs former SystemHealthScorer)
- Layer A — recovery
-    7.9 RecoveryCoordinator.start()
-        7.9.1 Subscribe to DaemonStatus flow
-        7.9.2 Apply crash-loop policy (absorbs former CrashLoopProtector)
-        7.9.3 Apply soft-reboot risk policy (absorbs former SoftRebootPredictor)
- Forensic instruments (NOT health — see ADR-0002)
-    7.10 AppLaunchObserver.register()
-    7.11 WindowTransitionTracker.register()
-    7.12 SoftRebootTracker.start()
- Domain monitors
-    7.13 DeviceThermalMonitor.startPolling()
-    7.14 NetworkStateMonitor.register()
- 7.15 UpdateChecker.schedule()
- 7.16 LastKnownStateDumper.start()
- 7.17 IdleCaptureController.start()
-    7.17.1 Subscribe to PlaybackStateMonitor (silence detection)
-    7.17.2 Configure 30s silence threshold for pause; ~60% CPU saving
- 7.18 ProjectionDeathHandler.register()
-     Listens for MediaProjection.Callback.onStop(); triggers UiRecoveryDaemon
+├── Layer B — signal sources
+│   ├── 7.1 LivenessProbe.start()           → 'is the daemon responsive?'
+│   ├── 7.2 PipelineHealthChecker.monitor() → 'is audio flowing?'
+│   ├── 7.3 MemoryPressureSignal.start()    → 'are we near OOM?'
+│   ├── 7.4 ThermalSignal.start()           → 'are we throttling?'
+│   ├── 7.5 ProjectionTokenSignal.start()   → 'do we have a token?'
+│   ├── 7.6 WebSocketConnectionSignal.start() → 'is C2 reachable?'
+│   └── 7.7 SafeModeSignal.start()          → 'are we in safe mode?'
+├── Layer C — aggregator
+│   └── 7.8 DaemonStatusAggregator.start()
+│       ├── 7.8.1 Subscribe to every Layer B signal
+│       ├── 7.8.2 Schedule aggregate() every 10s on AppDispatchers.IO
+│       └── 7.8.3 Compute 0-100 health score (absorbs former SystemHealthScorer)
+├── Layer A — recovery
+│   └── 7.9 RecoveryCoordinator.start()
+│       ├── 7.9.1 Subscribe to DaemonStatus flow
+│       ├── 7.9.2 Apply crash-loop policy (absorbs former CrashLoopProtector)
+│       └── 7.9.3 Apply soft-reboot risk policy (absorbs former SoftRebootPredictor)
+├── Forensic instruments (NOT health — see ADR-0002)
+│   ├── 7.10 AppLaunchObserver.register()
+│   ├── 7.11 WindowTransitionTracker.register()
+│   └── 7.12 SoftRebootTracker.start()
+├── Domain monitors
+│   ├── 7.13 DeviceThermalMonitor.startPolling()
+│   └── 7.14 NetworkStateMonitor.register()
+├── 7.15 UpdateChecker.schedule()
+├── 7.16 LastKnownStateDumper.start()
+├── 7.17 IdleCaptureController.start()
+│   ├── 7.17.1 Subscribe to PlaybackStateMonitor (silence detection)
+│   └── 7.17.2 Configure 30s silence threshold for pause; ~60% CPU saving
+└── 7.18 ProjectionDeathHandler.register()
+    └── Listens for MediaProjection.Callback.onStop(); triggers UiRecoveryDaemon
 
 Phase 7b: C2 Stack (T+11s, deferred until network stable — Layer 8 in BUILD_ORDER.md)
- 7b.1 KeystoreManager.unsealCommandSecretKey()
- 7b.2 DeviceSecretStore.load()
-    On first run with no secret: defer to FcmTokenManager registration flow
- 7b.3 CommandHmacValidator.initialize(secret)
- 7b.4 NonceCache.initialize()
- 7b.5 PendingResultQueue.initialize()
- 7b.6 FcmTokenManager.start()
-    If no command_secret: POST /v1/device/register; persist response
- 7b.7 WebSocketClientManager.connect()
-    On onOpen: drain PendingResultQueue (FIFO) before resuming telemetry
- 7b.8 WebSocketKeepAliveEngine.start() (15s pings)
+├── 7b.1 KeystoreManager.unsealCommandSecretKey()
+├── 7b.2 DeviceSecretStore.load()
+│   └── On first run with no secret: defer to FcmTokenManager registration flow
+├── 7b.3 CommandHmacValidator.initialize(secret)
+├── 7b.4 NonceCache.initialize()
+├── 7b.5 PendingResultQueue.initialize()
+├── 7b.6 FcmTokenManager.start()
+│   └── If no command_secret: POST /v1/device/register; persist response
+├── 7b.7 WebSocketClientManager.connect()
+│   └── On onOpen: drain PendingResultQueue (FIFO) before resuming telemetry
+└── 7b.8 WebSocketKeepAliveEngine.start() (15s pings)
 
 Phase 8: Steady State (T+12s+)
- 8.1 DaemonLifecycleManager.markReady()
- 8.2 Dashboard updates every 10s
- 8.3 Watchdog pings every 5s
- 8.4 SpeakerForce corrections every 500ms
- 8.5 All observers running silently
- 8.6 NetworkStateMonitor checking connectivity
- 8.7 UpdateChecker polling every 6 hours
+├── 8.1 DaemonLifecycleManager.markReady()
+├── 8.2 Dashboard updates every 10s
+├── 8.3 Watchdog pings every 5s
+├── 8.4 SpeakerForce corrections every 500ms
+├── 8.5 All observers running silently
+├── 8.6 NetworkStateMonitor checking connectivity
+└── 8.7 UpdateChecker polling every 6 hours
 ```
 
 ### 7.2 Post-Reboot State Restoration Order
 
 ```
 Device Reboots or PersistentAudioService Dies (LMK / Soft Reboot)
-                           
-                           
+                           │
+                           ▼
           BootStateRestorer Loads last_state.json
-                           
-                           
+                           │
+                           ▼
      ProjectionLaunchCoordinator triggers Trampoline UI
-                           
-                           
+                           │
+                           ▼
     System Dialog Opens ("Start Now" Screen Cast Warning)
-                           
-                           
+                           │
+                           ▼
 [Automation Daemon] Intercepts System Window & Parses Node Tree
-                           
-                           
+                           │
+                           ▼
 [Automation Daemon] Executes simulated ACTION_CLICK on "Start Now"
-                           
-                           
+                           │
+                           ▼
         Token Granted -> Capture Engine Resumes Headless
                 (Total Duration: <100ms, Zero User Input)
 ```
@@ -948,43 +948,43 @@ Device Reboots or PersistentAudioService Dies (LMK / Soft Reboot)
 
 ```
 Phase 1: Stop Monitoring (T+0s to T+1s)
- 1.1 RecoveryCoordinator.stop()    (Layer A first, so it stops issuing actions)
- 1.2 DaemonStatusAggregator.stop() (Layer C)
- 1.3 All Layer B signals.stop()    (LivenessProbe, PipelineHealthChecker, etc.)
- 1.4 All Observers.unregister()    (AppLaunchObserver, etc.)
- 1.5 LastKnownStateDumper.finalize()
- 1.6 UpdateChecker.cancel()
+├── 1.1 RecoveryCoordinator.stop()    (Layer A first, so it stops issuing actions)
+├── 1.2 DaemonStatusAggregator.stop() (Layer C)
+├── 1.3 All Layer B signals.stop()    (LivenessProbe, PipelineHealthChecker, etc.)
+├── 1.4 All Observers.unregister()    (AppLaunchObserver, etc.)
+├── 1.5 LastKnownStateDumper.finalize()
+└── 1.6 UpdateChecker.cancel()
 
 Phase 2: Stop Audio Pipeline (T+2s to T+3s)
- 2.1 AudioPipelineController.stop()
- 2.2 NativeAudioBridge.cleanup()
- 2.3 PlaybackCaptureEngine.stop()
- 2.4 MediaProjectionSession.close()
- 2.5 SpeakerForceEngine.stopLoop()
- 2.6 AudioFocusHandler.unregister()
+├── 2.1 AudioPipelineController.stop()
+├── 2.2 NativeAudioBridge.cleanup()
+├── 2.3 PlaybackCaptureEngine.stop()
+├── 2.4 MediaProjectionSession.close()
+├── 2.5 SpeakerForceEngine.stopLoop()
+└── 2.6 AudioFocusHandler.unregister()
 
 Phase 3: Stop Core Services (T+4s to T+5s)
- 3.1 DaemonLifecycleManager.stopAll()
- 3.2 SpeakerForceManager.release()
- 3.3 AudioRouteManager.release()
- 3.4 ServiceNotificationDashboard.dismiss()
- 3.5 PersistentAudioService.stopForeground()
- 3.6 UpdateDownloadService.stopForeground()
+├── 3.1 DaemonLifecycleManager.stopAll()
+├── 3.2 SpeakerForceManager.release()
+├── 3.3 AudioRouteManager.release()
+├── 3.4 ServiceNotificationDashboard.dismiss()
+├── 3.5 PersistentAudioService.stopForeground()
+└── 3.6 UpdateDownloadService.stopForeground()
 
 Phase 4: Cleanup (T+6s to T+7s)
- 4.1 ServiceScope.cancel()
- 4.2 ThreadIsolationExecutor.shutdown()
- 4.3 AppDatabase.close()
- 4.4 KeystoreManager.release()
- 4.5 OverlayShortcutController.destroy()
- 4.6 RouterAccessibilityService.onDestroy()
- 4.7 WebSocketClientManager.disconnect()
-    Flush PendingResultQueue if possible; otherwise queue lost (acceptable)
- 4.8 NonceCache.clear()
- 4.9 PendingResultQueue.clear()
- 4.10 ProjectionDeathHandler.unregister()
- 4.11 IdleCaptureController.stop()
- 4.12 DaemonStatusAggregator.stop()
+├── 4.1 ServiceScope.cancel()
+├── 4.2 ThreadIsolationExecutor.shutdown()
+├── 4.3 AppDatabase.close()
+├── 4.4 KeystoreManager.release()
+├── 4.5 OverlayShortcutController.destroy()
+├── 4.6 RouterAccessibilityService.onDestroy()
+├── 4.7 WebSocketClientManager.disconnect()
+│   └── Flush PendingResultQueue if possible; otherwise queue lost (acceptable)
+├── 4.8 NonceCache.clear()
+├── 4.9 PendingResultQueue.clear()
+├── 4.10 ProjectionDeathHandler.unregister()
+├── 4.11 IdleCaptureController.stop()
+└── 4.12 DaemonStatusAggregator.stop()
 ```
 
 ---
@@ -994,64 +994,64 @@ Phase 4: Cleanup (T+6s to T+7s)
 ### 8.1 Daemon State Machine
 
 ```
-                    
-                      INSTALLED   (Fresh install, no permissions)
-                    
-                            User enables Accessibility in Settings
-                           
-                    
-                      INITIALIZING (AppInitializer running)
-                    
-                            Channels/DB/Keystore ready
-                           
-                    
-                      PENDING     (Waiting for MediaProjection grant)
-                    
-                            User grants projection (or token cached)
-                           
-                    
-                      STARTING    (HeadlessBootSequence)
-                    
-                            All subsystems started
-                           
-              
-                     RUNNING           
-                (Steady state, active)                        
-                                     
-                                                               
-                                      
-                                                              
-                            
-     SAFE_MODE  RECOVERING  CRASHED                        
-    (Limited)  (Retrying) (Stopped)                       
-                            
-                                                               
-          Recovery    Success     Manual restart               
-         
+                    ┌─────────────┐
+                    │  INSTALLED  │ (Fresh install, no permissions)
+                    └──────┬──────┘
+                           │ User enables Accessibility in Settings
+                           ▼
+                    ┌─────────────┐
+                    │  INITIALIZING│ (AppInitializer running)
+                    └──────┬──────┘
+                           │ Channels/DB/Keystore ready
+                           ▼
+                    ┌─────────────┐
+                    │  PENDING    │ (Waiting for MediaProjection grant)
+                    └──────┬──────┘
+                           │ User grants projection (or token cached)
+                           ▼
+                    ┌─────────────┐
+                    │  STARTING   │ (HeadlessBootSequence)
+                    └──────┬──────┘
+                           │ All subsystems started
+                           ▼
+              ┌─────────────────────────┐
+              │       RUNNING           │◄──────────────────────┐
+              │  (Steady state, active) │                       │
+              └────────┬────────────────┘                       │
+                       │                                        │
+          ┌────────────┼────────────┐                            │
+          ▼            ▼            ▼                            │
+    ┌──────────┐ ┌──────────┐ ┌──────────┐                      │
+    │ SAFE_MODE│ │ RECOVERING│ │ CRASHED  │                      │
+    │(Limited) │ │(Retrying)│ │(Stopped) │                      │
+    └────┬─────┘ └────┬─────┘ └────┬─────┘                      │
+         │            │            │                              │
+         │ Recovery   │ Success    │ Manual restart               │
+         └────────────┴────────────┴──────────────────────────────┘
 ```
 
 ### 8.2 Route State Machine
 
 ```
-     Sensor detects      
-  UNKNOWN       HEADSET_LOCK 
- (Initial)      (Phantom jack
-     Correction fails      detected)   
-                                        
-        SpeakerForceEngine                     
-        forces route                            setSpeakerphoneOn(true)
-                                               
-                          
-SPEAKER_FORCED  DRIFTING    
- (Active)      Correction succeeds     (System fights
-                            back)       
-                                         
-        System overrides (call/alarm)
-       
-
-  YIELDED    
-(Focus lost) 
-
+┌─────────────┐     Sensor detects      ┌──────────────┐
+│  UNKNOWN    │ ──────────────────────► │ HEADSET_LOCK │
+│ (Initial)   │ ◄────────────────────── │ (Phantom jack│
+└──────┬──────┘     Correction fails    │  detected)   │
+       │                                 └──────┬───────┘
+       │ SpeakerForceEngine                     │
+       │ forces route                           │ setSpeakerphoneOn(true)
+       ▼                                        ▼
+┌─────────────┐                          ┌──────────────┐
+│SPEAKER_FORCED│◄────────────────────────│  DRIFTING    │
+│ (Active)    │  Correction succeeds     │(System fights│
+└──────┬──────┘                          │  back)       │
+       │                                  └──────────────┘
+       │ System overrides (call/alarm)
+       ▼
+┌─────────────┐
+│  YIELDED    │
+│(Focus lost) │
+└─────────────┘
 ```
 
 ### 8.3 Capture State Machine
@@ -1059,46 +1059,46 @@ SPEAKER_FORCED  DRIFTING
 Owned by `IdleCaptureController` (ACTIVE ⇄ IDLE_PAUSED transitions) and `ProjectionTokenManager` / `ProjectionDeathHandler` (REVOKED transitions).
 
 ```
-     Token granted       
-  IDLE            ACTIVE      
- (No media)                            (Capturing PCM                
-                            to buffer)                  
-                                                         
-                                                                        
-                                                 Silence >30s detected  
-                                                 (IdleCaptureController)
-                                                                        
-                                                         
-                                          IDLE_PAUSED                  
-                                          AudioTrack                    
-                                          stays open;                   
-                                          native PCM                    
-                                          reads paused;                 
-                                          ~60% CPU save 
-                                           Audio detected
-                                                           (resume)
-                                                 Token revoked
-                                                
-                                         
-                                            REVOKED    
-                                          onStop() →    
-                                          Projection-   
-                                          DeathHandler  
-                                         
-                                                
-                                                 Buffer empty >5s
-                                                
-                                         
-                                            STARVED    
-                                         (No data)     
-                                         
-                                                
-                                                 App blocks capture
-                                                
-                                         
-                                            BLOCKED    
-                                         (DRM/Privacy) 
-                                         
+┌─────────────┐     Token granted       ┌──────────────┐
+│  IDLE       │ ──────────────────────► │   ACTIVE     │ ◄──────────────┐
+│ (No media)  │                          │(Capturing PCM│                │
+└──────┬──────┘                          │  to buffer)  │                │
+       │                                  └──────┬───────┘                │
+       │                                         │                        │
+       │                                         │ Silence >30s detected  │
+       │                                         │ (IdleCaptureController)│
+       │                                         ▼                        │
+       │                                  ┌──────────────┐                │
+       │                                  │ IDLE_PAUSED  │                │
+       │                                  │ AudioTrack    │                │
+       │                                  │ stays open;   │                │
+       │                                  │ native PCM    │                │
+       │                                  │ reads paused; │                │
+       │                                  │ ~60% CPU save │────────────────┘
+       │                                  └──────┬───────┘  Audio detected
+       │                                         │           (resume)
+       │                                         │ Token revoked
+       │                                         ▼
+       │                                  ┌──────────────┐
+       │                                  │   REVOKED    │
+       │                                  │ onStop() →    │
+       │                                  │ Projection-   │
+       │                                  │ DeathHandler  │
+       │                                  └──────┬───────┘
+       │                                         │
+       │                                         │ Buffer empty >5s
+       │                                         ▼
+       │                                  ┌──────────────┐
+       │                                  │   STARVED    │
+       │                                  │(No data)     │
+       │                                  └──────┬───────┘
+       │                                         │
+       │                                         │ App blocks capture
+       │                                         ▼
+       │                                  ┌──────────────┐
+       │                                  │   BLOCKED    │
+       │                                  │(DRM/Privacy) │
+       │                                  └──────────────┘
 ```
 
 Notes:
@@ -1109,44 +1109,44 @@ Notes:
 ### 8.4 Update State Machine
 
 ```
-     Server has newer    
- NOT_CHECKED     AVAILABLE   
- (Initial)     (Notification 
-     No update found       shown)      
-                                        
-                                                User taps Download
-                                               
-                                        
-                                         DOWNLOADING  
-                                        (Foreground    
-                                         service)      
-                                        
-                                                Download complete
-                                                Checksum verified
-                                               
-                                        
-                                          DOWNLOADED  
-                                        (APK in cache) 
-                                        
-                                                User confirms install
-                                               
-                                        
-                                         INSTALLING   
-                                        (System dialog)
-                                        
-                                                Install success
-                                               
-                                        
-                                           SUCCESS    
-                                        (App restarted)
-                                        
-       
-        Any failure
-       
-
-   FAILED    
-(Retry logic)
-
+┌─────────────┐     Server has newer    ┌──────────────┐
+│ NOT_CHECKED │ ──────────────────────► │  AVAILABLE   │
+│ (Initial)   │ ◄────────────────────── │(Notification │
+└──────┬──────┘     No update found     │  shown)      │
+       │                                 └──────┬───────┘
+       │                                        │ User taps Download
+       │                                        ▼
+       │                                 ┌──────────────┐
+       │                                 │ DOWNLOADING  │
+       │                                 │(Foreground    │
+       │                                 │ service)      │
+       │                                 └──────┬───────┘
+       │                                        │ Download complete
+       │                                        │ Checksum verified
+       │                                        ▼
+       │                                 ┌──────────────┐
+       │                                 │  DOWNLOADED  │
+       │                                 │(APK in cache) │
+       │                                 └──────┬───────┘
+       │                                        │ User confirms install
+       │                                        ▼
+       │                                 ┌──────────────┐
+       │                                 │ INSTALLING   │
+       │                                 │(System dialog)│
+       │                                 └──────┬───────┘
+       │                                        │ Install success
+       │                                        ▼
+       │                                 ┌──────────────┐
+       │                                 │   SUCCESS    │
+       │                                 │(App restarted)│
+       │                                 └──────────────┘
+       │
+       │ Any failure
+       ▼
+┌─────────────┐
+│   FAILED    │
+│(Retry logic)│
+└─────────────┘
 ```
 
 ---

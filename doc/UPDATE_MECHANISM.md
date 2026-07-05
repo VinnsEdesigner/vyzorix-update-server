@@ -10,57 +10,57 @@ Enable the VyzorixAudioRouter daemon to check for, download, and install APK upd
 ## System Architecture Overview
 
 ```
-
-                    DEVELOPER WORKSTATION                      
-  - Builds release APK via ./gradlew assembleRelease          
-  - Signs APK with release keystore                            
-  - Pushes to GitHub with semantic version tag (v2.1.0)        
-
-                           
-                           
-
-                  GITHUB ACTIONS (CI/CD)                       
-  Trigger: git tag push (v*)                                  
-  Workflow: push_update_bin.yml                               
-  Steps:                                                      
-    1. Build release APK                                      
-    2. Compute SHA-256 checksum                               
-    3. Create version.json metadata                           
-    4. Push APK to server repo /bin/ folder                   
-    5. Push version.json to server repo /api/v1/version       
-    6. Deploy to Render (auto-triggered on repo push)         
-
-                           
-                           
-
-                     RENDER BACKEND SERVER                     
-  - Static file server (nginx/Express)                        
-  - Serves:                                                   
-      GET /api/v1/version    -> version.json                  
-      GET /api/v1/changelog  -> changelog.json                
-      GET /bin/audiorouter-v2.1.0.apk -> APK binary           
-  - CORS configured for app domain                            
-  - HTTPS enforced (TLS 1.2+)                                 
-
-                           
-                           
-
-                  VYZORIX AUDIO ROUTER (DAEMON)                
-  - NetworkStateMonitor detects internet connectivity         
-  - UpdateChecker polls /api/v1/version on schedule           
-  - Compares remote version vs local BuildConfig.VERSION_CODE  
-  - If update available:                                      
-      1. Shows "Update available" notification                
-      2. User taps notification                               
-      3. UpdateDownloader starts foreground download service   
-      4. Downloads APK to cacheDir/updates/                   
-      5. Verifies SHA-256 checksum                            
-      6. UpdateInstaller triggers ACTION_INSTALL_PACKAGE       
-      7. System shows "Install this update?" dialog           
-      8. User confirms -> APK installed                       
-      9. Daemon restarts with new version                     
-     10. BootStateRestorer resumes from last known state      
-
+┌─────────────────────────────────────────────────────────────┐
+│                    DEVELOPER WORKSTATION                      │
+│  - Builds release APK via ./gradlew assembleRelease          │
+│  - Signs APK with release keystore                            │
+│  - Pushes to GitHub with semantic version tag (v2.1.0)        │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  GITHUB ACTIONS (CI/CD)                       │
+│  Trigger: git tag push (v*)                                  │
+│  Workflow: push_update_bin.yml                               │
+│  Steps:                                                      │
+│    1. Build release APK                                      │
+│    2. Compute SHA-256 checksum                               │
+│    3. Create version.json metadata                           │
+│    4. Push APK to server repo /bin/ folder                   │
+│    5. Push version.json to server repo /api/v1/version       │
+│    6. Deploy to Render (auto-triggered on repo push)         │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     RENDER BACKEND SERVER                     │
+│  - Static file server (nginx/Express)                        │
+│  - Serves:                                                   │
+│      GET /api/v1/version    -> version.json                  │
+│      GET /api/v1/changelog  -> changelog.json                │
+│      GET /bin/audiorouter-v2.1.0.apk -> APK binary           │
+│  - CORS configured for app domain                            │
+│  - HTTPS enforced (TLS 1.2+)                                 │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  VYZORIX AUDIO ROUTER (DAEMON)                │
+│  - NetworkStateMonitor detects internet connectivity         │
+│  - UpdateChecker polls /api/v1/version on schedule           │
+│  - Compares remote version vs local BuildConfig.VERSION_CODE  │
+│  - If update available:                                      │
+│      1. Shows "Update available" notification                │
+│      2. User taps notification                               │
+│      3. UpdateDownloader starts foreground download service   │
+│      4. Downloads APK to cacheDir/updates/                   │
+│      5. Verifies SHA-256 checksum                            │
+│      6. UpdateInstaller triggers ACTION_INSTALL_PACKAGE       │
+│      7. System shows "Install this update?" dialog           │
+│      8. User confirms -> APK installed                       │
+│      9. Daemon restarts with new version                     │
+│     10. BootStateRestorer resumes from last known state      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -284,20 +284,20 @@ jobs:
 
 ```
 vyzorix-update-server/
- bin/
-    audiorouter-v2.0.0.apk
-    audiorouter-v2.1.0.apk
-    audiorouter-v2.2.0.apk          # New APKs added by GitHub Actions
- api/
-    v1/
-        version.json                 # Updated by GitHub Actions
-        changelog.json               # Updated by GitHub Actions
- public/
-    index.html                       # Simple landing page (optional)
- package.json                         # Express.js dependencies
- server.js                            # Express server
- nginx.conf                           # Nginx configuration
- Dockerfile                           # Container definition
+├── bin/
+│   ├── audiorouter-v2.0.0.apk
+│   ├── audiorouter-v2.1.0.apk
+│   └── audiorouter-v2.2.0.apk          # New APKs added by GitHub Actions
+├── api/
+│   └── v1/
+│       ├── version.json                 # Updated by GitHub Actions
+│       └── changelog.json               # Updated by GitHub Actions
+├── public/
+│   └── index.html                       # Simple landing page (optional)
+├── package.json                         # Express.js dependencies
+├── server.js                            # Express server
+├── nginx.conf                           # Nginx configuration
+└── Dockerfile                           # Container definition
 ```
 
 ### Express.js Server (server.js)
