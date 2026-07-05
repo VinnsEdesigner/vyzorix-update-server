@@ -3,6 +3,7 @@ package keys
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -154,10 +155,11 @@ func (s *Service) ValidateKey(ctx context.Context, fullKey string) (*domain.APIK
 }
 
 // IncrementUsage increments the request counter for an API key.
-// VerifyKey verifies a key against a stored hash.
+// VerifyKey verifies a key against a stored hash using constant-time comparison.
 func (s *Service) VerifyKey(fullKey, keyHash string) bool {
 	hashedKey := hashKeyValue(fullKey)
-	return hashedKey == keyHash
+	// Use constant-time comparison to prevent timing attacks
+	return subtle.ConstantTimeCompare([]byte(hashedKey), []byte(keyHash)) == 1
 }
 
 func (s *Service) IncrementUsage(ctx context.Context, keyID string) error {
