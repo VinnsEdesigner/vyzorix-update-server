@@ -130,6 +130,8 @@ func (s *Server) setupAuthenticatedRoutes() {
 	// This allows both session auth AND API key auth for tenant endpoints
 	if s.apiKeyAuth != nil {
 		tenantGroup.Use(s.apiKeyAuth.Middleware())
+		// Apply scope enforcement middleware - ensures API keys respect their scope
+		tenantGroup.Use(s.apiKeyAuth.ScopeEnforcement(middleware.MethodToScope))
 		// Apply API key rate limiting after auth
 		if s.apiKeyRateLimiter != nil {
 			tenantGroup.Use(middleware.APIKeyRateLimitMiddleware(s.apiKeyRateLimiter))
