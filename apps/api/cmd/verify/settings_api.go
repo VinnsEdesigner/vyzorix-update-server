@@ -35,7 +35,7 @@ type sImpl struct {
 func verifySettings() bool {
 	fmt.Println()
 	fmt.Println("  SERVER_BACKEND_SETTINGS_API.md VERIFICATION                            ")
-	fmt.Println("")
+	fmt.Println()
 	root := "/workspace/project/vyzorix-update-server"
 	spec := sLoadSpec()
 	impl := sScanImpl(root)
