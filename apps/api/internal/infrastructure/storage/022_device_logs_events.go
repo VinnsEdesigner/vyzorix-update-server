@@ -7,7 +7,7 @@ import (
 
 // migrateCreateDeviceLogsAndEvents creates device_logs table.
 // NOTE: device_events table is created by migration 034 (migrateDeviceEvents)
-// to ensure consistent schema with timestamp and data JSONB columns.
+// to ensure consistent schema with timestamp and data columns (TEXT in SQLite).
 func migrateCreateDeviceLogsAndEvents(db *sql.DB) error {
 	// Create device_logs table per SERVER_BACKEND_DASHBOARD_COMMANDS_API.md Section 4.1
 	_, err := db.ExecContext(context.Background(), `
