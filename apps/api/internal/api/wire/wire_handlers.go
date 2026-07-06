@@ -59,7 +59,7 @@ type HandlerDependencies struct {
 	UpdatesStorage *storage.UpdatesStorage
 	AuthService    *auth.AuthService
 	Config         config.Config
-	APIKeyService  *keys.Service
+	APIKeyService  *keys.APIKeyService
 }
 
 // HandlerSet contains all handler instances.

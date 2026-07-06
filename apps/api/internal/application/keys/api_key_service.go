@@ -37,22 +37,22 @@ func DefaultConfig() Config {
 	}
 }
 
-// Service handles API key business logic.
-type Service struct {
+// APIKeyService handles API key business logic.
+type APIKeyService struct {
 	repo   infraStorage.APIKeyRepository
 	config Config
 }
 
-// NewService creates a new API key service.
-func NewService(repo infraStorage.APIKeyRepository, config Config) *Service {
-	return &Service{
+// NewAPIKeyService creates a new API key service.
+func NewAPIKeyService(repo infraStorage.APIKeyRepository, config Config) *APIKeyService {
+	return &APIKeyService{
 		repo:   repo,
 		config: config,
 	}
 }
 
 // GenerateKey generates a new API key and returns the full key (only time it's available).
-func (s *Service) GenerateKey(ctx context.Context, operatorID string, req *domain.CreateAPIKeyRequest) (*domain.APIKeyWithFullKey, error) {
+func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req *domain.CreateAPIKeyRequest) (*domain.APIKeyWithFullKey, error) {
 	// Validate name
 	if len(req.Name) > s.config.MaxNameLength {
 		return nil, domain.ErrKeyNameTooLong
@@ -131,7 +131,7 @@ func (s *Service) GenerateKey(ctx context.Context, operatorID string, req *domai
 }
 
 // ValidateKey validates an API key and returns the key if valid.
-func (s *Service) ValidateKey(ctx context.Context, fullKey string) (*domain.APIKey, error) {
+func (s *APIKeyService) ValidateKey(ctx context.Context, fullKey string) (*domain.APIKey, error) {
 	keyHash := hashKeyValue(fullKey)
 
 	key, err := s.repo.GetByKeyHash(ctx, keyHash)
@@ -156,18 +156,18 @@ func (s *Service) ValidateKey(ctx context.Context, fullKey string) (*domain.APIK
 
 // IncrementUsage increments the request counter for an API key.
 // VerifyKey verifies a key against a stored hash using constant-time comparison.
-func (s *Service) VerifyKey(fullKey, keyHash string) bool {
+func (s *APIKeyService) VerifyKey(fullKey, keyHash string) bool {
 	hashedKey := hashKeyValue(fullKey)
 	// Use constant-time comparison to prevent timing attacks
 	return subtle.ConstantTimeCompare([]byte(hashedKey), []byte(keyHash)) == 1
 }
 
-func (s *Service) IncrementUsage(ctx context.Context, keyID string) error {
+func (s *APIKeyService) IncrementUsage(ctx context.Context, keyID string) error {
 	return s.repo.IncrementRequestCount(ctx, keyID)
 }
 
 // ListKeys lists all API keys for an operator.
-func (s *Service) ListKeys(ctx context.Context, operatorID string, page, limit int) (*domain.ListAPIKeysResponse, error) {
+func (s *APIKeyService) ListKeys(ctx context.Context, operatorID string, page, limit int) (*domain.ListAPIKeysResponse, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -209,7 +209,7 @@ func (s *Service) ListKeys(ctx context.Context, operatorID string, page, limit i
 }
 
 // GetKey gets a single API key by ID.
-func (s *Service) GetKey(ctx context.Context, operatorID, keyID string) (*domain.APIKey, error) {
+func (s *APIKeyService) GetKey(ctx context.Context, operatorID, keyID string) (*domain.APIKey, error) {
 	key, err := s.repo.GetByID(ctx, keyID)
 	if err != nil {
 		return nil, domain.ErrAPIKeyNotFound
@@ -224,7 +224,7 @@ func (s *Service) GetKey(ctx context.Context, operatorID, keyID string) (*domain
 }
 
 // UpdateKey updates an API key (name and/or scope).
-func (s *Service) UpdateKey(ctx context.Context, operatorID, keyID string, req *domain.UpdateAPIKeyRequest) (*domain.APIKey, error) {
+func (s *APIKeyService) UpdateKey(ctx context.Context, operatorID, keyID string, req *domain.UpdateAPIKeyRequest) (*domain.APIKey, error) {
 	key, err := s.repo.GetByID(ctx, keyID)
 	if err != nil {
 		return nil, domain.ErrAPIKeyNotFound
@@ -261,7 +261,7 @@ func (s *Service) UpdateKey(ctx context.Context, operatorID, keyID string, req *
 }
 
 // RevokeKey revokes an API key.
-func (s *Service) RevokeKey(ctx context.Context, operatorID, keyID string) error {
+func (s *APIKeyService) RevokeKey(ctx context.Context, operatorID, keyID string) error {
 	key, err := s.repo.GetByID(ctx, keyID)
 	if err != nil {
 		return domain.ErrAPIKeyNotFound
@@ -276,12 +276,12 @@ func (s *Service) RevokeKey(ctx context.Context, operatorID, keyID string) error
 }
 
 // ForceRevokeKey force revokes an API key (super admin only).
-func (s *Service) ForceRevokeKey(ctx context.Context, keyID string) error {
+func (s *APIKeyService) ForceRevokeKey(ctx context.Context, keyID string) error {
 	return s.repo.Revoke(ctx, keyID)
 }
 
 // RotateKey rotates an API key, generating a new key and invalidating the old one.
-func (s *Service) RotateKey(ctx context.Context, operatorID, keyID string) (*domain.APIKeyWithFullKey, error) {
+func (s *APIKeyService) RotateKey(ctx context.Context, operatorID, keyID string) (*domain.APIKeyWithFullKey, error) {
 	key, err := s.repo.GetByID(ctx, keyID)
 	if err != nil {
 		return nil, domain.ErrAPIKeyNotFound
@@ -292,16 +292,16 @@ func (s *Service) RotateKey(ctx context.Context, operatorID, keyID string) (*dom
 		return nil, domain.ErrAPIKeyNotFound
 	}
 
+	// Preserve expiry time before revoking (copy value, not pointer)
+	var expiresAt *int64
+	if key.ExpiresAt != nil {
+		expiresAtVal := *key.ExpiresAt
+		expiresAt = &expiresAtVal
+	}
+
 	// Revoke the old key
 	if revokeErr := s.repo.Revoke(ctx, keyID); revokeErr != nil {
 		return nil, fmt.Errorf("failed to revoke old key: %w", revokeErr)
-	}
-
-	// Generate a new key with the same settings
-	req := &domain.CreateAPIKeyRequest{
-		Name:          key.Name,
-		Scope:         domain.Scope(key.Scope),
-		
 	}
 
 	// Re-check monthly limit (we're creating a new key)
@@ -330,11 +330,11 @@ func (s *Service) RotateKey(ctx context.Context, operatorID, keyID string) (*dom
 	newKey := &infraStorage.APIKey{
 		ID:         uuid.Must(uuid.NewV7()).String(),
 		OperatorID: operatorID,
-		Name:       req.Name,
+		Name:       key.Name,
 		KeyPrefix:  prefix,
 		KeyHash:    keyHash,
-		Scope:      string(req.Scope),
-		ExpiresAt:  key.ExpiresAt, // Keep the same expiry
+		Scope:      key.Scope,
+		ExpiresAt:  expiresAt, // Keep the same expiry (copied value, not pointer)
 		IsActive:   true,
 		CreatedAt:  now.UnixMilli(),
 		UpdatedAt:  now.UnixMilli(),
@@ -456,7 +456,7 @@ func IsValidScope(s string) bool {
 }
 
 // ListAllKeys lists all API keys across all operators (super admin only).
-func (s *Service) ListAllKeys(ctx context.Context, page, limit int) (*domain.ListAllAPIKeysResponse, error) {
+func (s *APIKeyService) ListAllKeys(ctx context.Context, page, limit int) (*domain.ListAllAPIKeysResponse, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -490,7 +490,7 @@ func (s *Service) ListAllKeys(ctx context.Context, page, limit int) (*domain.Lis
 }
 
 // GetGlobalStats returns global API key statistics (super admin only).
-func (s *Service) GetGlobalStats(ctx context.Context) (*domain.GlobalAPIKeyStats, error) {
+func (s *APIKeyService) GetGlobalStats(ctx context.Context) (*domain.GlobalAPIKeyStats, error) {
 	totalActive, err := s.repo.CountAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count all keys: %w", err)

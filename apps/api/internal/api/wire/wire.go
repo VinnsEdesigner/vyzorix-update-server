@@ -51,7 +51,7 @@ type ServerDependencies struct {
 	TelemetryRepo  *storage.TelemetryRepository
 	UpdatesStorage *storage.UpdatesStorage
 	UpdatesService *updatesapp.Service
-	APIKeyService  *keys.Service
+	APIKeyService  *keys.APIKeyService
 	Config         infraConfig.Config
 }
 
