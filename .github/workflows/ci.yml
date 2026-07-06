@@ -260,7 +260,7 @@ jobs:
         run: |
           # Start fresh container for health check with SSR fully disabled
           docker run -d --name vyzorix-health \
-            -e TOKEN_SECRET=test-secret-minimum-32-chars!! \
+            -e SERVER_API_TOKEN=test-secret-minimum-32-chars!! \
             -e JWT_SECRET=test-jwt-secret-minimum-32-chars!! \
             -e SSR_ENABLED=false \
             -e SSR_AUTO_BUILD=false \
@@ -268,6 +268,11 @@ jobs:
             -p 3002:3000 \
             vyzorix-update-server:latest
           sleep 10
+
+          # Debug: check container logs
+          echo "=== Container logs ==="
+          docker logs vyzorix-health || true
+          echo "=== End logs ==="
 
           # Test health endpoint
           curl -f http://localhost:3002/health || exit 1
