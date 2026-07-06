@@ -54,17 +54,15 @@ jobs:
           go-version: '1.26'
 
       - name: Run GoSec
-        uses: securego/gosec@master
-        with:
-          args: '-no-fail -fmt json -out=gosec-results.json ./...'
-          working-directory: apps/api
+        run: |
+          cd apps/api
+          gosec -no-fail -fmt json -out=gosec-results.json ./...
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
           version: 'v2.12.2'
           working-directory: apps/api
-          args: --format json > golangci-lint-results.json
 
       - name: Upload SAST results
         uses: actions/upload-artifact@v4
@@ -72,8 +70,8 @@ jobs:
         with:
           name: sast-results
           path: |
-            gosec-results.json
-            golangci-lint-results.json
+            apps/api/gosec-results.json
+            apps/api/golangci-lint-results.json
           retention-days: 30
 
   # ============================================================================
@@ -153,7 +151,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest'
+          image-ref: 'ghcr.io/${{ github.repository_owner_lowercase }}/vyzorix-update-server/vyzorix:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -214,7 +212,7 @@ jobs:
     name: Build Container
     runs-on: ubuntu-latest
     outputs:
-      image: ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest
+      image: ghcr.io/${{ github.repository_owner_lowercase }}/vyzorix-update-server/vyzorix:latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -233,6 +231,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: false
-          tags: ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest
+          tags: ghcr.io/${{ github.repository_owner_lowercase }}/vyzorix-update-server/vyzorix:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
