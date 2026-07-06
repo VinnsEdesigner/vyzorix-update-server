@@ -7,6 +7,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
@@ -26,6 +28,8 @@ type MiddlewareConfig struct {
 	RateLimitPerMin  int
 	AuthRateLimitMin int
 	EnforceHMAC      bool
+	APIKeyService    *keys.APIKeyService
+	AuditLogger      *audit.Logger
 }
 
 // MiddlewareSet contains all middleware instances.
@@ -42,6 +46,8 @@ type MiddlewareSet struct {
 	EncryptKeyFn      func(clientID string) ([]byte, bool)
 	RateLimiter       *middleware.RateLimiter
 	AuthLimiter       *middleware.RateLimiter
+	TenantAPIKeyAuth  *middleware.TenantAPIKeyAuth
+	APIKeyRateLimiter *middleware.InMemoryRateLimiter
 }
 
 // WireMiddleware creates and wires all middleware instances.
@@ -75,6 +81,12 @@ func WireMiddleware(cfg MiddlewareConfig) *MiddlewareSet {
 	ms.RevocationList = ms.Factory.GetRevocationList()
 	ms.IPIntelligence = ms.Factory.IPIntelligence()
 	ms.SignatureVerifier = ms.Factory.GetSignatureVerifier()
+
+	// Wire API key middleware if service is available
+	if cfg.APIKeyService != nil && cfg.AuditLogger != nil {
+		ms.TenantAPIKeyAuth = middleware.NewTenantAPIKeyAuth(cfg.APIKeyService, cfg.AuditLogger)
+		ms.APIKeyRateLimiter = middleware.NewInMemoryRateLimiter(100, time.Minute)
+	}
 
 	return ms
 }
