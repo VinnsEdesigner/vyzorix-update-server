@@ -1,49 +1,34 @@
-version: 2
+version: "2"
 
 run:
   timeout: 5m
   tests: false
 
-issues:
-  exclude-rules:
-    - path: "cmd/verify"
-      linters:
-        - gosec
-        - funlen
-        - gocyclo
-    - path: "internal/api/wire|internal/api/api_server"
-      linters:
-        - staticcheck
-    - path: "internal/domain/event/event_entity.go"
-      linters:
-        - exhaustive
-    - path: "internal/application/event/event_processor.go"
-      linters:
-        - exhaustive
-    - path: "internal/application/inbox/inbox_service.go"
-      linters:
-        - unused
-    - path: "internal/application/keys/service.go"
-      linters:
-        - unparam
-
 linters:
-  enable:
-    - errcheck
-    - godot
-    - govet
-  disable:
-    - errorlint
-    - exhaustive
-    - gosec
-    - funlen
-    - gocyclo
-    - staticcheck
-    - unused
-    - unparam
-
-linters-settings:
-  godot:
-    scope: all
-    exclude:
-      - "^// Exported:"
+  exclusions:
+    rules:
+      - path: "cmd/verify"
+        linters:
+          - gosec
+          - funlen
+          - gocyclo
+      - path: "internal/api/wire|internal/api/api_server"
+        linters:
+          - staticcheck
+      - path: "internal/domain/event/event_entity.go"
+        linters:
+          - exhaustive
+      - path: "internal/application/event/event_processor.go"
+        linters:
+          - exhaustive
+      - path: "internal/application/inbox/inbox_service.go"
+        linters:
+          - unused
+      - path: "internal/application/keys/service.go"
+        linters:
+          - unparam
+  settings:
+    godot:
+      scope: all
+      exclude:
+        - "^// Exported:"

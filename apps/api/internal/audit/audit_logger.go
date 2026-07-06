@@ -25,7 +25,7 @@ type Logger struct {
 	log  *slog.Logger
 }
 
-// Compile-time check that Logger implements AuditLogger
+// Compile-time check that Logger implements AuditLogger.
 var _ AuditLogger = (*Logger)(nil)
 
 // NoOpLogger is a no-operation audit logger for testing.

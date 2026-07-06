@@ -5,7 +5,7 @@
 # =============================================================================
 # Stage 1: Go Builder - Build the Go server binary
 # =============================================================================
-FROM golang:1.24 AS go-builder
+FROM golang:1.26 AS go-builder
 
 WORKDIR /app
 
