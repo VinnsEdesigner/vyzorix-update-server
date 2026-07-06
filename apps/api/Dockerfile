@@ -88,7 +88,7 @@ COPY --from=web-builder /app/package.json /app/pnpm-lock.yaml* ./
 RUN node -e "const pkg = require('./package.json'); pkg.type = 'module'; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));"
 
 # Install all dependencies (vite is in devDependencies but needed for SSR)
-RUN npm install --ignore-scripts
+RUN npm install --ignore-scripts --legacy-peer-deps
 
 # Environment variables
 ENV PORT=3000 \
