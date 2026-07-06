@@ -259,8 +259,10 @@ jobs:
       - name: Health check
         run: |
           # Start fresh container for health check with SSR fully disabled
+          # Both API_KEY_primary and SERVER_API_TOKEN are required in production mode
           docker run -d --name vyzorix-health \
             -e API_KEY_primary=test-secret-minimum-32-chars!! \
+            -e SERVER_API_TOKEN=test-secret-minimum-32-chars!! \
             -e JWT_SECRET=test-jwt-secret-minimum-32-chars!! \
             -e SSR_ENABLED=false \
             -e SSR_AUTO_BUILD=false \
