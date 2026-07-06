@@ -986,48 +986,42 @@ UI Layer ────────► Presentation Layer ────────
 ```
 apps/web/src/
 │
-├── domain/                              # DOMAIN LAYER (NEW)
-│   │
-│   ├── common/
-│   │   ├── pagination.ts               # Pagination types & helpers
-│   │   ├── error.ts                    # Domain error types
-│   │   └── types.ts                    # Shared domain types
+├── domain/                              # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
+│   ├── _shared/                      # SHARED domain types
+│   │   ├── domain-pagination.ts    # Pagination types & helpers
+│   │   └── domain-errors.ts        # Domain error types
 │   │
 │   ├── registration/
-│   │   ├── registration-types.ts        # InboxEntry, InboxStatus
-│   │   ├── registration-transforms.ts  # inboxFromRaw(), deviceFromRaw()
-│   │   └── registration-validation.ts  # validateIMEI(), validateInboxEntry()
+│   │   ├── registration-entity.ts   # InboxEntry, InboxStatus
+│   │   ├── registration-mappers.ts # inboxFromRaw(), deviceFromRaw()
+│   │   └── registration-validators.ts # validateIMEI(), validateInboxEntry()
 │   │
 │   └── devices/
-│       ├── device-types.ts              # Device, DeviceStatus, ConnectionState
-│       └── device-transforms.ts         # deviceFromRaw(), connectionFromRaw()
+│       ├── device-entity.ts         # Device, DeviceStatus, ConnectionState
+│       └── device-mappers.ts        # deviceFromRaw(), connectionFromRaw()
 │
 ├── lib/
 │   └── api/
 │       ├── graphql/
-│       │   ├── client.ts               # (EXISTING - Apollo client)
-│       │   ├── query-client.ts         # (EXISTING - React Query)
+│       │   ├── _shared/
+│       │   │   └── graphql-client.ts  # GraphQL client setup
 │       │   │
-│       │   ├── queries/
-│       │   │   ├── registration-queries.ts     # GET_INBOX, GET_INBOX_ENTRY
-│       │   │   ├── device-queries.ts          # GET_DEVICES, GET_DEVICE
-│       │   │   └── index.ts           # Barrel export
+│       │   ├── registration/
+│       │   │   ├── graphql-registration-queries.ts   # GET_INBOX, GET_INBOX_ENTRY
+│       │   │   ├── graphql-registration-mutations.ts # ACK_INBOX, REGISTER, DEREGISTER
+│       │   │   ├── graphql-registration-fragments.ts # InboxEntry & device fragments
+│       │   │   └── graphql-registration-types.ts     # Raw GraphQL response types
 │       │   │
-│       │   ├── mutations/
-│       │   │   ├── registration-mutations.ts   # ACK_INBOX, REGISTER, DEREGISTER
-│       │   │   └── index.ts           # Barrel export
-│       │   │
-│       │   ├── fragments/
-│       │   │   ├── inbox-entry.fragment.ts
-│       │   │   ├── device.fragment.ts
-│       │   │   └── index.ts
-│       │   │
-│       │   └── api-response-types.ts  # (EXISTING)
+│       │   └── devices/
+│       │       ├── graphql-devices-queries.ts   # GET_DEVICES, GET_DEVICE
+│       │       ├── graphql-devices-fragments.ts # Device fragments
+│       │       └── graphql-devices-types.ts     # Raw GraphQL response types
 │       │
 │       └── rest/
-│           ├── client.ts               # Base REST client
-│           ├── endpoints.ts            # (EXISTING)
-│           └── registration-rest.ts    # REST fallback
+│           ├── _shared/
+│           │   └── rest-client.ts     # Base REST client
+│           └── registration/
+│               └── rest-registration-endpoints.ts  # REST fallback
 │
 ├── hooks/                               # PRESENTATION LAYER
 │   │
