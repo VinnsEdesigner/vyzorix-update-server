@@ -157,56 +157,56 @@ UI Layer ────────► Presentation Layer ────────
 ```
 apps/web/src/
 │
-├── domain/                          # DOMAIN LAYER (NEW)
-│   ├── common/
-│   │   ├── pagination.ts            # Pagination types & helpers
-│   │   ├── error.ts                # Domain error types
-│   │   └── types.ts                 # Shared domain types
+├── domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
+│   ├── _shared/                   # SHARED domain types
+│   │   ├── domain-pagination.ts  # Pagination types & helpers
+│   │   └── domain-errors.ts      # Domain error types
 │   │
 │   ├── commands/
-│   │   ├── command-types.ts         # Command, CommandStatus, PresetCommand
-│   │   ├── command-transforms.ts    # commandFromRaw(), commandToApi()
-│   │   ├── command-validation.ts    # validateCommand(), validateStatus()
-│   │   └── command-presets.ts       # Preset command definitions
+│   │   ├── command-entity.ts     # Command, CommandStatus, PresetCommand
+│   │   ├── command-mappers.ts    # commandFromRaw(), commandToApi()
+│   │   ├── command-validators.ts # validateCommand(), validateStatus()
+│   │   └── command-constants.ts  # Preset command definitions
 │   │
 │   ├── logs/
-│   │   ├── log-types.ts             # LogEntry, LogLevel, LogSource
-│   │   ├── log-transforms.ts        # logFromRaw()
-│   │   └── log-validation.ts        # validateLogEntry()
+│   │   ├── log-entity.ts         # LogEntry, LogLevel, LogSource
+│   │   ├── log-mappers.ts        # logFromRaw()
+│   │   └── log-filters.ts        # validateLogEntry(), filter functions
 │   │
-│   └── devices/                     # Shared device domain types
-│       ├── device-types.ts          # Device basic types
-│       └── device-transforms.ts      # deviceBasicFromRaw()
+│   └── devices/                  # Shared device domain types
+│       ├── device-entity.ts      # Device basic types
+│       └── device-mappers.ts     # deviceBasicFromRaw()
 │
 ├── lib/
 │   └── api/
 │       ├── graphql/
-│       │   ├── client.ts            # (EXISTING)
-│       │   ├── query-client.ts      # (EXISTING)
+│       │   ├── _shared/
+│       │   │   └── graphql-client.ts  # GraphQL client setup
 │       │   │
-│       │   ├── queries/             # DATA LAYER - GraphQL Queries
-│       │   │   ├── command-queries.ts      # GET_COMMANDS, GET_PENDING_COMMANDS
-│       │   │   ├── log-queries.ts          # GET_LOG_ENTRIES, GET_LOG_STATS
-│       │   │   └── devices.ts       # GET_DEVICES, GET_DEVICE, GET_DEVICE_COUNT
+│       │   ├── commands/
+│       │   │   ├── graphql-commands-queries.ts     # GET_COMMANDS, GET_PENDING_COMMANDS
+│       │   │   ├── graphql-commands-mutations.ts  # SEND_COMMAND, CANCEL_COMMAND, RETRY_COMMAND
+│       │   │   ├── graphql-commands-fragments.ts  # Command fragments
+│       │   │   └── graphql-commands-types.ts     # Raw GraphQL response types
 │       │   │
-│       │   ├── mutations/           # DATA LAYER - GraphQL Mutations
-│       │   │   ├── command-mutations.ts      # SEND_COMMAND, CANCEL_COMMAND, RETRY_COMMAND
-│       │   │   └── index.ts
+│       │   ├── logs/
+│       │   │   ├── graphql-logs-queries.ts        # GET_LOG_ENTRIES, GET_LOG_STATS
+│       │   │   ├── graphql-logs-subscriptions.ts # Real-time log subscription
+│       │   │   ├── graphql-logs-fragments.ts     # Log entry fragments
+│       │   │   └── graphql-logs-types.ts         # Raw GraphQL response types
 │       │   │
-│       │   ├── fragments/           # GraphQL fragments
-│       │   │   ├── command.fragment.ts
-│       │   │   ├── log-entry.fragment.ts
-│       │   │   └── device.fragment.ts
-│       │   │
-│       │   ├── types.ts             # (EXISTING - types mapping)
-│       │   ├── index.ts
-│       │   └── hooks.ts             # (EXISTING - may need refactoring)
+│       │   └── devices/
+│       │       ├── graphql-devices-queries.ts     # GET_DEVICES, GET_DEVICE, GET_DEVICE_COUNT
+│       │       ├── graphql-devices-fragments.ts  # Device fragments
+│       │       └── graphql-devices-types.ts      # Raw GraphQL response types
 │       │
-│       └── rest/                    # DATA LAYER - REST Fallback
-│           ├── client.ts            # Base REST client
-│           ├── endpoints.ts         # (EXISTING)
-│           ├── command-rest.ts          # REST endpoints for commands
-│           └── log-rest.ts              # REST endpoints for logs
+│       └── rest/
+│           ├── _shared/
+│           │   └── rest-client.ts     # Base REST client
+│           ├── commands/
+│           │   └── rest-commands-endpoints.ts    # REST endpoints for commands
+│           └── logs/
+│               └── rest-logs-endpoints.ts        # REST endpoints for logs
 │
 ├── hooks/                           # PRESENTATION LAYER
 │   │
