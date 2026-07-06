@@ -419,14 +419,16 @@ func (l *Logger) APIKeyRotated(ctx context.Context, operatorID, keyID, keyName, 
 }
 
 // APIKeyFailed logs a failed API key authentication attempt.
-func (l *Logger) APIKeyFailed(ctx context.Context, ipAddress, userAgent, reason string) {
+func (l *Logger) APIKeyFailed(ctx context.Context, operatorID, keyPrefix, ipAddress, userAgent, reason string) {
 	l.LogEvent(ctx, &Entry{
-		Action:    ActionAPIKeyFailed,
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
-		Result:    ResultFailure,
+		OperatorID: operatorID,
+		Action:     ActionAPIKeyFailed,
+		IPAddress:  ipAddress,
+		UserAgent:  userAgent,
+		Result:     ResultFailure,
 		Metadata: map[string]string{
-			"reason": reason,
+			"key_prefix": keyPrefix,
+			"reason":     reason,
 		},
 	})
 }

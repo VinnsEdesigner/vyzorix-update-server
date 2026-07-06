@@ -439,7 +439,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		db:                cfg.DB,
 		hub:               cfg.Hub,
 		AuditLogger:       cfg.AuditLogger,
-		apiKeyAuth:        middleware.NewTenantAPIKeyAuth(cfg.APIKeyService, cfg.Config.APIKeyPrefix),
+		apiKeyAuth:        middleware.NewTenantAPIKeyAuth(cfg.APIKeyService, cfg.AuditLogger),
                 apiKeyRateLimiter:   middleware.NewInMemoryRateLimiter(100, time.Minute),
 	}
 

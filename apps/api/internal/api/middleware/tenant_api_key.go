@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	domain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 // =============================================================================
@@ -120,15 +120,15 @@ func IsTenantPath(path string) bool {
 
 // TenantAPIKeyAuth provides tenant API key authentication middleware.
 type TenantAPIKeyAuth struct {
-	service   *keys.APIKeyService
-	keyPrefix string
+	service     *keys.APIKeyService
+	auditLogger *audit.Logger
 }
 
 // NewTenantAPIKeyAuth creates a new TenantAPIKeyAuth middleware.
-func NewTenantAPIKeyAuth(service *keys.APIKeyService, keyPrefix string) *TenantAPIKeyAuth {
+func NewTenantAPIKeyAuth(service *keys.APIKeyService, auditLogger *audit.Logger) *TenantAPIKeyAuth {
 	return &TenantAPIKeyAuth{
-		service:   service,
-		keyPrefix: keyPrefix,
+		service:     service,
+		auditLogger: auditLogger,
 	}
 }
 
@@ -161,6 +161,17 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 		// Extract API key from header
 		apiKey := extractAPIKeyFromHeader(c)
 		if apiKey == "" {
+			// Log missing API key attempt
+			if t.auditLogger != nil {
+				t.auditLogger.APIKeyFailed(
+					c.Request.Context(),
+					"",
+					"",
+					c.ClientIP(),
+					c.GetHeader("User-Agent"),
+					"missing",
+				)
+			}
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   "api_key_required",
 				"message": "X-API-Key header or session required",
@@ -171,6 +182,29 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 		// Validate the key using the service
 		key, err := t.service.ValidateKey(c.Request.Context(), apiKey)
 		if err != nil {
+			// Log failed authentication attempt
+			if t.auditLogger != nil {
+				// Extract key prefix for logging (last 8 chars before the key ID)
+				keyPrefix := ""
+				if len(apiKey) > 8 {
+					keyPrefix = apiKey[:8]
+				}
+				reason := "invalid_api_key"
+				if err.Error() == "api key has expired" {
+					reason = "expired"
+				} else if err.Error() == "api key has been revoked" {
+					reason = "revoked"
+				}
+				t.auditLogger.APIKeyFailed(
+					c.Request.Context(),
+					"", // operatorID unknown for failed auth
+					keyPrefix,
+					c.ClientIP(),
+					c.GetHeader("User-Agent"),
+					reason,
+				)
+			}
+
 			statusCode := http.StatusUnauthorized
 			if err.Error() == "api key has expired" {
 				statusCode = http.StatusUnauthorized
@@ -287,12 +321,4 @@ func MethodToScope(method string) domain.Scope {
 	default:
 		return domain.ScopeRead
 	}
-}
-
-// GenerateKey generates a new API key with the configured prefix.
-func (t *TenantAPIKeyAuth) GenerateKey() (string, string, error) {
-	uidStr := uuid.New().String()
-	fullKey := t.keyPrefix + "_" + uidStr
-	prefix := fullKey[:12]
-	return fullKey, prefix, nil
 }
