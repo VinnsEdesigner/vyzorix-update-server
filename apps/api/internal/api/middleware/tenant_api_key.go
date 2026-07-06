@@ -19,7 +19,7 @@ type PathType int
 const (
 	PathTypeUnknown        PathType = iota
 	PathTypePublic                  // No auth required
-	PathTypeInfrastructure          // Env API Key (TokenSecret)
+	PathTypeInfrastructure          // Env API Key (ServerAPIToken)
 	PathTypeSessionOnly             // Session Cookie required
 	PathTypeDeviceAuth              // HMAC Signature
 	PathTypeTenant                  // Session OR API Key + Scope
@@ -36,7 +36,7 @@ var PathBoundaries = map[string]PathType{
 	"/v1/device/":          PathTypePublic, // /v1/device/:imei/status - device status check
 	"/metrics":             PathTypePublic, // Prometheus scraping
 
-	// INFRASTRUCTURE - TokenSecret (env var) - handled at route level
+	// INFRASTRUCTURE - ServerAPIToken (env var) - handled at route level
 	// /admin/*, /internal/*, /healthz
 
 	// SESSION ONLY - Session Cookie required (no API key)

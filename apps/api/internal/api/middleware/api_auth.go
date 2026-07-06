@@ -6,7 +6,7 @@ import (
 )
 
 type Authenticator struct {
-	TokenSecret       string
+	ServerAPIToken       string
 	DevelopmentBypass bool
 }
 
@@ -17,14 +17,14 @@ func (a Authenticator) Middleware() gin.HandlerFunc {
 			return
 		}
 
-		if a.TokenSecret == "" {
+		if a.ServerAPIToken == "" {
 			c.JSON(401, map[string]string{"error": "unauthorized", "message": "invalid or missing dashboard token"})
 			c.Abort()
 
 			return
 		}
 
-		if c.GetHeader("Authorization") == "Bearer "+a.TokenSecret || c.GetHeader("X-Vyzorix-Token") == a.TokenSecret {
+		if c.GetHeader("Authorization") == "Bearer "+a.ServerAPIToken || c.GetHeader("X-Vyzorix-Token") == a.ServerAPIToken {
 			c.Next()
 			return
 		}

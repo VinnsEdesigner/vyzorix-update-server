@@ -24,11 +24,17 @@ func (e *ValidationError) Error() string {
 type ConfigValidator struct {
 	errs   []ValidationError
 	config Config
+	ssrCfg SSRConfig
 }
 
 // NewValidator creates a new config validator with the given configuration.
 func NewValidator(cfg Config) *ConfigValidator {
 	return &ConfigValidator{config: cfg, errs: make([]ValidationError, 0)}
+}
+
+// NewValidatorWithSSR creates a new config validator with SSR configuration.
+func NewValidatorWithSSR(cfg Config, ssrCfg SSRConfig) *ConfigValidator {
+	return &ConfigValidator{config: cfg, ssrCfg: ssrCfg, errs: make([]ValidationError, 0)}
 }
 
 // Validate runs all validation checks and returns all errors found.
@@ -44,6 +50,7 @@ func (v *ConfigValidator) Validate() []ValidationError {
 	v.validateSession()
 	v.validateRateLimits()
 	v.validateTimeWindows()
+	v.validateSSR()
 
 	return v.errs
 }
@@ -69,13 +76,13 @@ func (v *ConfigValidator) validatePort() {
 
 // validateSecrets validates all secret values meet minimum requirements.
 func (v *ConfigValidator) validateSecrets() {
-	// TOKEN_SECRET: min 32 chars in production
-	if v.config.TokenSecret == "" {
+	// SERVER_API_TOKEN: min 32 chars in production
+	if v.config.ServerAPIToken == "" {
 		if v.config.Env == "production" {
-			v.addError("TOKEN_SECRET", "is required in production")
+			v.addError("SERVER_API_TOKEN", "is required in production")
 		}
-	} else if v.config.Env == "production" && len(v.config.TokenSecret) < 32 {
-		v.addError("TOKEN_SECRET", "must be at least 32 characters in production")
+	} else if v.config.Env == "production" && len(v.config.ServerAPIToken) < 32 {
+		v.addError("SERVER_API_TOKEN", "must be at least 32 characters in production")
 	}
 
 	// JWT_SECRET: min 32 chars in production
@@ -264,8 +271,47 @@ func (v *ConfigValidator) Err() error {
 	return nil
 }
 
+// validateSSR validates SSR server configuration.
+func (v *ConfigValidator) validateSSR() {
+	if !v.ssrCfg.EnableSSR {
+		return
+	}
+
+	// SSR_SERVER_URL is required when SSR is enabled
+	if v.ssrCfg.SSRServerURL == "" {
+		v.addError("SSR_SERVER_URL", "is required when SSR_ENABLED=true")
+		return
+	}
+
+	// Validate URL format
+	if _, err := url.Parse(v.ssrCfg.SSRServerURL); err != nil {
+		v.addError("SSR_SERVER_URL", fmt.Sprintf("must be a valid URL, got: %q", v.ssrCfg.SSRServerURL))
+	}
+
+	// SSR_BUILD_TIMEOUT: should be reasonable (30s - 10min)
+	if v.ssrCfg.SSRBuildTimeout < 30 || v.ssrCfg.SSRBuildTimeout > 600 {
+		v.addError("SSR_BUILD_TIMEOUT", "should be between 30 and 600 seconds")
+	}
+
+	// SSR_HEALTH_CHECK_INTERVAL: should be reasonable (5s - 5min)
+	if v.ssrCfg.SSRHealthCheckInterval < 5 || v.ssrCfg.SSRHealthCheckInterval > 300 {
+		v.addError("SSR_HEALTH_CHECK_INTERVAL", "should be between 5 and 300 seconds")
+	}
+
+	// SSR_RETRY_ATTEMPTS: should be reasonable (1 - 10)
+	if v.ssrCfg.SSRRetryAttempts < 1 || v.ssrCfg.SSRRetryAttempts > 10 {
+		v.addError("SSR_RETRY_ATTEMPTS", "should be between 1 and 10")
+	}
+}
+
 // Validate runs validation on the given config and returns an error if invalid.
 func Validate(cfg Config) error {
 	validator := NewValidator(cfg)
+	return validator.Err()
+}
+
+// ValidateWithSSR runs validation on the given config with SSR config.
+func ValidateWithSSR(cfg Config, ssrCfg SSRConfig) error {
+	validator := NewValidatorWithSSR(cfg, ssrCfg)
 	return validator.Err()
 }

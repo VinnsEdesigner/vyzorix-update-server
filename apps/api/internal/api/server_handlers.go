@@ -115,20 +115,15 @@ func (s *Server) serveStaticFile(c *gin.Context, path, ct string) {
 	c.File(path)
 }
 
-// dashboardHandler serves the dashboard or SPA.
+// dashboardHandler serves the dashboard or landing page.
 func (s *Server) dashboardHandler(c *gin.Context) {
 	path := c.Request.URL.Path
 
-	// / → serve the native static landing page (pure HTML, no React).
-	if path == "/" {
-		c.File(filepath.Join(s.config.PublicDir, "landing.html"))
-		return
-	}
-
-	// All other non-API paths → serve the React SPA (index.html).
+	// All non-API paths → serve the landing page first (fallback).
+	// SSR middleware handles "/" when enabled (proxies to SSR or serves fallback landing.html).
 	clean := strings.TrimPrefix(filepath.Clean(path), "/")
 	if clean == "." || clean == "" {
-		clean = "index.html"
+		clean = "landing.html"
 	}
 
 	candidate := filepath.Join(s.config.PublicDir, clean)
@@ -137,7 +132,7 @@ func (s *Server) dashboardHandler(c *gin.Context) {
 		return
 	}
 
-	c.File(filepath.Join(s.config.PublicDir, "index.html"))
+	c.File(filepath.Join(s.config.PublicDir, "landing.html"))
 }
 
 // requireHMAC is middleware that validates HMAC signatures for device API requests.

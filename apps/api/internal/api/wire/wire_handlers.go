@@ -9,7 +9,6 @@ import (
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
 	operatorhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/operator"
-	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
@@ -71,7 +70,6 @@ type HandlerSet struct {
 	TelemetryHistory    *handlers.TelemetryHistoryHandler
 	ConnectionStatus    *handlers.ConnectionStatusHandler
 	AdminClients        *admin.ClientsHandler
-	Updater             *updaterhandlers.Handler
 	Updates             *updateshandlers.UpdatesHandler
 	UpdatesService      *updatesapplication.Service
 	ThresholdHandler    *operatorhandlers.ThresholdHandler
@@ -129,9 +127,6 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	// Admin handlers
 	hs.AdminClients = admin.NewClientsHandler(deps.ClientService)
 
-	// Updater handlers
-	hs.Updater = updaterhandlers.NewHandler(deps.Log, deps.Config)
-
 	// Updates handlers
 	if deps.UpdatesStorage != nil && deps.DeviceService != nil {
 		// Create sub-services
@@ -179,7 +174,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		// Create rate limiter middleware for updates endpoints
 		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(nil)
 
-		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, updatesRateLimiters, deps.AuditLogger, deps.Config.GitHubWebhookSecret)
+		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, pushSvc, updatesRateLimiters, deps.AuditLogger, deps.Config.GitHubWebhookSecret)
 		hs.UpdatesService = updatesService
 	}
 
