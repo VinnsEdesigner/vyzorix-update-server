@@ -133,19 +133,4 @@ USER appuser
 ENTRYPOINT ["/app/vyzorix-update-server"]
 
 # =============================================================================
-# Hardening Notes (for future implementation):
-# =============================================================================
-# 1. Add to run with more security:
-#    docker run --read-only \
-#               --tmpfs /tmp:rw,noexec,nosuid,size=64m \
-#               --cap-drop=ALL \
-#               --security-opt=no-new-privileges:true \
-#               --memory=512m \
-#               --pids-limit=100 \
-#               -v /path/to/data:/data \
-#               vyzorix-update-server:latest
-#
-# 2. Switch to distroless or scratch for minimal image
-# 3. Add AppArmor/SELinux profiles
-# 4. Implement read-only root filesystem where possible
-# =============================================================================
+
