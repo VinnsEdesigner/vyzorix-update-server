@@ -32,7 +32,7 @@ func DefaultIdempotencyConfig() IdempotencyConfig {
 }
 
 // GinIdempotency returns a Gin middleware that handles idempotency keys.
-// This implements Bug 45 fix - enterprise-grade idempotency.
+//
 func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 	if config.TTL == 0 {
 		config.TTL = 24 * time.Hour
