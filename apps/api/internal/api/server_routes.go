@@ -19,6 +19,7 @@ func (s *Server) setupRoutes() {
 	s.setupStaticRoutes()
 	s.setupPublicRoutes()
 	s.setupAuthenticatedRoutes()
+	// Note: setupDashboardRoutes is called within setupAuthenticatedRoutes
 	s.setupMethodHandlers()
 }
 
