@@ -10,11 +10,32 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/uuid"
 )
 
+// AuditLogger defines the interface for audit logging operations.
+type AuditLogger interface {
+	APIKeyCreated(ctx context.Context, operatorID, keyID, keyName, keyPrefix, scope, ipAddress, userAgent string)
+	APIKeyUpdated(ctx context.Context, operatorID, keyID, keyName, changes, ipAddress, userAgent string)
+	APIKeyRevoked(ctx context.Context, operatorID, keyID, keyName, ipAddress, userAgent string)
+	APIKeyRotated(ctx context.Context, operatorID, keyID, keyName, ipAddress, userAgent string)
+	APIKeyFailed(ctx context.Context, operatorID, keyPrefix, ipAddress, userAgent, reason string)
+}
+
 // Logger handles logging of security events to the audit repository.
 type Logger struct {
 	repo *Repository
 	log  *slog.Logger
 }
+
+// Compile-time check that Logger implements AuditLogger
+var _ AuditLogger = (*Logger)(nil)
+
+// NoOpLogger is a no-operation audit logger for testing.
+type NoOpLogger struct{}
+
+func (n *NoOpLogger) APIKeyCreated(ctx context.Context, operatorID, keyID, keyName, keyPrefix, scope, ipAddress, userAgent string) {}
+func (n *NoOpLogger) APIKeyUpdated(ctx context.Context, operatorID, keyID, keyName, changes, ipAddress, userAgent string) {}
+func (n *NoOpLogger) APIKeyRevoked(ctx context.Context, operatorID, keyID, keyName, ipAddress, userAgent string) {}
+func (n *NoOpLogger) APIKeyRotated(ctx context.Context, operatorID, keyID, keyName, ipAddress, userAgent string) {}
+func (n *NoOpLogger) APIKeyFailed(ctx context.Context, operatorID, keyPrefix, ipAddress, userAgent, reason string) {}
 
 // LoggerConfig holds configuration for the audit logger.
 type LoggerConfig struct {

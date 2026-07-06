@@ -13,11 +13,11 @@ import (
 // Handler handles API key management endpoints.
 type Handler struct {
 	service     *apikeyapp.APIKeyService
-	auditLogger *audit.Logger
+	auditLogger audit.AuditLogger
 }
 
 // NewHandler creates a new API key handler.
-func NewHandler(service *apikeyapp.APIKeyService, auditLogger *audit.Logger) *Handler {
+func NewHandler(service *apikeyapp.APIKeyService, auditLogger audit.AuditLogger) *Handler {
 	return &Handler{
 		service:     service,
 		auditLogger: auditLogger,
@@ -76,18 +76,16 @@ func (h *Handler) CreateKey(c *gin.Context) {
 	}
 
 	// Audit log successful key creation
-	if h.auditLogger != nil {
-		h.auditLogger.APIKeyCreated(
-			c.Request.Context(),
-			operatorID,
-			result.ID,
-			result.Name,
-			result.KeyPrefix,
-			string(result.Scope),
-			c.ClientIP(),
-			c.GetHeader("User-Agent"),
-		)
-	}
+	h.auditLogger.APIKeyCreated(
+		c.Request.Context(),
+		operatorID,
+		result.ID,
+		result.Name,
+		result.KeyPrefix,
+		string(result.Scope),
+		c.ClientIP(),
+		c.GetHeader("User-Agent"),
+	)
 
 	// Return the full key only on creation
 	c.JSON(http.StatusCreated, gin.H{
@@ -216,28 +214,26 @@ func (h *Handler) UpdateKey(c *gin.Context) {
 	}
 
 	// Audit log successful key update
-	if h.auditLogger != nil {
-		// Build changes summary
-		changes := ""
-		if req.Name != nil {
-			changes += "name"
-		}
-		if req.Scope != nil {
-			if changes != "" {
-				changes += ", "
-			}
-			changes += "scope"
-		}
-		h.auditLogger.APIKeyUpdated(
-			c.Request.Context(),
-			operatorID,
-			keyID,
-			key.Name,
-			changes,
-			c.ClientIP(),
-			c.GetHeader("User-Agent"),
-		)
+	// Build changes summary
+	changes := ""
+	if req.Name != nil {
+		changes += "name"
 	}
+	if req.Scope != nil {
+		if changes != "" {
+			changes += ", "
+		}
+		changes += "scope"
+	}
+	h.auditLogger.APIKeyUpdated(
+		c.Request.Context(),
+		operatorID,
+		keyID,
+		key.Name,
+		changes,
+		c.ClientIP(),
+		c.GetHeader("User-Agent"),
+	)
 
 	c.JSON(http.StatusOK, key.ToResponse())
 }
@@ -285,16 +281,14 @@ func (h *Handler) RevokeKey(c *gin.Context) {
 	}
 
 	// Audit log successful key revocation
-	if h.auditLogger != nil {
-		h.auditLogger.APIKeyRevoked(
-			c.Request.Context(),
-			operatorID,
-			keyID,
-			key.Name,
-			c.ClientIP(),
-			c.GetHeader("User-Agent"),
-		)
-	}
+	h.auditLogger.APIKeyRevoked(
+		c.Request.Context(),
+		operatorID,
+		keyID,
+		key.Name,
+		c.ClientIP(),
+		c.GetHeader("User-Agent"),
+	)
 
 	c.Status(http.StatusNoContent)
 }
@@ -331,16 +325,14 @@ func (h *Handler) RotateKey(c *gin.Context) {
 	}
 
 	// Audit log successful key rotation
-	if h.auditLogger != nil {
-		h.auditLogger.APIKeyRotated(
-			c.Request.Context(),
-			operatorID,
-			result.ID,
-			result.Name,
-			c.ClientIP(),
-			c.GetHeader("User-Agent"),
-		)
-	}
+	h.auditLogger.APIKeyRotated(
+		c.Request.Context(),
+		operatorID,
+		result.ID,
+		result.Name,
+		c.ClientIP(),
+		c.GetHeader("User-Agent"),
+	)
 
 	// Return the new full key
 	c.JSON(http.StatusOK, gin.H{
