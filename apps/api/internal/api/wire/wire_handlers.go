@@ -5,8 +5,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
-	authapikeyshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
-	adminkeyshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
@@ -15,7 +13,6 @@ import (
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
@@ -59,7 +56,6 @@ type HandlerDependencies struct {
 	UpdatesStorage *storage.UpdatesStorage
 	AuthService    *auth.AuthService
 	Config         config.Config
-	APIKeyService  *keys.APIKeyService
 }
 
 // HandlerSet contains all handler instances.
@@ -80,8 +76,6 @@ type HandlerSet struct {
 	UpdatesService      *updatesapplication.Service
 	ThresholdHandler    *operatorhandlers.ThresholdHandler
 	NotificationHandler *operatorhandlers.NotificationHandler
-		APIKeys            *authapikeyshandlers.Handler
-		SuperAdminAPIKeys  *adminkeyshandlers.SuperAdminHandler
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -185,7 +179,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		// Create rate limiter middleware for updates endpoints
 		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(nil)
 
-		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, pushSvc, updatesRateLimiters, deps.AuditLogger, deps.Config.GitHubWebhookSecret)
+		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, updatesRateLimiters, deps.AuditLogger, deps.Config.GitHubWebhookSecret)
 		hs.UpdatesService = updatesService
 	}
 
@@ -197,12 +191,6 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	notificationSvc := appoperator.NewNotificationService(deps.OperatorRepo)
 	webhookClient := infrawebhook.NewClient(10 * time.Second)
 	hs.NotificationHandler = operatorhandlers.NewNotificationHandler(notificationSvc, webhookClient)
-
-	// API Keys handlers
-	if deps.APIKeyService != nil {
-		hs.APIKeys = authapikeyshandlers.NewHandler(deps.APIKeyService, deps.AuditLogger)
-		hs.SuperAdminAPIKeys = adminkeyshandlers.NewSuperAdminHandler(deps.APIKeyService, deps.AuditLogger)
-	}
 
 	return hs
 }

@@ -57,92 +57,71 @@ func (s *ClientSettingsService) GetSettings(ctx context.Context, operatorID stri
 
 // UpdateClientSettings updates client settings for an operator.
 func (s *ClientSettingsService) UpdateClientSettings(ctx context.Context, operatorID string, input *ClientSettingsInput) (*SettingsResponse, error) {
-	if err := s.validateClientSettings(input); err != nil {
-		return nil, err
-	}
-
-	currentSettings, err := s.operatorRepo.GetOperatorSettings(ctx, operatorID)
-	if err != nil {
-		return nil, err
-	}
-
-	s.applyClientSettings(input, &currentSettings.Client)
-
-	if err = s.operatorRepo.UpdateClientSettings(ctx, operatorID, currentSettings.Client); err != nil {
-		return nil, err
-	}
-
-	return s.buildSettingsResponse(ctx, operatorID, currentSettings.Client)
-}
-
-// validateClientSettings validates the input client settings.
-func (s *ClientSettingsService) validateClientSettings(input *ClientSettingsInput) error {
+	// Validate input
 	if input.RequestTimeoutMs != nil {
 		if *input.RequestTimeoutMs < 500 || *input.RequestTimeoutMs > 60000 {
-			return &ValidationError{Message: "requestTimeoutMs must be between 500 and 60000"}
+			return nil, &ValidationError{Message: "requestTimeoutMs must be between 500 and 60000"}
 		}
 	}
 
 	if input.LogBufferLimit != nil {
 		if *input.LogBufferLimit < 50 || *input.LogBufferLimit > 5000 {
-			return &ValidationError{Message: "logBufferLimit must be between 50 and 5000"}
+			return nil, &ValidationError{Message: "logBufferLimit must be between 50 and 5000"}
 		}
 	}
 
 	if input.SignalHistoryLimit != nil {
 		if *input.SignalHistoryLimit < 30 || *input.SignalHistoryLimit > 2000 {
-			return &ValidationError{Message: "signalHistoryLimit must be between 30 and 2000"}
+			return nil, &ValidationError{Message: "signalHistoryLimit must be between 30 and 2000"}
 		}
 	}
 
+	// Validate ServerURL format if provided
 	if input.ServerURL != nil && *input.ServerURL != "" {
-		if err := s.validateServerURL(*input.ServerURL); err != nil {
-			return err
+		parsedURL, urlErr := url.Parse(*input.ServerURL)
+		if urlErr != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+			return nil, &ValidationError{Message: "serverUrl must be a valid HTTP/HTTPS URL"}
+		}
+		if parsedURL.Host == "" {
+			return nil, &ValidationError{Message: "serverUrl must have a valid host"}
 		}
 	}
 
-	return nil
-}
-
-// validateServerURL validates the server URL format.
-func (s *ClientSettingsService) validateServerURL(serverURL string) error {
-	parsedURL, err := url.Parse(serverURL)
-	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
-		return &ValidationError{Message: "serverUrl must be a valid HTTP/HTTPS URL"}
+	// Get current operator settings to merge with input
+	currentSettings, err := s.operatorRepo.GetOperatorSettings(ctx, operatorID)
+	if err != nil {
+		return nil, err
 	}
-	if parsedURL.Host == "" {
-		return &ValidationError{Message: "serverUrl must have a valid host"}
-	}
-	return nil
-}
 
-// applyClientSettings applies input settings to the client struct.
-func (s *ClientSettingsService) applyClientSettings(input *ClientSettingsInput, client *operator.ClientSettings) {
+	// Apply updates from input to client settings
 	if input.ServerURL != nil {
-		client.ServerURL = *input.ServerURL
+		currentSettings.Client.ServerURL = *input.ServerURL
 	}
 	if input.DeviceID != nil {
-		client.DeviceID = *input.DeviceID
+		currentSettings.Client.DeviceID = *input.DeviceID
 	}
 	if input.RequestTimeoutMs != nil {
-		client.RequestTimeoutMs = *input.RequestTimeoutMs
+		currentSettings.Client.RequestTimeoutMs = *input.RequestTimeoutMs
 	}
 	if input.AutoReconnect != nil {
-		client.AutoReconnect = *input.AutoReconnect
+		currentSettings.Client.AutoReconnect = *input.AutoReconnect
 	}
 	if input.StrictHmac != nil {
-		client.StrictHmac = *input.StrictHmac
+		currentSettings.Client.StrictHmac = *input.StrictHmac
 	}
 	if input.LogBufferLimit != nil {
-		client.LogBufferLimit = *input.LogBufferLimit
+		currentSettings.Client.LogBufferLimit = *input.LogBufferLimit
 	}
 	if input.SignalHistoryLimit != nil {
-		client.SignalHistoryLimit = *input.SignalHistoryLimit
+		currentSettings.Client.SignalHistoryLimit = *input.SignalHistoryLimit
 	}
-}
 
-// buildSettingsResponse builds the full settings response.
-func (s *ClientSettingsService) buildSettingsResponse(ctx context.Context, operatorID string, client operator.ClientSettings) (*SettingsResponse, error) {
+	// Save updated client settings
+	if err = s.operatorRepo.UpdateClientSettings(ctx, operatorID, currentSettings.Client); err != nil {
+		return nil, err
+	}
+
+	// Get full settings to return
 	thresholds, err := s.operatorRepo.GetThresholds(ctx, operatorID)
 	if err != nil {
 		return nil, err
@@ -156,7 +135,7 @@ func (s *ClientSettingsService) buildSettingsResponse(ctx context.Context, opera
 	return &SettingsResponse{
 		Thresholds:    thresholds,
 		Notifications: notifications,
-		Client:        &client,
+		Client:        &currentSettings.Client,
 	}, nil
 }
 

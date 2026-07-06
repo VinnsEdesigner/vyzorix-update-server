@@ -8,12 +8,7 @@ import (
 // Service errors for the inbox package.
 var (
 	ErrInboxNotFound            = errors.New("inbox entry not found")
-	ErrInboxNotPending          = errors.New("inbox entry is not pending")
-	ErrInboxNotAcknowledged     = errors.New("inbox entry is not acknowledged, device must acknowledge first")
-	ErrInboxNotApproved         = errors.New("inbox entry is not approved, cannot resend notification")
-	ErrInboxCannotBeAcknowledged = errors.New("inbox entry cannot be acknowledged, only pending entries can")
-	ErrInboxCannotBeApproved    = errors.New("inbox entry cannot be approved, device must acknowledge first")
-	ErrInboxCannotBeRejected    = errors.New("inbox entry cannot be rejected in current state")
+	ErrInboxNotPending          = errors.New("inbox entry is not pending, cannot acknowledge")
 	ErrInvalidIMEI              = errors.New("invalid IMEI format")
 	ErrInvalidFCMToken          = errors.New("invalid FCM token format")
 	ErrInvalidFirebaseInstallID = errors.New("invalid Firebase install ID format")
@@ -21,8 +16,7 @@ var (
 	ErrAlreadyRegistered        = errors.New("device already registered as confirmed device")
 	ErrDeviceAlreadyExists      = errors.New("device already registered, use re-registration flow")
 	ErrSecretGeneration         = errors.New("failed to generate command secret")
-	ErrInvalidAckAction         = errors.New("invalid acknowledge action")
-	ErrInvalidOperatorAction    = errors.New("invalid operator action")
+	ErrInvalidAckAction         = errors.New("invalid acknowledge action, must be 'approve' or 'reject'")
 	ErrFCMNotification          = errors.New("failed to send FCM notification")
 	ErrUnauthorized             = errors.New("operator not authorized to perform this action")
 )
@@ -65,16 +59,6 @@ func ToServiceError(err error) *ServiceError {
 		return &ServiceError{Code: "not_found", Message: err.Error(), Status: http.StatusNotFound}
 	case errors.Is(err, ErrInboxNotPending):
 		return &ServiceError{Code: "bad_request", Message: err.Error(), Status: http.StatusBadRequest}
-	case errors.Is(err, ErrInboxNotAcknowledged):
-		return &ServiceError{Code: "bad_request", Message: err.Error(), Status: http.StatusBadRequest}
-	case errors.Is(err, ErrInboxNotApproved):
-		return &ServiceError{Code: "bad_request", Message: err.Error(), Status: http.StatusBadRequest}
-	case errors.Is(err, ErrInboxCannotBeAcknowledged):
-		return &ServiceError{Code: "bad_request", Message: err.Error(), Status: http.StatusBadRequest}
-	case errors.Is(err, ErrInboxCannotBeApproved):
-		return &ServiceError{Code: "bad_request", Message: err.Error(), Status: http.StatusBadRequest}
-	case errors.Is(err, ErrInboxCannotBeRejected):
-		return &ServiceError{Code: "bad_request", Message: err.Error(), Status: http.StatusBadRequest}
 	case errors.Is(err, ErrInvalidIMEI):
 		return &ServiceError{Code: "bad_request", Message: err.Error(), Status: http.StatusBadRequest}
 	case errors.Is(err, ErrInvalidFCMToken):
@@ -88,8 +72,6 @@ func ToServiceError(err error) *ServiceError {
 	case errors.Is(err, ErrSecretGeneration):
 		return &ServiceError{Code: "internal_error", Message: err.Error(), Status: http.StatusInternalServerError}
 	case errors.Is(err, ErrInvalidAckAction):
-		return &ServiceError{Code: "bad_request", Message: err.Error(), Status: http.StatusBadRequest}
-	case errors.Is(err, ErrInvalidOperatorAction):
 		return &ServiceError{Code: "bad_request", Message: err.Error(), Status: http.StatusBadRequest}
 	case errors.Is(err, ErrFCMNotification):
 		return &ServiceError{Code: "internal_error", Message: err.Error(), Status: http.StatusInternalServerError}
