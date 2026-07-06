@@ -33,9 +33,9 @@ type drImpl struct {
 }
 
 func verifyDeviceRegistration() bool {
-	fmt.Println("\n")
+	fmt.Println()
 	fmt.Println("  SERVER_BACKEND_DEVICE_REGISTRATION_API.md VERIFICATION                ")
-	fmt.Println("")
+	fmt.Println()
 	root := "/workspace/project/vyzorix-update-server"
 	spec := drLoadSpec()
 	impl := drScanImpl(root)
