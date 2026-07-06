@@ -522,7 +522,7 @@ After 5 failed attempts, trigger FCM fallback for commands.
 ### 6.1 Types
 
 ```typescript
-// domain/realtime/types.ts
+// domain/realtime-entity.ts
 
 export interface WSTelemetry {
   imei: string;
@@ -571,7 +571,7 @@ export type WSCommandType =
 ### 6.2 Transforms
 
 ```typescript
-// domain/realtime/transforms.ts
+// domain/realtime-mappers.ts
 
 import type { WSTelemetry, WSEvent } from './types';
 
@@ -615,7 +615,7 @@ export const eventFromRaw = (raw: RawEvent): WSEvent => ({
 ### 6.3 Validation
 
 ```typescript
-// domain/realtime/validation.ts
+// domain/realtime-validators.ts
 
 import type { WSTelemetry, WSCommand } from './types';
 
@@ -652,7 +652,7 @@ export const validateCommand = (data: unknown): data is WSCommand => {
 ### 7.1 WebSocket Client
 
 ```typescript
-// lib/api/websocket/client.ts
+// lib/api/websocket/websocket-client.ts
 
 import type { WSTelemetry, WSEvent, WSCommand } from '@/domain/realtime';
 
@@ -686,7 +686,7 @@ export interface WebSocketClient {
 ### 7.2 Connection State Machine
 
 ```typescript
-// lib/api/websocket/connection.ts
+// lib/api/websocket/websocket-connection.ts
 
 export type ConnectionState =
   | 'CLOSED'
@@ -705,7 +705,7 @@ export interface ConnectionStateMachine {
 ### 7.3 Heartbeat Manager
 
 ```typescript
-// lib/api/websocket/heartbeat.ts
+// lib/api/websocket/websocket-heartbeat.ts
 
 export interface HeartbeatManager {
   start(): void;
@@ -1033,19 +1033,19 @@ export const CommandStatus = ({ imei }: CommandStatusProps) => {
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `domain/realtime/types.ts` | **NEW** | WSTelemetry, WSEvent, WSCommand types |
-| `domain/realtime/transforms.ts` | **NEW** | telemetryFromRaw(), eventFromRaw() |
-| `domain/realtime/validation.ts` | **NEW** | validateTelemetry(), validateCommand() |
+| `domain/realtime-entity.ts` | **NEW** | WSTelemetry, WSEvent, WSCommand types |
+| `domain/realtime-mappers.ts` | **NEW** | telemetryFromRaw(), eventFromRaw() |
+| `domain/realtime-validators.ts` | **NEW** | validateTelemetry(), validateCommand() |
 
 #### Data Layer - WebSocket (5 NEW)
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `lib/api/websocket/client.ts` | **NEW** | WebSocket client wrapper |
-| `lib/api/websocket/connection.ts` | **NEW** | Connection state machine |
-| `lib/api/websocket/heartbeat.ts` | **NEW** | Heartbeat manager |
-| `lib/api/websocket/reconnect.ts` | **NEW** | Reconnection logic |
-| `lib/api/websocket/messages.ts` | **NEW** | Message types/parsers |
+| `lib/api/websocket/websocket-client.ts` | **NEW** | WebSocket client wrapper |
+| `lib/api/websocket/websocket-connection.ts` | **NEW** | Connection state machine |
+| `lib/api/websocket/websocket-heartbeat.ts` | **NEW** | Heartbeat manager |
+| `lib/api/websocket/websocket-reconnect.ts` | **NEW** | Reconnection logic |
+| `lib/api/websocket/websocket-messages.ts` | **NEW** | Message types/parsers |
 
 #### Presentation Layer (4 NEW)
 
@@ -1091,16 +1091,16 @@ export const CommandStatus = ({ imei }: CommandStatusProps) => {
 4. Modify `internal/ws/client.go` - emit connect/disconnect events
 
 ### Phase 3: Frontend - Domain Layer (Day 2)
-1. Create `domain/realtime/types.ts`
-2. Create `domain/realtime/transforms.ts`
-3. Create `domain/realtime/validation.ts`
+1. Create `domain/realtime-entity.ts`
+2. Create `domain/realtime-mappers.ts`
+3. Create `domain/realtime-validators.ts`
 
 ### Phase 4: Frontend - Data Layer (Day 2)
-1. Create `lib/api/websocket/messages.ts`
-2. Create `lib/api/websocket/connection.ts`
-3. Create `lib/api/websocket/heartbeat.ts`
-4. Create `lib/api/websocket/reconnect.ts`
-5. Create `lib/api/websocket/client.ts`
+1. Create `lib/api/websocket/websocket-messages.ts`
+2. Create `lib/api/websocket/websocket-connection.ts`
+3. Create `lib/api/websocket/websocket-heartbeat.ts`
+4. Create `lib/api/websocket/websocket-reconnect.ts`
+5. Create `lib/api/websocket/websocket-client.ts`
 
 ### Phase 5: Frontend - Presentation Layer (Day 2-3)
 1. Create `hooks/realtime/use-websocket-connection.ts`
