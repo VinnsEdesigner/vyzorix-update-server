@@ -79,7 +79,7 @@ func LoadSigningConfig() SigningConfig {
 type Config struct {
 	APIKeys                  map[string]string
 	ResendAPIKey             string
-	TokenSecret              string
+	ServerAPIToken              string
 	GitHubOAuthClientSecret  string
 	FirebaseCreds            string
 	SessionSecret            string
@@ -209,7 +209,7 @@ func Load() (Config, error) {
 		BinDir:                   get("VYZORIX_BIN_DIR", "./bin"),
 		PublicDir:                get("VYZORIX_PUBLIC_DIR", "./public"),
 		FirebaseCreds:            os.Getenv("FIREBASE_CREDENTIALS"),
-		TokenSecret:              os.Getenv("TOKEN_SECRET"),
+		ServerAPIToken:              os.Getenv("SERVER_API_TOKEN"),
 		APIKeyPrefix:             get("API_KEY_PREFIX", "vxyz"),
 		MonthlyKeyLimit:          20,
 		MaxKeyNameLength:         64,
@@ -265,8 +265,8 @@ func Load() (Config, error) {
 		return c, errors.New("at least one API_KEY_* is required - all endpoints except /health and /healthz are protected")
 	}
 
-	if c.Env == "production" && c.TokenSecret == "" {
-		return c, errors.New("TOKEN_SECRET is required in production")
+	if c.Env == "production" && c.ServerAPIToken == "" {
+		return c, errors.New("SERVER_API_TOKEN is required in production")
 	}
 
 	return c, nil

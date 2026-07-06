@@ -182,7 +182,6 @@ func handleAuthenticatedRequest(c *gin.Context, log *slog.Logger, path string, p
 
 func serveFallback(w http.ResponseWriter, req *http.Request, publicDir string) {
 	fallbackFiles := []string{
-		filepath.Join(publicDir, "index.html"),
 		filepath.Join(publicDir, "landing.html"),
 	}
 	for _, fallbackPath := range fallbackFiles {

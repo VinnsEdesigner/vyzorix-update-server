@@ -124,6 +124,20 @@ DEVICE                         SERVER                        DASHBOARD
 | `TELEMETRY` | ← | Real-time device telemetry |
 | `EVENT` | ← | Device connection/disconnection, alerts |
 
+#### GraphQL Subscriptions (Implemented)
+
+The server implements GraphQL subscriptions for dashboard real-time updates:
+
+| Subscription | Purpose | Payload |
+|--------------|---------|---------|
+| `deviceUpdated(deviceId: ID)` | Subscribe to device update events | `Device` |
+| `telemetryReceived(deviceId: ID)` | Subscribe to real-time telemetry | `TelemetryEntry` |
+| `commandStatusChanged(dispatchId: ID)` | Subscribe to command status changes | `Command` |
+
+**Note on Device Authentication:** Device authentication uses HMAC middleware (HTTP header-based), not a message type.
+
+**Note on Command Acknowledgments:** Command acknowledgments from devices go through the REST API (`POST /v1/device/:imei/command/:dispatchId/ack`), not WebSocket messages.
+
 ---
 
 ## 2. Architecture
