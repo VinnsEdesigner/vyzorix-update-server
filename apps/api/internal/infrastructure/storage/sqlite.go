@@ -409,16 +409,19 @@ func migrateCreateSettings(db *sql.DB) error {
 }
 
 func migrateAddCommandsColumns(db *sql.DB) error {
-	// Add columns if they don't exist (ALTER TABLE is idempotent-safe in SQLite)
-	cols := []string{
-		`ALTER TABLE commands ADD COLUMN wake_sent INTEGER NOT NULL DEFAULT 0`,
-		`ALTER TABLE commands ADD COLUMN failure_reason TEXT`,
+	// Add columns if they don't exist (handles idempotent case for existing tables)
+	cols := []struct {
+		sql  string
+		name string
+	}{
+		{`ALTER TABLE commands ADD COLUMN wake_sent INTEGER NOT NULL DEFAULT 0`, "wake_sent"},
+		{`ALTER TABLE commands ADD COLUMN failure_reason TEXT`, "failure_reason"},
 	}
 	for _, col := range cols {
-		if _, err := db.ExecContext(context.Background(), col); err != nil {
-			// Column may already exist (SQLite ignores duplicate column additions)
+		if _, err := db.ExecContext(context.Background(), col.sql); err != nil {
+			// Skip if column already exists
 			if !isColumnExistsError(err) {
-				return err
+				return fmt.Errorf("failed to add column %s: %w", col.name, err)
 			}
 		}
 	}
