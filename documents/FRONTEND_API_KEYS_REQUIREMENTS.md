@@ -83,59 +83,65 @@ Following the [Frontend Architecture](../FRONTEND_ARCHITECTURE.md):
 ```
 src/
 ├── domain/
-│   └── api-keys/
-│       ├── types.ts              # API key domain types (NO external imports)
-│       ├── transforms.ts         # Raw → Domain transformations
-│       ├── validation.ts         # Input validation
-│       └── scopes.ts             # Key scope definitions
+│   ├── apikey/                    # API Keys feature domain
+│   │   ├── apikey-entity.ts      # API key domain types
+│   │   ├── apikey-mappers.ts     # Raw → Domain transformations
+│   │   ├── apikey-validators.ts  # Input validation
+│   │   └── apikey-constants.ts   # Key scope definitions
+│   │
+│   └── _shared/                   # Shared domain types
+│       ├── domain-pagination.ts
+│       └── domain-errors.ts
 │
 ├── lib/api/
-│   ├── client/
-│   │   ├── session-client.ts      # Session-based API calls (for management)
-│   │   └── developer-client.ts    # API key-based calls (for third-party apps)
-│   └── rest/
-│       └── endpoints/
-│           ├── api-keys.ts        # Management endpoints
-│           └── developer.ts       # Developer portal endpoints
+│   ├── apikey/                   # API Keys feature data layer
+│   │   ├── graphql-apikey-queries.ts
+│   │   ├── graphql-apikey-mutations.ts
+│   │   └── graphql-apikey-types.ts
+│   │
+│   ├── rest/
+│   │   └── rest-apikey-endpoints.ts
+│   │
+│   └── _shared/                   # Shared API utilities
+│       ├── graphql-client.ts
+│       └── rest-client.ts
 │
 ├── hooks/
-│   └── api-keys/
-│       ├── use-api-keys.ts         # List keys with pagination
-│       ├── use-create-api-key.ts   # Create with optimistic update
-│       ├── use-revoke-api-key.ts   # Revoke with optimistic update
-│       ├── use-rotate-api-key.ts   # Rotate returns new key
-│       ├── use-update-api-key.ts   # Rename/update key
-│       └── query-keys.ts           # React Query keys
+│   └── apikey/
+│       ├── hook-use-apikeys.ts         # List keys with pagination
+│       ├── hook-use-create-apikey.ts   # Create with optimistic update
+│       ├── hook-use-revoke-apikey.ts  # Revoke with optimistic update
+│       ├── hook-use-rotate-apikey.ts  # Rotate returns new key
+│       ├── hook-use-update-apikey.ts   # Rename/update key
+│       └── hook-use-apikey-stats.ts   # Usage statistics
 │
 └── ui/
     ├── pages/
     │   ├── settings/
     │   │   └── api-keys/
-    │   │       ├── api-keys-page.tsx      # Operator management
+    │   │       ├── page-apikey-settings.tsx    # Operator management
     │   │       └── components/
-    │   │           ├── api-key-list.tsx       # Key list table
-    │   │           ├── api-key-row.tsx         # Single key row
-    │   │           ├── api-key-list-skeleton.tsx # Loading skeleton
-    │   │           ├── create-key-dialog.tsx   # Create key modal
-    │   │           ├── revoke-key-dialog.tsx   # Revoke confirmation
-    │   │           ├── rotate-key-dialog.tsx   # Rotate confirmation
-    │   │           ├── edit-key-dialog.tsx     # Rename/edit modal
-    │   │           ├── key-created-dialog.tsx  # Show new key ONCE
-    │   │           └── key-usage-stats.tsx     # Usage statistics
+    │   │           ├── component-apikey-list.tsx       # Key list table
+    │   │           ├── component-apikey-row.tsx       # Single key row
+    │   │           ├── component-apikey-list-skeleton.tsx # Loading skeleton
+    │   │           ├── component-create-apikey-dialog.tsx   # Create key modal
+    │   │           ├── component-revoke-apikey-dialog.tsx   # Revoke confirmation
+    │   │           ├── component-rotate-apikey-dialog.tsx  # Rotate confirmation
+    │   │           ├── component-edit-apikey-dialog.tsx     # Rename/edit modal
+    │   │           ├── component-apikey-created-dialog.tsx  # Show new key ONCE
+    │   │           └── component-apikey-usage-stats.tsx   # Usage statistics
     │   │
     │   └── developer-portal/
-    │       ├── dashboard-page.tsx      # Developer overview
-    │       ├── documentation-page.tsx   # API docs
+    │       ├── page-developer-dashboard.tsx     # Developer overview
+    │       ├── page-developer-docs.tsx          # API docs
     │       └── components/
-    │           ├── sdk-examples.tsx      # Code examples
-    │           ├── test-endpoint.tsx    # API testing tool
-    │           └── usage-chart.tsx       # Usage visualization
+    │           ├── component-sdk-examples.tsx     # Code examples
+    │           ├── component-test-endpoint.tsx  # API testing tool
+    │           └── component-usage-chart.tsx    # Usage visualization
     │
     └── components/
-        ├── skeleton-loaders/
-        │   └── api-key-row-skeleton.tsx  # Loading placeholder
         └── shared/
-            └── copy-button.tsx            # Reusable copy component
+            └── component-copy-button.tsx       # Reusable copy component
 ```
 
 ### 2.2 Dependency Rules (STRICT - MUST FOLLOW)
@@ -188,10 +194,25 @@ const devices = await client.getDevices();
 
 ## 3. Domain Layer
 
-### 3.1 Types (MUST BE SELF-CONTAINED)
+### 3.1 Target File Structure
+
+```
+src/domain/
+├── apikey/
+│   ├── apikey-entity.ts          # Types (ApiKey, ApiKeyScope, etc.)
+│   ├── apikey-mappers.ts         # Raw → Domain transformations
+│   ├── apikey-validators.ts     # Input validation
+│   └── apikey-constants.ts      # Scope limits, defaults
+│
+└── _shared/
+    ├── domain-pagination.ts      # Shared pagination types
+    └── domain-errors.ts         # Shared error types
+```
+
+### 3.2 Entity Types (apikey-entity.ts)
 
 ```typescript
-// src/domain/api-keys/types.ts
+// src/domain/apikey/apikey-entity.ts
 
 // NOTE: This file must NOT import from lib/api/ or hooks/
 
@@ -283,10 +304,10 @@ export interface ApiKeyUsageStats {
 }
 ```
 
-### 3.2 Transforms (Raw API Response → Domain)
+### 3.2 Mappers (apikey-mappers.ts)
 
 ```typescript
-// src/domain/api-keys/transforms.ts
+// src/domain/apikey/apikey-mappers.ts
 
 // NOTE: This file must NOT import from lib/api/ or hooks/
 
@@ -297,7 +318,7 @@ import type {
   ApiKeyStatus,
   ApiKeysListResponse,
   PaginationInfo,
-} from "./types";
+} from "./apikey-entity";
 
 /**
  * Raw API response for a single key (snake_case from backend)
