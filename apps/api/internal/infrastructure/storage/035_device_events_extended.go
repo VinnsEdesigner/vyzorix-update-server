@@ -9,44 +9,33 @@ import (
 func migrateDeviceEventsExtended(db *sql.DB) error {
 	ctx := context.Background()
 
-	// Add severity column if not exists
-	_, err := db.ExecContext(ctx, `
-		ALTER TABLE device_events ADD COLUMN IF NOT EXISTS severity TEXT DEFAULT 'info'`)
+	// Add severity column if not exists (with idempotent error handling for SQLite)
+	_, err := db.ExecContext(ctx, `ALTER TABLE device_events ADD COLUMN severity TEXT DEFAULT 'info'`)
 	if err != nil {
-		// Ignore error if column already exists (SQLite doesn't support IF NOT EXISTS for columns)
-		// Check if column exists first
-		var count int
-		checkQuery := `SELECT COUNT(*) FROM pragma_table_info('device_events') WHERE name = 'severity'`
-		if scanErr := db.QueryRowContext(ctx, checkQuery).Scan(&count); scanErr == nil && count == 0 {
+		if !isColumnExistsError(err) {
 			return err
 		}
 	}
 
-	// Add source column if not exists
-	_, err = db.ExecContext(ctx, `
-		ALTER TABLE device_events ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'server'`)
+	// Add source column if not exists (with idempotent error handling for SQLite)
+	_, err = db.ExecContext(ctx, `ALTER TABLE device_events ADD COLUMN source TEXT DEFAULT 'server'`)
 	if err != nil {
-		var count int
-		checkQuery := `SELECT COUNT(*) FROM pragma_table_info('device_events') WHERE name = 'source'`
-		if scanErr := db.QueryRowContext(ctx, checkQuery).Scan(&count); scanErr == nil && count == 0 {
+		if !isColumnExistsError(err) {
 			return err
 		}
 	}
 
-	// Add operator_id column if not exists
-	_, err = db.ExecContext(ctx, `
-		ALTER TABLE device_events ADD COLUMN IF NOT EXISTS operator_id TEXT`)
+	// Add operator_id column if not exists (with idempotent error handling for SQLite)
+	_, err = db.ExecContext(ctx, `ALTER TABLE device_events ADD COLUMN operator_id TEXT`)
 	if err != nil {
-		var count int
-		checkQuery := `SELECT COUNT(*) FROM pragma_table_info('device_events') WHERE name = 'operator_id'`
-		if scanErr := db.QueryRowContext(ctx, checkQuery).Scan(&count); scanErr == nil && count == 0 {
+		if !isColumnExistsError(err) {
 			return err
 		}
 	}
 
 	// Create index on severity for filtering
 	severityIndex := `
-	CREATE INDEX IF NOT EXISTS idx_device_events_severity 
+	CREATE INDEX IF NOT EXISTS idx_device_events_severity
 		ON device_events(device_id, severity, timestamp DESC)`
 	_, err = db.ExecContext(ctx, severityIndex)
 	if err != nil {
@@ -55,7 +44,7 @@ func migrateDeviceEventsExtended(db *sql.DB) error {
 
 	// Create index on source for filtering
 	sourceIndex := `
-	CREATE INDEX IF NOT EXISTS idx_device_events_source 
+	CREATE INDEX IF NOT EXISTS idx_device_events_source
 		ON device_events(device_id, source, timestamp DESC)`
 	_, err = db.ExecContext(ctx, sourceIndex)
 	if err != nil {
