@@ -23,7 +23,7 @@ type diImpl struct{paths, domain, infra, application, routes map[string]bool; me
 func verifyDiagnostics() bool {
 	fmt.Println()
 	fmt.Println("  SERVER_BACKEND_DIAGNOSTICS_API.md VERIFICATION                         ")
-	fmt.Println("")
+	fmt.Println()
 	root := "/workspace/project/vyzorix-update-server"
 	spec := diLoadSpec()
 	impl := diScanImpl(root)
