@@ -300,127 +300,127 @@ src/
 ├── ui/                              # UI LAYER
 │   ├── pages/                       # Route pages
 │   │   ├── dashboard/
-│   │   │   ├── page-dashboard.tsx        # Main dashboard page
-│   │   │   ├── page-dashboard-overview.tsx
-│   │   │   ├── page-dashboard-metrics.tsx
-│   │   │   ├── page-dashboard-commands.tsx
-│   │   │   └── page-dashboard-logs.tsx
+│   │   │   ├── dashboard.tsx            # Main dashboard page
+│   │   │   ├── dashboard-overview.tsx
+│   │   │   ├── dashboard-metrics.tsx
+│   │   │   ├── dashboard-commands.tsx
+│   │   │   └── dashboard-logs.tsx
 │   │   ├── commands/
-│   │   │   ├── page-commands.tsx
-│   │   │   ├── page-commands-send.tsx
-│   │   │   ├── page-commands-pending.tsx
-│   │   │   └── page-commands-history.tsx
+│   │   │   ├── commands.tsx
+│   │   │   ├── commands-send.tsx
+│   │   │   ├── commands-pending.tsx
+│   │   │   └── commands-history.tsx
 │   │   ├── logs/
-│   │   │   └── page-logs.tsx
+│   │   │   └── logs.tsx
 │   │   ├── device/
-│   │   │   ├── page-device.tsx
-│   │   │   ├── page-device-overview.tsx
-│   │   │   ├── page-device-telemetry.tsx
-│   │   │   ├── page-device-commands.tsx
-│   │   │   └── page-device-history.tsx
+│   │   │   ├── device.tsx
+│   │   │   ├── device-overview.tsx
+│   │   │   ├── device-telemetry.tsx
+│   │   │   ├── device-commands.tsx
+│   │   │   └── device-history.tsx
 │   │   ├── diagnostics/
-│   │   │   ├── page-diagnostics.tsx
-│   │   │   ├── page-diagnostics-inspector.tsx
-│   │   │   └── page-diagnostics-timeline.tsx
+│   │   │   ├── diagnostics.tsx
+│   │   │   ├── diagnostics-inspector.tsx
+│   │   │   └── diagnostics-timeline.tsx
 │   │   ├── alerts/
-│   │   │   ├── page-alerts.tsx
-│   │   │   ├── page-alerts-active.tsx
-│   │   │   └── page-alerts-history.tsx
+│   │   │   ├── alerts.tsx
+│   │   │   ├── alerts-active.tsx
+│   │   │   └── alerts-history.tsx
 │   │   └── updates/
-│   │       └── page-updates.tsx
+│   │       └── updates.tsx
 │   │
 │   ├── components/                  # Reusable components
-│   │   ├── ui/                     # Base UI components (prefixed with ui-)
-│   │   │   ├── ui-button.tsx
-│   │   │   ├── ui-badge.tsx
-│   │   │   ├── ui-section.tsx
-│   │   │   ├── ui-table.tsx
-│   │   │   ├── ui-tabs.tsx
-│   │   │   ├── ui-input.tsx
-│   │   │   ├── ui-select.tsx
-│   │   │   ├── ui-dropdown-menu.tsx
-│   │   │   ├── ui-dialog.tsx
-│   │   │   ├── ui-skeleton.tsx
-│   │   │   ├── ui-toast.tsx
-│   │   │   ├── ui-tooltip.tsx
-│   │   │   ├── ui-pagination.tsx
-│   │   │   ├── ui-search-input.tsx
-│   │   │   ├── ui-empty-state.tsx
-│   │   │   ├── ui-loading-spinner.tsx
-│   │   │   └── ui-error-state.tsx
+│   │   ├── ui/                     # Base UI components
+│   │   │   ├── button.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── section.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── skeleton.tsx
+│   │   │   ├── toast.tsx
+│   │   │   ├── tooltip.tsx
+│   │   │   ├── pagination.tsx
+│   │   │   ├── search-input.tsx
+│   │   │   ├── empty-state.tsx
+│   │   │   ├── loading-spinner.tsx
+│   │   │   └── error-state.tsx
 │   │   │
-│   │   ├── layout/                 # Layout components (prefixed with layout-)
-│   │   │   ├── layout-page-header.tsx
-│   │   │   ├── layout-page-tabs.tsx
-│   │   │   ├── layout-sidebar.tsx
-│   │   │   └── layout-app-layout.tsx
+│   │   ├── layout/                 # Layout components
+│   │   │   ├── page-header.tsx
+│   │   │   ├── page-tabs.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   └── app-layout.tsx
 │   │   │
 │   │   └── shared/                 # Shared feature components
 │   │       ├── section/
-│   │       │   ├── component-section-container.tsx
-│   │       │   ├── component-section-header.tsx
-│   │       │   └── component-section-content.tsx
+│   │       │   ├── section-container.tsx
+│   │       │   ├── section-header.tsx
+│   │       │   └── section-content.tsx
 │   │       ├── metric-card/
-│   │       │   ├── component-metric-card-display.tsx
-│   │       │   ├── component-metric-card-grid.tsx
-│   │       │   └── component-metric-progress.tsx
+│   │       │   ├── metric-card-display.tsx
+│   │       │   ├── metric-card-grid.tsx
+│   │       │   └── metric-progress.tsx
 │   │       ├── connection-status/
-│   │       │   ├── component-connection-status.tsx
-│   │       │   └── component-connection-indicator.tsx
+│   │       │   ├── connection-status.tsx
+│   │       │   └── connection-indicator.tsx
 │   │       ├── device-selector/
-│   │       │   └── component-device-selector.tsx
+│   │       │   └── device-selector.tsx
 │   │       ├── command-button/
-│   │       │   └── component-command-button.tsx
+│   │       │   └── command-button.tsx
 │   │       ├── command-row/
-│   │       │   └── component-command-row.tsx
+│   │       │   └── command-row.tsx
 │   │       ├── log-entry/
-│   │       │   └── component-log-entry.tsx
+│   │       │   └── log-entry.tsx
 │   │       └── export-menu/
-│   │           ├── component-export-menu.tsx
-│   │           ├── component-export-scope.tsx
-│   │           └── component-export-format.tsx
+│   │           ├── export-menu.tsx
+│   │           ├── export-scope.tsx
+│   │           └── export-format.tsx
 │   │
 │   └── index.ts                    # UI layer exports
 │
 ├── hooks/                          # PRESENTATION LAYER
 │   ├── auth/
-│   │   ├── hook-use-auth.ts
-│   │   └── hook-use-signed-api.ts
+│   │   ├── use-auth.ts
+│   │   └── use-signed-api.ts
 │   ├── device/
-│   │   ├── hook-use-device-stream.ts
-│   │   ├── hook-use-device.ts
-│   │   ├── hook-use-devices.ts
-│   │   ├── hook-use-device-telemetry.ts
-│   │   ├── hook-use-device-inspection.ts
-│   │   └── hook-use-device-timeline.ts
+│   │   ├── use-device-stream.ts
+│   │   ├── use-device.ts
+│   │   ├── use-devices.ts
+│   │   ├── use-device-telemetry.ts
+│   │   ├── use-device-inspection.ts
+│   │   └── use-device-timeline.ts
 │   ├── commands/
-│   │   ├── hook-use-commands.ts
-│   │   ├── hook-use-send-command.ts
-│   │   ├── hook-use-cancel-command.ts
-│   │   └── hook-use-command-history.ts
+│   │   ├── use-commands.ts
+│   │   ├── use-send-command.ts
+│   │   ├── use-cancel-command.ts
+│   │   └── use-command-history.ts
 │   ├── logs/
-│   │   ├── hook-use-logs.ts
-│   │   ├── hook-use-log-stream.ts
-│   │   └── hook-use-log-filter.ts
+│   │   ├── use-logs.ts
+│   │   ├── use-log-stream.ts
+│   │   └── use-log-filter.ts
 │   ├── alerts/
-│   │   ├── hook-use-alerts.ts
-│   │   ├── hook-use-alert.ts
-│   │   └── hook-use-dismiss-alert.ts
+│   │   ├── use-alerts.ts
+│   │   ├── use-alert.ts
+│   │   └── use-dismiss-alert.ts
 │   ├── telemetry/
-│   │   ├── hook-use-telemetry.ts
-│   │   └── hook-use-telemetry-stats.ts
+│   │   ├── use-telemetry.ts
+│   │   └── use-telemetry-stats.ts
 │   ├── export/
-│   │   ├── hook-use-export.ts
-│   │   ├── hook-use-export-job.ts
-│   │   └── hook-use-export-dialog.ts
+│   │   ├── use-export.ts
+│   │   ├── use-export-job.ts
+│   │   └── use-export-dialog.ts
 │   ├── _shared/
-│   │   ├── hook-use-pagination.ts
-│   │   ├── hook-use-search.ts
-│   │   ├── hook-use-device-selector.ts
-│   │   └── hook-use-time-range.ts
-│   ├── hook-use-mobile.tsx
-│   ├── hook-use-operator.ts
-│   └── hook-use-server-health.ts
+│   │   ├── use-pagination.ts
+│   │   ├── use-search.ts
+│   │   ├── use-device-selector.ts
+│   │   └── use-time-range.ts
+│   ├── use-mobile.tsx
+│   ├── use-operator.ts
+│   └── use-server-health.ts
 │
 ├── domain/                         # DOMAIN LAYER
 │   ├── _shared/                   # SHARED - cross-feature types/functions

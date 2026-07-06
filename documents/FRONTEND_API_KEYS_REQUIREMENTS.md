@@ -108,40 +108,40 @@ src/
 │
 ├── hooks/
 │   └── apikey/
-│       ├── hook-use-apikeys.ts         # List keys with pagination
-│       ├── hook-use-create-apikey.ts   # Create with optimistic update
-│       ├── hook-use-revoke-apikey.ts  # Revoke with optimistic update
-│       ├── hook-use-rotate-apikey.ts  # Rotate returns new key
-│       ├── hook-use-update-apikey.ts   # Rename/update key
-│       └── hook-use-apikey-stats.ts   # Usage statistics
+│       ├── use-apikeys.ts               # List keys with pagination
+│       ├── use-create-apikey.ts        # Create with optimistic update
+│       ├── use-revoke-apikey.ts        # Revoke with optimistic update
+│       ├── use-rotate-apikey.ts        # Rotate returns new key
+│       ├── use-update-apikey.ts        # Rename/update key
+│       └── use-apikey-stats.ts         # Usage statistics
 │
 └── ui/
     ├── pages/
     │   ├── settings/
     │   │   └── api-keys/
-    │   │       ├── page-apikey-settings.tsx    # Operator management
+    │   │       ├── apikey-settings.tsx         # Operator management
     │   │       └── components/
-    │   │           ├── component-apikey-list.tsx       # Key list table
-    │   │           ├── component-apikey-row.tsx       # Single key row
-    │   │           ├── component-apikey-list-skeleton.tsx # Loading skeleton
-    │   │           ├── component-create-apikey-dialog.tsx   # Create key modal
-    │   │           ├── component-revoke-apikey-dialog.tsx   # Revoke confirmation
-    │   │           ├── component-rotate-apikey-dialog.tsx  # Rotate confirmation
-    │   │           ├── component-edit-apikey-dialog.tsx     # Rename/edit modal
-    │   │           ├── component-apikey-created-dialog.tsx  # Show new key ONCE
-    │   │           └── component-apikey-usage-stats.tsx   # Usage statistics
+    │   │           ├── apikey-list.tsx         # Key list table
+    │   │           ├── apikey-row.tsx         # Single key row
+    │   │           ├── apikey-list-skeleton.tsx # Loading skeleton
+    │   │           ├── create-apikey-dialog.tsx    # Create key modal
+    │   │           ├── revoke-apikey-dialog.tsx   # Revoke confirmation
+    │   │           ├── rotate-apikey-dialog.tsx    # Rotate confirmation
+    │   │           ├── edit-apikey-dialog.tsx      # Rename/edit modal
+    │   │           ├── apikey-created-dialog.tsx   # Show new key ONCE
+    │   │           └── apikey-usage-stats.tsx     # Usage statistics
     │   │
     │   └── developer-portal/
-    │       ├── page-developer-dashboard.tsx     # Developer overview
-    │       ├── page-developer-docs.tsx          # API docs
+    │       ├── developer-dashboard.tsx          # Developer overview
+    │       ├── developer-docs.tsx               # API docs
     │       └── components/
-    │           ├── component-sdk-examples.tsx     # Code examples
-    │           ├── component-test-endpoint.tsx  # API testing tool
-    │           └── component-usage-chart.tsx    # Usage visualization
+    │           ├── sdk-examples.tsx            # Code examples
+    │           ├── test-endpoint.tsx            # API testing tool
+    │           └── usage-chart.tsx             # Usage visualization
     │
     └── components/
         └── shared/
-            └── component-copy-button.tsx       # Reusable copy component
+            └── copy-button.tsx                  # Reusable copy component
 ```
 
 ### 2.2 Dependency Rules (STRICT - MUST FOLLOW)
