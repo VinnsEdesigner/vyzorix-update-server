@@ -33,9 +33,9 @@ type uImpl struct {
 }
 
 func verifyUpdates() bool {
-	fmt.Println("\n")
+	fmt.Println()
 	fmt.Println("  SERVER_BACKEND_UPDATES_API.md VERIFICATION                               ")
-	fmt.Println("")
+	fmt.Println()
 	root := "/workspace/project/vyzorix-update-server"
 	spec := uLoadSpec()
 	impl := uScanImpl(root)

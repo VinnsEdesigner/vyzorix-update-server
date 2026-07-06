@@ -9,11 +9,10 @@ import (
 
 func main() {
 	fmt.Println()
-	fmt.Println("")
 	fmt.Println("                                                                              ")
 	fmt.Println("        VYZORIX UPDATE SERVER - VERIFICATION SUITE                        ")
 	fmt.Println("                                                                              ")
-	fmt.Println("")
+	fmt.Println()
 	fmt.Println()
 
 	fmt.Printf("  Initializing verification environment...\n")
@@ -41,9 +40,9 @@ func main() {
 	}
 
 	fmt.Println()
-	fmt.Println("")
+	fmt.Println()
 	fmt.Println("                           FINAL SUMMARY                                      ")
-	fmt.Println("")
+	fmt.Println()
 	fmt.Println()
 
 	allPassed := true
