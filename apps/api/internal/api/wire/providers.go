@@ -544,7 +544,7 @@ func ProvideServerDependencies(
 	lockout *middleware.Lockout,
 	ipIntelligence *middleware.IPIntelligence,
 	updatesService *updatesapp.Service,
-	apiKeyService *keys.Service,
+	apiKeyService *keys.APIKeyService,
 ) *ServerDependencies {
 	return &ServerDependencies{
 		FCMNotifier:     fcmNotifier,

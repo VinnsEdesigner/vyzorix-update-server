@@ -71,7 +71,7 @@ type ServerConfig struct {
 	UpdatesService *updatesapp.Service
 	PushService    *updatesapp.PushService
 	Config         config.Config
-	APIKeyService  *keys.Service
+	APIKeyService  *keys.APIKeyService
 }
 
 // Server is the main API server.
@@ -412,7 +412,7 @@ type ServerConfigWithDeps struct {
 	AuditLogger    *audit.Logger
 	UpdatesService *updatesapp.Service
 	Config         config.Config
-	APIKeyService  *keys.Service
+	APIKeyService  *keys.APIKeyService
 }
 
 // NewServerWithDeps creates a Server using pre-wired dependencies from wire.

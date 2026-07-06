@@ -87,8 +87,8 @@ func ProvideAPIKeyRepository(db *sql.DB) storage.APIKeyRepository {
 }
 
 // ProvideAPIKeyService provides the API key service.
-func ProvideAPIKeyService(repo storage.APIKeyRepository, cfg config.Config) *keys.Service {
-	return keys.NewService(repo, keys.Config{
+func ProvideAPIKeyService(repo storage.APIKeyRepository, cfg config.Config) *keys.APIKeyService {
+	return keys.NewAPIKeyService(repo, keys.Config{
 		Prefix:            cfg.APIKeyPrefix,
 		MaxPerMonth:       cfg.MonthlyKeyLimit,
 		MaxNameLength:     cfg.MaxKeyNameLength,

@@ -31,13 +31,13 @@ const (
 // PathBoundary maps path patterns to their authentication requirements.
 var PathBoundaries = map[string]PathType{
 	// PUBLIC - No auth required
-	"/health":             PathTypePublic,
+	"/health":              PathTypePublic,
 	"/v1/auth/":           PathTypePublic,
-	"/v1/device/register": PathTypePublic,
-	"/v1/device/public/":  PathTypePublic,
-	"/v1/device/inbox":    PathTypePublic,
-	"/v1/device/confirm":  PathTypePublic,
-	"/metrics":            PathTypePublic, // Prometheus scraping
+	"/v1/device/register":  PathTypePublic,
+	"/v1/device/inbox":     PathTypePublic,
+	"/v1/device/confirm":   PathTypePublic,
+	"/v1/device/":          PathTypePublic, // /v1/device/:imei/status - device status check
+	"/metrics":             PathTypePublic, // Prometheus scraping
 
 	// INFRASTRUCTURE - TokenSecret (env var) - handled at route level
 	// /admin/*, /internal/*, /healthz
@@ -49,8 +49,8 @@ var PathBoundaries = map[string]PathType{
 	"/api/v1/apk/":   PathTypeSessionOnly,
 
 	// DEVICE AUTH - HMAC Signature - handled by device middleware
-	// /v1/device/:imei/command, /v1/device/:imei/fcm-token
-	// These are under /device/ but use HMAC, not session/API key
+	// /device/:imei/command, /device/:imei/fcm-token
+	// These use HMAC, not session/API key
 
 	// TENANT - Session OR API Key + Scope
 	"/v1/devices/":            PathTypeTenant,
@@ -109,12 +109,12 @@ func IsTenantPath(path string) bool {
 
 // TenantAPIKeyAuth provides tenant API key authentication middleware.
 type TenantAPIKeyAuth struct {
-	service   *keys.Service
+	service   *keys.APIKeyService
 	keyPrefix string
 }
 
 // NewTenantAPIKeyAuth creates a new TenantAPIKeyAuth middleware.
-func NewTenantAPIKeyAuth(service *keys.Service, keyPrefix string) *TenantAPIKeyAuth {
+func NewTenantAPIKeyAuth(service *keys.APIKeyService, keyPrefix string) *TenantAPIKeyAuth {
 	return &TenantAPIKeyAuth{
 		service:   service,
 		keyPrefix: keyPrefix,
