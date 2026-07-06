@@ -23,12 +23,12 @@ The threat coverage table below assumes the **future-scaled** deployment, where 
 
 | Threat | TLS Coverage | HMAC Coverage |
 |---|---|---|
-| Network eavesdropping | ✅ | N/A |
-| Compromised Render server issues arbitrary commands | ❌ | ✅ |
-| Stolen dashboard JWT used to issue commands | ❌ | ✅ |
-| Captured WebSocket frame replayed later | ❌ | ✅ (nonce + timestamp window) |
-| MITM on WSS connection | ✅ (certificate pinning recommended) | N/A |
-| Physical device dump of command secret | ❌ | ✅ (secret encrypted via TokenEncryptor.kt) |
+| Network eavesdropping |  | N/A |
+| Compromised Render server issues arbitrary commands |  |  |
+| Stolen dashboard JWT used to issue commands |  |  |
+| Captured WebSocket frame replayed later |  |  (nonce + timestamp window) |
+| MITM on WSS connection |  (certificate pinning recommended) | N/A |
+| Physical device dump of command secret |  |  (secret encrypted via TokenEncryptor.kt) |
 
 **Explicitly out of scope** for the current deployment:
 - Physical access to the device by a sophisticated adversary (the C22's Unisoc TEE is itself unreliable — see DOC_7 §3.1).
@@ -161,28 +161,28 @@ transmitted again after that point.
 
 ```text
 Device first boot (after Accessibility grant)
-    │
-    ▼
+    
+    
 FcmTokenManager.kt
     - Generates device UUID (stored in DeviceSecretStore.kt)
     - Calls POST /v1/device/register over HTTPS/WSS with:
         { "deviceId": uuid, "fcmToken": token, "androidVersion": "13" }
-    │
-    ▼
+    
+    
 controllers/device.go (Go server)
     - Generates command_secret = crypto/rand 32 bytes → hex (64 chars)
     - Stores command_secret in devices table (command_secret column)
     - Returns in registration response:
         { "deviceId": uuid, "commandSecret": "abc123...64chars" }
-    │
-    ▼
+    
+    
 Device receives response
     - DeviceSecretStore.kt passes secret to TokenEncryptor.kt
     - TokenEncryptor.kt encrypts with AES-GCM using KeystoreManager key
     - Writes encrypted blob to DataStore
     - commandSecret is NEVER stored in plaintext anywhere
-    │
-    ▼
+    
+    
 Subsequent commands
     - RemoteCommandExecutor.kt calls DeviceSecretStore.kt.getSecret()
     - DeviceSecretStore.kt decrypts via TokenEncryptor.kt on each read

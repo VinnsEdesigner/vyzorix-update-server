@@ -2245,72 +2245,72 @@ After ALL migration is complete:
 
 ```
 apps/api/
-├── cmd/
-│   └── api/
-│       └── main.go
-│
-├── internal/
-│   ├── api/
-│   │   ├── router.go
-│   │   ├── auth_handler.go
-│   │   ├── device_handler.go
-│   │   └── health_handler.go
-│   │
-│   ├── application/
-│   │   ├── auth/
-│   │   │   ├── service.go
-│   │   │   └── password.go
-│   │   ├── device/
-│   │   │   └── service.go
-│   │   ├── dto/
-│   │   │   ├── auth.go
-│   │   │   └── device.go
-│   │   └── errors.go
-│   │
-│   ├── domain/
-│   │   ├── errors.go
-│   │   ├── operator/
-│   │   │   ├── entity.go
-│   │   │   └── repository.go
-│   │   ├── device/
-│   │   │   ├── entity.go
-│   │   │   └── repository.go
-│   │   ├── session/
-│   │   │   ├── entity.go
-│   │   │   └── repository.go
-│   │   ├── command/
-│   │   │   ├── entity.go
-│   │   │   └── repository.go
-│   │   └── auth/
-│   │       └── enum_safe.go
-│   │
-│   ├── infrastructure/
-│   │   ├── storage/
-│   │   │   ├── sqlite.go
-│   │   │   ├── operator.go
-│   │   │   ├── device.go
-│   │   │   ├── session.go
-│   │   │   └── command.go
-│   │   │
-│   │   └── crypto/
-│   │       ├── aes_gcm.go
-│   │       ├── replay_cache.go
-│   │       └── token.go
-│   │
-│   └── api/
-│       └── middleware/
-│           ├── auth.go
-│           ├── cors.go
-│           ├── ratelimit.go
-│           └── ...
-│
-├── pkg/
-│   ├── config/
-│   ├── logging/
-│   └── models/
-│
-├── go.mod
-└── main.go
+ cmd/
+    api/
+        main.go
+
+ internal/
+    api/
+       router.go
+       auth_handler.go
+       device_handler.go
+       health_handler.go
+   
+    application/
+       auth/
+          service.go
+          password.go
+       device/
+          service.go
+       dto/
+          auth.go
+          device.go
+       errors.go
+   
+    domain/
+       errors.go
+       operator/
+          entity.go
+          repository.go
+       device/
+          entity.go
+          repository.go
+       session/
+          entity.go
+          repository.go
+       command/
+          entity.go
+          repository.go
+       auth/
+           enum_safe.go
+   
+    infrastructure/
+       storage/
+          sqlite.go
+          operator.go
+          device.go
+          session.go
+          command.go
+      
+       crypto/
+           aes_gcm.go
+           replay_cache.go
+           token.go
+   
+    api/
+        middleware/
+            auth.go
+            cors.go
+            ratelimit.go
+            ...
+
+ pkg/
+    config/
+    logging/
+    models/
+
+ go.mod
+ main.go
 ```
 
 ---

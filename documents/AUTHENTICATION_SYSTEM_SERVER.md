@@ -23,7 +23,7 @@
 
 ---
 
-> ⚠️ **Architecture Alignment Note**
+>  **Architecture Alignment Note**
 > 
 > This document outlines the server-side requirements for authentication, aligned with the existing Go backend structure in `apps/api/internal/`. It complements `AUTHENTICATION_SYSTEM.md` (frontend) and `FRONTEND_ARCHITECTURE.md`.
 >
@@ -67,56 +67,56 @@ This document specifies the server-side authentication requirements to support:
 
 ```
 apps/api/internal/
-├── api/
-│   ├── handlers/auth/           # EXISTING
-│   │   ├── auth_login.go        # EXISTS
-│   │   ├── auth_register.go    # EXISTS
-│   │   ├── auth_logout.go      # EXISTS
-│   │   ├── auth_me.go          # EXISTS
-│   │   ├── auth_mfa.go         # EXISTS
-│   │   ├── auth_oauth.go       # EXISTS
-│   │   ├── auth_password_reset.go    # EXISTS
-│   │   ├── auth_email_verify.go      # EXISTS
-│   │   ├── auth_settings.go    # EXISTS
-│   │   ├── auth_admin.go       # EXISTS
-│   │   ├── auth_routes.go      # EXISTS
-│   │   └── auth_lockout.go     # EXISTS
-│   └── middleware/
-├── application/auth/           # EXISTS
-│   ├── auth_service.go        # EXISTS (AuthService)
-│   └── auth_password.go       # EXISTS
-├── domain/
-│   ├── operator/               # EXISTS
-│   │   ├── operator_entity.go           # EXISTS (Operator struct)
-│   │   ├── operator_repository.go       # EXISTS
-│   │   ├── operator_errors.go           # EXISTS
-│   │   ├── operator_password.go         # EXISTS
-│   │   ├── operator_role.go            # EXISTS
-│   │   ├── operator_requests.go         # EXISTS
-│   │   └── operator_responses.go       # EXISTS
-│   ├── session/                # EXISTS
-│   │   ├── session_entity.go          # EXISTS
-│   │   └── session_repository.go      # EXISTS
-│   ├── refresh_token/          # EXISTS
-│   │   ├── refresh_token_entity.go          # EXISTS
-│   │   └── refresh_token_repository.go      # EXISTS
-│   ├── email_verification/     # EXISTS
-│   │   ├── email_verification_entity.go          # EXISTS
-│   │   ├── email_verification_repository.go      # EXISTS
-│   │   ├── email_verification_requests.go       # EXISTS
-│   │   └── email_verification_responses.go      # EXISTS
-│   ├── password_reset/         # EXISTS
-│   │   ├── password_reset_entity.go          # EXISTS
-│   │   ├── password_reset_repository.go      # EXISTS
-│   │   ├── password_reset_requests.go        # EXISTS
-│   │   └── password_reset_responses.go       # EXISTS
-│   └── oauth/                  # EXISTS
-│       ├── oauth_entity.go          # EXISTS
-│       └── oauth_errors.go         # EXISTS
-└── infrastructure/
-    ├── security/              # EXISTS
-    ├── email/                  # EXISTS
-    └── storage/                # EXISTS
+ api/
+    handlers/auth/           # EXISTING
+       auth_login.go        # EXISTS
+       auth_register.go    # EXISTS
+       auth_logout.go      # EXISTS
+       auth_me.go          # EXISTS
+       auth_mfa.go         # EXISTS
+       auth_oauth.go       # EXISTS
+       auth_password_reset.go    # EXISTS
+       auth_email_verify.go      # EXISTS
+       auth_settings.go    # EXISTS
+       auth_admin.go       # EXISTS
+       auth_routes.go      # EXISTS
+       auth_lockout.go     # EXISTS
+    middleware/
+ application/auth/           # EXISTS
+    auth_service.go        # EXISTS (AuthService)
+    auth_password.go       # EXISTS
+ domain/
+    operator/               # EXISTS
+       operator_entity.go           # EXISTS (Operator struct)
+       operator_repository.go       # EXISTS
+       operator_errors.go           # EXISTS
+       operator_password.go         # EXISTS
+       operator_role.go            # EXISTS
+       operator_requests.go         # EXISTS
+       operator_responses.go       # EXISTS
+    session/                # EXISTS
+       session_entity.go          # EXISTS
+       session_repository.go      # EXISTS
+    refresh_token/          # EXISTS
+       refresh_token_entity.go          # EXISTS
+       refresh_token_repository.go      # EXISTS
+    email_verification/     # EXISTS
+       email_verification_entity.go          # EXISTS
+       email_verification_repository.go      # EXISTS
+       email_verification_requests.go       # EXISTS
+       email_verification_responses.go      # EXISTS
+    password_reset/         # EXISTS
+       password_reset_entity.go          # EXISTS
+       password_reset_repository.go      # EXISTS
+       password_reset_requests.go        # EXISTS
+       password_reset_responses.go       # EXISTS
+    oauth/                  # EXISTS
+        oauth_entity.go          # EXISTS
+        oauth_errors.go         # EXISTS
+ infrastructure/
+     security/              # EXISTS
+     email/                  # EXISTS
+     storage/                # EXISTS
 ```
 
 ### 2.2 Existing Handler Methods
@@ -617,85 +617,85 @@ CREATE INDEX idx_password_resets_token_hash ON password_resets(token_hash);
 
 ```
 apps/api/internal/
-├── api/
-│   ├── handlers/auth/
-│   │   ├── login.go            # EXISTS
-│   │   ├── register.go         # EXISTS
-│   │   ├── logout.go           # EXISTS
-│   │   ├── me.go               # EXISTS
-│   │   ├── mfa.go              # EXISTS
-│   │   ├── oauth.go             # EXISTS
-│   │   ├── password_reset.go    # EXISTS
-│   │   ├── email_verify.go      # EXISTS
-│   │   ├── settings.go          # EXISTS
-│   │   ├── admin.go             # EXISTS
-│   │   ├── lockout.go           # EXISTS
-│   │   ├── routes.go            # EXISTS
-│   │   └── client_credentials.go # EXISTS
-│   │
-│   ├── middleware/
-│   │   ├── auth.go              # EXISTS
-│   │   ├── cookie_auth.go       # EXISTS
-│   │   ├── lockout.go           # EXISTS
-│   │   ├── rate_limit.go       # EXISTS
-│   │   └── validation.go        # EXISTS
-│   │
-│   └── responses/
-│       └── presenter.go         # EXISTS
-│
-├── application/auth/
-│   ├── auth_service.go              # EXISTS
-│   └── auth_password.go              # EXISTS
-│
-├── domain/
-│   ├── operator/
-│   │   ├── operator_entity.go           # EXISTS
-│   │   ├── operator_repository.go       # EXISTS
-│   │   ├── operator_errors.go           # EXISTS
-│   │   ├── operator_password.go         # EXISTS
-│   │   ├── operator_role.go            # EXISTS
-│   │   ├── operator_requests.go       # EXISTS
-│   │   ├── operator_responses.go      # EXISTS
-│   │   └── operator_email.go          # EXISTS
-│   │
-│   ├── session/
-│   │   ├── session_entity.go          # EXISTS
-│   │   └── session_repository.go      # EXISTS
-│   │
-│   ├── refresh_token/
-│   │   ├── refresh_token_entity.go          # EXISTS
-│   │   └── refresh_token_repository.go      # EXISTS
-│   │
-│   ├── email_verification/
-│   │   ├── email_verification_entity.go          # EXISTS
-│   │   ├── email_verification_repository.go      # EXISTS
-│   │   ├── email_verification_requests.go        # EXISTS
-│   │   └── email_verification_responses.go     # EXISTS
-│   │
-│   ├── password_reset/
-│   │   ├── password_reset_entity.go          # EXISTS
-│   │   ├── password_reset_repository.go      # EXISTS
-│   │   ├── password_reset_requests.go        # EXISTS
-│   │   └── password_reset_responses.go      # EXISTS
-│   │
-│   └── oauth/
-│       ├── oauth_entity.go          # EXISTS
-│       └── oauth_errors.go         # EXISTS
-│
-└── infrastructure/
-    ├── security/
-    │   ├── jwt.go             # EXISTS
-    │   ├── password.go        # EXISTS
-    │   ├── google.go          # EXISTS
-    │   └── session/           # EXISTS
-    │
-    ├── email/
-    │   └── email_service.go   # EXISTS
-    │
-    └── storage/
-        ├── auth_storage.go           # EXISTS
-        ├── session_storage.go       # EXISTS
-        └── operator_storage.go      # EXISTS
+ api/
+    handlers/auth/
+       login.go            # EXISTS
+       register.go         # EXISTS
+       logout.go           # EXISTS
+       me.go               # EXISTS
+       mfa.go              # EXISTS
+       oauth.go             # EXISTS
+       password_reset.go    # EXISTS
+       email_verify.go      # EXISTS
+       settings.go          # EXISTS
+       admin.go             # EXISTS
+       lockout.go           # EXISTS
+       routes.go            # EXISTS
+       client_credentials.go # EXISTS
+   
+    middleware/
+       auth.go              # EXISTS
+       cookie_auth.go       # EXISTS
+       lockout.go           # EXISTS
+       rate_limit.go       # EXISTS
+       validation.go        # EXISTS
+   
+    responses/
+        presenter.go         # EXISTS
+
+ application/auth/
+    auth_service.go              # EXISTS
+    auth_password.go              # EXISTS
+
+ domain/
+    operator/
+       operator_entity.go           # EXISTS
+       operator_repository.go       # EXISTS
+       operator_errors.go           # EXISTS
+       operator_password.go         # EXISTS
+       operator_role.go            # EXISTS
+       operator_requests.go       # EXISTS
+       operator_responses.go      # EXISTS
+       operator_email.go          # EXISTS
+   
+    session/
+       session_entity.go          # EXISTS
+       session_repository.go      # EXISTS
+   
+    refresh_token/
+       refresh_token_entity.go          # EXISTS
+       refresh_token_repository.go      # EXISTS
+   
+    email_verification/
+       email_verification_entity.go          # EXISTS
+       email_verification_repository.go      # EXISTS
+       email_verification_requests.go        # EXISTS
+       email_verification_responses.go     # EXISTS
+   
+    password_reset/
+       password_reset_entity.go          # EXISTS
+       password_reset_repository.go      # EXISTS
+       password_reset_requests.go        # EXISTS
+       password_reset_responses.go      # EXISTS
+   
+    oauth/
+        oauth_entity.go          # EXISTS
+        oauth_errors.go         # EXISTS
+
+ infrastructure/
+     security/
+        jwt.go             # EXISTS
+        password.go        # EXISTS
+        google.go          # EXISTS
+        session/           # EXISTS
+    
+     email/
+        email_service.go   # EXISTS
+    
+     storage/
+         auth_storage.go           # EXISTS
+         session_storage.go       # EXISTS
+         operator_storage.go      # EXISTS
 ```
 
 ### 9.2 Files (Actual Implementation)

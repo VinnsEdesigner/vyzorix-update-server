@@ -30,7 +30,7 @@
 
 ---
 
-> ⚠️ **Architecture Alignment Note (v1.1)**
+>  **Architecture Alignment Note (v1.1)**
 >
 > This document has been updated to align with the **Layered Architecture** defined in `FRONTEND_ARCHITECTURE.md`. The file structure below follows the **4-layer architecture**:
 > - **UI Layer** (`src/components/`) - Pure UI rendering, imports only from hooks
@@ -74,15 +74,15 @@ The Diagnostics page provides operators with deep visibility into:
 ### 2.1 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  DIAGNOSTICS                                              [Refresh] │
-├─────────────────────────────────────────────────────────────────────┤
-│  [Inspector]  [Timeline]                                           │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  TAB CONTENT                                                       │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+  DIAGNOSTICS                                              [Refresh] 
+
+  [Inspector]  [Timeline]                                           
+
+                                                                     
+  TAB CONTENT                                                       
+                                                                     
+
 ```
 
 ### 2.2 Navigation
@@ -98,57 +98,57 @@ The Diagnostics page provides operators with deep visibility into:
 ### 3.1 Layered Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        FRONTEND ARCHITECTURE                        │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      UI LAYER                               │   │
-│  │                   (src/components/)                        │   │
-│  │                                                             │   │
-│  │    Pages, Components, Shared UI                            │   │
-│  │    ONLY renders UI. Uses hooks for everything.              │   │
-│  │    NEVER imports from Data or Domain.                       │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                   PRESENTATION LAYER                          │   │
-│  │                      (src/hooks/)                          │   │
-│  │                                                             │   │
-│  │    UI Logic, State Management, Data Transformation           │   │
-│  │    Imports from Domain and Data layers.                      │   │
-│  │    NEVER imports UI components.                              │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      DOMAIN LAYER                           │   │
-│  │                       (src/domain/)                         │   │
-│  │                                                             │   │
-│  │    Types, Transforms, Validation (Pure TypeScript)          │   │
-│  │    NO external imports (no React, no API, no i18n)          │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                       DATA LAYER                            │   │
-│  │                    (src/lib/api/)                         │   │
-│  │                                                             │   │
-│  │    GraphQL Queries/Mutations, REST Endpoints               │   │
-│  │    Imports Domain types only.                               │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                        FRONTEND ARCHITECTURE                        
+
+                                                                     
+     
+                        UI LAYER                                  
+                     (src/components/)                           
+                                                                  
+      Pages, Components, Shared UI                               
+      ONLY renders UI. Uses hooks for everything.                 
+      NEVER imports from Data or Domain.                          
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                     PRESENTATION LAYER                             
+                        (src/hooks/)                             
+                                                                  
+      UI Logic, State Management, Data Transformation              
+      Imports from Domain and Data layers.                         
+      NEVER imports UI components.                                 
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                        DOMAIN LAYER                              
+                         (src/domain/)                            
+                                                                  
+      Types, Transforms, Validation (Pure TypeScript)             
+      NO external imports (no React, no API, no i18n)             
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                         DATA LAYER                               
+                      (src/lib/api/)                            
+                                                                  
+      GraphQL Queries/Mutations, REST Endpoints                  
+      Imports Domain types only.                                  
+     
+                                                                     
+
 ```
 
 ### 3.2 Dependency Rule
 
 ```
-UI Layer ──────► Presentation Layer ──────► Domain Layer ──────► Data Layer
+UI Layer  Presentation Layer  Domain Layer  Data Layer
                   (Hooks)                    (Types)              (API)
                   
 • UI Layer can ONLY import from Presentation Layer (hooks)
@@ -163,93 +163,93 @@ UI Layer ──────► Presentation Layer ──────► Domain L
 
 ```
 apps/web/src/
-│
-├── domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
-│   ├── _shared/                   # SHARED domain types
-│   │   ├── domain-pagination.ts  # Pagination types & helpers
-│   │   └── domain-errors.ts      # Domain error types
-│   │
-│   ├── diagnostics/
-│   │   ├── diagnostics-entity.ts     # DeviceInspection, TimelineEvent, EventType
-│   │   ├── diagnostics-mappers.ts    # inspectionFromRaw(), eventFromRaw()
-│   │   └── diagnostics-validators.ts # validateInspection(), validateEvent()
-│   │
-│   └── devices/                     # Shared device domain types
-│       ├── device-entity.ts           # Device basic types
-│       └── device-mappers.ts          # deviceBasicFromRaw()
-│
-├── lib/
-│   └── api/
-│       ├── graphql/
-│       │   ├── _shared/
-│       │   │   └── graphql-client.ts  # GraphQL client setup
-│       │   │
-│       │   ├── diagnostics/
-│       │   │   ├── graphql-diagnostics-queries.ts   # GET_DEVICE_INSPECTION, GET_DEVICE_TIMELINE
-│       │   │   ├── graphql-diagnostics-fragments.ts # inspection & timeline fragments
-│       │   │   └── graphql-diagnostics-types.ts   # Raw GraphQL response types
-│       │   │
-│       │   └── devices/
-│       │       ├── graphql-device-queries.ts  # Device queries
-│       │       └── graphql-device-types.ts    # Raw response types
-│       │
-│       └── rest/
-│           ├── diagnostics/
-│           │   └── rest-diagnostics-endpoints.ts  # REST endpoints for diagnostics
-│           └── _shared/
-│               └── rest-client.ts    # REST client setup
-│
-├── hooks/                           # PRESENTATION LAYER
-│   │
-│   ├── diagnostics/
-│   │   ├── use-device-inspection.ts  # Fetch inspection data
-│   │   ├── use-device-timeline.ts    # Fetch timeline events with pagination
-│   │   └── use-timeline-filter.ts    # Timeline filter state
-│   │
-│   ├── devices/
-│   │   ├── use-devices.ts           # Device list with filters
-│   │   └── use-device-stream.ts     # WebSocket stream for real-time data
-│   │
-│   └── _shared/
-│       ├── use-pagination.ts        # Generic pagination hook
-│       └── use-refresh.ts           # Refresh trigger hook
-│
-├── components/                      # UI LAYER
-│   │
-│   ├── shared/                     # Shared UI components
-│   │   ├── section.tsx             # Bordered section component
-│   │   ├── section-header.tsx      # Section header with collapse toggle
-│   │   ├── empty-state.tsx         # Empty state component
-│   │   ├── loading-skeleton.tsx   # Loading skeleton variants
-│   │   ├── data-table.tsx         # Table wrapper with sorting/pagination
-│   │   ├── pagination.tsx         # Pagination controls
-│   │   ├── status-badge.tsx       # Status badge component
-│   │   ├── refresh-button.tsx      # Refresh button with loading state
-│   │   └── tab-nav.tsx            # Tab navigation component
-│   │
-│   ├── diagnostics/
-│   │   ├── diagnostics-inspector.tsx # Inspector tab content
-│   │   ├── diagnostics-timeline.tsx  # Timeline tab content
-│   │   ├── inspector-section.tsx  # Collapsible inspector section
-│   │   ├── inspector-field.tsx    # Key-value display field
-│   │   ├── inspector-identity.tsx # Identity section
-│   │   ├── inspector-software.tsx # Software section
-│   │   ├── inspector-registration.tsx # Registration section
-│   │   ├── inspector-connection.tsx # Connection section
-│   │   ├── inspector-telemetry.tsx # Telemetry stats section
-│   │   ├── timeline-event.tsx     # Single event row
-│   │   ├── timeline-filters.tsx   # Event type filter dropdown
-│   │   └── timeline-controls.tsx  # Auto-scroll, clear controls
-│   │
-│   └── layout/                    # (EXISTING)
-│       ├── app-layout.tsx
-│       └── auth-layout.tsx
-│       └── ...
-│
-└── routes/                         # PAGE LAYER (Routes)
-    ├── diagnostics-page.tsx         # MODIFIED - layout with tabs
-    ├── diagnostics.inspector.tsx   # NEW - Inspector tab
-    └── diagnostics.timeline.tsx    # NEW - Timeline tab
+
+ domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
+    _shared/                   # SHARED domain types
+       domain-pagination.ts  # Pagination types & helpers
+       domain-errors.ts      # Domain error types
+   
+    diagnostics/
+       diagnostics-entity.ts     # DeviceInspection, TimelineEvent, EventType
+       diagnostics-mappers.ts    # inspectionFromRaw(), eventFromRaw()
+       diagnostics-validators.ts # validateInspection(), validateEvent()
+   
+    devices/                     # Shared device domain types
+        device-entity.ts           # Device basic types
+        device-mappers.ts          # deviceBasicFromRaw()
+
+ lib/
+    api/
+        graphql/
+           _shared/
+              graphql-client.ts  # GraphQL client setup
+          
+           diagnostics/
+              graphql-diagnostics-queries.ts   # GET_DEVICE_INSPECTION, GET_DEVICE_TIMELINE
+              graphql-diagnostics-fragments.ts # inspection & timeline fragments
+              graphql-diagnostics-types.ts   # Raw GraphQL response types
+          
+           devices/
+               graphql-device-queries.ts  # Device queries
+               graphql-device-types.ts    # Raw response types
+       
+        rest/
+            diagnostics/
+               rest-diagnostics-endpoints.ts  # REST endpoints for diagnostics
+            _shared/
+                rest-client.ts    # REST client setup
+
+ hooks/                           # PRESENTATION LAYER
+   
+    diagnostics/
+       use-device-inspection.ts  # Fetch inspection data
+       use-device-timeline.ts    # Fetch timeline events with pagination
+       use-timeline-filter.ts    # Timeline filter state
+   
+    devices/
+       use-devices.ts           # Device list with filters
+       use-device-stream.ts     # WebSocket stream for real-time data
+   
+    _shared/
+        use-pagination.ts        # Generic pagination hook
+        use-refresh.ts           # Refresh trigger hook
+
+ components/                      # UI LAYER
+   
+    shared/                     # Shared UI components
+       section.tsx             # Bordered section component
+       section-header.tsx      # Section header with collapse toggle
+       empty-state.tsx         # Empty state component
+       loading-skeleton.tsx   # Loading skeleton variants
+       data-table.tsx         # Table wrapper with sorting/pagination
+       pagination.tsx         # Pagination controls
+       status-badge.tsx       # Status badge component
+       refresh-button.tsx      # Refresh button with loading state
+       tab-nav.tsx            # Tab navigation component
+   
+    diagnostics/
+       diagnostics-inspector.tsx # Inspector tab content
+       diagnostics-timeline.tsx  # Timeline tab content
+       inspector-section.tsx  # Collapsible inspector section
+       inspector-field.tsx    # Key-value display field
+       inspector-identity.tsx # Identity section
+       inspector-software.tsx # Software section
+       inspector-registration.tsx # Registration section
+       inspector-connection.tsx # Connection section
+       inspector-telemetry.tsx # Telemetry stats section
+       timeline-event.tsx     # Single event row
+       timeline-filters.tsx   # Event type filter dropdown
+       timeline-controls.tsx  # Auto-scroll, clear controls
+   
+    layout/                    # (EXISTING)
+        app-layout.tsx
+        auth-layout.tsx
+        ...
+
+ routes/                         # PAGE LAYER (Routes)
+     diagnostics-page.tsx         # MODIFIED - layout with tabs
+     diagnostics.inspector.tsx   # NEW - Inspector tab
+     diagnostics.timeline.tsx    # NEW - Timeline tab
 
 
 ---

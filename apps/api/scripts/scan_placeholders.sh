@@ -21,10 +21,10 @@ SCAN_DIR="${1:-.}"
 # Counter for findings
 TOTAL_FINDINGS=0
 
-echo -e "${BOLD}${CYAN}═══════════════════════════════════════════════════════════════════${NC}"
+echo -e "${BOLD}${CYAN}${NC}"
 echo -e "${BOLD}${CYAN}  Implementation Placeholder Scanner${NC}"
 echo -e "${BOLD}${CYAN}  Scanning for: incomplete, simplified, placeholder comments${NC}"
-echo -e "${CYAN}═══════════════════════════════════════════════════════════════════${NC}"
+echo -e "${CYAN}${NC}"
 echo ""
 
 # Define search patterns with descriptions
@@ -109,13 +109,13 @@ sort -u "$RESULTS_FILE" > "${RESULTS_FILE}.sorted"
 mv "${RESULTS_FILE}.sorted" "$RESULTS_FILE"
 
 # Categorize findings
-echo -e "${BOLD}${YELLOW}═══════════════════════════════════════════════════════════════════${NC}"
+echo -e "${BOLD}${YELLOW}${NC}"
 echo -e "${BOLD}${YELLOW}  SCAN RESULTS${NC}"
-echo -e "${YELLOW}═══════════════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}${NC}"
 echo ""
 
 if [ $TOTAL_FINDINGS -eq 0 ]; then
-    echo -e "${GREEN}✓ No placeholder comments found!${NC}"
+    echo -e "${GREEN} No placeholder comments found!${NC}"
     echo ""
     exit 0
 fi
@@ -192,9 +192,9 @@ while IFS=: read -r file linenum pattern content; do
 done < "$RESULTS_FILE"
 
 # Summary
-echo -e "${BOLD}${YELLOW}═══════════════════════════════════════════════════════════════════${NC}"
+echo -e "${BOLD}${YELLOW}${NC}"
 echo -e "${BOLD}${YELLOW}  SUMMARY${NC}"
-echo -e "${YELLOW}═══════════════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}${NC}"
 echo ""
 echo -e "  ${RED}Implementation Issues:${NC}  ${CATEGORY_COUNTS[implementation]}"
 echo -e "  ${YELLOW}Mock/Dummy Code:${NC}        ${CATEGORY_COUNTS[mock]}"
@@ -208,15 +208,15 @@ echo ""
 
 # Prioritized warnings
 if [ ${CATEGORY_COUNTS[implementation]} -gt 0 ]; then
-    echo -e "${RED}⚠ Found ${CATEGORY_COUNTS[implementation]} incomplete implementations - these need work!${NC}"
+    echo -e "${RED} Found ${CATEGORY_COUNTS[implementation]} incomplete implementations - these need work!${NC}"
 fi
 
 if [ ${CATEGORY_COUNTS[security]} -gt 0 ]; then
-    echo -e "${RED}⚠ Found ${CATEGORY_COUNTS[security]} security-related comments - review carefully!${NC}"
+    echo -e "${RED} Found ${CATEGORY_COUNTS[security]} security-related comments - review carefully!${NC}"
 fi
 
 if [ ${CATEGORY_COUNTS[mock]} -gt 0 ]; then
-    echo -e "${YELLOW}⚠ Found ${CATEGORY_COUNTS[mock]} mock/dummy implementations - may need real code${NC}"
+    echo -e "${YELLOW} Found ${CATEGORY_COUNTS[mock]} mock/dummy implementations - may need real code${NC}"
 fi
 
 echo ""

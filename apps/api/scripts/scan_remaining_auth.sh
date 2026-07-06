@@ -3,14 +3,14 @@
 
 cd "$(dirname "$0")/.."
 
-echo "╔════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗"
-echo "║                    SCANNING: REMAINING internal/auth/ FILES                                          ║"
-echo "╚════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝"
+echo ""
+echo "                    SCANNING: REMAINING internal/auth/ FILES                                          "
+echo ""
 echo ""
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "1. REMAINING FILES IN internal/auth/"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
 echo "Files:"
@@ -23,14 +23,14 @@ for f in internal/auth/*.go; do
 done
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "2. MIGRATION STATUS"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
-echo "┌────────────────────────────────────────────────┬────────────────────────────────────────┐"
-echo "│ File                                              │ Migration Status                        │"
-echo "├────────────────────────────────────────────────┼────────────────────────────────────────┤"
+echo ""
+echo " File                                               Migration Status                        "
+echo ""
 
 # Check each file
 for f in internal/auth/*.go; do
@@ -40,62 +40,62 @@ for f in internal/auth/*.go; do
         case "$name" in
             "jwt.go")
                 if grep -rq "JWTManager\|Generate\|Verify" internal/application/auth/ 2>/dev/null; then
-                    echo "│ $name                            │ ✅ In application/auth/           │"
+                    echo " $name                              In application/auth/           "
                 else
-                    echo "│ $name                            │ ⚠️  Needs migration              │"
+                    echo " $name                               Needs migration              "
                 fi
                 ;;
             "google_token.go"|"github.go")
                 if grep -rq "Google\|GitHub\|OAuth" internal/domain/oauth/ 2>/dev/null || grep -rq "Google\|GitHub" internal/application/auth/ 2>/dev/null; then
-                    echo "│ $name                            │ ✅ In domain/application/        │"
+                    echo " $name                              In domain/application/        "
                 else
-                    echo "│ $name                            │ ⚠️  Needs migration              │"
+                    echo " $name                               Needs migration              "
                 fi
                 ;;
             "session.go")
                 if grep -rq "SessionManager" internal/application/ 2>/dev/null || grep -rq "SessionManager" internal/infrastructure/storage/session.go 2>/dev/null; then
-                    echo "│ $name                            │ ✅ In application/storage       │"
+                    echo " $name                              In application/storage       "
                 else
-                    echo "│ $name                            │ ⚠️  Needs migration              │"
+                    echo " $name                               Needs migration              "
                 fi
                 ;;
             "validate.go")
                 if grep -rq "Validate" internal/domain/ 2>/dev/null; then
-                    echo "│ $name                            │ ✅ In domain layer              │"
+                    echo " $name                              In domain layer              "
                 else
-                    echo "│ $name                            │ ⚠️  Needs migration              │"
+                    echo " $name                               Needs migration              "
                 fi
                 ;;
             "password.go")
                 if grep -rq "HashPassword\|VerifyPassword" internal/infrastructure/auth/ 2>/dev/null; then
-                    echo "│ $name                            │ ✅ In infrastructure/auth/      │"
+                    echo " $name                              In infrastructure/auth/      "
                 else
-                    echo "│ $name                            │ ⚠️  Needs migration              │"
+                    echo " $name                               Needs migration              "
                 fi
                 ;;
             "lockout.go"|"totp.go"|"totp_qr.go"|"origin.go"|"ratelimit.go")
                 if grep -rq "Lockout\|TOTP\|Origin\|RateLimit" internal/infrastructure/security/ 2>/dev/null; then
-                    echo "│ $name                            │ ✅ In infrastructure/security/  │"
+                    echo " $name                              In infrastructure/security/  "
                 else
-                    echo "│ $name                            │ ⚠️  Needs migration              │"
+                    echo " $name                               Needs migration              "
                 fi
                 ;;
             "revocation.go"|"request_signer.go")
-                echo "│ $name                            │ ⚠️  Check middleware/security   │"
+                echo " $name                               Check middleware/security   "
                 ;;
             *)
-                echo "│ $name                            │ ⚠️  Unknown                       │"
+                echo " $name                               Unknown                       "
                 ;;
         esac
     fi
 done
 
-echo "└────────────────────────────────────────────────┴────────────────────────────────────────┘"
+echo ""
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "3. KEY LOGIC SUMMARY"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
 echo "JWT/Token Management:"
@@ -115,9 +115,9 @@ echo "Validation:"
 grep "^func " internal/auth/validate.go 2>/dev/null | head -10
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "4. FILES TO MIGRATE"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
 echo "Files needing migration to infrastructure/security/ or application/:"
@@ -136,10 +136,10 @@ for f in internal/auth/*.go; do
         esac
         
         if [ "$migrated" = "no" ]; then
-            echo "  ⚠️  $name"
+            echo "    $name"
         fi
     fi
 done
 
 echo ""
-echo "════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗"
+echo ""

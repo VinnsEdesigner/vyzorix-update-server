@@ -49,25 +49,25 @@ The Vyzorix Update Server uses **SQLite** with WAL (Write-Ahead Logging) mode fo
 
 | Version | Table/Change | Status |
 |---------|--------------|--------|
-| 1 | devices | ✅ Existing |
-| 2 | telemetry | ✅ Existing |
-| 3 | commands | ✅ Existing |
-| 4 | operators | ✅ Existing |
-| 5 | auth_sessions | ✅ Existing |
-| 6 | email_verifications | ✅ Existing |
-| 7 | password_reset_tokens | ✅ Existing |
-| 8 | settings | ✅ Existing |
-| 9 | commands (add columns) | ✅ Existing |
-| 10 | devices (command_secret_hash) | ✅ Existing |
-| 11 | operators (github_id) | ✅ Existing |
-| 12 | password_reset_resend_tracker | ✅ Existing |
-| 13 | api_clients | ✅ Existing |
-| 14 | signing_keys | ✅ Existing |
-| 15 | session_revocations | ✅ Existing |
-| 16 | failed_login_attempts | ✅ Existing |
-| 17 | account_lockouts | ✅ Existing |
-| 18 | audit_logs | ✅ Existing |
-| 19 | message_queue | ✅ Existing |
+| 1 | devices |  Existing |
+| 2 | telemetry |  Existing |
+| 3 | commands |  Existing |
+| 4 | operators |  Existing |
+| 5 | auth_sessions |  Existing |
+| 6 | email_verifications |  Existing |
+| 7 | password_reset_tokens |  Existing |
+| 8 | settings |  Existing |
+| 9 | commands (add columns) |  Existing |
+| 10 | devices (command_secret_hash) |  Existing |
+| 11 | operators (github_id) |  Existing |
+| 12 | password_reset_resend_tracker |  Existing |
+| 13 | api_clients |  Existing |
+| 14 | signing_keys |  Existing |
+| 15 | session_revocations |  Existing |
+| 16 | failed_login_attempts |  Existing |
+| 17 | account_lockouts |  Existing |
+| 18 | audit_logs |  Existing |
+| 19 | message_queue |  Existing |
 | **20** | **events** | **NEW** |
 | **21** | **inbox_requests, registration_logs** | **NEW** |
 | **22** | **device_logs, device_events** | **NEW** |
@@ -626,85 +626,85 @@ ALTER TABLE devices ADD COLUMN fcm_token_refreshed_at INTEGER;
 ## 6. Schema Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           VYZORIX DATABASE SCHEMA                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐               │
-│  │   devices    │────►│  telemetry   │     │   commands   │               │
-│  │              │     │              │     │              │               │
-│  │ • id (PK)   │     │ • id (PK)   │     │ • id (PK)   │               │
-│  │ • imei      │     │ • device_id │     │ • device_id │               │
-│  │ • online    │     │ • payload   │     │ • type      │               │
-│  │ • fcm_token │     │ • risk_score│     │ • status    │               │
-│  │ • +14 cols │     │ • buffer    │     │ • expires_at│               │
-│  └──────┬───────┘     │ • temp     │     └──────┬───────┘               │
-│         │              └──────────────┘            │                       │
-│         │                                              │                       │
-│         ├──────►┌──────────────┐                                          │
-│         │       │    events    │ (v20)                                     │
-│         │       │ • event_type │                                          │
-│         │       │ • severity   │                                          │
-│         │       │ • metadata   │                                          │
-│         │       └──────────────┘                                          │
-│         │                                                              │
-│         ├──────►┌──────────────────┐                                    │
-│         │       │  inbox_requests  │ (v21)                                │
-│         │       │ • imei (UNIQUE) │                                    │
-│         │       │ • status        │                                    │
-│         │       │ • command_secret│                                    │
-│         │       └──────────────────┘                                    │
-│         │                                                              │
-│         ├──────►┌──────────────────┐                                    │
-│         │       │ registration_logs │ (v21)                                │
-│         │       └──────────────────┘                                    │
-│         │                                                              │
-│         ├──────►┌──────────────┐                                        │
-│         │       │ device_logs  │ (v22)                                    │
-│         │       └──────────────┘                                        │
-│         │                                                              │
-│         ├──────►┌──────────────┐                                        │
-│         │       │device_events │ (v22)                                     │
-│         │       └──────────────┘                                        │
-│         │                                                              │
-│         └──────►┌──────────────┐                                        │
-│                 │message_queue │ (v19)                                     │
-│                 └──────────────┘                                        │
-│                                                                            │
-│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐               │
-│  │  operators   │────►│auth_sessions │────►│refresh_tokens│ (v25)         │
-│  │              │     │              │     │              │               │
-│  │ • id (PK)   │     │ • id (PK)   │     │ • token_hash│               │
-│  │ • email     │     │ • operator_id│     └──────────────┘               │
-│  │ • password  │     └──────────────┘                                    │
-│  │ • mfa_enab  │                                                          │
-│  │ • thresholds│     ┌──────────────┐     ┌──────────────┐               │
-│  └──────┬──────┘     │ operator_    │     │notification_ │               │
-│         │     │     │ settings     │     │audit_log    │ (v26)         │
-│         │     │     │ (v24)       │     │              │               │
-│         │     └────►└──────────────┘     └──────────────┘               │
-│         │                                                                  │
-│         ├──────►┌──────────────┐     ┌──────────────┐               │
-│         │       │email_verifs  │     │pwd_reset_   │               │
-│         │       └──────────────┘     │tokens       │               │
-│         │                              └──────────────┘               │
-│         ├──────►┌──────────────┐                                    │
-│         │       │audit_logs   │                                    │
-│         │       └──────────────┘                                    │
-│         │                                                                  │
-│  ┌─────▼──────┐     ┌──────────────┐                                    │
-│  │api_clients │────►│ signing_keys │                                    │
-│  │            │     └──────────────┘                                    │
-│  └────────────┘                                                         │
-│                                                                            │
-│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐               │
-│  │update_      │────►│update_pushes │────►│update_push_ │               │
-│  │versions (v23)     │              │     │devices     │ (v23)         │
-│  │ • version   │     │ • status    │     │ • status    │               │
-│  │ • is_latest │     │ • scheduled  │     └──────────────┘               │
-│  └──────────────┘     └──────────────┘                                    │
-│                                                                            │
-└─────────────────────────────────────────────────────────────────────────────┘
+
+                           VYZORIX DATABASE SCHEMA                             
+
+                                                                             
+                           
+     devices      telemetry           commands                  
+                                                                     
+   • id (PK)         • id (PK)         • id (PK)                  
+   • imei            • device_id       • device_id                
+   • online          • payload         • type                     
+   • fcm_token       • risk_score      • status                   
+   • +14 cols       • buffer          • expires_at               
+        • temp                         
+                                                          
+                                                                              
+                                                   
+                    events     (v20)                                     
+                 • event_type                                           
+                 • severity                                             
+                 • metadata                                             
+                                                          
+                                                                       
+                                             
+                  inbox_requests   (v21)                                
+                 • imei (UNIQUE)                                     
+                 • status                                            
+                 • command_secret                                    
+                                                    
+                                                                       
+                                             
+                 registration_logs  (v21)                                
+                                                    
+                                                                       
+                                                 
+                 device_logs   (v22)                                    
+                                                        
+                                                                       
+                                                 
+                device_events  (v22)                                     
+                                                        
+                                                                       
+                                                 
+                 message_queue  (v19)                                     
+                                                         
+                                                                            
+                           
+    operators   auth_sessions refresh_tokens (v25)         
+                                                                     
+   • id (PK)         • id (PK)         • token_hash               
+   • email           • operator_id                    
+   • password                                           
+   • mfa_enab                                                            
+   • thresholds                         
+        operator_         notification_                
+                    settings          audit_log     (v26)         
+                    (v24)                                         
+                                  
+                                                                           
+                             
+                email_verifs       pwd_reset_                  
+                     tokens                      
+                                                      
+                                             
+                audit_logs                                       
+                                                    
+                                                                           
+                                           
+  api_clients  signing_keys                                     
+                                                       
+                                                           
+                                                                            
+                           
+  update_      update_pushes update_push_                
+  versions (v23)                        devices      (v23)         
+   • version         • status          • status                   
+   • is_latest       • scheduled                      
+                                           
+                                                                            
+
 ```
 
 ---
@@ -712,36 +712,36 @@ ALTER TABLE devices ADD COLUMN fcm_token_refreshed_at INTEGER;
 ## 7. Entity Relationships
 
 ```
-operators (1) ────── (N) auth_sessions
-     │                    │
-     ├───── (1) operator_settings (1:1)
-     ├───── (N) refresh_tokens
-     ├───── (N) email_verifications
-     ├───── (N) password_reset_tokens
-     ├───── (N) audit_logs
-     ├───── (N) notification_audit_log
-     ├───── (N) inbox_requests (as operator)
-     └───── (N) registration_logs (as operator)
+operators (1)  (N) auth_sessions
+                         
+      (1) operator_settings (1:1)
+      (N) refresh_tokens
+      (N) email_verifications
+      (N) password_reset_tokens
+      (N) audit_logs
+      (N) notification_audit_log
+      (N) inbox_requests (as operator)
+      (N) registration_logs (as operator)
 
-api_clients (1) ─── (N) signing_keys
+api_clients (1)  (N) signing_keys
 
-devices (1) ────── (N) telemetry
-     │
-     ├───── (N) commands
-     ├───── (N) events
-     ├───── (N) message_queue
-     ├───── (N) device_logs
-     ├───── (N) device_events
-     ├───── (N) registration_logs
-     ├───── (N) update_push_devices
-     │
-     └──── (0/1) inbox_requests (inbox entry for this device)
+devices (1)  (N) telemetry
+     
+      (N) commands
+      (N) events
+      (N) message_queue
+      (N) device_logs
+      (N) device_events
+      (N) registration_logs
+      (N) update_push_devices
+     
+      (0/1) inbox_requests (inbox entry for this device)
 
-inbox_requests ──becomes──> devices (after registration)
+inbox_requests becomes> devices (after registration)
 
-update_versions (1) ─── (N) update_pushes
-                              │
-                              └───── (N) update_push_devices
+update_versions (1)  (N) update_pushes
+                              
+                               (N) update_push_devices
 ```
 
 ---

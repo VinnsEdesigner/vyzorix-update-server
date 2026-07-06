@@ -27,50 +27,50 @@ These features enable:
 # 1. Architecture Specifications
 
 ```text
-  ┌────────────────────────────────────────────────────────────────────────────────────────┐
-  │                               RENDER CONTROL SERVER (Go)                               │
-  │  ┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────────┐  │
-  │  │  Firebase Admin SDK  │    │   WebSocket Broker   │    │  React Telemetry UI      │  │
-  │  │  (fcm/notifier.go)   │    │   (hub/hub.go)       │    │  (frontend/src/)         │  │
-  │  └──────────┬───────────┘    └──────────▲───────────┘    └────────────▲─────────────┘  │
-  └─────────────┼──────────────────────────┼──────────────────────────────┼────────────────┘
-                │ High-Priority            │ Bidirectional                │ WebSocket
-                │ Silent Push (Wake)       │ HMAC-Signed TCP (C2)         │ Live Stream
-                ▼                          ▼                              ▼
-  ┌────────────────────────────────────────────────────────────────────────────────────────┐
-  │                                 VYZORIX CLIENT DAEMON                                  │
-  │  ┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────────┐  │
-  │  │  FcmWakeLockHolder   │    │ WebSocketClientMgr   │    │  SecureSupportHelper     │  │
-  │  │                      │    │                      │    │                          │  │
-  │  │  - 20s lock on cmds  │    │  - Exponential Jitter│    │  - Binds SQLCipher to    │  │
-  │  │  - 10s on WAKE_DAEMON│    │  - Socket Heartbeats │    │    the Room DB instance  │  │
-  │  │  - Launches BAL-expt │    │  - Flushes Pending   │    │                          │  │
-  │  └──────────┬───────────┘    │    ResultQueue on    │    └────────────▲─────────────┘  │
-  │             │                │    reconnect         │                 │                │
-  │             ▼                └──────────┬───────────┘                 │ Binds AES-256  │
-  │     FcmCommandParser                    │                             │ passphrase     │
-  │             │                           ▼                             │                │
-  │             ▼           CommandHmacValidator ◄── NonceCache           │                │
-  │     (HMAC validated)              │                                   │                │
-  │             │                     ▼                                   │                │
-  │             └──────► RemoteCommandExecutor ──────────────────► KeystoreManager        │
-  │                                   │                            (Sealed AES key)        │
-  │                                   ▼                                   │                │
-  │                          RemoteCommandDispatcher                      │                │
-  │                                   │                          DeviceSecretStore ────────┘
-  │                                   ▼                          (command_secret encrypted)│
-  │                          Target Subsystem executes                                     │
-  │                                   │                                                    │
-  │                                   ▼                                                    │
-  │                    RemoteCommandResultDispatcher                                       │
-  │                                   │                                                    │
-  │                    ┌──────────────┴──────────────┐                                    │
-  │                    │                             │                                    │
-  │             WS connected?                  WS reconnecting?                           │
-  │                    │                             │                                    │
-  │             Send immediately           PendingResultQueue                             │
-  │                                        (flush on reconnect)                           │
-  └────────────────────────────────────────────────────────────────────────────────────────┘
+  
+                                 RENDER CONTROL SERVER (Go)                               
+              
+      Firebase Admin SDK         WebSocket Broker         React Telemetry UI        
+      (fcm/notifier.go)          (hub/hub.go)             (frontend/src/)           
+              
+  
+                 High-Priority             Bidirectional                 WebSocket
+                 Silent Push (Wake)        HMAC-Signed TCP (C2)          Live Stream
+                                                                        
+  
+                                   VYZORIX CLIENT DAEMON                                  
+              
+      FcmWakeLockHolder        WebSocketClientMgr         SecureSupportHelper       
+                                                                                    
+      - 20s lock on cmds        - Exponential Jitter      - Binds SQLCipher to      
+      - 10s on WAKE_DAEMON      - Socket Heartbeats         the Room DB instance    
+      - Launches BAL-expt       - Flushes Pending                                   
+            ResultQueue on          
+                                   reconnect                                          
+                                                 Binds AES-256  
+       FcmCommandParser                                                  passphrase     
+                                                                                       
+                          CommandHmacValidator  NonceCache                           
+       (HMAC validated)                                                                 
+                                                                                       
+                RemoteCommandExecutor  KeystoreManager        
+                                                                 (Sealed AES key)        
+                                                                                        
+                            RemoteCommandDispatcher                                      
+                                                               DeviceSecretStore 
+                                                               (command_secret encrypted)
+                            Target Subsystem executes                                     
+                                                                                         
+                                                                                         
+                      RemoteCommandResultDispatcher                                       
+                                                                                         
+                                                          
+                                                                                       
+               WS connected?                  WS reconnecting?                           
+                                                                                       
+               Send immediately           PendingResultQueue                             
+                                          (flush on reconnect)                           
+  
 ```
 
 ---
@@ -175,14 +175,14 @@ All commands are HMAC-SHA256 signed. See COMMAND_SECURITY.md for signing specifi
 
 | Command Action | Parameters | Natively Allowed | Non-Root Bypass | HMAC Signed |
 |----------------|------------|------------------|-----------------|-------------|
-| `FORCE_SPEAKER` | None | Yes | `MODE_IN_COMMUNICATION` + `isSpeakerphoneOn=true`; 500ms reassertion loop via AdaptiveSamplingController | ✅ |
-| `RESET_AUDIO_HAL` | None | No (direct shell blocked) | Soft HAL reset: cycles BT streams + sub-audible micro-burst under `USAGE_VOICE_COMMUNICATION` to force HAL re-probe | ✅ |
-| `TOGGLE_CAPTURE` | `active` (boolean) | Yes | Starts/stops `AudioRecord` read loops on active MediaProjection thread pool | ✅ |
-| `REINIT_PROJECTION` | None | No (background activity blocked) | High-Priority `fullScreenIntent` notification heads-up → immediately automated by Accessibility engine (<100ms) | ✅ |
-| `DUMP_FLIGHT_DATA` | None | Yes | Gathers local metrics → JSON → postback payload immediately | ✅ |
-| `UPLOAD_CRASH_ZIP` | None | Yes | `CrashSnapshotExporter` zips offline SQLite logs → securely POSTs binary block | ✅ |
-| `SET_LOG_LEVEL` | `level` (string) | Yes | Dynamically modifies `Logger.minLogLevel` in memory | ✅ |
-| `WAKE_UP_UPDATER` | None | Yes | Overrides WorkManager delays → runs `UpdateChecker` instantly | ✅ |
+| `FORCE_SPEAKER` | None | Yes | `MODE_IN_COMMUNICATION` + `isSpeakerphoneOn=true`; 500ms reassertion loop via AdaptiveSamplingController |  |
+| `RESET_AUDIO_HAL` | None | No (direct shell blocked) | Soft HAL reset: cycles BT streams + sub-audible micro-burst under `USAGE_VOICE_COMMUNICATION` to force HAL re-probe |  |
+| `TOGGLE_CAPTURE` | `active` (boolean) | Yes | Starts/stops `AudioRecord` read loops on active MediaProjection thread pool |  |
+| `REINIT_PROJECTION` | None | No (background activity blocked) | High-Priority `fullScreenIntent` notification heads-up → immediately automated by Accessibility engine (<100ms) |  |
+| `DUMP_FLIGHT_DATA` | None | Yes | Gathers local metrics → JSON → postback payload immediately |  |
+| `UPLOAD_CRASH_ZIP` | None | Yes | `CrashSnapshotExporter` zips offline SQLite logs → securely POSTs binary block |  |
+| `SET_LOG_LEVEL` | `level` (string) | Yes | Dynamically modifies `Logger.minLogLevel` in memory |  |
+| `WAKE_UP_UPDATER` | None | Yes | Overrides WorkManager delays → runs `UpdateChecker` instantly |  |
 
 ## 3.2 WebSocket Command Frame (JSON Contract)
 
@@ -240,36 +240,36 @@ Rejection result (HMAC validation failed):
 # 4. Storage Encryption & Cryptographic Pipeline
 
 ```text
-  ┌──────────────────────┐
-  │   Android Keystore   │  ← Cryptographically sealed inside hardware Secure Element (SoC)
-  │                      │    Software fallback for unreliable Unisoc SC9863A TEE:
-  │                      │    derives key from install-time UUID + randomized salt
-  └──────────┬───────────┘
-             │ getOrGenerateDatabaseKey()
-             ▼
-  ┌──────────────────────┐
-  │   SupportFactory     │  ← Dynamically unlocks SQLCipher DB using PBKDF2 hash
-  └──────────┬───────────┘
-             │ Binds factory
-             ▼
-  ┌──────────────────────┐
-  │   Room DB (Open)     │  ← Unencrypted SQL queries in local volatile memory
-  └──────────────────────┘
+  
+     Android Keystore     ← Cryptographically sealed inside hardware Secure Element (SoC)
+                            Software fallback for unreliable Unisoc SC9863A TEE:
+                            derives key from install-time UUID + randomized salt
+  
+              getOrGenerateDatabaseKey()
+             
+  
+     SupportFactory       ← Dynamically unlocks SQLCipher DB using PBKDF2 hash
+  
+              Binds factory
+             
+  
+     Room DB (Open)       ← Unencrypted SQL queries in local volatile memory
+  
 
   Separately — command_secret encryption:
-  ┌──────────────────────┐
-  │   Android Keystore   │
-  └──────────┬───────────┘
-             │ AES-GCM key
-             ▼
-  ┌──────────────────────┐
-  │   TokenEncryptor.kt  │  ← Encrypts command_secret before DeviceSecretStore write
-  └──────────┬───────────┘
-             │
-             ▼
-  ┌──────────────────────┐
-  │  DeviceSecretStore   │  ← Encrypted blob in DataStore; never stored plaintext
-  └──────────────────────┘
+  
+     Android Keystore   
+  
+              AES-GCM key
+             
+  
+     TokenEncryptor.kt    ← Encrypts command_secret before DeviceSecretStore write
+  
+             
+             
+  
+    DeviceSecretStore     ← Encrypted blob in DataStore; never stored plaintext
+  
 ```
 
 ## 4.1 SQLCipher Integration Details
@@ -304,54 +304,54 @@ CommandHmacValidator.validate(frame, secret)
 
 ```text
  Render Control Server           Google FCM Cloud Gateway        Nokia C22 Device (Sleeping)
-        │                                   │                              │
-        │ 1. POST /sendPush                 │                              │
-        ├──────────────────────────────────►│                              │
-        │  - High-Priority                  │                              │
-        │  - Silent payload                 │                              │
-        │  - action field present           │                              │
-        │                                   │ 2. Delivers silent push      │
-        │                                   ├─────────────────────────────►│
-        │                                   │                              │
-        │                                   │                              │ 3. VyzorixMessagingService
-        │                                   │                              │    receives push intent
-        │                                   │                              │
-        │                                   │                              │ 4. FcmWakeLockHolder grabs
-        │                                   │                              │    20s CPU lock (command
-        │                                   │                              │    payload detected)
-        │                                   │                              │
-        │                                   │                              │ 5. FcmCommandParser parses
-        │                                   │                              │    and deserializes frame
-        │                                   │                              │
-        │                                   │                              │ 6. CommandHmacValidator
-        │                                   │                              │    validates HMAC signature
-        │                                   │                              │    checks timestamp ±30s
-        │                                   │                              │    checks nonce not replayed
-        │                                   │                              │
-        │                                   │                              │ 7. If re-grant needed:
-        │                                   │                              │    posts FullScreenIntent
-        │                                   │                              │    heads-up notification
-        │                                   │                              │
-        │                                   │                              │ 8. Trampoline UI launches;
-        │                                   │                              │    Automation Daemon clicks
-        │                                   │                              │    "Start Now" (<100ms)
-        │                                   │                              │
-        │                                   │                              │ 9. Command executes
-        │                                   │                              │    (~1-5s)
-        │                                   │                              │
-        │                                   │                              │ 10. RemoteCommandResult
-        │                                   │                              │     Dispatcher checks WS
-        │                                   │                              │
-        │                                   │                  ┌───────────┴───────────┐
-        │                                   │             WS connected?         WS reconnecting?
-        │                                   │                  │                       │
-        │ 11a. Result delivered             │            send immediately      PendingResultQueue
-        │◄──────────────────────────────────┼────────────────────┘            .enqueue(result)
-        │                                   │
-        │                                   │                              │ 12. WS reconnects
-        │ 11b. Result delivered on reconnect│                              │     onOpen fires
-        │◄──────────────────────────────────┼──────────────────────────────┤
-        │                                   │     PendingResultQueue flush │
+                                                                         
+         1. POST /sendPush                                               
+                                      
+          - High-Priority                                                
+          - Silent payload                                               
+          - action field present                                         
+                                            2. Delivers silent push      
+                                           
+                                                                         
+                                                                          3. VyzorixMessagingService
+                                                                             receives push intent
+                                                                         
+                                                                          4. FcmWakeLockHolder grabs
+                                                                             20s CPU lock (command
+                                                                             payload detected)
+                                                                         
+                                                                          5. FcmCommandParser parses
+                                                                             and deserializes frame
+                                                                         
+                                                                          6. CommandHmacValidator
+                                                                             validates HMAC signature
+                                                                             checks timestamp ±30s
+                                                                             checks nonce not replayed
+                                                                         
+                                                                          7. If re-grant needed:
+                                                                             posts FullScreenIntent
+                                                                             heads-up notification
+                                                                         
+                                                                          8. Trampoline UI launches;
+                                                                             Automation Daemon clicks
+                                                                             "Start Now" (<100ms)
+                                                                         
+                                                                          9. Command executes
+                                                                             (~1-5s)
+                                                                         
+                                                                          10. RemoteCommandResult
+                                                                              Dispatcher checks WS
+                                                                         
+                                                             
+                                                        WS connected?         WS reconnecting?
+                                                                                    
+         11a. Result delivered                         send immediately      PendingResultQueue
+                    .enqueue(result)
+                                           
+                                                                          12. WS reconnects
+         11b. Result delivered on reconnect                                   onOpen fires
+        
+                                                PendingResultQueue flush 
 ```
 
 ---

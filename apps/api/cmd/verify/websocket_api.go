@@ -33,9 +33,9 @@ type wsImpl struct {
 }
 
 func verifyWebSocket() bool {
-	fmt.Println("\n╔══════════════════════════════════════════════════════════════════════════════╗")
-	fmt.Println("║  REALTIME_WEBSOCKET_ARCHITECTURE.md VERIFICATION                         ║")
-	fmt.Println("╚══════════════════════════════════════════════════════════════════════════════╝")
+	fmt.Println("\n")
+	fmt.Println("  REALTIME_WEBSOCKET_ARCHITECTURE.md VERIFICATION                         ")
+	fmt.Println("")
 	root := "/workspace/project/vyzorix-update-server"
 	spec := wsLoadSpec()
 	impl := wsScanImpl(root)
@@ -50,14 +50,14 @@ func verifyWebSocket() bool {
 	wsVerifyMessages(spec, impl, root)
 	pass := atomic.LoadUint64(&wsPassCount)
 	fail := atomic.LoadUint64(&wsFailCount)
-	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  VERIFICATION SUMMARY")
-	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n\n    Checks Passed:      %d", pass)
 	fmt.Printf("\n    Checks Failed:      %d", fail)
 	fmt.Printf("\n\n")
-	if fail == 0 { fmt.Printf("\n  ✅ ALL WEBSOCKET CHECKS PASSED!")
-	} else { fmt.Printf("\n  ❌ SOME WEBSOCKET CHECKS FAILED") }
+	if fail == 0 { fmt.Printf("\n   ALL WEBSOCKET CHECKS PASSED!")
+	} else { fmt.Printf("\n   SOME WEBSOCKET CHECKS FAILED") }
 	fmt.Printf("\n")
 	return fail == 0
 }
@@ -139,9 +139,9 @@ func wsCollectGoAST(content string, collect map[string]bool) {
 }
 
 func wsVerifyHub(_ *wsSpec, _ *wsImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  WEBSOCKET HUB VERIFICATION (Section 2.2)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	hubFiles := []string{"apps/api/internal/domain/ws/hub.go", "apps/api/internal/websocket/hub.go", "apps/api/internal/ws/hub.go"}
 	hubFound := false
 	for _, p := range hubFiles {
@@ -149,14 +149,14 @@ func wsVerifyHub(_ *wsSpec, _ *wsImpl, root string) {
 		if _, err := os.Stat(path); err == nil {
 			data, _ := os.ReadFile(path)
 			if strings.Contains(string(data), "Hub") || strings.Contains(string(data), "hub") {
-				fmt.Printf("    ✅ WebSocket Hub found: %s\n", p)
+				fmt.Printf("     WebSocket Hub found: %s\n", p)
 				atomic.AddUint64(&wsPassCount, 1)
 				hubFound = true
 				break
 			}
 		}
 	}
-	if !hubFound { fmt.Printf("    ❌ WebSocket Hub - NOT FOUND\n"); atomic.AddUint64(&wsFailCount, 1) }
+	if !hubFound { fmt.Printf("     WebSocket Hub - NOT FOUND\n"); atomic.AddUint64(&wsFailCount, 1) }
 	clientTypes := []string{"DeviceClient", "DashboardClient"}
 	for _, ct := range clientTypes {
 		found := false
@@ -164,39 +164,39 @@ func wsVerifyHub(_ *wsSpec, _ *wsImpl, root string) {
 			path := filepath.Join(root, p)
 			if _, err := os.Stat(path); err == nil {
 				data, _ := os.ReadFile(path)
-				if strings.Contains(string(data), ct) { fmt.Printf("    ✅ %s type found\n", ct); atomic.AddUint64(&wsPassCount, 1); found = true; break }
+				if strings.Contains(string(data), ct) { fmt.Printf("     %s type found\n", ct); atomic.AddUint64(&wsPassCount, 1); found = true; break }
 			}
 		}
-		if !found { fmt.Printf("    ⚠️  %s type - verify manually\n", ct); atomic.AddUint64(&wsPassCount, 1) }
+		if !found { fmt.Printf("      %s type - verify manually\n", ct); atomic.AddUint64(&wsPassCount, 1) }
 	}
 }
 
 func wsVerifyHandlers(_ *wsSpec, _ *wsImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  WEBSOCKET HANDLER VERIFICATION (Section 4)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	handlerBase := filepath.Join(root, "apps/api/internal/api/handlers/websocket")
 	found := 0
 	expectedFiles := []string{"stream_message.go", "websocket_handler.go", "websocket_presenter.go", "websocket_stream.go"}
 	for _, file := range expectedFiles {
 		path := filepath.Join(handlerBase, file)
-		if _, err := os.Stat(path); err == nil { fmt.Printf("    ✅ handlers/websocket/%s\n", file); atomic.AddUint64(&wsPassCount, 1); found++ }
+		if _, err := os.Stat(path); err == nil { fmt.Printf("     handlers/websocket/%s\n", file); atomic.AddUint64(&wsPassCount, 1); found++ }
 	}
 	if found == len(expectedFiles) { fmt.Printf("      All WebSocket handler files verified\n") }
 	_ = found
 }
 
 func wsVerifyEndpoints(spec *wsSpec, _ *wsImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  ENDPOINT VERIFICATION")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	routeContent := wsGetRouteContent(root)
 	found := 0
 	for _, ep := range spec.endpoints {
 		paths := []string{ep.Path, strings.TrimPrefix(ep.Path, "/v1"), "/ws" + strings.TrimPrefix(ep.Path, "/v1"), strings.TrimPrefix(ep.Path, "/v1/device")}
 		registered := false
 		for _, p := range paths { if strings.Contains(routeContent, "\""+p+"\"") { registered = true; break } }
-		if registered { fmt.Printf("    ✅ %s %s\n", ep.Method, ep.Path); atomic.AddUint64(&wsPassCount, 1); found++ } else { fmt.Printf("    ❌ %s %s - NOT REGISTERED\n", ep.Method, ep.Path); atomic.AddUint64(&wsFailCount, 1) }
+		if registered { fmt.Printf("     %s %s\n", ep.Method, ep.Path); atomic.AddUint64(&wsPassCount, 1); found++ } else { fmt.Printf("     %s %s - NOT REGISTERED\n", ep.Method, ep.Path); atomic.AddUint64(&wsFailCount, 1) }
 	}
 	fmt.Printf("\n    Registered endpoints: %d/%d\n", found, len(spec.endpoints))
 }
@@ -209,57 +209,57 @@ func wsGetRouteContent(root string) string {
 }
 
 func wsVerifyDomain(spec *wsSpec, _ *wsImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	domainBase := filepath.Join(root, "apps/api/internal/domain")
 	found := 0
 	for name, d := range spec.domain {
 		domainPath := filepath.Join(domainBase, d.Subdir)
-		if _, err := os.Stat(domainPath); err != nil { fmt.Printf("    ⚠️  domain/%s/ - Directory not found\n", name); atomic.AddUint64(&wsPassCount, 1); continue }
-		fmt.Printf("    ✅ domain/%s/\n", d.Subdir)
+		if _, err := os.Stat(domainPath); err != nil { fmt.Printf("      domain/%s/ - Directory not found\n", name); atomic.AddUint64(&wsPassCount, 1); continue }
+		fmt.Printf("     domain/%s/\n", d.Subdir)
 		atomic.AddUint64(&wsPassCount, 1)
 		for _, file := range d.Files {
 			filePath := filepath.Join(domainPath, file)
-			if _, err := os.Stat(filePath); err == nil { fmt.Printf("      ✅ %s\n", file); atomic.AddUint64(&wsPassCount, 1); found++ }
+			if _, err := os.Stat(filePath); err == nil { fmt.Printf("       %s\n", file); atomic.AddUint64(&wsPassCount, 1); found++ }
 		}
 	}
 	_ = found
 }
 
 func wsVerifyInfra(_ *wsSpec, _ *wsImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  WEBSOCKET INFRASTRUCTURE (Section 4)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	infraPaths := []string{"apps/api/internal/infrastructure/fcm/fcm_service.go", "apps/api/internal/infrastructure/storage/stream_storage.go"}
 	broadcasterFound := false
 	for _, p := range infraPaths {
 		path := filepath.Join(root, p)
 		if _, err := os.Stat(path); err == nil {
 			data, _ := os.ReadFile(path)
-			if strings.Contains(string(data), "Broadcaster") || strings.Contains(string(data), "Broadcast") { fmt.Printf("    ✅ Broadcaster found in: %s\n", filepath.Base(p)); atomic.AddUint64(&wsPassCount, 1); broadcasterFound = true; break }
+			if strings.Contains(string(data), "Broadcaster") || strings.Contains(string(data), "Broadcast") { fmt.Printf("     Broadcaster found in: %s\n", filepath.Base(p)); atomic.AddUint64(&wsPassCount, 1); broadcasterFound = true; break }
 		}
 	}
-	if !broadcasterFound { fmt.Printf("    ⚠️  Broadcaster - not found (may be in hub)\n"); atomic.AddUint64(&wsPassCount, 1) }
+	if !broadcasterFound { fmt.Printf("      Broadcaster - not found (may be in hub)\n"); atomic.AddUint64(&wsPassCount, 1) }
 	for _, p := range infraPaths {
 		path := filepath.Join(root, p)
-		if _, err := os.Stat(path); err == nil { fmt.Printf("    ✅ %s\n", p); atomic.AddUint64(&wsPassCount, 1) }
+		if _, err := os.Stat(path); err == nil { fmt.Printf("     %s\n", p); atomic.AddUint64(&wsPassCount, 1) }
 	}
 }
 
 func wsVerifyRoutes(_ *wsSpec, _ *wsImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  WEBSOCKET ROUTE REGISTRATION")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	handlerBase := filepath.Join(root, "apps/api/internal/api/handlers")
 	routePath := filepath.Join(handlerBase, "websocket/websocket_handler.go")
-	if _, err := os.Stat(routePath); err == nil { fmt.Printf("    ✅ routes: websocket/websocket_handler.go\n"); atomic.AddUint64(&wsPassCount, 1) } else { fmt.Printf("    ❌ No WebSocket route file found\n"); atomic.AddUint64(&wsFailCount, 1) }
+	if _, err := os.Stat(routePath); err == nil { fmt.Printf("     routes: websocket/websocket_handler.go\n"); atomic.AddUint64(&wsPassCount, 1) } else { fmt.Printf("     No WebSocket route file found\n"); atomic.AddUint64(&wsFailCount, 1) }
 }
 
 func wsVerifySchema(_ *wsSpec, _ *wsImpl, _ string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  WEBSOCKET MESSAGE TYPES (Section 6)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	messageTypes := map[string][]string{
 		"Device": {"Auth", "Telemetry", "Pong", "CmdAck"},
 		"Server": {"Cmd", "Ping", "Ack"},
@@ -272,23 +272,23 @@ func wsVerifySchema(_ *wsSpec, _ *wsImpl, _ string) {
 }
 
 func wsVerifyStructure(_ *wsSpec, _ *wsImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 3, 10)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	keyPaths := []string{"apps/api/internal/api/handlers/websocket/", "apps/api/internal/ws/", "apps/api/internal/infrastructure/fcm/"}
 	found := 0
 	for _, p := range keyPaths {
 		path := filepath.Join(root, p)
-		if _, err := os.Stat(path); err == nil { fmt.Printf("    ✅ %s\n", p); atomic.AddUint64(&wsPassCount, 1); found++ }
+		if _, err := os.Stat(path); err == nil { fmt.Printf("     %s\n", p); atomic.AddUint64(&wsPassCount, 1); found++ }
 	}
-	if found < len(keyPaths) { fmt.Printf("    ❌ Missing: apps/api/internal/websocket/ or internal hub\n"); atomic.AddUint64(&wsFailCount, 1) }
+	if found < len(keyPaths) { fmt.Printf("     Missing: apps/api/internal/websocket/ or internal hub\n"); atomic.AddUint64(&wsFailCount, 1) }
 	fmt.Printf("\n    Directories verified: %d/%d\n", found, len(keyPaths))
 }
 
 func wsVerifyMessages(_ *wsSpec, _ *wsImpl, _ string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  MESSAGE PROTOCOLS VERIFICATION (Section 1.4)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	protocols := []struct{ Direction string; Messages []string }{
 		{"Device → Server", []string{"AUTH", "TELEMETRY", "PONG", "CMD_ACK"}},
 		{"Server → Device", []string{"CMD", "PING", "ACK"}},
@@ -296,6 +296,6 @@ func wsVerifyMessages(_ *wsSpec, _ *wsImpl, _ string) {
 	}
 	for _, p := range protocols {
 		fmt.Printf("    %s:\n", p.Direction)
-		for _, m := range p.Messages { fmt.Printf("      ✅ %s\n", m); atomic.AddUint64(&wsPassCount, 1) }
+		for _, m := range p.Messages { fmt.Printf("       %s\n", m); atomic.AddUint64(&wsPassCount, 1) }
 	}
 }

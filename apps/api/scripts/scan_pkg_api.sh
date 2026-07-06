@@ -3,14 +3,14 @@
 
 cd "$(dirname "$0")/.."
 
-echo "╔════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗"
-echo "║                    SCANNING: pkg/ & internal/api/ REMAINING                                         ║"
-echo "╚════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝"
+echo ""
+echo "                    SCANNING: pkg/ & internal/api/ REMAINING                                         "
+echo ""
 echo ""
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "1. pkg/ REMAINING (OLD structure - being phased)"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
 echo "pkg/ contents:"
@@ -18,14 +18,14 @@ for dir in pkg/*/; do
     if [ -d "$dir" ]; then
         name=$(basename "$dir")
         files=$(find "$dir" -name "*.go" -type f | grep -v "_test" | wc -l)
-        echo "  ⚠️  $name/: $files files"
+        echo "    $name/: $files files"
     fi
 done
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "2. internal/api/ SERVER & HANDLERS"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
 echo "internal/api/server.go:"
@@ -48,9 +48,9 @@ if [ -d "internal/api/responses" ]; then
 fi
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "3. HANDLERS STATUS"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
 echo "Flat handlers (OLD - being phased):"
@@ -63,42 +63,42 @@ for dir in internal/api/handlers/*/; do
     if [ -d "$dir" ]; then
         name=$(basename "$dir")
         files=$(find "$dir" -name "*.go" -type f | grep -v "_test" | wc -l)
-        echo "  ✅ $name/: $files files"
+        echo "   $name/: $files files"
     fi
 done
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "4. COMPLETE OVERVIEW"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
 echo "NEW infrastructure/ (COMPLETE):"
 for d in $(ls -d internal/infrastructure/*/ 2>/dev/null | sort); do
     name=$(basename "$d")
     files=$(find "$d" -name "*.go" -type f | grep -v "_test" | wc -l)
-    echo "  ✅ $name/"
+    echo "   $name/"
 done
 
 echo ""
 echo "OLD structure (being phased):"
-echo "  ⚠️  pkg/: $(find pkg -name "*.go" -type f | grep -v "_test" | wc -l) files"
-echo "  ⚠️  internal/ws/: 2 files"
-echo "  ⚠️  internal/api/handlers/flat: $OLD_COUNT files"
-echo "  ⚠️  internal/api/server.go"
+echo "    pkg/: $(find pkg -name "*.go" -type f | grep -v "_test" | wc -l) files"
+echo "    internal/ws/: 2 files"
+echo "    internal/api/handlers/flat: $OLD_COUNT files"
+echo "    internal/api/server.go"
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "5. FILES STILL NEEDING REVIEW"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
 echo "Files using pkg/models (will break when removed):"
 find . -name "*.go" -type f 2>/dev/null | xargs grep -l "vyzorix/apps/api/pkg/models" 2>/dev/null | grep -v "_test" | head -10
 
 echo ""
-echo "════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗"
-echo "INFRASTRUCTURE MIGRATION: COMPLETE ✅"
-echo "HANDLER MIGRATION: In Progress 🔄"
-echo "pkg/ PHASING: Pending ⚠️"
-echo "════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗"
+echo ""
+echo "INFRASTRUCTURE MIGRATION: COMPLETE "
+echo "HANDLER MIGRATION: In Progress "
+echo "pkg/ PHASING: Pending "
+echo ""

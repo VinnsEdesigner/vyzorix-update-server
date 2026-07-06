@@ -26,9 +26,9 @@ NC='\033[0m'
 
 log_section() {
     echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     echo "  $1"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
 }
 
 log_test() {
@@ -545,10 +545,10 @@ test_protocol_security() {
 
 run_all_tests() {
     echo ""
-    echo "╔════════════════════════════════════════════════════════╗"
-    echo "║     COMPREHENSIVE SECURITY TESTING SUITE              ║"
-    echo "║     Target: $BASE_URL"
-    echo "╚════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "     COMPREHENSIVE SECURITY TESTING SUITE              "
+    echo "     Target: $BASE_URL"
+    echo ""
     echo ""
     
     # Run all test categories
@@ -566,9 +566,9 @@ run_all_tests() {
     
     # Summary
     echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     echo "  SECURITY TEST SUMMARY"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     echo ""
     echo -e "Total Tests:   $TOTAL_COUNT"
     echo -e "Passed:        ${GREEN}$PASS_COUNT${NC}"
@@ -577,13 +577,13 @@ run_all_tests() {
     echo ""
     
     if [ $FAIL_COUNT -gt 0 ]; then
-        echo -e "${RED}⚠️  SECURITY ISSUES DETECTED - Review failed tests above${NC}"
+        echo -e "${RED}  SECURITY ISSUES DETECTED - Review failed tests above${NC}"
         return 1
     elif [ $WARN_COUNT -gt 0 ]; then
-        echo -e "${YELLOW}⚠️  Review warnings above for potential improvements${NC}"
+        echo -e "${YELLOW}  Review warnings above for potential improvements${NC}"
         return 0
     else
-        echo -e "${GREEN}✅ ALL SECURITY TESTS PASSED${NC}"
+        echo -e "${GREEN} ALL SECURITY TESTS PASSED${NC}"
         return 0
     fi
 }

@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-04  
 **Author:** OpenHands (Claude Sonnet 4.7)  
-**Status:** ✅ COMPLETE
+**Status:**  COMPLETE
 
 ---
 
@@ -18,14 +18,14 @@ The native audio DSP pipeline (Layer 2+3) was incomplete — frames were flowing
 
 | Component | Status | Issue |
 |-----------|--------|-------|
-| `AudioPipeline` | ✅ Landed | Ring buffer allocated, native init working |
-| `AudioPipelineController` | ✅ Landed | JNI bridge methods exist |
-| `CaptureLifecycleController` | ✅ Landed | Orchestrates capture |
-| `SpeakerPlaybackEngine` | ✅ Landed | Writes to AudioTrack |
-| **`NativeFrameSink`** | ❌ Missing | Capture → native crossing |
-| **`NativePlaybackSource`** | ❌ Missing | Native → playback crossing |
-| **`PlaybackSource` interface** | ❌ Missing | Abstraction for playback sources |
-| **Pipeline state wiring** | ❌ Missing | `Streaming` never set |
+| `AudioPipeline` |  Landed | Ring buffer allocated, native init working |
+| `AudioPipelineController` |  Landed | JNI bridge methods exist |
+| `CaptureLifecycleController` |  Landed | Orchestrates capture |
+| `SpeakerPlaybackEngine` |  Landed | Writes to AudioTrack |
+| **`NativeFrameSink`** |  Missing | Capture → native crossing |
+| **`NativePlaybackSource`** |  Missing | Native → playback crossing |
+| **`PlaybackSource` interface** |  Missing | Abstraction for playback sources |
+| **Pipeline state wiring** |  Missing | `Streaming` never set |
 
 ### Data Flow Before (Broken)
 

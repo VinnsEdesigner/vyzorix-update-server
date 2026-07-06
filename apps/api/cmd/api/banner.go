@@ -73,12 +73,12 @@ func PrintSection(label string) {
 
 // PrintStatus prints a status line with color coding.
 func PrintStatus(label, value string) {
-	fmt.Printf("  %s✓%s %s: %s%s%s\n", green, reset, label, green, value, reset)
+	fmt.Printf("  %s%s %s: %s%s%s\n", green, reset, label, green, value, reset)
 }
 
 // PrintWarning prints a warning message.
 func PrintWarning(label, value string) {
-	fmt.Printf("  %s⚠%s %s: %s%s%s\n", yellow, reset, label, yellow, value, reset)
+	fmt.Printf("  %s%s %s: %s%s%s\n", yellow, reset, label, yellow, value, reset)
 }
 
 func getEnv() string {
