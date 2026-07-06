@@ -416,7 +416,10 @@ func migrateAddCommandsColumns(db *sql.DB) error {
 	}
 	for _, col := range cols {
 		if _, err := db.ExecContext(context.Background(), col); err != nil {
-			return err
+			// Column may already exist (SQLite ignores duplicate column additions)
+			if !isColumnExistsError(err) {
+				return err
+			}
 		}
 	}
 
