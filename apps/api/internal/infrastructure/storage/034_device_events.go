@@ -11,13 +11,15 @@ func migrateDeviceEvents(db *sql.DB) error {
 	ctx := context.Background()
 
 	// Create device_events table
+	// Note: SQLite uses TEXT for timestamps (stored as ISO8601 strings) and TEXT for JSON
+	// TIMESTAMPTZ and JSONB are PostgreSQL-specific types not supported by SQLite
 	query := `
 	CREATE TABLE IF NOT EXISTS device_events (
 		id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
 		device_id TEXT NOT NULL,
 		event_type TEXT NOT NULL,
-		timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-		data JSONB,
+		timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+		data TEXT,
 		
 		CONSTRAINT fk_device_events_device 
 			FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
