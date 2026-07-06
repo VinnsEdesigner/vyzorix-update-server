@@ -11,10 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// =============================================================================
-// AUTHENTICATION BOUNDARY DEFINITIONS
-// Based on MULTI_CLIENT_API_KEY_SYSTEM.md Section 2 - Endpoint Authentication
-// =============================================================================
+
 
 // PathType defines the authentication boundary for a path.
 type PathType int
