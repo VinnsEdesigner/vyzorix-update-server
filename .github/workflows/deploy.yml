@@ -113,21 +113,35 @@ jobs:
       RENDER_SERVICE_URL: ${{ secrets.RENDER_SERVICE_URL }}
 
     steps:
+      - name: Check secrets configured
+        id: check-secrets
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ] || [ -z "$RENDER_SERVICE_URL" ]; then
+            echo "⚠️ Deployment secrets not configured, skipping..."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Download build artifacts
+        if: steps.check-secrets.outputs.skip != 'true'
         uses: actions/download-artifact@v4
         with:
           name: build-${{ github.sha }}
           path: ./dist
 
       - name: Trigger Render deploy
+        if: steps.check-secrets.outputs.skip != 'true'
         run: |
           echo "🔄 Triggering Render staging deployment..."
           curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}"
 
       - name: Wait for deployment
+        if: steps.check-secrets.outputs.skip != 'true'
         run: sleep 30
 
       - name: Health check
+        if: steps.check-secrets.outputs.skip != 'true'
         run: |
           echo "🏥 Checking health endpoint..."
           for i in {1..10}; do
@@ -156,21 +170,35 @@ jobs:
       PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
 
     steps:
+      - name: Check secrets configured
+        id: check-secrets
+        run: |
+          if [ -z "$PRODUCTION_DEPLOY_HOOK_URL" ] || [ -z "$PRODUCTION_URL" ]; then
+            echo "⚠️ Production deployment secrets not configured, skipping..."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Download build artifacts
+        if: steps.check-secrets.outputs.skip != 'true'
         uses: actions/download-artifact@v4
         with:
           name: build-${{ github.sha }}
           path: ./dist
 
       - name: Deploy to production
+        if: steps.check-secrets.outputs.skip != 'true'
         run: |
           echo "🚀 Deploying v${{ needs.build.outputs.version }} to production..."
           curl -fsS -X POST "${PRODUCTION_DEPLOY_HOOK_URL}"
 
       - name: Wait for deployment
+        if: steps.check-secrets.outputs.skip != 'true'
         run: sleep 45
 
       - name: Production health check
+        if: steps.check-secrets.outputs.skip != 'true'
         run: |
           echo "🏥 Checking production health..."
           for i in {1..15}; do
@@ -185,7 +213,7 @@ jobs:
           exit 1
 
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.check-secrets.outputs.skip != 'true' && startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |

@@ -26,7 +26,21 @@ jobs:
           go mod download
           go build -o bin/server .
           
+      - name: Check secrets configured
+        id: check-secrets
+        run: |
+          if [ -z "$RENDER_API_KEY" ] || [ -z "$RENDER_API_SERVICE_ID" ]; then
+            echo "⚠️ Render deployment secrets not configured, skipping..."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_API_SERVICE_ID: ${{ secrets.RENDER_API_SERVICE_ID }}
+
       - name: Deploy to Render
+        if: steps.check-secrets.outputs.skip != 'true'
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
         run: |
