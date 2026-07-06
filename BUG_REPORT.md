@@ -41,35 +41,35 @@ The device registration system had **27 bugs** across 6 rounds of analysis:
 
 | Bug # | Severity | Title | Location | Status |
 |-------|----------|-------|----------|--------|
-| 1 | ЁЯФ┤ CRITICAL | SELECT/Scan field order mismatch in GetByID | inbox_storage.go | тЬЕ FIXED |
-| 2 | ЁЯФ┤ CRITICAL | SELECT/Scan field order mismatch in GetByIMEI | inbox_storage.go | тЬЕ FIXED |
-| 3 | ЁЯФ┤ CRITICAL | SELECT/Scan field order mismatch in List | inbox_storage.go | тЬЕ FIXED |
-| 4 | ЁЯФ┤ CRITICAL | SELECT/Scan field order mismatch in ListByOperator | inbox_storage.go | тЬЕ FIXED |
-| 5 | ЁЯФ┤ CRITICAL | ListByOperator uses wrong column (device_model instead of manufacturer) | inbox_storage.go | тЬЕ FIXED |
+| 1 | ЁЯФ CRITICAL | SELECT/Scan field order mismatch in GetByID | inbox_storage.go | тЬЕ FIXED |
+| 2 | ЁЯФ CRITICAL | SELECT/Scan field order mismatch in GetByIMEI | inbox_storage.go | тЬЕ FIXED |
+| 3 | ЁЯФ CRITICAL | SELECT/Scan field order mismatch in List | inbox_storage.go | тЬЕ FIXED |
+| 4 | ЁЯФ CRITICAL | SELECT/Scan field order mismatch in ListByOperator | inbox_storage.go | тЬЕ FIXED |
+| 5 | ЁЯФ CRITICAL | ListByOperator uses wrong column (device_model instead of manufacturer) | inbox_storage.go | тЬЕ FIXED |
 
 ### Round 2: Additional Storage Bugs (Bugs 6-8)
 
 | Bug # | Severity | Title | Location | Status |
 |-------|----------|-------|----------|--------|
-| 6 | ЁЯФ┤ CRITICAL | scanEntry doesn't map reviewed_at to ApprovedAt/RejectedAt | inbox_storage.go | тЬЕ FIXED |
-| 7 | ЁЯФ┤ CRITICAL | scanEntries doesn't map reviewed_at to ApprovedAt/RejectedAt | inbox_storage.go | тЬЕ FIXED |
+| 6 | ЁЯФ CRITICAL | scanEntry doesn't map reviewed_at to ApprovedAt/RejectedAt | inbox_storage.go | тЬЕ FIXED |
+| 7 | ЁЯФ CRITICAL | scanEntries doesn't map reviewed_at to ApprovedAt/RejectedAt | inbox_storage.go | тЬЕ FIXED |
 | 8 | ЁЯЯб MEDIUM | Unused `commandSecret` scan variable in GetByID | inbox_storage.go | тЬЕ FIXED |
 
 ### Round 3: Insert/Update Bugs (Bugs 9-13)
 
 | Bug # | Severity | Title | Location | Status |
 |-------|----------|-------|----------|--------|
-| 9 | ЁЯФ┤ CRITICAL | INSERT doesn't include manufacturer column | inbox_storage.go | тЬЕ FIXED |
-| 10 | ЁЯФ┤ CRITICAL | UPDATE doesn't include manufacturer column | inbox_storage.go | тЬЕ FIXED |
-| 11 | ЁЯФ┤ CRITICAL | UPDATE reviewed_at mapped incorrectly | inbox_storage.go | тЬЕ FIXED |
-| 12 | ЁЯФ┤ CRITICAL | reviewed_reason/rejection_reason swapped in INSERT | inbox_storage.go | тЬЕ FIXED |
-| 13 | ЁЯФ┤ CRITICAL | reviewed_reason/rejection_reason swapped in UPDATE | inbox_storage.go | тЬЕ FIXED |
+| 9 | ЁЯФ CRITICAL | INSERT doesn't include manufacturer column | inbox_storage.go | тЬЕ FIXED |
+| 10 | ЁЯФ CRITICAL | UPDATE doesn't include manufacturer column | inbox_storage.go | тЬЕ FIXED |
+| 11 | ЁЯФ CRITICAL | UPDATE reviewed_at mapped incorrectly | inbox_storage.go | тЬЕ FIXED |
+| 12 | ЁЯФ CRITICAL | reviewed_reason/rejection_reason swapped in INSERT | inbox_storage.go | тЬЕ FIXED |
+| 13 | ЁЯФ CRITICAL | reviewed_reason/rejection_reason swapped in UPDATE | inbox_storage.go | тЬЕ FIXED |
 
 ### Round 4: Command Secret Handling (Bugs 14-17)
 
 | Bug # | Severity | Title | Location | Status |
 |-------|----------|-------|----------|--------|
-| 14 | ЁЯФ┤ CRITICAL | commandSecret stored in plaintext in inbox | inbox_storage.go | тЬЕ FIXED |
+| 14 | ЁЯФ CRITICAL | commandSecret stored in plaintext in inbox | inbox_storage.go | тЬЕ FIXED |
 | 15 | ЁЯЯб MEDIUM | commandSecret returned in API response | inbox_dto.go | тЬЕ FIXED |
 | 16 | ЁЯЯб MEDIUM | commandSecret visible in GraphQL resolver | inbox_resolver.go | тЬЕ FIXED |
 | 17 | ЁЯЯб MEDIUM | commandSecret not hashed when device created | device_service.go | тЬЕ FIXED |
@@ -78,17 +78,17 @@ The device registration system had **27 bugs** across 6 rounds of analysis:
 
 | Bug # | Severity | Title | Location | Status |
 |-------|----------|-------|----------|--------|
-| 18 | ЁЯФ┤ CRITICAL | Confirm Handler MISSING | device_confirm.go | тЬЕ FIXED (CREATED) |
-| 19 | ЁЯФ┤ CRITICAL | CreateFromInbox NOT implemented | device_service.go | тЬЕ FIXED (ADDED) |
-| 20 | ЁЯФ┤ CRITICAL | Device never moved from INBOX to DEVICES | inbox_service.go | тЬЕ FIXED |
-| 21 | ЁЯФ┤ CRITICAL | commandSecret validation impossible | device_service.go | тЬЕ FIXED |
+| 18 | ЁЯФ CRITICAL | Confirm Handler MISSING | device_confirm.go | тЬЕ FIXED (CREATED) |
+| 19 | ЁЯФ CRITICAL | CreateFromInbox NOT implemented | device_service.go | тЬЕ FIXED (ADDED) |
+| 20 | ЁЯФ CRITICAL | Device never moved from INBOX to DEVICES | inbox_service.go | тЬЕ FIXED |
+| 21 | ЁЯФ CRITICAL | commandSecret validation impossible | device_service.go | тЬЕ FIXED |
 
 ### Round 6: Schema & Security Issues (Bugs 22-27)
 
 | Bug # | Severity | Title | Location | Status |
 |-------|----------|-------|----------|--------|
-| 22 | ЁЯФ┤ CRITICAL | Manufacturer field LOST in inbox storage | inbox_storage.go | тЬЕ FIXED |
-| 23 | ЁЯФ┤ CRITICAL | CommandSecret in HTTP response | inbox_service.go | тЬЕ FIXED |
+| 22 | ЁЯФ CRITICAL | Manufacturer field LOST in inbox storage | inbox_storage.go | тЬЕ FIXED |
+| 23 | ЁЯФ CRITICAL | CommandSecret in HTTP response | inbox_service.go | тЬЕ FIXED |
 | 24 | ЁЯЯб MEDIUM | OperatorID always empty in GraphQL | inbox_resolver.go | тЬЕ FIXED |
 | 25 | ЁЯЯб MEDIUM | CommandSecret in GraphQL response | inbox_resolver.go | тЬЕ FIXED |
 | 26 | ЁЯЯб MEDIUM | Devices table missing manufacturer column | device_storage.go | тЬЕ FIXED |
@@ -98,21 +98,21 @@ The device registration system had **27 bugs** across 6 rounds of analysis:
 
 | Bug # | Severity | Title | Location | Status |
 |-------|----------|-------|----------|--------|
-| 28 | ЁЯФ┤ CRITICAL | CommandSecret never sent via FCM | notifier.go, inbox_service.go | тЬЕ FIXED |
-| 29 | ЁЯФ┤ CRITICAL | ListByOperator returns empty for pending | inbox_storage.go | тЬЕ FIXED |
-| 30 | ЁЯФ┤ CRITICAL | Silent failure in CreateFromInbox | inbox_service.go | тЬЕ FIXED |
+| 28 | ЁЯФ CRITICAL | CommandSecret never sent via FCM | notifier.go, inbox_service.go | тЬЕ FIXED |
+| 29 | ЁЯФ CRITICAL | ListByOperator returns empty for pending | inbox_storage.go | тЬЕ FIXED |
+| 30 | ЁЯФ CRITICAL | Silent failure in CreateFromInbox | inbox_service.go | тЬЕ FIXED |
 | 31 | ЁЯЯб HIGH | OperatorID missing in GetInbox | inbox_service.go | тЬЕ FIXED |
 
 ### Round 8: Integration & Multi-Tenant Bugs (Bugs 32-37)
 
 | Bug # | Severity | Title | Location | Status |
 |-------|----------|-------|----------|--------|
-| 32 | ЁЯФ┤ CRITICAL | Duplicate registration bypass via inbox | inbox_service.go | ✅ FIXED |
-| 33 | ЁЯФ┤ CRITICAL | CreateFromInbox silently returns existing | device_service.go | ✅ FIXED |
-| 34 | ЁЯЯб HIGH | Operator authorization not validated | inbox_service.go | ✅ FIXED |
-| 35 | ЁЯСз MEDIUM | CommandSecret not in AckResponse per spec | inbox_dto.go, inbox_service.go | ✅ FIXED |
-| 36 | ЁЯСз MEDIUM | GraphQL ListInbox no operator filter | inbox_storage.go | ✅ FIXED |
-| 37 | ЁЯСз MEDIUM | No UpdateInboxEntry endpoint | inbox_handler.go | ✅ FIXED |
+| 32 | ЁЯФ CRITICAL | Duplicate registration bypass via inbox | inbox_service.go |  FIXED |
+| 33 | ЁЯФ CRITICAL | CreateFromInbox silently returns existing | device_service.go |  FIXED |
+| 34 | ЁЯЯб HIGH | Operator authorization not validated | inbox_service.go |  FIXED |
+| 35 | ЁЯСз MEDIUM | CommandSecret not in AckResponse per spec | inbox_dto.go, inbox_service.go |  FIXED |
+| 36 | ЁЯСз MEDIUM | GraphQL ListInbox no operator filter | inbox_storage.go |  FIXED |
+| 37 | ЁЯСз MEDIUM | No UpdateInboxEntry endpoint | inbox_handler.go |  FIXED |
 
 ---
 
@@ -121,7 +121,7 @@ The device registration system had **27 bugs** across 6 rounds of analysis:
 ### Issue 1: Missing manufacturer Column in inbox_requests
 
 **Status:** тЭМ UNRESOLVED  
-**Severity:** ЁЯФ┤ CRITICAL  
+**Severity:** ЁЯФ CRITICAL  
 **Impact:** Data corruption - manufacturer permanently lost
 
 **Problem:**
@@ -189,7 +189,7 @@ const deviceColumns = `
 ### Issue 3: CommandSecret Returned in HTTP Ack Response
 
 **Status:** тЭМ UNRESOLVED  
-**Severity:** ЁЯФ┤ CRITICAL  
+**Severity:** ЁЯФ CRITICAL  
 **Impact:** Secret exposed via HTTP - man-in-the-middle can steal device secrets
 
 **Problem:**
@@ -202,7 +202,7 @@ return &AckResponse{
     IMEI:          entry.IMEI,
     Status:        string(entry.Status),
     ApprovedAt:    entry.ApprovedAt,
-    CommandSecret: secret,  // ЁЯФ┤ EXPOSED VIA HTTP!
+    CommandSecret: secret,  // ЁЯФ EXPOSED VIA HTTP!
     FCMPushSent:   fcmPushSent,
     Notes:         notes,
 }, nil
@@ -212,7 +212,7 @@ return &AckResponse{
 ```go
 type AckResponse struct {
     ...
-    CommandSecret string `json:"commandSecret,omitempty"`  // ЁЯФ┤ IN API RESPONSE!
+    CommandSecret string `json:"commandSecret,omitempty"`  // ЁЯФ IN API RESPONSE!
 }
 ```
 
@@ -234,7 +234,7 @@ return map[string]interface{}{
     "id":                 entry.ID,
     "imei":              entry.IMEI,
     ...
-    "commandSecret":      entry.CommandSecret,  // ЁЯФ┤ EXPOSED VIA GRAPHQL!
+    "commandSecret":      entry.CommandSecret,  // ЁЯФ EXPOSED VIA GRAPHQL!
 }, nil
 ```
 
@@ -257,12 +257,12 @@ return map[string]interface{}{
 | P0 | 29 | Fix ListByOperator pending query | inbox_storage.go | тЬЕ FIXED |
 | P0 | 30 | Fail transaction if CreateFromInbox fails | inbox_service.go | тЬЕ FIXED |
 | P1 | 31 | Add OperatorID to GetInbox responses | inbox_service.go | тЬЕ FIXED |
-| P0 | 32 | ✅ FIXED | Check devices table in CreateInboxRequest | inbox_service.go | ✅ FIXED |
-| P0 | 33 | ✅ FIXED | Error if device exists in CreateFromInbox | device_service.go | ✅ FIXED |
-| P0 | 34 | ✅ FIXED | Validate operator authorization in AckInbox | inbox_service.go | ✅ FIXED |
-| P1 | 35 | ✅ FIXED | Add CommandSecret to AckResponse per spec | inbox_dto.go, inbox_service.go | ✅ FIXED |
-| P2 | 36 | ✅ FIXED | Add operator filter to GraphQL ListInbox | inbox_storage.go | ✅ FIXED |
-| P2 | 37 | ✅ FIXED | Implement UpdateInboxEntry endpoint | inbox_handler.go | ✅ FIXED |
+| P0 | 32 |  FIXED | Check devices table in CreateInboxRequest | inbox_service.go |  FIXED |
+| P0 | 33 |  FIXED | Error if device exists in CreateFromInbox | device_service.go |  FIXED |
+| P0 | 34 |  FIXED | Validate operator authorization in AckInbox | inbox_service.go |  FIXED |
+| P1 | 35 |  FIXED | Add CommandSecret to AckResponse per spec | inbox_dto.go, inbox_service.go |  FIXED |
+| P2 | 36 |  FIXED | Add operator filter to GraphQL ListInbox | inbox_storage.go |  FIXED |
+| P2 | 37 |  FIXED | Implement UpdateInboxEntry endpoint | inbox_handler.go |  FIXED |
 
 ---
 
@@ -392,8 +392,8 @@ apps/api/internal/
 
 *Document Generated: 2026-07-03*  
 *Analysis: Deep bug analysis across 7 rounds*  
-*Status: ✅ ALL 31 BUGS FIXED*  
-*Build: ✅ Compiles successfully*
+*Status:  ALL 31 BUGS FIXED*  
+*Build:  Compiles successfully*
 
 ## Round 7 Implementation Summary
 
@@ -424,8 +424,8 @@ apps/api/internal/
 ## Round 8: Re-registration Bugs (Bugs 38-42)
 
 ### Bug 38: CRITICAL - Re-registration BLOCKED by stale InboxEntry
-- **Severity:** 🔴 CRITICAL
-- **Status:** ✅ FIXED (2026-07-03)
+- **Severity:**  CRITICAL
+- **Status:**  FIXED (2026-07-03)
 - **Files:** `inbox_service.go`
 - **Problem:** The `CreateInboxRequest` checks `ExistsByIMEI` BEFORE checking if device is deregistered. This means:
   1. Device registers → InboxEntry created (status=pending)
@@ -451,16 +451,16 @@ if existingDevice != nil && !existingDevice.IsDeregistered() {
 ```
 
 ### Bug 39: HIGH - No DeleteByIMEI method in repository
-- **Severity:** 🟡 HIGH
-- **Status:** ✅ FIXED (2026-07-03)
+- **Severity:**  HIGH
+- **Status:**  FIXED (2026-07-03)
 - **Files:** `inbox_repository.go`, `inbox_storage.go`
 - **Fix Applied:**
   - Added `DeleteByIMEI(ctx, imei string) error` to repository interface
   - Implemented in `inbox_storage.go` with `DELETE FROM inbox_requests WHERE device_imei = ?`
 
 ### Bug 40: MEDIUM - InboxEntry not updated on device deregistration
-- **Severity:** 🟠 MEDIUM
-- **Status:** ✅ FIXED (2026-07-03) - Alternative approach
+- **Severity:**  MEDIUM
+- **Status:**  FIXED (2026-07-03) - Alternative approach
 - **Files:** `inbox_service.go`
 - **Fix Applied:** Instead of updating on deregistration (which would require transaction across services), stale InboxEntry is cleaned up during re-registration in `CreateInboxRequest`. This is cleaner because:
   - Cleanup happens in the same transaction context
@@ -468,8 +468,8 @@ if existingDevice != nil && !existingDevice.IsDeregistered() {
   - If device never re-registers, stale entry doesn't hurt anything
 
 ### Bug 41: MEDIUM - No unique constraint on device_imei in schema
-- **Severity:** 🟠 MEDIUM
-- **Status:** ✅ FIXED (2026-07-03)
+- **Severity:**  MEDIUM
+- **Status:**  FIXED (2026-07-03)
 - **Files:** `031_inbox_imei_unique.go`, `sqlite.go`
 - **Fix Applied:**
   - Created migration 031 to clean up duplicate IMEI entries (keeping oldest)
@@ -477,8 +477,8 @@ if existingDevice != nil && !existingDevice.IsDeregistered() {
   - Registered migration in sqlite.go
 
 ### Bug 42: LOW - Inconsistent re-registration behavior
-- **Severity:** 🔵 LOW
-- **Status:** ✅ FIXED (2026-07-03)
+- **Severity:**  LOW
+- **Status:**  FIXED (2026-07-03)
 - **Fix Applied:** Bug 38 fix ensures consistent behavior regardless of soft/hard delete
 
 ---
@@ -486,8 +486,8 @@ if existingDevice != nil && !existingDevice.IsDeregistered() {
 ## Round 9: Additional Edge Cases (Bugs 43-45)
 
 ### Bug 43: MEDIUM - Null OperatorID handling in CreateFromInbox
-- **Severity:** 🟠 MEDIUM
-- **Status:** ⚠️ NEEDS VERIFICATION
+- **Severity:**  MEDIUM
+- **Status:**  NEEDS VERIFICATION
 - **Files:** `device_service.go`, `inbox_service.go`
 - **Problem:** `entry.OperatorID` may be empty string "" when approving. Need to verify OperatorID is properly set on device.
 - **Current Code:**
@@ -498,14 +498,14 @@ OperatorID: entry.OperatorID,  // Could be "" if not set
 - **Fix Required:** Verify OperatorID is properly propagated from AckInbox through to device creation
 
 ### Bug 44: LOW - CommandSecret in AckResponse per spec discussion
-- **Severity:** 🔵 LOW
-- **Status:** ✅ INTENTIONAL (spec changed)
+- **Severity:**  LOW
+- **Status:**  INTENTIONAL (spec changed)
 - **Files:** `inbox_dto.go`, `inbox_service.go`
 - **Note:** Spec originally said NOT to return CommandSecret in HTTP response. Implementation returns it for FCM failure recovery. This is intentional.
 
 ### Bug 45: LOW - Missing idempotency key support
-- **Severity:** 🔵 LOW
-- **Status:** ✅ FIXED (2026-07-03) - ENTERPRISE IMPLEMENTATION
+- **Severity:**  LOW
+- **Status:**  FIXED (2026-07-03) - ENTERPRISE IMPLEMENTATION
 - **Files:** 
   - `domain/idempotency/idempotency_record.go` - Domain entity and repository interface
   - `infrastructure/storage/idempotency_record_storage.go` - SQLite implementation
@@ -533,8 +533,8 @@ OperatorID: entry.OperatorID,  // Could be "" if not set
 ## Round 10: Production Hardening (Bugs 46-50)
 
 ### Bug 46: HIGH - No device registration metrics/observability
-- **Severity:** 🟡 HIGH
-- **Status:** ✅ FIXED (2026-07-03)
+- **Severity:**  HIGH
+- **Status:**  FIXED (2026-07-03)
 - **Files:** `prometheus.go`, `inbox_service.go`
 - **Fix Applied:**
   - Added device registration metrics to Metrics struct:
@@ -549,8 +549,8 @@ OperatorID: entry.OperatorID,  // Could be "" if not set
   - Integrated metrics recording in `CreateInboxRequest`
 
 ### Bug 47: HIGH - No registration request validation hardening
-- **Severity:** 🟡 HIGH
-- **Status:** ✅ FIXED (2026-07-03)
+- **Severity:**  HIGH
+- **Status:**  FIXED (2026-07-03)
 - **Files:** `inbox_service.go`, `inbox_errors.go`
 - **Fix Applied:**
   - IMEI: Added Luhn checksum validation
@@ -559,8 +559,8 @@ OperatorID: entry.OperatorID,  // Could be "" if not set
   - Added `ErrInvalidFirebaseInstallID` error
 
 ### Bug 48: MEDIUM - No audit logging for registration flow
-- **Severity:** 🟠 MEDIUM
-- **Status:** ✅ FIXED (2026-07-03)
+- **Severity:**  MEDIUM
+- **Status:**  FIXED (2026-07-03)
 - **Files:** `registration_log_storage.go`, `inbox_service.go`, `031_inbox_imei_unique.go`
 - **Fix Applied:**
   - Added `client_ip` and `user_agent` fields to RegistrationLog struct
@@ -571,8 +571,8 @@ OperatorID: entry.OperatorID,  // Could be "" if not set
   - Logs now capture User-Agent header
 
 ### Bug 49: LOW - No request timeout on registration endpoints
-- **Severity:** 🔵 LOW
-- **Status:** ✅ FIXED (2026-07-03) - ENTERPRISE IMPLEMENTATION
+- **Severity:**  LOW
+- **Status:**  FIXED (2026-07-03) - ENTERPRISE IMPLEMENTATION
 - **Files:** `api/middleware/request_timeout.go`
 - **Fix Applied:**
   - Created `request_timeout.go` middleware with proper enterprise-grade timeout handling:
@@ -588,8 +588,8 @@ OperatorID: entry.OperatorID,  // Could be "" if not set
   - Skip paths can be configured
 
 ### Bug 50: LOW - No circuit breaker on FCM calls
-- **Severity:** 🔵 LOW
-- **Status:** ✅ FIXED (2026-07-03)
+- **Severity:**  LOW
+- **Status:**  FIXED (2026-07-03)
 - **Files:** 
   - `infrastructure/fcm/fcm_circuit_breaker.go` - Circuit breaker implementation
   - `infrastructure/fcm/notifier.go` - Circuit breaker integration
@@ -606,21 +606,21 @@ OperatorID: entry.OperatorID,  // Could be "" if not set
 ## Production Readiness Checklist
 
 ### Must Fix Before Shipping:
-- [x] Bug 38: Re-registration blocked by stale InboxEntry ✅ FIXED
-- [x] Bug 39: Add DeleteByIMEI method ✅ FIXED
-- [x] Bug 40: Update InboxEntry on deregistration ✅ FIXED
-- [x] Bug 41: Add unique constraint on device_imei ✅ FIXED
-- [x] Bug 43: Verify OperatorID propagation ✅ VERIFIED
-- [x] Bug 46: Add metrics/observability ✅ FIXED
-- [x] Bug 47: Harden input validation ✅ FIXED
+- [x] Bug 38: Re-registration blocked by stale InboxEntry  FIXED
+- [x] Bug 39: Add DeleteByIMEI method  FIXED
+- [x] Bug 40: Update InboxEntry on deregistration  FIXED
+- [x] Bug 41: Add unique constraint on device_imei  FIXED
+- [x] Bug 43: Verify OperatorID propagation  VERIFIED
+- [x] Bug 46: Add metrics/observability  FIXED
+- [x] Bug 47: Harden input validation  FIXED
 
 ### Should Fix Before Shipping:
-- [x] Bug 48: Enhance audit logging ✅ FIXED (client IP, User-Agent captured)
-- [x] Bug 45: Idempotency support ✅ FIXED (enterprise-grade middleware + storage)
+- [x] Bug 48: Enhance audit logging  FIXED (client IP, User-Agent captured)
+- [x] Bug 45: Idempotency support  FIXED (enterprise-grade middleware + storage)
 
 ### Nice to Have (All Fixed):
-- [x] Bug 49: Add request timeouts ✅ FIXED (middleware-level with GinTimeout)
-- [x] Bug 50: Add circuit breaker for FCM ✅ FIXED (circuit breaker implemented)
+- [x] Bug 49: Add request timeouts  FIXED (middleware-level with GinTimeout)
+- [x] Bug 50: Add circuit breaker for FCM  FIXED (circuit breaker implemented)
 
 ---
 
@@ -629,4 +629,4 @@ OperatorID: entry.OperatorID,  // Could be "" if not set
 *Total Bugs: 50*  
 *Fixed: 50 (ALL BUGS RESOLVED)*  
 *Deferred: 0*  
-*Status: ✅ ENTERPRISE READY FOR PRODUCTION SHIPPING*
+*Status:  ENTERPRISE READY FOR PRODUCTION SHIPPING*

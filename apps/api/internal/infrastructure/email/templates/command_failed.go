@@ -34,7 +34,7 @@ const CommandFailedEmail = `<!DOCTYPE html>
     <div class="container">
         <div class="email-wrapper">
             <div class="header">
-                <div class="icon">❌</div>
+                <div class="icon"></div>
                 <div class="logo">Command Failed</div>
             </div>
             <div class="content">

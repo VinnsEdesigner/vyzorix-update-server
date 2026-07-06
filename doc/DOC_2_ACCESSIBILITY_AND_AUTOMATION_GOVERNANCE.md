@@ -11,46 +11,46 @@ The following mapping defines how a system-level window transition or dialog war
 
 ```text
                System UI Window State Transition (com.android.systemui)
-                                      │
-                                      ▼
+                                      
+                                      
                       [onAccessibilityEvent(event)]
-                                      │
-                                      ▼
+                                      
+                                      
                          RouterAccessibilityService
-                                      │
-                                      ▼
+                                      
+                                      
                           AccessibilityEventRouter
-                                      │
-                                      ▼
+                                      
+                                      
                          DialogRecognitionEngine
-                                      │
-                                      ├── Check: Active overlay or dialog?
-                                      ▼
+                                      
+                                       Check: Active overlay or dialog?
+                                      
                            UiInteractionSnapshot
-                                      │
-                                      ├── Parse active Node Tree (Start Now / Consent)
-                                      ▼
+                                      
+                                       Parse active Node Tree (Start Now / Consent)
+                                      
                           AutomationDecisionEngine
-                                      │
-            ┌─────────────────────────┴─────────────────────────┐
-            │                                                   │
+                                      
+            
+                                                               
   Is User Active / Locked?                              Is Limit Exceeded?
   [HumanPresenceDetector]                             [AutomationRateLimiter]
-            │                                                   │
-            ▼ (Screen Unlocked, Idle)                           ▼ (Actions < Max limits)
+                                                               
+             (Screen Unlocked, Idle)                            (Actions < Max limits)
    [AutomationSafetyGate]                             [AutomationCooldownPolicy]
-            │                                                   │
-            ▼ (Circuit Breaker: Stable)                         ▼ (Delay verified)
-            └─────────────────────────┬─────────────────────────┘
-                                      │
-                                      ▼
+                                                               
+             (Circuit Breaker: Stable)                          (Delay verified)
+            
+                                      
+                                      
                           AccessibilityGestureQueue
-                                      │
-                                      ▼
+                                      
+                                      
                       Simulated Programmatic Clicks
                      (AccessibilityService.dispatchGesture)
-                                      │
-                                      ▼
+                                      
+                                      
                  Token Granted / Reroute Complete (<100ms)
 ```
 
@@ -62,18 +62,18 @@ The `accessibility` package implements the main `AccessibilityService` binder in
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/accessibility/
-├── RouterAccessibilityService.kt
-├── AccessibilityEventRouter.kt
-├── PermissionScreenWatcher.kt
-├── SettingsAutomation.kt
-├── OverlayPermissionAutomator.kt
-├── ProjectionPermissionAutomator.kt
-├── AudioRouteWatcher.kt
-├── UiRecoveryDaemon.kt
-├── AccessibilityStateTracker.kt
-├── AccessibilityConfigManager.kt
-├── AccessibilityRecoveryHandler.kt
-└── OverlayShortcutController.kt
+ RouterAccessibilityService.kt
+ AccessibilityEventRouter.kt
+ PermissionScreenWatcher.kt
+ SettingsAutomation.kt
+ OverlayPermissionAutomator.kt
+ ProjectionPermissionAutomator.kt
+ AudioRouteWatcher.kt
+ UiRecoveryDaemon.kt
+ AccessibilityStateTracker.kt
+ AccessibilityConfigManager.kt
+ AccessibilityRecoveryHandler.kt
+ OverlayShortcutController.kt
 ```
 
 ### 2.1 `RouterAccessibilityService.kt`
@@ -81,12 +81,12 @@ core/services/src/main/kotlin/com/vyzorix/audiorouter/services/accessibility/
 *   **Architectural Role**: The primary, highly privileged bootstrap entry point. When enabled, the OS binds this service and grants it system-level screen-reading capabilities.
 *   **Operational Flow**:
     ```text
-    onServiceConnected() ──► LauncherIconHider.nukeLauncherIcon()
-                                 │
-                                 ▼
+    onServiceConnected()  LauncherIconHider.nukeLauncherIcon()
+                                 
+                                 
                              VyzorixAppInitializer.execute()
-                                 │
-                                 ▼
+                                 
+                                 
                              PersistentAudioService.startForeground()
     ```
 *   **Core APIs & State Dependencies**: Binds directly to `android.accessibilityservice.AccessibilityService`. Inherits the system-wide privileged binding context.
@@ -100,12 +100,12 @@ core/services/src/main/kotlin/com/vyzorix/audiorouter/services/accessibility/
 *   **Operational Flow**:
     ```text
     RouterAccessibilityService.onAccessibilityEvent(event)
-                                 │
-                                 ▼
+                                 
+                                 
                       AccessibilityEventRouter
-                                 │
-         ┌───────────────────────┼───────────────────────┐
-         ▼                       ▼                       ▼
+                                 
+         
+                                                       
     [PermissionWatcher]   [TransitionTracker]    [AutomationEngine]
     ```
 *   **Failure Boundaries**: If any sub-watcher crashes or hangs, the router catches the exception, logs it, and continues dispatching events to prevent the accessibility service from being marked unresponsive by the OS.
@@ -183,14 +183,14 @@ The `automation` submodule acts as a safety layer over the accessibility APIs, e
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/automation/
-├── AutomationRateLimiter.kt
-├── HumanPresenceDetector.kt
-├── AutomationCooldownPolicy.kt
-├── AutomationSafetyGate.kt
-├── DialogRecognitionEngine.kt
-├── AccessibilityGestureQueue.kt
-├── AutomationDecisionEngine.kt
-└── UiInteractionSnapshot.kt
+ AutomationRateLimiter.kt
+ HumanPresenceDetector.kt
+ AutomationCooldownPolicy.kt
+ AutomationSafetyGate.kt
+ DialogRecognitionEngine.kt
+ AccessibilityGestureQueue.kt
+ AutomationDecisionEngine.kt
+ UiInteractionSnapshot.kt
 ```
 
 ### 3.1 `AutomationRateLimiter.kt`
@@ -210,9 +210,9 @@ core/services/src/main/kotlin/com/vyzorix/audiorouter/services/automation/
 *   **Architectural Role**: Implements exponential backoffs. If a settings automation sequence fails or is interrupted, this policy forces a delay before retrying.
 *   **Backoff Profile**:
     ```text
-    1st failure ──► Delay 5 seconds
-    2nd failure ──► Delay 30 seconds
-    3rd failure ──► Delay 5 minutes
+    1st failure  Delay 5 seconds
+    2nd failure  Delay 30 seconds
+    3rd failure  Delay 5 minutes
     ```
 
 ---

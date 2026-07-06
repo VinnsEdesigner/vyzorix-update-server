@@ -137,17 +137,17 @@ func (r *TestReport) generateReport() string {
 			if res.DBTested {
 				switch res.DBResult {
 				case "PASS":
-					dbStatus = "✅"
+					dbStatus = ""
 				case "FAIL":
-					dbStatus = "❌"
+					dbStatus = ""
 				default:
-					dbStatus = "❓"
+					dbStatus = ""
 				}
 			}
 
-			reachable := "✅"
+			reachable := ""
 			if !res.Reachable {
-				reachable = "❌"
+				reachable = ""
 			}
 
 			notes := res.Notes
@@ -584,7 +584,7 @@ func testDatabaseOperations() []EndpointResult {
 // ==================== MAIN ====================
 
 func RunAllTests() error {
-	fmt.Println("🔍 Comprehensive API Testing Suite")
+	fmt.Println(" Comprehensive API Testing Suite")
 	fmt.Println("====================================")
 
 	report := &TestReport{}
@@ -663,14 +663,14 @@ func RunAllTests() error {
 
 	fmt.Println()
 	fmt.Println("====================================")
-	fmt.Println("📊 TEST SUMMARY")
+	fmt.Println(" TEST SUMMARY")
 	fmt.Println("====================================")
 	fmt.Printf("Total Endpoints: %d\n", report.TotalEndpoints)
-	fmt.Printf("Reachable: %d ✅\n", report.Reachable)
-	fmt.Printf("Unreachable: %d ❌\n", report.Unreachable)
+	fmt.Printf("Reachable: %d \n", report.Reachable)
+	fmt.Printf("Unreachable: %d \n", report.Unreachable)
 	fmt.Printf("Error Cases Tested: %d\n", report.ErrorHandling)
 	fmt.Printf("DB Tests: %d (%d passed, %d failed)\n", report.DBTests, report.DBPassed, report.DBFailed)
-	fmt.Printf("\n📄 Full report: %s\n", reportPath)
+	fmt.Printf("\n Full report: %s\n", reportPath)
 
 	return nil
 }

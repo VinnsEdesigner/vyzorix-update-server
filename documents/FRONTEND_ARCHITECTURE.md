@@ -44,35 +44,35 @@
 
 ```
 FLAT ARCHITECTURE:
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  Component ───────► API ───────► Context ───────► Hook ────────► │
-│                                                                     │
-│  Problem:                                                         │
-│  - Where do I put this logic?                                      │
-│  - Where is this data coming from?                                 │
-│  - Why is this breaking?                                           │
-│  - How do I test this?                                             │
-│  - Can I reuse this?                                               │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+  Component  API  Context  Hook  
+                                                                     
+  Problem:                                                         
+  - Where do I put this logic?                                      
+  - Where is this data coming from?                                 
+  - Why is this breaking?                                           
+  - How do I test this?                                             
+  - Can I reuse this?                                               
+                                                                     
+
 
 LAYERED ARCHITECTURE:
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  UI Layer ────────► Presentation Layer ────────► Domain ────────► │
-│                                     │                               │
-│                                     │                               │
-│                                     ▼                               │
-│                              Data Layer                             │
-│                                                                     │
-│  Benefits:                                                         │
-│  - I always know where to look                                     │
-│  - I know exactly where something broke                            │
-│  - I can test each layer independently                             │
-│  - I can reuse any layer                                          │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+  UI Layer  Presentation Layer  Domain  
+                                                                    
+                                                                    
+                                                                    
+                              Data Layer                             
+                                                                     
+  Benefits:                                                         
+  - I always know where to look                                     
+  - I know exactly where something broke                            
+  - I can test each layer independently                             
+  - I can reuse any layer                                          
+                                                                     
+
 ```
 
 ---
@@ -82,101 +82,101 @@ LAYERED ARCHITECTURE:
 ### 2.1 The Four Layers
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│                         FRONTEND ARCHITECTURE                       │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      UI LAYER                               │   │
-│  │                   (src/ui/)                                │   │
-│  │                                                             │   │
-│  │    Pages, Components, Shared UI                            │   │
-│  │    ONLY renders UI. Uses hooks for everything.              │   │
-│  │    NEVER imports from Data or Domain.                       │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                   PRESENTATION LAYER                        │   │
-│  │                   (src/hooks/)                            │   │
-│  │                                                             │   │
-│  │    Custom hooks that:                                      │   │
-│  │    - Handle UI logic                                        │   │
-│  │    - Transform data for UI                                  │   │
-│  │    - Manage state                                           │   │
-│  │    NEVER renders UI. NEVER imports from UI layer.          │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      DOMAIN LAYER                          │   │
-│  │                   (src/domain/)                            │   │
-│  │                                                             │   │
-│  │    Pure functions that:                                    │   │
-│  │    - Define types and interfaces                          │   │
-│  │    - Transform data (no side effects)                     │   │
-│  │    - Validate input                                        │   │
-│  │    NEVER imports from UI, Presentation, or Data.           │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                       DATA LAYER                           │   │
-│  │                   (src/lib/api/)                           │   │
-│  │                                                             │   │
-│  │    API clients that:                                       │   │
-│  │    - Make HTTP requests                                    │   │
-│  │    - Handle authentication                                  │   │
-│  │    - Parse responses                                       │   │
-│  │    NEVER imports from UI or Presentation.                  │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+                         FRONTEND ARCHITECTURE                       
+                                                                     
+     
+                        UI LAYER                                  
+                     (src/ui/)                                   
+                                                                  
+      Pages, Components, Shared UI                               
+      ONLY renders UI. Uses hooks for everything.                 
+      NEVER imports from Data or Domain.                          
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                     PRESENTATION LAYER                           
+                     (src/hooks/)                               
+                                                                  
+      Custom hooks that:                                         
+      - Handle UI logic                                           
+      - Transform data for UI                                     
+      - Manage state                                              
+      NEVER renders UI. NEVER imports from UI layer.             
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                        DOMAIN LAYER                             
+                     (src/domain/)                               
+                                                                  
+      Pure functions that:                                       
+      - Define types and interfaces                             
+      - Transform data (no side effects)                        
+      - Validate input                                           
+      NEVER imports from UI, Presentation, or Data.              
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                         DATA LAYER                              
+                     (src/lib/api/)                              
+                                                                  
+      API clients that:                                          
+      - Make HTTP requests                                       
+      - Handle authentication                                     
+      - Parse responses                                          
+      NEVER imports from UI or Presentation.                     
+     
+                                                                     
+
 ```
 
 ### 2.2 Data Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  USER INTERACTS                                                    │
-│        │                                                            │
-│        ▼                                                            │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  UI LAYER                                                     │   │
-│  │  - User clicks button                                         │   │
-│  │  - Component calls hook function                              │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│        │                                                            │
-│        ▼                                                            │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  PRESENTATION LAYER                                          │   │
-│  │  - Hook validates input                                       │   │
-│  │  - Hook calls domain transform                               │   │
-│  │  - Hook calls data layer                                     │   │
-│  │  - Hook transforms response                                  │   │
-│  │  - Hook returns data to UI                                   │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│        │                                                            │
-│        ▼                                                            │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  DOMAIN LAYER                                               │   │
-│  │  - Validates input                                           │   │
-│  │  - Transforms data (pure function)                          │   │
-│  │  - Returns transformed data                                 │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│        │                                                            │
-│        ▼                                                            │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  DATA LAYER                                                 │   │
-│  │  - Makes API request                                        │   │
-│  │  - Returns raw response                                     │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+  USER INTERACTS                                                    
+                                                                    
+                                                                    
+     
+    UI LAYER                                                        
+    - User clicks button                                            
+    - Component calls hook function                                 
+     
+                                                                    
+                                                                    
+     
+    PRESENTATION LAYER                                             
+    - Hook validates input                                          
+    - Hook calls domain transform                                  
+    - Hook calls data layer                                        
+    - Hook transforms response                                     
+    - Hook returns data to UI                                      
+     
+                                                                    
+                                                                    
+     
+    DOMAIN LAYER                                                  
+    - Validates input                                              
+    - Transforms data (pure function)                             
+    - Returns transformed data                                    
+     
+                                                                    
+                                                                    
+     
+    DATA LAYER                                                    
+    - Makes API request                                           
+    - Returns raw response                                        
+     
+                                                                     
+
 ```
 
 ---
@@ -230,33 +230,33 @@ LAYERED ARCHITECTURE:
 ### 4.1 The Golden Rule
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│   DEPENDENCIES MUST FLOW INWARD ONLY                               │
-│                                                                     │
-│   UI ──────────────► Presentation ──────────────► Domain ──────────► │
-│                                                                     │
-│   ─────────────────────────────────────────────────────────────────   │
-│                                                                     │
-│   NEVER:                                                           │
-│   - UI imports from Domain directly                                │
-│   - UI imports from Data directly                                   │
-│   - Presentation imports from UI                                     │
-│   - Domain imports from anything                                     │
-│   - Data imports from Presentation                                  │
-│   - Data imports from UI                                           │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+   DEPENDENCIES MUST FLOW INWARD ONLY                               
+                                                                     
+   UI  Presentation  Domain  
+                                                                     
+      
+                                                                     
+   NEVER:                                                           
+   - UI imports from Domain directly                                
+   - UI imports from Data directly                                   
+   - Presentation imports from UI                                     
+   - Domain imports from anything                                     
+   - Data imports from Presentation                                  
+   - Data imports from UI                                           
+                                                                     
+
 ```
 
 ### 4.2 Dependency Matrix
 
 | From \ To | UI | Presentation | Domain | Data |
 |-----------|-----|--------------|--------|------|
-| **UI** | ✅ | ✅ | ❌ | ❌ |
-| **Presentation** | ❌ | ✅ | ✅ | ✅ |
-| **Domain** | ❌ | ❌ | ✅ | ❌ |
-| **Data** | ❌ | ❌ | ✅ (types) | ✅ |
+| **UI** |  |  |  |  |
+| **Presentation** |  |  |  |  |
+| **Domain** |  |  |  |  |
+| **Data** |  |  |  (types) |  |
 
 ### 4.3 ESLint Rules
 
@@ -296,236 +296,236 @@ module.exports = {
 
 ```
 src/
-│
-├── ui/                              # UI LAYER
-│   ├── pages/                       # Route pages
-│   │   ├── dashboard/
-│   │   │   ├── dashboard.tsx            # Main dashboard page
-│   │   │   ├── dashboard-overview.tsx
-│   │   │   ├── dashboard-metrics.tsx
-│   │   │   ├── dashboard-commands.tsx
-│   │   │   └── dashboard-logs.tsx
-│   │   ├── commands/
-│   │   │   ├── commands.tsx
-│   │   │   ├── commands-send.tsx
-│   │   │   ├── commands-pending.tsx
-│   │   │   └── commands-history.tsx
-│   │   ├── logs/
-│   │   │   └── logs.tsx
-│   │   ├── device/
-│   │   │   ├── device.tsx
-│   │   │   ├── device-overview.tsx
-│   │   │   ├── device-telemetry.tsx
-│   │   │   ├── device-commands.tsx
-│   │   │   └── device-history.tsx
-│   │   ├── diagnostics/
-│   │   │   ├── diagnostics.tsx
-│   │   │   ├── diagnostics-inspector.tsx
-│   │   │   └── diagnostics-timeline.tsx
-│   │   ├── alerts/
-│   │   │   ├── alerts.tsx
-│   │   │   ├── alerts-active.tsx
-│   │   │   └── alerts-history.tsx
-│   │   └── updates/
-│   │       └── updates.tsx
-│   │
-│   ├── components/                  # Reusable components
-│   │   ├── ui/                     # Base UI components
-│   │   │   ├── button.tsx
-│   │   │   ├── badge.tsx
-│   │   │   ├── section.tsx
-│   │   │   ├── table.tsx
-│   │   │   ├── tabs.tsx
-│   │   │   ├── input.tsx
-│   │   │   ├── select.tsx
-│   │   │   ├── dropdown-menu.tsx
-│   │   │   ├── dialog.tsx
-│   │   │   ├── skeleton.tsx
-│   │   │   ├── toast.tsx
-│   │   │   ├── tooltip.tsx
-│   │   │   ├── pagination.tsx
-│   │   │   ├── search-input.tsx
-│   │   │   ├── empty-state.tsx
-│   │   │   ├── loading-spinner.tsx
-│   │   │   └── error-state.tsx
-│   │   │
-│   │   ├── layout/                 # Layout components
-│   │   │   ├── page-header.tsx
-│   │   │   ├── page-tabs.tsx
-│   │   │   ├── sidebar.tsx
-│   │   │   └── app-layout.tsx
-│   │   │
-│   │   └── shared/                 # Shared feature components
-│   │       ├── section/
-│   │       │   ├── section-container.tsx
-│   │       │   ├── section-header.tsx
-│   │       │   └── section-content.tsx
-│   │       ├── metric-card/
-│   │       │   ├── metric-card-display.tsx
-│   │       │   ├── metric-card-grid.tsx
-│   │       │   └── metric-progress.tsx
-│   │       ├── connection-status/
-│   │       │   ├── connection-status.tsx
-│   │       │   └── connection-indicator.tsx
-│   │       ├── device-selector/
-│   │       │   └── device-selector.tsx
-│   │       ├── command-button/
-│   │       │   └── command-button.tsx
-│   │       ├── command-row/
-│   │       │   └── command-row.tsx
-│   │       ├── log-entry/
-│   │       │   └── log-entry.tsx
-│   │       └── export-menu/
-│   │           ├── export-menu.tsx
-│   │           ├── export-scope.tsx
-│   │           └── export-format.tsx
-│   │
-│   └── index.ts                    # UI layer exports
-│
-├── hooks/                          # PRESENTATION LAYER
-│   ├── auth/
-│   │   ├── use-auth.ts
-│   │   └── use-signed-api.ts
-│   ├── device/
-│   │   ├── use-device-stream.ts
-│   │   ├── use-device.ts
-│   │   ├── use-devices.ts
-│   │   ├── use-device-telemetry.ts
-│   │   ├── use-device-inspection.ts
-│   │   └── use-device-timeline.ts
-│   ├── commands/
-│   │   ├── use-commands.ts
-│   │   ├── use-send-command.ts
-│   │   ├── use-cancel-command.ts
-│   │   └── use-command-history.ts
-│   ├── logs/
-│   │   ├── use-logs.ts
-│   │   ├── use-log-stream.ts
-│   │   └── use-log-filter.ts
-│   ├── alerts/
-│   │   ├── use-alerts.ts
-│   │   ├── use-alert.ts
-│   │   └── use-dismiss-alert.ts
-│   ├── telemetry/
-│   │   ├── use-telemetry.ts
-│   │   └── use-telemetry-stats.ts
-│   ├── export/
-│   │   ├── use-export.ts
-│   │   ├── use-export-job.ts
-│   │   └── use-export-dialog.ts
-│   ├── _shared/
-│   │   ├── use-pagination.ts
-│   │   ├── use-search.ts
-│   │   ├── use-device-selector.ts
-│   │   └── use-time-range.ts
-│   ├── use-mobile.tsx
-│   ├── use-operator.ts
-│   └── use-server-health.ts
-│
-├── domain/                         # DOMAIN LAYER
-│   ├── _shared/                   # SHARED - cross-feature types/functions
-│   │   ├── domain-pagination.ts   # Pagination types & helpers
-│   │   ├── domain-errors.ts       # Domain error classes
-│   │   └── domain-date.ts         # Date formatting utilities
-│   │
-│   ├── device/
-│   │   ├── device-entity.ts       # Device, DeviceStatus types
-│   │   ├── device-mappers.ts      # deviceFromGraphQL(), etc.
-│   │   └── device-validators.ts   # validateDeviceId(), etc.
-│   │
-│   ├── commands/
-│   │   ├── command-entity.ts      # Command, CommandStatus types
-│   │   ├── command-constants.ts   # PRESET_COMMANDS array
-│   │   ├── command-mappers.ts     # commandFromAPI(), etc.
-│   │   └── command-validators.ts  # validateCommand(), etc.
-│   │
-│   ├── logs/
-│   │   ├── log-entity.ts          # LogEntry, LogType types
-│   │   ├── log-mappers.ts         # logFromAPI(), etc.
-│   │   ├── log-filters.ts         # filterByType(), etc.
-│   │   └── log-formatters.ts      # formatTimestamp(), etc.
-│   │
-│   ├── telemetry/
-│   │   ├── telemetry-entity.ts    # TelemetryFrame, MetricStats types
-│   │   ├── telemetry-mappers.ts   # telemetryFromAPI(), etc.
-│   │   └── telemetry-aggregation.ts # calculateStats(), etc.
-│   │
-│   ├── alerts/
-│   │   ├── alert-entity.ts        # Alert, AlertSeverity types
-│   │   ├── alert-mappers.ts       # alertFromAPI(), etc.
-│   │   └── alert-priority.ts      # calculatePriority(), etc.
-│   │
-│   ├── export/
-│   │   ├── export-entity.ts       # ExportFormat, ExportScope types
-│   │   ├── export-formatters.ts   # toCSV(), toJSON(), toXML()
-│   │   ├── export-filename.ts     # generateFilename()
-│   │   └── export-validators.ts  # validateExportOptions()
-│   │
-│   └── index.ts                   # Domain exports (barrel)
-│
-└── lib/
-    └── api/                        # DATA LAYER
-        ├── _shared/              # SHARED - cross-feature data utilities
-        │   ├── graphql-client.ts   # GraphQL client setup
-        │   ├── graphql-fragments.ts # Reusable fragments
-        │   ├── rest-client.ts     # REST client setup
-        │   ├── rest-interceptors.ts # Auth, error handling
-        │   └── rest-adapters.ts  # graphql→rest adapters
-        │
-        ├── graphql/
-        │   ├── device/
-        │   │   ├── graphql-device-queries.ts
-        │   │   ├── graphql-device-mutations.ts
-        │   │   └── graphql-device-types.ts  # Raw response types
-        │   ├── commands/
-        │   │   ├── graphql-command-queries.ts
-        │   │   ├── graphql-command-mutations.ts
-        │   │   └── graphql-command-types.ts
-        │   ├── logs/
-        │   │   ├── graphql-log-queries.ts
-        │   │   ├── graphql-log-subscriptions.ts
-        │   │   └── graphql-log-types.ts
-        │   ├── telemetry/
-        │   │   ├── graphql-telemetry-queries.ts
-        │   │   └── graphql-telemetry-types.ts
-        │   ├── alerts/
-        │   │   ├── graphql-alert-queries.ts
-        │   │   ├── graphql-alert-mutations.ts
-        │   │   └── graphql-alert-types.ts
-        │   └── index.ts
-        │
-        ├── rest/
-        │   ├── device/
-        │   │   └── rest-device-endpoints.ts
-        │   ├── commands/
-        │   │   └── rest-command-endpoints.ts
-        │   └── index.ts
-        │
-        ├── mock/
-        │   ├── mock-device-data.ts
-        │   ├── mock-command-data.ts
-        │   └── mock-log-data.ts
-        │
-        └── index.ts              # API exports
+
+ ui/                              # UI LAYER
+    pages/                       # Route pages
+       dashboard/
+          dashboard.tsx            # Main dashboard page
+          dashboard-overview.tsx
+          dashboard-metrics.tsx
+          dashboard-commands.tsx
+          dashboard-logs.tsx
+       commands/
+          commands.tsx
+          commands-send.tsx
+          commands-pending.tsx
+          commands-history.tsx
+       logs/
+          logs.tsx
+       device/
+          device.tsx
+          device-overview.tsx
+          device-telemetry.tsx
+          device-commands.tsx
+          device-history.tsx
+       diagnostics/
+          diagnostics.tsx
+          diagnostics-inspector.tsx
+          diagnostics-timeline.tsx
+       alerts/
+          alerts.tsx
+          alerts-active.tsx
+          alerts-history.tsx
+       updates/
+           updates.tsx
+   
+    components/                  # Reusable components
+       ui/                     # Base UI components
+          button.tsx
+          badge.tsx
+          section.tsx
+          table.tsx
+          tabs.tsx
+          input.tsx
+          select.tsx
+          dropdown-menu.tsx
+          dialog.tsx
+          skeleton.tsx
+          toast.tsx
+          tooltip.tsx
+          pagination.tsx
+          search-input.tsx
+          empty-state.tsx
+          loading-spinner.tsx
+          error-state.tsx
+      
+       layout/                 # Layout components
+          page-header.tsx
+          page-tabs.tsx
+          sidebar.tsx
+          app-layout.tsx
+      
+       shared/                 # Shared feature components
+           section/
+              section-container.tsx
+              section-header.tsx
+              section-content.tsx
+           metric-card/
+              metric-card-display.tsx
+              metric-card-grid.tsx
+              metric-progress.tsx
+           connection-status/
+              connection-status.tsx
+              connection-indicator.tsx
+           device-selector/
+              device-selector.tsx
+           command-button/
+              command-button.tsx
+           command-row/
+              command-row.tsx
+           log-entry/
+              log-entry.tsx
+           export-menu/
+               export-menu.tsx
+               export-scope.tsx
+               export-format.tsx
+   
+    index.ts                    # UI layer exports
+
+ hooks/                          # PRESENTATION LAYER
+    auth/
+       use-auth.ts
+       use-signed-api.ts
+    device/
+       use-device-stream.ts
+       use-device.ts
+       use-devices.ts
+       use-device-telemetry.ts
+       use-device-inspection.ts
+       use-device-timeline.ts
+    commands/
+       use-commands.ts
+       use-send-command.ts
+       use-cancel-command.ts
+       use-command-history.ts
+    logs/
+       use-logs.ts
+       use-log-stream.ts
+       use-log-filter.ts
+    alerts/
+       use-alerts.ts
+       use-alert.ts
+       use-dismiss-alert.ts
+    telemetry/
+       use-telemetry.ts
+       use-telemetry-stats.ts
+    export/
+       use-export.ts
+       use-export-job.ts
+       use-export-dialog.ts
+    _shared/
+       use-pagination.ts
+       use-search.ts
+       use-device-selector.ts
+       use-time-range.ts
+    use-mobile.tsx
+    use-operator.ts
+    use-server-health.ts
+
+ domain/                         # DOMAIN LAYER
+    _shared/                   # SHARED - cross-feature types/functions
+       domain-pagination.ts   # Pagination types & helpers
+       domain-errors.ts       # Domain error classes
+       domain-date.ts         # Date formatting utilities
+   
+    device/
+       device-entity.ts       # Device, DeviceStatus types
+       device-mappers.ts      # deviceFromGraphQL(), etc.
+       device-validators.ts   # validateDeviceId(), etc.
+   
+    commands/
+       command-entity.ts      # Command, CommandStatus types
+       command-constants.ts   # PRESET_COMMANDS array
+       command-mappers.ts     # commandFromAPI(), etc.
+       command-validators.ts  # validateCommand(), etc.
+   
+    logs/
+       log-entity.ts          # LogEntry, LogType types
+       log-mappers.ts         # logFromAPI(), etc.
+       log-filters.ts         # filterByType(), etc.
+       log-formatters.ts      # formatTimestamp(), etc.
+   
+    telemetry/
+       telemetry-entity.ts    # TelemetryFrame, MetricStats types
+       telemetry-mappers.ts   # telemetryFromAPI(), etc.
+       telemetry-aggregation.ts # calculateStats(), etc.
+   
+    alerts/
+       alert-entity.ts        # Alert, AlertSeverity types
+       alert-mappers.ts       # alertFromAPI(), etc.
+       alert-priority.ts      # calculatePriority(), etc.
+   
+    export/
+       export-entity.ts       # ExportFormat, ExportScope types
+       export-formatters.ts   # toCSV(), toJSON(), toXML()
+       export-filename.ts     # generateFilename()
+       export-validators.ts  # validateExportOptions()
+   
+    index.ts                   # Domain exports (barrel)
+
+ lib/
+     api/                        # DATA LAYER
+         _shared/              # SHARED - cross-feature data utilities
+            graphql-client.ts   # GraphQL client setup
+            graphql-fragments.ts # Reusable fragments
+            rest-client.ts     # REST client setup
+            rest-interceptors.ts # Auth, error handling
+            rest-adapters.ts  # graphql→rest adapters
+        
+         graphql/
+            device/
+               graphql-device-queries.ts
+               graphql-device-mutations.ts
+               graphql-device-types.ts  # Raw response types
+            commands/
+               graphql-command-queries.ts
+               graphql-command-mutations.ts
+               graphql-command-types.ts
+            logs/
+               graphql-log-queries.ts
+               graphql-log-subscriptions.ts
+               graphql-log-types.ts
+            telemetry/
+               graphql-telemetry-queries.ts
+               graphql-telemetry-types.ts
+            alerts/
+               graphql-alert-queries.ts
+               graphql-alert-mutations.ts
+               graphql-alert-types.ts
+            index.ts
+        
+         rest/
+            device/
+               rest-device-endpoints.ts
+            commands/
+               rest-command-endpoints.ts
+            index.ts
+        
+         mock/
+            mock-device-data.ts
+            mock-command-data.ts
+            mock-log-data.ts
+        
+         index.ts              # API exports
 ```
 
 ### 5.2 Import Rules Visualized
 
 ```
 src/
-├── ui/                  ← CAN import from: hooks/
-│   ├── pages/          ← CANNOT import from: domain/, lib/api/
-│   └── components/     ← CANNOT import from: domain/, lib/api/
-│
-├── hooks/             ← CAN import from: domain/, lib/api/
-│   └── *.ts           ← CANNOT import from: ui/, hooks/
-│
-├── domain/            ← CAN import from: NOTHING
-│   └── *.ts           ← CANNOT import from: ui/, hooks/, lib/api/
-│
-└── lib/
-    └── api/           ← CAN import from: domain/ (types only)
-        └── *.ts       ← CANNOT import from: ui/, hooks/
+ ui/                  ← CAN import from: hooks/
+    pages/          ← CANNOT import from: domain/, lib/api/
+    components/     ← CANNOT import from: domain/, lib/api/
+
+ hooks/             ← CAN import from: domain/, lib/api/
+    *.ts           ← CANNOT import from: ui/, hooks/
+
+ domain/            ← CAN import from: NOTHING
+    *.ts           ← CANNOT import from: ui/, hooks/, lib/api/
+
+ lib/
+     api/           ← CAN import from: domain/ (types only)
+         *.ts       ← CANNOT import from: ui/, hooks/
 ```
 
 ---
@@ -1233,52 +1233,52 @@ export const CommandButton = ({
 Follow this order:
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  STEP 1: Define Domain                                             │
-│  ─────────────────────────────────────────────────────────────────   │
-│                                                                     │
-│  src/domain/[feature]/                                             │
-│  ├── types.ts          # What is this thing?                         │
-│  ├── transforms.ts     # How do I convert API data?                  │
-│  └── validation.ts     # Is this data valid?                         │
-│                                                                     │
-│  ↓ (next step)                                                     │
-│                                                                     │
-│  STEP 2: Create Data Layer                                         │
-│  ─────────────────────────────────────────────────────────────────   │
-│                                                                     │
-│  src/lib/api/graphql/                                              │
-│  ├── queries/[feature].ts    # GraphQL queries                      │
-│  └── mutations/[feature].ts   # GraphQL mutations                    │
-│                                                                     │
-│  src/lib/api/rest/                                                │
-│  ├── endpoints.ts           # REST endpoints (fallback)             │
-│  └── adapters.ts           # Convert REST to GraphQL format         │
-│                                                                     │
-│  ↓ (next step)                                                     │
-│                                                                     │
-│  STEP 3: Create Presentation Layer                                 │
-│  ─────────────────────────────────────────────────────────────────   │
-│                                                                     │
-│  src/hooks/[feature]/                                              │
-│  ├── use-[feature].ts          # Main hook                          │
-│  ├── use-[feature]-list.ts    # List hook                         │
-│  └── use-[feature]-mutation.ts # Mutation hook                      │
-│                                                                     │
-│  ↓ (next step)                                                     │
-│                                                                     │
-│  STEP 4: Create UI Layer                                           │
-│  ─────────────────────────────────────────────────────────────────   │
-│                                                                     │
-│  src/ui/pages/[feature]/                                            │
-│  └── [feature]-page.tsx        # Main page                          │
-│                                                                     │
-│  src/ui/components/shared/[feature]/                                │
-│  ├── [feature]-card.tsx        # Card component                     │
-│  └── [feature]-row.tsx          # Row component                     │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+  STEP 1: Define Domain                                             
+     
+                                                                     
+  src/domain/[feature]/                                             
+   types.ts          # What is this thing?                         
+   transforms.ts     # How do I convert API data?                  
+   validation.ts     # Is this data valid?                         
+                                                                     
+  ↓ (next step)                                                     
+                                                                     
+  STEP 2: Create Data Layer                                         
+     
+                                                                     
+  src/lib/api/graphql/                                              
+   queries/[feature].ts    # GraphQL queries                      
+   mutations/[feature].ts   # GraphQL mutations                    
+                                                                     
+  src/lib/api/rest/                                                
+   endpoints.ts           # REST endpoints (fallback)             
+   adapters.ts           # Convert REST to GraphQL format         
+                                                                     
+  ↓ (next step)                                                     
+                                                                     
+  STEP 3: Create Presentation Layer                                 
+     
+                                                                     
+  src/hooks/[feature]/                                              
+   use-[feature].ts          # Main hook                          
+   use-[feature]-list.ts    # List hook                         
+   use-[feature]-mutation.ts # Mutation hook                      
+                                                                     
+  ↓ (next step)                                                     
+                                                                     
+  STEP 4: Create UI Layer                                           
+     
+                                                                     
+  src/ui/pages/[feature]/                                            
+   [feature]-page.tsx        # Main page                          
+                                                                     
+  src/ui/components/shared/[feature]/                                
+   [feature]-card.tsx        # Card component                     
+   [feature]-row.tsx          # Row component                     
+                                                                     
+
 ```
 
 ### 10.2 Example: Add Alert Feature
@@ -1462,30 +1462,30 @@ export const AlertsActivePage = () => {
 ```
 When something breaks, work from outside in:
 
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  1. UI NOT RENDERING?                                              │
-│     └─► Check hook return value                                     │
-│         └─► Is the hook being called correctly?                     │
-│             └─► Is the hook returning what you expect?               │
-│                                                                     │
-│  2. HOOK RETURNING WRONG DATA?                                      │
-│     └─► Check data transformation                                    │
-│         └─► Is the domain transform correct?                         │
-│             └─► Is the raw data what you expect?                    │
-│                                                                         │
-│  3. API CALL FAILING?                                               │
-│     └─► Check data layer                                           │
-│         └─► Is the GraphQL query correct?                           │
-│             └─► Is the REST endpoint correct?                        │
-│                 └─► Is the API responding?                            │
-│                                                                     │
-│  4. DATA NOT VALID?                                                 │
-│     └─► Check domain validation                                     │
-│         └─► Is the validation function correct?                      │
-│             └─► What does the API actually return?                   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+  1. UI NOT RENDERING?                                              
+      Check hook return value                                     
+          Is the hook being called correctly?                     
+              Is the hook returning what you expect?               
+                                                                     
+  2. HOOK RETURNING WRONG DATA?                                      
+      Check data transformation                                    
+          Is the domain transform correct?                         
+              Is the raw data what you expect?                    
+                                                                         
+  3. API CALL FAILING?                                               
+      Check data layer                                           
+          Is the GraphQL query correct?                           
+              Is the REST endpoint correct?                        
+                  Is the API responding?                            
+                                                                     
+  4. DATA NOT VALID?                                                 
+      Check domain validation                                     
+          Is the validation function correct?                      
+              What does the API actually return?                   
+                                                                     
+
 ```
 
 ### 11.2 Quick Debug Commands
@@ -1557,38 +1557,38 @@ console.log("Response:", response);
 
 ```
 STEP 1: Create Directory Structure
-─────────────────────────────────
+
 src/
-├── ui/
-├── hooks/
-├── domain/
-└── lib/api/
+ ui/
+ hooks/
+ domain/
+ lib/api/
 
 STEP 2: Create Domain Types
-─────────────────────────────────
+
 src/domain/[feature]/types.ts
 src/domain/[feature]/transforms.ts
 
 STEP 3: Create Data Layer
-─────────────────────────────────
+
 src/lib/api/graphql/queries/[feature].ts
 src/lib/api/rest/endpoints.ts
 
 STEP 4: Create Presentation Layer
-─────────────────────────────────
+
 src/hooks/[feature]/use-[feature].ts
 
 STEP 5: Create UI Layer
-─────────────────────────────────
+
 src/ui/pages/[feature]/page.tsx
 
 STEP 6: Update Imports
-─────────────────────────────────
+
 # Update old imports to new locations
 # Run ESLint to find broken imports
 
 STEP 7: Delete Old Files
-─────────────────────────────────
+
 # Delete files from old locations
 # Keep backup until verified
 ```

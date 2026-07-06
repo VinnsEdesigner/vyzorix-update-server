@@ -3,14 +3,14 @@
 
 cd "$(dirname "$0")/.."
 
-echo "╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗"
-echo "║                    SCANNING internal/ DIRECTORIES FOR MIGRATION                                       ║"
-echo "╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝"
+echo ""
+echo "                    SCANNING internal/ DIRECTORIES FOR MIGRATION                                       "
+echo ""
 echo ""
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "1. internal/audit/"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 if [ -d "internal/audit" ]; then
     echo "Files:"
@@ -29,9 +29,9 @@ else
 fi
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "2. internal/fcm/"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 if [ -d "internal/fcm" ]; then
     echo "Files:"
@@ -50,9 +50,9 @@ else
 fi
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "3. internal/ssr/"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 if [ -d "internal/ssr" ]; then
     echo "Files:"
@@ -71,9 +71,9 @@ else
 fi
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "4. internal/api/server.go"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 if [ -f "internal/api/server.go" ]; then
     echo "Logic:"
@@ -83,9 +83,9 @@ else
 fi
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "5. internal/email.go & internal/command_signer.go"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 echo "internal/email.go:"
 if [ -f "internal/email.go" ]; then
@@ -103,51 +103,51 @@ if [ -f "internal/command_signer.go" ]; then
 fi
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "6. MIGRATION STATUS"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
-echo "┌────────────────────────────────────────────────┬────────────────────────────────────────┐"
-echo "│ Directory                                        │ Status                                  │"
-echo "├────────────────────────────────────────────────┼────────────────────────────────────────┤"
+echo ""
+echo " Directory                                         Status                                  "
+echo ""
 
 # Check audit
 if [ -d "internal/infrastructure/audit" ]; then
-    echo "│ internal/audit/                                │ ✅ Migrated to infrastructure/audit/ │"
+    echo " internal/audit/                                  Migrated to infrastructure/audit/ "
 else
-    echo "│ internal/audit/                                │ ⚠️  Needs migration                   │"
+    echo " internal/audit/                                   Needs migration                   "
 fi
 
 # Check fcm
 if [ -d "internal/infrastructure/fcm" ]; then
-    echo "│ internal/fcm/                                  │ ✅ Migrated to infrastructure/fcm/    │"
+    echo " internal/fcm/                                    Migrated to infrastructure/fcm/    "
 else
-    echo "│ internal/fcm/                                  │ ⚠️  Needs migration                   │"
+    echo " internal/fcm/                                     Needs migration                   "
 fi
 
 # Check ssr
 if [ -d "internal/infrastructure/ssr" ]; then
-    echo "│ internal/ssr/                                  │ ✅ Migrated to infrastructure/ssr/    │"
+    echo " internal/ssr/                                    Migrated to infrastructure/ssr/    "
 else
-    echo "│ internal/ssr/                                  │ ⚠️  Needs migration                   │"
+    echo " internal/ssr/                                     Needs migration                   "
 fi
 
 # Check email
 if [ -d "internal/infrastructure/email" ]; then
-    echo "│ internal/email.go                              │ ✅ Migrated to infrastructure/email/ │"
+    echo " internal/email.go                                Migrated to infrastructure/email/ "
 else
-    echo "│ internal/email.go                              │ ⚠️  Needs migration                   │"
+    echo " internal/email.go                                 Needs migration                   "
 fi
 
 # Check command_signer
 if grep -rq "CommandSigner" internal/infrastructure/crypto/ 2>/dev/null; then
-    echo "│ internal/command_signer.go                     │ ✅ Migrated to infrastructure/crypto/ │"
+    echo " internal/command_signer.go                       Migrated to infrastructure/crypto/ "
 else
-    echo "│ internal/command_signer.go                     │ ⚠️  Needs migration                   │"
+    echo " internal/command_signer.go                        Needs migration                   "
 fi
 
-echo "└────────────────────────────────────────────────┴────────────────────────────────────────┘"
+echo ""
 
 echo ""
-echo "═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════"
+echo ""

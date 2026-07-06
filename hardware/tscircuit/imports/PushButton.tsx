@@ -50,7 +50,7 @@ export const PushButton = (props: ChipProps<typeof buttonPinLabels>) => (
         <silkscreenpath route={[{ x: -2, y: -2 }, { x: 2, y: -2 }, { x: 2, y: 2 }, { x: -2, y: 2 }, { x: -2, y: -2 }]} />
         
         {/* Haptic bump indicator */}
-        <silkscreentext text="●" pcbX="0mm" pcbY="0mm" fontSize="2mm" anchorAlignment="center" />
+        <silkscreentext text="" pcbX="0mm" pcbY="0mm" fontSize="2mm" anchorAlignment="center" />
         
         {/* Reference designator */}
         <silkscreentext text="{NAME}" pcbX="0mm" pcbY="8mm" fontSize="0.8mm" anchorAlignment="center" />

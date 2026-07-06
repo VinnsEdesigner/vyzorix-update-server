@@ -112,7 +112,7 @@ def main():
     
     task = " ".join(sys.argv[1:])
     
-    print(f"🤖 Delegating task to SiliconFlow AI...")
+    print(f" Delegating task to SiliconFlow AI...")
     print(f"   Task: {task[:100]}...")
     print()
     

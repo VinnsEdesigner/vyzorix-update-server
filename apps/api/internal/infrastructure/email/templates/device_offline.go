@@ -33,7 +33,7 @@ const DeviceOfflineEmail = `<!DOCTYPE html>
     <div class="container">
         <div class="email-wrapper">
             <div class="header">
-                <div class="icon">🔴</div>
+                <div class="icon"></div>
                 <div class="logo">Device Offline</div>
             </div>
             <div class="content">

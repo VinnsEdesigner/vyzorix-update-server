@@ -9,7 +9,7 @@
 
 | Document Says | Implementation Uses | Status |
 |--------------|---------------------|--------|
-| `/v1/device/:id/stream` | `/v1/device/:imei/stream` | ⚠️ MISMATCH - Uses `:imei` not `:id` |
+| `/v1/device/:id/stream` | `/v1/device/:imei/stream` |  MISMATCH - Uses `:imei` not `:id` |
 
 **Fix Needed:** Update doc to use `:imei` for consistency with rest of API.
 
@@ -29,15 +29,15 @@ The REALTIME_WEBSOCKET_ARCHITECTURE.md does NOT document these GraphQL subscript
 
 ---
 
-## 3. Implementation Status: ✅ EXISTS
+## 3. Implementation Status:  EXISTS
 
 | Component | Handler File | Status |
 |-----------|--------------|--------|
-| WebSocket Stream | `websocket_handler.go` | ✅ IMPLEMENTED |
-| Message Router | `stream_message.go` | ✅ IMPLEMENTED |
-| Telemetry Handling | `MessageRouter.handleTelemetry()` | ✅ IMPLEMENTED |
-| Command Dispatch | `SendToClient()` | ✅ IMPLEMENTED |
-| GraphQL Subscriptions | `schema/subscription.go` | ✅ IMPLEMENTED |
+| WebSocket Stream | `websocket_handler.go` |  IMPLEMENTED |
+| Message Router | `stream_message.go` |  IMPLEMENTED |
+| Telemetry Handling | `MessageRouter.handleTelemetry()` |  IMPLEMENTED |
+| Command Dispatch | `SendToClient()` |  IMPLEMENTED |
+| GraphQL Subscriptions | `schema/subscription.go` |  IMPLEMENTED |
 
 ---
 
@@ -46,16 +46,16 @@ The REALTIME_WEBSOCKET_ARCHITECTURE.md does NOT document these GraphQL subscript
 ### Device → Server (Implemented):
 | Type | Handler | Status |
 |------|---------|--------|
-| `TELEMETRY` | `handleTelemetry()` | ✅ |
-| `PONG` | `handlePong()` | ✅ |
-| `STATUS` | `handleStatus()` | ✅ |
+| `TELEMETRY` | `handleTelemetry()` |  |
+| `PONG` | `handlePong()` |  |
+| `STATUS` | `handleStatus()` |  |
 
 ### Document Says vs Implementation:
 | Document Says | Implementation | Status |
 |---------------|----------------|--------|
-| `AUTH` | Not in MessageRouter | ⚠️ Uses HMAC middleware instead |
-| `CMD_ACK` | Not in MessageRouter | ⚠️ Handled via REST API |
-| `PONG` | `handlePong()` | ✅ |
+| `AUTH` | Not in MessageRouter |  Uses HMAC middleware instead |
+| `CMD_ACK` | Not in MessageRouter |  Handled via REST API |
+| `PONG` | `handlePong()` |  |
 
 ---
 

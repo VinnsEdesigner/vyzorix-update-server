@@ -199,35 +199,35 @@ CREATE INDEX idx_event_type ON device_logs(event_type);
 
 ```
 apps/api/internal/
-├── api/
-│   ├── server_routes.go          # Route registration
-│   └── handlers/
-│       ├── command/
-│       │   ├── command_history_handler.go  # CommandHistoryHandler
-│       │   └── command_history_routes.go  # (included)
-│       ├── device/
-│       │   ├── device_logs_handler.go     # LogsHandler
-│       │   ├── device_logs_routes.go     # (included)
-│       │   ├── device_metrics_handler.go   # MetricsHandler
-│       │   ├── device_metrics_routes.go   # (included)
-│       │   ├── device_telemetry_handler.go # TelemetryHandler
-│       │   └── device_telemetry_routes.go # (included)
-│       └── dashboard/
-│           ├── dashboard_stats_handler.go # DashboardStatsHandler
-│           └── dashboard_stats_routes.go   # (included)
-├── application/
-│   ├── command/
-│   │   └── command_service.go     # CommandService
-│   └── dashboard/
-│       └── dashboard_service.go   # DashboardService
-├── domain/
-│   ├── command/
-│   │   └── command_entity.go      # Command entity
-│   └── device/
-│       └── device_entity.go       # Device entity
-└── infrastructure/
-    └── storage/
-        └── device_storage.go      # Storage (commands, logs, metrics)
+ api/
+    server_routes.go          # Route registration
+    handlers/
+        command/
+           command_history_handler.go  # CommandHistoryHandler
+           command_history_routes.go  # (included)
+        device/
+           device_logs_handler.go     # LogsHandler
+           device_logs_routes.go     # (included)
+           device_metrics_handler.go   # MetricsHandler
+           device_metrics_routes.go   # (included)
+           device_telemetry_handler.go # TelemetryHandler
+           device_telemetry_routes.go # (included)
+        dashboard/
+            dashboard_stats_handler.go # DashboardStatsHandler
+            dashboard_stats_routes.go   # (included)
+ application/
+    command/
+       command_service.go     # CommandService
+    dashboard/
+        dashboard_service.go   # DashboardService
+ domain/
+    command/
+       command_entity.go      # Command entity
+    device/
+        device_entity.go       # Device entity
+ infrastructure/
+     storage/
+         device_storage.go      # Storage (commands, logs, metrics)
 ```
 
 ---

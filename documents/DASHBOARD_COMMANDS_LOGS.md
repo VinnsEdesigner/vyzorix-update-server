@@ -9,7 +9,7 @@
 
 ---
 
-> ⚠️ **Architecture Alignment Note (v1.2)**
+>  **Architecture Alignment Note (v1.2)**
 > 
 > This document has been updated to align with the **Layered Architecture** defined in `FRONTEND_ARCHITECTURE.md`. The file structure below follows the **4-layer architecture**:
 > - **UI Layer** (`src/components/`) - Pure UI rendering, imports only from hooks
@@ -77,73 +77,73 @@ Redesign the Dashboard page with tabs for better organization, create a shared C
 ### 2.1 Layered Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        FRONTEND ARCHITECTURE                        │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      UI LAYER                               │   │
-│  │                   (src/components/)                        │   │
-│  │                                                             │   │
-│  │    Pages, Components, Shared UI                            │   │
-│  │    ONLY renders UI. Uses hooks for everything.              │   │
-│  │    NEVER imports from Data or Domain.                       │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                   PRESENTATION LAYER                        │   │
-│  │                      (src/hooks/)                          │   │
-│  │                                                             │   │
-│  │    Custom hooks that:                                      │   │
-│  │    - Handle UI logic                                        │   │
-│  │    - Transform data for UI                                  │   │
-│  │    - Manage state                                           │   │
-│  │    NEVER renders UI. NEVER imports from UI layer.          │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      DOMAIN LAYER                          │   │
-│  │                     (src/domain/)                          │   │
-│  │                                                             │   │
-│  │    Pure functions that:                                    │   │
-│  │    - Define types and interfaces                          │   │
-│  │    - Transform data (no side effects)                     │   │
-│  │    - Validate input                                        │   │
-│  │    NEVER imports from UI, Presentation, or Data.           │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                       DATA LAYER                           │   │
-│  │                   (src/lib/api/)                           │   │
-│  │                                                             │   │
-│  │    API clients that:                                       │   │
-│  │    - Make HTTP requests                                    │   │
-│  │    - Handle authentication                                  │   │
-│  │    - Parse responses                                       │   │
-│  │    NEVER imports from UI or Presentation.                  │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                        FRONTEND ARCHITECTURE                        
+
+                                                                     
+     
+                        UI LAYER                                  
+                     (src/components/)                           
+                                                                  
+      Pages, Components, Shared UI                               
+      ONLY renders UI. Uses hooks for everything.                 
+      NEVER imports from Data or Domain.                          
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                     PRESENTATION LAYER                           
+                        (src/hooks/)                             
+                                                                  
+      Custom hooks that:                                         
+      - Handle UI logic                                           
+      - Transform data for UI                                     
+      - Manage state                                              
+      NEVER renders UI. NEVER imports from UI layer.             
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                        DOMAIN LAYER                             
+                       (src/domain/)                             
+                                                                  
+      Pure functions that:                                       
+      - Define types and interfaces                             
+      - Transform data (no side effects)                        
+      - Validate input                                           
+      NEVER imports from UI, Presentation, or Data.              
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                         DATA LAYER                              
+                     (src/lib/api/)                              
+                                                                  
+      API clients that:                                          
+      - Make HTTP requests                                       
+      - Handle authentication                                     
+      - Parse responses                                          
+      NEVER imports from UI or Presentation.                     
+     
+                                                                     
+
 ```
 
 ### 2.2 Dependency Rule
 
 ```
-UI Layer ────────► Presentation Layer ────────► Domain ────────► Data Layer
+UI Layer  Presentation Layer  Domain  Data Layer
 (components/)          (hooks/)              (domain/)        (lib/api/)
-     │                     │                      │                 │
-     │                     │                      │                 │
-     └── IMPORTS ─────────┘                      │                 │
-          ONLY FROM                              │                 │
-          HOOKS                                  │                 │
-                                             │                 │
-                                             └── IMPORTS ─────┘
+                                                                 
+                                                                 
+      IMPORTS                                        
+          ONLY FROM                                               
+          HOOKS                                                   
+                                                              
+                                              IMPORTS 
                                                   ONLY FROM
                                                   DOMAIN TYPES
 ```
@@ -156,186 +156,186 @@ UI Layer ────────► Presentation Layer ────────
 
 ```
 apps/web/src/
-│
-├── domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
-│   ├── _shared/                   # SHARED domain types
-│   │   ├── domain-pagination.ts  # Pagination types & helpers
-│   │   └── domain-errors.ts      # Domain error types
-│   │
-│   ├── commands/
-│   │   ├── command-entity.ts     # Command, CommandStatus, PresetCommand
-│   │   ├── command-mappers.ts    # commandFromRaw(), commandToApi()
-│   │   ├── command-validators.ts # validateCommand(), validateStatus()
-│   │   └── command-constants.ts  # Preset command definitions
-│   │
-│   ├── logs/
-│   │   ├── log-entity.ts         # LogEntry, LogLevel, LogSource
-│   │   ├── log-mappers.ts        # logFromRaw()
-│   │   └── log-filters.ts        # validateLogEntry(), filter functions
-│   │
-│   └── devices/                  # Shared device domain types
-│       ├── device-entity.ts      # Device basic types
-│       └── device-mappers.ts     # deviceBasicFromRaw()
-│
-├── lib/
-│   └── api/
-│       ├── graphql/
-│       │   ├── _shared/
-│       │   │   └── graphql-client.ts  # GraphQL client setup
-│       │   │
-│       │   ├── commands/
-│       │   │   ├── graphql-commands-queries.ts     # GET_COMMANDS, GET_PENDING_COMMANDS
-│       │   │   ├── graphql-commands-mutations.ts  # SEND_COMMAND, CANCEL_COMMAND, RETRY_COMMAND
-│       │   │   ├── graphql-commands-fragments.ts  # Command fragments
-│       │   │   └── graphql-commands-types.ts     # Raw GraphQL response types
-│       │   │
-│       │   ├── logs/
-│       │   │   ├── graphql-logs-queries.ts        # GET_LOG_ENTRIES, GET_LOG_STATS
-│       │   │   ├── graphql-logs-subscriptions.ts # Real-time log subscription
-│       │   │   ├── graphql-logs-fragments.ts     # Log entry fragments
-│       │   │   └── graphql-logs-types.ts         # Raw GraphQL response types
-│       │   │
-│       │   └── devices/
-│       │       ├── graphql-devices-queries.ts     # GET_DEVICES, GET_DEVICE, GET_DEVICE_COUNT
-│       │       ├── graphql-devices-fragments.ts  # Device fragments
-│       │       └── graphql-devices-types.ts      # Raw GraphQL response types
-│       │
-│       └── rest/
-│           ├── _shared/
-│           │   └── rest-client.ts     # Base REST client
-│           ├── commands/
-│           │   └── rest-commands-endpoints.ts    # REST endpoints for commands
-│           └── logs/
-│               └── rest-logs-endpoints.ts        # REST endpoints for logs
-│
-├── hooks/                           # PRESENTATION LAYER
-│   │
-│   ├── commands/                    # Commands presentation logic
-│   │   ├── use-commands.ts          # Send commands, get presets
-│   │   ├── use-command-history.ts   # Command history with pagination
-│   │   ├── use-pending-commands.ts  # Pending commands for device
-│   │   └── index.ts                 # Barrel export
-│   │
-│   ├── logs/                        # Logs presentation logic
-│   │   ├── use-logs.ts              # (EXISTING - refactor to follow architecture)
-│   │   ├── use-log-stream.ts        # Real-time log streaming
-│   │   └── index.ts                 # Barrel export
-│   │
-│   ├── devices/                     # Device presentation logic (shared)
-│   │   ├── use-devices.ts           # Device list with filters
-│   │   ├── use-device-selected.ts   # Current selected device context
-│   │   └── index.ts
-│   │
-│   └── shared/                      # Shared presentation utilities
-│       ├── use-pagination.ts        # Generic pagination hook
-│       ├── use-search.ts            # Generic search/filter hook
-│       └── index.ts
-│
-├── components/                      # UI LAYER
-│   │
-│   ├── shared/                      # Shared UI components (NOT feature-specific)
-│   │   ├── section.tsx              # Bordered section component
-│   │   ├── section-header.tsx       # Section header with title/subtitle
-│   │   ├── empty-state.tsx          # Empty state component
-│   │   ├── loading-skeleton.tsx     # Loading skeleton variants
-│   │   ├── data-table.tsx           # Table wrapper with sorting/pagination
-│   │   ├── pagination.tsx           # Pagination controls
-│   │   ├── search-input.tsx         # Search input with clear
-│   │   ├── filter-select.tsx        # Dropdown filter select
-│   │   ├── status-badge.tsx         # (EXISTING - move here)
-│   │   └── connection-badge.tsx     # (EXISTING - move here)
-│   │
-│   ├── commands/                    # Commands feature components
-│   │   ├── commands-send.tsx        # Send commands grid (PRESET_COMMANDS)
-│   │   ├── commands-pending.tsx     # Pending queue list
-│   │   ├── commands-history.tsx     # Full command history table
-│   │   ├── commands-recent.tsx      # Recent commands list
-│   │   ├── command-button.tsx       # Single command button
-│   │   ├── command-status-badge.tsx # Command status badge
-│   │   ├── command-row.tsx          # Single command table row
-│   │   └── index.ts                 # Barrel export
-│   │
-│   ├── logs/                        # Logs feature components
-│   │   ├── logs-stream.tsx          # Real-time log display
-│   │   ├── log-entry.tsx            # Single log entry row
-│   │   ├── log-filters.tsx          # Log filtering controls
-│   │   ├── log-stats.tsx            # Log statistics summary
-│   │   └── index.ts                 # Barrel export
-│   │
-│   ├── dashboard/                   # Dashboard feature components
-│   │   ├── dashboard-page.tsx       # Dashboard page wrapper with tabs
-│   │   ├── dashboard-overview.tsx   # Overview tab content
-│   │   ├── dashboard-metrics.tsx    # Metrics tab content
-│   │   ├── dashboard-commands.tsx   # Commands tab (redirects to /commands)
-│   │   ├── dashboard-logs.tsx       # Logs tab (redirects to /logs)
-│   │   ├── device-stats-grid.tsx    # Device statistics grid
-│   │   ├── activity-feed.tsx        # Recent activity feed
-│   │   └── index.ts                 # Barrel export
-│   │
-│   ├── layout/                      # (EXISTING)
-│   │   ├── app-layout.tsx
-│   │   └── auth-layout.tsx
-│   │
-│   ├── auth/                        # (EXISTING)
-│   │   └── ... (existing auth components)
-│   │
-│   └── ui/                          # (EXISTING - base UI primitives)
-│       ├── button.tsx
-│       ├── badge.tsx
-│       ├── card.tsx
-│       └── ... (shadcn/ui components)
-│
-└── routes/                          # PAGE LAYER (Routes)
-    │
-    ├── __root.tsx                   # (EXISTING)
-    ├── router.tsx                   # (EXISTING)
-    │
-    ├── dashboard.tsx                # MODIFIED - redirect to /dashboard/overview
-    │
-    ├── dashboard.commands.tsx       # NEW - /dashboard/commands
-    ├── dashboard.commands.pending.tsx  # NEW - /dashboard/commands/pending
-    ├── dashboard.commands.history.tsx  # NEW - /dashboard/commands/history
-    ├── dashboard.logs.tsx           # NEW - /dashboard/logs
-    ├── dashboard.metrics.tsx        # NEW - /dashboard/metrics
-    │
-    ├── commands-page.tsx            # NEW - /commands (standalone)
-    ├── commands.pending.tsx         # NEW - /commands/pending
-    ├── commands.history.tsx         # NEW - /commands/history
-    │
-    ├── logs-page.tsx                # MODIFIED - standalone logs page
-    │
-    ├── device.tsx                   # MODIFIED - add commands tab
-    ├── device.$imei.commands.tsx    # NEW - /device/:imei/commands
-    ├── device.$imei.commands.pending.tsx  # NEW
-    ├── device.$imei.commands.history.tsx  # NEW
-    │
-    └── ... (other existing routes)
+
+ domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
+    _shared/                   # SHARED domain types
+       domain-pagination.ts  # Pagination types & helpers
+       domain-errors.ts      # Domain error types
+   
+    commands/
+       command-entity.ts     # Command, CommandStatus, PresetCommand
+       command-mappers.ts    # commandFromRaw(), commandToApi()
+       command-validators.ts # validateCommand(), validateStatus()
+       command-constants.ts  # Preset command definitions
+   
+    logs/
+       log-entity.ts         # LogEntry, LogLevel, LogSource
+       log-mappers.ts        # logFromRaw()
+       log-filters.ts        # validateLogEntry(), filter functions
+   
+    devices/                  # Shared device domain types
+        device-entity.ts      # Device basic types
+        device-mappers.ts     # deviceBasicFromRaw()
+
+ lib/
+    api/
+        graphql/
+           _shared/
+              graphql-client.ts  # GraphQL client setup
+          
+           commands/
+              graphql-commands-queries.ts     # GET_COMMANDS, GET_PENDING_COMMANDS
+              graphql-commands-mutations.ts  # SEND_COMMAND, CANCEL_COMMAND, RETRY_COMMAND
+              graphql-commands-fragments.ts  # Command fragments
+              graphql-commands-types.ts     # Raw GraphQL response types
+          
+           logs/
+              graphql-logs-queries.ts        # GET_LOG_ENTRIES, GET_LOG_STATS
+              graphql-logs-subscriptions.ts # Real-time log subscription
+              graphql-logs-fragments.ts     # Log entry fragments
+              graphql-logs-types.ts         # Raw GraphQL response types
+          
+           devices/
+               graphql-devices-queries.ts     # GET_DEVICES, GET_DEVICE, GET_DEVICE_COUNT
+               graphql-devices-fragments.ts  # Device fragments
+               graphql-devices-types.ts      # Raw GraphQL response types
+       
+        rest/
+            _shared/
+               rest-client.ts     # Base REST client
+            commands/
+               rest-commands-endpoints.ts    # REST endpoints for commands
+            logs/
+                rest-logs-endpoints.ts        # REST endpoints for logs
+
+ hooks/                           # PRESENTATION LAYER
+   
+    commands/                    # Commands presentation logic
+       use-commands.ts          # Send commands, get presets
+       use-command-history.ts   # Command history with pagination
+       use-pending-commands.ts  # Pending commands for device
+       index.ts                 # Barrel export
+   
+    logs/                        # Logs presentation logic
+       use-logs.ts              # (EXISTING - refactor to follow architecture)
+       use-log-stream.ts        # Real-time log streaming
+       index.ts                 # Barrel export
+   
+    devices/                     # Device presentation logic (shared)
+       use-devices.ts           # Device list with filters
+       use-device-selected.ts   # Current selected device context
+       index.ts
+   
+    shared/                      # Shared presentation utilities
+        use-pagination.ts        # Generic pagination hook
+        use-search.ts            # Generic search/filter hook
+        index.ts
+
+ components/                      # UI LAYER
+   
+    shared/                      # Shared UI components (NOT feature-specific)
+       section.tsx              # Bordered section component
+       section-header.tsx       # Section header with title/subtitle
+       empty-state.tsx          # Empty state component
+       loading-skeleton.tsx     # Loading skeleton variants
+       data-table.tsx           # Table wrapper with sorting/pagination
+       pagination.tsx           # Pagination controls
+       search-input.tsx         # Search input with clear
+       filter-select.tsx        # Dropdown filter select
+       status-badge.tsx         # (EXISTING - move here)
+       connection-badge.tsx     # (EXISTING - move here)
+   
+    commands/                    # Commands feature components
+       commands-send.tsx        # Send commands grid (PRESET_COMMANDS)
+       commands-pending.tsx     # Pending queue list
+       commands-history.tsx     # Full command history table
+       commands-recent.tsx      # Recent commands list
+       command-button.tsx       # Single command button
+       command-status-badge.tsx # Command status badge
+       command-row.tsx          # Single command table row
+       index.ts                 # Barrel export
+   
+    logs/                        # Logs feature components
+       logs-stream.tsx          # Real-time log display
+       log-entry.tsx            # Single log entry row
+       log-filters.tsx          # Log filtering controls
+       log-stats.tsx            # Log statistics summary
+       index.ts                 # Barrel export
+   
+    dashboard/                   # Dashboard feature components
+       dashboard-page.tsx       # Dashboard page wrapper with tabs
+       dashboard-overview.tsx   # Overview tab content
+       dashboard-metrics.tsx    # Metrics tab content
+       dashboard-commands.tsx   # Commands tab (redirects to /commands)
+       dashboard-logs.tsx       # Logs tab (redirects to /logs)
+       device-stats-grid.tsx    # Device statistics grid
+       activity-feed.tsx        # Recent activity feed
+       index.ts                 # Barrel export
+   
+    layout/                      # (EXISTING)
+       app-layout.tsx
+       auth-layout.tsx
+   
+    auth/                        # (EXISTING)
+       ... (existing auth components)
+   
+    ui/                          # (EXISTING - base UI primitives)
+        button.tsx
+        badge.tsx
+        card.tsx
+        ... (shadcn/ui components)
+
+ routes/                          # PAGE LAYER (Routes)
+    
+     __root.tsx                   # (EXISTING)
+     router.tsx                   # (EXISTING)
+    
+     dashboard.tsx                # MODIFIED - redirect to /dashboard/overview
+    
+     dashboard.commands.tsx       # NEW - /dashboard/commands
+     dashboard.commands.pending.tsx  # NEW - /dashboard/commands/pending
+     dashboard.commands.history.tsx  # NEW - /dashboard/commands/history
+     dashboard.logs.tsx           # NEW - /dashboard/logs
+     dashboard.metrics.tsx        # NEW - /dashboard/metrics
+    
+     commands-page.tsx            # NEW - /commands (standalone)
+     commands.pending.tsx         # NEW - /commands/pending
+     commands.history.tsx         # NEW - /commands/history
+    
+     logs-page.tsx                # MODIFIED - standalone logs page
+    
+     device.tsx                   # MODIFIED - add commands tab
+     device.$imei.commands.tsx    # NEW - /device/:imei/commands
+     device.$imei.commands.pending.tsx  # NEW
+     device.$imei.commands.history.tsx  # NEW
+    
+     ... (other existing routes)
 ```
 
 ### 3.2 Sidebar Navigation
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  VYZORIX                                                          │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ■ Dashboard                                                       │
-│    └─ [Overview] [Metrics] [Commands] [Logs]                       │
-│                                                                     │
-│  ■ Device                                                          │
-│    └─ [Inbox] [Overview] [Telemetry] [History] [Commands]         │
-│                                                                     │
-│  ■ Updates                                                         │
-│                                                                     │
-│  ■ Diagnostics                                                     │
-│    └─ [Inspector] [Timeline]                                       │
-│                                                                     │
-│  ■ Alerts                                                          │
-│    └─ [Active] [Status] [History]                                  │
-│                                                                     │
-│  ■ Settings                                                        │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+  VYZORIX                                                          
+
+                                                                     
+   Dashboard                                                       
+     [Overview] [Metrics] [Commands] [Logs]                       
+                                                                     
+   Device                                                          
+     [Inbox] [Overview] [Telemetry] [History] [Commands]         
+                                                                     
+   Updates                                                         
+                                                                     
+   Diagnostics                                                     
+     [Inspector] [Timeline]                                       
+                                                                     
+   Alerts                                                          
+     [Active] [Status] [History]                                  
+                                                                     
+   Settings                                                        
+                                                                     
+
 ```
 
 ### 3.3 Route Structure
@@ -493,32 +493,32 @@ At-a-glance status of current device with key metrics and quick actions.
 ### 7.2 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  DASHBOARD                                    ● Connected | 2s ago  │
-├─────────────────────────────────────────────────────────────────────┤
-│  [Overview] [Metrics] [Commands] [Logs]                            │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─ CONNECTION ────────────────────────────────────────────────┐   │
-│  │  ● Pixel 8 Pro                         [View Device ▾]   │   │
-│  │  IMEI: 861234567890123                                     │   │
-│  │  WS: Connected · FCM: Valid · Last: 2s ago              │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ METRICS ─────────────────────────────────────────────────┐   │
-│  │  RISK          THERMAL        UPTIME         BUFFER      │   │
-│  │  ████████░ 72  █████░ 45°C  ████ 4d     ████████░ 67% │   │
-│  │  Healthy        Normal        Running        Stable         │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ QUICK ACTIONS ───────────────────────────────────────────┐   │
-│  │  [Send Command ▾]  [Refresh]  [View Logs]  [Alerts: 2] │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ DEVICE INFO ────────────────────────────────────────────┐   │
-│  │  OS: Android 14    App: v2.1.0    Build: UP1A.231005.007 │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+
+  DASHBOARD                                     Connected | 2s ago  
+
+  [Overview] [Metrics] [Commands] [Logs]                            
+
+                                                                     
+   CONNECTION    
+     Pixel 8 Pro                         [View Device ]      
+    IMEI: 861234567890123                                        
+    WS: Connected · FCM: Valid · Last: 2s ago                 
+     
+                                                                     
+   METRICS    
+    RISK          THERMAL        UPTIME         BUFFER         
+     72   45°C   4d      67%    
+    Healthy        Normal        Running        Stable            
+     
+                                                                     
+   QUICK ACTIONS    
+    [Send Command ]  [Refresh]  [View Logs]  [Alerts: 2]    
+     
+                                                                     
+   DEVICE INFO    
+    OS: Android 14    App: v2.1.0    Build: UP1A.231005.007    
+     
+
 ```
 
 ### 7.3 Sections
@@ -533,7 +533,7 @@ At-a-glance status of current device with key metrics and quick actions.
 
 | Element | Action |
 |---------|--------|
-| "View Device ▾" | Dropdown to switch devices |
+| "View Device " | Dropdown to switch devices |
 | Metrics | Click to navigate to Metrics tab |
 | "Send Command" | Dropdown with preset commands |
 | "View Logs" | Navigate to Logs tab |
@@ -549,19 +549,19 @@ Deep dive into telemetry data with time range selection and export options.
 ### 8.2 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  METRICS                                    [1h] [6h] [24h] [7d]   │
-│                                                             [Export ▾]│
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─ RISK SCORE ─────────────────────────────────────────────┐   │
-│  │         Current: 72  Avg: 45  Min: 32  Max: 78        │   │
-│  │  ┌─────────────────────────────────────────────────┐   │   │
-│  │  │    100 ─┤                                    ╱╲  │   │   │
-│  │  │     50 ─┤                       ╱╲       ╱    ╲ │   │   │
-│  │  │      0 ─┴────────────────╯──╲──╱──────╱──────╲───│   │   │
-│  │  └─────────────────────────────────────────────────┘   │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+
+  METRICS                                    [1h] [6h] [24h] [7d]   
+                                                             [Export ]
+
+   RISK SCORE    
+           Current: 72  Avg: 45  Min: 32  Max: 78           
+          
+        100                                             
+         50                                          
+          0       
+          
+     
+
 ```
 
 ### 8.3 Controls
@@ -582,18 +582,18 @@ Quick access to command sending (redirects to `/commands` page).
 ### 9.2 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  COMMANDS                                     [Pending] [Recent]   │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─ SEND COMMAND ────────────────────────────────────────────┐   │
-│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │   │
-│  │  │ FORCE_SPEAKER │ │ RESET_AUDIO_HAL │ │ TOGGLE_CAPTURE │       │   │
-│  │  └──────────────┘ └──────────────┘ └──────────────┘       │   │
-│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │   │
-│  │  │ REINIT_PROJECTION │ │ DUMP_FLIGHT_DATA │ │ UPLOAD_CRASH_ZIP │       │   │
-│  │  └──────────────┘ └──────────────┘ └──────────────┘       │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+
+  COMMANDS                                     [Pending] [Recent]   
+
+   SEND COMMAND    
+                
+     FORCE_SPEAKER   RESET_AUDIO_HAL   TOGGLE_CAPTURE           
+                
+                
+     REINIT_PROJECTION   DUMP_FLIGHT_DATA   UPLOAD_CRASH_ZIP           
+                
+     
+
 ```
 
 ---
@@ -607,14 +607,14 @@ Real-time WebSocket event stream for debugging.
 ### 10.2 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  LOGS                              [All ▾] [Auto-scroll ✓] [Clear]│
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─ EVENT STREAM ─────────────────────────────────────────────┐   │
-│  │  12:34:56.123  ● CONNECTED     WebSocket established        │   │
-│  │  12:35:02.456  ● TELEMETRY    Risk: 72, Thermal: 45°C      │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+
+  LOGS                              [All ] [Auto-scroll ] [Clear]
+
+   EVENT STREAM    
+    12:34:56.123   CONNECTED     WebSocket established           
+    12:35:02.456   TELEMETRY    Risk: 72, Thermal: 45°C         
+     
+
 ```
 
 ---
@@ -632,18 +632,18 @@ Real-time WebSocket event stream for debugging.
 ### 11.2 Commands Send Page Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  COMMANDS                                        Device: Pixel 8 ▾│
-├─────────────────────────────────────────────────────────────────────┤
-│  [Send] [Pending (2)] [History]                                   │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─ SEND COMMAND ────────────────────────────────────────────┐   │
-│  │  Select a command to send:                                 │   │
-│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │   │
-│  │  │ FORCE_SPEAKER │ │ RESET_AUDIO_HAL │ │ TOGGLE_CAPTURE │       │   │
-│  │  └──────────────┘ └──────────────┘ └──────────────┘       │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+
+  COMMANDS                                        Device: Pixel 8 
+
+  [Send] [Pending (2)] [History]                                   
+
+   SEND COMMAND    
+    Select a command to send:                                    
+                
+     FORCE_SPEAKER   RESET_AUDIO_HAL   TOGGLE_CAPTURE           
+                
+     
+
 ```
 
 ---
@@ -657,14 +657,14 @@ Standalone logs page accessible via `/dashboard/logs` or `/logs`.
 ### 12.2 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  LOGS                                              [Export] [Clear]│
-├─────────────────────────────────────────────────────────────────────┤
-│  Filter: [All ▾]                                                │
-│  ┌─ EVENT STREAM ─────────────────────────────────────────────┐   │
-│  │  [Same content as Dashboard/Logs tab]                       │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+
+  LOGS                                              [Export] [Clear]
+
+  Filter: [All ]                                                
+   EVENT STREAM    
+    [Same content as Dashboard/Logs tab]                          
+     
+
 ```
 
 ---
@@ -675,11 +675,11 @@ Standalone logs page accessible via `/dashboard/logs` or `/logs`.
 
 ```
 Device Page (tabs):
-├── Inbox        → Pending registration requests
-├── Overview     → Device info, health, connection
-├── Telemetry    → Real-time charts, metrics
-├── History      → Historical data, export
-└── Commands     → CommandsPanel (shared component)
+ Inbox        → Pending registration requests
+ Overview     → Device info, health, connection
+ Telemetry    → Real-time charts, metrics
+ History      → Historical data, export
+ Commands     → CommandsPanel (shared component)
 ```
 
 ---

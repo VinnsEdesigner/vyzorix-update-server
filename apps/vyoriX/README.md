@@ -14,87 +14,87 @@ Complete directory structure based on all frontend spec documents:
 
 ```
 src/
-├── ui/                                    # UI LAYER
-│   ├── pages/
-│   │   ├── dashboard/
-│   │   ├── commands/
-│   │   ├── logs/
-│   │   ├── device/
-│   │   ├── diagnostics/
-│   │   ├── alerts/
-│   │   └── updates/
-│   │
-│   └── components/
-│       ├── ui/                           # Base shadcn/ui
-│       ├── layout/                       # Layout components
-│       └── shared/                       # Cross-feature components
-│           ├── section/
-│           ├── metric-card/
-│           ├── connection-status/
-│           ├── device-selector/
-│           ├── command-button/
-│           ├── command-row/
-│           ├── log-entry/
-│           └── export-menu/
-│
-├── hooks/                                 # PRESENTATION LAYER
-│   ├── auth/
-│   ├── device/
-│   ├── commands/
-│   ├── logs/
-│   ├── alerts/
-│   ├── telemetry/
-│   ├── export/
-│   ├── apikey/                            # From FRONTEND_API_KEYS_REQUIREMENTS.md
-│   ├── settings/                          # From SETTINGS_PAGE.md
-│   ├── updates/                           # From UPDATES_PAGE.md
-│   ├── diagnostics/                       # From DIAGNOSTICS_PAGE.md
-│   ├── registration/                      # From DEVICE_REGISTRATION_SYSTEM.md
-│   ├── realtime/                          # From REALTIME_WEBSOCKET_ARCHITECTURE.md
-│   └── _shared/
-│
-├── domain/                                # DOMAIN LAYER
-│   ├── _shared/
-│   ├── device/
-│   ├── commands/
-│   ├── logs/
-│   ├── telemetry/
-│   ├── alerts/
-│   ├── export/
-│   ├── apikey/                            # From FRONTEND_API_KEYS_REQUIREMENTS.md
-│   ├── settings/                          # From SETTINGS_PAGE.md
-│   ├── updates/                           # From UPDATES_PAGE.md
-│   ├── diagnostics/                       # From DIAGNOSTICS_PAGE.md
-│   ├── registration/                      # From DEVICE_REGISTRATION_SYSTEM.md
-│   └── realtime/                         # From REALTIME_WEBSOCKET_ARCHITECTURE.md
-│
-└── lib/
-    └── api/                              # DATA LAYER
-        ├── _shared/
-        ├── graphql/
-        │   ├── device/
-        │   ├── commands/
-        │   ├── logs/
-        │   ├── telemetry/
-        │   ├── alerts/
-        │   ├── apikey/
-        │   ├── settings/
-        │   ├── updates/
-        │   ├── diagnostics/
-        │   ├── registration/
-        │   └── realtime/
-        ├── rest/
-        │   ├── device/
-        │   ├── commands/
-        │   ├── apikey/
-        │   ├── settings/
-        │   ├── updates/
-        │   ├── diagnostics/
-        │   ├── registration/
-        │   └── realtime/
-        ├── websocket/
-        │   └── realtime/                 # WebSocket only for realtime
-        └── mock/
+ ui/                                    # UI LAYER
+    pages/
+       dashboard/
+       commands/
+       logs/
+       device/
+       diagnostics/
+       alerts/
+       updates/
+   
+    components/
+        ui/                           # Base shadcn/ui
+        layout/                       # Layout components
+        shared/                       # Cross-feature components
+            section/
+            metric-card/
+            connection-status/
+            device-selector/
+            command-button/
+            command-row/
+            log-entry/
+            export-menu/
+
+ hooks/                                 # PRESENTATION LAYER
+    auth/
+    device/
+    commands/
+    logs/
+    alerts/
+    telemetry/
+    export/
+    apikey/                            # From FRONTEND_API_KEYS_REQUIREMENTS.md
+    settings/                          # From SETTINGS_PAGE.md
+    updates/                           # From UPDATES_PAGE.md
+    diagnostics/                       # From DIAGNOSTICS_PAGE.md
+    registration/                      # From DEVICE_REGISTRATION_SYSTEM.md
+    realtime/                          # From REALTIME_WEBSOCKET_ARCHITECTURE.md
+    _shared/
+
+ domain/                                # DOMAIN LAYER
+    _shared/
+    device/
+    commands/
+    logs/
+    telemetry/
+    alerts/
+    export/
+    apikey/                            # From FRONTEND_API_KEYS_REQUIREMENTS.md
+    settings/                          # From SETTINGS_PAGE.md
+    updates/                           # From UPDATES_PAGE.md
+    diagnostics/                       # From DIAGNOSTICS_PAGE.md
+    registration/                      # From DEVICE_REGISTRATION_SYSTEM.md
+    realtime/                         # From REALTIME_WEBSOCKET_ARCHITECTURE.md
+
+ lib/
+     api/                              # DATA LAYER
+         _shared/
+         graphql/
+            device/
+            commands/
+            logs/
+            telemetry/
+            alerts/
+            apikey/
+            settings/
+            updates/
+            diagnostics/
+            registration/
+            realtime/
+         rest/
+            device/
+            commands/
+            apikey/
+            settings/
+            updates/
+            diagnostics/
+            registration/
+            realtime/
+         websocket/
+            realtime/                 # WebSocket only for realtime
+         mock/
 ```
 
 ## Dependency Flow (STRICT)

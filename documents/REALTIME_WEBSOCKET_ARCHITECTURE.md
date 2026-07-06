@@ -26,7 +26,7 @@
 
 ---
 
-> ⚠️ **Architecture Alignment Note (v1.0)**
+>  **Architecture Alignment Note (v1.0)**
 >
 > This document follows the **4-layer architecture** defined in `FRONTEND_ARCHITECTURE.md`:
 > - **UI Layer** (`src/components/`) - Pure UI rendering, imports only from hooks
@@ -61,37 +61,37 @@ The Real-Time WebSocket system enables bidirectional communication between regis
 ### 1.3 Data Flow Summary
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         DATA FLOW                                   │
-└─────────────────────────────────────────────────────────────────────┘
+
+                         DATA FLOW                                   
+
 
 DEVICE                         SERVER                        DASHBOARD
-  │                               │                              │
-  │  1. Connect WSS              │                              │
-  │──────────────────────────────►│                              │
-  │                               │                              │
-  │  2. Authenticate             │                              │
-  │  (HMAC signed token)         │                              │
-  │──────────────────────────────►│                              │
-  │                               │                              │
-  │  3. Push Telemetry Frame     │                              │
-  │  {riskScore, temp, buffer}   │                              │
-  │──────────────────────────────►│──────┐                       │
-  │                               │      │ Broadcast to           │
-  │                               │      │ connected dashboard    │
-  │                               │◄─────┘ clients                │
-  │                               │                              │
-  │                               │      ┌──────────────────────►│
-  │                               │      │ Real-time update      │
-  │                               │◄─────┼────── Dashboard      │
-  │                               │      │ operator sends        │
-  │                               │      │ command               │
-  │  4. Receive Command          │      │                      │
-  │◄──────────────────────────────│      │                      │
-  │                               │      │                      │
-  │  5. Execute & Ack            │      │                      │
-  │  {dispatchId, status}        │      │                      │
-  │──────────────────────────────►│──────┴──────────────────────►│
+                                                               
+    1. Connect WSS                                            
+                                
+                                                               
+    2. Authenticate                                           
+    (HMAC signed token)                                       
+                                
+                                                               
+    3. Push Telemetry Frame                                   
+    {riskScore, temp, buffer}                                 
+                         
+                                        Broadcast to           
+                                        connected dashboard    
+                                  clients                
+                                                               
+                                       
+                                        Real-time update      
+                                  Dashboard      
+                                        operator sends        
+                                        command               
+    4. Receive Command                                      
+                              
+                                                             
+    5. Execute & Ack                                        
+    {dispatchId, status}                                    
+  
 ```
 
 ### 1.4 Message Protocols
@@ -145,149 +145,149 @@ The server implements GraphQL subscriptions for dashboard real-time updates:
 ### 2.1 Layered Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        FRONTEND ARCHITECTURE                        │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      UI LAYER                               │   │
-│  │                   (src/components/)                        │   │
-│  │                                                             │   │
-│  │    Pages, Components, Shared UI                            │   │
-│  │    ONLY renders UI. Uses hooks for everything.              │   │
-│  │    NEVER imports from Data or Domain.                       │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                   PRESENTATION LAYER                        │   │
-│  │                      (src/hooks/)                          │   │
-│  │                                                             │   │
-│  │    UI Logic, State Management, Data Transformation           │   │
-│  │    Imports from Domain and Data layers.                      │   │
-│  │    NEVER imports UI components.                              │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      DOMAIN LAYER                           │   │
-│  │                       (src/domain/)                         │   │
-│  │                                                             │   │
-│  │    Types, Transforms, Validation (Pure TypeScript)          │   │
-│  │    NO external imports (no React, no API, no i18n)          │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                       DATA LAYER                            │   │
-│  │                    (src/lib/api/)                          │   │
-│  │                                                             │   │
-│  │    GraphQL Queries/Mutations, REST Endpoints, WS Client     │   │
-│  │    Imports Domain types only.                               │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                        FRONTEND ARCHITECTURE                        
+
+                                                                     
+     
+                        UI LAYER                                  
+                     (src/components/)                           
+                                                                  
+      Pages, Components, Shared UI                               
+      ONLY renders UI. Uses hooks for everything.                 
+      NEVER imports from Data or Domain.                          
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                     PRESENTATION LAYER                           
+                        (src/hooks/)                             
+                                                                  
+      UI Logic, State Management, Data Transformation              
+      Imports from Domain and Data layers.                         
+      NEVER imports UI components.                                 
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                        DOMAIN LAYER                              
+                         (src/domain/)                            
+                                                                  
+      Types, Transforms, Validation (Pure TypeScript)             
+      NO external imports (no React, no API, no i18n)             
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                         DATA LAYER                               
+                      (src/lib/api/)                             
+                                                                  
+      GraphQL Queries/Mutations, REST Endpoints, WS Client        
+      Imports Domain types only.                                  
+     
+                                                                     
+
 ```
 
 ### 2.2 Backend Architecture (Go)
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    BACKEND WEBSOCKET ARCHITECTURE                   │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│   ┌─────────────────────────────────────────────────────────────┐   │
-│   │                      WebSocket Hub                          │   │
-│   │                   (in-memory, single instance)               │   │
-│   │                                                             │   │
-│   │   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │   │
-│   │   │ Device Clients│  │Dashboard Clients│  │ Event Queue │        │   │
-│   │   │  (IMEI keyed) │  │  (user keyed)  │  │  (in-memory) │        │   │
-│   │   └───────┬──────┘  └───────┬──────┘  └───────┬──────┘        │   │
-│   │           │                 │                 │                 │   │
-│   │           └─────────────────┼─────────────────┘                 │   │
-│   │                             │                                   │   │
-│   │                      ┌──────▼──────┐                           │   │
-│   │                      │  Broadcaster │                           │   │
-│   │                      │  (fan-out)   │                           │   │
-│   │                      └──────┬──────┘                           │   │
-│   └────────────────────────────┼───────────────────────────────────┘   │
-│                                │                                       │
-│         ┌──────────────────────┼──────────────────────┐              │
-│         │                      │                      │              │
-│    ┌────▼────┐           ┌─────▼─────┐          ┌────▼────┐        │
-│    │ Telemetry│           │  Command  │          │  Event  │        │
-│    │ Processor│           │ Dispatcher│          │ Emitter │        │
-│    └────┬────┘           └─────┬─────┘          └────┬────┘        │
-│         │                      │                      │              │
-│    ┌────▼────┐           ┌─────▼─────┐          ┌────▼────┐        │
-│    │ SQLite  │           │    FCM   │          │ SQLite  │        │
-│    │(telemetry)│          │(fallback)│          │(events) │        │
-│    └─────────┘           └──────────┘          └─────────┘        │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                    BACKEND WEBSOCKET ARCHITECTURE                   
+
+                                                                     
+      
+                         WebSocket Hub                             
+                      (in-memory, single instance)                  
+                                                                   
+                     
+       Device Clients  Dashboard Clients   Event Queue            
+        (IMEI keyed)     (user keyed)      (in-memory)            
+                     
+                                                                    
+                                  
+                                                                      
+                                                       
+                           Broadcaster                               
+                           (fan-out)                                 
+                                                       
+      
+                                                                       
+                       
+                                                                   
+                                 
+     Telemetry             Command              Event          
+     Processor            Dispatcher           Emitter         
+                                 
+                                                                   
+                                 
+     SQLite                 FCM              SQLite          
+    (telemetry)          (fallback)          (events)         
+                                 
+                                                                     
+
 ```
 
 ### 2.3 Connection Topology
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    SINGLE SERVER INSTANCE                            │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│   ┌─────────────────────────────────────────────────────────────┐   │
-│   │                      WebSocket Hub                          │   │
-│   │                                                             │   │
-│   │   Connected Devices Map (IMEI → Client)                    │   │
-│   │   ┌─────────────────────────────────────────────────────┐   │   │
-│   │   │ IMEI_001 ──► Client{socket, lastPing, telemetry}   │   │   │
-│   │   │ IMEI_002 ──► Client{socket, lastPing, telemetry}   │   │   │
-│   │   │ IMEI_003 ──► Client{socket, lastPing, telemetry}   │   │   │
-│   │   └─────────────────────────────────────────────────────┘   │   │
-│   │                                                             │   │
-│   │   Connected Dashboard Clients Map (UserID → Client)        │   │
-│   │   ┌─────────────────────────────────────────────────────┐   │   │
-│   │   │ User_001 ──► DashboardClient{socket, subscribed}   │   │   │
-│   │   │ User_002 ──► DashboardClient{socket, subscribed}   │   │   │
-│   │   └─────────────────────────────────────────────────────┘   │   │
-│   │                                                             │   │
-│   │   Message Routing                                           │   │
-│   │   ┌─────────────────────────────────────────────────────┐   │   │
-│   │   │ Device Telemetry ──► Broadcaster ──► Dashboards   │   │   │
-│   │   │ Dashboard Command ──► Device (by IMEI)             │   │   │
-│   │   │ System Event ──► Broadcaster ──► Dashboards        │   │   │
-│   │   └─────────────────────────────────────────────────────┘   │   │
-│   └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                    SINGLE SERVER INSTANCE                            
+
+                                                                     
+      
+                         WebSocket Hub                             
+                                                                   
+      Connected Devices Map (IMEI → Client)                       
+            
+       IMEI_001  Client{socket, lastPing, telemetry}         
+       IMEI_002  Client{socket, lastPing, telemetry}         
+       IMEI_003  Client{socket, lastPing, telemetry}         
+            
+                                                                   
+      Connected Dashboard Clients Map (UserID → Client)           
+            
+       User_001  DashboardClient{socket, subscribed}         
+       User_002  DashboardClient{socket, subscribed}         
+            
+                                                                   
+      Message Routing                                              
+            
+       Device Telemetry  Broadcaster  Dashboards         
+       Dashboard Command  Device (by IMEI)                   
+       System Event  Broadcaster  Dashboards              
+            
+      
+                                                                     
+
 ```
 
 ### 2.4 Fallback Mechanisms
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         FALLBACK FLOW                               │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  1. WebSocket Available                                             │
-│     └── Device ←──WSS──► Hub ←──WSS──► Dashboard                   │
-│                                                                     │
-│  2. WebSocket Disconnected (Device)                                 │
-│     └── Hub ──FCM Push──► Device                                   │
-│         └── FCM payload includes command + dispatchId             │
-│                                                                     │
-│  3. WebSocket Disconnected (Dashboard)                             │
-│     └── Client auto-reconnects with exponential backoff           │
-│                                                                     │
-│  4. FCM Fallback Trigger                                            │
-│     └── After 3 failed reconnection attempts                       │
-│         └── Device marked as "WS_UNAVAILABLE"                      │
-│         └── Commands queued in memory + FCM pushed                 │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                         FALLBACK FLOW                               
+
+                                                                     
+  1. WebSocket Available                                             
+      Device ←WSS Hub ←WSS Dashboard                   
+                                                                     
+  2. WebSocket Disconnected (Device)                                 
+      Hub FCM Push Device                                   
+          FCM payload includes command + dispatchId             
+                                                                     
+  3. WebSocket Disconnected (Dashboard)                             
+      Client auto-reconnects with exponential backoff           
+                                                                     
+  4. FCM Fallback Trigger                                            
+      After 3 failed reconnection attempts                       
+          Device marked as "WS_UNAVAILABLE"                      
+          Commands queued in memory + FCM pushed                 
+                                                                     
+
 ```
 
 ---
@@ -298,121 +298,121 @@ The server implements GraphQL subscriptions for dashboard real-time updates:
 
 ```
 apps/api/internal/
-├── domain/
-│   ├── command/                   # EXISTING
-│   │   ├── command_entity.go             # Command entity
-│   │   └── command_repository.go         # Command repository interface
-│   ├── device/                   # EXISTING
-│   │   ├── device_entity.go             # Device entity
-│   │   └── device_repository.go         # Device repository interface
-│   └── telemetry/                # EXISTING
-│       ├── telemetry_entity.go             # TelemetryFrame entity
-│       └── telemetry_repository.go         # Telemetry repository interface
-│
-├── ws/                           # EXISTING - WebSocket core
-│   ├── hub.go                    # Hub manages connections, broadcasts
-│   ├── client.go                 # Client read/write pumps
-│   ├── compression.go            # Message compression
-│   ├── message_queue.go          # Offline message queuing
-│   ├── rate_limiter.go           # Rate limiting
-│   ├── subscriptions.go           # Telemetry subscriptions
-│   └── telemetry_filter.go        # Telemetry filtering
-│
-├── api/
-│   └── handlers/
-│       └── websocket/             # EXISTING
-│           ├── websocket_handler.go         # StreamHandler (WS upgrade entry)
-│           ├── websocket_stream.go  # HTTP→WS upgrade logic
-│           ├── websocket_message.go  # Message parsing
-│           └── websocket_presenter.go       # Audit logging
-│
-├── application/
-│   ├── command/                  # EXISTING - Command dispatch
-│   ├── device/                  # EXISTING - Device management
-│   ├── dto/                     # EXISTING - Data transfer objects
-│   └── shared/                  # EXISTING
-│
-└── infrastructure/
-    ├── fcm/                     # EXISTING - FCM notifications
-    ├── storage/                  # EXISTING - SQLite storage
-    └── metrics/                 # EXISTING - Prometheus metrics
+ domain/
+    command/                   # EXISTING
+       command_entity.go             # Command entity
+       command_repository.go         # Command repository interface
+    device/                   # EXISTING
+       device_entity.go             # Device entity
+       device_repository.go         # Device repository interface
+    telemetry/                # EXISTING
+        telemetry_entity.go             # TelemetryFrame entity
+        telemetry_repository.go         # Telemetry repository interface
+
+ ws/                           # EXISTING - WebSocket core
+    hub.go                    # Hub manages connections, broadcasts
+    client.go                 # Client read/write pumps
+    compression.go            # Message compression
+    message_queue.go          # Offline message queuing
+    rate_limiter.go           # Rate limiting
+    subscriptions.go           # Telemetry subscriptions
+    telemetry_filter.go        # Telemetry filtering
+
+ api/
+    handlers/
+        websocket/             # EXISTING
+            websocket_handler.go         # StreamHandler (WS upgrade entry)
+            websocket_stream.go  # HTTP→WS upgrade logic
+            websocket_message.go  # Message parsing
+            websocket_presenter.go       # Audit logging
+
+ application/
+    command/                  # EXISTING - Command dispatch
+    device/                  # EXISTING - Device management
+    dto/                     # EXISTING - Data transfer objects
+    shared/                  # EXISTING
+
+ infrastructure/
+     fcm/                     # EXISTING - FCM notifications
+     storage/                  # EXISTING - SQLite storage
+     metrics/                 # EXISTING - Prometheus metrics
 ```
 
 ### 3.2 Backend (Go) - NEW Files Required
 
 ```
 apps/api/internal/
-├── domain/
-│   └── event/                   # NEW - Event entity
-│       ├── event_entity.go            # Event types (DEVICE_CONNECTED, etc.)
-│       └── event_repository.go        # Event repository interface
-│
-├── ws/                          # MODIFY existing
-│   ├── hub.go                   # MODIFY - Add event broadcasting
-│   └── client.go                # MODIFY - Add event emission on connect/disconnect
-│
-├── application/
-│   └── event/                  # NEW - Event use cases
-│       ├── event_broadcaster.go       # Broadcast events to dashboards
-│       └── event_processor.go        # Process and emit events
-│
-└── infrastructure/
-    └── storage/
-        └── event_storage.go            # NEW - Event SQLite storage
+ domain/
+    event/                   # NEW - Event entity
+        event_entity.go            # Event types (DEVICE_CONNECTED, etc.)
+        event_repository.go        # Event repository interface
+
+ ws/                          # MODIFY existing
+    hub.go                   # MODIFY - Add event broadcasting
+    client.go                # MODIFY - Add event emission on connect/disconnect
+
+ application/
+    event/                  # NEW - Event use cases
+        event_broadcaster.go       # Broadcast events to dashboards
+        event_processor.go        # Process and emit events
+
+ infrastructure/
+     storage/
+         event_storage.go            # NEW - Event SQLite storage
 ```
 
 ### 3.3 Frontend (React)
 
 ```
 apps/web/src/
-│
-├── domain/                          # DOMAIN LAYER
-│   ├── shared/
-│   │   ├── pagination.ts
-│   │   ├── errors.ts
-│   │   └── types.ts
-│   │
-│   └── realtime/
-│       ├── types.ts                 # WSTelemetry, WSEvent, WSCommand
-│       ├── transforms.ts            # telemetryFromRaw(), eventFromRaw()
-│       └── validation.ts            # validateTelemetry(), validateEvent()
-│
-├── lib/
-│   └── api/
-│       ├── graphql/
-│       │   ├── client.ts            # (EXISTING)
-│       │   ├── queries/
-│       │   │   └── realtime.ts     # Subscription queries (if needed)
-│       │   └── mutations/
-│       │       └── realtime.ts      # Command mutations
-│       │
-│       └── websocket/
-│           ├── client.ts            # WebSocket client wrapper
-│           ├── connection.ts        # Connection state machine
-│           ├── heartbeat.ts        # Heartbeat manager
-│           ├── reconnect.ts         # Reconnection logic
-│           └── messages.ts          # Message types/parsers
-│
-├── hooks/
-│   └── realtime/                    # PRESENTATION LAYER
-│       ├── use-websocket-connection.ts
-│       ├── use-device-telemetry.ts
-│       ├── use-dashboard-events.ts
-│       ├── use-command-dispatch.ts
-│       └── index.ts
-│
-└── components/
-    ├── shared/                      # SHARED UI LAYER
-    │   ├── connection-status.tsx
-    │   ├── reconnecting-indicator.tsx
-    │   ├── offline-banner.tsx
-    │   └── index.ts
-    │
-    └── realtime/                    # REALTIME UI LAYER
-        ├── telemetry-feed.tsx
-        ├── event-feed.tsx
-        ├── command-status.tsx
-        └── index.ts
+
+ domain/                          # DOMAIN LAYER
+    shared/
+       pagination.ts
+       errors.ts
+       types.ts
+   
+    realtime/
+        types.ts                 # WSTelemetry, WSEvent, WSCommand
+        transforms.ts            # telemetryFromRaw(), eventFromRaw()
+        validation.ts            # validateTelemetry(), validateEvent()
+
+ lib/
+    api/
+        graphql/
+           client.ts            # (EXISTING)
+           queries/
+              realtime.ts     # Subscription queries (if needed)
+           mutations/
+               realtime.ts      # Command mutations
+       
+        websocket/
+            client.ts            # WebSocket client wrapper
+            connection.ts        # Connection state machine
+            heartbeat.ts        # Heartbeat manager
+            reconnect.ts         # Reconnection logic
+            messages.ts          # Message types/parsers
+
+ hooks/
+    realtime/                    # PRESENTATION LAYER
+        use-websocket-connection.ts
+        use-device-telemetry.ts
+        use-dashboard-events.ts
+        use-command-dispatch.ts
+        index.ts
+
+ components/
+     shared/                      # SHARED UI LAYER
+        connection-status.tsx
+        reconnecting-indicator.tsx
+        offline-banner.tsx
+        index.ts
+    
+     realtime/                    # REALTIME UI LAYER
+         telemetry-feed.tsx
+         event-feed.tsx
+         command-status.tsx
+         index.ts
 ```
 
 ---
@@ -486,35 +486,35 @@ Event broadcasting to be added:
 The WebSocket client manages the connection lifecycle:
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    WEBSOCKET CLIENT STATE MACHINE                    │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│   ┌─────────┐     connect()      ┌─────────────┐                   │
-│   │ CLOSED  │ ─────────────────► │ CONNECTING  │                   │
-│   └─────────┘                    └──────┬──────┘                   │
-│        ▲                               │                           │
-│        │                         onOpen │                           │
-│        │                        success ▼                           │
-│        │                      ┌─────────────┐                       │
-│        ├───────────────────── │   OPEN     │                       │
-│        │                      └──────┬──────┘                       │
-│        │                             │                              │
-│        │                      ping/pong                           │
-│        │                             │                              │
-│        │                       onClose │                           │
-│        │                             ▼                              │
-│        │                      ┌─────────────┐                       │
-│        ├───────────────────── │ CLOSING    │                       │
-│        │                      └──────┬──────┘                       │
-│        │                             │                              │
-│        │                    onClosed │                              │
-│        │                             ▼                              │
-│        │                      ┌─────────────┐                       │
-│        └───────────────────── │   RECONNECT │ (exponential backoff)│
-│                               └─────────────┘                       │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                    WEBSOCKET CLIENT STATE MACHINE                    
+
+                                                                     
+        connect()                         
+    CLOSED     CONNECTING                     
+                                          
+                                                                  
+                                 onOpen                            
+                                success                            
+                                                     
+            OPEN                            
+                                                     
+                                                                   
+                              ping/pong                           
+                                                                   
+                               onClose                            
+                                                                   
+                                                     
+          CLOSING                           
+                                                     
+                                                                   
+                            onClosed                               
+                                                                   
+                                                     
+            RECONNECT  (exponential backoff)
+                                                      
+                                                                     
+
 ```
 
 ### 5.2 Reconnection Strategy

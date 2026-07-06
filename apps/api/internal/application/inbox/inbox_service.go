@@ -849,7 +849,7 @@ func isValidLuhn(number string) bool {
 // isValidFCMToken validates basic FCM token format.
 // FCM tokens are typically 152+ characters and alphanumeric with some special chars.
 func isValidFCMToken(token string) bool {
-	// FCM tokens are typically at least 100 characters (下限 from Firebase docs)
+	// FCM tokens are typically at least 100 characters ( from Firebase docs)
 	if len(token) < 100 {
 		return false
 	}

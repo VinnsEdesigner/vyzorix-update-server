@@ -23,158 +23,158 @@
 ### How the Backend Currently Works
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                           main.go                                    │
-│                   (Entry point, wires dependencies)                   │
-└─────────────────────────────────┬───────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                      handlers/server.go                               │
-│              (Server struct, holds ALL dependencies)                 │
-│         ┌──────────────────────────────────────────────────┐       │
-│         │ Notifier, Store, Hub, Limiter, AuthLimiter,       │       │
-│         │ jwtCtrl, mfaCtrl, HMAC, Config, CSRFProtector,   │       │
-│         │ Lockout, Turnstile, Signer, RevocationList...    │       │
-│         └──────────────────────────────────────────────────┘       │
-└─────────────────────────────────┬───────────────────────────────────┘
-                                  │
-                    ┌─────────────┴─────────────┐
-                    ▼                           ▼
-         ┌──────────────────┐        ┌──────────────────┐
-         │   middleware/     │        │   handlers/       │
-         │   - ratelimit    │        │   - auth_core    │
-         │   - turnstile    │        │   - auth_oauth    │
-         │   - lockout      │        │   - auth_mfa      │
-         │   - csrf         │        │   - device        │
-         │   - cors         │        │   - command       │
-         └──────────────────┘        └────────┬─────────┘
-                                              │
-                                              ▼
-                              ┌───────────────────────────┐
-                              │     pkg/storage/           │
-                              │  (direct DB access)        │
-                              │  operators.go, devices.go, │
-                              │  clients.go, crypto.go...  │
-                              └───────────────────────────┘
+
+                           main.go                                    
+                   (Entry point, wires dependencies)                   
+
+                                  
+                                  
+
+                      handlers/server.go                               
+              (Server struct, holds ALL dependencies)                 
+                
+          Notifier, Store, Hub, Limiter, AuthLimiter,              
+          jwtCtrl, mfaCtrl, HMAC, Config, CSRFProtector,          
+          Lockout, Turnstile, Signer, RevocationList...           
+                
+
+                                  
+                    
+                                               
+                 
+            middleware/                handlers/       
+            - ratelimit               - auth_core    
+            - turnstile               - auth_oauth    
+            - lockout                 - auth_mfa      
+            - csrf                    - device        
+            - cors                    - command       
+                 
+                                              
+                                              
+                              
+                                   pkg/storage/           
+                                (direct DB access)        
+                                operators.go, devices.go, 
+                                clients.go, crypto.go...  
+                              
 ```
 
 ### Current Request Flow: POST /api/v1/auth/login
 
 ```
 Step 1: main.go
-  ├─ Creates storage.Store
-  ├─ Creates handlers.Server (passes store, notifier, hub)
-  └─ Starts HTTP server
+   Creates storage.Store
+   Creates handlers.Server (passes store, notifier, hub)
+   Starts HTTP server
 
 Step 2: handlers/server.go
-  ├─ Server.New() initializes:
-  │   ├─ AuthController (holds session manager, email service)
-  │   ├─ MFAHandler
-  │   ├─ RateLimiters (2 instances)
-  │   ├─ TurnstileVerifier
-  │   ├─ Lockout middleware
-  │   ├─ CSRFProtector
-  │   ├─ SignatureVerifier
-  │   └─ HMAC verifier
-  └─ Server.Routes() registers routes with middleware
+   Server.New() initializes:
+      AuthController (holds session manager, email service)
+      MFAHandler
+      RateLimiters (2 instances)
+      TurnstileVerifier
+      Lockout middleware
+      CSRFProtector
+      SignatureVerifier
+      HMAC verifier
+   Server.Routes() registers routes with middleware
 
 Step 3: Middleware Chain (per-request)
-  ├─ GinPanicRecovery
-  ├─ RequestIDMiddleware
-  ├─ Logger
-  ├─ CORSHandler
-  ├─ SecurityHeaders
-  ├─ BodySizeLimit
-  ├─ AuthLimiter (5 req/min) ──────────────────┐
-  ├─ TurnstileMiddleware ───────────────────────┤ Per-route
-  └─ LockoutMiddleware ────────────────────────┘
+   GinPanicRecovery
+   RequestIDMiddleware
+   Logger
+   CORSHandler
+   SecurityHeaders
+   BodySizeLimit
+   AuthLimiter (5 req/min) 
+   TurnstileMiddleware  Per-route
+   LockoutMiddleware 
 
 Step 4: handlers/auth_core.go - Login()
-  ├─ Parse JSON request
-  ├─ storage.GetOperatorByEmail()
-  ├─ storage.VerifyPassword() (Argon2id)
-  ├─ auth.CreateSessionCookieWithExpiry() (AES-256-GCM)
-  └─ Return response
+   Parse JSON request
+   storage.GetOperatorByEmail()
+   storage.VerifyPassword() (Argon2id)
+   auth.CreateSessionCookieWithExpiry() (AES-256-GCM)
+   Return response
 
 Step 5: pkg/storage/operators.go
-  ├─ SQL query: SELECT * FROM operators WHERE email = ?
-  └─ Argon2id comparison in crypto.go
+   SQL query: SELECT * FROM operators WHERE email = ?
+   Argon2id comparison in crypto.go
 ```
 
 ### Current Directory Structure
 
 ```
 apps/api/
-├── main.go                           # Entry point
-├── internal/
-│   ├── api/
-│   │   ├── handlers/                # ALL handlers mixed together
-│   │   │   ├── server.go           # Route setup + Server struct
-│   │   │   ├── auth_core.go       # Login, Register, Logout, Me
-│   │   │   ├── auth_oauth.go      # Google, GitHub OAuth
-│   │   │   ├── auth_mfa.go        # TOTP, Backup codes
-│   │   │   ├── auth_password_reset.go
-│   │   │   ├── auth_email_verify.go
-│   │   │   ├── auth_settings.go
-│   │   │   ├── auth_admin.go
-│   │   │   ├── auth_rate_limit.go
-│   │   │   ├── auth_utils.go
-│   │   │   ├── auth_csrf.go
-│   │   │   ├── device.go
-│   │   │   ├── command.go
-│   │   │   ├── updater.go
-│   │   │   ├── websocket_handler.go
-│   │   │   ├── health.go
-│   │   │   └── lockout.go
-│   │   │
-│   │   └── middleware/              # All middleware
-│   │       ├── rate_limiter.go
-│   │       ├── turnstile.go
-│   │       ├── lockout.go
-│   │       ├── csrf.go
-│   │       ├── cors.go
-│   │       ├── security_headers.go
-│   │       ├── request_signing.go
-│   │       ├── replay_protection.go
-│   │       ├── user_enum.go
-│   │       ├── user_enum_block.go
-│   │       ├── auth_enum_safe.go
-│   │       ├── response_encryption.go
-│   │       ├── recovery.go
-│   │       └── ...
-│   │
-│   ├── auth/                        # Auth utilities
-│   │   ├── session.go              # Session cookies
-│   │   ├── password.go             # Password validation
-│   │   ├── totp.go                # TOTP generation
-│   │   └── ...
-│   │
-│   ├── command_signer.go           # Command signing (standalone file!)
-│   ├── email.go                    # Email service
-│   ├── fcm/                        # FCM integration
-│   ├── ws/                         # WebSocket hub
-│   ├── audit/                      # Audit logging
-│   ├── metrics/                    # Metrics
-│   └── ssr/                        # SSR server
-│
-└── pkg/
-    ├── storage/                     # Database layer
-    │   ├── store.go
-    │   ├── operators.go
-    │   ├── devices.go
-    │   ├── clients.go
-    │   ├── commands.go
-    │   ├── sessions.go
-    │   ├── settings.go
-    │   ├── migrations.go
-    │   ├── crypto.go
-    │   ├── uuid.go
-    │   └── telemetry.go
-    ├── crypto/                     # Crypto utilities
-    ├── config/                     # Configuration
-    ├── logging/                    # Logging
-    └── models/                     # Data models
+ main.go                           # Entry point
+ internal/
+    api/
+       handlers/                # ALL handlers mixed together
+          server.go           # Route setup + Server struct
+          auth_core.go       # Login, Register, Logout, Me
+          auth_oauth.go      # Google, GitHub OAuth
+          auth_mfa.go        # TOTP, Backup codes
+          auth_password_reset.go
+          auth_email_verify.go
+          auth_settings.go
+          auth_admin.go
+          auth_rate_limit.go
+          auth_utils.go
+          auth_csrf.go
+          device.go
+          command.go
+          updater.go
+          websocket_handler.go
+          health.go
+          lockout.go
+      
+       middleware/              # All middleware
+           rate_limiter.go
+           turnstile.go
+           lockout.go
+           csrf.go
+           cors.go
+           security_headers.go
+           request_signing.go
+           replay_protection.go
+           user_enum.go
+           user_enum_block.go
+           auth_enum_safe.go
+           response_encryption.go
+           recovery.go
+           ...
+   
+    auth/                        # Auth utilities
+       session.go              # Session cookies
+       password.go             # Password validation
+       totp.go                # TOTP generation
+       ...
+   
+    command_signer.go           # Command signing (standalone file!)
+    email.go                    # Email service
+    fcm/                        # FCM integration
+    ws/                         # WebSocket hub
+    audit/                      # Audit logging
+    metrics/                    # Metrics
+    ssr/                        # SSR server
+
+ pkg/
+     storage/                     # Database layer
+        store.go
+        operators.go
+        devices.go
+        clients.go
+        commands.go
+        sessions.go
+        settings.go
+        migrations.go
+        crypto.go
+        uuid.go
+        telemetry.go
+     crypto/                     # Crypto utilities
+     config/                     # Configuration
+     logging/                    # Logging
+     models/                     # Data models
 ```
 
 ---
@@ -185,23 +185,23 @@ apps/api/
 
 ```
 Problem: Everything talks to everything
-─────────────────────────────────────
+
 handlers/auth_core.go
-  ├─ imports storage (pkg)
-  ├─ imports auth/session (internal)
-  ├─ imports auth/password (internal)
-  └─ imports models (pkg)
+   imports storage (pkg)
+   imports auth/session (internal)
+   imports auth/password (internal)
+   imports models (pkg)
 
 handlers/device.go
-  ├─ imports storage (pkg)
-  ├─ imports crypto (pkg)
-  └─ imports models (pkg)
+   imports storage (pkg)
+   imports crypto (pkg)
+   imports models (pkg)
 
 middleware/rate_limiter.go
-  └─ standalone, no dependencies
+   standalone, no dependencies
 
 internal/command_signer.go
-  └─ standalone file in internal/, not in any package!
+   standalone file in internal/, not in any package!
 ```
 
 ### 2. Server Struct Knows Everything
@@ -296,85 +296,85 @@ func (s *Store) UpdateDeviceFCMToken(...)
 ### The Hexagonal / Layered Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          ENTRY POINT                                     │
-│                         cmd/api/main.go                                   │
-└─────────────────────────────────┬───────────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      PRESENTATION LAYER                                   │
-│                   internal/api/handlers/                                  │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐        │
-│  │  auth.go   │ │  device.go │ │ command.go │ │  health.go │        │
-│  └──────┬──────┘ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘        │
-│         │               │               │               │               │
-│         └───────────────┴───────────────┴───────────────┘               │
-│                               │                                           │
-│                    Responsibility: HTTP ONLY                             │
-│                    - Parse request                                       │
-│                    - Validate input                                      │
-│                    - Call application service                            │
-│                    - Format response                                     │
-└───────────────────────────────┬─────────────────────────────────────────┘
-                                │
-                                │ depends on
-                                ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      APPLICATION LAYER                                   │
-│                    internal/application/                                  │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐           │
-│  │ auth/           │ │ device/         │ │ command/        │           │
-│  │ ├── login.go   │ │ ├── register.go │ │ ├── execute.go │           │
-│  │ │ logout.go    │ │ │ update.go     │ │ ├── status.go  │           │
-│  │ ├── register.go│ │ └── usecases.go│ │ └── usecases.go│           │
-│  │ └── usecases.go│ │                 │ │                 │           │
-│  └────────┬────────┘ └────────┬────────┘ └────────┬────────┘           │
-│           │                  │                  │                     │
-│           └──────────────────┴──────────────────┘                     │
-│                               │                                         │
-│                    Responsibility: USE CASES                            │
-│                    - Orchestrate domain services                        │
-│                    - Transaction management                             │
-│                    - Input validation                                   │
-└───────────────────────────────┬─────────────────────────────────────────┘
-                                │
-                                │ depends on
-                                ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        DOMAIN LAYER                                      │
-│                      internal/domain/                                     │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐        │
-│  │  operator/  │ │   device/   │ │  session/   │ │  command/   │        │
-│  │ ├── entity.go│ │ ├── entity.go│ │ ├── entity.go│ │ ├── entity.go│        │
-│  │ └── repo.go │ │ └── repo.go │ │ └── repo.go │ │ └── repo.go │        │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘        │
-│                               │                                           │
-│                    Responsibility: PURE BUSINESS LOGIC                    │
-│                    - No external dependencies                            │
-│                    - Entity definitions                                  │
-│                    - Repository interfaces                               │
-│                    - Domain services (interfaces)                        │
-└───────────────────────────────┬─────────────────────────────────────────┘
-                                │
-                                │ implemented by
-                                ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                     INFRASTRUCTURE LAYER                                │
-│                   internal/infrastructure/                               │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐           │
-│  │    storage/     │ │    crypto/      │ │   external/     │           │
-│  │ ├── sqlite.go   │ │ ├── argon2.go   │ │ ├── fcm.go      │           │
-│  │ ├── operator.go │ │ ├── aes_gcm.go  │ │ ├── email.go    │           │
-│  │ ├── device.go   │ │ └── hmac.go     │ │ └── turnstile.go│           │
-│  │ └── session.go  │ │                 │ │                 │           │
-│  └─────────────────┘ └─────────────────┘ └─────────────────┘           │
-│                               │                                           │
-│                    Responsibility: EXTERNAL INTEGRATIONS                 │
-│                    - Database implementation                             │
-│                    - Cryptographic operations                           │
-│                    - Third-party services                               │
-└─────────────────────────────────────────────────────────────────────────┘
+
+                          ENTRY POINT                                     
+                         cmd/api/main.go                                   
+
+                                  
+                                  
+
+                      PRESENTATION LAYER                                   
+                   internal/api/handlers/                                  
+             
+    auth.go      device.go   command.go    health.go         
+             
+                                                                     
+                        
+                                                                          
+                    Responsibility: HTTP ONLY                             
+                    - Parse request                                       
+                    - Validate input                                      
+                    - Call application service                            
+                    - Format response                                     
+
+                                
+                                 depends on
+                                
+
+                      APPLICATION LAYER                                   
+                    internal/application/                                  
+               
+   auth/             device/           command/                   
+    login.go      register.go    execute.go            
+    logout.go       update.go        status.go             
+    register.go   usecases.go   usecases.go           
+    usecases.go                                               
+               
+                                                                    
+                                
+                                                                        
+                    Responsibility: USE CASES                            
+                    - Orchestrate domain services                        
+                    - Transaction management                             
+                    - Input validation                                   
+
+                                
+                                 depends on
+                                
+
+                        DOMAIN LAYER                                      
+                      internal/domain/                                     
+             
+    operator/      device/      session/      command/           
+    entity.go   entity.go   entity.go   entity.go        
+    repo.go    repo.go    repo.go    repo.go         
+             
+                                                                          
+                    Responsibility: PURE BUSINESS LOGIC                    
+                    - No external dependencies                            
+                    - Entity definitions                                  
+                    - Repository interfaces                               
+                    - Domain services (interfaces)                        
+
+                                
+                                 implemented by
+                                
+
+                     INFRASTRUCTURE LAYER                                
+                   internal/infrastructure/                               
+               
+      storage/          crypto/          external/                
+    sqlite.go      argon2.go      fcm.go                 
+    operator.go    aes_gcm.go     email.go               
+    device.go      hmac.go        turnstile.go           
+    session.go                                                 
+               
+                                                                          
+                    Responsibility: EXTERNAL INTEGRATIONS                 
+                    - Database implementation                             
+                    - Cryptographic operations                           
+                    - Third-party services                               
+
 ```
 
 ---
@@ -570,37 +570,37 @@ var _ domain.OperatorRepository = (*SQLiteOperatorRepository)(nil)
 ### Current (Problematic)
 
 ```
-┌─────────┐     ┌──────────┐     ┌─────────┐
-│ Handler │ ──► │ Service  │ ──► │ Storage │
-└─────────┘     └──────────┘     └─────────┘
-    │               │
-    └───────────────┴─────── All mixed together
+          
+ Handler    Service     Storage 
+          
+                   
+     All mixed together
 ```
 
 ### Proposed (Clean)
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     DEPENDENCIES FLOW                        │
-│                                                             │
-│   ┌─────────┐      ┌─────────────┐      ┌─────────────┐   │
-│   │Handler  │ ──► │ Application │ ──► │   Domain    │   │
-│   └─────────┘      │   Service   │      │ (Interfaces)│   │
-│                   └─────────────┘      └──────┬──────┘   │
-│                                                │           │
-│                   ┌───────────────────────────┘           │
-│                   │ implements                            │
-│                   ▼                                      │
-│            ┌─────────────┐                               │
-│            │Infrastructure│                               │
-│            │ (Storage,    │                               │
-│            │  Crypto,     │                               │
-│            │  External)   │                               │
-│            └─────────────┘                               │
-│                                                             │
-│   RULE: Dependencies point INWARD                          │
-│         Inner layers know nothing about outer layers        │
-└─────────────────────────────────────────────────────────────┘
+
+                     DEPENDENCIES FLOW                        
+                                                             
+                  
+   Handler     Application      Domain       
+            Service          (Interfaces)   
+                            
+                                                           
+                              
+                    implements                            
+                                                         
+                                           
+            Infrastructure                               
+             (Storage,                                   
+              Crypto,                                    
+              External)                                  
+                                           
+                                                             
+   RULE: Dependencies point INWARD                          
+         Inner layers know nothing about outer layers        
+
 ```
 
 ### Login Flow Comparison
@@ -608,58 +608,58 @@ var _ domain.OperatorRepository = (*SQLiteOperatorRepository)(nil)
 **Current:**
 ```
 main.go
-  │
-  ├─► storage.Open() ─────────────────────────┐
-  │                                          │
-  ├─► handlers.NewServer(store, ...) ────────┤
-  │    │                                      │
-  │    ├─► AuthController{store} ─────────────┤
-  │    │    │                                 │
-  │    │    └─► LoginHandler                  │
-  │    │         │                            │
-  │    │         ├─► store.GetOperatorByEmail() ─┐
-  │    │         ├─► store.VerifyPassword()  ─────┤
-  │    │         └─► session.CreateCookie()   ────┤
-  │    │                                           │
-  │    ├─► RateLimiter{}                         │
-  │    ├─► TurnstileVerifier{}                   │
-  │    ├─► LockoutMiddleware{}                    │
-  │    └─► CSRFProtector{}                       │
-  │                                          │
-  └─► server.Routes() ◄──────────────────────┘
+  
+   storage.Open() 
+                                            
+   handlers.NewServer(store, ...) 
+                                            
+       AuthController{store} 
+                                           
+           LoginHandler                  
+                                           
+                store.GetOperatorByEmail() 
+                store.VerifyPassword()  
+                session.CreateCookie()   
+                                                 
+       RateLimiter{}                         
+       TurnstileVerifier{}                   
+       LockoutMiddleware{}                    
+       CSRFProtector{}                       
+                                            
+   server.Routes() 
 ```
 
 **Proposed:**
 ```
 main.go (wires everything)
-  │
-  ├─► infrastructure.storage.NewSQLite(cfg.DatabasePath)
-  │       │
-  │       └─► *sql.DB
-  │
-  ├─► infrastructure.crypto.NewArgon2Hasher()
-  │       │
-  │       └─► PasswordHasher (interface)
-  │
-  ├─► infrastructure.auth.NewSessionManager(cfg.SessionSecret)
-  │       │
-  │       └─► SessionManager (interface)
-  │
-  ├─► application.NewAuthService(
-  │         operatorRepo,      // domain.OperatorRepository
-  │         passwordHasher,    // domain.PasswordHasher
-  │         sessionManager,    // domain.SessionManager
-  │     )
-  │       │
-  │       └─► *application.AuthService
-  │
-  ├─► handlers.NewAuthHandler(authService)
-  │       │
-  │       └─► *handlers.AuthHandler
-  │
-  └─► router.Setup(authHandler, middleware...)
-       │
-       └─► gin.Engine
+  
+   infrastructure.storage.NewSQLite(cfg.DatabasePath)
+         
+          *sql.DB
+  
+   infrastructure.crypto.NewArgon2Hasher()
+         
+          PasswordHasher (interface)
+  
+   infrastructure.auth.NewSessionManager(cfg.SessionSecret)
+         
+          SessionManager (interface)
+  
+   application.NewAuthService(
+           operatorRepo,      // domain.OperatorRepository
+           passwordHasher,    // domain.PasswordHasher
+           sessionManager,    // domain.SessionManager
+       )
+         
+          *application.AuthService
+  
+   handlers.NewAuthHandler(authService)
+         
+          *handlers.AuthHandler
+  
+   router.Setup(authHandler, middleware...)
+       
+        gin.Engine
 ```
 
 ---
@@ -670,129 +670,129 @@ main.go (wires everything)
 
 ```
 apps/api/
-│
-├── cmd/
-│   └── api/
-│       └── main.go                      # Entry point, DI wiring
-│
-├── internal/
-│   │
-│   ├── api/                            # PRESENTATION LAYER
-│   │   │
-│   │   ├── handlers/                   # HTTP handlers (ONE FILE PER ENDPOINT)
-│   │   │   ├── auth/
-│   │   │   │   ├── login.go
-│   │   │   │   ├── logout.go
-│   │   │   │   ├── register.go
-│   │   │   │   ├── refresh.go
-│   │   │   │   ├── oauth.go            # OAuth flow
-│   │   │   │   ├── mfa.go              # MFA operations
-│   │   │   │   └── password.go         # Reset, change
-│   │   │   │
-│   │   │   ├── device/
-│   │   │   │   ├── register.go
-│   │   │   │   ├── status.go
-│   │   │   │   ├── fcm_token.go
-│   │   │   │   └── delete.go
-│   │   │   │
-│   │   │   ├── command/
-│   │   │   │   ├── execute.go
-│   │   │   │   └── status.go
-│   │   │   │
-│   │   │   ├── health.go
-│   │   │   ├── version.go
-│   │   │   └── error.go                # Shared error handling
-│   │   │
-│   │   ├── middleware/                 # HTTP middleware
-│   │   │   ├── ratelimit.go
-│   │   │   ├── cors.go
-│   │   │   ├── security.go
-│   │   │   ├── recovery.go
-│   │   │   ├── request_id.go
-│   │   │   └── logging.go
-│   │   │
-│   │   └── router.go                   # Route definitions
-│   │
-│   ├── application/                     # APPLICATION LAYER
-│   │   │
-│   │   ├── auth/
-│   │   │   ├── login.go
-│   │   │   ├── logout.go
-│   │   │   ├── register.go
-│   │   │   ├── oauth.go
-│   │   │   ├── mfa.go
-│   │   │   └── dto/                    # Request/Response DTOs
-│   │   │       ├── login.go
-│   │   │       └── register.go
-│   │   │
-│   │   ├── device/
-│   │   │   ├── register.go
-│   │   │   └── dto/
-│   │   │
-│   │   └── errors.go                   # Application-level errors
-│   │
-│   ├── domain/                         # DOMAIN LAYER
-│   │   │
-│   │   ├── operator/
-│   │   │   ├── entity.go               # Operator struct
-│   │   │   ├── repository.go           # Interface
-│   │   │   └── service.go              # Interface (optional)
-│   │   │
-│   │   ├── device/
-│   │   │   ├── entity.go
-│   │   │   ├── repository.go
-│   │   │   └── service.go
-│   │   │
-│   │   ├── session/
-│   │   │   ├── entity.go
-│   │   │   └── repository.go
-│   │   │
-│   │   ├── command/
-│   │   │   ├── entity.go
-│   │   │   ├── repository.go
-│   │   │   └── service.go
-│   │   │
-│   │   └── errors.go                   # Domain errors (ErrNotFound, etc.)
-│   │
-│   └── infrastructure/                 # INFRASTRUCTURE LAYER
-│       │
-│       ├── storage/                     # Database implementation
-│       │   ├── sqlite.go               # Connection management
-│       │   ├── operator.go             # Implements domain.OperatorRepository
-│       │   ├── device.go               # Implements domain.DeviceRepository
-│       │   ├── session.go              # Implements domain.SessionRepository
-│       │   ├── command.go              # Implements domain.CommandRepository
-│       │   └── migrations/             # Schema migrations
-│       │       ├── 001_init.sql
-│       │       ├── 002_add_mfa.sql
-│       │       └── ...
-│       │
-│       ├── crypto/                      # Cryptographic implementations
-│       │   ├── argon2.go               # Password hashing (implements domain.PasswordHasher)
-│       │   ├── aes_gcm.go             # Encryption (implements domain.Encrypter)
-│       │   ├── hmac.go                # HMAC signing
-│       │   └── uuid.go                # UUID generation
-│       │
-│       ├── auth/                        # Auth infrastructure
-│       │   ├── session.go              # Session management (implements domain.SessionManager)
-│       │   └── cookies.go             # Cookie handling
-│       │
-│       └── external/                    # External services
-│           ├── fcm.go                  # Firebase Cloud Messaging
-│           ├── email.go                # Email sending
-│           └── turnstile.go           # Cloudflare Turnstile
-│
-├── pkg/
-│   ├── config/
-│   │   └── config.go                   # Configuration loading
-│   │
-│   ├── models/                         # Shared models (only if truly shared across layers)
-│   │   └── errors.go                   # Error types
-│   │
-│   └── logging/
-│       └── logger.go                   # Logger setup
-│
-└── go.mod
+
+ cmd/
+    api/
+        main.go                      # Entry point, DI wiring
+
+ internal/
+   
+    api/                            # PRESENTATION LAYER
+      
+       handlers/                   # HTTP handlers (ONE FILE PER ENDPOINT)
+          auth/
+             login.go
+             logout.go
+             register.go
+             refresh.go
+             oauth.go            # OAuth flow
+             mfa.go              # MFA operations
+             password.go         # Reset, change
+         
+          device/
+             register.go
+             status.go
+             fcm_token.go
+             delete.go
+         
+          command/
+             execute.go
+             status.go
+         
+          health.go
+          version.go
+          error.go                # Shared error handling
+      
+       middleware/                 # HTTP middleware
+          ratelimit.go
+          cors.go
+          security.go
+          recovery.go
+          request_id.go
+          logging.go
+      
+       router.go                   # Route definitions
+   
+    application/                     # APPLICATION LAYER
+      
+       auth/
+          login.go
+          logout.go
+          register.go
+          oauth.go
+          mfa.go
+          dto/                    # Request/Response DTOs
+              login.go
+              register.go
+      
+       device/
+          register.go
+          dto/
+      
+       errors.go                   # Application-level errors
+   
+    domain/                         # DOMAIN LAYER
+      
+       operator/
+          entity.go               # Operator struct
+          repository.go           # Interface
+          service.go              # Interface (optional)
+      
+       device/
+          entity.go
+          repository.go
+          service.go
+      
+       session/
+          entity.go
+          repository.go
+      
+       command/
+          entity.go
+          repository.go
+          service.go
+      
+       errors.go                   # Domain errors (ErrNotFound, etc.)
+   
+    infrastructure/                 # INFRASTRUCTURE LAYER
+       
+        storage/                     # Database implementation
+           sqlite.go               # Connection management
+           operator.go             # Implements domain.OperatorRepository
+           device.go               # Implements domain.DeviceRepository
+           session.go              # Implements domain.SessionRepository
+           command.go              # Implements domain.CommandRepository
+           migrations/             # Schema migrations
+               001_init.sql
+               002_add_mfa.sql
+               ...
+       
+        crypto/                      # Cryptographic implementations
+           argon2.go               # Password hashing (implements domain.PasswordHasher)
+           aes_gcm.go             # Encryption (implements domain.Encrypter)
+           hmac.go                # HMAC signing
+           uuid.go                # UUID generation
+       
+        auth/                        # Auth infrastructure
+           session.go              # Session management (implements domain.SessionManager)
+           cookies.go             # Cookie handling
+       
+        external/                    # External services
+            fcm.go                  # Firebase Cloud Messaging
+            email.go                # Email sending
+            turnstile.go           # Cloudflare Turnstile
+
+ pkg/
+    config/
+       config.go                   # Configuration loading
+   
+    models/                         # Shared models (only if truly shared across layers)
+       errors.go                   # Error types
+   
+    logging/
+        logger.go                   # Logger setup
+
+ go.mod
 ```
 
 ---
@@ -892,16 +892,16 @@ apps/api/
 
 ```
 DOMAIN LAYER: Test pure business logic (no mocks needed)
-  └─► Unit test AuthService.Login()
+   Unit test AuthService.Login()
 
 INFRASTRUCTURE: Test implementations against interfaces
-  └─► Integration test SQLiteOperatorRepository
+   Integration test SQLiteOperatorRepository
 
 APPLICATION: Test use cases with mocked dependencies
-  └─► Unit test AuthService with mock OperatorRepository
+   Unit test AuthService with mock OperatorRepository
 
 PRESENTATION: Test HTTP handling with mocked application
-  └─► Integration test LoginHandler with mock AuthService
+   Integration test LoginHandler with mock AuthService
 ```
 
 ### For Onboarding

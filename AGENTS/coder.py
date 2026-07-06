@@ -154,7 +154,7 @@ class Coder:
     def _call_model(self, prompt: str) -> str:
         """Make a single API call."""
         if not API_KEY:
-            return "❌ SILICONFLOW_API_KEY not set!"
+            return " SILICONFLOW_API_KEY not set!"
         
         headers = {
             "Authorization": f"Bearer {API_KEY}",
@@ -180,15 +180,15 @@ class Coder:
             )
             
             if response.status_code != 200:
-                return f"❌ API Error: {response.status_code} - {response.text}"
+                return f" API Error: {response.status_code} - {response.text}"
             
             data = response.json()
             return data["choices"][0]["message"]["content"]
             
         except requests.exceptions.Timeout:
-            return "❌ Request timed out"
+            return " Request timed out"
         except Exception as e:
-            return f"❌ Error: {e}"
+            return f" Error: {e}"
 
 
 # =============================================================================
@@ -197,13 +197,13 @@ class Coder:
 
 def main():
     if not API_KEY:
-        print("❌ Error: SILICONFLOW_API_KEY not set!")
+        print(" Error: SILICONFLOW_API_KEY not set!")
         print("   Set with: export SILICONFLOW_API_KEY='your-key'")
         sys.exit(1)
     
     coder = Coder()
     
-    print("🤖 Vyzorix Coder - Efficient AI Coding Assistant")
+    print(" Vyzorix Coder - Efficient AI Coding Assistant")
     print("="*50)
     print(f"Model: {coder.model}")
     print("="*50)
@@ -238,28 +238,28 @@ def main():
                 if not files:
                     print("Usage: review <file1> <file2> ...")
                     continue
-                print("\n🤖 Analyzing...")
+                print("\n Analyzing...")
                 print(coder.review("Review these files and report issues", files))
                 
             elif cmd == 'ask':
                 if not args:
                     print("Usage: ask <question>")
                     continue
-                print("\n🤖 Thinking...")
+                print("\n Thinking...")
                 print(coder.ask(args))
                 
             elif cmd == 'fix':
                 if not args:
                     print("Usage: fix <issue description>")
                     continue
-                print("\n🤖 Analyzing...")
+                print("\n Analyzing...")
                 print(coder.fix(args))
                 
             elif cmd == 'refactor':
                 if not args:
                     print("Usage: refactor <task>")
                     continue
-                print("\n🤖 Analyzing...")
+                print("\n Analyzing...")
                 print(coder.refactor(args))
                 
             else:

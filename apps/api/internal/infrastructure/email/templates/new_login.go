@@ -25,13 +25,13 @@ const NewLoginEmail = `
 </head>
 <body>
     <div class="header">
-        <h1>🔐 New Login Detected</h1>
+        <h1> New Login Detected</h1>
     </div>
     <div class="content">
         <p>Hello {{.OperatorName}},</p>
         
         <div class="alert">
-            <strong>⚠️ Security Notice</strong><br>
+            <strong> Security Notice</strong><br>
             A new login was detected on your account. If this wasn't you, please secure your account immediately.
         </div>
         

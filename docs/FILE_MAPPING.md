@@ -234,7 +234,7 @@
 
 ## File-by-File Detailed Analysis
 
-### 🔴 HIGH PRIORITY FILES (Require Significant Rewrite)
+###  HIGH PRIORITY FILES (Require Significant Rewrite)
 
 ---
 
@@ -435,7 +435,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*Login
 #### 5. `pkg/storage/devices.go`
 
 **Current Problems:**
-- Plaintext command secret stored in DB ⚠️
+- Plaintext command secret stored in DB 
 - Lock held during slow DB operations
 - UPDATE followed by SELECT (N+1)
 
@@ -528,7 +528,7 @@ func (s *OAuthService) CreateOperator(ctx context.Context, email, name, provider
 
 ---
 
-### 🟠 MEDIUM PRIORITY FILES
+###  MEDIUM PRIORITY FILES
 
 ---
 
@@ -650,7 +650,7 @@ func ComputeFakePasswordHash() {
 
 ---
 
-### 🟡 LOW PRIORITY FILES
+###  LOW PRIORITY FILES
 
 ---
 
@@ -692,41 +692,41 @@ for _, q := range queries {
 
 ```
 main.go
-  └─► pkg/config/config.go
-  └─► pkg/storage/store.go (currently)
-       └─► Will become internal/infrastructure/storage/
+   pkg/config/config.go
+   pkg/storage/store.go (currently)
+        Will become internal/infrastructure/storage/
 
 main.go
-  └─► internal/api/handlers/server.go (currently)
-       ├─► pkg/storage/operators.go
-       ├─► pkg/storage/devices.go
-       ├─► pkg/storage/clients.go
-       ├─► internal/auth/session.go
-       ├─► internal/auth/password.go
-       ├─► internal/api/middleware/* (many)
-       └─► Will become internal/api/router.go
+   internal/api/handlers/server.go (currently)
+        pkg/storage/operators.go
+        pkg/storage/devices.go
+        pkg/storage/clients.go
+        internal/auth/session.go
+        internal/auth/password.go
+        internal/api/middleware/* (many)
+        Will become internal/api/router.go
 ```
 
 ### New Dependency Graph
 
 ```
 cmd/api/main.go
-  │
-  ├─► pkg/config/
-  │
-  ├─► internal/api/router.go
-  │    ├─► internal/api/middleware/* (presentation)
-  │    └─► internal/api/handlers/* (presentation)
-  │
-  ├─► internal/application/
-  │    ├─► internal/domain/* (interfaces only)
-  │    └─► internal/infrastructure/* (implementations)
-  │
-  └─► internal/infrastructure/
-       ├─► internal/infrastructure/storage/* (implements domain interfaces)
-       ├─► internal/infrastructure/crypto/* (implements domain interfaces)
-       ├─► internal/infrastructure/auth/* (implements domain interfaces)
-       └─► internal/infrastructure/external/* (external services)
+  
+   pkg/config/
+  
+   internal/api/router.go
+       internal/api/middleware/* (presentation)
+       internal/api/handlers/* (presentation)
+  
+   internal/application/
+       internal/domain/* (interfaces only)
+       internal/infrastructure/* (implementations)
+  
+   internal/infrastructure/
+        internal/infrastructure/storage/* (implements domain interfaces)
+        internal/infrastructure/crypto/* (implements domain interfaces)
+        internal/infrastructure/auth/* (implements domain interfaces)
+        internal/infrastructure/external/* (external services)
 ```
 
 ---
@@ -858,41 +858,41 @@ cmd/api/main.go
 
 ```
 PHASE 1 - Domain Layer
-□ Create internal/domain/operator/entity.go
-□ Create internal/domain/operator/repository.go
-□ Create internal/domain/device/entity.go
-□ Create internal/domain/device/repository.go
-□ Create internal/domain/session/entity.go
-□ Create internal/domain/session/repository.go
-□ Create internal/domain/command/entity.go
-□ Create internal/domain/command/repository.go
-□ Create internal/domain/errors.go
-□ Create internal/domain/auth/enum_safe.go
+ Create internal/domain/operator/entity.go
+ Create internal/domain/operator/repository.go
+ Create internal/domain/device/entity.go
+ Create internal/domain/device/repository.go
+ Create internal/domain/session/entity.go
+ Create internal/domain/session/repository.go
+ Create internal/domain/command/entity.go
+ Create internal/domain/command/repository.go
+ Create internal/domain/errors.go
+ Create internal/domain/auth/enum_safe.go
 
 PHASE 2 - Infrastructure Layer
-□ Move pkg/storage/ → internal/infrastructure/storage/
-□ Move internal/auth/ → internal/infrastructure/auth/
-□ Move pkg/crypto/ → internal/infrastructure/crypto/
-□ Create internal/infrastructure/crypto/aes_gcm.go
-□ Create internal/infrastructure/crypto/replay_cache.go
-□ Implement all domain repository interfaces
+ Move pkg/storage/ → internal/infrastructure/storage/
+ Move internal/auth/ → internal/infrastructure/auth/
+ Move pkg/crypto/ → internal/infrastructure/crypto/
+ Create internal/infrastructure/crypto/aes_gcm.go
+ Create internal/infrastructure/crypto/replay_cache.go
+ Implement all domain repository interfaces
 
 PHASE 3 - Application Layer
-□ Create internal/application/auth/
-□ Create internal/application/device/
-□ Create internal/application/shared/token.go
-□ Extract business logic from handlers
+ Create internal/application/auth/
+ Create internal/application/device/
+ Create internal/application/shared/token.go
+ Extract business logic from handlers
 
 PHASE 4 - Router Refactor
-□ Create internal/api/router.go
-□ Split server.go handlers into separate files
-□ Simplify Server struct dependencies
+ Create internal/api/router.go
+ Split server.go handlers into separate files
+ Simplify Server struct dependencies
 
 PHASE 5 - Cleanup
-□ Delete orphaned/dup files
-□ Run golangci-lint
-□ Run all tests
-□ Verify build
+ Delete orphaned/dup files
+ Run golangci-lint
+ Run all tests
+ Verify build
 ```
 
 ---

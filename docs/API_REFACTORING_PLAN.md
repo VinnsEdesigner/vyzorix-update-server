@@ -350,12 +350,12 @@ Check `application/` packages for:
 
 ```
 internal/api/
-├── server.go          ← Main server, minimal (~100 lines)
-├── wire/
-│   ├── wire_handlers.go    ← Handler instantiation
-│   ├── wire_middleware.go  ← Middleware factory usage
-│   ├── wire_services.go    ← Service instantiation
-│   └── wire.go             ← Main wiring function
+ server.go          ← Main server, minimal (~100 lines)
+ wire/
+    wire_handlers.go    ← Handler instantiation
+    wire_middleware.go  ← Middleware factory usage
+    wire_services.go    ← Service instantiation
+    wire.go             ← Main wiring function
 ```
 
 #### RF-5.2: `wire_handlers.go`
@@ -530,81 +530,81 @@ After all refactoring:
 
 ```
 internal/
-├── domain/
-│   ├── operator/
-│   │   ├── entity.go
-│   │   ├── repository.go
-│   │   ├── errors.go
-│   │   ├── email.go          ← email validation moved here
-│   │   ├── password.go       ← password policy moved here
-│   │   └── role.go
-│   ├── device/
-│   │   ├── entity.go
-│   │   ├── repository.go
-│   │   └── errors.go
-│   ├── client/
-│   ├── command/
-│   ├── session/
-│   └── ...
-│
-├── application/
-│   ├── auth/
-│   │   └── service.go
-│   ├── device/
-│   │   └── service.go
-│   ├── client/
-│   │   └── service.go
-│   ├── command/
-│   │   └── service.go
-│   ├── dto/
-│   │   ├── login.go
-│   │   ├── register.go
-│   │   └── ...
-│   └── shared/
-│       └── id.go
-│
-├── infrastructure/
-│   ├── security/              ← renamed from internal/auth
-│   │   ├── jwt/
-│   │   ├── password/
-│   │   ├── totp/
-│   │   ├── session/
-│   │   ├── lockout/
-│   │   ├── ratelimit/
-│   │   ├── revocation/
-│   │   ├── oauth/
-│   │   └── secretstore/
-│   ├── storage/
-│   │   ├── sqlite.go
-│   │   ├── operator.go
-│   │   ├── device.go
-│   │   └── ...
-│   ├── email/
-│   ├── fcm/
-│   ├── logging/
-│   ├── metrics/
-│   ├── config/
-│   └── crypto/
-│
-└── api/
-    ├── server.go             ← ~150 lines
-    ├── wire/
-    │   ├── wire.go
-    │   ├── wire_handlers.go
-    │   ├── wire_middleware.go
-    │   └── wire_services.go
-    ├── adapters/
-    │   └── response/
-    │       └── presenter.go
-    ├── handlers/
-    │   ├── auth/
-    │   ├── device/
-    │   ├── command/
-    │   └── websocket/
-    ├── middleware/
-    │   ├── factory.go        ← new
-    │   ├── ratelimit.go
-    │   ├── cookie_auth.go
-    │   └── ...
-    └── graphql/
+ domain/
+    operator/
+       entity.go
+       repository.go
+       errors.go
+       email.go          ← email validation moved here
+       password.go       ← password policy moved here
+       role.go
+    device/
+       entity.go
+       repository.go
+       errors.go
+    client/
+    command/
+    session/
+    ...
+
+ application/
+    auth/
+       service.go
+    device/
+       service.go
+    client/
+       service.go
+    command/
+       service.go
+    dto/
+       login.go
+       register.go
+       ...
+    shared/
+        id.go
+
+ infrastructure/
+    security/              ← renamed from internal/auth
+       jwt/
+       password/
+       totp/
+       session/
+       lockout/
+       ratelimit/
+       revocation/
+       oauth/
+       secretstore/
+    storage/
+       sqlite.go
+       operator.go
+       device.go
+       ...
+    email/
+    fcm/
+    logging/
+    metrics/
+    config/
+    crypto/
+
+ api/
+     server.go             ← ~150 lines
+     wire/
+        wire.go
+        wire_handlers.go
+        wire_middleware.go
+        wire_services.go
+     adapters/
+        response/
+            presenter.go
+     handlers/
+        auth/
+        device/
+        command/
+        websocket/
+     middleware/
+        factory.go        ← new
+        ratelimit.go
+        cookie_auth.go
+        ...
+     graphql/
 ```

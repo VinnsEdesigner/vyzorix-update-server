@@ -62,9 +62,9 @@ type dImpl struct {
 }
 
 func verifyDashboard() bool {
-	fmt.Println("\n╔══════════════════════════════════════════════════════════════════════════════╗")
-	fmt.Println("║  SERVER_BACKEND_DASHBOARD_COMMANDS_API.md VERIFICATION                    ║")
-	fmt.Println("╚══════════════════════════════════════════════════════════════════════════════╝")
+	fmt.Println("\n")
+	fmt.Println("  SERVER_BACKEND_DASHBOARD_COMMANDS_API.md VERIFICATION                    ")
+	fmt.Println("")
 
 	root := "/workspace/project/vyzorix-update-server"
 
@@ -84,18 +84,18 @@ func verifyDashboard() bool {
 	pass := atomic.LoadUint64(&dashboardPassCount)
 	fail := atomic.LoadUint64(&dashboardFailCount)
 
-	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  VERIFICATION SUMMARY")
-	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n")
 	fmt.Printf("\n    Checks Passed:      %d", pass)
 	fmt.Printf("\n    Checks Failed:      %d", fail)
 	fmt.Printf("\n")
 
 	if fail == 0 {
-		fmt.Printf("\n  ✅ ALL DASHBOARD COMMANDS CHECKS PASSED!")
+		fmt.Printf("\n   ALL DASHBOARD COMMANDS CHECKS PASSED!")
 	} else {
-		fmt.Printf("\n  ❌ SOME DASHBOARD COMMANDS CHECKS FAILED")
+		fmt.Printf("\n   SOME DASHBOARD COMMANDS CHECKS FAILED")
 	}
 	fmt.Printf("\n")
 
@@ -250,9 +250,9 @@ func dCollectGoAST(content string, collect map[string]bool) {
 }
 
 func dVerifyEndpoints(spec *dSpec, impl *dImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  ENDPOINT VERIFICATION (Section 3)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	routeContent := dGetRouteContent(root)
 	found := 0
@@ -260,11 +260,11 @@ func dVerifyEndpoints(spec *dSpec, impl *dImpl, root string) {
 	for _, ep := range spec.endpoints {
 		registered := dCheckEndpoint(ep, routeContent, impl, root)
 		if registered {
-			fmt.Printf("    ✅ %s %s\n", ep.method, ep.path)
+			fmt.Printf("     %s %s\n", ep.method, ep.path)
 			atomic.AddUint64(&dashboardPassCount, 1)
 			found++
 		} else {
-			fmt.Printf("    ❌ %s %s - NOT REGISTERED\n", ep.method, ep.path)
+			fmt.Printf("     %s %s - NOT REGISTERED\n", ep.method, ep.path)
 			atomic.AddUint64(&dashboardFailCount, 1)
 		}
 	}
@@ -359,9 +359,9 @@ func dGetRouteContent(root string) string {
 }
 
 func dVerifyHandlers(spec *dSpec, _ *dImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  HANDLER VERIFICATION (Section 6)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	handlerBase := filepath.Join(root, "apps/api/internal/api/handlers")
 	found := 0
@@ -371,15 +371,15 @@ func dVerifyHandlers(spec *dSpec, _ *dImpl, root string) {
 		if _, err := os.Stat(handlerPath); err == nil {
 			data, _ := os.ReadFile(handlerPath)
 			if strings.Contains(string(data), h.method) {
-				fmt.Printf("    ✅ handlers/%s/%s (%s)\n", h.subdir, h.file, h.method)
+				fmt.Printf("     handlers/%s/%s (%s)\n", h.subdir, h.file, h.method)
 				atomic.AddUint64(&dashboardPassCount, 1)
 				found++
 			} else {
-				fmt.Printf("    ❌ handlers/%s/%s - Missing method %s\n", h.subdir, h.file, h.method)
+				fmt.Printf("     handlers/%s/%s - Missing method %s\n", h.subdir, h.file, h.method)
 				atomic.AddUint64(&dashboardFailCount, 1)
 			}
 		} else {
-			fmt.Printf("    ❌ handlers/%s/%s - NOT FOUND\n", h.subdir, h.file)
+			fmt.Printf("     handlers/%s/%s - NOT FOUND\n", h.subdir, h.file)
 			atomic.AddUint64(&dashboardFailCount, 1)
 		}
 	}
@@ -388,9 +388,9 @@ func dVerifyHandlers(spec *dSpec, _ *dImpl, root string) {
 }
 
 func dVerifyDomain(spec *dSpec, _ *dImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION (Section 4, 5)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	domainBase := filepath.Join(root, "apps/api/internal/domain")
 	total := 0
@@ -399,23 +399,23 @@ func dVerifyDomain(spec *dSpec, _ *dImpl, root string) {
 	for name, d := range spec.domain {
 		domainPath := filepath.Join(domainBase, d.subdir)
 		if _, err := os.Stat(domainPath); err != nil {
-			fmt.Printf("    ❌ domain/%s/ - DIRECTORY NOT FOUND\n", name)
+			fmt.Printf("     domain/%s/ - DIRECTORY NOT FOUND\n", name)
 			atomic.AddUint64(&dashboardFailCount, 1)
 			continue
 		}
 
-		fmt.Printf("    ✅ domain/%s/\n", d.subdir)
+		fmt.Printf("     domain/%s/\n", d.subdir)
 		atomic.AddUint64(&dashboardPassCount, 1)
 
 		for _, file := range d.files {
 			total++
 			filePath := filepath.Join(domainPath, file)
 			if _, err := os.Stat(filePath); err == nil {
-				fmt.Printf("      ✅ %s\n", file)
+				fmt.Printf("       %s\n", file)
 				found++
 				atomic.AddUint64(&dashboardPassCount, 1)
 			} else {
-				fmt.Printf("      ❌ Missing: %s\n", file)
+				fmt.Printf("       Missing: %s\n", file)
 				atomic.AddUint64(&dashboardFailCount, 1)
 			}
 		}
@@ -425,9 +425,9 @@ func dVerifyDomain(spec *dSpec, _ *dImpl, root string) {
 }
 
 func dVerifyInfra(spec *dSpec, _ *dImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  INFRASTRUCTURE VERIFICATION (Section 5)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	infraBase := filepath.Join(root, "apps/api/internal/infrastructure/storage")
 	found := 0
@@ -436,11 +436,11 @@ func dVerifyInfra(spec *dSpec, _ *dImpl, root string) {
 		for _, file := range i.files {
 			filePath := filepath.Join(infraBase, file)
 			if _, err := os.Stat(filePath); err == nil {
-				fmt.Printf("    ✅ infrastructure/%s/%s\n", i.subdir, file)
+				fmt.Printf("     infrastructure/%s/%s\n", i.subdir, file)
 				found++
 				atomic.AddUint64(&dashboardPassCount, 1)
 			} else {
-				fmt.Printf("    ❌ Missing: infrastructure/%s/%s\n", i.subdir, file)
+				fmt.Printf("     Missing: infrastructure/%s/%s\n", i.subdir, file)
 				atomic.AddUint64(&dashboardFailCount, 1)
 			}
 		}
@@ -450,9 +450,9 @@ func dVerifyInfra(spec *dSpec, _ *dImpl, root string) {
 }
 
 func dVerifyApplication(spec *dSpec, _ *dImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  APPLICATION LAYER VERIFICATION (Section 5, 7)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	appBase := filepath.Join(root, "apps/api/internal/application")
 	total := 0
@@ -461,23 +461,23 @@ func dVerifyApplication(spec *dSpec, _ *dImpl, root string) {
 	for name, a := range spec.application {
 		appPath := filepath.Join(appBase, a.subdir)
 		if _, err := os.Stat(appPath); err != nil {
-			fmt.Printf("    ❌ application/%s/ - DIRECTORY NOT FOUND\n", name)
+			fmt.Printf("     application/%s/ - DIRECTORY NOT FOUND\n", name)
 			atomic.AddUint64(&dashboardFailCount, 1)
 			continue
 		}
 
-		fmt.Printf("    ✅ application/%s/\n", a.subdir)
+		fmt.Printf("     application/%s/\n", a.subdir)
 		atomic.AddUint64(&dashboardPassCount, 1)
 
 		for _, file := range a.files {
 			total++
 			filePath := filepath.Join(appPath, file)
 			if _, err := os.Stat(filePath); err == nil {
-				fmt.Printf("      ✅ %s\n", file)
+				fmt.Printf("       %s\n", file)
 				found++
 				atomic.AddUint64(&dashboardPassCount, 1)
 			} else {
-				fmt.Printf("      ❌ Missing: %s\n", file)
+				fmt.Printf("       Missing: %s\n", file)
 				atomic.AddUint64(&dashboardFailCount, 1)
 			}
 		}
@@ -487,9 +487,9 @@ func dVerifyApplication(spec *dSpec, _ *dImpl, root string) {
 }
 
 func dVerifyRoutes(_ *dSpec, _ *dImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  ROUTE REGISTRATION VERIFICATION")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	routeFiles := map[string]string{
 		"command/command_history_routes.go":    "command",
@@ -505,11 +505,11 @@ func dVerifyRoutes(_ *dSpec, _ *dImpl, root string) {
 	for rf := range routeFiles {
 		routePath := filepath.Join(handlerBase, rf)
 		if _, err := os.Stat(routePath); err == nil {
-			fmt.Printf("    ✅ routes: %s\n", rf)
+			fmt.Printf("     routes: %s\n", rf)
 			found++
 			atomic.AddUint64(&dashboardPassCount, 1)
 		} else {
-			fmt.Printf("    ❌ Missing: %s\n", rf)
+			fmt.Printf("     Missing: %s\n", rf)
 			atomic.AddUint64(&dashboardFailCount, 1)
 		}
 	}
@@ -518,9 +518,9 @@ func dVerifyRoutes(_ *dSpec, _ *dImpl, root string) {
 }
 
 func dVerifySchema(_ *dSpec, _ *dImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 4)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	entityPaths := []string{
 		"apps/api/internal/domain/logs/logs_entity.go",
@@ -532,7 +532,7 @@ func dVerifySchema(_ *dSpec, _ *dImpl, root string) {
 	for _, p := range entityPaths {
 		path := filepath.Join(root, p)
 		if _, err := os.Stat(path); err == nil {
-			fmt.Printf("    ✅ Schema defined in: %s\n", filepath.Base(p))
+			fmt.Printf("     Schema defined in: %s\n", filepath.Base(p))
 			schemasFound++
 			atomic.AddUint64(&dashboardPassCount, 1)
 		}
@@ -542,9 +542,9 @@ func dVerifySchema(_ *dSpec, _ *dImpl, root string) {
 }
 
 func dVerifyStructure(_ *dSpec, _ *dImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 5)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	keyPaths := []string{
 		"apps/api/internal/api/handlers/command/",
@@ -563,11 +563,11 @@ func dVerifyStructure(_ *dSpec, _ *dImpl, root string) {
 	for _, p := range keyPaths {
 		path := filepath.Join(root, p)
 		if _, err := os.Stat(path); err == nil {
-			fmt.Printf("    ✅ %s\n", p)
+			fmt.Printf("     %s\n", p)
 			found++
 			atomic.AddUint64(&dashboardPassCount, 1)
 		} else {
-			fmt.Printf("    ❌ Missing: %s\n", p)
+			fmt.Printf("     Missing: %s\n", p)
 			atomic.AddUint64(&dashboardFailCount, 1)
 		}
 	}
@@ -576,9 +576,9 @@ func dVerifyStructure(_ *dSpec, _ *dImpl, root string) {
 }
 
 func dVerifyFrontend(_ *dSpec, _ string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  FRONTEND REQUIREMENTS MAPPING (Section 1.2)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	frontendMappings := []struct {
 		feature string
@@ -597,7 +597,7 @@ func dVerifyFrontend(_ *dSpec, _ string) {
 
 	found := 0
 	for _, m := range frontendMappings {
-		fmt.Printf("    ✅ %s -> %s %s\n", m.feature, m.method, m.path)
+		fmt.Printf("     %s -> %s %s\n", m.feature, m.method, m.path)
 		found++
 		atomic.AddUint64(&dashboardPassCount, 1)
 	}
