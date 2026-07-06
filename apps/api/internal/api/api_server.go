@@ -14,11 +14,12 @@ import (
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
 	diagnosticshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/diagnostics"
 	inboxhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/inbox"
-	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
+        updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
@@ -65,6 +66,7 @@ type ServerConfig struct {
 	AuditLogger    *audit.Logger
 	RateLimiter    *middleware.RateLimiter
 	UpdatesService *updatesapp.Service
+	APIKeyService  *keys.APIKeyService
 	Config         config.Config
 }
 
@@ -101,13 +103,13 @@ type Server struct {
 	telemetryHistoryHandler    *handlers.TelemetryHistoryHandler
 	connectionStatusHandler    *handlers.ConnectionStatusHandler
 	adminClientsHandler        *admin.ClientsHandler
-	updaterHandler             *updaterhandlers.Handler
 	metricsHandler             *infraMetrics.MetricsHandler
 	commandHistoryHandler      *cmdhandlers.HistoryHandler
 	deviceLogsHandler          *devicehandlers.LogsHandler
 	deviceMetricsHandler       *devicehandlers.MetricsHandler
 	deviceTelemetryHandler     *devicehandlers.TelemetryHandler
 	dashboardStatsHandler      *dashboardhandlers.StatsHandler
+	updaterHandler            *updaterhandlers.Handler
 	updatesHandler             *updateshandlers.UpdatesHandler
 	inboxHandler               *inboxhandlers.Handler
 	deviceConfirmHandler       *devicehandlers.ConfirmHandler
@@ -115,6 +117,10 @@ type Server struct {
 	diagnosticsInspectHandler  *diagnosticshandlers.InspectHandler
 	diagnosticsTimelineHandler *diagnosticshandlers.TimelineHandler
 	config                     config.Config
+	apiKeysHandler             *authhandlers.Handler
+	superAdminAPIKeys          *admin.SuperAdminHandler
+	tenantAPIKeyAuth           *middleware.TenantAPIKeyAuth
+	apiKeyRateLimiter          *middleware.InMemoryRateLimiter
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -139,6 +145,8 @@ func NewServer(cfg *ServerConfig) *Server {
 		JWTSecret:        cfg.Config.JWTSecret,
 		RateLimitPerMin:  100,
 		AuthRateLimitMin: 5,
+		APIKeyService:    cfg.APIKeyService,
+		AuditLogger:      cfg.AuditLogger,
 	})
 
 	s := &Server{
@@ -160,6 +168,8 @@ func NewServer(cfg *ServerConfig) *Server {
 		sessionManager:    cfg.SessionManager,
 		db:                cfg.DB,
 		hub:               cfg.Hub,
+		tenantAPIKeyAuth:  mwSet.TenantAPIKeyAuth,
+		apiKeyRateLimiter: mwSet.APIKeyRateLimiter,
 	}
 
 	// Create presenter and wire handlers
@@ -228,8 +238,11 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	// Admin handlers
 	s.adminClientsHandler = admin.NewClientsHandler(cfg.ClientService)
 
-	// Updater handlers
-	s.updaterHandler = updaterhandlers.NewHandler(cfg.Log, cfg.Config)
+	// API key handlers
+	if cfg.APIKeyService != nil {
+		s.apiKeysHandler = authhandlers.NewHandler(cfg.APIKeyService, cfg.AuditLogger)
+		s.superAdminAPIKeys = admin.NewSuperAdminHandler(cfg.APIKeyService, cfg.AuditLogger)
+	}
 
 	// Dashboard command handlers - wire up new handlers
 	s.wireDashboardHandlers(cfg)
@@ -296,8 +309,10 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 
 	// Updates handler
 	if cfg.UpdatesService != nil {
+	// Updater handler for OTA updates
+	s.updaterHandler = updaterhandlers.NewHandler(cfg.Log, cfg.Config)
 		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(middleware.DefaultUpdatesRateLimits())
-		s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
+		s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, cfg.UpdatesService.GetPushService(), updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
 	}
 
 	// Inbox handler
@@ -395,6 +410,7 @@ type ServerConfigWithDeps struct {
 	Hub            *hub.Hub
 	AuditLogger    *audit.Logger
 	UpdatesService *updatesapp.Service
+	APIKeyService  *keys.APIKeyService
 	Config         config.Config
 }
 
@@ -422,6 +438,8 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		db:                cfg.DB,
 		hub:               cfg.Hub,
 		AuditLogger:       cfg.AuditLogger,
+		tenantAPIKeyAuth:  cfg.Middleware.TenantAPIKeyAuth,
+		apiKeyRateLimiter: cfg.Middleware.APIKeyRateLimiter,
 	}
 
 	// Wire handlers from HandlerSet
@@ -436,8 +454,13 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.telemetryHistoryHandler = cfg.HandlerSet.TelemetryHistory
 	s.connectionStatusHandler = cfg.HandlerSet.ConnectionStatus
 	s.adminClientsHandler = cfg.HandlerSet.AdminClients
-	s.updaterHandler = cfg.HandlerSet.Updater
 	s.updatesHandler = cfg.HandlerSet.Updates
+
+	// API key handlers
+	if cfg.APIKeyService != nil {
+		s.apiKeysHandler = authhandlers.NewHandler(cfg.APIKeyService, cfg.AuditLogger)
+		s.superAdminAPIKeys = admin.NewSuperAdminHandler(cfg.APIKeyService, cfg.AuditLogger)
+	}
 
 	s.setupRoutes()
 

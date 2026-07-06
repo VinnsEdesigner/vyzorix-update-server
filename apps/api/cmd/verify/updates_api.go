@@ -86,7 +86,6 @@ func uLoadSpec() *uSpec {
 	}
 	for _, h := range handlers { spec.handlers[h.Subdir+"/"+h.File] = h }
 	spec.domain["updates"] = uDomain{"updates", []string{"updates_entity.go", "updates_errors.go", "updates_repository.go"}}
-	spec.domain["updater"] = uDomain{"updater", []string{"updater_entity.go"}}
 	spec.infra["storage"] = uInfra{"storage", []string{"updates_storage.go", "023_update_versions.go"}}
 	spec.application["updates"] = uApp{"updates", []string{"updates_service.go", "updates_history_service.go", "updates_push_service.go", "updates_sync_service.go", "updates_versions_list_service.go", "updates_export_service.go", "updates_changelog_service.go", "updates_versions_status_service.go"}}
 	return spec
@@ -258,7 +257,7 @@ func uVerifySchema(_ *uSpec, _ *uImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 4)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	entityPaths := []string{"apps/api/internal/domain/updates/update_entity.go", "apps/api/internal/domain/updater/version_entity.go"}
+	entityPaths := []string{"apps/api/internal/domain/updates/update_entity.go"}
 	for _, p := range entityPaths {
 		path := filepath.Join(root, p)
 		if _, err := os.Stat(path); err == nil { fmt.Printf("    ✅ Schema defined in: %s\n", filepath.Base(p)); atomic.AddUint64(&updatesPassCount, 1) }
@@ -269,7 +268,7 @@ func uVerifyStructure(_ *uSpec, _ *uImpl, root string) {
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 5)")
 	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
-	keyPaths := []string{"apps/api/internal/api/handlers/updates/", "apps/api/internal/application/updates/", "apps/api/internal/domain/updates/", "apps/api/internal/domain/updater/"}
+	keyPaths := []string{"apps/api/internal/api/handlers/updates/", "apps/api/internal/application/updates/", "apps/api/internal/domain/updates/"}
 	found := 0
 	for _, p := range keyPaths {
 		path := filepath.Join(root, p)

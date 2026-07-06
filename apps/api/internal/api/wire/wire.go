@@ -12,6 +12,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	infraConfig "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -50,6 +51,7 @@ type ServerDependencies struct {
 	TelemetryRepo  *storage.TelemetryRepository
 	UpdatesStorage *storage.UpdatesStorage
 	UpdatesService *updatesapp.Service
+	APIKeyService  *keys.APIKeyService
 	Config         infraConfig.Config
 }
 

@@ -47,12 +47,12 @@ func NewStreamHandler(
 	}
 }
 
-// Handle handles GET /v1/device/:id/stream.
+// Handle handles GET /v1/device/:imei/stream.
 // This is the HTTP entry point that upgrades to WebSocket.
 func (h *StreamHandler) Handle(c *gin.Context) {
-	deviceID := c.Param("id")
+	deviceID := c.Param("imei")
 	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device id required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device imei required"})
 		return
 	}
 

@@ -6,6 +6,8 @@ import (
 
 // InboxEntry represents a device registration request in the inbox.
 type InboxEntry struct {
+	AcknowledgedAt    *int64      `json:"acknowledgedAt,omitempty"`
+	ApprovingAt       *int64      `json:"approvingAt,omitempty"`
 	ApprovedAt        *int64      `json:"approvedAt,omitempty"`
 	RejectedAt        *int64      `json:"rejectedAt,omitempty"`
 	FCMToken          string      `json:"fcmToken"`
@@ -67,6 +69,16 @@ func (e *InboxEntry) IsRejected() bool {
 // CanBeAcknowledged returns true if the entry can be acknowledged (only pending entries).
 func (e *InboxEntry) CanBeAcknowledged() bool {
 	return e.Status == StatusPending
+}
+
+// CanBeApproved returns true if the entry can be approved (only acknowledged entries).
+func (e *InboxEntry) CanBeApproved() bool {
+	return e.Status == StatusAcknowledged
+}
+
+// CanBeRejected returns true if the entry can be rejected (acknowledged or approving entries).
+func (e *InboxEntry) CanBeRejected() bool {
+	return e.Status == StatusAcknowledged || e.Status == StatusApproving
 }
 
 // RegistrationLog represents an audit log entry for registration actions.

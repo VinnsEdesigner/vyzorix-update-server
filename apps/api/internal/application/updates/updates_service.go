@@ -46,6 +46,11 @@ func (s *Service) GetRepo() updates.Repository {
 	return s.repo
 }
 
+
+// GetPushService returns the push service for handler initialization.
+func (s *Service) GetPushService() *PushService {
+        return s.pushSvc
+}
 // GetStatus returns the current update system status.
 func (s *Service) GetStatus(ctx context.Context) (*GetStatusResponse, error) {
 	return s.versionsStatusSvc.GetStatus(ctx)
