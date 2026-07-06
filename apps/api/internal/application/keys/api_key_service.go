@@ -63,6 +63,15 @@ func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req 
 		return nil, domain.ErrInvalidScope
 	}
 
+	// Check for duplicate name per operator
+	exists, err := s.repo.ExistsByOperatorAndName(ctx, operatorID, req.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check key name: %w", err)
+	}
+	if exists {
+		return nil, domain.ErrKeyNameConflict
+	}
+
 	// Check monthly limit
 	count, err := s.repo.CountByOperatorThisMonth(ctx, operatorID)
 	if err != nil {
@@ -239,6 +248,14 @@ func (s *APIKeyService) UpdateKey(ctx context.Context, operatorID, keyID string,
 	if req.Name != nil {
 		if len(*req.Name) > s.config.MaxNameLength {
 			return nil, domain.ErrKeyNameTooLong
+		}
+		// Check for duplicate name (excluding current key)
+		exists, err := s.repo.ExistsByOperatorAndNameExcluding(ctx, operatorID, *req.Name, keyID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check key name: %w", err)
+		}
+		if exists {
+			return nil, domain.ErrKeyNameConflict
 		}
 		key.Name = *req.Name
 	}
