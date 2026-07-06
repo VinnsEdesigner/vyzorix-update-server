@@ -460,12 +460,11 @@ func migrateAddMFASecretMAC(db *sql.DB) error {
 }
 
 // isColumnExistsError checks if the error is because the column already exists.
-// SQLite silently ignores duplicate column additions.
 func isColumnExistsError(err error) bool {
 	if err == nil {
-		return true // No error means success (column added or already exists)
+		return false // No error means column was added successfully
 	}
-	// SQLite doesn't error on duplicate column - it just ignores it
+	// Check for SQLite's duplicate column error
 	return strings.Contains(err.Error(), "duplicate column")
 }
 
