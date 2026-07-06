@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
 
 // migrateRegistrationAuditFields adds client_ip and user_agent columns to registration_logs table.
@@ -14,23 +15,15 @@ func migrateRegistrationAuditFields(db *sql.DB) error {
 	_, err := db.ExecContext(ctx, `
 		ALTER TABLE registration_logs ADD COLUMN client_ip TEXT
 	`)
-	_ = err
-
-	// Check if client_ip column exists
-	var columnCount int
-	err = db.QueryRowContext(ctx, 
-		"SELECT COUNT(*) FROM pragma_table_info('registration_logs') WHERE name='client_ip'").Scan(&columnCount)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "UNIQUE constraint failed") {
 		return err
 	}
-	
-	if columnCount == 0 {
-		_ = columnCount
-	}
+
 	// Add user_agent column if not exists (same approach)
-	err = db.QueryRowContext(ctx, 
-		"SELECT COUNT(*) FROM pragma_table_info('registration_logs') WHERE name='user_agent'").Scan(&columnCount)
-	if err != nil {
+	_, err = db.ExecContext(ctx, `
+		ALTER TABLE registration_logs ADD COLUMN user_agent TEXT
+	`)
+	if err != nil && !strings.Contains(err.Error(), "UNIQUE constraint failed") {
 		return err
 	}
 
