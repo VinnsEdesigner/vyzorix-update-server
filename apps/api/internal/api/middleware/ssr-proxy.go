@@ -93,6 +93,8 @@ func setupProxyDirector(proxy *httputil.ReverseProxy, ssrServerURL *url.URL) {
 	proxy.Rewrite = func(r *httputil.ProxyRequest) {
 		r.Out.URL.Scheme = ssrServerURL.Scheme
 		r.Out.URL.Host = ssrServerURL.Host
+		// Use SSR server host for X-Forwarded-Host to prevent host spoofing
+		// X-Original-Host preserves the original request host for debugging
 		r.Out.Header.Set("X-Forwarded-Host", ssrServerURL.Host)
 		r.Out.Header.Set("X-Forwarded-Proto", ssrServerURL.Scheme)
 		r.Out.Header.Set("X-Forwarded-For", r.In.RemoteAddr)
