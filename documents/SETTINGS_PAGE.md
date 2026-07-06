@@ -128,73 +128,66 @@ UI Layer (components/) -> Presentation Layer (hooks/) -> Domain Layer (domain/) 
 ```
 apps/web/src/
 |
-├── domain/                          # DOMAIN LAYER (NEW)
-|   ├── common/
-|   │   ├── pagination.ts          # Pagination types
-|   │   ├── error.ts              # Domain error types
-|   │   └── types.ts              # Shared domain types
+├── domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
+|   ├── _shared/                   # SHARED domain types
+|   │   ├── domain-pagination.ts  # Pagination types
+|   │   └── domain-errors.ts      # Domain error types
 |   │
 |   └── settings/
-|       ├── settings-types.ts      # Settings types
-|       ├── settings-transforms.ts # settingsFromRaw()
-|       └── settings-validation.ts # validateSettings()
+|       ├── settings-entity.ts      # Settings types (settings-specific)
+|       ├── settings-mappers.ts    # settingsFromRaw() transformations
+|       └── settings-validators.ts # validateSettings()
 |
 ├── lib/
 │   └── api/
 |       ├── graphql/
-|       │   ├── queries/          # GraphQL Queries
-|       │   │   ├── settings-queries.ts  # GET_SETTINGS, GET_THRESHOLDS
-|       │   │   └── index.ts
-|       │   ├── mutations/         # GraphQL Mutations
-|       │   │   ├── settings-mutations.ts # UPDATE_SETTINGS, UPDATE_THRESHOLDS
-|       │   │   └── index.ts
-|       │   ├── fragments/         # GraphQL fragments
-|       │   │   ├── settings.fragment.ts
-|       │   │   └── index.ts
-|       │   ├── api-response-types.ts    # (EXISTING - add settings types)
-|       │   └── index.ts
-|       └── rest/                   # DATA LAYER - REST Fallback
-|           ├── settings-rest.ts   # REST endpoints for settings
-|           └── index.ts
+|       │   ├── settings/
+|       │   │   ├── graphql-settings-queries.ts    # GET_SETTINGS, GET_THRESHOLDS
+|       │   │   ├── graphql-settings-mutations.ts # UPDATE_SETTINGS, UPDATE_THRESHOLDS
+|       │   │   ├── graphql-settings-fragments.ts # Reusable fragments
+|       │   │   └── graphql-settings-types.ts     # Raw GraphQL response types
+|       │   └── _shared/
+|       │       └── graphql-client.ts    # GraphQL client setup
+|       └── rest/
+|           ├── settings/
+|           │   └── rest-settings-endpoints.ts  # REST endpoints for settings
+|           └── _shared/
+|               └── rest-client.ts     # REST client setup
 |
 ├── hooks/                           # PRESENTATION LAYER
-|   ├── settings/                  # Settings hooks
-|   │   ├── use-settings.ts       # Get/update settings
+|   ├── settings/
+|   │   ├── use-settings.ts        # Get/update settings
 |   │   ├── use-thresholds.ts     # Get/update thresholds
-|   │   ├── use-notifications.ts  # Get/update notifications
-|   │   └── index.ts              # Barrel export
-|   │
-|   └── shared/
-|       └── use-debounce.ts       # Debounced save hook
+|   │   └── use-notifications.ts   # Get/update notifications
+|   └── _shared/
+|       └── use-debounce.ts        # Debounced save hook
 |
 ├── components/                      # UI LAYER
 |   ├── shared/                    # Shared UI components
-|   │   ├── section.tsx           # Bordered section
-|   │   ├── section-header.tsx    # Section header
-|   │   ├── empty-state.tsx       # Empty state
+|   │   ├── section.tsx            # Bordered section
+|   │   ├── section-header.tsx     # Section header
+|   │   ├── empty-state.tsx        # Empty state
 |   │   ├── loading-skeleton.tsx   # Loading skeleton
 |   │   ├── slider-input.tsx       # Slider + input combo
 |   │   ├── status-badge.tsx       # Status badge
-|   │   ├── danger-zone.tsx       # Danger zone wrapper
-|   │   └── index.ts              # Barrel export
+|   │   └── danger-zone.tsx        # Danger zone wrapper
 |   │
-|   └── settings/                  # Settings components
-|       ├── connection-settings.tsx # Connection tab
-|       ├── operator-settings.tsx   # Operator tab
-|       ├── threshold-settings.tsx  # Thresholds tab
+|   └── settings/
+|       ├── connection-settings.tsx  # Connection tab
+|       ├── operator-settings.tsx    # Operator tab
+|       ├── threshold-settings.tsx   # Thresholds tab
 |       ├── notification-settings.tsx # Notifications tab
 |       ├── advanced-settings.tsx    # Advanced tab
 |       ├── threshold-input.tsx      # Threshold input component
-|       ├── notification-row.tsx     # Notification toggle row
-|       └── index.ts                # Barrel export
+|       └── notification-row.tsx     # Notification toggle row
 |
 └── routes/                         # PAGE LAYER (Routes)
-    ├── settings-page.tsx           # EXISTS - layout with tabs
-    ├── settings.connection.tsx     # EXISTS
-    ├── settings.operator.tsx      # EXISTS
-    ├── settings.thresholds.tsx     # EXISTS
-    ├── settings.notifications.tsx  # EXISTS
-    └── settings.advanced.tsx      # EXISTS
+    ├── settings.tsx                # Layout with tabs
+    ├── settings.connection.tsx
+    ├── settings.operator.tsx
+    ├── settings.thresholds.tsx
+    ├── settings.notifications.tsx
+    └── settings.advanced.tsx
 ```
 
 ---

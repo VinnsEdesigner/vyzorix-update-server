@@ -117,39 +117,34 @@ UI Layer (components/) -> Presentation Layer (hooks/) -> Domain Layer (domain/) 
 ```
 apps/web/src/
 |
-├── domain/                          # DOMAIN LAYER (NEW)
-|   ├── common/
-|   |   ├── pagination.ts            # Pagination types
-|   |   ├── error.ts                # Domain error types
-|   |   └── types.ts                # Shared domain types
+├── domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
+|   ├── _shared/                   # SHARED domain types
+|   |   ├── domain-pagination.ts  # Pagination types
+|   |   └── domain-errors.ts      # Domain error types
 |   |
 |   └── updates/
-|       ├── update-types.ts          # Version, Changelog, UpdatePush
-|       ├── update-transforms.ts     # versionFromAPI()
-|       └── update-validation.ts     # validateVersion()
+|       ├── updates-entity.ts      # Version, Changelog, UpdatePush types
+|       ├── updates-mappers.ts     # versionFromAPI() transformations
+|       └── updates-validators.ts # validateVersion()
 |
 ├── lib/api/
 |   └── graphql/
-|       ├── queries/                 # GraphQL Queries
-|       |   ├── update-queries.ts   # GET_VERSIONS, GET_CHANGELOG, etc.
-|       |   └── index.ts
-|       ├── mutations/               # GraphQL Mutations
-|       |   ├── update-mutations.ts # PUSH_UPDATE, CANCEL_UPDATE
-|       |   └── index.ts
-|       ├── fragments/               # GraphQL fragments
-|       |   ├── version.fragment.ts
-|       |   └── index.ts
-|       └── api-response-types.ts   # (MODIFIED - add update types)
+|       ├── updates/
+|       |   ├── graphql-updates-queries.ts     # GET_VERSIONS, GET_CHANGELOG, etc.
+|       |   ├── graphql-updates-mutations.ts  # PUSH_UPDATE, CANCEL_UPDATE
+|       |   ├── graphql-updates-fragments.ts  # Reusable fragments
+|       |   └── graphql-updates-types.ts      # Raw GraphQL response types
+|       └── _shared/
+|           └── graphql-client.ts   # GraphQL client setup
 |
 ├── hooks/                           # PRESENTATION LAYER
-|   ├── updates/                    # Updates hooks
+|   ├── updates/
 |   |   ├── use-versions.ts
 |   |   ├── use-changelog.ts
 |   |   ├── use-push-update.ts
 |   |   ├── use-update-history.ts
-|   |   ├── use-sync-status.ts
-|   |   └── index.ts
-|   └── shared/
+|   |   └── use-sync-status.ts
+|   └── _shared/
 |       └── use-pagination.ts
 |
 ├── components/                      # UI LAYER
@@ -161,8 +156,7 @@ apps/web/src/
 |   |   ├── data-table.tsx
 |   |   ├── pagination.tsx
 |   |   ├── status-badge.tsx
-|   |   ├── tab-nav.tsx
-|   |   └── index.ts
+|   |   └── tab-nav.tsx
 |   |
 |   └── updates/                   # Updates feature components
 |       ├── version-card.tsx
@@ -170,17 +164,16 @@ apps/web/src/
 |       ├── push-form.tsx
 |       ├── device-select.tsx
 |       ├── changelog-entry.tsx
-|       ├── update-history-card.tsx
-|       └── index.ts
+|       └── update-history-card.tsx
 |
 └── routes/                         # PAGE LAYER (Routes)
-    ├── updates-page.tsx           # MODIFIED - main layout
-    ├── updates.status.tsx          # NEW - Status tab
-    ├── updates.versions.tsx        # NEW - Versions tab
-    ├── updates.push.tsx            # NEW - Push tab
-    ├── updates.changelog.tsx      # NEW - Changelog tab
-    ├── updates.export.tsx          # NEW - Export tab
-    └── updates.history.tsx        # NEW - History tab
+    ├── updates.tsx                # Main layout
+    ├── updates.status.tsx
+    ├── updates.versions.tsx
+    ├── updates.push.tsx
+    ├── updates.changelog.tsx
+    ├── updates.export.tsx
+    └── updates.history.tsx
 ```
 
 ---

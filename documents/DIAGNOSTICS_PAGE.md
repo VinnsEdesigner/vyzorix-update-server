@@ -164,64 +164,55 @@ UI Layer ──────► Presentation Layer ──────► Domain L
 ```
 apps/web/src/
 │
-├── domain/                          # DOMAIN LAYER (NEW)
-│   ├── common/
-│   │   ├── pagination.ts            # Pagination types & helpers
-│   │   ├── error.ts                 # Domain error types
-│   │   └── types.ts                 # Shared domain types
+├── domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
+│   ├── _shared/                   # SHARED domain types
+│   │   ├── domain-pagination.ts  # Pagination types & helpers
+│   │   └── domain-errors.ts      # Domain error types
 │   │
 │   ├── diagnostics/
-│   │   ├── diagnostic-types.ts       # DeviceInspection, TimelineEvent, EventType
-│   │   ├── diagnostic-transforms.ts # inspectionFromRaw(), eventFromRaw()
-│   │   └── diagnostic-validation.ts # validateInspection(), validateEvent()
+│   │   ├── diagnostics-entity.ts     # DeviceInspection, TimelineEvent, EventType
+│   │   ├── diagnostics-mappers.ts    # inspectionFromRaw(), eventFromRaw()
+│   │   └── diagnostics-validators.ts # validateInspection(), validateEvent()
 │   │
 │   └── devices/                     # Shared device domain types
-│       ├── device-types.ts           # Device basic types
-│       └── device-transforms.ts      # deviceBasicFromRaw()
+│       ├── device-entity.ts           # Device basic types
+│       └── device-mappers.ts          # deviceBasicFromRaw()
 │
 ├── lib/
 │   └── api/
 │       ├── graphql/
-│       │   ├── client.ts            # (EXISTING)
-│       │   ├── query-client.ts      # (EXISTING)
+│       │   ├── _shared/
+│       │   │   └── graphql-client.ts  # GraphQL client setup
 │       │   │
-│       │   ├── queries/             # DATA LAYER - GraphQL Queries
-│       │   │   ├── diagnostic-queries.ts   # GET_DEVICE_INSPECTION, GET_DEVICE_TIMELINE
-│       │   │   └── index.ts
+│       │   ├── diagnostics/
+│       │   │   ├── graphql-diagnostics-queries.ts   # GET_DEVICE_INSPECTION, GET_DEVICE_TIMELINE
+│       │   │   ├── graphql-diagnostics-fragments.ts # inspection & timeline fragments
+│       │   │   └── graphql-diagnostics-types.ts   # Raw GraphQL response types
 │       │   │
-│       │   ├── mutations/            # DATA LAYER - GraphQL Mutations
-│       │   │   └── index.ts
-│       │   │
-│       │   ├── fragments/           # GraphQL fragments
-│       │   │   ├── inspection.fragment.ts
-│       │   │   ├── timeline-event.fragment.ts
-│       │   │   └── index.ts
-│       │   │
-│       │   ├── types.ts             # (EXISTING - add diagnostic types)
-│       │   ├── index.ts
-│       │   └── hooks.ts            # (EXISTING - add diagnostic hooks)
+│       │   └── devices/
+│       │       ├── graphql-device-queries.ts  # Device queries
+│       │       └── graphql-device-types.ts    # Raw response types
 │       │
-│       └── rest/                    # DATA LAYER - REST Fallback
-│           ├── diagnostic-rest.ts       # REST endpoints for diagnostics
-│           └── index.ts
+│       └── rest/
+│           ├── diagnostics/
+│           │   └── rest-diagnostics-endpoints.ts  # REST endpoints for diagnostics
+│           └── _shared/
+│               └── rest-client.ts    # REST client setup
 │
 ├── hooks/                           # PRESENTATION LAYER
 │   │
-│   ├── diagnostics/                 # Diagnostics presentation logic
-│   │   ├── use-device-inspection.ts # Fetch inspection data
-│   │   ├── use-device-timeline.ts   # Fetch timeline events with pagination
-│   │   ├── use-timeline-filter.ts  # Timeline filter state
-│   │   └── index.ts                # Barrel export
+│   ├── diagnostics/
+│   │   ├── use-device-inspection.ts  # Fetch inspection data
+│   │   ├── use-device-timeline.ts    # Fetch timeline events with pagination
+│   │   └── use-timeline-filter.ts    # Timeline filter state
 │   │
-│   ├── devices/                     # Device presentation logic (shared)
-│   │   ├── use-devices.ts          # Device list with filters
-│   │   ├── use-device-stream.ts    # WebSocket stream for real-time data
-│   │   └── index.ts
+│   ├── devices/
+│   │   ├── use-devices.ts           # Device list with filters
+│   │   └── use-device-stream.ts     # WebSocket stream for real-time data
 │   │
-│   └── shared/                     # Shared presentation utilities
-│       ├── use-pagination.ts       # Generic pagination hook
-│       ├── use-refresh.ts          # Refresh trigger hook
-│       └── index.ts
+│   └── _shared/
+│       ├── use-pagination.ts        # Generic pagination hook
+│       └── use-refresh.ts           # Refresh trigger hook
 │
 ├── components/                      # UI LAYER
 │   │
@@ -234,13 +225,11 @@ apps/web/src/
 │   │   ├── pagination.tsx         # Pagination controls
 │   │   ├── status-badge.tsx       # Status badge component
 │   │   ├── refresh-button.tsx      # Refresh button with loading state
-│   │   ├── tab-nav.tsx            # Tab navigation component
-│   │   └── index.ts               # Barrel export
+│   │   └── tab-nav.tsx            # Tab navigation component
 │   │
-│   ├── diagnostics/               # Diagnostics feature components
-│   │   ├── diagnostics-page.tsx   # Page wrapper with tabs
+│   ├── diagnostics/
 │   │   ├── diagnostics-inspector.tsx # Inspector tab content
-│   │   ├── diagnostics-timeline.tsx # Timeline tab content
+│   │   ├── diagnostics-timeline.tsx  # Timeline tab content
 │   │   ├── inspector-section.tsx  # Collapsible inspector section
 │   │   ├── inspector-field.tsx    # Key-value display field
 │   │   ├── inspector-identity.tsx # Identity section
@@ -250,14 +239,11 @@ apps/web/src/
 │   │   ├── inspector-telemetry.tsx # Telemetry stats section
 │   │   ├── timeline-event.tsx     # Single event row
 │   │   ├── timeline-filters.tsx   # Event type filter dropdown
-│   │   ├── timeline-controls.tsx  # Auto-scroll, clear controls
-│   │   └── index.ts              # Barrel export
+│   │   └── timeline-controls.tsx  # Auto-scroll, clear controls
 │   │
-│   ├── layout/                    # (EXISTING)
-│   │   ├── app-layout.tsx
-│   │   └── auth-layout.tsx
-│   │
-│   └── ui/                       # (EXISTING - shadcn/ui)
+│   └── layout/                    # (EXISTING)
+│       ├── app-layout.tsx
+│       └── auth-layout.tsx
 │       └── ...
 │
 └── routes/                         # PAGE LAYER (Routes)
@@ -274,44 +260,40 @@ apps/web/src/
 
 | Category | New Files | Modified Files |
 |----------|-----------|----------------|
-| Domain Layer | 6 | 0 |
-| Data Layer (GraphQL) | 3 | 1 |
-| Data Layer (REST) | 2 | 0 |
+| Domain Layer | 4 | 0 |
+| Data Layer (GraphQL) | 3 | 0 |
+| Data Layer (REST) | 1 | 0 |
 | Presentation Layer | 4 | 0 |
 | UI Layer (Shared) | 8 | 0 |
 | UI Layer (Diagnostics) | 14 | 0 |
 | Routes | 2 | 1 |
-| **TOTAL** | **39** | **2** |
+| **TOTAL** | **36** | **1** |
 
 ### 11.2 All Files Listed
 
-#### Domain Layer (6 NEW)
+#### Domain Layer (4 NEW) - Unique names per FRONTEND_ARCHITECTURE.md
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `domain/shared/pagination.ts` | **NEW** | Pagination types & helpers |
-| `domain/common/error.ts` | **NEW** | Domain error types |
-| `domain/shared/types.ts` | **NEW** | Shared domain types |
-| `domain/diagnostics/diagnostic-types.ts` | **NEW** | DeviceInspection, TimelineEvent, EventType |
-| `domain/diagnostics/diagnostic-transforms.ts` | **NEW** | inspectionFromRaw(), eventFromRaw() |
-| `domain/diagnostics/diagnostic-validation.ts` | **NEW** | validateInspection(), validateEvent() |
+| `domain/_shared/domain-pagination.ts` | **NEW** | Pagination types & helpers |
+| `domain/_shared/domain-errors.ts` | **NEW** | Domain error types |
+| `domain/diagnostics/diagnostics-entity.ts` | **NEW** | DeviceInspection, TimelineEvent, EventType |
+| `domain/diagnostics/diagnostics-mappers.ts` | **NEW** | inspectionFromRaw(), eventFromRaw() |
+| `domain/diagnostics/diagnostics-validators.ts` | **NEW** | validateInspection(), validateEvent() |
 
-#### Data Layer - GraphQL (3 NEW, 1 MODIFIED)
-
-| File | Status | Purpose |
-|------|--------|---------|
-| `lib/api/graphql/queries/diagnostics.ts` | **NEW** | GET_DEVICE_INSPECTION, GET_DEVICE_TIMELINE |
-| `lib/api/graphql/fragments/inspection.fragment.ts` | **NEW** | Inspection GraphQL fragment |
-| `lib/api/graphql/fragments/timeline-event.fragment.ts` | **NEW** | TimelineEvent fragment |
-| `lib/api/graphql/api-response-types.ts` | MODIFIED | Add diagnostic types |
-| `lib/api/graphql/hooks.ts` | MODIFIED | Add useDeviceInspection, useDeviceTimeline |
-
-#### Data Layer - REST (2 NEW)
+#### Data Layer - GraphQL (3 NEW) - Prefixed with graphql-
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `lib/api/rest/diagnostics.ts` | **NEW** | REST endpoints for diagnostics |
-| `lib/api/rest/index.ts` | **NEW** | REST barrel export |
+| `lib/api/graphql/diagnostics/graphql-diagnostics-queries.ts` | **NEW** | GET_DEVICE_INSPECTION, GET_DEVICE_TIMELINE |
+| `lib/api/graphql/diagnostics/graphql-diagnostics-fragments.ts` | **NEW** | Inspection & timeline fragments |
+| `lib/api/graphql/diagnostics/graphql-diagnostics-types.ts` | **NEW** | Raw GraphQL response types |
+
+#### Data Layer - REST (1 NEW)
+
+| File | Status | Purpose |
+|------|--------|---------|
+| `lib/api/rest/diagnostics/rest-diagnostics-endpoints.ts` | **NEW** | REST endpoints for diagnostics |
 
 #### Presentation Layer - Hooks (4 NEW)
 
@@ -320,7 +302,6 @@ apps/web/src/
 | `hooks/diagnostics/use-device-inspection.ts` | **NEW** | Fetch inspection data |
 | `hooks/diagnostics/use-device-timeline.ts` | **NEW** | Fetch timeline with pagination |
 | `hooks/diagnostics/use-timeline-filter.ts` | **NEW** | Timeline filter state |
-| `hooks/diagnostics/index.ts` | **NEW** | Barrel export |
 
 #### UI Layer - Shared (8 NEW)
 
@@ -367,22 +348,21 @@ apps/web/src/
 ## 12. Implementation Order
 
 ### Phase 1: Domain Layer (Day 1)
-1. Create `domain/shared/` types, errors, pagination
-2. Create `domain/diagnostics/diagnostic-types.ts` with all diagnostic types
-3. Create `domain/diagnostics/diagnostic-transforms.ts`
-4. Create `domain/diagnostics/diagnostic-validation.ts`
+1. Create `domain/_shared/` types, errors, pagination
+2. Create `domain/diagnostics/diagnostics-entity.ts` with all diagnostic types
+3. Create `domain/diagnostics/diagnostics-mappers.ts`
+4. Create `domain/diagnostics/diagnostics-validators.ts`
 
 ### Phase 2: Data Layer (Day 1)
-1. Create GraphQL queries in `lib/api/graphql/queries/diagnostics.ts`
-2. Add types to `lib/api/graphql/api-response-types.ts`
-3. Add hooks to `lib/api/graphql/hooks.ts`
-4. Create REST fallback in `lib/api/rest/diagnostics.ts`
+1. Create GraphQL queries in `lib/api/graphql/diagnostics/graphql-diagnostics-queries.ts`
+2. Create types in `lib/api/graphql/diagnostics/graphql-diagnostics-types.ts`
+3. Create fragments in `lib/api/graphql/diagnostics/graphql-diagnostics-fragments.ts`
+4. Create REST fallback in `lib/api/rest/diagnostics/rest-diagnostics-endpoints.ts`
 
 ### Phase 3: Presentation Layer (Day 1-2)
 1. Create `hooks/diagnostics/use-device-inspection.ts`
 2. Create `hooks/diagnostics/use-device-timeline.ts`
 3. Create `hooks/diagnostics/use-timeline-filter.ts`
-4. Create shared hooks if needed
 
 ### Phase 4: UI Layer - Shared Components (Day 2)
 1. Create `components/shared/section.tsx`
