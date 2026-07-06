@@ -409,7 +409,7 @@ func migrateCreateSettings(db *sql.DB) error {
 }
 
 func migrateAddCommandsColumns(db *sql.DB) error {
-	// Add columns if they don't exist (handles idempotent case for existing tables)
+	// Add columns if they don't exist (with idempotent error handling for SQLite)
 	cols := []struct {
 		sql  string
 		name string
@@ -418,10 +418,11 @@ func migrateAddCommandsColumns(db *sql.DB) error {
 		{`ALTER TABLE commands ADD COLUMN failure_reason TEXT`, "failure_reason"},
 	}
 	for _, col := range cols {
-		if _, err := db.ExecContext(context.Background(), col.sql); err != nil {
-			// Skip if column already exists
+		_, err := db.ExecContext(context.Background(), col.sql)
+		if err != nil {
+			// Column may already exist (SQLite ignores duplicate column additions)
 			if !isColumnExistsError(err) {
-				return fmt.Errorf("failed to add column %s: %w", col.name, err)
+				return fmt.Errorf("failed to add %s column: %w", col.name, err)
 			}
 		}
 	}
