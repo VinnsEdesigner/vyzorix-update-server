@@ -33,7 +33,7 @@ type wsImpl struct {
 }
 
 func verifyWebSocket() bool {
-	fmt.Println("\n")
+	fmt.Println()
 	fmt.Println("  REALTIME_WEBSOCKET_ARCHITECTURE.md VERIFICATION                         ")
 	fmt.Println("")
 	root := "/workspace/project/vyzorix-update-server"
