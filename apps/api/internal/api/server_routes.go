@@ -19,7 +19,6 @@ func (s *Server) setupRoutes() {
 	s.setupStaticRoutes()
 	s.setupPublicRoutes()
 	s.setupAuthenticatedRoutes()
-	s.setupDashboardRoutes()
 	s.setupMethodHandlers()
 }
 
