@@ -1,10 +1,5 @@
 # =============================================================================
-# Vyzorix Update Server - Production Dockerfile
-# =============================================================================
-# Ubuntu-based production image with Node.js SSR support
-# Hardening can be added incrementally - see comments for suggestions
-# =============================================================================
-
+# Vyzorix Update Server
 # syntax=docker/dockerfile:1.7-labs
 
 # =============================================================================
