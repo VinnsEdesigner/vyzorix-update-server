@@ -11,11 +11,11 @@ import (
 
 // Handler handles API key management endpoints.
 type Handler struct {
-	service *apikeyapp.Service
+	service *apikeyapp.APIKeyService
 }
 
 // NewHandler creates a new API key handler.
-func NewHandler(service *apikeyapp.Service) *Handler {
+func NewHandler(service *apikeyapp.APIKeyService) *Handler {
 	return &Handler{service: service}
 }
 
