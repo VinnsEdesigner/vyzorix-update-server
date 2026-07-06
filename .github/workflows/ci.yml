@@ -234,6 +234,7 @@ jobs:
         run: |
           docker run -d --name vyzorix-test \
             -e API_KEY_primary=test-secret-minimum-32-chars!! \
+            -e SERVER_API_TOKEN=test-secret-minimum-32-chars!! \
             -e JWT_SECRET=test-jwt-secret-minimum-32-chars!! \
             -e SSR_ENABLED=false \
             -v /tmp/vyzorix-data:/data \
@@ -247,6 +248,7 @@ jobs:
         run: |
           docker run -d --name vyzorix-ssr-test \
             -e API_KEY_primary=test-secret-minimum-32-chars!! \
+            -e SERVER_API_TOKEN=test-secret-minimum-32-chars!! \
             -e JWT_SECRET=test-jwt-secret-minimum-32-chars!! \
             -e SSR_ENABLED=true \
             -v /tmp/vyzorix-data:/data \
@@ -261,6 +263,7 @@ jobs:
           # Start fresh container for health check with SSR fully disabled
           docker run -d --name vyzorix-health \
             -e API_KEY_primary=test-secret-minimum-32-chars!! \
+            -e SERVER_API_TOKEN=test-secret-minimum-32-chars!! \
             -e JWT_SECRET=test-jwt-secret-minimum-32-chars!! \
             -e SSR_ENABLED=false \
             -e SSR_AUTO_BUILD=false \
