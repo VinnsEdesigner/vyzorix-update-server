@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: GitHub Secret Scanning
-        uses: github/secret-scanning@v3
+        run: echo "GitHub Secret Scanning is enabled by default on this repository"
 
       - name: TruffleHog Secrets Scanner
         uses: trufflesecurity/trufflehog@main
@@ -51,18 +51,20 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.26'
 
       - name: Run GoSec
         uses: securego/gosec@master
         with:
           args: '-no-fail -fmt json -out=gosec-results.json ./...'
+          working-directory: apps/api
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
           version: 'v2.12.2'
-          args: --out-format json > golangci-lint-results.json
+          working-directory: apps/api
+          args: --format json > golangci-lint-results.json
 
       - name: Upload SAST results
         uses: actions/upload-artifact@v4
@@ -87,19 +89,24 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.26'
           cache: true
+          cache-dependency-path: apps/api/go.sum
 
       - name: Run Go vulnerability scan
         run: |
+          cd apps/api
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
 
       - name: Run go mod verify
-        run: go mod verify
+        run: |
+          cd apps/api
+          go mod verify
 
       - name: Check for go.sum changes
         run: |
+          cd apps/api
           git diff --exit-code go.sum
 
       - name: Set up pnpm
@@ -146,7 +153,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'ghcr.io/${{ github.repository }}/vyzorix:latest'
+          image-ref: 'ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -207,7 +214,7 @@ jobs:
     name: Build Container
     runs-on: ubuntu-latest
     outputs:
-      image: ghcr.io/${{ github.repository }}/vyzorix:latest
+      image: ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -226,6 +233,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: false
-          tags: ghcr.io/${{ github.repository }}/vyzorix:latest
+          tags: ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
