@@ -300,197 +300,211 @@ src/
 ├── ui/                              # UI LAYER
 │   ├── pages/                       # Route pages
 │   │   ├── dashboard/
-│   │   │   ├── dashboard-page.tsx        # Main dashboard page
-│   │   │   ├── dashboard-overview.tsx
-│   │   │   ├── dashboard-metrics.tsx
-│   │   │   ├── dashboard-commands.tsx
-│   │   │   └── dashboard-logs.tsx
+│   │   │   ├── page-dashboard.tsx        # Main dashboard page
+│   │   │   ├── page-dashboard-overview.tsx
+│   │   │   ├── page-dashboard-metrics.tsx
+│   │   │   ├── page-dashboard-commands.tsx
+│   │   │   └── page-dashboard-logs.tsx
 │   │   ├── commands/
-│   │   │   ├── commands-page.tsx
-│   │   │   ├── commands-send.tsx
-│   │   │   ├── commands-pending.tsx
-│   │   │   └── commands-history.tsx
+│   │   │   ├── page-commands.tsx
+│   │   │   ├── page-commands-send.tsx
+│   │   │   ├── page-commands-pending.tsx
+│   │   │   └── page-commands-history.tsx
 │   │   ├── logs/
-│   │   │   └── logs-page.tsx
+│   │   │   └── page-logs.tsx
 │   │   ├── device/
-│   │   │   ├── device-page.tsx
-│   │   │   ├── device-overview.tsx
-│   │   │   ├── device-telemetry.tsx
-│   │   │   ├── device-commands.tsx
-│   │   │   └── device-history.tsx
+│   │   │   ├── page-device.tsx
+│   │   │   ├── page-device-overview.tsx
+│   │   │   ├── page-device-telemetry.tsx
+│   │   │   ├── page-device-commands.tsx
+│   │   │   └── page-device-history.tsx
 │   │   ├── diagnostics/
-│   │   │   ├── diagnostics-page.tsx
-│   │   │   ├── diagnostics-inspector.tsx
-│   │   │   └── diagnostics-timeline.tsx
+│   │   │   ├── page-diagnostics.tsx
+│   │   │   ├── page-diagnostics-inspector.tsx
+│   │   │   └── page-diagnostics-timeline.tsx
 │   │   ├── alerts/
-│   │   │   ├── alerts-page.tsx
-│   │   │   ├── alerts-active.tsx
-│   │   │   └── alerts-history.tsx
+│   │   │   ├── page-alerts.tsx
+│   │   │   ├── page-alerts-active.tsx
+│   │   │   └── page-alerts-history.tsx
 │   │   └── updates/
-│   │       └── updates-page.tsx
+│   │       └── page-updates.tsx
 │   │
 │   ├── components/                  # Reusable components
-│   │   ├── ui/                     # Base UI components
-│   │   │   ├── button.tsx
-│   │   │   ├── badge.tsx
-│   │   │   ├── section.tsx
-│   │   │   ├── table.tsx
-│   │   │   ├── tabs.tsx
-│   │   │   ├── input.tsx
-│   │   │   ├── select.tsx
-│   │   │   ├── dropdown-menu.tsx
-│   │   │   ├── dialog.tsx
-│   │   │   ├── skeleton.tsx
-│   │   │   ├── toast.tsx
-│   │   │   ├── tooltip.tsx
-│   │   │   ├── pagination.tsx
-│   │   │   ├── search-input.tsx
-│   │   │   ├── empty-state.tsx
-│   │   │   ├── loading-spinner.tsx
-│   │   │   └── error-state.tsx
+│   │   ├── ui/                     # Base UI components (prefixed with ui-)
+│   │   │   ├── ui-button.tsx
+│   │   │   ├── ui-badge.tsx
+│   │   │   ├── ui-section.tsx
+│   │   │   ├── ui-table.tsx
+│   │   │   ├── ui-tabs.tsx
+│   │   │   ├── ui-input.tsx
+│   │   │   ├── ui-select.tsx
+│   │   │   ├── ui-dropdown-menu.tsx
+│   │   │   ├── ui-dialog.tsx
+│   │   │   ├── ui-skeleton.tsx
+│   │   │   ├── ui-toast.tsx
+│   │   │   ├── ui-tooltip.tsx
+│   │   │   ├── ui-pagination.tsx
+│   │   │   ├── ui-search-input.tsx
+│   │   │   ├── ui-empty-state.tsx
+│   │   │   ├── ui-loading-spinner.tsx
+│   │   │   └── ui-error-state.tsx
 │   │   │
-│   │   ├── layout/                 # Layout components
-│   │   │   ├── page-header.tsx
-│   │   │   ├── page-tabs.tsx
-│   │   │   ├── sidebar.tsx
-│   │   │   └── app-layout.tsx
+│   │   ├── layout/                 # Layout components (prefixed with layout-)
+│   │   │   ├── layout-page-header.tsx
+│   │   │   ├── layout-page-tabs.tsx
+│   │   │   ├── layout-sidebar.tsx
+│   │   │   └── layout-app-layout.tsx
 │   │   │
 │   │   └── shared/                 # Shared feature components
 │   │       ├── section/
-│   │       │   ├── section-container.tsx
-│   │       │   ├── section-header.tsx
-│   │       │   └── section-content.tsx
+│   │       │   ├── component-section-container.tsx
+│   │       │   ├── component-section-header.tsx
+│   │       │   └── component-section-content.tsx
 │   │       ├── metric-card/
-│   │       │   ├── metric-card-display.tsx
-│   │       │   ├── metric-card-grid.tsx
-│   │       │   └── metric-progress.tsx
+│   │       │   ├── component-metric-card-display.tsx
+│   │       │   ├── component-metric-card-grid.tsx
+│   │       │   └── component-metric-progress.tsx
 │   │       ├── connection-status/
-│   │       │   ├── connection-status.tsx
-│   │       │   └── connection-indicator.tsx
+│   │       │   ├── component-connection-status.tsx
+│   │       │   └── component-connection-indicator.tsx
 │   │       ├── device-selector/
-│   │       │   └── device-selector.tsx
+│   │       │   └── component-device-selector.tsx
 │   │       ├── command-button/
-│   │       │   └── command-button.tsx
+│   │       │   └── component-command-button.tsx
 │   │       ├── command-row/
-│   │       │   └── command-row.tsx
+│   │       │   └── component-command-row.tsx
 │   │       ├── log-entry/
-│   │       │   └── log-entry.tsx
+│   │       │   └── component-log-entry.tsx
 │   │       └── export-menu/
-│   │           ├── export-menu.tsx
-│   │           ├── export-scope.tsx
-│   │           └── export-format.tsx
+│   │           ├── component-export-menu.tsx
+│   │           ├── component-export-scope.tsx
+│   │           └── component-export-format.tsx
 │   │
 │   └── index.ts                    # UI layer exports
 │
 ├── hooks/                          # PRESENTATION LAYER
 │   ├── auth/
-│   │   ├── use-auth.ts
-│   │   └── use-signed-api.ts
+│   │   ├── hook-use-auth.ts
+│   │   └── hook-use-signed-api.ts
 │   ├── device/
-│   │   ├── use-device-stream.ts
-│   │   ├── use-device.ts
-│   │   ├── use-devices.ts
-│   │   ├── use-device-telemetry.ts
-│   │   ├── use-device-inspection.ts
-│   │   └── use-device-timeline.ts
+│   │   ├── hook-use-device-stream.ts
+│   │   ├── hook-use-device.ts
+│   │   ├── hook-use-devices.ts
+│   │   ├── hook-use-device-telemetry.ts
+│   │   ├── hook-use-device-inspection.ts
+│   │   └── hook-use-device-timeline.ts
 │   ├── commands/
-│   │   ├── use-commands.ts
-│   │   ├── use-send-command.ts
-│   │   ├── use-cancel-command.ts
-│   │   └── use-command-history.ts
+│   │   ├── hook-use-commands.ts
+│   │   ├── hook-use-send-command.ts
+│   │   ├── hook-use-cancel-command.ts
+│   │   └── hook-use-command-history.ts
 │   ├── logs/
-│   │   ├── use-logs.ts
-│   │   ├── use-log-stream.ts
-│   │   └── use-log-filter.ts
+│   │   ├── hook-use-logs.ts
+│   │   ├── hook-use-log-stream.ts
+│   │   └── hook-use-log-filter.ts
 │   ├── alerts/
-│   │   ├── use-alerts.ts
-│   │   ├── use-alert.ts
-│   │   └── use-dismiss-alert.ts
+│   │   ├── hook-use-alerts.ts
+│   │   ├── hook-use-alert.ts
+│   │   └── hook-use-dismiss-alert.ts
 │   ├── telemetry/
-│   │   ├── use-telemetry.ts
-│   │   └── use-telemetry-stats.ts
+│   │   ├── hook-use-telemetry.ts
+│   │   └── hook-use-telemetry-stats.ts
 │   ├── export/
-│   │   ├── use-export.ts
-│   │   ├── use-export-job.ts
-│   │   └── use-export-dialog.ts
-│   ├── common/
-│   │   ├── use-pagination.ts
-│   │   ├── use-search.ts
-│   │   ├── use-device-selector.ts
-│   │   └── use-time-range.ts
-│   ├── use-mobile.tsx
-│   ├── use-operator.ts
-│   └── use-server-health.ts
+│   │   ├── hook-use-export.ts
+│   │   ├── hook-use-export-job.ts
+│   │   └── hook-use-export-dialog.ts
+│   ├── _shared/
+│   │   ├── hook-use-pagination.ts
+│   │   ├── hook-use-search.ts
+│   │   ├── hook-use-device-selector.ts
+│   │   └── hook-use-time-range.ts
+│   ├── hook-use-mobile.tsx
+│   ├── hook-use-operator.ts
+│   └── hook-use-server-health.ts
 │
 ├── domain/                         # DOMAIN LAYER
+│   ├── _shared/                   # SHARED - cross-feature types/functions
+│   │   ├── domain-pagination.ts   # Pagination types & helpers
+│   │   ├── domain-errors.ts       # Domain error classes
+│   │   └── domain-date.ts         # Date formatting utilities
+│   │
 │   ├── device/
-│   │   ├── device-types.ts        # Device, DeviceStatus, etc.
-│   │   ├── device-transforms.ts   # deviceFromGraphQL, etc.
-│   │   └── device-validation.ts   # validateDeviceId, etc.
+│   │   ├── device-entity.ts       # Device, DeviceStatus types
+│   │   ├── device-mappers.ts      # deviceFromGraphQL(), etc.
+│   │   └── device-validators.ts   # validateDeviceId(), etc.
 │   │
 │   ├── commands/
-│   │   ├── command-types.ts      # Command, CommandStatus, etc.
-│   │   ├── command-presets.ts     # PRESET_COMMANDS array
-│   │   ├── command-transforms.ts  # commandFromAPI, etc.
-│   │   └── command-validation.ts  # validateCommand, etc.
+│   │   ├── command-entity.ts      # Command, CommandStatus types
+│   │   ├── command-constants.ts   # PRESET_COMMANDS array
+│   │   ├── command-mappers.ts     # commandFromAPI(), etc.
+│   │   └── command-validators.ts  # validateCommand(), etc.
 │   │
 │   ├── logs/
-│   │   ├── log-types.ts           # LogEntry, LogType, etc.
-│   │   ├── log-transforms.ts      # logFromAPI, etc.
-│   │   ├── log-filters.ts         # filterByType, etc.
-│   │   └── log-formatters.ts      # formatTimestamp, etc.
+│   │   ├── log-entity.ts          # LogEntry, LogType types
+│   │   ├── log-mappers.ts         # logFromAPI(), etc.
+│   │   ├── log-filters.ts         # filterByType(), etc.
+│   │   └── log-formatters.ts      # formatTimestamp(), etc.
 │   │
 │   ├── telemetry/
-│   │   ├── telemetry-types.ts     # TelemetryFrame, MetricStats, etc.
-│   │   ├── telemetry-transforms.ts # telemetryFromAPI, etc.
-│   │   └── telemetry-aggregation.ts # calculateStats, etc.
+│   │   ├── telemetry-entity.ts    # TelemetryFrame, MetricStats types
+│   │   ├── telemetry-mappers.ts   # telemetryFromAPI(), etc.
+│   │   └── telemetry-aggregation.ts # calculateStats(), etc.
 │   │
 │   ├── alerts/
-│   │   ├── alert-types.ts         # Alert, AlertSeverity, etc.
-│   │   ├── alert-transforms.ts    # alertFromAPI, etc.
-│   │   └── alert-priority.ts      # calculatePriority, etc.
+│   │   ├── alert-entity.ts        # Alert, AlertSeverity types
+│   │   ├── alert-mappers.ts       # alertFromAPI(), etc.
+│   │   └── alert-priority.ts      # calculatePriority(), etc.
 │   │
 │   ├── export/
-│   │   ├── export-types.ts        # ExportFormat, ExportScope, etc.
-│   │   ├── export-formatters.ts   # toCSV, toJSON, toXML
-│   │   ├── export-filename.ts     # generateFilename
-│   │   └── export-validation.ts   # validateExportOptions
+│   │   ├── export-entity.ts       # ExportFormat, ExportScope types
+│   │   ├── export-formatters.ts   # toCSV(), toJSON(), toXML()
+│   │   ├── export-filename.ts     # generateFilename()
+│   │   └── export-validators.ts  # validateExportOptions()
 │   │
-│   ├── common/
-│   │   ├── pagination.ts          # Pagination type helpers
-│   │   ├── date.ts                # Date formatting utilities
-│   │   └── error.ts               # Domain error types
-│   │
-│   └── index.ts                   # Domain exports
+│   └── index.ts                   # Domain exports (barrel)
 │
 └── lib/
     └── api/                        # DATA LAYER
+        ├── _shared/              # SHARED - cross-feature data utilities
+        │   ├── graphql-client.ts   # GraphQL client setup
+        │   ├── graphql-fragments.ts # Reusable fragments
+        │   ├── rest-client.ts     # REST client setup
+        │   ├── rest-interceptors.ts # Auth, error handling
+        │   └── rest-adapters.ts  # graphql→rest adapters
+        │
         ├── graphql/
-        │   ├── client.ts          # GraphQL client setup
-        │   ├── queries/
-        │   │   ├── device-queries.ts
-        │   │   ├── command-queries.ts
-        │   │   ├── log-queries.ts
-        │   │   └── telemetry-queries.ts
-        │   ├── mutations/
-        │   │   ├── device-mutations.ts
-        │   │   ├── command-mutations.ts
-        │   │   └── alert-mutations.ts
-        │   ├── subscriptions/
-        │   │   └── log-subscriptions.ts
-        │   └── types/
-        │       └── responses.ts   # Raw GraphQL response types
+        │   ├── device/
+        │   │   ├── graphql-device-queries.ts
+        │   │   ├── graphql-device-mutations.ts
+        │   │   └── graphql-device-types.ts  # Raw response types
+        │   ├── commands/
+        │   │   ├── graphql-command-queries.ts
+        │   │   ├── graphql-command-mutations.ts
+        │   │   └── graphql-command-types.ts
+        │   ├── logs/
+        │   │   ├── graphql-log-queries.ts
+        │   │   ├── graphql-log-subscriptions.ts
+        │   │   └── graphql-log-types.ts
+        │   ├── telemetry/
+        │   │   ├── graphql-telemetry-queries.ts
+        │   │   └── graphql-telemetry-types.ts
+        │   ├── alerts/
+        │   │   ├── graphql-alert-queries.ts
+        │   │   ├── graphql-alert-mutations.ts
+        │   │   └── graphql-alert-types.ts
+        │   └── index.ts
         │
         ├── rest/
-        │   ├── client.ts          # REST client setup
-        │   ├── endpoints.ts       # API endpoint definitions
-        │   ├── adapters.ts       # graphql→rest adapters
-        │   └── interceptors.ts    # Auth, error handling
+        │   ├── device/
+        │   │   └── rest-device-endpoints.ts
+        │   ├── commands/
+        │   │   └── rest-command-endpoints.ts
+        │   └── index.ts
         │
         ├── mock/
-        │   ├── mock-devices.ts
-        │   ├── mock-commands.ts
-        │   └── mock-logs.ts
+        │   ├── mock-device-data.ts
+        │   ├── mock-command-data.ts
+        │   └── mock-log-data.ts
         │
         └── index.ts              # API exports
 ```
