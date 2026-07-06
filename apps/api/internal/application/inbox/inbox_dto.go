@@ -26,8 +26,6 @@ type InboxListResponse struct {
 
 // InboxEntryResponse represents an inbox entry in API responses.
 type InboxEntryResponse struct {
-	AcknowledgedAt    *int64 `json:"acknowledgedAt,omitempty"`
-	ApprovingAt       *int64 `json:"approvingAt,omitempty"`
 	ApprovedAt        *int64 `json:"approvedAt,omitempty"`
 	RejectedAt        *int64 `json:"rejectedAt,omitempty"`
 	Model             string `json:"model"`
@@ -54,15 +52,14 @@ type AckRequest struct {
 
 // AckResponse represents the response for POST /v1/device/inbox/:imei/ack.
 type AckResponse struct {
-	AcknowledgedAt *int64 `json:"acknowledgedAt,omitempty"`
-	ApprovedAt     *int64 `json:"approvedAt,omitempty"`
-	RejectedAt     *int64 `json:"rejectedAt,omitempty"`
-	ID             string `json:"id"`
-	IMEI           string `json:"imei"`
-	Status         string `json:"status"`
-	CommandSecret  string `json:"commandSecret,omitempty"`
-	Notes          string `json:"notes,omitempty"`
-	FCMPushSent    bool   `json:"fcmPushSent"`
+	ApprovedAt    *int64 `json:"approvedAt,omitempty"`
+	RejectedAt    *int64 `json:"rejectedAt,omitempty"`
+	ID            string `json:"id"`
+	IMEI          string `json:"imei"`
+	Status        string `json:"status"`
+	CommandSecret string `json:"commandSecret,omitempty"`
+	Notes         string `json:"notes,omitempty"`
+	FCMPushSent   bool   `json:"fcmPushSent"`
 }
 
 // PaginationResponse represents pagination info in responses.

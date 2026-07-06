@@ -11,7 +11,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
-	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -32,18 +31,18 @@ import (
 type ServerDependencies struct {
 	FCMNotifier    fcm.Notifier
 	OperatorRepo   operator.Repository
-	RateLimiter    *middleware.RateLimiter
-	DB             *storage.SQLite
+	EmailService   *emailService.Service
+	CommandService *command.Service
 	AuthService    *auth.AuthService
 	AuthLimiter    *middleware.RateLimiter
 	IPIntelligence *middleware.IPIntelligence
 	Log            *slog.Logger
 	SessionManager *infraauth.SessionManager
 	GoogleVerifier *infraauth.GoogleTokenVerifier
-	EmailService   *emailService.Service
+	RateLimiter    *middleware.RateLimiter
 	Hub            *hub.Hub
 	ClientService  *client.Service
-	CommandService *command.Service
+	DB             *storage.SQLite
 	Lockout        *middleware.Lockout
 	DeviceService  *device.Service
 	Metrics        *metrics.Metrics
@@ -51,7 +50,6 @@ type ServerDependencies struct {
 	TelemetryRepo  *storage.TelemetryRepository
 	UpdatesStorage *storage.UpdatesStorage
 	UpdatesService *updatesapp.Service
-	APIKeyService  *keys.APIKeyService
 	Config         infraConfig.Config
 }
 
@@ -135,7 +133,6 @@ func WireServer(deps ServerDependencies) *ServerResult {
 		HmacVerifier:   result.HmacVerifier,
 		DB:             deps.DB,
 		UpdatesStorage: deps.UpdatesStorage,
-		APIKeyService:  deps.APIKeyService,
 	}
 	result.HandlerSet = WireHandlers(handlerDeps)
 
