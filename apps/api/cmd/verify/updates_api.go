@@ -33,9 +33,9 @@ type uImpl struct {
 }
 
 func verifyUpdates() bool {
-	fmt.Println("\n╔══════════════════════════════════════════════════════════════════════════════╗")
-	fmt.Println("║  SERVER_BACKEND_UPDATES_API.md VERIFICATION                               ║")
-	fmt.Println("╚══════════════════════════════════════════════════════════════════════════════╝")
+	fmt.Println("\n")
+	fmt.Println("  SERVER_BACKEND_UPDATES_API.md VERIFICATION                               ")
+	fmt.Println("")
 	root := "/workspace/project/vyzorix-update-server"
 	spec := uLoadSpec()
 	impl := uScanImpl(root)
@@ -50,14 +50,14 @@ func verifyUpdates() bool {
 	uVerifyFrontend(spec, root)
 	pass := atomic.LoadUint64(&updatesPassCount)
 	fail := atomic.LoadUint64(&updatesFailCount)
-	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  VERIFICATION SUMMARY")
-	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n\n    Checks Passed:      %d", pass)
 	fmt.Printf("\n    Checks Failed:      %d", fail)
 	fmt.Printf("\n\n")
-	if fail == 0 { fmt.Printf("\n  ✅ ALL UPDATES API CHECKS PASSED!")
-	} else { fmt.Printf("\n  ❌ SOME UPDATES API CHECKS FAILED") }
+	if fail == 0 { fmt.Printf("\n   ALL UPDATES API CHECKS PASSED!")
+	} else { fmt.Printf("\n   SOME UPDATES API CHECKS FAILED") }
 	fmt.Printf("\n")
 	return fail == 0
 }
@@ -146,14 +146,14 @@ func uCollectGoAST(content string, collect map[string]bool) {
 }
 
 func uVerifyEndpoints(spec *uSpec, impl *uImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  ENDPOINT VERIFICATION (Section 3)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	routeContent := uGetRouteContent(root)
 	found := 0
 	for _, ep := range spec.endpoints {
 		registered := uCheckEndpoint(ep, routeContent, impl, root)
-		if registered { fmt.Printf("    ✅ %s %s\n", ep.Method, ep.Path); atomic.AddUint64(&updatesPassCount, 1); found++ } else { fmt.Printf("    ❌ %s %s - NOT REGISTERED\n", ep.Method, ep.Path); atomic.AddUint64(&updatesFailCount, 1) }
+		if registered { fmt.Printf("     %s %s\n", ep.Method, ep.Path); atomic.AddUint64(&updatesPassCount, 1); found++ } else { fmt.Printf("     %s %s - NOT REGISTERED\n", ep.Method, ep.Path); atomic.AddUint64(&updatesFailCount, 1) }
 	}
 	fmt.Printf("\n    Registered endpoints: %d/%d\n", found, len(spec.endpoints))
 }
@@ -177,110 +177,110 @@ func uGetRouteContent(root string) string {
 }
 
 func uVerifyHandlers(spec *uSpec, _ *uImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  HANDLER VERIFICATION (Section 6)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	handlerBase := filepath.Join(root, "apps/api/internal/api/handlers")
 	found := 0
 	for _, h := range spec.handlers {
 		handlerPath := filepath.Join(handlerBase, h.Subdir, h.File)
-		if _, err := os.Stat(handlerPath); err == nil { fmt.Printf("    ✅ handlers/%s/%s (%s)\n", h.Subdir, h.File, h.Method); atomic.AddUint64(&updatesPassCount, 1); found++ } else { fmt.Printf("    ❌ handlers/%s/%s - NOT FOUND\n", h.Subdir, h.File); atomic.AddUint64(&updatesFailCount, 1) }
+		if _, err := os.Stat(handlerPath); err == nil { fmt.Printf("     handlers/%s/%s (%s)\n", h.Subdir, h.File, h.Method); atomic.AddUint64(&updatesPassCount, 1); found++ } else { fmt.Printf("     handlers/%s/%s - NOT FOUND\n", h.Subdir, h.File); atomic.AddUint64(&updatesFailCount, 1) }
 	}
 	_ = found
 }
 
 func uVerifyDomain(spec *uSpec, _ *uImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION (Section 5)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	domainBase := filepath.Join(root, "apps/api/internal/domain")
 	total, found := 0, 0
 	for name, d := range spec.domain {
 		domainPath := filepath.Join(domainBase, d.Subdir)
-		if _, err := os.Stat(domainPath); err != nil { fmt.Printf("    ❌ domain/%s/ - DIRECTORY NOT FOUND\n", name); atomic.AddUint64(&updatesFailCount, 1); continue }
-		fmt.Printf("    ✅ domain/%s/\n", d.Subdir)
+		if _, err := os.Stat(domainPath); err != nil { fmt.Printf("     domain/%s/ - DIRECTORY NOT FOUND\n", name); atomic.AddUint64(&updatesFailCount, 1); continue }
+		fmt.Printf("     domain/%s/\n", d.Subdir)
 		atomic.AddUint64(&updatesPassCount, 1)
 		for _, file := range d.Files {
 			total++
 			filePath := filepath.Join(domainPath, file)
-			if _, err := os.Stat(filePath); err == nil { fmt.Printf("      ✅ %s\n", file); found++; atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("      ❌ Missing: %s\n", file); atomic.AddUint64(&updatesFailCount, 1) }
+			if _, err := os.Stat(filePath); err == nil { fmt.Printf("       %s\n", file); found++; atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("       Missing: %s\n", file); atomic.AddUint64(&updatesFailCount, 1) }
 		}
 	}
 	fmt.Printf("\n    Domain files: %d/%d found\n", found, total)
 }
 
 func uVerifyInfra(spec *uSpec, _ *uImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  INFRASTRUCTURE VERIFICATION (Section 5)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	infraBase := filepath.Join(root, "apps/api/internal/infrastructure/storage")
 	found := 0
 	for _, i := range spec.infra {
 		for _, file := range i.Files {
 			filePath := filepath.Join(infraBase, file)
-			if _, err := os.Stat(filePath); err == nil { fmt.Printf("    ✅ infrastructure/%s/%s\n", i.Subdir, file); found++; atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("    ❌ Missing: infrastructure/%s/%s\n", i.Subdir, file); atomic.AddUint64(&updatesFailCount, 1) }
+			if _, err := os.Stat(filePath); err == nil { fmt.Printf("     infrastructure/%s/%s\n", i.Subdir, file); found++; atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("     Missing: infrastructure/%s/%s\n", i.Subdir, file); atomic.AddUint64(&updatesFailCount, 1) }
 		}
 	}
 	_ = found
 }
 
 func uVerifyApplication(spec *uSpec, _ *uImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  APPLICATION LAYER VERIFICATION (Section 7)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	appBase := filepath.Join(root, "apps/api/internal/application")
 	total, found := 0, 0
 	for name, a := range spec.application {
 		appPath := filepath.Join(appBase, a.Subdir)
-		if _, err := os.Stat(appPath); err != nil { fmt.Printf("    ❌ application/%s/ - DIRECTORY NOT FOUND\n", name); atomic.AddUint64(&updatesFailCount, 1); continue }
-		fmt.Printf("    ✅ application/%s/\n", a.Subdir)
+		if _, err := os.Stat(appPath); err != nil { fmt.Printf("     application/%s/ - DIRECTORY NOT FOUND\n", name); atomic.AddUint64(&updatesFailCount, 1); continue }
+		fmt.Printf("     application/%s/\n", a.Subdir)
 		atomic.AddUint64(&updatesPassCount, 1)
 		for _, file := range a.Files {
 			total++
 			filePath := filepath.Join(appPath, file)
-			if _, err := os.Stat(filePath); err == nil { fmt.Printf("      ✅ %s\n", file); found++; atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("      ❌ Missing: %s\n", file); atomic.AddUint64(&updatesFailCount, 1) }
+			if _, err := os.Stat(filePath); err == nil { fmt.Printf("       %s\n", file); found++; atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("       Missing: %s\n", file); atomic.AddUint64(&updatesFailCount, 1) }
 		}
 	}
 	fmt.Printf("\n    Application files: %d/%d found\n", found, total)
 }
 
 func uVerifyRoutes(_ *uSpec, _ *uImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  ROUTE REGISTRATION VERIFICATION")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	handlerBase := filepath.Join(root, "apps/api/internal/api/handlers")
 	routePath := filepath.Join(handlerBase, "updates/updates_handler.go")
-	if _, err := os.Stat(routePath); err == nil { fmt.Printf("    ✅ routes: updates/updates_handler.go\n"); atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("    ❌ Missing: updates/updates_handler.go\n"); atomic.AddUint64(&updatesFailCount, 1) }
+	if _, err := os.Stat(routePath); err == nil { fmt.Printf("     routes: updates/updates_handler.go\n"); atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("     Missing: updates/updates_handler.go\n"); atomic.AddUint64(&updatesFailCount, 1) }
 }
 
 func uVerifySchema(_ *uSpec, _ *uImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 4)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	entityPaths := []string{"apps/api/internal/domain/updates/update_entity.go"}
 	for _, p := range entityPaths {
 		path := filepath.Join(root, p)
-		if _, err := os.Stat(path); err == nil { fmt.Printf("    ✅ Schema defined in: %s\n", filepath.Base(p)); atomic.AddUint64(&updatesPassCount, 1) }
+		if _, err := os.Stat(path); err == nil { fmt.Printf("     Schema defined in: %s\n", filepath.Base(p)); atomic.AddUint64(&updatesPassCount, 1) }
 	}
 }
 
 func uVerifyStructure(_ *uSpec, _ *uImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 5)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	keyPaths := []string{"apps/api/internal/api/handlers/updates/", "apps/api/internal/application/updates/", "apps/api/internal/domain/updates/"}
 	found := 0
 	for _, p := range keyPaths {
 		path := filepath.Join(root, p)
-		if _, err := os.Stat(path); err == nil { fmt.Printf("    ✅ %s\n", p); found++; atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("    ❌ Missing: %s\n", p); atomic.AddUint64(&updatesFailCount, 1) }
+		if _, err := os.Stat(path); err == nil { fmt.Printf("     %s\n", p); found++; atomic.AddUint64(&updatesPassCount, 1) } else { fmt.Printf("     Missing: %s\n", p); atomic.AddUint64(&updatesFailCount, 1) }
 	}
 	fmt.Printf("\n    Directories verified: %d/%d\n", found, len(keyPaths))
 }
 
 func uVerifyFrontend(_ *uSpec, _ string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  FRONTEND REQUIREMENTS MAPPING (Section 1.2)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	mappings := []struct{ Feature, Method, Path string }{
 		{"Update Status", "GET", "/v1/updates/status"}, {"Version List", "GET", "/v1/updates/versions"},
 		{"Changelog", "GET", "/v1/updates/changelog"}, {"Push Update", "POST", "/v1/updates/push"},
@@ -288,6 +288,6 @@ func uVerifyFrontend(_ *uSpec, _ string) {
 		{"Sync Updates", "POST", "/v1/updates/sync"},
 	}
 	found := 0
-	for _, m := range mappings { fmt.Printf("    ✅ %s -> %s %s\n", m.Feature, m.Method, m.Path); found++; atomic.AddUint64(&updatesPassCount, 1) }
+	for _, m := range mappings { fmt.Printf("     %s -> %s %s\n", m.Feature, m.Method, m.Path); found++; atomic.AddUint64(&updatesPassCount, 1) }
 	fmt.Printf("\n    Frontend mappings verified: %d/%d\n", found, len(mappings))
 }

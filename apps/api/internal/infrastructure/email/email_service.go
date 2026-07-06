@@ -145,7 +145,7 @@ func (s *Service) SendThresholdBreachEmail(ctx context.Context, to string, data 
 		return fmt.Errorf("failed to parse threshold breach template: %w", err)
 	}
 
-	subject := fmt.Sprintf("⚠️ Alert: %s threshold breached on device %s", data.AlertType, data.DeviceID)
+	subject := fmt.Sprintf(" Alert: %s threshold breached on device %s", data.AlertType, data.DeviceID)
 	return s.send(ctx, to, subject, html)
 }
 
@@ -160,7 +160,7 @@ func (s *Service) SendDeviceOfflineEmail(ctx context.Context, to string, data No
 		return fmt.Errorf("failed to parse device offline template: %w", err)
 	}
 
-	subject := fmt.Sprintf("🔴 Device Offline: %s", data.DeviceID)
+	subject := fmt.Sprintf(" Device Offline: %s", data.DeviceID)
 	return s.send(ctx, to, subject, html)
 }
 
@@ -175,7 +175,7 @@ func (s *Service) SendDeviceOnlineEmail(ctx context.Context, to string, data Not
 		return fmt.Errorf("failed to parse device online template: %w", err)
 	}
 
-	subject := fmt.Sprintf("🟢 Device Online: %s", data.DeviceID)
+	subject := fmt.Sprintf(" Device Online: %s", data.DeviceID)
 	return s.send(ctx, to, subject, html)
 }
 
@@ -190,7 +190,7 @@ func (s *Service) SendCommandFailedEmail(ctx context.Context, to string, data No
 		return fmt.Errorf("failed to parse command failed template: %w", err)
 	}
 
-	subject := fmt.Sprintf("❌ Command Failed: %s on device %s", data.CommandName, data.DeviceID)
+	subject := fmt.Sprintf(" Command Failed: %s on device %s", data.CommandName, data.DeviceID)
 	return s.send(ctx, to, subject, html)
 }
 
@@ -205,7 +205,7 @@ func (s *Service) SendUpdateAvailableEmail(ctx context.Context, to string, data 
 		return fmt.Errorf("failed to parse update available template: %w", err)
 	}
 
-	subject := fmt.Sprintf("📦 Update Available: Version %s for device %s", data.UpdateVersion, data.DeviceID)
+	subject := fmt.Sprintf(" Update Available: Version %s for device %s", data.UpdateVersion, data.DeviceID)
 	return s.send(ctx, to, subject, html)
 }
 
@@ -220,7 +220,7 @@ func (s *Service) SendRegistrationRequestEmail(ctx context.Context, to string, d
 		return fmt.Errorf("failed to parse registration request template: %w", err)
 	}
 
-	subject := fmt.Sprintf("📋 Registration Request: %s", data.RequesterName)
+	subject := fmt.Sprintf(" Registration Request: %s", data.RequesterName)
 	return s.send(ctx, to, subject, html)
 }
 
@@ -235,7 +235,7 @@ func (s *Service) SendErrorAlertEmail(ctx context.Context, to string, data Notif
 		return fmt.Errorf("failed to parse error alert template: %w", err)
 	}
 
-	subject := fmt.Sprintf("🔴 Error Alert: %s", data.DeviceID)
+	subject := fmt.Sprintf(" Error Alert: %s", data.DeviceID)
 	return s.send(ctx, to, subject, html)
 }
 
@@ -251,7 +251,7 @@ func (s *Service) SendNewLoginNotificationEmail(ctx context.Context, to string, 
 		return fmt.Errorf("failed to parse new login template: %w", err)
 	}
 
-	subject := "🔐 New login to your account"
+	subject := " New login to your account"
 	return s.send(ctx, to, subject, html)
 }
 

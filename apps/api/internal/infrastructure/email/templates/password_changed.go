@@ -32,7 +32,7 @@ const PasswordChangedEmail = `<!DOCTYPE html>
     <div class="container">
         <div class="email-wrapper">
             <div class="header">
-                <div class="icon">✓</div>
+                <div class="icon"></div>
                 <div class="logo">Vyzorix</div>
             </div>
             <div class="content">
@@ -40,7 +40,7 @@ const PasswordChangedEmail = `<!DOCTYPE html>
                 <p>Hi {{.Name}},</p>
                 <p>Your password has been changed successfully.</p>
                 <div class="success-box">
-                    <div class="success-icon">✓</div>
+                    <div class="success-icon"></div>
                     <p style="margin-bottom: 0;">Your account is secure</p>
                 </div>
                 <div class="security-tip">

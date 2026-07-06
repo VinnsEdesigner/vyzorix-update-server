@@ -299,22 +299,22 @@ ALTER TABLE devices ADD COLUMN IF NOT EXISTS fcm_token_refreshed_at TIMESTAMPTZ;
 
 ```
 apps/api/internal/
-├── api/
-│   ├── server_routes.go                         # Route registration
-│   └── handlers/
-│       └── diagnostics/
-│           ├── diagnostics_inspect_handler.go   # InspectHandler
-│           ├── diagnostics_timeline_handler.go  # TimelineHandler
-│           └── diagnostics_routes.go           # (included)
-├── application/
-│   └── diagnostics/
-│       └── diagnostics_service.go               # DiagnosticsService
-├── domain/
-│   └── diagnostics/
-│       └── diagnostics_types.go                 # Diagnostic types
-└── infrastructure/
-    └── storage/
-        └── diagnostics_storage.go               # Diagnostics storage
+ api/
+    server_routes.go                         # Route registration
+    handlers/
+        diagnostics/
+            diagnostics_inspect_handler.go   # InspectHandler
+            diagnostics_timeline_handler.go  # TimelineHandler
+            diagnostics_routes.go           # (included)
+ application/
+    diagnostics/
+        diagnostics_service.go               # DiagnosticsService
+ domain/
+    diagnostics/
+        diagnostics_types.go                 # Diagnostic types
+ infrastructure/
+     storage/
+         diagnostics_storage.go               # Diagnostics storage
 ```
 
 ---

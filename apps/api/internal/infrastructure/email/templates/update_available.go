@@ -34,7 +34,7 @@ const UpdateAvailableEmail = `<!DOCTYPE html>
     <div class="container">
         <div class="email-wrapper">
             <div class="header">
-                <div class="icon">📦</div>
+                <div class="icon"></div>
                 <div class="logo">Update Available</div>
             </div>
             <div class="content">

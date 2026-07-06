@@ -82,84 +82,84 @@ Following the [Frontend Architecture](../FRONTEND_ARCHITECTURE.md):
 
 ```
 src/
-├── domain/
-│   ├── apikey/                    # API Keys feature domain
-│   │   ├── apikey-entity.ts      # API key domain types
-│   │   ├── apikey-mappers.ts     # Raw → Domain transformations
-│   │   ├── apikey-validators.ts  # Input validation
-│   │   └── apikey-constants.ts   # Key scope definitions
-│   │
-│   └── _shared/                   # Shared domain types
-│       ├── domain-pagination.ts
-│       └── domain-errors.ts
-│
-├── lib/api/
-│   ├── apikey/                   # API Keys feature data layer
-│   │   ├── graphql-apikey-queries.ts
-│   │   ├── graphql-apikey-mutations.ts
-│   │   └── graphql-apikey-types.ts
-│   │
-│   ├── rest/
-│   │   └── rest-apikey-endpoints.ts
-│   │
-│   └── _shared/                   # Shared API utilities
-│       ├── graphql-client.ts
-│       └── rest-client.ts
-│
-├── hooks/
-│   └── apikey/
-│       ├── use-apikeys.ts               # List keys with pagination
-│       ├── use-create-apikey.ts        # Create with optimistic update
-│       ├── use-revoke-apikey.ts        # Revoke with optimistic update
-│       ├── use-rotate-apikey.ts        # Rotate returns new key
-│       ├── use-update-apikey.ts        # Rename/update key
-│       └── use-apikey-stats.ts         # Usage statistics
-│
-└── ui/
-    ├── pages/
-    │   ├── settings/
-    │   │   └── api-keys/
-    │   │       ├── apikey-settings.tsx         # Operator management
-    │   │       └── components/
-    │   │           ├── apikey-list.tsx         # Key list table
-    │   │           ├── apikey-row.tsx         # Single key row
-    │   │           ├── apikey-list-skeleton.tsx # Loading skeleton
-    │   │           ├── create-apikey-dialog.tsx    # Create key modal
-    │   │           ├── revoke-apikey-dialog.tsx   # Revoke confirmation
-    │   │           ├── rotate-apikey-dialog.tsx    # Rotate confirmation
-    │   │           ├── edit-apikey-dialog.tsx      # Rename/edit modal
-    │   │           ├── apikey-created-dialog.tsx   # Show new key ONCE
-    │   │           └── apikey-usage-stats.tsx     # Usage statistics
-    │   │
-    │   └── developer-portal/
-    │       ├── developer-dashboard.tsx          # Developer overview
-    │       ├── developer-docs.tsx               # API docs
-    │       └── components/
-    │           ├── sdk-examples.tsx            # Code examples
-    │           ├── test-endpoint.tsx            # API testing tool
-    │           └── usage-chart.tsx             # Usage visualization
-    │
-    └── components/
-        └── shared/
-            └── copy-button.tsx                  # Reusable copy component
+ domain/
+    apikey/                    # API Keys feature domain
+       apikey-entity.ts      # API key domain types
+       apikey-mappers.ts     # Raw → Domain transformations
+       apikey-validators.ts  # Input validation
+       apikey-constants.ts   # Key scope definitions
+   
+    _shared/                   # Shared domain types
+        domain-pagination.ts
+        domain-errors.ts
+
+ lib/api/
+    apikey/                   # API Keys feature data layer
+       graphql-apikey-queries.ts
+       graphql-apikey-mutations.ts
+       graphql-apikey-types.ts
+   
+    rest/
+       rest-apikey-endpoints.ts
+   
+    _shared/                   # Shared API utilities
+        graphql-client.ts
+        rest-client.ts
+
+ hooks/
+    apikey/
+        use-apikeys.ts               # List keys with pagination
+        use-create-apikey.ts        # Create with optimistic update
+        use-revoke-apikey.ts        # Revoke with optimistic update
+        use-rotate-apikey.ts        # Rotate returns new key
+        use-update-apikey.ts        # Rename/update key
+        use-apikey-stats.ts         # Usage statistics
+
+ ui/
+     pages/
+        settings/
+           api-keys/
+               apikey-settings.tsx         # Operator management
+               components/
+                   apikey-list.tsx         # Key list table
+                   apikey-row.tsx         # Single key row
+                   apikey-list-skeleton.tsx # Loading skeleton
+                   create-apikey-dialog.tsx    # Create key modal
+                   revoke-apikey-dialog.tsx   # Revoke confirmation
+                   rotate-apikey-dialog.tsx    # Rotate confirmation
+                   edit-apikey-dialog.tsx      # Rename/edit modal
+                   apikey-created-dialog.tsx   # Show new key ONCE
+                   apikey-usage-stats.tsx     # Usage statistics
+       
+        developer-portal/
+            developer-dashboard.tsx          # Developer overview
+            developer-docs.tsx               # API docs
+            components/
+                sdk-examples.tsx            # Code examples
+                test-endpoint.tsx            # API testing tool
+                usage-chart.tsx             # Usage visualization
+    
+     components/
+         shared/
+             copy-button.tsx                  # Reusable copy component
 ```
 
 ### 2.2 Dependency Rules (STRICT - MUST FOLLOW)
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  UI Layer ──────────────► Presentation Layer ──────────────► Domain │
-│       │                              │                              │
-│       │ uses hooks                  │ uses types & transforms       │
-│       │                              │                              │
-│       │                              ▼                              │
-│       │                    Data Layer (lib/api/)                    │
-│       │                              │                              │
-│       │                              │ imports domain types only   │
-│       │                              │ (NO reverse dependencies)    │
-│       │                              │                              │
-└───────┴──────────────────────────────┴──────────────────────────────┘
+
+                                                                     
+  UI Layer  Presentation Layer  Domain 
+                                                                   
+        uses hooks                   uses types & transforms       
+                                                                   
+                                                                   
+                           Data Layer (lib/api/)                    
+                                                                   
+                                      imports domain types only   
+                                      (NO reverse dependencies)    
+                                                                   
+
 ```
 
 **CRITICAL RULES:**
@@ -198,15 +198,15 @@ const devices = await client.getDevices();
 
 ```
 src/domain/
-├── apikey/
-│   ├── apikey-entity.ts          # Types (ApiKey, ApiKeyScope, etc.)
-│   ├── apikey-mappers.ts         # Raw → Domain transformations
-│   ├── apikey-validators.ts     # Input validation
-│   └── apikey-constants.ts      # Scope limits, defaults
-│
-└── _shared/
-    ├── domain-pagination.ts      # Shared pagination types
-    └── domain-errors.ts         # Shared error types
+ apikey/
+    apikey-entity.ts          # Types (ApiKey, ApiKeyScope, etc.)
+    apikey-mappers.ts         # Raw → Domain transformations
+    apikey-validators.ts     # Input validation
+    apikey-constants.ts      # Scope limits, defaults
+
+ _shared/
+     domain-pagination.ts      # Shared pagination types
+     domain-errors.ts         # Shared error types
 ```
 
 ### 3.2 Entity Types (apikey-entity.ts)
@@ -2344,155 +2344,155 @@ export const CopyButton = ({
 ### 7.1 Create API Key Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  1. User clicks "Generate New Key"                                  │
-│     │                                                               │
-│     ▼                                                               │
-│  2. CreateKeyDialog opens                                           │
-│     │                                                               │
-│     ▼                                                               │
-│  3. User enters:                                                    │
-│     - Name (required)                                               │
-│     - Scope (read/write/admin)                                      │
-│     - Expiration (optional)                                         │
-│     │                                                               │
-│     ▼                                                               │
-│  4. User clicks "Generate Key"                                      │
-│     │                                                               │
-│     ▼                                                               │
-│  5. Show loading state                                              │
-│     │                                                               │
-│     ▼                                                               │
-│  6a. On SUCCESS:                                                    │
-│      - Close CreateKeyDialog                                        │
-│      - Open KeyCreatedDialog with FULL key                         │
-│      - Show warning: "Copy now, won't see again"                   │
-│      - User clicks copy button                                       │
-│      - User clicks "Done"                                           │
-│      - Clear key from memory                                        │
-│      - Close KeyCreatedDialog                                       │
-│      │                                                               │
-│      ▼                                                               │
-│      7. List refreshes showing new key                             │
-│                                                                     │
-│  6b. On VALIDATION ERROR:                                           │
-│      - Show error messages inline                                   │
-│      - Stay in dialog                                               │
-│                                                                     │
-│  6c. On SERVER ERROR:                                               │
-│      - Show error toast                                             │
-│      - Stay in dialog                                               │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+  1. User clicks "Generate New Key"                                  
+                                                                    
+                                                                    
+  2. CreateKeyDialog opens                                           
+                                                                    
+                                                                    
+  3. User enters:                                                    
+     - Name (required)                                               
+     - Scope (read/write/admin)                                      
+     - Expiration (optional)                                         
+                                                                    
+                                                                    
+  4. User clicks "Generate Key"                                      
+                                                                    
+                                                                    
+  5. Show loading state                                              
+                                                                    
+                                                                    
+  6a. On SUCCESS:                                                    
+      - Close CreateKeyDialog                                        
+      - Open KeyCreatedDialog with FULL key                         
+      - Show warning: "Copy now, won't see again"                   
+      - User clicks copy button                                       
+      - User clicks "Done"                                           
+      - Clear key from memory                                        
+      - Close KeyCreatedDialog                                       
+                                                                     
+                                                                     
+      7. List refreshes showing new key                             
+                                                                     
+  6b. On VALIDATION ERROR:                                           
+      - Show error messages inline                                   
+      - Stay in dialog                                               
+                                                                     
+  6c. On SERVER ERROR:                                               
+      - Show error toast                                             
+      - Stay in dialog                                               
+                                                                     
+
 ```
 
 ### 7.2 Revoke API Key Flow (Optimistic Update)
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  1. User clicks revoke icon on key row                              │
-│     │                                                               │
-│     ▼                                                               │
-│  2. RevokeKeyDialog opens with key name                             │
-│     │                                                               │
-│     ▼                                                               │
-│  3. User clicks "Revoke Key"                                        │
-│     │                                                               │
-│     ▼                                                               │
-│  4. IMMEDIATELY (optimistic):                                      │
-│     - Key disappears from list                                      │
-│     - Dialog closes                                                 │
-│     │                                                               │
-│     ▼                                                               │
-│  5. Background: API call to revoke                                 │
-│     │                                                               │
-│     ▼                                                               │
-│  6a. On SUCCESS:                                                    │
-│      - Nothing to do (already updated UI)                          │
-│      - Show success toast                                           │
-│                                                                     │
-│  6b. On ERROR:                                                      │
-│      - Rollback: Key reappears in list                              │
-│      - Show error toast                                             │
-│      - Show revoke dialog again                                    │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+  1. User clicks revoke icon on key row                              
+                                                                    
+                                                                    
+  2. RevokeKeyDialog opens with key name                             
+                                                                    
+                                                                    
+  3. User clicks "Revoke Key"                                        
+                                                                    
+                                                                    
+  4. IMMEDIATELY (optimistic):                                      
+     - Key disappears from list                                      
+     - Dialog closes                                                 
+                                                                    
+                                                                    
+  5. Background: API call to revoke                                 
+                                                                    
+                                                                    
+  6a. On SUCCESS:                                                    
+      - Nothing to do (already updated UI)                          
+      - Show success toast                                           
+                                                                     
+  6b. On ERROR:                                                      
+      - Rollback: Key reappears in list                              
+      - Show error toast                                             
+      - Show revoke dialog again                                    
+                                                                     
+
 ```
 
 ### 7.3 Rotate API Key Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  1. User clicks rotate in dropdown menu                             │
-│     │                                                               │
-│     ▼                                                               │
-│  2. RotateKeyDialog opens with key name                             │
-│     │                                                               │
-│     ▼                                                               │
-│  3. User clicks "Rotate Key"                                        │
-│     │                                                               │
-│     ▼                                                               │
-│  4. Show loading state on button                                   │
-│     │                                                               │
-│     ▼                                                               │
-│  6a. On SUCCESS:                                                    │
-│      - Close RotateKeyDialog                                        │
-│      - Open KeyCreatedDialog with NEW full key                      │
-│      - Show warning about updating applications                     │
-│      - User copies new key                                          │
-│      - User clicks "Done"                                           │
-│      - Clear new key from memory                                    │
-│      │                                                               │
-│      ▼                                                               │
-│      7. List refreshes showing rotated key                         │
-│                                                                     │
-│  6b. On ERROR:                                                      │
-│      - Show error toast                                             │
-│      - Stay in dialog                                               │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+  1. User clicks rotate in dropdown menu                             
+                                                                    
+                                                                    
+  2. RotateKeyDialog opens with key name                             
+                                                                    
+                                                                    
+  3. User clicks "Rotate Key"                                        
+                                                                    
+                                                                    
+  4. Show loading state on button                                   
+                                                                    
+                                                                    
+  6a. On SUCCESS:                                                    
+      - Close RotateKeyDialog                                        
+      - Open KeyCreatedDialog with NEW full key                      
+      - Show warning about updating applications                     
+      - User copies new key                                          
+      - User clicks "Done"                                           
+      - Clear new key from memory                                    
+                                                                     
+                                                                     
+      7. List refreshes showing rotated key                         
+                                                                     
+  6b. On ERROR:                                                      
+      - Show error toast                                             
+      - Stay in dialog                                               
+                                                                     
+
 ```
 
 ### 7.4 Edit API Key Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  1. User clicks edit in dropdown menu                               │
-│     │                                                               │
-│     ▼                                                               │
-│  2. EditKeyDialog opens pre-filled with:                            │
-│     - Current name                                                  │
-│     - Current scope                                                 │
-│     │                                                               │
-│     ▼                                                               │
-│  3. User modifies:                                                  │
-│     - Name (optional)                                               │
-│     - Scope (optional)                                              │
-│     │                                                               │
-│     ▼                                                               │
-│  4. User clicks "Save Changes"                                      │
-│     │                                                               │
-│     ▼                                                               │
-│  5. If no changes made, close dialog                                │
-│     │                                                               │
-│     ▼                                                               │
-│  6. Show loading state                                              │
-│     │                                                               │
-│     ▼                                                               │
-│  6a. On SUCCESS:                                                    │
-│      - Close dialog                                                 │
-│      - Show success toast                                           │
-│      - List refreshes showing updated key                          │
-│                                                                     │
-│  6b. On ERROR:                                                      │
-│      - Show error messages                                          │
-│      - Stay in dialog                                               │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+  1. User clicks edit in dropdown menu                               
+                                                                    
+                                                                    
+  2. EditKeyDialog opens pre-filled with:                            
+     - Current name                                                  
+     - Current scope                                                 
+                                                                    
+                                                                    
+  3. User modifies:                                                  
+     - Name (optional)                                               
+     - Scope (optional)                                              
+                                                                    
+                                                                    
+  4. User clicks "Save Changes"                                      
+                                                                    
+                                                                    
+  5. If no changes made, close dialog                                
+                                                                    
+                                                                    
+  6. Show loading state                                              
+                                                                    
+                                                                    
+  6a. On SUCCESS:                                                    
+      - Close dialog                                                 
+      - Show success toast                                           
+      - List refreshes showing updated key                          
+                                                                     
+  6b. On ERROR:                                                      
+      - Show error messages                                          
+      - Stay in dialog                                               
+                                                                     
+
 ```
 
 ---
@@ -2645,12 +2645,12 @@ The Developer Portal is a separate section for third-party developers who use AP
 
 ```
 src/ui/pages/developer-portal/
-├── dashboard-page.tsx        # Overview with usage stats
-├── documentation-page.tsx    # API reference docs
-├── components/
-│   ├── sdk-examples.tsx      # Code samples for different languages
-│   ├── test-endpoint.tsx     # Interactive API tester
-│   └── usage-chart.tsx       # Usage visualization
+ dashboard-page.tsx        # Overview with usage stats
+ documentation-page.tsx    # API reference docs
+ components/
+    sdk-examples.tsx      # Code samples for different languages
+    test-endpoint.tsx     # Interactive API tester
+    usage-chart.tsx       # Usage visualization
 ```
 
 ### 11.3 Developer Dashboard
@@ -2700,15 +2700,15 @@ Super Admin UI allows administrators to:
 
 ```
 src/ui/pages/admin/
-├── api-keys/
-│   ├── api-keys-admin-page.tsx    # List all keys with filters
-│   ├── stats-page.tsx            # Global statistics
-│   └── components/
-│       ├── admin-key-list.tsx         # List with operator info
-│       ├── admin-key-row.tsx          # Row with operator name
-│       ├── force-revoke-dialog.tsx    # Force revoke confirmation
-│       ├── operator-filter.tsx        # Filter by operator
-│       └── global-stats.tsx           # Statistics dashboard
+ api-keys/
+    api-keys-admin-page.tsx    # List all keys with filters
+    stats-page.tsx            # Global statistics
+    components/
+        admin-key-list.tsx         # List with operator info
+        admin-key-row.tsx          # Row with operator name
+        force-revoke-dialog.tsx    # Force revoke confirmation
+        operator-filter.tsx        # Filter by operator
+        global-stats.tsx           # Statistics dashboard
 ```
 
 ### 12.3 Domain Types

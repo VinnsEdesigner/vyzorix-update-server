@@ -34,8 +34,8 @@ dependencies {
 Copy the `signing` package into your Android project:
 ```
 your-app/src/main/java/com/vyzorix/signing/
-├── CryptoUtils.kt
-└── SignedApiClient.kt
+ CryptoUtils.kt
+ SignedApiClient.kt
 ```
 
 ## Usage

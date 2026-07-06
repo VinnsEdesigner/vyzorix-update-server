@@ -17,23 +17,23 @@ It details:
 The server is engineered as a lightweight, static-binary Go web service. It coordinates three major runtime boundaries:
 
 ```text
-  ┌────────────────────────────────────────────────────────────────────────────────────────┐
-  │                                  VYZORIX CONTROL PLATFORM                              │
-  │                                                                                        │
-  │  ┌─────────────────────────┐     WebSocket Link     ┌───────────────────────────────┐  │
-  │  │  Web Dashboard    │◄──────────────────────►│     WebSocket Broker (Hub)     │  │
-  │  │                         │                        │  - gorilla/websocket          │  │
-  │  └──────────┬──────────────┘                        │  - Melody concurrent tunnels  │  │
-  │             │ HTTP POST                             └──────────────▲────────────────┘  │
-  │             │ (/v1/command)                                        │                   │
-  │             ▼                                                      │ Persistent TCP    │
-  │  ┌─────────────────────────┐    High-Priority Push                 │ Socket (Sub-20ms) │
-  │  │   FCM Push Notifier     ├─────────────────────┐                 │                   │
-  │  │   - firebase-admin SDK  │                     │                 │                   │
-  │  └─────────────────────────┘                     ▼                 ▼                   │
-  │                                             [ Google FCM ] ──► Nokia C22               │
-  │                                             (Wake / Regrant)   (Vyzorix Client)        │
-  └────────────────────────────────────────────────────────────────────────────────────────┘
+  
+                                    VYZORIX CONTROL PLATFORM                              
+                                                                                          
+         WebSocket Link       
+      Web Dashboard         WebSocket Broker (Hub)       
+                                                       - gorilla/websocket            
+                              - Melody concurrent tunnels    
+                HTTP POST                               
+                (/v1/command)                                                           
+                                                                      Persistent TCP    
+        High-Priority Push                  Socket (Sub-20ms) 
+       FCM Push Notifier                                         
+       - firebase-admin SDK                                                           
+                                                             
+                                               [ Google FCM ]  Nokia C22               
+                                               (Wake / Regrant)   (Vyzorix Client)        
+  
 ```
 
 ### A. The REST API Layer
@@ -51,12 +51,12 @@ The server is engineered as a lightweight, static-binary Go web service. It coor
 
 ```text
 vyzorix-update-server/
-├── go.mod
-├── go.sum
-├── main.go
-├── Dockerfile
-├── render.yaml
-└── .env.example
+ go.mod
+ go.sum
+ main.go
+ Dockerfile
+ render.yaml
+ .env.example
 ```
 
 ### 2.1 `go.mod` & `go.sum`
@@ -103,11 +103,11 @@ vyzorix-update-server/
 
 ```text
 vyzorix-update-server/
-├── config/
-│   └── config.go
-└── storage/
-    ├── sqlite.go
-    └── migrations.go
+ config/
+    config.go
+ storage/
+     sqlite.go
+     migrations.go
 ```
 
 ### 3.1 `config/config.go`
@@ -147,10 +147,10 @@ Strict, type-safe structures mapping database and network payloads. It ensures a
 
 ```text
 vyzorix-update-server/models/
-├── device.go
-├── telemetry.go
-├── command.go
-└── response.go
+ device.go
+ telemetry.go
+ command.go
+ response.go
 ```
 
 ### 4.1 `models/device.go`
@@ -211,8 +211,8 @@ The `hub` module acts as the full-duplex network broker, keeping track of active
 
 ```text
 vyzorix-update-server/hub/
-├── hub.go
-└── client.go
+ hub.go
+ client.go
 ```
 
 ### 5.1 `hub/hub.go`
@@ -237,9 +237,9 @@ vyzorix-update-server/hub/
 
 ```text
 vyzorix-update-server/controllers/
-├── updater.go
-├── device.go
-└── command.go
+ updater.go
+ device.go
+ command.go
 ```
 
 ### 6.1 `controllers/updater.go`
@@ -255,10 +255,10 @@ vyzorix-update-server/controllers/
 *   **Architectural Role**: Receives manual C2 commands from the React dashboard via POST requests and forwards them to the WebSocket broker channels.
 *   **Operational Flow**:
     ```text
-    POST /v1/command ──► Parse JSON ──► Check if target online?
-                                              │
-                    ┌─────────────────────────┴─────────────────────────┐
-                    ▼ (YES: Direct WS Route)                            ▼ (NO: FCM Signaling)
+    POST /v1/command  Parse JSON  Check if target online?
+                                              
+                    
+                     (YES: Direct WS Route)                             (NO: FCM Signaling)
          hub.ActiveHub.Send()                                services.fcm.SendSilentPush()
     ```
 
@@ -270,8 +270,8 @@ The `fcm` service initializes the Google Admin SDK and dispatches silent high-pr
 
 ```text
 vyzorix-update-server/services/fcm/
-├── fcm.go
-└── notifier.go
+ fcm.go
+ notifier.go
 ```
 
 ### 7.1 `services/fcm/fcm.go`
@@ -302,9 +302,9 @@ vyzorix-update-server/services/fcm/
 
 ```text
 vyzorix-update-server/middleware/
-├── auth.go
-├── rate_limiter.go
-└── logger.go
+ auth.go
+ rate_limiter.go
+ logger.go
 ```
 
 ### 8.1 `middleware/auth.go`
@@ -325,13 +325,13 @@ vyzorix-update-server/middleware/
 
 ```text
 vyzorix-update-server/
-├── api/v1/
-│   ├── version.json
-│   └── changelog.json
-└── scripts/
-    ├── generate_version.sh
-    ├── compute_checksum.sh
-    └── validate_apk.sh
+ api/v1/
+    version.json
+    changelog.json
+ scripts/
+     generate_version.sh
+     compute_checksum.sh
+     validate_apk.sh
 ```
 
 ### 9.1 `api/v1/version.json`

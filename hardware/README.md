@@ -6,12 +6,12 @@ This folder contains hardware design files for Vyzorix IoT devices, created usin
 
 ```
 hardware/
-├── tscircuit/     # TSCircuit PCB designs
-│   ├── index.tsx   # Main circuit definition
-│   ├── dist/       # Build outputs (PCB, schematic, 3D)
-│   ├── TSCCIRCUIT_WORKFLOW.md  # Full workflow guide
-│   └── QUICKREF.md             # Quick reference
-└── README.md       # This file
+ tscircuit/     # TSCircuit PCB designs
+    index.tsx   # Main circuit definition
+    dist/       # Build outputs (PCB, schematic, 3D)
+    TSCCIRCUIT_WORKFLOW.md  # Full workflow guide
+    QUICKREF.md             # Quick reference
+ README.md       # This file
 ```
 
 ## Published Packages

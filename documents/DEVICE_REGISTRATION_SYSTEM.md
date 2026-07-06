@@ -32,7 +32,7 @@
 
 ---
 
-> ⚠️ **Architecture Alignment Note (v1.1)**
+>  **Architecture Alignment Note (v1.1)**
 > 
 > This document has been updated to align with the **Layered Architecture** defined in `FRONTEND_ARCHITECTURE.md`. The file structure below follows the **4-layer architecture**:
 > - **UI Layer** (`src/components/`) - Pure UI rendering, imports only from hooks
@@ -66,17 +66,17 @@ Zero-friction device registration with:
 ### 1.3 Flow Summary
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  DEVICE (APK)                    SERVER                       DASHBOARD
-│
-│  1. APK starts, fetches device info (IMEI, firmware, OS, etc.)
-│  2. POST /v1/device/inbox (device sends registration request)
-│  3. Server stores in INBOX (status: pending)
-│  4. Operator views inbox, clicks "Register"
-│  5. Server validates, generates commandSecret, FCM push to device
-│  6. Device receives push, stores commandSecret, POST /v1/device/confirm
-│  7. Server marks device as REGISTERED
-└─────────────────────────────────────────────────────────────────────┘
+
+  DEVICE (APK)                    SERVER                       DASHBOARD
+
+  1. APK starts, fetches device info (IMEI, firmware, OS, etc.)
+  2. POST /v1/device/inbox (device sends registration request)
+  3. Server stores in INBOX (status: pending)
+  4. Operator views inbox, clicks "Register"
+  5. Server validates, generates commandSecret, FCM push to device
+  6. Device receives push, stores commandSecret, POST /v1/device/confirm
+  7. Server marks device as REGISTERED
+
 ```
 
 ---
@@ -86,127 +86,127 @@ Zero-friction device registration with:
 ### 2.1 Components
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         FRONTEND (React)                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐               │
-│  │  DevicePage │  │  InboxView  │  │ CommandsTab │               │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘               │
-│         │                │                │                        │
-│         └────────────────┼────────────────┘                        │
-│                          │                                         │
-│                    ┌─────▼─────┐                                  │
-│                    │  GraphQL  │ (primary)                         │
-│                    │  Client   │                                   │
-│                    └─────┬─────┘                                  │
-│                          │                                         │
-│                    ┌─────▼─────┐                                  │
-│                    │   REST    │ (fallback)                        │
-│                    │   Client  │                                   │
-│                    └─────┬─────┘                                  │
-└──────────────────────────┼─────────────────────────────────────────┘
-                           │
-                    ┌──────▼──────┐
-                    │   SERVER    │
-                    │   (Go)     │
-                    └──────┬──────┘
-                           │
-         ┌─────────────────┼─────────────────┐
-         │                 │                 │
-    ┌────▼────┐      ┌─────▼─────┐     ┌────▼────┐
-    │ Inbox   │      │  Device   │     │ Command │
-    │ Handler │      │  Handler  │     │ Handler │
-    └────┬────┘      └─────┬─────┘     └────┬────┘
-         │                 │                 │
-    ┌────▼────┐      ┌─────▼─────┐     ┌────▼────┐
-    │ Inbox   │      │  Device   │     │ Command │
-    │ Store   │      │  Store    │     │ Store   │
-    └────┬────┘      └─────┬─────┘     └────┬────┘
-         │                 │                 │
-         └─────────────────┼─────────────────┘
-                           │
-                    ┌──────▼──────┐
-                    │   SQLite    │
-                    │   Database  │
-                    └─────────────┘
+
+                         FRONTEND (React)                            
+                     
+    DevicePage     InboxView     CommandsTab                
+                     
+                                                                 
+                                 
+                                                                   
+                                                      
+                      GraphQL   (primary)                         
+                      Client                                      
+                                                      
+                                                                   
+                                                      
+                       REST     (fallback)                        
+                       Client                                     
+                                                      
+
+                           
+                    
+                       SERVER    
+                       (Go)     
+                    
+                           
+         
+                                           
+               
+     Inbox           Device         Command 
+     Handler         Handler        Handler 
+               
+                                           
+               
+     Inbox           Device         Command 
+     Store           Store          Store   
+               
+                                           
+         
+                           
+                    
+                       SQLite    
+                       Database  
+                    
 ```
 
 ### 2.2 Directory Structure
 
 ```
 apps/
-├── api/
-│   └── internal/
-│       ├── api/
-│       │   ├── handlers/
-│       │   │   ├── inbox/
-│       │   │   │   ├── inbox.go           # Inbox handlers
-│       │   │   │   ├── inbox_test.go
-│       │   │   │   └── routes.go          # Inbox routes
-│       │   │   └── device/
-│       │   │       ├── register.go         # Existing - update
-│       │   │       ├── confirm.go          # New - confirm endpoint
-│       │   │       ├── status.go
-│       │   │       ├── list.go
-│       │   │       └── deregister.go
-│       │   │
-│       │   ├── middleware/
-│       │   │   └── auth.go
-│       │   │
-│       │   └── router.go
-│       │
-│       ├── domain/
-│       │   ├── device/
-│       │   │   ├── device_entity.go               # Device entity
-│       │   │   ├── device_inbox.go               # NEW: InboxEntry entity
-│       │   │   ├── device_errors.go
-│       │   │   └── device_repository.go          # Interfaces
-│       │   │
-│       │   └── command/
-│       │
-│       ├── infrastructure/
-│       │   ├── storage/
-│       │   │   ├── device_storage.go            # Existing
-│       │   │   ├── inbox_storage.go             # NEW: Inbox storage
-│       │   │   └── migrations/
-│       │   │       └── 001_device_inbox.sql
-│       │   │
-│       │   ├── fcm/
-│       │   │   └── notifier.go
-│       │   │
-│       │   └── crypto/
-│       │
-│       └── application/
-│           ├── device/
-│           │   ├── register_usecase.go
-│           │   ├── inbox_usecase.go
-│           │   └── command_usecase.go
-│           │
-│           └── dto/
-│               ├── inbox.go
-│               └── device.go
-│
-└── web/
-    └── src/
-        ├── routes/
-        │   └── device-page.tsx             # Update with tabs
-        │
-        ├── components/
-        │   └── device/
-        │       ├── DeviceInbox.tsx          # NEW: Inbox component
-        │       ├── DeviceOverview.tsx       # NEW: Overview tab
-        │       ├── DeviceTelemetry.tsx      # NEW: Telemetry tab
-        │       ├── DeviceCommands.tsx       # NEW: Commands tab
-        │       └── DeviceHistory.tsx        # NEW: History tab
-        │
-        ├── lib/
-        │   └── api/
-        │       ├── graphql/
-        │       │   ├── queries.ts          # Update
-        │       │   ├── mutations.ts        # Update
-        │       │   └── types.ts           # Update
-        │       │
-        │       └── rest/
-        │           └── device-client.ts    # NEW: REST fallback
+ api/
+    internal/
+        api/
+           handlers/
+              inbox/
+                 inbox.go           # Inbox handlers
+                 inbox_test.go
+                 routes.go          # Inbox routes
+              device/
+                  register.go         # Existing - update
+                  confirm.go          # New - confirm endpoint
+                  status.go
+                  list.go
+                  deregister.go
+          
+           middleware/
+              auth.go
+          
+           router.go
+       
+        domain/
+           device/
+              device_entity.go               # Device entity
+              device_inbox.go               # NEW: InboxEntry entity
+              device_errors.go
+              device_repository.go          # Interfaces
+          
+           command/
+       
+        infrastructure/
+           storage/
+              device_storage.go            # Existing
+              inbox_storage.go             # NEW: Inbox storage
+              migrations/
+                  001_device_inbox.sql
+          
+           fcm/
+              notifier.go
+          
+           crypto/
+       
+        application/
+            device/
+               register_usecase.go
+               inbox_usecase.go
+               command_usecase.go
+           
+            dto/
+                inbox.go
+                device.go
+
+ web/
+     src/
+         routes/
+            device-page.tsx             # Update with tabs
+        
+         components/
+            device/
+                DeviceInbox.tsx          # NEW: Inbox component
+                DeviceOverview.tsx       # NEW: Overview tab
+                DeviceTelemetry.tsx      # NEW: Telemetry tab
+                DeviceCommands.tsx       # NEW: Commands tab
+                DeviceHistory.tsx        # NEW: History tab
+        
+         lib/
+            api/
+                graphql/
+                   queries.ts          # Update
+                   mutations.ts        # Update
+                   types.ts           # Update
+               
+                rest/
+                    device-client.ts    # NEW: REST fallback
 ```
 
 ---
@@ -216,53 +216,53 @@ apps/
 ### 3.1 Inbox States
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         INBOX STATE MACHINE                         │
-└─────────────────────────────────────────────────────────────────────┘
 
-UNREGISTERED ─────────────────────────────────────────────────────
-     │
-     │  POST /v1/device/inbox (device sends request)
-     ▼
-┌───────────┐     FCM sent to device, awaiting acknowledgment
-│  PENDING  │
-└─────┬─────┘
-      │
-      │  POST /v1/device/inbox/:imei/ack (action=acknowledge)
-      ▼
-┌──────────────┐   Device has seen the request
-│ ACKNOWLEDGED│
-└──────┬───────┘
-       │
-       │  POST /v1/device/inbox/:imei/ack (action=approve)
-       ▼
-┌──────────┐    Server validating, generating commandSecret, FCM push
-│ APPROVING│
-└──────┬───┘
-       │
-       │  (Automatic transition after commandSecret generation)
-       ▼
-┌────────────┐
-│ APPROVED   │ ◄── Device can now call POST /v1/device/confirm
-└─────┬──────┘
-      │
-      │  POST /v1/device/confirm (device confirms)
-      ▼
-┌────────────┐
-│ REGISTERED │ ◄─────────────────────────────────────────────
-└────────────┘
-       │
-       │  (on rejection at any step)
-       ▼
-┌───────────┐
-│ REJECTED  │ ◄── Operator clicks Dismiss
-└───────────┘
-       │
-       │  (auto-cleanup after 30 days)
-       ▼
-┌───────────┐
-│ EXPIRED   │ ◄── No action taken
-└───────────┘
+                         INBOX STATE MACHINE                         
+
+
+UNREGISTERED 
+     
+       POST /v1/device/inbox (device sends request)
+     
+     FCM sent to device, awaiting acknowledgment
+  PENDING  
+
+      
+        POST /v1/device/inbox/:imei/ack (action=acknowledge)
+      
+   Device has seen the request
+ ACKNOWLEDGED
+
+       
+         POST /v1/device/inbox/:imei/ack (action=approve)
+       
+    Server validating, generating commandSecret, FCM push
+ APPROVING
+
+       
+         (Automatic transition after commandSecret generation)
+       
+
+ APPROVED     Device can now call POST /v1/device/confirm
+
+      
+        POST /v1/device/confirm (device confirms)
+      
+
+ REGISTERED  
+
+       
+         (on rejection at any step)
+       
+
+ REJECTED    Operator clicks Dismiss
+
+       
+         (auto-cleanup after 30 days)
+       
+
+ EXPIRED     No action taken
+
 ```
 
 > **Note:** This implements the full 5-state model from SPEC. commandSecret is generated
@@ -271,33 +271,33 @@ UNREGISTERED ──────────────────────�
 ### 3.2 Device States
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         DEVICE STATE MACHINE                        │
-└─────────────────────────────────────────────────────────────────────┘
 
-REGISTERED ─────────────────────────────────────────────────────────
-     │
-     │  First telemetry OR WebSocket connect
-     ▼
-┌─────────┐
-│ ONLINE  │ ◄──────────────────────────────────────────────────
-└────┬────┘
-     │     WebSocket disconnect OR no telemetry for 30s
-     ▼
-┌──────────┐
-│ OFFLINE │
-└────┬─────┘
-     │     WebSocket reconnect OR telemetry received
-     ▼
-┌─────────┐
-│ ONLINE  │
-└────┬────┘
-     │
-     │  DELETE /v1/device/:imei (operator deregisters)
-     ▼
-┌──────────────┐
-│ DEREGISTERED │ ◄── Terminal state
-└──────────────┘
+                         DEVICE STATE MACHINE                        
+
+
+REGISTERED 
+     
+       First telemetry OR WebSocket connect
+     
+
+ ONLINE   
+
+          WebSocket disconnect OR no telemetry for 30s
+     
+
+ OFFLINE 
+
+          WebSocket reconnect OR telemetry received
+     
+
+ ONLINE  
+
+     
+       DELETE /v1/device/:imei (operator deregisters)
+     
+
+ DEREGISTERED   Terminal state
+
 ```
 
 ---
@@ -906,73 +906,73 @@ ALTER TABLE devices ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'offli
 ### 7.1 Layered Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        FRONTEND ARCHITECTURE                        │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      UI LAYER                               │   │
-│  │                   (src/components/)                        │   │
-│  │                                                             │   │
-│  │    Pages, Components, Shared UI                            │   │
-│  │    ONLY renders UI. Uses hooks for everything.              │   │
-│  │    NEVER imports from Data or Domain.                       │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                   PRESENTATION LAYER                        │   │
-│  │                      (src/hooks/)                          │   │
-│  │                                                             │   │
-│  │    Custom hooks that:                                       │   │
-│  │    - Handle UI logic                                        │   │
-│  │    - Transform data for UI                                  │   │
-│  │    - Manage state                                           │   │
-│  │    NEVER renders UI. NEVER imports from UI layer.          │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      DOMAIN LAYER                          │   │
-│  │                     (src/domain/)                          │   │
-│  │                                                             │   │
-│  │    Pure functions that:                                     │   │
-│  │    - Define types and interfaces                           │   │
-│  │    - Transform data (no side effects)                     │   │
-│  │    - Validate input                                         │   │
-│  │    NEVER imports from UI, Presentation, or Data.            │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                       DATA LAYER                           │   │
-│  │                   (src/lib/api/)                           │   │
-│  │                                                             │   │
-│  │    API clients that:                                       │   │
-│  │    - Make HTTP requests                                    │   │
-│  │    - Handle authentication                                  │   │
-│  │    - Parse responses                                       │   │
-│  │    NEVER imports from UI or Presentation.                  │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                        FRONTEND ARCHITECTURE                        
+
+                                                                     
+     
+                        UI LAYER                                  
+                     (src/components/)                           
+                                                                  
+      Pages, Components, Shared UI                               
+      ONLY renders UI. Uses hooks for everything.                 
+      NEVER imports from Data or Domain.                          
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                     PRESENTATION LAYER                           
+                        (src/hooks/)                             
+                                                                  
+      Custom hooks that:                                          
+      - Handle UI logic                                           
+      - Transform data for UI                                     
+      - Manage state                                              
+      NEVER renders UI. NEVER imports from UI layer.             
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                        DOMAIN LAYER                             
+                       (src/domain/)                             
+                                                                  
+      Pure functions that:                                        
+      - Define types and interfaces                              
+      - Transform data (no side effects)                        
+      - Validate input                                            
+      NEVER imports from UI, Presentation, or Data.               
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                         DATA LAYER                              
+                     (src/lib/api/)                              
+                                                                  
+      API clients that:                                          
+      - Make HTTP requests                                       
+      - Handle authentication                                     
+      - Parse responses                                          
+      NEVER imports from UI or Presentation.                     
+     
+                                                                     
+
 ```
 
 ### 7.2 Dependency Rule
 
 ```
-UI Layer ────────► Presentation Layer ────────► Domain ────────► Data Layer
+UI Layer  Presentation Layer  Domain  Data Layer
 (components/)          (hooks/)              (domain/)        (lib/api/)
-     │                     │                      │                 │
-     │                     │                      │                 │
-     └── IMPORTS ─────────┘                      │                 │
-          ONLY FROM                              │                 │
-          HOOKS                                  │                 │
-                                             │                 │
-                                             └── IMPORTS ─────┘
+                                                                 
+                                                                 
+      IMPORTS                                        
+          ONLY FROM                                               
+          HOOKS                                                   
+                                                              
+                                              IMPORTS 
                                                   ONLY FROM
                                                   DOMAIN TYPES
 ```
@@ -985,127 +985,127 @@ UI Layer ────────► Presentation Layer ────────
 
 ```
 apps/web/src/
-│
-├── domain/                              # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
-│   ├── _shared/                      # SHARED domain types
-│   │   ├── domain-pagination.ts    # Pagination types & helpers
-│   │   └── domain-errors.ts        # Domain error types
-│   │
-│   ├── registration/
-│   │   ├── registration-entity.ts   # InboxEntry, InboxStatus
-│   │   ├── registration-mappers.ts # inboxFromRaw(), deviceFromRaw()
-│   │   └── registration-validators.ts # validateIMEI(), validateInboxEntry()
-│   │
-│   └── devices/
-│       ├── device-entity.ts         # Device, DeviceStatus, ConnectionState
-│       └── device-mappers.ts        # deviceFromRaw(), connectionFromRaw()
-│
-├── lib/
-│   └── api/
-│       ├── graphql/
-│       │   ├── _shared/
-│       │   │   └── graphql-client.ts  # GraphQL client setup
-│       │   │
-│       │   ├── registration/
-│       │   │   ├── graphql-registration-queries.ts   # GET_INBOX, GET_INBOX_ENTRY
-│       │   │   ├── graphql-registration-mutations.ts # ACK_INBOX, REGISTER, DEREGISTER
-│       │   │   ├── graphql-registration-fragments.ts # InboxEntry & device fragments
-│       │   │   └── graphql-registration-types.ts     # Raw GraphQL response types
-│       │   │
-│       │   └── devices/
-│       │       ├── graphql-devices-queries.ts   # GET_DEVICES, GET_DEVICE
-│       │       ├── graphql-devices-fragments.ts # Device fragments
-│       │       └── graphql-devices-types.ts     # Raw GraphQL response types
-│       │
-│       └── rest/
-│           ├── _shared/
-│           │   └── rest-client.ts     # Base REST client
-│           └── registration/
-│               └── rest-registration-endpoints.ts  # REST fallback
-│
-├── hooks/                               # PRESENTATION LAYER
-│   │
-│   ├── registration/
-│   │   ├── use-inbox.ts               # Get inbox entries
-│   │   ├── use-inbox-entry.ts         # Single inbox entry
-│   │   ├── use-ack-inbox.ts           # Acknowledge (approve/reject)
-│   │   ├── use-devices.ts             # Device list
-│   │   ├── use-device.ts              # Single device
-│   │   ├── use-device-status.ts       # Device status + connection
-│   │   ├── use-register-device.ts     # Register device
-│   │   ├── use-deregister-device.ts   # Deregister device
-│   │   └── index.ts                  # Barrel export
-│   │
-│   ├── devices/
-│   │   ├── use-device-stream.ts       # (EXISTING - WebSocket)
-│   │   ├── use-device-selected.ts     # Current selected device
-│   │   └── index.ts
-│   │
-│   └── shared/
-│       ├── use-pagination.ts           # Generic pagination
-│       ├── use-search.ts              # Generic search
-│       └── index.ts
-│
-├── components/
-│   │
-│   ├── shared/                        # SHARED UI COMPONENTS
-│   │   ├── section.tsx               # Bordered section
-│   │   ├── section-header.tsx         # Section header
-│   │   ├── empty-state.tsx            # Empty state
-│   │   ├── loading-skeleton.tsx       # Loading skeleton
-│   │   ├── data-table.tsx            # Table wrapper
-│   │   ├── pagination.tsx            # Pagination controls
-│   │   ├── search-input.tsx           # Search input
-│   │   ├── filter-select.tsx          # Filter dropdown
-│   │   ├── status-badge.tsx           # (EXISTING - move here)
-│   │   ├── connection-badge.tsx       # (EXISTING - move here)
-│   │   └── index.ts                  # Barrel export
-│   │
-│   ├── registration/                  # REGISTRATION FEATURE
-│   │   ├── device-inbox.tsx          # Main inbox list
-│   │   ├── inbox-entry-row.tsx       # Single inbox row
-│   │   ├── inbox-filters.tsx         # Status filter controls
-│   │   ├── registration-actions.tsx   # Approve/Reject buttons
-│   │   ├── device-list.tsx           # All registered devices
-│   │   ├── device-card.tsx           # Device card for list
-│   │   ├── device-overview.tsx        # Device overview tab
-│   │   ├── device-telemetry.tsx       # Real-time + charts
-│   │   ├── device-commands.tsx        # Send commands tab
-│   │   ├── device-history.tsx         # Historical data tab
-│   │   ├── connection-status.tsx       # Connection status panel
-│   │   ├── device-tabs.tsx            # Tab navigation
-│   │   └── index.ts                  # Barrel export
-│   │
-│   ├── layout/                       # (EXISTING)
-│   │   ├── app-layout.tsx
-│   │   └── auth-layout.tsx
-│   │
-│   ├── auth/                         # (EXISTING)
-│   │   └── ... (existing auth components)
-│   │
-│   └── ui/                           # (EXISTING - base UI primitives)
-│       ├── button.tsx
-│       ├── badge.tsx
-│       ├── card.tsx
-│       └── ... (shadcn/ui components)
-│
-└── routes/                            # PAGE LAYER (Routes)
-    │
-    ├── __root.tsx                    # (EXISTING)
-    ├── router.tsx                    # (EXISTING)
-    │
-    ├── device-page.tsx             # MODIFIED - add tabs structure
-    ├── device.inbox.tsx             # NEW - /device/inbox (inbox view)
-    ├── device.$imei.tsx             # NEW - /device/:imei (Overview tab)
-    ├── device.$imei.telemetry.tsx  # NEW - /device/:imei/telemetry
-    ├── device.$imei.history.tsx     # NEW - /device/:imei/history
-    ├── device.$imei.commands.tsx   # NEW - /device/:imei/commands
-    │
-    ├── settings.tsx                 # (EXISTING)
-    ├── dashboard.tsx                # (EXISTING)
-    ├── diagnostics.tsx              # (EXISTING)
-    ├── updates.tsx                  # (EXISTING)
-    └── ... (other existing routes)
+
+ domain/                              # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
+    _shared/                      # SHARED domain types
+       domain-pagination.ts    # Pagination types & helpers
+       domain-errors.ts        # Domain error types
+   
+    registration/
+       registration-entity.ts   # InboxEntry, InboxStatus
+       registration-mappers.ts # inboxFromRaw(), deviceFromRaw()
+       registration-validators.ts # validateIMEI(), validateInboxEntry()
+   
+    devices/
+        device-entity.ts         # Device, DeviceStatus, ConnectionState
+        device-mappers.ts        # deviceFromRaw(), connectionFromRaw()
+
+ lib/
+    api/
+        graphql/
+           _shared/
+              graphql-client.ts  # GraphQL client setup
+          
+           registration/
+              graphql-registration-queries.ts   # GET_INBOX, GET_INBOX_ENTRY
+              graphql-registration-mutations.ts # ACK_INBOX, REGISTER, DEREGISTER
+              graphql-registration-fragments.ts # InboxEntry & device fragments
+              graphql-registration-types.ts     # Raw GraphQL response types
+          
+           devices/
+               graphql-devices-queries.ts   # GET_DEVICES, GET_DEVICE
+               graphql-devices-fragments.ts # Device fragments
+               graphql-devices-types.ts     # Raw GraphQL response types
+       
+        rest/
+            _shared/
+               rest-client.ts     # Base REST client
+            registration/
+                rest-registration-endpoints.ts  # REST fallback
+
+ hooks/                               # PRESENTATION LAYER
+   
+    registration/
+       use-inbox.ts               # Get inbox entries
+       use-inbox-entry.ts         # Single inbox entry
+       use-ack-inbox.ts           # Acknowledge (approve/reject)
+       use-devices.ts             # Device list
+       use-device.ts              # Single device
+       use-device-status.ts       # Device status + connection
+       use-register-device.ts     # Register device
+       use-deregister-device.ts   # Deregister device
+       index.ts                  # Barrel export
+   
+    devices/
+       use-device-stream.ts       # (EXISTING - WebSocket)
+       use-device-selected.ts     # Current selected device
+       index.ts
+   
+    shared/
+        use-pagination.ts           # Generic pagination
+        use-search.ts              # Generic search
+        index.ts
+
+ components/
+   
+    shared/                        # SHARED UI COMPONENTS
+       section.tsx               # Bordered section
+       section-header.tsx         # Section header
+       empty-state.tsx            # Empty state
+       loading-skeleton.tsx       # Loading skeleton
+       data-table.tsx            # Table wrapper
+       pagination.tsx            # Pagination controls
+       search-input.tsx           # Search input
+       filter-select.tsx          # Filter dropdown
+       status-badge.tsx           # (EXISTING - move here)
+       connection-badge.tsx       # (EXISTING - move here)
+       index.ts                  # Barrel export
+   
+    registration/                  # REGISTRATION FEATURE
+       device-inbox.tsx          # Main inbox list
+       inbox-entry-row.tsx       # Single inbox row
+       inbox-filters.tsx         # Status filter controls
+       registration-actions.tsx   # Approve/Reject buttons
+       device-list.tsx           # All registered devices
+       device-card.tsx           # Device card for list
+       device-overview.tsx        # Device overview tab
+       device-telemetry.tsx       # Real-time + charts
+       device-commands.tsx        # Send commands tab
+       device-history.tsx         # Historical data tab
+       connection-status.tsx       # Connection status panel
+       device-tabs.tsx            # Tab navigation
+       index.ts                  # Barrel export
+   
+    layout/                       # (EXISTING)
+       app-layout.tsx
+       auth-layout.tsx
+   
+    auth/                         # (EXISTING)
+       ... (existing auth components)
+   
+    ui/                           # (EXISTING - base UI primitives)
+        button.tsx
+        badge.tsx
+        card.tsx
+        ... (shadcn/ui components)
+
+ routes/                            # PAGE LAYER (Routes)
+    
+     __root.tsx                    # (EXISTING)
+     router.tsx                    # (EXISTING)
+    
+     device-page.tsx             # MODIFIED - add tabs structure
+     device.inbox.tsx             # NEW - /device/inbox (inbox view)
+     device.$imei.tsx             # NEW - /device/:imei (Overview tab)
+     device.$imei.telemetry.tsx  # NEW - /device/:imei/telemetry
+     device.$imei.history.tsx     # NEW - /device/:imei/history
+     device.$imei.commands.tsx   # NEW - /device/:imei/commands
+    
+     settings.tsx                 # (EXISTING)
+     dashboard.tsx                # (EXISTING)
+     diagnostics.tsx              # (EXISTING)
+     updates.tsx                  # (EXISTING)
+     ... (other existing routes)
 ```
 
 ---

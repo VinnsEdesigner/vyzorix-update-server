@@ -32,7 +32,7 @@
 ### Issues Found
 | Category | Count | Fixed |
 |----------|-------|-------|
-| Critical Security | 5 | 5 ✅ |
+| Critical Security | 5 | 5  |
 | High Security | 5 | 0 |
 | Code Duplication | 18 | 0 |
 | Performance Issues | 7 | 0 |
@@ -41,29 +41,29 @@
 ### Packages Analyzed
 ```
 apps/api/
-├── internal/
-│   ├── api/handlers/     (13 files, ~180KB)
-│   ├── api/middleware/   (22 files, ~100KB)
-│   ├── auth/             (standalone files)
-│   ├── fcm/              (standalone files)
-│   ├── ws/               (standalone files)
-│   ├── audit/            (standalone files)
-│   ├── metrics/          (standalone files)
-│   └── ssr/              (standalone files)
-├── pkg/
-│   ├── storage/          (11 files, ~96KB)
-│   ├── crypto/           (standalone files)
-│   ├── config/           (standalone files)
-│   ├── logging/          (standalone files)
-│   └── models/           (standalone files)
-└── main.go
+ internal/
+    api/handlers/     (13 files, ~180KB)
+    api/middleware/   (22 files, ~100KB)
+    auth/             (standalone files)
+    fcm/              (standalone files)
+    ws/               (standalone files)
+    audit/            (standalone files)
+    metrics/          (standalone files)
+    ssr/              (standalone files)
+ pkg/
+    storage/          (11 files, ~96KB)
+    crypto/           (standalone files)
+    config/           (standalone files)
+    logging/          (standalone files)
+    models/           (standalone files)
+ main.go
 ```
 
 ---
 
 ## Critical Security Fixes
 
-### Status: ALL FIXED ✅
+### Status: ALL FIXED 
 
 | # | File | Issue | Fix Applied |
 |---|------|-------|-------------|
@@ -80,7 +80,7 @@ apps/api/
 ### 1. `internal/api/middleware/request_signing.go`
 
 **File Size:** 12KB  
-**Priority:** 🔴 CRITICAL  
+**Priority:**  CRITICAL  
 **Current Issues:**
 
 #### 1.1 Duplicated AES-256-GCM Encryption (4 Locations)
@@ -348,7 +348,7 @@ func (s *RequestSigning) Verify(c *gin.Context) error {
 ### 2. `pkg/storage/clients.go`
 
 **File Size:** 15KB  
-**Priority:** 🔴 HIGH  
+**Priority:**  HIGH  
 **Current Issues:**
 
 #### 2.1 Duplicated JSON Unmarshal Pattern (3 Locations)
@@ -424,7 +424,7 @@ func (s *Store) VerifyAPIClientSecret(ctx context.Context, clientID, clientSecre
 ### 3. `pkg/storage/operators.go`
 
 **File Size:** 17KB  
-**Priority:** 🔴 HIGH  
+**Priority:**  HIGH  
 **Current Issues:**
 
 #### 3.1 Update Pattern Repeated 7 Times
@@ -507,7 +507,7 @@ func boolToInt(b bool) int {
 ### 4. `internal/api/handlers/auth_oauth.go`
 
 **File Size:** 10KB  
-**Priority:** 🔴 HIGH  
+**Priority:**  HIGH  
 **Current Issues:**
 
 #### 4.1 OAuth Operator Creation Duplicated (Google vs GitHub)
@@ -615,7 +615,7 @@ func (ac *AuthController) getRoleForNewOperator(ctx context.Context) (models.Rol
 
 ### 5. `internal/api/handlers/auth_password_reset.go`
 
-**Priority:** 🟠 MEDIUM  
+**Priority:**  MEDIUM  
 **Issues:**
 
 #### 5.1 Token Generation Duplicated
@@ -673,7 +673,7 @@ go func() {
 
 ### 6. `internal/api/handlers/auth_email_verify.go`
 
-**Priority:** 🟠 MEDIUM  
+**Priority:**  MEDIUM  
 **Issues:**
 
 #### 6.1 Same Token Generation Issue
@@ -704,7 +704,7 @@ if !ac.emailSvc.IsConfigured() {
 
 ### 7. `internal/api/handlers/auth_mfa.go`
 
-**Priority:** 🟠 MEDIUM  
+**Priority:**  MEDIUM  
 **Issues:**
 
 #### 7.1 MFAHandler Missing Logger
@@ -754,10 +754,10 @@ func (h *MFAHandler) totp() *security.TOTP {
 
 ### 8. `pkg/storage/devices.go`
 
-**Priority:** 🟠 MEDIUM  
+**Priority:**  MEDIUM  
 **Issues:**
 
-#### 8.1 Plaintext Command Secret Stored in DB ⚠️
+#### 8.1 Plaintext Command Secret Stored in DB 
 
 **Current (Lines 86-105):**
 ```go
@@ -843,7 +843,7 @@ func (s *Store) Register(ctx context.Context, req models.RegisterRequest) (Devic
 
 ### 9. Middleware Consolidation (3 files)
 
-**Priority:** 🟠 MEDIUM  
+**Priority:**  MEDIUM  
 **Files:** `user_enum.go`, `user_enum_block.go`, `auth_enum_safe.go`
 
 **Issues:**
@@ -922,7 +922,7 @@ func ComputeFakePasswordHash() {
 
 ### 10. `pkg/storage/uuid.go`
 
-**Priority:** 🟡 LOW  
+**Priority:**  LOW  
 **Issues:**
 
 #### 10.1 hexCharToInt Returns 0 for Invalid Chars
@@ -965,7 +965,7 @@ func hexCharToInt(c rune) (int, error) {
 
 ### 11. `pkg/storage/migrations.go`
 
-**Priority:** 🟡 LOW  
+**Priority:**  LOW  
 **Issues:**
 
 #### 11.1 Silent Error Swallowing
@@ -1005,7 +1005,7 @@ func migrateAddCommandsColumns(db *sql.DB) error {
 
 ### 12. `pkg/storage/sessions.go`
 
-**Priority:** 🟡 LOW  
+**Priority:**  LOW  
 **Issues:**
 
 #### 12.1 N+1 Queries in RevokeAllOperatorSessions
@@ -1070,29 +1070,29 @@ func (s *Store) RevokeAllOperatorSessions(ctx context.Context, operatorID string
 
 ```
 internal/crypto/
-├── aes_gcm.go        # AES-256-GCM encrypt/decrypt
-├── hmac.go           # HMAC-SHA512 operations
-├── replay_cache.go   # Unified replay protection with auto-cleanup
-└── rand.go           # Secure random utilities
+ aes_gcm.go        # AES-256-GCM encrypt/decrypt
+ hmac.go           # HMAC-SHA512 operations
+ replay_cache.go   # Unified replay protection with auto-cleanup
+ rand.go           # Secure random utilities
 ```
 
 ### `internal/auth/` - NEW UTILITIES
 
 ```
 internal/auth/
-├── token.go          # Token generation (GenerateSecureToken)
-├── oauth.go          # OAuth operator creation helpers
-├── enum_safe.go      # User enumeration prevention
-└── errors.go         # Auth-specific errors
+ token.go          # Token generation (GenerateSecureToken)
+ oauth.go          # OAuth operator creation helpers
+ enum_safe.go      # User enumeration prevention
+ errors.go         # Auth-specific errors
 ```
 
 ### `pkg/storage/` - INTERNAL HELPERS
 
 ```
 pkg/storage/
-├── helpers.go        # Shared scanning helpers
-├── transactions.go   # Transaction utilities
-└── cleanup.go        # Background cleanup goroutines
+ helpers.go        # Shared scanning helpers
+ transactions.go   # Transaction utilities
+ cleanup.go        # Background cleanup goroutines
 ```
 
 ---
@@ -1120,28 +1120,28 @@ pkg/storage/
 
 | File | Priority | Issues | Fix Actions |
 |------|----------|--------|-------------|
-| `request_signing.go` | 🔴 CRITICAL | 4 | Extract crypto, split Verify, fix eviction |
-| `clients.go` | 🔴 HIGH | 3 | Extract helpers, add comments |
-| `operators.go` | 🔴 HIGH | 3 | Generic update helper, simplify boolToInt |
-| `auth_oauth.go` | 🔴 HIGH | 3 | Extract OAuth helpers |
-| `auth_password_reset.go` | 🟠 MEDIUM | 3 | Extract token gen, fix context |
-| `auth_email_verify.go` | 🟠 MEDIUM | 3 | Use shared token, fix silent fail |
-| `auth_mfa.go` | 🟠 MEDIUM | 2 | Add logger, cache config |
-| `devices.go` | 🟠 MEDIUM | 3 | Remove plaintext, fix lock |
-| `user_enum*.go` | 🟠 MEDIUM | 2 | Consolidate to enum_safe.go |
-| `uuid.go` | 🟡 LOW | 2 | Fix hexCharToInt error handling |
-| `migrations.go` | 🟡 LOW | 2 | Log errors properly |
-| `sessions.go` | 🟡 LOW | 2 | Bulk INSERT |
-| `rate_limiter.go` | ✅ DONE | 1 | Already fixed with cleanup |
-| `lockout.go` | ✅ DONE | 2 | Already fixed with Argon2id |
-| `command_signer.go` | ✅ DONE | 1 | Already fixed, removed fallback |
+| `request_signing.go` |  CRITICAL | 4 | Extract crypto, split Verify, fix eviction |
+| `clients.go` |  HIGH | 3 | Extract helpers, add comments |
+| `operators.go` |  HIGH | 3 | Generic update helper, simplify boolToInt |
+| `auth_oauth.go` |  HIGH | 3 | Extract OAuth helpers |
+| `auth_password_reset.go` |  MEDIUM | 3 | Extract token gen, fix context |
+| `auth_email_verify.go` |  MEDIUM | 3 | Use shared token, fix silent fail |
+| `auth_mfa.go` |  MEDIUM | 2 | Add logger, cache config |
+| `devices.go` |  MEDIUM | 3 | Remove plaintext, fix lock |
+| `user_enum*.go` |  MEDIUM | 2 | Consolidate to enum_safe.go |
+| `uuid.go` |  LOW | 2 | Fix hexCharToInt error handling |
+| `migrations.go` |  LOW | 2 | Log errors properly |
+| `sessions.go` |  LOW | 2 | Bulk INSERT |
+| `rate_limiter.go` |  DONE | 1 | Already fixed with cleanup |
+| `lockout.go` |  DONE | 2 | Already fixed with Argon2id |
+| `command_signer.go` |  DONE | 1 | Already fixed, removed fallback |
 
 ---
 
 ## Implementation Order
 
 ### Phase 1: Security Hardening (1-2 days)
-1. ✅ ~~Fix 5 critical security issues~~ (DONE)
+1.  ~~Fix 5 critical security issues~~ (DONE)
 2. Create `internal/crypto/` package
 3. Create `internal/auth/` package
 4. Consolidate middleware

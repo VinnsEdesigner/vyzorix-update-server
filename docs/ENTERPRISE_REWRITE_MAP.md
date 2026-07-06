@@ -4,7 +4,7 @@ This document maps all files with basic/simple/insecure implementations that nee
 
 ---
 
-## 🔴 CRITICAL - Security Vulnerabilities
+##  CRITICAL - Security Vulnerabilities
 
 ### 1. `pkg/storage/crypto.go` - Insecure Random Fallback
 
@@ -16,7 +16,7 @@ func randomBytes(b []byte) {
     if _, err := rand.Read(b); err != nil {
         // Fallback - should never happen in practice.
         for i := range b {
-            b[i] = byte(time.Now().UnixNano() & 0xff)  // ⚠️ PREDICTABLE!
+            b[i] = byte(time.Now().UnixNano() & 0xff)  //  PREDICTABLE!
         }
     }
 }
@@ -42,7 +42,7 @@ func randomBytes(b []byte) {
 if _, err := uuidRand.Read(randBytes[:]); err != nil {
     // Fallback to less secure random on error
     for i := range randBytes {
-        randBytes[i] = byte(time.Now().UnixNano() & 0xff)  // ⚠️ PREDICTABLE!
+        randBytes[i] = byte(time.Now().UnixNano() & 0xff)  //  PREDICTABLE!
     }
 }
 ```
@@ -71,7 +71,7 @@ func IsValidPassword(password string) bool {
     // Constant-time validation using XOR (avoids actual hash computation)
     result := 1
     for i := 0; i < len(password); i++ {
-        result ^= int(password[i])  // ⚠️ NOT CRYPTOGRAPHIC!
+        result ^= int(password[i])  //  NOT CRYPTOGRAPHIC!
     }
     return result != 0
 }
@@ -97,7 +97,7 @@ func IsValidPassword(password string) bool {
 if _, err := rand.Read(b); err != nil {
     // Fallback - should never happen in practice
     for i := range b {
-        b[i] = byte(i % 256)  // ⚠️ SEQUENTIAL, NOT RANDOM!
+        b[i] = byte(i % 256)  //  SEQUENTIAL, NOT RANDOM!
     }
 }
 ```
@@ -122,9 +122,9 @@ if _, err := rand.Read(b); err != nil {
 func (s *CommandSigner) fallbackHash(secret string) string {
     salt := make([]byte, 16)
     if _, err := rand.Read(salt); err != nil {
-        salt = []byte(strconv.FormatInt(time.Now().UnixNano(), 10))  // ⚠️ WEAK!
+        salt = []byte(strconv.FormatInt(time.Now().UnixNano(), 10))  //  WEAK!
     }
-    // ⚠️ Uses plain SHA512 without proper key derivation!
+    //  Uses plain SHA512 without proper key derivation!
     mac := sha512.New()
     mac.Write(salt)
     mac.Write([]byte(secret))
@@ -145,7 +145,7 @@ func (s *CommandSigner) fallbackHash(secret string) string {
 
 ---
 
-## 🟡 HIGH - Production Risks
+##  HIGH - Production Risks
 
 ### 6. `internal/api/middleware/rate_limiter.go` - Memory Leak
 
@@ -154,7 +154,7 @@ func (s *CommandSigner) fallbackHash(secret string) string {
 **Current Issue:**
 ```go
 type RateLimiter struct {
-    buckets  map[string]*bucket  // ⚠️ GROWS UNBOUNDED!
+    buckets  map[string]*bucket  //  GROWS UNBOUNDED!
     Capacity int
     Refill   time.Duration
     mu       sync.Mutex
@@ -176,7 +176,7 @@ type RateLimiter struct {
 
 **Current Issue:**
 ```go
-client := &http.Client{Timeout: 10 * time.Second}  // ⚠️ NEW CLIENT PER REQUEST!
+client := &http.Client{Timeout: 10 * time.Second}  //  NEW CLIENT PER REQUEST!
 httpResp, err := client.Do(req)
 ```
 
@@ -195,7 +195,7 @@ httpResp, err := client.Do(req)
 
 **Current Issue:**
 ```go
-specialChars := "!@#$%^&*()_+-="  // ⚠️ INCOMPLETE SET
+specialChars := "!@#$%^&*()_+-="  //  INCOMPLETE SET
 ```
 
 **Risk:** Many commonly allowed special characters are excluded (quotes, backticks, slashes, etc.)
@@ -208,13 +208,13 @@ specialChars := "!@#$%^&*()_+-="  // ⚠️ INCOMPLETE SET
 
 ---
 
-## 🟢 MEDIUM - Code Quality Improvements
+##  MEDIUM - Code Quality Improvements
 
 ### 9. `pkg/crypto/hmac.go` - Non-Standard HMAC Algorithm
 
 **Current Issue:**
 ```go
-mac := hmac.New(sha512.New, []byte(secret))  // ⚠️ SHA512 vs SHA256
+mac := hmac.New(sha512.New, []byte(secret))  //  SHA512 vs SHA256
 ```
 
 **Risk:** HMAC-SHA256 is more standard and efficient for most use cases.
@@ -232,7 +232,7 @@ mac := hmac.New(sha512.New, []byte(secret))  // ⚠️ SHA512 vs SHA256
 **Current Issue:**
 ```go
 func HashOperatorID(operatorID string) string {
-    h := sha512.Sum512([]byte(operatorID))  // ⚠️ SHA512 for simple lookup
+    h := sha512.Sum512([]byte(operatorID))  //  SHA512 for simple lookup
     return hex.EncodeToString(h[:])
 }
 ```
@@ -247,24 +247,24 @@ func HashOperatorID(operatorID string) string {
 
 ---
 
-## 📋 Complete File List with Priority
+##  Complete File List with Priority
 
 | File | Lines | Issue | Priority | Status |
 |------|-------|-------|----------|--------|
-| `pkg/storage/crypto.go` | 176-182 | Insecure random fallback | 🔴 CRITICAL | TODO |
-| `pkg/storage/uuid.go` | 54-61 | Insecure UUID random fallback | 🔴 CRITICAL | TODO |
-| `internal/auth/lockout.go` | 145-158 | Weak fake password validation | 🔴 CRITICAL | TODO |
-| `internal/command_signer.go` | 140-153 | Weak fallback hash | 🔴 CRITICAL | TODO |
-| `internal/auth/lockout.go` | 160-171 | Predictable fake token fallback | 🟡 HIGH | TODO |
-| `internal/api/middleware/rate_limiter.go` | 11-24 | Memory leak - no cleanup | 🟡 HIGH | TODO |
-| `internal/api/handlers/auth_utils.go` | - | Connection pool not reused | 🟡 MEDIUM | TODO |
-| `internal/auth/password.go` | - | Limited special char set | 🟢 LOW | TODO |
-| `pkg/crypto/hmac.go` | - | Non-standard HMAC algorithm | 🟢 LOW | TODO |
-| `internal/auth/session.go` | - | SHA512 overkill for lookups | 🟢 LOW | TODO |
+| `pkg/storage/crypto.go` | 176-182 | Insecure random fallback |  CRITICAL | TODO |
+| `pkg/storage/uuid.go` | 54-61 | Insecure UUID random fallback |  CRITICAL | TODO |
+| `internal/auth/lockout.go` | 145-158 | Weak fake password validation |  CRITICAL | TODO |
+| `internal/command_signer.go` | 140-153 | Weak fallback hash |  CRITICAL | TODO |
+| `internal/auth/lockout.go` | 160-171 | Predictable fake token fallback |  HIGH | TODO |
+| `internal/api/middleware/rate_limiter.go` | 11-24 | Memory leak - no cleanup |  HIGH | TODO |
+| `internal/api/handlers/auth_utils.go` | - | Connection pool not reused |  MEDIUM | TODO |
+| `internal/auth/password.go` | - | Limited special char set |  LOW | TODO |
+| `pkg/crypto/hmac.go` | - | Non-standard HMAC algorithm |  LOW | TODO |
+| `internal/auth/session.go` | - | SHA512 overkill for lookups |  LOW | TODO |
 
 ---
 
-## 📊 Summary Statistics
+##  Summary Statistics
 
 - **Total Files Needing Attention:** 10
 - **Critical Security Issues:** 4
@@ -274,20 +274,20 @@ func HashOperatorID(operatorID string) string {
 
 ---
 
-## ✅ Already Rewritten (Recent Fixes)
+##  Already Rewritten (Recent Fixes)
 
 | File | Issue | Fixed |
 |------|-------|-------|
-| `internal/auth/totp_qr.go` | Simplified QR encoding | ✅ v2.0 |
-| `internal/auth/validate.go` | Basic email regex | ✅ v2.0 |
-| `internal/api/middleware/replay_protection.go` | Fake sorting | ✅ v2.0 |
-| `internal/api/handlers/auth_csrf.go` | Insecure CSRF storage | ✅ v2.0 |
-| `internal/auth/origin.go` | HTTPS enforcement bug | ✅ v2.0 |
-| `internal/api/handlers/server.go` | Placeholder client lookup | ✅ v2.0 |
+| `internal/auth/totp_qr.go` | Simplified QR encoding |  v2.0 |
+| `internal/auth/validate.go` | Basic email regex |  v2.0 |
+| `internal/api/middleware/replay_protection.go` | Fake sorting |  v2.0 |
+| `internal/api/handlers/auth_csrf.go` | Insecure CSRF storage |  v2.0 |
+| `internal/auth/origin.go` | HTTPS enforcement bug |  v2.0 |
+| `internal/api/handlers/server.go` | Placeholder client lookup |  v2.0 |
 
 ---
 
-## 🔧 Rewrite Guidelines
+##  Rewrite Guidelines
 
 ### For Critical Security Issues:
 1. Remove fallback mechanisms entirely

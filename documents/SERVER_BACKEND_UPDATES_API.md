@@ -46,22 +46,22 @@ This document maps out the server-side requirements to support the Updates page 
 ### 1.3 Data Flow
 
 ```
-GitHub Repository (bin/) ──────────────────────┐
-                                            │
-                                            ▼
+GitHub Repository (bin/) 
+                                            
+                                            
                                     Update Server
-                                            │
-    ┌────────────────────────────────────────┤
-    │                                        │
-    ▼                                        ▼
-Versions/Metadata ◄────────────────── GitHub Sync (periodic/webhook)
-    │
-    │ REST/GraphQL
-    ▼
+                                            
+    
+                                            
+                                            
+Versions/Metadata  GitHub Sync (periodic/webhook)
+    
+     REST/GraphQL
+    
 Frontend (Updates Page)
-    │
-    ▼
-Push Update ──────► FCM/WSS ──────► Device
+    
+    
+Push Update  FCM/WSS  Device
 ```
 
 ---
@@ -572,26 +572,26 @@ INSERT INTO update_sync_status (id, status) VALUES ('singleton', 'idle');
 
 ```
 apps/api/internal/
-├── api/
-│   ├── server_routes.go                      # Route registration
-│   └── handlers/
-│       ├── updates/
-│       │   ├── updates_versions_handler.go   # UpdatesVersionsHandler
-│       │   ├── updates_push_handler.go       # UpdatesPushHandler
-│       │   ├── updates_history_handler.go    # UpdatesHistoryHandler
-│       │   ├── updates_sync_handler.go       # UpdatesSyncHandler
-│       │   └── updates_handler.go            # UpdatesHandler
-│       └── updater/
-│           └── update_check.go               # UpdateCheckHandler
-├── application/
-│   └── updates/
-│       └── updates_service.go                # UpdatesService
-├── domain/
-│   └── updates/
-│       └── updates_entity.go                # Update entities
-└── infrastructure/
-    └── storage/
-        └── updates_storage.go               # Updates storage
+ api/
+    server_routes.go                      # Route registration
+    handlers/
+        updates/
+           updates_versions_handler.go   # UpdatesVersionsHandler
+           updates_push_handler.go       # UpdatesPushHandler
+           updates_history_handler.go    # UpdatesHistoryHandler
+           updates_sync_handler.go       # UpdatesSyncHandler
+           updates_handler.go            # UpdatesHandler
+        updater/
+            update_check.go               # UpdateCheckHandler
+ application/
+    updates/
+        updates_service.go                # UpdatesService
+ domain/
+    updates/
+        updates_entity.go                # Update entities
+ infrastructure/
+     storage/
+         updates_storage.go               # Updates storage
 ```
 
 ---

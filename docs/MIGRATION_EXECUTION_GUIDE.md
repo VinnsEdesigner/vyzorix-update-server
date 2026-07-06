@@ -30,13 +30,13 @@ The new clean architecture structure was **designed correctly** but **implemente
 
 | Component | Status | Issue |
 |-----------|--------|-------|
-| Directory Structure | ✅ Complete | - |
-| Repository Interfaces | ✅ Complete | - |
-| Domain Entities | ✅ Complete | - |
-| Infrastructure Layer | ✅ Partial | Incomplete implementations |
-| Application Services | ⚠️ Partial | Missing methods, not wired up |
-| API Handlers | ⚠️ Partial | New handlers exist but old handlers still have working logic |
-| Main.go Wiring | ❌ Incomplete | CommandService never instantiated |
+| Directory Structure |  Complete | - |
+| Repository Interfaces |  Complete | - |
+| Domain Entities |  Complete | - |
+| Infrastructure Layer |  Partial | Incomplete implementations |
+| Application Services |  Partial | Missing methods, not wired up |
+| API Handlers |  Partial | New handlers exist but old handlers still have working logic |
+| Main.go Wiring |  Incomplete | CommandService never instantiated |
 
 ### The Solution
 
@@ -50,168 +50,168 @@ The new clean architecture structure was **designed correctly** but **implemente
 
 ```
 apps/api/
-├── cmd/api/main.go                          ✅ Entry point
-├── internal/
-│   ├── api/
-│   │   ├── server.go                       ✅ Router
-│   │   ├── health_handler.go               ✅ Health
-│   │   ├── handlers/
-│   │   │   ├── auth/                       ✅ NEW handlers (partial)
-│   │   │   │   ├── login.go
-│   │   │   │   ├── register.go
-│   │   │   │   ├── logout.go
-│   │   │   │   ├── me.go
-│   │   │   │   ├── settings.go
-│   │   │   │   ├── admin.go
-│   │   │   │   ├── mfa.go
-│   │   │   │   ├── oauth.go
-│   │   │   │   ├── email_verify.go
-│   │   │   │   ├── password_reset.go
-│   │   │   │   ├── client_credentials.go
-│   │   │   │   └── routes.go
-│   │   │   ├── device/                     ✅ NEW handlers (partial)
-│   │   │   │   ├── register.go
-│   │   │   │   ├── status.go
-│   │   │   │   └── updater.go
-│   │   │   ├── command/                   ✅ NEW handlers (partial)
-│   │   │   │   └── execute.go
-│   │   │   ├── websocket/
-│   │   │   │   └── handler.go
-│   │   │   ├── admin/
-│   │   │   │   └── clients.go
-│   │   │   ├── admin_clients.go           ❌ OLD - needs migration
-│   │   │   ├── auth_core.go               ❌ OLD - needs migration
-│   │   │   ├── auth_email_verify.go        ❌ OLD - needs migration
-│   │   │   ├── auth_mfa.go                ❌ OLD - needs migration
-│   │   │   ├── auth_oauth.go               ❌ OLD - needs migration
-│   │   │   ├── auth_password_reset.go      ❌ OLD - needs migration
-│   │   │   ├── auth_settings.go           ❌ OLD - needs migration
-│   │   │   ├── auth_admin.go              ❌ OLD - needs migration
-│   │   │   ├── auth_csrf.go               ❌ OLD - needs migration
-│   │   │   ├── auth_rate_limit.go         ❌ OLD - needs migration
-│   │   │   ├── auth_utils.go              ❌ OLD - needs migration
-│   │   │   ├── auth_test.go               ❌ OLD - needs migration
-│   │   │   ├── auth_mfa_test.go          ❌ OLD - needs migration
-│   │   │   ├── client_credentials.go       ❌ OLD - needs migration
-│   │   │   ├── command.go                  ❌ OLD - needs migration
-│   │   │   ├── command_test.go            ❌ OLD - needs migration
-│   │   │   ├── device.go                  ❌ OLD - needs migration
-│   │   │   ├── device_test.go            ❌ OLD - needs migration
-│   │   │   ├── health.go                 ❌ OLD - needs migration
-│   │   │   ├── health_handler_test.go    ❌ OLD - needs migration
-│   │   │   ├── health_test.go            ❌ OLD - needs migration
-│   │   │   ├── lockout.go                 ❌ OLD - needs migration
-│   │   │   ├── lockout_test.go           ❌ OLD - needs migration
-│   │   │   ├── rate_limit_test.go        ❌ OLD - needs migration
-│   │   │   ├── server.go                  ❌ OLD - needs migration
-│   │   │   ├── updater.go                ❌ OLD - needs migration
-│   │   │   └── websocket_handler.go       ❌ OLD - needs migration
-│   │   │   └── websocket_handler_test.go ❌ OLD - needs migration
-│   │   └── middleware/                   ✅ Middleware (complete)
-│   ├── application/                      ⚠️ Services (partial)
-│   │   ├── auth/
-│   │   │   ├── service.go               ⚠️ Missing session management
-│   │   │   └── password.go
-│   │   ├── device/
-│   │   │   └── service.go               ⚠️ Missing LastSeen, Count, pagination
-│   │   ├── command/
-│   │   │   └── service.go               ⚠️ NOT WIRED in main.go!
-│   │   ├── client/
-│   │   │   └── service.go
-│   │   ├── dto/
-│   │   │   ├── auth.go
-│   │   │   └── device.go
-│   │   ├── shared/
-│   │   │   └── token.go
-│   │   └── errors.go
-│   ├── domain/                           ✅ Domain (complete)
-│   │   ├── errors.go
-│   │   ├── operator/
-│   │   │   ├── entity.go
-│   │   │   └── repository.go
-│   │   ├── device/
-│   │   │   ├── entity.go
-│   │   │   └── repository.go
-│   │   ├── session/
-│   │   │   ├── entity.go
-│   │   │   └── repository.go
-│   │   ├── command/
-│   │   │   ├── entity.go
-│   │   │   └── repository.go
-│   │   ├── client/
-│   │   │   ├── entity.go
-│   │   │   └── repository.go
-│   │   ├── email_verification/
-│   │   │   └── entity.go
-│   │   ├── password_reset/
-│   │   │   └── entity.go
-│   │   └── auth/
-│   │       └── enum_safe.go
-│   ├── infrastructure/                   ⚠️ Infrastructure (partial)
-│   │   ├── storage/
-│   │   │   ├── sqlite.go
-│   │   │   ├── operator.go
-│   │   │   ├── device.go
-│   │   │   ├── session.go
-│   │   │   ├── command.go
-│   │   │   ├── client.go
-│   │   │   ├── email_verification.go
-│   │   │   └── password_reset.go
-│   │   ├── crypto/
-│   │   │   ├── aes_gcm.go
-│   │   │   └── replay_cache.go
-│   │   ├── auth/
-│   │   │   └── argon2_hasher.go
-│   │   └── email/
-│   │       └── service.go
-│   ├── ws/
-│   │   ├── hub.go
-│   │   └── client.go
-│   ├── fcm/
-│   │   ├── fcm.go
-│   │   └── notifier.go
-│   ├── auth/
-│   │   ├── jwt.go
-│   │   ├── session.go
-│   │   ├── lockout.go
-│   │   ├── password.go
-│   │   ├── totp.go
-│   │   ├── origin.go
-│   │   └── ...
-│   ├── email.go
-│   ├── email_test.go
-│   ├── command_signer.go
-│   ├── command_signer_test.go
-│   ├── audit/
-│   ├── metrics/
-│   └── ssr/
-├── pkg/                                   ⚠️ Legacy (to be cleaned)
-│   ├── storage/                          ❌ DUPLICATE - old storage
-│   │   ├── store.go
-│   │   ├── operators.go
-│   │   ├── devices.go
-│   │   ├── sessions.go
-│   │   ├── commands.go
-│   │   ├── clients.go
-│   │   ├── settings.go
-│   │   ├── migrations.go
-│   │   ├── crypto.go
-│   │   ├── uuid.go
-│   │   └── telemetry.go
-│   ├── models/                          ❌ DUPLICATE - old models
-│   │   ├── auth.go
-│   │   ├── device.go
-│   │   ├── command.go
-│   │   ├── response.go
-│   │   ├── telemetry.go
-│   │   └── updater.go
-│   ├── crypto/
-│   │   └── hmac.go
-│   ├── config/
-│   │   └── ...
-│   └── logging/
-│       └── ...
-└── public/                               ✅ Static assets
+ cmd/api/main.go                           Entry point
+ internal/
+    api/
+       server.go                        Router
+       health_handler.go                Health
+       handlers/
+          auth/                        NEW handlers (partial)
+             login.go
+             register.go
+             logout.go
+             me.go
+             settings.go
+             admin.go
+             mfa.go
+             oauth.go
+             email_verify.go
+             password_reset.go
+             client_credentials.go
+             routes.go
+          device/                      NEW handlers (partial)
+             register.go
+             status.go
+             updater.go
+          command/                    NEW handlers (partial)
+             execute.go
+          websocket/
+             handler.go
+          admin/
+             clients.go
+          admin_clients.go            OLD - needs migration
+          auth_core.go                OLD - needs migration
+          auth_email_verify.go         OLD - needs migration
+          auth_mfa.go                 OLD - needs migration
+          auth_oauth.go                OLD - needs migration
+          auth_password_reset.go       OLD - needs migration
+          auth_settings.go            OLD - needs migration
+          auth_admin.go               OLD - needs migration
+          auth_csrf.go                OLD - needs migration
+          auth_rate_limit.go          OLD - needs migration
+          auth_utils.go               OLD - needs migration
+          auth_test.go                OLD - needs migration
+          auth_mfa_test.go           OLD - needs migration
+          client_credentials.go        OLD - needs migration
+          command.go                   OLD - needs migration
+          command_test.go             OLD - needs migration
+          device.go                   OLD - needs migration
+          device_test.go             OLD - needs migration
+          health.go                  OLD - needs migration
+          health_handler_test.go     OLD - needs migration
+          health_test.go             OLD - needs migration
+          lockout.go                  OLD - needs migration
+          lockout_test.go            OLD - needs migration
+          rate_limit_test.go         OLD - needs migration
+          server.go                   OLD - needs migration
+          updater.go                 OLD - needs migration
+          websocket_handler.go        OLD - needs migration
+          websocket_handler_test.go  OLD - needs migration
+       middleware/                    Middleware (complete)
+    application/                       Services (partial)
+       auth/
+          service.go                Missing session management
+          password.go
+       device/
+          service.go                Missing LastSeen, Count, pagination
+       command/
+          service.go                NOT WIRED in main.go!
+       client/
+          service.go
+       dto/
+          auth.go
+          device.go
+       shared/
+          token.go
+       errors.go
+    domain/                            Domain (complete)
+       errors.go
+       operator/
+          entity.go
+          repository.go
+       device/
+          entity.go
+          repository.go
+       session/
+          entity.go
+          repository.go
+       command/
+          entity.go
+          repository.go
+       client/
+          entity.go
+          repository.go
+       email_verification/
+          entity.go
+       password_reset/
+          entity.go
+       auth/
+           enum_safe.go
+    infrastructure/                    Infrastructure (partial)
+       storage/
+          sqlite.go
+          operator.go
+          device.go
+          session.go
+          command.go
+          client.go
+          email_verification.go
+          password_reset.go
+       crypto/
+          aes_gcm.go
+          replay_cache.go
+       auth/
+          argon2_hasher.go
+       email/
+           service.go
+    ws/
+       hub.go
+       client.go
+    fcm/
+       fcm.go
+       notifier.go
+    auth/
+       jwt.go
+       session.go
+       lockout.go
+       password.go
+       totp.go
+       origin.go
+       ...
+    email.go
+    email_test.go
+    command_signer.go
+    command_signer_test.go
+    audit/
+    metrics/
+    ssr/
+ pkg/                                    Legacy (to be cleaned)
+    storage/                           DUPLICATE - old storage
+       store.go
+       operators.go
+       devices.go
+       sessions.go
+       commands.go
+       clients.go
+       settings.go
+       migrations.go
+       crypto.go
+       uuid.go
+       telemetry.go
+    models/                           DUPLICATE - old models
+       auth.go
+       device.go
+       command.go
+       response.go
+       telemetry.go
+       updater.go
+    crypto/
+       hmac.go
+    config/
+       ...
+    logging/
+        ...
+ public/                                Static assets
 ```
 
 ---
@@ -254,15 +254,15 @@ Make the new structure actually usable. Wire up what's been created but not conn
 **Current main.go creates**:
 ```go
 // Created:
-authService        ✅
-deviceService      ✅
-clientService     ✅
-emailSvc          ✅
-fcmNotifier       ✅
-wsHub             ✅
+authService        
+deviceService      
+clientService     
+emailSvc          
+fcmNotifier       
+wsHub             
 
 // NOT Created:
-commandService    ❌ MISSING
+commandService     MISSING
 ```
 
 **Action Required**:
@@ -474,11 +474,11 @@ Then modify `SendCommand` to:
 
 | Task | File | Status |
 |------|------|--------|
-| 0.1 | Wire CommandService in main.go | ⬜ TODO |
-| 0.2 | Complete DeviceService methods | ⬜ TODO |
-| 0.3 | Complete AuthService session | ⬜ TODO |
-| 0.4 | Add missing command endpoints | ⬜ TODO |
-| 0.5 | Add FCM/Hub to CommandService | ⬜ TODO |
+| 0.1 | Wire CommandService in main.go |  TODO |
+| 0.2 | Complete DeviceService methods |  TODO |
+| 0.3 | Complete AuthService session |  TODO |
+| 0.4 | Add missing command endpoints |  TODO |
+| 0.5 | Add FCM/Hub to CommandService |  TODO |
 
 **Phase 0 is complete when**:
 - `CommandService` is wired in main.go
@@ -498,11 +498,11 @@ Full command functionality in new structure. Switch routes when verified.
 **NEW handler**: `internal/api/handlers/command/execute.go` - 114 lines (incomplete)
 
 **OLD has endpoints**:
-- `POST /v1/device/:id/command` - SendCommand ✅
-- `GET /v1/command/:dispatchId/status` - GetCommandStatus ❌
-- `POST /v1/command/:dispatchId/retry` - RetryCommand ❌
-- `GET /v1/device/:id/commands/pending` - GetPendingCommands ❌
-- `DELETE /v1/command/:dispatchId` - CancelCommand ❌
+- `POST /v1/device/:id/command` - SendCommand 
+- `GET /v1/command/:dispatchId/status` - GetCommandStatus 
+- `POST /v1/command/:dispatchId/retry` - RetryCommand 
+- `GET /v1/device/:id/commands/pending` - GetPendingCommands 
+- `DELETE /v1/command/:dispatchId` - CancelCommand 
 
 ### Tasks
 
@@ -809,13 +809,13 @@ Full device functionality in new structure. Switch routes when verified.
 **NEW handler directory**: `internal/api/handlers/device/` - 3 files (incomplete)
 
 **OLD has endpoints**:
-- `POST /v1/device/register` - Register ✅ (new exists)
-- `GET /v1/device/:id/status` - Status ✅ (new exists)
-- `PATCH /v1/device/:id/fcm-token` - UpdateFCMToken ✅ (new exists)
-- `DELETE /v1/device/:id` - Delete ✅ (new exists)
-- `GET /v1/dashboard/devices` - List with pagination ❌ MISSING in new
-- `GET /v1/device/:id` - GetDevice ❌ MISSING in new
-- `GET /v1/device/count` - Count ❌ MISSING in new
+- `POST /v1/device/register` - Register  (new exists)
+- `GET /v1/device/:id/status` - Status  (new exists)
+- `PATCH /v1/device/:id/fcm-token` - UpdateFCMToken  (new exists)
+- `DELETE /v1/device/:id` - Delete  (new exists)
+- `GET /v1/dashboard/devices` - List with pagination  MISSING in new
+- `GET /v1/device/:id` - GetDevice  MISSING in new
+- `GET /v1/device/count` - Count  MISSING in new
 
 ### Tasks
 
@@ -1066,16 +1066,16 @@ Full auth functionality in new structure. This is the most complex domain.
 - `auth_admin.go` - Admin operations
 
 **NEW handlers** (partially complete):
-- `auth/login.go` ✅
-- `auth/register.go` ✅
-- `auth/logout.go` ✅
-- `auth/me.go` ✅
-- `auth/email_verify.go` ⚠️ (needs completion)
-- `auth/password_reset.go` ⚠️ (needs completion)
-- `auth/mfa.go` ⚠️ (needs completion)
-- `auth/oauth.go` ⚠️ (needs completion)
-- `auth/settings.go` ⚠️ (needs completion)
-- `auth/admin.go` ✅ (ListOperators only)
+- `auth/login.go` 
+- `auth/register.go` 
+- `auth/logout.go` 
+- `auth/me.go` 
+- `auth/email_verify.go`  (needs completion)
+- `auth/password_reset.go`  (needs completion)
+- `auth/mfa.go`  (needs completion)
+- `auth/oauth.go`  (needs completion)
+- `auth/settings.go`  (needs completion)
+- `auth/admin.go`  (ListOperators only)
 
 ### Tasks
 
@@ -1269,34 +1269,34 @@ Remove duplicate/old code once everything is verified working.
 
 ```
 internal/api/handlers/
-├── admin_clients.go           # Replaced by handlers/admin/clients.go
-├── auth_core.go              # Replaced by handlers/auth/
-├── auth_email_verify.go      # Replaced by handlers/auth/email_verify.go
-├── auth_mfa.go               # Replaced by handlers/auth/mfa.go
-├── auth_oauth.go             # Replaced by handlers/auth/oauth.go
-├── auth_password_reset.go    # Replaced by handlers/auth/password_reset.go
-├── auth_settings.go          # Replaced by handlers/auth/settings.go
-├── auth_admin.go             # Replaced by handlers/auth/admin.go
-├── auth_csrf.go              # Logic moved to middleware
-├── auth_rate_limit.go        # Logic moved to middleware
-├── auth_utils.go             # Utility functions distributed
-├── auth_test.go              # Tests moved to new locations
-├── auth_mfa_test.go          # Tests moved to new locations
-├── client_credentials.go     # Replaced by handlers/auth/client_credentials.go
-├── command.go                # Replaced by handlers/command/
-├── command_test.go           # Tests moved to new location
-├── device.go                 # Replaced by handlers/device/
-├── device_test.go           # Tests moved to new location
-├── health.go                 # Replaced by health_handler.go
-├── health_handler_test.go   # Tests moved to new location
-├── health_test.go          # Tests moved to new location
-├── lockout.go               # Logic moved to middleware/auth/lockout.go
-├── lockout_test.go         # Tests moved
-├── rate_limit_test.go      # Tests moved
-├── server.go                # Logic moved to server.go (api package)
-├── updater.go              # Logic moved to handlers/device/updater.go
-├── websocket_handler.go     # Replaced by handlers/websocket/handler.go
-└── websocket_handler_test.go # Tests moved
+ admin_clients.go           # Replaced by handlers/admin/clients.go
+ auth_core.go              # Replaced by handlers/auth/
+ auth_email_verify.go      # Replaced by handlers/auth/email_verify.go
+ auth_mfa.go               # Replaced by handlers/auth/mfa.go
+ auth_oauth.go             # Replaced by handlers/auth/oauth.go
+ auth_password_reset.go    # Replaced by handlers/auth/password_reset.go
+ auth_settings.go          # Replaced by handlers/auth/settings.go
+ auth_admin.go             # Replaced by handlers/auth/admin.go
+ auth_csrf.go              # Logic moved to middleware
+ auth_rate_limit.go        # Logic moved to middleware
+ auth_utils.go             # Utility functions distributed
+ auth_test.go              # Tests moved to new locations
+ auth_mfa_test.go          # Tests moved to new locations
+ client_credentials.go     # Replaced by handlers/auth/client_credentials.go
+ command.go                # Replaced by handlers/command/
+ command_test.go           # Tests moved to new location
+ device.go                 # Replaced by handlers/device/
+ device_test.go           # Tests moved to new location
+ health.go                 # Replaced by health_handler.go
+ health_handler_test.go   # Tests moved to new location
+ health_test.go          # Tests moved to new location
+ lockout.go               # Logic moved to middleware/auth/lockout.go
+ lockout_test.go         # Tests moved
+ rate_limit_test.go      # Tests moved
+ server.go                # Logic moved to server.go (api package)
+ updater.go              # Logic moved to handlers/device/updater.go
+ websocket_handler.go     # Replaced by handlers/websocket/handler.go
+ websocket_handler_test.go # Tests moved
 ```
 
 ---
@@ -1307,17 +1307,17 @@ internal/api/handlers/
 
 ```
 pkg/storage/
-├── clients.go              # Replaced by internal/infrastructure/storage/client.go
-├── commands.go             # Replaced by internal/infrastructure/storage/command.go
-├── crypto.go              # Replaced by internal/infrastructure/crypto/
-├── devices.go              # Replaced by internal/infrastructure/storage/device.go
-├── migrations.go           # Keep or move to internal/infrastructure/storage/migrations/
-├── operators.go            # Replaced by internal/infrastructure/storage/operator.go
-├── sessions.go             # Replaced by internal/infrastructure/storage/session.go
-├── settings.go             # Replaced by domain repositories
-├── store.go               # Replaced by internal/infrastructure/storage/sqlite.go
-├── telemetry.go            # May not be needed
-└── uuid.go                # Replaced by internal/application/shared/
+ clients.go              # Replaced by internal/infrastructure/storage/client.go
+ commands.go             # Replaced by internal/infrastructure/storage/command.go
+ crypto.go              # Replaced by internal/infrastructure/crypto/
+ devices.go              # Replaced by internal/infrastructure/storage/device.go
+ migrations.go           # Keep or move to internal/infrastructure/storage/migrations/
+ operators.go            # Replaced by internal/infrastructure/storage/operator.go
+ sessions.go             # Replaced by internal/infrastructure/storage/session.go
+ settings.go             # Replaced by domain repositories
+ store.go               # Replaced by internal/infrastructure/storage/sqlite.go
+ telemetry.go            # May not be needed
+ uuid.go                # Replaced by internal/application/shared/
 
 # ALSO DELETE pkg/models/ (all files) - replaced by internal/domain/
 ```

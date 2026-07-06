@@ -3,14 +3,14 @@
 
 cd "$(dirname "$0")/.."
 
-echo "╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗"
-echo "║                    COMPREHENSIVE LOGIC SCAN: ALL OLD vs NEW STRUCTURE                                          ║"
-echo "╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝"
+echo ""
+echo "                    COMPREHENSIVE LOGIC SCAN: ALL OLD vs NEW STRUCTURE                                          "
+echo ""
 echo ""
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "1. OLD LOGIC FILES (excluding handlers - being phased out)"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
 echo "pkg/config/ (Configuration Logic):"
@@ -79,56 +79,56 @@ if [ -f "internal/command_signer.go" ]; then
 fi
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "2. MIGRATION STATUS BY FILE"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
-echo "┌────────────────────────────────────────────────┬────────────────────────────────────────┐"
-echo "│ OLD File                                        │ NEW Location                            │"
-echo "├────────────────────────────────────────────────┼────────────────────────────────────────┤"
+echo ""
+echo " OLD File                                         NEW Location                            "
+echo ""
 
 # Config
-echo "│ pkg/config/config.go                           │ internal/infrastructure/config/ (TODO) │"
+echo " pkg/config/config.go                            internal/infrastructure/config/ (TODO) "
 
 # Crypto
-echo "│ pkg/crypto/hmac.go                             │ internal/infrastructure/crypto/verifier.go ✅ │"
+echo " pkg/crypto/hmac.go                              internal/infrastructure/crypto/verifier.go  "
 
 # Logging
-echo "│ pkg/logging/redactor.go                        │ internal/infrastructure/logging/ (TODO)│"
-echo "│ pkg/logging/structured.go                      │ internal/infrastructure/logging/ (TODO)│"
+echo " pkg/logging/redactor.go                         internal/infrastructure/logging/ (TODO)"
+echo " pkg/logging/structured.go                       internal/infrastructure/logging/ (TODO)"
 
 # Models - all migrated
-echo "│ pkg/models/auth.go                             │ internal/domain/operator/ ✅            │"
-echo "│ pkg/models/device.go                           │ internal/domain/device/ ✅            │"
-echo "│ pkg/models/command.go                          │ internal/domain/command/ ✅           │"
-echo "│ pkg/models/telemetry.go                        │ internal/domain/telemetry/ ✅          │"
-echo "│ pkg/models/updater.go                          │ internal/domain/updater/ ✅           │"
-echo "│ pkg/models/response.go                         │ internal/api/responses/ ✅            │"
+echo " pkg/models/auth.go                              internal/domain/operator/             "
+echo " pkg/models/device.go                            internal/domain/device/             "
+echo " pkg/models/command.go                           internal/domain/command/            "
+echo " pkg/models/telemetry.go                         internal/domain/telemetry/           "
+echo " pkg/models/updater.go                           internal/domain/updater/            "
+echo " pkg/models/response.go                          internal/api/responses/             "
 
 # Storage - all migrated
-echo "│ pkg/storage/clients.go                         │ internal/infrastructure/storage/client.go ✅ │"
-echo "│ pkg/storage/commands.go                       │ internal/infrastructure/storage/command.go ✅ │"
-echo "│ pkg/storage/crypto.go                          │ internal/infrastructure/auth/argon2_hasher.go ✅ │"
-echo "│ pkg/storage/devices.go                         │ internal/infrastructure/storage/device.go ✅ │"
-echo "│ pkg/storage/operators.go                       │ internal/infrastructure/storage/operator.go ✅ │"
-echo "│ pkg/storage/sessions.go                        │ internal/infrastructure/storage/session.go ✅ │"
-echo "│ pkg/storage/settings.go                        │ internal/infrastructure/storage/ ✅ │"
-echo "│ pkg/storage/telemetry.go                       │ internal/infrastructure/storage/telemetry.go ✅ │"
-echo "│ pkg/storage/uuid.go                            │ internal/infrastructure/uuid/uuid.go ✅ │"
+echo " pkg/storage/clients.go                          internal/infrastructure/storage/client.go  "
+echo " pkg/storage/commands.go                        internal/infrastructure/storage/command.go  "
+echo " pkg/storage/crypto.go                           internal/infrastructure/auth/argon2_hasher.go  "
+echo " pkg/storage/devices.go                          internal/infrastructure/storage/device.go  "
+echo " pkg/storage/operators.go                        internal/infrastructure/storage/operator.go  "
+echo " pkg/storage/sessions.go                         internal/infrastructure/storage/session.go  "
+echo " pkg/storage/settings.go                         internal/infrastructure/storage/  "
+echo " pkg/storage/telemetry.go                        internal/infrastructure/storage/telemetry.go  "
+echo " pkg/storage/uuid.go                             internal/infrastructure/uuid/uuid.go  "
 
 # Email
-echo "│ internal/email.go                              │ internal/infrastructure/email/service.go ✅ │"
+echo " internal/email.go                               internal/infrastructure/email/service.go  "
 
 # Command signer
-echo "│ internal/command_signer.go                     │ internal/infrastructure/crypto/command_signer.go ✅ │"
-
-echo "└────────────────────────────────────────────────┴────────────────────────────────────────┘"
+echo " internal/command_signer.go                      internal/infrastructure/crypto/command_signer.go  "
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+echo ""
+echo ""
 echo "3. MISSING MIGRATIONS (Logic not in NEW structure)"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
 # Check what is truly missing
@@ -136,24 +136,24 @@ MISSING=""
 
 # Config
 if [ ! -d "internal/infrastructure/config" ]; then
-    echo "❌ pkg/config/ - No infrastructure/config equivalent"
+    echo " pkg/config/ - No infrastructure/config equivalent"
     MISSING="yes"
 fi
 
 # Logging
 if [ ! -d "internal/infrastructure/logging" ]; then
-    echo "❌ pkg/logging/ - No infrastructure/logging equivalent"
+    echo " pkg/logging/ - No infrastructure/logging equivalent"
     MISSING="yes"
 fi
 
 if [ -z "$MISSING" ]; then
-    echo "✅ All core logic has been migrated!"
+    echo " All core logic has been migrated!"
 fi
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "4. VALIDATION: Check NEW structure completeness"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
 echo "NEW infrastructure/ contents:"
@@ -170,37 +170,37 @@ for dir in internal/infrastructure/*/; do
 done
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo "5. NEW STRUCTURE: internal/infrastructure/"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 echo ""
 
-echo "✅ auth/           - Argon2idHasher, HashPassword, VerifyPassword"
-echo "✅ crypto/         - AES-GCM, CommandSigner, ReplayCache, Verifier"
-echo "✅ email/          - Email Service"
-echo "✅ storage/        - Client, Command, Device, EmailVerification, Operator, PasswordReset, Session, Telemetry"
-echo "✅ uuid/           - UUIDv7 Generator"
-echo "⚠️  config/        - NOT MIGRATED (legacy - env loading)"
-echo "⚠️  logging/       - NOT MIGRATED (legacy - structured logging)"
+echo " auth/           - Argon2idHasher, HashPassword, VerifyPassword"
+echo " crypto/         - AES-GCM, CommandSigner, ReplayCache, Verifier"
+echo " email/          - Email Service"
+echo " storage/        - Client, Command, Device, EmailVerification, Operator, PasswordReset, Session, Telemetry"
+echo " uuid/           - UUIDv7 Generator"
+echo "  config/        - NOT MIGRATED (legacy - env loading)"
+echo "  logging/       - NOT MIGRATED (legacy - structured logging)"
 
 echo ""
-echo "═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════"
-echo "📊 SUMMARY"
-echo "═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════"
+echo ""
+echo " SUMMARY"
+echo ""
 echo ""
 echo "Core Logic Migration:"
-echo "  ✅ Domain Models: 38 types migrated"
-echo "  ✅ Storage: 100 Repository methods migrated"
-echo "  ✅ Crypto: NonceCache, Verifier, CommandSigner migrated"
-echo "  ✅ Auth: HashPassword, VerifyPassword migrated"
-echo "  ✅ Email: EmailService migrated"
-echo "  ✅ UUID: UUIDv7 Generator migrated"
+echo "   Domain Models: 38 types migrated"
+echo "   Storage: 100 Repository methods migrated"
+echo "   Crypto: NonceCache, Verifier, CommandSigner migrated"
+echo "   Auth: HashPassword, VerifyPassword migrated"
+echo "   Email: EmailService migrated"
+echo "   UUID: UUIDv7 Generator migrated"
 echo ""
 echo "Pending Migration:"
-echo "  ⚠️  pkg/config/ - Configuration loading (env-based)"
-echo "  ⚠️  pkg/logging/ - Structured logging (slog wrapper)"
+echo "    pkg/config/ - Configuration loading (env-based)"
+echo "    pkg/logging/ - Structured logging (slog wrapper)"
 echo ""
 echo "Handler Status (PHASED OUT - NOT MIGRATED):"
 echo "  - 92 handler files in internal/api/handlers/ (being replaced)"
 echo ""
-echo "═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════"
+echo ""
