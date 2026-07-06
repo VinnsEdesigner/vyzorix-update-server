@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	apikeydomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	"github.com/gin-gonic/gin"
@@ -11,12 +12,16 @@ import (
 
 // SuperAdminHandler handles super admin API key endpoints.
 type SuperAdminHandler struct {
-	service *apikeyapp.APIKeyService
+	service     *apikeyapp.APIKeyService
+	auditLogger *audit.Logger
 }
 
 // NewSuperAdminHandler creates a new super admin API key handler.
-func NewSuperAdminHandler(service *apikeyapp.APIKeyService) *SuperAdminHandler {
-	return &SuperAdminHandler{service: service}
+func NewSuperAdminHandler(service *apikeyapp.APIKeyService, auditLogger *audit.Logger) *SuperAdminHandler {
+	return &SuperAdminHandler{
+		service:     service,
+		auditLogger: auditLogger,
+	}
 }
 
 // RegisterRoutes registers the super admin API key routes.
@@ -80,7 +85,8 @@ func (h *SuperAdminHandler) GetOperatorKeys(c *gin.Context) {
 func (h *SuperAdminHandler) ForceRevokeKey(c *gin.Context) {
 	keyID := c.Param("keyId")
 
-	err := h.service.ForceRevokeKey(c.Request.Context(), keyID)
+	// Get key info for audit before revoking
+	key, err := h.service.GetKey(c.Request.Context(), "", keyID)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{
@@ -88,6 +94,28 @@ func (h *SuperAdminHandler) ForceRevokeKey(c *gin.Context) {
 			"message": err.Error(),
 		})
 		return
+	}
+
+	err = h.service.ForceRevokeKey(c.Request.Context(), keyID)
+	if err != nil {
+		status := apikeydomain.HTTPStatusCode(err)
+		c.JSON(status, gin.H{
+			"error":   apikeydomain.ErrorCode(err),
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Audit log force revocation by super admin
+	if h.auditLogger != nil {
+		h.auditLogger.APIKeyRevoked(
+			c.Request.Context(),
+			key.OperatorID,
+			keyID,
+			key.Name,
+			c.ClientIP(),
+			c.GetHeader("User-Agent"),
+		)
 	}
 
 	c.Status(http.StatusNoContent)

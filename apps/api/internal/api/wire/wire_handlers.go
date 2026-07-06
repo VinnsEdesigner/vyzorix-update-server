@@ -200,8 +200,8 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 
 	// API Keys handlers
 	if deps.APIKeyService != nil {
-		hs.APIKeys = authapikeyshandlers.NewHandler(deps.APIKeyService)
-		hs.SuperAdminAPIKeys = adminkeyshandlers.NewSuperAdminHandler(deps.APIKeyService)
+		hs.APIKeys = authapikeyshandlers.NewHandler(deps.APIKeyService, deps.AuditLogger)
+		hs.SuperAdminAPIKeys = adminkeyshandlers.NewSuperAdminHandler(deps.APIKeyService, deps.AuditLogger)
 	}
 
 	return hs

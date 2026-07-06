@@ -178,8 +178,8 @@ func NewServer(cfg *ServerConfig) *Server {
 
 	// Initialize API keys handler
 	if cfg.APIKeyService != nil {
-		s.apiKeysHandler = authapikeyshandlers.NewHandler(cfg.APIKeyService)
-		s.superAdminAPIKeys = adminkeyshandlers.NewSuperAdminHandler(cfg.APIKeyService)
+		s.apiKeysHandler = authapikeyshandlers.NewHandler(cfg.APIKeyService, cfg.AuditLogger)
+		s.superAdminAPIKeys = adminkeyshandlers.NewSuperAdminHandler(cfg.APIKeyService, cfg.AuditLogger)
 	}
 
 	// Start Hub if available
