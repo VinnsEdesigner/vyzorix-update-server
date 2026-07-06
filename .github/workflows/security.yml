@@ -56,6 +56,7 @@ jobs:
       - name: Run GoSec
         run: |
           cd apps/api
+          go install github.com/securego/gosec/v2@latest
           gosec -no-fail -fmt json -out=gosec-results.json ./...
 
       - name: Run golangci-lint
@@ -151,7 +152,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'ghcr.io/${{ github.repository_owner_lowercase }}/vyzorix-update-server/vyzorix:latest'
+          image-ref: 'ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -212,7 +213,7 @@ jobs:
     name: Build Container
     runs-on: ubuntu-latest
     outputs:
-      image: ghcr.io/${{ github.repository_owner_lowercase }}/vyzorix-update-server/vyzorix:latest
+      image: ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -231,6 +232,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: false
-          tags: ghcr.io/${{ github.repository_owner_lowercase }}/vyzorix-update-server/vyzorix:latest
+          tags: ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
