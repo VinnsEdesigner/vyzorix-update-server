@@ -43,7 +43,7 @@ find . -name "*.go" -type f -exec sed -i -E 's/^[[:space:]]*\/\/[[:space:]]*$//'
 # Clean up multiple empty lines that may have been created
 find . -name "*.go" -type f -exec sed -i -E '/^$/N;/^\n$/D' {} \;
 
-echo -e "${GREEN}✓ Linter suppression comments removed${NC}"
+echo -e "${GREEN} Linter suppression comments removed${NC}"
 echo ""
 echo "Review the changes with:"
 echo "  git diff --stat"

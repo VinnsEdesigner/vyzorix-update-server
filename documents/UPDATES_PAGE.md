@@ -67,12 +67,12 @@ GitHub Repository -> Update Server -> Frontend (Updates Page)
 
 ```
 /updates
-├── Status      -> Current state, sync status
-├── Versions    -> All available versions
-├── Push        -> Push updates to devices
-├── Changelog   -> Release notes
-├── Export      -> Export version data
-└── History     -> Past updates
+ Status      -> Current state, sync status
+ Versions    -> All available versions
+ Push        -> Push updates to devices
+ Changelog   -> Release notes
+ Export      -> Export version data
+ History     -> Past updates
 ```
 
 ---
@@ -117,63 +117,63 @@ UI Layer (components/) -> Presentation Layer (hooks/) -> Domain Layer (domain/) 
 ```
 apps/web/src/
 |
-├── domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
-|   ├── _shared/                   # SHARED domain types
-|   |   ├── domain-pagination.ts  # Pagination types
-|   |   └── domain-errors.ts      # Domain error types
+ domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
+|    _shared/                   # SHARED domain types
+|   |    domain-pagination.ts  # Pagination types
+|   |    domain-errors.ts      # Domain error types
 |   |
-|   └── updates/
-|       ├── updates-entity.ts      # Version, Changelog, UpdatePush types
-|       ├── updates-mappers.ts     # versionFromAPI() transformations
-|       └── updates-validators.ts # validateVersion()
+|    updates/
+|        updates-entity.ts      # Version, Changelog, UpdatePush types
+|        updates-mappers.ts     # versionFromAPI() transformations
+|        updates-validators.ts # validateVersion()
 |
-├── lib/api/
-|   └── graphql/
-|       ├── updates/
-|       |   ├── graphql-updates-queries.ts     # GET_VERSIONS, GET_CHANGELOG, etc.
-|       |   ├── graphql-updates-mutations.ts  # PUSH_UPDATE, CANCEL_UPDATE
-|       |   ├── graphql-updates-fragments.ts  # Reusable fragments
-|       |   └── graphql-updates-types.ts      # Raw GraphQL response types
-|       └── _shared/
-|           └── graphql-client.ts   # GraphQL client setup
+ lib/api/
+|    graphql/
+|        updates/
+|       |    graphql-updates-queries.ts     # GET_VERSIONS, GET_CHANGELOG, etc.
+|       |    graphql-updates-mutations.ts  # PUSH_UPDATE, CANCEL_UPDATE
+|       |    graphql-updates-fragments.ts  # Reusable fragments
+|       |    graphql-updates-types.ts      # Raw GraphQL response types
+|        _shared/
+|            graphql-client.ts   # GraphQL client setup
 |
-├── hooks/                           # PRESENTATION LAYER
-|   ├── updates/
-|   |   ├── use-versions.ts
-|   |   ├── use-changelog.ts
-|   |   ├── use-push-update.ts
-|   |   ├── use-update-history.ts
-|   |   └── use-sync-status.ts
-|   └── _shared/
-|       └── use-pagination.ts
+ hooks/                           # PRESENTATION LAYER
+|    updates/
+|   |    use-versions.ts
+|   |    use-changelog.ts
+|   |    use-push-update.ts
+|   |    use-update-history.ts
+|   |    use-sync-status.ts
+|    _shared/
+|        use-pagination.ts
 |
-├── components/                      # UI LAYER
-|   ├── shared/                    # Shared UI components
-|   |   ├── section.tsx
-|   |   ├── section-header.tsx
-|   |   ├── empty-state.tsx
-|   |   ├── loading-skeleton.tsx
-|   |   ├── data-table.tsx
-|   |   ├── pagination.tsx
-|   |   ├── status-badge.tsx
-|   |   └── tab-nav.tsx
+ components/                      # UI LAYER
+|    shared/                    # Shared UI components
+|   |    section.tsx
+|   |    section-header.tsx
+|   |    empty-state.tsx
+|   |    loading-skeleton.tsx
+|   |    data-table.tsx
+|   |    pagination.tsx
+|   |    status-badge.tsx
+|   |    tab-nav.tsx
 |   |
-|   └── updates/                   # Updates feature components
-|       ├── version-card.tsx
-|       ├── version-badge.tsx
-|       ├── push-form.tsx
-|       ├── device-select.tsx
-|       ├── changelog-entry.tsx
-|       └── update-history-card.tsx
+|    updates/                   # Updates feature components
+|        version-card.tsx
+|        version-badge.tsx
+|        push-form.tsx
+|        device-select.tsx
+|        changelog-entry.tsx
+|        update-history-card.tsx
 |
-└── routes/                         # PAGE LAYER (Routes)
-    ├── updates.tsx                # Main layout
-    ├── updates.status.tsx
-    ├── updates.versions.tsx
-    ├── updates.push.tsx
-    ├── updates.changelog.tsx
-    ├── updates.export.tsx
-    └── updates.history.tsx
+ routes/                         # PAGE LAYER (Routes)
+     updates.tsx                # Main layout
+     updates.status.tsx
+     updates.versions.tsx
+     updates.push.tsx
+     updates.changelog.tsx
+     updates.export.tsx
+     updates.history.tsx
 ```
 
 ---

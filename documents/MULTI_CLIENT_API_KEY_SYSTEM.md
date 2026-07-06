@@ -95,62 +95,62 @@ Different endpoint types use different authentication methods. API keys (databas
 ### 2.2 Request Flow
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    REQUEST INCOMING                          │
-└───────────────────────┬─────────────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│              IS PATH /health OR /v1/auth/* OR               │
-│              /v1/device/public/* ?                          │
-│  if YES → Allow (PUBLIC)                                   │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ No
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│              IS PATH /healthz OR /metrics OR                │
-│              /admin/* OR /internal/* ?                     │
-│  if YES → Check Env API Key                                │
-│           if valid → Allow                                 │
-│           if invalid → 401                                │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ No
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│              IS PATH /bin/* OR /v1/dashboard/* OR          │
-│              /v1/api-keys/* OR /api/v1/apk/* ?            │
-│  if YES → Check Session Cookie                             │
-│           if valid → Allow                                 │
-│           if invalid → 401                                │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ No
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│              IS PATH /v1/device/:imei/command OR             │
-│              /v1/device/:imei/fcm-token ?                    │
-│  if YES → Check HMAC Signature                            │
-│           if valid → Allow                                 │
-│           if invalid → 401                                │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ No
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│              DEFAULT: TENANT OPERATIONS                     │
-│              Check Session Cookie OR API Key                │
-│              if valid → Check Scope (GET/POST/DELETE)      │
-│              if valid_session → Allow                      │
-│              if valid_api_key → ScopeEnforcementMiddleware  │
-│                  → Allow if scope sufficient                │
-│                  → 403 if scope insufficient                │
-│              else → 401                                   │
-└─────────────────────────────────────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│              RATE LIMIT CHECK (for API key requests)         │
-│              100 req/min per key                            │
-│              if exceeded → 429 Too Many Requests             │
-└─────────────────────────────────────────────────────────────┘
+
+                    REQUEST INCOMING                          
+
+                        
+                        
+
+              IS PATH /health OR /v1/auth/* OR               
+              /v1/device/public/* ?                          
+  if YES → Allow (PUBLIC)                                   
+
+                         No
+                        
+
+              IS PATH /healthz OR /metrics OR                
+              /admin/* OR /internal/* ?                     
+  if YES → Check Env API Key                                
+           if valid → Allow                                 
+           if invalid → 401                                
+
+                         No
+                        
+
+              IS PATH /bin/* OR /v1/dashboard/* OR          
+              /v1/api-keys/* OR /api/v1/apk/* ?            
+  if YES → Check Session Cookie                             
+           if valid → Allow                                 
+           if invalid → 401                                
+
+                         No
+                        
+
+              IS PATH /v1/device/:imei/command OR             
+              /v1/device/:imei/fcm-token ?                    
+  if YES → Check HMAC Signature                            
+           if valid → Allow                                 
+           if invalid → 401                                
+
+                         No
+                        
+
+              DEFAULT: TENANT OPERATIONS                     
+              Check Session Cookie OR API Key                
+              if valid → Check Scope (GET/POST/DELETE)      
+              if valid_session → Allow                      
+              if valid_api_key → ScopeEnforcementMiddleware  
+                  → Allow if scope sufficient                
+                  → 403 if scope insufficient                
+              else → 401                                   
+
+                        
+                        
+
+              RATE LIMIT CHECK (for API key requests)         
+              100 req/min per key                            
+              if exceeded → 429 Too Many Requests             
+
 ```
 
 ---
@@ -192,86 +192,86 @@ Different endpoint types use different authentication methods. API keys (databas
 ### 4.1 System Components
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Client Apps                          │
-│   (Web App, iOS App, Android App, 3rd Party, etc.)      │
-└─────────────────────┬───────────────────────────────────────┘
-                      │ X-API-Key: vxyz_xxx...
-                      ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   API Gateway Layer                          │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │           CombinedAPIKeyMiddleware                  │   │
-│  │  ┌─────────────┐  ┌─────────────────────────────┐  │   │
-│  │  │ EnvVarKeys  │  │ DatabaseKeys (DBLookup)     │  │   │
-│  │  │ (Infra)     │  │ (Tenant)                    │  │   │
-│  │  └─────────────┘  └─────────────────────────────┘  │   │
-│  │                                                      │   │
-│  │  ┌─────────────────────────────────────────────┐  │   │
-│  │  │       ScopeEnforcementMiddleware            │  │   │
-│  │  │  GET → read scope                          │  │   │
-│  │  │  POST/PUT/PATCH → write scope             │  │   │
-│  │  │  DELETE → admin scope                      │  │   │
-│  │  └─────────────────────────────────────────────┘  │   │
-│  │                                                      │   │
-│  │  ┌─────────────────────────────────────────────┐  │   │
-│  │  │       RateLimitMiddleware                   │  │   │
-│  │  │  100 req/min per key                       │  │   │
-│  │  └─────────────────────────────────────────────┘  │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      Handlers                               │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │           APIKeyManagementHandler                   │   │
-│  │  - CreateKey, ListKeys, UpdateKey, RevokeKey      │   │
-│  │  - RotateKey, GetKey                               │   │
-│  │  - Requires authenticated session (cookie)         │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                              │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │           SuperAdminAPIKeyHandler                   │   │
-│  │  - ListAllKeys, GetOperatorKeys, ForceRevoke       │   │
-│  │  - GetGlobalStats, GetOperatorStats                 │   │
-│  │  - Requires super_admin role                        │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+
+                        Client Apps                          
+   (Web App, iOS App, Android App, 3rd Party, etc.)      
+
+                       X-API-Key: vxyz_xxx...
+                      
+
+                   API Gateway Layer                          
+     
+             CombinedAPIKeyMiddleware                     
+           
+     EnvVarKeys     DatabaseKeys (DBLookup)          
+     (Infra)        (Tenant)                         
+           
+                                                           
+         
+           ScopeEnforcementMiddleware                 
+      GET → read scope                               
+      POST/PUT/PATCH → write scope                  
+      DELETE → admin scope                           
+         
+                                                           
+         
+           RateLimitMiddleware                        
+      100 req/min per key                            
+         
+     
+
+                      
+                      
+
+                      Handlers                               
+     
+             APIKeyManagementHandler                      
+    - CreateKey, ListKeys, UpdateKey, RevokeKey         
+    - RotateKey, GetKey                                  
+    - Requires authenticated session (cookie)            
+     
+                                                              
+     
+             SuperAdminAPIKeyHandler                      
+    - ListAllKeys, GetOperatorKeys, ForceRevoke          
+    - GetGlobalStats, GetOperatorStats                    
+    - Requires super_admin role                           
+     
+
 ```
 
 ### 4.2 Middleware Stack (Order)
 
 ```
 Request
-   │
-   ▼
-┌──────────────────────┐
-│ Global Middleware    │ (CORS, Logger, etc.)
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ API Key Auth         │ ←── CombinedAPIKeyAuth
-│ (Env or DB lookup)  │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Scope Enforcement    │ ←── Only for tenant API key auth
-│ (read/write/admin)   │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Rate Limit           │ ←── 100 req/min per key
-│ (Redis or memory)    │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│ Handler              │
-└──────────────────────┘
+   
+   
+
+ Global Middleware     (CORS, Logger, etc.)
+
+           
+           
+
+ API Key Auth          ← CombinedAPIKeyAuth
+ (Env or DB lookup)  
+
+           
+           
+
+ Scope Enforcement     ← Only for tenant API key auth
+ (read/write/admin)   
+
+           
+           
+
+ Rate Limit            ← 100 req/min per key
+ (Redis or memory)    
+
+           
+           
+
+ Handler              
+
 ```
 
 ---

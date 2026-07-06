@@ -86,70 +86,70 @@ This document maps out the server-side requirements to support the Device Regist
 ### 3.1 Full Registration Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        DEVICE REGISTRATION FLOW                        │
-└─────────────────────────────────────────────────────────────────────┘
+
+                        DEVICE REGISTRATION FLOW                        
+
 
   DEVICE                          SERVER                         OPERATOR
-    │                               │                                │
-    │  1. POST /v1/device/inbox   │                                │
-    │  {imei, model, manufacturer, fcmToken, firebaseInstallId}    │
-    │──────────────────────────────►│                                │
-    │                               │                                │
-    │                               │  Store in INBOX               │
-    │                               │  Status: pending              │
-    │                               │                                │
-    │                               │                                │  2. GET /v1/device/inbox
-    │                               │◄─────────────────────────────│
-    │                               │  [pending requests]            │
-    │                               │                                │
-    │                               │                                │  3. POST /v1/device/inbox/:imei/ack
-    │                               │◄─────────────────────────────│
-    │                               │  {action: "approve"}          │
-    │                               │                                │
-    │                               │  Generate commandSecret       │
-    │                               │  Send FCM push with secret    │
-    │                               │  Update status: approved      │
-    │                               │                                │
-    │  4. FCM push received        │                                │
-    │  {commandSecret, approved}   │                                │
-    │◄──────────────────────────────│                                │
-    │                               │                                │
-    │  Store commandSecret locally  │                                │
-    │                               │                                │
-    │  5. POST /v1/device/confirm  │                                │
-    │  {imei, commandSecret}        │                                │
-    │───────────────────────────────►│                                │
-    │                               │                                │
-    │                               │  Validate commandSecret        │
-    │                               │  Move to DEVICES table        │
-    │                               │  Status: registered           │
-    │                               │                                │
-    │  6. 200 OK                   │                                │
-    │◄──────────────────────────────│                                │
-    │                               │                                │
+                                                                   
+      1. POST /v1/device/inbox                                   
+      {imei, model, manufacturer, fcmToken, firebaseInstallId}    
+                                    
+                                                                   
+                                     Store in INBOX               
+                                     Status: pending              
+                                                                   
+                                                                     2. GET /v1/device/inbox
+                                   
+                                     [pending requests]            
+                                                                   
+                                                                     3. POST /v1/device/inbox/:imei/ack
+                                   
+                                     {action: "approve"}          
+                                                                   
+                                     Generate commandSecret       
+                                     Send FCM push with secret    
+                                     Update status: approved      
+                                                                   
+      4. FCM push received                                        
+      {commandSecret, approved}                                   
+                                    
+                                                                   
+      Store commandSecret locally                                  
+                                                                   
+      5. POST /v1/device/confirm                                  
+      {imei, commandSecret}                                        
+                                    
+                                                                   
+                                     Validate commandSecret        
+                                     Move to DEVICES table        
+                                     Status: registered           
+                                                                   
+      6. 200 OK                                                   
+                                    
+                                                                   
 ```
 
 ### 3.2 Deregistration Flow
 
 ```
   DEVICE                          SERVER                         OPERATOR
-    │                               │                                │
-    │                               │                                │  1. DELETE /v1/device/:imei
-    │                               │◄─────────────────────────────│
-    │                               │                                │
-    │                               │  Mark as deregistered          │
-    │                               │  (soft delete - 30 day retention)│
-    │                               │                                │
-    │                               │                                │
-    │  2. Next command fails       │                                │
-    │  (FCM returns error)        │                                │
-    │◄──────────────────────────────│                                │
-    │                               │                                │
-    │  3. Device re-registers       │                                │
-    │  (if needed)                 │                                │
-    │───────────────────────────────►│                                │
-    │                               │                                │
+                                                                   
+                                                                     1. DELETE /v1/device/:imei
+                                   
+                                                                   
+                                     Mark as deregistered          
+                                     (soft delete - 30 day retention)
+                                                                   
+                                                                   
+      2. Next command fails                                       
+      (FCM returns error)                                        
+                                    
+                                                                   
+      3. Device re-registers                                       
+      (if needed)                                                 
+                                    
+                                                                   
 ```
 
 ---
@@ -481,47 +481,47 @@ CREATE INDEX idx_registration_logs_device ON registration_logs(device_id, create
 
 ```
 apps/api/internal/
-├── api/
-│   ├── server_routes.go                # Route registration
-│   ├── api_server.go                   # Server setup
-│   ├── wire/
-│   │   ├── providers.go               # Dependency providers
-│   │   └── wire_handlers.go           # Handler wiring
-│   └── handlers/
-│       ├── inbox/
-│       │   ├── inbox_handler.go        # InboxHandler
-│       │   └── inbox_routes.go        # (included in handler)
-│       ├── device/
-│       │   ├── devices_handler.go      # DevicesHandler (GetDevices, GetDeviceDetail)
-│       │   ├── device_list.go          # ListHandler (Count)
-│       │   ├── device_updater.go       # UpdaterHandler (Delete, Update)
-│       │   ├── device_confirm.go       # ConfirmHandler
-│       │   ├── device_register.go      # RegisterHandler
-│       │   ├── dev_status.go          # StatusHandler
-│       │   ├── device_logs_handler.go  # LogsHandler
-│       │   ├── device_metrics_handler.go # MetricsHandler
-│       │   └── device_telemetry_handler.go # TelemetryHandler
-│       ├── websocket/
-│       │   ├── websocket_handler.go    # StreamHandler
-│       │   ├── stream_message.go       # MessageRouter
-│       │   ├── websocket_presenter.go  # WebSocket presenter
-│       │   └── websocket_stream.go    # HTTP→WS upgrade
-│       └── ...
-├── application/
-│   ├── inbox/
-│   │   └── inbox_service.go           # InboxService
-│   └── device/
-│       └── device_service.go           # DeviceService
-├── domain/
-│   ├── inbox/
-│   │   ├── inbox_entity.go             # InboxEntry, InboxListResponse
-│   │   └── inbox_repository.go        # Repository interface
-│   └── device/
-│       ├── device_entity.go           # Device entity
-│       └── device_repository.go        # Repository interface
-└── infrastructure/
-    └── storage/
-        └── device_storage.go           # Storage implementation
+ api/
+    server_routes.go                # Route registration
+    api_server.go                   # Server setup
+    wire/
+       providers.go               # Dependency providers
+       wire_handlers.go           # Handler wiring
+    handlers/
+        inbox/
+           inbox_handler.go        # InboxHandler
+           inbox_routes.go        # (included in handler)
+        device/
+           devices_handler.go      # DevicesHandler (GetDevices, GetDeviceDetail)
+           device_list.go          # ListHandler (Count)
+           device_updater.go       # UpdaterHandler (Delete, Update)
+           device_confirm.go       # ConfirmHandler
+           device_register.go      # RegisterHandler
+           dev_status.go          # StatusHandler
+           device_logs_handler.go  # LogsHandler
+           device_metrics_handler.go # MetricsHandler
+           device_telemetry_handler.go # TelemetryHandler
+        websocket/
+           websocket_handler.go    # StreamHandler
+           stream_message.go       # MessageRouter
+           websocket_presenter.go  # WebSocket presenter
+           websocket_stream.go    # HTTP→WS upgrade
+        ...
+ application/
+    inbox/
+       inbox_service.go           # InboxService
+    device/
+        device_service.go           # DeviceService
+ domain/
+    inbox/
+       inbox_entity.go             # InboxEntry, InboxListResponse
+       inbox_repository.go        # Repository interface
+    device/
+        device_entity.go           # Device entity
+        device_repository.go        # Repository interface
+ infrastructure/
+     storage/
+         device_storage.go           # Storage implementation
 ```
 
 

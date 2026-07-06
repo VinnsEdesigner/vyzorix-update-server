@@ -547,43 +547,43 @@ CREATE INDEX idx_notification_audit_type ON notification_audit_log(event_type, s
 
 ```
 apps/api/internal/
-├── api/
-│   ├── handlers/
-│   │   ├── auth/
-│   │   │   ├── auth_handler.go       # EXISTS
-│   │   │   └── auth_settings_handler.go   # MODIFIED - settings handlers
-│   │   ├── operator/
-│   │   │   ├── operator_handler.go   # EXISTS
-│   │   │   ├── operator_thresholds_handler.go  # NEW - threshold handlers
-│   │   │   └── operator_notifications_handler.go  # NEW - notification handlers
-│   │   └── router.go               # MODIFIED
-│   └── middleware/
-│       └── ...
-├── application/
-│   ├── auth/
-│   │   ├── auth_service.go         # EXISTS
-│   │   └── auth_settings_service.go # NEW - settings service
-│   ├── operator/
-│   │   ├── operator_service.go      # EXISTS
-│   │   └── operator_settings_service.go  # NEW - threshold/notification service
-│   └── dto/
-│       └── settings_dto.go          # NEW - settings DTOs
-├── domain/
-│   ├── auth/
-│   │   └── session.go              # EXISTS
-│   ├── operator/
-│   │   ├── operator_entity.go       # EXISTS
-│   │   ├── operator_settings.go     # NEW - settings entity
-│   │   └── operator_repository.go   # EXISTS - add settings methods
-│   └── errors.go                   # EXISTS
-├── infrastructure/
-│   ├── storage/
-│   │   ├── operator_storage.go     # EXISTS - add settings
-│   │   ├── notification_storage.go # NEW - notification audit
-│   │   └── migrations/
-│   │       └── 001_operator_settings.sql
-│   └── webhook/
-│       └── webhook_client.go        # NEW - webhook testing
+ api/
+    handlers/
+       auth/
+          auth_handler.go       # EXISTS
+          auth_settings_handler.go   # MODIFIED - settings handlers
+       operator/
+          operator_handler.go   # EXISTS
+          operator_thresholds_handler.go  # NEW - threshold handlers
+          operator_notifications_handler.go  # NEW - notification handlers
+       router.go               # MODIFIED
+    middleware/
+        ...
+ application/
+    auth/
+       auth_service.go         # EXISTS
+       auth_settings_service.go # NEW - settings service
+    operator/
+       operator_service.go      # EXISTS
+       operator_settings_service.go  # NEW - threshold/notification service
+    dto/
+        settings_dto.go          # NEW - settings DTOs
+ domain/
+    auth/
+       session.go              # EXISTS
+    operator/
+       operator_entity.go       # EXISTS
+       operator_settings.go     # NEW - settings entity
+       operator_repository.go   # EXISTS - add settings methods
+    errors.go                   # EXISTS
+ infrastructure/
+    storage/
+       operator_storage.go     # EXISTS - add settings
+       notification_storage.go # NEW - notification audit
+       migrations/
+           001_operator_settings.sql
+    webhook/
+        webhook_client.go        # NEW - webhook testing
 ```
 
 ---

@@ -21,9 +21,9 @@ type diSpec struct{endpoints map[string]diEndpoint}
 type diImpl struct{paths, domain, infra, application, routes map[string]bool; methods map[string][]string}
 
 func verifyDiagnostics() bool {
-	fmt.Println("\n╔══════════════════════════════════════════════════════════════════════════════╗")
-	fmt.Println("║  SERVER_BACKEND_DIAGNOSTICS_API.md VERIFICATION                         ║")
-	fmt.Println("╚══════════════════════════════════════════════════════════════════════════════╝")
+	fmt.Println("\n")
+	fmt.Println("  SERVER_BACKEND_DIAGNOSTICS_API.md VERIFICATION                         ")
+	fmt.Println("")
 	root := "/workspace/project/vyzorix-update-server"
 	spec := diLoadSpec()
 	impl := diScanImpl(root)
@@ -36,14 +36,14 @@ func verifyDiagnostics() bool {
 	diVerifySchema(spec, root)
 	pass := atomic.LoadUint64(&diagPassCount)
 	fail := atomic.LoadUint64(&diagFailCount)
-	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  VERIFICATION SUMMARY")
-	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n\n    Checks Passed:      %d", pass)
 	fmt.Printf("\n    Checks Failed:      %d", fail)
 	fmt.Printf("\n\n")
-	if fail == 0 { fmt.Printf("\n  ✅ ALL DIAGNOSTICS API CHECKS PASSED!")
-	} else { fmt.Printf("\n  ❌ SOME DIAGNOSTICS API CHECKS FAILED") }
+	if fail == 0 { fmt.Printf("\n   ALL DIAGNOSTICS API CHECKS PASSED!")
+	} else { fmt.Printf("\n   SOME DIAGNOSTICS API CHECKS FAILED") }
 	fmt.Printf("\n")
 	return fail == 0
 }
@@ -99,14 +99,14 @@ func diCollectGoAST(content string, collect map[string]bool) {
 }
 
 func diVerifyEndpoints(spec *diSpec, impl *diImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  ENDPOINT VERIFICATION (Section 3)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	routeContent := diGetRouteContent(root)
 	found := 0
 	for _, ep := range spec.endpoints {
 		registered := diCheckEndpoint(ep, routeContent, impl, root)
-		if registered { fmt.Printf("    ✅ %s %s\n", ep.Method, ep.Path); atomic.AddUint64(&diagPassCount, 1); found++ } else { fmt.Printf("    ❌ %s %s - NOT REGISTERED\n", ep.Method, ep.Path); atomic.AddUint64(&diagFailCount, 1) }
+		if registered { fmt.Printf("     %s %s\n", ep.Method, ep.Path); atomic.AddUint64(&diagPassCount, 1); found++ } else { fmt.Printf("     %s %s - NOT REGISTERED\n", ep.Method, ep.Path); atomic.AddUint64(&diagFailCount, 1) }
 	}
 	fmt.Printf("\n    Registered endpoints: %d/%d\n", found, len(spec.endpoints))
 }
@@ -129,9 +129,9 @@ func diGetRouteContent(root string) string {
 }
 
 func diVerifyHandlers(spec *diSpec, _ *diImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  HANDLER VERIFICATION (Section 6)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	handlerPath := filepath.Join(root, "apps/api/internal/api/handlers/diagnostics")
 	for _, f := range []string{"diagnostics_inspect_handler.go", "diagnostics_timeline_handler.go"} {
 		fp := handlerPath + "/" + f
@@ -139,60 +139,60 @@ func diVerifyHandlers(spec *diSpec, _ *diImpl, root string) {
 			data, _ := os.ReadFile(fp)
 			methodCount := 0
 			for _, ep := range spec.endpoints { if strings.Contains(string(data), ep.HandlerFunc) { methodCount++ } }
-			fmt.Printf("    ✅ handlers/diagnostics/%s\n", f)
+			fmt.Printf("     handlers/diagnostics/%s\n", f)
 			atomic.AddUint64(&diagPassCount, 1)
 			if methodCount > 0 { fmt.Printf("      (%d methods found)\n", methodCount) }
-		} else { fmt.Printf("    ❌ handlers/diagnostics/%s - NOT FOUND\n", f); atomic.AddUint64(&diagFailCount, 1) }
+		} else { fmt.Printf("     handlers/diagnostics/%s - NOT FOUND\n", f); atomic.AddUint64(&diagFailCount, 1) }
 	}
 }
 
 func diVerifyDomain(_ *diSpec, _ *diImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION (Section 5)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	domainPath := filepath.Join(root, "apps/api/internal/domain/device")
-	if _, err := os.Stat(domainPath); err == nil { fmt.Printf("    ✅ domain/device/ (parent exists)\n"); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("    ❌ domain/device/ - DIRECTORY NOT FOUND\n"); atomic.AddUint64(&diagFailCount, 1) }
+	if _, err := os.Stat(domainPath); err == nil { fmt.Printf("     domain/device/ (parent exists)\n"); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("     domain/device/ - DIRECTORY NOT FOUND\n"); atomic.AddUint64(&diagFailCount, 1) }
 	for _, f := range []string{"diagnostics_inspect_handler.go", "diagnostics_timeline_handler.go"} {
 		fp := filepath.Join(root, "apps/api/internal/api/handlers/diagnostics", f)
-		if _, err := os.Stat(fp); err == nil { fmt.Printf("      ✅ %s\n", f); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("      ❌ Missing: %s\n", f); atomic.AddUint64(&diagFailCount, 1) }
+		if _, err := os.Stat(fp); err == nil { fmt.Printf("       %s\n", f); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("       Missing: %s\n", f); atomic.AddUint64(&diagFailCount, 1) }
 	}
 }
 
 func diVerifyInfra(_ *diSpec, _ *diImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  INFRASTRUCTURE VERIFICATION (Section 5)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	infraPath := filepath.Join(root, "apps/api/internal/infrastructure/storage")
-	if _, err := os.Stat(infraPath); err == nil { fmt.Printf("    ✅ infrastructure/storage/\n"); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("    ❌ infrastructure/storage/ - NOT FOUND\n"); atomic.AddUint64(&diagFailCount, 1) }
+	if _, err := os.Stat(infraPath); err == nil { fmt.Printf("     infrastructure/storage/\n"); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("     infrastructure/storage/ - NOT FOUND\n"); atomic.AddUint64(&diagFailCount, 1) }
 }
 
 func diVerifyApplication(_ *diSpec, _ *diImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  APPLICATION LAYER VERIFICATION (Section 7)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	appPath := filepath.Join(root, "apps/api/internal/application/diagnostics")
-	if _, err := os.Stat(appPath); err == nil { fmt.Printf("    ✅ application/diagnostics/\n"); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("    ❌ application/diagnostics/ - DIRECTORY NOT FOUND\n"); atomic.AddUint64(&diagFailCount, 1) }
+	if _, err := os.Stat(appPath); err == nil { fmt.Printf("     application/diagnostics/\n"); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("     application/diagnostics/ - DIRECTORY NOT FOUND\n"); atomic.AddUint64(&diagFailCount, 1) }
 }
 
 func diVerifyRoutes(_ *diSpec, _ *diImpl, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  ROUTE REGISTRATION VERIFICATION")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	routePath := filepath.Join(root, "apps/api/internal/api/handlers/diagnostics/diagnostics_routes.go")
-	if _, err := os.Stat(routePath); err == nil { fmt.Printf("    ✅ diagnostics/diagnostics_routes.go\n"); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("    ❌ diagnostics/diagnostics_routes.go - NOT FOUND\n"); atomic.AddUint64(&diagFailCount, 1) }
+	if _, err := os.Stat(routePath); err == nil { fmt.Printf("     diagnostics/diagnostics_routes.go\n"); atomic.AddUint64(&diagPassCount, 1) } else { fmt.Printf("     diagnostics/diagnostics_routes.go - NOT FOUND\n"); atomic.AddUint64(&diagFailCount, 1) }
 }
 
 func diVerifySchema(_ *diSpec, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 4)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 	schemaFound := false
 	if err := filepath.Walk(filepath.Join(root, "apps/api/internal/domain"), func(p string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() { return err }
 		if strings.Contains(p, "timeline") || strings.Contains(p, "diagnostics") {
-			if _, err := os.Stat(p); err == nil { data, _ := os.ReadFile(p); if strings.Contains(string(data), "Timeline") || strings.Contains(string(data), "timeline") { fmt.Printf("    ✅ Timeline schema defined in: %s\n", filepath.Base(p)); schemaFound = true; atomic.AddUint64(&diagPassCount, 1); return nil } }
+			if _, err := os.Stat(p); err == nil { data, _ := os.ReadFile(p); if strings.Contains(string(data), "Timeline") || strings.Contains(string(data), "timeline") { fmt.Printf("     Timeline schema defined in: %s\n", filepath.Base(p)); schemaFound = true; atomic.AddUint64(&diagPassCount, 1); return nil } }
 		}
 		return nil
 	}); err != nil { return }
-	if !schemaFound { fmt.Printf("    ⚠️  Timeline schema not found in domain files\n") }
+	if !schemaFound { fmt.Printf("      Timeline schema not found in domain files\n") }
 }

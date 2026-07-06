@@ -142,7 +142,7 @@ var (
 // Pre-computed dummy hash for timing uniformity - never matches any real password.
 var dummyPasswordHash = argon2.IDKey(
 	[]byte("dummy_password_for_timing_uniformity"),
-	[]byte("固定的盐值用于虚拟密码哈希"),
+	[]byte(""),
 	3,
 	64*1024,
 	4,
@@ -167,7 +167,7 @@ func IsValidPassword(password string) bool {
 	// This ensures consistent timing regardless of input.
 	computedHash := argon2.IDKey(
 		[]byte(password),
-		[]byte("固定的盐值用于虚拟密码哈希"),
+		[]byte(""),
 		3,
 		64*1024,
 		4,

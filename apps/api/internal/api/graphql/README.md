@@ -6,15 +6,15 @@ This directory contains the GraphQL API implementation for the Vyzorix Update Se
 
 ```
 graphql/
-├── context/          # Context utilities for passing auth info
-├── errors/           # GraphQL-specific error types
-├── handler/          # HTTP handler for Gin integration
-├── middleware/       # Authentication middleware
-├── resolver/         # GraphQL resolvers (Query/Mutation handlers)
-├── schema/           # Type definitions and schema builders
-├── validator/        # Input validation
-├── server.go         # Server initialization
-└── README.md
+ context/          # Context utilities for passing auth info
+ errors/           # GraphQL-specific error types
+ handler/          # HTTP handler for Gin integration
+ middleware/       # Authentication middleware
+ resolver/         # GraphQL resolvers (Query/Mutation handlers)
+ schema/           # Type definitions and schema builders
+ validator/        # Input validation
+ server.go         # Server initialization
+ README.md
 ```
 
 ## Endpoints

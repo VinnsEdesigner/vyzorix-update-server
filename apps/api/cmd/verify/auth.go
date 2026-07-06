@@ -67,9 +67,9 @@ type infraSpec struct {
 }
 
 func verifyAuth() bool {
-	fmt.Println("\n╔══════════════════════════════════════════════════════════════════════════════╗")
-	fmt.Println("║  AUTHENTICATION_SYSTEM_SERVER.md VERIFICATION                            ║")
-	fmt.Println("╚══════════════════════════════════════════════════════════════════════════════╝")
+	fmt.Println("\n")
+	fmt.Println("  AUTHENTICATION_SYSTEM_SERVER.md VERIFICATION                            ")
+	fmt.Println("")
 
 	root := "/workspace/project/vyzorix-update-server"
 
@@ -97,18 +97,18 @@ func verifyAuth() bool {
 	passCount := atomic.LoadUint64(&authPassCount)
 	failCount := atomic.LoadUint64(&authFailCount)
 
-	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  VERIFICATION SUMMARY")
-	fmt.Printf("\n  ════════════════════════════════════════════════════════════════════════════")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n")
 	fmt.Printf("\n    Checks Passed:      %d", passCount)
 	fmt.Printf("\n    Checks Failed:      %d", failCount)
 	fmt.Printf("\n")
 
 	if failCount == 0 {
-		fmt.Printf("\n  ✅ ALL AUTHENTICATION CHECKS PASSED!")
+		fmt.Printf("\n   ALL AUTHENTICATION CHECKS PASSED!")
 	} else {
-		fmt.Printf("\n  ❌ SOME AUTHENTICATION CHECKS FAILED")
+		fmt.Printf("\n   SOME AUTHENTICATION CHECKS FAILED")
 	}
 	fmt.Printf("\n")
 
@@ -495,25 +495,25 @@ func parseRegisteredRoutes(content string) []string {
 }
 
 func verifyAuthHandlers(spec *authSpec, impl *authImplementation) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  HANDLER VERIFICATION")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	for file, expectedMethods := range spec.handlers {
 		actualMethods, ok := impl.handlers[file]
 
 		if !ok {
-			fmt.Printf("    ❌ %s - FILE NOT FOUND\n", file)
+			fmt.Printf("     %s - FILE NOT FOUND\n", file)
 			atomic.AddUint64(&authFailCount, 1)
 			continue
 		}
 
-		fmt.Printf("    ✅ %s\n", file)
+		fmt.Printf("     %s\n", file)
 		atomic.AddUint64(&authPassCount, 1)
 
 		for _, method := range expectedMethods.methods {
 			if !actualMethods[method] {
-				fmt.Printf("      ❌ Missing method: %s\n", method)
+				fmt.Printf("       Missing method: %s\n", method)
 				atomic.AddUint64(&authFailCount, 1)
 			}
 		}
@@ -521,9 +521,9 @@ func verifyAuthHandlers(spec *authSpec, impl *authImplementation) {
 }
 
 func verifyAuthEndpoints(spec *authSpec, impl *authImplementation) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  ENDPOINT VERIFICATION")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	registeredCount := 0
 	missingCount := 0
@@ -542,10 +542,10 @@ func verifyAuthEndpoints(spec *authSpec, impl *authImplementation) {
 
 	coverage := float64(registeredCount) / float64(len(spec.endpoints)) * 100
 	if coverage >= 85 {
-		fmt.Printf("    ✅ Endpoint coverage acceptable (%.1f%%)\n", coverage)
+		fmt.Printf("     Endpoint coverage acceptable (%.1f%%)\n", coverage)
 		atomic.AddUint64(&authPassCount, 1)
 	} else {
-		fmt.Printf("    ⚠️  Endpoint coverage low (%.1f%%)\n", coverage)
+		fmt.Printf("      Endpoint coverage low (%.1f%%)\n", coverage)
 		atomic.AddUint64(&authFailCount, 1)
 	}
 
@@ -558,9 +558,9 @@ func verifyAuthEndpoints(spec *authSpec, impl *authImplementation) {
 }
 
 func verifyAuthDomain(spec *authSpec, impl *authImplementation, _ string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  DOMAIN LAYER VERIFICATION (Section 4 of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	totalFilesExpected := 0
 	totalFilesFound := 0
@@ -569,12 +569,12 @@ func verifyAuthDomain(spec *authSpec, impl *authImplementation, _ string) {
 		files, ok := impl.domainFiles[domainData.dir]
 
 		if !ok {
-			fmt.Printf("    ❌ domain/%s/ - DIRECTORY NOT FOUND\n", domainData.dir)
+			fmt.Printf("     domain/%s/ - DIRECTORY NOT FOUND\n", domainData.dir)
 			atomic.AddUint64(&authFailCount, 1)
 			continue
 		}
 
-		fmt.Printf("    ✅ domain/%s/\n", domainData.dir)
+		fmt.Printf("     domain/%s/\n", domainData.dir)
 		atomic.AddUint64(&authPassCount, 1)
 
 		for _, expectedFile := range domainData.files {
@@ -582,7 +582,7 @@ func verifyAuthDomain(spec *authSpec, impl *authImplementation, _ string) {
 			if files[expectedFile] {
 				totalFilesFound++
 			} else {
-				fmt.Printf("      ❌ Missing: %s\n", expectedFile)
+				fmt.Printf("       Missing: %s\n", expectedFile)
 				atomic.AddUint64(&authFailCount, 1)
 			}
 		}
@@ -592,27 +592,27 @@ func verifyAuthDomain(spec *authSpec, impl *authImplementation, _ string) {
 }
 
 func verifyAuthInfrastructure(spec *authSpec, impl *authImplementation, _ string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  INFRASTRUCTURE VERIFICATION (Section 7 of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	for _, infraData := range spec.infra {
 		files, ok := impl.infraFiles[infraData.dir]
 
 		if !ok {
-			fmt.Printf("    ❌ infrastructure/%s/ - DIRECTORY NOT FOUND\n", infraData.dir)
+			fmt.Printf("     infrastructure/%s/ - DIRECTORY NOT FOUND\n", infraData.dir)
 			atomic.AddUint64(&authFailCount, 1)
 			continue
 		}
 
-		fmt.Printf("    ✅ infrastructure/%s/\n", infraData.dir)
+		fmt.Printf("     infrastructure/%s/\n", infraData.dir)
 		atomic.AddUint64(&authPassCount, 1)
 
 		for _, expectedFile := range infraData.files {
 			if files[expectedFile] {
-				fmt.Printf("      ✅ %s\n", expectedFile)
+				fmt.Printf("       %s\n", expectedFile)
 			} else {
-				fmt.Printf("      ❌ Missing: %s\n", expectedFile)
+				fmt.Printf("       Missing: %s\n", expectedFile)
 				atomic.AddUint64(&authFailCount, 1)
 			}
 		}
@@ -620,25 +620,25 @@ func verifyAuthInfrastructure(spec *authSpec, impl *authImplementation, _ string
 }
 
 func verifyAuthMiddleware(spec *authSpec, impl *authImplementation, _ string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  MIDDLEWARE VERIFICATION")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	for mw := range spec.middleware {
 		if impl.middleware[mw] {
-			fmt.Printf("    ✅ middleware/%s\n", mw)
+			fmt.Printf("     middleware/%s\n", mw)
 			atomic.AddUint64(&authPassCount, 1)
 		} else {
-			fmt.Printf("    ❌ middleware/%s - NOT FOUND\n", mw)
+			fmt.Printf("     middleware/%s - NOT FOUND\n", mw)
 			atomic.AddUint64(&authFailCount, 1)
 		}
 	}
 }
 
 func verifyAuthApplication(spec *authSpec, impl *authImplementation, _ string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  APPLICATION LAYER VERIFICATION (Section 5 of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	// Check application layer files
 	appFilesFound := 0
@@ -646,11 +646,11 @@ func verifyAuthApplication(spec *authSpec, impl *authImplementation, _ string) {
 	for appFile := range spec.application {
 		appFilesExpected++
 		if impl.appFiles[appFile] {
-			fmt.Printf("    ✅ application/auth/%s\n", appFile)
+			fmt.Printf("     application/auth/%s\n", appFile)
 			appFilesFound++
 			atomic.AddUint64(&authPassCount, 1)
 		} else {
-			fmt.Printf("    ❌ application/auth/%s - NOT FOUND\n", appFile)
+			fmt.Printf("     application/auth/%s - NOT FOUND\n", appFile)
 			atomic.AddUint64(&authFailCount, 1)
 		}
 	}
@@ -671,9 +671,9 @@ func verifyAuthApplication(spec *authSpec, impl *authImplementation, _ string) {
 
 	for _, sf := range serviceFiles {
 		if impl.appFiles[sf] {
-			fmt.Printf("      ✅ %s\n", sf)
+			fmt.Printf("       %s\n", sf)
 		} else {
-			fmt.Printf("      ⚠️  %s - not found\n", sf)
+			fmt.Printf("        %s - not found\n", sf)
 		}
 	}
 
@@ -681,13 +681,13 @@ func verifyAuthApplication(spec *authSpec, impl *authImplementation, _ string) {
 }
 
 func verifyAuthSecurity(_ *authSpec, impl *authImplementation, _ string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  SECURITY VERIFICATION")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	// Check for main security files
 	if impl.securityFiles["security.go"] {
-		fmt.Printf("    ✅ security/security.go\n")
+		fmt.Printf("     security/security.go\n")
 		atomic.AddUint64(&authPassCount, 1)
 	}
 
@@ -696,7 +696,7 @@ func verifyAuthSecurity(_ *authSpec, impl *authImplementation, _ string) {
 	for _, dir := range securityDirs {
 		dirKey := dir + "/"
 		if impl.securityFiles[dirKey] {
-			fmt.Printf("    ✅ security/%s/ (directory exists)\n", dir)
+			fmt.Printf("     security/%s/ (directory exists)\n", dir)
 		}
 	}
 
@@ -705,19 +705,19 @@ func verifyAuthSecurity(_ *authSpec, impl *authImplementation, _ string) {
 	for sf := range impl.securityFiles {
 		if strings.Contains(sf, "totp") {
 			totpFound = true
-			fmt.Printf("    ✅ TOTP implementation found: %s\n", sf)
+			fmt.Printf("     TOTP implementation found: %s\n", sf)
 			break
 		}
 	}
 	if !totpFound {
-		fmt.Printf("    ⚠️  TOTP implementation file not found in security/\n")
+		fmt.Printf("      TOTP implementation file not found in security/\n")
 	}
 }
 
 func verifyAuthDatabaseSchema(_ *authSpec, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 8 of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	// Check for SQL migration files
 	migrationDirs := []string{
@@ -730,7 +730,7 @@ func verifyAuthDatabaseSchema(_ *authSpec, root string) {
 	for _, mdir := range migrationDirs {
 		path := filepath.Join(root, mdir)
 		if _, err := os.Stat(path); err == nil {
-			fmt.Printf("    ✅ Migration directory found: %s\n", mdir)
+			fmt.Printf("     Migration directory found: %s\n", mdir)
 			schemaFound = true
 
 			// Check for auth-related migrations
@@ -750,7 +750,7 @@ func verifyAuthDatabaseSchema(_ *authSpec, root string) {
 	}
 
 	if !schemaFound {
-		fmt.Printf("    ⚠️  No migration directory found (may be managed elsewhere)\n")
+		fmt.Printf("      No migration directory found (may be managed elsewhere)\n")
 	}
 
 	// Check for schema definitions in domain files
@@ -764,16 +764,16 @@ func verifyAuthDatabaseSchema(_ *authSpec, root string) {
 		if _, err := os.Stat(path); err == nil {
 			content, _ := os.ReadFile(path)
 			if strings.Contains(string(content), "type") && strings.Contains(string(content), "struct") {
-				fmt.Printf("    ✅ Schema defined in: %s\n", filepath.Base(sf))
+				fmt.Printf("     Schema defined in: %s\n", filepath.Base(sf))
 			}
 		}
 	}
 }
 
 func verifyAuthErrorCodes(_ *authSpec, _ *authImplementation, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  ERROR CODES VERIFICATION (Appendix of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	// Expected error codes from spec
 	expectedCodes := []string{
@@ -827,14 +827,14 @@ func scanErrorCodes(content string, codes map[string]bool) {
 }
 
 func verifyAuthRoutes(_ *authSpec, _ *authImplementation, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  ROUTE REGISTRATION VERIFICATION")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	routesPath := filepath.Join(root, "apps/api/internal/api/handlers/auth/auth_routes.go")
 
 	if _, err := os.Stat(routesPath); err != nil {
-		fmt.Printf("    ❌ auth_routes.go NOT FOUND\n")
+		fmt.Printf("     auth_routes.go NOT FOUND\n")
 		atomic.AddUint64(&authFailCount, 1)
 		return
 	}
@@ -860,38 +860,38 @@ func verifyAuthRoutes(_ *authSpec, _ *authImplementation, root string) {
 	routesFound := 0
 	for _, rp := range routePatterns {
 		if strings.Contains(contentStr, rp.pattern) {
-			fmt.Printf("    ✅ Route: %s\n", rp.desc)
+			fmt.Printf("     Route: %s\n", rp.desc)
 			routesFound++
 		} else {
-			fmt.Printf("    ❌ Route: %s - NOT REGISTERED\n", rp.desc)
+			fmt.Printf("     Route: %s - NOT REGISTERED\n", rp.desc)
 			atomic.AddUint64(&authFailCount, 1)
 		}
 	}
 
 	if routesFound == len(routePatterns) {
-		fmt.Printf("    ✅ All critical routes registered\n")
+		fmt.Printf("     All critical routes registered\n")
 		atomic.AddUint64(&authPassCount, 1)
 	}
 
 	if strings.Contains(contentStr, "NewAllHandlers") {
-		fmt.Printf("    ✅ NewAllHandlers - All handlers wired\n")
+		fmt.Printf("     NewAllHandlers - All handlers wired\n")
 		atomic.AddUint64(&authPassCount, 1)
 	} else {
-		fmt.Printf("    ❌ NewAllHandlers - Handlers not wired\n")
+		fmt.Printf("     NewAllHandlers - Handlers not wired\n")
 		atomic.AddUint64(&authFailCount, 1)
 	}
 
 	if strings.Contains(contentStr, "RegisterRoutes") {
-		fmt.Printf("    ✅ RegisterRoutes function found\n")
+		fmt.Printf("     RegisterRoutes function found\n")
 		atomic.AddUint64(&authPassCount, 1)
 	}
 }
 
 // verifyAuthDomainMethods checks for domain entity methods (Section 4.1).
 func verifyAuthDomainMethods(_ *authSpec, _ *authImplementation, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  DOMAIN ENTITY METHODS VERIFICATION (Section 4.1 of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	operatorFile := filepath.Join(root, "apps/api/internal/domain/operator/operator_entity.go")
 	content, _ := os.ReadFile(operatorFile)
@@ -901,10 +901,10 @@ func verifyAuthDomainMethods(_ *authSpec, _ *authImplementation, root string) {
 	methodsFound := 0
 	for _, method := range operatorMethods {
 		if strings.Contains(contentStr, "func (o *Operator) "+method) {
-			fmt.Printf("    ✅ Operator.%s()\n", method)
+			fmt.Printf("     Operator.%s()\n", method)
 			methodsFound++
 		} else {
-			fmt.Printf("    ⚠️  Operator.%s() - method not found\n", method)
+			fmt.Printf("      Operator.%s() - method not found\n", method)
 		}
 	}
 	fmt.Printf("    Operator methods: %d/%d\n", methodsFound, len(operatorMethods))
@@ -912,9 +912,9 @@ func verifyAuthDomainMethods(_ *authSpec, _ *authImplementation, root string) {
 
 // verifyAuthRepositoryMethods checks for repository interface methods (Section 4.3, 4.4).
 func verifyAuthRepositoryMethods(_ *authSpec, _ *authImplementation, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  REPOSITORY INTERFACE METHODS (Section 4.3, 4.4 of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	repoFile := filepath.Join(root, "apps/api/internal/domain/operator/operator_repository.go")
 	content, _ := os.ReadFile(repoFile)
@@ -924,7 +924,7 @@ func verifyAuthRepositoryMethods(_ *authSpec, _ *authImplementation, root string
 	methodsFound := 0
 	for _, method := range operatorRepoMethods {
 		if strings.Contains(contentStr, method+"(") || strings.Contains(contentStr, method+" (") {
-			fmt.Printf("    ✅ OperatorRepo.%s()\n", method)
+			fmt.Printf("     OperatorRepo.%s()\n", method)
 			methodsFound++
 		}
 	}
@@ -938,7 +938,7 @@ func verifyAuthRepositoryMethods(_ *authSpec, _ *authImplementation, root string
 	sessionMethodsFound := 0
 	for _, method := range sessionRepoMethods {
 		if strings.Contains(sessionContentStr, method+"(") || strings.Contains(sessionContentStr, method+" (") {
-			fmt.Printf("    ✅ SessionRepo.%s()\n", method)
+			fmt.Printf("     SessionRepo.%s()\n", method)
 			sessionMethodsFound++
 		}
 	}
@@ -947,9 +947,9 @@ func verifyAuthRepositoryMethods(_ *authSpec, _ *authImplementation, root string
 
 // verifyAuthApplicationMethods checks for AuthService methods (Section 5.1).
 func verifyAuthApplicationMethods(_ *authSpec, _ *authImplementation, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  AUTH SERVICE METHODS (Section 5.1 of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	authDir := filepath.Join(root, "apps/api/internal/application/auth")
 	var authContent strings.Builder
@@ -966,7 +966,7 @@ func verifyAuthApplicationMethods(_ *authSpec, _ *authImplementation, root strin
 	methodsFound := 0
 	for _, method := range authServiceMethods {
 		if strings.Contains(contentStr, "func (s *AuthService) "+method) {
-			fmt.Printf("    ✅ AuthService.%s()\n", method)
+			fmt.Printf("     AuthService.%s()\n", method)
 			methodsFound++
 		}
 	}
@@ -975,9 +975,9 @@ func verifyAuthApplicationMethods(_ *authSpec, _ *authImplementation, root strin
 
 // verifyAuthDatabaseIndexes checks for database indexes (Section 8.2).
 func verifyAuthDatabaseIndexes(_ *authSpec, _ string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  DATABASE INDEXES (Section 8.2 of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	requiredIndexes := []string{"idx_operators_email", "idx_operators_google_id", "idx_operators_github_id", "idx_sessions_operator_id", "idx_refresh_tokens_token_hash", "idx_refresh_tokens_operator_id", "idx_email_verifications_operator_id", "idx_email_verifications_token_hash", "idx_password_resets_operator_id", "idx_password_resets_token_hash"}
 	fmt.Printf("    Required indexes: %d\n", len(requiredIndexes))
@@ -987,16 +987,16 @@ func verifyAuthDatabaseIndexes(_ *authSpec, _ string) {
 
 // verifyAuthFileStructure checks the complete file structure (Section 9).
 func verifyAuthFileStructure(_ *authSpec, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  FILE STRUCTURE VERIFICATION (Section 9 of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	keyFiles := []string{"apps/api/internal/api/handlers/auth/routes.go", "apps/api/internal/api/responses/presenter.go"}
 	filesFound := 0
 	for _, f := range keyFiles {
 		path := filepath.Join(root, f)
 		if _, err := os.Stat(path); err == nil {
-			fmt.Printf("    ✅ %s\n", f)
+			fmt.Printf("     %s\n", f)
 			filesFound++
 		}
 	}
@@ -1006,9 +1006,9 @@ func verifyAuthFileStructure(_ *authSpec, root string) {
 
 // verifyAuthFrontendRequirements checks frontend requirement mappings (Section 1.2).
 func verifyAuthFrontendRequirements(spec *authSpec, _ string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  FRONTEND REQUIREMENTS MAPPING (Section 1.2 of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	frontendMappings := []struct{ hook, method, path string }{
 		{"use-login.ts", "POST", "/v1/auth/login"},
@@ -1025,7 +1025,7 @@ func verifyAuthFrontendRequirements(spec *authSpec, _ string) {
 	for _, m := range frontendMappings {
 		routeKey := m.method + " " + m.path
 		if spec.endpoints[routeKey].method != "" {
-			fmt.Printf("    ✅ %s -> %s %s\n", m.hook, m.method, m.path)
+			fmt.Printf("     %s -> %s %s\n", m.hook, m.method, m.path)
 			mappingsFound++
 		}
 	}
@@ -1035,9 +1035,9 @@ func verifyAuthFrontendRequirements(spec *authSpec, _ string) {
 
 // verifyAuthSessionConfig verifies session configuration matches spec Section 7.3.
 func verifyAuthSessionConfig(spec *authSpec, _ *authImplementation, root string) {
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("\n  ")
 	fmt.Printf("\n  SESSION CONFIGURATION VERIFICATION (Section 7.3 of Spec)")
-	fmt.Printf("\n  ─────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Printf("\n  \n")
 
 	sessionConfigFound := false
 
@@ -1047,18 +1047,18 @@ func verifyAuthSessionConfig(spec *authSpec, _ *authImplementation, root string)
 		contentStr := string(content)
 
 		if strings.Contains(contentStr, "JWT") || strings.Contains(contentStr, "jwt") {
-			fmt.Printf("    ✅ JWT configuration found in auth_service.go\n")
+			fmt.Printf("     JWT configuration found in auth_service.go\n")
 			sessionConfigFound = true
 			atomic.AddUint64(&authPassCount, 1)
 		}
 
 		if strings.Contains(contentStr, "sessionTTL") || strings.Contains(contentStr, "SessionTTL") {
-			fmt.Printf("    ✅ Session TTL configuration found\n")
+			fmt.Printf("     Session TTL configuration found\n")
 			atomic.AddUint64(&authPassCount, 1)
 		}
 
 		if strings.Contains(contentStr, "refreshToken") || strings.Contains(contentStr, "RefreshToken") {
-			fmt.Printf("    ✅ Refresh token configuration found\n")
+			fmt.Printf("     Refresh token configuration found\n")
 			atomic.AddUint64(&authPassCount, 1)
 		}
 	}
@@ -1066,7 +1066,7 @@ func verifyAuthSessionConfig(spec *authSpec, _ *authImplementation, root string)
 	// Check for session manager
 	sessionManagerPath := filepath.Join(root, "apps/api/internal/infrastructure/security/session/manager.go")
 	if _, err := os.Stat(sessionManagerPath); err == nil {
-		fmt.Printf("    ✅ Session manager found at infrastructure/security/session/\n")
+		fmt.Printf("     Session manager found at infrastructure/security/session/\n")
 		atomic.AddUint64(&authPassCount, 1)
 		sessionConfigFound = true
 	}
@@ -1081,8 +1081,8 @@ func verifyAuthSessionConfig(spec *authSpec, _ *authImplementation, root string)
 	fmt.Printf("    Storage Type:         %s\n", spec.sessionConfig.StorageType)
 
 	if sessionConfigFound {
-		fmt.Printf("\n    ✅ Session configuration structure verified\n")
+		fmt.Printf("\n     Session configuration structure verified\n")
 	} else {
-		fmt.Printf("\n    ⚠️  Session configuration should match spec values above\n")
+		fmt.Printf("\n      Session configuration should match spec values above\n")
 	}
 }

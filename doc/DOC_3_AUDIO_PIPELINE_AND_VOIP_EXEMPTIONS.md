@@ -11,34 +11,34 @@ The following mapping outlines the complete sub-millisecond data flow from the p
 
 ```text
   [SYSTEM MIXER] (Spotify, YouTube, browser, system alarms, notifications)
-         │
-         ▼ (Captured via Android 10+ AudioPlaybackCapture API)
+         
+          (Captured via Android 10+ AudioPlaybackCapture API)
    PlaybackCaptureEngine (Java/Kotlin Layer)
-         │
-         ▼ (Buffered in thread-safe, non-allocating allocator)
+         
+          (Buffered in thread-safe, non-allocating allocator)
    AudioBufferPool (Prevents JVM garbage collection latency spikes)
-         │
-         ▼ (JNI Call: safe_jni_bridge.cpp)
+         
+          (JNI Call: safe_jni_bridge.cpp)
    NativeAudioBridge (Kotlin -> JNI Memory boundary)
-         │
-         ▼ (Written to lock-free Native Memory ring buffer)
+         
+          (Written to lock-free Native Memory ring buffer)
    capture_ring_buffer.cpp (Lock-free Single-Producer Single-Consumer)
-         │
-         ├── playback_resampler.cpp (Converts source rate -> 48kHz mono/stereo)
-         ├── pcm_mixer.cpp (Applies remote gain configurations and stream mixtures)
-         ├── audio_clock_sync.cpp (Synchronizes clock drift between capture and playback)
-         └── underrun_guard.cpp (Monitors buffer thresholds and injects silent packets)
-         │
-         ▼ (Read from Ring Buffer via JNI callback)
+         
+          playback_resampler.cpp (Converts source rate -> 48kHz mono/stereo)
+          pcm_mixer.cpp (Applies remote gain configurations and stream mixtures)
+          audio_clock_sync.cpp (Synchronizes clock drift between capture and playback)
+          underrun_guard.cpp (Monitors buffer thresholds and injects silent packets)
+         
+          (Read from Ring Buffer via JNI callback)
    AudioPipelineController (Kotlin coordination layer)
-         │
-         ▼ (Pushed to low-latency AudioTrack write thread)
+         
+          (Pushed to low-latency AudioTrack write thread)
    SpeakerPlaybackEngine
-         │
-         ▼ (USAGE_VOICE_COMMUNICATION + CONTENT_TYPE_SPEECH)
+         
+          (USAGE_VOICE_COMMUNICATION + CONTENT_TYPE_SPEECH)
    AudioTrack (Android System Output)
-         │
-         ▼ (Forced by SpeakerForceEngine running in 500ms loops)
+         
+          (Forced by SpeakerForceEngine running in 500ms loops)
    [PHYSICAL SPEAKERPHONE] (Bypasses headset sensor stuck in connected state)---- 500ms loop: This is running every 500ms indefinitely. On my 2GB device, this + capture + WebSocket heartbeat + dashboard updates = constant CPU churn. AdaptiveSamplingController should dynamically push this to 2000ms+ when the route is stable, only tightening when drift is detected. 
 ```
 
@@ -50,43 +50,43 @@ The `:core:audioengine` module manages JNI bindings, native memory allocations, 
 
 ```text
 core/audioengine/src/main/
-├── cpp/
-│   ├── CMakeLists.txt
-│   ├── capture_ring_buffer.cpp
-│   ├── playback_resampler.cpp
-│   ├── latency_tracker.cpp
-│   ├── pcm_mixer.cpp
-│   ├── underrun_guard.cpp
-│   ├── audio_clock_sync.cpp
-│   ├── logger_engine.cpp
-│   ├── crash_guard.cpp
-│   ├── safe_jni_bridge.cpp
-│   ├── watchdog_ping.cpp
-│   ├── memory_guard.cpp
-│   ├── ringbuffer_pressure.cpp
-│   ├── audio_fallback_bridge.cpp
-│   ├── thread_priority_guard.cpp
-│   └── include/
-│       ├── ring_buffer.h
-│       ├── audio_defs.h
-│       ├── latency_tracker.h
-│       ├── pcm_mixer.h
-│       ├── clock_sync.h
-│       ├── crash_guard.h
-│       ├── watchdog_ping.h
-│       ├── safe_jni_bridge.h
-│       └── audio_latency_profiler.h
-└── kotlin/com/vyzorix/audiorouter/audioengine/
-    ├── NativeAudioBridge.kt
-    ├── NativeLoader.kt
-    ├── AudioPipeline.kt
-    ├── PcmFrame.kt
-    ├── AudioPipelineController.kt
-    ├── PipelineStateTracker.kt
-    ├── NativeSafetyController.kt
-    ├── NativeCrashRecovery.kt
-    ├── PipelineBackpressureController.kt
-    └── AudioEngineHealthState.kt
+ cpp/
+    CMakeLists.txt
+    capture_ring_buffer.cpp
+    playback_resampler.cpp
+    latency_tracker.cpp
+    pcm_mixer.cpp
+    underrun_guard.cpp
+    audio_clock_sync.cpp
+    logger_engine.cpp
+    crash_guard.cpp
+    safe_jni_bridge.cpp
+    watchdog_ping.cpp
+    memory_guard.cpp
+    ringbuffer_pressure.cpp
+    audio_fallback_bridge.cpp
+    thread_priority_guard.cpp
+    include/
+        ring_buffer.h
+        audio_defs.h
+        latency_tracker.h
+        pcm_mixer.h
+        clock_sync.h
+        crash_guard.h
+        watchdog_ping.h
+        safe_jni_bridge.h
+        audio_latency_profiler.h
+ kotlin/com/vyzorix/audiorouter/audioengine/
+     NativeAudioBridge.kt
+     NativeLoader.kt
+     AudioPipeline.kt
+     PcmFrame.kt
+     AudioPipelineController.kt
+     PipelineStateTracker.kt
+     NativeSafetyController.kt
+     NativeCrashRecovery.kt
+     PipelineBackpressureController.kt
+     AudioEngineHealthState.kt
 ```
 
 ### 2.1 Native C++ Submodule (`cpp/`)
@@ -206,35 +206,35 @@ The `audio` package manages audio focus requests, active playback session identi
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/audio/
-├── AudioFocusHandler.kt
-├── InterruptionPolicy.kt
-├── focus/
-│   ├── FocusRecoveryCoordinator.kt
-│   ├── FocusPriorityPolicy.kt
-│   ├── FocusConflictResolver.kt
-│   ├── FocusPersistenceEngine.kt
-│   ├── FocusEventHistory.kt
-│   ├── FocusSuppressionPolicy.kt
-│   └── AudioDuckController.kt
-├── media/
-│   ├── ActiveMediaSessionResolver.kt
-│   ├── MediaPriorityPolicy.kt
-│   ├── ForegroundPlaybackResolver.kt
-│   ├── CaptureOwnershipArbitrator.kt
-│   ├── MediaSessionWatcher.kt
-│   ├── PlaybackOriginClassifier.kt
-│   ├── SessionEvictionPolicy.kt
-│   └── PlaybackStateMonitor.kt
-├── route/
-│   ├── RouteAssertionEngine.kt
-│   ├── RouteConflictResolver.kt
-│   ├── RouteEscalationPolicy.kt
-│   └── RouteFailureJournal.kt
-└── session/
-    ├── AudioSessionRegistry.kt
-    ├── SessionPriorityManager.kt
-    ├── PlaybackUidTracker.kt
-    └── CaptureEligibilityChecker.kt
+ AudioFocusHandler.kt
+ InterruptionPolicy.kt
+ focus/
+    FocusRecoveryCoordinator.kt
+    FocusPriorityPolicy.kt
+    FocusConflictResolver.kt
+    FocusPersistenceEngine.kt
+    FocusEventHistory.kt
+    FocusSuppressionPolicy.kt
+    AudioDuckController.kt
+ media/
+    ActiveMediaSessionResolver.kt
+    MediaPriorityPolicy.kt
+    ForegroundPlaybackResolver.kt
+    CaptureOwnershipArbitrator.kt
+    MediaSessionWatcher.kt
+    PlaybackOriginClassifier.kt
+    SessionEvictionPolicy.kt
+    PlaybackStateMonitor.kt
+ route/
+    RouteAssertionEngine.kt
+    RouteConflictResolver.kt
+    RouteEscalationPolicy.kt
+    RouteFailureJournal.kt
+ session/
+     AudioSessionRegistry.kt
+     SessionPriorityManager.kt
+     PlaybackUidTracker.kt
+     CaptureEligibilityChecker.kt
 ```
 
 ### 3.1 `AudioFocusHandler.kt`
@@ -364,13 +364,13 @@ The `voip` package implements the core logic to keep the system locked in `MODE_
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/voip/
-├── SilentVoipSession.kt
-├── CommunicationRouter.kt
-├── VoipAudioAnchor.kt
-├── AudioModeKeeper.kt
-├── SpeakerForceEngine.kt
-├── CommunicationDeviceSelector.kt
-└── RoutePersistenceDaemon.kt
+ SilentVoipSession.kt
+ CommunicationRouter.kt
+ VoipAudioAnchor.kt
+ AudioModeKeeper.kt
+ SpeakerForceEngine.kt
+ CommunicationDeviceSelector.kt
+ RoutePersistenceDaemon.kt
 ```
 
 ### 4.1 `SilentVoipSession.kt`
@@ -416,15 +416,15 @@ The `playback` package manages high-speed playback threads and write loops.
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/playback/
-├── SpeakerPlaybackEngine.kt
-├── AudioTrackController.kt
-├── AudioTrackFactory.kt
-├── LatencyOptimizer.kt
-├── RouteRecoveryEngine.kt
-├── PlaybackGainController.kt
-├── SpeakerOutputVerifier.kt
-├── PlaybackThread.kt
-└── UnderrunRecovery.kt
+ SpeakerPlaybackEngine.kt
+ AudioTrackController.kt
+ AudioTrackFactory.kt
+ LatencyOptimizer.kt
+ RouteRecoveryEngine.kt
+ PlaybackGainController.kt
+ SpeakerOutputVerifier.kt
+ PlaybackThread.kt
+ UnderrunRecovery.kt
 ```
 
 ### 5.1 `SpeakerPlaybackEngine.kt`
@@ -471,15 +471,15 @@ The `capture` package captures system-wide audio using the privileged `MediaProj
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/capture/
-├── MediaProjectionSession.kt
-├── PlaybackCaptureEngine.kt
-├── AudioCaptureConfig.kt
-├── CapturePermissionStore.kt
-├── PlaybackCaptureFactory.kt
-├── CaptureLifecycleController.kt
-├── CaptureRecoveryEngine.kt
-├── ProjectionTokenManager.kt
-└── TokenPersistence.kt
+ MediaProjectionSession.kt
+ PlaybackCaptureEngine.kt
+ AudioCaptureConfig.kt
+ CapturePermissionStore.kt
+ PlaybackCaptureFactory.kt
+ CaptureLifecycleController.kt
+ CaptureRecoveryEngine.kt
+ ProjectionTokenManager.kt
+ TokenPersistence.kt
 ```
 
 ### 6.1 `MediaProjectionSession.kt`
@@ -526,13 +526,13 @@ The `projection` package implements legal workarounds to request projection perm
 
 ```text
 core/services/src/main/kotlin/com/vyzorix/audiorouter/services/projection/
-├── ProjectionLaunchCoordinator.kt
-├── FullScreenIntentBridge.kt
-├── ProjectionActivityMediator.kt
-├── ProjectionLaunchConditions.kt
-├── ProjectionRetryPolicy.kt
-├── ProjectionVisibilityGuard.kt
-└── ProjectionForegroundEscalator.kt
+ ProjectionLaunchCoordinator.kt
+ FullScreenIntentBridge.kt
+ ProjectionActivityMediator.kt
+ ProjectionLaunchConditions.kt
+ ProjectionRetryPolicy.kt
+ ProjectionVisibilityGuard.kt
+ ProjectionForegroundEscalator.kt
 ```
 
 ### 7.1 `ProjectionLaunchCoordinator.kt`

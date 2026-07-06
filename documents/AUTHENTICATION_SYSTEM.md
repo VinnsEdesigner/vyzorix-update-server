@@ -23,7 +23,7 @@
 
 ---
 
-> ⚠️ **Architecture Alignment Note (v1.0)**
+>  **Architecture Alignment Note (v1.0)**
 > 
 > This document follows the **4-layer architecture** defined in `FRONTEND_ARCHITECTURE.md`:
 > - **UI Layer** (`src/components/`) - Pure UI rendering, imports only from hooks
@@ -72,105 +72,105 @@ The Authentication System handles:
 ### 2.1 Layered Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        FRONTEND ARCHITECTURE                        │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      UI LAYER                               │   │
-│  │                   (src/components/)                        │   │
-│  │                                                             │   │
-│  │    Pages, Components, Shared UI                            │   │
-│  │    ONLY renders UI. Uses hooks for everything.              │   │
-│  │    NEVER imports from Data or Domain.                       │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                   PRESENTATION LAYER                        │   │
-│  │                      (src/hooks/)                          │   │
-│  │                                                             │   │
-│  │    Custom hooks that:                                      │   │
-│  │    - Handle UI logic                                        │   │
-│  │    - Transform data for UI                                  │   │
-│  │    - Manage state                                           │   │
-│  │    NEVER renders UI. NEVER imports from UI layer.          │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                      DOMAIN LAYER                          │   │
-│  │                     (src/domain/)                          │   │
-│  │                                                             │   │
-│  │    Pure functions that:                                    │   │
-│  │    - Define types and interfaces                          │   │
-│  │    - Transform data (no side effects)                     │   │
-│  │    - Validate input                                        │   │
-│  │    NEVER imports from UI, Presentation, or Data.         │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              │                                       │
-│                              │ uses                                  │
-│                              ▼                                       │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                       DATA LAYER                           │   │
-│  │                   (src/lib/api/)                           │   │
-│  │                                                             │   │
-│  │    API clients that:                                       │   │
-│  │    - Make HTTP requests                                    │   │
-│  │    - Handle authentication                                  │   │
-│  │    - Parse responses                                       │   │
-│  │    NEVER imports from UI or Presentation.                  │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                        FRONTEND ARCHITECTURE                        
+
+                                                                     
+     
+                        UI LAYER                                  
+                     (src/components/)                           
+                                                                  
+      Pages, Components, Shared UI                               
+      ONLY renders UI. Uses hooks for everything.                 
+      NEVER imports from Data or Domain.                          
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                     PRESENTATION LAYER                           
+                        (src/hooks/)                             
+                                                                  
+      Custom hooks that:                                         
+      - Handle UI logic                                           
+      - Transform data for UI                                     
+      - Manage state                                              
+      NEVER renders UI. NEVER imports from UI layer.             
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                        DOMAIN LAYER                             
+                       (src/domain/)                             
+                                                                  
+      Pure functions that:                                       
+      - Define types and interfaces                             
+      - Transform data (no side effects)                        
+      - Validate input                                           
+      NEVER imports from UI, Presentation, or Data.            
+     
+                                                                     
+                               uses                                  
+                                                                     
+     
+                         DATA LAYER                              
+                     (src/lib/api/)                              
+                                                                  
+      API clients that:                                          
+      - Make HTTP requests                                       
+      - Handle authentication                                     
+      - Parse responses                                          
+      NEVER imports from UI or Presentation.                     
+     
+                                                                     
+
 ```
 
 ### 2.2 Auth State Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         AUTH STATE FLOW                             │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  USER ACTION                                                       │
-│       │                                                            │
-│       ▼                                                            │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  UI LAYER                                                     │   │
-│  │  - LoginForm component calls useLogin() hook                  │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│       │                                                            │
-│       ▼                                                            │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  PRESENTATION LAYER (Hooks)                                  │   │
-│  │  - useLogin() validates input, calls authApi.login()        │   │
-│  │  - Returns { user, isLoading, error }                       │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│       │                                                            │
-│       ▼                                                            │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  DOMAIN LAYER                                               │   │
-│  │  - loginFromRaw() transforms API response                  │   │
-│  │  - validateCredentials() checks input                       │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│       │                                                            │
-│       ▼                                                            │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  DATA LAYER (API)                                           │   │
-│  │  - POST /v1/auth/login                                      │   │
-│  │  - Handles JWT storage                                       │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│       │                                                            │
-│       ▼                                                            │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  AUTH CONTEXT                                               │   │
-│  │  - Stores user, tokens, auth state                          │   │
-│  │  - Provides useAuth() hook globally                          │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                         AUTH STATE FLOW                             
+
+                                                                     
+  USER ACTION                                                       
+                                                                   
+                                                                   
+     
+    UI LAYER                                                        
+    - LoginForm component calls useLogin() hook                     
+     
+                                                                   
+                                                                   
+     
+    PRESENTATION LAYER (Hooks)                                     
+    - useLogin() validates input, calls authApi.login()           
+    - Returns { user, isLoading, error }                          
+     
+                                                                   
+                                                                   
+     
+    DOMAIN LAYER                                                  
+    - loginFromRaw() transforms API response                     
+    - validateCredentials() checks input                          
+     
+                                                                   
+                                                                   
+     
+    DATA LAYER (API)                                              
+    - POST /v1/auth/login                                         
+    - Handles JWT storage                                          
+     
+                                                                   
+                                                                   
+     
+    AUTH CONTEXT                                                  
+    - Stores user, tokens, auth state                             
+    - Provides useAuth() hook globally                             
+     
+                                                                     
+
 ```
 
 ---
@@ -181,76 +181,76 @@ The Authentication System handles:
 
 ```
 apps/web/src/
-│
-├── domain/                          # DOMAIN LAYER (NEW)
-│   ├── common/
-│   │   ├── pagination.ts            # Pagination types (reused)
-│   │   ├── error.ts                 # Domain error types
-│   │   └── types.ts                 # Shared domain types
-│   │
-│   └── auth/
-│       ├── auth-types.ts            # AuthUser, LoginCredentials, MFAState
-│       ├── auth-transforms.ts       # userFromRaw(), tokenFromRaw()
-│       └── auth-validation.ts       # validateEmail(), validatePassword()
-│
-├── lib/
-│   └── api/
-│       ├── graphql/
-│       │   ├── queries/
-│       │   │   └── auth-queries.ts  # GET_ME, GET_MFA_STATUS
-│       │   ├── mutations/
-│       │   │   └── auth-mutations.ts # LOGIN, REGISTER, LOGOUT, etc.
-│       │   └── fragments/
-│       │       └── user.fragment.ts  # User fragment
-│       │
-│       └── rest/
-│           └── auth-rest.ts         # REST fallback endpoints
-│
-├── hooks/                           # PRESENTATION LAYER
-│   ├── auth/
-│   │   ├── use-login.ts           # Login flow
-│   │   ├── use-register.ts        # Registration flow
-│   │   ├── use-logout.ts          # Logout flow
-│   │   ├── use-mfa.ts             # MFA verification
-│   │   ├── use-password-reset.ts # Forgot/reset password
-│   │   ├── use-session.ts         # Session management
-│   │   ├── use-auth-callback.ts   # OAuth callback
-│   │   └── index.ts               # Barrel export
-│   │
-│   └── shared/
-│       └── use-debounce.ts        # Debounce utility
-│
-├── components/                      # UI LAYER
-│   ├── shared/                    # Shared auth components
-│   │   ├── auth-card.tsx          # Centered card wrapper
-│   │   ├── auth-input.tsx         # Email/password input
-│   │   ├── auth-button.tsx        # Primary submit button
-│   │   ├── auth-error.tsx         # Error message display
-│   │   ├── auth-links.tsx         # Forgot password, register links
-│   │   ├── mfa-input.tsx          # 6-digit TOTP input
-│   │   ├── password-strength.tsx  # Password strength indicator
-│   │   └── index.ts               # Barrel export
-│   │
-│   └── auth/
-│       ├── login-form.tsx         # Login form
-│       ├── register-form.tsx       # Registration form
-│       ├── mfa-form.tsx           # MFA verification form
-│       ├── forgot-password-form.tsx # Forgot password form
-│       ├── reset-password-form.tsx # Reset password form
-│       ├── auth-layout.tsx        # Auth page layout
-│       ├── protected-route.tsx   # Route wrapper
-│       └── index.ts               # Barrel export
-│
-├── context/
-│   └── auth-context.tsx           # Auth provider (NEW - global state)
-│
-└── routes/
-    ├── auth.tsx                   # Auth layout (EXISTS - modify)
-    ├── auth.login.tsx            # /auth/login (EXISTS - modify)
-    ├── auth.register.tsx         # /auth/register (NEW)
-    ├── auth.forgot.tsx           # /auth/forgot (NEW)
-    ├── auth.reset.tsx            # /auth/reset (NEW)
-    └── auth.callback.tsx         # /auth/callback (NEW - OAuth)
+
+ domain/                          # DOMAIN LAYER (NEW)
+    common/
+       pagination.ts            # Pagination types (reused)
+       error.ts                 # Domain error types
+       types.ts                 # Shared domain types
+   
+    auth/
+        auth-types.ts            # AuthUser, LoginCredentials, MFAState
+        auth-transforms.ts       # userFromRaw(), tokenFromRaw()
+        auth-validation.ts       # validateEmail(), validatePassword()
+
+ lib/
+    api/
+        graphql/
+           queries/
+              auth-queries.ts  # GET_ME, GET_MFA_STATUS
+           mutations/
+              auth-mutations.ts # LOGIN, REGISTER, LOGOUT, etc.
+           fragments/
+               user.fragment.ts  # User fragment
+       
+        rest/
+            auth-rest.ts         # REST fallback endpoints
+
+ hooks/                           # PRESENTATION LAYER
+    auth/
+       use-login.ts           # Login flow
+       use-register.ts        # Registration flow
+       use-logout.ts          # Logout flow
+       use-mfa.ts             # MFA verification
+       use-password-reset.ts # Forgot/reset password
+       use-session.ts         # Session management
+       use-auth-callback.ts   # OAuth callback
+       index.ts               # Barrel export
+   
+    shared/
+        use-debounce.ts        # Debounce utility
+
+ components/                      # UI LAYER
+    shared/                    # Shared auth components
+       auth-card.tsx          # Centered card wrapper
+       auth-input.tsx         # Email/password input
+       auth-button.tsx        # Primary submit button
+       auth-error.tsx         # Error message display
+       auth-links.tsx         # Forgot password, register links
+       mfa-input.tsx          # 6-digit TOTP input
+       password-strength.tsx  # Password strength indicator
+       index.ts               # Barrel export
+   
+    auth/
+        login-form.tsx         # Login form
+        register-form.tsx       # Registration form
+        mfa-form.tsx           # MFA verification form
+        forgot-password-form.tsx # Forgot password form
+        reset-password-form.tsx # Reset password form
+        auth-layout.tsx        # Auth page layout
+        protected-route.tsx   # Route wrapper
+        index.ts               # Barrel export
+
+ context/
+    auth-context.tsx           # Auth provider (NEW - global state)
+
+ routes/
+     auth.tsx                   # Auth layout (EXISTS - modify)
+     auth.login.tsx            # /auth/login (EXISTS - modify)
+     auth.register.tsx         # /auth/register (NEW)
+     auth.forgot.tsx           # /auth/forgot (NEW)
+     auth.reset.tsx            # /auth/reset (NEW)
+     auth.callback.tsx         # /auth/callback (NEW - OAuth)
 ```
 
 ---
@@ -271,104 +271,104 @@ apps/web/src/
 
 #### Login Page (`/auth/login`)
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│                     ┌─────────────────────────┐                     │
-│                     │      [Vyzorix Logo]    │                     │
-│                     │                         │                     │
-│                     │   Welcome back         │                     │
-│                     │                         │                     │
-│                     │   [Email Input]        │                     │
-│                     │   [Password Input]     │                     │
-│                     │                         │                     │
-│                     │   [    Login    ]      │                     │
-│                     │                         │                     │
-│                     │   Forgot password?      │                     │
-│                     │   ─────────────────    │                     │
-│                     │   Don't have account?  │                     │
-│                     │                         │                     │
-│                     │   [  Sign up with Google  ]                 │
-│                     │                         │                     │
-│                     └─────────────────────────┘                     │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+                                          
+                           [Vyzorix Logo]                         
+                                                                   
+                        Welcome back                              
+                                                                   
+                        [Email Input]                             
+                        [Password Input]                          
+                                                                   
+                        [    Login    ]                           
+                                                                   
+                        Forgot password?                           
+                                                 
+                        Don't have account?                       
+                                                                   
+                        [  Sign up with Google  ]                 
+                                                                   
+                                          
+                                                                     
+
 ```
 
 #### Registration Page (`/auth/register`)
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│                     ┌─────────────────────────┐                     │
-│                     │      [Vyzorix Logo]    │                     │
-│                     │                         │                     │
-│                     │   Create account       │                     │
-│                     │                         │                     │
-│                     │   [Email Input]        │                     │
-│                     │   [Password Input]     │                     │
-│                     │   [Confirm Password]    │                     │
-│                     │                         │                     │
-│                     │   [  Create Account  ] │                     │
-│                     │                         │                     │
-│                     │   Already have account? │                     │
-│                     │                         │                     │
-│                     └─────────────────────────┘                     │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+                                          
+                           [Vyzorix Logo]                         
+                                                                   
+                        Create account                            
+                                                                   
+                        [Email Input]                             
+                        [Password Input]                          
+                        [Confirm Password]                         
+                                                                   
+                        [  Create Account  ]                      
+                                                                   
+                        Already have account?                      
+                                                                   
+                                          
+                                                                     
+
 ```
 
 #### MFA Verification Page (`/auth/mfa`)
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│                     ┌─────────────────────────┐                     │
-│                     │      [Vyzorix Logo]    │                     │
-│                     │                         │                     │
-│                     │   Two-factor auth      │                     │
-│                     │                         │                     │
-│                     │   Enter 6-digit code   │                     │
-│                     │   from your app         │                     │
-│                     │                         │                     │
-│                     │   [ _ ][ _ ][ _ ]      │                     │
-│                     │   [ _ ][ _ ][ _ ]      │                     │
-│                     │                         │                     │
-│                     │   [    Verify    ]      │                     │
-│                     │                         │                     │
-│                     │   [  Resend code  ]    │                     │
-│                     │                         │                     │
-│                     └─────────────────────────┘                     │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                                                                     
+                                          
+                           [Vyzorix Logo]                         
+                                                                   
+                        Two-factor auth                           
+                                                                   
+                        Enter 6-digit code                        
+                        from your app                              
+                                                                   
+                        [ _ ][ _ ][ _ ]                           
+                        [ _ ][ _ ][ _ ]                           
+                                                                   
+                        [    Verify    ]                           
+                                                                   
+                        [  Resend code  ]                         
+                                                                   
+                                          
+                                                                     
+
 ```
 
 ### 4.3 Auth Context Provider
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         AUTH CONTEXT                                │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  AuthContext                                                 │   │
-│  │                                                             │   │
-│  │  State:                                                     │   │
-│  │  - user: AuthUser | null                                    │   │
-│  │  - isAuthenticated: boolean                                  │   │
-│  │  - isLoading: boolean                                       │   │
-│  │  - mfaRequired: boolean                                     │   │
-│  │  - mfaToken: string | null                                  │   │
-│  │                                                             │   │
-│  │  Methods:                                                   │   │
-│  │  - login(credentials): Promise<void>                        │   │
-│  │  - register(data): Promise<void>                            │   │
-│  │  - logout(): Promise<void>                                   │   │
-│  │  - verifyMfa(code): Promise<void>                           │   │
-│  │  - forgotPassword(email): Promise<void>                      │   │
-│  │  - resetPassword(token, password): Promise<void>            │   │
-│  │                                                             │   │
-│  │  Provides useAuth() hook globally                            │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+
+                         AUTH CONTEXT                                
+
+                                                                     
+     
+    AuthContext                                                    
+                                                                  
+    State:                                                        
+    - user: AuthUser | null                                       
+    - isAuthenticated: boolean                                     
+    - isLoading: boolean                                          
+    - mfaRequired: boolean                                        
+    - mfaToken: string | null                                     
+                                                                  
+    Methods:                                                      
+    - login(credentials): Promise<void>                           
+    - register(data): Promise<void>                               
+    - logout(): Promise<void>                                      
+    - verifyMfa(code): Promise<void>                              
+    - forgotPassword(email): Promise<void>                         
+    - resetPassword(token, password): Promise<void>               
+                                                                  
+    Provides useAuth() hook globally                               
+     
+                                                                     
+
 ```
 
 ---

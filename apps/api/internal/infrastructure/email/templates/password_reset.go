@@ -44,7 +44,7 @@ const PasswordResetEmail = `<!DOCTYPE html>
                 </div>
                 <p class="expiry">This link expires in {{.ExpiryMins}} minutes</p>
                 <div class="warning">
-                    <div class="warning-title">⚠️ If you didn't request this</div>
+                    <div class="warning-title"> If you didn't request this</div>
                     <div class="warning-text">Please ignore this email or contact support if you have concerns about your account security.</div>
                 </div>
             </div>

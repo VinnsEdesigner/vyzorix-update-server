@@ -31,37 +31,37 @@ Each had a documented purpose, but cumulatively they created:
 Collapse to a **three-layer architecture** with strict boundaries:
 
 ```
-┌───────────────────────────────────────────────────────────────┐
-│ Layer C: STATUS AGGREGATOR                                    │
-│   DaemonStatusAggregator                                      │
-│     - subscribes to all signal sources                        │
-│     - produces ONE immutable DaemonStatus model               │
-│     - emits via SharedFlow<DaemonStatus> @ 10s cadence        │
-│     - has NO recovery logic (pure read model)                 │
-└──────────────┬────────────────────────────────────────────────┘
-               │ reads from
-               ▼
-┌──────────────────────────────────┬────────────────────────────┐
-│ Layer B: SIGNAL SOURCES          │  (one class per signal)    │
-│                                  │                            │
-│ • LivenessProbe                  │  "is the service running?" │
-│ • PipelineHealthChecker          │  "is audio flowing?"       │
-│ • MemoryPressureSignal           │  "are we near OOM?"        │
-│ • ThermalSignal                  │  "are we throttling?"      │
-│ • ProjectionTokenSignal          │  "do we have the token?"   │
-│ • WebSocketConnectionSignal      │  "is C2 reachable?"        │
-│ • SafeModeSignal                 │  "are we in safe mode?"    │
-└──────────────────────────────────┴────────────────────────────┘
-                                                     ▲
-                                                     │ subscribes to DaemonStatus
-                                          ┌──────────┴──────────┐
-                                          │ Layer A: RECOVERY   │
-                                          │   RecoveryCoordinator│
-                                          │   - reads status     │
-                                          │   - decides + acts:  │
-                                          │     restart / safe   │
-                                          │     mode / fallback  │
-                                          └──────────────────────┘
+
+ Layer C: STATUS AGGREGATOR                                    
+   DaemonStatusAggregator                                      
+     - subscribes to all signal sources                        
+     - produces ONE immutable DaemonStatus model               
+     - emits via SharedFlow<DaemonStatus> @ 10s cadence        
+     - has NO recovery logic (pure read model)                 
+
+                reads from
+               
+
+ Layer B: SIGNAL SOURCES            (one class per signal)    
+                                                              
+ • LivenessProbe                    "is the service running?" 
+ • PipelineHealthChecker            "is audio flowing?"       
+ • MemoryPressureSignal             "are we near OOM?"        
+ • ThermalSignal                    "are we throttling?"      
+ • ProjectionTokenSignal            "do we have the token?"   
+ • WebSocketConnectionSignal        "is C2 reachable?"        
+ • SafeModeSignal                   "are we in safe mode?"    
+
+                                                     
+                                                      subscribes to DaemonStatus
+                                          
+                                           Layer A: RECOVERY   
+                                             RecoveryCoordinator
+                                             - reads status     
+                                             - decides + acts:  
+                                               restart / safe   
+                                               mode / fallback  
+                                          
 ```
 
 ### Mapping from old to new

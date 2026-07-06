@@ -34,7 +34,7 @@ const RegistrationRequestEmail = `<!DOCTYPE html>
     <div class="container">
         <div class="email-wrapper">
             <div class="header">
-                <div class="icon">📋</div>
+                <div class="icon"></div>
                 <div class="logo">Registration Request</div>
             </div>
             <div class="content">

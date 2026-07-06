@@ -96,12 +96,12 @@ interface VyzorixConfig {
 
 ```
 Settings
-├── Overview (/)          → Redirects to /settings/connection
-├── Connection           → Server URL, device ID, timeout
-├── Operator            → Account info, display name
-├── Thresholds           → Risk, thermal, buffer thresholds
-├── Notifications        → Email, push, webhook settings
-└── Advanced            → Buffers, danger zone
+ Overview (/)          → Redirects to /settings/connection
+ Connection           → Server URL, device ID, timeout
+ Operator            → Account info, display name
+ Thresholds           → Risk, thermal, buffer thresholds
+ Notifications        → Email, push, webhook settings
+ Advanced            → Buffers, danger zone
 ```
 
 ---
@@ -128,66 +128,66 @@ UI Layer (components/) -> Presentation Layer (hooks/) -> Domain Layer (domain/) 
 ```
 apps/web/src/
 |
-├── domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
-|   ├── _shared/                   # SHARED domain types
-|   │   ├── domain-pagination.ts  # Pagination types
-|   │   └── domain-errors.ts      # Domain error types
-|   │
-|   └── settings/
-|       ├── settings-entity.ts      # Settings types (settings-specific)
-|       ├── settings-mappers.ts    # settingsFromRaw() transformations
-|       └── settings-validators.ts # validateSettings()
+ domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
+|    _shared/                   # SHARED domain types
+|       domain-pagination.ts  # Pagination types
+|       domain-errors.ts      # Domain error types
+|   
+|    settings/
+|        settings-entity.ts      # Settings types (settings-specific)
+|        settings-mappers.ts    # settingsFromRaw() transformations
+|        settings-validators.ts # validateSettings()
 |
-├── lib/
-│   └── api/
-|       ├── graphql/
-|       │   ├── settings/
-|       │   │   ├── graphql-settings-queries.ts    # GET_SETTINGS, GET_THRESHOLDS
-|       │   │   ├── graphql-settings-mutations.ts # UPDATE_SETTINGS, UPDATE_THRESHOLDS
-|       │   │   ├── graphql-settings-fragments.ts # Reusable fragments
-|       │   │   └── graphql-settings-types.ts     # Raw GraphQL response types
-|       │   └── _shared/
-|       │       └── graphql-client.ts    # GraphQL client setup
-|       └── rest/
-|           ├── settings/
-|           │   └── rest-settings-endpoints.ts  # REST endpoints for settings
-|           └── _shared/
-|               └── rest-client.ts     # REST client setup
+ lib/
+    api/
+|        graphql/
+|           settings/
+|              graphql-settings-queries.ts    # GET_SETTINGS, GET_THRESHOLDS
+|              graphql-settings-mutations.ts # UPDATE_SETTINGS, UPDATE_THRESHOLDS
+|              graphql-settings-fragments.ts # Reusable fragments
+|              graphql-settings-types.ts     # Raw GraphQL response types
+|           _shared/
+|               graphql-client.ts    # GraphQL client setup
+|        rest/
+|            settings/
+|               rest-settings-endpoints.ts  # REST endpoints for settings
+|            _shared/
+|                rest-client.ts     # REST client setup
 |
-├── hooks/                           # PRESENTATION LAYER
-|   ├── settings/
-|   │   ├── use-settings.ts        # Get/update settings
-|   │   ├── use-thresholds.ts     # Get/update thresholds
-|   │   └── use-notifications.ts   # Get/update notifications
-|   └── _shared/
-|       └── use-debounce.ts        # Debounced save hook
+ hooks/                           # PRESENTATION LAYER
+|    settings/
+|       use-settings.ts        # Get/update settings
+|       use-thresholds.ts     # Get/update thresholds
+|       use-notifications.ts   # Get/update notifications
+|    _shared/
+|        use-debounce.ts        # Debounced save hook
 |
-├── components/                      # UI LAYER
-|   ├── shared/                    # Shared UI components
-|   │   ├── section.tsx            # Bordered section
-|   │   ├── section-header.tsx     # Section header
-|   │   ├── empty-state.tsx        # Empty state
-|   │   ├── loading-skeleton.tsx   # Loading skeleton
-|   │   ├── slider-input.tsx       # Slider + input combo
-|   │   ├── status-badge.tsx       # Status badge
-|   │   └── danger-zone.tsx        # Danger zone wrapper
-|   │
-|   └── settings/
-|       ├── connection-settings.tsx  # Connection tab
-|       ├── operator-settings.tsx    # Operator tab
-|       ├── threshold-settings.tsx   # Thresholds tab
-|       ├── notification-settings.tsx # Notifications tab
-|       ├── advanced-settings.tsx    # Advanced tab
-|       ├── threshold-input.tsx      # Threshold input component
-|       └── notification-row.tsx     # Notification toggle row
+ components/                      # UI LAYER
+|    shared/                    # Shared UI components
+|       section.tsx            # Bordered section
+|       section-header.tsx     # Section header
+|       empty-state.tsx        # Empty state
+|       loading-skeleton.tsx   # Loading skeleton
+|       slider-input.tsx       # Slider + input combo
+|       status-badge.tsx       # Status badge
+|       danger-zone.tsx        # Danger zone wrapper
+|   
+|    settings/
+|        connection-settings.tsx  # Connection tab
+|        operator-settings.tsx    # Operator tab
+|        threshold-settings.tsx   # Thresholds tab
+|        notification-settings.tsx # Notifications tab
+|        advanced-settings.tsx    # Advanced tab
+|        threshold-input.tsx      # Threshold input component
+|        notification-row.tsx     # Notification toggle row
 |
-└── routes/                         # PAGE LAYER (Routes)
-    ├── settings.tsx                # Layout with tabs
-    ├── settings.connection.tsx
-    ├── settings.operator.tsx
-    ├── settings.thresholds.tsx
-    ├── settings.notifications.tsx
-    └── settings.advanced.tsx
+ routes/                         # PAGE LAYER (Routes)
+     settings.tsx                # Layout with tabs
+     settings.connection.tsx
+     settings.operator.tsx
+     settings.thresholds.tsx
+     settings.notifications.tsx
+     settings.advanced.tsx
 ```
 
 ---
@@ -201,20 +201,20 @@ Landing page for settings, showing summary of current configuration and quick li
 ### 5.2 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  SETTINGS                                                        │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─ QUICK STATUS ──────────────────────────────────────────────┐   │
-│  │  Server: https://api.example.com       [Edit]              │   │
-│  │  Device: Pixel 8 Pro                  [Edit]              │   │
-│  │  Notifications: Enabled                [Toggle]             │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ SECTIONS ─────────────────────────────────────────────────┐   │
-│  │  [Connection]  [Operator]  [Thresholds]  [Notifications] │   │
-│  │  [Advanced]                                            [Advanced] │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+
+  SETTINGS                                                        
+
+   QUICK STATUS    
+    Server: https://api.example.com       [Edit]                 
+    Device: Pixel 8 Pro                  [Edit]                 
+    Notifications: Enabled                [Toggle]                
+     
+                                                                     
+   SECTIONS    
+    [Connection]  [Operator]  [Thresholds]  [Notifications]    
+    [Advanced]                                            [Advanced]    
+     
+
 ```
 
 ### 5.3 Data Displayed
@@ -248,39 +248,39 @@ Configure server connection and device settings.
 ### 6.3 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  CONNECTION                                                    │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─ SERVER ────────────────────────────────────────────────────┐   │
-│  │  Server URL                                                │   │
-│  │  ┌─────────────────────────────────────────────────┐     │   │
-│  │  │ https://api.example.com                         │     │   │
-│  │  └─────────────────────────────────────────────────┘     │   │
-│  │  Health: ● ok                                            │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ DEVICE ───────────────────────────────────────────────────┐   │
-│  │  Device ID                                               │   │
-│  │  ┌─────────────────────────────────────────────────┐     │   │
-│  │  │ 861234567890123                                 │     │   │
-│  │  └─────────────────────────────────────────────────┘     │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ AUTHENTICATION ──────────────────────────────────────────┐   │
-│  │  Dashboard Token                                        │   │
-│  │  ┌─────────────────────────────────────────────────┐     │   │
-│  │  │ ••••••••••••••••                               │     │   │
-│  │  └─────────────────────────────────────────────────┘     │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ ADVANCED ───────────────────────────────────────────────┐   │
-│  │  Request Timeout (ms)                    [5000        ]  │   │
-│  │  Auto Reconnect                         [Toggle: ON]    │   │
-│  │  Strict HMAC Validation                 [Toggle: OFF]   │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  [Save Changes]                                                    │
-└─────────────────────────────────────────────────────────────────────┘
+
+  CONNECTION                                                    
+
+   SERVER    
+    Server URL                                                   
+            
+     https://api.example.com                                 
+            
+    Health:  ok                                               
+     
+                                                                     
+   DEVICE    
+    Device ID                                                  
+            
+     861234567890123                                         
+            
+     
+                                                                     
+   AUTHENTICATION    
+    Dashboard Token                                           
+            
+     ••••••••••••••••                                       
+            
+     
+                                                                     
+   ADVANCED    
+    Request Timeout (ms)                    [5000        ]     
+    Auto Reconnect                         [Toggle: ON]       
+    Strict HMAC Validation                 [Toggle: OFF]      
+     
+                                                                     
+  [Save Changes]                                                    
+
 ```
 
 ### 6.4 Validation Rules
@@ -314,29 +314,29 @@ Manage operator account information and permissions.
 ### 7.3 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  OPERATOR                                                    │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─ ACCOUNT ─────────────────────────────────────────────────┐   │
-│  │  Display Name                                           │   │
-│  │  ┌─────────────────────────────────────────────────┐     │   │
-│  │  │ John Doe                                         │     │   │
-│  │  └─────────────────────────────────────────────────┘     │   │
-│  │  Auto-saves on change                                    │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ IDENTITY ─────────────────────────────────────────────────┐   │
-│  │  Email         operator@example.com                        │   │
-│  │  Role          admin                                     │   │
-│  │  Member Since  2024-01-15                               │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ PERMISSIONS ──────────────────────────────────────────────┐   │
-│  │  ● Register Devices      ● Deregister Devices             │   │
-│  │  ● Send Commands         ● View Telemetry                 │   │
-│  │  ● Push Updates         ● Manage Settings                │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+
+  OPERATOR                                                    
+
+   ACCOUNT    
+    Display Name                                              
+            
+     John Doe                                                 
+            
+    Auto-saves on change                                       
+     
+                                                                     
+   IDENTITY    
+    Email         operator@example.com                           
+    Role          admin                                        
+    Member Since  2024-01-15                                  
+     
+                                                                     
+   PERMISSIONS    
+     Register Devices       Deregister Devices                
+     Send Commands          View Telemetry                    
+     Push Updates          Manage Settings                   
+     
+
 ```
 
 ---
@@ -361,36 +361,36 @@ Configure alert thresholds for risk, thermal, and buffer levels.
 ### 8.3 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  THRESHOLDS                                                   │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─ RISK SCORE ───────────────────────────────────────────────┐   │
-│  │                                                          │   │
-│  │  Warning                              Critical            │   │
-│  │  ○────────●─────────────────────────────○───────────────│   │
-│  │  70                                  85                  │   │
-│  │                                                          │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ THERMAL TEMPERATURE ─────────────────────────────────────┐   │
-│  │                                                          │   │
-│  │  Warning                              Critical            │   │
-│  │  ○─────────────●─────────────────────────○──────────────│   │
-│  │  45                                  50                  │   │
-│  │                                                          │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ BUFFER LEVEL ───────────────────────────────────────────┐   │
-│  │                                                          │   │
-│  │  Critical                             Warning             │   │
-│  │  ○─────●─────────────────────────────○──────────────────│   │
-│  │  15                                 30                  │   │
-│  │  (Inverted: low buffer is bad)                          │   │
-│  │                                                          │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  [Reset to Defaults]                        [Save Changes]           │
-└─────────────────────────────────────────────────────────────────────┘
+
+  THRESHOLDS                                                   
+
+   RISK SCORE    
+                                                               
+    Warning                              Critical               
+       
+    70                                  85                     
+                                                               
+     
+                                                                     
+   THERMAL TEMPERATURE    
+                                                               
+    Warning                              Critical               
+       
+    45                                  50                     
+                                                               
+     
+                                                                     
+   BUFFER LEVEL    
+                                                               
+    Critical                             Warning                
+       
+    15                                 30                     
+    (Inverted: low buffer is bad)                             
+                                                               
+     
+                                                                     
+  [Reset to Defaults]                        [Save Changes]           
+
 ```
 
 ### 8.4 Threshold Relationships
@@ -431,42 +431,42 @@ Configure notification preferences (email, push, webhook).
 ### 9.4 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  NOTIFICATIONS                                                │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─ EMAIL ───────────────────────────────────────────────────┐   │
-│  │  [Enable Email Notifications]                             │   │
-│  │                                                          │   │
-│  │  ● threshold_breach                                     │   │
-│  │  ● device_offline                                       │   │
-│  │  ● device_online                                       │   │
-│  │  ○ update_available                                    │   │
-│  │  ○ command_failed                                      │   │
-│  │  ○ registration_request                                │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ PUSH ─────────────────────────────────────────────────┐   │
-│  │  [Enable Push Notifications]                            │   │
-│  │                                                          │   │
-│  │  ● threshold_breach                                   │   │
-│  │  ○ device_offline                                     │   │
-│  │  ○ device_online                                       │   │
-│  │  ○ update_available                                    │   │
-│  │  ○ command_failed                                      │   │
-│  │  ○ registration_request                                │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ WEBHOOK ────────────────────────────────────────────────┐   │
-│  │  [Enable Webhook]                                      │   │
-│  │                                                          │   │
-│  │  Webhook URL                                           │   │
-│  │  ┌─────────────────────────────────────────────────┐     │   │
-│  │  │ https://hooks.example.com/vyzorix              │     │   │
-│  │  └─────────────────────────────────────────────────┘     │   │
-│  │                                                          │   │
-│  │  [Test Webhook]                                         │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+
+  NOTIFICATIONS                                                
+
+   EMAIL    
+    [Enable Email Notifications]                                
+                                                               
+     threshold_breach                                        
+     device_offline                                          
+     device_online                                          
+     update_available                                       
+     command_failed                                         
+     registration_request                                   
+     
+                                                                     
+   PUSH    
+    [Enable Push Notifications]                               
+                                                               
+     threshold_breach                                      
+     device_offline                                        
+     device_online                                          
+     update_available                                       
+     command_failed                                         
+     registration_request                                   
+     
+                                                                     
+   WEBHOOK    
+    [Enable Webhook]                                         
+                                                               
+    Webhook URL                                              
+            
+     https://hooks.example.com/vyzorix                      
+            
+                                                               
+    [Test Webhook]                                            
+     
+
 ```
 
 ---
@@ -495,27 +495,27 @@ Configure advanced client settings and access danger zone.
 ### 10.4 Layout
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  ADVANCED                                                     │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─ BUFFERS ────────────────────────────────────────────────┐   │
-│  │                                                          │   │
-│  │  Log Retention (entries)     [500              ]       │   │
-│  │  Signal History (entries)    [240              ]       │   │
-│  │                                                          │   │
-│  │  Memory limits for in-browser signal and log buffers    │   │
-│  │                                                          │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─ DANGER ZONE ──────────────────────────────────────────────┐   │
-│  │                                                          │   │
-│  │  ⚠️  These actions are irreversible                     │   │
-│  │                                                          │   │
-│  │  [Reset All Settings to Defaults]                       │   │
-│  │  [Export Configuration]                                 │   │
-│  │                                                          │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
+
+  ADVANCED                                                     
+
+   BUFFERS    
+                                                               
+    Log Retention (entries)     [500              ]          
+    Signal History (entries)    [240              ]          
+                                                               
+    Memory limits for in-browser signal and log buffers       
+                                                               
+     
+                                                                     
+   DANGER ZONE    
+                                                               
+      These actions are irreversible                        
+                                                               
+    [Reset All Settings to Defaults]                          
+    [Export Configuration]                                    
+                                                               
+     
+
 ```
 
 ---

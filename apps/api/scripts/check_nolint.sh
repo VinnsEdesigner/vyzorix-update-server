@@ -29,11 +29,11 @@ if [ ${#NOLINT_LINES[@]} -gt 0 ]; then
     FOUND=1
     COUNT=$((COUNT + ${#NOLINT_LINES[@]}))
     for line in "${NOLINT_LINES[@]}"; do
-        echo -e "${RED}✗${NC} $line"
+        echo -e "${RED}${NC} $line"
     done
     echo ""
 else
-    echo -e "${GREEN}✓ No nolint comments found${NC}"
+    echo -e "${GREEN} No nolint comments found${NC}"
     echo ""
 fi
 
@@ -47,11 +47,11 @@ if [ ${#NOINLINE_LINES[@]} -gt 0 ]; then
     FOUND=1
     COUNT=$((COUNT + ${#NOINLINE_LINES[@]}))
     for line in "${NOINLINE_LINES[@]}"; do
-        echo -e "${RED}✗${NC} $line"
+        echo -e "${RED}${NC} $line"
     done
     echo ""
 else
-    echo -e "${GREEN}✓ No noinline comments found${NC}"
+    echo -e "${GREEN} No noinline comments found${NC}"
     echo ""
 fi
 
@@ -65,11 +65,11 @@ if [ ${#LINT_SKIP_LINES[@]} -gt 0 ]; then
     FOUND=1
     COUNT=$((COUNT + ${#LINT_SKIP_LINES[@]}))
     for line in "${LINT_SKIP_LINES[@]}"; do
-        echo -e "${RED}✗${NC} $line"
+        echo -e "${RED}${NC} $line"
     done
     echo ""
 else
-    echo -e "${GREEN}✓ No lint skip patterns found${NC}"
+    echo -e "${GREEN} No lint skip patterns found${NC}"
     echo ""
 fi
 

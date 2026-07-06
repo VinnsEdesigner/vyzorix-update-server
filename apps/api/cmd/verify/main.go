@@ -9,11 +9,11 @@ import (
 
 func main() {
 	fmt.Println()
-	fmt.Println("╔══════════════════════════════════════════════════════════════════════════════╗")
-	fmt.Println("║                                                                              ║")
-	fmt.Println("║        VYZORIX UPDATE SERVER - VERIFICATION SUITE                        ║")
-	fmt.Println("║                                                                              ║")
-	fmt.Println("╚══════════════════════════════════════════════════════════════════════════════╝")
+	fmt.Println("")
+	fmt.Println("                                                                              ")
+	fmt.Println("        VYZORIX UPDATE SERVER - VERIFICATION SUITE                        ")
+	fmt.Println("                                                                              ")
+	fmt.Println("")
 	fmt.Println()
 
 	fmt.Printf("  Initializing verification environment...\n")
@@ -41,9 +41,9 @@ func main() {
 	}
 
 	fmt.Println()
-	fmt.Println("╔══════════════════════════════════════════════════════════════════════════════╗")
-	fmt.Println("║                           FINAL SUMMARY                                      ║")
-	fmt.Println("╚══════════════════════════════════════════════════════════════════════════════╝")
+	fmt.Println("")
+	fmt.Println("                           FINAL SUMMARY                                      ")
+	fmt.Println("")
 	fmt.Println()
 
 	allPassed := true
@@ -51,9 +51,9 @@ func main() {
 	failCount := 0
 
 	for name, passed := range results {
-		status := "✅ PASS"
+		status := " PASS"
 		if !passed {
-			status = "❌ FAIL"
+			status = " FAIL"
 			allPassed = false
 			failCount++
 		} else {
@@ -67,9 +67,9 @@ func main() {
 	fmt.Println()
 
 	if allPassed {
-		fmt.Println("  🎉 ALL VERIFICATIONS PASSED!")
+		fmt.Println("   ALL VERIFICATIONS PASSED!")
 	} else {
-		fmt.Println("  ⚠️  SOME VERIFICATIONS FAILED")
+		fmt.Println("    SOME VERIFICATIONS FAILED")
 	}
 	fmt.Println()
 
