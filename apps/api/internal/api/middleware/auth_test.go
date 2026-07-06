@@ -14,7 +14,7 @@ func init() {
 
 func TestAuthenticator_ValidBearerToken(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "secret-token-123",
+		ServerAPIToken:       "secret-token-123",
 		DevelopmentBypass: false,
 	}
 
@@ -34,7 +34,7 @@ func TestAuthenticator_ValidBearerToken(t *testing.T) {
 
 func TestAuthenticator_ValidVyzorixToken(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "secret-token-123",
+		ServerAPIToken:       "secret-token-123",
 		DevelopmentBypass: false,
 	}
 
@@ -54,7 +54,7 @@ func TestAuthenticator_ValidVyzorixToken(t *testing.T) {
 
 func TestAuthenticator_InvalidBearerToken(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "secret-token-123",
+		ServerAPIToken:       "secret-token-123",
 		DevelopmentBypass: false,
 	}
 
@@ -77,7 +77,7 @@ func TestAuthenticator_InvalidBearerToken(t *testing.T) {
 
 func TestAuthenticator_InvalidVyzorixToken(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "secret-token-123",
+		ServerAPIToken:       "secret-token-123",
 		DevelopmentBypass: false,
 	}
 
@@ -97,7 +97,7 @@ func TestAuthenticator_InvalidVyzorixToken(t *testing.T) {
 
 func TestAuthenticator_NoToken(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "secret-token-123",
+		ServerAPIToken:       "secret-token-123",
 		DevelopmentBypass: false,
 	}
 
@@ -120,7 +120,7 @@ func TestAuthenticator_NoToken(t *testing.T) {
 
 func TestAuthenticator_DevelopmentBypass(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "", // No token secret
+		ServerAPIToken:       "", // No token secret
 		DevelopmentBypass: true,
 	}
 
@@ -140,7 +140,7 @@ func TestAuthenticator_DevelopmentBypass(t *testing.T) {
 
 func TestAuthenticator_MissingBearerPrefix(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "secret-token-123",
+		ServerAPIToken:       "secret-token-123",
 		DevelopmentBypass: false,
 	}
 
@@ -160,7 +160,7 @@ func TestAuthenticator_MissingBearerPrefix(t *testing.T) {
 
 func TestAuthenticator_BearerWithDifferentToken(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "secret-token-123",
+		ServerAPIToken:       "secret-token-123",
 		DevelopmentBypass: false,
 	}
 
@@ -180,7 +180,7 @@ func TestAuthenticator_BearerWithDifferentToken(t *testing.T) {
 
 func TestAuthenticator_ResponseBody(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "secret-token-123",
+		ServerAPIToken:       "secret-token-123",
 		DevelopmentBypass: false,
 	}
 
@@ -198,9 +198,9 @@ func TestAuthenticator_ResponseBody(t *testing.T) {
 	}
 }
 
-func TestAuthenticator_EmptyTokenSecret(t *testing.T) {
+func TestAuthenticator_EmptyServerAPIToken(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "",
+		ServerAPIToken:       "",
 		DevelopmentBypass: false,
 	}
 
@@ -221,7 +221,7 @@ func TestAuthenticator_EmptyTokenSecret(t *testing.T) {
 
 func TestAuthenticator_CaseSensitiveToken(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "SecretToken123",
+		ServerAPIToken:       "SecretToken123",
 		DevelopmentBypass: false,
 	}
 
@@ -259,7 +259,7 @@ func TestAuthenticator_CaseSensitiveToken(t *testing.T) {
 
 func TestAuthenticator_BothHeadersSet(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "secret-token-123",
+		ServerAPIToken:       "secret-token-123",
 		DevelopmentBypass: false,
 	}
 
@@ -282,7 +282,7 @@ func TestAuthenticator_BothHeadersSet(t *testing.T) {
 
 func TestAuthenticator_XVyzorixTokenOnly(t *testing.T) {
 	auth := Authenticator{
-		TokenSecret:       "secret-token-123",
+		ServerAPIToken:       "secret-token-123",
 		DevelopmentBypass: false,
 	}
 

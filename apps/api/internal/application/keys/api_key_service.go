@@ -455,18 +455,6 @@ func fromMillisVal(ms int64) time.Time {
 	return time.UnixMilli(ms)
 }
 
-// fromMillisToDays converts milliseconds to days for expiry.
-func fromMillisToDays(ms *int64) *int {
-	if ms == nil {
-		return nil
-	}
-	days := int(time.Until(time.UnixMilli(*ms)).Hours() / 24)
-	if days < 0 {
-		return nil
-	}
-	return &days
-}
-
 // IsValidScope checks if a string is a valid scope.
 func IsValidScope(s string) bool {
 	return domain.Scope(strings.ToLower(s)).IsValid()
