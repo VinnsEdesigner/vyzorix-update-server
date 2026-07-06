@@ -62,7 +62,7 @@ type dImpl struct {
 }
 
 func verifyDashboard() bool {
-	fmt.Println("\n")
+	fmt.Println()
 	fmt.Println("  SERVER_BACKEND_DASHBOARD_COMMANDS_API.md VERIFICATION                    ")
 	fmt.Println("")
 

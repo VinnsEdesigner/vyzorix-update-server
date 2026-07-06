@@ -67,7 +67,7 @@ type infraSpec struct {
 }
 
 func verifyAuth() bool {
-	fmt.Println("\n")
+	fmt.Println()
 	fmt.Println("  AUTHENTICATION_SYSTEM_SERVER.md VERIFICATION                            ")
 	fmt.Println("")
 
