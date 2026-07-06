@@ -39,7 +39,7 @@ func RequestIDMiddleware() gin.HandlerFunc {
 // generateRequestID creates a random request ID.
 func generateRequestID() string {
 	b := make([]byte, 16)
-	rand.Read(b) //
+	_, _ = rand.Read(b) // crypto/rand.Read always succeeds in practice
 
 	return hex.EncodeToString(b)
 }
