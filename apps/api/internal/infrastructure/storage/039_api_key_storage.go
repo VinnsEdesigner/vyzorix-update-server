@@ -49,6 +49,8 @@ type APIKeyRepository interface {
 	CountByOperatorThisMonth(ctx context.Context, operatorID string) (int, error)
 	CountAll(ctx context.Context) (int, error)
 	IncrementRequestCount(ctx context.Context, id string) error
+	ExistsByOperatorAndName(ctx context.Context, operatorID, name string) (bool, error)
+	ExistsByOperatorAndNameExcluding(ctx context.Context, operatorID, name, excludeKeyID string) (bool, error)
 }
 
 // APIKeyRepositoryImpl handles API key persistence.
@@ -293,6 +295,26 @@ func (r *APIKeyRepositoryImpl) CountAll(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("failed to count all keys: %w", err)
 	}
 	return count, nil
+}
+
+// ExistsByOperatorAndName checks if an active API key with the given name exists for the operator.
+func (r *APIKeyRepositoryImpl) ExistsByOperatorAndName(ctx context.Context, operatorID, name string) (bool, error) {
+	query := `SELECT COUNT(*) FROM api_keys WHERE operator_id = ? AND name = ? AND is_active = 1`
+	var count int
+	if err := r.db.QueryRowContext(ctx, query, operatorID, name).Scan(&count); err != nil {
+		return false, fmt.Errorf("failed to check key existence: %w", err)
+	}
+	return count > 0, nil
+}
+
+// ExistsByOperatorAndNameExcluding checks if an active API key with the given name exists for the operator, excluding a specific key ID.
+func (r *APIKeyRepositoryImpl) ExistsByOperatorAndNameExcluding(ctx context.Context, operatorID, name, excludeKeyID string) (bool, error) {
+	query := `SELECT COUNT(*) FROM api_keys WHERE operator_id = ? AND name = ? AND is_active = 1 AND id != ?`
+	var count int
+	if err := r.db.QueryRowContext(ctx, query, operatorID, name, excludeKeyID).Scan(&count); err != nil {
+		return false, fmt.Errorf("failed to check key existence: %w", err)
+	}
+	return count > 0, nil
 }
 
 // SetupAPIKeysTable creates the api_keys table if it doesn't exist.

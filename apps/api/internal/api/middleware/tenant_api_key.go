@@ -62,17 +62,28 @@ var PathBoundaries = map[string]PathType{
 }
 
 // ClassifyPath determines the PathType for a given path.
+// It checks exact matches first, then prefix matches in order of longest prefix first.
+// This ensures /v1/device/diagnostics/ is matched before /v1/device/.
 func ClassifyPath(path string) PathType {
 	// Check exact matches first
 	if pt, ok := PathBoundaries[path]; ok {
 		return pt
 	}
 
-	// Check prefix matches
+	// Check prefix matches - iterate in order of longest prefix first
+	// to ensure more specific paths take precedence over shorter prefixes
+	longestPrefix := ""
+	var longestPathType PathType
 	for prefix, pt := range PathBoundaries {
 		if strings.HasPrefix(path, prefix) {
-			return pt
+			if len(prefix) > len(longestPrefix) {
+				longestPrefix = prefix
+				longestPathType = pt
+			}
 		}
+	}
+	if longestPrefix != "" {
+		return longestPathType
 	}
 
 	return PathTypeTenant // Default to TENANT
