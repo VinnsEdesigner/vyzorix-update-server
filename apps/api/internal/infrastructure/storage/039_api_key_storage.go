@@ -159,14 +159,15 @@ func (r *APIKeyRepositoryImpl) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-// CountByOperatorThisMonth counts active API keys created by an operator this month.
-// Revoked keys don't count toward the monthly limit since they've been replaced.
+// CountByOperatorThisMonth counts all API keys created by an operator this month (including revoked).
+// This enforces the "20 keys per operator per month" limit properly, preventing bypass via rotation.
 func (r *APIKeyRepositoryImpl) CountByOperatorThisMonth(ctx context.Context, operatorID string) (int, error) {
 	// Get start of current month
 	now := currentTimeMillis()
 	monthStart := getMonthStartMillis(now)
 
-	query := `SELECT COUNT(*) FROM api_keys WHERE operator_id = ? AND created_at >= ? AND is_active = 1`
+	// Count ALL keys including revoked - this prevents circumvention via rotation
+	query := `SELECT COUNT(*) FROM api_keys WHERE operator_id = ? AND created_at >= ?`
 	var count int
 	if err := r.db.QueryRowContext(ctx, query, operatorID, monthStart).Scan(&count); err != nil {
 		return 0, err

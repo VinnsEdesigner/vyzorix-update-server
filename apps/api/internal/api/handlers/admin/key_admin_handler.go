@@ -11,11 +11,11 @@ import (
 
 // SuperAdminHandler handles super admin API key endpoints.
 type SuperAdminHandler struct {
-	service *apikeyapp.Service
+	service *apikeyapp.APIKeyService
 }
 
 // NewSuperAdminHandler creates a new super admin API key handler.
-func NewSuperAdminHandler(service *apikeyapp.Service) *SuperAdminHandler {
+func NewSuperAdminHandler(service *apikeyapp.APIKeyService) *SuperAdminHandler {
 	return &SuperAdminHandler{service: service}
 }
 
