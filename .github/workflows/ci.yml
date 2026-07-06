@@ -260,6 +260,9 @@ jobs:
 
       - name: Health check
         run: |
+          # Clean up data directory for fresh migrations
+          rm -rf /tmp/vyzorix-data/*
+          
           # Start fresh container for health check with SSR fully disabled
           docker run -d --name vyzorix-health \
             -e API_KEY_primary=test-secret-minimum-32-chars!! \
