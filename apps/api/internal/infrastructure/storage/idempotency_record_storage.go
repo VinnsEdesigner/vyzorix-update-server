@@ -4,14 +4,10 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/idempotency"
 )
-
-// ErrIdempotencyRecordNotFound is returned when an idempotency record is not found.
-var ErrIdempotencyRecordNotFound = errors.New("idempotency record not found")
 
 // Ensure IdempotencyRepository implements idempotency.Repository.
 var _ idempotency.Repository = (*IdempotencyRepository)(nil)
@@ -52,7 +48,8 @@ func (r *IdempotencyRepository) Get(ctx context.Context, key string) (*idempoten
 		&record.UserAgent,
 	)
 	if err == sql.ErrNoRows {
-		return nil, ErrIdempotencyRecordNotFound
+		//
+		return nil, nil
 	}
 	if err != nil {
 		return nil, err

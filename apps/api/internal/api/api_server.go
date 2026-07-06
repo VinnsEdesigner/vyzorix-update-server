@@ -4,13 +4,10 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
-	adminkeyshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
-	authapikeyshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	dashboardhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/dashboard"
@@ -22,7 +19,6 @@ import (
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
-	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
@@ -69,20 +65,16 @@ type ServerConfig struct {
 	AuditLogger    *audit.Logger
 	RateLimiter    *middleware.RateLimiter
 	UpdatesService *updatesapp.Service
-	PushService    *updatesapp.PushService
 	Config         config.Config
-	APIKeyService  *keys.APIKeyService
 }
 
 // Server is the main API server.
 type Server struct {
-	AuditLogger                *audit.Logger
-	revocationList             *infraauth.RevocationList
-	log                        *slog.Logger
-	apiKeyAuth                 *middleware.TenantAPIKeyAuth
-	apiKeyRateLimiter       *middleware.InMemoryRateLimiter
+	encryptKeyFn               func(clientID string) ([]byte, bool)
 	authHandlers               *authhandlers.AllHandlers
 	hub                        *hub.Hub
+	engine                     *gin.Engine
+	log                        *slog.Logger
 	deviceStatusHandler        *devicehandlers.StatusHandler
 	sessionManager             *infraauth.SessionManager
 	rateLimiter                *middleware.RateLimiter
@@ -92,16 +84,16 @@ type Server struct {
 	lockout                    *middleware.Lockout
 	csrfProtector              *middleware.CSRFProtector
 	turnstileVerifier          *middleware.TurnstileVerifier
-	deviceRegisterHandler      *devicehandlers.RegisterHandler
+	revocationList             *infraauth.RevocationList
 	ipIntelligence             *middleware.IPIntelligence
 	hmacVerifier               *cryptohmac.Verifier
 	mwFactory                  *middleware.MiddlewareFactory
 	db                         *storage.SQLite
 	dashboardRateLimiter       *middleware.DashboardRateLimiterMiddleware
 	deviceRegRateLimiter       *middleware.DeviceRegistrationRateLimiterMiddleware
-	engine                     *gin.Engine
-	encryptKeyFn               func(clientID string) ([]byte, bool)
-	dashboardStatsHandler      *dashboardhandlers.StatsHandler
+	AuditLogger                *audit.Logger
+	deviceRegisterHandler      *devicehandlers.RegisterHandler
+	deviceUpdaterHandler       *devicehandlers.UpdaterHandler
 	deviceListHandler          *devicehandlers.ListHandler
 	devicesHandler             *devicehandlers.DevicesHandler
 	commandHandler             *cmdhandlers.ExecuteHandler
@@ -115,7 +107,7 @@ type Server struct {
 	deviceLogsHandler          *devicehandlers.LogsHandler
 	deviceMetricsHandler       *devicehandlers.MetricsHandler
 	deviceTelemetryHandler     *devicehandlers.TelemetryHandler
-	deviceUpdaterHandler       *devicehandlers.UpdaterHandler
+	dashboardStatsHandler      *dashboardhandlers.StatsHandler
 	updatesHandler             *updateshandlers.UpdatesHandler
 	inboxHandler               *inboxhandlers.Handler
 	deviceConfirmHandler       *devicehandlers.ConfirmHandler
@@ -123,8 +115,6 @@ type Server struct {
 	diagnosticsInspectHandler  *diagnosticshandlers.InspectHandler
 	diagnosticsTimelineHandler *diagnosticshandlers.TimelineHandler
 	config                     config.Config
-	apiKeysHandler             *authapikeyshandlers.Handler
-	superAdminAPIKeys          *adminkeyshandlers.SuperAdminHandler
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -175,12 +165,6 @@ func NewServer(cfg *ServerConfig) *Server {
 	// Create presenter and wire handlers
 	presenter := response.NewPresenter(cfg.AuthService, cfg.AuditLogger, cfg.IPIntelligence)
 	s.wireHandlers(cfg, presenter, mwSet)
-
-	// Initialize API keys handler
-	if cfg.APIKeyService != nil {
-		s.apiKeysHandler = authapikeyshandlers.NewHandler(cfg.APIKeyService, cfg.AuditLogger)
-		s.superAdminAPIKeys = adminkeyshandlers.NewSuperAdminHandler(cfg.APIKeyService, cfg.AuditLogger)
-	}
 
 	// Start Hub if available
 	if cfg.Hub != nil {
@@ -313,7 +297,7 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	// Updates handler
 	if cfg.UpdatesService != nil {
 		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(middleware.DefaultUpdatesRateLimits())
-		s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, cfg.PushService, updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
+		s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
 	}
 
 	// Inbox handler
@@ -412,7 +396,6 @@ type ServerConfigWithDeps struct {
 	AuditLogger    *audit.Logger
 	UpdatesService *updatesapp.Service
 	Config         config.Config
-	APIKeyService  *keys.APIKeyService
 }
 
 // NewServerWithDeps creates a Server using pre-wired dependencies from wire.
@@ -439,8 +422,6 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		db:                cfg.DB,
 		hub:               cfg.Hub,
 		AuditLogger:       cfg.AuditLogger,
-		apiKeyAuth:        middleware.NewTenantAPIKeyAuth(cfg.APIKeyService, cfg.AuditLogger),
-                apiKeyRateLimiter:   middleware.NewInMemoryRateLimiter(100, time.Minute),
 	}
 
 	// Wire handlers from HandlerSet
