@@ -1,0 +1,21 @@
+export * from "./updates-entity";
+export {
+  versionFromRaw,
+  changelogEntryFromRaw,
+  updatePushFromRaw,
+  syncStatusFromRaw,
+  updateStatusResultFromRaw,
+  versionListResultFromRaw,
+  updateHistoryResultFromRaw,
+  changelogResultFromRaw,
+  syncResultFromRaw,
+  type RawVersion,
+  type RawChangelogEntry,
+  type RawUpdatePush,
+  type RawSyncStatus,
+  type RawUpdateStatusResult,
+  type RawVersionListResult,
+  type RawUpdateHistoryResult,
+  type RawChangelogResult,
+  type RawSyncResult,
+} from "./updates-mappers";

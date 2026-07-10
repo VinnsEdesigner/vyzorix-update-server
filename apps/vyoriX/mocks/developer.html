@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vyzorix Developer</title>
+  <style>
+    :root {
+      --rose-400: #fb7185;
+      --rose-500: #f43f5e;
+      --rose-600: #e11d48;
+      --rose-700: #be123c;
+      --rose-800: #9f1239;
+      
+      /* Neutral Dark theme */
+      --bg: #0d0d0d;
+      --bg-secondary: #171717;
+      --bg-tertiary: #262626;
+      --border: #2e2e2e;
+      --border-strong: #404040;
+      --text: #e5e5e5;
+      --text-secondary: #a3a3a3;
+      --text-muted: #6b6b6b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .mono { font-family: ui-monospace, monospace; }
+
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 240px;
+      border-right: 1px solid var(--border);
+      padding: 1rem;
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      background: var(--bg-secondary);
+    }
+
+    .tab {
+      padding: 0.875rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab:hover { color: var(--text); }
+    .tab.active {
+      color: var(--rose-500);
+      border-bottom-color: var(--rose-500);
+    }
+
+    .content {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 1.5rem;
+      height: calc(100vh - 140px);
+    }
+
+    /* Left Nav */
+    .doc-nav {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      overflow-y: auto;
+    }
+
+    .doc-nav-section {
+      padding: 0.75rem 1rem;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .doc-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 1rem;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+
+    .doc-nav-item:last-child { border-bottom: none; }
+    .doc-nav-item:hover { background: var(--bg-secondary); color: var(--text); }
+    .doc-nav-item.active { 
+      background: var(--bg-tertiary); 
+      color: var(--text);
+      border-left: 2px solid var(--rose-500);
+    }
+
+    .doc-nav-icon {
+      width: 16px;
+      height: 16px;
+      opacity: 0.6;
+    }
+
+    /* Code Panel */
+    .code-panel {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .code-title {
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
+    .code-lang {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      padding: 0.25rem 0.5rem;
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+      border-radius: 4px;
+    }
+
+    .code-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 1rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .code-tab {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .code-tab:hover { color: var(--text-secondary); }
+    .code-tab.active { color: var(--rose-500); border-bottom-color: var(--rose-500); }
+
+    .code-body {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      background: var(--bg-secondary);
+    }
+
+    pre {
+      font-family: ui-monospace, monospace;
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .code-comment { color: var(--text-muted); font-style: italic; }
+    .code-keyword { color: var(--rose-400); font-weight: 600; }
+    .code-string { color: var(--text); }
+    .code-number { color: var(--rose-500); }
+    .code-function { color: var(--text); }
+    .code-variable { color: var(--text); }
+    .code-property { color: var(--text-secondary); }
+    .code-punctuation { color: var(--text-muted); }
+    .code-option { color: var(--text-muted); }
+
+    /* Info Box */
+    .info-box {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+
+    .info-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .info-content {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .info-content strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Endpoint Section */
+    .endpoint-grid {
+      display: grid;
+      grid-template-columns: 100px 1fr 120px;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      margin-bottom: 0.5rem;
+      align-items: center;
+    }
+
+    .endpoint-method {
+      font-family: ui-monospace, monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .endpoint-method.get { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .endpoint-method.post { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .endpoint-method.delete { background: rgba(244, 63, 94, 0.15); color: var(--rose-400); }
+    .endpoint-method.put { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+
+    .endpoint-path {
+      font-family: ui-monospace, monospace;
+      font-size: 0.8125rem;
+      color: var(--text);
+    }
+
+    .endpoint-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    /* SDK Cards */
+    .sdk-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .sdk-card {
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--bg);
+    }
+
+    .sdk-card:hover {
+      border-color: var(--border-strong);
+      background: var(--bg-secondary);
+    }
+
+    .sdk-card.active {
+      border-color: var(--border-strong);
+      background: var(--bg-tertiary);
+    }
+
+    .sdk-icon {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 1rem;
+      color: var(--text-muted);
+    }
+
+    .sdk-name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .sdk-lang {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Nav styles */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      margin-bottom: 0.25rem;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-secondary);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--bg-tertiary);
+      color: var(--text);
+      border-left: 2px solid var(--text-muted);
+    }
+
+    .nav-icon {
+      width: 20px;
+      height: 20px;
+      opacity: 0.7;
+    }
+
+    .nav-section {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: 1rem 0.75rem 0.5rem;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1rem 0;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--rose-500);
+      margin-bottom: 1.5rem;
+      padding-left: 0.75rem;
+    }
+
+    .theme-toggle {
+      padding: 0.5rem 1rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+
+    .theme-toggle:hover {
+      background: var(--bg-secondary);
+    }
+
+    /* Section title */
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .copy-btn {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .copy-btn:hover {
+      background: var(--bg-secondary);
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <button class="theme-toggle" onclick="document.body.classList.toggle('dark')">Toggle Theme</button>
+      <div class="logo">Vyzorix</div>
+      
+      <div class="nav-section">Management</div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/>
+        </svg>
+        Dashboard
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+        </svg>
+        Devices
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+        </svg>
+        Logs
+      </div>
+      <div class="nav-item active">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+        </svg>
+        Developer
+      </div>
+      
+      <div class="divider"></div>
+      
+      <div class="nav-section">Settings</div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+        </svg>
+        Settings
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="header">
+        <span class="header-title">Developer</span>
+      </header>
+
+      <nav class="tabs">
+        <div class="tab active">SDKs</div>
+        <div class="tab">REST API</div>
+        <div class="tab">GraphQL</div>
+        <div class="tab">WebSocket</div>
+      </nav>
+
+      <div class="content">
+        <!-- SDK Cards -->
+        <div class="sdk-grid">
+          <div class="sdk-card active">
+            <svg class="sdk-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M0 0h24v24H0V0zm22.034 18.276c-.175-1.095-.888-2.015-3.003-2.873-.736-.345-1.554-.585-1.797-1.14-.091-.33-.105-.51-.046-.705.15-.646.915-.84 1.515-.66.39.12.75.42.976.9 1.034-.676 1.034-.676 1.755-1.125-.27-.42-.404-.601-.586-.78-.63-.705-1.469-1.065-2.834-1.034l-.705.089c-.676.165-1.32.525-1.71 1.005-1.14 1.291-.811 3.541.569 4.471 1.365 1.02 3.361 1.244 3.616 2.205.24 1.17-.87 1.545-1.966 1.41-.811-.18-1.26-.586-1.755-1.336l-1.83 1.051c.21.48.45.689.81 1.109 1.74 1.756 6.09 1.666 6.871-1.004.029-.09.24-.705.074-1.65l.046.067zm-8.983-7.245h-2.248c0 1.938-.009 3.864-.009 5.805 0 1.232.063 2.363-.138 2.711-.33.689-1.18.601-1.566.48-.396-.196-.597-.466-.83-.855-.063-.105-.11-.196-.127-.196l-1.825 1.125c.305.63.75 1.172 1.324 1.517.855.51 2.004.675 3.207.405.783-.226 1.458-.691 1.811-1.411.51-.93.402-2.07.397-3.346.012-2.054 0-4.109 0-6.179l.004-.056z"/>
+            </svg>
+            <div class="sdk-name">JavaScript</div>
+            <div class="sdk-lang">Node.js / Browser</div>
+          </div>
+          <div class="sdk-card">
+            <svg class="sdk-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z"/>
+            </svg>
+            <div class="sdk-name">Go</div>
+            <div class="sdk-lang">golang</div>
+          </div>
+          <div class="sdk-card">
+            <svg class="sdk-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+            <div class="sdk-name">Python</div>
+            <div class="sdk-lang">Python 3</div>
+          </div>
+        </div>
+
+        <div class="content-grid">
+          <!-- Left Nav -->
+          <nav class="doc-nav">
+            <div class="doc-nav-section">Getting Started</div>
+            <div class="doc-nav-item active">
+              <svg class="doc-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+              Installation
+            </div>
+            <div class="doc-nav-item">
+              <svg class="doc-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.482-.502-5.084z"/>
+              </svg>
+              Authentication
+            </div>
+            <div class="doc-nav-item">
+              <svg class="doc-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+              </svg>
+              Devices
+            </div>
+            
+            <div class="doc-nav-section">Real-time</div>
+            <div class="doc-nav-item">
+              <svg class="doc-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+              WebSocket
+            </div>
+            <div class="doc-nav-item">
+              <svg class="doc-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+              Push Notifications
+            </div>
+            
+            <div class="doc-nav-section">Commands</div>
+            <div class="doc-nav-item">
+              <svg class="doc-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              Send Commands
+            </div>
+            <div class="doc-nav-item">
+              <svg class="doc-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+              Command History
+            </div>
+          </nav>
+
+          <!-- Code Panel -->
+          <div class="code-panel">
+            <div class="code-header">
+              <span class="code-title">Installation</span>
+              <span class="code-lang">npm</span>
+            </div>
+            
+            <div class="info-box">
+              <svg class="info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div class="info-content">
+                <strong>API Key Required</strong><br>
+                Get your API key from Settings â API Keys. All requests must include <code style="color: var(--rose-400)">Authorization: Bearer YOUR_API_KEY</code>
+              </div>
+            </div>
+
+            <div class="code-body">
+              <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">Install the SDK</span>
+                  <button class="copy-btn">Copy</button>
+                </div>
+                <pre><span class="code-keyword">npm</span> <span class="code-option">install</span> @vyzorix/sdk</pre>
+              </div>
+
+              <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">Initialize client</span>
+                  <button class="copy-btn">Copy</button>
+                </div>
+                <pre><span class="code-keyword">import</span> <span class="code-punctuation">{</span> VyzorixClient <span class="code-punctuation">}</span> <span class="code-keyword">from</span> <span class="code-string">'@vyzorix/sdk'</span><span class="code-punctuation">;</span>
+
+<span class="code-keyword">const</span> client <span class="code-punctuation">=</span> <span class="code-keyword">new</span> <span class="code-function">VyzorixClient</span><span class="code-punctuation">({</span>
+  <span class="code-property">apiKey</span><span class="code-punctuation">:</span> <span class="code-string">'vk_live_xxxxxxxxxxxx'</span><span class="code-punctuation">,</span>
+  <span class="code-property">region</span><span class="code-punctuation">:</span> <span class="code-string">'us-east-1'</span>
+<span class="code-punctuation">});</span></pre>
+              </div>
+
+              <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">Get device info</span>
+                  <button class="copy-btn">Copy</button>
+                </div>
+                <pre><span class="code-comment">// Fetch device details</span>
+<span class="code-keyword">const</span> device <span class="code-punctuation">=</span> <span class="code-keyword">await</span> client.devices<span class="code-punctuation">.</span><span class="code-function">get</span><span class="code-punctuation">(</span>
+  <span class="code-string">'861234567890123'</span>
+<span class="code-punctuation">);</span>
+
+console<span class="code-punctuation">.</span><span class="code-function">log</span><span class="code-punctuation">(</span>device<span class="code-punctuation">.</span>name<span class="code-punctuation">);</span>      <span class="code-comment">// "Pixel 8 Pro"</span>
+console<span class="code-punctuation">.</span><span class="code-function">log</span><span class="code-punctuation">(</span>device<span class="code-punctuation">.</span>status<span class="code-punctuation">);</span>   <span class="code-comment">// "online"</span></pre>
+              </div>
+
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">Send command</span>
+                  <button class="copy-btn">Copy</button>
+                </div>
+                <pre><span class="code-keyword">const</span> result <span class="code-punctuation">=</span> <span class="code-keyword">await</span> client<span class="code-punctuation">.</span>commands<span class="code-punctuation">.</span><span class="code-function">send</span><span class="code-punctuation">({</span>
+  <span class="code-property">imei</span><span class="code-punctuation">:</span> <span class="code-string">'861234567890123'</span><span class="code-punctuation">,</span>
+  <span class="code-property">command</span><span class="code-punctuation">:</span> <span class="code-string">'FORCE_SPEAKER'</span>
+<span class="code-punctuation">});</span>
+
+console<span class="code-punctuation">.</span><span class="code-function">log</span><span class="code-punctuation">(</span>result<span class="code-punctuation">.</span>id<span class="code-punctuation">);</span>        <span class="code-comment">// "cmd_abc123"</span>
+console<span class="code-punctuation">.</span><span class="code-function">log</span><span class="code-punctuation">(</span>result<span class="code-punctuation">.</span>status<span class="code-punctuation">);</span>   <span class="code-comment">// "pending"</span></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+
+    // SDK cards
+    document.querySelectorAll('.sdk-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.sdk-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+      });
+    });
+
+    // Doc nav items
+    document.querySelectorAll('.doc-nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.doc-nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
