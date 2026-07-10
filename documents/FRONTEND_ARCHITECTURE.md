@@ -112,7 +112,7 @@ LAYERED ARCHITECTURE:
                                                                      
      
                         DOMAIN LAYER                             
-                     (src/domain/)                               
+                     (packages/API_Client/src/domain/)                               
                                                                   
       Pure functions that:                                       
       - Define types and interfaces                             
@@ -125,7 +125,7 @@ LAYERED ARCHITECTURE:
                                                                      
      
                          DATA LAYER                              
-                     (src/lib/api/)                              
+                     (packages/API_Client/src/vyzorServer/)                              
                                                                   
       API clients that:                                          
       - Make HTTP requests                                       
@@ -200,14 +200,14 @@ LAYERED ARCHITECTURE:
 | **Location** | `src/hooks/` |
 | **Contains** | Custom React hooks |
 | **Responsibility** | UI logic, data transformation, state management |
-| **Imports From** | `src/domain/`, `src/lib/api/` |
+| **Imports From** | `packages/API_Client/src/domain/`, `packages/API_Client/src/vyzorServer/` |
 | **Examples** | `useDeviceList`, `useSendCommand`, `useExport` |
 
 ### 3.3 Domain Layer
 
 | Aspect | Definition |
 |--------|-------------|
-| **Location** | `src/domain/` |
+| **Location** | `packages/API_Client/src/domain/` |
 | **Contains** | Types, interfaces, pure functions |
 | **Responsibility** | Define types, transform data, validate input |
 | **Imports From** | NOTHING (no dependencies) |
@@ -217,10 +217,10 @@ LAYERED ARCHITECTURE:
 
 | Aspect | Definition |
 |--------|-------------|
-| **Location** | `src/lib/api/` |
+| **Location** | `packages/API_Client/src/vyzorServer/` |
 | **Contains** | API clients, queries, mutations |
 | **Responsibility** | Make HTTP requests, handle responses |
-| **Imports From** | `src/domain/` (types only) |
+| **Imports From** | `packages/API_Client/src/domain/` (types only) |
 | **Examples** | GraphQL client, REST client, API endpoints |
 
 ---
@@ -270,14 +270,14 @@ module.exports = {
       {
         patterns: [
           // UI cannot import from these
-          { group: ['@/domain/**'], target: 'UI Layer' },
-          { group: ['@/lib/api/**'], target: 'UI Layer' },
+          { group: ['@vyzorix/api-client/domain/**'], target: 'UI Layer' },
+          { group: ['@vyzorix/api-client/vyzorServer/**'], target: 'UI Layer' },
           // Presentation cannot import from UI
           { group: ['@/ui/**'], target: 'Presentation Layer' },
           // Domain cannot import from anything
           { group: ['@/ui/**'], target: 'Domain Layer' },
           { group: ['@/hooks/**'], target: 'Domain Layer' },
-          { group: ['@/lib/api/**'], target: 'Domain Layer' },
+          { group: ['@vyzorix/api-client/vyzorServer/**'], target: 'Domain Layer' },
           // Data cannot import from UI or Presentation
           { group: ['@/ui/**'], target: 'Data Layer' },
           { group: ['@/hooks/**'], target: 'Data Layer' },
@@ -557,7 +557,7 @@ The domain layer is the **pure core** of the application. It defines what the ap
 ### 6.4 Example: Device Domain
 
 ```typescript
-// src/domain/device/types.ts
+// packages/API_Client/src/domain/device/types.ts
 
 export type DeviceStatus = "online" | "offline" | "deregistered";
 
@@ -584,7 +584,7 @@ export interface DeviceListItem {
 ```
 
 ```typescript
-// src/domain/device/transforms.ts
+// packages/API_Client/src/domain/device/transforms.ts
 
 import type { Device, DeviceListItem } from "./types";
 
@@ -624,7 +624,7 @@ export const deviceListItemFromRaw = (raw: RawDevice): DeviceListItem => ({
 ```
 
 ```typescript
-// src/domain/device/validation.ts
+// packages/API_Client/src/domain/device/validation.ts
 
 export const validateImei = (imei: string): boolean => {
   // IMEI must be 15 digits
@@ -638,7 +638,7 @@ export const validateDeviceName = (name: string): boolean => {
 ```
 
 ```typescript
-// src/domain/device/index.ts
+// packages/API_Client/src/domain/device/index.ts
 
 export * from "./types";
 export * from "./transforms";
@@ -664,7 +664,7 @@ The data layer handles all **external communication**. It knows nothing about UI
 ### 7.3 GraphQL Client Setup
 
 ```typescript
-// src/lib/api/graphql/client.ts
+// packages/API_Client/src/vyzorServer/graphql/client.ts
 
 import { ApolloClient, InMemoryCache, HttpLink } from "@apollo/client";
 
@@ -687,7 +687,7 @@ export const graphqlClient = new ApolloClient({
 ### 7.4 GraphQL Queries
 
 ```typescript
-// src/lib/api/graphql/queries/device.ts
+// packages/API_Client/src/vyzorServer/graphql/queries/device.ts
 
 import { gql } from "@apollo/client";
 
@@ -737,7 +737,7 @@ export const GET_DEVICE = gql`
 ### 7.5 REST Client
 
 ```typescript
-// src/lib/api/rest/client.ts
+// packages/API_Client/src/vyzorServer/rest/client.ts
 
 const getBaseUrl = () => import.meta.env.VITE_API_URL;
 
@@ -792,7 +792,7 @@ export const restClient = {
 ### 7.6 REST Endpoints
 
 ```typescript
-// src/lib/api/rest/endpoints.ts
+// packages/API_Client/src/vyzorServer/rest/endpoints.ts
 
 import { restClient } from "./client";
 
@@ -871,14 +871,14 @@ export const use[Feature] = (/* params */) => {
 // src/hooks/device/use-devices.ts
 
 import { useQuery } from "@tanstack/react-query";
-import { graphqlClient } from "@/lib/api/graphql/client";
-import { GET_DEVICES } from "@/lib/api/graphql/queries/device";
+import { graphqlClient } from "@vyzorix/api-client/vyzorServer/graphql/client";
+import { GET_DEVICES } from "@vyzorix/api-client/vyzorServer/graphql/queries/device";
 import { 
   deviceFromRaw, 
   deviceListItemFromRaw,
   validateDeviceListResponse,
-} from "@/domain/device";
-import type { Device, DeviceListItem } from "@/domain/device";
+} from "@vyzorix/api-client/domain/device";
+import type { Device, DeviceListItem } from "@vyzorix/api-client/domain/device";
 
 interface UseDevicesOptions {
   page?: number;
@@ -942,10 +942,10 @@ export const useDevices = (
 // src/hooks/commands/use-send-command.ts
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { graphqlClient } from "@/lib/api/graphql/client";
-import { SEND_COMMAND } from "@/lib/api/graphql/mutations/command-mutations";
-import { validateCommandResponse } from "@/domain/commands";
-import type { CommandResponse } from "@/domain/commands";
+import { graphqlClient } from "@vyzorix/api-client/vyzorServer/graphql/client";
+import { SEND_COMMAND } from "@vyzorix/api-client/vyzorServer/graphql/mutations/command-mutations";
+import { validateCommandResponse } from "@vyzorix/api-client/domain/commands";
+import type { CommandResponse } from "@vyzorix/api-client/domain/commands";
 
 interface UseSendCommandOptions {
   imei: string;
@@ -1000,8 +1000,8 @@ import {
   toJSON, 
   generateFilename,
   validateExportData,
-} from "@/domain/export";
-import type { ExportFormat, ExportableData } from "@/domain/export";
+} from "@vyzorix/api-client/domain/export";
+import type { ExportFormat, ExportableData } from "@vyzorix/api-client/domain/export";
 
 interface UseExportOptions {
   type: string;
@@ -1090,7 +1090,7 @@ import { useState } from "react";
 import { useSendCommand } from "@/hooks/commands/use-send-command";
 import { useCommandsPending } from "@/hooks/commands/use-commands";
 import { useDeviceSelector } from "@/hooks/common/use-device-selector";
-import { PRESET_COMMANDS } from "@/domain/commands";
+import { PRESET_COMMANDS } from "@vyzorix/api-client/domain/commands";
 import { toast } from "sonner";
 
 import { Section } from "@/ui/components/ui/section";
@@ -1189,7 +1189,7 @@ import { ButtonHTMLAttributes } from "react";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/ui/components/ui/button";
-import type { PresetCommand } from "@/domain/commands";
+import type { PresetCommand } from "@vyzorix/api-client/domain/commands";
 
 interface CommandButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   command: PresetCommand;
@@ -1238,7 +1238,7 @@ Follow this order:
   STEP 1: Define Domain                                             
      
                                                                      
-  src/domain/[feature]/                                             
+  packages/API_Client/src/domain/[feature]/                                             
    types.ts          # What is this thing?                         
    transforms.ts     # How do I convert API data?                  
    validation.ts     # Is this data valid?                         
@@ -1248,11 +1248,11 @@ Follow this order:
   STEP 2: Create Data Layer                                         
      
                                                                      
-  src/lib/api/graphql/                                              
+  packages/API_Client/src/vyzorServer/graphql/                                              
    queries/[feature].ts    # GraphQL queries                      
    mutations/[feature].ts   # GraphQL mutations                    
                                                                      
-  src/lib/api/rest/                                                
+  packages/API_Client/src/vyzorServer/rest/                                                
    endpoints.ts           # REST endpoints (fallback)             
    adapters.ts           # Convert REST to GraphQL format         
                                                                      
@@ -1286,7 +1286,7 @@ Follow this order:
 #### Step 1: Domain
 
 ```typescript
-// src/domain/alerts/types.ts
+// packages/API_Client/src/domain/alerts/types.ts
 
 export type AlertSeverity = "critical" | "warning" | "info";
 
@@ -1307,7 +1307,7 @@ export interface Alert {
 ```
 
 ```typescript
-// src/domain/alerts/transforms.ts
+// packages/API_Client/src/domain/alerts/transforms.ts
 
 import type { Alert } from "./types";
 
@@ -1341,7 +1341,7 @@ export const alertFromRaw = (raw: RawAlert): Alert => ({
 #### Step 2: Data Layer
 
 ```typescript
-// src/lib/api/graphql/queries/alert-queries.ts
+// packages/API_Client/src/vyzorServer/graphql/queries/alert-queries.ts
 
 import { gql } from "@apollo/client";
 
@@ -1377,10 +1377,10 @@ export const GET_ALERTS = gql`
 // src/hooks/alerts/use-alerts.ts
 
 import { useQuery } from "@tanstack/react-query";
-import { graphqlClient } from "@/lib/api/graphql/client";
-import { GET_ALERTS } from "@/lib/api/graphql/queries/alert-queries";
-import { alertFromRaw } from "@/domain/alerts";
-import type { Alert, AlertStatus } from "@/domain/alerts";
+import { graphqlClient } from "@vyzorix/api-client/vyzorServer/graphql/client";
+import { GET_ALERTS } from "@vyzorix/api-client/vyzorServer/graphql/queries/alert-queries";
+import { alertFromRaw } from "@vyzorix/api-client/domain/alerts";
+import type { Alert, AlertStatus } from "@vyzorix/api-client/domain/alerts";
 
 interface UseAlertsOptions {
   status?: AlertStatus;
@@ -1566,13 +1566,13 @@ src/
 
 STEP 2: Create Domain Types
 
-src/domain/[feature]/types.ts
-src/domain/[feature]/transforms.ts
+packages/API_Client/src/domain/[feature]/types.ts
+packages/API_Client/src/domain/[feature]/transforms.ts
 
 STEP 3: Create Data Layer
 
-src/lib/api/graphql/queries/[feature].ts
-src/lib/api/rest/endpoints.ts
+packages/API_Client/src/vyzorServer/graphql/queries/[feature].ts
+packages/API_Client/src/vyzorServer/rest/endpoints.ts
 
 STEP 4: Create Presentation Layer
 

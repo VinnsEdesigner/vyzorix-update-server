@@ -172,18 +172,18 @@ src/
 
 ```typescript
 // 1. Session-based Client (for Operator Settings UI)
-// Location: src/lib/api/client/session-client.ts
+// Location: packages/API_Client/src/vyzorServer/client/session-client.ts
 // Uses cookies - operator is logged in
 // Purpose: Manage own keys (create, revoke, rotate, rename)
 
-import { sessionClient } from "@/lib/api/client/session-client";
+import { sessionClient } from "@vyzorix/api-client/vyzorServer/client/session-client";
 
 // 2. Developer Client (for third-party apps)
-// Location: src/lib/api/client/developer-client.ts
+// Location: packages/API_Client/src/vyzorServer/client/developer-client.ts
 // Uses X-API-Key header - developer is using their key
 // Purpose: Make API calls using the key
 
-import { createDeveloperClient } from "@/lib/api/client/developer-client";
+import { createDeveloperClient } from "@vyzorix/api-client/vyzorServer/client/developer-client";
 const client = createDeveloperClient("vxyz_abc123...");
 const devices = await client.getDevices();
 ```
@@ -197,7 +197,7 @@ const devices = await client.getDevices();
 ### 3.1 Target File Structure
 
 ```
-src/domain/
+packages/API_Client/src/domain/
  apikey/
     apikey-entity.ts          # Types (ApiKey, ApiKeyScope, etc.)
     apikey-mappers.ts         # Raw → Domain transformations
@@ -212,7 +212,7 @@ src/domain/
 ### 3.2 Entity Types (apikey-entity.ts)
 
 ```typescript
-// src/domain/apikey/apikey-entity.ts
+// packages/API_Client/src/domain/apikey/apikey-entity.ts
 
 // NOTE: This file must NOT import from lib/api/ or hooks/
 
@@ -307,7 +307,7 @@ export interface ApiKeyUsageStats {
 ### 3.2 Mappers (apikey-mappers.ts)
 
 ```typescript
-// src/domain/apikey/apikey-mappers.ts
+// packages/API_Client/src/domain/apikey/apikey-mappers.ts
 
 // NOTE: This file must NOT import from lib/api/ or hooks/
 
@@ -434,7 +434,7 @@ export const apiKeysListFromRaw = (raw: RawApiKeysListResponse): ApiKeysListResp
 ### 3.3 Validation
 
 ```typescript
-// src/domain/api-keys/validation.ts
+// packages/API_Client/src/domain/api-keys/validation.ts
 
 // NOTE: This file must NOT import from lib/api/ or hooks/
 
@@ -562,7 +562,7 @@ export const validateUpdateApiKeyRequest = (
 ### 4.1 Session Client (Operator Settings - Management)
 
 ```typescript
-// src/lib/api/client/session-client.ts
+// packages/API_Client/src/vyzorServer/client/session-client.ts
 
 /**
  * Session-based API client for operator settings
@@ -605,21 +605,21 @@ export const sessionClient = {
 ### 4.2 API Keys Management Endpoints
 
 ```typescript
-// src/lib/api/rest/endpoints/api-keys.ts
+// packages/API_Client/src/vyzorServer/rest/endpoints/api-keys.ts
 
-import { sessionClient } from "@/lib/api/client/session-client";
+import { sessionClient } from "@vyzorix/api-client/vyzorServer/client/session-client";
 import {
   apiKeyWithFullKeyFromRaw,
   apiKeysListFromRaw,
   apiKeyFromRaw,
-} from "@/domain/api-keys/transforms";
+} from "@vyzorix/api-client/domain/api-keys/transforms";
 import type {
   ApiKey,
   ApiKeyWithFullKey,
   CreateApiKeyRequest,
   UpdateApiKeyRequest,
   ApiKeysListResponse,
-} from "@/domain/api-keys/types";
+} from "@vyzorix/api-client/domain/api-keys/types";
 
 const API_KEYS_BASE = "/v1/auth/api-keys";
 
@@ -692,7 +692,7 @@ export const apiKeysEndpoints = {
 ### 4.3 Developer Client (Third-Party Apps)
 
 ```typescript
-// src/lib/api/client/developer-client.ts
+// packages/API_Client/src/vyzorServer/client/developer-client.ts
 
 /**
  * Developer API client for third-party applications
@@ -826,10 +826,10 @@ export const apiKeysQueryKeys = {
 // src/hooks/api-keys/use-api-keys.ts
 
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiKeysEndpoints } from "@/lib/api/rest/endpoints/api-keys";
-import { apiKeysListFromRaw } from "@/domain/api-keys/transforms";
+import { apiKeysEndpoints } from "@vyzorix/api-client/vyzorServer/rest/endpoints/api-keys";
+import { apiKeysListFromRaw } from "@vyzorix/api-client/domain/api-keys/transforms";
 import { apiKeysQueryKeys } from "./query-keys";
-import type { ApiKey, ApiKeysListResponse } from "@/domain/api-keys/types";
+import type { ApiKey, ApiKeysListResponse } from "@vyzorix/api-client/domain/api-keys/types";
 
 const PAGE_SIZE = 20;
 
@@ -885,9 +885,9 @@ export const useApiKeys = () => {
 
 import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiKeysEndpoints } from "@/lib/api/rest/endpoints/api-keys";
-import { validateCreateApiKeyRequest } from "@/domain/api-keys/validation";
-import type { ApiKeyWithFullKey, CreateApiKeyRequest } from "@/domain/api-keys/types";
+import { apiKeysEndpoints } from "@vyzorix/api-client/vyzorServer/rest/endpoints/api-keys";
+import { validateCreateApiKeyRequest } from "@vyzorix/api-client/domain/api-keys/validation";
+import type { ApiKeyWithFullKey, CreateApiKeyRequest } from "@vyzorix/api-client/domain/api-keys/types";
 
 export const useCreateApiKey = () => {
   const queryClient = useQueryClient();
@@ -951,8 +951,8 @@ export const useCreateApiKey = () => {
 
 import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiKeysEndpoints } from "@/lib/api/rest/endpoints/api-keys";
-import type { ApiKey } from "@/domain/api-keys/types";
+import { apiKeysEndpoints } from "@vyzorix/api-client/vyzorServer/rest/endpoints/api-keys";
+import type { ApiKey } from "@vyzorix/api-client/domain/api-keys/types";
 
 export const useRevokeApiKey = () => {
   const queryClient = useQueryClient();
@@ -1037,8 +1037,8 @@ export const useRevokeApiKey = () => {
 
 import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiKeysEndpoints } from "@/lib/api/rest/endpoints/api-keys";
-import type { ApiKeyWithFullKey } from "@/domain/api-keys/types";
+import { apiKeysEndpoints } from "@vyzorix/api-client/vyzorServer/rest/endpoints/api-keys";
+import type { ApiKeyWithFullKey } from "@vyzorix/api-client/domain/api-keys/types";
 
 export const useRotateApiKey = () => {
   const queryClient = useQueryClient();
@@ -1094,9 +1094,9 @@ export const useRotateApiKey = () => {
 
 import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiKeysEndpoints } from "@/lib/api/rest/endpoints/api-keys";
-import { validateUpdateApiKeyRequest } from "@/domain/api-keys/validation";
-import type { ApiKey, UpdateApiKeyRequest } from "@/domain/api-keys/types";
+import { apiKeysEndpoints } from "@vyzorix/api-client/vyzorServer/rest/endpoints/api-keys";
+import { validateUpdateApiKeyRequest } from "@vyzorix/api-client/domain/api-keys/validation";
+import type { ApiKey, UpdateApiKeyRequest } from "@vyzorix/api-client/domain/api-keys/types";
 
 export const useUpdateApiKey = () => {
   const queryClient = useQueryClient();
@@ -1417,7 +1417,7 @@ export const ApiKeysPage = () => {
 ```tsx
 // src/ui/pages/settings/api-keys/components/api-key-list.tsx
 
-import type { ApiKey } from "@/domain/api-keys/types";
+import type { ApiKey } from "@vyzorix/api-client/domain/api-keys/types";
 import { ApiKeyRow } from "./api-key-row";
 
 interface ApiKeyListProps {
@@ -1462,7 +1462,7 @@ export const ApiKeyList = ({ keys, onRevoke, onRotate, onEdit }: ApiKeyListProps
 ```tsx
 // src/ui/pages/settings/api-keys/components/api-key-row.tsx
 
-import type { ApiKey } from "@/domain/api-keys/types";
+import type { ApiKey } from "@vyzorix/api-client/domain/api-keys/types";
 import { Button } from "@/ui/components/ui/button";
 import { CopyButton } from "@/ui/components/shared/copy-button";
 import { RotateCw, Pencil, Trash2, MoreVertical } from "lucide-react";
@@ -1747,7 +1747,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/ui/components/ui/select";
-import type { ApiKeyScope } from "@/domain/api-keys/types";
+import type { ApiKeyScope } from "@vyzorix/api-client/domain/api-keys/types";
 
 interface CreateKeyDialogProps {
   open: boolean;
@@ -2083,7 +2083,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/ui/components/ui/select";
-import type { ApiKeyScope } from "@/domain/api-keys/types";
+import type { ApiKeyScope } from "@vyzorix/api-client/domain/api-keys/types";
 
 interface EditKeyDialogProps {
   open: boolean;
@@ -2502,7 +2502,7 @@ export const CopyButton = ({
 ### 8.1 React Query Configuration
 
 ```typescript
-// src/lib/api/react-query.ts
+// packages/API_Client/src/vyzorServer/react-query.ts
 
 import { QueryClient } from "@tanstack/react-query";
 
@@ -2714,7 +2714,7 @@ src/ui/pages/admin/
 ### 12.3 Domain Types
 
 ```typescript
-// src/domain/api-keys/admin-types.ts
+// packages/API_Client/src/domain/api-keys/admin-types.ts
 
 export interface AdminApiKey {
   id: string;
@@ -2749,9 +2749,9 @@ export interface OperatorStats {
 ### 12.4 Admin Data Layer
 
 ```typescript
-// src/lib/api/rest/endpoints/admin-api-keys.ts
+// packages/API_Client/src/vyzorServer/rest/endpoints/admin-api-keys.ts
 
-import { sessionClient } from "@/lib/api/client/session-client";
+import { sessionClient } from "@vyzorix/api-client/vyzorServer/client/session-client";
 
 const ADMIN_API_KEYS_BASE = "/v1/admin/api-keys";
 
@@ -2852,7 +2852,7 @@ const transformStats = (raw: any): GlobalStats => ({
 // src/hooks/api-keys/admin/use-admin-api-keys.ts
 
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
-import { adminApiKeysEndpoints } from "@/lib/api/rest/endpoints/admin-api-keys";
+import { adminApiKeysEndpoints } from "@vyzorix/api-client/vyzorServer/rest/endpoints/admin-api-keys";
 
 export const useAdminApiKeys = (filters?: {
   operatorId?: string;
@@ -3244,7 +3244,7 @@ export const TestEndpoint = () => {
 ### 13.1 Unit Tests (Domain Layer)
 
 ```typescript
-// src/domain/api-keys/__tests__/transforms.test.ts
+// packages/API_Client/src/domain/api-keys/__tests__/transforms.test.ts
 
 import { apiKeyFromRaw, apiKeyWithFullKeyFromRaw } from "../transforms";
 
@@ -3298,7 +3298,7 @@ describe("apiKeyFromRaw", () => {
 ### 13.2 Validation Tests
 
 ```typescript
-// src/domain/api-keys/__tests__/validation.test.ts
+// packages/API_Client/src/domain/api-keys/__tests__/validation.test.ts
 
 import {
   validateApiKeyName,
