@@ -1,0 +1,62 @@
+export const UPDATE_VERSION_FRAGMENT = /* GraphQL */ `
+  fragment UpdateVersion on UpdateVersion {
+    id
+    version
+    apkFilename
+    apkSize
+    sha256
+    releaseDate
+    releaseNotes
+    releaseType
+    isLatest
+  }
+`;
+
+export const PUSH_DEVICE_FRAGMENT = /* GraphQL */ `
+  fragment PushDevice on PushDevice {
+    id
+    deviceId
+    deviceName
+    status
+    sentAt
+    acknowledgedAt
+    error
+  }
+`;
+
+export const UPDATE_PUSH_FRAGMENT = /* GraphQL */ `
+  fragment UpdatePush on UpdatePush {
+    id
+    version
+    installType
+    status
+    initiatedBy
+    initiatedAt
+    completedAt
+    cancelledAt
+    deviceCount
+    devices {
+      ...PushDevice
+    }
+  }
+  ${PUSH_DEVICE_FRAGMENT}
+`;
+
+export const SYNC_STATUS_FRAGMENT = /* GraphQL */ `
+  fragment SyncStatus on SyncStatus {
+    status
+    lastSyncAt
+    nextSyncAt
+    versionsFound
+    error
+  }
+`;
+
+export const CHANGELOG_ENTRY_FRAGMENT = /* GraphQL */ `
+  fragment ChangelogEntry on ChangelogEntry {
+    version
+    date
+    type
+    notes
+  }
+`;

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vyzorix Dashboard</title>
+  <style>
+    :root {
+      --rose-400: #fb7185;
+      --rose-500: #f43f5e;
+      --rose-600: #e11d48;
+      --rose-700: #be123c;
+      --rose-800: #9f1239;
+      
+      /* Neutral Dark theme - like terminal/enterprise apps */
+      --bg: #0d0d0d;
+      --bg-secondary: #171717;
+      --bg-tertiary: #262626;
+      --border: #2e2e2e;
+      --border-strong: #404040;
+      --text: #e5e5e5;
+      --text-secondary: #a3a3a3;
+      --text-muted: #6b6b6b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .mono { font-family: ui-monospace, monospace; }
+
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 240px;
+      border-right: 1px solid var(--border);
+      padding: 1rem;
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      background: var(--bg-secondary);
+    }
+
+    .tab {
+      padding: 0.875rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab:hover { color: var(--text); }
+    .tab.active {
+      color: var(--rose-500);
+      border-bottom-color: var(--rose-500);
+    }
+
+    .content {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .section {
+      border: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+
+    .section-header {
+      padding: 0.625rem 1rem;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-body {
+      padding: 1rem;
+    }
+
+    .device-name {
+      font-size: 1.125rem;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .device-dropdown {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--rose-500);
+      cursor: pointer;
+    }
+
+    .device-meta {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.375rem;
+    }
+
+    .device-status {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .device-status span {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .mini-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .mini-dot.active { background: var(--rose-500); }
+    .mini-dot.inactive { background: var(--text-muted); }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .metric-card {
+      text-align: center;
+    }
+
+    .metric-label {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      margin-bottom: 0.375rem;
+      overflow: hidden;
+    }
+
+    .metric-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+
+    .metric-bar-fill.rose { background: var(--rose-500); }
+    .metric-bar-fill.dark { background: var(--text); }
+    .metric-bar-fill.gray { background: var(--text-muted); }
+
+    .metric-value {
+      font-family: ui-monospace, monospace;
+      font-size: 0.9375rem;
+      font-weight: 500;
+    }
+
+    .metric-subtext {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .quick-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .btn:hover {
+      background: var(--bg-secondary);
+      border-color: var(--border-strong);
+    }
+
+    .btn-primary {
+      background: var(--rose-600);
+      border-color: var(--rose-600);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--rose-700);
+      border-color: var(--rose-700);
+    }
+
+    .btn-badge {
+      background: var(--bg-tertiary);
+      color: var(--text);
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .info-item-label {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .info-item-value {
+      font-family: ui-monospace, monospace;
+      font-size: 0.875rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      margin-bottom: 0.25rem;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-secondary);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--bg-tertiary);
+      color: var(--text);
+      border-left: 2px solid var(--text-muted);
+    }
+
+    .nav-icon {
+      width: 20px;
+      height: 20px;
+      opacity: 0.7;
+    }
+
+    .nav-section {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: 1rem 0.75rem 0.5rem;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1rem 0;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--rose-500);
+      margin-bottom: 1.5rem;
+      padding-left: 0.75rem;
+    }
+
+    .theme-toggle {
+      padding: 0.5rem 1rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+
+    .theme-toggle:hover {
+      background: var(--bg-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <button class="theme-toggle" onclick="document.body.classList.toggle('dark')">Toggle Theme</button>
+      <div class="logo">Vyzorix</div>
+      
+      <div class="nav-section">Management</div>
+      <div class="nav-item active">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+        </svg>
+        Dashboard
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+        </svg>
+        Devices
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        Logs
+      </div>
+      
+      <div class="divider"></div>
+      
+      <div class="nav-section">Settings</div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Settings
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+        </svg>
+        API Keys
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="header">
+        <span class="header-title">Dashboard</span>
+        <div class="connection-status">
+          <span class="status-dot"></span>
+          <span>Connected</span>
+          <span style="color: var(--text-muted)">|</span>
+          <span>2s ago</span>
+        </div>
+      </header>
+
+      <nav class="tabs">
+        <div class="tab active">Overview</div>
+        <div class="tab">Metrics</div>
+        <div class="tab">Commands</div>
+        <div class="tab">Logs</div>
+      </nav>
+
+      <div class="content">
+        <!-- Connection Section -->
+        <section class="section">
+          <div class="section-header">Connection</div>
+          <div class="section-body">
+            <div class="device-name">
+              <span>Pixel 8 Pro</span>
+              <span class="device-dropdown">View Device â¾</span>
+            </div>
+            <div class="device-meta mono">IMEI: 861234567890123</div>
+            <div class="device-status">
+              <span><span class="mini-dot active"></span> WS: Connected</span>
+              <span><span class="mini-dot active"></span> FCM: Valid</span>
+              <span><span class="mini-dot inactive"></span> Last: 2s ago</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Metrics Section -->
+        <section class="section">
+          <div class="section-header">Metrics</div>
+          <div class="section-body">
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-label">Risk</div>
+                <div class="metric-bar"><div class="metric-bar-fill rose" style="width: 72%"></div></div>
+                <div class="metric-value">72</div>
+                <div class="metric-subtext">Healthy</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Thermal</div>
+                <div class="metric-bar"><div class="metric-bar-fill dark" style="width: 45%"></div></div>
+                <div class="metric-value">45Â°C</div>
+                <div class="metric-subtext">Normal</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Uptime</div>
+                <div class="metric-bar"><div class="metric-bar-fill gray" style="width: 65%"></div></div>
+                <div class="metric-value">4d 3h</div>
+                <div class="metric-subtext">Running</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Buffer</div>
+                <div class="metric-bar"><div class="metric-bar-fill dark" style="width: 67%"></div></div>
+                <div class="metric-value">67%</div>
+                <div class="metric-subtext">Stable</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section class="section">
+          <div class="section-header">Quick Actions</div>
+          <div class="section-body">
+            <div class="quick-actions">
+              <button class="btn btn-primary">Send Command â¾</button>
+              <button class="btn">Refresh</button>
+              <button class="btn">View Logs</button>
+              <button class="btn">Alerts <span class="btn-badge">2</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Device Info -->
+        <section class="section">
+          <div class="section-header">Device Info</div>
+          <div class="section-body">
+            <div class="info-grid">
+              <div>
+                <div class="info-item-label">OS</div>
+                <div class="info-item-value">Android 14</div>
+              </div>
+              <div>
+                <div class="info-item-label">App Version</div>
+                <div class="info-item-value">v2.1.0</div>
+              </div>
+              <div>
+                <div class="info-item-label">Build</div>
+                <div class="info-item-value">UP1A.231005.007</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+
+    // Nav switching
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+
+    // Simulate live updates
+    function updateMetrics() {
+      const risk = document.querySelector('.metric-card:nth-child(1) .metric-value');
+      const thermal = document.querySelector('.metric-card:nth-child(2) .metric-value');
+      if (risk && thermal) {
+        risk.textContent = Math.floor(Math.random() * 30) + 60;
+        thermal.textContent = (Math.random() * 10 + 40).toFixed(0) + 'Â°C';
+      }
+    }
+    
+    setInterval(updateMetrics, 3000);
+  </script>
+</body>
+</html>
