@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from "../_shared/rest-client";
+import { restClient } from "../_shared/rest-client";
 import { deviceFromRaw, deviceListItemFromRaw, deviceStatsFromRaw, deviceListItemsFromRaw, type RawDevice, type RawDeviceListItem } from "@/domain/device/device-mappers";
 import type { Device, DeviceListItem, DeviceStats } from "@/domain/device/device-entity";
 import type { PaginatedResult } from "@/domain/_shared";
@@ -28,7 +28,7 @@ export interface RegisterDeviceResponse {
 export async function fetchDevices(
   params?: { page?: number; limit?: number; status?: "online" | "offline" | "all" }
 ): Promise<PaginatedResult<DeviceListItem[]>> {
-  const response = await apiGet<{
+  const response = await restClient.get<{
     devices: RawDeviceListItem[];
     pagination: { page: number; limit: number; total: number; total_pages: number };
   }>(DEVICE_PATHS.devices, {
@@ -44,18 +44,18 @@ export async function fetchDevices(
 }
 
 export async function fetchDevice(imei: string): Promise<Device | null> {
-  const data = await apiGet<RawDevice | null>(DEVICE_PATHS.device(imei));
+  const data = await restClient.get<RawDevice | null>(DEVICE_PATHS.device(imei));
   if (!data || !data.imei) return null;
   return deviceFromRaw(data);
 }
 
 export async function fetchDeviceStats(): Promise<DeviceStats> {
-  const data = await apiGet<{ total: number; online: number; offline: number }>(DEVICE_PATHS.deviceStats);
+  const data = await restClient.get<{ total: number; online: number; offline: number }>(DEVICE_PATHS.deviceStats);
   return deviceStatsFromRaw(data);
 }
 
 export async function registerDevice(request: RegisterDeviceRequest): Promise<{ success: boolean; device?: Device; commandSecret?: string }> {
-  const data = await apiPost<RegisterDeviceResponse>(DEVICE_PATHS.device, request);
+  const data = await restClient.post<RegisterDeviceResponse>(DEVICE_PATHS.device, request);
   return {
     success: data.success,
     device: data.device ? deviceFromRaw(data.device) : undefined,
@@ -64,5 +64,5 @@ export async function registerDevice(request: RegisterDeviceRequest): Promise<{ 
 }
 
 export async function deregisterDevice(imei: string): Promise<{ success: boolean }> {
-  return apiDelete<{ success: boolean }>(DEVICE_PATHS.device(imei));
+  return restClient.delete<{ success: boolean }>(DEVICE_PATHS.device(imei));
 }

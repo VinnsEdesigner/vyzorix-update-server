@@ -50,3 +50,36 @@ export const GET_COMMAND_STATUS = /* GraphQL */ `
     }
   }
 `;
+import { graphqlClient } from '../_shared/graphql-client';
+
+export async function queryCommands(params: { imei: string; status?: string; page?: number; limit?: number }) {
+  return graphqlClient.query({
+    query: GET_COMMANDS,
+    variables: params,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryPendingCommands(imei: string) {
+  return graphqlClient.query({
+    query: GET_PENDING_COMMANDS,
+    variables: { imei },
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryCommand(dispatchId: string) {
+  return graphqlClient.query({
+    query: GET_COMMAND,
+    variables: { dispatchId },
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryCommandStatus(dispatchId: string) {
+  return graphqlClient.query({
+    query: GET_COMMAND_STATUS,
+    variables: { dispatchId },
+    fetchPolicy: 'network-only',
+  });
+}

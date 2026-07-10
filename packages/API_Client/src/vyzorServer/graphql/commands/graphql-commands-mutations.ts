@@ -51,3 +51,25 @@ export const RETRY_COMMAND = /* GraphQL */ `
     }
   }
 `;
+import { graphqlClient } from '../_shared/graphql-client';
+
+export async function mutateSendCommand(imei: string, commandType: string, params?: Record<string, unknown>) {
+  return graphqlClient.mutate({
+    mutation: SEND_COMMAND,
+    variables: { imei, commandType, params },
+  });
+}
+
+export async function mutateCancelCommand(imei: string, dispatchId: string) {
+  return graphqlClient.mutate({
+    mutation: CANCEL_COMMAND,
+    variables: { imei, dispatchId },
+  });
+}
+
+export async function mutateRetryCommand(dispatchId: string) {
+  return graphqlClient.mutate({
+    mutation: RETRY_COMMAND,
+    variables: { dispatchId },
+  });
+}

@@ -255,3 +255,101 @@ export const UPDATE_OPERATOR = /* GraphQL */ `
  *   types?: [String!]
  * }
  */
+import { graphqlClient } from '../_shared/graphql-client';
+
+export interface ClientSettingsInput {
+  serverUrl?: string;
+  deviceId?: string;
+  requestTimeoutMs?: number;
+  autoReconnect?: boolean;
+  strictHmac?: boolean;
+  logBufferLimit?: number;
+  signalHistoryLimit?: number;
+}
+
+export interface ThresholdsInput {
+  riskWarn?: number;
+  riskCrit?: number;
+  thermalWarn?: number;
+  thermalCrit?: number;
+  bufferWarn?: number;
+  bufferCrit?: number;
+}
+
+export interface NotificationInput {
+  enabled?: boolean;
+  email?: EmailNotificationInput;
+  push?: PushNotificationInput;
+  webhook?: WebhookNotificationInput;
+}
+
+export interface EmailNotificationInput {
+  thresholdBreach?: boolean;
+  deviceOffline?: boolean;
+  deviceOnline?: boolean;
+  updateAvailable?: boolean;
+  commandFailed?: boolean;
+  registrationRequest?: boolean;
+}
+
+export interface PushNotificationInput {
+  thresholdBreach?: boolean;
+  deviceOffline?: boolean;
+  deviceOnline?: boolean;
+  updateAvailable?: boolean;
+  commandFailed?: boolean;
+  registrationRequest?: boolean;
+}
+
+export interface WebhookNotificationInput {
+  enabled?: boolean;
+  url?: string;
+  types?: string[];
+}
+
+export async function mutateUpdateSettings(input: ClientSettingsInput) {
+  return graphqlClient.mutate({
+    mutation: UPDATE_SETTINGS,
+    variables: { input },
+  });
+}
+
+export async function mutateUpdateThresholds(input: ThresholdsInput) {
+  return graphqlClient.mutate({
+    mutation: UPDATE_THRESHOLDS,
+    variables: { input },
+  });
+}
+
+export async function mutateUpdateNotifications(input: NotificationInput) {
+  return graphqlClient.mutate({
+    mutation: UPDATE_NOTIFICATIONS,
+    variables: { input },
+  });
+}
+
+export async function mutateTestWebhook(url: string) {
+  return graphqlClient.mutate({
+    mutation: TEST_WEBHOOK,
+    variables: { url },
+  });
+}
+
+export async function mutateRotateWebhookSecret() {
+  return graphqlClient.mutate({
+    mutation: ROTATE_WEBHOOK_SECRET,
+  });
+}
+
+export async function mutateResetSettings() {
+  return graphqlClient.mutate({
+    mutation: RESET_SETTINGS,
+  });
+}
+
+export async function mutateUpdateOperator(name?: string, email?: string) {
+  return graphqlClient.mutate({
+    mutation: UPDATE_OPERATOR,
+    variables: { name, email },
+  });
+}

@@ -1,6 +1,80 @@
-import { UPDATE_VERSION_FRAGMENT, UPDATE_PUSH_FRAGMENT, SYNC_STATUS_FRAGMENT, CHANGELOG_ENTRY_FRAGMENT } from "./graphql-updates-fragments";
+// Updates GraphQL Queries using Apollo Client
+import { gql } from '@apollo/client';
+import { graphqlClient } from '../_shared/graphql-client';
 
-export const GET_UPDATE_STATUS = /* GraphQL */ `
+// ============================================================================
+// Fragments
+// ============================================================================
+
+export const UPDATE_VERSION_FRAGMENT = gql`
+  fragment UpdateVersion on UpdateVersion {
+    id
+    version
+    apkFilename
+    apkSize
+    sha256
+    releaseDate
+    releaseNotes
+    releaseType
+    isLatest
+  }
+`;
+
+export const PUSH_DEVICE_FRAGMENT = gql`
+  fragment PushDevice on PushDevice {
+    id
+    deviceId
+    deviceName
+    status
+    sentAt
+    acknowledgedAt
+    error
+  }
+`;
+
+export const UPDATE_PUSH_FRAGMENT = gql`
+  fragment UpdatePush on UpdatePush {
+    id
+    version
+    installType
+    scheduledAt
+    status
+    initiatedBy
+    initiatedAt
+    completedAt
+    cancelledAt
+    deviceCount
+    devices {
+      ...PushDevice
+    }
+  }
+  ${PUSH_DEVICE_FRAGMENT}
+`;
+
+export const SYNC_STATUS_FRAGMENT = gql`
+  fragment SyncStatus on SyncStatus {
+    status
+    lastSyncAt
+    nextSyncAt
+    versionsFound
+    error
+  }
+`;
+
+export const CHANGELOG_ENTRY_FRAGMENT = gql`
+  fragment ChangelogEntry on ChangelogEntry {
+    version
+    date
+    type
+    notes
+  }
+`;
+
+// ============================================================================
+// Queries
+// ============================================================================
+
+export const GET_UPDATE_STATUS = gql`
   query GetUpdateStatus {
     updatesStatus {
       sync {
@@ -19,7 +93,7 @@ export const GET_UPDATE_STATUS = /* GraphQL */ `
   ${UPDATE_VERSION_FRAGMENT}
 `;
 
-export const GET_VERSIONS = /* GraphQL */ `
+export const GET_VERSIONS = gql`
   query GetVersions($status: String, $page: Int, $limit: Int) {
     updatesVersions(status: $status, page: $page, limit: $limit) {
       versions {
@@ -36,7 +110,7 @@ export const GET_VERSIONS = /* GraphQL */ `
   ${UPDATE_VERSION_FRAGMENT}
 `;
 
-export const GET_CHANGELOG = /* GraphQL */ `
+export const GET_CHANGELOG = gql`
   query GetChangelog($version: String) {
     updatesChangelog(version: $version) {
       changelog {
@@ -47,7 +121,7 @@ export const GET_CHANGELOG = /* GraphQL */ `
   ${CHANGELOG_ENTRY_FRAGMENT}
 `;
 
-export const GET_UPDATE_HISTORY = /* GraphQL */ `
+export const GET_UPDATE_HISTORY = gql`
   query GetUpdateHistory($status: String, $page: Int, $limit: Int) {
     updatesHistory(status: $status, page: $page, limit: $limit) {
       pushes {
@@ -64,7 +138,7 @@ export const GET_UPDATE_HISTORY = /* GraphQL */ `
   ${UPDATE_PUSH_FRAGMENT}
 `;
 
-export const GET_UPDATE_PUSH = /* GraphQL */ `
+export const GET_UPDATE_PUSH = gql`
   query GetUpdatePush($pushId: String!) {
     updatesHistoryDetail(pushId: $pushId) {
       ...UpdatePush
@@ -73,7 +147,7 @@ export const GET_UPDATE_PUSH = /* GraphQL */ `
   ${UPDATE_PUSH_FRAGMENT}
 `;
 
-export const GET_SYNC_STATUS = /* GraphQL */ `
+export const GET_SYNC_STATUS = gql`
   query GetSyncStatus {
     updatesSyncStatus {
       ...SyncStatus
@@ -81,3 +155,53 @@ export const GET_SYNC_STATUS = /* GraphQL */ `
   }
   ${SYNC_STATUS_FRAGMENT}
 `;
+
+// ============================================================================
+// Query Functions (using Apollo Client)
+// ============================================================================
+
+export async function queryUpdateStatus() {
+  return graphqlClient.query({
+    query: GET_UPDATE_STATUS,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryVersions(params?: { status?: string; page?: number; limit?: number }) {
+  return graphqlClient.query({
+    query: GET_VERSIONS,
+    variables: params,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryChangelog(params?: { version?: string }) {
+  return graphqlClient.query({
+    query: GET_CHANGELOG,
+    variables: params,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryUpdateHistory(params?: { status?: string; page?: number; limit?: number }) {
+  return graphqlClient.query({
+    query: GET_UPDATE_HISTORY,
+    variables: params,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryUpdatePush(pushId: string) {
+  return graphqlClient.query({
+    query: GET_UPDATE_PUSH,
+    variables: { pushId },
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function querySyncStatus() {
+  return graphqlClient.query({
+    query: GET_SYNC_STATUS,
+    fetchPolicy: 'network-only',
+  });
+}

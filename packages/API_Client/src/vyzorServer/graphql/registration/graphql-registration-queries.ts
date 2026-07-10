@@ -168,3 +168,49 @@ export const GET_DEVICE_TELEMETRY = /* GraphQL */ `
   }
   ${TELEMETRY_FRAME_FRAGMENT}
 `;
+import { graphqlClient } from '../_shared/graphql-client';
+
+export async function queryInboxEntries(params?: { status?: string; page?: number; limit?: number }) {
+  return graphqlClient.query({
+    query: GET_INBOX_ENTRIES,
+    variables: params,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryInboxEntry(imei: string) {
+  return graphqlClient.query({
+    query: GET_INBOX_ENTRY,
+    variables: { imei },
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryDevices(params?: { status?: string; page?: number; limit?: number }) {
+  return graphqlClient.query({
+    query: GET_DEVICES,
+    variables: params,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryDevice(imei: string) {
+  return graphqlClient.query({
+    query: GET_DEVICE,
+    variables: { imei },
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryDeviceTelemetry(params: {
+  imei: string;
+  startTime?: number;
+  endTime?: number;
+  limit?: number;
+}) {
+  return graphqlClient.query({
+    query: GET_DEVICE_TELEMETRY,
+    variables: params,
+    fetchPolicy: 'network-only',
+  });
+}

@@ -1,154 +1,74 @@
-/**
- * GraphQL Client Configuration
- * 
- * Shared GraphQL client setup for all features.
- * Uses session-based authentication (cookies).
- */
+// GraphQL Client using Apollo Client
+// Handles all GraphQL API communication
 
-import type { FetchOptions } from "../../rest/_shared/rest-client";
+import { ApolloClient, InMemoryCache, createHttpLink, type NormalizedCacheObject } from '@apollo/client';
+import { setContext } from '@apollo/client/link/context';
 
 // ============================================================================
 // Configuration
 // ============================================================================
 
-/**
- * GraphQL endpoint configuration
- */
 export interface GraphQLConfig {
-  endpoint: string;
+  uri: string;
   credentials?: RequestCredentials;
 }
 
-/**
- * Default GraphQL config from environment
- */
-export function getGraphQLConfig(): GraphQLConfig {
-  const endpoint = import.meta.env.VITE_API_URL 
-    ? `${import.meta.env.VITE_API_URL}/graphql`
-    : "/api/graphql";
-  
+function getGraphQLConfig(): GraphQLConfig {
   return {
-    endpoint,
-    credentials: "include", // Send cookies for session auth
+    uri: import.meta.env.VITE_API_URL 
+      ? `${import.meta.env.VITE_API_URL}/graphql` 
+      : '/api/graphql',
+    credentials: 'include',
   };
 }
 
 // ============================================================================
-// GraphQL Client
+// Apollo Client
 // ============================================================================
 
-/**
- * GraphQL request options
- */
-export interface GraphQLRequestOptions extends FetchOptions {
-  query: string;
-  variables?: Record<string, unknown>;
-  operationName?: string;
-}
-
-/**
- * GraphQL response wrapper
- */
-export interface GraphQLResponse<T> {
-  data?: T;
-  errors?: Array<{
-    message: string;
-    locations?: Array<{ line: number; column: number }>;
-    path?: string[];
-  }>;
-}
-
-/**
- * Execute a GraphQL query or mutation
- */
-export async function graphqlRequest<T>(
-  options: GraphQLRequestOptions
-): Promise<GraphQLResponse<T>> {
-  const config = getGraphQLConfig();
-  const { query, variables, operationName, ...fetchOptions } = options;
-  
-  const response = await fetch(config.endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...fetchOptions.headers,
-    },
-    body: JSON.stringify({
-      query,
-      variables,
-      operationName,
-    }),
+function createApolloClient(config: GraphQLConfig): ApolloClient<NormalizedCacheObject> {
+  const httpLink = createHttpLink({
+    uri: config.uri,
     credentials: config.credentials,
-    ...fetchOptions,
   });
-  
-  if (!response.ok) {
-    throw new Error(`GraphQL request failed: ${response.status} ${response.statusText}`);
-  }
-  
-  return response.json();
-}
 
-// ============================================================================
-// Query Helper
-// ============================================================================
+  const authLink = setContext((_, { headers }) => {
+    return {
+      headers: {
+        ...headers,
+      },
+    };
+  });
 
-/**
- * Execute a GraphQL query (GET method for caching)
- */
-export async function graphqlQuery<T>(
-  query: string,
-  variables?: Record<string, unknown>,
-  options?: Omit<GraphQLRequestOptions, "query" | "variables">
-): Promise<GraphQLResponse<T>> {
-  return graphqlRequest<T>({
-    query,
-    variables,
-    method: "POST",
-    ...options,
+  return new ApolloClient({
+    link: authLink.concat(httpLink),
+    cache: new InMemoryCache(),
+    defaultOptions: {
+      watchQuery: {
+        fetchPolicy: 'cache-and-network',
+      },
+      query: {
+        fetchPolicy: 'network-only',
+        errorPolicy: 'all',
+      },
+      mutate: {
+        errorPolicy: 'all',
+      },
+    },
   });
 }
 
-// ============================================================================
-// Error Handling
-// ============================================================================
+let apolloClient: ApolloClient<NormalizedCacheObject> | null = null;
 
-/**
- * Extract error message from GraphQL response
- */
-export function getGraphQLErrorMessage(response: GraphQLResponse<unknown>): string | null {
-  if (response.errors && response.errors.length > 0) {
-    return response.errors.map((e) => e.message).join(", ");
+export function getApolloClient(): ApolloClient<NormalizedCacheObject> {
+  if (!apolloClient) {
+    apolloClient = createApolloClient(getGraphQLConfig());
   }
-  return null;
-}
-
-/**
- * Check if GraphQL response has errors
- */
-export function hasGraphQLErrors(response: GraphQLResponse<unknown>): boolean {
-  return Boolean(response.errors && response.errors.length > 0);
+  return apolloClient;
 }
 
 // ============================================================================
-// Type Utilities
+// Client Instance (default export)
 // ============================================================================
 
-/**
- * Unwrap GraphQL data or throw
- */
-export function unwrapGraphQLData<T>(
-  response: GraphQLResponse<T>,
-  operationName?: string
-): T {
-  if (hasGraphQLErrors(response)) {
-    const message = getGraphQLErrorMessage(response) ?? "GraphQL error";
-    throw new Error(operationName ? `${operationName}: ${message}` : message);
-  }
-  
-  if (!response.data) {
-    throw new Error("No data returned from GraphQL");
-  }
-  
-  return response.data;
-}
+export const graphqlClient = getApolloClient();

@@ -6,7 +6,7 @@
  * Uses session-based authentication (cookies).
  */
 
-import { apiGet, apiPost, apiPatch } from "../_shared/rest-client";
+import { restClient } from "../_shared/rest-client";
 
 // ============================================================================
 // API Paths (from SERVER_BACKEND_SETTINGS_API.md)
@@ -468,7 +468,7 @@ export function notificationSettingsToRaw(settings: Partial<NotificationSettings
  * GET /v1/auth/me/settings
  */
 export async function fetchSettings(): Promise<Settings> {
-  const data = await apiGet<RawSettings>(SETTINGS_PATHS.settings);
+  const data = await restClient.get<RawSettings>(SETTINGS_PATHS.settings);
   return settingsFromRaw(data);
 }
 
@@ -477,7 +477,7 @@ export async function fetchSettings(): Promise<Settings> {
  * GET /v1/auth/me/thresholds
  */
 export async function fetchThresholds(): Promise<ThresholdSettings> {
-  const data = await apiGet<RawThresholds>(SETTINGS_PATHS.thresholds);
+  const data = await restClient.get<RawThresholds>(SETTINGS_PATHS.thresholds);
   return thresholdsFromRaw(data);
 }
 
@@ -486,7 +486,7 @@ export async function fetchThresholds(): Promise<ThresholdSettings> {
  * GET /v1/auth/me/notifications
  */
 export async function fetchNotifications(): Promise<NotificationSettings> {
-  const data = await apiGet<RawNotificationSettings>(SETTINGS_PATHS.notifications);
+  const data = await restClient.get<RawNotificationSettings>(SETTINGS_PATHS.notifications);
   return notificationSettingsFromRaw(data);
 }
 
@@ -495,7 +495,7 @@ export async function fetchNotifications(): Promise<NotificationSettings> {
  * GET /v1/auth/me
  */
 export async function fetchOperator(): Promise<Operator | null> {
-  const data = await apiGet<RawOperator>(SETTINGS_PATHS.operator);
+  const data = await restClient.get<RawOperator>(SETTINGS_PATHS.operator);
   return operatorFromRaw(data);
 }
 
@@ -516,7 +516,7 @@ export async function updateSettings(settings: {
     payload.client = clientSettingsToRaw(settings.client);
   }
   
-  const data = await apiPatch<RawSettings>(SETTINGS_PATHS.settings, payload);
+  const data = await restClient.patch<RawSettings>(SETTINGS_PATHS.settings, payload);
   return settingsFromRaw(data);
 }
 
@@ -526,7 +526,7 @@ export async function updateSettings(settings: {
  */
 export async function updateThresholds(thresholds: Partial<ThresholdSettings>): Promise<ThresholdSettings> {
   const payload = thresholdsToRaw(thresholds);
-  const data = await apiPatch<RawThresholds>(SETTINGS_PATHS.thresholds, payload);
+  const data = await restClient.patch<RawThresholds>(SETTINGS_PATHS.thresholds, payload);
   return thresholdsFromRaw(data);
 }
 
@@ -536,7 +536,7 @@ export async function updateThresholds(thresholds: Partial<ThresholdSettings>): 
  */
 export async function updateNotifications(settings: Partial<NotificationSettings>): Promise<NotificationSettings> {
   const payload = notificationSettingsToRaw(settings);
-  const data = await apiPatch<RawNotificationSettings>(SETTINGS_PATHS.notifications, payload);
+  const data = await restClient.patch<RawNotificationSettings>(SETTINGS_PATHS.notifications, payload);
   return notificationSettingsFromRaw(data);
 }
 
@@ -548,7 +548,7 @@ export async function updateOperator(data: {
   name?: string;
   email?: string;
 }): Promise<Operator | null> {
-  return apiPatch<RawOperator>(SETTINGS_PATHS.operator, data);
+  return restClient.patch<RawOperator>(SETTINGS_PATHS.operator, data);
 }
 
 // ============================================================================
@@ -570,7 +570,7 @@ export interface WebhookTestResult {
  * POST /v1/auth/me/notifications/webhook/test
  */
 export async function testWebhook(url: string): Promise<WebhookTestResult> {
-  return apiPost<WebhookTestResult>(SETTINGS_PATHS.webhookTest, { url });
+  return restClient.post<WebhookTestResult>(SETTINGS_PATHS.webhookTest, { url });
 }
 
 /**
@@ -578,5 +578,5 @@ export async function testWebhook(url: string): Promise<WebhookTestResult> {
  * POST /v1/auth/me/notifications/webhook/rotate
  */
 export async function rotateWebhookSecret(): Promise<{ secret: string }> {
-  return apiPost<{ secret: string }>(SETTINGS_PATHS.webhookRotate);
+  return restClient.post<{ secret: string }>(SETTINGS_PATHS.webhookRotate);
 }

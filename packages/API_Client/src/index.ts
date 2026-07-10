@@ -4,5 +4,5 @@
 // Domain Layer - Entities, Mappers, Validators
 export * from './domain';
 
-// API Layer - GraphQL, REST, WebSocket Clients
-export * from './api';
+// VyzoServer Layer - GraphQL, REST, WebSocket Clients
+export * from './vyzorServer';

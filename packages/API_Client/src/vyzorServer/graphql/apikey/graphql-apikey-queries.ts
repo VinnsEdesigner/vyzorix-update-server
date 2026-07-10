@@ -36,3 +36,28 @@ export const GET_API_KEY_STATS = /* GraphQL */ `
     }
   }
 `;
+
+import { graphqlClient } from '../_shared/graphql-client';
+
+export async function queryApiKeys(params?: { page?: number; limit?: number }) {
+  return graphqlClient.query({
+    query: GET_API_KEYS,
+    variables: params,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryApiKey(id: string) {
+  return graphqlClient.query({
+    query: GET_API_KEY,
+    variables: { id },
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryApiKeyStats() {
+  return graphqlClient.query({
+    query: GET_API_KEY_STATS,
+    fetchPolicy: 'network-only',
+  });
+}
