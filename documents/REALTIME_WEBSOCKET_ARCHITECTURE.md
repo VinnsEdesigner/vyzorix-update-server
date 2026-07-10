@@ -31,8 +31,8 @@
 > This document follows the **4-layer architecture** defined in `FRONTEND_ARCHITECTURE.md`:
 > - **UI Layer** (`src/components/`) - Pure UI rendering, imports only from hooks
 > - **Presentation Layer** (`src/hooks/`) - UI logic, state management, imports from domain & data
-> - **Domain Layer** (`src/domain/` - NEW) - Types, transforms, validation (NO external imports)
-> - **Data Layer** (`src/lib/api/`) - API clients (GraphQL/REST), imports only domain types
+> - **Domain Layer** (`packages/API_Client/src/domain/` - NEW) - Types, transforms, validation (NO external imports)
+> - **Data Layer** (`packages/API_Client/src/vyzorServer/`) - API clients (GraphQL/REST), imports only domain types
 >
 > **Dependency Rule:** UI → Hooks → Domain → API (flow inward only)
 
@@ -173,7 +173,7 @@ The server implements GraphQL subscriptions for dashboard real-time updates:
                                                                      
      
                         DOMAIN LAYER                              
-                         (src/domain/)                            
+                         (packages/API_Client/src/domain/)                            
                                                                   
       Types, Transforms, Validation (Pure TypeScript)             
       NO external imports (no React, no API, no i18n)             
@@ -183,7 +183,7 @@ The server implements GraphQL subscriptions for dashboard real-time updates:
                                                                      
      
                          DATA LAYER                               
-                      (src/lib/api/)                             
+                      (packages/API_Client/src/vyzorServer/)                             
                                                                   
       GraphQL Queries/Mutations, REST Endpoints, WS Client        
       Imports Domain types only.                                  
@@ -668,7 +668,7 @@ export const validateCommand = (data: unknown): data is WSCommand => {
 ```typescript
 // lib/api/websocket/websocket-client.ts
 
-import type { WSTelemetry, WSEvent, WSCommand } from '@/domain/realtime';
+import type { WSTelemetry, WSEvent, WSCommand } from '@vyzorix/api-client/domain/realtime';
 
 export type WSMessageType =
   | 'AUTH'
@@ -739,7 +739,7 @@ export interface HeartbeatManager {
 ```typescript
 // hooks/realtime/use-websocket-connection.ts
 
-import { useWebSocket } from '@/lib/api/websocket/client';
+import { useWebSocket } from '@vyzorix/api-client/vyzorServer/websocket/client';
 
 interface UseWebSocketConnectionResult {
   isConnected: boolean;
@@ -760,7 +760,7 @@ export const useWebSocketConnection = (): UseWebSocketConnectionResult => {
 ```typescript
 // hooks/realtime/use-device-telemetry.ts
 
-import type { WSTelemetry } from '@/domain/realtime';
+import type { WSTelemetry } from '@vyzorix/api-client/domain/realtime';
 
 interface UseDeviceTelemetryOptions {
   imei?: string;
@@ -785,7 +785,7 @@ export const useDeviceTelemetry = (
 ```typescript
 // hooks/realtime/use-dashboard-events.ts
 
-import type { WSEvent, WSEventType } from '@/domain/realtime';
+import type { WSEvent, WSEventType } from '@vyzorix/api-client/domain/realtime';
 
 interface UseDashboardEventsOptions {
   eventTypes?: WSEventType[];
@@ -811,7 +811,7 @@ export const useDashboardEvents = (
 ```typescript
 // hooks/realtime/use-command-dispatch.ts
 
-import type { WSCommand, WSCommandType } from '@/domain/realtime';
+import type { WSCommand, WSCommandType } from '@vyzorix/api-client/domain/realtime';
 
 interface UseCommandDispatchOptions {
   imei: string;

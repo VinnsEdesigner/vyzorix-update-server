@@ -37,8 +37,8 @@
 > This document has been updated to align with the **Layered Architecture** defined in `FRONTEND_ARCHITECTURE.md`. The file structure below follows the **4-layer architecture**:
 > - **UI Layer** (`src/components/`) - Pure UI rendering, imports only from hooks
 > - **Presentation Layer** (`src/hooks/`) - UI logic, state management, imports from domain & data
-> - **Domain Layer** (`src/domain/` - NEW) - Types, transforms, validation (NO external imports)
-> - **Data Layer** (`src/lib/api/`) - API clients (GraphQL/REST), imports only domain types
+> - **Domain Layer** (`packages/API_Client/src/domain/` - NEW) - Types, transforms, validation (NO external imports)
+> - **Data Layer** (`packages/API_Client/src/vyzorServer/`) - API clients (GraphQL/REST), imports only domain types
 >
 > **Dependency Rule:** UI → Hooks → Domain → API (flow inward only)
 
@@ -936,7 +936,7 @@ ALTER TABLE devices ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'offli
                                                                      
      
                         DOMAIN LAYER                             
-                       (src/domain/)                             
+                       (packages/API_Client/src/domain/)                             
                                                                   
       Pure functions that:                                        
       - Define types and interfaces                              
@@ -949,7 +949,7 @@ ALTER TABLE devices ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'offli
                                                                      
      
                          DATA LAYER                              
-                     (src/lib/api/)                              
+                     (packages/API_Client/src/vyzorServer/)                              
                                                                   
       API clients that:                                          
       - Make HTTP requests                                       

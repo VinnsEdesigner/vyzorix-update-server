@@ -8,12 +8,15 @@
   ],
   "scripts": {
     "dev": "cd apps/web && vite dev",
+    "dev:mobile": "cd apps/VyzoriX_mobile && expo start",
     "build": "turbo run build",
+    "build:web": "turbo run build --filter=VyzoriX_web",
+    "build:mobile": "turbo run build --filter=VyzoriX_mobile",
     "test": "turbo run test",
     "prelint": "pnpm --filter @vyzorix/config exec tsc --build --force",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

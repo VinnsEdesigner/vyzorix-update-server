@@ -23,48 +23,48 @@ These files exist once and are shared:
 
 | File | Used By | Purpose |
 |------|---------|---------|
-| `domain/_shared/domain-pagination.ts` | ALL | Pagination types, `PaginatedResult<T>` |
-| `domain/_shared/domain-errors.ts` | ALL | `DomainError`, `ValidationError` base classes |
+| `packages/API_Client/src/domain/_shared/domain-pagination.ts` | ALL | Pagination types, `PaginatedResult<T>` |
+| `packages/API_Client/src/domain/_shared/domain-errors.ts` | ALL | `DomainError`, `ValidationError` base classes |
 
 ### Data Layer - `_shared/`
 
 | File | Used By | Purpose |
 |------|---------|---------|
-| `lib/api/_shared/graphql-client.ts` | ALL | Apollo/GraphQL client setup |
-| `lib/api/_shared/rest-client.ts` | ALL | REST client base |
+| `packages/API_Client/src/vyzorServer/_shared/graphql-client.ts` | ALL | Apollo/GraphQL client setup |
+| `packages/API_Client/src/vyzorServer/_shared/rest-client.ts` | ALL | REST client base |
 
 ### Hooks - `_shared/`
 
 | File | Used By | Purpose |
 |------|---------|---------|
-| `hooks/_shared/use-pagination.ts` | ALL | Generic pagination hook |
-| `hooks/_shared/use-search.ts` | ALL | Generic search/filter hook |
-| `hooks/_shared/use-device-selector.ts` | ALL | Device selection state |
-| `hooks/_shared/use-time-range.ts` | ALL | Time range selection |
-| `hooks/_shared/use-debounce.ts` | Settings | Debounced save hook |
-| `hooks/_shared/use-refresh.ts` | Diagnostics | Refresh trigger |
+| `apps/VyzoriX_web/src/hooks/_shared/use-pagination.ts` | ALL | Generic pagination hook |
+| `apps/VyzoriX_web/src/hooks/_shared/use-search.ts` | ALL | Generic search/filter hook |
+| `apps/VyzoriX_web/src/hooks/_shared/use-device-selector.ts` | ALL | Device selection state |
+| `apps/VyzoriX_web/src/hooks/_shared/use-time-range.ts` | ALL | Time range selection |
+| `apps/VyzoriX_web/src/hooks/_shared/use-debounce.ts` | Settings | Debounced save hook |
+| `apps/VyzoriX_web/src/hooks/_shared/use-refresh.ts` | Diagnostics | Refresh trigger |
 
 ### UI Components - `shared/`
 
 | File | Used By | Purpose |
 |------|---------|---------|
-| `components/shared/section.tsx` | ALL | Bordered section wrapper |
-| `components/shared/section-header.tsx` | ALL | Section with title/subtitle |
-| `components/shared/empty-state.tsx` | ALL | Empty state display |
-| `components/shared/loading-skeleton.tsx` | ALL | Loading placeholder |
-| `components/shared/data-table.tsx` | Multiple | Table with sort/pagination |
-| `components/shared/pagination.tsx` | Multiple | Pagination controls |
-| `components/shared/search-input.tsx` | Multiple | Search with clear |
-| `components/shared/filter-select.tsx` | Multiple | Dropdown filter |
-| `components/shared/status-badge.tsx` | Multiple | Status indicator |
-| `components/shared/tab-nav.tsx` | Multiple | Tab navigation |
-| `components/shared/refresh-button.tsx` | Diagnostics | Refresh with loading |
+| `apps/VyzoriX_web/src/ui/components/shared/section.tsx` | ALL | Bordered section wrapper |
+| `apps/VyzoriX_web/src/ui/components/shared/section-header.tsx` | ALL | Section with title/subtitle |
+| `apps/VyzoriX_web/src/ui/components/shared/empty-state.tsx` | ALL | Empty state display |
+| `apps/VyzoriX_web/src/ui/components/shared/loading-skeleton.tsx` | ALL | Loading placeholder |
+| `apps/VyzoriX_web/src/ui/components/shared/data-table.tsx` | Multiple | Table with sort/pagination |
+| `apps/VyzoriX_web/src/ui/components/shared/pagination.tsx` | Multiple | Pagination controls |
+| `apps/VyzoriX_web/src/ui/components/shared/search-input.tsx` | Multiple | Search with clear |
+| `apps/VyzoriX_web/src/ui/components/shared/filter-select.tsx` | Multiple | Dropdown filter |
+| `apps/VyzoriX_web/src/ui/components/shared/status-badge.tsx` | Multiple | Status indicator |
+| `apps/VyzoriX_web/src/ui/components/shared/tab-nav.tsx` | Multiple | Tab navigation |
+| `apps/VyzoriX_web/src/ui/components/shared/refresh-button.tsx` | Diagnostics | Refresh with loading |
 
 ---
 
 ## Feature Files (Unique per Spec)
 
-### API Keys (`domain/apikey/`, `lib/api/apikey/`, `hooks/apikey/`)
+### API Keys (`packages/API_Client/src/domain/apikey/`, `packages/API_Client/src/vyzorServer/apikey/`, `apps/VyzoriX_web/src/hooks/apikey/`)
 
 | Layer | File | Purpose |
 |-------|------|---------|
@@ -83,7 +83,7 @@ These files exist once and are shared:
 | Hooks | `use-update-apikey.ts` | Update key hook |
 | Hooks | `use-apikey-stats.ts` | Usage statistics |
 
-### Settings (`domain/settings/`, `lib/api/settings/`, `hooks/settings/`)
+### Settings (`packages/API_Client/src/domain/settings/`, `packages/API_Client/src/vyzorServer/settings/`, `apps/VyzoriX_web/src/hooks/settings/`)
 
 | Layer | File | Purpose |
 |-------|------|---------|
@@ -99,7 +99,7 @@ These files exist once and are shared:
 | Hooks | `use-thresholds.ts` | Get/update thresholds |
 | Hooks | `use-notifications.ts` | Get/update notifications |
 
-### Updates (`domain/updates/`, `lib/api/updates/`, `hooks/updates/`)
+### Updates (`packages/API_Client/src/domain/updates/`, `packages/API_Client/src/vyzorServer/updates/`, `apps/VyzoriX_web/src/hooks/updates/`)
 
 | Layer | File | Purpose |
 |-------|------|---------|
@@ -116,7 +116,7 @@ These files exist once and are shared:
 | Hooks | `use-update-history.ts` | Update history |
 | Hooks | `use-sync-status.ts` | GitHub sync status |
 
-### Diagnostics (`domain/diagnostics/`, `lib/api/diagnostics/`, `hooks/diagnostics/`)
+### Diagnostics (`packages/API_Client/src/domain/diagnostics/`, `packages/API_Client/src/vyzorServer/diagnostics/`, `apps/VyzoriX_web/src/hooks/diagnostics/`)
 
 | Layer | File | Purpose |
 |-------|------|---------|
@@ -131,7 +131,7 @@ These files exist once and are shared:
 | Hooks | `use-device-timeline.ts` | Fetch timeline |
 | Hooks | `use-timeline-filter.ts` | Filter timeline |
 
-### Commands (`domain/commands/`, `lib/api/commands/`, `hooks/commands/`)
+### Commands (`packages/API_Client/src/domain/commands/`, `packages/API_Client/src/vyzorServer/commands/`, `apps/VyzoriX_web/src/hooks/commands/`)
 
 | Layer | File | Purpose |
 |-------|------|---------|
@@ -148,7 +148,7 @@ These files exist once and are shared:
 | Hooks | `use-command-history.ts` | Command history |
 | Hooks | `use-pending-commands.ts` | Pending queue |
 
-### Logs (`domain/logs/`, `lib/api/logs/`, `hooks/logs/`)
+### Logs (`packages/API_Client/src/domain/logs/`, `packages/API_Client/src/vyzorServer/logs/`, `apps/VyzoriX_web/src/hooks/logs/`)
 
 | Layer | File | Purpose |
 |-------|------|---------|
@@ -164,7 +164,7 @@ These files exist once and are shared:
 | Hooks | `use-log-stream.ts` | Real-time streaming |
 | Hooks | `use-log-filter.ts` | Filter logs |
 
-### Device Registration (`domain/registration/`, `lib/api/registration/`, `hooks/registration/`)
+### Device Registration (`packages/API_Client/src/domain/registration/`, `packages/API_Client/src/vyzorServer/registration/`, `apps/VyzoriX_web/src/hooks/registration/`)
 
 | Layer | File | Purpose |
 |-------|------|---------|
@@ -182,7 +182,7 @@ These files exist once and are shared:
 | Hooks | `use-register-device.ts` | Register device |
 | Hooks | `use-deregister-device.ts` | Deregister |
 
-### Real-time WebSocket (`domain/realtime/`, `lib/api/websocket/`, `hooks/realtime/`)
+### Real-time WebSocket (`packages/API_Client/src/domain/realtime/`, `packages/API_Client/src/vyzorServer/websocket/`, `apps/VyzoriX_web/src/hooks/realtime/`)
 
 | Layer | File | Purpose |
 |-------|------|---------|
@@ -239,14 +239,14 @@ These files exist once and are shared:
 
 | Spec Document | Features | Domain Dir | Data Dir |
 |--------------|----------|------------|----------|
-| `FRONTEND_ARCHITECTURE.md` | ALL | `domain/{feature}/` | `lib/api/{feature}/` |
-| `FRONTEND_API_KEYS_REQUIREMENTS.md` | API Keys | `domain/apikey/` | `lib/api/apikey/` |
-| `SETTINGS_PAGE.md` | Settings | `domain/settings/` | `lib/api/settings/` |
-| `UPDATES_PAGE.md` | Updates | `domain/updates/` | `lib/api/updates/` |
-| `DIAGNOSTICS_PAGE.md` | Diagnostics | `domain/diagnostics/` | `lib/api/diagnostics/` |
-| `DASHBOARD_COMMANDS_LOGS.md` | Commands, Logs | `domain/commands/`, `domain/logs/` | `lib/api/commands/`, `lib/api/logs/` |
-| `DEVICE_REGISTRATION_SYSTEM.md` | Registration | `domain/registration/` | `lib/api/registration/` |
-| `REALTIME_WEBSOCKET_ARCHITECTURE.md` | Real-time | `domain/realtime/` | `lib/api/websocket/` |
+| `FRONTEND_ARCHITECTURE.md` | ALL | `packages/API_Client/src/domain/{feature}/` | `packages/API_Client/src/vyzorServer/{feature}/` |
+| `FRONTEND_API_KEYS_REQUIREMENTS.md` | API Keys | `packages/API_Client/src/domain/apikey/` | `packages/API_Client/src/vyzorServer/apikey/` |
+| `SETTINGS_PAGE.md` | Settings | `packages/API_Client/src/domain/settings/` | `packages/API_Client/src/vyzorServer/settings/` |
+| `UPDATES_PAGE.md` | Updates | `packages/API_Client/src/domain/updates/` | `packages/API_Client/src/vyzorServer/updates/` |
+| `DIAGNOSTICS_PAGE.md` | Diagnostics | `packages/API_Client/src/domain/diagnostics/` | `packages/API_Client/src/vyzorServer/diagnostics/` |
+| `DASHBOARD_COMMANDS_LOGS.md` | Commands, Logs | `packages/API_Client/src/domain/commands/`, `packages/API_Client/src/domain/logs/` | `packages/API_Client/src/vyzorServer/commands/`, `packages/API_Client/src/vyzorServer/logs/` |
+| `DEVICE_REGISTRATION_SYSTEM.md` | Registration | `packages/API_Client/src/domain/registration/` | `packages/API_Client/src/vyzorServer/registration/` |
+| `REALTIME_WEBSOCKET_ARCHITECTURE.md` | Real-time | `packages/API_Client/src/domain/realtime/` | `packages/API_Client/src/vyzorServer/websocket/` |
 
 ---
 

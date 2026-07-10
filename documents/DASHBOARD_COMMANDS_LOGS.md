@@ -14,8 +14,8 @@
 > This document has been updated to align with the **Layered Architecture** defined in `FRONTEND_ARCHITECTURE.md`. The file structure below follows the **4-layer architecture**:
 > - **UI Layer** (`src/components/`) - Pure UI rendering, imports only from hooks
 > - **Presentation Layer** (`src/hooks/`) - UI logic, state management, imports from domain & data
-> - **Domain Layer** (`src/domain/`) - Types, transforms, validation (NO external imports)
-> - **Data Layer** (`src/lib/api/`) - API clients (GraphQL/REST), imports only domain types
+> - **Domain Layer** (`packages/API_Client/src/domain/`) - Types, transforms, validation (NO external imports)
+> - **Data Layer** (`packages/API_Client/src/vyzorServer/`) - API clients (GraphQL/REST), imports only domain types
 >
 > **Dependency Rule:** UI → Hooks → Domain → API (flow inward only)
 
@@ -107,7 +107,7 @@ Redesign the Dashboard page with tabs for better organization, create a shared C
                                                                      
      
                         DOMAIN LAYER                             
-                       (src/domain/)                             
+                       (packages/API_Client/src/domain/)                             
                                                                   
       Pure functions that:                                       
       - Define types and interfaces                             
@@ -120,7 +120,7 @@ Redesign the Dashboard page with tabs for better organization, create a shared C
                                                                      
      
                          DATA LAYER                              
-                     (src/lib/api/)                              
+                     (packages/API_Client/src/vyzorServer/)                              
                                                                   
       API clients that:                                          
       - Make HTTP requests                                       
@@ -1076,10 +1076,10 @@ export const LOG_ENTRY_FRAGMENT = gql`
 **use-commands.ts:**
 ```typescript
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { graphqlClient } from "@/lib/api/graphql/client";
-import { GET_COMMANDS, SEND_COMMAND } from "@/lib/api/graphql/queries/command-queries";
-import { commandFromRaw } from "@/domain/commands";
-import type { Command, CommandStatus } from "@/domain/commands";
+import { graphqlClient } from "@vyzorix/api-client/vyzorServer/graphql/client";
+import { GET_COMMANDS, SEND_COMMAND } from "@vyzorix/api-client/vyzorServer/graphql/queries/command-queries";
+import { commandFromRaw } from "@vyzorix/api-client/domain/commands";
+import type { Command, CommandStatus } from "@vyzorix/api-client/domain/commands";
 
 interface UseCommandsOptions {
   imei: string;
@@ -1132,10 +1132,10 @@ export { usePendingCommands } from "./use-pending-commands";
 **use-logs.ts:**
 ```typescript
 import { useQuery } from "@tanstack/react-query";
-import { graphqlClient } from "@/lib/api/graphql/client";
-import { GET_LOGS } from "@/lib/api/graphql/queries/log-queries";
-import { logFromRaw } from "@/domain/logs";
-import type { LogEntry, LogEventType } from "@/domain/logs";
+import { graphqlClient } from "@vyzorix/api-client/vyzorServer/graphql/client";
+import { GET_LOGS } from "@vyzorix/api-client/vyzorServer/graphql/queries/log-queries";
+import { logFromRaw } from "@vyzorix/api-client/domain/logs";
+import type { LogEntry, LogEventType } from "@vyzorix/api-client/domain/logs";
 
 interface UseLogsOptions {
   imei: string;
@@ -1179,7 +1179,7 @@ export { useLogStream } from "./use-log-stream";
 **commands-send.tsx:**
 ```typescript
 import { useSendCommand } from "@/hooks/commands";
-import { PRESET_COMMANDS } from "@/domain/commands";
+import { PRESET_COMMANDS } from "@vyzorix/api-client/domain/commands";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 
@@ -1260,7 +1260,7 @@ import { SearchInput } from "@/components/shared/search-input";
 import { FilterSelect } from "@/components/shared/filter-select";
 import { DataTable } from "@/components/shared/data-table";
 import { CommandRow } from "./command-row";
-import type { CommandStatus } from "@/domain/commands";
+import type { CommandStatus } from "@vyzorix/api-client/domain/commands";
 
 interface CommandsHistoryProps {
   imei: string;

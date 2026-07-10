@@ -28,8 +28,8 @@
 > This document follows the **4-layer architecture** defined in `FRONTEND_ARCHITECTURE.md`:
 > - **UI Layer** (`src/components/`) - Pure UI rendering, imports only from hooks
 > - **Presentation Layer** (`src/hooks/`) - UI logic, state management, imports from domain & data
-> - **Domain Layer** (`src/domain/` - NEW) - Types, transforms, validation (NO external imports)
-> - **Data Layer** (`src/lib/api/` - GraphQL/REST) - API clients, imports only domain types
+> - **Domain Layer** (`packages/API_Client/src/domain/` - NEW) - Types, transforms, validation (NO external imports)
+> - **Data Layer** (`packages/API_Client/src/vyzorServer/` - GraphQL/REST) - API clients, imports only domain types
 >
 > **Dependency Rule:** UI → Hooks → Domain → API (flow inward only)
 
@@ -102,7 +102,7 @@ The Authentication System handles:
                                                                      
      
                         DOMAIN LAYER                             
-                       (src/domain/)                             
+                       (packages/API_Client/src/domain/)                             
                                                                   
       Pure functions that:                                       
       - Define types and interfaces                             
@@ -115,7 +115,7 @@ The Authentication System handles:
                                                                      
      
                          DATA LAYER                              
-                     (src/lib/api/)                              
+                     (packages/API_Client/src/vyzorServer/)                              
                                                                   
       API clients that:                                          
       - Make HTTP requests                                       
@@ -752,9 +752,9 @@ interface TokenStorage {
 // hooks/auth/use-login.ts
 import { useState, useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { login as loginApi } from '@/lib/api/rest/auth';
-import { loginFromRaw } from '@/domain/auth';
-import { validateLoginCredentials } from '@/domain/auth/validation';
+import { login as loginApi } from '@vyzorix/api-client/vyzorServer/rest/auth';
+import { loginFromRaw } from '@vyzorix/api-client/domain/auth';
+import { validateLoginCredentials } from '@vyzorix/api-client/domain/auth/validation';
 import { useAuth } from '@/context/auth-context';
 
 export function useLogin() {
@@ -815,7 +815,7 @@ export function useLogin() {
 // hooks/auth/use-logout.ts
 import { useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { logout as logoutApi } from '@/lib/api/rest/auth';
+import { logout as logoutApi } from '@vyzorix/api-client/vyzorServer/rest/auth';
 import { useAuth } from '@/context/auth-context';
 
 export function useLogout() {
@@ -841,9 +841,9 @@ export function useLogout() {
 // hooks/auth/use-mfa.ts
 import { useState, useCallback } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { verifyMfa as verifyMfaApi } from '@/lib/api/rest/auth';
-import { loginFromRaw } from '@/domain/auth';
-import { validateMfaCode } from '@/domain/auth/validation';
+import { verifyMfa as verifyMfaApi } from '@vyzorix/api-client/vyzorServer/rest/auth';
+import { loginFromRaw } from '@vyzorix/api-client/domain/auth';
+import { validateMfaCode } from '@vyzorix/api-client/domain/auth/validation';
 import { useAuth } from '@/context/auth-context';
 
 export function useMfa() {
@@ -892,7 +892,7 @@ export function useMfa() {
 ```typescript
 // hooks/auth/use-session.ts
 import { useEffect, useCallback, useRef } from 'react';
-import { refreshToken as refreshTokenApi } from '@/lib/api/rest/auth';
+import { refreshToken as refreshTokenApi } from '@vyzorix/api-client/vyzorServer/rest/auth';
 import { useAuth } from '@/context/auth-context';
 
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
