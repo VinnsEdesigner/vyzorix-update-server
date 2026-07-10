@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from "../_shared/rest-client";
+import { restClient } from "../_shared/rest-client";
 import { commandFromRaw, commandListItemFromRaw, sendCommandRequestToRaw } from "@/domain/commands/commands-mappers";
 import type { Command, CommandListItem, SendCommandRequest } from "@/domain/commands/commands-entity";
 import type { PaginatedResult } from "@/domain/_shared";
@@ -47,7 +47,7 @@ export async function fetchCommandHistory(
   imei: string,
   params?: CommandHistoryParams
 ): Promise<PaginatedResult<CommandListItem[]>> {
-  const response = await apiGet<RawCommandHistoryResponse>(
+  const response = await restClient.get<RawCommandHistoryResponse>(
     COMMANDS_PATHS.commandHistory(imei),
     {
       status: params?.status,
@@ -65,7 +65,7 @@ export async function fetchCommandHistory(
 }
 
 export async function fetchPendingCommands(imei: string): Promise<CommandListItem[]> {
-  const response = await apiGet<RawPendingCommandsResponse>(
+  const response = await restClient.get<RawPendingCommandsResponse>(
     COMMANDS_PATHS.pendingCommands(imei)
   );
   
@@ -73,7 +73,7 @@ export async function fetchPendingCommands(imei: string): Promise<CommandListIte
 }
 
 export async function fetchCommandByDispatchId(dispatchId: string): Promise<Command | null> {
-  const data = await apiGet<Record<string, unknown>>(
+  const data = await restClient.get<Record<string, unknown>>(
     COMMANDS_PATHS.commandStatus(dispatchId)
   );
   if (!data || Object.keys(data).length === 0) return null;
@@ -82,7 +82,7 @@ export async function fetchCommandByDispatchId(dispatchId: string): Promise<Comm
 
 export async function sendCommand(request: SendCommandRequest): Promise<Command> {
   const payload = sendCommandRequestToRaw(request);
-  const response = await apiPost<RawSendCommandResponse>(
+  const response = await restClient.post<RawSendCommandResponse>(
     COMMANDS_PATHS.sendCommand(request.imei),
     payload
   );
@@ -110,13 +110,13 @@ export async function cancelCommand(
   imei: string,
   dispatchId: string
 ): Promise<{ success: boolean }> {
-  return apiDelete<{ success: boolean }>(
+  return restClient.delete<{ success: boolean }>(
     COMMANDS_PATHS.cancelCommand(imei, dispatchId)
   );
 }
 
 export async function retryCommand(dispatchId: string): Promise<Command> {
-  const response = await apiPost<RawSendCommandResponse>(
+  const response = await restClient.post<RawSendCommandResponse>(
     COMMANDS_PATHS.retryCommand(dispatchId)
   );
   

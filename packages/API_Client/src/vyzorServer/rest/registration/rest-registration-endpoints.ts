@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from "../_shared/rest-client";
+import { restClient } from "../_shared/rest-client";
 import type { InboxEntry, InboxStatus, AcknowledgeAction, AckResult, DeregisterResult, InboxListResult } from "@/domain/registration";
 
 export const REGISTRATION_PATHS = {
@@ -67,7 +67,7 @@ export async function fetchInbox(params?: {
   page?: number;
   limit?: number;
 }): Promise<InboxListResult> {
-  const data = await apiGet<{
+  const data = await restClient.get<{
     requests: RawInboxEntry[];
     pagination: RawPagination;
   }>(REGISTRATION_PATHS.inbox, {
@@ -88,7 +88,7 @@ export async function fetchInbox(params?: {
 }
 
 export async function fetchInboxEntry(imei: string): Promise<InboxEntry | null> {
-  const data = await apiGet<RawInboxEntry | null>(REGISTRATION_PATHS.inboxEntry(imei));
+  const data = await restClient.get<RawInboxEntry | null>(REGISTRATION_PATHS.inboxEntry(imei));
   if (!data || !data.imei) return null;
   return inboxEntryFromRaw(data);
 }
@@ -98,7 +98,7 @@ export async function acknowledgeInbox(
   action: AcknowledgeAction,
   notes?: string
 ): Promise<AckResult> {
-  const data = await apiPost<{
+  const data = await restClient.post<{
     id: string;
     imei: string;
     status: string;
@@ -122,7 +122,7 @@ export async function acknowledgeInbox(
 }
 
 export async function deregisterDevice(imei: string): Promise<DeregisterResult> {
-  const data = await apiDelete<{
+  const data = await restClient.delete<{
     imei: string;
     status: string;
     deregistered_at: number;

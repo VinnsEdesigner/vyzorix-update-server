@@ -6,7 +6,7 @@
  * Uses session-based authentication (cookies).
  */
 
-import { apiGet, apiPost, apiDelete } from "../_shared/rest-client";
+import { restClient } from "../_shared/rest-client";
 import type { PaginatedResult } from "@/domain/_shared";
 import { offsetPaginationFromRaw } from "@/domain/_shared";
 
@@ -238,7 +238,7 @@ export async function fetchInboxEntries(params?: {
   page?: number;
   limit?: number;
 }): Promise<PaginatedResult<InboxEntry[]>> {
-  const data = await apiGet<{
+  const data = await restClient.get<{
     requests: RawInboxEntry[];
     pagination: {
       page: number;
@@ -264,7 +264,7 @@ export async function fetchInboxEntries(params?: {
  * GET /v1/device/inbox/:imei
  */
 export async function fetchInboxEntry(imei: string): Promise<InboxEntry | null> {
-  const data = await apiGet<RawInboxEntry>(REGISTRATION_PATHS.inboxEntry(imei));
+  const data = await restClient.get<RawInboxEntry>(REGISTRATION_PATHS.inboxEntry(imei));
   if (!data || !data.imei) return null;
   return inboxEntryFromRaw(data);
 }
@@ -293,7 +293,7 @@ export async function acknowledgeInbox(
   imei: string,
   request: AcknowledgeRequest
 ): Promise<AcknowledgeResponse> {
-  const data = await apiPost<{
+  const data = await restClient.post<{
     id: string;
     imei: string;
     status: string;
@@ -327,7 +327,7 @@ export async function dismissInboxEntry(imei: string): Promise<{
   status: InboxStatus;
   updatedAt: Date;
 }> {
-  const data = await apiDelete<{
+  const data = await restClient.delete<{
     status: string;
     updated_at: number;
   }>(REGISTRATION_PATHS.inboxDismiss(imei));
@@ -351,7 +351,7 @@ export async function fetchDevices(params?: {
   limit?: number;
   status?: DeviceStatus | "all";
 }): Promise<PaginatedResult<Device[]>> {
-  const data = await apiGet<{
+  const data = await restClient.get<{
     devices: RawDevice[];
     pagination: {
       page: number;
@@ -377,7 +377,7 @@ export async function fetchDevices(params?: {
  * GET /v1/devices/:imei
  */
 export async function fetchDevice(imei: string): Promise<Device | null> {
-  const data = await apiGet<RawDevice>(REGISTRATION_PATHS.device(imei));
+  const data = await restClient.get<RawDevice>(REGISTRATION_PATHS.device(imei));
   if (!data || !data.imei) return null;
   return deviceFromRaw(data);
 }
@@ -394,7 +394,7 @@ export interface DeregisterResponse {
 }
 
 export async function deregisterDevice(imei: string): Promise<DeregisterResponse> {
-  const data = await apiDelete<{
+  const data = await restClient.delete<{
     imei: string;
     status: string;
     deregistered_at: number;
@@ -428,7 +428,7 @@ export interface RegisterDeviceResponse {
 }
 
 export async function registerDevice(request: RegisterDeviceRequest): Promise<RegisterDeviceResponse> {
-  const data = await apiPost<{
+  const data = await restClient.post<{
     status: string;
     device_id: string;
     message: string;
@@ -462,7 +462,7 @@ export interface ConfirmRegistrationResponse {
 export async function confirmRegistration(
   request: ConfirmRegistrationRequest
 ): Promise<ConfirmRegistrationResponse> {
-  const data = await apiPost<{
+  const data = await restClient.post<{
     status: string;
     device_id: string;
     command_secret: string;
@@ -506,7 +506,7 @@ export async function fetchDeviceTelemetry(
   imei: string,
   params?: TelemetryParams
 ): Promise<TelemetryResponse> {
-  const data = await apiGet<{
+  const data = await restClient.get<{
     frames: RawTelemetryFrame[];
     pagination: {
       limit: number;

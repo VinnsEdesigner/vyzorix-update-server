@@ -1,4 +1,4 @@
-import { apiGet } from "../_shared/rest-client";
+import { restClient } from "../_shared/rest-client";
 
 export const LOGS_PATHS = {
   logs: (imei: string) => `/v1/logs/${imei}`,
@@ -38,7 +38,7 @@ export async function fetchLogs(
   imei: string,
   params?: { type?: string; limit?: number; cursor?: string }
 ) {
-  const data = await apiGet<RawLogConnection>(LOGS_PATHS.logs(imei), {
+  const data = await restClient.get<RawLogConnection>(LOGS_PATHS.logs(imei), {
     type: params?.type,
     limit: params?.limit,
     cursor: params?.cursor,
@@ -55,12 +55,12 @@ export async function fetchLogs(
 }
 
 export async function fetchLog(id: string) {
-  const data = await apiGet<RawLogEntry>(LOGS_PATHS.log(id));
+  const data = await restClient.get<RawLogEntry>(LOGS_PATHS.log(id));
   return logFromRaw(data);
 }
 
 export async function fetchLogStats(imei: string, params?: { start_time?: number; end_time?: number }) {
-  const data = await apiGet<RawLogStats>(LOGS_PATHS.stats(imei), {
+  const data = await restClient.get<RawLogStats>(LOGS_PATHS.stats(imei), {
     start_time: params?.start_time,
     end_time: params?.end_time,
   });

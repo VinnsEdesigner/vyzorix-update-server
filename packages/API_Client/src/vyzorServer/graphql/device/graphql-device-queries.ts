@@ -123,3 +123,39 @@ export const GET_DEVICE_STATS = /* GraphQL */ `
     }
   }
 `;
+// ============================================================================
+// Query Functions (using Apollo Client)
+// ============================================================================
+
+import { graphqlClient } from '../_shared/graphql-client';
+
+export async function queryDevices(params?: { page?: number; limit?: number; status?: string }) {
+  return graphqlClient.query({
+    query: GET_DEVICES,
+    variables: params,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryDevice(imei: string) {
+  return graphqlClient.query({
+    query: GET_DEVICE,
+    variables: { imei },
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryDeviceStatus(imei: string) {
+  return graphqlClient.query({
+    query: GET_DEVICE_STATUS,
+    variables: { imei },
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryDeviceStats() {
+  return graphqlClient.query({
+    query: GET_DEVICE_STATS,
+    fetchPolicy: 'network-only',
+  });
+}

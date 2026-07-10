@@ -117,3 +117,59 @@ export const DEREGISTER_DEVICE = /* GraphQL */ `
     }
   }
 `;
+import { graphqlClient } from '../_shared/graphql-client';
+
+export interface RegistrationRequestInput {
+  imei: string;
+  deviceName: string;
+  model?: string;
+  manufacturer?: string;
+  osVersion: string;
+  appVersion: string;
+  fcmToken: string;
+  firmware?: string;
+  securityPatch?: string;
+  buildId?: string;
+}
+
+export async function mutateSubmitRegistrationRequest(input: RegistrationRequestInput) {
+  return graphqlClient.mutate({
+    mutation: SUBMIT_REGISTRATION_REQUEST,
+    variables: { input },
+  });
+}
+
+export async function mutateAcknowledgeRequest(imei: string) {
+  return graphqlClient.mutate({
+    mutation: ACKNOWLEDGE_REQUEST,
+    variables: { imei },
+  });
+}
+
+export async function mutateRegisterDevice(imei: string) {
+  return graphqlClient.mutate({
+    mutation: REGISTER_DEVICE,
+    variables: { imei },
+  });
+}
+
+export async function mutateDismissInboxEntry(imei: string) {
+  return graphqlClient.mutate({
+    mutation: DISMISS_INBOX_ENTRY,
+    variables: { imei },
+  });
+}
+
+export async function mutateConfirmRegistration(imei: string, confirmed: boolean) {
+  return graphqlClient.mutate({
+    mutation: CONFIRM_REGISTRATION,
+    variables: { imei, confirmed },
+  });
+}
+
+export async function mutateDeregisterDevice(imei: string) {
+  return graphqlClient.mutate({
+    mutation: DEREGISTER_DEVICE,
+    variables: { imei },
+  });
+}

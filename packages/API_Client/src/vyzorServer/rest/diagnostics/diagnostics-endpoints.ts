@@ -6,7 +6,7 @@
  * Uses session-based authentication (cookies).
  */
 
-import { apiGet } from "../_shared/rest-client";
+import { restClient } from "../_shared/rest-client";
 import type { PaginatedResult } from "@/domain/_shared";
 import { offsetPaginationFromRaw } from "@/domain/_shared";
 
@@ -293,7 +293,7 @@ function timelineEventFromRaw(raw: RawTimelineEvent): TimelineEvent {
  * GET /v1/device/:imei/inspect
  */
 export async function fetchDeviceInspection(imei: string): Promise<DeviceInspection> {
-  const data = await apiGet<RawDeviceInspection>(DIAGNOSTICS_PATHS.inspect(imei));
+  const data = await restClient.get<RawDeviceInspection>(DIAGNOSTICS_PATHS.inspect(imei));
   return inspectionFromRaw(data);
 }
 
@@ -311,7 +311,7 @@ export async function fetchDeviceTimeline(
     limit?: number;
   }
 ): Promise<PaginatedResult<TimelineEvent[]>> {
-  const data = await apiGet<{
+  const data = await restClient.get<{
     events: RawTimelineEvent[];
     pagination: {
       page: number;

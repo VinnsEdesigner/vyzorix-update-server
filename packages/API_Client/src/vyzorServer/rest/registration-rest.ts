@@ -6,7 +6,7 @@
  * Uses session-based authentication (cookies).
  */
 
-import { apiGet, apiPost, apiDelete } from "./_shared/rest-client";
+import { restClient } from "./_shared/rest-client";
 import type { PaginatedResult } from "@/domain/_shared";
 import { offsetPaginationFromRaw } from "@/domain/_shared";
 
@@ -197,7 +197,7 @@ export async function fetchInboxEntries(params?: {
   page?: number;
   limit?: number;
 }): Promise<PaginatedResult<InboxEntry[]>> {
-  const data = await apiGet<{
+  const data = await restClient.get<{
     requests: RawInboxEntry[];
     pagination: { page: number; limit: number; total: number; total_pages: number; has_more?: boolean };
   }>(REGISTRATION_PATHS.inbox, { status: params?.status, page: params?.page, limit: params?.limit });
@@ -209,7 +209,7 @@ export async function fetchInboxEntries(params?: {
 }
 
 export async function fetchInboxEntry(imei: string): Promise<InboxEntry | null> {
-  const data = await apiGet<RawInboxEntry>(REGISTRATION_PATHS.inboxEntry(imei));
+  const data = await restClient.get<RawInboxEntry>(REGISTRATION_PATHS.inboxEntry(imei));
   if (!data || !data.imei) return null;
   return inboxEntryFromRaw(data);
 }
@@ -234,7 +234,7 @@ export async function acknowledgeInbox(
   imei: string,
   request: AcknowledgeRequest
 ): Promise<AcknowledgeResponse> {
-  const data = await apiPost<{
+  const data = await restClient.post<{
     id: string; imei: string; status: string;
     acknowledged_at?: number; approved_at?: number;
     command_secret?: string; fcm_push_sent?: boolean; notes?: string;
@@ -249,7 +249,7 @@ export async function acknowledgeInbox(
 }
 
 export async function dismissInboxEntry(imei: string): Promise<{ status: InboxStatus; updatedAt: Date }> {
-  const data = await apiDelete<{ status: string; updated_at: number }>(REGISTRATION_PATHS.inboxDismiss(imei));
+  const data = await restClient.delete<{ status: string; updated_at: number }>(REGISTRATION_PATHS.inboxDismiss(imei));
   return { status: (data.status as InboxStatus) ?? "rejected", updatedAt: parseTimestamp(data.updated_at) ?? new Date() };
 }
 
@@ -260,7 +260,7 @@ export async function dismissInboxEntry(imei: string): Promise<{ status: InboxSt
 export async function fetchDevices(params?: {
   page?: number; limit?: number; status?: DeviceStatus | "all";
 }): Promise<PaginatedResult<Device[]>> {
-  const data = await apiGet<{
+  const data = await restClient.get<{
     devices: RawDevice[];
     pagination: { page: number; limit: number; total: number; total_pages: number; has_more?: boolean };
   }>(REGISTRATION_PATHS.devices, { page: params?.page, limit: params?.limit, status: params?.status });
@@ -269,7 +269,7 @@ export async function fetchDevices(params?: {
 }
 
 export async function fetchDevice(imei: string): Promise<Device | null> {
-  const data = await apiGet<RawDevice>(REGISTRATION_PATHS.device(imei));
+  const data = await restClient.get<RawDevice>(REGISTRATION_PATHS.device(imei));
   if (!data || !data.imei) return null;
   return deviceFromRaw(data);
 }
@@ -279,7 +279,7 @@ export interface DeregisterResponse {
 }
 
 export async function deregisterDevice(imei: string): Promise<DeregisterResponse> {
-  const data = await apiDelete<{ imei: string; status: string; deregistered_at: number; retention_until: number }>(REGISTRATION_PATHS.deregister(imei));
+  const data = await restClient.delete<{ imei: string; status: string; deregistered_at: number; retention_until: number }>(REGISTRATION_PATHS.deregister(imei));
   return { imei: data.imei, status: "deregistered", deregisteredAt: parseTimestamp(data.deregistered_at) ?? new Date(), retentionUntil: parseTimestamp(data.retention_until) ?? new Date() };
 }
 
@@ -291,7 +291,7 @@ export interface RegisterDeviceRequest { imei: string; }
 export interface RegisterDeviceResponse { status: "approving"; deviceId: string; message: string; }
 
 export async function registerDevice(request: RegisterDeviceRequest): Promise<RegisterDeviceResponse> {
-  const data = await apiPost<{ status: string; device_id: string; message: string }>(REGISTRATION_PATHS.register, { imei: request.imei });
+  const data = await restClient.post<{ status: string; device_id: string; message: string }>(REGISTRATION_PATHS.register, { imei: request.imei });
   return { status: "approving", deviceId: data.device_id, message: data.message };
 }
 
@@ -299,7 +299,7 @@ export interface ConfirmRegistrationRequest { imei: string; confirmed: boolean; 
 export interface ConfirmRegistrationResponse { status: "registered"; deviceId: string; commandSecret: string; registeredAt: Date; }
 
 export async function confirmRegistration(request: ConfirmRegistrationRequest): Promise<ConfirmRegistrationResponse> {
-  const data = await apiPost<{ status: string; device_id: string; command_secret: string; registered_at: number }>(REGISTRATION_PATHS.confirm, { imei: request.imei, confirmed: request.confirmed });
+  const data = await restClient.post<{ status: string; device_id: string; command_secret: string; registered_at: number }>(REGISTRATION_PATHS.confirm, { imei: request.imei, confirmed: request.confirmed });
   return { status: "registered", deviceId: data.device_id, commandSecret: data.command_secret, registeredAt: parseTimestamp(data.registered_at) ?? new Date() };
 }
 
@@ -311,6 +311,6 @@ export interface TelemetryParams { startTime?: number; endTime?: number; limit?:
 export interface TelemetryResponse { frames: TelemetryFrame[]; pagination: { limit: number; hasMore: boolean }; }
 
 export async function fetchDeviceTelemetry(imei: string, params?: TelemetryParams): Promise<TelemetryResponse> {
-  const data = await apiGet<{ frames: RawTelemetryFrame[]; pagination: { limit: number; has_more: boolean } }>(REGISTRATION_PATHS.telemetry(imei), { start_time: params?.startTime, end_time: params?.endTime, limit: params?.limit });
+  const data = await restClient.get<{ frames: RawTelemetryFrame[]; pagination: { limit: number; has_more: boolean } }>(REGISTRATION_PATHS.telemetry(imei), { start_time: params?.startTime, end_time: params?.endTime, limit: params?.limit });
   return { frames: data.frames.map(telemetryFrameFromRaw), pagination: { limit: data.pagination.limit, hasMore: data.pagination.has_more ?? false } };
 }

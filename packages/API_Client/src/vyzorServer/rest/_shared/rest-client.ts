@@ -1,220 +1,106 @@
-/**
- * REST Client Configuration
- * 
- * Shared REST client setup for all features.
- * Uses session-based authentication (cookies).
- */
+// REST Client using Axios
+// Handles all REST API communication with proper error handling
 
-import { DomainError, errorFromHTTP } from "@/domain/_shared";
+import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 
 // ============================================================================
 // Configuration
 // ============================================================================
 
-/**
- * REST API configuration
- */
 export interface RESTConfig {
-  baseUrl: string;
-  credentials?: RequestCredentials;
-  defaultHeaders?: Record<string, string>;
+  baseURL: string;
+  timeout?: number;
+  withCredentials?: boolean;
 }
 
-/**
- * Get REST API config from environment
- */
-export function getRESTConfig(): RESTConfig {
-  const baseUrl = import.meta.env.VITE_API_URL ?? "";
-  
+function getRESTConfig(): RESTConfig {
   return {
-    baseUrl,
-    credentials: "include", // Send cookies for session auth
-    defaultHeaders: {
-      "Content-Type": "application/json",
-    },
+    baseURL: import.meta.env.VITE_API_URL ?? '/api',
+    timeout: 30000,
+    withCredentials: true,
   };
 }
 
 // ============================================================================
-// Fetch Options
+// Axios Instance
 // ============================================================================
 
-/**
- * Extended fetch options for REST requests
- */
-export interface FetchOptions extends RequestInit {
-  params?: Record<string, string | number | boolean | undefined>;
-  timeout?: number;
+function createAxiosInstance(config: RESTConfig): AxiosInstance {
+  const instance = axios.create({
+    baseURL: config.baseURL,
+    timeout: config.timeout,
+    withCredentials: config.withCredentials,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  instance.interceptors.request.use(
+    (config: InternalAxiosRequestConfig) => {
+      console.debug(`[REST] ${config.method?.toUpperCase()} ${config.url}`);
+      return config;
+    },
+    (error) => {
+      console.error('[REST] Request error:', error);
+      return Promise.reject(error);
+    }
+  );
+
+  instance.interceptors.response.use(
+    (response: AxiosResponse) => response,
+    (error) => {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status ?? 0;
+        const data = error.response?.data;
+        console.error(`[REST] Error ${status}:`, data ?? error.message);
+        throw error;
+      }
+      console.error('[REST] Unexpected error:', error);
+      throw error;
+    }
+  );
+
+  return instance;
 }
 
-/**
- * Build URL with query parameters
- */
-export function buildUrl(
-  baseUrl: string,
-  path: string,
-  params?: Record<string, string | number | boolean | undefined>
-): string {
-  const url = new URL(path, baseUrl);
-  
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        url.searchParams.set(key, String(value));
-      }
-    });
+let axiosInstance: AxiosInstance | null = null;
+
+function getAxios(): AxiosInstance {
+  if (!axiosInstance) {
+    axiosInstance = createAxiosInstance(getRESTConfig());
   }
-  
-  return url.toString();
+  return axiosInstance;
 }
 
 // ============================================================================
 // REST Client
 // ============================================================================
 
-/**
- * Base fetch wrapper with error handling
- */
-export async function apiFetch<T>(
-  path: string,
-  options: FetchOptions = {}
-): Promise<T> {
-  const config = getRESTConfig();
-  const { params, timeout, headers, ...fetchInit } = options;
-  
-  // Build URL with params
-  const url = buildUrl(config.baseUrl, path, params);
-  
-  // Setup abort controller for timeout
-  const controller = new AbortController();
-  const timeoutId = timeout ? setTimeout(() => controller.abort(), timeout) : undefined;
-  
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        ...config.defaultHeaders,
-        ...headers,
-      },
-      credentials: config.credentials,
-      signal: controller.signal,
-      ...fetchInit,
-    });
-    
-    // Handle no content
-    if (response.status === 204) {
-      return undefined as T;
-    }
-    
-    // Parse response
-    const contentType = response.headers.get("content-type");
-    const data = contentType?.includes("application/json")
-      ? await response.json()
-      : await response.text();
-    
-    // Handle errors
-    if (!response.ok) {
-      throw errorFromHTTP(response.status, data);
-    }
-    
-    return data as T;
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  }
-}
+export const restClient = {
+  async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await getAxios().get<T>(url, config);
+    return response.data;
+  },
 
-// ============================================================================
-// HTTP Methods
-// ============================================================================
+  async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    const response = await getAxios().post<T>(url, data, config);
+    return response.data;
+  },
 
-/**
- * GET request
- */
-export async function apiGet<T>(
-  path: string,
-  params?: Record<string, string | number | boolean | undefined>,
-  options?: Omit<FetchOptions, "params">
-): Promise<T> {
-  return apiFetch<T>(path, { ...options, params, method: "GET" });
-}
+  async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    const response = await getAxios().put<T>(url, data, config);
+    return response.data;
+  },
 
-/**
- * POST request
- */
-export async function apiPost<T>(
-  path: string,
-  body?: unknown,
-  options?: Omit<FetchOptions, "body">
-): Promise<T> {
-  return apiFetch<T>(path, {
-    ...options,
-    method: "POST",
-    body: body ? JSON.stringify(body) : undefined,
-  });
-}
+  async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    const response = await getAxios().patch<T>(url, data, config);
+    return response.data;
+  },
 
-/**
- * PUT request
- */
-export async function apiPut<T>(
-  path: string,
-  body?: unknown,
-  options?: Omit<FetchOptions, "body">
-): Promise<T> {
-  return apiFetch<T>(path, {
-    ...options,
-    method: "PUT",
-    body: body ? JSON.stringify(body) : undefined,
-  });
-}
+  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const response = await getAxios().delete<T>(url, config);
+    return response.data;
+  },
+};
 
-/**
- * PATCH request
- */
-export async function apiPatch<T>(
-  path: string,
-  body?: unknown,
-  options?: Omit<FetchOptions, "body">
-): Promise<T> {
-  return apiFetch<T>(path, {
-    ...options,
-    method: "PATCH",
-    body: body ? JSON.stringify(body) : undefined,
-  });
-}
-
-/**
- * DELETE request
- */
-export async function apiDelete<T>(
-  path: string,
-  options?: Omit<FetchOptions, "params">
-): Promise<T> {
-  return apiFetch<T>(path, { ...options, method: "DELETE" });
-}
-
-// ============================================================================
-// API Response Types
-// ============================================================================
-
-/**
- * Standard API error response
- */
-export interface APIErrorResponse {
-  error?: string;
-  message?: string;
-  code?: string;
-}
-
-/**
- * Check if response is an error
- */
-export function isAPIError(response: unknown): response is APIErrorResponse {
-  return (
-    typeof response === "object" &&
-    response !== null &&
-    ("error" in response || "message" in response)
-  );
-}
+export { axios };

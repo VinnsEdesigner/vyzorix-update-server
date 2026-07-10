@@ -44,3 +44,35 @@ export const GET_TIMELINE_EVENT = /* GraphQL */ `
   }
   ${TIMELINE_EVENT_FRAGMENT}
 `;
+import { graphqlClient } from '../_shared/graphql-client';
+
+export async function queryDeviceInspection(imei: string) {
+  return graphqlClient.query({
+    query: GET_DEVICE_INSPECTION,
+    variables: { imei },
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryDeviceTimeline(params: {
+  imei: string;
+  eventType?: string;
+  startTime?: number;
+  endTime?: number;
+  limit?: number;
+  cursor?: string;
+}) {
+  return graphqlClient.query({
+    query: GET_DEVICE_TIMELINE,
+    variables: params,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryTimelineEvent(id: string) {
+  return graphqlClient.query({
+    query: GET_TIMELINE_EVENT,
+    variables: { id },
+    fetchPolicy: 'network-only',
+  });
+}

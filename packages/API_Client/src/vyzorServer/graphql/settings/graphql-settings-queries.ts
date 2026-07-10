@@ -57,3 +57,32 @@ export const GET_OPERATOR = /* GraphQL */ `
   }
   ${OPERATOR_FRAGMENT}
 `;
+import { graphqlClient } from '../_shared/graphql-client';
+
+export async function querySettings() {
+  return graphqlClient.query({
+    query: GET_SETTINGS,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryThresholds() {
+  return graphqlClient.query({
+    query: GET_THRESHOLDS,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryNotifications() {
+  return graphqlClient.query({
+    query: GET_NOTIFICATIONS,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryOperator() {
+  return graphqlClient.query({
+    query: GET_OPERATOR,
+    fetchPolicy: 'network-only',
+  });
+}

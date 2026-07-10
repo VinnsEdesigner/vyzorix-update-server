@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPatch, apiDelete } from "../_shared/rest-client";
+import { restClient } from "../_shared/rest-client";
 import type { ApiKey, ApiKeyWithSecret, ApiKeyListResponse } from "@/domain/apikey";
 import type { ApiKeyScope } from "@/domain/apikey";
 import { apiKeyFromRaw, apiKeyWithSecretFromRaw, paginationFromRaw, apiKeyStatsFromRaw } from "@/domain/apikey";
@@ -24,7 +24,7 @@ export interface UpdateApiKeyRequest {
 }
 
 export async function listApiKeys(params?: { page?: number; limit?: number }): Promise<ApiKeyListResponse> {
-  const data = await apiGet<{
+  const data = await restClient.get<{
     keys: Parameters<typeof apiKeyFromRaw>[0][];
     pagination: Parameters<typeof paginationFromRaw>[0];
     monthly_limit: number;
@@ -42,12 +42,12 @@ export async function listApiKeys(params?: { page?: number; limit?: number }): P
 }
 
 export async function getApiKey(keyId: string): Promise<ApiKey> {
-  const data = await apiGet<Parameters<typeof apiKeyFromRaw>[0]>(API_KEY_PATHS.get(keyId));
+  const data = await restClient.get<Parameters<typeof apiKeyFromRaw>[0]>(API_KEY_PATHS.get(keyId));
   return apiKeyFromRaw(data);
 }
 
 export async function createApiKey(input: CreateApiKeyRequest): Promise<{ success: boolean; key: ApiKeyWithSecret }> {
-  const response = await apiPost<{
+  const response = await restClient.post<{
     success: boolean;
     key?: Parameters<typeof apiKeyWithSecretFromRaw>[0];
     error?: string;
@@ -64,7 +64,7 @@ export async function createApiKey(input: CreateApiKeyRequest): Promise<{ succes
 }
 
 export async function updateApiKey(keyId: string, input: UpdateApiKeyRequest): Promise<{ success: boolean; key: ApiKey }> {
-  const response = await apiPatch<{
+  const response = await restClient.patch<{
     success: boolean;
     key?: Parameters<typeof apiKeyFromRaw>[0];
     error?: string;
@@ -81,7 +81,7 @@ export async function updateApiKey(keyId: string, input: UpdateApiKeyRequest): P
 }
 
 export async function revokeApiKey(keyId: string): Promise<{ success: boolean }> {
-  const response = await apiDelete<{ success: boolean; error?: string }>(API_KEY_PATHS.revoke(keyId));
+  const response = await restClient.delete<{ success: boolean; error?: string }>(API_KEY_PATHS.revoke(keyId));
 
   if (!response.success) {
     throw new Error(response.error || "Failed to revoke API key");
@@ -91,7 +91,7 @@ export async function revokeApiKey(keyId: string): Promise<{ success: boolean }>
 }
 
 export async function rotateApiKey(keyId: string): Promise<{ success: boolean; key: ApiKeyWithSecret }> {
-  const response = await apiPost<{
+  const response = await restClient.post<{
     success: boolean;
     key?: Parameters<typeof apiKeyWithSecretFromRaw>[0];
     error?: string;

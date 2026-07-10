@@ -59,3 +59,33 @@ export interface UpdateApiKeyInput {
   name?: string;
   scope?: ApiKeyScope;
 }
+
+import { graphqlClient } from '../_shared/graphql-client';
+
+export async function mutateCreateApiKey(input: CreateApiKeyInput) {
+  return graphqlClient.mutate({
+    mutation: CREATE_API_KEY,
+    variables: { input },
+  });
+}
+
+export async function mutateUpdateApiKey(id: string, input: UpdateApiKeyInput) {
+  return graphqlClient.mutate({
+    mutation: UPDATE_API_KEY,
+    variables: { id, input },
+  });
+}
+
+export async function mutateRevokeApiKey(id: string) {
+  return graphqlClient.mutate({
+    mutation: REVOKE_API_KEY,
+    variables: { id },
+  });
+}
+
+export async function mutateRotateApiKey(id: string) {
+  return graphqlClient.mutate({
+    mutation: ROTATE_API_KEY,
+    variables: { id },
+  });
+}

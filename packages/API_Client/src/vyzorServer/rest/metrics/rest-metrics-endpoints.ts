@@ -1,4 +1,4 @@
-import { apiGet } from "../_shared/rest-client";
+import { restClient } from "../_shared/rest-client";
 import type { DeviceMetrics, DashboardStats, TimeRange, MetricResolution } from "@/domain/metrics";
 import { deviceMetricsFromRaw, dashboardStatsFromRaw } from "@/domain/metrics";
 
@@ -18,7 +18,7 @@ export async function fetchDeviceMetrics(
     resolution?: MetricResolution;
   }
 ): Promise<DeviceMetrics> {
-  const data = await apiGet<Parameters<typeof deviceMetricsFromRaw>[0]>(
+  const data = await restClient.get<Parameters<typeof deviceMetricsFromRaw>[0]>(
     METRICS_PATHS.metrics(imei),
     {
       range: params?.range,
@@ -44,12 +44,12 @@ export async function exportMetrics(
   if (params?.range) searchParams.set("range", params.range);
   if (params?.metrics) searchParams.set("metrics", params.metrics.join(","));
 
-  const response = await fetch(
-    `/api${METRICS_PATHS.metricsExport(imei)}?${searchParams}`,
-    { credentials: "include" }
+  const response = await restClient.get(
+    `${METRICS_PATHS.metricsExport(imei)}?${searchParams}`,
+    { responseType: 'blob' }
   );
 
-  return response.blob();
+  return response;
 }
 
 export async function fetchTelemetryHistory(
@@ -60,7 +60,7 @@ export async function fetchTelemetryHistory(
     limit?: number;
   }
 ) {
-  const data = await apiGet<{
+  const data = await restClient.get<{
     frames: Array<{
       timestamp: number;
       risk_score: number;
@@ -96,7 +96,7 @@ export async function fetchTelemetryHistory(
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
-  const data = await apiGet<Parameters<typeof dashboardStatsFromRaw>[0]>(
+  const data = await restClient.get<Parameters<typeof dashboardStatsFromRaw>[0]>(
     METRICS_PATHS.dashboardStats
   );
   return dashboardStatsFromRaw(data);
