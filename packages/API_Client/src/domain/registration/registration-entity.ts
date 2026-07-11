@@ -2,6 +2,45 @@ export type InboxStatus = "pending" | "acknowledged" | "approving" | "approved" 
 export type AcknowledgeAction = "acknowledge" | "approve" | "reject";
 export type DeviceStatus = "online" | "offline" | "deregistered";
 
+/**
+ * Request from device to create an inbox entry (submit registration request).
+ * This is the first step in the device registration flow.
+ */
+export interface CreateInboxRequest {
+  imei: string;
+  deviceName?: string;
+  deviceClass?: string;
+  model?: string;
+  manufacturer?: string;
+  osVersion?: string;
+  appVersion?: string;
+  fcmToken: string;
+  firebaseInstallId: string;
+  idempotencyKey?: string;
+}
+
+/**
+ * Result after successfully creating an inbox entry.
+ */
+export interface CreateInboxResult {
+  id: string;
+  imei: string;
+  status: InboxStatus;
+  createdAt: Date;
+}
+
+/**
+ * Result after successfully confirming device registration.
+ */
+export interface ConfirmDeviceResult {
+  deviceId: string;
+  imei: string;
+  confirmed: boolean;
+  online: boolean;
+  registeredAt: Date;
+  serverTime: Date;
+}
+
 export interface InboxEntry {
   id: string;
   imei: string;

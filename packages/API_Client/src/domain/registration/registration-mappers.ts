@@ -1,4 +1,13 @@
-import type { InboxEntry, Device, Pagination, InboxStatus, DeviceStatus } from "./registration-entity";
+import type {
+  InboxEntry,
+  Device,
+  Pagination,
+  InboxStatus,
+  DeviceStatus,
+  CreateInboxRequest,
+  CreateInboxResult,
+  ConfirmDeviceResult,
+} from "./registration-entity";
 
 export interface RawInboxEntry {
   id: string;
@@ -42,9 +51,79 @@ export interface RawPagination {
   totalPages: number;
 }
 
+/** Raw request for POST /v1/device/inbox */
+export interface RawCreateInboxRequest {
+  imei: string;
+  deviceName?: string;
+  deviceClass?: string;
+  model?: string;
+  manufacturer?: string;
+  osVersion?: string;
+  appVersion?: string;
+  fcmToken: string;
+  firebaseInstallId: string;
+  idempotencyKey?: string;
+}
+
+/** Raw response for POST /v1/device/inbox */
+export interface RawCreateInboxResponse {
+  id: string;
+  imei: string;
+  status: InboxStatus;
+  createdAt: number;
+}
+
+/** Raw response for POST /v1/device/confirm */
+export interface RawConfirmDeviceResponse {
+  device_id: string;
+  imei: string;
+  confirmed: boolean;
+  online: boolean;
+  registered_at: number;
+  server_time: number;
+}
+
 function parseTimestamp(value: number | null | undefined): Date | null {
   if (!value) return null;
   return new Date(value > 1e12 ? value : value * 1000);
+}
+
+/** Maps CreateInboxRequest to raw request format for API */
+export function createInboxRequestToRaw(request: CreateInboxRequest): RawCreateInboxRequest {
+  return {
+    imei: request.imei,
+    deviceName: request.deviceName,
+    deviceClass: request.deviceClass,
+    model: request.model,
+    manufacturer: request.manufacturer,
+    osVersion: request.osVersion,
+    appVersion: request.appVersion,
+    fcmToken: request.fcmToken,
+    firebaseInstallId: request.firebaseInstallId,
+    idempotencyKey: request.idempotencyKey,
+  };
+}
+
+/** Maps raw CreateInboxResponse to domain CreateInboxResult */
+export function createInboxResultFromRaw(raw: RawCreateInboxResponse): CreateInboxResult {
+  return {
+    id: raw.id,
+    imei: raw.imei,
+    status: raw.status,
+    createdAt: parseTimestamp(raw.createdAt) ?? new Date(),
+  };
+}
+
+/** Maps raw ConfirmDeviceResponse to domain ConfirmDeviceResult */
+export function confirmDeviceResultFromRaw(raw: RawConfirmDeviceResponse): ConfirmDeviceResult {
+  return {
+    deviceId: raw.device_id,
+    imei: raw.imei,
+    confirmed: raw.confirmed,
+    online: raw.online,
+    registeredAt: parseTimestamp(raw.registered_at) ?? new Date(),
+    serverTime: parseTimestamp(raw.server_time) ?? new Date(),
+  };
 }
 
 export function inboxEntryFromRaw(raw: RawInboxEntry): InboxEntry {
