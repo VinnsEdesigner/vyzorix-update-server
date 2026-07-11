@@ -45,6 +45,13 @@ import (
 	"github.com/google/wire"
 )
 
+const (
+	// Default JWT expiry for access tokens
+	defaultJWTAccessExpiry = 15 * time.Minute
+	// Default refresh token expiry
+	defaultRefreshTokenExpiry = 7 * 24 * time.Hour // 7 days
+)
+
 // ProvideConfig returns the application config.
 func ProvideConfig() (config.Config, error) {
 	return config.Load()
@@ -179,22 +186,42 @@ func ProvidePasswordResetRepository(db *sql.DB) *storage.PasswordResetRepository
 	return storage.NewPasswordResetRepository(db)
 }
 
-// ProvideAuthService creates the auth service.
+// ProvideRefreshTokenRepository creates the refresh token repository.
+func ProvideRefreshTokenRepository(db *sql.DB) *storage.RefreshTokenRepository {
+	return storage.NewRefreshTokenRepository(db)
+}
+
+// ProvideJWTManager creates the JWT manager for access tokens.
+func ProvideJWTManager(cfg config.Config) (*infraauth.JWTManager, error) {
+	return infraauth.NewJWTManager(
+		cfg.JWTSecret,
+		defaultJWTAccessExpiry,
+		"vyz-api",
+	)
+}
+
+// ProvideAuthService creates the auth service with full refresh token support.
 func ProvideAuthService(
 	operatorRepo *storage.OperatorRepository,
 	sessionRepo *storage.SessionRepository,
 	emailVerifyRepo *storage.EmailVerificationRepository,
 	passwordResetRepo *storage.PasswordResetRepository,
+	refreshTokenRepo *storage.RefreshTokenRepository,
 	hasher *passwordpkg.Argon2idHasher,
+	jwtManager *infraauth.JWTManager,
 ) *auth.AuthService {
 	sessionTTL := 7 * 24 * time.Hour
-	return auth.NewAuthService(
+	return auth.NewAuthServiceWithRefresh(
 		operatorRepo,
 		sessionRepo,
 		emailVerifyRepo,
 		passwordResetRepo,
 		hasher,
 		sessionTTL,
+		refreshTokenRepo,
+		defaultRefreshTokenExpiry,
+		jwtManager,
+		nil, // ldapConfig - not used currently
 	)
 }
 

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
@@ -80,6 +81,10 @@ func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken st
 
 // IssueRefreshToken issues a new refresh token.
 func (s *AuthService) IssueRefreshToken(ctx context.Context, operatorID, sessionID string) (string, error) {
+	if s.refreshTokenRepo == nil {
+		return "", errors.New("refresh token repository not configured")
+	}
+
 	token, err := shared.GenerateToken()
 	if err != nil {
 		return "", err
@@ -88,12 +93,18 @@ func (s *AuthService) IssueRefreshToken(ctx context.Context, operatorID, session
 	tokenHash := hashTokenSha256(token)
 	id := shared.GenerateID()
 
+	// Default to 7 days if refreshTokenExpiry not set
+	expiry := s.refreshTokenExpiry
+	if expiry == 0 {
+		expiry = 7 * 24 * time.Hour
+	}
+
 	rt := &RefreshToken{
 		ID:         id,
 		OperatorID: operatorID,
 		SessionID:  sessionID,
 		TokenHash:  tokenHash,
-		ExpiresAt:  time.Now().Add(s.refreshTokenExpiry),
+		ExpiresAt:  time.Now().Add(expiry),
 		CreatedAt:  time.Now(),
 	}
 
