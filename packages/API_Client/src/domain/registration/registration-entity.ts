@@ -1,53 +1,70 @@
-export type InboxStatus = "pending" | "approved" | "rejected";
-
-export type AcknowledgeAction = "approve" | "reject";
+export type InboxStatus = "pending" | "acknowledged" | "approving" | "approved" | "rejected" | "expired";
+export type AcknowledgeAction = "acknowledge" | "approve" | "reject";
+export type DeviceStatus = "online" | "offline" | "deregistered";
 
 export interface InboxEntry {
   id: string;
   imei: string;
-  model?: string;
-  manufacturer?: string;
-  osVersion?: string;
-  appVersion?: string;
+  deviceName: string;
+  deviceClass: string;
+  model: string;
+  manufacturer: string;
+  osVersion: string;
+  appVersion: string;
   fcmToken: string;
   firebaseInstallId: string;
   status: InboxStatus;
+  acknowledgedAt: Date | null;
+  approvingAt: Date | null;
+  approvedAt: Date | null;
+  rejectedAt: Date | null;
+  notes: string | null;
+  operatorId: string | null;
   createdAt: Date;
-  approvedAt?: Date;
-  rejectedAt?: Date;
-  commandSecret?: string;
-  notes?: string;
-  operatorId?: string;
 }
 
-export interface InboxListItem {
+export interface Device {
   id: string;
   imei: string;
-  model?: string;
-  manufacturer?: string;
-  status: InboxStatus;
-  createdAt: Date;
+  deviceName: string;
+  model: string;
+  manufacturer: string;
+  osVersion: string;
+  appVersion: string;
+  status: DeviceStatus;
+  registeredAt: Date | null;
+  lastSeen: Date | null;
+  online: boolean;
+}
+
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export interface InboxListResult {
   requests: InboxEntry[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  pagination: Pagination;
+}
+
+export interface DeviceListResult {
+  devices: Device[];
+  pagination: Pagination;
 }
 
 export interface AckResult {
   id: string;
   imei: string;
   status: InboxStatus;
-  approvedAt?: Date;
-  rejectedAt?: Date;
-  commandSecret?: string;
-  fcmPushSent?: boolean;
-  notes?: string;
+  acknowledgedAt: Date | null;
+  approvingAt: Date | null;
+  approvedAt: Date | null;
+  rejectedAt: Date | null;
+  commandSecret: string | null;
+  fcmPushSent: boolean;
+  notes: string | null;
 }
 
 export interface DeregisterResult {
@@ -55,17 +72,4 @@ export interface DeregisterResult {
   status: string;
   deregisteredAt: Date;
   retentionUntil: Date;
-}
-
-export function isInboxTerminal(entry: InboxEntry | InboxListItem): boolean {
-  return entry.status === "rejected";
-}
-
-export function getInboxStatusLabel(status: InboxStatus): string {
-  const labels: Record<InboxStatus, string> = {
-    pending: "Pending",
-    approved: "Approved",
-    rejected: "Rejected",
-  };
-  return labels[status];
 }

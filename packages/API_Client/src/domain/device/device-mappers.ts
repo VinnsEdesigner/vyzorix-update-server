@@ -1,45 +1,55 @@
-import type { Device, DeviceListItem, DeviceStats, DeviceOnlineStatus, DeviceConnection } from "./device-entity";
+import type {
+  Device,
+  DeviceListItem,
+  DeviceStats,
+  DeviceStatus,
+  DeviceConnection,
+} from "./device-entity";
 
 export interface RawDevice {
-  id?: string;
-  imei?: string;
-  device_name?: string;
+  id: string;
+  imei: string;
+  deviceName?: string;
   model?: string;
   manufacturer?: string;
-  app_version?: string;
-  os_version?: string;
-  security_patch?: string;
-  build_id?: string;
-  online?: boolean;
-  fcm_token_valid?: boolean;
-  command_secret_set?: boolean;
-  registered_at?: number;
-  last_seen?: number;
-  created_at?: number;
-  updated_at?: number;
+  osVersion?: string;
+  appVersion?: string;
+  securityPatch?: string;
+  online: boolean;
+  fcmTokenValid: boolean;
+  commandSecretSet: boolean;
+  registeredAt?: number;
+  lastSeen?: number;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface RawDeviceListItem {
-  id?: string;
-  imei?: string;
-  device_name?: string;
+  id: string;
+  imei: string;
+  deviceName?: string;
   model?: string;
   manufacturer?: string;
-  status?: string;
-  last_seen?: number;
+  status: string;
+  lastSeen?: number;
 }
 
 export interface RawDeviceStats {
-  total?: number;
-  online?: number;
-  offline?: number;
+  total: number;
+  online: number;
+  offline: number;
 }
 
-export interface RawDeviceConnection {
-  web_socket_status?: string;
-  connected_at?: number;
-  protocol?: string;
-  client_ip?: string;
+export interface RawPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface RawDeviceListResult {
+  devices: RawDeviceListItem[];
+  pagination: RawPagination;
 }
 
 function parseTimestamp(value?: number | null): Date | undefined {
@@ -47,36 +57,41 @@ function parseTimestamp(value?: number | null): Date | undefined {
   return new Date(value > 1e12 ? value : value * 1000);
 }
 
+function statusFromOnline(online: boolean, deregisteredAt?: number): DeviceStatus {
+  if (deregisteredAt) return "deregistered";
+  return online ? "online" : "offline";
+}
+
 export function deviceFromRaw(raw: RawDevice): Device {
   return {
-    id: raw.id ?? "",
-    imei: raw.imei ?? "",
-    deviceName: raw.device_name,
+    id: raw.id,
+    imei: raw.imei,
+    deviceName: raw.deviceName,
     model: raw.model,
     manufacturer: raw.manufacturer,
-    osVersion: raw.os_version,
-    appVersion: raw.app_version,
-    securityPatch: raw.security_patch,
-    status: (raw.online ? "online" : "offline") as DeviceOnlineStatus,
-    registeredAt: parseTimestamp(raw.registered_at),
-    lastSeen: parseTimestamp(raw.last_seen),
-    fcmTokenValid: raw.fcm_token_valid ?? false,
-    commandSecretSet: raw.command_secret_set ?? false,
+    osVersion: raw.osVersion,
+    appVersion: raw.appVersion,
+    securityPatch: raw.securityPatch,
+    status: statusFromOnline(raw.online),
+    registeredAt: parseTimestamp(raw.registeredAt),
+    lastSeen: parseTimestamp(raw.lastSeen),
+    fcmTokenValid: raw.fcmTokenValid,
+    commandSecretSet: raw.commandSecretSet,
     connection: {} as DeviceConnection,
-    createdAt: parseTimestamp(raw.created_at) ?? new Date(),
-    updatedAt: parseTimestamp(raw.updated_at) ?? new Date(),
+    createdAt: parseTimestamp(raw.createdAt) ?? new Date(),
+    updatedAt: parseTimestamp(raw.updatedAt) ?? new Date(),
   };
 }
 
 export function deviceListItemFromRaw(raw: RawDeviceListItem): DeviceListItem {
   return {
-    id: raw.id ?? "",
-    imei: raw.imei ?? "",
-    deviceName: raw.device_name,
+    id: raw.id,
+    imei: raw.imei,
+    deviceName: raw.deviceName,
     model: raw.model,
     manufacturer: raw.manufacturer,
-    status: (raw.status as DeviceOnlineStatus) ?? "offline",
-    lastSeen: parseTimestamp(raw.last_seen),
+    status: (raw.status as DeviceStatus) ?? "offline",
+    lastSeen: parseTimestamp(raw.lastSeen),
   };
 }
 
@@ -88,6 +103,11 @@ export function deviceStatsFromRaw(raw: RawDeviceStats): DeviceStats {
   };
 }
 
-export function deviceListItemsFromRaw(raw: RawDeviceListItem[]): DeviceListItem[] {
-  return raw.map(deviceListItemFromRaw);
+export function paginationFromRaw(raw: RawPagination): Pagination {
+  return {
+    page: raw.page,
+    limit: raw.limit,
+    total: raw.total,
+    totalPages: raw.totalPages,
+  };
 }

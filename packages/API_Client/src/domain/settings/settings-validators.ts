@@ -6,7 +6,7 @@
  */
 
 import { ValidationError } from "@/domain/_shared";
-import type { ThresholdSettings, ConnectionSettings } from "./settings-entity";
+import type { Thresholds, ClientSettings } from "./settings-entity";
 
 // ============================================================================
 // Validation Result
@@ -57,7 +57,7 @@ export function validateThresholdValue(
 /**
  * Validate threshold settings (warning < critical for risk/thermal, warning > critical for buffer)
  */
-export function validateThresholdSettings(thresholds: ThresholdSettings): ValidationResult {
+export function validateThresholds(thresholds: Thresholds): ValidationResult {
   const errors: Record<string, string[]> = {};
   
   // Risk thresholds: warning should be < critical
@@ -162,7 +162,7 @@ export function validateRequestTimeout(ms: number): string | null {
 /**
  * Validate connection settings
  */
-export function validateConnectionSettings(settings: ConnectionSettings): ValidationResult {
+export function validateClientSettings(settings: ClientSettings): ValidationResult {
   const errors: Record<string, string[]> = {};
   
   const serverUrlError = validateServerUrl(settings.serverUrl);

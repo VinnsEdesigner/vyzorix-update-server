@@ -1,6 +1,7 @@
 import { restClient } from "../_shared/rest-client";
 import type { DeviceMetrics, DashboardStats, TimeRange, MetricResolution } from "@/domain/metrics";
 import { deviceMetricsFromRaw, dashboardStatsFromRaw } from "@/domain/metrics";
+import { getMetricsConfig } from "../../config";
 
 export const METRICS_PATHS = {
   metrics: (imei: string) => `/v1/device/${imei}/metrics`,
@@ -60,6 +61,9 @@ export async function fetchTelemetryHistory(
     limit?: number;
   }
 ) {
+  const metricsConfig = getMetricsConfig();
+  const defaultLimit = params?.limit ?? metricsConfig.defaultLimit;
+  
   const data = await restClient.get<{
     frames: Array<{
       timestamp: number;
@@ -76,7 +80,7 @@ export async function fetchTelemetryHistory(
   }>(METRICS_PATHS.telemetry(imei), {
     start_time: params?.startTime,
     end_time: params?.endTime,
-    limit: params?.limit ?? 500,
+    limit: defaultLimit,
   });
 
   return {

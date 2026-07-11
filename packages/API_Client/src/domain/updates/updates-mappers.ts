@@ -1,110 +1,91 @@
 import type {
   Version,
-  ChangelogEntry,
+  SyncState,
+  PushDevices,
   UpdatePush,
-  PushDevice,
-  SyncStatus,
-  DeviceUpdateStatus,
-  UpdateStatusResult,
   Pagination,
   VersionListResult,
   UpdateHistoryResult,
-  ChangelogResult,
-  SyncResult,
+  ChangelogEntry,
   ReleaseType,
   UpdateStatus,
+  InstallType,
   DevicePushStatus,
-  SyncStatusValue,
+  SyncStatus,
 } from "./updates-entity";
 
-export type RawVersion = {
+export interface RawVersion {
   id: string;
   version: string;
   apkFilename: string;
   apkSize: number;
   sha256: string;
-  releaseDate: string;
-  releaseNotes?: string;
   releaseType: string;
+  releaseNotes?: string;
+  releaseDate: number;
   isLatest: boolean;
-};
+  createdAt: number;
+  updatedAt: number;
+}
 
-export type RawChangelogEntry = {
-  version: string;
-  date: string;
-  type: string;
-  notes: string;
-};
-
-export type RawPushDevice = {
-  id: string;
-  deviceId: string;
-  deviceName?: string;
+export interface RawSyncState {
   status: string;
-  sentAt?: string | null;
-  acknowledgedAt?: string | null;
+  lastSyncAt?: number | null;
+  nextSyncAt?: number | null;
+  versionsFound?: number;
   error?: string;
-};
+}
 
-export type RawUpdatePush = {
+export interface RawPushDevices {
+  total: number;
+  pending: number;
+  sent: number;
+  acknowledged: number;
+  failed: number;
+}
+
+export interface RawUpdatePush {
   id: string;
-  version: string;
+  versionId: string;
   installType: string;
   status: string;
   initiatedBy: string;
-  initiatedAt: string;
-  completedAt?: string | null;
-  cancelledAt?: string | null;
-  deviceCount: number;
-  devices: RawPushDevice[];
-};
+  initiatedAt: number;
+  scheduledAt?: number | null;
+  completedAt?: number | null;
+  cancelledAt?: number | null;
+  cancelledBy?: string;
+  devices: RawPushDevices;
+}
 
-export type RawSyncStatus = {
-  status: string;
-  lastSyncAt?: string | null;
-  nextSyncAt?: string | null;
-  versionsFound?: number;
-  error?: string;
-};
-
-export type RawDeviceUpdateStatus = {
-  currentVersion?: string;
-  needsUpdate: boolean;
-};
-
-export type RawUpdateStatusResult = {
-  sync: RawSyncStatus;
-  latest?: RawVersion;
-  device: RawDeviceUpdateStatus;
-};
-
-export type RawPagination = {
+export interface RawPagination {
   page: number;
   limit: number;
   total: number;
   totalPages: number;
-};
+}
 
-export type RawVersionListResult = {
+export interface RawVersionListResult {
   versions: RawVersion[];
   pagination: RawPagination;
-};
+}
 
-export type RawUpdateHistoryResult = {
+export interface RawUpdateHistoryResult {
   pushes: RawUpdatePush[];
   pagination: RawPagination;
-};
+}
 
-export type RawChangelogResult = {
-  changelog: RawChangelogEntry[];
-};
+export interface RawChangelogEntry {
+  version: string;
+  date: string;
+  type: string;
+  notes: string;
+}
 
-export type RawSyncResult = {
-  status: string;
-  startedAt: string;
-  versionsFound?: number;
-  message?: string;
-};
+function parseTimestamp(value?: number | null): Date | undefined {
+  if (!value) return undefined;
+  return new Date(value > 1e12 ? value : value * 1000);
+}
 
 export function versionFromRaw(raw: RawVersion): Version {
   return {
@@ -113,71 +94,48 @@ export function versionFromRaw(raw: RawVersion): Version {
     apkFilename: raw.apkFilename,
     apkSize: raw.apkSize,
     sha256: raw.sha256,
-    releaseDate: new Date(raw.releaseDate),
+    releaseType: (raw.releaseType as ReleaseType) ?? "patch",
     releaseNotes: raw.releaseNotes,
-    releaseType: raw.releaseType as ReleaseType,
+    releaseDate: parseTimestamp(raw.releaseDate) ?? new Date(),
     isLatest: raw.isLatest,
+    createdAt: parseTimestamp(raw.createdAt) ?? new Date(),
+    updatedAt: parseTimestamp(raw.updatedAt) ?? new Date(),
   };
 }
 
-export function changelogEntryFromRaw(raw: RawChangelogEntry): ChangelogEntry {
+export function syncStateFromRaw(raw: RawSyncState): SyncState {
   return {
-    version: raw.version,
-    date: new Date(raw.date),
-    type: raw.type as ReleaseType,
-    notes: raw.notes,
-  };
-}
-
-export function pushDeviceFromRaw(raw: RawPushDevice): PushDevice {
-  return {
-    id: raw.id,
-    deviceId: raw.deviceId,
-    deviceName: raw.deviceName,
-    status: raw.status as DevicePushStatus,
-    sentAt: raw.sentAt ? new Date(raw.sentAt) : undefined,
-    acknowledgedAt: raw.acknowledgedAt ? new Date(raw.acknowledgedAt) : undefined,
+    status: (raw.status as SyncStatus) ?? "idle",
+    lastSyncAt: parseTimestamp(raw.lastSyncAt),
+    nextSyncAt: parseTimestamp(raw.nextSyncAt),
+    versionsFound: raw.versionsFound,
     error: raw.error,
+  };
+}
+
+export function pushDevicesFromRaw(raw: RawPushDevices): PushDevices {
+  return {
+    total: raw.total ?? 0,
+    pending: raw.pending ?? 0,
+    sent: raw.sent ?? 0,
+    acknowledged: raw.acknowledged ?? 0,
+    failed: raw.failed ?? 0,
   };
 }
 
 export function updatePushFromRaw(raw: RawUpdatePush): UpdatePush {
   return {
     id: raw.id,
-    version: raw.version,
-    installType: raw.installType as "immediate" | "scheduled",
-    status: raw.status as UpdateStatus,
+    versionId: raw.versionId,
+    installType: (raw.installType as InstallType) ?? "immediate",
+    status: (raw.status as UpdateStatus) ?? "pending",
     initiatedBy: raw.initiatedBy,
-    initiatedAt: new Date(raw.initiatedAt),
-    completedAt: raw.completedAt ? new Date(raw.completedAt) : undefined,
-    cancelledAt: raw.cancelledAt ? new Date(raw.cancelledAt) : undefined,
-    deviceCount: raw.deviceCount,
-    devices: raw.devices.map(pushDeviceFromRaw),
-  };
-}
-
-export function syncStatusFromRaw(raw: RawSyncStatus): SyncStatus {
-  return {
-    status: raw.status as SyncStatusValue,
-    lastSyncAt: raw.lastSyncAt ? new Date(raw.lastSyncAt) : undefined,
-    nextSyncAt: raw.nextSyncAt ? new Date(raw.nextSyncAt) : undefined,
-    versionsFound: raw.versionsFound,
-    error: raw.error,
-  };
-}
-
-export function deviceUpdateStatusFromRaw(raw: RawDeviceUpdateStatus): DeviceUpdateStatus {
-  return {
-    currentVersion: raw.currentVersion,
-    needsUpdate: raw.needsUpdate,
-  };
-}
-
-export function updateStatusResultFromRaw(raw: RawUpdateStatusResult): UpdateStatusResult {
-  return {
-    sync: syncStatusFromRaw(raw.sync),
-    latest: raw.latest ? versionFromRaw(raw.latest) : undefined,
-    device: deviceUpdateStatusFromRaw(raw.device),
+    initiatedAt: parseTimestamp(raw.initiatedAt) ?? new Date(),
+    scheduledAt: parseTimestamp(raw.scheduledAt),
+    completedAt: parseTimestamp(raw.completedAt),
+    cancelledAt: parseTimestamp(raw.cancelledAt),
+    cancelledBy: raw.cancelledBy,
+    devices: pushDevicesFromRaw(raw.devices),
   };
 }
 
@@ -204,17 +162,11 @@ export function updateHistoryResultFromRaw(raw: RawUpdateHistoryResult): UpdateH
   };
 }
 
-export function changelogResultFromRaw(raw: RawChangelogResult): ChangelogResult {
+export function changelogEntryFromRaw(raw: RawChangelogEntry): ChangelogEntry {
   return {
-    changelog: raw.changelog.map(changelogEntryFromRaw),
-  };
-}
-
-export function syncResultFromRaw(raw: RawSyncResult): SyncResult {
-  return {
-    status: raw.status as SyncStatusValue,
-    startedAt: new Date(raw.startedAt),
-    versionsFound: raw.versionsFound,
-    message: raw.message,
+    version: raw.version,
+    date: new Date(raw.date),
+    type: (raw.type as ReleaseType) ?? "patch",
+    notes: raw.notes,
   };
 }

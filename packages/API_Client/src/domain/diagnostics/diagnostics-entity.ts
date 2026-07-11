@@ -69,22 +69,16 @@ export interface DeviceInspection {
 
 export interface TimelineEvent {
   id: string;
+  deviceId: string;
   type: TimelineEventType;
   timestamp: Date;
   data: Record<string, unknown>;
 }
 
-export interface TimelineConnection {
+export interface TimelineResult {
   events: TimelineEvent[];
   hasMore: boolean;
   nextCursor?: string;
-}
-
-export interface TimelineFilters {
-  eventType?: TimelineEventType;
-  startTime?: Date;
-  endTime?: Date;
-  limit?: number;
 }
 
 export function getEventCategory(type: TimelineEventType): TimelineEventCategory {

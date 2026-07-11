@@ -11,8 +11,9 @@
     "declarationMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "paths": {
+      "@/*": ["./*"],
       "@vyzorix/api-client": ["./src"]
     }
   },

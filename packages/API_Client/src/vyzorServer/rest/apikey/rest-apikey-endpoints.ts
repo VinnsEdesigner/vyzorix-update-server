@@ -1,108 +1,80 @@
 import { restClient } from "../_shared/rest-client";
-import type { ApiKey, ApiKeyWithSecret, ApiKeyListResponse } from "@/domain/apikey";
-import type { ApiKeyScope } from "@/domain/apikey";
-import { apiKeyFromRaw, apiKeyWithSecretFromRaw, paginationFromRaw, apiKeyStatsFromRaw } from "@/domain/apikey";
+import {
+  apiKeyFromRaw,
+  apiKeyWithSecretFromRaw,
+  paginationFromRaw,
+  apiKeyStatsFromRaw,
+  type RawApiKey,
+  type RawApiKeyWithSecret,
+  type RawApiKeyListResult,
+} from "@/domain/apikey";
+import type {
+  ApiKey,
+  ApiKeyWithSecret,
+  ApiKeyListResult,
+  ApiKeyScope,
+} from "@/domain/apikey";
 
-export const API_KEY_PATHS = {
+const PATHS = {
   list: "/v1/auth/api-keys",
-  get: (keyId: string) => `/v1/auth/api-keys/${keyId}`,
-  create: "/v1/auth/api-keys",
-  update: (keyId: string) => `/v1/auth/api-keys/${keyId}`,
-  revoke: (keyId: string) => `/v1/auth/api-keys/${keyId}`,
+  key: (keyId: string) => `/v1/auth/api-keys/${keyId}`,
   rotate: (keyId: string) => `/v1/auth/api-keys/${keyId}/rotate`,
 } as const;
 
-export interface CreateApiKeyRequest {
+export interface CreateApiKeyInput {
   name: string;
   scope: ApiKeyScope;
-  expires_in_days?: number;
+  expiresInDays?: number;
 }
 
-export interface UpdateApiKeyRequest {
+export interface UpdateApiKeyInput {
   name?: string;
   scope?: ApiKeyScope;
 }
 
-export async function listApiKeys(params?: { page?: number; limit?: number }): Promise<ApiKeyListResponse> {
-  const data = await restClient.get<{
-    keys: Parameters<typeof apiKeyFromRaw>[0][];
-    pagination: Parameters<typeof paginationFromRaw>[0];
-    monthly_limit: number;
-    keys_created_this_month: number;
-  }>(API_KEY_PATHS.list, {
-    page: params?.page,
-    limit: params?.limit,
-  });
+export const apiKeys = {
+  async list(params?: { page?: number; limit?: number }): Promise<ApiKeyListResult> {
+    const response = await restClient.get<RawApiKeyListResult>(PATHS.list, {
+      params: {
+        page: params?.page,
+        limit: params?.limit,
+      },
+    });
+    return {
+      keys: response.keys.map(apiKeyFromRaw),
+      pagination: paginationFromRaw(response.pagination),
+      stats: apiKeyStatsFromRaw(response),
+    };
+  },
 
-  return {
-    keys: data.keys.map(apiKeyFromRaw),
-    pagination: paginationFromRaw(data.pagination),
-    ...apiKeyStatsFromRaw(data),
-  };
-}
+  async get(keyId: string): Promise<ApiKey> {
+    const response = await restClient.get<RawApiKey>(PATHS.key(keyId));
+    return apiKeyFromRaw(response);
+  },
 
-export async function getApiKey(keyId: string): Promise<ApiKey> {
-  const data = await restClient.get<Parameters<typeof apiKeyFromRaw>[0]>(API_KEY_PATHS.get(keyId));
-  return apiKeyFromRaw(data);
-}
+  async create(input: CreateApiKeyInput): Promise<ApiKeyWithSecret> {
+    const response = await restClient.post<RawApiKeyWithSecret>(PATHS.list, {
+      name: input.name,
+      scope: input.scope,
+      expires_in_days: input.expiresInDays,
+    });
+    return apiKeyWithSecretFromRaw(response);
+  },
 
-export async function createApiKey(input: CreateApiKeyRequest): Promise<{ success: boolean; key: ApiKeyWithSecret }> {
-  const response = await restClient.post<{
-    success: boolean;
-    key?: Parameters<typeof apiKeyWithSecretFromRaw>[0];
-    error?: string;
-  }>(API_KEY_PATHS.create, input);
+  async update(keyId: string, input: UpdateApiKeyInput): Promise<ApiKey> {
+    const response = await restClient.patch<RawApiKey>(PATHS.key(keyId), {
+      name: input.name,
+      scope: input.scope,
+    });
+    return apiKeyFromRaw(response);
+  },
 
-  if (!response.success || !response.key) {
-    throw new Error(response.error || "Failed to create API key");
-  }
+  async revoke(keyId: string): Promise<{ success: boolean }> {
+    return restClient.delete<{ success: boolean }>(PATHS.key(keyId));
+  },
 
-  return {
-    success: true,
-    key: apiKeyWithSecretFromRaw(response.key),
-  };
-}
-
-export async function updateApiKey(keyId: string, input: UpdateApiKeyRequest): Promise<{ success: boolean; key: ApiKey }> {
-  const response = await restClient.patch<{
-    success: boolean;
-    key?: Parameters<typeof apiKeyFromRaw>[0];
-    error?: string;
-  }>(API_KEY_PATHS.update(keyId), input);
-
-  if (!response.success || !response.key) {
-    throw new Error(response.error || "Failed to update API key");
-  }
-
-  return {
-    success: true,
-    key: apiKeyFromRaw(response.key),
-  };
-}
-
-export async function revokeApiKey(keyId: string): Promise<{ success: boolean }> {
-  const response = await restClient.delete<{ success: boolean; error?: string }>(API_KEY_PATHS.revoke(keyId));
-
-  if (!response.success) {
-    throw new Error(response.error || "Failed to revoke API key");
-  }
-
-  return { success: true };
-}
-
-export async function rotateApiKey(keyId: string): Promise<{ success: boolean; key: ApiKeyWithSecret }> {
-  const response = await restClient.post<{
-    success: boolean;
-    key?: Parameters<typeof apiKeyWithSecretFromRaw>[0];
-    error?: string;
-  }>(API_KEY_PATHS.rotate(keyId), {});
-
-  if (!response.success || !response.key) {
-    throw new Error(response.error || "Failed to rotate API key");
-  }
-
-  return {
-    success: true,
-    key: apiKeyWithSecretFromRaw(response.key),
-  };
-}
+  async rotate(keyId: string): Promise<ApiKeyWithSecret> {
+    const response = await restClient.post<RawApiKeyWithSecret>(PATHS.rotate(keyId), {});
+    return apiKeyWithSecretFromRaw(response);
+  },
+};

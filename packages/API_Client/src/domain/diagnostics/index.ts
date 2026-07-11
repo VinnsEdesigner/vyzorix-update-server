@@ -1,8 +1,13 @@
 export * from "./diagnostics-entity";
 export {
+  identityFromRaw,
+  softwareFromRaw,
+  registrationFromRaw,
+  connectionFromRaw,
+  telemetryFromRaw,
+  timelineEventFromRaw,
   deviceInspectionFromRaw,
-  timelineConnectionFromRaw,
-  timelineEventsFromRaw,
+  timelineResultFromRaw,
   type RawIdentityInfo,
   type RawSoftwareInfo,
   type RawRegistrationInfo,
@@ -10,6 +15,5 @@ export {
   type RawTelemetryInfo,
   type RawDeviceInspection,
   type RawTimelineEvent,
-  type RawTimelineConnection,
-  type RawTimelineResponse,
+  type RawTimelineResult,
 } from "./diagnostics-mappers";
