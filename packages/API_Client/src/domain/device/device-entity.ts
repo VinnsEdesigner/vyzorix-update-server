@@ -1,11 +1,4 @@
-export type DeviceOnlineStatus = "online" | "offline";
-
-export type DeviceRegistrationStatus = "pending" | "registered" | "deregistered" | "suspended";
-
-export interface DeviceStatus {
-  online: DeviceOnlineStatus;
-  registration: DeviceRegistrationStatus;
-}
+export type DeviceStatus = "online" | "offline" | "deregistered";
 
 export interface DeviceConnection {
   webSocketStatus?: string;
@@ -23,7 +16,7 @@ export interface Device {
   osVersion?: string;
   appVersion?: string;
   securityPatch?: string;
-  status: DeviceOnlineStatus;
+  status: DeviceStatus;
   registeredAt?: Date;
   lastSeen?: Date;
   fcmTokenValid: boolean;
@@ -39,7 +32,7 @@ export interface DeviceListItem {
   deviceName?: string;
   model?: string;
   manufacturer?: string;
-  status: DeviceOnlineStatus;
+  status: DeviceStatus;
   lastSeen?: Date;
 }
 
@@ -61,14 +54,17 @@ export interface DeviceListResult {
   pagination: Pagination;
 }
 
-export function isDeviceOnline(device: Device | DeviceListItem): boolean {
-  return device.status === "online";
-}
-
-export function isDeviceRegistered(device: Device): boolean {
-  return device.registeredAt !== undefined;
+export interface RegisterDeviceRequest {
+  imei: string;
+  deviceName?: string;
+  model?: string;
+  fcmToken: string;
 }
 
 export function formatDeviceName(device: Device | DeviceListItem): string {
   return device.deviceName || device.model || `Device ${device.imei.slice(-4)}`;
+}
+
+export function isDeviceOnline(device: Device | DeviceListItem): boolean {
+  return device.status === "online";
 }

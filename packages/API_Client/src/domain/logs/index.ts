@@ -1,43 +1,9 @@
-/**
- * Logs Domain Index
- * 
- * Re-exports all logs domain types and mappers.
- */
-
-// Types
-export type {
-  LogEntry,
-  LogListItem,
-  LogLevel,
-  LogLevelInfo,
-  LogFilters,
-  LogLevelCounts,
-  LogStats,
-} from "./logs-entity";
-
-export {
-  LOG_LEVELS,
-  getLogLevelInfo,
-  isErrorLevel,
-  isWarningLevel,
-  formatLogMessage,
-  filterLogsByLevel,
-  calculateLogStats,
-} from "./logs-entity";
-
-// Mappers
-export type {
-  RawLogEntry,
-  RawLogStats,
-  RawPaginatedLogs,
-} from "./logs-mappers";
-
+export * from "./logs-entity";
 export {
   logEntryFromRaw,
-  logListItemFromRaw,
+  logListResultFromRaw,
   logStatsFromRaw,
-  logEntriesFromRaw,
-  logListItemsFromRaw,
-  logFiltersToParams,
-  paramsToLogFilters,
+  type RawLogEntry,
+  type RawLogListResult,
+  type RawLogStats,
 } from "./logs-mappers";

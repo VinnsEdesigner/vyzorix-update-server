@@ -1,139 +1,132 @@
 import type {
-  DeviceInspection,
-  TimelineEvent,
-  TimelineConnection,
   IdentityInfo,
   SoftwareInfo,
   RegistrationInfo,
   ConnectionInfo,
   TelemetryInfo,
+  DeviceInspection,
+  TimelineEvent,
+  TimelineResult,
   TimelineEventType,
   DeviceStatus,
   FCMStatus,
   WebSocketStatus,
 } from "./diagnostics-entity";
 
-export type RawIdentityInfo = {
+export interface RawIdentityInfo {
   imei: string;
-  device_name?: string;
+  deviceName?: string;
   model?: string;
   manufacturer?: string;
-};
+}
 
-export type RawSoftwareInfo = {
-  os_version?: string;
-  app_version?: string;
-  security_patch?: string;
-  build_id?: string;
-};
+export interface RawSoftwareInfo {
+  osVersion?: string;
+  appVersion?: string;
+  securityPatch?: string;
+  buildId?: string;
+}
 
-export type RawRegistrationInfo = {
+export interface RawRegistrationInfo {
   status: string;
-  registered_at?: number;
-  fcm_token_valid: boolean;
-  fcm_token_refreshed_at?: number;
-  command_secret_set: boolean;
-};
+  registeredAt?: number;
+  fcmTokenValid: boolean;
+  fcmTokenRefreshedAt?: number;
+  commandSecretSet: boolean;
+}
 
-export type RawConnectionInfo = {
-  web_socket_status?: string;
-  connected_at?: number;
-  fcm_status?: string;
-  last_seen?: number;
-  client_ip?: string;
+export interface RawConnectionInfo {
+  webSocketStatus?: string;
+  connectedAt?: number;
+  fcmStatus?: string;
+  lastSeen?: number;
+  clientIp?: string;
   protocol?: string;
-};
+}
 
-export type RawTelemetryInfo = {
-  last_timestamp?: number;
-  frames_today?: number;
-  avg_latency_ms?: number;
-  total_bytes_today?: number;
-  sessions_today?: number;
-};
+export interface RawTelemetryInfo {
+  lastTimestamp?: number;
+  framesToday: number;
+  avgLatencyMs?: number;
+  totalBytesToday?: number;
+  sessionsToday: number;
+}
 
-export type RawDeviceInspection = {
+export interface RawDeviceInspection {
   identity: RawIdentityInfo;
   software: RawSoftwareInfo;
   registration: RawRegistrationInfo;
   connection: RawConnectionInfo;
   telemetry: RawTelemetryInfo;
-};
+}
 
-export type RawTimelineEvent = {
+export interface RawTimelineEvent {
   id: string;
+  deviceId: string;
   type: string;
   timestamp: number;
-  data: Record<string, unknown>;
-};
+  data?: Record<string, unknown>;
+}
 
-export type RawTimelineConnection = {
+export interface RawTimelineResult {
   events: RawTimelineEvent[];
-  pagination: {
-    limit: number;
-    has_more: boolean;
-    next_cursor?: string;
-  };
-};
+  hasMore: boolean;
+  nextCursor?: string;
+}
 
-export type RawTimelineResponse = {
-  events: RawTimelineEvent[];
-  has_more: boolean;
-  next_cursor?: string;
-};
-
-function identityFromRaw(raw: RawIdentityInfo): IdentityInfo {
+export function identityFromRaw(raw: RawIdentityInfo): IdentityInfo {
   return {
     imei: raw.imei,
-    deviceName: raw.device_name,
+    deviceName: raw.deviceName,
     model: raw.model,
     manufacturer: raw.manufacturer,
   };
 }
 
-function softwareFromRaw(raw: RawSoftwareInfo): SoftwareInfo {
+export function softwareFromRaw(raw: RawSoftwareInfo): SoftwareInfo {
   return {
-    osVersion: raw.os_version,
-    appVersion: raw.app_version,
-    securityPatch: raw.security_patch,
-    buildId: raw.build_id,
+    osVersion: raw.osVersion,
+    appVersion: raw.appVersion,
+    securityPatch: raw.securityPatch,
+    buildId: raw.buildId,
   };
 }
 
-function registrationFromRaw(raw: RawRegistrationInfo): RegistrationInfo {
+export function registrationFromRaw(raw: RawRegistrationInfo): RegistrationInfo {
   return {
     status: (raw.status as DeviceStatus) ?? "offline",
-    registeredAt: raw.registered_at ? new Date(raw.registered_at) : undefined,
-    fcmTokenValid: raw.fcm_token_valid,
-    fcmTokenRefreshedAt: raw.fcm_token_refreshed_at ? new Date(raw.fcm_token_refreshed_at) : undefined,
-    commandSecretSet: raw.command_secret_set,
+    registeredAt: raw.registeredAt ? new Date(raw.registeredAt) : undefined,
+    fcmTokenValid: raw.fcmTokenValid,
+    fcmTokenRefreshedAt: raw.fcmTokenRefreshedAt ? new Date(raw.fcmTokenRefreshedAt) : undefined,
+    commandSecretSet: raw.commandSecretSet,
   };
 }
 
-function connectionFromRaw(raw: RawConnectionInfo): ConnectionInfo {
+export function connectionFromRaw(raw: RawConnectionInfo): ConnectionInfo {
   return {
-    webSocketStatus: (raw.web_socket_status as WebSocketStatus) ?? "disconnected",
-    connectedAt: raw.connected_at ? new Date(raw.connected_at) : undefined,
-    fcmStatus: (raw.fcm_status as FCMStatus) ?? "not_set",
-    lastSeen: raw.last_seen ? new Date(raw.last_seen) : undefined,
-    clientIp: raw.client_ip,
+    webSocketStatus: (raw.webSocketStatus as WebSocketStatus) ?? "disconnected",
+    connectedAt: raw.connectedAt ? new Date(raw.connectedAt) : undefined,
+    fcmStatus: (raw.fcmStatus as FCMStatus) ?? "not_set",
+    lastSeen: raw.lastSeen ? new Date(raw.lastSeen) : undefined,
+    clientIp: raw.clientIp,
     protocol: raw.protocol,
   };
 }
 
-function telemetryFromRaw(raw: RawTelemetryInfo): TelemetryInfo {
+export function telemetryFromRaw(raw: RawTelemetryInfo): TelemetryInfo {
   return {
-    lastTimestamp: raw.last_timestamp ? new Date(raw.last_timestamp) : undefined,
-    framesToday: raw.frames_today ?? 0,
-    avgLatencyMs: raw.avg_latency_ms,
-    totalBytesToday: raw.total_bytes_today,
-    sessionsToday: raw.sessions_today ?? 0,
+    lastTimestamp: raw.lastTimestamp ? new Date(raw.lastTimestamp) : undefined,
+    framesToday: raw.framesToday ?? 0,
+    avgLatencyMs: raw.avgLatencyMs,
+    totalBytesToday: raw.totalBytesToday,
+    sessionsToday: raw.sessionsToday ?? 0,
   };
 }
 
-function timelineEventFromRaw(raw: RawTimelineEvent): TimelineEvent {
+export function timelineEventFromRaw(raw: RawTimelineEvent): TimelineEvent {
   return {
     id: raw.id,
+    deviceId: raw.deviceId,
     type: raw.type as TimelineEventType,
     timestamp: new Date(raw.timestamp),
     data: raw.data ?? {},
@@ -150,14 +143,10 @@ export function deviceInspectionFromRaw(raw: RawDeviceInspection): DeviceInspect
   };
 }
 
-export function timelineConnectionFromRaw(raw: RawTimelineResponse): TimelineConnection {
+export function timelineResultFromRaw(raw: RawTimelineResult): TimelineResult {
   return {
     events: raw.events.map(timelineEventFromRaw),
-    hasMore: raw.has_more,
-    nextCursor: raw.next_cursor,
+    hasMore: raw.hasMore,
+    nextCursor: raw.nextCursor,
   };
-}
-
-export function timelineEventsFromRaw(raw: RawTimelineEvent[]): TimelineEvent[] {
-  return raw.map(timelineEventFromRaw);
 }

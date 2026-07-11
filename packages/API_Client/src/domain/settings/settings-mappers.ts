@@ -1,300 +1,212 @@
-/**
- * Settings Mappers
- * 
- * Transformations from raw API response to domain types.
- * Raw API uses snake_case, domain uses camelCase.
- */
-
 import type {
-  ConnectionSettings,
-  ThresholdSettings,
+  Thresholds,
+  ClientSettings,
+  EmailNotifications,
+  PushNotifications,
+  WebhookNotifications,
   NotificationSettings,
-  OperatorInfo,
-  AdvancedSettings,
-  Settings,
-  NotificationChannel,
+  SecuritySettings,
+  NotificationEvent,
 } from "./settings-entity";
 
-// ============================================================================
-// Raw API Types (snake_case)
-// ============================================================================
-
-/**
- * Raw connection settings from API
- */
-export interface RawConnectionSettings {
-  server_url?: string;
-  device_id?: string;
-  dashboard_token?: string;
-  request_timeout_ms?: number;
-  auto_reconnect?: boolean;
-  strict_hmac?: boolean;
+export interface RawThresholds {
+  riskWarn: number;
+  riskCrit: number;
+  thermalWarn: number;
+  thermalCrit: number;
+  bufferWarn: number;
+  bufferCrit: number;
 }
 
-/**
- * Raw threshold settings from API
- */
-export interface RawThresholdSettings {
-  risk_warn?: number;
-  risk_crit?: number;
-  thermal_warn?: number;
-  thermal_crit?: number;
-  buffer_warn?: number;
-  buffer_crit?: number;
+export interface RawClientSettings {
+  serverUrl: string;
+  deviceId: string;
+  requestTimeoutMs: number;
+  logBufferLimit: number;
+  signalHistoryLimit: number;
+  autoReconnect: boolean;
+  strictHmac: boolean;
+  notificationsEnabled: boolean;
 }
 
-/**
- * Raw notification channel from API
- */
-export interface RawNotificationChannel {
-  enabled?: boolean;
-  email?: string;
-  webhook_url?: string;
-  webhook_secret?: string;
+export interface RawEmailNotifications {
+  thresholdBreach: boolean;
+  deviceOffline: boolean;
+  deviceOnline: boolean;
+  updateAvailable: boolean;
+  commandFailed: boolean;
+  registrationRequest: boolean;
 }
 
-/**
- * Raw notification settings from API
- */
+export interface RawPushNotifications {
+  thresholdBreach: boolean;
+  deviceOffline: boolean;
+  deviceOnline: boolean;
+  updateAvailable: boolean;
+  commandFailed: boolean;
+  registrationRequest: boolean;
+}
+
+export interface RawWebhookNotifications {
+  enabled: boolean;
+  url: string;
+  secret: string;
+  types: string[];
+}
+
 export interface RawNotificationSettings {
-  enabled?: boolean;
-  email?: RawNotificationChannel;
-  push?: RawNotificationChannel;
-  webhook?: RawNotificationChannel;
-  events?: Record<string, boolean>;
+  enabled: boolean;
+  channels: string[];
+  email: RawEmailNotifications;
+  push: RawPushNotifications;
+  webhook: RawWebhookNotifications;
 }
 
-/**
- * Raw operator info from API
- */
-export interface RawOperatorInfo {
-  id?: string;
-  email?: string;
-  name?: string;
-  role?: string;
-  email_verified?: boolean;
-  created_at?: string | number;
+export type RawNotificationSettingsResponse = RawNotificationSettings;
+
+export interface RawSecuritySettings {
+  maxConcurrentSessions: number;
+  passwordMinAgeDays: number;
+  passwordMaxAgeDays: number;
+  passwordHistoryCount: number;
+  sessionPinRequired: boolean;
 }
 
-/**
- * Raw advanced settings from API
- */
-export interface RawAdvancedSettings {
-  log_buffer_limit?: number;
-  signal_history_limit?: number;
-}
-
-/**
- * Raw complete settings from API
- */
-export interface RawSettings {
-  connection?: RawConnectionSettings;
-  thresholds?: RawThresholdSettings;
-  notifications?: RawNotificationSettings;
-  operator?: RawOperatorInfo;
-  advanced?: RawAdvancedSettings;
-}
-
-// ============================================================================
-// Transform Functions
-// ============================================================================
-
-/**
- * Transform raw connection settings to domain
- */
-export function connectionFromRaw(raw?: RawConnectionSettings | null): ConnectionSettings | null {
-  if (!raw) return null;
-  
+export function thresholdsFromRaw(raw: RawThresholds): Thresholds {
   return {
-    serverUrl: raw.server_url ?? "",
-    deviceId: raw.device_id ?? "",
-    dashboardToken: raw.dashboard_token ?? "",
-    requestTimeoutMs: raw.request_timeout_ms ?? 8000,
-    autoReconnect: raw.auto_reconnect ?? true,
-    strictHmac: raw.strict_hmac ?? false,
+    riskWarn: raw.riskWarn,
+    riskCrit: raw.riskCrit,
+    thermalWarn: raw.thermalWarn,
+    thermalCrit: raw.thermalCrit,
+    bufferWarn: raw.bufferWarn,
+    bufferCrit: raw.bufferCrit,
   };
 }
 
-/**
- * Transform raw threshold settings to domain
- */
-export function thresholdsFromRaw(raw?: RawThresholdSettings | null): ThresholdSettings | null {
-  if (!raw) return null;
-  
+export function clientSettingsFromRaw(raw: RawClientSettings): ClientSettings {
   return {
-    riskWarn: raw.risk_warn ?? 70,
-    riskCrit: raw.risk_crit ?? 85,
-    thermalWarn: raw.thermal_warn ?? 45,
-    thermalCrit: raw.thermal_crit ?? 50,
-    bufferWarn: raw.buffer_warn ?? 30,
-    bufferCrit: raw.buffer_crit ?? 15,
+    serverUrl: raw.serverUrl,
+    deviceId: raw.deviceId,
+    requestTimeoutMs: raw.requestTimeoutMs,
+    logBufferLimit: raw.logBufferLimit,
+    signalHistoryLimit: raw.signalHistoryLimit,
+    autoReconnect: raw.autoReconnect,
+    strictHmac: raw.strictHmac,
+    notificationsEnabled: raw.notificationsEnabled,
   };
 }
 
-/**
- * Transform raw notification channel to domain
- */
-export function notificationChannelFromRaw(raw?: RawNotificationChannel | null): NotificationChannel | null {
-  if (!raw) return null;
-  
+export function emailNotificationsFromRaw(raw: RawEmailNotifications): EmailNotifications {
   return {
-    enabled: raw.enabled ?? false,
-    email: raw.email,
-    webhookUrl: raw.webhook_url,
-    webhookSecret: raw.webhook_secret,
+    thresholdBreach: raw.thresholdBreach,
+    deviceOffline: raw.deviceOffline,
+    deviceOnline: raw.deviceOnline,
+    updateAvailable: raw.updateAvailable,
+    commandFailed: raw.commandFailed,
+    registrationRequest: raw.registrationRequest,
   };
 }
 
-/**
- * Transform raw notification settings to domain
- */
-export function notificationsFromRaw(raw?: RawNotificationSettings | null): NotificationSettings | null {
-  if (!raw) return null;
-  
+export function pushNotificationsFromRaw(raw: RawPushNotifications): PushNotifications {
   return {
-    enabled: raw.enabled ?? true,
-    email: notificationChannelFromRaw(raw.email) ?? undefined,
-    push: notificationChannelFromRaw(raw.push) ?? undefined,
-    webhook: notificationChannelFromRaw(raw.webhook) ?? undefined,
-    events: raw.events ?? {},
+    thresholdBreach: raw.thresholdBreach,
+    deviceOffline: raw.deviceOffline,
+    deviceOnline: raw.deviceOnline,
+    updateAvailable: raw.updateAvailable,
+    commandFailed: raw.commandFailed,
+    registrationRequest: raw.registrationRequest,
   };
 }
 
-/**
- * Transform raw operator info to domain
- */
-export function operatorFromRaw(raw?: RawOperatorInfo | null): OperatorInfo | null {
-  if (!raw) return null;
-  
+export function webhookNotificationsFromRaw(raw: RawWebhookNotifications): WebhookNotifications {
   return {
-    id: raw.id ?? "",
-    email: raw.email ?? "",
-    name: raw.name ?? "",
-    role: (raw.role as "operator" | "admin") ?? "operator",
-    emailVerified: raw.email_verified ?? false,
-    createdAt: raw.created_at 
-      ? new Date(typeof raw.created_at === "number"" ? raw.created_at * 1000 : raw.created_at)
-      : new Date(),
+    enabled: raw.enabled,
+    url: raw.url,
+    secret: raw.secret,
+    types: raw.types as NotificationEvent[],
   };
 }
 
-/**
- * Transform raw advanced settings to domain
- */
-export function advancedFromRaw(raw?: RawAdvancedSettings | null): AdvancedSettings | null {
-  if (!raw) return null;
-  
+export function notificationSettingsFromRaw(raw: RawNotificationSettings): NotificationSettings {
   return {
-    logBufferLimit: raw.log_buffer_limit ?? 500,
-    signalHistoryLimit: raw.signal_history_limit ?? 240,
+    enabled: raw.enabled,
+    channels: raw.channels,
+    email: emailNotificationsFromRaw(raw.email),
+    push: pushNotificationsFromRaw(raw.push),
+    webhook: webhookNotificationsFromRaw(raw.webhook),
   };
 }
 
-/**
- * Transform raw settings to domain
- */
-export function settingsFromRaw(raw?: RawSettings | null): Settings | null {
-  if (!raw) return null;
-  
+export function securitySettingsFromRaw(raw: RawSecuritySettings): SecuritySettings {
   return {
-    operator: operatorFromRaw(raw.operator) ?? {
-      id: "",
-      email: "",
-      name: "",
-      role: "operator",
-      emailVerified: false,
-      createdAt: new Date(),
-    },
-    connection: connectionFromRaw(raw.connection) ?? {
-      serverUrl: "",
-      deviceId: "",
-      dashboardToken: "",
-      requestTimeoutMs: 8000,
-      autoReconnect: true,
-      strictHmac: false,
-    },
-    thresholds: thresholdsFromRaw(raw.thresholds) ?? {
-      riskWarn: 70,
-      riskCrit: 85,
-      thermalWarn: 45,
-      thermalCrit: 50,
-      bufferWarn: 30,
-      bufferCrit: 15,
-    },
-    notifications: notificationsFromRaw(raw.notifications) ?? {
-      enabled: true,
-      events: {},
-    },
-    advanced: advancedFromRaw(raw.advanced) ?? {
-      logBufferLimit: 500,
-      signalHistoryLimit: 240,
-    },
+    maxConcurrentSessions: raw.maxConcurrentSessions,
+    passwordMinAgeDays: raw.passwordMinAgeDays,
+    passwordMaxAgeDays: raw.passwordMaxAgeDays,
+    passwordHistoryCount: raw.passwordHistoryCount,
+    sessionPinRequired: raw.sessionPinRequired,
   };
 }
 
-// ============================================================================
-// Reverse Transform (Domain â API)
-// ============================================================================
-
-/**
- * Transform connection settings to API format
- */
-export function connectionToRaw(settings: ConnectionSettings): RawConnectionSettings {
+export function thresholdsToRaw(thresholds: Partial<Thresholds>): Partial<RawThresholds> {
   return {
-    server_url: settings.serverUrl,
-    device_id: settings.deviceId,
-    dashboard_token: settings.dashboardToken,
-    request_timeout_ms: settings.requestTimeoutMs,
-    auto_reconnect: settings.autoReconnect,
-    strict_hmac: settings.strictHmac,
+    riskWarn: thresholds.riskWarn,
+    riskCrit: thresholds.riskCrit,
+    thermalWarn: thresholds.thermalWarn,
+    thermalCrit: thresholds.thermalCrit,
+    bufferWarn: thresholds.bufferWarn,
+    bufferCrit: thresholds.bufferCrit,
   };
 }
 
-/**
- * Transform threshold settings to API format
- */
-export function thresholdsToRaw(settings: ThresholdSettings): RawThresholdSettings {
+export function clientSettingsToRaw(client: Partial<ClientSettings>): Partial<RawClientSettings> {
   return {
-    risk_warn: settings.riskWarn,
-    risk_crit: settings.riskCrit,
-    thermal_warn: settings.thermalWarn,
-    thermal_crit: settings.thermalCrit,
-    buffer_warn: settings.bufferWarn,
-    buffer_crit: settings.bufferCrit,
+    serverUrl: client.serverUrl,
+    deviceId: client.deviceId,
+    requestTimeoutMs: client.requestTimeoutMs,
+    logBufferLimit: client.logBufferLimit,
+    signalHistoryLimit: client.signalHistoryLimit,
+    autoReconnect: client.autoReconnect,
+    strictHmac: client.strictHmac,
+    notificationsEnabled: client.notificationsEnabled,
   };
 }
 
-/**
- * Transform notification channel to API format
- */
-export function notificationChannelToRaw(channel: NotificationChannel): RawNotificationChannel {
+export function emailNotificationsToRaw(email: Partial<EmailNotifications>): Partial<RawEmailNotifications> {
   return {
-    enabled: channel.enabled,
-    email: channel.email,
-    webhook_url: channel.webhookUrl,
-    webhook_secret: channel.webhookSecret,
+    thresholdBreach: email.thresholdBreach,
+    deviceOffline: email.deviceOffline,
+    deviceOnline: email.deviceOnline,
+    updateAvailable: email.updateAvailable,
+    commandFailed: email.commandFailed,
+    registrationRequest: email.registrationRequest,
   };
 }
 
-/**
- * Transform notification settings to API format
- */
-export function notificationsToRaw(settings: NotificationSettings): RawNotificationSettings {
+export function pushNotificationsToRaw(push: Partial<PushNotifications>): Partial<RawPushNotifications> {
+  return {
+    thresholdBreach: push.thresholdBreach,
+    deviceOffline: push.deviceOffline,
+    deviceOnline: push.deviceOnline,
+    updateAvailable: push.updateAvailable,
+    commandFailed: push.commandFailed,
+    registrationRequest: push.registrationRequest,
+  };
+}
+
+export function webhookNotificationsToRaw(webhook: Partial<WebhookNotifications>): Partial<RawWebhookNotifications> {
+  return {
+    enabled: webhook.enabled,
+    url: webhook.url,
+    types: webhook.types,
+  };
+}
+
+export function notificationSettingsToRaw(settings: Partial<NotificationSettings>): Partial<RawNotificationSettings> {
   return {
     enabled: settings.enabled,
-    email: settings.email ? notificationChannelToRaw(settings.email) : undefined,
-    push: settings.push ? notificationChannelToRaw(settings.push) : undefined,
-    webhook: settings.webhook ? notificationChannelToRaw(settings.webhook) : undefined,
-    events: settings.events,
-  };
-}
-
-/**
- * Transform advanced settings to API format
- */
-export function advancedToRaw(settings: AdvancedSettings): RawAdvancedSettings {
-  return {
-    log_buffer_limit: settings.logBufferLimit,
-    signal_history_limit: settings.signalHistoryLimit,
+    channels: settings.channels,
+    email: settings.email ? emailNotificationsToRaw(settings.email) : undefined,
+    push: settings.push ? pushNotificationsToRaw(settings.push) : undefined,
+    webhook: settings.webhook ? webhookNotificationsToRaw(settings.webhook) : undefined,
   };
 }

@@ -1,0 +1,117 @@
+/**
+ * API Client Configuration
+ * 
+ * Centralized configuration management using environment variables.
+ * All hardcoded defaults should be configured via environment variables.
+ */
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+export interface WebSocketConfig {
+  url: string;
+  reconnectInterval: number;
+  maxReconnectAttempts: number;
+  heartbeatInterval: number;
+  heartbeatTimeout: number;
+  reconnectMaxDelay: number;
+  reconnectMultiplier: number;
+}
+
+export interface RESTConfig {
+  baseURL: string;
+  timeout: number;
+  withCredentials: boolean;
+}
+
+export interface MetricsConfig {
+  defaultLimit: number;
+  retentionDays: number;
+}
+
+export interface ClientConfig {
+  ws: WebSocketConfig;
+  rest: RESTConfig;
+  metrics: MetricsConfig;
+}
+
+// ============================================================================
+// Environment Variable Parsers
+// ============================================================================
+
+function parseIntEnv(key: string, defaultValue: number): number {
+  const value = import.meta.env[key];
+  if (value === undefined) return defaultValue;
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) ? defaultValue : parsed;
+}
+
+function parseStringEnv(key: string, defaultValue: string): string {
+  return import.meta.env[key] ?? defaultValue;
+}
+
+function parseBoolEnv(key: string, defaultValue: boolean): boolean {
+  const value = import.meta.env[key];
+  if (value === undefined) return defaultValue;
+  return value === "true" || value === "1";
+}
+
+// ============================================================================
+// Configuration Factory
+// ============================================================================
+
+export function getClientConfig(): ClientConfig {
+  return {
+    ws: getWebSocketConfig(),
+    rest: getRESTConfig(),
+    metrics: getMetricsConfig(),
+  };
+}
+
+export function getWebSocketConfig(): WebSocketConfig {
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const host = window.location.host;
+  const wsUrl = parseStringEnv("VITE_WS_URL", `${protocol}//${host}`);
+  
+  return {
+    url: wsUrl,
+    reconnectInterval: parseIntEnv("VITE_WS_RECONNECT_INTERVAL", 3000),
+    maxReconnectAttempts: parseIntEnv("VITE_WS_MAX_RECONNECT_ATTEMPTS", 5),
+    heartbeatInterval: parseIntEnv("VITE_WS_HEARTBEAT_INTERVAL", 30000),
+    heartbeatTimeout: parseIntEnv("VITE_WS_HEARTBEAT_TIMEOUT", 10000),
+    reconnectMaxDelay: parseIntEnv("VITE_WS_RECONNECT_MAX_DELAY", 30000),
+    reconnectMultiplier: parseIntEnv("VITE_WS_RECONNECT_MULTIPLIER", 2),
+  };
+}
+
+export function getRESTConfig(): RESTConfig {
+  return {
+    baseURL: parseStringEnv("VITE_API_URL", "/api"),
+    timeout: parseIntEnv("VITE_REST_TIMEOUT", 30000),
+    withCredentials: parseBoolEnv("VITE_REST_WITH_CREDENTIALS", true),
+  };
+}
+
+export function getMetricsConfig(): MetricsConfig {
+  return {
+    defaultLimit: parseIntEnv("VITE_METRICS_DEFAULT_LIMIT", 500),
+    retentionDays: parseIntEnv("VITE_METRICS_RETENTION_DAYS", 30),
+  };
+}
+
+// ============================================================================
+// Individual Config Accessors (for granular usage)
+// ============================================================================
+
+export const config = {
+  get ws(): WebSocketConfig {
+    return getWebSocketConfig();
+  },
+  get rest(): RESTConfig {
+    return getRESTConfig();
+  },
+  get metrics(): MetricsConfig {
+    return getMetricsConfig();
+  },
+};

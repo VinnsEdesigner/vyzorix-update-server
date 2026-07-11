@@ -2,24 +2,13 @@
 // Handles all REST API communication with proper error handling
 
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
+import { getRESTConfig, type RESTConfig } from '../../config';
 
 // ============================================================================
 // Configuration
 // ============================================================================
 
-export interface RESTConfig {
-  baseURL: string;
-  timeout?: number;
-  withCredentials?: boolean;
-}
-
-function getRESTConfig(): RESTConfig {
-  return {
-    baseURL: import.meta.env.VITE_API_URL ?? '/api',
-    timeout: 30000,
-    withCredentials: true,
-  };
-}
+export { type RESTConfig } from '../../config';
 
 // ============================================================================
 // Axios Instance

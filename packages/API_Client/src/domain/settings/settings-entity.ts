@@ -1,59 +1,3 @@
-/**
- * Settings Domain Types
- * 
- * Domain types for operator settings configuration.
- * Pure TypeScript - no external imports.
- */
-
-// ============================================================================
-// Connection Settings
-// ============================================================================
-
-/**
- * Connection configuration for device communication
- */
-export interface ConnectionSettings {
-  serverUrl: string;
-  deviceId: string;
-  dashboardToken: string;
-  requestTimeoutMs: number;
-  autoReconnect: boolean;
-  strictHmac: boolean;
-}
-
-// ============================================================================
-// Threshold Settings
-// ============================================================================
-
-/**
- * Threshold levels for alerts
- */
-export interface ThresholdSettings {
-  riskWarn: number;
-  riskCrit: number;
-  thermalWarn: number;
-  thermalCrit: number;
-  bufferWarn: number;
-  bufferCrit: number;
-}
-
-// ============================================================================
-// Notification Settings
-// ============================================================================
-
-/**
- * Notification channel configuration
- */
-export interface NotificationChannel {
-  enabled: boolean;
-  email?: string;
-  webhookUrl?: string;
-  webhookSecret?: string;
-}
-
-/**
- * Notification event types
- */
 export type NotificationEvent =
   | "threshold_breach"
   | "device_offline"
@@ -62,68 +6,68 @@ export type NotificationEvent =
   | "command_failed"
   | "registration_request";
 
-/**
- * Notification settings
- */
-export interface NotificationSettings {
-  enabled: boolean;
-  email?: NotificationChannel;
-  push?: NotificationChannel;
-  webhook?: NotificationChannel;
-  events: Partial<Record<NotificationEvent, boolean>>;
+export interface Thresholds {
+  riskWarn: number;
+  riskCrit: number;
+  thermalWarn: number;
+  thermalCrit: number;
+  bufferWarn: number;
+  bufferCrit: number;
 }
 
-// ============================================================================
-// Operator Settings
-// ============================================================================
-
-/**
- * Operator account information
- */
-export interface OperatorInfo {
-  id: string;
-  email: string;
-  name: string;
-  role: "operator" | "admin";
-  emailVerified: boolean;
-  createdAt: Date;
-}
-
-// ============================================================================
-// Advanced Settings
-// ============================================================================
-
-/**
- * Advanced client settings
- */
-export interface AdvancedSettings {
+export interface ClientSettings {
+  serverUrl: string;
+  deviceId: string;
+  requestTimeoutMs: number;
   logBufferLimit: number;
   signalHistoryLimit: number;
+  autoReconnect: boolean;
+  strictHmac: boolean;
+  notificationsEnabled: boolean;
 }
 
-// ============================================================================
-// Complete Settings
-// ============================================================================
-
-/**
- * Complete operator settings
- */
-export interface Settings {
-  operator: OperatorInfo;
-  connection: ConnectionSettings;
-  thresholds: ThresholdSettings;
-  notifications: NotificationSettings;
-  advanced: AdvancedSettings;
+export interface EmailNotifications {
+  thresholdBreach: boolean;
+  deviceOffline: boolean;
+  deviceOnline: boolean;
+  updateAvailable: boolean;
+  commandFailed: boolean;
+  registrationRequest: boolean;
 }
 
-// ============================================================================
-// Default Values
-// ============================================================================
+export interface PushNotifications {
+  thresholdBreach: boolean;
+  deviceOffline: boolean;
+  deviceOnline: boolean;
+  updateAvailable: boolean;
+  commandFailed: boolean;
+  registrationRequest: boolean;
+}
 
-/**
- * Default threshold values
- */
-export const DEFAULT_THRESHOLDS: ThresholdSettings = {
+export interface WebhookNotifications {
+  enabled: boolean;
+  url: string;
+  secret: string;
+  types: NotificationEvent[];
+}
+
+export interface NotificationSettings {
+  enabled: boolean;
+  channels: string[];
+  email: EmailNotifications;
+  push: PushNotifications;
+  webhook: WebhookNotifications;
+}
+
+export interface SecuritySettings {
+  maxConcurrentSessions: number;
+  passwordMinAgeDays: number;
+  passwordMaxAgeDays: number;
+  passwordHistoryCount: number;
+  sessionPinRequired: boolean;
+}
+
+export const DEFAULT_THRESHOLDS: Thresholds = {
   riskWarn: 70,
   riskCrit: 85,
   thermalWarn: 45,
@@ -132,81 +76,21 @@ export const DEFAULT_THRESHOLDS: ThresholdSettings = {
   bufferCrit: 15,
 };
 
-/**
- * Default connection settings
- */
-export const DEFAULT_CONNECTION: ConnectionSettings = {
+export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
   serverUrl: "",
   deviceId: "",
-  dashboardToken: "",
   requestTimeoutMs: 8000,
-  autoReconnect: true,
-  strictHmac: false,
-};
-
-/**
- * Default advanced settings
- */
-export const DEFAULT_ADVANCED: AdvancedSettings = {
   logBufferLimit: 500,
   signalHistoryLimit: 240,
+  autoReconnect: true,
+  strictHmac: false,
+  notificationsEnabled: true,
 };
 
-/**
- * Create default settings
- */
-export function createDefaultSettings(operator: OperatorInfo): Settings {
-  return {
-    operator,
-    connection: { ...DEFAULT_CONNECTION },
-    thresholds: { ...DEFAULT_THRESHOLDS },
-    notifications: { enabled: true, events: {} },
-    advanced: { ...DEFAULT_ADVANCED },
-  };
-}
-
-// ============================================================================
-// Threshold Helpers
-// ============================================================================
-
-/**
- * Check if risk level is in warning zone
- */
-export function isRiskWarning(threshold: ThresholdSettings, value: number): boolean {
-  return value >= threshold.riskWarn && value < threshold.riskCrit;
-}
-
-/**
- * Check if risk level is in critical zone
- */
-export function isRiskCritical(threshold: ThresholdSettings, value: number): boolean {
-  return value >= threshold.riskCrit;
-}
-
-/**
- * Check if thermal is in warning zone
- */
-export function isThermalWarning(threshold: ThresholdSettings, value: number): boolean {
-  return value >= threshold.thermalWarn && value < threshold.thermalCrit;
-}
-
-/**
- * Check if thermal is in critical zone
- */
-export function isThermalCritical(threshold: ThresholdSettings, value: number): boolean {
-  return value >= threshold.thermalCrit;
-}
-
-/**
- * Check if buffer is in warning zone (inverted - low is bad)
- */
-export function isBufferWarning(threshold: ThresholdSettings, value: number): boolean {
-  return value <= threshold.bufferWarn && value > threshold.bufferCrit;
-}
-
-/**
- * Check if buffer is in critical zone (inverted - low is bad)
- */
-export function isBufferCritical(threshold: ThresholdSettings, value: number): boolean {
-  return value <= threshold.bufferCrit;
-}
+export const DEFAULT_SECURITY_SETTINGS: SecuritySettings = {
+  maxConcurrentSessions: 3,
+  passwordMinAgeDays: 0,
+  passwordMaxAgeDays: 90,
+  passwordHistoryCount: 5,
+  sessionPinRequired: false,
+};

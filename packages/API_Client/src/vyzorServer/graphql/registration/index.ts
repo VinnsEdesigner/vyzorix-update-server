@@ -45,5 +45,4 @@ export {
   DISMISS_INBOX_ENTRY,
   CONFIRM_REGISTRATION,
   DEREGISTER_DEVICE,
-  RE_REGISTER_DEVICE,
 } from "./graphql-registration-mutations";

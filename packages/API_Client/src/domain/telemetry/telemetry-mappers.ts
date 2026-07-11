@@ -235,39 +235,50 @@ export function uptimeFromRaw(raw?: RawUptimeMetric | null): UptimeMetric | null
 
 /**
  * Transform raw metrics collection
+ * Note: Thresholds should be fetched from the server via /v1/auth/me/settings or /v1/auth/me/thresholds
+ * and applied at the presentation layer, not hardcoded here.
  */
 export function metricsCollectionFromRaw(raw?: RawMetricsCollection | null): MetricsCollection | null {
   if (!raw) return null;
   
+  const riskScore = riskScoreFromRaw(raw.risk_score);
+  const thermalTemp = thermalFromRaw(raw.thermal_temp);
+  const bufferLevel = bufferLevelFromRaw(raw.buffer_level);
+  const uptime = uptimeFromRaw(raw.uptime);
+  
+  // If we have at least some data, return it with server-provided thresholds or null
+  // Thresholds should be provided by the server or fetched separately
+  if (!riskScore && !thermalTemp && !bufferLevel && !uptime) return null;
+  
   return {
-    riskScore: riskScoreFromRaw(raw.risk_score) ?? {
+    riskScore: riskScore ?? {
       current: 0,
       avg: 0,
       min: 0,
       max: 0,
       unit: "%",
-      threshold: { warning: 70, critical: 85 },
+      threshold: { warning: 0, critical: 0 }, // Thresholds should come from server
       chart: [],
     },
-    thermalTemp: thermalFromRaw(raw.thermal_temp) ?? {
+    thermalTemp: thermalTemp ?? {
       current: 0,
       avg: 0,
       min: 0,
       max: 0,
       unit: "Â°C",
-      threshold: { warning: 45, critical: 50 },
+      threshold: { warning: 0, critical: 0 }, // Thresholds should come from server
       chart: [],
     },
-    bufferLevel: bufferLevelFromRaw(raw.buffer_level) ?? {
+    bufferLevel: bufferLevel ?? {
       current: 0,
       avg: 0,
       min: 0,
       max: 0,
       unit: "%",
-      threshold: { warning: 30, critical: 15 },
+      threshold: { warning: 0, critical: 0 }, // Thresholds should come from server
       chart: [],
     },
-    uptime: uptimeFromRaw(raw.uptime) ?? {
+    uptime: uptime ?? {
       current: 0,
       unit: "%",
     },
@@ -316,6 +327,8 @@ export function metricEventFromRaw(raw: RawMetricEvent): MetricEvent {
 
 /**
  * Transform raw device metrics
+ * Note: Thresholds should be fetched from the server via /v1/auth/me/settings or /v1/auth/me/thresholds
+ * and applied at the presentation layer, not hardcoded here.
  */
 export function deviceMetricsFromRaw(raw?: RawDeviceMetrics | null): DeviceMetrics | null {
   if (!raw) return null;
@@ -329,9 +342,9 @@ export function deviceMetricsFromRaw(raw?: RawDeviceMetrics | null): DeviceMetri
       resolution: "",
     },
     metrics: metricsCollectionFromRaw(raw.metrics) ?? {
-      riskScore: { current: 0, avg: 0, min: 0, max: 0, unit: "%", threshold: { warning: 70, critical: 85 }, chart: [] },
-      thermalTemp: { current: 0, avg: 0, min: 0, max: 0, unit: "Â°C", threshold: { warning: 45, critical: 50 }, chart: [] },
-      bufferLevel: { current: 0, avg: 0, min: 0, max: 0, unit: "%", threshold: { warning: 30, critical: 15 }, chart: [] },
+      riskScore: { current: 0, avg: 0, min: 0, max: 0, unit: "%", threshold: { warning: 0, critical: 0 }, chart: [] },
+      thermalTemp: { current: 0, avg: 0, min: 0, max: 0, unit: "Â°C", threshold: { warning: 0, critical: 0 }, chart: [] },
+      bufferLevel: { current: 0, avg: 0, min: 0, max: 0, unit: "%", threshold: { warning: 0, critical: 0 }, chart: [] },
       uptime: { current: 0, unit: "%" },
     },
   };

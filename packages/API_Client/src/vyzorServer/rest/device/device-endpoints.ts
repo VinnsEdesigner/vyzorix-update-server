@@ -1,68 +1,72 @@
 import { restClient } from "../_shared/rest-client";
-import { deviceFromRaw, deviceListItemFromRaw, deviceStatsFromRaw, deviceListItemsFromRaw, type RawDevice, type RawDeviceListItem } from "@/domain/device/device-mappers";
-import type { Device, DeviceListItem, DeviceStats } from "@/domain/device/device-entity";
-import type { PaginatedResult } from "@/domain/_shared";
-import { offsetPaginationFromRaw } from "@/domain/_shared";
+import {
+  deviceFromRaw,
+  deviceListItemFromRaw,
+  deviceStatsFromRaw,
+  paginationFromRaw,
+  type RawDevice,
+  type RawDeviceListItem,
+  type RawDeviceStats,
+  type RawPagination,
+  type RawDeviceListResult,
+} from "@/domain/device";
+import type {
+  Device,
+  DeviceListItem,
+  DeviceStats,
+  DeviceListResult,
+  RegisterDeviceRequest,
+} from "@/domain/device";
 
-const BASE = "/v1/devices";
-
-export const DEVICE_PATHS = {
-  devices: `${BASE}`,
-  device: (imei: string) => `${BASE}/${imei}`,
-  deviceStats: `${BASE}/stats`,
+const PATHS = {
+  devices: "/v1/devices",
+  stats: "/v1/devices/stats",
 } as const;
 
-export interface RegisterDeviceRequest {
-  imei: string;
-  deviceName?: string;
-  model?: string;
-  fcmToken: string;
+export interface DeviceParams {
+  page?: number;
+  limit?: number;
+  status?: "online" | "offline" | "all";
 }
 
-export interface RegisterDeviceResponse {
-  success: boolean;
-  device?: RawDevice;
-  commandSecret?: string;
-}
+export const devices = {
+  async list(params?: DeviceParams): Promise<DeviceListResult> {
+    const response = await restClient.get<RawDeviceListResult>(PATHS.devices, {
+      params: {
+        page: params?.page,
+        limit: params?.limit,
+        status: params?.status,
+      },
+    });
+    return {
+      devices: response.devices.map(deviceListItemFromRaw),
+      pagination: paginationFromRaw(response.pagination),
+    };
+  },
 
-export async function fetchDevices(
-  params?: { page?: number; limit?: number; status?: "online" | "offline" | "all" }
-): Promise<PaginatedResult<DeviceListItem[]>> {
-  const response = await restClient.get<{
-    devices: RawDeviceListItem[];
-    pagination: { page: number; limit: number; total: number; total_pages: number };
-  }>(DEVICE_PATHS.devices, {
-    page: params?.page,
-    limit: params?.limit,
-    status: params?.status,
-  });
-  
-  return {
-    items: deviceListItemsFromRaw(response.devices),
-    pagination: offsetPaginationFromRaw(response.pagination),
-  };
-}
+  async get(imei: string): Promise<Device | null> {
+    const response = await restClient.get<RawDevice | null>(`${PATHS.devices}/${imei}`);
+    if (!response?.imei) return null;
+    return deviceFromRaw(response);
+  },
 
-export async function fetchDevice(imei: string): Promise<Device | null> {
-  const data = await restClient.get<RawDevice | null>(DEVICE_PATHS.device(imei));
-  if (!data || !data.imei) return null;
-  return deviceFromRaw(data);
-}
+  async stats(): Promise<DeviceStats> {
+    const response = await restClient.get<RawDeviceStats>(PATHS.stats);
+    return deviceStatsFromRaw(response);
+  },
 
-export async function fetchDeviceStats(): Promise<DeviceStats> {
-  const data = await restClient.get<{ total: number; online: number; offline: number }>(DEVICE_PATHS.deviceStats);
-  return deviceStatsFromRaw(data);
-}
+  async register(request: RegisterDeviceRequest): Promise<{ device?: Device; commandSecret?: string }> {
+    const response = await restClient.post<{
+      device?: RawDevice;
+      commandSecret?: string;
+    }>(PATHS.devices, request);
+    return {
+      device: response.device ? deviceFromRaw(response.device) : undefined,
+      commandSecret: response.commandSecret,
+    };
+  },
 
-export async function registerDevice(request: RegisterDeviceRequest): Promise<{ success: boolean; device?: Device; commandSecret?: string }> {
-  const data = await restClient.post<RegisterDeviceResponse>(DEVICE_PATHS.device, request);
-  return {
-    success: data.success,
-    device: data.device ? deviceFromRaw(data.device) : undefined,
-    commandSecret: data.commandSecret,
-  };
-}
-
-export async function deregisterDevice(imei: string): Promise<{ success: boolean }> {
-  return restClient.delete<{ success: boolean }>(DEVICE_PATHS.device(imei));
-}
+  async deregister(imei: string): Promise<{ success: boolean }> {
+    return restClient.delete<{ success: boolean }>(`${PATHS.devices}/${imei}`);
+  },
+};

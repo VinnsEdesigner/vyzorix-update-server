@@ -1,11 +1,13 @@
 export * from "./device-entity";
+export * from "./device-validators";
 export {
   deviceFromRaw,
   deviceListItemFromRaw,
   deviceStatsFromRaw,
-  deviceListItemsFromRaw,
+  paginationFromRaw,
   type RawDevice,
   type RawDeviceListItem,
   type RawDeviceStats,
-  type RawDeviceConnection,
+  type RawPagination,
+  type RawDeviceListResult,
 } from "./device-mappers";
