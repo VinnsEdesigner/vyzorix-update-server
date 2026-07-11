@@ -1,8 +1,16 @@
+/**
+ * Authentication REST Endpoints
+ * 
+ * All endpoints use HttpOnly cookie-based authentication via the 'vyz_session' cookie.
+ * The browser automatically handles cookie storage and transmission.
+ * 
+ * No token storage in localStorage/sessionStorage - this is handled securely by the server.
+ */
+
 import { restClient } from "../_shared/rest-client";
 import {
   loginRequestToRaw,
   registerRequestToRaw,
-  refreshRequestToRaw,
   updateNameRequestToRaw,
   forgotPasswordRequestToRaw,
   resetPasswordRequestToRaw,
@@ -15,13 +23,11 @@ import {
   isMFAResponse,
   registerResponseFromRaw,
   meResponseFromRaw,
-  authTokensFromRaw,
 } from "@/domain/auth";
 import type {
   LoginResponse,
   RegisterResponse,
   MeResponse,
-  AuthTokens,
   Operator,
   ForgotPasswordResponse,
   ResetPasswordResponse,
@@ -56,21 +62,30 @@ const AUTH_PATHS = {
   },
 } as const;
 
-interface LoginResult {
+// ============================================================================
+// Public Endpoints (No Auth Required)
+// ============================================================================
+
+interface LoginSuccess {
   success: true;
   data: LoginResponse;
 }
 
-interface MFAResult {
+interface LoginMFARequired {
   mfaRequired: true;
   operatorId: string;
 }
 
-export type LoginSuccessResult = LoginResult | MFAResult;
+export type LoginResult = LoginSuccess | LoginMFARequired;
 
-export async function login(
-  credentials: { email: string; password: string }
-): Promise<LoginSuccessResult> {
+/**
+ * Login with email and password.
+ * Server sets HttpOnly cookie on successful login.
+ */
+export async function login(credentials: {
+  email: string;
+  password: string;
+}): Promise<LoginResult> {
   const raw = await restClient.post<RawLoginResponse | RawLoginMFARequiredResponse>(
     AUTH_PATHS.login,
     loginRequestToRaw(credentials)
@@ -83,32 +98,85 @@ export async function login(
   return { success: true, data: loginResponseFromRaw(raw) };
 }
 
-export async function register(
-  credentials: { email: string; password: string; name: string }
-): Promise<RegisterResponse> {
-  const raw = await restClient.post<{ operator_id: string; email: string; name: string }>(
-    AUTH_PATHS.register,
-    registerRequestToRaw(credentials)
-  );
+/**
+ * Register a new operator account.
+ * Server sets HttpOnly cookie on successful registration.
+ */
+export async function register(credentials: {
+  email: string;
+  password: string;
+  name: string;
+}): Promise<RegisterResponse> {
+  const raw = await restClient.post<{
+    operator_id: string;
+    email: string;
+    name: string;
+  }>(AUTH_PATHS.register, registerRequestToRaw(credentials));
   return registerResponseFromRaw(raw);
 }
 
+/**
+ * Request a password reset email.
+ */
+export async function forgotPassword(
+  email: string
+): Promise<ForgotPasswordResponse> {
+  return restClient.post<ForgotPasswordResponse>(
+    AUTH_PATHS.forgotPassword,
+    forgotPasswordRequestToRaw(email)
+  );
+}
+
+/**
+ * Reset password using a token from the reset email.
+ */
+export async function resetPassword(
+  token: string,
+  newPassword: string
+): Promise<ResetPasswordResponse> {
+  return restClient.post<ResetPasswordResponse>(
+    AUTH_PATHS.resetPassword,
+    resetPasswordRequestToRaw(token, newPassword)
+  );
+}
+
+/**
+ * Verify email using a token from the verification email.
+ */
+export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
+  return restClient.post<VerifyEmailResponse>(
+    AUTH_PATHS.verifyEmail,
+    verifyEmailRequestToRaw(token)
+  );
+}
+
+/**
+ * Resend email verification email.
+ */
+export async function resendVerification(
+  email: string
+): Promise<{ success: boolean }> {
+  return restClient.post<{ success: boolean }>(
+    AUTH_PATHS.resendVerification,
+    forgotPasswordRequestToRaw(email)
+  );
+}
+
+// ============================================================================
+// Authenticated Endpoints (Require Session Cookie)
+// ============================================================================
+
+/**
+ * Logout and clear the session cookie.
+ */
 export async function logout(): Promise<{ success: boolean }> {
-  const raw = await restClient.post<{ success: boolean }>(AUTH_PATHS.logout);
-  clearStoredAuth();
-  return raw;
+  return restClient.post<{ success: boolean }>(AUTH_PATHS.logout);
 }
 
-export async function refreshToken(refreshToken: string): Promise<AuthTokens> {
-  const raw = await restClient.post<{
-    access_token: string;
-    refresh_token: string;
-    expires_at: number;
-    session_id: string;
-  }>(AUTH_PATHS.refresh, refreshRequestToRaw(refreshToken));
-  return authTokensFromRaw(raw);
-}
-
+/**
+ * Get current authenticated operator's profile.
+ * Requires valid session cookie.
+ */
 export async function getMe(): Promise<MeResponse | null> {
   try {
     const raw = await restClient.get<{
@@ -127,6 +195,10 @@ export async function getMe(): Promise<MeResponse | null> {
   }
 }
 
+/**
+ * Update operator's name.
+ * Requires valid session cookie.
+ */
 export async function updateName(name: string): Promise<Operator> {
   const raw = await restClient.patch<{
     id: string;
@@ -146,34 +218,13 @@ export async function updateName(name: string): Promise<Operator> {
   };
 }
 
-export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
-  return restClient.post<ForgotPasswordResponse>(
-    AUTH_PATHS.forgotPassword,
-    forgotPasswordRequestToRaw(email)
-  );
-}
+// ============================================================================
+// MFA Endpoints (Require Session Cookie)
+// ============================================================================
 
-export async function resetPassword(token: string, newPassword: string): Promise<ResetPasswordResponse> {
-  return restClient.post<ResetPasswordResponse>(
-    AUTH_PATHS.resetPassword,
-    resetPasswordRequestToRaw(token, newPassword)
-  );
-}
-
-export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
-  return restClient.post<VerifyEmailResponse>(
-    AUTH_PATHS.verifyEmail,
-    verifyEmailRequestToRaw(token)
-  );
-}
-
-export async function resendVerification(email: string): Promise<{ success: boolean }> {
-  return restClient.post<{ success: boolean }>(
-    AUTH_PATHS.resendVerification,
-    forgotPasswordRequestToRaw(email)
-  );
-}
-
+/**
+ * Get MFA enrollment status.
+ */
 export async function getMFAStatus(): Promise<MFAStatusResponse> {
   const raw = await restClient.get<{ enabled: boolean; backup_codes?: string[] }>(
     AUTH_PATHS.mfa.status
@@ -181,6 +232,9 @@ export async function getMFAStatus(): Promise<MFAStatusResponse> {
   return mfaStatusResponseFromRaw(raw);
 }
 
+/**
+ * Start MFA enrollment - returns TOTP secret for QR code generation.
+ */
 export async function enrollMFA(): Promise<MFAEnrollResponse> {
   const raw = await restClient.post<{ secret: string; qr_code_url: string }>(
     AUTH_PATHS.mfa.enroll
@@ -188,13 +242,21 @@ export async function enrollMFA(): Promise<MFAEnrollResponse> {
   return mfaEnrollResponseFromRaw(raw);
 }
 
-export async function verifyMFASetup(code: string): Promise<MFAVerifyResponse> {
+/**
+ * Verify MFA setup with a TOTP code.
+ */
+export async function verifyMFASetup(
+  code: string
+): Promise<MFAVerifyResponse> {
   return restClient.post<MFAVerifyResponse>(
     AUTH_PATHS.mfa.verifySetup,
     mfaEnrollRequestToRaw(code)
   );
 }
 
+/**
+ * Enable MFA after successful setup verification.
+ */
 export async function enableMFA(code: string): Promise<MFAEnableResponse> {
   return restClient.post<MFAEnableResponse>(
     AUTH_PATHS.mfa.enable,
@@ -202,6 +264,9 @@ export async function enableMFA(code: string): Promise<MFAEnableResponse> {
   );
 }
 
+/**
+ * Disable MFA (requires current TOTP code).
+ */
 export async function disableMFA(code: string): Promise<{ success: boolean }> {
   return restClient.post<{ success: boolean }>(
     AUTH_PATHS.mfa.disable,
@@ -209,61 +274,33 @@ export async function disableMFA(code: string): Promise<{ success: boolean }> {
   );
 }
 
-export async function verifyMFA(code: string): Promise<AuthTokens> {
-  const raw = await restClient.post<{
-    access_token: string;
-    refresh_token: string;
-    expires_at: number;
-    session_id: string;
-  }>(AUTH_PATHS.mfa.verify, mfaVerifyRequestToRaw(code));
-  return authTokensFromRaw(raw);
+/**
+ * Verify TOTP code during login (when MFA is required).
+ */
+export async function verifyMFA(code: string): Promise<{ success: boolean }> {
+  return restClient.post<{ success: boolean }>(
+    AUTH_PATHS.mfa.verify,
+    mfaVerifyRequestToRaw(code)
+  );
 }
 
-export async function verifyBackupCode(code: string): Promise<{ success: boolean }> {
+/**
+ * Verify a backup code during login.
+ */
+export async function verifyBackupCode(
+  code: string
+): Promise<{ success: boolean }> {
   return restClient.post<{ success: boolean }>(
     AUTH_PATHS.mfa.verifyBackup,
     mfaVerifyRequestToRaw(code)
   );
 }
 
+/**
+ * Regenerate MFA backup codes.
+ */
 export async function regenerateBackupCodes(): Promise<{ backupCodes: string[] }> {
   return restClient.post<{ backup_codes: string[] }>(
     AUTH_PATHS.mfa.regenerateBackupCodes
   );
-}
-
-const AUTH_TOKENS_KEY = "vyz_auth_tokens";
-
-export interface StoredAuth {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: number;
-  sessionId: string;
-  operatorId: string;
-  email: string;
-}
-
-export function storeAuth(auth: StoredAuth): void {
-  try {
-    localStorage.setItem(AUTH_TOKENS_KEY, JSON.stringify(auth));
-  } catch {
-    // localStorage unavailable
-  }
-}
-
-export function getStoredAuth(): StoredAuth | null {
-  try {
-    const stored = localStorage.getItem(AUTH_TOKENS_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function clearStoredAuth(): void {
-  try {
-    localStorage.removeItem(AUTH_TOKENS_KEY);
-  } catch {
-    // localStorage unavailable
-  }
 }
