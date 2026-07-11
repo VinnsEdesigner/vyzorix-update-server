@@ -164,6 +164,10 @@ export function mfaEnrollRequestToRaw(code: string): { code: string } {
   return { code };
 }
 
+export function backupCodeVerifyRequestToRaw(code: string): { code: string } {
+  return { code };
+}
+
 export function mfaStatusResponseFromRaw(raw: { enabled: boolean; backup_codes?: string[] }): {
   enabled: boolean;
   backupCodes?: string[];
@@ -181,5 +185,42 @@ export function mfaEnrollResponseFromRaw(raw: { secret: string; qr_code_url: str
   return {
     secret: raw.secret,
     qrCodeUrl: raw.qr_code_url,
+  };
+}
+
+export function mfaVerifyRequestToRaw(operatorId: string, code: string): { operator_id: string; code: string } {
+  return { operator_id: operatorId, code };
+}
+
+export interface RawMFAVerifyResponse {
+  success: boolean;
+  session_id?: string;
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: number;
+  operator?: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    mfa_enabled: boolean;
+  };
+}
+
+export function mfaVerifyResponseFromRaw(raw: RawMFAVerifyResponse): {
+  success: boolean;
+  sessionId?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
+  operator?: Operator;
+} {
+  return {
+    success: raw.success,
+    sessionId: raw.session_id,
+    accessToken: raw.access_token,
+    refreshToken: raw.refresh_token,
+    expiresAt: raw.expires_at,
+    operator: raw.operator ? operatorFromRaw(raw.operator as RawOperator) : undefined,
   };
 }

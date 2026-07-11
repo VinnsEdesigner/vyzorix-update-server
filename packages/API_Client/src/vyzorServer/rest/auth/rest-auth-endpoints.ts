@@ -17,12 +17,16 @@ import {
   verifyEmailRequestToRaw,
   mfaVerifyRequestToRaw,
   mfaEnrollRequestToRaw,
+  backupCodeVerifyRequestToRaw,
   mfaStatusResponseFromRaw,
   mfaEnrollResponseFromRaw,
   loginResponseFromRaw,
   isMFAResponse,
   registerResponseFromRaw,
   meResponseFromRaw,
+  authTokensFromRaw,
+  mfaVerifyResponseFromRaw,
+  type RawMFAVerifyResponse,
 } from "@/domain/auth";
 import type {
   LoginResponse,
@@ -36,6 +40,7 @@ import type {
   MFAEnrollResponse,
   MFAVerifyResponse,
   MFAEnableResponse,
+  AuthTokens,
 } from "@/domain/auth";
 import type { RawLoginResponse, RawLoginMFARequiredResponse } from "@/domain/auth/auth-mappers";
 
@@ -276,12 +281,24 @@ export async function disableMFA(code: string): Promise<{ success: boolean }> {
 
 /**
  * Verify TOTP code during login (when MFA is required).
+ * Requires operatorId from the MFA-required login response.
  */
-export async function verifyMFA(code: string): Promise<{ success: boolean }> {
-  return restClient.post<{ success: boolean }>(
+export async function verifyMFA(
+  operatorId: string,
+  code: string
+): Promise<{
+  success: boolean;
+  sessionId?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
+  operator?: Operator;
+}> {
+  const raw = await restClient.post<RawMFAVerifyResponse>(
     AUTH_PATHS.mfa.verify,
-    mfaVerifyRequestToRaw(code)
+    mfaVerifyRequestToRaw(operatorId, code)
   );
+  return mfaVerifyResponseFromRaw(raw);
 }
 
 /**
@@ -292,7 +309,7 @@ export async function verifyBackupCode(
 ): Promise<{ success: boolean }> {
   return restClient.post<{ success: boolean }>(
     AUTH_PATHS.mfa.verifyBackup,
-    mfaVerifyRequestToRaw(code)
+    backupCodeVerifyRequestToRaw(code)
   );
 }
 
@@ -303,4 +320,18 @@ export async function regenerateBackupCodes(): Promise<{ backupCodes: string[] }
   return restClient.post<{ backup_codes: string[] }>(
     AUTH_PATHS.mfa.regenerateBackupCodes
   );
+}
+
+/**
+ * Refresh access token using a refresh token.
+ * Implements refresh token rotation for security.
+ */
+export async function refreshToken(refreshToken: string): Promise<AuthTokens> {
+  const raw = await restClient.post<{
+    access_token: string;
+    refresh_token: string;
+    expires_at: number;
+    session_id: string;
+  }>(AUTH_PATHS.refresh, { refresh_token: refreshToken });
+  return authTokensFromRaw(raw);
 }

@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"time"
-
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
