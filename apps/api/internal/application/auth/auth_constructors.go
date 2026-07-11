@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/email_verification"
@@ -29,13 +30,13 @@ type PasswordError = operator.PasswordError
 
 // RefreshTokenRepository interface for refresh token operations.
 type RefreshTokenRepository interface {
-	Create(ctx interface{}, rt *RefreshToken) error
-	FindByID(ctx interface{}, id string) (*RefreshToken, error)
-	FindByTokenHash(ctx interface{}, tokenHash string) (*RefreshToken, error)
-	Revoke(ctx interface{}, id string) error
-	RevokeByTokenHash(ctx interface{}, tokenHash string) error
-	RevokeAllForOperator(ctx interface{}, operatorID string) error
-	CleanupExpired(ctx interface{}, olderThan time.Duration) (int, error)
+	Create(ctx context.Context, rt *RefreshToken) error
+	FindByID(ctx context.Context, id string) (*RefreshToken, error)
+	FindByTokenHash(ctx context.Context, tokenHash string) (*RefreshToken, error)
+	Revoke(ctx context.Context, id string) error
+	RevokeByTokenHash(ctx context.Context, tokenHash string) error
+	RevokeAllForOperator(ctx context.Context, operatorID string) error
+	CleanupExpired(ctx context.Context, olderThan time.Duration) (int, error)
 }
 
 // RefreshToken aliases domain refresh_token package.

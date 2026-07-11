@@ -13,7 +13,6 @@ import (
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	infranotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/notification"
-	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 )
@@ -102,18 +101,4 @@ func ProvideAPIKeyService(repo storage.APIKeyRepository, cfg config.Config) *key
 		MaxExpiryDays:     365,
 		PrefixLength:      8,
 	})
-}
-
-// ProvideRefreshTokenRepository creates the refresh token repository.
-func ProvideRefreshTokenRepository(db *sql.DB) *storage.RefreshTokenRepository {
-	return storage.NewRefreshTokenRepository(db)
-}
-
-// ProvideJWTManager creates the JWT manager for access tokens.
-func ProvideJWTManager(cfg config.Config) (*infraauth.JWTManager, error) {
-	return infraauth.NewJWTManager(
-		cfg.JWTSecret,
-		defaultJWTAccessExpiry,
-		"vyz-api",
-	)
 }
