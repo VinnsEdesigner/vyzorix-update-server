@@ -68,21 +68,17 @@ func (m *AuthMiddleware) authenticateSession(ctx context.Context, cookieHeader s
 		return nil, gqlerrors.ErrUnauthorized
 	}
 
-	operatorID, err := m.SessionManager.DecryptOperatorID(sessionID)
+	// Decrypt session ID from cookie
+	decryptedSessionID, err := m.SessionManager.DecryptSessionID(sessionID)
 	if err != nil {
 		m.Log.Debug("session decryption failed", "err", err)
 		return nil, gqlerrors.ErrUnauthorized
 	}
 
-	_, op, err := m.AuthService.ValidateSession(ctx, sessionID)
+	// Validate the session
+	_, op, err := m.AuthService.ValidateSession(ctx, decryptedSessionID)
 	if err != nil || op == nil {
-		m.Log.Debug("session validation failed", "sessionID", sessionID, "err", err)
-		return nil, gqlerrors.ErrUnauthorized
-	}
-
-	// Additional check: ensure decrypted operatorID matches session's operator
-	if op.ID != operatorID {
-		m.Log.Debug("operator ID mismatch in session", "decrypted", operatorID, "session", op.ID)
+		m.Log.Debug("session validation failed", "sessionID", decryptedSessionID, "err", err)
 		return nil, gqlerrors.ErrUnauthorized
 	}
 

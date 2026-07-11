@@ -180,14 +180,14 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	}
 
 	// Create session (validates operator was found/created)
-	_, err = h.authService.CreateSession(ctx, result.Operator.ID)
+	session, err := h.authService.CreateSession(ctx, result.Operator.ID)
 	if err != nil {
 		h.presenter.InternalError(c, "login failed")
 		return
 	}
 
-	// Set session cookie
-	cookie, err := h.sessionMgr.CreateCookieWithExpiry(result.Operator.ID, h.config.SessionMaxAge)
+	// Set session cookie with session ID
+	cookie, err := h.sessionMgr.CreateCookieWithExpiry(session.ID, h.config.SessionMaxAge)
 	if err != nil {
 		h.presenter.InternalError(c, "login failed")
 		return
@@ -323,14 +323,14 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	}
 
 	// Create session (validates operator was found/created)
-	_, err = h.authService.CreateSession(ctx, result.Operator.ID)
+	session, err := h.authService.CreateSession(ctx, result.Operator.ID)
 	if err != nil {
 		h.presenter.InternalError(c, "login failed")
 		return
 	}
 
-	// Set session cookie
-	cookie, err := h.sessionMgr.CreateCookieWithExpiry(result.Operator.ID, h.config.SessionMaxAge)
+	// Set session cookie with session ID
+	cookie, err := h.sessionMgr.CreateCookieWithExpiry(session.ID, h.config.SessionMaxAge)
 	if err != nil {
 		h.presenter.InternalError(c, "login failed")
 		return

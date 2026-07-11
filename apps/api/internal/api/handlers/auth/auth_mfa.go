@@ -298,9 +298,9 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 
 	// 2 END: Operator state validated, safe to create session
 
-	// Create session cookie (critical - must not fail silently)
+	// Create session cookie with session ID (critical - must not fail silently)
 	if h.authService.GetSessionManager() != nil {
-		cookie, cookieErr := h.authService.GetSessionManager().CreateCookie(req.OperatorID)
+		cookie, cookieErr := h.authService.GetSessionManager().CreateCookie(session.ID)
 		if cookieErr != nil {
 			h.presenter.InternalError(c, "Failed to create session")
 			return
