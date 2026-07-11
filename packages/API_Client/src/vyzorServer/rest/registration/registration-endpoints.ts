@@ -3,9 +3,15 @@ import {
   inboxEntryFromRaw,
   deviceFromRaw,
   paginationFromRaw,
+  createInboxRequestToRaw,
+  createInboxResultFromRaw,
+  confirmDeviceResultFromRaw,
   type RawInboxEntry,
   type RawDevice,
   type RawPagination,
+  type RawCreateInboxRequest,
+  type RawCreateInboxResponse,
+  type RawConfirmDeviceResponse,
 } from "@/domain/registration";
 import type {
   InboxEntry,
@@ -16,12 +22,16 @@ import type {
   DeregisterResult,
   AcknowledgeAction,
   InboxStatus,
+  CreateInboxRequest,
+  CreateInboxResult,
+  ConfirmDeviceResult,
 } from "@/domain/registration";
 
 const PATHS = {
   inbox: "/v1/device/inbox",
   inboxEntry: (imei: string) => `/v1/device/inbox/${imei}`,
   inboxAck: (imei: string) => `/v1/device/inbox/${imei}/ack`,
+  confirm: "/v1/device/confirm",
   devices: "/v1/devices",
   device: (imei: string) => `/v1/devices/${imei}`,
 } as const;
@@ -57,6 +67,38 @@ interface RawDeregisterResponse {
 }
 
 export const registration = {
+  /**
+   * Create a new inbox entry (submit device registration request).
+   * This is the first step in the device registration flow.
+   * 
+   * @param request - Device registration request with IMEI, FCM token, and device info
+   * @returns Result containing the created inbox entry ID and status
+   */
+  async createInboxRequest(request: CreateInboxRequest): Promise<CreateInboxResult> {
+    const rawRequest = createInboxRequestToRaw(request);
+    const response = await restClient.post<RawCreateInboxResponse>(
+      PATHS.inbox,
+      rawRequest
+    );
+    return createInboxResultFromRaw(response);
+  },
+
+  /**
+   * Confirm device registration after receiving commandSecret via FCM.
+   * This is called after operator approves the registration request.
+   * 
+   * @param imei - Device IMEI
+   * @param commandSecret - Secret received via FCM push notification
+   * @returns Result containing confirmation status and device info
+   */
+  async confirmDevice(imei: string, commandSecret: string): Promise<ConfirmDeviceResult> {
+    const response = await restClient.post<RawConfirmDeviceResponse>(PATHS.confirm, {
+      imei,
+      commandSecret,
+    });
+    return confirmDeviceResultFromRaw(response);
+  },
+
   async getInbox(params?: {
     status?: InboxStatus | "all";
     page?: number;
@@ -144,4 +186,10 @@ export const registration = {
   },
 };
 
-export type { InboxStatus, AcknowledgeAction };
+export type {
+  InboxStatus,
+  AcknowledgeAction,
+  CreateInboxRequest,
+  CreateInboxResult,
+  ConfirmDeviceResult,
+};
