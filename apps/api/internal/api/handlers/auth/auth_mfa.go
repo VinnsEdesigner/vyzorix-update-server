@@ -308,8 +308,9 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		h.presenter.SetSessionCookie(c, cookie)
 	}
 
-	// 3: Issue refresh token for proper session management
+	// Issue refresh token and access token for API clients
 	var refreshToken string
+	var accessToken string
 	var expiresAt int64
 	if h.authService != nil {
 		refreshToken, err = h.authService.IssueRefreshToken(c.Request.Context(), req.OperatorID, session.ID)
@@ -317,7 +318,15 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 			h.presenter.InternalError(c, "Failed to issue refresh token")
 			return
 		}
-		expiresAt = time.Now().Add(7 * 24 * time.Hour).Unix() // 7 days default
+
+		// Generate proper JWT access token
+		tokenResult, tokenErr := h.authService.GenerateAccessToken(c.Request.Context(), op.ID, op.Email, op.Name, string(op.Role))
+		if tokenErr != nil {
+			h.presenter.InternalError(c, "Failed to generate access token")
+			return
+		}
+		accessToken = tokenResult.AccessToken
+		expiresAt = tokenResult.ExpiresAt
 	}
 
 	// Return success with session info and tokens
@@ -329,9 +338,9 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	h.presenter.OK(c, gin.H{
 		"success":       true,
 		"session_id":    session.ID,
-		"access_token":  session.ID, // For API compatibility
-		"refresh_token": refreshToken, // 3: Add refresh token
-		"expires_at":    expiresAt,    // 3: Add expiry time
+		"access_token":  accessToken, // Proper JWT access token
+		"refresh_token": refreshToken,
+		"expires_at":    expiresAt,
 		"operator": gin.H{
 			"id":          op.ID,
 			"email":       op.Email,

@@ -17,6 +17,29 @@ type RefreshTokenResult struct {
 	SessionID    string
 }
 
+// AccessTokenResult holds the result of generating an access token.
+type AccessTokenResult struct {
+	AccessToken string
+	ExpiresAt   int64
+}
+
+// GenerateAccessToken generates a JWT access token for an operator.
+func (s *AuthService) GenerateAccessToken(ctx context.Context, operatorID, email, name, role string) (*AccessTokenResult, error) {
+	if s.jwtManager == nil {
+		return nil, errors.New("JWT manager not configured")
+	}
+
+	accessToken, expiresAt, err := s.jwtManager.Generate(operatorID, email, name, role)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AccessTokenResult{
+		AccessToken: accessToken,
+		ExpiresAt:   expiresAt.Unix(),
+	}, nil
+}
+
 // RotateRefreshToken rotates a refresh token, revoking the old one and issuing a new one.
 func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken string) (*RefreshTokenResult, error) {
 	// Check if refresh token repository is configured
@@ -51,12 +74,18 @@ func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken st
 		return nil, application.ErrTokenExpired
 	}
 
-	// Generate new tokens
+	// Fetch operator details for the JWT claims
+	op, err := s.operatorRepo.FindByID(ctx, existing.OperatorID)
+	if err != nil {
+		return nil, application.ErrUnauthorized
+	}
+
+	// Generate new JWT access token with full operator details
 	accessToken, expiresAt, err := s.jwtManager.Generate(
-		existing.OperatorID,
-		"", // Email not needed for access token
-		"", // Name not needed
-		"", // Role not needed
+		op.ID,
+		op.Email,
+		op.Name,
+		string(op.Role),
 	)
 	if err != nil {
 		return nil, err
