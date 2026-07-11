@@ -13,6 +13,7 @@ import (
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	infranotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/notification"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 )
@@ -40,8 +41,13 @@ func Injector(cfg config.Config) (*Server, error) {
 	updatesStorage := ProvideUpdatesStorage(db)
 	emailVerificationRepository := ProvideEmailVerificationRepository(db)
 	passwordResetRepository := ProvidePasswordResetRepository(db)
+	refreshTokenRepository := ProvideRefreshTokenRepository(db)
 	argon2idHasher := ProvidePasswordHasher()
-	authService := ProvideAuthService(operatorRepository, sessionRepository, emailVerificationRepository, passwordResetRepository, argon2idHasher)
+	jwtManager, err := ProvideJWTManager(cfg)
+	if err != nil {
+		return nil, err
+	}
+	authService := ProvideAuthService(operatorRepository, sessionRepository, emailVerificationRepository, passwordResetRepository, refreshTokenRepository, argon2idHasher, jwtManager)
 	service := ProvideDeviceService(deviceRepository, operatorRepository, logger)
 	clientService := ProvideClientService(clientRepository)
 	commandService := ProvideCommandService(commandRepository, deviceRepository)
@@ -96,4 +102,18 @@ func ProvideAPIKeyService(repo storage.APIKeyRepository, cfg config.Config) *key
 		MaxExpiryDays:     365,
 		PrefixLength:      8,
 	})
+}
+
+// ProvideRefreshTokenRepository creates the refresh token repository.
+func ProvideRefreshTokenRepository(db *sql.DB) *storage.RefreshTokenRepository {
+	return storage.NewRefreshTokenRepository(db)
+}
+
+// ProvideJWTManager creates the JWT manager for access tokens.
+func ProvideJWTManager(cfg config.Config) (*infraauth.JWTManager, error) {
+	return infraauth.NewJWTManager(
+		cfg.JWTSecret,
+		defaultJWTAccessExpiry,
+		"vyz-api",
+	)
 }
