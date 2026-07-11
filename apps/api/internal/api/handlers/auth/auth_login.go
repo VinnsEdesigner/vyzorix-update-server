@@ -236,9 +236,9 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		}()
 	}
 
-	// Create session cookie
+	// Create session cookie with session ID (not operator ID)
 	if session != nil && h.authService.GetSessionManager() != nil {
-		cookie, err := h.authService.GetSessionManager().CreateCookie(result.OperatorID)
+		cookie, err := h.authService.GetSessionManager().CreateCookie(session.ID)
 		if err != nil {
 			h.presenter.InternalError(c, "Failed to create session")
 			return

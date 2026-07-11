@@ -47,7 +47,7 @@ func (c *CookieAuth) Middleware() gin.HandlerFunc {
 		}
 
 		// Decrypt the session ID from the cookie.
-		sessionID, err := c.sessionManager.DecryptOperatorID(cookieValue)
+		sessionID, err := c.sessionManager.DecryptSessionID(cookieValue)
 		if err != nil {
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "invalid session"})
 			ctx.Abort()

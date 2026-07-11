@@ -74,8 +74,8 @@ func (sm *Manager) SetRepository(repo Repository) {
 	sm.sessionRepo = repo
 }
 
-// EncryptOperatorID encrypts an operator ID for storage in a cookie value.
-func (sm *Manager) EncryptOperatorID(operatorID string) (string, error) {
+// EncryptSessionID encrypts a session ID for storage in a cookie value.
+func (sm *Manager) EncryptSessionID(sessionID string) (string, error) {
 	block, err := aes.NewCipher(sm.encryptionKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to create cipher: %w", err)
@@ -91,13 +91,13 @@ func (sm *Manager) EncryptOperatorID(operatorID string) (string, error) {
 		return "", fmt.Errorf("failed to generate nonce: %w", err)
 	}
 
-	ciphertext := aesGCM.Seal(nonce, nonce, []byte(operatorID), nil)
+	ciphertext := aesGCM.Seal(nonce, nonce, []byte(sessionID), nil)
 
 	return base64.RawURLEncoding.EncodeToString(ciphertext), nil
 }
 
-// DecryptOperatorID decrypts an operator ID from a cookie value.
-func (sm *Manager) DecryptOperatorID(cookieValue string) (string, error) {
+// DecryptSessionID decrypts a session ID from a cookie value.
+func (sm *Manager) DecryptSessionID(cookieValue string) (string, error) {
 	ciphertext, err := base64.RawURLEncoding.DecodeString(cookieValue)
 	if err != nil {
 		return "", fmt.Errorf("%w: invalid base64 encoding", ErrDecryptionFailed)
@@ -128,9 +128,10 @@ func (sm *Manager) DecryptOperatorID(cookieValue string) (string, error) {
 	return string(plaintext), nil
 }
 
-// CreateCookie creates an HttpOnly session cookie for the given operator.
-func (sm *Manager) CreateCookie(operatorID string) (*http.Cookie, error) {
-	encryptedID, err := sm.EncryptOperatorID(operatorID)
+// CreateCookie creates an HttpOnly session cookie for the given session.
+// The sessionID is encrypted and stored in the cookie value.
+func (sm *Manager) CreateCookie(sessionID string) (*http.Cookie, error) {
+	encryptedID, err := sm.EncryptSessionID(sessionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt session: %w", err)
 	}
@@ -147,8 +148,9 @@ func (sm *Manager) CreateCookie(operatorID string) (*http.Cookie, error) {
 }
 
 // CreateCookieWithExpiry creates an HttpOnly session cookie with custom expiry.
-func (sm *Manager) CreateCookieWithExpiry(operatorID string, maxAge int) (*http.Cookie, error) {
-	encryptedID, err := sm.EncryptOperatorID(operatorID)
+// The sessionID is encrypted and stored in the cookie value.
+func (sm *Manager) CreateCookieWithExpiry(sessionID string, maxAge int) (*http.Cookie, error) {
+	encryptedID, err := sm.EncryptSessionID(sessionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt session: %w", err)
 	}
@@ -178,13 +180,13 @@ func (sm *Manager) ClearCookie() *http.Cookie {
 	}
 }
 
-// ExtractFromCookie extracts the operator ID from a session cookie value.
+// ExtractFromCookie extracts the session ID from a session cookie value.
 func (sm *Manager) ExtractFromCookie(cookieValue string) (string, error) {
 	if cookieValue == "" {
 		return "", ErrInvalidCookie
 	}
 
-	return sm.DecryptOperatorID(cookieValue)
+	return sm.DecryptSessionID(cookieValue)
 }
 
 // HashOperatorID creates a SHA-512 hash of an operator ID for database lookups.
