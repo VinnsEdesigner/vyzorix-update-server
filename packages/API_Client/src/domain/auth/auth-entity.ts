@@ -45,3 +45,34 @@ export interface MeResponse extends Operator {
 export interface UpdateNameRequest {
   name: string;
 }
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+}
+
+export interface VerifyEmailResponse {
+  success: boolean;
+}
+
+export interface MFAStatusResponse {
+  enabled: boolean;
+  backupCodes?: string[];
+}
+
+export interface MFAEnrollResponse {
+  secret: string;
+  qrCodeUrl: string;
+}
+
+export interface MFAVerifyResponse {
+  success: boolean;
+}
+
+export interface MFAEnableResponse {
+  success: boolean;
+  backupCodes?: string[];
+}

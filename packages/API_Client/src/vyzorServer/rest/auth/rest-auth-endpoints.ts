@@ -4,6 +4,13 @@ import {
   registerRequestToRaw,
   refreshRequestToRaw,
   updateNameRequestToRaw,
+  forgotPasswordRequestToRaw,
+  resetPasswordRequestToRaw,
+  verifyEmailRequestToRaw,
+  mfaVerifyRequestToRaw,
+  mfaEnrollRequestToRaw,
+  mfaStatusResponseFromRaw,
+  mfaEnrollResponseFromRaw,
   loginResponseFromRaw,
   isMFAResponse,
   registerResponseFromRaw,
@@ -16,6 +23,13 @@ import type {
   MeResponse,
   AuthTokens,
   Operator,
+  ForgotPasswordResponse,
+  ResetPasswordResponse,
+  VerifyEmailResponse,
+  MFAStatusResponse,
+  MFAEnrollResponse,
+  MFAVerifyResponse,
+  MFAEnableResponse,
 } from "@/domain/auth";
 import type { RawLoginResponse, RawLoginMFARequiredResponse } from "@/domain/auth/auth-mappers";
 
@@ -26,9 +40,20 @@ const AUTH_PATHS = {
   refresh: "/v1/auth/refresh",
   me: "/v1/auth/me",
   updateName: "/v1/auth/me",
-  settings: "/v1/auth/me/settings",
-  thresholds: "/v1/auth/me/thresholds",
-  notifications: "/v1/auth/me/notifications",
+  forgotPassword: "/v1/auth/forgot-password",
+  resetPassword: "/v1/auth/reset-password",
+  verifyEmail: "/v1/auth/verify-email",
+  resendVerification: "/v1/auth/resend-verification",
+  mfa: {
+    status: "/v1/auth/mfa/status",
+    enroll: "/v1/auth/mfa/enroll",
+    verifySetup: "/v1/auth/mfa/verify-setup",
+    enable: "/v1/auth/mfa/enable",
+    disable: "/v1/auth/mfa/disable",
+    verify: "/v1/auth/mfa/verify",
+    verifyBackup: "/v1/auth/mfa/verify-backup",
+    regenerateBackupCodes: "/v1/auth/mfa/regenerate-backup-codes",
+  },
 } as const;
 
 interface LoginResult {
@@ -119,6 +144,92 @@ export async function updateName(name: string): Promise<Operator> {
     mfaEnabled: raw.mfa_enabled,
     emailVerified: raw.email_verified,
   };
+}
+
+export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+  return restClient.post<ForgotPasswordResponse>(
+    AUTH_PATHS.forgotPassword,
+    forgotPasswordRequestToRaw(email)
+  );
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<ResetPasswordResponse> {
+  return restClient.post<ResetPasswordResponse>(
+    AUTH_PATHS.resetPassword,
+    resetPasswordRequestToRaw(token, newPassword)
+  );
+}
+
+export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
+  return restClient.post<VerifyEmailResponse>(
+    AUTH_PATHS.verifyEmail,
+    verifyEmailRequestToRaw(token)
+  );
+}
+
+export async function resendVerification(email: string): Promise<{ success: boolean }> {
+  return restClient.post<{ success: boolean }>(
+    AUTH_PATHS.resendVerification,
+    forgotPasswordRequestToRaw(email)
+  );
+}
+
+export async function getMFAStatus(): Promise<MFAStatusResponse> {
+  const raw = await restClient.get<{ enabled: boolean; backup_codes?: string[] }>(
+    AUTH_PATHS.mfa.status
+  );
+  return mfaStatusResponseFromRaw(raw);
+}
+
+export async function enrollMFA(): Promise<MFAEnrollResponse> {
+  const raw = await restClient.post<{ secret: string; qr_code_url: string }>(
+    AUTH_PATHS.mfa.enroll
+  );
+  return mfaEnrollResponseFromRaw(raw);
+}
+
+export async function verifyMFASetup(code: string): Promise<MFAVerifyResponse> {
+  return restClient.post<MFAVerifyResponse>(
+    AUTH_PATHS.mfa.verifySetup,
+    mfaEnrollRequestToRaw(code)
+  );
+}
+
+export async function enableMFA(code: string): Promise<MFAEnableResponse> {
+  return restClient.post<MFAEnableResponse>(
+    AUTH_PATHS.mfa.enable,
+    mfaVerifyRequestToRaw(code)
+  );
+}
+
+export async function disableMFA(code: string): Promise<{ success: boolean }> {
+  return restClient.post<{ success: boolean }>(
+    AUTH_PATHS.mfa.disable,
+    mfaVerifyRequestToRaw(code)
+  );
+}
+
+export async function verifyMFA(code: string): Promise<AuthTokens> {
+  const raw = await restClient.post<{
+    access_token: string;
+    refresh_token: string;
+    expires_at: number;
+    session_id: string;
+  }>(AUTH_PATHS.mfa.verify, mfaVerifyRequestToRaw(code));
+  return authTokensFromRaw(raw);
+}
+
+export async function verifyBackupCode(code: string): Promise<{ success: boolean }> {
+  return restClient.post<{ success: boolean }>(
+    AUTH_PATHS.mfa.verifyBackup,
+    mfaVerifyRequestToRaw(code)
+  );
+}
+
+export async function regenerateBackupCodes(): Promise<{ backupCodes: string[] }> {
+  return restClient.post<{ backup_codes: string[] }>(
+    AUTH_PATHS.mfa.regenerateBackupCodes
+  );
 }
 
 const AUTH_TOKENS_KEY = "vyz_auth_tokens";
