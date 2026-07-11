@@ -140,3 +140,46 @@ export function refreshRequestToRaw(refreshToken: string): { refresh_token: stri
 export function updateNameRequestToRaw(name: string): { name: string } {
   return { name: name.trim() };
 }
+
+export function forgotPasswordRequestToRaw(email: string): { email: string } {
+  return { email: email.toLowerCase().trim() };
+}
+
+export function resetPasswordRequestToRaw(token: string, newPassword: string): {
+  token: string;
+  new_password: string;
+} {
+  return { token, new_password: newPassword };
+}
+
+export function verifyEmailRequestToRaw(token: string): { token: string } {
+  return { token };
+}
+
+export function mfaVerifyRequestToRaw(code: string): { code: string } {
+  return { code };
+}
+
+export function mfaEnrollRequestToRaw(code: string): { code: string } {
+  return { code };
+}
+
+export function mfaStatusResponseFromRaw(raw: { enabled: boolean; backup_codes?: string[] }): {
+  enabled: boolean;
+  backupCodes?: string[];
+} {
+  return {
+    enabled: raw.enabled,
+    backupCodes: raw.backup_codes,
+  };
+}
+
+export function mfaEnrollResponseFromRaw(raw: { secret: string; qr_code_url: string }): {
+  secret: string;
+  qrCodeUrl: string;
+} {
+  return {
+    secret: raw.secret,
+    qrCodeUrl: raw.qr_code_url,
+  };
+}
