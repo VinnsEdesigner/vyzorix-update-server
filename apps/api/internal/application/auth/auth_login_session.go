@@ -73,6 +73,88 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 	}, sess, nil
 }
 
+// LoginWithTokens authenticates an operator and returns tokens for API clients.
+// This method is used for non-browser clients that need JWT access tokens and refresh tokens.
+func (s *AuthService) LoginWithTokens(ctx context.Context, req *dto.LoginRequest) (*dto.LoginWithTokensResponse, error) {
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+
+	op, err := s.operatorRepo.FindByEmail(ctx, email)
+	if err != nil {
+		if err == operator.ErrNotFound {
+			_ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
+			return nil, application.ErrInvalidCredentials
+		}
+		return nil, err
+	}
+
+	if op == nil {
+		_ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
+		return nil, application.ErrInvalidCredentials
+	}
+
+	if op.PasswordHash == "" {
+		return nil, application.ErrInvalidCredentials
+	}
+
+	if err = s.passwordHasher.Verify(req.Password, op.PasswordHash); err != nil {
+		if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" ||
+			err.Error() == "crypto/scrypt: password hash does not match" ||
+			err.Error() == "crypto/argon2: invalid hash" {
+			return nil, application.ErrInvalidCredentials
+		}
+		return nil, application.ErrInvalidCredentials
+	}
+
+	// If MFA is required, return partial response indicating MFA is needed
+	if op.MFARequired || op.HasMFA() {
+		return &dto.LoginWithTokensResponse{
+			OperatorID: op.ID,
+			Email:      op.Email,
+			Name:       op.Name,
+			Role:       string(op.Role),
+			MFAEnabled: true,
+		}, application.ErrMFARequired
+	}
+
+	// Create session
+	sess, err := s.CreateSession(ctx, op.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate JWT access token
+	var accessToken string
+	var expiresAt int64
+	if s.jwtManager != nil {
+		accessToken, _, err = s.jwtManager.Generate(op.ID, op.Email, op.Name, string(op.Role))
+		if err != nil {
+			return nil, err
+		}
+		expiresAt = time.Now().Add(15 * time.Minute).Unix()
+	}
+
+	// Issue refresh token
+	var refreshTokenVal string
+	if s.refreshTokenRepo != nil {
+		refreshTokenVal, err = s.IssueRefreshToken(ctx, op.ID, sess.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &dto.LoginWithTokensResponse{
+		OperatorID:   op.ID,
+		Email:        op.Email,
+		Name:         op.Name,
+		Role:         string(op.Role),
+		MFAEnabled:   op.MFAEnabled,
+		AccessToken:  accessToken,
+		RefreshToken: refreshTokenVal,
+		ExpiresAt:    expiresAt,
+		SessionID:    sess.ID,
+	}, nil
+}
+
 // Register creates a new operator.
 func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest, validatePassword bool) (*dto.RegisterResponse, error) {
 	email := strings.ToLower(strings.TrimSpace(req.Email))

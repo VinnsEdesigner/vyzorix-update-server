@@ -249,6 +249,71 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 	h.presenter.OK(c, result)
 }
 
+// HandleWithTokens processes the login request and returns tokens for API clients.
+// This endpoint is for non-browser clients that need JWT access tokens and refresh tokens.
+// It does NOT set session cookies - only returns tokens in the response body.
+func (h *LoginHandler) HandleWithTokens(c *gin.Context) {
+	var req dto.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.presenter.BadRequest(c, "Invalid request")
+		return
+	}
+
+	// Normalize email
+	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
+
+	if req.Email == "" || req.Password == "" {
+		h.presenter.BadRequest(c, "email and password required")
+		return
+	}
+
+	// Check lockout BEFORE any expensive operations
+	if h.lockout.IsLocked(req.Email) {
+		retryAfter := h.lockout.RetryAfter(req.Email)
+		h.presenter.OK(c, gin.H{"error": "account_locked", "message": "Too many failed attempts. Account temporarily locked.", "retry_after": retryAfter.Seconds(), "locked_until": time.Now().Add(retryAfter).Unix()})
+		return
+	}
+
+	// Validate email format
+	if _, err := infraauth.ValidateEmail(req.Email); err != nil {
+		h.presenter.BadRequest(c, "Invalid email format")
+		return
+	}
+
+	// Add timeout
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	// Login with tokens
+	result, err := h.authService.LoginWithTokens(ctx, &req)
+	if err != nil {
+		switch {
+		case errors.Is(err, application.ErrMFARequired):
+			// MFA is required - return partial response with mfa_required flag
+			h.presenter.OK(c, gin.H{
+				"mfa_required": true,
+				"operator_id":  result.OperatorID,
+				"email":        result.Email,
+				"name":         result.Name,
+				"role":         result.Role,
+				"mfa_enabled": true,
+			})
+		case errors.Is(err, application.ErrInvalidCredentials):
+			h.lockout.RecordFailed(req.Email, c.ClientIP(), c.GetHeader("User-Agent"))
+			h.presenter.Unauthorized(c, "Invalid email or password")
+		default:
+			h.presenter.InternalError(c, "Login failed")
+		}
+		return
+	}
+
+	// Clear lockout on successful login
+	h.lockout.Clear(req.Email)
+
+	// Return tokens (no cookie set - this is for API clients)
+	h.presenter.OK(c, result)
+}
+
 // generateDeviceFingerprint creates a fingerprint from request headers.
 func (h *LoginHandler) generateDeviceFingerprint(c *gin.Context, email string) string {
 	// Combine available signals for device fingerprint

@@ -88,10 +88,16 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 	publicAuth := rg.Group("")
 	publicAuth.Use(middleware.NoCache())
 	{
-		// Login with validation
+		// Login with validation (browser clients - sets session cookie)
 		publicAuth.POST("/login", middleware.POST(),
 			middleware.ValidationMiddleware(&middleware.LoginSchema{}),
 			h.Login.Handle,
+		)
+
+		// Login with tokens for API clients (non-browser - returns JWT + refresh token)
+		publicAuth.POST("/login/tokens", middleware.POST(),
+			middleware.ValidationMiddleware(&middleware.LoginSchema{}),
+			h.Login.HandleWithTokens,
 		)
 
 		// Register with validation

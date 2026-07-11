@@ -17,6 +17,19 @@ type LoginResponse struct {
 	MFAEnabled bool   `json:"mfa_enabled"`
 }
 
+// LoginWithTokensResponse represents a login response with API tokens.
+type LoginWithTokensResponse struct {
+	OperatorID   string `json:"operator_id"`
+	Email        string `json:"email"`
+	Name         string `json:"name"`
+	Role         string `json:"role"`
+	MFAEnabled   bool   `json:"mfa_enabled"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresAt    int64  `json:"expires_at"`
+	SessionID    string `json:"session_id"`
+}
+
 // RegisterRequest represents a registration request.
 type RegisterRequest struct {
 	Email    string `json:"email"`
