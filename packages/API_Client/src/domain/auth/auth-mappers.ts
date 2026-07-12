@@ -1,6 +1,8 @@
 import type {
   Operator,
   LoginResponse,
+  LoginWithTokensResponse,
+  LoginWithTokensMFARequiredResponse,
   RegisterResponse,
   MeResponse,
   OperatorRole,
@@ -28,6 +30,27 @@ interface RawLoginResponse {
 interface RawLoginMFARequiredResponse {
   mfa_required: true;
   operator_id: string;
+}
+
+interface RawLoginWithTokensResponse {
+  operator_id: string;
+  email: string;
+  name: string;
+  role: string;
+  mfa_enabled: boolean;
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+  session_id: string;
+}
+
+interface RawLoginWithTokensMFARequiredResponse {
+  mfa_required: true;
+  operator_id: string;
+  email: string;
+  name: string;
+  role: string;
+  mfa_enabled: boolean;
 }
 
 interface RawRegisterResponse {
@@ -78,6 +101,26 @@ export function loginResponseFromRaw(raw: RawLoginResponse): LoginResponse {
 export function isMFAResponse(
   raw: RawLoginResponse | RawLoginMFARequiredResponse
 ): raw is RawLoginMFARequiredResponse {
+  return "mfa_required" in raw && raw.mfa_required === true;
+}
+
+export function loginWithTokensResponseFromRaw(raw: RawLoginWithTokensResponse): LoginWithTokensResponse {
+  return {
+    operatorId: raw.operator_id,
+    email: raw.email,
+    name: raw.name,
+    role: raw.role as OperatorRole,
+    mfaEnabled: raw.mfa_enabled,
+    accessToken: raw.access_token,
+    refreshToken: raw.refresh_token,
+    expiresAt: raw.expires_at,
+    sessionId: raw.session_id,
+  };
+}
+
+export function isLoginWithTokensMFARequired(
+  raw: RawLoginWithTokensResponse | RawLoginWithTokensMFARequiredResponse
+): raw is RawLoginWithTokensMFARequiredResponse {
   return "mfa_required" in raw && raw.mfa_required === true;
 }
 
@@ -156,7 +199,7 @@ export function verifyEmailRequestToRaw(token: string): { token: string } {
   return { token };
 }
 
-export function mfaVerifyRequestToRaw(code: string): { code: string } {
+export function mfaCodeRequestToRaw(code: string): { code: string } {
   return { code };
 }
 

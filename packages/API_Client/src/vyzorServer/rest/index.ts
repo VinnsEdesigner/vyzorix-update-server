@@ -8,4 +8,5 @@ export * from "./commands";
 export * from "./updates";
 export * from "./device";
 export * from "./logs";
+export * from "./session";
 export * from "../websocket";

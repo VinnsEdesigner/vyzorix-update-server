@@ -16,6 +16,7 @@ import {
   resetPasswordRequestToRaw,
   verifyEmailRequestToRaw,
   mfaVerifyRequestToRaw,
+  mfaCodeRequestToRaw,
   mfaEnrollRequestToRaw,
   backupCodeVerifyRequestToRaw,
   mfaStatusResponseFromRaw,
@@ -30,6 +31,8 @@ import {
 } from "@/domain/auth";
 import type {
   LoginResponse,
+  LoginWithTokensResponse,
+  LoginWithTokensMFARequiredResponse,
   RegisterResponse,
   MeResponse,
   Operator,
@@ -42,10 +45,18 @@ import type {
   MFAEnableResponse,
   AuthTokens,
 } from "@/domain/auth";
-import type { RawLoginResponse, RawLoginMFARequiredResponse } from "@/domain/auth/auth-mappers";
+import type {
+  RawLoginResponse,
+  RawLoginMFARequiredResponse,
+  RawLoginWithTokensResponse,
+  RawLoginWithTokensMFARequiredResponse,
+  loginWithTokensResponseFromRaw,
+  isLoginWithTokensMFARequired,
+} from "@/domain/auth/auth-mappers";
 
 const AUTH_PATHS = {
   login: "/v1/auth/login",
+  loginTokens: "/v1/auth/login/tokens",
   register: "/v1/auth/register",
   logout: "/v1/auth/logout",
   refresh: "/v1/auth/refresh",
@@ -53,6 +64,7 @@ const AUTH_PATHS = {
   updateName: "/v1/auth/me",
   forgotPassword: "/v1/auth/forgot-password",
   resetPassword: "/v1/auth/reset-password",
+  resendPasswordReset: "/v1/auth/resend-password-reset",
   verifyEmail: "/v1/auth/verify-email",
   resendVerification: "/v1/auth/resend-verification",
   mfa: {
@@ -65,6 +77,9 @@ const AUTH_PATHS = {
     verifyBackup: "/v1/auth/mfa/verify-backup",
     regenerateBackupCodes: "/v1/auth/mfa/regenerate-backup-codes",
   },
+  sessions: "/v1/auth/sessions",
+  sessionsConcurrent: "/v1/auth/sessions/concurrent",
+  sessionsRevokeAll: "/v1/auth/sessions/revoke-all",
 } as const;
 
 // ============================================================================
@@ -82,6 +97,22 @@ interface LoginMFARequired {
 }
 
 export type LoginResult = LoginSuccess | LoginMFARequired;
+
+interface LoginWithTokensSuccess {
+  success: true;
+  data: LoginWithTokensResponse;
+}
+
+interface LoginWithTokensMFARequired {
+  mfaRequired: true;
+  operatorId: string;
+  email: string;
+  name: string;
+  role: string;
+  mfaEnabled: boolean;
+}
+
+export type LoginWithTokensResult = LoginWithTokensSuccess | LoginWithTokensMFARequired;
 
 /**
  * Login with email and password.
@@ -101,6 +132,34 @@ export async function login(credentials: {
   }
 
   return { success: true, data: loginResponseFromRaw(raw) };
+}
+
+/**
+ * Login with email and password, returning JWT tokens for API clients.
+ * Does NOT set HttpOnly cookies - tokens are returned in the response.
+ * Use this for non-browser clients that need direct token access.
+ */
+export async function loginWithTokens(credentials: {
+  email: string;
+  password: string;
+}): Promise<LoginWithTokensResult> {
+  const raw = await restClient.post<RawLoginWithTokensResponse | RawLoginWithTokensMFARequiredResponse>(
+    AUTH_PATHS.loginTokens,
+    loginRequestToRaw(credentials)
+  );
+
+  if (isLoginWithTokensMFARequired(raw)) {
+    return {
+      mfaRequired: true,
+      operatorId: raw.operator_id,
+      email: raw.email,
+      name: raw.name,
+      role: raw.role,
+      mfaEnabled: raw.mfa_enabled,
+    };
+  }
+
+  return { success: true, data: loginWithTokensResponseFromRaw(raw) };
 }
 
 /**
@@ -142,6 +201,19 @@ export async function resetPassword(
   return restClient.post<ResetPasswordResponse>(
     AUTH_PATHS.resetPassword,
     resetPasswordRequestToRaw(token, newPassword)
+  );
+}
+
+/**
+ * Resend password reset email with rate limiting.
+ * Returns rate limit info if too many requests.
+ */
+export async function resendPasswordReset(
+  email: string
+): Promise<{ success: boolean; error?: string; retryAfter?: number; lockedUntil?: number }> {
+  return restClient.post<{ success: boolean; error?: string; retryAfter?: number; lockedUntil?: number }>(
+    AUTH_PATHS.resendPasswordReset,
+    forgotPasswordRequestToRaw(email)
   );
 }
 
@@ -261,11 +333,12 @@ export async function verifyMFASetup(
 
 /**
  * Enable MFA after successful setup verification.
+ * Sends TOTP code as both 'code' and 'token' fields to match server expectations.
  */
 export async function enableMFA(code: string): Promise<MFAEnableResponse> {
   return restClient.post<MFAEnableResponse>(
     AUTH_PATHS.mfa.enable,
-    mfaVerifyRequestToRaw(code)
+    { code, token: code }
   );
 }
 
@@ -275,7 +348,7 @@ export async function enableMFA(code: string): Promise<MFAEnableResponse> {
 export async function disableMFA(code: string): Promise<{ success: boolean }> {
   return restClient.post<{ success: boolean }>(
     AUTH_PATHS.mfa.disable,
-    mfaVerifyRequestToRaw(code)
+    mfaCodeRequestToRaw(code)
   );
 }
 

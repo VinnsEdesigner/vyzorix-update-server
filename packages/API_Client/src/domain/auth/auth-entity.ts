@@ -31,6 +31,27 @@ export interface LoginMFARequiredResponse {
   operatorId: string;
 }
 
+export interface LoginWithTokensResponse {
+  operatorId: string;
+  email: string;
+  name: string;
+  role: OperatorRole;
+  mfaEnabled: boolean;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+  sessionId: string;
+}
+
+export interface LoginWithTokensMFARequiredResponse {
+  mfaRequired: true;
+  operatorId: string;
+  email: string;
+  name: string;
+  role: OperatorRole;
+  mfaEnabled: boolean;
+}
+
 export interface RegisterResponse {
   operatorId: string;
   email: string;
