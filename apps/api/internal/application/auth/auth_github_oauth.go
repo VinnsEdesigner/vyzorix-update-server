@@ -43,7 +43,8 @@ func (s *AuthService) FindOrCreateGitHubOperator(ctx context.Context, githubID, 
 		return nil, err
 	}
 
-	role := operator.RoleOperator
+	// First user is super_admin (system bootstrap), others get default OAuth role
+	role := DefaultOAuthRole
 	if count == 0 {
 		role = operator.RoleSuperAdmin
 	}

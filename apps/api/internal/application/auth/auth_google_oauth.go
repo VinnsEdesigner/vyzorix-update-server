@@ -14,6 +14,10 @@ type OAuthResult struct {
 	IsNew    bool
 }
 
+// DefaultOAuthRole is the role assigned to new OAuth users.
+// This can be made configurable via environment variables in the future.
+const DefaultOAuthRole = operator.RoleOperator
+
 // FindOrCreateGoogleOperator finds or creates an operator by Google ID.
 func (s *AuthService) FindOrCreateGoogleOperator(ctx context.Context, googleID, email, name string) (*OAuthResult, error) {
 	// Try to find by Google ID.
@@ -49,7 +53,8 @@ func (s *AuthService) FindOrCreateGoogleOperator(ctx context.Context, googleID, 
 		return nil, err
 	}
 
-	role := operator.RoleOperator
+	// First user is super_admin (system bootstrap), others get default OAuth role
+	role := DefaultOAuthRole
 	if count == 0 {
 		role = operator.RoleSuperAdmin
 	}
