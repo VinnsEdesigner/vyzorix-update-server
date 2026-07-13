@@ -337,3 +337,15 @@ func (s *InvitationStorage) scanInvitations(rows *sql.Rows) ([]*invitation.Invit
 
 	return invitations, rows.Err()
 }
+
+
+// ExpireByInviter expires all pending invitations sent by an operator (used during operator deletion).
+func (s *InvitationStorage) ExpireByInviter(ctx context.Context, inviterID string) error {
+	query := `
+		UPDATE invitations
+		SET status = 'expired'
+		WHERE invited_by = ? AND status = 'pending' AND expires_at <= ?`
+
+	_, err := s.getQuerier(ctx).ExecContext(ctx, query, inviterID, time.Now().UnixMilli())
+	return err
+}
