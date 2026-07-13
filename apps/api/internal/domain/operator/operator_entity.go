@@ -95,22 +95,40 @@ type Operator struct {
 
 // IsSuperAdmin returns true if the operator is a super admin.
 func (o *Operator) IsSuperAdmin() bool {
-	return o.Role == RoleSuperAdmin
+	return o.Role.IsSuperAdmin()
 }
 
 // IsAdmin returns true if the operator is an admin or super admin.
 func (o *Operator) IsAdmin() bool {
-	return o.Role == RoleSuperAdmin
+	return o.Role.IsAdmin()
 }
 
 // CanManageOperators returns true if the operator can manage other operators.
 func (o *Operator) CanManageOperators() bool {
-	return o.IsAdmin()
+	return o.Role.IsAdmin()
 }
 
 // CanManageDevices returns true if the operator can manage devices.
 func (o *Operator) CanManageDevices() bool {
-	return o.IsAdmin()
+	// All roles except viewer can manage devices
+	return o.Role.Level() >= LevelOperator
+}
+
+// CanViewLogs returns true if the operator can view logs.
+func (o *Operator) CanViewLogs() bool {
+	// All roles can view logs
+	return true
+}
+
+// CanManageSettings returns true if the operator can manage settings.
+func (o *Operator) CanManageSettings() bool {
+	// Admin+ can manage settings, operators can manage their own
+	return o.Role.Level() >= LevelAdmin
+}
+
+// CanManageAPIKeys returns true if the operator can manage API keys.
+func (o *Operator) CanManageAPIKeys() bool {
+	return o.Role.Level() >= LevelOperator
 }
 
 // HasMFA returns true if MFA is enabled for this operator.

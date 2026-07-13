@@ -37,8 +37,8 @@ func (h *AdminHandler) ListOperators(c *gin.Context) {
 	}
 
 	// Check role
-	if op.Role != "super_admin" && op.Role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "forbidden"})
+	if !op.Role.IsAdmin() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
 		return
 	}
 
@@ -67,8 +67,8 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 	}
 
 	// Check role
-	if op.Role != "super_admin" && op.Role != "admin" {
-		h.presenter.Forbidden(c, "forbidden")
+	if !op.Role.IsAdmin() {
+		h.presenter.Forbidden(c, "insufficient privileges")
 		return
 	}
 
@@ -120,8 +120,8 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 	}
 
 	// Check role
-	if op.Role != "super_admin" && op.Role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "forbidden"})
+	if !op.Role.IsAdmin() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
 		return
 	}
 
@@ -165,8 +165,8 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 	}
 
 	// Check role
-	if op.Role != "super_admin" && op.Role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "forbidden"})
+	if !op.Role.IsAdmin() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
 		return
 	}
 
@@ -213,8 +213,8 @@ func (h *AdminHandler) DeleteOperator(c *gin.Context) {
 	}
 
 	// Check role
-	if op.Role != "super_admin" && op.Role != "admin" {
-		h.presenter.Forbidden(c, "forbidden")
+	if !op.Role.IsAdmin() {
+		h.presenter.Forbidden(c, "insufficient privileges")
 		return
 	}
 
