@@ -31,6 +31,7 @@ type Invitation struct {
 	InvitedBy     string
 	InvitedAt     time.Time
 	RespondedAt   *time.Time
+ResponderID   *string
 	ExpiresAt     time.Time
 
 	// Populated fields (joined from other tables)

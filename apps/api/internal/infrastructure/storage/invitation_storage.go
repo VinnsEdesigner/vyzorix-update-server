@@ -34,8 +34,8 @@ func (s *InvitationStorage) getQuerier(ctx context.Context) Querier {
 // Create creates a new invitation.
 func (s *InvitationStorage) Create(ctx context.Context, invite *invitation.Invitation) error {
 	query := `
-		INSERT INTO invitations (id, organization_id, email, role, status, token, inviter_notes, invitee_notes, invited_by, invited_at, expires_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		INSERT INTO invitations (id, organization_id, email, role, status, token, inviter_notes, invitee_notes, invited_by, invited_at, responder_id, expires_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := s.getQuerier(ctx).ExecContext(ctx, query,
 		invite.ID,
@@ -48,6 +48,7 @@ func (s *InvitationStorage) Create(ctx context.Context, invite *invitation.Invit
 		nullStringPtr(invite.InviteeNotes),
 		invite.InvitedBy,
 		invite.InvitedAt.UnixMilli(),
+		nullStringPtr(invite.ResponderID),
 		invite.ExpiresAt.UnixMilli(),
 	)
 	if err != nil {
@@ -64,7 +65,7 @@ func (s *InvitationStorage) Create(ctx context.Context, invite *invitation.Invit
 func (s *InvitationStorage) FindByID(ctx context.Context, id string) (*invitation.Invitation, error) {
 	query := `
 		SELECT i.id, i.organization_id, i.email, i.role, i.status, i.token, i.inviter_notes, i.invitee_notes, 
-			   i.invited_by, i.invited_at, i.responded_at, i.expires_at,
+			   i.invited_by, i.invited_at, i.responded_at, i.responder_id, i.expires_at,
 			   COALESCE(o.name, '') as organization_name, COALESCE(op.name, '') as inviter_name
 		FROM invitations i
 		LEFT JOIN organizations o ON i.organization_id = o.id
@@ -78,7 +79,7 @@ func (s *InvitationStorage) FindByID(ctx context.Context, id string) (*invitatio
 func (s *InvitationStorage) FindByToken(ctx context.Context, token string) (*invitation.Invitation, error) {
 	query := `
 		SELECT i.id, i.organization_id, i.email, i.role, i.status, i.token, i.inviter_notes, i.invitee_notes, 
-			   i.invited_by, i.invited_at, i.responded_at, i.expires_at,
+			   i.invited_by, i.invited_at, i.responded_at, i.responder_id, i.expires_at,
 			   COALESCE(o.name, '') as organization_name, COALESCE(op.name, '') as inviter_name
 		FROM invitations i
 		LEFT JOIN organizations o ON i.organization_id = o.id
@@ -92,7 +93,7 @@ func (s *InvitationStorage) FindByToken(ctx context.Context, token string) (*inv
 func (s *InvitationStorage) FindPendingByEmail(ctx context.Context, email string) ([]*invitation.Invitation, error) {
 	query := `
 		SELECT i.id, i.organization_id, i.email, i.role, i.status, i.token, i.inviter_notes, i.invitee_notes, 
-			   i.invited_by, i.invited_at, i.responded_at, i.expires_at,
+			   i.invited_by, i.invited_at, i.responded_at, i.responder_id, i.expires_at,
 			   COALESCE(o.name, '') as organization_name, COALESCE(op.name, '') as inviter_name
 		FROM invitations i
 		LEFT JOIN organizations o ON i.organization_id = o.id
@@ -113,7 +114,7 @@ func (s *InvitationStorage) FindPendingByEmail(ctx context.Context, email string
 func (s *InvitationStorage) FindPendingByEmailAndOrg(ctx context.Context, email, orgID string) (*invitation.Invitation, error) {
 	query := `
 		SELECT i.id, i.organization_id, i.email, i.role, i.status, i.token, i.inviter_notes, i.invitee_notes, 
-			   i.invited_by, i.invited_at, i.responded_at, i.expires_at,
+			   i.invited_by, i.invited_at, i.responded_at, i.responder_id, i.expires_at,
 			   COALESCE(o.name, '') as organization_name, COALESCE(op.name, '') as inviter_name
 		FROM invitations i
 		LEFT JOIN organizations o ON i.organization_id = o.id
@@ -127,13 +128,14 @@ func (s *InvitationStorage) FindPendingByEmailAndOrg(ctx context.Context, email,
 func (s *InvitationStorage) Update(ctx context.Context, invite *invitation.Invitation) error {
 	query := `
 		UPDATE invitations
-		SET status = ?, invitee_notes = ?, responded_at = ?, expires_at = ?
+		SET status = ?, invitee_notes = ?, responded_at = ?, responder_id = ?, expires_at = ?
 		WHERE id = ?`
 
 	result, err := s.getQuerier(ctx).ExecContext(ctx, query,
 		string(invite.Status),
 		nullStringPtr(invite.InviteeNotes),
 		nullTimePtr(invite.RespondedAt),
+		nullStringPtr(invite.ResponderID),
 		invite.ExpiresAt.UnixMilli(),
 		invite.ID,
 	)
@@ -156,7 +158,7 @@ func (s *InvitationStorage) Update(ctx context.Context, invite *invitation.Invit
 func (s *InvitationStorage) ListByOrganization(ctx context.Context, orgID string, filter *invitation.InvitationFilter) ([]*invitation.Invitation, error) {
 	query := `
 		SELECT i.id, i.organization_id, i.email, i.role, i.status, i.token, i.inviter_notes, i.invitee_notes, 
-			   i.invited_by, i.invited_at, i.responded_at, i.expires_at,
+			   i.invited_by, i.invited_at, i.responded_at, i.responder_id, i.expires_at,
 			   COALESCE(o.name, '') as organization_name, COALESCE(op.name, '') as inviter_name
 		FROM invitations i
 		LEFT JOIN organizations o ON i.organization_id = o.id
@@ -184,7 +186,7 @@ func (s *InvitationStorage) ListByOrganization(ctx context.Context, orgID string
 func (s *InvitationStorage) ListByInviter(ctx context.Context, inviterID string) ([]*invitation.Invitation, error) {
 	query := `
 		SELECT i.id, i.organization_id, i.email, i.role, i.status, i.token, i.inviter_notes, i.invitee_notes, 
-			   i.invited_by, i.invited_at, i.responded_at, i.expires_at,
+			   i.invited_by, i.invited_at, i.responded_at, i.responder_id, i.expires_at,
 			   COALESCE(o.name, '') as organization_name, COALESCE(op.name, '') as inviter_name
 		FROM invitations i
 		LEFT JOIN organizations o ON i.organization_id = o.id
@@ -235,7 +237,7 @@ func (s *InvitationStorage) ExpireByOrganization(ctx context.Context, orgID stri
 // scanInvitation scans a single invitation from a row.
 func (s *InvitationStorage) scanInvitation(row *sql.Row) (*invitation.Invitation, error) {
 	var invite invitation.Invitation
-	var inviterNotes, inviteeNotes sql.NullString
+	var inviterNotes, inviteeNotes, responderID sql.NullString
 	var respondedAt sql.NullInt64
 	var organizationName, inviterName sql.NullString
 
@@ -251,6 +253,7 @@ func (s *InvitationStorage) scanInvitation(row *sql.Row) (*invitation.Invitation
 		&invite.InvitedBy,
 		&invite.InvitedAt,
 		&respondedAt,
+		&responderID,
 		&invite.ExpiresAt,
 		&organizationName,
 		&inviterName,
@@ -273,6 +276,9 @@ func (s *InvitationStorage) scanInvitation(row *sql.Row) (*invitation.Invitation
 		t := time.UnixMilli(respondedAt.Int64)
 		invite.RespondedAt = &t
 	}
+	if responderID.Valid {
+		invite.ResponderID = &responderID.String
+	}
 	invite.OrganizationName = organizationName.String
 	invite.InviterName = inviterName.String
 
@@ -285,7 +291,7 @@ func (s *InvitationStorage) scanInvitations(rows *sql.Rows) ([]*invitation.Invit
 
 	for rows.Next() {
 		var invite invitation.Invitation
-		var inviterNotes, inviteeNotes sql.NullString
+		var inviterNotes, inviteeNotes, responderID sql.NullString
 		var respondedAt sql.NullInt64
 		var organizationName, inviterName sql.NullString
 
@@ -301,6 +307,7 @@ func (s *InvitationStorage) scanInvitations(rows *sql.Rows) ([]*invitation.Invit
 			&invite.InvitedBy,
 			&invite.InvitedAt,
 			&respondedAt,
+			&responderID,
 			&invite.ExpiresAt,
 			&organizationName,
 			&inviterName,
@@ -318,6 +325,9 @@ func (s *InvitationStorage) scanInvitations(rows *sql.Rows) ([]*invitation.Invit
 		if respondedAt.Valid {
 			t := time.UnixMilli(respondedAt.Int64)
 			invite.RespondedAt = &t
+		}
+		if responderID.Valid {
+			invite.ResponderID = &responderID.String
 		}
 		invite.OrganizationName = organizationName.String
 		invite.InviterName = inviterName.String
