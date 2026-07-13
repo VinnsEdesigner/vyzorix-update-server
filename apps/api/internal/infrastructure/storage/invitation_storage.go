@@ -104,7 +104,7 @@ func (s *InvitationStorage) FindPendingByEmail(ctx context.Context, email string
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	return s.scanInvitations(rows)
 }
@@ -175,7 +175,7 @@ func (s *InvitationStorage) ListByOrganization(ctx context.Context, orgID string
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	return s.scanInvitations(rows)
 }
@@ -196,7 +196,7 @@ func (s *InvitationStorage) ListByInviter(ctx context.Context, inviterID string)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	return s.scanInvitations(rows)
 }

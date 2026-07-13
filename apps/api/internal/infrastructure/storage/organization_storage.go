@@ -209,7 +209,7 @@ func (s *OrganizationStorage) ListByOperator(ctx context.Context, operatorID str
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var orgs []*organization.Organization
 	for rows.Next() {
