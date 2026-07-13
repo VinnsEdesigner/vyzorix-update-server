@@ -1409,210 +1409,381 @@ Option C: Invitation required even for first user
 
 ## 🚨 GRAPHQL SCHEMA IMPACT ANALYSIS
 
-The existing GraphQL API will need significant changes to support org-scoped operations.
-
-### Current GraphQL Schema Structure
+### Files to Check and Refactor
 
 ```
-schema/
-├── objects.go       # Device, Operator, Session, etc.
-├── enums.go        # Role, Permission types
-├── schema.go      # Query, Mutation definitions
-├── subscription.go # Real-time subscriptions
-└── scalars.go     # Custom scalar types
+graphql/
+├── schema/
+│   ├── objects.go           # Add Organization, Membership types
+│   ├── enums.go            # Add OrgRole enum, update Role enum
+│   ├── schema.go           # Add org queries/mutations
+│   ├── subscription.go     # Add org-scoped subscriptions
+│   └── scalars.go          # May need new scalars
+│
+├── resolver/
+│   ├── query_resolver.go       # Add organization queries
+│   ├── mutation_resolver.go    # Add org mutations
+│   ├── resolver.go            # Add organization resolver
+│   ├── helpers.go             # Add org context helpers
+│   ├── inbox_resolver.go     # Update to filter by org
+│   ├── updates_resolver.go   # Update to filter by org
+│   └── subscription_resolver.go # Add org subscriptions
+│
+├── middleware/
+│   └── gql_auth.go         # Update role checks to org-scoped
+│
+├── errors/
+│   └── gql_errors.go       # Add org-specific errors
+│
+├── context/
+│   └── context.go          # Add org context to resolver
+│
+└── adapters/
+    └── gql_presenter.go    # Update for org responses
 ```
 
-### Required Changes
+### Detailed File Changes
 
-#### 1. Schema Updates
-
-```graphql
-# NEW: Organization type
-type Organization {
-    id: ID!
-    name: String!
-    createdBy: Operator!
-    members(first: Int, after: String): MemberConnection!
-    devices(first: Int, after: String): DeviceConnection!
-    invitations(first: Int, after: String): InvitationConnection!
-    createdAt: DateTime!
-    isActive: Boolean!
-}
-
-# UPDATED: Operator now has memberships
-type Operator {
-    id: ID!
-    email: String!
-    name: String!
-    memberships: [OrganizationMembership!]!
-    # Remove global role - use org-scoped
-}
-
-type OrganizationMembership {
-    organization: Organization!
-    role: OrgRole!
-    joinedAt: DateTime!
-    invitedBy: Operator
-}
-
-enum OrgRole {
-    SUPER_ADMIN
-    ADMIN
-    OPERATOR
-    VIEWER
-}
-
-# UPDATED: Device now belongs to organization
-type Device {
-    id: ID!
-    imei: String!
-    organization: Organization!
-    operator: Operator!
-    # ... other fields
-}
-
-# UPDATED: Session includes org context
-type Session {
-    id: ID!
-    operator: Operator!
-    selectedOrganization: Organization
-    memberships: [OrganizationMembership!]!
-    createdAt: DateTime!
-}
-```
-
-#### 2. Query Updates
-
-```graphql
-type Query {
-    # CURRENT: devices
-    devices(first: Int, after: String): DeviceConnection!
-    
-    # REQUIRED: org-scoped devices
-    organization(id: ID!): Organization
-    organizations: [Organization!]!
-    myMemberships: [OrganizationMembership!]!
-    
-    # Device queries MUST be org-scoped
-    organizationDevices(orgId: ID!, first: Int, after: String): DeviceConnection!
-}
-
-type Mutation {
-    # ORGANIZATION OPERATIONS
-    createOrganization(input: CreateOrganizationInput!): CreateOrganizationPayload!
-    updateOrganization(id: ID!, input: UpdateOrganizationInput!): UpdateOrganizationPayload!
-    deleteOrganization(id: ID!): DeleteOrganizationPayload!
-    
-    # MEMBERSHIP OPERATIONS
-    inviteMember(orgId: ID!, input: InviteMemberInput!): InviteMemberPayload!
-    removeMember(orgId: ID!, memberId: ID!): RemoveMemberPayload!
-    updateMemberRole(orgId: ID!, memberId: ID!, role: OrgRole!): UpdateMemberRolePayload!
-    
-    # INVITATION OPERATIONS
-    acceptInvitation(token: String!, notes: String): AcceptInvitationPayload!
-    rejectInvitation(token: String!, notes: String!): RejectInvitationPayload!
-    
-    # DEVICE TRANSFER
-    transferDevice(orgId: ID!, deviceId: ID!, targetOrgId: ID!): TransferDevicePayload!
-}
-```
-
-#### 3. Subscription Updates
-
-```graphql
-type Subscription {
-    # CURRENT: device events
-    deviceUpdated(imei: String!): DeviceEvent!
-    
-    # REQUIRED: org-scoped subscriptions
-    organizationEvent(orgId: ID!): OrganizationEvent!
-    memberJoined(orgId: ID!): MemberEvent!
-    memberLeft(orgId: ID!): MemberEvent!
-    invitationReceived(token: String!): InvitationEvent!
-}
-
-union OrganizationEvent = 
-    | DeviceRegisteredEvent
-    | DeviceDeregisteredEvent
-    | MemberInvitedEvent
-    | MemberJoinedEvent
-    | MemberRemovedEvent
-    | RoleChangedEvent
-```
-
-#### 4. Authorization Changes
+#### 1. schema/objects.go
 
 ```go
-// graphql/middleware/gql_auth.go
-
-// Current: Check global role
-func RequireSuperAdmin() gin.HandlerFunc {
-    return func(c *gin.Context) {
-        op := GetOperator(c)
-        if op.Role != operator.RoleSuperAdmin {
-            // forbidden
-        }
-    }
+// ADD: Organization type
+type Organization struct {
+    ID        string    `json:"id"`
+    Name      string    `json:"name"`
+    CreatedBy *Operator  `json:"createdBy"`
+    Members   []*Member `json:"members"`
+    CreatedAt time.Time `json:"createdAt"`
+    IsActive  bool      `json:"isActive"`
 }
 
-// Required: Check org-scoped role
-func RequireOrgRole(minRole operator.OrgRole) gin.HandlerFunc {
-    return func(c *gin.Context) {
-        op := GetOperator(c)
-        orgID := c.Param("orgId") // from context
+// ADD: OrganizationMembership type
+type OrganizationMembership struct {
+    Organization *Organization `json:"organization"`
+    Operator    *Operator     `json:"operator"`
+    Role        OrgRole       `json:"role"`
+    JoinedAt    time.Time     `json:"joinedAt"`
+    InvitedBy   *Operator     `json:"invitedBy,omitempty"`
+}
+
+// ADD: Invitation type (for GraphQL)
+type Invitation struct {
+    ID            string    `json:"id"`
+    Organization  *Organization `json:"organization"`
+    Email         string    `json:"email"`
+    Role          OrgRole   `json:"role"`
+    Status        string    `json:"status"`
+    InvitedAt     time.Time `json:"invitedAt"`
+    ExpiresAt     time.Time `json:"expiresAt"`
+}
+
+// UPDATE: Operator type - add memberships field
+type Operator struct {
+    // ... existing fields
+    Memberships []*OrganizationMembership `json:"memberships"`
+}
+
+// UPDATE: Device type - add organization field
+type Device struct {
+    // ... existing fields
+    OrganizationID string `json:"organizationId"`
+    Organization  *Organization `json:"organization"`
+}
+```
+
+#### 2. schema/enums.go
+
+```go
+// ADD: OrgRole enum
+var OrgRoleEnum = graphql.NewEnum(graphql.EnumConfig{
+    Name: "OrgRole",
+    Values: graphql.EnumValueConfigMap{
+        "SUPER_ADMIN": &graphql.EnumValueConfig{
+            Value: "super_admin",
+        },
+        "ADMIN": &graphql.EnumValueConfig{
+            Value: "admin",
+        },
+        "OPERATOR": &graphql.EnumValueConfig{
+            Value: "operator",
+        },
+        "VIEWER": &graphql.EnumValueConfig{
+            Value: "viewer",
+        },
+    },
+})
+
+// UPDATE: Deprecate global Role enum (or keep for backward compat)
+// Keep Role enum but mark as deprecated in docs
+```
+
+#### 3. schema/schema.go
+
+```go
+// ADD: Organization queries
+organization: &graphql.Field{
+    Type: organizationType,
+    Args: graphql.FieldConfigArgument{
+        "id": &graphql.ArgumentConfig{
+            Type: graphql.NewNonNull(graphql.ID),
+        },
+    },
+    Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+        // Check membership, return org
+    },
+}
+
+organizations: &graphql.Field{
+    Type: graphql.NewList(organizationType),
+    Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+        // Return user's organizations
+    },
+}
+
+myMemberships: &graphql.Field{
+    Type: graphql.NewList(memberType),
+    Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+        // Return user's memberships
+    },
+}
+
+// ADD: Organization mutations
+createOrganization: &graphql.Field{
+    Type: createOrganizationPayloadType,
+    Args: graphql.FieldConfigArgument{
+        "name": &graphql.ArgumentConfig{
+            Type: graphql.NewNonNull(graphql.String),
+        },
+    },
+    Resolve: CreateOrganizationResolver,
+}
+
+// ADD: Membership mutations
+inviteMember: &graphql.Field{...}
+removeMember: &graphql.Field{...}
+updateMemberRole: &graphql.Field{...}
+
+// ADD: Invitation mutations
+acceptInvitation: &graphql.Field{...}
+rejectInvitation: &graphql.Field{...}
+
+// ADD: Device transfer mutation
+transferDevice: &graphql.Field{...}
+```
+
+#### 4. schema/subscription.go
+
+```go
+// ADD: Organization-scoped subscriptions
+organizationEvent: &graphql.Field{
+    Type: organizationEventUnion,
+    Args: graphql.FieldConfigArgument{
+        "orgId": &graphql.ArgumentConfig{
+            Type: graphql.NewNonNull(graphql.ID),
+        },
+    },
+    Subscribe: OrganizationEventSubscription,
+}
+
+memberEvent: &graphql.Field{
+    Type: memberEventType,
+    Args: graphql.FieldConfigArgument{
+        "orgId": &graphql.ArgumentConfig{
+            Type: graphql.NewNonNull(graphql.ID),
+        },
+    },
+    Subscribe: MemberEventSubscription,
+}
+```
+
+#### 5. resolver/query_resolver.go
+
+```go
+// ADD: Organization queries
+func (r *Resolver) OrganizationQuery(p graphql.ResolveParams) (interface{}, error) {
+    orgID := p.Args["id"].(string)
+    operator := GetOperatorFromContext(p.Context)
+    
+    // Check membership
+    membership := operator.GetMembership(orgID)
+    if membership == nil {
+        return nil, gqlerror.Errorf("Not a member of this organization")
+    }
+    
+    return GetOrganization(orgID)
+}
+
+func (r *Resolver) OrganizationsQuery(p graphql.ResolveParams) (interface{}, error) {
+    operator := GetOperatorFromContext(p.Context)
+    return operator.GetOrganizations(), nil
+}
+
+func (r *Resolver) MyMembershipsQuery(p graphql.ResolveParams) (interface{}, error) {
+    operator := GetOperatorFromContext(p.Context)
+    return operator.GetMemberships(), nil
+}
+
+// UPDATE: Existing device queries - add org filter
+func (r *Resolver) DevicesQuery(p graphql.ResolveParams) (interface{}, error) {
+    operator := GetOperatorFromContext(p.Context)
+    orgID := p.Args["orgId"] // Optional, defaults to selected org
+    
+    if orgID == nil {
+        orgID = operator.GetSelectedOrgID()
+    }
+    
+    // Check membership and return org-scoped devices
+    return GetDevicesByOrganization(orgID.(string))
+}
+```
+
+#### 6. resolver/mutation_resolver.go
+
+```go
+// ADD: Organization mutations
+func (r *Resolver) CreateOrganizationMutation(p graphql.ResolveParams) (interface{}, error) {
+    operator := GetOperatorFromContext(p.Context)
+    name := p.Args["name"].(string)
+    
+    return CreateOrganization(operator, name)
+}
+
+func (r *Resolver) DeleteOrganizationMutation(p graphql.ResolveParams) (interface{}, error) {
+    operator := GetOperatorFromContext(p.Context)
+    orgID := p.Args["id"].(string)
+    
+    // Check: must be super_admin of org
+    // Check: must have no devices (or transfer/delete first)
+    // Check: must have no other members (or remove first)
+    
+    return DeleteOrganization(operator, orgID)
+}
+
+// ADD: Membership mutations
+func (r *Resolver) InviteMemberMutation(p graphql.ResolveParams) (interface{}, error) {
+    operator := GetOperatorFromContext(p.Context)
+    orgID := p.Args["orgId"].(string)
+    email := p.Args["email"].(string)
+    role := p.Args["role"].(OrgRole)
+    
+    // Check: operator must be admin+
+    // Create invitation, send email
+}
+
+func (r *Resolver) AcceptInvitationMutation(p graphql.ResolveParams) (interface{}, error) {
+    operator := GetOperatorFromContext(p.Context)
+    token := p.Args["token"].(string)
+    notes := p.Args["notes"].(string)
+    
+    // Validate token
+    // Check email matches operator
+    // Create membership
+    // Send notification to inviter
+}
+
+func (r *Resolver) RejectInvitationMutation(p graphql.ResolveParams) (interface{}, error) {
+    operator := GetOperatorFromContext(p.Context)
+    token := p.Args["token"].(string)
+    notes := p.Args["notes"].(string)
+    
+    // Validate token
+    // Update invitation status
+    // Send notification to inviter
+}
+```
+
+#### 7. resolver/helpers.go
+
+```go
+// ADD: Org context helpers
+func GetOperatorFromContext(ctx context.Context) *Operator {
+    // Extract operator from context
+}
+
+func GetOrgFromContext(ctx context.Context) (*Organization, error) {
+    // Get selected org from context
+}
+
+func RequireOrgMembership(operator *Operator, orgID string, minRole OrgRole) error {
+    membership := operator.GetMembership(orgID)
+    if membership == nil {
+        return ErrNotOrgMember
+    }
+    if !membership.Role.IsAtLeast(minRole) {
+        return ErrInsufficientRole
+    }
+    return nil
+}
+
+func GetOrgDevice(operator *Operator, deviceID string) (*Device, error) {
+    // Get device, verify operator is org member
+}
+```
+
+#### 8. middleware/gql_auth.go
+
+```go
+// UPDATE: Role checks to org-scoped
+func RequireOrgRole(orgID string, minRole OrgRole) func(graphql.ResolveParams) (interface{}, error) {
+    return func(p graphql.ResolveParams) (interface{}, error) {
+        operator := GetOperatorFromContext(p.Context)
         
-        membership := op.GetMembership(orgID)
+        membership := operator.GetMembership(orgID)
         if membership == nil {
-            // not a member
+            return nil, gqlerror.Errorf("Not a member of this organization")
         }
         
         if !membership.Role.IsAtLeast(minRole) {
-            // insufficient role
+            return nil, gqlerror.Errorf("Insufficient permissions")
         }
+        
+        return nil, nil
     }
 }
-```
 
-#### 5. Resolver Updates Required
-
-```
-graphql/resolver/
-├── query_resolver.go       # Add org queries
-├── mutation_resolver.go    # Add org mutations  
-├── resolver.go           # Add organization, membership resolvers
-├── helpers.go            # Add org context helpers
-└── [NEW] org_resolver.go # Organization-specific resolvers
+// Deprecate old global role checks
+// Keep RequireSuperAdmin() for backward compat but log deprecation warning
 ```
 
 ### GraphQL Impact Summary
 
-| Component | Files to Modify | Effort |
-|-----------|---------------|--------|
-| Schema objects | `schema/objects.go` | Medium |
-| Schema enums | `schema/enums.go` | Low |
-| Schema queries | `schema/schema.go` | High |
-| Schema mutations | `schema/schema.go` | High |
-| Schema subscriptions | `schema/subscription.go` | Medium |
-| Resolvers | `resolver/*.go` | High |
-| Auth middleware | `middleware/gql_auth.go` | High |
-| Context helpers | `resolver/helpers.go` | Medium |
+| Component | File | Changes Required | Effort |
+|-----------|------|----------------|--------|
+| Organization Type | `objects.go` | Add Organization, Membership, Invitation structs | Medium |
+| Enums | `enums.go` | Add OrgRole enum | Low |
+| Queries | `schema.go` | Add 4 new queries | Medium |
+| Mutations | `schema.go` | Add 8 new mutations | High |
+| Subscriptions | `subscription.go` | Add org-scoped subscriptions | Medium |
+| Query Resolver | `query_resolver.go` | Add org queries, update device queries | High |
+| Mutation Resolver | `mutation_resolver.go` | Add all org mutations | High |
+| Helpers | `helpers.go` | Add org context helpers | Medium |
+| Auth Middleware | `middleware/gql_auth.go` | Update role checks | Medium |
+| Context | `context.go` | Add org to context | Low |
+| Errors | `errors/gql_errors.go` | Add org-specific errors | Low |
+| Inbox Resolver | `inbox_resolver.go` | Filter by org | Medium |
+| Updates Resolver | `updates_resolver.go` | Filter by org | Medium |
+
+**Total Files to Modify: 12**
+**Estimated Effort: High (2-3 weeks)**
 
 ---
 
-## 🚨 EXISTING DEVICE MIGRATION STRATEGY
+## 🚨 MIGRATION STRATEGY (SIMPLIFIED)
 
-### The Problem
+### Important: No Existing Data
 
-All existing devices have `operator_id` but NO `organization_id`.
+**⚠️ ASSUMPTION: There are NO existing users, devices, or organizations in the system.**
+
+This is a greenfield implementation for org features. All data is created fresh.
 
 ```
-CURRENT STATE:
-┌────────────┐     ┌────────────┐
-│  Operator  │────▶│   Device   │
-│  (owner)   │     │ (no org)  │
-└────────────┘     └────────────┘
+CURRENT STATE (Greenfield):
+┌─────────────────┐
+│  EMPTY DATABASE  │
+│  (fresh start)   │
+└─────────────────┘
 
-TARGET STATE:
+TARGET STATE (With Organizations):
 ┌────────────┐     ┌────────────┐     ┌────────────┐
 │  Operator  │────▶│ Membership │────▶│Organization│
 │           │     │  (role)   │     │            │
@@ -1621,137 +1792,121 @@ TARGET STATE:
                          ▼
                     ┌────────────┐
                     │   Device   │
-                    │ (has org)  │
                     └────────────┘
 ```
 
-### Migration Phases
+### Migration Phase (Single Phase)
 
-#### Phase M1: Create Tables (Non-Breaking)
+Since there's no existing data, we just need ONE migration:
+
 ```sql
 -- Migration 040_organizations.sql
-CREATE TABLE organizations (...);
-CREATE TABLE organization_members (...);
-CREATE TABLE invitations (...);
+-- Creates all new tables at once
 
--- Add nullable columns (backward compatible)
-ALTER TABLE devices ADD COLUMN organization_id TEXT;
+BEGIN;
+
+-- Create organizations table
+CREATE TABLE IF NOT EXISTS organizations (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    deleted_at INTEGER,
+    is_active INTEGER DEFAULT 1,
+    max_members INTEGER DEFAULT 100,
+    UNIQUE(created_by, name)  -- Per-operator unique names
+);
+
+-- Create organization_members table
+CREATE TABLE IF NOT EXISTS organization_members (
+    id TEXT PRIMARY KEY,
+    organization_id TEXT NOT NULL,
+    operator_id TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('super_admin', 'admin', 'operator', 'viewer')),
+    invited_by TEXT,
+    joined_at INTEGER NOT NULL,
+    removed_at INTEGER,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'removed')),
+    UNIQUE(organization_id, operator_id),
+    FOREIGN KEY (organization_id) REFERENCES organizations(id),
+    FOREIGN KEY (operator_id) REFERENCES operators(id),
+    FOREIGN KEY (invited_by) REFERENCES operators(id)
+);
+
+-- Create invitations table
+CREATE TABLE IF NOT EXISTS invitations (
+    id TEXT PRIMARY KEY,
+    organization_id TEXT NOT NULL,
+    email TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('admin', 'operator', 'viewer')),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'expired')),
+    token TEXT NOT NULL UNIQUE,
+    inviter_notes TEXT,
+    invitee_notes TEXT,
+    invited_by TEXT NOT NULL,
+    invited_at INTEGER NOT NULL,
+    responded_at INTEGER,
+    expires_at INTEGER NOT NULL,
+    responder_id TEXT,
+    FOREIGN KEY (organization_id) REFERENCES organizations(id),
+    FOREIGN KEY (invited_by) REFERENCES operators(id),
+    FOREIGN KEY (responder_id) REFERENCES operators(id)
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_org_members_operator ON organization_members(operator_id);
+CREATE INDEX IF NOT EXISTS idx_org_members_org ON organization_members(organization_id);
+CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email);
+CREATE INDEX IF NOT EXISTS idx_invitations_org_status ON invitations(organization_id, status);
+
+-- Add organization_id to devices (NOT NULL - required from now on)
+ALTER TABLE devices ADD COLUMN organization_id TEXT NOT NULL;
+
+-- Add organization_id to sessions (nullable for backward compat)
 ALTER TABLE sessions ADD COLUMN organization_id TEXT;
+
+-- Add organization_id to api_keys (nullable for backward compat)
 ALTER TABLE api_keys ADD COLUMN organization_id TEXT;
-```
-**Impact**: Zero. Existing code works unchanged.
 
-#### Phase M2: Create Default Organizations (Silent)
-```go
-// Migration script - run BEFORE enabling org features
-func MigrateExistingUsersToOrgs(db *sql.DB) error {
-    // For each operator WITHOUT org membership:
-    operators := db.Query("SELECT id, email FROM operators")
-    
-    for op := range operators {
-        // Create "Personal" org for each user
-        orgID := uuid.New().String()
-        db.Exec(`
-            INSERT INTO organizations (id, name, created_by, created_at, is_active)
-            VALUES (?, ?, ?, ?, true)
-        `, orgID, "Personal", op.ID, time.Now().UnixMilli())
-        
-        // Add as super_admin
-        db.Exec(`
-            INSERT INTO organization_members (id, organization_id, operator_id, role, joined_at)
-            VALUES (?, ?, ?, 'super_admin', ?)
-        `, uuid.New().String(), orgID, op.ID, time.Now().UnixMilli())
-        
-        // Backfill devices: assign to their personal org
-        db.Exec(`
-            UPDATE devices SET organization_id = ? WHERE operator_id = ?
-        `, orgID, op.ID)
-    }
-}
-```
-**Impact**: Silent migration. All users get personal org.
-
-#### Phase M3: Enable Org Context (Gradual)
-```go
-// Feature flag - gradual rollout
-type Config struct {
-    RequireOrgContext bool `env:"REQUIRE_ORG_CONTEXT" default:"false"`
-}
-
-// Middleware becomes opt-in
-func OrgContextMiddleware(c *gin.Context) {
-    if !c.Config.RequireOrgContext {
-        return // Skip during migration
-    }
-    // Enforce org context
-}
+COMMIT;
 ```
 
-#### Phase M4: Require Org (Strict Mode)
-```go
-// After all users migrated, enable strict mode
-type Config struct {
-    RequireOrgContext bool `env:"REQUIRE_ORG_CONTEXT" default:"true"`
-}
-```
-
-### Migration Rollback Plan
-
-```bash
-# If migration fails at Phase M2:
-
-# 1. Stop API
-systemctl stop vyzorix-api
-
-# 2. Restore from backup (before M2 ran)
-psql vyzorix < backup-pre-migration.sql
-
-# 3. Deploy previous version (without org features)
-git checkout v1.2.3
-
-# 4. Investigate and retry
-```
-
-### Pre-Migration Checklist
-
-```bash
-# 1. Database backup
-pg_dump vyzorix > backup-$(date +%Y%m%d).sql
-
-# 2. Test on staging with copy of production data
-pg_dump production | psql staging
-
-# 3. Dry run migration
-DRY_RUN=true ./migrate-to-orgs
-
-# 4. Notify users of maintenance window
-# Email: "Scheduled maintenance on [DATE]"
-
-# 5. Disable new device registrations during migration
-# Set MAINTENANCE_MODE=true
-```
-
-### Post-Migration Verification
+### Migration Verification
 
 ```sql
--- Verify all operators have memberships
-SELECT COUNT(*) FROM operators 
-WHERE id NOT IN (SELECT operator_id FROM organization_members);
+-- Verify tables created
+SELECT table_name FROM information_schema.tables 
+WHERE table_schema = 'main' 
+AND table_name IN ('organizations', 'organization_members', 'invitations');
 
--- Should return 0
+-- Should return: organizations, organization_members, invitations
 
--- Verify all devices have organization_id
-SELECT COUNT(*) FROM devices WHERE organization_id IS NULL;
+-- Verify columns added
+PRAGMA table_info(devices);
+-- Should show organization_id column
 
--- Should return 0
+-- Verify constraints
+PRAGMA foreign_key_list('organization_members');
+-- Should show FK to organizations and operators
+```
 
--- Verify device count matches
-SELECT 
-    (SELECT COUNT(*) FROM devices) as total_devices,
-    (SELECT COUNT(*) FROM organization_members) as memberships,
-    (SELECT COUNT(*) FROM organizations) as orgs;
+### Migration Rollback (if needed)
 
--- memberships should equal orgs (1:1 initially)
+```sql
+-- If we need to rollback:
+BEGIN;
+
+ALTER TABLE devices DROP COLUMN organization_id;
+ALTER TABLE sessions DROP COLUMN organization_id;
+ALTER TABLE api_keys DROP COLUMN organization_id;
+
+DROP TABLE IF EXISTS invitations;
+DROP TABLE IF EXISTS organization_members;
+DROP TABLE IF EXISTS organizations;
+
+COMMIT;
 ```
 
 ---
@@ -1809,3 +1964,79 @@ SELECT
 2. Remove old admin endpoints
 3. Update documentation
 4. Update OpenAPI spec
+
+---
+
+## MFA & BACKUP CODES (Per-Operator)
+
+### Design Decision
+
+**MFA and Backup Codes remain per-operator, NOT org-scoped.**
+
+- MFA/Backup codes are GLOBAL - work across ALL org memberships
+- Stored in `operators` table (already exists)
+- **No changes needed**
+
+---
+
+## OPERATOR DELETION FLOW
+
+### Deletion Flow
+
+1. User initiates account deletion
+2. System validates:
+   - Cannot delete if last super_admin of any org
+   - Warn about orphaned devices
+   - Cancel pending invitations sent by user
+3. User confirms with password
+4. System cascade deletes:
+   - Remove from all org memberships
+   - Cancel all invitations sent by operator
+   - Delete sessions
+   - Delete operator record
+5. Devices remain but orphaned (historical reference kept)
+
+### Transfer Ownership (Optional)
+
+Before deletion, user can transfer org ownership:
+1. Select new owner (must be admin or operator)
+2. New owner receives confirmation email
+3. New owner accepts transfer
+4. Old owner becomes admin
+5. Old owner can then leave org
+
+---
+
+## DEVICE TRANSFER FEATURE
+
+### Prerequisites
+
+- Device must be OFFLINE
+- User must have permission in source AND target orgs
+
+### Transfer Flow
+
+1. Admin initiates transfer
+2. System validates prerequisites
+3. Updates `device.organization_id`
+4. Creates audit log
+5. Notifies target org admins
+
+### Transfer API
+
+```
+POST /v1/organizations/:id/devices/:imei/transfer
+{
+    "target_org_id": "uuid",
+    "notes": "optional notes"
+}
+```
+
+### Error Codes
+
+| Error | Meaning |
+|-------|---------|
+| `device_must_be_offline` | Device must be disconnected |
+| `device_already_in_org` | Device is already in target org |
+| `cannot_transfer_to_self` | Source and target are same |
+| `org_at_member_limit` | Target org has reached limit |
