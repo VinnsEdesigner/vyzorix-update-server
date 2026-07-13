@@ -24,6 +24,9 @@ type MemberRepository interface {
 	// SoftDelete soft-deletes a membership (marks as removed).
 	SoftDelete(ctx context.Context, id string) error
 
+	// SoftDeleteByOperator soft-deletes all memberships for an operator (used during operator deletion).
+	SoftDeleteByOperator(ctx context.Context, operatorID string) error
+
 	// CountByOrganization counts members in an organization.
 	CountByOrganization(ctx context.Context, orgID string) (int, error)
 

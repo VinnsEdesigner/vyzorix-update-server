@@ -349,3 +349,16 @@ func (s *MemberStorage) ListByOperator(ctx context.Context, operatorID string) (
 
 	return members, rows.Err()
 }
+
+
+// SoftDeleteByOperator soft-deletes all memberships for an operator (used during operator deletion).
+func (s *MemberStorage) SoftDeleteByOperator(ctx context.Context, operatorID string) error {
+	query := `
+		UPDATE organization_members
+		SET status = 'removed', removed_at = ?
+		WHERE operator_id = ? AND status = 'active'`
+
+	now := time.Now().UnixMilli()
+	_, err := s.getQuerier(ctx).ExecContext(ctx, query, now, operatorID)
+	return err
+}

@@ -40,4 +40,7 @@ type Repository interface {
 
 	// ExpireByOrganization expires all pending invitations for an organization.
 	ExpireByOrganization(ctx context.Context, orgID string) error
+
+	// ExpireByInviter expires all pending invitations sent by an operator (used during operator deletion).
+	ExpireByInviter(ctx context.Context, inviterID string) error
 }
