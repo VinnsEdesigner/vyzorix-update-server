@@ -57,7 +57,8 @@ func createOrganizationsTable(db *sql.DB) error {
 			deleted_at INTEGER,
 			is_active INTEGER NOT NULL DEFAULT 1,
 			max_members INTEGER NOT NULL DEFAULT 2,
-			FOREIGN KEY (created_by) REFERENCES operators(id)
+			FOREIGN KEY (created_by) REFERENCES operators(id),
+			UNIQUE(created_by, name)
 		)
 	`)
 	if err != nil {
@@ -124,9 +125,11 @@ func createInvitationsTable(db *sql.DB) error {
 			invited_by TEXT NOT NULL,
 			invited_at INTEGER NOT NULL,
 			responded_at INTEGER,
+			responder_id TEXT,
 			expires_at INTEGER NOT NULL,
 			FOREIGN KEY (organization_id) REFERENCES organizations(id),
-			FOREIGN KEY (invited_by) REFERENCES operators(id)
+			FOREIGN KEY (invited_by) REFERENCES operators(id),
+			FOREIGN KEY (responder_id) REFERENCES operators(id)
 		)
 	`)
 	if err != nil {
