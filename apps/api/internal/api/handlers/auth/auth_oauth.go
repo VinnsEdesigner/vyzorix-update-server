@@ -20,6 +20,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// OAuth error codes for frontend handling
+const (
+	ErrOAuthEmailRequired    = "email_required"
+	ErrOAuthEmailNotVerified = "email_not_verified"
+	ErrOAuthLoginFailed      = "login_failed"
+	ErrOAuthStateInvalid     = "state_invalid"
+	ErrOAuthExchangeFailed   = "token_exchange_failed"
+	ErrOAuthConfigMissing    = "oauth_not_configured"
+)
+
+// OAuthErrorDetails holds structured error information for the frontend
+type OAuthErrorDetails struct {
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+	Provider   string `json:"provider,omitempty"`
+	HelpURL    string `json:"helpUrl,omitempty"`
+	Retryable  bool   `json:"retryable"`
+}
+
 // OAuthHandler handles OAuth endpoints.
 type OAuthHandler struct {
 	oauthStateRepo OAuthStateProvider
@@ -63,6 +82,44 @@ func (h *OAuthHandler) WithOAuthStateRepo(repo OAuthStateProvider) *OAuthHandler
 func (h *OAuthHandler) WithLogger(logger *slog.Logger) *OAuthHandler {
 	h.logger = logger
 	return h
+}
+
+// getOAuthRedirectURL builds a redirect URL with error parameters for OAuth errors
+func (h *OAuthHandler) getOAuthRedirectURL(redirectURL string, err OAuthErrorDetails) string {
+	baseURL := redirectURL
+	if baseURL == "" {
+		baseURL = h.config.FrontendURL
+		if baseURL == "" {
+			baseURL = "http://localhost:5173"
+		}
+	}
+
+	errURL := fmt.Sprintf("%s/auth/callback?oauth=error&code=%s&message=%s",
+		baseURL,
+		url.QueryEscape(err.Code),
+		url.QueryEscape(err.Message),
+	)
+
+	if err.Provider != "" {
+		errURL += "&provider=" + url.QueryEscape(err.Provider)
+	}
+	if !err.Retryable {
+		errURL += "&retryable=false"
+	}
+
+	return errURL
+}
+
+// getDefaultRedirectURL returns the default redirect URL
+func (h *OAuthHandler) getDefaultRedirectURL(redirectURL string) string {
+	baseURL := redirectURL
+	if baseURL == "" {
+		baseURL = h.config.FrontendURL
+		if baseURL == "" {
+			baseURL = "http://localhost:5173"
+		}
+	}
+	return baseURL
 }
 
 // GoogleLogin handles GET /v1/auth/google.
@@ -129,7 +186,13 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	var err error
 	redirectURL, state, err = h.oauthStateRepo.Validate(c.Request.Context(), state)
 	if err != nil {
-		h.presenter.BadRequest(c, "invalid or expired OAuth state")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthStateInvalid,
+			Message:   "OAuth state expired or invalid. Please try signing in again.",
+			Provider:  "google",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 	// Delete the state after successful validation (one-time use)
@@ -150,61 +213,105 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 
 	var tokenResp struct {
 		AccessToken  string `json:"access_token"`
-		IDToken      string `json:"id_token"`
+		IDToken     string `json:"id_token"`
 		RefreshToken string `json:"refresh_token"`
 		ExpiresIn    int    `json:"expires_in"`
 	}
 
 	if postErr := postJSON(ctx, tokenURL, tokenReq, &tokenResp); postErr != nil {
-			h.presenter.BadGateway(c, "failed to exchange code with Google")
-			return
-		}
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthExchangeFailed,
+			Message:   "Failed to exchange code with Google. Please try again.",
+			Provider:  "google",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
+		return
+	}
 
 	// Verify ID token
 	googleClaims, err := h.googleVer.Verify(tokenResp.IDToken)
 	if err != nil {
-		h.presenter.BadGateway(c, "invalid identity token from Google")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthExchangeFailed,
+			Message:   "Failed to verify your Google identity. Please try again.",
+			Provider:  "google",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 
+	// Check for email requirement - Google requires verified email
 	if googleClaims.Email == "" {
-		h.presenter.BadRequest(c, "Google did not return an email address")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthEmailRequired,
+			Message:   "Your Google account must have a verified email address to sign up. Please add an email to your Google Account and verify it, then try again.",
+			Provider:  "google",
+			HelpURL:   "https://support.google.com/accounts/answer/97060",
+			Retryable: false,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
+		return
+	}
+
+	if !googleClaims.EmailVerified {
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthEmailNotVerified,
+			Message:   "Your Google email must be verified to sign up. Please verify your email in Google Account settings, then try again.",
+			Provider:  "google",
+			HelpURL:   "https://support.google.com/accounts/answer/97060",
+			Retryable: false,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 
 	// Find or create operator via application service
 	result, err := h.authService.FindOrCreateGoogleOperator(ctx, googleClaims.Sub, googleClaims.Email, googleClaims.Name)
 	if err != nil {
-		h.presenter.InternalError(c, "login failed")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthLoginFailed,
+			Message:   "Failed to create or access your account. Please try again or contact support.",
+			Provider:  "google",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 
 	// Create session (validates operator was found/created)
 	session, err := h.authService.CreateSession(ctx, result.Operator.ID)
 	if err != nil {
-		h.presenter.InternalError(c, "login failed")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthLoginFailed,
+			Message:   "Failed to create session. Please try again.",
+			Provider:  "google",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 
 	// Set session cookie with session ID
 	cookie, err := h.sessionMgr.CreateCookieWithExpiry(session.ID, h.config.SessionMaxAge)
 	if err != nil {
-		h.presenter.InternalError(c, "login failed")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthLoginFailed,
+			Message:   "Failed to create session. Please try again.",
+			Provider:  "google",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 
 	http.SetCookie(c.Writer, cookie)
 
-	// Redirect to frontend with stored redirect URL
-	if redirectURL == "" {
-		redirectURL = h.config.FrontendURL
-		if redirectURL == "" {
-			redirectURL = "http://localhost:5173"
-		}
-	}
-
-	redirectURL = fmt.Sprintf("%s/auth/callback?oauth=success&new=%t", redirectURL, result.IsNew)
-	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+	// Redirect to frontend with success
+	baseURL := h.getDefaultRedirectURL(redirectURL)
+	successURL := fmt.Sprintf("%s/auth/callback?oauth=success&new=%t", baseURL, result.IsNew)
+	c.Redirect(http.StatusTemporaryRedirect, successURL)
 }
 
 // GitHubLogin handles GET /v1/auth/github.
@@ -271,7 +378,13 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	var err error
 	redirectURL, state, err = h.oauthStateRepo.Validate(c.Request.Context(), state)
 	if err != nil {
-		h.presenter.BadRequest(c, "invalid or expired OAuth state")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthStateInvalid,
+			Message:   "OAuth state expired or invalid. Please try signing in again.",
+			Provider:  "github",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 	// Delete the state after successful validation (one-time use)
@@ -289,21 +402,67 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		RedirectURI:  callbackURL,
 	})
 	if err != nil {
-		h.presenter.BadGateway(c, "failed to exchange code with GitHub")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthExchangeFailed,
+			Message:   "Failed to exchange code with GitHub. Please try again.",
+			Provider:  "github",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 
 	// Fetch GitHub user profile
 	ghUser, err := infraauth.FetchGitHubUserProfile(ctx, tokenResp.AccessToken)
 	if err != nil {
-		h.presenter.BadGateway(c, "failed to retrieve GitHub user profile")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthLoginFailed,
+			Message:   "Failed to retrieve GitHub user profile. Please try again.",
+			Provider:  "github",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 
-	// Fetch user emails
+	// Fetch user emails - REQUIRED for sign up
+	emails, fetchErr := infraauth.FetchGitHubEmails(ctx, tokenResp.AccessToken)
+	if fetchErr != nil {
+		h.logger.Warn("Failed to fetch GitHub emails", "err", fetchErr)
+	}
+
 	email := ghUser.Email
 	if email == "" {
-		email = fetchGitHubEmailWithFallback(ctx, tokenResp.AccessToken, ghUser.Login, h.logger)
+		email = infraauth.GetPrimaryEmail(emails)
+	}
+
+	// If no email found, redirect with error - email is REQUIRED
+	if email == "" {
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthEmailRequired,
+			Message:   "Your GitHub account must have a public or verified email address to sign up. Please go to GitHub Settings > Emails and make an email public or verified, then try again.",
+			Provider:  "github",
+			HelpURL:   "https://github.com/settings/emails",
+			Retryable: false,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
+		return
+	}
+
+	// Check if email is verified
+	hasVerifiedEmail := false
+	for _, e := range emails {
+		if e.Email == email && e.Verified {
+			hasVerifiedEmail = true
+			break
+		}
+	}
+
+	// Allow sign-up with unverified email if it's the primary email from profile
+	// but warn that they won't receive password reset emails
+	if !hasVerifiedEmail && ghUser.Email != "" {
+		// Primary email from GitHub profile - allow but note it
+		h.logger.Info("GitHub user signing up with unverified primary email", "email", email)
 	}
 
 	// Generate stable GitHub ID
@@ -318,36 +477,48 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 	// Find or create operator
 	result, err := h.authService.FindOrCreateGitHubOperator(ctx, githubID, email, name)
 	if err != nil {
-		h.presenter.InternalError(c, "login failed")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthLoginFailed,
+			Message:   "Failed to create or access your account. Please try again or contact support.",
+			Provider:  "github",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 
 	// Create session (validates operator was found/created)
 	session, err := h.authService.CreateSession(ctx, result.Operator.ID)
 	if err != nil {
-		h.presenter.InternalError(c, "login failed")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthLoginFailed,
+			Message:   "Failed to create session. Please try again.",
+			Provider:  "github",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 
 	// Set session cookie with session ID
 	cookie, err := h.sessionMgr.CreateCookieWithExpiry(session.ID, h.config.SessionMaxAge)
 	if err != nil {
-		h.presenter.InternalError(c, "login failed")
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthLoginFailed,
+			Message:   "Failed to create session. Please try again.",
+			Provider:  "github",
+			Retryable: true,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
 
 	http.SetCookie(c.Writer, cookie)
 
-	// Redirect to frontend with stored redirect URL if available
-	if redirectURL == "" {
-		redirectURL = h.config.FrontendURL
-		if redirectURL == "" {
-			redirectURL = "http://localhost:5173"
-		}
-	}
-
-	redirectURL = fmt.Sprintf("%s/auth/callback?oauth=success&new=%t&provider=github", redirectURL, result.IsNew)
-	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+	// Redirect to frontend with success
+	baseURL := h.getDefaultRedirectURL(redirectURL)
+	successURL := fmt.Sprintf("%s/auth/callback?oauth=success&new=%t&provider=github", baseURL, result.IsNew)
+	c.Redirect(http.StatusTemporaryRedirect, successURL)
 }
 
 // postJSON performs an HTTP POST with a JSON body and parses the JSON response.
@@ -382,21 +553,4 @@ func postJSON(ctx context.Context, url string, body map[string]string, resp inte
 	}
 
 	return nil
-}
-
-// fetchGitHubEmailWithFallback fetches the primary email or generates a fallback.
-func fetchGitHubEmailWithFallback(ctx context.Context, accessToken, login string, logger *slog.Logger) string {
-	emails, fetchErr := infraauth.FetchGitHubEmails(ctx, accessToken)
-	email := infraauth.GetPrimaryEmail(emails)
-	if email == "" {
-		email = login + "@github.noreply.vyzorix.internal"
-		if fetchErr != nil {
-			logger.Warn("Failed to fetch GitHub emails, using fallback", "err", fetchErr)
-		}
-		return email
-	}
-	if fetchErr != nil {
-		logger.Warn("Failed to fetch GitHub emails, using fallback", "err", fetchErr)
-	}
-	return email
 }
