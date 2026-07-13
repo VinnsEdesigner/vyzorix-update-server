@@ -194,6 +194,8 @@ var migrations = []Migration{
 	{Apply: migrateOperatorFCMToken, Name: "add_operator_fcm_token_column", Version: 36},
 	{Apply: migrateCreateOAuthStates, Name: "create_oauth_states_table", Version: 37},
 	{Apply: migrateAddMFASecretMAC, Name: "add_mfa_secret_mac_column", Version: 38},
+	// Multi-tenant organization model
+	{Apply: migrateOrganizations, Name: "create_organizations_tables", Version: 40},
 }
 
 // runMigrations applies all pending migrations.
