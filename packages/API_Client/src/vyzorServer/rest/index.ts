@@ -9,4 +9,6 @@ export * from "./updates";
 export * from "./device";
 export * from "./logs";
 export * from "./session";
+export * from "./admin";
+export * from "./oauth";
 export * from "../websocket";
