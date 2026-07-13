@@ -14,11 +14,6 @@ func boolToInt(b bool) int {
 	return 0
 }
 
-// intToBool converts an int (0 or 1) from SQLite to bool.
-func intToBool(i int) bool {
-	return i != 0
-}
-
 // nullStringPtr returns a sql.NullString from a string pointer.
 func nullStringPtr(s *string) sql.NullString {
 	if s == nil || *s == "" {

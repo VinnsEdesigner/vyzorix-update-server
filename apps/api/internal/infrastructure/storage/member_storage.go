@@ -164,7 +164,7 @@ func (s *MemberStorage) FindByOrganization(ctx context.Context, orgID string) ([
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var members []*organization.OrganizationMember
 	for rows.Next() {
@@ -309,7 +309,7 @@ func (s *MemberStorage) ListByOperator(ctx context.Context, operatorID string) (
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var members []*organization.OrganizationMember
 	for rows.Next() {
