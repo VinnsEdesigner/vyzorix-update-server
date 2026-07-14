@@ -173,7 +173,7 @@ func (s *OrganizationStorage) Update(ctx context.Context, org *organization.Orga
 func (s *OrganizationStorage) SoftDelete(ctx context.Context, id string) error {
 	query := `
 		UPDATE organizations
-		SET deleted_at = ?, updated_at = ?
+		SET deleted_at = ?, updated_at = ?, is_active = 0
 		WHERE id = ? AND deleted_at IS NULL`
 
 	now := time.Now().UnixMilli()
