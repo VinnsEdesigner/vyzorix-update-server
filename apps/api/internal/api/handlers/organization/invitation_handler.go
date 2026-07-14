@@ -385,19 +385,78 @@ func (h *InvitationHandler) ListPendingForEmail(c *gin.Context) {
 	result := make([]gin.H, len(invitations))
 	for i, inv := range invitations {
 		result[i] = gin.H{
-			"id":               inv.ID,
-			"organization_id":  inv.OrganizationID,
+			"id":                inv.ID,
+			"organization_id":   inv.OrganizationID,
 			"organization_name": inv.OrganizationName,
-			"email":            inv.Email,
-			"role":             inv.Role,
-			"status":           inv.Status,
-			"invited_at":       inv.InvitedAt,
-			"inviter_name":     inv.InviterName,
-			"expires_at":       inv.ExpiresAt,
+			"email":             inv.Email,
+			"role":              inv.Role,
+			"status":            inv.Status,
+			"invited_at":        inv.InvitedAt,
+			"inviter_name":      inv.InviterName,
+			"expires_at":        inv.ExpiresAt,
 		}
 	}
 
 	h.presenter.OK(c, gin.H{
 		"invitations": result,
+	})
+}
+
+// Delete handles DELETE /v1/invitations/:id (cancel/delete invitation).
+func (h *InvitationHandler) Delete(c *gin.Context) {
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		h.presenter.Unauthorized(c, "authentication required")
+		return
+	}
+
+	invitationID := c.Param("id")
+	if invitationID == "" {
+		h.presenter.BadRequest(c, "invitation id is required")
+		return
+	}
+
+	// Get invitation to verify permissions
+	inv, err := h.invitationService.GetInvitationByID(c.Request.Context(), invitationID)
+	if err != nil {
+		if errors.Is(err, appOrganization.ErrInvitationNotFound) {
+			h.presenter.NotFound(c, "invitation not found")
+			return
+		}
+		h.presenter.InternalError(c, "failed to get invitation")
+		return
+	}
+
+	// Only inviter or org admin can delete
+	isInviter := inv.InvitedBy == op.ID
+	isOrgAdmin := false
+	if isInviter {
+		isOrgAdmin = true // Inviter can always delete
+	} else {
+		// Check if user is org admin
+		member, err := h.memberService.GetMembership(c.Request.Context(), op.ID, inv.OrganizationID)
+		if err == nil && member.Role.CanManageMembers() {
+			isOrgAdmin = true
+		}
+	}
+
+	if !isInviter && !isOrgAdmin {
+		h.presenter.Forbidden(c, "only inviter or organization admin can delete this invitation")
+		return
+	}
+
+	// Only pending invitations can be deleted
+	if inv.Status != invitation.InvitationStatusPending {
+		h.presenter.Conflict(c, "only pending invitations can be deleted")
+		return
+	}
+
+	if err := h.invitationService.CancelInvitation(c.Request.Context(), invitationID); err != nil {
+		h.presenter.InternalError(c, "failed to delete invitation")
+		return
+	}
+
+	h.presenter.OK(c, gin.H{
+		"message": "invitation deleted",
 	})
 }
