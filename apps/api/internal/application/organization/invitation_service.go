@@ -207,6 +207,23 @@ func (s *InvitationService) GetInvitationByToken(ctx context.Context, token stri
 	return inv, nil
 }
 
+// GetInvitationByID retrieves an invitation by its ID.
+func (s *InvitationService) GetInvitationByID(ctx context.Context, invitationID string) (*invitation.Invitation, error) {
+	inv, err := s.invitationRepo.FindByID(ctx, invitationID)
+	if err != nil {
+		if errors.Is(err, invitation.ErrNotFound) {
+			return nil, ErrInvitationNotFound
+		}
+		return nil, err
+	}
+	return inv, nil
+}
+
+// CancelInvitation cancels/deletes an invitation.
+func (s *InvitationService) CancelInvitation(ctx context.Context, invitationID string) error {
+	return s.invitationRepo.Delete(ctx, invitationID)
+}
+
 // AcceptInvitation accepts an invitation (for authenticated users).
 func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operatorID, operatorEmail, notes string) error {
 	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
