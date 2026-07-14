@@ -168,22 +168,28 @@ func (s *Server) setupDashboardRoutes(r ...*gin.RouterGroup) {
 	} else {
 		router = s.engine.Group("/v1")
 	}
-	router.GET("/dashboard/devices", s.deviceListHandler.Handle)
-	router.GET("/dashboard/devices/operator", s.deviceListHandler.ListByOperator)
+
+	// Dashboard routes require organization context for multi-tenant isolation
+	dashboard := router.Group("/dashboard")
+	dashboard.Use(middleware.NewOrganizationContext(nil).Middleware())
+	dashboard.Use(middleware.NewOrganizationMembership(nil).Middleware())
+
+	dashboard.GET("/devices", s.deviceListHandler.Handle)
+	dashboard.GET("/devices/operator", s.deviceListHandler.ListByOperator)
 	if s.commandHistoryHandler != nil {
-		s.commandHistoryHandler.RegisterRoutes(router, s.dashboardRateLimiter)
+		s.commandHistoryHandler.RegisterRoutes(dashboard, s.dashboardRateLimiter)
 	}
 	if s.deviceLogsHandler != nil {
-		s.deviceLogsHandler.RegisterRoutes(router, s.dashboardRateLimiter)
+		s.deviceLogsHandler.RegisterRoutes(dashboard, s.dashboardRateLimiter)
 	}
 	if s.deviceMetricsHandler != nil {
-		s.deviceMetricsHandler.RegisterMetricsRoutes(router, s.dashboardRateLimiter)
+		s.deviceMetricsHandler.RegisterMetricsRoutes(dashboard, s.dashboardRateLimiter)
 	}
 	if s.deviceTelemetryHandler != nil {
-		s.deviceTelemetryHandler.RegisterTelemetryRoutes(router, s.dashboardRateLimiter)
+		s.deviceTelemetryHandler.RegisterTelemetryRoutes(dashboard, s.dashboardRateLimiter)
 	}
 	if s.dashboardStatsHandler != nil {
-		s.dashboardStatsHandler.RegisterRoutes(router)
+		s.dashboardStatsHandler.RegisterRoutes(dashboard)
 	}
 }
 
@@ -231,10 +237,18 @@ func (s *Server) setupDeviceManagementRoutes(r *gin.RouterGroup) {
 func (s *Server) setupDeviceInboxRoutes(r *gin.RouterGroup) {
 	if s.inboxHandler != nil && s.deviceRegRateLimiter != nil {
 		deviceInbox := r.Group("/device")
-		// Apply rate limiting per spec Section 11.1
-		deviceInbox.GET("/inbox", s.deviceRegRateLimiter.InboxListLimit(), s.inboxHandler.GetInbox)
-		deviceInbox.GET("/inbox/:imei", s.deviceRegRateLimiter.InboxGetLimit(), s.inboxHandler.GetInboxEntry)
-		deviceInbox.POST("/inbox/:imei/ack", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.AckInbox)
+
+		// Authenticated inbox routes - require org context for multi-tenant isolation
+		authenticatedInbox := deviceInbox.Group("")
+		authenticatedInbox.Use(middleware.NewOrganizationContext(nil).Middleware())
+		authenticatedInbox.Use(middleware.NewOrganizationMembership(nil).Middleware())
+		authenticatedInbox.Use(s.cookieAuth.Middleware())
+		authenticatedInbox.GET("/inbox", s.deviceRegRateLimiter.InboxListLimit(), s.inboxHandler.GetInbox)
+		authenticatedInbox.GET("/inbox/:imei", s.deviceRegRateLimiter.InboxGetLimit(), s.inboxHandler.GetInboxEntry)
+		authenticatedInbox.PATCH("/inbox/:imei", s.deviceRegRateLimiter.InboxGetLimit(), s.inboxHandler.UpdateInboxEntry)
+		authenticatedInbox.POST("/inbox/:imei/ack", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.AckInbox)
+		authenticatedInbox.POST("/inbox/:imei/resend", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.ResendApproval)
+
 		// Note: POST /v1/device/inbox is public (used by devices for registration)
 		s.inboxHandler.RegisterPublicRoutes(deviceInbox)
 	}
@@ -261,6 +275,8 @@ func (s *Server) setupCommandManagementRoutes(r *gin.RouterGroup) {
 
 func (s *Server) setupTelemetryRoutes(r *gin.RouterGroup) {
 	telemetry := r.Group("/telemetry")
+	telemetry.Use(middleware.NewOrganizationContext(nil).Middleware())
+	telemetry.Use(middleware.NewOrganizationMembership(nil).Middleware())
 	telemetry.GET("/history", s.telemetryHistoryHandler.Query)
 	telemetry.GET("/history/export", s.telemetryHistoryHandler.ExportJSON)
 	telemetry.GET("/latest/:deviceId", s.telemetryHistoryHandler.GetLatest)
@@ -270,6 +286,8 @@ func (s *Server) setupTelemetryRoutes(r *gin.RouterGroup) {
 
 func (s *Server) setupConnectionsRoutes(r *gin.RouterGroup) {
 	connections := r.Group("/connections")
+	connections.Use(middleware.NewOrganizationContext(nil).Middleware())
+	connections.Use(middleware.NewOrganizationMembership(nil).Middleware())
 	connections.GET("", s.connectionStatusHandler.GetAllStatus)
 	connections.GET("/metrics", s.connectionStatusHandler.GetMetrics)
 }
@@ -284,6 +302,8 @@ func (s *Server) setupUpdatesRoutes(r *gin.RouterGroup) {
 func (s *Server) setupDiagnosticsRoutes(r *gin.RouterGroup) {
 	if s.diagnosticsInspectHandler != nil || s.diagnosticsTimelineHandler != nil {
 		diagnosticsGroup := r.Group("/device")
+		diagnosticsGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+		diagnosticsGroup.Use(middleware.NewOrganizationMembership(nil).Middleware())
 		diagnostics.RegisterRoutes(diagnosticsGroup, s.diagnosticsInspectHandler, s.diagnosticsTimelineHandler)
 	}
 }
