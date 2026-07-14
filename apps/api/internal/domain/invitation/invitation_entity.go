@@ -12,11 +12,16 @@ import (
 type InvitationStatus string
 
 const (
-	InvitationStatusPending  InvitationStatus = "pending"
+	InvitationStatusPending   InvitationStatus = "pending"
 	InvitationStatusApproved InvitationStatus = "approved"
 	InvitationStatusRejected InvitationStatus = "rejected"
-	InvitationStatusExpired InvitationStatus = "expired"
+	InvitationStatusExpired  InvitationStatus = "expired"
 )
+
+// InvitationStatusPtr returns a pointer to the given InvitationStatus.
+func InvitationStatusPtr(s InvitationStatus) *InvitationStatus {
+	return &s
+}
 
 // Invitation represents an invitation to join an organization.
 type Invitation struct {
