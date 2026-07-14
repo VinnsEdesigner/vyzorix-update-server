@@ -243,3 +243,38 @@ func (h *MemberHandler) Remove(c *gin.Context) {
 		"message": "member removed",
 	})
 }
+
+// TransferOwnership handles POST /v1/organizations/:id/members/:memberId/transfer.
+func (h *MemberHandler) TransferOwnership(c *gin.Context) {
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		h.presenter.Unauthorized(c, "authentication required")
+		return
+	}
+
+	orgID := c.Param("id")
+	memberID := c.Param("memberId")
+
+	if orgID == "" || memberID == "" {
+		h.presenter.BadRequest(c, "organization id and member id are required")
+		return
+	}
+
+	err := h.memberService.TransferOwnership(c.Request.Context(), orgID, op.ID, memberID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			h.presenter.NotFound(c, "member not found")
+			return
+		}
+		if errors.Is(err, organization.ErrForbidden) {
+			h.presenter.Forbidden(c, "only super_admin can transfer ownership")
+			return
+		}
+		h.presenter.InternalError(c, "failed to transfer ownership")
+		return
+	}
+
+	h.presenter.OK(c, gin.H{
+		"message": "ownership transferred successfully",
+	})
+}
