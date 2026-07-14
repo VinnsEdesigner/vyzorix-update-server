@@ -300,6 +300,14 @@ func (h *InvitationHandler) Accept(c *gin.Context) {
 			h.presenter.Forbidden(c, "email does not match invitation")
 			return
 		}
+		if errors.Is(err, appOrganization.ErrAlreadyOrgMember) {
+			h.presenter.Conflict(c, "you are already a member of this organization")
+			return
+		}
+		if errors.Is(err, appOrganization.ErrOrgAtCapacity) {
+			h.presenter.Forbidden(c, "organization has reached its member limit")
+			return
+		}
 		h.presenter.InternalError(c, "failed to accept invitation")
 		return
 	}
