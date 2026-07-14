@@ -8,7 +8,6 @@ import (
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
-	operatorhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/operator"
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
@@ -16,7 +15,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
-	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	updatesapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -27,10 +25,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
-	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"log/slog"
-	"time"
 )
 
 // HandlerDependencies contains all dependencies needed by handlers.
@@ -59,21 +55,19 @@ type HandlerDependencies struct {
 
 // HandlerSet contains all handler instances.
 type HandlerSet struct {
-	Auth                *authhandlers.AllHandlers
-	DeviceRegister      *devicehandlers.RegisterHandler
-	DeviceStatus        *devicehandlers.StatusHandler
-	DeviceUpdater       *devicehandlers.UpdaterHandler
-	DeviceList          *devicehandlers.ListHandler
-	Devices             *devicehandlers.DevicesHandler
-	Command             *cmdhandlers.ExecuteHandler
-	Stream              *websockethandlers.StreamHandler
-	TelemetryHistory    *handlers.TelemetryHistoryHandler
-	ConnectionStatus    *handlers.ConnectionStatusHandler
-	AdminClients        *admin.ClientsHandler
-	Updates             *updateshandlers.UpdatesHandler
-	UpdatesService      *updatesapplication.Service
-	ThresholdHandler    *operatorhandlers.ThresholdHandler
-	NotificationHandler *operatorhandlers.NotificationHandler
+	Auth             *authhandlers.AllHandlers
+	DeviceRegister   *devicehandlers.RegisterHandler
+	DeviceStatus     *devicehandlers.StatusHandler
+	DeviceUpdater    *devicehandlers.UpdaterHandler
+	DeviceList       *devicehandlers.ListHandler
+	Devices          *devicehandlers.DevicesHandler
+	Command          *cmdhandlers.ExecuteHandler
+	Stream           *websockethandlers.StreamHandler
+	TelemetryHistory *handlers.TelemetryHistoryHandler
+	ConnectionStatus *handlers.ConnectionStatusHandler
+	AdminClients     *admin.ClientsHandler
+	Updates          *updateshandlers.UpdatesHandler
+	UpdatesService   *updatesapplication.Service
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -177,15 +171,6 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, pushSvc, updatesRateLimiters, deps.AuditLogger, deps.Config.GitHubWebhookSecret)
 		hs.UpdatesService = updatesService
 	}
-
-	// Threshold handler
-	thresholdSvc := appoperator.NewThresholdService(deps.OperatorRepo)
-	hs.ThresholdHandler = operatorhandlers.NewThresholdHandler(thresholdSvc)
-
-	// Notification handler
-	notificationSvc := appoperator.NewNotificationService(deps.OperatorRepo)
-	webhookClient := infrawebhook.NewClient(10 * time.Second)
-	hs.NotificationHandler = operatorhandlers.NewNotificationHandler(notificationSvc, webhookClient)
 
 	return hs
 }
