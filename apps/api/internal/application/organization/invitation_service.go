@@ -27,6 +27,8 @@ var (
 	ErrMaxInvitationsReached = errors.New("maximum pending invitations reached")
 	ErrCannotInviteSelf      = errors.New("cannot invite yourself")
 	ErrInvitationNotFound    = errors.New("invitation not found")
+	ErrAlreadyOrgMember      = errors.New("operator is already a member of this organization")
+	ErrOrgAtCapacity        = errors.New("organization has reached its member limit")
 )
 
 // EmailService defines the interface for sending emails.
@@ -126,12 +128,10 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 		return nil, invitation.ErrAlreadyExists
 	}
 
-	// Check if user is already a member
-	existingMember, err := s.memberRepo.FindByOperatorAndOrg(ctx, inviterID, orgID)
-	if err != nil && !errors.Is(err, organization.ErrMemberNotFound) {
-		return nil, err
-	}
-	_ = existingMember // Would need to look up by email
+	// Check if user is already a member of this org
+	// We need to check if there's an operator with this email who is already a member
+	// Since we don't have operatorRepo here, we'll skip this check and let AcceptInvitation
+	// handle the "already a member" case when the user tries to accept
 
 	// Generate secure token
 	token, err := invitation.GenerateSecureToken(32)
@@ -229,6 +229,21 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 		// Verify email matches
 		if inv.Email != operatorEmail {
 			return invitation.ErrEmailMismatch
+		}
+
+		// Check if operator is already a member of this org
+		existingMember, err := s.memberRepo.FindByOperatorAndOrg(txCtx, operatorID, inv.OrganizationID)
+		if err == nil && existingMember != nil && existingMember.IsActive() {
+			return ErrAlreadyOrgMember
+		}
+
+		// Check org capacity
+		org, err := s.orgRepo.FindByID(txCtx, inv.OrganizationID)
+		if err != nil {
+			return err
+		}
+		if !org.CanAddMember() {
+			return ErrOrgAtCapacity
 		}
 
 		now := time.Now()
