@@ -210,6 +210,61 @@ func (s *MemberService) UpdateMemberRole(ctx context.Context, orgID, memberID, a
 	return member, nil
 }
 
+// TransferOwnership transfers super_admin ownership to another member.
+func (s *MemberService) TransferOwnership(ctx context.Context, orgID, currentSuperAdminID, newSuperAdminMemberID string) error {
+	// Get the current super_admin
+	currentAdmin, err := s.memberRepo.FindByOperatorAndOrg(ctx, currentSuperAdminID, orgID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			return organization.ErrForbidden
+		}
+		return err
+	}
+
+	// Must be super_admin to transfer
+	if currentAdmin.Role != organization.RoleSuperAdmin {
+		return organization.ErrForbidden
+	}
+
+	// Get the new super_admin member
+	newAdmin, err := s.memberRepo.FindByID(ctx, newSuperAdminMemberID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			return organization.ErrMemberNotFound
+		}
+		return err
+	}
+
+	// Verify new admin belongs to this org
+	if newAdmin.OrganizationID != orgID {
+		return organization.ErrMemberNotFound
+	}
+
+	// New admin must be active
+	if !newAdmin.IsActive() {
+		return organization.ErrMemberNotFound
+	}
+
+	// Transfer ownership: new admin becomes super_admin, current becomes admin
+	newAdmin.Role = organization.RoleSuperAdmin
+	if err := s.memberRepo.Update(ctx, newAdmin); err != nil {
+		return err
+	}
+
+	currentAdmin.Role = organization.RoleAdmin
+	if err := s.memberRepo.Update(ctx, currentAdmin); err != nil {
+		return err
+	}
+
+	s.logger.Info("ownership transferred",
+		"org_id", orgID,
+		"from", currentSuperAdminID,
+		"to", newSuperAdminMemberID,
+	)
+
+	return nil
+}
+
 // GetMember retrieves a member by ID.
 func (s *MemberService) GetMember(ctx context.Context, memberID string) (*organization.OrganizationMember, error) {
 	member, err := s.memberRepo.FindByID(ctx, memberID)
