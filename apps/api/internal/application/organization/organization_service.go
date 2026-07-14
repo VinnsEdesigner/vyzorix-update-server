@@ -71,6 +71,8 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 		maxMembers = DefaultOrgMaxMembers
 	}
 
+	var createdOrg *organization.Organization
+
 	// Use transaction to prevent race condition on max orgs
 	err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
 		// Count active orgs for this operator
@@ -101,24 +103,24 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 
 		// Create organization
 		now := time.Now()
-		org := &organization.Organization{
-			ID:        uuid.New().String(),
-			Name:      name,
-			CreatedBy: operatorID,
-			CreatedAt: now,
-			UpdatedAt: now,
-			IsActive:  true,
+		createdOrg = &organization.Organization{
+			ID:         uuid.New().String(),
+			Name:       name,
+			CreatedBy:  operatorID,
+			CreatedAt:  now,
+			UpdatedAt:  now,
+			IsActive:   true,
 			MaxMembers: maxMembers,
 		}
 
-		if err := s.orgRepo.Create(txCtx, org); err != nil {
+		if err := s.orgRepo.Create(txCtx, createdOrg); err != nil {
 			return err
 		}
 
 		// Create membership for creator as super_admin
 		member := &organization.OrganizationMember{
 			ID:             uuid.New().String(),
-			OrganizationID: org.ID,
+			OrganizationID: createdOrg.ID,
 			OperatorID:     operatorID,
 			Role:           organization.RoleSuperAdmin,
 			JoinedAt:       now,
@@ -136,8 +138,7 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 		return nil, err
 	}
 
-	// Fetch and return the created organization
-	return s.orgRepo.FindByID(ctx, uuid.New().String()) // Return fresh data
+	return createdOrg, nil
 }
 
 // GetOrganization retrieves an organization by ID.
