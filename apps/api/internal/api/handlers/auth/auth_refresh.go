@@ -14,7 +14,6 @@ import (
 )
 
 // RefreshHandler handles POST /v1/auth/refresh.
-// MISSING endpoint from bug analysis - implements token refresh functionality.
 type RefreshHandler struct {
 	authService *auth.AuthService
 	presenter   *response.Presenter

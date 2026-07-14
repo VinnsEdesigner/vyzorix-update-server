@@ -45,7 +45,7 @@ type AllHandlers struct {
 	Me            *MeHandler
 	EmailVerify   *EmailVerifyHandler
 	PasswordReset *PasswordResetHandler
-	Refresh       *RefreshHandler // MISSING endpoint - added
+	Refresh       *RefreshHandler
 	MFA           *MFAHandler
 	OAuth         *OAuthHandler
 	Settings      *SettingsHandler
@@ -71,7 +71,7 @@ func NewAllHandlers(deps *Dependencies) *AllHandlers {
 		Me:            NewMeHandler(deps.AuthService, deps.Presenter),
 		EmailVerify:   NewEmailVerifyHandler(deps.AuthService, deps.EmailService, deps.Presenter),
 		PasswordReset: NewPasswordResetHandler(deps.AuthService, deps.EmailService, deps.Presenter),
-		Refresh:       NewRefreshHandler(deps.AuthService, deps.Presenter), // MISSING endpoint - added
+		Refresh:       NewRefreshHandler(deps.AuthService, deps.Presenter),
 		MFA:           NewMFAHandler(deps.AuthService, deps.OperatorRepo, deps.Presenter),
 		OAuth:         NewOAuthHandler(deps.AuthService, deps.SessionManager, deps.Config, deps.GoogleVerifier, deps.Presenter).WithOAuthStateRepo(deps.OAuthStateRepo),
 		Settings:      NewSettingsHandler(deps.AuthService, deps.OperatorRepo, deps.Presenter, settingsRateLimiter),
@@ -128,7 +128,7 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		publicAuth.POST("/cancel-verification", middleware.POST(), h.EmailVerify.CancelVerification)
 		publicAuth.GET("/poll-verification", middleware.GET(), h.EmailVerify.PollVerification)
 
-		// Token refresh - MISSING endpoint from bug analysis
+		// Token refresh
 		publicAuth.POST("/refresh", h.Refresh.Handle)
 	}
 
