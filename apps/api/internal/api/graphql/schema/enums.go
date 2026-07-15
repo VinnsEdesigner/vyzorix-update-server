@@ -25,6 +25,27 @@ var InboxStatusEnum = graphql.NewEnum(graphql.EnumConfig{
 	},
 })
 
+// DeviceLifecycleEnum represents the lifecycle state of a device.
+// Maps to domain/device.Lifecycle: Pending → Registered → Deregistered
+var DeviceLifecycleEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "DeviceLifecycle",
+	Description: "Lifecycle state of a device registration",
+	Values: graphql.EnumValueConfigMap{
+		"PENDING": &graphql.EnumValueConfig{
+			Value:       "pending",
+			Description: "Device is pending approval",
+		},
+		"REGISTERED": &graphql.EnumValueConfig{
+			Value:       "registered",
+			Description: "Device is registered and active",
+		},
+		"DEREGISTERED": &graphql.EnumValueConfig{
+			Value:       "deregistered",
+			Description: "Device has been deregistered",
+		},
+	},
+})
+
 // DeviceStatusEnum represents the status of a device.
 var DeviceStatusEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name:        "DeviceStatus",
@@ -194,5 +215,51 @@ var TimelineEventTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 		"REGISTERED": &graphql.EnumValueConfig{Value: "REGISTERED"},
 		"DEREGISTERED": &graphql.EnumValueConfig{Value: "DEREGISTERED"},
 		"ERROR": &graphql.EnumValueConfig{Value: "ERROR"},
+	},
+})
+
+// OrganizationLifecycleEnum represents the lifecycle state of an organization.
+// Maps to domain/organization.OrganizationLifecycle: Active → Inactive/Archived
+var OrganizationLifecycleEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "OrganizationLifecycle",
+	Description: "Lifecycle state of an organization",
+	Values: graphql.EnumValueConfigMap{
+		"ACTIVE": &graphql.EnumValueConfig{
+			Value:       "active",
+			Description: "Organization is active",
+		},
+		"INACTIVE": &graphql.EnumValueConfig{
+			Value:       "inactive",
+			Description: "Organization is inactive (suspended)",
+		},
+		"ARCHIVED": &graphql.EnumValueConfig{
+			Value:       "archived",
+			Description: "Organization has been archived (soft-deleted)",
+		},
+	},
+})
+
+// MemberLifecycleEnum represents the lifecycle state of an organization member.
+// Maps to domain/organization.MemberLifecycle: Invited → Active → Suspended/Removed
+var MemberLifecycleEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "MemberLifecycle",
+	Description: "Lifecycle state of an organization member",
+	Values: graphql.EnumValueConfigMap{
+		"INVITED": &graphql.EnumValueConfig{
+			Value:       "invited",
+			Description: "Member has been invited but hasn't joined",
+		},
+		"ACTIVE": &graphql.EnumValueConfig{
+			Value:       "active",
+			Description: "Member is active in the organization",
+		},
+		"SUSPENDED": &graphql.EnumValueConfig{
+			Value:       "suspended",
+			Description: "Member's access has been suspended",
+		},
+		"REMOVED": &graphql.EnumValueConfig{
+			Value:       "removed",
+			Description: "Member has been removed from the organization",
+		},
 	},
 })

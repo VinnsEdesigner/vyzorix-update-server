@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/google/uuid"
@@ -65,16 +64,9 @@ func (s *MemberService) AddMember(ctx context.Context, orgID, operatorID string,
 		return nil, organization.ErrMaxMembersReached
 	}
 
-	now := time.Now()
-	member := &organization.OrganizationMember{
-		ID:             uuid.New().String(),
-		OrganizationID:  orgID,
-		OperatorID:      operatorID,
-		Role:            role,
-		InvitedBy:       &invitedBy,
-		JoinedAt:        now,
-		Status:          organization.MemberStatusActive,
-	}
+	// Use domain constructor for new member
+	member := organization.NewMember(uuid.New().String(), orgID, operatorID, role)
+	member.InvitedBy = &invitedBy
 
 	if err := s.memberRepo.Create(ctx, member); err != nil {
 		return nil, err

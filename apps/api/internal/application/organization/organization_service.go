@@ -101,31 +101,22 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 			return organization.ErrOrganizationExists
 		}
 
-		// Create organization
-		now := time.Now()
-		createdOrg = &organization.Organization{
-			ID:         uuid.New().String(),
-			Name:       name,
-			CreatedBy:  operatorID,
-			CreatedAt:  now,
-			UpdatedAt:  now,
-			IsActive:   true,
-			MaxMembers: maxMembers,
-		}
+		// Create organization using constructor
+		orgID := uuid.New().String()
+		createdOrg = organization.NewOrganization(orgID, name, operatorID)
+		createdOrg.MaxMembers = maxMembers
 
 		if err := s.orgRepo.Create(txCtx, createdOrg); err != nil {
 			return err
 		}
 
-		// Create membership for creator as super_admin
-		member := &organization.OrganizationMember{
-			ID:             uuid.New().String(),
-			OrganizationID: createdOrg.ID,
-			OperatorID:     operatorID,
-			Role:           organization.RoleSuperAdmin,
-			JoinedAt:       now,
-			Status:         organization.MemberStatusActive,
-		}
+		// Create membership for creator as super_admin using constructor
+		member := organization.NewMember(
+			uuid.New().String(),
+			createdOrg.ID,
+			operatorID,
+			organization.RoleSuperAdmin,
+		)
 
 		if err := s.memberRepo.Create(txCtx, member); err != nil {
 			return err

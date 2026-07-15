@@ -71,17 +71,67 @@ func (r OrganizationRole) CanManageAPIKeys() bool {
 	return r.Level() >= RoleAdmin.Level()
 }
 
-// Organization represents an organization (tenant) in the system.
+// Organization represents an organization (tenant) in the system with explicit lifecycle management.
 type Organization struct {
-	ID         string
-	Name       string
-	CreatedBy  string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	DeletedAt  *time.Time // Soft delete
-	IsActive   bool
-	MaxMembers int
+	// Lifecycle tracks the organization lifecycle state
+	Lifecycle OrganizationLifecycle
+
+	// Infrastructure fields
+	ID          string
+	Name        string
+	CreatedBy   string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   *time.Time // Soft delete - set when archived
+	MaxMembers  int
 	MemberCount int
+}
+
+// NewOrganization creates a new Organization with active lifecycle.
+func NewOrganization(id, name, createdBy string) *Organization {
+	return &Organization{
+		ID:         id,
+		Name:       name,
+		CreatedBy:  createdBy,
+		Lifecycle:  OrganizationLifecycleActive,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+}
+
+// Activate transitions the organization to active state.
+func (o *Organization) Activate() error {
+	return o.Lifecycle.TransitionTo(OrganizationLifecycleActive)
+}
+
+// Deactivate transitions the organization to inactive state (suspended).
+func (o *Organization) Deactivate() error {
+	return o.Lifecycle.TransitionTo(OrganizationLifecycleInactive)
+}
+
+// Archive transitions the organization to archived state (soft delete).
+func (o *Organization) Archive() error {
+	if err := o.Lifecycle.TransitionTo(OrganizationLifecycleArchived); err != nil {
+		return err
+	}
+	now := time.Now()
+	o.DeletedAt = &now
+	return nil
+}
+
+// IsActive returns true if the organization is active.
+func (o *Organization) IsActive() bool {
+	return o.Lifecycle.IsActive()
+}
+
+// IsInactive returns true if the organization is inactive.
+func (o *Organization) IsInactive() bool {
+	return o.Lifecycle.IsInactive()
+}
+
+// IsArchived returns true if the organization has been archived.
+func (o *Organization) IsArchived() bool {
+	return o.Lifecycle.IsArchived()
 }
 
 // IsValid returns true if the organization has all required fields.
@@ -91,41 +141,111 @@ func (o *Organization) IsValid() bool {
 
 // IsDeleted returns true if the organization has been soft-deleted.
 func (o *Organization) IsDeleted() bool {
-	return o.DeletedAt != nil
+	return o.Lifecycle.IsArchived()
 }
 
 // CanAddMember returns true if the organization can accept more members.
 func (o *Organization) CanAddMember() bool {
-	return o.IsActive && (o.MaxMembers <= 0 || o.MemberCount < o.MaxMembers)
+	return o.Lifecycle.CanAcceptMembers() && (o.MaxMembers <= 0 || o.MemberCount < o.MaxMembers)
 }
 
 // OrganizationMember represents a membership linking an operator to an organization.
 type OrganizationMember struct {
+	// Lifecycle tracks the membership lifecycle state
+	Lifecycle MemberLifecycle
+
+	// Core fields
 	ID             string
 	OrganizationID string
 	OperatorID     string
 	Role           OrganizationRole
 	InvitedBy      *string
 	JoinedAt       time.Time
-	RemovedAt      *time.Time // Soft delete
-	Status         MemberStatus
+	RemovedAt      *time.Time // Soft delete - set when removed
+	SuspendedAt    *time.Time
 
 	// Populated fields (joined from other tables)
 	OperatorName  string
 	OperatorEmail string
 }
 
-// MemberStatus represents the status of a membership.
-type MemberStatus string
+// NewMember creates a new OrganizationMember with invited lifecycle.
+func NewMember(id, organizationID, operatorID string, role OrganizationRole) *OrganizationMember {
+	return &OrganizationMember{
+		ID:             id,
+		OrganizationID: organizationID,
+		OperatorID:     operatorID,
+		Role:           role,
+		Lifecycle:      MemberLifecycleInvited,
+		JoinedAt:       time.Now(),
+	}
+}
 
-const (
-	MemberStatusActive  MemberStatus = "active"
-	MemberStatusRemoved MemberStatus = "removed"
-)
+// Invite transitions to invited state (initial state).
+func (m *OrganizationMember) Invite() {
+	m.Lifecycle = MemberLifecycleInvited
+	m.RemovedAt = nil
+	m.SuspendedAt = nil
+}
 
-// IsActive returns true if the membership is active.
+// Join transitions from invited to active.
+func (m *OrganizationMember) Join() error {
+	return m.Lifecycle.TransitionTo(MemberLifecycleActive)
+}
+
+// Suspend transitions from active to suspended.
+func (m *OrganizationMember) Suspend() error {
+	if err := m.Lifecycle.TransitionTo(MemberLifecycleSuspended); err != nil {
+		return err
+	}
+	now := time.Now()
+	m.SuspendedAt = &now
+	return nil
+}
+
+// Reinstate transitions from suspended back to active.
+func (m *OrganizationMember) Reinstate() error {
+	return m.Lifecycle.TransitionTo(MemberLifecycleActive)
+}
+
+// Remove transitions to removed state (soft delete).
+func (m *OrganizationMember) Remove() error {
+	if err := m.Lifecycle.TransitionTo(MemberLifecycleRemoved); err != nil {
+		return err
+	}
+	now := time.Now()
+	m.RemovedAt = &now
+	return nil
+}
+
+// IsInvited returns true if the member is invited.
+func (m *OrganizationMember) IsInvited() bool {
+	return m.Lifecycle.IsInvited()
+}
+
+// IsActive returns true if the member is active.
 func (m *OrganizationMember) IsActive() bool {
-	return m.Status == MemberStatusActive
+	return m.Lifecycle.IsActive()
+}
+
+// IsSuspended returns true if the member is suspended.
+func (m *OrganizationMember) IsSuspended() bool {
+	return m.Lifecycle.IsSuspended()
+}
+
+// IsRemoved returns true if the member is removed.
+func (m *OrganizationMember) IsRemoved() bool {
+	return m.Lifecycle.IsRemoved()
+}
+
+// CanAccessResources returns true if the member can access organization resources.
+func (m *OrganizationMember) CanAccessResources() bool {
+	return m.Lifecycle.CanAccessResources()
+}
+
+// UpdateRole updates the member's role.
+func (m *OrganizationMember) UpdateRole(role OrganizationRole) {
+	m.Role = role
 }
 
 // CreateOrganizationRequest represents a request to create an organization.

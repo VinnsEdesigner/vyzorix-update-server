@@ -44,7 +44,7 @@ func (s *MemberStorage) Create(ctx context.Context, member *organization.Organiz
 		string(member.Role),
 		member.InvitedBy,
 		member.JoinedAt.UnixMilli(),
-		string(member.Status),
+		string(member.Lifecycle),
 	)
 	if err != nil {
 		if isUniqueConstraintError(err) {
@@ -56,21 +56,15 @@ func (s *MemberStorage) Create(ctx context.Context, member *organization.Organiz
 	return nil
 }
 
-// FindByID retrieves a member by ID.
-func (s *MemberStorage) FindByID(ctx context.Context, id string) (*organization.OrganizationMember, error) {
-	query := `
-		SELECT om.id, om.organization_id, om.operator_id, om.role, om.invited_by, om.joined_at, om.removed_at, om.status,
-			   COALESCE(op.name, '') as operator_name, COALESCE(op.email, '') as operator_email
-		FROM organization_members om
-		LEFT JOIN operators op ON om.operator_id = op.id
-		WHERE om.id = ?`
-
+// scanMember scans a member from a row.
+func scanMember(row *sql.Row) (*organization.OrganizationMember, error) {
 	var member organization.OrganizationMember
 	var invitedBy sql.NullString
 	var removedAt sql.NullInt64
 	var operatorName, operatorEmail sql.NullString
+	var status string
 
-	err := s.getQuerier(ctx).QueryRowContext(ctx, query, id).Scan(
+	err := row.Scan(
 		&member.ID,
 		&member.OrganizationID,
 		&member.OperatorID,
@@ -78,7 +72,7 @@ func (s *MemberStorage) FindByID(ctx context.Context, id string) (*organization.
 		&invitedBy,
 		&member.JoinedAt,
 		&removedAt,
-		&member.Status,
+		&status,
 		&operatorName,
 		&operatorEmail,
 	)
@@ -90,6 +84,7 @@ func (s *MemberStorage) FindByID(ctx context.Context, id string) (*organization.
 		return nil, err
 	}
 
+	member.Lifecycle = organization.MemberLifecycle(status)
 	if invitedBy.Valid {
 		member.InvitedBy = &invitedBy.String
 	}
@@ -101,6 +96,67 @@ func (s *MemberStorage) FindByID(ctx context.Context, id string) (*organization.
 	member.OperatorEmail = operatorEmail.String
 
 	return &member, nil
+}
+
+// scanMembers scans multiple members from rows.
+func scanMembers(rows *sql.Rows) ([]*organization.OrganizationMember, error) {
+	var members []*organization.OrganizationMember
+
+	for rows.Next() {
+		var member organization.OrganizationMember
+		var invitedBy sql.NullString
+		var removedAt sql.NullInt64
+		var operatorName, operatorEmail sql.NullString
+		var status string
+
+		err := rows.Scan(
+			&member.ID,
+			&member.OrganizationID,
+			&member.OperatorID,
+			&member.Role,
+			&invitedBy,
+			&member.JoinedAt,
+			&removedAt,
+			&status,
+			&operatorName,
+			&operatorEmail,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		member.Lifecycle = organization.MemberLifecycle(status)
+		if invitedBy.Valid {
+			member.InvitedBy = &invitedBy.String
+		}
+		if removedAt.Valid {
+			t := time.UnixMilli(removedAt.Int64)
+			member.RemovedAt = &t
+		}
+		member.OperatorName = operatorName.String
+		member.OperatorEmail = operatorEmail.String
+
+		members = append(members, &member)
+	}
+
+	return members, rows.Err()
+}
+
+// FindByID retrieves a member by ID.
+func (s *MemberStorage) FindByID(ctx context.Context, id string) (*organization.OrganizationMember, error) {
+	query := `
+		SELECT om.id, om.organization_id, om.operator_id, om.role, om.invited_by, om.joined_at, om.removed_at, om.status,
+			   COALESCE(op.name, '') as operator_name, COALESCE(op.email, '') as operator_email
+		FROM organization_members om
+		LEFT JOIN operators op ON om.operator_id = op.id
+		WHERE om.id = ?`
+
+	return scanMember(s.getQuerier(ctx).QueryRowContext(ctx, query, id))
+}
+
+// FindByMemberID retrieves a member by MemberID value object.
+func (s *MemberStorage) FindByMemberID(ctx context.Context, id organization.MemberID) (*organization.OrganizationMember, error) {
+	return s.FindByID(ctx, id.String())
 }
 
 // FindByOperatorAndOrg finds a membership by operator ID and organization ID.
@@ -214,7 +270,7 @@ func (s *MemberStorage) Update(ctx context.Context, member *organization.Organiz
 
 	result, err := s.getQuerier(ctx).ExecContext(ctx, query,
 		string(member.Role),
-		string(member.Status),
+		string(member.Lifecycle),
 		member.ID,
 	)
 	if err != nil {
@@ -361,4 +417,54 @@ func (s *MemberStorage) SoftDeleteByOperator(ctx context.Context, operatorID str
 	now := time.Now().UnixMilli()
 	_, err := s.getQuerier(ctx).ExecContext(ctx, query, now, operatorID)
 	return err
+}
+
+// FindByOperatorAndOrgID finds a membership by OperatorID and OrganizationID value objects.
+func (s *MemberStorage) FindByOperatorAndOrgID(ctx context.Context, operatorID organization.OperatorID, orgID organization.OrganizationID) (*organization.OrganizationMember, error) {
+	return s.FindByOperatorAndOrg(ctx, operatorID.String(), orgID.String())
+}
+
+// FindByOrganizationID lists all members by OrganizationID value object.
+func (s *MemberStorage) FindByOrganizationID(ctx context.Context, orgID organization.OrganizationID) ([]*organization.OrganizationMember, error) {
+	return s.FindByOrganization(ctx, orgID.String())
+}
+
+// FindActiveByOrganization lists all active members of an organization.
+func (s *MemberStorage) FindActiveByOrganization(ctx context.Context, orgID string) ([]*organization.OrganizationMember, error) {
+	return s.FindByOrganization(ctx, orgID)
+}
+
+// FindActiveByOrganizationID lists all active members by OrganizationID.
+func (s *MemberStorage) FindActiveByOrganizationID(ctx context.Context, orgID organization.OrganizationID) ([]*organization.OrganizationMember, error) {
+	return s.FindByOrganization(ctx, orgID.String())
+}
+
+// SoftDeleteByMemberID soft-deletes a membership by MemberID.
+func (s *MemberStorage) SoftDeleteByMemberID(ctx context.Context, id organization.MemberID) error {
+	return s.SoftDelete(ctx, id.String())
+}
+
+// SoftDeleteByOperatorID soft-deletes all memberships for an OperatorID.
+func (s *MemberStorage) SoftDeleteByOperatorID(ctx context.Context, operatorID organization.OperatorID) error {
+	return s.SoftDeleteByOperator(ctx, operatorID.String())
+}
+
+// CountByOrganizationID counts members by OrganizationID.
+func (s *MemberStorage) CountByOrganizationID(ctx context.Context, orgID organization.OrganizationID) (int, error) {
+	return s.CountByOrganization(ctx, orgID.String())
+}
+
+// CountActiveByOrganizationID counts active members by OrganizationID.
+func (s *MemberStorage) CountActiveByOrganizationID(ctx context.Context, orgID organization.OrganizationID) (int, error) {
+	return s.CountActiveByOrganization(ctx, orgID.String())
+}
+
+// CountSuperAdminsByOrganizationID counts super_admin members by OrganizationID.
+func (s *MemberStorage) CountSuperAdminsByOrganizationID(ctx context.Context, orgID organization.OrganizationID) (int, error) {
+	return s.CountSuperAdminsByOrganization(ctx, orgID.String())
+}
+
+// ListByOperatorID lists all memberships by OperatorID.
+func (s *MemberStorage) ListByOperatorID(ctx context.Context, operatorID organization.OperatorID) ([]*organization.OrganizationMember, error) {
+	return s.ListByOperator(ctx, operatorID.String())
 }
