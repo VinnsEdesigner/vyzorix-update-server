@@ -10,9 +10,10 @@ import (
 type contextKey string
 
 const (
-	operatorKey  contextKey = "operator"
-	requestIDKey contextKey = "requestID"
-	metadataKey  contextKey = "requestMetadata"
+	operatorKey       contextKey = "operator"
+	requestIDKey      contextKey = "requestID"
+	metadataKey       contextKey = "requestMetadata"
+	organizationIDKey contextKey = "organizationID"
 )
 
 // RequestMetadata holds request metadata.
@@ -104,4 +105,24 @@ func GetUserAgent(ctx context.Context) string {
 	}
 
 	return ""
+}
+
+// WithOrganizationID adds the organization ID to the context.
+func WithOrganizationID(ctx context.Context, orgID string) context.Context {
+	return context.WithValue(ctx, organizationIDKey, orgID)
+}
+
+// GetOrganizationID retrieves the organization ID from context.
+func GetOrganizationID(ctx context.Context) string {
+	val := ctx.Value(organizationIDKey)
+	if val == nil {
+		return ""
+	}
+
+	orgID, ok := val.(string)
+	if !ok {
+		return ""
+	}
+
+	return orgID
 }
