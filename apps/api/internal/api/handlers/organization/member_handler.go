@@ -64,7 +64,7 @@ func (h *MemberHandler) List(c *gin.Context) {
 			"role":            member.Role,
 			"invited_by":      member.InvitedBy,
 			"joined_at":       member.JoinedAt,
-			"status":          member.Status,
+			"status":          string(member.Lifecycle),
 			"operator_name":   member.OperatorName,
 			"operator_email":  member.OperatorEmail,
 		}
@@ -122,7 +122,7 @@ func (h *MemberHandler) Get(c *gin.Context) {
 		"invited_by":      member.InvitedBy,
 		"joined_at":       member.JoinedAt,
 		"removed_at":      member.RemovedAt,
-		"status":          member.Status,
+		"status":          string(member.Lifecycle),
 		"operator_name":   member.OperatorName,
 		"operator_email":  member.OperatorEmail,
 	})
@@ -195,7 +195,7 @@ func (h *MemberHandler) UpdateRole(c *gin.Context) {
 		"organization_id": member.OrganizationID,
 		"operator_id":     member.OperatorID,
 		"role":            member.Role,
-		"status":          member.Status,
+		"status":          string(member.Lifecycle),
 		"operator_name":   member.OperatorName,
 		"operator_email":  member.OperatorEmail,
 	})

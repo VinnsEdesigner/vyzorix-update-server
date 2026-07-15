@@ -178,7 +178,15 @@ func (s *OrganizationService) UpdateOrganization(ctx context.Context, orgID stri
 	}
 
 	if isActive != nil {
-		org.IsActive = *isActive
+		if *isActive {
+			if err := org.Activate(); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := org.Deactivate(); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	org.UpdatedAt = time.Now()

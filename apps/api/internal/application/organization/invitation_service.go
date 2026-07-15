@@ -277,16 +277,14 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 			return err
 		}
 
-		// Create membership
-		member := &organization.OrganizationMember{
-			ID:             uuid.New().String(),
-			OrganizationID:  inv.OrganizationID,
-			OperatorID:      operatorID,
-			Role:            organization.OrganizationRole(inv.Role.ToOrgRole()),
-			InvitedBy:       &inv.InvitedBy,
-			JoinedAt:        now,
-			Status:          organization.MemberStatusActive,
-		}
+		// Create membership using domain constructor
+		member := organization.NewMember(
+			uuid.New().String(),
+			inv.OrganizationID,
+			operatorID,
+			organization.OrganizationRole(inv.Role.ToOrgRole()),
+		)
+		member.InvitedBy = &inv.InvitedBy
 
 		if err := s.memberRepo.Create(txCtx, member); err != nil {
 			return err
