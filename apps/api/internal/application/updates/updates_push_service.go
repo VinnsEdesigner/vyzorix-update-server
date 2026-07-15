@@ -76,12 +76,13 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 
 	now := time.Now()
 	push := &updates.UpdatePush{
-		VersionID:    version.ID,
-		InstallType: updates.InstallType(req.InstallType),
-		ScheduledAt:  req.ScheduledAt,
-		Status:       updates.UpdateStatusPending,
-		InitiatedBy:  initiatedBy,
-		InitiatedAt:  now.UnixMilli(),
+		VersionID:      version.ID,
+		OrganizationID: req.OrganizationID,
+		InstallType:   updates.InstallType(req.InstallType),
+		ScheduledAt:    req.ScheduledAt,
+		Status:         updates.UpdateStatusPending,
+		InitiatedBy:    initiatedBy,
+		InitiatedAt:    now.UnixMilli(),
 	}
 
 	if err := s.repo.CreatePush(ctx, push); err != nil {

@@ -199,22 +199,22 @@ func (s *UpdatesStorage) scanVersionRows(rows *sql.Rows) (*updates.UpdateVersion
 
 func (s *UpdatesStorage) CreatePush(ctx context.Context, p *updates.UpdatePush) error {
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO update_pushes (id, version_id, install_type, scheduled_at, status, initiated_by, initiated_at, completed_at, cancelled_at, cancelled_by)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, p.ID, p.VersionID, p.InstallType, p.ScheduledAt, p.Status, p.InitiatedBy, p.InitiatedAt, p.CompletedAt, p.CancelledAt, p.CancelledBy)
+		INSERT INTO update_pushes (id, version_id, organization_id, install_type, scheduled_at, status, initiated_by, initiated_at, completed_at, cancelled_at, cancelled_by)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, p.ID, p.VersionID, p.OrganizationID, p.InstallType, p.ScheduledAt, p.Status, p.InitiatedBy, p.InitiatedAt, p.CompletedAt, p.CancelledAt, p.CancelledBy)
 	return err
 }
 
-func (s *UpdatesStorage) GetPushByID(ctx context.Context, id string) (*updates.UpdatePush, error) {
+func (s *UpdatesStorage) GetPushByID(ctx context.Context, id string, orgID string) (*updates.UpdatePush, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, version_id, install_type, scheduled_at, status, initiated_by, initiated_at, completed_at, cancelled_at, cancelled_by
-		FROM update_pushes WHERE id = ?
-	`, id)
+		SELECT id, version_id, organization_id, install_type, scheduled_at, status, initiated_by, initiated_at, completed_at, cancelled_at, cancelled_by
+		FROM update_pushes WHERE id = ? AND organization_id = ?
+	`, id, orgID)
 	return s.scanPush(row)
 }
 
-func (s *UpdatesStorage) GetPushByIDWithVersion(ctx context.Context, id string) (*updates.UpdatePush, *updates.UpdateVersion, error) {
-	push, err := s.GetPushByID(ctx, id)
+func (s *UpdatesStorage) GetPushByIDWithVersion(ctx context.Context, id string, orgID string) (*updates.UpdatePush, *updates.UpdateVersion, error) {
+	push, err := s.GetPushByID(ctx, id, orgID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -244,7 +244,7 @@ func (s *UpdatesStorage) CancelPush(ctx context.Context, id, cancelledBy string)
 	return err
 }
 
-func (s *UpdatesStorage) ListPushes(ctx context.Context, status string, limit, offset int) ([]*updates.UpdatePush, int, error) {
+func (s *UpdatesStorage) ListPushes(ctx context.Context, status string, limit, offset int, orgID string) ([]*updates.UpdatePush, int, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -253,10 +253,14 @@ func (s *UpdatesStorage) ListPushes(ctx context.Context, status string, limit, o
 	}
 
 	var whereClause string
-	args := make([]interface{}, 0, 2)
+	args := make([]interface{}, 0, 3)
+
+	// Always filter by organization
+	whereClause = "WHERE organization_id = ?"
+	args = append(args, orgID)
 
 	if status != "" && status != "all" {
-		whereClause = "WHERE status = ?"
+		whereClause += " AND status = ?"
 		args = append(args, status)
 	}
 
@@ -269,7 +273,7 @@ func (s *UpdatesStorage) ListPushes(ctx context.Context, status string, limit, o
 
 	// Get pushes
 	query := fmt.Sprintf(`
-		SELECT id, version_id, install_type, scheduled_at, status, initiated_by, initiated_at, completed_at, cancelled_at, cancelled_by
+		SELECT id, version_id, organization_id, install_type, scheduled_at, status, initiated_by, initiated_at, completed_at, cancelled_at, cancelled_by
 		FROM update_pushes
 	%s
 		ORDER BY initiated_at DESC
@@ -300,7 +304,7 @@ func (s *UpdatesStorage) scanPush(row *sql.Row) (*updates.UpdatePush, error) {
 	var scheduledAt, completedAt, cancelledAt sql.NullInt64
 	var cancelledBy sql.NullString
 	err := row.Scan(
-		&p.ID, &p.VersionID, &p.InstallType, &scheduledAt, &p.Status,
+		&p.ID, &p.VersionID, &p.OrganizationID, &p.InstallType, &scheduledAt, &p.Status,
 		&p.InitiatedBy, &p.InitiatedAt, &completedAt, &cancelledAt, &cancelledBy,
 	)
 	if err == sql.ErrNoRows {
@@ -329,7 +333,7 @@ func (s *UpdatesStorage) scanPushRows(rows *sql.Rows) (*updates.UpdatePush, erro
 	var scheduledAt, completedAt, cancelledAt sql.NullInt64
 	var cancelledBy sql.NullString
 	err := rows.Scan(
-		&p.ID, &p.VersionID, &p.InstallType, &scheduledAt, &p.Status,
+		&p.ID, &p.VersionID, &p.OrganizationID, &p.InstallType, &scheduledAt, &p.Status,
 		&p.InitiatedBy, &p.InitiatedAt, &completedAt, &cancelledAt, &cancelledBy,
 	)
 	if err != nil {
@@ -360,12 +364,14 @@ func (s *UpdatesStorage) CreatePushDevice(ctx context.Context, d *updates.Update
 	return err
 }
 
-func (s *UpdatesStorage) GetPushDevices(ctx context.Context, pushID string) ([]*updates.UpdatePushDevice, error) {
+func (s *UpdatesStorage) GetPushDevices(ctx context.Context, pushID string, orgID string) ([]*updates.UpdatePushDevice, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, push_id, device_id, status, sent_at, acknowledged_at, error, retry_count, created_at, updated_at
-		FROM update_push_devices WHERE push_id = ?
-		ORDER BY created_at ASC
-	`, pushID)
+		SELECT upd.id, upd.push_id, upd.device_id, upd.status, upd.sent_at, upd.acknowledged_at, upd.error, upd.retry_count, upd.created_at, upd.updated_at
+		FROM update_push_devices upd
+		INNER JOIN update_pushes up ON upd.push_id = up.id
+		WHERE upd.push_id = ? AND up.organization_id = ?
+		ORDER BY upd.created_at ASC
+	`, pushID, orgID)
 	if err != nil {
 		return nil, err
 	}
