@@ -85,6 +85,9 @@ type Repository interface {
 	// ListByOperatorID returns all devices for an OperatorID.
 	ListByOperatorID(ctx context.Context, operatorID OperatorID) ([]*Device, error)
 
+	// ListByOrganization returns all devices for an organization.
+	ListByOrganization(ctx context.Context, orgID string) ([]*Device, error)
+
 	// Count returns the total number of devices.
 	Count(ctx context.Context) (int, error)
 

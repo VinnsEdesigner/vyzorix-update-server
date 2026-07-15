@@ -35,10 +35,17 @@ func NewMetricsHandler(metricsSvc *metrics.Service, devRepo device.Repository, l
 func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	// Extract operator for DOA check
+	// Extract operator for auth check
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
+		return
+	}
+
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
 		return
 	}
 
@@ -48,19 +55,19 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 		return
 	}
 
-	// DOA check - verify operator owns this device
-	dev, err := h.devRepo.FindByIDAndOperator(ctx, deviceID, op.ID)
+	// Verify device belongs to this organization
+	dev, err := h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
 	if err != nil {
-		h.logger.Warn("Device not found or not owned", "deviceID", deviceID, "operatorID", op.ID, "error", err)
+		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Device not found"})
 		return
 	}
 
 	req := &metrics.GetMetricsRequest{
-		DeviceID:   dev.ID,
-		OperatorID: op.ID,
-		Range:      c.DefaultQuery("range", "6h"),
-		Resolution: c.Query("resolution"),
+		DeviceID:       dev.ID,
+		OrganizationID: orgID,
+		Range:          c.DefaultQuery("range", "6h"),
+		Resolution:     c.Query("resolution"),
 	}
 
 	if st := c.Query("startTime"); st != "" {
@@ -87,10 +94,17 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	// Extract operator for DOA check
+	// Extract operator for auth check
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
+		return
+	}
+
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
 		return
 	}
 
@@ -100,10 +114,10 @@ func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 		return
 	}
 
-	// DOA check - verify operator owns this device
-	_, err := h.devRepo.FindByIDAndOperator(ctx, deviceID, op.ID)
+	// Verify device belongs to this organization
+	_, err := h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
 	if err != nil {
-		h.logger.Warn("Device not found or not owned", "deviceID", deviceID, "operatorID", op.ID, "error", err)
+		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Device not found"})
 		return
 	}

@@ -584,6 +584,20 @@ func (r *DeviceRepository) ListByOperatorID(ctx context.Context, operatorID devi
 	return r.ListByOperator(ctx, operatorID.String())
 }
 
+// ListByOrganization returns all devices for an organization.
+func (r *DeviceRepository) ListByOrganization(ctx context.Context, orgID string) ([]*device.Device, error) {
+	query := `SELECT ` + deviceColumns + ` FROM devices WHERE organization_id = ? ORDER BY created_at DESC`
+
+	rows, err := r.queryRows(ctx, query, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	return scanDevices(rows)
+}
+
 // ListPending returns all devices in pending lifecycle state.
 func (r *DeviceRepository) ListPending(ctx context.Context) ([]*device.Device, error) {
 	query := `SELECT ` + deviceColumns + ` FROM devices WHERE registered_at = 0 AND deregistered_at IS NULL ORDER BY created_at DESC`
