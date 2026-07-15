@@ -98,50 +98,6 @@ func scanMember(row *sql.Row) (*organization.OrganizationMember, error) {
 	return &member, nil
 }
 
-// scanMembers scans multiple members from rows.
-func scanMembers(rows *sql.Rows) ([]*organization.OrganizationMember, error) {
-	var members []*organization.OrganizationMember
-
-	for rows.Next() {
-		var member organization.OrganizationMember
-		var invitedBy sql.NullString
-		var removedAt sql.NullInt64
-		var operatorName, operatorEmail sql.NullString
-		var status string
-
-		err := rows.Scan(
-			&member.ID,
-			&member.OrganizationID,
-			&member.OperatorID,
-			&member.Role,
-			&invitedBy,
-			&member.JoinedAt,
-			&removedAt,
-			&status,
-			&operatorName,
-			&operatorEmail,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		member.Lifecycle = organization.MemberLifecycle(status)
-		if invitedBy.Valid {
-			member.InvitedBy = &invitedBy.String
-		}
-		if removedAt.Valid {
-			t := time.UnixMilli(removedAt.Int64)
-			member.RemovedAt = &t
-		}
-		member.OperatorName = operatorName.String
-		member.OperatorEmail = operatorEmail.String
-
-		members = append(members, &member)
-	}
-
-	return members, rows.Err()
-}
-
 // FindByID retrieves a member by ID.
 func (s *MemberStorage) FindByID(ctx context.Context, id string) (*organization.OrganizationMember, error) {
 	query := `
@@ -171,6 +127,7 @@ func (s *MemberStorage) FindByOperatorAndOrg(ctx context.Context, operatorID, or
 	var member organization.OrganizationMember
 	var invitedBy sql.NullString
 	var removedAt sql.NullInt64
+	var status string
 	var operatorName, operatorEmail sql.NullString
 
 	err := s.getQuerier(ctx).QueryRowContext(ctx, query, operatorID, orgID).Scan(
@@ -181,7 +138,7 @@ func (s *MemberStorage) FindByOperatorAndOrg(ctx context.Context, operatorID, or
 		&invitedBy,
 		&member.JoinedAt,
 		&removedAt,
-		&member.Status,
+		&status,
 		&operatorName,
 		&operatorEmail,
 	)
@@ -192,6 +149,9 @@ func (s *MemberStorage) FindByOperatorAndOrg(ctx context.Context, operatorID, or
 	if err != nil {
 		return nil, err
 	}
+
+	// Map status string to lifecycle
+	member.Lifecycle = memberStatusToLifecycle(status)
 
 	if invitedBy.Valid {
 		member.InvitedBy = &invitedBy.String
@@ -227,6 +187,7 @@ func (s *MemberStorage) FindByOrganization(ctx context.Context, orgID string) ([
 		var member organization.OrganizationMember
 		var invitedBy sql.NullString
 		var removedAt sql.NullInt64
+		var status string
 		var operatorName, operatorEmail sql.NullString
 
 		err := rows.Scan(
@@ -237,13 +198,16 @@ func (s *MemberStorage) FindByOrganization(ctx context.Context, orgID string) ([
 			&invitedBy,
 			&member.JoinedAt,
 			&removedAt,
-			&member.Status,
+			&status,
 			&operatorName,
 			&operatorEmail,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		// Map status string to lifecycle
+		member.Lifecycle = memberStatusToLifecycle(status)
 
 		if invitedBy.Valid {
 			member.InvitedBy = &invitedBy.String
@@ -372,6 +336,7 @@ func (s *MemberStorage) ListByOperator(ctx context.Context, operatorID string) (
 		var member organization.OrganizationMember
 		var invitedBy sql.NullString
 		var removedAt sql.NullInt64
+		var status string
 		var operatorName, operatorEmail sql.NullString
 
 		err := rows.Scan(
@@ -382,13 +347,16 @@ func (s *MemberStorage) ListByOperator(ctx context.Context, operatorID string) (
 			&invitedBy,
 			&member.JoinedAt,
 			&removedAt,
-			&member.Status,
+			&status,
 			&operatorName,
 			&operatorEmail,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		// Map status string to lifecycle
+		member.Lifecycle = memberStatusToLifecycle(status)
 
 		if invitedBy.Valid {
 			member.InvitedBy = &invitedBy.String
@@ -467,4 +435,18 @@ func (s *MemberStorage) CountSuperAdminsByOrganizationID(ctx context.Context, or
 // ListByOperatorID lists all memberships by OperatorID.
 func (s *MemberStorage) ListByOperatorID(ctx context.Context, operatorID organization.OperatorID) ([]*organization.OrganizationMember, error) {
 	return s.ListByOperator(ctx, operatorID.String())
+}
+
+// memberStatusToLifecycle maps a status string from the database to MemberLifecycle.
+func memberStatusToLifecycle(status string) organization.MemberLifecycle {
+	switch status {
+	case "active":
+		return organization.MemberLifecycleActive
+	case "suspended":
+		return organization.MemberLifecycleSuspended
+	case "removed":
+		return organization.MemberLifecycleRemoved
+	default:
+		return organization.MemberLifecycleActive
+	}
 }

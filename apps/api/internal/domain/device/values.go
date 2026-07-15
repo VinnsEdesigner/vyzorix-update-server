@@ -119,5 +119,5 @@ func (id DeviceID) Format(s fmt.State, verb rune) {
 	if verb == 'v' && s.Flag('#') {
 		format = "%q"
 	}
-	fmt.Fprintf(s, format, id.value)
+	_, _ = fmt.Fprintf(s, format, id.value)
 }

@@ -43,7 +43,7 @@ func (s *OrganizationStorage) Create(ctx context.Context, org *organization.Orga
 		org.CreatedBy,
 		org.CreatedAt.UnixMilli(),
 		org.UpdatedAt.UnixMilli(),
-		boolToInt(org.IsActive),
+		boolToInt(org.IsActive()),
 		org.MaxMembers,
 	)
 	if err != nil {
@@ -61,6 +61,7 @@ func scanOrganization(row *sql.Row) (*organization.Organization, error) {
 	var org organization.Organization
 	var deletedAt sql.NullInt64
 	var createdBy string
+	var isActive bool
 
 	err := row.Scan(
 		&org.ID,
@@ -69,7 +70,7 @@ func scanOrganization(row *sql.Row) (*organization.Organization, error) {
 		&org.CreatedAt,
 		&org.UpdatedAt,
 		&deletedAt,
-		&org.IsActive,
+		&isActive,
 		&org.MaxMembers,
 		&org.MemberCount,
 	)
@@ -85,7 +86,7 @@ func scanOrganization(row *sql.Row) (*organization.Organization, error) {
 	if deletedAt.Valid {
 		org.DeletedAt = ptrTime(time.UnixMilli(deletedAt.Int64))
 		org.Lifecycle = organization.OrganizationLifecycleArchived
-	} else if org.IsActive {
+	} else if isActive {
 		org.Lifecycle = organization.OrganizationLifecycleActive
 	} else {
 		org.Lifecycle = organization.OrganizationLifecycleInactive
@@ -102,6 +103,7 @@ func scanOrganizations(rows *sql.Rows) ([]*organization.Organization, error) {
 		var org organization.Organization
 		var deletedAt sql.NullInt64
 		var createdBy string
+		var isActive bool
 
 		err := rows.Scan(
 			&org.ID,
@@ -110,7 +112,7 @@ func scanOrganizations(rows *sql.Rows) ([]*organization.Organization, error) {
 			&org.CreatedAt,
 			&org.UpdatedAt,
 			&deletedAt,
-			&org.IsActive,
+			&isActive,
 			&org.MaxMembers,
 			&org.MemberCount,
 		)
@@ -122,7 +124,7 @@ func scanOrganizations(rows *sql.Rows) ([]*organization.Organization, error) {
 		if deletedAt.Valid {
 			org.DeletedAt = ptrTime(time.UnixMilli(deletedAt.Int64))
 			org.Lifecycle = organization.OrganizationLifecycleArchived
-		} else if org.IsActive {
+		} else if isActive {
 			org.Lifecycle = organization.OrganizationLifecycleActive
 		} else {
 			org.Lifecycle = organization.OrganizationLifecycleInactive
@@ -170,6 +172,7 @@ func (s *OrganizationStorage) FindByName(ctx context.Context, operatorID, name s
 	var org organization.Organization
 	var deletedAt sql.NullInt64
 	var createdBy string
+	var isActive bool
 
 	err := s.getQuerier(ctx).QueryRowContext(ctx, query, operatorID, name).Scan(
 		&org.ID,
@@ -178,7 +181,7 @@ func (s *OrganizationStorage) FindByName(ctx context.Context, operatorID, name s
 		&org.CreatedAt,
 		&org.UpdatedAt,
 		&deletedAt,
-		&org.IsActive,
+		&isActive,
 		&org.MaxMembers,
 		&org.MemberCount,
 	)
@@ -209,7 +212,7 @@ func (s *OrganizationStorage) Update(ctx context.Context, org *organization.Orga
 	result, err := s.getQuerier(ctx).ExecContext(ctx, query,
 		org.Name,
 		time.Now().UnixMilli(),
-		boolToInt(org.IsActive),
+		boolToInt(org.IsActive()),
 		org.MaxMembers,
 		org.ID,
 	)
@@ -275,6 +278,7 @@ func (s *OrganizationStorage) ListByOperator(ctx context.Context, operatorID str
 		var org organization.Organization
 		var deletedAt sql.NullInt64
 		var createdBy string
+		var isActive bool
 
 		err := rows.Scan(
 			&org.ID,
@@ -283,7 +287,7 @@ func (s *OrganizationStorage) ListByOperator(ctx context.Context, operatorID str
 			&org.CreatedAt,
 			&org.UpdatedAt,
 			&deletedAt,
-			&org.IsActive,
+			&isActive,
 			&org.MaxMembers,
 			&org.MemberCount,
 		)

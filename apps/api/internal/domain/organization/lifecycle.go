@@ -84,7 +84,7 @@ func (l OrganizationLifecycle) Format(s fmt.State, verb rune) {
 	if verb == 'v' && s.Flag('#') {
 		format = "%q"
 	}
-	fmt.Fprintf(s, format, string(l))
+	_, _ = fmt.Fprintf(s, format, string(l))
 }
 
 // MemberLifecycle represents the lifecycle state of an organization member.
@@ -176,7 +176,7 @@ func (l MemberLifecycle) Format(s fmt.State, verb rune) {
 	if verb == 'v' && s.Flag('#') {
 		format = "%q"
 	}
-	fmt.Fprintf(s, format, string(l))
+	_, _ = fmt.Fprintf(s, format, string(l))
 }
 
 // MemberTransitionHelper provides methods for member lifecycle state changes.

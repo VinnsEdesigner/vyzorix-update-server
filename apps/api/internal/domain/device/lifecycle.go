@@ -83,5 +83,5 @@ func (l Lifecycle) Format(s fmt.State, verb rune) {
 	if verb == 'v' && s.Flag('#') {
 		format = "%q"
 	}
-	fmt.Fprintf(s, format, string(l))
+	_, _ = fmt.Fprintf(s, format, string(l))
 }
