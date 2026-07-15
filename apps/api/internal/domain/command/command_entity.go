@@ -3,11 +3,15 @@ package command
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 )
 
 // ErrNotFound is returned when a command is not found.
 var ErrNotFound = errors.New("command not found")
+
+// ErrInvalidCommandTransition is returned when an invalid command status transition is attempted.
+var ErrInvalidCommandTransition = errors.New("invalid command status transition")
 
 // Status represents the status of a command.
 type Status string
@@ -24,6 +28,78 @@ const (
 	// StatusCancelled indicates the command was cancelled.
 	StatusCancelled Status = "cancelled"
 )
+
+// CommandStatusTransitions defines valid state transitions for command lifecycle.
+// The map key is the current state, and the value is the set of allowed next states.
+var CommandStatusTransitions = map[Status]map[Status]bool{
+	StatusPending: {
+		StatusDelivered:  true,
+		StatusFailed:    true,
+		StatusCancelled: true,
+	},
+	StatusDelivered: {
+		StatusCompleted: true,
+		StatusFailed:   true,
+		StatusCancelled: true,
+	},
+	StatusCompleted: {}, // Terminal state
+	StatusFailed:   {}, // Terminal state
+	StatusCancelled: {}, // Terminal state
+}
+
+// CanTransitionTo returns true if the status can transition to the target status.
+func (s Status) CanTransitionTo(target Status) bool {
+	allowed, exists := CommandStatusTransitions[s]
+	if !exists {
+		return false
+	}
+	return allowed[target]
+}
+
+// TransitionTo transitions the status to a new state.
+// Returns ErrInvalidCommandTransition if the transition is not allowed.
+func (s *Status) TransitionTo(target Status) error {
+	if !s.CanTransitionTo(target) {
+		return fmt.Errorf("%w: cannot transition from %s to %s", ErrInvalidCommandTransition, *s, target)
+	}
+	*s = target
+	return nil
+}
+
+// IsPending checks if the command is pending.
+func (s Status) IsPending() bool {
+	return s == StatusPending
+}
+
+// IsDelivered checks if the command has been delivered.
+func (s Status) IsDelivered() bool {
+	return s == StatusDelivered
+}
+
+// IsCompleted checks if the command has been completed.
+func (s Status) IsCompleted() bool {
+	return s == StatusCompleted
+}
+
+// IsFailed checks if the command has failed.
+func (s Status) IsFailed() bool {
+	return s == StatusFailed
+}
+
+// IsCancelled checks if the command was cancelled.
+func (s Status) IsCancelled() bool {
+	return s == StatusCancelled
+}
+
+// IsTerminal checks if the status is a terminal state.
+func (s Status) IsTerminal() bool {
+	return s == StatusCompleted || s == StatusFailed || s == StatusCancelled
+}
+
+// IsActive checks if the command is in an active state (pending or delivered).
+func (s Status) IsActive() bool {
+	return s == StatusPending || s == StatusDelivered
+}
 
 // Command type constants.
 const (
@@ -62,27 +138,27 @@ type CommandFrame struct {
 
 // IsPending returns true if the command is pending.
 func (c *Command) IsPending() bool {
-	return c.Status == StatusPending
+	return c.Status.IsPending()
 }
 
 // IsDelivered returns true if the command has been delivered.
 func (c *Command) IsDelivered() bool {
-	return c.Status == StatusDelivered
+	return c.Status.IsDelivered()
 }
 
 // IsCompleted returns true if the command has been completed.
 func (c *Command) IsCompleted() bool {
-	return c.Status == StatusCompleted
+	return c.Status.IsCompleted()
 }
 
 // IsFailed returns true if the command has failed.
 func (c *Command) IsFailed() bool {
-	return c.Status == StatusFailed
+	return c.Status.IsFailed()
 }
 
 // IsFinished returns true if the command is in a terminal state.
 func (c *Command) IsFinished() bool {
-	return c.Status == StatusCompleted || c.Status == StatusFailed || c.Status == StatusCancelled
+	return c.Status.IsTerminal()
 }
 
 // DeliveredAtTime returns the DeliveredAt as a time.Time.
