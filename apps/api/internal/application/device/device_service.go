@@ -389,13 +389,14 @@ func (s *Service) DeviceRepo() device.Repository {
 
 // ListQuery represents query parameters for listing devices.
 type ListQuery struct {
-	Status string
-	Search string
-	Page   int
-	Limit  int
+	OrganizationID string
+	Status        string
+	Search        string
+	Page          int
+	Limit         int
 }
 
-// GetDevices returns a paginated list of devices with optional filtering.
+// GetDevices returns a paginated list of devices filtered by organization.
 func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.DeviceListResponse, error) {
 	if query.Page < 1 {
 		query.Page = 1
@@ -415,6 +416,11 @@ func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.Device
 	// Apply filters
 	var filtered []*device.Device
 	for _, d := range allDevices {
+		// Apply organization filter first (required for multi-tenant)
+		if query.OrganizationID != "" && d.OrganizationID != query.OrganizationID {
+			continue
+		}
+
 		// Apply status filter
 		if query.Status != "" && query.Status != "all" {
 			isOnline := d.Online
@@ -511,6 +517,65 @@ func (s *Service) GetDeviceDetailByOperator(ctx context.Context, imei, operatorI
 	}
 
 	return s.deviceDetailResponse(d), nil
+}
+
+// GetDeviceDetailByOrganization returns detailed device information for an organization.
+func (s *Service) GetDeviceDetailByOrganization(ctx context.Context, imei, orgID string) (*dto.DeviceDetailResponse, error) {
+	d, err := s.deviceRepo.FindByIMEIAndOrganization(ctx, imei, orgID)
+	if err != nil {
+		if err == device.ErrNotFound {
+			return nil, device.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return s.deviceDetailResponse(d), nil
+}
+
+// DeregisterDeviceByOrganization deregisters a device within an organization.
+func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgID string, hard bool) (*dto.DeregisterResponse, error) {
+	// First verify device exists and belongs to this organization
+	d, err := s.deviceRepo.FindByIMEIAndOrganization(ctx, imei, orgID)
+	if err != nil {
+		if err == device.ErrNotFound {
+			return nil, device.ErrNotFound
+		}
+		return nil, err
+	}
+
+	now := time.Now()
+	deregisteredAt := now.UnixMilli()
+	deletionScheduledAt := now.Add(30 * 24 * time.Hour).UnixMilli() // 30 days retention
+
+	if hard {
+		// Hard delete - actually remove the device
+		if err := s.deviceRepo.Delete(ctx, imei); err != nil {
+			if err == device.ErrNotFound {
+				return nil, device.ErrNotFound
+			}
+			return nil, err
+		}
+		return &dto.DeregisterResponse{
+			IMEI:           imei,
+			Status:         "deleted",
+			DeregisteredAt: deregisteredAt,
+		}, nil
+	}
+
+	// Soft delete - mark as deregistered
+	if err := s.deviceRepo.SoftDelete(ctx, imei, deregisteredAt, deletionScheduledAt); err != nil {
+		if err == device.ErrNotFound {
+			return nil, device.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return &dto.DeregisterResponse{
+		IMEI:                imei,
+		Status:              "deregistered",
+		DeregisteredAt:      deregisteredAt,
+		DeletionScheduledAt: deletionScheduledAt,
+	}, nil
 }
 
 // deviceDetailResponse creates a DeviceDetailResponse from a Device entity.
