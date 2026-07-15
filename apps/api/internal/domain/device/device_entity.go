@@ -8,29 +8,83 @@ import (
 // ErrNotFound is returned when a device is not found.
 var ErrNotFound = errors.New("device not found")
 
-// Device represents a registered device.
+// Device represents a registered device with explicit lifecycle management.
 type Device struct {
-	UpdatedAt           time.Time
-	CreatedAt           time.Time
-	Metadata            map[string]string
-	FCMTokenRefreshedAt *int64
-	DeletionScheduledAt *int64
-	DeregisteredAt      *int64
-	Model               string
-	OSVersion           string
-	FCMToken            string
-	FirebaseInstallID   string
-	OperatorID          string
-	DeviceClass         string
-	CommandSecretHash   string
-	DeviceName          string
-	Manufacturer        string
-	ID                  string
-	AppVersion          string
-	SecurityPatch       string
-	LastSeen            int64
-	RegisteredAt        int64
-	Online              bool
+	// Lifecycle tracks the registration lifecycle state (pending → registered → deregistered)
+	Lifecycle Lifecycle
+
+	// Infrastructure fields (kept as-is for backward compatibility)
+	UpdatedAt            time.Time
+	CreatedAt            time.Time
+	Metadata             map[string]string
+	FCMTokenRefreshedAt  *int64
+	DeletionScheduledAt  *int64
+	DeregisteredAt       *int64
+	Model                string
+	OSVersion            string
+	FCMToken             string
+	FirebaseInstallID    string
+	OperatorID           string
+	DeviceClass          string
+	CommandSecretHash    string
+	DeviceName           string
+	Manufacturer         string
+	ID                   string
+	AppVersion           string
+	SecurityPatch        string
+	LastSeen             int64
+	RegisteredAt         int64
+	Online               bool
+}
+
+// NewDevice creates a new Device with pending lifecycle.
+func NewDevice(id string, firebaseInstallID string) *Device {
+	return &Device{
+		ID:                id,
+		FirebaseInstallID: firebaseInstallID,
+		Lifecycle:         LifecyclePending,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+	}
+}
+
+// Approve transitions the device from pending to registered.
+// Returns ErrInvalidTransition if the device is not in pending state.
+func (d *Device) Approve() error {
+	return d.Lifecycle.TransitionTo(LifecycleRegistered)
+}
+
+// Deregister transitions the device to deregistered state.
+// Returns ErrInvalidTransition if the transition is not allowed.
+func (d *Device) Deregister() error {
+	if err := d.Lifecycle.TransitionTo(LifecycleDeregistered); err != nil {
+		return err
+	}
+	now := time.Now().UnixMilli()
+	d.DeregisteredAt = &now
+	deletionTime := now + (30 * 24 * int64(time.Hour/time.Millisecond))
+	d.DeletionScheduledAt = &deletionTime
+	return nil
+}
+
+// IsPending returns true if the device is waiting for approval.
+func (d *Device) IsPending() bool {
+	return d.Lifecycle.IsPending()
+}
+
+// IsRegistered returns true if the device is approved and active.
+func (d *Device) IsRegistered() bool {
+	return d.Lifecycle.IsRegistered()
+}
+
+// IsDeregistered returns true if the device has been deregistered.
+func (d *Device) IsDeregistered() bool {
+	return d.Lifecycle.IsDeregistered()
+}
+
+// IsActive returns true if the device can accept commands.
+func (d *Device) IsActive() bool {
+	return d.Lifecycle.IsActive() && d.Online
 }
 
 // IsOnline returns true if the device is currently online.
@@ -66,11 +120,6 @@ func (d *Device) IsPhone() bool {
 // IsTablet returns true if the device is a tablet.
 func (d *Device) IsTablet() bool {
 	return d.DeviceClass == "tablet"
-}
-
-// IsDeregistered returns true if the device has been deregistered.
-func (d *Device) IsDeregistered() bool {
-	return d.DeregisteredAt != nil && *d.DeregisteredAt > 0
 }
 
 // DeregisteredAtTime returns the DeregisteredAt as a time.Time if set.
@@ -120,10 +169,13 @@ func (d *Device) IsCommandSecretSet() bool {
 	return d.CommandSecretHash != ""
 }
 
-// GetStatus returns the device status string.
+// GetStatus returns the device status string based on lifecycle and connection state.
 func (d *Device) GetStatus() string {
-	if d.IsDeregistered() {
+	if d.Lifecycle.IsDeregistered() {
 		return "deregistered"
+	}
+	if d.Lifecycle.IsPending() {
+		return "pending"
 	}
 	if d.Online {
 		return "online"

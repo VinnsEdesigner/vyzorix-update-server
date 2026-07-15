@@ -56,21 +56,13 @@ func (s *OrganizationStorage) Create(ctx context.Context, org *organization.Orga
 	return nil
 }
 
-// FindByID retrieves an organization by ID.
-func (s *OrganizationStorage) FindByID(ctx context.Context, id string) (*organization.Organization, error) {
-	query := `
-		SELECT o.id, o.name, o.created_by, o.created_at, o.updated_at, o.deleted_at, o.is_active, o.max_members,
-			   COUNT(DISTINCT om.id) as member_count
-		FROM organizations o
-		LEFT JOIN organization_members om ON o.id = om.organization_id AND om.status = 'active'
-		WHERE o.id = ? AND o.deleted_at IS NULL
-		GROUP BY o.id`
-
+// scanOrganization scans an organization from a row.
+func scanOrganization(row *sql.Row) (*organization.Organization, error) {
 	var org organization.Organization
 	var deletedAt sql.NullInt64
 	var createdBy string
 
-	err := s.getQuerier(ctx).QueryRowContext(ctx, query, id).Scan(
+	err := row.Scan(
 		&org.ID,
 		&org.Name,
 		&createdBy,
@@ -91,11 +83,78 @@ func (s *OrganizationStorage) FindByID(ctx context.Context, id string) (*organiz
 
 	org.CreatedBy = createdBy
 	if deletedAt.Valid {
-		t := time.UnixMilli(deletedAt.Int64)
-		org.DeletedAt = &t
+		org.DeletedAt = ptrTime(time.UnixMilli(deletedAt.Int64))
+		org.Lifecycle = organization.OrganizationLifecycleArchived
+	} else if org.IsActive {
+		org.Lifecycle = organization.OrganizationLifecycleActive
+	} else {
+		org.Lifecycle = organization.OrganizationLifecycleInactive
 	}
 
 	return &org, nil
+}
+
+// scanOrganizations scans multiple organizations from rows.
+func scanOrganizations(rows *sql.Rows) ([]*organization.Organization, error) {
+	var orgs []*organization.Organization
+
+	for rows.Next() {
+		var org organization.Organization
+		var deletedAt sql.NullInt64
+		var createdBy string
+
+		err := rows.Scan(
+			&org.ID,
+			&org.Name,
+			&createdBy,
+			&org.CreatedAt,
+			&org.UpdatedAt,
+			&deletedAt,
+			&org.IsActive,
+			&org.MaxMembers,
+			&org.MemberCount,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		org.CreatedBy = createdBy
+		if deletedAt.Valid {
+			org.DeletedAt = ptrTime(time.UnixMilli(deletedAt.Int64))
+			org.Lifecycle = organization.OrganizationLifecycleArchived
+		} else if org.IsActive {
+			org.Lifecycle = organization.OrganizationLifecycleActive
+		} else {
+			org.Lifecycle = organization.OrganizationLifecycleInactive
+		}
+
+		orgs = append(orgs, &org)
+	}
+
+	return orgs, rows.Err()
+}
+
+// ptrTime returns a pointer to a time.Time.
+func ptrTime(t time.Time) *time.Time {
+	return &t
+}
+
+// FindByID retrieves an organization by ID.
+func (s *OrganizationStorage) FindByID(ctx context.Context, id string) (*organization.Organization, error) {
+	query := `
+		SELECT o.id, o.name, o.created_by, o.created_at, o.updated_at, o.deleted_at, o.is_active, o.max_members,
+			   COUNT(DISTINCT om.id) as member_count
+		FROM organizations o
+		LEFT JOIN organization_members om ON o.id = om.organization_id AND om.status = 'active'
+		WHERE o.id = ? AND o.deleted_at IS NULL
+		GROUP BY o.id`
+
+	return scanOrganization(s.getQuerier(ctx).QueryRowContext(ctx, query, id))
+}
+
+// FindByOrganizationID retrieves an organization by OrganizationID value object.
+func (s *OrganizationStorage) FindByOrganizationID(ctx context.Context, id organization.OrganizationID) (*organization.Organization, error) {
+	return s.FindByID(ctx, id.String())
 }
 
 // FindByName finds an organization by name for a specific operator.
@@ -257,4 +316,44 @@ func (s *OrganizationStorage) CountActiveMembers(ctx context.Context, orgID stri
 	}
 
 	return count, nil
+}
+
+// FindByNameAndOperatorID finds an organization by name for a specific operator.
+func (s *OrganizationStorage) FindByNameAndOperatorID(ctx context.Context, operatorID organization.OperatorID, name string) (*organization.Organization, error) {
+	return s.FindByName(ctx, operatorID.String(), name)
+}
+
+// SoftDeleteByID soft-deletes an organization by OrganizationID.
+func (s *OrganizationStorage) SoftDeleteByID(ctx context.Context, id organization.OrganizationID) error {
+	return s.SoftDelete(ctx, id.String())
+}
+
+// ListByOperatorID lists all organizations for an OperatorID.
+func (s *OrganizationStorage) ListByOperatorID(ctx context.Context, operatorID organization.OperatorID) ([]*organization.Organization, error) {
+	return s.ListByOperator(ctx, operatorID.String())
+}
+
+// ListActive lists all active (non-archived) organizations.
+func (s *OrganizationStorage) ListActive(ctx context.Context) ([]*organization.Organization, error) {
+	query := `
+		SELECT o.id, o.name, o.created_by, o.created_at, o.updated_at, o.deleted_at, o.is_active, o.max_members,
+			   COUNT(DISTINCT om.id) as member_count
+		FROM organizations o
+		LEFT JOIN organization_members om ON o.id = om.organization_id AND om.status = 'active'
+		WHERE o.deleted_at IS NULL AND o.is_active = 1
+		GROUP BY o.id
+		ORDER BY o.created_at DESC`
+
+	rows, err := s.getQuerier(ctx).QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	return scanOrganizations(rows)
+}
+
+// CountActiveMembersByID counts the number of active members by OrganizationID.
+func (s *OrganizationStorage) CountActiveMembersByID(ctx context.Context, orgID organization.OrganizationID) (int, error) {
+	return s.CountActiveMembers(ctx, orgID.String())
 }

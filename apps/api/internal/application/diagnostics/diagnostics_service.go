@@ -408,7 +408,8 @@ func (s *Service) RecordDeviceEvent(ctx context.Context, deviceID string, eventT
 
 // determineDeviceStatus determines the device registration status.
 func (s *Service) determineDeviceStatus(dev *device.Device) string {
-	if dev.DeregisteredAt != nil {
+	// Use domain lifecycle method
+	if dev.IsDeregistered() {
 		return "deregistered"
 	}
 	if dev.RegisteredAt > 0 {

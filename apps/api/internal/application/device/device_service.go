@@ -24,6 +24,8 @@ var (
 	ErrCommandSecretNotSet   = errors.New("command secret not set for device")
 	ErrInvalidCommandSecret  = errors.New("invalid command secret")
 	ErrDeviceAlreadyApproved = errors.New("device already approved and registered")
+	ErrDeviceNotPending      = errors.New("device is not in pending state")
+	ErrInvalidLifecycleTransition = errors.New("invalid lifecycle state transition")
 )
 
 // Service handles device operations.
@@ -50,6 +52,7 @@ func NewService(
 }
 
 // Register registers a new device.
+// New devices start in LifecyclePending state and require operator approval.
 func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) (*dto.RegisterDeviceResponse, error) {
 	// Check if device already exists.
 	existing, err := s.deviceRepo.FindByID(ctx, req.DeviceID)
@@ -61,6 +64,14 @@ func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) 
 		// Device exists - check for hijacking.
 		if existing.FirebaseInstallID != req.FirebaseInstallID {
 			return nil, ErrDeviceHijack
+		}
+
+		// If device was deregistered, allow re-registration with new pending state
+		if existing.IsDeregistered() {
+			// Use domain method to transition back to pending
+			existing.Lifecycle = device.LifecyclePending
+			existing.DeregisteredAt = nil
+			existing.DeletionScheduledAt = nil
 		}
 
 		// Update existing device.
@@ -79,6 +90,7 @@ func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) 
 			DeviceID:      existing.ID,
 			CommandSecret: "", // Don't return secret on re-registration
 			RegisteredAt:  existing.RegisteredAt,
+			Lifecycle:     string(existing.Lifecycle),
 		}, nil
 	}
 
@@ -89,18 +101,13 @@ func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) 
 	}
 
 	now := time.Now()
-	d := &device.Device{
-		ID:                req.DeviceID,
-		FirebaseInstallID: req.FirebaseInstallID,
-		FCMToken:          req.FCMToken,
-		AppVersion:        req.AppVersion,
-		DeviceClass:       req.DeviceClass,
-		Online:            true,
-		RegisteredAt:      now.UnixMilli(),
-		LastSeen:          now.UnixMilli(),
-		CreatedAt:         now,
-		UpdatedAt:         now,
-	}
+	// Use NewDevice constructor which sets LifecyclePending by default
+	d := device.NewDevice(req.DeviceID, req.FirebaseInstallID)
+	d.FCMToken = req.FCMToken
+	d.AppVersion = req.AppVersion
+	d.DeviceClass = req.DeviceClass
+	d.Online = true
+	d.LastSeen = now.UnixMilli()
 
 	// Hash the command secret for storage.
 	h := sha256.Sum256([]byte(commandSecret))
@@ -114,7 +121,35 @@ func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) 
 		DeviceID:      d.ID,
 		CommandSecret: commandSecret,
 		RegisteredAt:  d.RegisteredAt,
+		Lifecycle:     string(d.Lifecycle),
 	}, nil
+}
+
+// ApproveDevice transitions a pending device to registered state.
+// Returns error if device is not in pending state.
+func (s *Service) ApproveDevice(ctx context.Context, deviceID string) error {
+	d, err := s.deviceRepo.FindByID(ctx, deviceID)
+	if err != nil {
+		if err == device.ErrNotFound {
+			return ErrDeviceNotFound
+		}
+		return err
+	}
+
+	// Use domain method to enforce valid transitions
+	if err := d.Approve(); err != nil {
+		return ErrInvalidLifecycleTransition
+	}
+
+	// Set RegisteredAt when transitioning to registered
+	d.RegisteredAt = time.Now().UnixMilli()
+	d.UpdatedAt = time.Now()
+
+	if err := s.deviceRepo.Update(ctx, d); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetStatus retrieves device status.
@@ -559,7 +594,6 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 
 	now := time.Now()
 	deregisteredAt := now.UnixMilli()
-	deletionScheduledAt := now.Add(30 * 24 * time.Hour).UnixMilli() // 30 days retention
 
 	if hard {
 		// Hard delete - actually remove the device
@@ -573,8 +607,14 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 		}, nil
 	}
 
-	// Soft delete - mark as deregistered
-	if err := s.deviceRepo.SoftDeleteByIMEI(ctx, imei, deregisteredAt, deletionScheduledAt); err != nil {
+	// Use domain method to enforce valid lifecycle transition
+	if err := d.Deregister(); err != nil {
+		return nil, ErrInvalidLifecycleTransition
+	}
+	d.UpdatedAt = now
+
+	// Save the updated device state
+	if err := s.deviceRepo.Update(ctx, d); err != nil {
 		return nil, err
 	}
 
@@ -584,8 +624,8 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 	return &dto.DeregisterResponse{
 		IMEI:           imei,
 		Status:         "deregistered",
-		DeregisteredAt:  deregisteredAt,
-		RetentionUntil: deletionScheduledAt,
+		DeregisteredAt: deregisteredAt,
+		RetentionUntil: *d.DeletionScheduledAt,
 	}, nil
 }
 

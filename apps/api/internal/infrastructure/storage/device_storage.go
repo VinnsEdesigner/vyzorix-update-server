@@ -92,7 +92,13 @@ func scanDevice(row *sql.Row) (*device.Device, error) {
 
 	if deregisteredAt.Valid {
 		d.DeregisteredAt = &deregisteredAt.Int64
+		d.Lifecycle = device.LifecycleDeregistered
+	} else if d.RegisteredAt > 0 {
+		d.Lifecycle = device.LifecycleRegistered
+	} else {
+		d.Lifecycle = device.LifecyclePending
 	}
+
 	if deletionScheduledAt.Valid {
 		d.DeletionScheduledAt = &deletionScheduledAt.Int64
 	}
@@ -131,7 +137,13 @@ func scanDevices(rows *sql.Rows) ([]*device.Device, error) {
 
 		if deregisteredAt.Valid {
 			d.DeregisteredAt = &deregisteredAt.Int64
+			d.Lifecycle = device.LifecycleDeregistered
+		} else if d.RegisteredAt > 0 {
+			d.Lifecycle = device.LifecycleRegistered
+		} else {
+			d.Lifecycle = device.LifecyclePending
 		}
+
 		if deletionScheduledAt.Valid {
 			d.DeletionScheduledAt = &deletionScheduledAt.Int64
 		}
@@ -524,6 +536,59 @@ func (r *DeviceRepository) ListActiveByOperator(ctx context.Context, operatorID 
 	query := `SELECT ` + deviceColumns + ` FROM devices WHERE operator_id = ? AND deregistered_at IS NULL ORDER BY created_at DESC`
 
 	rows, err := r.queryRows(ctx, query, operatorID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	return scanDevices(rows)
+}
+
+// FindByDeviceID retrieves a device by DeviceID value object.
+func (r *DeviceRepository) FindByDeviceID(ctx context.Context, id device.DeviceID) (*device.Device, error) {
+	return r.FindByID(ctx, id.String())
+}
+
+// FindByIDAndOperatorID retrieves a device by DeviceID and OperatorID value objects.
+func (r *DeviceRepository) FindByIDAndOperatorID(ctx context.Context, id device.DeviceID, operatorID device.OperatorID) (*device.Device, error) {
+	return r.FindByIDAndOperator(ctx, id.String(), operatorID.String())
+}
+
+// DeleteByDeviceID deletes a device by DeviceID.
+func (r *DeviceRepository) DeleteByDeviceID(ctx context.Context, id device.DeviceID) error {
+	return r.Delete(ctx, id.String())
+}
+
+// SetOnlineByDeviceID sets the online status by DeviceID.
+func (r *DeviceRepository) SetOnlineByDeviceID(ctx context.Context, id device.DeviceID, online bool) error {
+	return r.SetOnline(ctx, id.String(), online)
+}
+
+// ListByOperatorID returns all devices for an OperatorID.
+func (r *DeviceRepository) ListByOperatorID(ctx context.Context, operatorID device.OperatorID) ([]*device.Device, error) {
+	return r.ListByOperator(ctx, operatorID.String())
+}
+
+// ListPending returns all devices in pending lifecycle state.
+func (r *DeviceRepository) ListPending(ctx context.Context) ([]*device.Device, error) {
+	query := `SELECT ` + deviceColumns + ` FROM devices WHERE registered_at = 0 AND deregistered_at IS NULL ORDER BY created_at DESC`
+
+	rows, err := r.queryRows(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	return scanDevices(rows)
+}
+
+// ListPendingByOperator returns all pending devices for an operator.
+func (r *DeviceRepository) ListPendingByOperator(ctx context.Context, operatorID device.OperatorID) ([]*device.Device, error) {
+	query := `SELECT ` + deviceColumns + ` FROM devices WHERE operator_id = ? AND registered_at = 0 AND deregistered_at IS NULL ORDER BY created_at DESC`
+
+	rows, err := r.queryRows(ctx, query, operatorID.String())
 	if err != nil {
 		return nil, err
 	}
