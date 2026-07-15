@@ -19,7 +19,7 @@ func NewHistoryService(repo updates.Repository) *HistoryService {
 }
 
 // GetHistory returns paginated push history.
-func (s *HistoryService) GetHistory(ctx context.Context, status string, page, limit int) (*ListHistoryResponse, error) {
+func (s *HistoryService) GetHistory(ctx context.Context, status string, page, limit int, orgID string) (*ListHistoryResponse, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -32,7 +32,7 @@ func (s *HistoryService) GetHistory(ctx context.Context, status string, page, li
 
 	offset := (page - 1) * limit
 
-	pushes, total, err := s.repo.ListPushes(ctx, status, limit, offset)
+	pushes, total, err := s.repo.ListPushes(ctx, status, limit, offset, orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pushes: %w", err)
 	}
@@ -77,8 +77,8 @@ func (s *HistoryService) getPushVersionString(ctx context.Context, push *updates
 }
 
 // GetPushDetail returns detailed information about a specific push.
-func (s *HistoryService) GetPushDetail(ctx context.Context, pushID string) (*PushDetailResponse, error) {
-	push, version, err := s.repo.GetPushByIDWithVersion(ctx, pushID)
+func (s *HistoryService) GetPushDetail(ctx context.Context, pushID string, orgID string) (*PushDetailResponse, error) {
+	push, version, err := s.repo.GetPushByIDWithVersion(ctx, pushID, orgID)
 	if err != nil {
 		if err == updates.ErrPushNotFound {
 			return nil, ErrPushNotFound
@@ -86,7 +86,7 @@ func (s *HistoryService) GetPushDetail(ctx context.Context, pushID string) (*Pus
 		return nil, fmt.Errorf("failed to get push: %w", err)
 	}
 
-	devices, err := s.repo.GetPushDevices(ctx, pushID)
+	devices, err := s.repo.GetPushDevices(ctx, pushID, orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get push devices: %w", err)
 	}
@@ -120,8 +120,8 @@ func (s *HistoryService) GetPushDetail(ctx context.Context, pushID string) (*Pus
 }
 
 // CancelPush cancels a pending push.
-func (s *HistoryService) CancelPush(ctx context.Context, pushID, cancelledBy string) (*CancelPushResponse, error) {
-	push, err := s.repo.GetPushByID(ctx, pushID)
+func (s *HistoryService) CancelPush(ctx context.Context, pushID, cancelledBy string, orgID string) (*CancelPushResponse, error) {
+	push, err := s.repo.GetPushByID(ctx, pushID, orgID)
 	if err != nil {
 		if err == updates.ErrPushNotFound {
 			return nil, ErrPushNotFound
