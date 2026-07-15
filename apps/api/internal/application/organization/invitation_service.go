@@ -6,13 +6,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/invitation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	"github.com/google/uuid"
 )
-
-const (
 	// InvitationDefaultTTL is the default time-to-live for invitations (7 days).
 	InvitationDefaultTTL = 7 * 24 * time.Hour
 

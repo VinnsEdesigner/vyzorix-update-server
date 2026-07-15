@@ -32,19 +32,6 @@ func NewUpdatesHandler(service *updates.Service, pushService *updates.PushServic
 		pushHandler:      NewUpdatesPushHandler(service, auditLogger),
 		historyHandler:   NewUpdatesHistoryHandler(service, auditLogger),
 		syncHandler:      NewUpdatesSyncHandler(service, auditLogger),
-		deviceStatusHandler: NewDeviceStatusHandler(pushService),
-		rateLimiters:     rateLimiters,
-		adminAuth:        middleware.NewUpdatesAdminAuth(),
-		auditLogger:      auditLogger,
-		webhookSecret:    webhookSecret,
-	}
-}
-
-// InitWebhookHandler initializes the webhook handler after service is set.
-func (h *UpdatesHandler) InitWebhookHandler(log *slog.Logger) {
-	h.webhookHandler = NewGitHubWebhookHandler(h.service, h.webhookSecret, h.auditLogger, log)
-}
-
 // RegisterRoutes registers all updates routes.
 func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth) {
 	// Device callback endpoint - public (no auth required, device identifies itself)
@@ -56,6 +43,9 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 
 	updatesGroup := rg.Group("/updates")
 	updatesGroup.Use(cookieAuth.Middleware())
+	// Apply organization context middleware for multi-tenant isolation
+	updatesGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+	updatesGroup.Use(middleware.NewOrganizationMembership(nil).Middleware())
 
 	// Apply rate limiting per endpoint if configured
 	if h.rateLimiters != nil {
@@ -123,6 +113,25 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 
 		// Remaining routes without rate limiting
 		updatesGroup.GET("/status", h.versionsHandler.GetStatus)
+		updatesGroup.GET("/versions", h.versionsHandler.GetVersions)
+		updatesGroup.GET("/changelog", h.versionsHandler.GetChangelog)
+		updatesGroup.GET("/export", h.versionsHandler.Export)
+		updatesGroup.GET("/history", h.historyHandler.GetHistory)
+		updatesGroup.GET("/history/:pushId", h.historyHandler.GetPushDetail)
+		updatesGroup.GET("/sync/status", h.syncHandler.GetSyncStatus)
+
+		// Webhook - no cookie auth (uses HMAC signature)
+		if h.webhookHandler != nil {
+			updatesGroup.POST("/webhook/github",
+				h.webhookHandler.HandleWebhook)
+			updatesGroup.GET("/webhook/info",
+				h.webhookHandler.GetWebhookInfo)
+		}
+	}
+}
+		}
+	}
+}
 		updatesGroup.GET("/versions", h.versionsHandler.GetVersions)
 		updatesGroup.GET("/changelog", h.versionsHandler.GetChangelog)
 		updatesGroup.GET("/export", h.versionsHandler.Export)

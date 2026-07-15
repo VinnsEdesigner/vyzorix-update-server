@@ -580,11 +580,11 @@ func (s *Service) DeregisterDevice(ctx context.Context, imei string, hard bool) 
 	}, nil
 }
 
-// DeregisterDeviceByOperator soft-deletes a device with DOA verification.
-// Only the operator who owns the device can deregister it.
-func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operatorID string, hard bool) (*dto.DeregisterResponse, error) {
-	// First verify device exists and belongs to this operator
-	d, err := s.deviceRepo.FindByIMEIAndOperator(ctx, imei, operatorID)
+// DeregisterDeviceByOperator soft-deletes a device with DOA and org verification.
+// Only the operator who owns the device within an organization can deregister it.
+func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operatorID, orgID string, hard bool) (*dto.DeregisterResponse, error) {
+	// First verify device exists and belongs to this operator and organization
+	d, err := s.deviceRepo.FindByIDAndOrganization(ctx, imei, orgID)
 	if err != nil {
 		if err == device.ErrNotFound {
 			return nil, device.ErrNotFound
@@ -592,8 +592,14 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 		return nil, err
 	}
 
+	// Verify operator owns this device
+	if d.OperatorID != operatorID {
+		return nil, device.ErrNotFound
+	}
+
 	now := time.Now()
 	deregisteredAt := now.UnixMilli()
+	deletionScheduledAt := now.Add(30 * 24 * time.Hour).UnixMilli() // 30 days retention
 
 	if hard {
 		// Hard delete - actually remove the device
@@ -607,14 +613,8 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 		}, nil
 	}
 
-	// Use domain method to enforce valid lifecycle transition
-	if err := d.Deregister(); err != nil {
-		return nil, ErrInvalidLifecycleTransition
-	}
-	d.UpdatedAt = now
-
-	// Save the updated device state
-	if err := s.deviceRepo.Update(ctx, d); err != nil {
+	// Soft delete - mark as deregistered
+	if err := s.deviceRepo.SoftDeleteByIMEI(ctx, imei, deregisteredAt, deletionScheduledAt); err != nil {
 		return nil, err
 	}
 
@@ -623,6 +623,16 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 
 	return &dto.DeregisterResponse{
 		IMEI:           imei,
+		Status:         "deregistered",
+		DeregisteredAt:  deregisteredAt,
+		RetentionUntil: deletionScheduledAt,
+	}, nil
+}
+		Status:         "deregistered",
+		DeregisteredAt:  deregisteredAt,
+		RetentionUntil: deletionScheduledAt,
+	}, nil
+}
 		Status:         "deregistered",
 		DeregisteredAt: deregisteredAt,
 		RetentionUntil: *d.DeletionScheduledAt,
@@ -763,4 +773,88 @@ func secureCompare(a, b string) bool {
 		result |= int(a[i]) ^ int(b[i])
 	}
 	return result == 0
+}
+
+// TransferDevice transfers a device from one organization to another.
+// Prerequisites:
+// - Device must be OFFLINE
+// - Actor must have permission in source AND target orgs
+func (s *Service) TransferDevice(ctx context.Context, imei, sourceOrgID, targetOrgID, actorOperatorID string) error {
+	// Get the device
+	d, err := s.deviceRepo.FindByIMEI(ctx, imei)
+	if err != nil {
+		if err == device.ErrNotFound {
+			return ErrDeviceNotFound
+		}
+		return err
+	}
+
+	// Verify device belongs to source org
+	if d.OrganizationID != sourceOrgID {
+		return ErrDeviceNotFound
+	}
+
+	// Device must be offline for transfer
+	if d.Online {
+		return application.ErrDeviceOnline
+	}
+
+	// Update device organization
+	d.OrganizationID = targetOrgID
+	d.UpdatedAt = time.Now()
+
+	if err := s.deviceRepo.Update(ctx, d); err != nil {
+		return err
+	}
+
+	s.logger.Info("device transferred between organizations",
+		"imei", imei,
+		"from_org", sourceOrgID,
+		"to_org", targetOrgID,
+		"actor_id", actorOperatorID,
+	)
+
+	return nil
+}
+
+// TransferDevice transfers a device from one organization to another.
+// Prerequisites:
+// - Device must be OFFLINE
+// - Actor must have permission in source AND target orgs
+func (s *Service) TransferDevice(ctx context.Context, imei, sourceOrgID, targetOrgID, actorOperatorID string) error {
+	// Get the device
+	d, err := s.deviceRepo.FindByIMEI(ctx, imei)
+	if err != nil {
+		if err == device.ErrNotFound {
+			return ErrDeviceNotFound
+		}
+		return err
+	}
+
+	// Verify device belongs to source org
+	if d.OrganizationID != sourceOrgID {
+		return ErrDeviceNotFound
+	}
+
+	// Device must be offline for transfer
+	if d.Online {
+		return application.ErrDeviceOnline
+	}
+
+	// Update device organization
+	d.OrganizationID = targetOrgID
+	d.UpdatedAt = time.Now()
+
+	if err := s.deviceRepo.Update(ctx, d); err != nil {
+		return err
+	}
+
+	s.logger.Info("device transferred between organizations",
+		"imei", imei,
+		"from_org", sourceOrgID,
+		"to_org", targetOrgID,
+		"actor_id", actorOperatorID,
+	)
+
+	return nil
 }

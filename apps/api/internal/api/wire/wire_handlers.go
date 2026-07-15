@@ -24,11 +24,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
-	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
-	"log/slog"
-)
-
 // HandlerDependencies contains all dependencies needed by handlers.
 type HandlerDependencies struct {
 	OperatorRepo   operator.Repository
@@ -42,6 +37,7 @@ type HandlerDependencies struct {
 	AuditLogger    *audit.Logger
 	GoogleVerifier *infraauth.GoogleTokenVerifier
 	DeviceService  *device.Service
+	DeviceRepo    *storage.DeviceRepository
 	IPIntelligence *middleware.IPIntelligence
 	ClientService  *client.Service
 	CommandService *command.Service
@@ -50,6 +46,12 @@ type HandlerDependencies struct {
 	HmacVerifier   *cryptohmac.Verifier
 	UpdatesStorage *storage.UpdatesStorage
 	AuthService    *auth.AuthService
+	Config         config.Config
+	OrgService     *orgapp.OrganizationService
+	MemberService  *orgapp.MemberService
+	InvitationService *orgapp.InvitationService
+}
+}
 	Config         config.Config
 }
 
@@ -102,7 +104,6 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 
 	// WebSocket handler
 	hs.Stream = websockethandlers.NewStreamHandler(deps.Log, deps.Config, deps.Hub, *deps.HmacVerifier, deps.AuditLogger)
-
 	// Telemetry history handler
 	var telemetryRepo *storage.TelemetryRepository
 	if deps.DB != nil {
@@ -112,11 +113,14 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	hs.TelemetryHistory = handlers.NewTelemetryHistoryHandler(
 		deps.Log,
 		telemetryRepo,
+		deps.DeviceRepo,
+		nil,
+	)
 		nil,
 	)
 
 	// Connection status handler
-	hs.ConnectionStatus = handlers.NewConnectionStatusHandler(deps.Log, deps.Hub)
+	hs.ConnectionStatus = handlers.NewConnectionStatusHandler(deps.Log, deps.Hub, deps.DeviceRepo)
 
 	// Admin handlers
 	hs.AdminClients = admin.NewClientsHandler(deps.ClientService)

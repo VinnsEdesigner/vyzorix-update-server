@@ -6,13 +6,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/invitation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	"github.com/google/uuid"
 )
-
-const (
 	// MaxActiveOrgsPerOperator is the maximum number of active organizations an operator can have.
 	MaxActiveOrgsPerOperator = 2
 

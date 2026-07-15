@@ -3,11 +3,16 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/gin-gonic/gin"
 )
 
-// RequirePermission returns middleware that checks for a specific permission.
+// =============================================================================
+// Organization-Scoped RBAC (No Global Fallback)
+// =============================================================================
+
+// RequireOrgRole returns middleware that requires a minimum role level in the organization.
+func RequireOrgRole(minRole organization.OrganizationRole) gin.HandlerFunc {
 func RequirePermission(perm operator.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		op := GetOperatorFromContext(c)

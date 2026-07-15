@@ -6,12 +6,12 @@ import (
 	"errors"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/invitation"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 )
 
-// Ensure InvitationRepository implements invitation.Repository.
-var _ invitation.Repository = (*InvitationStorage)(nil)
+// Ensure InvitationRepository implements organization.InvitationRepository.
+var _ organization.InvitationRepository = (*InvitationStorage)(nil)
 
 // InvitationStorage implements invitation.Repository using SQLite.
 type InvitationStorage struct {
@@ -53,7 +53,7 @@ func (s *InvitationStorage) Create(ctx context.Context, invite *invitation.Invit
 	)
 	if err != nil {
 		if isUniqueConstraintError(err) {
-			return invitation.ErrAlreadyExists
+			return organization.ErrInvitationExists
 		}
 		return err
 	}

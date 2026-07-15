@@ -57,18 +57,19 @@ func (r *OperatorRepository) exec(ctx context.Context, query string, args ...int
 // FindByID retrieves an operator by ID.
 func (r *OperatorRepository) FindByID(ctx context.Context, id string) (*operator.Operator, error) {
 	query := `
-		SELECT id, email, name, password_hash, role, google_id, github_id, 
-		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_backup_codes, email_verified, created_at, updated_at, fcm_token 
+		SELECT id, email, name, password_hash, google_id, github_id, 
+		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_backup_codes, email_verified, created_at, updated_at, fcm_token,
+		       last_organization_id
 		FROM operators WHERE id = ?`
 
 	var op operator.Operator
 
-	var googleID, githubID, mfaSecret, mfaSecretMAC, mfaBackupCodes, fcmToken sql.NullString
+	var googleID, githubID, mfaSecret, mfaSecretMAC, mfaBackupCodes, fcmToken, lastOrgID sql.NullString
 
 	err := r.queryRow(ctx, query, id).Scan(
-		&op.ID, &op.Email, &op.Name, &op.PasswordHash, &op.Role,
+		&op.ID, &op.Email, &op.Name, &op.PasswordHash,
 		&googleID, &githubID, &mfaSecret, &mfaSecretMAC, &op.MFAEnabled, &mfaBackupCodes,
-		&op.EmailVerified, &op.CreatedAt, &op.UpdatedAt, &fcmToken,
+		&op.EmailVerified, &op.CreatedAt, &op.UpdatedAt, &fcmToken, &lastOrgID,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -84,6 +85,7 @@ func (r *OperatorRepository) FindByID(ctx context.Context, id string) (*operator
 	op.MFASecret = mfaSecret.String
 	op.MFASecretMAC = mfaSecretMAC.String
 	op.FCMToken = fcmToken.String
+	op.LastOrganizationID = lastOrgID.String
 
 	// Parse backup codes from JSON
 	if mfaBackupCodes.Valid && mfaBackupCodes.String != "" {
@@ -100,18 +102,19 @@ func (r *OperatorRepository) FindByID(ctx context.Context, id string) (*operator
 // FindByEmail retrieves an operator by email.
 func (r *OperatorRepository) FindByEmail(ctx context.Context, email string) (*operator.Operator, error) {
 	query := `
-		SELECT id, email, name, password_hash, role, google_id, github_id, 
-		       mfa_secret, mfa_secret_mac, mfa_enabled, email_verified, created_at, updated_at, fcm_token 
+		SELECT id, email, name, password_hash, google_id, github_id, 
+		       mfa_secret, mfa_secret_mac, mfa_enabled, email_verified, created_at, updated_at, fcm_token,
+		       last_organization_id
 		FROM operators WHERE email = ?`
 
 	var op operator.Operator
 
-	var googleID, githubID, mfaSecret, mfaSecretMAC, fcmToken sql.NullString
+	var googleID, githubID, mfaSecret, mfaSecretMAC, fcmToken, lastOrgID sql.NullString
 
 	err := r.queryRow(ctx, query, strings.ToLower(email)).Scan(
-		&op.ID, &op.Email, &op.Name, &op.PasswordHash, &op.Role,
+		&op.ID, &op.Email, &op.Name, &op.PasswordHash,
 		&googleID, &githubID, &mfaSecret, &mfaSecretMAC, &op.MFAEnabled, &op.EmailVerified,
-		&op.CreatedAt, &op.UpdatedAt, &fcmToken,
+		&op.CreatedAt, &op.UpdatedAt, &fcmToken, &lastOrgID,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -127,6 +130,7 @@ func (r *OperatorRepository) FindByEmail(ctx context.Context, email string) (*op
 	op.MFASecret = mfaSecret.String
 	op.MFASecretMAC = mfaSecretMAC.String
 	op.FCMToken = fcmToken.String
+	op.LastOrganizationID = lastOrgID.String
 
 	return &op, nil
 }
@@ -134,18 +138,19 @@ func (r *OperatorRepository) FindByEmail(ctx context.Context, email string) (*op
 // FindByGoogleID retrieves an operator by Google ID.
 func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string) (*operator.Operator, error) {
 	query := `
-		SELECT id, email, name, password_hash, role, google_id, github_id, 
-		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_backup_codes, email_verified, created_at, updated_at, fcm_token 
+		SELECT id, email, name, password_hash, google_id, github_id, 
+		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_backup_codes, email_verified, created_at, updated_at, fcm_token,
+		       last_organization_id
 		FROM operators WHERE google_id = ?`
 
 	var op operator.Operator
 
-	var googleIDVal, githubID, mfaSecret, mfaSecretMAC, mfaBackupCodes, fcmToken sql.NullString
+	var googleIDVal, githubID, mfaSecret, mfaSecretMAC, mfaBackupCodes, fcmToken, lastOrgID sql.NullString
 
 	err := r.queryRow(ctx, query, googleID).Scan(
-		&op.ID, &op.Email, &op.Name, &op.PasswordHash, &op.Role,
+		&op.ID, &op.Email, &op.Name, &op.PasswordHash,
 		&googleIDVal, &githubID, &mfaSecret, &mfaSecretMAC, &op.MFAEnabled, &mfaBackupCodes,
-		&op.EmailVerified, &op.CreatedAt, &op.UpdatedAt, &fcmToken,
+		&op.EmailVerified, &op.CreatedAt, &op.UpdatedAt, &fcmToken, &lastOrgID,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -161,6 +166,7 @@ func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string
 	op.MFASecret = mfaSecret.String
 	op.MFASecretMAC = mfaSecretMAC.String
 	op.FCMToken = fcmToken.String
+	op.LastOrganizationID = lastOrgID.String
 
 	if mfaBackupCodes.Valid && mfaBackupCodes.String != "" {
 		_ = json.Unmarshal([]byte(mfaBackupCodes.String), &op.BackupCodes)
@@ -172,18 +178,19 @@ func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string
 // FindByGitHubID retrieves an operator by GitHub ID.
 func (r *OperatorRepository) FindByGitHubID(ctx context.Context, githubID string) (*operator.Operator, error) {
 	query := `
-		SELECT id, email, name, password_hash, role, google_id, github_id, 
-		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_backup_codes, email_verified, created_at, updated_at, fcm_token 
+		SELECT id, email, name, password_hash, google_id, github_id, 
+		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_backup_codes, email_verified, created_at, updated_at, fcm_token,
+		       last_organization_id
 		FROM operators WHERE github_id = ?`
 
 	var op operator.Operator
 
-	var googleID, githubIDVal, mfaSecret, mfaSecretMAC, mfaBackupCodes, fcmToken sql.NullString
+	var googleID, githubIDVal, mfaSecret, mfaSecretMAC, mfaBackupCodes, fcmToken, lastOrgID sql.NullString
 
 	err := r.queryRow(ctx, query, githubID).Scan(
-		&op.ID, &op.Email, &op.Name, &op.PasswordHash, &op.Role,
+		&op.ID, &op.Email, &op.Name, &op.PasswordHash,
 		&googleID, &githubIDVal, &mfaSecret, &mfaSecretMAC, &op.MFAEnabled, &mfaBackupCodes,
-		&op.EmailVerified, &op.CreatedAt, &op.UpdatedAt, &fcmToken,
+		&op.EmailVerified, &op.CreatedAt, &op.UpdatedAt, &fcmToken, &lastOrgID,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -199,6 +206,7 @@ func (r *OperatorRepository) FindByGitHubID(ctx context.Context, githubID string
 	op.MFASecret = mfaSecret.String
 	op.MFASecretMAC = mfaSecretMAC.String
 	op.FCMToken = fcmToken.String
+	op.LastOrganizationID = lastOrgID.String
 
 	if mfaBackupCodes.Valid && mfaBackupCodes.String != "" {
 		_ = json.Unmarshal([]byte(mfaBackupCodes.String), &op.BackupCodes)
@@ -210,14 +218,15 @@ func (r *OperatorRepository) FindByGitHubID(ctx context.Context, githubID string
 // Create creates a new operator.
 func (r *OperatorRepository) Create(ctx context.Context, op *operator.Operator) error {
 	query := `
-		INSERT INTO operators (id, email, name, password_hash, role, google_id, github_id, 
-		                       mfa_secret, mfa_secret_mac, mfa_enabled, email_verified, created_at, updated_at, fcm_token)
+		INSERT INTO operators (id, email, name, password_hash, google_id, github_id, 
+		                       mfa_secret, mfa_secret_mac, mfa_enabled, email_verified, created_at, updated_at, fcm_token,
+		                       last_organization_id)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := r.exec(ctx, query,
-		op.ID, strings.ToLower(op.Email), op.Name, op.PasswordHash, op.Role,
+		op.ID, strings.ToLower(op.Email), op.Name, op.PasswordHash,
 		nullString(op.GoogleID), nullString(op.GitHubID), nullString(op.MFASecret), nullString(op.MFASecretMAC),
-		op.MFAEnabled, op.EmailVerified, op.CreatedAt, op.UpdatedAt, nullString(op.FCMToken),
+		op.MFAEnabled, op.EmailVerified, op.CreatedAt, op.UpdatedAt, nullString(op.FCMToken), nullString(op.LastOrganizationID),
 	)
 	// Handle race condition: if UNIQUE constraint fails, return ErrUserExists
 	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed") {
@@ -232,14 +241,15 @@ func (r *OperatorRepository) Create(ctx context.Context, op *operator.Operator) 
 func (r *OperatorRepository) Update(ctx context.Context, op *operator.Operator) error {
 	query := `
 		UPDATE operators 
-		SET email = ?, name = ?, password_hash = ?, role = ?, google_id = ?, github_id = ?,
-		    mfa_secret = ?, mfa_secret_mac = ?, mfa_enabled = ?, email_verified = ?, fcm_token = ?, updated_at = ?
+		SET email = ?, name = ?, password_hash = ?, google_id = ?, github_id = ?,
+		    mfa_secret = ?, mfa_secret_mac = ?, mfa_enabled = ?, email_verified = ?, fcm_token = ?,
+		    last_organization_id = ?, updated_at = ?
 		WHERE id = ?`
 
 	result, err := r.exec(ctx, query,
-		strings.ToLower(op.Email), op.Name, op.PasswordHash, op.Role,
+		strings.ToLower(op.Email), op.Name, op.PasswordHash,
 		nullString(op.GoogleID), nullString(op.GitHubID), nullString(op.MFASecret), nullString(op.MFASecretMAC),
-		op.MFAEnabled, op.EmailVerified, nullString(op.FCMToken), time.Now(), op.ID,
+		op.MFAEnabled, op.EmailVerified, nullString(op.FCMToken), nullString(op.LastOrganizationID), time.Now(), op.ID,
 	)
 	if err != nil {
 		return err
@@ -287,8 +297,9 @@ func (r *OperatorRepository) Count(ctx context.Context) (int, error) {
 // List returns a paginated list of operators.
 func (r *OperatorRepository) List(ctx context.Context, limit, offset int) ([]*operator.Operator, int, error) {
 	query := `
-		SELECT id, email, name, password_hash, role, google_id, github_id, 
-		       mfa_secret, mfa_secret_mac, mfa_enabled, email_verified, created_at, updated_at 
+		SELECT id, email, name, password_hash, google_id, github_id, 
+		       mfa_secret, mfa_secret_mac, mfa_enabled, email_verified, created_at, updated_at,
+		       last_organization_id
 		FROM operators ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.queryRows(ctx, query, limit, offset)
@@ -303,12 +314,12 @@ func (r *OperatorRepository) List(ctx context.Context, limit, offset int) ([]*op
 	for rows.Next() {
 		var op operator.Operator
 
-		var googleID, githubID, mfaSecret, mfaSecretMAC sql.NullString
+		var googleID, githubID, mfaSecret, mfaSecretMAC, lastOrgID sql.NullString
 
 		if err := rows.Scan(
-			&op.ID, &op.Email, &op.Name, &op.PasswordHash, &op.Role,
+			&op.ID, &op.Email, &op.Name, &op.PasswordHash,
 			&googleID, &githubID, &mfaSecret, &mfaSecretMAC, &op.MFAEnabled, &op.EmailVerified,
-			&op.CreatedAt, &op.UpdatedAt,
+			&op.CreatedAt, &op.UpdatedAt, &lastOrgID,
 		); err != nil {
 			return nil, 0, err
 		}
@@ -317,6 +328,7 @@ func (r *OperatorRepository) List(ctx context.Context, limit, offset int) ([]*op
 		op.GitHubID = githubID.String
 		op.MFASecret = mfaSecret.String
 		op.MFASecretMAC = mfaSecretMAC.String
+		op.LastOrganizationID = lastOrgID.String
 		operators = append(operators, &op)
 	}
 

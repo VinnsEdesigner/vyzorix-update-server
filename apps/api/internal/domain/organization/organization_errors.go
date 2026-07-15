@@ -47,4 +47,25 @@ var (
 
 	// ErrOperatorNotInOrganization is returned when operator is not a member of the organization.
 	ErrOperatorNotInOrganization = errors.New("operator is not a member of this organization")
+
+	// ErrAlreadyExists is a generic already exists error.
+	ErrAlreadyExists = errors.New("resource already exists")
+
+	// ErrAlreadyResponded is returned when an invitation has already been responded to.
+	ErrAlreadyResponded = errors.New("invitation has already been responded to")
+
+	// ErrExpired is returned when an invitation has expired.
+	ErrExpired = errors.New("resource has expired")
+
+	// ErrCannotDeleteLastSuperAdmin is returned when trying to delete the last super_admin of an org.
+	ErrCannotDeleteLastSuperAdmin = errors.New("cannot delete the last super_admin of an organization")
+
+	// ErrTransferOwnershipNotAllowed is returned when transfer ownership is not allowed.
+	ErrTransferOwnershipNotAllowed = errors.New("transfer ownership not allowed")
+
+	// ErrDeviceTransferNotAllowed is returned when device transfer is not allowed.
+	ErrDeviceTransferNotAllowed = errors.New("device transfer not allowed")
+
+	// ErrDeviceOnline is returned when a device is still online.
+	ErrDeviceOnline = errors.New("device must be offline to transfer")
 )

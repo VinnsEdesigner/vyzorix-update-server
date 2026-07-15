@@ -60,15 +60,8 @@ func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
 		})
 
 		return
-	}
-
-	h.presenter.OK(c, gin.H{
-		"locked":             false,
-		"attempts_remaining": attemptsRemaining,
-	})
-}
-
 // UnlockAccount handles POST /v1/admin/lockout/unlock/:operator_id.
+// Requires org-scoped super_admin access.
 func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 	sessionID, err := h.getSessionFromCookie(c)
 	if err != nil {
@@ -83,7 +76,9 @@ func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 		return
 	}
 
-	if op.Role != "super_admin" {
+	// Org-scoped check
+	orgID := middleware.GetOrganizationID(c)
+	if !op.IsSuperAdminIn(orgID) {
 		h.presenter.Forbidden(c, "")
 		return
 	}
@@ -103,6 +98,17 @@ func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 
 	// Clear lockout using in-memory lockout (email-based)
 	h.lockout.RecordSuccessfulAttempt(targetOp.Email)
+
+	h.presenter.AdminAction(c, op.ID, "unlock_account", "operator", targetOperatorID, nil)
+	h.presenter.OK(c, gin.H{
+		"success":     true,
+		"message":     "Account unlocked successfully",
+		"operator_id": targetOperatorID,
+	})
+}
+		"operator_id": targetOperatorID,
+	})
+}
 
 	h.presenter.AdminAction(c, op.ID, "unlock_account", "operator", targetOperatorID, nil)
 	h.presenter.OK(c, gin.H{
