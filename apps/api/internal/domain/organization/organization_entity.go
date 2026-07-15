@@ -15,6 +15,14 @@ const (
 	RoleViewer    OrganizationRole = "viewer"
 )
 
+// Level constants for role hierarchy comparisons
+const (
+	LevelViewer    = 1
+	LevelOperator  = 2
+	LevelAdmin     = 3
+	LevelSuperAdmin = 4
+)
+
 // RoleLevel returns the privilege level for a role (higher = more privileges).
 func (r OrganizationRole) Level() int {
 	switch r {
