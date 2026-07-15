@@ -194,8 +194,10 @@ func (s *Server) setupDashboardRoutes(r ...*gin.RouterGroup) {
 }
 
 func (s *Server) setupAdminRoutes(r *gin.RouterGroup) {
-	// SuperAdmin-only client management routes
+	// SuperAdmin-only client management routes (scoped under organization)
 	adminClients := r.Group("/admin/clients")
+	adminClients.Use(middleware.NewOrganizationContext(nil).Middleware())
+	adminClients.Use(middleware.NewOrganizationMembership(nil).Middleware())
 	adminClients.Use(middleware.RequireSuperAdmin())
 	adminClients.GET("", s.adminClientsHandler.List)
 	adminClients.GET("/:clientId", s.adminClientsHandler.Get)
@@ -203,9 +205,11 @@ func (s *Server) setupAdminRoutes(r *gin.RouterGroup) {
 	adminClients.DELETE("/:clientId", s.adminClientsHandler.Delete)
 	adminClients.POST("/:clientId/rotate-key", s.adminClientsHandler.RotateKey)
 
-	// Super admin API key management routes
+	// Super admin API key management routes (scoped under organization)
 	if s.superAdminAPIKeys != nil {
 		adminAPIKeys := r.Group("/admin/api-keys")
+		adminAPIKeys.Use(middleware.NewOrganizationContext(nil).Middleware())
+		adminAPIKeys.Use(middleware.NewOrganizationMembership(nil).Middleware())
 		adminAPIKeys.Use(middleware.RequireSuperAdmin())
 		s.superAdminAPIKeys.RegisterRoutes(adminAPIKeys)
 	}
@@ -243,28 +247,23 @@ func (s *Server) setupDeviceInboxRoutes(r *gin.RouterGroup) {
 		authenticatedInbox.Use(middleware.NewOrganizationContext(nil).Middleware())
 		authenticatedInbox.Use(middleware.NewOrganizationMembership(nil).Middleware())
 		authenticatedInbox.Use(s.cookieAuth.Middleware())
-func (s *Server) setupDeviceInboxRoutes(r *gin.RouterGroup) {
-	if s.inboxHandler != nil && s.deviceRegRateLimiter != nil {
-		deviceInbox := r.Group("/device")
-		
-		// Authenticated inbox routes - require org context for multi-tenant isolation
-		authenticatedInbox := deviceInbox.Group("/inbox")
-		authenticatedInbox.Use(middleware.NewOrganizationContext(nil).Middleware())
-		authenticatedInbox.Use(middleware.NewOrganizationMembership(nil).Middleware())
-		authenticatedInbox.Use(s.cookieAuth.Middleware())
-		authenticatedInbox.GET("", s.deviceRegRateLimiter.InboxListLimit(), s.inboxHandler.GetInbox)
-		authenticatedInbox.GET("/:imei", s.deviceRegRateLimiter.InboxGetLimit(), s.inboxHandler.GetInboxEntry)
-		authenticatedInbox.PATCH("/:imei", s.deviceRegRateLimiter.InboxGetLimit(), s.inboxHandler.UpdateInboxEntry)
-		authenticatedInbox.POST("/:imei/ack", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.AckInbox)
-		authenticatedInbox.POST("/:imei/resend", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.ResendApproval)
-		
-		// Public device registration - no auth required
-		deviceInbox.POST("/inbox", s.inboxHandler.CreateInboxRequest)
+		authenticatedInbox.GET("/inbox", s.deviceRegRateLimiter.InboxListLimit(), s.inboxHandler.GetInbox)
+		authenticatedInbox.GET("/inbox/:imei", s.deviceRegRateLimiter.InboxGetLimit(), s.inboxHandler.GetInboxEntry)
+		authenticatedInbox.PATCH("/inbox/:imei", s.deviceRegRateLimiter.InboxGetLimit(), s.inboxHandler.UpdateInboxEntry)
+		authenticatedInbox.POST("/inbox/:imei/ack", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.AckInbox)
+		authenticatedInbox.POST("/inbox/:imei/resend", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.ResendApproval)
+
+		// Note: POST /v1/device/inbox is public (used by devices for registration)
+		s.inboxHandler.RegisterPublicRoutes(deviceInbox)
 	}
 }
+
 func (s *Server) setupDevicesRoutes(r *gin.RouterGroup) {
 	if s.devicesHandler != nil && s.deviceRegRateLimiter != nil {
 		devices := r.Group("/devices")
+		// All device routes require organization context for multi-tenant isolation
+		devices.Use(middleware.NewOrganizationContext(nil).Middleware())
+		devices.Use(middleware.NewOrganizationMembership(nil).Middleware())
 		// Apply rate limiting per spec Section 11.1
 		devices.GET("", s.deviceRegRateLimiter.DevicesListLimit(), s.devicesHandler.GetDevices)
 		devices.GET("/:imei", s.deviceRegRateLimiter.DevicesGetLimit(), s.devicesHandler.GetDeviceDetail)
@@ -274,6 +273,9 @@ func (s *Server) setupDevicesRoutes(r *gin.RouterGroup) {
 
 func (s *Server) setupCommandManagementRoutes(r *gin.RouterGroup) {
 	commandMgmt := r.Group("/command")
+	// All command routes require organization context for multi-tenant isolation
+	commandMgmt.Use(middleware.NewOrganizationContext(nil).Middleware())
+	commandMgmt.Use(middleware.NewOrganizationMembership(nil).Middleware())
 	commandMgmt.Use(middleware.RequestSigningMiddleware(s.signatureVerifier))
 	commandMgmt.Use(middleware.MandatoryEncryptionMiddleware(s.encryptKeyFn))
 	commandMgmt.GET("/:dispatchId/status", s.commandHandler.GetStatus)
@@ -284,9 +286,6 @@ func (s *Server) setupCommandManagementRoutes(r *gin.RouterGroup) {
 func (s *Server) setupTelemetryRoutes(r *gin.RouterGroup) {
 	telemetry := r.Group("/telemetry")
 	telemetry.Use(middleware.NewOrganizationContext(nil).Middleware())
-func (s *Server) setupTelemetryRoutes(r *gin.RouterGroup) {
-	telemetry := r.Group("/telemetry")
-	telemetry.Use(middleware.NewOrganizationContext(nil).Middleware())
 	telemetry.Use(middleware.NewOrganizationMembership(nil).Middleware())
 	telemetry.GET("/history", s.telemetryHistoryHandler.Query)
 	telemetry.GET("/history/export", s.telemetryHistoryHandler.ExportJSON)
@@ -294,7 +293,7 @@ func (s *Server) setupTelemetryRoutes(r *gin.RouterGroup) {
 	telemetry.GET("/stats/:deviceId", s.telemetryHistoryHandler.GetStats)
 	telemetry.DELETE("/cleanup", s.telemetryHistoryHandler.CleanupOld)
 }
-func (s *Server) setupConnectionsRoutes(r *gin.RouterGroup) {
+
 func (s *Server) setupConnectionsRoutes(r *gin.RouterGroup) {
 	connections := r.Group("/connections")
 	connections.Use(middleware.NewOrganizationContext(nil).Middleware())
@@ -302,11 +301,13 @@ func (s *Server) setupConnectionsRoutes(r *gin.RouterGroup) {
 	connections.GET("", s.connectionStatusHandler.GetAllStatus)
 	connections.GET("/metrics", s.connectionStatusHandler.GetMetrics)
 }
-}
 
 func (s *Server) setupUpdatesRoutes(r *gin.RouterGroup) {
 	if s.updatesHandler != nil {
 		updatesGroup := r.Group("/updates")
+		// All updates routes require organization context for multi-tenant isolation
+		updatesGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+		updatesGroup.Use(middleware.NewOrganizationMembership(nil).Middleware())
 		s.updatesHandler.RegisterRoutes(updatesGroup, s.cookieAuth)
 	}
 }
@@ -319,12 +320,13 @@ func (s *Server) setupDiagnosticsRoutes(r *gin.RouterGroup) {
 		diagnostics.RegisterRoutes(diagnosticsGroup, s.diagnosticsInspectHandler, s.diagnosticsTimelineHandler)
 	}
 }
-	}
-}
 
 func (s *Server) setupAPIKeysRoutes(r *gin.RouterGroup) {
 	if s.apiKeysHandler != nil {
 		authGroup := r.Group("/auth")
+		// All API keys routes require organization context for multi-tenant isolation
+		authGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+		authGroup.Use(middleware.NewOrganizationMembership(nil).Middleware())
 		s.apiKeysHandler.RegisterRoutes(authGroup)
 	}
 }
