@@ -7,6 +7,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,20 +21,19 @@ func NewDevicesHandler(service *device.Service) *DevicesHandler {
 	return &DevicesHandler{service: service}
 }
 
-// getOperatorID extracts the operator ID from the Gin context.
-func (h *DevicesHandler) getOperatorID(c *gin.Context) string {
-	// Try to get from context set by auth middleware
-	if opID, exists := c.Get("operator_id"); exists {
-		if opIDStr, ok := opID.(string); ok {
-			return opIDStr
-		}
-	}
-	// Fallback to query param for dashboard access
-	return c.Query("operatorId")
+// getOrganizationID extracts the organization ID from the Gin context.
+func (h *DevicesHandler) getOrganizationID(c *gin.Context) string {
+	return middleware.GetOrganizationID(c)
 }
 
 // GetDevices handles GET /v1/devices.
 func (h *DevicesHandler) GetDevices(c *gin.Context) {
+	orgID := h.getOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "organization_id required"})
+		return
+	}
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	status := c.Query("status")
@@ -47,10 +47,11 @@ func (h *DevicesHandler) GetDevices(c *gin.Context) {
 	}
 
 	query := &device.ListQuery{
-		Status: status,
-		Search: search,
-		Page:   page,
-		Limit:  limit,
+		OrganizationID: orgID,
+		Status:        status,
+		Search:        search,
+		Page:          page,
+		Limit:         limit,
 	}
 
 	result, err := h.service.GetDevices(c.Request.Context(), query)
@@ -63,36 +64,24 @@ func (h *DevicesHandler) GetDevices(c *gin.Context) {
 }
 
 // GetDeviceDetail handles GET /v1/devices/:imei.
-// Implements DOA verification - returns device only if it belongs to the operator.
+// Requires organization context for multi-tenant isolation.
 func (h *DevicesHandler) GetDeviceDetail(c *gin.Context) {
+	orgID := h.getOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "organization_id required"})
+		return
+	}
+
 	imei := c.Param("imei")
 	if imei == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "IMEI is required"})
 		return
 	}
 
-	operatorID := h.getOperatorID(c)
-
-	// If operator ID is provided, verify ownership
-	if operatorID != "" {
-		d, err := h.service.GetDeviceDetailByOperator(c.Request.Context(), imei, operatorID)
-		if err != nil {
-			if errors.Is(err, devicedomain.ErrNotFound) {
-				c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found or not owned by operator"})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get device"})
-			return
-		}
-		c.JSON(http.StatusOK, d)
-		return
-	}
-
-	// No operator ID - get without ownership check (admin access)
-	d, err := h.service.GetDeviceDetail(c.Request.Context(), imei)
+	d, err := h.service.GetDeviceDetailByOrganization(c.Request.Context(), imei, orgID)
 	if err != nil {
 		if errors.Is(err, devicedomain.ErrNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found in organization"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get device"})
@@ -103,8 +92,14 @@ func (h *DevicesHandler) GetDeviceDetail(c *gin.Context) {
 }
 
 // DeregisterDevice handles DELETE /v1/devices/:imei.
-// Implements DOA verification - only the owning operator can deregister.
+// Requires organization context for multi-tenant isolation.
 func (h *DevicesHandler) DeregisterDevice(c *gin.Context) {
+	orgID := h.getOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "organization_id required"})
+		return
+	}
+
 	imei := c.Param("imei")
 	if imei == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "IMEI is required"})
@@ -112,28 +107,11 @@ func (h *DevicesHandler) DeregisterDevice(c *gin.Context) {
 	}
 
 	hard := c.Query("hard") == "true"
-	operatorID := h.getOperatorID(c)
 
-	// If operator ID is provided, verify ownership
-	if operatorID != "" {
-		result, err := h.service.DeregisterDeviceByOperator(c.Request.Context(), imei, operatorID, hard)
-		if err != nil {
-			if errors.Is(err, devicedomain.ErrNotFound) {
-				c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found or not owned by operator"})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to deregister device"})
-			return
-		}
-		c.JSON(http.StatusOK, result)
-		return
-	}
-
-	// No operator ID - allow without ownership check (admin access)
-	result, err := h.service.DeregisterDevice(c.Request.Context(), imei, hard)
+	result, err := h.service.DeregisterDeviceByOrganization(c.Request.Context(), imei, orgID, hard)
 	if err != nil {
 		if errors.Is(err, devicedomain.ErrNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found in organization"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to deregister device"})

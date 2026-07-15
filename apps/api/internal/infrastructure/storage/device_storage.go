@@ -191,6 +191,20 @@ func (r *DeviceRepository) FindByIMEIAndOperator(ctx context.Context, imei, oper
 	return scanDevice(r.queryRow(ctx, query, imei, operatorID))
 }
 
+// FindByIMEIAndOrganization retrieves a device by IMEI within an organization.
+// Returns ErrNotFound if device doesn't exist OR doesn't belong to the organization.
+func (r *DeviceRepository) FindByIMEIAndOrganization(ctx context.Context, imei, orgID string) (*device.Device, error) {
+	query := `SELECT ` + deviceColumns + ` FROM devices WHERE id = ? AND organization_id = ?`
+	return scanDevice(r.queryRow(ctx, query, imei, orgID))
+}
+
+// FindByIDAndOrganization retrieves a device by ID within an organization.
+// Returns ErrNotFound if device doesn't exist OR doesn't belong to the organization.
+func (r *DeviceRepository) FindByIDAndOrganization(ctx context.Context, id, orgID string) (*device.Device, error) {
+	query := `SELECT ` + deviceColumns + ` FROM devices WHERE id = ? AND organization_id = ?`
+	return scanDevice(r.queryRow(ctx, query, id, orgID))
+}
+
 // Create creates a new device.
 func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) error {
 	query := `
