@@ -224,16 +224,19 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 
 	// WebSocket handler
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
-
 	// Telemetry history handler
 	s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(
 		cfg.Log,
 		storage.NewTelemetryRepository(cfg.DB.DB()),
+		storage.NewDeviceRepository(cfg.DB.DB()),
+		nil,
+	)
+	)
 		nil,
 	)
 
 	// Connection status handler
-	s.connectionStatusHandler = handlers.NewConnectionStatusHandler(cfg.Log, cfg.Hub)
+	s.connectionStatusHandler = handlers.NewConnectionStatusHandler(cfg.Log, cfg.Hub, storage.NewDeviceRepository(cfg.DB.DB()))
 
 	// Admin handlers
 	s.adminClientsHandler = admin.NewClientsHandler(cfg.ClientService)

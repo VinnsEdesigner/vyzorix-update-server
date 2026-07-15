@@ -7,13 +7,10 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	appOrganization "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/invitation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 
 	"github.com/gin-gonic/gin"
 )
-
-// InvitationHandler handles invitation-related HTTP requests.
 type InvitationHandler struct {
 	invitationService *appOrganization.InvitationService
 	memberService    *appOrganization.MemberService

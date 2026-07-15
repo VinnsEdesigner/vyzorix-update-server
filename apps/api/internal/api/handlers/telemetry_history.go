@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/telemetry"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/gin-gonic/gin"
@@ -37,6 +38,7 @@ func DefaultTelemetryHistoryConfig() *TelemetryHistoryConfig {
 type TelemetryHistoryHandler struct {
 	log           *slog.Logger
 	telemetryRepo *storage.TelemetryRepository
+	deviceRepo    *storage.DeviceRepository
 	config        *TelemetryHistoryConfig
 }
 
@@ -44,6 +46,7 @@ type TelemetryHistoryHandler struct {
 func NewTelemetryHistoryHandler(
 	log *slog.Logger,
 	telemetryRepo *storage.TelemetryRepository,
+	deviceRepo *storage.DeviceRepository,
 	cfg *TelemetryHistoryConfig,
 ) *TelemetryHistoryHandler {
 	if cfg == nil {
@@ -53,8 +56,131 @@ func NewTelemetryHistoryHandler(
 	return &TelemetryHistoryHandler{
 		log:           log,
 		telemetryRepo: telemetryRepo,
+		deviceRepo:    deviceRepo,
 		config:        cfg,
 	}
+}
+
+// verifyDeviceInOrganization verifies that a device belongs to the given organization.
+func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, deviceID, orgID string) bool {
+	if h.deviceRepo == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "internal_error",
+			"message": "device repository not available",
+		})
+		return false
+	}
+
+	d, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
+	if err != nil {
+		if err == device.ErrNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":   "not_found",
+				"message": "device not found in organization",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "internal_error",
+				"message": "failed to verify device",
+			})
+		}
+		return false
+	}
+
+	// Verify the device ID matches (deviceID could be IMEI)
+	if d.ID != deviceID {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "not_found",
+			"message": "device not found in organization",
+		})
+		return false
+	}
+
+	return true
+}
+		deviceRepo:    deviceRepo,
+		config:        cfg,
+	}
+}
+
+// verifyDeviceInOrganization verifies that a device belongs to the given organization.
+func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, deviceID, orgID string) bool {
+	if h.deviceRepo == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "internal_error",
+			"message": "device repository not available",
+		})
+		return false
+	}
+
+	d, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
+	if err != nil {
+		if err == device.ErrNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":   "not_found",
+				"message": "device not found in organization",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "internal_error",
+				"message": "failed to verify device",
+			})
+		}
+		return false
+	}
+
+	// Verify the device ID matches (deviceID could be IMEI)
+	if d.ID != deviceID {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "not_found",
+			"message": "device not found in organization",
+		})
+		return false
+	}
+
+	return true
+}
+		deviceRepo:    deviceRepo,
+		config:        cfg,
+	}
+}
+
+// verifyDeviceInOrganization verifies that a device belongs to the given organization.
+func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, deviceID, orgID string) bool {
+	if h.deviceRepo == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "internal_error",
+			"message": "device repository not available",
+		})
+		return false
+	}
+
+	d, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
+	if err != nil {
+		if err == device.ErrNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":   "not_found",
+				"message": "device not found in organization",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "internal_error",
+				"message": "failed to verify device",
+			})
+		}
+		return false
+	}
+
+	// Verify the device ID matches (deviceID could be IMEI)
+	if d.ID != deviceID {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "not_found",
+			"message": "device not found in organization",
+		})
+		return false
+	}
+
+	return true
 }
 
 // QueryHistoryRequest represents a telemetry history query request.
@@ -90,6 +216,38 @@ type telemetryEntry struct {
 // Query handles GET /v1/telemetry/history
 // Query telemetry history for a device within a time range.
 func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
+	// Require organization context for multi-tenant isolation
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+// Query handles GET /v1/telemetry/history
+// Query telemetry history for a device within a time range.
+func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
+	// Require organization context for multi-tenant isolation
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "bad_request",
+			"message": "organization context required",
+		})
+		return
+	}
+
+	startTime := time.Now()
+
+// Query handles GET /v1/telemetry/history
+// Query telemetry history for a device within a time range.
+func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
+	// Require organization context for multi-tenant isolation
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "bad_request",
+			"message": "organization context required",
+		})
+		return
+	}
+
 	startTime := time.Now()
 
 	var req QueryHistoryRequest
@@ -108,6 +266,11 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 			"message": "deviceId is required",
 		})
 
+		return
+	}
+
+	// Verify device belongs to organization
+	if !h.verifyDeviceInOrganization(c, req.DeviceID, orgID) {
 		return
 	}
 
@@ -177,6 +340,14 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 	}
 
 	// Handle export formats
+	switch req.Format {
+	case "csv":
+		h.exportCSV(c, response)
+		return
+	case "json":
+	}
+	c.JSON(http.StatusOK, response)
+}
 	switch req.Format {
 	case "csv":
 		h.exportCSV(c, response)

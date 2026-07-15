@@ -119,16 +119,64 @@ func RequireAuth(resolverFunc func(ctx context.Context) (interface{}, error)) fu
 		}
 
 		return resolverFunc(ctx)
-	}
-}
-
 // RequireRole returns a middleware that requires a specific role.
+// IMPORTANT: In the organization-scoped model, roles are per-organization.
+// This middleware only checks for ACTIVE MEMBERSHIP (any role). 
+// Org-scoped authorization must be performed by individual resolvers 
+// using GetMembership() or CheckCanManage*() methods.
 func RequireRole(roles ...operator.OperatorRole) func(resolverFunc func(ctx context.Context) (interface{}, error)) func(ctx context.Context) (interface{}, error) {
 	return func(resolverFunc func(ctx context.Context) (interface{}, error)) func(ctx context.Context) (interface{}, error) {
 		return func(ctx context.Context) (interface{}, error) {
 			op, ok := gqlcontext.GetOperator(ctx)
 			if !ok || op == nil {
 				return nil, gqlerrors.ErrUnauthorized
+			}
+
+			// Check if operator has any active membership
+			// NOTE: Super admin and admin checks have been removed from here.
+			// Org-scoped role checks are performed by individual resolvers.
+			hasRole := false
+			for _, role := range roles {
+				switch role {
+				case operator.RoleSuperAdmin, operator.RoleAdmin:
+					// These are org-scoped - check in resolver
+					// For now, check if operator has any active membership
+					for _, m := range op.Memberships {
+						if m.IsActive() && m.Role.Level() >= 1 {
+							hasRole = true
+							break
+						}
+					}
+				case operator.RoleOperator:
+					for _, m := range op.Memberships {
+						if m.IsActive() && (m.Role.Level() >= 2) {
+							hasRole = true
+							break
+						}
+					}
+				case operator.RoleViewer:
+					if len(op.Memberships) > 0 {
+						for _, m := range op.Memberships {
+							if m.IsActive() {
+								hasRole = true
+								break
+							}
+						}
+					}
+				}
+				if hasRole {
+					break
+				}
+			}
+
+			if !hasRole {
+				return nil, gqlerrors.Forbidden("active membership required")
+			}
+
+			return resolverFunc(ctx)
+		}
+	}
+}
 			}
 
 			for _, role := range roles {

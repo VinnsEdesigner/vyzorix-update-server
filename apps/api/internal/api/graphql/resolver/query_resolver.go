@@ -622,16 +622,18 @@ func (r *Resolver) GetDeviceMetrics(p graphql.ResolveParams) (interface{}, error
 			},
 		},
 		"events": r.convertThresholdEvents(resp.Events),
-	}, nil
-}
-
-// GetDeviceLogs resolves the deviceLogs query.
-func (r *Resolver) GetDeviceLogs(p graphql.ResolveParams) (interface{}, error) {
+// GetDeviceInspection resolves the deviceInspection query.
+func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
 	imei, ok := p.Args["imei"].(string)
 	if !ok || imei == "" {
-		return nil, r.Presenter.BadRequestError("device IMEI is required")
+		return nil, r.Presenter.BadRequestError("IMEI is required")
+	}
+
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -639,16 +641,19 @@ func (r *Resolver) GetDeviceLogs(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device ownership
 	_, err := r.DeviceService.GetDeviceByOperator(ctx, imei, op.ID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
 
-	if r.LogsSvc == nil {
-		return nil, r.Presenter.InternalError("logs service not available")
+	if r.DiagnosticsSvc == nil {
+		return nil, r.Presenter.InternalError("diagnostics service not available")
 	}
 
+	inspection, err := r.DiagnosticsSvc.GetDeviceInspection(ctx, imei, orgID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get device inspection")
+	}
 	eventType, _ := p.Args["type"].(string)
 	limit, _ := p.Args["limit"].(int)
 	if limit <= 0 {
@@ -857,6 +862,18 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 	imei, ok := p.Args["imei"].(string)
 	if !ok || imei == "" {
 		return nil, r.Presenter.BadRequestError("IMEI is required")
+// GetDeviceInspection resolves the deviceInspection query.
+func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	imei, ok := p.Args["imei"].(string)
+	if !ok || imei == "" {
+		return nil, r.Presenter.BadRequestError("IMEI is required")
+	}
+
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -873,12 +890,10 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 		return nil, r.Presenter.InternalError("diagnostics service not available")
 	}
 
-	inspection, err := r.DiagnosticsSvc.GetDeviceInspection(ctx, imei)
+	inspection, err := r.DiagnosticsSvc.GetDeviceInspection(ctx, imei, orgID)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to get device inspection")
 	}
-
-	var registeredAt interface{} = nil
 	if inspection.Registration.RegisteredAt != nil {
 		registeredAt = inspection.Registration.RegisteredAt.Format(time.RFC3339)
 	}
@@ -936,11 +951,6 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 			"framesToday":     inspection.Telemetry.FramesToday,
 			"avgLatencyMs":   inspection.Telemetry.AvgLatencyMs,
 			"totalBytesToday": inspection.Telemetry.TotalBytesToday,
-			"sessionsToday":   inspection.Telemetry.SessionsToday,
-		},
-	}, nil
-}
-
 // GetDeviceTimeline resolves the deviceTimeline query.
 func (r *Resolver) GetDeviceTimeline(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
@@ -948,6 +958,11 @@ func (r *Resolver) GetDeviceTimeline(p graphql.ResolveParams) (interface{}, erro
 	imei, ok := p.Args["imei"].(string)
 	if !ok || imei == "" {
 		return nil, r.Presenter.BadRequestError("IMEI is required")
+	}
+
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -979,7 +994,22 @@ func (r *Resolver) GetDeviceTimeline(p graphql.ResolveParams) (interface{}, erro
 		Cursor:    cursor,
 	}
 
-	resp, err := r.DiagnosticsSvc.GetDeviceTimeline(ctx, imei, req)
+	resp, err := r.DiagnosticsSvc.GetDeviceTimeline(ctx, imei, req, orgID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get device timeline")
+	}
+
+	resp, err := r.DiagnosticsSvc.GetDeviceTimeline(ctx, imei, req, orgID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get device timeline")
+	}
+		StartTime: startTime,
+		EndTime:   endTime,
+		Limit:     limit,
+		Cursor:    cursor,
+	}
+
+	resp, err := r.DiagnosticsSvc.GetDeviceTimeline(ctx, imei, req, orgID)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to get device timeline")
 	}

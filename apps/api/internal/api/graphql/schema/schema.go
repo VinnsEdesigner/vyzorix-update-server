@@ -23,27 +23,33 @@ func buildQueryType(res *resolver.Resolver) *graphql.Object {
 		Name:   "Query",
 		Fields: mergeFields(inboxQueries(res), deviceQueries(res), commandQueries(res), telemetryQueries(res),
 			connectionQueries(res), dashboardQueries(res), updatesQueries(res), diagnosticsQueries(res)),
-	})
-}
-
 func inboxQueries(res *resolver.Resolver) graphql.Fields {
 	return graphql.Fields{
 		"inbox": &graphql.Field{
 			Type:        InboxListResponseType,
-			Description: "Get paginated inbox entries",
+			Description: "Get paginated inbox entries for an organization",
 			Args: graphql.FieldConfigArgument{
-				"status": &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: "pending"},
-				"page":   &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
-				"limit":  &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+				"status":         &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: "pending"},
+				"page":           &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
+				"limit":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
 			},
 			Resolve: res.GetInbox,
 		},
 		"inboxEntry": &graphql.Field{
 			Type:        InboxEntryType,
-			Description: "Get a single inbox entry by IMEI",
+			Description: "Get a single inbox entry by IMEI within an organization",
 			Args: graphql.FieldConfigArgument{
-				"imei": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+				"imei":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			},
+			Resolve: res.GetInboxEntry,
+		},
+	}
+}
+		},
+	}
+}
 			Resolve: res.GetInboxEntry,
 		},
 	}
@@ -277,17 +283,16 @@ func buildMutationType(res *resolver.Resolver) *graphql.Object {
 			inboxMutations(res),
 			deviceMutations(res),
 			commandMutations(res),
-			updatesMutations(res),
-		),
-	})
-}
-
 func inboxMutations(res *resolver.Resolver) graphql.Fields {
 	return graphql.Fields{
 		"ackInbox": &graphql.Field{
 			Type:        AckResultType,
-			Description: "Acknowledge (approve/reject) an inbox entry",
+			Description: "Acknowledge (approve/reject) an inbox entry within an organization",
 			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Organization ID",
+				},
 				"imei": &graphql.ArgumentConfig{
 					Type: graphql.NewNonNull(graphql.String),
 				},
@@ -302,8 +307,33 @@ func inboxMutations(res *resolver.Resolver) graphql.Fields {
 		},
 		"deregisterDevice": &graphql.Field{
 			Type:        DeregisterResultType,
-			Description: "Deregister a device (soft delete with 30-day retention)",
+			Description: "Deregister a device (soft delete with 30-day retention) within an organization",
 			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Organization ID",
+				},
+				"imei": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+				"hard": &graphql.ArgumentConfig{
+					Type: graphql.Boolean,
+				},
+			},
+			Resolve: res.DeregisterDeviceGraphQL,
+		},
+	}
+}
+				"hard": &graphql.ArgumentConfig{
+					Type: graphql.Boolean,
+				},
+			},
+			Resolve: res.DeregisterDeviceGraphQL,
+		},
+	}
+}
+					Description: "Organization ID",
+				},
 				"imei": &graphql.ArgumentConfig{
 					Type: graphql.NewNonNull(graphql.String),
 				},
@@ -452,24 +482,30 @@ func mergeMutationFields(maps ...graphql.Fields) graphql.Fields {
 
 func diagnosticsQueries(res *resolver.Resolver) graphql.Fields {
 	return graphql.Fields{
+func diagnosticsQueries(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+func diagnosticsQueries(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
 		"deviceInspection": &graphql.Field{
 			Type:        DeviceInspectionType,
-			Description: "Get full device inspection data for diagnostics",
+			Description: "Get full device inspection data for diagnostics within an organization",
 			Args: graphql.FieldConfigArgument{
-				"imei": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+				"imei":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			},
 			Resolve: res.GetDeviceInspection,
 		},
 		"deviceTimeline": &graphql.Field{
 			Type:        TimelineConnectionType,
-			Description: "Get chronological event timeline for a device",
+			Description: "Get chronological event timeline for a device within an organization",
 			Args: graphql.FieldConfigArgument{
-				"imei":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
-				"eventType": &graphql.ArgumentConfig{Type: TimelineEventTypeEnum},
-				"startTime":  &graphql.ArgumentConfig{Type: graphql.Int},
-				"endTime":    &graphql.ArgumentConfig{Type: graphql.Int},
-				"limit":      &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 50},
-				"cursor":     &graphql.ArgumentConfig{Type: graphql.String},
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+				"imei":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"eventType":    &graphql.ArgumentConfig{Type: TimelineEventTypeEnum},
+				"startTime":    &graphql.ArgumentConfig{Type: graphql.Int},
+				"endTime":      &graphql.ArgumentConfig{Type: graphql.Int},
+				"limit":        &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 50},
+				"cursor":       &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: res.GetDeviceTimeline,
 		},

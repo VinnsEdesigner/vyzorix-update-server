@@ -1,22 +1,25 @@
 package operator
 
 // Permission represents a specific action an operator can perform.
+// Note: Permissions are now derived from organization membership roles.
+// This file provides constants for permission checking but the actual
+// permission resolution is done through membership-based role checks.
 type Permission string
 
 const (
 	// Device permissions.
 	PermissionDeviceRead   Permission = "device:read"
-	PermissionDeviceWrite  Permission = "device:write"
+	PermissionDeviceWrite Permission = "device:write"
 	PermissionDeviceDelete Permission = "device:delete"
 
 	// Operator management permissions.
 	PermissionOperatorRead   Permission = "operator:read"
-	PermissionOperatorWrite  Permission = "operator:write"
+	PermissionOperatorWrite Permission = "operator:write"
 	PermissionOperatorDelete Permission = "operator:delete"
 
 	// Update management permissions.
 	PermissionUpdateRead   Permission = "update:read"
-	PermissionUpdateWrite  Permission = "update:write"
+	PermissionUpdateWrite Permission = "update:write"
 	PermissionUpdateDelete Permission = "update:delete"
 
 	// Audit log permissions.
@@ -32,6 +35,7 @@ const (
 )
 
 // DefaultPermissions returns the default permissions for a standard operator.
+// Deprecated: Use membership-based role checks instead.
 func DefaultPermissions() []Permission {
 	return []Permission{
 		PermissionDeviceRead,
@@ -44,6 +48,7 @@ func DefaultPermissions() []Permission {
 }
 
 // AdminPermissions returns all permissions for an admin.
+// Deprecated: Use membership-based role checks instead.
 func AdminPermissions() []Permission {
 	return []Permission{
 		PermissionDeviceRead,
@@ -63,38 +68,9 @@ func AdminPermissions() []Permission {
 }
 
 // SuperAdminPermissions returns all permissions.
+// Deprecated: Use membership-based role checks instead.
 func SuperAdminPermissions() []Permission {
 	perms := AdminPermissions()
 	perms = append(perms, PermissionAdminImpersonate)
 	return perms
-}
-
-// HasPermission checks if the operator has a specific permission.
-func (o *Operator) HasPermission(perm Permission) bool {
-	for _, p := range o.Permissions {
-		if p == perm {
-			return true
-		}
-	}
-	return false
-}
-
-// HasAnyPermission checks if the operator has any of the given permissions.
-func (o *Operator) HasAnyPermission(perms ...Permission) bool {
-	for _, perm := range perms {
-		if o.HasPermission(perm) {
-			return true
-		}
-	}
-	return false
-}
-
-// HasAllPermissions checks if the operator has all of the given permissions.
-func (o *Operator) HasAllPermissions(perms ...Permission) bool {
-	for _, perm := range perms {
-		if !o.HasPermission(perm) {
-			return false
-		}
-	}
-	return true
 }
