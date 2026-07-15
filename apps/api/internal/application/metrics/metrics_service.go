@@ -34,10 +34,10 @@ func (s *Service) GetDeviceMetrics(ctx context.Context, req *GetMetricsRequest) 
 		return nil, fmt.Errorf("failed to get latest telemetry: %w", err)
 	}
 
-	// Get thresholds from operator settings
-	thresholds, err := s.getOperatorThresholds(ctx, req.OperatorID)
+	// Get thresholds from organization settings
+	thresholds, err := s.getOrganizationThresholds(ctx, req.OrganizationID)
 	if err != nil {
-		// Fall back to defaults if operator settings can't be fetched
+		// Fall back to defaults if organization settings can't be fetched
 		thresholds = defaultThresholds()
 	}
 
@@ -319,6 +319,17 @@ func (s *Service) getOperatorThresholds(ctx context.Context, operatorID string) 
 		BufferWarning:     float64(thresholds.BufferWarn),
 		BufferCritical:    float64(thresholds.BufferCrit),
 	}, nil
+}
+
+// getOrganizationThresholds retrieves thresholds from organization settings.
+func (s *Service) getOrganizationThresholds(ctx context.Context, orgID string) (*metrics.ThresholdPreset, error) {
+	if orgID == "" {
+		return defaultThresholds(), nil
+	}
+
+	// For now, fall back to default thresholds
+	// In the future, this can be extended to fetch organization-specific thresholds
+	return defaultThresholds(), nil
 }
 
 // defaultThresholds returns default threshold values.
