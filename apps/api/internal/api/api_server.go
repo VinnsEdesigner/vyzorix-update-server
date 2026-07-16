@@ -400,6 +400,7 @@ func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
 
 // Handlers are defined in server_handlers.go
 // Routes are defined in server_routes.go
+// GraphQL is defined in server_graphql.go
 
 // ServerConfigWithDeps is the config for NewServerWithDeps using pre-wired dependencies.
 type ServerConfigWithDeps struct {
