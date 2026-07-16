@@ -222,8 +222,9 @@ func (s *InvitationService) CancelInvitation(ctx context.Context, invitationID s
 }
 
 // AcceptInvitation accepts an invitation (for authenticated users).
-func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operatorID, operatorEmail, notes string) error {
-	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
+func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operatorID, operatorEmail, notes string) (*organization.OrganizationMember, error) {
+	var resultMember *organization.OrganizationMember
+	err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
 		inv, err := s.invitationRepo.FindByToken(txCtx, token)
 		if err != nil {
 			if errors.Is(err, invitation.ErrNotFound) {
@@ -293,6 +294,9 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 			"org_id", inv.OrganizationID,
 		)
 
+		// Store member reference for return value
+		resultMember = member
+
 		// Send notification email to inviter (async)
 		if s.emailService != nil {
 			go func() {
@@ -309,6 +313,8 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 
 		return nil
 	})
+
+	return resultMember, err
 }
 
 // RejectInvitation rejects an invitation.
@@ -379,6 +385,46 @@ func (s *InvitationService) ListInvitationsByOrganization(ctx context.Context, o
 	}
 
 	return invitations, nil
+}
+
+// ListInvitationsByOrganizationPaginated lists invitations with pagination.
+func (s *InvitationService) ListInvitationsByOrganizationPaginated(ctx context.Context, orgID string, page, limit int, status *invitation.InvitationStatus) (*InvitationListResponse, error) {
+	// Apply defaults and limits
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = DefaultPageSize
+	}
+	if limit > MaxPageSize {
+		limit = MaxPageSize
+	}
+
+	offset := (page - 1) * limit
+
+	// Use repository paginated method - does LIMIT/OFFSET at DB level
+	invitations, total, err := s.invitationRepo.FindByOrganizationPaginated(ctx, orgID, limit, offset, &invitation.InvitationFilter{
+		Status: status,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := (total + limit - 1) / limit
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	return &InvitationListResponse{
+		Items: invitations,
+		Pagination: Pagination{
+			Page:       page,
+			Limit:      limit,
+			Total:      total,
+			TotalPages: totalPages,
+			HasMore:    page < totalPages,
+		},
+	}, nil
 }
 
 // ListInvitationsByInviter lists all invitations sent by an operator.

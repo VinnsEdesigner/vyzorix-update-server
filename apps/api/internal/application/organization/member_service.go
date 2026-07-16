@@ -293,6 +293,44 @@ func (s *MemberService) ListMembers(ctx context.Context, orgID string) ([]*organ
 	return result, nil
 }
 
+// ListMembersPaginated lists all active members of an organization with pagination.
+func (s *MemberService) ListMembersPaginated(ctx context.Context, orgID string, page, limit int) (*MemberListResponse, error) {
+	// Apply defaults and limits
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = DefaultPageSize
+	}
+	if limit > MaxPageSize {
+		limit = MaxPageSize
+	}
+
+	offset := (page - 1) * limit
+
+	// Use repository paginated method - does LIMIT/OFFSET at DB level
+	members, total, err := s.memberRepo.FindActiveByOrganizationPaginated(ctx, orgID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := (total + limit - 1) / limit
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	return &MemberListResponse{
+		Items: members,
+		Pagination: Pagination{
+			Page:       page,
+			Limit:      limit,
+			Total:      total,
+			TotalPages: totalPages,
+			HasMore:    page < totalPages,
+		},
+	}, nil
+}
+
 // GetMembership retrieves a specific operator's membership in an org.
 func (s *MemberService) GetMembership(ctx context.Context, operatorID, orgID string) (*organization.OrganizationMember, error) {
 	member, err := s.memberRepo.FindByOperatorAndOrg(ctx, operatorID, orgID)
@@ -313,6 +351,44 @@ func (s *MemberService) GetMembership(ctx context.Context, operatorID, orgID str
 // ListOperatorMemberships lists all memberships for an operator across all orgs.
 func (s *MemberService) ListOperatorMemberships(ctx context.Context, operatorID string) ([]*organization.OrganizationMember, error) {
 	return s.memberRepo.ListByOperator(ctx, operatorID)
+}
+
+// ListOperatorMembershipsPaginated lists memberships with pagination.
+func (s *MemberService) ListOperatorMembershipsPaginated(ctx context.Context, operatorID string, page, limit int) (*MembershipListResponse, error) {
+	// Apply defaults and limits
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = DefaultPageSize
+	}
+	if limit > MaxPageSize {
+		limit = MaxPageSize
+	}
+
+	offset := (page - 1) * limit
+
+	// Use repository paginated method - does LIMIT/OFFSET at DB level
+	members, total, err := s.memberRepo.ListByOperatorPaginated(ctx, operatorID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := (total + limit - 1) / limit
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	return &MembershipListResponse{
+		Items: members,
+		Pagination: Pagination{
+			Page:       page,
+			Limit:      limit,
+			Total:      total,
+			TotalPages: totalPages,
+			HasMore:    page < totalPages,
+		},
+	}, nil
 }
 
 // CheckCanManageMembers checks if an operator can manage other members in an org.

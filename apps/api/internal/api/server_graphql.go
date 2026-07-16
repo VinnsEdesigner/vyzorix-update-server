@@ -17,6 +17,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	orgapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
@@ -47,6 +48,9 @@ func (s *Server) RegisterGraphQL(
 	thresholdService *appoperator.ThresholdService,
 	notificationSvc *appoperator.NotificationService,
 	webhookClient *infrawebhook.Client,
+	orgService *orgapp.OrganizationService,
+	memberService *orgapp.MemberService,
+	invitationService *orgapp.InvitationService,
 ) error {
 	// Get auth services from server config
 	authService := s.getAuthService()
@@ -80,6 +84,9 @@ func (s *Server) RegisterGraphQL(
 		thresholdService,
 		notificationSvc,
 		webhookClient,
+		orgService,
+		memberService,
+		invitationService,
 	)
 
 	// Build schema
@@ -94,10 +101,10 @@ func (s *Server) RegisterGraphQL(
 		authMiddleware: authMw,
 	}
 
-	// Register routes
-	s.engine.POST("/graphql", h.Handle)
-	s.engine.GET("/graphql", h.Handle)
-	s.engine.GET("/playground", h.Playground)
+	// Register routes with org-scoped paths
+	s.engine.POST("/:org/graphql", h.Handle)
+	s.engine.GET("/:org/graphql", h.Handle)
+	s.engine.GET("/:org/playground", h.Playground)
 
 	// Create subscription handler
 	subsHandler := subscription.NewHandler(&subscription.Config{
@@ -108,9 +115,9 @@ func (s *Server) RegisterGraphQL(
 		AuditLogger: subscription.NewAuditLoggerAdapter(s.AuditLogger),
 		Config:      s.config,
 	})
-	s.engine.GET("/graphql/ws", subsHandler.HandleWebSocket)
+	s.engine.GET("/:org/graphql/ws", subsHandler.HandleWebSocket)
 
-	s.log.Info("GraphQL server registered", "path", "/graphql", "playground", "/playground", "subscriptions", "/graphql/ws")
+	s.log.Info("GraphQL server registered", "path", "/:org/graphql", "playground", "/:org/playground", "subscriptions", "/:org/graphql/ws")
 
 	return nil
 }
@@ -139,6 +146,16 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 		return
 	}
 
+	// Extract org from URL parameter
+	orgID := c.Param("org")
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"errors": []gin.H{{"message": "organization ID required"}},
+		})
+
+		return
+	}
+
 	// Authenticate
 	headers := map[string]string{
 		"Cookie":        c.GetHeader("Cookie"),
@@ -154,8 +171,9 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Add operator to context
+	// Add operator and organization to context
 	ctx := gqlcontext.WithOperator(c.Request.Context(), op)
+	ctx = gqlcontext.WithOrganizationID(ctx, orgID)
 
 	// Execute query
 	result := gql.Do(gql.Params{
@@ -200,11 +218,13 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 
 // Playground serves the GraphQL playground.
 func (h *gqlHandler) Playground(c *gin.Context) {
+	orgID := c.Param("org")
 	c.Header("Content-Type", "text/html")
-	c.String(http.StatusOK, playgroundHTML)
+	c.String(http.StatusOK, playgroundHTML(orgID))
 }
 
-const playgroundHTML = `<!DOCTYPE html>
+func playgroundHTML(orgID string) string {
+	return `<!DOCTYPE html>
 <html>
 <head>
   <title>Vyzorix GraphQL Playground</title>
@@ -227,7 +247,7 @@ const playgroundHTML = `<!DOCTYPE html>
   <script>
     window.addEventListener('load', function (event) {
       GraphQLPlayground.init(document.getElementById('root'), {
-        endpoint: '/graphql',
+        endpoint: '/` + orgID + `/graphql',
         settings: { 'request.credentials': 'include' },
         headers: { 'Authorization': 'Bearer YOUR_TOKEN_HERE' }
       })
@@ -235,6 +255,7 @@ const playgroundHTML = `<!DOCTYPE html>
   </script>
 </body>
 </html>`
+}
 
 // getAuthService returns the AuthService from auth handlers.
 func (s *Server) getAuthService() *appsvc.AuthService {

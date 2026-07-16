@@ -36,6 +36,9 @@ type OrganizationRepository interface {
 	// ListByOperatorID lists all organizations for an OperatorID.
 	ListByOperatorID(ctx context.Context, operatorID OperatorID) ([]*Organization, error)
 
+	// ListByOperatorPaginated lists organizations for an operator with pagination.
+	ListByOperatorPaginated(ctx context.Context, operatorID string, limit, offset int) ([]*Organization, int, error)
+
 	// ListActive lists all active (non-archived) organizations.
 	ListActive(ctx context.Context) ([]*Organization, error)
 

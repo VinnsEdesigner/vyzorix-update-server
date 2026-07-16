@@ -22,6 +22,7 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
 	token, _ := p.Args["token"].(string)
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
@@ -31,13 +32,17 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 		return nil, r.Presenter.BadRequestError("FCM token is required")
 	}
 
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device ownership - returns *dto.DeviceResponse
-	_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+	// Verify device exists in organization using org-scoped method
+	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -52,21 +57,26 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 	r.Presenter.FCMTokenUpdate(ctx, op.ID, deviceID)
 
 	// Fetch updated device to return fresh data
-	updatedDev, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+	updatedDev, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
 
-	return r.deviceDTOToMap(updatedDev), nil
+	return r.deviceDTOToMap(&updatedDev.Device), nil
 }
 
 // DeleteDevice resolves the deleteDevice mutation.
 func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["id"].(string)
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
+	}
+
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -74,13 +84,8 @@ func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device ownership
-	_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
-	if err != nil {
-		return nil, r.Presenter.NotFoundError("device not found")
-	}
-
-	err = r.DeviceService.DeleteDevice(ctx, deviceID)
+	// Use organization-scoped deregistration method
+	_, err := r.DeviceService.DeregisterDeviceByOrganization(ctx, deviceID, orgID, true)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to delete device")
 	}
@@ -97,6 +102,7 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 	deviceID, _ := p.Args["deviceId"].(string)
 	cmdStr, _ := p.Args["command"].(string)
 	args, _ := p.Args["args"].(map[string]interface{})
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
@@ -106,13 +112,17 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.BadRequestError("command is required")
 	}
 
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device ownership
-	_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+	// Verify device exists in organization using org-scoped method
+	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -155,17 +165,6 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 
 	// If not sent via WebSocket, try FCM
 	if delivery == "queued" && r.FCMNotifier != nil {
-		// First verify ownership before sending FCM
-		_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
-		if err != nil {
-			//
-			return map[string]interface{}{
-				"dispatchId":   cmdResp.DispatchID,
-				"commandId":    cmdResp.CommandID,
-				"status":       delivery,
-				"deviceOnline": false,
-			}, nil
-		}
 		dev, _ := r.DeviceService.GetDevice(ctx, deviceID)
 		if dev != nil && dev.FCMToken != "" {
 			wake := fcm.SilentWake{
@@ -175,7 +174,6 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 				DeviceID:   deviceID,
 			}
 			if err := r.FCMNotifier.SendSilentWake(ctx, wake); err != nil {
-				// Log but don't fail - command remains queued
 				r.Presenter.LogAction(ctx, op.ID, "fcm_send_failed", "device", deviceID)
 			} else {
 				delivery = "queued_fcm"
@@ -198,9 +196,14 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	dispatchID, _ := p.Args["dispatchId"].(string)
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if dispatchID == "" {
 		return nil, r.Presenter.BadRequestError("dispatch ID is required")
+	}
+
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -214,8 +217,8 @@ func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.NotFoundError("command not found")
 	}
 
-	// Verify device ownership
-	_, err = r.DeviceService.GetDeviceByOperator(ctx, cmd.DeviceID, op.ID)
+	// Verify device exists in organization
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, cmd.DeviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("command not found")
 	}
@@ -236,9 +239,14 @@ func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	dispatchID, _ := p.Args["dispatchId"].(string)
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if dispatchID == "" {
 		return nil, r.Presenter.BadRequestError("dispatch ID is required")
+	}
+
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -252,8 +260,8 @@ func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.NotFoundError("command not found")
 	}
 
-	// Verify device ownership
-	_, err = r.DeviceService.GetDeviceByOperator(ctx, cmd.DeviceID, op.ID)
+	// Verify device exists in organization
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, cmd.DeviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("command not found")
 	}
@@ -277,9 +285,14 @@ func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
+	}
+
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -287,8 +300,8 @@ func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device ownership
-	_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+	// Verify device exists in organization
+	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}

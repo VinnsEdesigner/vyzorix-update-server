@@ -94,6 +94,9 @@ type Repository interface {
 	// CountByOperator returns the number of devices for an operator.
 	CountByOperator(ctx context.Context, operatorID string) (int, error)
 
+	// CountByOrganization returns the number of devices for an organization.
+	CountByOrganization(ctx context.Context, orgID string) (int, error)
+
 	// SoftDelete marks a device as deregistered (soft delete).
 	// Sets deregistered_at and deletion_scheduled_at for 30-day retention.
 	SoftDelete(ctx context.Context, id string, deregisteredAt, deletionScheduledAt int64) error

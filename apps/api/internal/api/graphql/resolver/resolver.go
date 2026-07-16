@@ -17,6 +17,7 @@ import (
 	inboxapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	orgapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
@@ -49,6 +50,10 @@ type Resolver struct {
 	ThresholdService  *appoperator.ThresholdService
 	NotificationSvc   *appoperator.NotificationService
 	WebhookClient     *infrawebhook.Client
+	// Organization services
+	OrgService        *orgapp.OrganizationService
+	MemberService     *orgapp.MemberService
+	InvitationService *orgapp.InvitationService
 }
 
 // NewResolver creates a new GraphQL resolver.
@@ -73,6 +78,9 @@ func NewResolver(
 	thresholdService *appoperator.ThresholdService,
 	notificationSvc *appoperator.NotificationService,
 	webhookClient *infrawebhook.Client,
+	orgService *orgapp.OrganizationService,
+	memberService *orgapp.MemberService,
+	invitationService *orgapp.InvitationService,
 ) *Resolver {
 	return &Resolver{
 		DeviceService:    deviceService,
@@ -96,6 +104,9 @@ func NewResolver(
 		ThresholdService: thresholdService,
 		NotificationSvc: notificationSvc,
 		WebhookClient:   webhookClient,
+		OrgService:      orgService,
+		MemberService:   memberService,
+		InvitationService: invitationService,
 	}
 }
 

@@ -16,6 +16,7 @@ type Client struct {
 	ctx       context.Context
 	conn      *websocket.Conn
 	operator  *operator.Operator
+	orgID     string
 	subs      map[string]func()
 	done      chan struct{}
 	handler   *Handler
@@ -24,10 +25,11 @@ type Client struct {
 }
 
 // NewClient creates a new subscription client.
-func NewClient(conn *websocket.Conn, op *operator.Operator, handler *Handler, presenter *Presenter) *Client {
+func NewClient(conn *websocket.Conn, op *operator.Operator, orgID string, handler *Handler, presenter *Presenter) *Client {
 	return &Client{
 		conn:      conn,
 		operator:  op,
+		orgID:     orgID,
 		subs:      make(map[string]func()),
 		done:      make(chan struct{}),
 		ctx:       context.Background(),

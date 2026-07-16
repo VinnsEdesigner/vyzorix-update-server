@@ -94,6 +94,13 @@ func (h *Handler) removeClient(conn *websocket.Conn) {
 
 // HandleWebSocket upgrades HTTP to WebSocket and handles subscription connections.
 func (h *Handler) HandleWebSocket(c *gin.Context) {
+	// Extract org from URL parameter
+	orgID := c.Param("org")
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "organization ID required"})
+		return
+	}
+
 	headers := map[string]string{
 		"Cookie": c.GetHeader("Cookie"),
 	}
@@ -112,7 +119,7 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 		return
 	}
 
-	client := NewClient(conn, op, h, h.presenter)
+	client := NewClient(conn, op, orgID, h, h.presenter)
 
 	h.mu.Lock()
 	h.clients[conn] = client
