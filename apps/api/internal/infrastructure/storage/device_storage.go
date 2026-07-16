@@ -57,6 +57,7 @@ func NewDeviceRepository(db *sql.DB) *DeviceRepository {
 const deviceColumns = `
 	id, firebase_install_id, fcm_token, app_version, device_class,
 	command_secret_hash, online, registered_at, last_seen, operator_id,
+	organization_id,
 	created_at, updated_at, device_name, manufacturer, model, os_version, security_patch,
 	deregistered_at, deletion_scheduled_at, fcm_token_refreshed_at
 `
@@ -64,12 +65,13 @@ const deviceColumns = `
 // scanDevice scans a device from a row.
 func scanDevice(row *sql.Row) (*device.Device, error) {
 	var d device.Device
-	var fcmToken, operatorID, deviceName, manufacturer, model, osVersion, securityPatch sql.NullString
+	var fcmToken, operatorID, organizationID, deviceName, manufacturer, model, osVersion, securityPatch sql.NullString
 	var deregisteredAt, deletionScheduledAt, fcmTokenRefreshedAt sql.NullInt64
 
 	err := row.Scan(
 		&d.ID, &d.FirebaseInstallID, &fcmToken, &d.AppVersion, &d.DeviceClass,
 		&d.CommandSecretHash, &d.Online, &d.RegisteredAt, &d.LastSeen, &operatorID,
+		&organizationID,
 		&d.CreatedAt, &d.UpdatedAt, &deviceName, &manufacturer, &model, &osVersion, &securityPatch,
 		&deregisteredAt, &deletionScheduledAt, &fcmTokenRefreshedAt,
 	)
@@ -84,6 +86,7 @@ func scanDevice(row *sql.Row) (*device.Device, error) {
 
 	d.FCMToken = fcmToken.String
 	d.OperatorID = operatorID.String
+	d.OrganizationID = organizationID.String
 	d.DeviceName = deviceName.String
 	d.Manufacturer = manufacturer.String
 	d.Model = model.String
@@ -210,12 +213,14 @@ func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) error {
 	query := `
 		INSERT INTO devices (id, firebase_install_id, fcm_token, app_version, device_class,
 		                    command_secret_hash, online, registered_at, last_seen, operator_id,
+		                    organization_id,
 		                    created_at, updated_at, device_name, manufacturer, model, os_version)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := r.exec(ctx, query,
 		d.ID, d.FirebaseInstallID, nullString(d.FCMToken), d.AppVersion, d.DeviceClass,
 		d.CommandSecretHash, d.Online, d.RegisteredAt, d.LastSeen, nullString(d.OperatorID),
+		nullString(d.OrganizationID),
 		d.CreatedAt, d.UpdatedAt, nullString(d.DeviceName), nullString(d.Manufacturer),
 		nullString(d.Model), nullString(d.OSVersion),
 	)
@@ -229,14 +234,14 @@ func (r *DeviceRepository) Update(ctx context.Context, d *device.Device) error {
 		UPDATE devices 
 		SET firebase_install_id = ?, fcm_token = ?, app_version = ?, device_class = ?,
 		    command_secret_hash = ?, online = ?, registered_at = ?, last_seen = ?,
-		    operator_id = ?, updated_at = ?, device_name = ?, manufacturer = ?,
+		    operator_id = ?, organization_id = ?, updated_at = ?, device_name = ?, manufacturer = ?,
 		    model = ?, os_version = ?
 		WHERE id = ?`
 
 	result, err := r.exec(ctx, query,
 		d.FirebaseInstallID, nullString(d.FCMToken), d.AppVersion, d.DeviceClass,
 		d.CommandSecretHash, d.Online, d.RegisteredAt, d.LastSeen, nullString(d.OperatorID),
-		time.Now(), nullString(d.DeviceName), nullString(d.Manufacturer),
+		nullString(d.OrganizationID), time.Now(), nullString(d.DeviceName), nullString(d.Manufacturer),
 		nullString(d.Model), nullString(d.OSVersion), d.ID,
 	)
 	if err != nil {
@@ -407,6 +412,16 @@ func (r *DeviceRepository) CountByOperator(ctx context.Context, operatorID strin
 	var count int
 	err := r.queryRow(ctx,
 		"SELECT COUNT(*) FROM devices WHERE operator_id = ?", operatorID,
+	).Scan(&count)
+
+	return count, err
+}
+
+// CountByOrganization returns the number of devices for an organization.
+func (r *DeviceRepository) CountByOrganization(ctx context.Context, orgID string) (int, error) {
+	var count int
+	err := r.queryRow(ctx,
+		"SELECT COUNT(*) FROM devices WHERE organization_id = ?", orgID,
 	).Scan(&count)
 
 	return count, err

@@ -151,6 +151,9 @@ func (s *Server) setupAuthenticatedRoutes() {
 	// These routes manage API keys - shouldn't use API key auth
 	s.setupAPIKeysRoutes(tenantGroup)
 
+	// Organization routes: Session required (operators, invitations, members)
+	s.setupOrganizationRoutes(tenantGroup)
+
 	// ADMIN routes: SuperAdmin session required (NO API key auth)
 	// These require valid session AND SuperAdmin role
 	s.setupAdminRoutes(tenantGroup)
@@ -328,6 +331,59 @@ func (s *Server) setupAPIKeysRoutes(r *gin.RouterGroup) {
 		authGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
 		authGroup.Use(middleware.NewOrganizationMembership(nil).Middleware())
 		s.apiKeysHandler.RegisterRoutes(authGroup)
+	}
+}
+
+func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
+	if s.organizationHandler == nil {
+		return
+	}
+
+	// Organization routes (authenticated)
+	orgs := r.Group("/organizations")
+	orgs.Use(s.cookieAuth.Middleware())
+	{
+		orgs.POST("", s.organizationHandler.Create)
+		orgs.GET("", s.organizationHandler.List)
+		orgs.GET("/:id", s.organizationHandler.Get)
+		orgs.PATCH("/:id", s.organizationHandler.Update)
+		orgs.DELETE("/:id", s.organizationHandler.Delete)
+
+		// Member routes under organizations
+		orgs.GET("/:id/members", s.memberHandler.List)
+		orgs.DELETE("/:id/members/:memberId", s.memberHandler.Remove)
+		orgs.PATCH("/:id/members/:memberId", s.memberHandler.UpdateRole)
+
+		// Invitation routes under organizations
+		orgs.GET("/:id/invitations", s.invitationHandler.ListByOrganization)
+
+		// Device transfer route
+		if s.transferHandler != nil {
+			orgs.POST("/:id/devices/:imei/transfer", s.transferHandler.Transfer)
+		}
+	}
+
+	// Invitation routes (public + authenticated)
+	invitations := r.Group("/invitations")
+	invitations.Use(s.cookieAuth.Middleware())
+	{
+		invitations.GET("", s.invitationHandler.ListByInviter)
+		invitations.DELETE("/:id", s.invitationHandler.Delete)
+	}
+
+	// Public invitation acceptance routes
+	invite := r.Group("/invite")
+	{
+		invite.GET("/:token", s.invitationHandler.GetByToken)
+		invite.POST("/:token/accept", s.invitationHandler.Accept)
+		invite.POST("/:token/reject", s.invitationHandler.Reject)
+	}
+
+	// My invitations (pending for current user)
+	me := r.Group("/me")
+	me.Use(s.cookieAuth.Middleware())
+	{
+		me.GET("/invitations", s.invitationHandler.ListPendingForEmail)
 	}
 }
 

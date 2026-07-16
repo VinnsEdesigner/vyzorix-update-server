@@ -117,6 +117,9 @@ func main() {
 			thresholdService,
 			notificationSvc,
 			webhookClient,
+			result.HandlerSet.OrgService,
+			result.HandlerSet.MemberService,
+			result.HandlerSet.InvitationService,
 		); regErr != nil {
 			log.Error("failed to register GraphQL", "err", regErr)
 			PrintWarning("GraphQL", "Registration failed")

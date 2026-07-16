@@ -8,6 +8,7 @@ import (
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
+	organizationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/organization"
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
@@ -15,6 +16,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -24,52 +26,61 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	"log/slog"
+)
+
 // HandlerDependencies contains all dependencies needed by handlers.
 type HandlerDependencies struct {
-	OperatorRepo   operator.Repository
-	FCMNotifier    fcm.Notifier
-	OAuthStateRepo authhandlers.OAuthStateProvider
-	Presenter      *response.Presenter
-	Hub            *hub.Hub
-	EmailService   *emailService.Service
-	Lockout        *middleware.Lockout
-	DB             *storage.SQLite
-	AuditLogger    *audit.Logger
-	GoogleVerifier *infraauth.GoogleTokenVerifier
-	DeviceService  *device.Service
-	DeviceRepo    *storage.DeviceRepository
-	IPIntelligence *middleware.IPIntelligence
-	ClientService  *client.Service
-	CommandService *command.Service
-	SessionManager *infraauth.SessionManager
-	Log            *slog.Logger
-	HmacVerifier   *cryptohmac.Verifier
-	UpdatesStorage *storage.UpdatesStorage
-	AuthService    *auth.AuthService
-	Config         config.Config
-	OrgService     *orgapp.OrganizationService
-	MemberService  *orgapp.MemberService
-	InvitationService *orgapp.InvitationService
-}
-}
-	Config         config.Config
+	OperatorRepo        operator.Repository
+	FCMNotifier         fcm.Notifier
+	OAuthStateRepo      authhandlers.OAuthStateProvider
+	Presenter           *response.Presenter
+	Hub                 *ws.Hub
+	EmailService        *emailService.Service
+	Lockout             *middleware.Lockout
+	DB                  *storage.SQLite
+	AuditLogger         *audit.Logger
+	GoogleVerifier      *infraauth.GoogleTokenVerifier
+	DeviceService       *device.Service
+	DeviceRepo         *storage.DeviceRepository
+	IPIntelligence      *middleware.IPIntelligence
+	ClientService       *client.Service
+	CommandService      *command.Service
+	SessionManager      *infraauth.SessionManager
+	Log                 *slog.Logger
+	HmacVerifier        *cryptohmac.Verifier
+	UpdatesStorage      *storage.UpdatesStorage
+	AuthService         *auth.AuthService
+	Config              config.Config
+	OrgService          *orgapplication.OrganizationService
+	MemberService       *orgapplication.MemberService
+	InvitationService   *orgapplication.InvitationService
 }
 
 // HandlerSet contains all handler instances.
 type HandlerSet struct {
-	Auth             *authhandlers.AllHandlers
-	DeviceRegister   *devicehandlers.RegisterHandler
-	DeviceStatus     *devicehandlers.StatusHandler
-	DeviceUpdater    *devicehandlers.UpdaterHandler
-	DeviceList       *devicehandlers.ListHandler
-	Devices          *devicehandlers.DevicesHandler
-	Command          *cmdhandlers.ExecuteHandler
-	Stream           *websockethandlers.StreamHandler
-	TelemetryHistory *handlers.TelemetryHistoryHandler
-	ConnectionStatus *handlers.ConnectionStatusHandler
-	AdminClients     *admin.ClientsHandler
-	Updates          *updateshandlers.UpdatesHandler
-	UpdatesService   *updatesapplication.Service
+	Auth               *authhandlers.AllHandlers
+	DeviceRegister     *devicehandlers.RegisterHandler
+	DeviceStatus       *devicehandlers.StatusHandler
+	DeviceUpdater      *devicehandlers.UpdaterHandler
+	DeviceList         *devicehandlers.ListHandler
+	Devices            *devicehandlers.DevicesHandler
+	Command            *cmdhandlers.ExecuteHandler
+	Stream             *websockethandlers.StreamHandler
+	TelemetryHistory   *handlers.TelemetryHistoryHandler
+	ConnectionStatus   *handlers.ConnectionStatusHandler
+	AdminClients       *admin.ClientsHandler
+	Updates            *updateshandlers.UpdatesHandler
+	UpdatesService     *updatesapplication.Service
+	Organization       *organizationhandlers.OrganizationHandler
+	Invitation         *organizationhandlers.InvitationHandler
+	Member             *organizationhandlers.MemberHandler
+	Transfer           *devicehandlers.TransferHandler
+	OrgService         *orgapplication.OrganizationService
+	MemberService      *orgapplication.MemberService
+	InvitationService  *orgapplication.InvitationService
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -174,6 +185,21 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 
 		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, pushSvc, updatesRateLimiters, deps.AuditLogger, deps.Config.GitHubWebhookSecret)
 		hs.UpdatesService = updatesService
+	}
+
+	// Organization handlers
+	if deps.OrgService != nil && deps.MemberService != nil {
+		hs.Organization = organizationhandlers.NewOrganizationHandler(deps.OrgService, deps.MemberService, deps.Presenter)
+		hs.Invitation = organizationhandlers.NewInvitationHandler(deps.InvitationService, deps.MemberService, deps.Presenter)
+		hs.Member = organizationhandlers.NewMemberHandler(deps.MemberService, deps.OrgService, deps.Presenter)
+		hs.OrgService = deps.OrgService
+		hs.MemberService = deps.MemberService
+		hs.InvitationService = deps.InvitationService
+	}
+
+	// Device transfer handler
+	if deps.DeviceService != nil {
+		hs.Transfer = devicehandlers.NewTransferHandler(deps.DeviceService, deps.Presenter)
 	}
 
 	return hs

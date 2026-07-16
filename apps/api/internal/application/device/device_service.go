@@ -350,6 +350,11 @@ func (s *Service) CountByOperator(ctx context.Context, operatorID string) (int, 
 	return len(devices), nil
 }
 
+// CountByOrganization returns the total number of devices for an organization.
+func (s *Service) CountByOrganization(ctx context.Context, orgID string) (int, error) {
+	return s.deviceRepo.CountByOrganization(ctx, orgID)
+}
+
 // ListByOperatorPaginated returns paginated devices for an operator.
 func (s *Service) ListByOperatorPaginated(ctx context.Context, operatorID string, limit, offset int) ([]*device.Device, error) {
 	if limit <= 0 {
@@ -838,48 +843,6 @@ func secureCompare(a, b string) bool {
 		result |= int(a[i]) ^ int(b[i])
 	}
 	return result == 0
-}
-
-// TransferDevice transfers a device from one organization to another.
-// Prerequisites:
-// - Device must be OFFLINE
-// - Actor must have permission in source AND target orgs
-func (s *Service) TransferDevice(ctx context.Context, imei, sourceOrgID, targetOrgID, actorOperatorID string) error {
-	// Get the device
-	d, err := s.deviceRepo.FindByIMEI(ctx, imei)
-	if err != nil {
-		if err == device.ErrNotFound {
-			return ErrDeviceNotFound
-		}
-		return err
-	}
-
-	// Verify device belongs to source org
-	if d.OrganizationID != sourceOrgID {
-		return ErrDeviceNotFound
-	}
-
-	// Device must be offline for transfer
-	if d.Online {
-		return application.ErrDeviceOnline
-	}
-
-	// Update device organization
-	d.OrganizationID = targetOrgID
-	d.UpdatedAt = time.Now()
-
-	if err := s.deviceRepo.Update(ctx, d); err != nil {
-		return err
-	}
-
-	s.logger.Info("device transferred between organizations",
-		"imei", imei,
-		"from_org", sourceOrgID,
-		"to_org", targetOrgID,
-		"actor_id", actorOperatorID,
-	)
-
-	return nil
 }
 
 // TransferDevice transfers a device from one organization to another.

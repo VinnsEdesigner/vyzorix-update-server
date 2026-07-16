@@ -1771,3 +1771,303 @@ var WebhookTestResultType = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
+
+// OrganizationType represents an organization in the system.
+var OrganizationType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "Organization",
+	Description: "An organization for multi-tenant device management",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique organization identifier",
+		},
+		"name": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Organization name",
+		},
+		"lifecycle": &graphql.Field{
+			Type:        graphql.NewNonNull(OrganizationLifecycleEnum),
+			Description: "Organization lifecycle state",
+		},
+		"maxMembers": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Maximum number of members allowed",
+		},
+		"memberCount": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Current number of active members",
+		},
+		"createdAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "Organization creation timestamp",
+		},
+		"updatedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "Organization last update timestamp",
+		},
+		"deletedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "Organization deletion timestamp (soft delete)",
+		},
+		"createdBy": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "ID of the operator who created this organization",
+		},
+	},
+})
+
+// MembershipType represents an organization membership.
+var MembershipType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "Membership",
+	Description: "An organization membership",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique membership identifier",
+		},
+		"organizationId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Organization ID",
+		},
+		"operatorId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Operator ID",
+		},
+		"role": &graphql.Field{
+			Type:        graphql.NewNonNull(OrgRoleEnum),
+			Description: "Member role in the organization",
+		},
+		"lifecycle": &graphql.Field{
+			Type:        graphql.NewNonNull(MemberLifecycleEnum),
+			Description: "Membership lifecycle state",
+		},
+		"invitedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the invitation was sent",
+		},
+		"joinedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the operator joined",
+		},
+		"removedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the member was removed",
+		},
+		"suspendedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the member was suspended",
+		},
+		"operator": &graphql.Field{
+			Type:        OperatorType,
+			Description: "The operator associated with this membership",
+		},
+		"organization": &graphql.Field{
+			Type:        OrganizationType,
+			Description: "The organization",
+		},
+	},
+})
+
+// InvitationType represents an organization invitation.
+var InvitationType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "Invitation",
+	Description: "An organization invitation",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique invitation identifier",
+		},
+		"organizationId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Organization ID",
+		},
+		"organizationName": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Organization name at time of invitation",
+		},
+		"email": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Email address the invitation was sent to",
+		},
+		"role": &graphql.Field{
+			Type:        graphql.NewNonNull(OrgRoleEnum),
+			Description: "Role being invited to",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(InvitationStatusEnum),
+			Description: "Invitation status",
+		},
+		"token": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Unique invitation token",
+		},
+		"inviterId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "ID of the operator who sent the invitation",
+		},
+		"inviterName": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Name of the inviter",
+		},
+		"inviteeId": &graphql.Field{
+			Type:        graphql.ID,
+			Description: "ID of the invited operator (if accepted)",
+		},
+		"inviteeNotes": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Notes from the invitee",
+		},
+		"inviterNotes": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Notes from the inviter",
+		},
+		"createdAt": &graphql.Field{
+			Type:        graphql.NewNonNull(DateTimeScalar),
+			Description: "When the invitation was created",
+		},
+		"expiresAt": &graphql.Field{
+			Type:        graphql.NewNonNull(DateTimeScalar),
+			Description: "When the invitation expires",
+		},
+		"respondedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the invitation was responded to",
+		},
+		"organization": &graphql.Field{
+			Type:        OrganizationType,
+			Description: "The organization",
+		},
+	},
+})
+
+// OrganizationMemberType represents a member within an organization context.
+var OrganizationMemberType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "OrganizationMember",
+	Description: "A member of an organization with their membership details",
+	Fields: graphql.Fields{
+		"membership": &graphql.Field{
+			Type:        graphql.NewNonNull(MembershipType),
+			Description: "Membership details",
+		},
+		"operator": &graphql.Field{
+			Type:        OperatorType,
+			Description: "Operator information",
+		},
+	},
+})
+
+// CreateOrganizationPayloadType represents the result of creating an organization.
+var CreateOrganizationPayloadType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "CreateOrganizationPayload",
+	Description: "Result of creating an organization",
+	Fields: graphql.Fields{
+		"organization": &graphql.Field{
+			Type:        graphql.NewNonNull(OrganizationType),
+			Description: "The created organization",
+		},
+		"membership": &graphql.Field{
+			Type:        graphql.NewNonNull(MembershipType),
+			Description: "The creator's membership as super_admin",
+		},
+	},
+})
+
+// TransferDevicePayloadType represents the result of transferring a device.
+var TransferDevicePayloadType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "TransferDevicePayload",
+	Description: "Result of transferring a device between organizations",
+	Fields: graphql.Fields{
+		"success": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Whether the transfer was successful",
+		},
+		"deviceId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "The transferred device ID",
+		},
+		"sourceOrganizationId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Source organization ID",
+		},
+		"targetOrganizationId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Target organization ID",
+		},
+	},
+})
+
+// PaginationType represents pagination metadata.
+var PaginationType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "Pagination",
+	Description: "Pagination metadata for list queries",
+	Fields: graphql.Fields{
+		"page": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Current page number",
+		},
+		"limit": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Items per page",
+		},
+		"total": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Total number of items",
+		},
+		"totalPages": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Total number of pages",
+		},
+		"hasMore": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Whether there are more pages",
+		},
+	},
+})
+
+// OrganizationListResponseType represents a paginated list of organizations.
+var OrganizationListResponseType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "OrganizationListResponse",
+	Description: "Paginated list of organizations",
+	Fields: graphql.Fields{
+		"items": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(OrganizationType))),
+			Description: "List of organizations",
+		},
+		"pagination": &graphql.Field{
+			Type:        graphql.NewNonNull(PaginationType),
+			Description: "Pagination metadata",
+		},
+	},
+})
+
+// MemberListResponseType represents a paginated list of organization members.
+var MemberListResponseType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "MemberListResponse",
+	Description: "Paginated list of organization members",
+	Fields: graphql.Fields{
+		"items": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(MembershipType))),
+			Description: "List of members",
+		},
+		"pagination": &graphql.Field{
+			Type:        graphql.NewNonNull(PaginationType),
+			Description: "Pagination metadata",
+		},
+	},
+})
+
+// InvitationListResponseType represents a paginated list of invitations.
+var InvitationListResponseType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "InvitationListResponse",
+	Description: "Paginated list of invitations",
+	Fields: graphql.Fields{
+		"items": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(InvitationType))),
+			Description: "List of invitations",
+		},
+		"pagination": &graphql.Field{
+			Type:        graphql.NewNonNull(PaginationType),
+			Description: "Pagination metadata",
+		},
+	},
+})

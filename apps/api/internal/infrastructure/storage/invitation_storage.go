@@ -182,6 +182,57 @@ func (s *InvitationStorage) ListByOrganization(ctx context.Context, orgID string
 	return s.scanInvitations(rows)
 }
 
+// FindByOrganizationPaginated retrieves invitations with pagination.
+func (s *InvitationStorage) FindByOrganizationPaginated(ctx context.Context, orgID string, limit, offset int, filter *invitation.InvitationFilter) ([]*invitation.Invitation, int, error) {
+	// Build count query
+	countQuery := `SELECT COUNT(*) FROM invitations WHERE organization_id = ?`
+	args := []interface{}{orgID}
+
+	if filter != nil && filter.Status != nil {
+		countQuery += " AND status = ?"
+		args = append(args, string(*filter.Status))
+	}
+
+	var total int
+	err := s.getQuerier(ctx).QueryRowContext(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Build paginated query
+	query := `
+		SELECT i.id, i.organization_id, i.email, i.role, i.status, i.token, i.inviter_notes, i.invitee_notes, 
+			   i.invited_by, i.invited_at, i.responded_at, i.responder_id, i.expires_at,
+			   COALESCE(o.name, '') as organization_name, COALESCE(op.name, '') as inviter_name
+		FROM invitations i
+		LEFT JOIN organizations o ON i.organization_id = o.id
+		LEFT JOIN operators op ON i.invited_by = op.id
+		WHERE i.organization_id = ?`
+
+	scanArgs := []interface{}{orgID}
+
+	if filter != nil && filter.Status != nil {
+		query += " AND i.status = ?"
+		scanArgs = append(scanArgs, string(*filter.Status))
+	}
+
+	query += " ORDER BY i.invited_at DESC LIMIT ? OFFSET ?"
+	scanArgs = append(scanArgs, limit, offset)
+
+	rows, err := s.getQuerier(ctx).QueryContext(ctx, query, scanArgs...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	invitations, err := s.scanInvitations(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return invitations, total, nil
+}
+
 // ListByInviter lists all invitations sent by an operator.
 func (s *InvitationStorage) ListByInviter(ctx context.Context, inviterID string) ([]*invitation.Invitation, error) {
 	query := `

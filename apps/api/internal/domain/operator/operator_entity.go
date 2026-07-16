@@ -180,6 +180,92 @@ func (o *Operator) CanManageSettingsIn(orgID string) bool {
 	return m.Role.Level() >= organization.LevelAdmin
 }
 
+// IsSuperAdmin returns true if the operator has super_admin role in any organization.
+func (o *Operator) IsSuperAdmin() bool {
+	for _, m := range o.Memberships {
+		if m.Role.IsSuperAdmin() && m.IsActive() {
+			return true
+		}
+	}
+	return false
+}
+
+// IsAdmin returns true if the operator has admin or super_admin role in any organization.
+func (o *Operator) IsAdmin() bool {
+	for _, m := range o.Memberships {
+		if m.Role.IsAdmin() && m.IsActive() {
+			return true
+		}
+	}
+	return false
+}
+
+// IsOperator returns true if the operator has operator role in any organization.
+func (o *Operator) IsOperator() bool {
+	for _, m := range o.Memberships {
+		if m.Role.Level() == LevelOperator && m.IsActive() {
+			return true
+		}
+	}
+	return false
+}
+
+// IsViewer returns true if the operator has viewer role in any organization.
+func (o *Operator) IsViewer() bool {
+	for _, m := range o.Memberships {
+		if m.Role.Level() == LevelViewer && m.IsActive() {
+			return true
+		}
+	}
+	return false
+}
+
+// HasPermission returns true if the operator has the given permission in any organization.
+func (o *Operator) HasPermission(perm Permission) bool {
+	for _, m := range o.Memberships {
+		if !m.IsActive() {
+			continue
+		}
+		// Admin and super_admin have all permissions
+		if m.Role.IsAdmin() {
+			return true
+		}
+		// Check specific permissions based on role
+		switch m.Role {
+		case RoleOperator:
+			if perm == PermissionDeviceRead || perm == PermissionDeviceWrite ||
+				perm == PermissionUpdateRead || perm == PermissionSettingsRead {
+				return true
+			}
+		case RoleViewer:
+			if perm == PermissionDeviceRead || perm == PermissionUpdateRead || perm == PermissionSettingsRead {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// HasAnyPermission returns true if the operator has any of the given permissions.
+func (o *Operator) HasAnyPermission(perms ...Permission) bool {
+	for _, perm := range perms {
+		if o.HasPermission(perm) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasAllPermissions returns true if the operator has all of the given permissions.
+func (o *Operator) HasAllPermissions(perms ...Permission) bool {
+	for _, perm := range perms {
+		if !o.HasPermission(perm) {
+			return false
+		}
+	}
+	return true
+}
+
 // HasMFA returns true if MFA is enabled for this operator.
 func (o *Operator) HasMFA() bool {
 	return o.MFAEnabled && o.MFASecret != ""

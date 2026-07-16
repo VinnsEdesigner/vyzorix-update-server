@@ -24,6 +24,9 @@ type InvitationRepository interface {
 	// FindByOrganization retrieves all invitations for an organization.
 	FindByOrganization(ctx context.Context, orgID string) ([]*Invitation, error)
 
+	// FindByOrganizationPaginated retrieves invitations with pagination.
+	FindByOrganizationPaginated(ctx context.Context, orgID string, limit, offset int, filter *InvitationFilter) ([]*Invitation, int, error)
+
 	// FindPendingByOrganization retrieves all pending invitations for an organization.
 	FindPendingByOrganization(ctx context.Context, orgID string) ([]*Invitation, error)
 

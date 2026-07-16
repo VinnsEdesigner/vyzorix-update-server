@@ -8,6 +8,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
+	organizationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/organization"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	dashboardhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/dashboard"
@@ -121,6 +122,10 @@ type Server struct {
 	superAdminAPIKeys          *admin.SuperAdminHandler
 	tenantAPIKeyAuth           *middleware.TenantAPIKeyAuth
 	apiKeyRateLimiter          *middleware.InMemoryRateLimiter
+	organizationHandler        *organizationhandlers.OrganizationHandler
+	invitationHandler         *organizationhandlers.InvitationHandler
+	memberHandler             *organizationhandlers.MemberHandler
+	transferHandler          *devicehandlers.TransferHandler
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -458,6 +463,12 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.connectionStatusHandler = cfg.HandlerSet.ConnectionStatus
 	s.adminClientsHandler = cfg.HandlerSet.AdminClients
 	s.updatesHandler = cfg.HandlerSet.Updates
+
+	// Organization handlers
+	s.organizationHandler = cfg.HandlerSet.Organization
+	s.invitationHandler = cfg.HandlerSet.Invitation
+	s.memberHandler = cfg.HandlerSet.Member
+	s.transferHandler = cfg.HandlerSet.Transfer
 
 	// API key handlers
 	if cfg.APIKeyService != nil {
