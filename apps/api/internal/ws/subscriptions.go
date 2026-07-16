@@ -27,7 +27,7 @@ func nextCallbackID() int {
 	return callbackIDCounter
 }
 
-// SubscriptionManager manages real-time subscriptions for GraphQL subscriptions.
+// SubscriptionManager manages real-time subscriptions for WebSocket connections.
 type SubscriptionManager struct {
 	hub           *Hub
 	deviceUpdates map[string][]callbackWrapper
