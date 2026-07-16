@@ -114,6 +114,7 @@ type Config struct {
 	EnableUsageTracking      bool
 	AllowKeyRenaming         bool
 	EnforceHMAC              bool
+	EnableGraphQL            bool
 	RequireKeyName           bool
 }
 
@@ -236,6 +237,7 @@ func Load() (Config, error) {
 		JWTDuration:              jwtDuration,
 		EmailVerifyTokenExpiry:   emailVerifyExpiry,
 		PasswordResetTokenExpiry: passwordResetExpiry,
+		EnableGraphQL:            getBool("ENABLE_GRAPHQL", true), // Enabled by default
 		DiagnosticsConfig:        LoadDiagnosticsConfig(),
 	}
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,8 +21,8 @@ func NewUpdatesAdminAuth() *UpdatesAdminAuth {
 // RequireAdmin returns a Gin middleware that requires admin role.
 func (m *UpdatesAdminAuth) RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		op := GetOperatorFromContext(c)
-		if op == nil {
+		op, exists := gqlcontext.GetOperator(c.Request.Context())
+		if !exists || op == nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error":   "unauthorized",
 				"message": "Authentication required",
@@ -46,8 +47,8 @@ func (m *UpdatesAdminAuth) RequireAdmin() gin.HandlerFunc {
 // RequireSuperAdmin returns a Gin middleware that requires super_admin role.
 func (m *UpdatesAdminAuth) RequireSuperAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		op := GetOperatorFromContext(c)
-		if op == nil {
+		op, exists := gqlcontext.GetOperator(c.Request.Context())
+		if !exists || op == nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error":   "unauthorized",
 				"message": "Authentication required",

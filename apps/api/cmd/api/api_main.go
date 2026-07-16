@@ -13,9 +13,18 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
+	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
+	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/logging"
+	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/ssr"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 )
 
 func main() {
@@ -64,6 +73,57 @@ func main() {
 		AuditLogger:    deps.AuditLogger,
 		UpdatesService: deps.UpdatesService,
 	})
+
+	// Register GraphQL if enabled
+	if cfg.EnableGraphQL {
+		PrintSection("GraphQL")
+		PrintStatus("GraphQL", "Registering...")
+
+		// Create GraphQL-specific services not in main wire graph
+		db := deps.DB.DB()
+		deviceRepo := deps.DeviceService.DeviceRepo()
+		commandRepo := deps.CommandService.CommandRepo()
+
+		historyService := command.NewHistoryService(commandRepo, deviceRepo)
+		logsRepo := storage.NewLogsRepository(db)
+		metricsRepo := storage.NewMetricsRepository(db)
+		logsSvc := logs.NewService(logsRepo, deps.Log)
+		metricsSvc := appmetrics.NewService(metricsRepo, deps.OperatorRepo)
+		dashboardSvc := dashboard.NewService(deviceRepo, commandRepo, logsRepo)
+		diagnosticsRepo := storage.NewDiagnosticsRepository(db)
+		diagnosticsSvc := diagnosticsapp.NewService(diagnosticsRepo, deviceRepo, deps.Hub, cfg.DiagnosticsConfig)
+
+		// Create settings-related services for GraphQL
+		settingsService := auth.NewClientSettingsService(deps.OperatorRepo)
+		thresholdService := appoperator.NewThresholdService(deps.OperatorRepo)
+		notificationSvc := appoperator.NewNotificationService(deps.OperatorRepo)
+		webhookClient := infrawebhook.NewClient(10 * time.Second)
+
+		if regErr := apiServer.RegisterGraphQL(
+			deps.DeviceService,
+			deps.CommandService,
+			historyService,
+			dashboardSvc,
+			logsSvc,
+			metricsSvc,
+			deps.TelemetryRepo,
+			logsRepo,
+			metricsRepo,
+			deps.Hub,
+			deps.UpdatesService,
+			diagnosticsSvc,
+			deps.OperatorRepo,
+			settingsService,
+			thresholdService,
+			notificationSvc,
+			webhookClient,
+		); regErr != nil {
+			log.Error("failed to register GraphQL", "err", regErr)
+			PrintWarning("GraphQL", "Registration failed")
+		} else {
+			PrintStatus("GraphQL", "Registered")
+		}
+	}
 
 	startServer(cfg.Port, log, apiServer, ssrConfig, ssrManager)
 }
