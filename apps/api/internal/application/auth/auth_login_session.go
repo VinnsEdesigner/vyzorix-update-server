@@ -89,7 +89,31 @@ if err != nil {
 return nil, nil, err
 }
 
+// Auto-resolve and set organization for the session
+// This enables single-org and last-used-org auto-selection
+s.resolveAndSetOrganization(ctx, op, sess)
+
 return s.buildLoginResponse(op), sess, nil
+}
+
+// resolveAndSetOrganization resolves the organization for an operator and sets it on the session.
+// It uses LastOrganizationID if valid, otherwise auto-selects single org.
+func (s *AuthService) resolveAndSetOrganization(ctx context.Context, op *operator.Operator, sess *session.Session) {
+orgID, _, err := s.ResolveOrganizationForOperator(ctx, op)
+if err != nil {
+    // No organization or selection required - dont set anything on session
+    return
+}
+
+// Valid org found - set on session and update LastOrganizationID
+sess.SelectedOrganizationID = orgID
+_ = s.sessionRepo.UpdateOrganizationID(ctx, sess.ID, orgID)
+
+// Also update operators LastOrganizationID for persistence
+if s.operatorRepo != nil && op.LastOrganizationID != orgID {
+    op.LastOrganizationID = orgID
+    _ = s.operatorRepo.Update(ctx, op)
+}
 }
 
 // LoginWithTokens authenticates an operator and returns tokens for API clients.
@@ -156,6 +180,10 @@ if err != nil {
 return nil, err
 }
 }
+
+// Auto-resolve and set organization for the session
+// This enables single-org and last-used-org auto-selection
+s.resolveAndSetOrganization(ctx, op, sess)
 
 resp := s.buildLoginWithTokensResponse(op)
 resp.AccessToken = accessToken

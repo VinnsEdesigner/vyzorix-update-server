@@ -277,10 +277,11 @@ func ProvideOrganizationService(
 	orgRepo *storage.OrganizationStorage,
 	memberRepo *storage.MemberStorage,
 	invitationRepo *storage.InvitationStorage,
+	operatorRepo *storage.OperatorStorage,
 	txManager transaction.TxManager,
 	log *slog.Logger,
 ) *orgapplication.OrganizationService {
-	return orgapplication.NewOrganizationService(orgRepo, memberRepo, invitationRepo, txManager, log)
+	return orgapplication.NewOrganizationService(orgRepo, memberRepo, invitationRepo, operatorRepo, txManager, log)
 }
 
 // ProvideMemberService creates the member service.
@@ -295,6 +296,7 @@ func ProvideMemberService(
 // ProvideInvitationService creates the invitation service.
 func ProvideInvitationService(
 	invitationRepo *storage.InvitationStorage,
+	operatorRepo *storage.OperatorStorage,
 	orgRepo *storage.OrganizationStorage,
 	memberRepo *storage.MemberStorage,
 	txManager transaction.TxManager,

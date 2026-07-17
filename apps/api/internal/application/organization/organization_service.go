@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	"github.com/google/uuid"
 )
@@ -59,6 +60,7 @@ type OrganizationService struct {
 	orgRepo         organization.OrganizationRepository
 	memberRepo      organization.MemberRepository
 	invitationRepo  organization.InvitationRepository
+	operatorRepo    operator.Repository
 	txManager       transaction.TxManager
 	logger          *slog.Logger
 }
@@ -68,6 +70,7 @@ func NewOrganizationService(
 	orgRepo organization.OrganizationRepository,
 	memberRepo organization.MemberRepository,
 	invitationRepo organization.InvitationRepository,
+	operatorRepo operator.Repository,
 	txManager transaction.TxManager,
 	logger *slog.Logger,
 ) *OrganizationService {
@@ -78,6 +81,7 @@ func NewOrganizationService(
 		orgRepo:        orgRepo,
 		memberRepo:     memberRepo,
 		invitationRepo: invitationRepo,
+		operatorRepo:   operatorRepo,
 		txManager:      txManager,
 		logger:          logger,
 	}
@@ -169,6 +173,15 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 
 	if err != nil {
 		return nil, err
+	}
+
+	// Update operator LastOrganizationID for auto-selection on next login
+	if s.operatorRepo != nil {
+		op, opErr := s.operatorRepo.FindByID(ctx, operatorID)
+		if opErr == nil && op.LastOrganizationID != createdOrg.ID {
+			op.LastOrganizationID = createdOrg.ID
+			_ = s.operatorRepo.Update(ctx, op)
+		}
 	}
 
 	return createdOrg, nil
