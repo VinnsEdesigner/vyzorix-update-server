@@ -66,7 +66,7 @@ type Operator struct {
 	EmailVerified    bool
 
 	// Memberships holds the operator's memberships in organizations.
-	// Role is now org-scoped via these memberships instead of a global role.
+	// Role is org-scoped via these memberships.
 	Memberships []*organization.OrganizationMember
 
 	// LastOrganizationID is the most recently accessed organization for this operator.
@@ -203,7 +203,7 @@ func (o *Operator) IsAdmin() bool {
 // IsOperator returns true if the operator has operator role in any organization.
 func (o *Operator) IsOperator() bool {
 	for _, m := range o.Memberships {
-		if m.Role.Level() == LevelOperator && m.IsActive() {
+		if m.Role.Level() == organization.LevelOperator && m.IsActive() {
 			return true
 		}
 	}
@@ -213,7 +213,7 @@ func (o *Operator) IsOperator() bool {
 // IsViewer returns true if the operator has viewer role in any organization.
 func (o *Operator) IsViewer() bool {
 	for _, m := range o.Memberships {
-		if m.Role.Level() == LevelViewer && m.IsActive() {
+		if m.Role.Level() == organization.LevelViewer && m.IsActive() {
 			return true
 		}
 	}

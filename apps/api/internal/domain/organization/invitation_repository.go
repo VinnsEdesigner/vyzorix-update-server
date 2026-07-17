@@ -36,8 +36,14 @@ type InvitationRepository interface {
 	// FindPendingByOrganizationAndEmail retrieves pending invitations by org and email.
 	FindPendingByOrganizationAndEmail(ctx context.Context, orgID, email string) ([]*Invitation, error)
 
+	// ListByInviter lists all invitations sent by an operator.
+	ListByInviter(ctx context.Context, inviterID string) ([]*Invitation, error)
+
 	// Update updates an existing invitation.
 	Update(ctx context.Context, invitation *Invitation) error
+
+	// Delete deletes an invitation.
+	Delete(ctx context.Context, id string) error
 
 	// SoftDelete soft-deletes an invitation.
 	SoftDelete(ctx context.Context, id string) error
@@ -59,6 +65,9 @@ type InvitationRepository interface {
 
 	// CountPendingByOrganization counts pending invitations for an organization.
 	CountPendingByOrganization(ctx context.Context, orgID string) (int, error)
+
+	// ExpireByOrganization expires all pending invitations for an organization.
+	ExpireByOrganization(ctx context.Context, orgID string) error
 
 	// ExpireOldThan soft-deletes invitations older than the given duration.
 	ExpireOldThan(ctx context.Context, duration string) error

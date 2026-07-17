@@ -6,6 +6,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,12 +42,32 @@ func (h *MeHandler) Handle(c *gin.Context) {
 		return
 	}
 
+	// Get operator's organizations
+	orgs, _ := h.authService.GetOperatorOrganizations(c.Request.Context(), op)
+
+	// Determine if operator needs to create/join an organization
+	needsOrg := len(orgs) == 0
+
+	// Find selected organization from session or last used
+	var selectedOrg *dto.OrganizationInfo
+	if op.LastOrganizationID != "" {
+		for _, org := range orgs {
+			if org.ID == op.LastOrganizationID {
+				selectedOrg = &org
+				break
+			}
+		}
+	}
+
 	h.presenter.OK(c, gin.H{
-		"id":             op.ID,
-		"email":          op.Email,
-		"name":           op.Name,
-		"role":           op.Role,
-		"mfa_enabled":    op.MFAEnabled,
-		"email_verified": op.EmailVerified,
+		"id":              op.ID,
+		"email":           op.Email,
+		"name":            op.Name,
+		"mfa_enabled":     op.MFAEnabled,
+		"email_verified":  op.EmailVerified,
+		"needs_organization": needsOrg,
+		"organizations":   orgs,
+		"last_organization_id": op.LastOrganizationID,
+		"selected_organization": selectedOrg,
 	})
 }

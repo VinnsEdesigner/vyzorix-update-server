@@ -1,6 +1,7 @@
 package organization
 
 import (
+	"context"
 	"errors"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
@@ -28,6 +29,26 @@ func NewMemberHandler(
 	}
 }
 
+// MembershipChecker returns an adapter that implements the OrganizationMembershipChecker interface.
+// This allows the handler's memberService to be used by the org membership middleware.
+func (h *MemberHandler) MembershipChecker() *MemberServiceAdapter {
+	return &MemberServiceAdapter{memberService: h.memberService}
+}
+
+// MemberServiceAdapter implements middleware.OrganizationMembershipChecker
+// using the organization's member service.
+type MemberServiceAdapter struct {
+	memberService *appOrganization.MemberService
+}
+
+// GetMembership checks if an operator is a member of an organization.
+func (a *MemberServiceAdapter) GetMembership(ctx context.Context, operatorID, orgID string) (interface{}, error) {
+	if a.memberService == nil {
+		return nil, errors.New("member service not configured")
+	}
+	return a.memberService.GetMembership(ctx, operatorID, orgID)
+}
+
 // List handles GET /v1/organizations/:id/members.
 func (h *MemberHandler) List(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
@@ -42,11 +63,16 @@ func (h *MemberHandler) List(c *gin.Context) {
 		return
 	}
 
-	// Check if operator is a member of this org
-	_, err := h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
-	if err != nil {
-		h.presenter.Forbidden(c, "access denied")
-		return
+	// Use membership from context (set by OrganizationMembership middleware)
+	// If middleware didn't run, fall back to service call
+	member := middleware.GetMembership(c)
+	if member == nil {
+		var err error
+		_, err = h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
+		if err != nil {
+			h.presenter.Forbidden(c, "access denied")
+			return
+		}
 	}
 
 	members, err := h.memberService.ListMembers(c.Request.Context(), orgID)
@@ -91,11 +117,16 @@ func (h *MemberHandler) Get(c *gin.Context) {
 		return
 	}
 
-	// Check if operator is a member of this org
-	_, err := h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
-	if err != nil {
-		h.presenter.Forbidden(c, "access denied")
-		return
+	// Use membership from context (set by OrganizationMembership middleware)
+	// If middleware didn't run, fall back to service call
+	ctxMember := middleware.GetMembership(c)
+	if ctxMember == nil {
+		var err error
+		_, err = h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
+		if err != nil {
+			h.presenter.Forbidden(c, "access denied")
+			return
+		}
 	}
 
 	member, err := h.memberService.GetMember(c.Request.Context(), memberID)

@@ -23,10 +23,12 @@ import (
 	eventapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/event"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
+	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
@@ -248,6 +250,63 @@ func ProvideEmailService() *emailService.Service {
 // ProvideMetrics creates the metrics service.
 func ProvideMetrics() *metrics.Metrics {
 	return metrics.New()
+}
+
+// ProvideOrganizationRepository creates the organization repository.
+func ProvideOrganizationRepository(db *sql.DB) *storage.OrganizationStorage {
+	return storage.NewOrganizationStorage(db)
+}
+
+// ProvideMemberRepository creates the member repository.
+func ProvideMemberRepository(db *sql.DB) *storage.MemberStorage {
+	return storage.NewMemberStorage(db)
+}
+
+// ProvideInvitationRepository creates the invitation repository.
+func ProvideInvitationRepository(db *sql.DB) *storage.InvitationStorage {
+	return storage.NewInvitationStorage(db)
+}
+
+// ProvideTxManager creates a simple transaction manager for SQLite.
+func ProvideTxManager(db *sql.DB) transaction.TxManager {
+	return storage.NewTxManager(db)
+}
+
+// ProvideOrganizationService creates the organization service.
+func ProvideOrganizationService(
+	orgRepo *storage.OrganizationStorage,
+	memberRepo *storage.MemberStorage,
+	invitationRepo *storage.InvitationStorage,
+	txManager transaction.TxManager,
+	log *slog.Logger,
+) *orgapplication.OrganizationService {
+	return orgapplication.NewOrganizationService(orgRepo, memberRepo, invitationRepo, txManager, log)
+}
+
+// ProvideMemberService creates the member service.
+func ProvideMemberService(
+	memberRepo *storage.MemberStorage,
+	orgRepo *storage.OrganizationStorage,
+	log *slog.Logger,
+) *orgapplication.MemberService {
+	return orgapplication.NewMemberService(memberRepo, orgRepo, log)
+}
+
+// ProvideInvitationService creates the invitation service.
+func ProvideInvitationService(
+	invitationRepo *storage.InvitationStorage,
+	orgRepo *storage.OrganizationStorage,
+	memberRepo *storage.MemberStorage,
+	txManager transaction.TxManager,
+	emailSvc *emailService.Service,
+	log *slog.Logger,
+	cfg config.Config,
+) *orgapplication.InvitationService {
+	baseURL := cfg.FrontendURL
+	if baseURL == "" {
+		baseURL = "http://localhost:5173"
+	}
+	return orgapplication.NewInvitationService(invitationRepo, orgRepo, memberRepo, txManager, emailSvc, log, baseURL)
 }
 
 // HubResult holds the WebSocket hub components.
@@ -512,6 +571,11 @@ var WireInjector = wire.NewSet(
 	ProvideEventProcessor,
 	ProvideEmailVerificationRepository,
 	ProvidePasswordResetRepository,
+	ProvideRefreshTokenRepository,
+	ProvideOrganizationRepository,
+	ProvideMemberRepository,
+	ProvideInvitationRepository,
+	ProvideTxManager,
 	ProvideAuthService,
 	ProvideDeviceService,
 	ProvideClientService,
@@ -535,6 +599,9 @@ var WireInjector = wire.NewSet(
 	ProvideServerDependencies,
 	ProvideServerResult,
 	ProvideServer,
+	ProvideOrganizationService,
+	ProvideMemberService,
+	ProvideInvitationService,
 	wire.Bind(new(operator.Repository), new(*storage.OperatorRepository)),
 )
 
@@ -570,31 +637,37 @@ func ProvideServerDependencies(
 	ipIntelligence *middleware.IPIntelligence,
 	updatesService *updatesapp.Service,
 	apiKeyService *keys.APIKeyService,
+	orgService *orgapplication.OrganizationService,
+	memberService *orgapplication.MemberService,
+	invitationService *orgapplication.InvitationService,
 ) *ServerDependencies {
 	return &ServerDependencies{
-		FCMNotifier:     fcmNotifier,
-		OperatorRepo:    operatorRepo,
-		RateLimiter:     rateLimiter,
-		Hub:             hubResult.Hub,
-		AuthService:     authService,
-		AuthLimiter:     middleware.NewRateLimiter(5, time.Minute),
-		IPIntelligence:  ipIntelligence,
-		Log:             log,
-		SessionManager:  sessionManager,
-		GoogleVerifier:  googleVerifier,
-		EmailService:    emailService,
-		CommandService:  commandService,
-		ClientService:   clientService,
-		DB:              sqlite,
-		Lockout:         lockout,
-		DeviceService:   deviceService,
-		Metrics:         metrics,
-		AuditLogger:     auditLogger,
-		Config:          cfg,
-		UpdatesStorage:  updatesStorage,
-		UpdatesService:  updatesService,
-		TelemetryRepo:   telemetryRepo,
-		APIKeyService:   apiKeyService,
+		FCMNotifier:        fcmNotifier,
+		OperatorRepo:       operatorRepo,
+		RateLimiter:        rateLimiter,
+		Hub:                hubResult.Hub,
+		AuthService:        authService,
+		AuthLimiter:        middleware.NewRateLimiter(5, time.Minute),
+		IPIntelligence:     ipIntelligence,
+		Log:                log,
+		SessionManager:     sessionManager,
+		GoogleVerifier:     googleVerifier,
+		EmailService:       emailService,
+		CommandService:     commandService,
+		ClientService:      clientService,
+		DB:                sqlite,
+		Lockout:           lockout,
+		DeviceService:      deviceService,
+		Metrics:           metrics,
+		AuditLogger:       auditLogger,
+		Config:            cfg,
+		UpdatesStorage:    updatesStorage,
+		UpdatesService:    updatesService,
+		TelemetryRepo:     telemetryRepo,
+		APIKeyService:     apiKeyService,
+		OrgService:        orgService,
+		MemberService:     memberService,
+		InvitationService: invitationService,
 	}
 }
 

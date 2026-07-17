@@ -36,8 +36,8 @@ var (
 	// ErrInvitationExpired is returned when an invitation has expired.
 	ErrInvitationExpired = errors.New("invitation has expired")
 
-	// ErrInvitationAlreadyResponded is returned when an invitation has already been responded to.
-	ErrInvitationAlreadyResponded = errors.New("invitation has already been responded to")
+	// ErrAlreadyResponded is returned when an invitation has already been responded to.
+	ErrAlreadyResponded = errors.New("invitation has already been responded to")
 
 	// ErrEmailMismatch is returned when the invitee email doesn't match.
 	ErrEmailMismatch = errors.New("email does not match invitation")
@@ -50,12 +50,6 @@ var (
 
 	// ErrAlreadyExists is a generic already exists error.
 	ErrAlreadyExists = errors.New("resource already exists")
-
-	// ErrAlreadyResponded is returned when an invitation has already been responded to.
-	ErrAlreadyResponded = errors.New("invitation has already been responded to")
-
-	// ErrExpired is returned when an invitation has expired.
-	ErrExpired = errors.New("resource has expired")
 
 	// ErrCannotDeleteLastSuperAdmin is returned when trying to delete the last super_admin of an org.
 	ErrCannotDeleteLastSuperAdmin = errors.New("cannot delete the last super_admin of an organization")

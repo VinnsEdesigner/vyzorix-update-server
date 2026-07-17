@@ -197,6 +197,11 @@ func (s *OrganizationStorage) FindByName(ctx context.Context, operatorID, name s
 	if deletedAt.Valid {
 		t := time.UnixMilli(deletedAt.Int64)
 		org.DeletedAt = &t
+		org.Lifecycle = organization.OrganizationLifecycleArchived
+	} else if isActive {
+		org.Lifecycle = organization.OrganizationLifecycleActive
+	} else {
+		org.Lifecycle = organization.OrganizationLifecycleInactive
 	}
 
 	return &org, nil
@@ -299,6 +304,11 @@ func (s *OrganizationStorage) ListByOperator(ctx context.Context, operatorID str
 		if deletedAt.Valid {
 			t := time.UnixMilli(deletedAt.Int64)
 			org.DeletedAt = &t
+			org.Lifecycle = organization.OrganizationLifecycleArchived
+		} else if isActive {
+			org.Lifecycle = organization.OrganizationLifecycleActive
+		} else {
+			org.Lifecycle = organization.OrganizationLifecycleInactive
 		}
 
 		orgs = append(orgs, &org)
@@ -366,6 +376,11 @@ func (s *OrganizationStorage) ListByOperatorPaginated(ctx context.Context, opera
 		if deletedAt.Valid {
 			t := time.UnixMilli(deletedAt.Int64)
 			org.DeletedAt = &t
+			org.Lifecycle = organization.OrganizationLifecycleArchived
+		} else if isActive {
+			org.Lifecycle = organization.OrganizationLifecycleActive
+		} else {
+			org.Lifecycle = organization.OrganizationLifecycleInactive
 		}
 
 		orgs = append(orgs, &org)

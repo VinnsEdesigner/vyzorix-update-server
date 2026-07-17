@@ -290,7 +290,7 @@ var OrgRoleEnum = graphql.NewEnum(graphql.EnumConfig{
 })
 
 // InvitationStatusEnum represents the status of an invitation.
-// Maps to domain/invitation.InvitationStatus: pending, accepted, rejected, expired
+// Maps to domain/organization.InvitationStatus: pending, accepted, rejected, expired
 var InvitationStatusEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name:        "InvitationStatus",
 	Description: "Status of an organization invitation",
