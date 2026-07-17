@@ -266,7 +266,7 @@ orgName = org.Name
 }
 
 // Update session object for return
-sess.OrganizationID = organizationID
+sess.SelectedOrganizationID = organizationID
 
 return &SelectOrganizationResult{
 Session:          sess,

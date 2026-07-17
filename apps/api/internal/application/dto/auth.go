@@ -189,3 +189,15 @@ type UpdateSettingsRequest struct {
 	Name       string          `json:"name,omitempty"`
 	Reset      bool            `json:"reset,omitempty"`
 }
+
+// SelectOrganizationRequest represents a request to select an organization.
+type SelectOrganizationRequest struct {
+	OrganizationID string `json:"organization_id"`
+}
+
+// SelectOrganizationResponse represents the response after selecting an organization.
+type SelectOrganizationResponse struct {
+	OrganizationID   string           `json:"organization_id"`
+	OrganizationName string           `json:"organization_name"`
+	Role            string           `json:"role"`
+}

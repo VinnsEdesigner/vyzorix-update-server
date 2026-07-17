@@ -228,13 +228,9 @@ func (s *AuthService) LoginWithDevice(ctx context.Context, req *dto.LoginRequest
 
 	// MFA check
 	if op.MFARequired || op.HasMFA() {
-		return &dto.LoginResponse{
-			OperatorID: op.ID,
-			Email:      op.Email,
-			Name:       op.Name,
-			Role:       string(op.Role),
-			MFAEnabled: true,
-		}, nil, application.ErrMFARequired
+		resp := s.buildLoginResponse(op)
+		resp.MFAEnabled = true
+		return resp, nil, application.ErrMFARequired
 	}
 
 	// Create session
@@ -248,13 +244,7 @@ func (s *AuthService) LoginWithDevice(ctx context.Context, req *dto.LoginRequest
 		s.deviceStore.RegisterDevice(op.ID, device.DeviceFingerprint, device.IPAddress, device.UserAgent)
 	}
 
-	return &dto.LoginResponse{
-		OperatorID: op.ID,
-		Email:      op.Email,
-		Name:       op.Name,
-		Role:       string(op.Role),
-		MFAEnabled: op.MFAEnabled,
-	}, sess, nil
+	return s.buildLoginResponse(op), sess, nil
 }
 
 // SetDeviceStore sets the device store for login tracking.

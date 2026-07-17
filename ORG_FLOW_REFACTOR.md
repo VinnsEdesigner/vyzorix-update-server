@@ -179,13 +179,14 @@ Functions in `auth_constructors.go`:
 - [x] `ResolveOrganizationForOperator` - implemented in auth_constructors.go
 - [x] `SelectOrganization` - implemented in auth_constructors.go
 - [x] `GetOperatorOrganizations` - implemented in auth_constructors.go
-- [ ] Add `POST /v1/auth/organizations/select` endpoint
-- [ ] Update session to track selected organization
+- [x] Add `POST /v1/auth/organizations/select` endpoint
+- [x] Update session to track selected organization
 
 ### Remaining Issues to Fix
-1. `auth_device_recognition.go` - LoginWithDevice function still references `op.Role`
-2. Add `POST /v1/auth/organizations/select` endpoint for switching orgs
-3. Update session entity to store selected organization ID
+All items completed as of 2026-07-17:
+1. [x] `auth_device_recognition.go` - LoginWithDevice function now uses `buildLoginResponse` (no `op.Role` references)
+2. [x] Add `POST /v1/auth/organizations/select` endpoint for switching orgs
+3. [x] Update session entity to store selected organization ID
 
 ---
 

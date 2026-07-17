@@ -53,6 +53,7 @@ type AllHandlers struct {
 	ClientCreds   *ClientCredentialsHandler
 	Lockout       *LockoutHandler
 	Sessions      *SessionsHandler
+	Organization  *OrganizationHandler
 }
 
 // NewAllHandlers creates all auth handlers with proper dependencies.
@@ -79,6 +80,7 @@ func NewAllHandlers(deps *Dependencies) *AllHandlers {
 		ClientCreds:   NewClientCredentialsHandler(deps.AuthService, deps.ClientService, deps.Presenter),
 		Lockout:       NewLockoutHandler(deps.AuthService, deps.Lockout, deps.Presenter),
 		Sessions:      NewSessionsHandler(deps.AuthService, deps.SessionManager, deps.Presenter),
+		Organization:  NewOrganizationHandler(deps.AuthService, deps.Presenter),
 	}
 }
 
@@ -155,6 +157,10 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		authenticated.POST("/me/notifications/webhook/rotate", h.Settings.RotateWebhookSecret)
 		authenticated.POST("/logout", h.Logout.Handle)
 		authenticated.GET("/lockout/status", h.Lockout.GetLockoutStatus)
+
+		// Organization selection endpoints
+		authenticated.GET("/organizations", h.Organization.GetOrganizations)
+		authenticated.POST("/organizations/select", h.Organization.SelectOrganization)
 	}
 
 	// SuperAdmin-only operator management routes
