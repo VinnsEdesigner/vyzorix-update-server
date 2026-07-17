@@ -25,14 +25,14 @@ func NewSessionRepository(db *sql.DB) *SessionRepository {
 
 // FindByID retrieves a session by ID.
 func (r *SessionRepository) FindByID(ctx context.Context, id string) (*session.Session, error) {
-	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent FROM auth_sessions WHERE id = ?`
+	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id FROM auth_sessions WHERE id = ?`
 
 	var s session.Session
 
-	var ipAddress, userAgent sql.NullString
+	var ipAddress, userAgent, orgID sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent,
+		&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -45,13 +45,14 @@ func (r *SessionRepository) FindByID(ctx context.Context, id string) (*session.S
 
 	s.IPAddress = ipAddress.String
 	s.UserAgent = userAgent.String
+	s.SelectedOrganizationID = orgID.String
 
 	return &s, nil
 }
 
 // FindByOperatorID retrieves all sessions for an operator.
 func (r *SessionRepository) FindByOperatorID(ctx context.Context, operatorID string) ([]*session.Session, error) {
-	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent FROM auth_sessions WHERE operator_id = ?`
+	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id FROM auth_sessions WHERE operator_id = ?`
 
 	rows, err := r.db.QueryContext(ctx, query, operatorID)
 	if err != nil {
@@ -65,14 +66,15 @@ func (r *SessionRepository) FindByOperatorID(ctx context.Context, operatorID str
 	for rows.Next() {
 		var s session.Session
 
-		var ipAddress, userAgent sql.NullString
+		var ipAddress, userAgent, orgID sql.NullString
 
-		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent); err != nil {
+		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID); err != nil {
 			return nil, err
 		}
 
 		s.IPAddress = ipAddress.String
 		s.UserAgent = userAgent.String
+		s.SelectedOrganizationID = orgID.String
 		sessions = append(sessions, &s)
 	}
 
@@ -81,8 +83,8 @@ func (r *SessionRepository) FindByOperatorID(ctx context.Context, operatorID str
 
 // ListActiveByOperator retrieves active (non-expired) sessions for an operator, ordered by creation time.
 func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID string) ([]*session.Session, error) {
-	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent 
-		FROM auth_sessions 
+	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id
+		FROM auth_sessions
 		WHERE operator_id = ? AND expires_at > ?
 		ORDER BY created_at ASC`
 
@@ -98,14 +100,15 @@ func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID
 	for rows.Next() {
 		var s session.Session
 
-		var ipAddress, userAgent sql.NullString
+		var ipAddress, userAgent, orgID sql.NullString
 
-		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent); err != nil {
+		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID); err != nil {
 			return nil, err
 		}
 
 		s.IPAddress = ipAddress.String
 		s.UserAgent = userAgent.String
+		s.SelectedOrganizationID = orgID.String
 		sessions = append(sessions, &s)
 	}
 
@@ -114,11 +117,11 @@ func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID
 
 // Create creates a new session.
 func (r *SessionRepository) Create(ctx context.Context, s *session.Session) error {
-	query := `INSERT INTO auth_sessions (id, operator_id, expires_at, created_at, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO auth_sessions (id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id) VALUES (?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := r.db.ExecContext(ctx, query,
 		s.ID, s.OperatorID, s.ExpiresAt, s.CreatedAt,
-		nullString(s.IPAddress), nullString(s.UserAgent),
+		nullString(s.IPAddress), nullString(s.UserAgent), nullString(s.SelectedOrganizationID),
 	)
 
 	return err
@@ -166,6 +169,28 @@ func (r *SessionRepository) Extend(ctx context.Context, id string, newExpiry tim
 	result, err := r.db.ExecContext(ctx,
 		"UPDATE auth_sessions SET expires_at = ? WHERE id = ?",
 		newExpiry, id,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return session.ErrNotFound
+	}
+
+	return nil
+}
+
+// UpdateOrganizationID updates the selected organization ID for a session.
+func (r *SessionRepository) UpdateOrganizationID(ctx context.Context, sessionID, organizationID string) error {
+	result, err := r.db.ExecContext(ctx,
+		"UPDATE auth_sessions SET organization_id = ? WHERE id = ?",
+		nullString(organizationID), sessionID,
 	)
 	if err != nil {
 		return err
