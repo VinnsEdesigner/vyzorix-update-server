@@ -32,3 +32,15 @@ func (r *Resolver) TelemetryReceived(p graphql.ResolveParams) (interface{}, erro
 func (r *Resolver) CommandStatusChanged(p graphql.ResolveParams) (interface{}, error) {
 	return nil, ErrSubscriptionsNotSupported
 }
+
+// OrganizationEvent resolves the organizationEvent subscription field.
+// Subscriptions are handled via WebSocket, not GraphQL queries.
+func (r *Resolver) OrganizationEvent(p graphql.ResolveParams) (interface{}, error) {
+	return nil, ErrSubscriptionsNotSupported
+}
+
+// MemberEvent resolves the memberEvent subscription field.
+// Subscriptions are handled via WebSocket, not GraphQL queries.
+func (r *Resolver) MemberEvent(p graphql.ResolveParams) (interface{}, error) {
+	return nil, ErrSubscriptionsNotSupported
+}

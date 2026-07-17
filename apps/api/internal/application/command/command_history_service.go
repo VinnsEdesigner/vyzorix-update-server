@@ -43,6 +43,7 @@ type HistoryResponse struct {
 type CommandEntry struct {
 	ID            string `json:"id,omitempty"`
 	DispatchID    string `json:"dispatchId"`
+	DeviceID      string `json:"deviceId"`
 	Command       string `json:"command"`
 	Status        string `json:"status"`
 	FailureReason string `json:"failureReason,omitempty"`
@@ -110,6 +111,7 @@ func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest)
 		entry := CommandEntry{
 			ID:            cmd.ID,
 			DispatchID:    cmd.DispatchID,
+			DeviceID:      req.DeviceID,
 			Command:       string(cmd.Command),
 			Status:        string(cmd.Status),
 			SentAt:        sentAt,

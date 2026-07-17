@@ -206,6 +206,21 @@ func (i *Invitation) IsExpired() bool {
 	return i.Lifecycle.IsExpired() || time.Now().After(i.ExpiresAt)
 }
 
+// CanBeAccepted returns true if the invitation can be accepted.
+func (i *Invitation) CanBeAccepted() bool {
+	return i.IsPending() && !i.IsExpired()
+}
+
+// CanBeRejected returns true if the invitation can be rejected.
+func (i *Invitation) CanBeRejected() bool {
+	return i.IsPending() && !i.IsExpired()
+}
+
+// CanBeExpired returns true if the invitation can be expired.
+func (i *Invitation) CanBeExpired() bool {
+	return i.IsPending() && !i.IsExpired()
+}
+
 // IsValid returns true if the invitation has all required fields.
 func (i *Invitation) IsValid() bool {
 	return i.ID != "" && i.OrganizationID != "" && i.Email != "" && i.Token != ""
@@ -260,4 +275,13 @@ func (r *RespondToInvitationRequest) Validate() error {
 	return nil
 }
 
+// InvitationFilter represents filters for listing invitations.
+type InvitationFilter struct {
+	Status *InvitationStatus
+}
+
+// InvitationStatusPtr returns a pointer to the given InvitationStatus.
+func InvitationStatusPtr(s InvitationStatus) *InvitationStatus {
+	return &s
+}
 

@@ -119,7 +119,7 @@ func (r *Resolver) GetDevice(p graphql.ResolveParams) (interface{}, error) {
 	// Log via presenter
 	r.Presenter.DeviceView(ctx, op.ID, id)
 
-	return r.deviceDTOToMap(dev), nil
+	return r.deviceDetailToMap(dev), nil
 }
 
 // GetDevices resolves the devices list query.
@@ -612,7 +612,7 @@ func (r *Resolver) GetDeviceMetrics(p graphql.ResolveParams) (interface{}, error
 	}
 
 	// Verify device exists in organization
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, imei, orgID)
+	device, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, imei, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -653,7 +653,7 @@ func (r *Resolver) GetDeviceMetrics(p graphql.ResolveParams) (interface{}, error
 	return map[string]interface{}{
 		"device": map[string]interface{}{
 			"imei":       resp.Device.IMEI,
-			"deviceName": resp.Device.IMEI, // Would need to fetch actual device name
+			"deviceName": device.DeviceName,
 		},
 		"timeRange": map[string]interface{}{
 			"start":      resp.TimeRange.Start,
@@ -853,10 +853,10 @@ func (r *Resolver) convertCommandHistory(commands []cmdapp.CommandEntry) []map[s
 		entry := map[string]interface{}{
 			"dispatchId": c.DispatchID,
 			"commandId":  c.ID,
-			"deviceId":   "", // Would need device ID from context
+			"deviceId":   c.DeviceID,
 			"command":    c.Command,
-			"status":    c.Status,
-			"sentAt":    time.UnixMilli(c.SentAt).Format(time.RFC3339),
+			"status":     c.Status,
+			"sentAt":     time.UnixMilli(c.SentAt).Format(time.RFC3339),
 		}
 		if c.DeliveredAt > 0 {
 			entry["deliveredAt"] = time.UnixMilli(c.DeliveredAt).Format(time.RFC3339)

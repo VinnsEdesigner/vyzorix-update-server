@@ -33,7 +33,7 @@ func NewUpdatesHandler(service *updates.Service, pushService *updates.PushServic
 		historyHandler:   NewUpdatesHistoryHandler(service, auditLogger),
 		syncHandler:      NewUpdatesSyncHandler(service, auditLogger),
 // RegisterRoutes registers all updates routes.
-func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth) {
+func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth, membershipChecker middleware.OrganizationMembershipChecker) {
 	// Device callback endpoint - public (no auth required, device identifies itself)
 	// This must be registered BEFORE the cookie auth middleware is applied
 	// Note: rg is already at /v1/updates path, so we use /device-status directly
@@ -45,7 +45,7 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 	updatesGroup.Use(cookieAuth.Middleware())
 	// Apply organization context middleware for multi-tenant isolation
 	updatesGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
-	updatesGroup.Use(middleware.NewOrganizationMembership(nil).Middleware())
+	updatesGroup.Use(middleware.NewOrganizationMembership(membershipChecker).Middleware())
 
 	// Apply rate limiting per endpoint if configured
 	if h.rateLimiters != nil {

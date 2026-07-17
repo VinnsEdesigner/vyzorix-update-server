@@ -2071,3 +2071,143 @@ var InvitationListResponseType = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
+
+// OrganizationEventTypeEnum represents the type of organization event.
+var OrganizationEventTypeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "OrganizationEventType",
+	Description: "Type of organization event",
+	Values: graphql.EnumValueConfigMap{
+		"CREATED": &graphql.EnumValueConfig{
+			Value:       "created",
+			Description: "Organization was created",
+		},
+		"UPDATED": &graphql.EnumValueConfig{
+			Value:       "updated",
+			Description: "Organization was updated",
+		},
+		"DELETED": &graphql.EnumValueConfig{
+			Value:       "deleted",
+			Description: "Organization was deleted",
+		},
+		"ACTIVATED": &graphql.EnumValueConfig{
+			Value:       "activated",
+			Description: "Organization was activated",
+		},
+		"DEACTIVATED": &graphql.EnumValueConfig{
+			Value:       "deactivated",
+			Description: "Organization was deactivated",
+		},
+	},
+})
+
+// MemberEventTypeEnum represents the type of member event.
+var MemberEventTypeEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "MemberEventType",
+	Description: "Type of member event",
+	Values: graphql.EnumValueConfigMap{
+		"MEMBER_JOINED": &graphql.EnumValueConfig{
+			Value:       "member_joined",
+			Description: "A member joined the organization",
+		},
+		"MEMBER_INVITED": &graphql.EnumValueConfig{
+			Value:       "member_invited",
+			Description: "A member was invited",
+		},
+		"MEMBER_REMOVED": &graphql.EnumValueConfig{
+			Value:       "member_removed",
+			Description: "A member was removed",
+		},
+		"MEMBER_SUSPENDED": &graphql.EnumValueConfig{
+			Value:       "member_suspended",
+			Description: "A member was suspended",
+		},
+		"MEMBER_REACTIVATED": &graphql.EnumValueConfig{
+			Value:       "member_reactivated",
+			Description: "A member was reactivated",
+		},
+		"ROLE_CHANGED": &graphql.EnumValueConfig{
+			Value:       "role_changed",
+			Description: "A member's role was changed",
+		},
+	},
+})
+
+// OrganizationEventType represents an organization event.
+var OrganizationEventType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "OrganizationEvent",
+	Description: "An event related to an organization",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique event identifier",
+		},
+		"type": &graphql.Field{
+			Type:        graphql.NewNonNull(OrganizationEventTypeEnum),
+			Description: "Event type",
+		},
+		"organizationId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Organization ID",
+		},
+		"operatorId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Operator who triggered the event",
+		},
+		"timestamp": &graphql.Field{
+			Type:        graphql.NewNonNull(DateTimeScalar),
+			Description: "Event timestamp",
+		},
+		"data": &graphql.Field{
+			Type:        JSONScalar,
+			Description: "Additional event data",
+		},
+		"organization": &graphql.Field{
+			Type:        OrganizationType,
+			Description: "The organization",
+		},
+	},
+})
+
+// MemberEventType represents a member event.
+var MemberEventType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "MemberEvent",
+	Description: "An event related to an organization member",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique event identifier",
+		},
+		"type": &graphql.Field{
+			Type:        graphql.NewNonNull(MemberEventTypeEnum),
+			Description: "Event type",
+		},
+		"organizationId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Organization ID",
+		},
+		"memberId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Membership ID affected",
+		},
+		"operatorId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Operator who triggered the event",
+		},
+		"timestamp": &graphql.Field{
+			Type:        graphql.NewNonNull(DateTimeScalar),
+			Description: "Event timestamp",
+		},
+		"data": &graphql.Field{
+			Type:        JSONScalar,
+			Description: "Additional event data (e.g., old/new role)",
+		},
+		"membership": &graphql.Field{
+			Type:        MembershipType,
+			Description: "The membership",
+		},
+		"organization": &graphql.Field{
+			Type:        OrganizationType,
+			Description: "The organization",
+		},
+	},
+})

@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
 type InvitationHandler struct {
 	invitationService *appOrganization.InvitationService
 	memberService    *appOrganization.MemberService
@@ -50,15 +51,15 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Validate role
-	var invRole invitation.InvitationRole
+	// Validate role - use organization.OrganizationRole
+	var invRole organization.OrganizationRole
 	switch req.Role {
 	case "admin":
-		invRole = invitation.InvitationRoleAdmin
+		invRole = organization.RoleAdmin
 	case "operator":
-		invRole = invitation.InvitationRoleOperator
+		invRole = organization.RoleOperator
 	case "viewer":
-		invRole = invitation.InvitationRoleViewer
+		invRole = organization.RoleViewer
 	default:
 		h.presenter.BadRequest(c, "invalid role")
 		return
@@ -81,7 +82,7 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 			h.presenter.NotFound(c, "organization not found")
 			return
 		}
-		if errors.Is(err, invitation.ErrAlreadyExists) {
+		if errors.Is(err, organization.ErrInvitationExists) {
 			h.presenter.Conflict(c, "invitation already exists for this email")
 			return
 		}
@@ -124,27 +125,33 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 		return
 	}
 
-	// Check if operator is a member of this org
-	_, err := h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
-	if err != nil {
-		h.presenter.Forbidden(c, "access denied")
-		return
+	// Use membership from context (set by OrganizationMembership middleware)
+	// If middleware didn't run, fall back to service call
+	member := middleware.GetMembership(c)
+	if member == nil {
+		// Fallback: check via service if middleware didn't set it
+		var err error
+		member, err = h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
+		if err != nil {
+			h.presenter.Forbidden(c, "access denied")
+			return
+		}
 	}
 
 	// Optional status filter
-	var status *invitation.InvitationStatus
+	var status *organization.InvitationStatus
 	statusStr := c.Query("status")
 	if statusStr != "" {
-		var s invitation.InvitationStatus
+		var s organization.InvitationStatus
 		switch statusStr {
 		case "pending":
-			s = invitation.InvitationStatusPending
+			s = organization.InvitationStatusPending
 		case "approved":
-			s = invitation.InvitationStatusApproved
+			s = organization.InvitationStatusApproved
 		case "rejected":
-			s = invitation.InvitationStatusRejected
+			s = organization.InvitationStatusRejected
 		case "expired":
-			s = invitation.InvitationStatusExpired
+			s = organization.InvitationStatusExpired
 		default:
 			h.presenter.BadRequest(c, "invalid status filter")
 			return
@@ -169,7 +176,7 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 			"invited_by":       inv.InvitedBy,
 			"invited_at":       inv.InvitedAt,
 			"responded_at":     inv.RespondedAt,
-			"responder_id":     inv.ResponderID,
+			"responder_id":     inv.RespondedBy,
 			"expires_at":       inv.ExpiresAt,
 			"organization_name": inv.OrganizationName,
 			"inviter_name":     inv.InviterName,
@@ -229,7 +236,7 @@ func (h *InvitationHandler) GetByToken(c *gin.Context) {
 			h.presenter.NotFound(c, "invitation not found")
 			return
 		}
-		if errors.Is(err, invitation.ErrExpired) {
+		if errors.Is(err, organization.ErrInvitationExpired) {
 			c.JSON(http.StatusGone, gin.H{"error": "gone", "message": "invitation has expired"})
 			return
 		}
@@ -285,15 +292,15 @@ func (h *InvitationHandler) Accept(c *gin.Context) {
 			h.presenter.NotFound(c, "invitation not found")
 			return
 		}
-		if errors.Is(err, invitation.ErrExpired) {
+		if errors.Is(err, organization.ErrInvitationExpired) {
 			c.JSON(http.StatusGone, gin.H{"error": "gone", "message": "invitation has expired"})
 			return
 		}
-		if errors.Is(err, invitation.ErrAlreadyResponded) {
+		if errors.Is(err, organization.ErrAlreadyResponded) {
 			h.presenter.Conflict(c, "invitation has already been processed")
 			return
 		}
-		if errors.Is(err, invitation.ErrEmailMismatch) {
+		if errors.Is(err, organization.ErrEmailMismatch) {
 			h.presenter.Forbidden(c, "email does not match invitation")
 			return
 		}
@@ -348,11 +355,11 @@ func (h *InvitationHandler) Reject(c *gin.Context) {
 			h.presenter.NotFound(c, "invitation not found")
 			return
 		}
-		if errors.Is(err, invitation.ErrAlreadyResponded) {
+		if errors.Is(err, organization.ErrAlreadyResponded) {
 			h.presenter.Conflict(c, "invitation has already been processed")
 			return
 		}
-		if errors.Is(err, invitation.ErrEmailMismatch) {
+		if errors.Is(err, organization.ErrEmailMismatch) {
 			h.presenter.Forbidden(c, "email does not match invitation")
 			return
 		}
@@ -425,25 +432,33 @@ func (h *InvitationHandler) Delete(c *gin.Context) {
 	}
 
 	// Only inviter or org admin can delete
+	canDelete := false
 	isInviter := inv.InvitedBy == op.ID
-	isOrgAdmin := false
 	if isInviter {
-		isOrgAdmin = true // Inviter can always delete
+		canDelete = true
 	} else {
-		// Check if user is org admin
-		member, err := h.memberService.GetMembership(c.Request.Context(), op.ID, inv.OrganizationID)
-		if err == nil && member.Role.CanManageMembers() {
-			isOrgAdmin = true
+		// Use membership from context (set by OrganizationMembership middleware)
+		// If middleware didn't run, fall back to service call
+		member := middleware.GetMembership(c)
+		if member == nil {
+			member, err = h.memberService.GetMembership(c.Request.Context(), op.ID, inv.OrganizationID)
+			if err != nil {
+				h.presenter.Forbidden(c, "not a member of this organization")
+				return
+			}
+		}
+		if member.Role.CanManageMembers() {
+			canDelete = true
 		}
 	}
 
-	if !isInviter && !isOrgAdmin {
+	if !canDelete {
 		h.presenter.Forbidden(c, "only inviter or organization admin can delete this invitation")
 		return
 	}
 
 	// Only pending invitations can be deleted
-	if inv.Status != invitation.InvitationStatusPending {
+	if !inv.IsPending() {
 		h.presenter.Conflict(c, "only pending invitations can be deleted")
 		return
 	}

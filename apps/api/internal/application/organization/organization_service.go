@@ -44,7 +44,7 @@ type MemberListResponse struct {
 
 // InvitationListResponse represents a paginated list of invitations.
 type InvitationListResponse struct {
-	Items      []*invitation.Invitation `json:"items"`
+	Items      []*organization.Invitation `json:"items"`
 	Pagination Pagination                `json:"pagination"`
 }
 
@@ -58,7 +58,7 @@ type MembershipListResponse struct {
 type OrganizationService struct {
 	orgRepo         organization.OrganizationRepository
 	memberRepo      organization.MemberRepository
-	invitationRepo  invitation.Repository
+	invitationRepo  organization.InvitationRepository
 	txManager       transaction.TxManager
 	logger          *slog.Logger
 }
@@ -67,7 +67,7 @@ type OrganizationService struct {
 func NewOrganizationService(
 	orgRepo organization.OrganizationRepository,
 	memberRepo organization.MemberRepository,
-	invitationRepo invitation.Repository,
+	invitationRepo organization.InvitationRepository,
 	txManager transaction.TxManager,
 	logger *slog.Logger,
 ) *OrganizationService {
@@ -83,17 +83,28 @@ func NewOrganizationService(
 	}
 }
 
-// CreateOrganization creates a new organization with the creator as super_admin.
-func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID, name string, maxMembers int) (*organization.Organization, error) {
+// CreateOrganization creates a new organization with the creator as a member with the specified role.
+func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID, name, description string, maxMembers int, role string) (*organization.Organization, error) {
 	// Validate input
 	if name == "" {
-		return nil, errors.New("organization name is required")
+		name = "personal" // Default name
 	}
 	if len(name) < 2 {
 		return nil, errors.New("organization name must be at least 2 characters")
 	}
 	if len(name) > 255 {
 		return nil, errors.New("organization name exceeds 255 characters")
+	}
+
+	// Validate role
+	var memberRole organization.OrganizationRole
+	switch role {
+	case "super_admin":
+		memberRole = organization.RoleSuperAdmin
+	case "admin":
+		memberRole = organization.RoleAdmin
+	default:
+		return nil, errors.New("role must be 'super_admin' or 'admin'")
 	}
 
 	// Check max members
@@ -135,17 +146,18 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 		orgID := uuid.New().String()
 		createdOrg = organization.NewOrganization(orgID, name, operatorID)
 		createdOrg.MaxMembers = maxMembers
+		createdOrg.Description = description
 
 		if err := s.orgRepo.Create(txCtx, createdOrg); err != nil {
 			return err
 		}
 
-		// Create membership for creator as super_admin using constructor
+		// Create membership for creator with the specified role
 		member := organization.NewMember(
 			uuid.New().String(),
 			createdOrg.ID,
 			operatorID,
-			organization.RoleSuperAdmin,
+			memberRole,
 		)
 
 		if err := s.memberRepo.Create(txCtx, member); err != nil {

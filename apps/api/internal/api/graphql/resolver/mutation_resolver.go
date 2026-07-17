@@ -62,7 +62,7 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
 
-	return r.deviceDTOToMap(&updatedDev.Device), nil
+	return r.deviceDetailToMap(updatedDev), nil
 }
 
 // DeleteDevice resolves the deleteDevice mutation.

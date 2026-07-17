@@ -2,10 +2,13 @@
 package resolver
 
 import (
+	"fmt"
+
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	orgapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/graphql-go/graphql"
+	"time"
 )
 
 // ============================================================
@@ -288,6 +291,17 @@ func (r *Resolver) CreateOrganization(p graphql.ResolveParams) (interface{}, err
 		return nil, r.Presenter.InternalError("failed to get membership")
 	}
 
+	// Publish organization created event
+	if r.Hub != nil {
+		r.Hub.PublishOrganizationEvent(org.ID.String(), map[string]interface{}{
+			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
+			"type":           "created",
+			"organizationId": org.ID.String(),
+			"operatorId":     op.ID,
+			"timestamp":      time.Now().UTC(),
+		})
+	}
+
 	return map[string]interface{}{
 		"organization": r.orgToMap(org),
 		"membership":   r.membershipToMap(membership),
@@ -334,6 +348,25 @@ func (r *Resolver) UpdateOrganization(p graphql.ResolveParams) (interface{}, err
 		return nil, r.Presenter.InternalError("failed to update organization")
 	}
 
+	// Publish organization updated event
+	if r.Hub != nil {
+		eventType := "updated"
+		if isActivePtr != nil {
+			if *isActivePtr {
+				eventType = "activated"
+			} else {
+				eventType = "deactivated"
+			}
+		}
+		r.Hub.PublishOrganizationEvent(id, map[string]interface{}{
+			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
+			"type":           eventType,
+			"organizationId": id,
+			"operatorId":     op.ID,
+			"timestamp":      time.Now().UTC(),
+		})
+	}
+
 	return r.orgToMap(org), nil
 }
 
@@ -366,6 +399,17 @@ func (r *Resolver) DeleteOrganization(p graphql.ResolveParams) (interface{}, err
 		return nil, r.Presenter.InternalError("failed to delete organization")
 	}
 
+	// Publish organization deleted event
+	if r.Hub != nil {
+		r.Hub.PublishOrganizationEvent(id, map[string]interface{}{
+			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
+			"type":           "deleted",
+			"organizationId": id,
+			"operatorId":     op.ID,
+			"timestamp":      time.Now().UTC(),
+		})
+	}
+
 	return true, nil
 }
 
@@ -394,6 +438,22 @@ func (r *Resolver) InviteMember(p graphql.ResolveParams) (interface{}, error) {
 	invitation, err := r.InvitationService.CreateInvitation(ctx, orgID, op.ID, email, role, notes)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to create invitation")
+	}
+
+	// Publish member invited event
+	if r.Hub != nil {
+		r.Hub.PublishMemberEvent(orgID, map[string]interface{}{
+			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
+			"type":           "member_invited",
+			"organizationId": orgID,
+			"memberId":       invitation.ID.String(),
+			"operatorId":     op.ID,
+			"timestamp":      time.Now().UTC(),
+			"data": map[string]interface{}{
+				"email": email,
+				"role":  role,
+			},
+		})
 	}
 
 	return r.invitationToMap(invitation), nil
@@ -442,6 +502,18 @@ func (r *Resolver) RemoveMember(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.InternalError("failed to remove member")
 	}
 
+	// Publish member removed event
+	if r.Hub != nil {
+		r.Hub.PublishMemberEvent(orgID, map[string]interface{}{
+			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
+			"type":           "member_removed",
+			"organizationId": orgID,
+			"memberId":       memberID,
+			"operatorId":     op.ID,
+			"timestamp":      time.Now().UTC(),
+		})
+	}
+
 	return true, nil
 }
 
@@ -455,12 +527,19 @@ func (r *Resolver) canRemoveMember(ctx context.Context, orgID, memberID string) 
 	// Find the target membership to check its role
 	var targetRole orgdomain.OrganizationRole
 	var targetLifecycle orgdomain.MemberLifecycle
+	var memberFound bool
 	for _, m := range memberships {
 		if m.ID.String() == memberID {
 			targetRole = m.Role
 			targetLifecycle = m.Lifecycle
+			memberFound = true
 			break
 		}
+	}
+
+	// If member doesn't exist, don't allow removal
+	if !memberFound {
+		return false, nil
 	}
 
 	// If target is not a super_admin or not active, removal is always safe
@@ -531,9 +610,34 @@ func (r *Resolver) UpdateMemberRole(p graphql.ResolveParams) (interface{}, error
 	// Convert role string to OrganizationRole
 	role := orgdomain.OrganizationRole(roleStr)
 
+	// Get the old role before updating for the event
+	var oldRole string
+	for _, m := range memberships {
+		if m.ID.String() == memberID {
+			oldRole = string(m.Role)
+			break
+		}
+	}
+
 	membership, err := r.MemberService.UpdateMemberRole(ctx, orgID, memberID, op.ID, role)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to update member role")
+	}
+
+	// Publish role changed event
+	if r.Hub != nil {
+		r.Hub.PublishMemberEvent(orgID, map[string]interface{}{
+			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
+			"type":           "role_changed",
+			"organizationId": orgID,
+			"memberId":       memberID,
+			"operatorId":     op.ID,
+			"timestamp":      time.Now().UTC(),
+			"data": map[string]interface{}{
+				"oldRole": oldRole,
+				"newRole": role,
+			},
+		})
 	}
 
 	return r.membershipToMap(membership), nil
@@ -579,7 +683,7 @@ func (r *Resolver) AcceptInvitation(p graphql.ResolveParams) (interface{}, error
 	if err != nil {
 		// Map service errors to proper GraphQL errors
 		switch err {
-		case orgdomain.ErrInvitationNotFound, orgdomain.ErrInvitationAlreadyResponded:
+		case orgdomain.ErrInvitationNotFound, orgdomain.ErrAlreadyResponded:
 			return nil, r.Presenter.NotFoundError(err.Error())
 		case orgdomain.ErrExpired:
 			return nil, r.Presenter.BadRequestError("invitation has expired")
@@ -588,6 +692,18 @@ func (r *Resolver) AcceptInvitation(p graphql.ResolveParams) (interface{}, error
 		default:
 			return nil, r.Presenter.InternalError("failed to accept invitation: " + err.Error())
 		}
+	}
+
+	// Publish member joined event
+	if r.Hub != nil {
+		r.Hub.PublishMemberEvent(membership.OrganizationID.String(), map[string]interface{}{
+			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
+			"type":           "member_joined",
+			"organizationId": membership.OrganizationID.String(),
+			"memberId":       membership.ID.String(),
+			"operatorId":     op.ID,
+			"timestamp":      time.Now().UTC(),
+		})
 	}
 
 	// Membership is returned directly from the transaction - no race condition
@@ -615,7 +731,7 @@ func (r *Resolver) RejectInvitation(p graphql.ResolveParams) (interface{}, error
 	if err != nil {
 		// Map service errors to proper GraphQL errors
 		switch err {
-		case orgdomain.ErrInvitationNotFound, orgdomain.ErrInvitationAlreadyResponded:
+		case orgdomain.ErrInvitationNotFound, orgdomain.ErrAlreadyResponded:
 			return nil, r.Presenter.NotFoundError(err.Error())
 		case orgdomain.ErrExpired:
 			return nil, r.Presenter.BadRequestError("invitation has expired")
