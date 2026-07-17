@@ -2,6 +2,7 @@ package organization
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
@@ -41,13 +42,19 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 
 	var req struct {
 		Name        string `json:"name"`
-		Description string `json:"description"`
+		Description string `json:"description" binding:"required"`
 		MaxMembers  int    `json:"maxMembers"`
 		Role        string `json:"role" binding:"required"` // Required: "super_admin" or "admin"
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.presenter.BadRequest(c, "Invalid request body")
+		h.presenter.BadRequest(c, "Invalid request body: description is required")
+		return
+	}
+
+	// Validate description is not empty after trimming
+	if strings.TrimSpace(req.Description) == "" {
+		h.presenter.BadRequest(c, "description is required and cannot be empty")
 		return
 	}
 
