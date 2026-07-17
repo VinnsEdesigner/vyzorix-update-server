@@ -18,6 +18,14 @@ const (
 	MaxPageSize     = 100
 )
 
+// Organization limits
+const (
+	// MaxActiveOrgsPerOperator is the maximum number of active organizations an operator can have.
+	MaxActiveOrgsPerOperator = 2
+	// DefaultOrgMaxMembers is the default maximum members per organization.
+	DefaultOrgMaxMembers = 100
+)
+
 var (
 	ErrMaxOrgsReached = errors.New("maximum 2 active organizations allowed")
 )
