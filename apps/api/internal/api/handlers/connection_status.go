@@ -1,5 +1,4 @@
 package handlers
-package handlers
 
 import (
 	"log/slog"
@@ -10,23 +9,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/gin-gonic/gin"
-)
-
-// ConnectionStatusHandler handles WebSocket connection status requests.
-type ConnectionStatusHandler struct {
-	log        *slog.Logger
-	hub        *hub.Hub
-	deviceRepo *storage.DeviceRepository
-}
-
-// NewConnectionStatusHandler creates a new ConnectionStatusHandler.
-func NewConnectionStatusHandler(log *slog.Logger, hub *hub.Hub, deviceRepo *storage.DeviceRepository) *ConnectionStatusHandler {
-	return &ConnectionStatusHandler{
-		log:        log,
-		hub:        hub,
-		deviceRepo: deviceRepo,
-	}
-}
 )
 
 // ConnectionStatusHandler handles WebSocket connection status requests.
@@ -71,9 +53,9 @@ type ConnectionStatusResponse struct {
 // AllConnectionsResponse represents the status of all connected devices.
 type AllConnectionsResponse struct {
 	Devices        []DeviceConnectionStatus `json:"devices"`
-	QueueMetrics   hub.QueueMetrics         `json:"queueMetrics"`
-	TotalConnected int                      `json:"totalConnected"`
-	TotalQueued    int                      `json:"totalQueued"`
+	QueueMetrics   hub.QueueMetrics       `json:"queueMetrics"`
+	TotalConnected int                    `json:"totalConnected"`
+	TotalQueued    int                    `json:"totalQueued"`
 }
 
 // GetStatus handles GET /v1/device/:id/connection-status
@@ -85,7 +67,6 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 			"error":   "bad_request",
 			"message": "device id is required",
 		})
-
 		return
 	}
 
@@ -98,7 +79,6 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 	}
 
 	if client != nil {
-		// Device is connected
 		metrics := client.GetMetrics()
 		response.ConnectedAt = metrics.LastConnectedAt
 		response.UptimeSeconds = client.Uptime()
@@ -110,7 +90,6 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 		response.QueueMetrics = &hub.QueueMetrics{}
 
 		if queueSize := h.hub.QueueSize(deviceID); queueSize >= 0 {
-			// Get full metrics if available
 			if qm, ok := h.hub.QueueMetrics(); ok {
 				response.QueueMetrics = &qm
 			}
@@ -123,7 +102,6 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 // GetAllStatus handles GET /v1/connections
 // Returns the status of all WebSocket connections within the organization.
 func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
-	// Defensive: ensure hub is initialized
 	if h.hub == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"error":   "service_unavailable",
@@ -132,7 +110,6 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 		return
 	}
 
-	// Require organization context for multi-tenant isolation
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -177,19 +154,16 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 			LastMessageAt:   metrics.LastMessageAt,
 		}
 
-		// Get queue size for this device
 		status.QueueSize = h.hub.QueueSize(deviceID)
 
 		devices = append(devices, status)
 	}
 
-	// Get overall queue metrics
 	var queueMetrics hub.QueueMetrics
 	if qm, ok := h.hub.QueueMetrics(); ok {
 		queueMetrics = qm
 	}
 
-	// Calculate total queued messages
 	totalQueued := h.hub.TotalQueuedMessages()
 
 	response := AllConnectionsResponse{
@@ -205,7 +179,6 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 // GetMetrics handles GET /v1/connections/metrics
 // Returns aggregate WebSocket metrics for the organization.
 func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
-	// Require organization context for multi-tenant isolation
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -237,7 +210,6 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 
 	// Aggregate metrics
 	var totalMessagesSent, totalMessagesReceived int64
-
 	var totalConnectAttempts, totalConnectSuccesses, totalConnectFailures int64
 
 	for _, client := range orgClients {
@@ -249,7 +221,6 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 		totalConnectFailures += int64(metrics.ConnectFailures)
 	}
 
-	// Get queue metrics
 	var queueMetrics hub.QueueMetrics
 	if qm, ok := h.hub.QueueMetrics(); ok {
 		queueMetrics = qm
@@ -273,7 +244,6 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 // DisconnectDevice handles POST /v1/device/:id/disconnect
 // Forcefully disconnects a device's WebSocket connection within the organization.
 func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
-	// Require organization context for multi-tenant isolation
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -289,7 +259,6 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 			"error":   "bad_request",
 			"message": "device id is required",
 		})
-
 		return
 	}
 
@@ -312,7 +281,6 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 			"error":   "unauthorized",
 			"message": "authentication required",
 		})
-
 		return
 	}
 
@@ -323,11 +291,9 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 			"error":   "not_found",
 			"message": "device not connected",
 		})
-
 		return
 	}
 
-	// Remove from hub (this will close the connection via ReadPump defer)
 	h.hub.Unregister(client)
 
 	h.log.Info("device disconnected by operator",
@@ -336,250 +302,6 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 	)
 
 	c.JSON(http.StatusOK, gin.H{
-		"deviceId":     deviceID,
-		"disconnected": true,
-		"operatorId":   op.ID,
-	})
-}
-		return
-	}
-
-	// Get organization-scoped connections
-	orgClients := h.hub.OrgConnections(orgID)
-
-	// Aggregate metrics
-	var totalMessagesSent, totalMessagesReceived int64
-
-	var totalConnectAttempts, totalConnectSuccesses, totalConnectFailures int64
-
-	for _, client := range orgClients {
-		metrics := client.GetMetrics()
-		totalMessagesSent += int64(metrics.MessagesSent)
-		totalMessagesReceived += int64(metrics.MessagesReceived)
-		totalConnectAttempts += int64(metrics.ConnectAttempts)
-		totalConnectSuccesses += int64(metrics.ConnectSuccesses)
-		totalConnectFailures += int64(metrics.ConnectFailures)
-	}
-
-	// Get queue metrics
-	var queueMetrics hub.QueueMetrics
-	if qm, ok := h.hub.QueueMetrics(); ok {
-		queueMetrics = qm
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"timestamp":      time.Now().Unix(),
-		"totalConnected": len(orgClients),
-		"totalQueued":    h.hub.TotalQueuedMessages(),
-		"aggregateMetrics": gin.H{
-			"totalMessagesSent":     totalMessagesSent,
-			"totalMessagesReceived": totalMessagesReceived,
-			"totalConnectAttempts":  totalConnectAttempts,
-			"totalConnectSuccesses": totalConnectSuccesses,
-			"totalConnectFailures":  totalConnectFailures,
-		},
-		"queueMetrics": queueMetrics,
-	})
-}
-	}
-
-	// Require organization context for multi-tenant isolation
-	orgID := middleware.GetOrganizationID(c)
-	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "organization context required",
-		})
-		return
-	}
-
-	// Get devices in this organization
-	var orgDeviceIDs = make(map[string]bool)
-	if h.deviceRepo != nil {
-		orgDevices, err := h.deviceRepo.ListByOrganization(c.Request.Context(), orgID)
-		if err == nil {
-			for _, d := range orgDevices {
-				orgDeviceIDs[d.ID] = true
-			}
-		}
-	}
-
-	// Get all clients and filter by organization
-	allClients := h.hub.Clients()
-	orgClients := make(map[string]*hub.Client)
-	for deviceID, client := range allClients {
-		if orgDeviceIDs[deviceID] {
-			orgClients[deviceID] = client
-		}
-	}
-
-	devices := make([]DeviceConnectionStatus, 0, len(orgClients))
-
-	for deviceID, client := range orgClients {
-		metrics := client.GetMetrics()
-
-		status := DeviceConnectionStatus{
-			DeviceID:         deviceID,
-			Online:           true,
-			ConnectedAt:      metrics.LastConnectedAt,
-			UptimeSeconds:    client.Uptime(),
-			MessagesSent:     metrics.MessagesSent,
-			MessagesReceived: metrics.MessagesReceived,
-			LastMessageAt:   metrics.LastMessageAt,
-		}
-
-		// Get queue size for this device
-		status.QueueSize = h.hub.QueueSize(deviceID)
-
-		devices = append(devices, status)
-	}
-
-	// Get overall queue metrics
-	var queueMetrics hub.QueueMetrics
-	if qm, ok := h.hub.QueueMetrics(); ok {
-		queueMetrics = qm
-	}
-
-	// Calculate total queued messages
-// GetMetrics handles GET /v1/connections/metrics
-// Returns aggregate WebSocket metrics for the organization.
-func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
-	// Require organization context for multi-tenant isolation
-	orgID := middleware.GetOrganizationID(c)
-	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "organization context required",
-		})
-		return
-	}
-
-	// Get devices in this organization
-	var orgDeviceIDs = make(map[string]bool)
-	if h.deviceRepo != nil {
-		orgDevices, err := h.deviceRepo.ListByOrganization(c.Request.Context(), orgID)
-		if err == nil {
-			for _, d := range orgDevices {
-				orgDeviceIDs[d.ID] = true
-			}
-		}
-	}
-
-	// Get all clients and filter by organization
-	allClients := h.hub.Clients()
-	orgClients := make(map[string]*hub.Client)
-	for deviceID, client := range allClients {
-		if orgDeviceIDs[deviceID] {
-			orgClients[deviceID] = client
-		}
-	}
-
-	// Aggregate metrics
-	var totalMessagesSent, totalMessagesReceived int64
-
-	var totalConnectAttempts, totalConnectSuccesses, totalConnectFailures int64
-
-	for _, client := range orgClients {
-		metrics := client.GetMetrics()
-		totalMessagesSent += int64(metrics.MessagesSent)
-		totalMessagesReceived += int64(metrics.MessagesReceived)
-		totalConnectAttempts += int64(metrics.ConnectAttempts)
-		totalConnectSuccesses += int64(metrics.ConnectSuccesses)
-		totalConnectFailures += int64(metrics.ConnectFailures)
-	}
-
-	// Get queue metrics
-	var queueMetrics hub.QueueMetrics
-	if qm, ok := h.hub.QueueMetrics(); ok {
-		queueMetrics = qm
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"timestamp":      time.Now().Unix(),
-		"totalConnected": len(orgClients),
-		"totalQueued":    h.hub.TotalQueuedMessages(),
-		"aggregateMetrics": gin.H{
-			"totalMessagesSent":     totalMessagesSent,
-			"totalMessagesReceived": totalMessagesReceived,
-			"totalConnectAttempts":  totalConnectAttempts,
-			"totalConnectSuccesses": totalConnectSuccesses,
-			"totalConnectFailures":  totalConnectFailures,
-		},
-		"queueMetrics": queueMetrics,
-	})
-}
-
-// DisconnectDevice handles POST /v1/device/:id/disconnect
-// Forcefully disconnects a device's WebSocket connection within the organization.
-func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
-	// Require organization context for multi-tenant isolation
-	orgID := middleware.GetOrganizationID(c)
-	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "organization context required",
-		})
-		return
-	}
-
-	deviceID := c.Param("id")
-	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "device id is required",
-		})
-
-		return
-	}
-
-	// Verify device belongs to organization
-	if h.deviceRepo != nil {
-		_, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error":   "not_found",
-				"message": "device not found in organization",
-			})
-			return
-		}
-	}
-
-	// Require operator auth
-	op := middleware.GetOperatorFromContext(c)
-	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "authentication required",
-		})
-
-		return
-	}
-
-	// Get and disconnect client
-	client := h.hub.GetClient(deviceID)
-	if client == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   "not_found",
-			"message": "device not connected",
-		})
-
-		return
-	}
-
-	// Remove from hub (this will close the connection via ReadPump defer)
-	h.hub.Unregister(client)
-
-	h.log.Info("device disconnected by operator",
-		"deviceId", deviceID,
-		"operatorId", op.ID,
-	)
-
-	c.JSON(http.StatusOK, gin.H{
-		"deviceId":     deviceID,
-		"disconnected": true,
-		"operatorId":   op.ID,
-	})
-}
 		"deviceId":     deviceID,
 		"disconnected": true,
 		"operatorId":   op.ID,
