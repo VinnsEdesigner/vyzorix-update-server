@@ -99,10 +99,7 @@ func (s *Server) setupAuthRoutes(public *gin.RouterGroup) {
 }
 
 func (s *Server) setupDevicePublicRoutes(public *gin.RouterGroup) {
-	public.POST("/v1/device/register",
-		middleware.ValidationMiddleware(&middleware.DeviceRegisterSchema{}),
-		s.deviceRegisterHandler.Handle,
-	)
+	// DEPRECATED: /v1/device/register removed. Use /v1/device/inbox for new registration flow.
 	public.GET("/v1/device/:imei/status", s.deviceStatusHandler.Handle)
 	// Public inbox endpoint - device submits registration request
 	if s.inboxHandler != nil {

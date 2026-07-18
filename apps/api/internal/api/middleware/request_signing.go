@@ -339,7 +339,7 @@ func IsSigningRequiredPath(path string) bool {
 	}
 
 	// Public device registration - device gets its credentials via device auth
-	if path == "/v1/device/register" {
+	// DEPRECATED: if path == "/v1/device/register" {
 		return false
 	}
 

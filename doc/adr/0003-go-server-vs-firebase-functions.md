@@ -7,7 +7,7 @@ Accepted
 
 The C2 / update server needs to:
 
-1. Accept device registrations (`POST /v1/device/register`) and issue per-device `command_secret`.
+1. Accept device registrations (`POST /v1/device/inbox (DEPRECATED: was /v1/device/register)`) and issue per-device `command_secret`.
 2. Maintain persistent WebSocket connections to online devices.
 3. Forward commands from the dashboard to either WSS (if connected) or FCM (if offline).
 4. Serve update artifacts (APK + manifest) for the OTA mechanism.

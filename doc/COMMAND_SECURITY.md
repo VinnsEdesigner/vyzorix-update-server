@@ -165,7 +165,7 @@ Device first boot (after Accessibility grant)
     
 FcmTokenManager.kt
     - Generates device UUID (stored in DeviceSecretStore.kt)
-    - Calls POST /v1/device/register over HTTPS/WSS with:
+    - Calls POST /v1/device/inbox (DEPRECATED: was /v1/device/register) over HTTPS/WSS with:
         { "deviceId": uuid, "fcmToken": token, "androidVersion": "13" }
     
     

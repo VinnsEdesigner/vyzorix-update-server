@@ -37,7 +37,7 @@ Phase 3   = Hardening, monitoring, scaling.
 
 The mock server is a real Go binary, not test fixtures. It implements just enough of `DEVICE_REGISTRATION.md` to make Layer 8 testable:
 
-- `POST /v1/device/register` returns a deterministic `command_secret` (all-zeros for CI; configurable for local development).
+- `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)` returns a deterministic `command_secret` (all-zeros for CI; configurable for local development).
 - `PATCH /v1/device/:id/fcm-token` accepts and acks.
 - WSS `/v1/ws` accepts the HMAC handshake (using the same deterministic secret) and echoes any frame back as a no-op command result.
 - `POST /v1/command` accepts dashboard-side command submissions and forwards over WSS (when connected) or no-ops (when not).
