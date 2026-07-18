@@ -6,7 +6,7 @@
 
 ## Document Purpose
 
-The `command_secret` (per-device shared HMAC key) is generated server-side during the first `POST /v1/device/register` call. The device side of this flow is well-documented in `COMMAND_SECURITY.md`. The server side has **no document** — the only reference is a single line in `UPDATE_SERVER_ARCHITECTURE_SPEC.md` §6.2 that says "Manages REST-based device registrations." That is not enough to implement against.
+The `command_secret` (per-device shared HMAC key) is generated server-side during the first `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)` call. The device side of this flow is well-documented in `COMMAND_SECURITY.md`. The server side has **no document** — the only reference is a single line in `UPDATE_SERVER_ARCHITECTURE_SPEC.md` §6.2 that says "Manages REST-based device registrations." That is not enough to implement against.
 
 This document fills that gap. It is the canonical REST + WSS contract for everything the Go server in `vyzorix-update-server` does with a `Device` row in SQLite, from first-time registration through deregistration.
 
@@ -40,7 +40,7 @@ Non-goals:
 A device on the server transitions through these states. The state is stored in `devices.state` (column to be added to the schema; see §6).
 
 ```
-            POST /v1/device/register
+            POST /v1/device/inbox (DEPRECATED: was /v1/device/register)
                        
                        
                  
@@ -68,7 +68,7 @@ Transitions:
 
 | From | To | Trigger | Side effects |
 |------|----|---------|--------------|
-| (none) | REGISTERED | `POST /v1/device/register` | Generate command_secret; insert devices row; return secret in response body |
+| (none) | REGISTERED | `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)` | Generate command_secret; insert devices row; return secret in response body |
 | REGISTERED | ONLINE | First successful WSS handshake OR first telemetry frame received | `devices.is_online = true`; `devices.last_seen = NOW()` |
 | ONLINE | OFFLINE | WSS disconnect (clean close OR ping timeout, see UPDATE_SERVER §5.2) | `devices.is_online = false`; `devices.last_seen` retained |
 | OFFLINE | ONLINE | WSS reconnect | `devices.is_online = true`; `devices.last_seen = NOW()` |
@@ -80,14 +80,14 @@ Idle timeout: if a device has been OFFLINE for >30 days, the server may move it 
 
 ## 3. REST Endpoints
 
-### 3.1 `POST /v1/device/register`
+### 3.1 `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)`
 
 **Purpose:** First-time registration. Generates and returns the `command_secret`.
 
 **Request:**
 
 ```http
-POST /v1/device/register HTTP/1.1
+POST /v1/device/inbox (DEPRECATED: was /v1/device/register) HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer <fleet_registration_token>
 
@@ -136,7 +136,7 @@ Content-Type: application/json
 
 **Idempotency:**
 
-If the same `deviceId` + `firebaseInstallId` pair retries `POST /v1/device/register`, the server returns the **existing** registration with the **same** `commandSecret` (201 Created again, but with the original `registeredAt`). This handles the case where the device successfully registered but lost the response (network blip). Without idempotency the device would have no way to recover.
+If the same `deviceId` + `firebaseInstallId` pair retries `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)`, the server returns the **existing** registration with the **same** `commandSecret` (201 Created again, but with the original `registeredAt`). This handles the case where the device successfully registered but lost the response (network blip). Without idempotency the device would have no way to recover.
 
 If `deviceId` is the same but `firebaseInstallId` is different, we return 409 Conflict. This handles the case where someone is trying to hijack a device row.
 
@@ -229,7 +229,7 @@ Side effects:
 3. Server force-closes any active WSS connection for this device with close code 4001 / reason `device_deregistered`.
 4. Subsequent HMAC validation rejects all commands from this device with `device_deregistered`.
 
-Re-registering after a deregistration requires a fresh `POST /v1/device/register` and produces a **new** `commandSecret` — the old one is dead.
+Re-registering after a deregistration requires a fresh `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)` and produces a **new** `commandSecret` — the old one is dead.
 
 ---
 

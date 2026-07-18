@@ -174,7 +174,7 @@ vyzorix-update-server/
           headApk()             # HEAD /api/v1/apk/:filename
           getDeviceStatus()     # GET /v1/device/:id/status
           getDashboardDevices() # GET /v1/dashboard/devices
-          registerDevice()      # POST /v1/device/register
+          registerDevice()      # POST /v1/device/inbox (DEPRECATED: was /v1/device/register)
           dispatchCommand()     # POST /v1/device/:id/command
        vyzorix-auth.ts  # Auth client (login, register, OAuth)
           login()              # POST /v1/auth/login

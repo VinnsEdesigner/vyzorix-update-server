@@ -463,7 +463,7 @@ OR
 
 ### 4.2 Device Endpoints
 
-#### `POST /v1/device/register`
+#### `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)`
 **Purpose:** Operator initiates device registration
 
 **Request:**
@@ -1383,7 +1383,7 @@ The following commands are supported by the device APK and sent via the Commands
 3. Implement `GET /v1/device/inbox/:imei`
 4. Implement `POST /v1/device/inbox/:imei/ack`
 5. Implement `DELETE /v1/device/inbox/:imei`
-6. Implement `POST /v1/device/register` (update)
+6. Implement `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)` (update)
 7. Implement `POST /v1/device/confirm`
 8. Implement `DELETE /v1/device/:imei`
 9. Wire routes in `router.go`

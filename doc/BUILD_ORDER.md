@@ -323,7 +323,7 @@ If Layer 3 passes, the route-forcing thesis is proven on hardware. All later lay
 **Stubs only:** None — Layer 8 closes out Phase 1 against the mock.
 
 **Mock-server deliverable for this layer** (`vyzorix-update-server/cmd/mockserver/`, extended from Layer 7):
-- `POST /v1/device/register` — returns a deterministic command_secret (e.g., `0000...` in dev mode, or random+persisted to a file for soak tests). Idempotent on (`deviceId`, `firebaseInstallId`).
+- `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)` — returns a deterministic command_secret (e.g., `0000...` in dev mode, or random+persisted to a file for soak tests). Idempotent on (`deviceId`, `firebaseInstallId`).
 - `WSS /v1/device/:id/stream` — accepts WS upgrade with HMAC headers; can issue signed test commands; receives telemetry frames.
 - `POST /v1/device/:id/command` — dashboard-style command-issuance endpoint that the mock signs on behalf of the (non-existent) dashboard.
 - `PATCH /v1/device/:id/fcm-token` — echoes the new token back.
@@ -331,7 +331,7 @@ If Layer 3 passes, the route-forcing thesis is proven on hardware. All later lay
 - The mock also publishes a sample FCM-shaped command directly to the device via a local debug intent for offline FCM testing (since Firebase requires real network).
 
 **Success criteria:**
-- Device registers via `POST /v1/device/register`; receives `command_secret`; stores encrypted via `DeviceSecretStore`.
+- Device registers via `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)`; receives `command_secret`; stores encrypted via `DeviceSecretStore`.
 - Server can issue a signed `FORCE_SPEAKER` command via WebSocket and the device validates HMAC, executes, and dispatches a result frame.
 - Replay test: capture a valid frame, replay it. `NonceCache` rejects with `REPLAYED_NONCE`.
 - Tampering test: flip a bit in the HMAC. Validator rejects with `INVALID_SIGNATURE`.

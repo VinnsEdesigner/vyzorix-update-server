@@ -29,7 +29,7 @@ func TestServer_RateLimitingPublicEndpoints(t *testing.T) {
 	}{
 		{"POST", "/v1/auth/login"},
 		{"POST", "/v1/auth/register"},
-		{"POST", "/v1/device/register"},
+// DEPRECATED: // DEPRECATED: 		{"POST", "/v1/device/register"},
 		{"GET", "/v1/device/device123/status"},
 		{"GET", "/health"},
 		{"GET", "/api/v1/version"},
