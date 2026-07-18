@@ -62,4 +62,10 @@ var (
 
 	// ErrDeviceOnline is returned when a device is still online.
 	ErrDeviceOnline = errors.New("device must be offline to transfer")
+
+	// ErrInvalidThreshold is returned when threshold values are invalid.
+	ErrInvalidThreshold = errors.New("invalid threshold values")
+
+	// ErrSettingsNotFound is returned when organization settings are not found.
+	ErrSettingsNotFound = errors.New("organization settings not found")
 )

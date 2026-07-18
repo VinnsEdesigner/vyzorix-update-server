@@ -418,3 +418,9 @@ func (s *MemberService) CheckCanManageOrganization(ctx context.Context, operator
 
 	return nil
 }
+
+// CheckMembership checks if an operator is a member of the organization.
+func (s *MemberService) CheckMembership(ctx context.Context, operatorID, orgID string) error {
+	_, err := s.GetMembership(ctx, operatorID, orgID)
+	return err
+}

@@ -123,7 +123,8 @@ type Server struct {
 	superAdminAPIKeys          *admin.SuperAdminHandler
 	tenantAPIKeyAuth           *middleware.TenantAPIKeyAuth
 	apiKeyRateLimiter          *middleware.InMemoryRateLimiter
-	organizationHandler        *organizationhandlers.OrganizationHandler
+	organizationHandler         *organizationhandlers.OrganizationHandler
+	organizationSettingsHandler *organizationhandlers.SettingsHandler
 	invitationHandler         *organizationhandlers.InvitationHandler
 	memberHandler             *organizationhandlers.MemberHandler
 	transferHandler          *devicehandlers.TransferHandler
@@ -467,6 +468,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 
 	// Organization handlers
 	s.organizationHandler = cfg.HandlerSet.Organization
+	s.organizationSettingsHandler = cfg.HandlerSet.OrgSettings
 	s.invitationHandler = cfg.HandlerSet.Invitation
 	s.memberHandler = cfg.HandlerSet.Member
 	s.transferHandler = cfg.HandlerSet.Transfer
