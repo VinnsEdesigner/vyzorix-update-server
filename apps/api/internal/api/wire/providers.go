@@ -311,6 +311,20 @@ func ProvideInvitationService(
 	return orgapplication.NewInvitationService(invitationRepo, orgRepo, memberRepo, txManager, emailSvc, log, baseURL)
 }
 
+// ProvideOrganizationSettingsRepository creates the organization settings repository.
+func ProvideOrganizationSettingsRepository(db *sql.DB) *storage.OrganizationSettingsRepository {
+	return storage.NewOrganizationSettingsRepository(db)
+}
+
+// ProvideOrganizationSettingsService creates the organization settings service.
+func ProvideOrganizationSettingsService(
+	settingsRepo *storage.OrganizationSettingsRepository,
+	orgRepo *storage.OrganizationStorage,
+	memberRepo *storage.MemberStorage,
+) *orgapplication.OrganizationSettingsService {
+	return orgapplication.NewOrganizationSettingsService(settingsRepo, orgRepo, memberRepo)
+}
+
 // HubResult holds the WebSocket hub components.
 type HubResult struct {
 	Hub        *hub.Hub
@@ -604,6 +618,8 @@ var WireInjector = wire.NewSet(
 	ProvideOrganizationService,
 	ProvideMemberService,
 	ProvideInvitationService,
+	ProvideOrganizationSettingsRepository,
+	ProvideOrganizationSettingsService,
 	wire.Bind(new(operator.Repository), new(*storage.OperatorRepository)),
 )
 
@@ -642,34 +658,36 @@ func ProvideServerDependencies(
 	orgService *orgapplication.OrganizationService,
 	memberService *orgapplication.MemberService,
 	invitationService *orgapplication.InvitationService,
+	orgSettingsService *orgapplication.OrganizationSettingsService,
 ) *ServerDependencies {
 	return &ServerDependencies{
-		FCMNotifier:        fcmNotifier,
-		OperatorRepo:       operatorRepo,
-		RateLimiter:        rateLimiter,
-		Hub:                hubResult.Hub,
-		AuthService:        authService,
-		AuthLimiter:        middleware.NewRateLimiter(5, time.Minute),
-		IPIntelligence:     ipIntelligence,
-		Log:                log,
-		SessionManager:     sessionManager,
-		GoogleVerifier:     googleVerifier,
-		EmailService:       emailService,
-		CommandService:     commandService,
-		ClientService:      clientService,
-		DB:                sqlite,
-		Lockout:           lockout,
-		DeviceService:      deviceService,
-		Metrics:           metrics,
-		AuditLogger:       auditLogger,
-		Config:            cfg,
-		UpdatesStorage:    updatesStorage,
-		UpdatesService:    updatesService,
-		TelemetryRepo:     telemetryRepo,
-		APIKeyService:     apiKeyService,
-		OrgService:        orgService,
-		MemberService:     memberService,
-		InvitationService: invitationService,
+		FCMNotifier:         fcmNotifier,
+		OperatorRepo:        operatorRepo,
+		RateLimiter:         rateLimiter,
+		Hub:                 hubResult.Hub,
+		AuthService:         authService,
+		AuthLimiter:         middleware.NewRateLimiter(5, time.Minute),
+		IPIntelligence:      ipIntelligence,
+		Log:                 log,
+		SessionManager:      sessionManager,
+		GoogleVerifier:      googleVerifier,
+		EmailService:        emailService,
+		CommandService:      commandService,
+		ClientService:       clientService,
+		DB:                 sqlite,
+		Lockout:            lockout,
+		DeviceService:       deviceService,
+		Metrics:            metrics,
+		AuditLogger:        auditLogger,
+		Config:             cfg,
+		UpdatesStorage:     updatesStorage,
+		UpdatesService:     updatesService,
+		TelemetryRepo:      telemetryRepo,
+		APIKeyService:      apiKeyService,
+		OrgService:         orgService,
+		MemberService:      memberService,
+		InvitationService:  invitationService,
+		OrgSettingsService: orgSettingsService,
 	}
 }
 

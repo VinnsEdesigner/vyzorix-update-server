@@ -201,6 +201,8 @@ var migrations = []Migration{
 	{Apply: migrateAddOrgContextColumns, Name: "add_org_context_columns", Version: 41},
 	// Inbox organization column for multi-tenant
 	{Apply: migrateAddInboxOrganizationColumn, Name: "add_inbox_organization_column", Version: 42},
+	// Organization settings table
+	{Apply: migrateOrganizationSettings, Name: "create_organization_settings_table", Version: 43},
 }
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {

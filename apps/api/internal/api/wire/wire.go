@@ -31,32 +31,33 @@ import (
 
 // ServerDependencies contains all dependencies needed to create a Server.
 type ServerDependencies struct {
-	FCMNotifier       fcm.Notifier
-	OperatorRepo      operator.Repository
-	EmailService      *emailService.Service
-	CommandService    *command.Service
-	AuthService      *auth.AuthService
-	AuthLimiter      *middleware.RateLimiter
-	IPIntelligence    *middleware.IPIntelligence
-	Log               *slog.Logger
-	SessionManager    *infraauth.SessionManager
-	GoogleVerifier    *infraauth.GoogleTokenVerifier
-	RateLimiter      *middleware.RateLimiter
-	Hub               *hub.Hub
-	ClientService     *client.Service
-	DB               *storage.SQLite
-	Lockout          *middleware.Lockout
-	DeviceService    *device.Service
-	Metrics          *metrics.Metrics
-	AuditLogger      *audit.Logger
-	TelemetryRepo    *storage.TelemetryRepository
-	UpdatesStorage   *storage.UpdatesStorage
-	UpdatesService   *updatesapp.Service
-	APIKeyService    *keys.APIKeyService
-	Config           infraConfig.Config
-	OrgService       *orgapplication.OrganizationService
-	MemberService    *orgapplication.MemberService
-	InvitationService *orgapplication.InvitationService
+	FCMNotifier          fcm.Notifier
+	OperatorRepo        operator.Repository
+	EmailService        *emailService.Service
+	CommandService      *command.Service
+	AuthService        *auth.AuthService
+	AuthLimiter        *middleware.RateLimiter
+	IPIntelligence      *middleware.IPIntelligence
+	Log                *slog.Logger
+	SessionManager      *infraauth.SessionManager
+	GoogleVerifier      *infraauth.GoogleTokenVerifier
+	RateLimiter        *middleware.RateLimiter
+	Hub                *hub.Hub
+	ClientService      *client.Service
+	DB                *storage.SQLite
+	Lockout            *middleware.Lockout
+	DeviceService      *device.Service
+	Metrics            *metrics.Metrics
+	AuditLogger        *audit.Logger
+	TelemetryRepo      *storage.TelemetryRepository
+	UpdatesStorage     *storage.UpdatesStorage
+	UpdatesService     *updatesapp.Service
+	APIKeyService      *keys.APIKeyService
+	Config             infraConfig.Config
+	OrgService         *orgapplication.OrganizationService
+	MemberService      *orgapplication.MemberService
+	InvitationService   *orgapplication.InvitationService
+	OrgSettingsService  *orgapplication.OrganizationSettingsService
 }
 
 // ServerResult contains the fully wired server components.
@@ -120,28 +121,29 @@ func WireServer(deps ServerDependencies) *ServerResult {
 
 	// Wire handlers
 	handlerDeps := HandlerDependencies{
-		AuthService:       deps.AuthService,
-		SessionManager:    deps.SessionManager,
-		Config:            deps.Config,
-		GoogleVerifier:    deps.GoogleVerifier,
-		ClientService:     deps.ClientService,
-		EmailService:      deps.EmailService,
-		Lockout:           deps.Lockout,
-		OperatorRepo:      deps.OperatorRepo,
-		AuditLogger:       deps.AuditLogger,
-		IPIntelligence:    deps.IPIntelligence,
-		Presenter:         result.Presenter,
-		DeviceService:     deps.DeviceService,
-		Hub:               deps.Hub,
-		CommandService:    deps.CommandService,
-		FCMNotifier:       deps.FCMNotifier,
-		Log:               deps.Log,
-		HmacVerifier:      result.HmacVerifier,
-		DB:                deps.DB,
-		UpdatesStorage:    deps.UpdatesStorage,
-		OrgService:        deps.OrgService,
-		MemberService:     deps.MemberService,
-		InvitationService: deps.InvitationService,
+		AuthService:        deps.AuthService,
+		SessionManager:     deps.SessionManager,
+		Config:             deps.Config,
+		GoogleVerifier:     deps.GoogleVerifier,
+		ClientService:      deps.ClientService,
+		EmailService:       deps.EmailService,
+		Lockout:            deps.Lockout,
+		OperatorRepo:       deps.OperatorRepo,
+		AuditLogger:        deps.AuditLogger,
+		IPIntelligence:     deps.IPIntelligence,
+		Presenter:          result.Presenter,
+		DeviceService:      deps.DeviceService,
+		Hub:                deps.Hub,
+		CommandService:     deps.CommandService,
+		FCMNotifier:        deps.FCMNotifier,
+		Log:                deps.Log,
+		HmacVerifier:       result.HmacVerifier,
+		DB:                 deps.DB,
+		UpdatesStorage:     deps.UpdatesStorage,
+		OrgService:         deps.OrgService,
+		MemberService:      deps.MemberService,
+		InvitationService:  deps.InvitationService,
+		OrgSettingsService: deps.OrgSettingsService,
 	}
 	result.HandlerSet = WireHandlers(handlerDeps)
 

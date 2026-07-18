@@ -354,6 +354,14 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 		// Invitation routes under organizations
 		orgs.GET("/:id/invitations", s.invitationHandler.ListByOrganization)
 
+		// Organization settings routes
+		if s.organizationSettingsHandler != nil {
+			orgs.GET("/:id/settings", s.organizationSettingsHandler.GetSettings)
+			orgs.PATCH("/:id/settings", s.organizationSettingsHandler.UpdateSettings)
+			orgs.GET("/:id/settings/thresholds", s.organizationSettingsHandler.GetThresholds)
+			orgs.PATCH("/:id/settings/thresholds", s.organizationSettingsHandler.UpdateThresholds)
+		}
+
 		// Device transfer route
 		if s.transferHandler != nil {
 			orgs.POST("/:id/devices/:imei/transfer", s.transferHandler.Transfer)

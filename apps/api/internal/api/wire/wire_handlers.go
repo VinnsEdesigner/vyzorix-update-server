@@ -33,55 +33,59 @@ import (
 
 // HandlerDependencies contains all dependencies needed by handlers.
 type HandlerDependencies struct {
-	OperatorRepo        operator.Repository
-	FCMNotifier         fcm.Notifier
-	OAuthStateRepo      authhandlers.OAuthStateProvider
-	Presenter           *response.Presenter
-	Hub                 *ws.Hub
-	EmailService        *emailService.Service
-	Lockout             *middleware.Lockout
-	DB                  *storage.SQLite
-	AuditLogger         *audit.Logger
-	GoogleVerifier      *infraauth.GoogleTokenVerifier
-	DeviceService       *device.Service
-	DeviceRepo         *storage.DeviceRepository
-	IPIntelligence      *middleware.IPIntelligence
-	ClientService       *client.Service
-	CommandService      *command.Service
-	SessionManager      *infraauth.SessionManager
-	Log                 *slog.Logger
-	HmacVerifier        *cryptohmac.Verifier
-	UpdatesStorage      *storage.UpdatesStorage
-	AuthService         *auth.AuthService
-	Config              config.Config
-	OrgService          *orgapplication.OrganizationService
-	MemberService       *orgapplication.MemberService
-	InvitationService   *orgapplication.InvitationService
+	OperatorRepo              operator.Repository
+	FCMNotifier              fcm.Notifier
+	OAuthStateRepo           authhandlers.OAuthStateProvider
+	Presenter                *response.Presenter
+	Hub                      *ws.Hub
+	EmailService             *emailService.Service
+	Lockout                  *middleware.Lockout
+	DB                       *storage.SQLite
+	AuditLogger              *audit.Logger
+	GoogleVerifier           *infraauth.GoogleTokenVerifier
+	DeviceService            *device.Service
+	DeviceRepo               *storage.DeviceRepository
+	IPIntelligence           *middleware.IPIntelligence
+	ClientService            *client.Service
+	CommandService           *command.Service
+	SessionManager           *infraauth.SessionManager
+	Log                      *slog.Logger
+	HmacVerifier             *cryptohmac.Verifier
+	UpdatesStorage           *storage.UpdatesStorage
+	AuthService              *auth.AuthService
+	Config                   config.Config
+	OrgService               *orgapplication.OrganizationService
+	MemberService            *orgapplication.MemberService
+	InvitationService        *orgapplication.InvitationService
+	OrgSettingsService       *orgapplication.OrganizationSettingsService
+	OrganizationRepo         orgapplication.OrganizationRepository
+	MemberRepo               orgapplication.MemberRepository
 }
 
 // HandlerSet contains all handler instances.
 type HandlerSet struct {
-	Auth               *authhandlers.AllHandlers
+	Auth              *authhandlers.AllHandlers
 	// DEPRECATED: DeviceRegister - /v1/device/register endpoint removed
 	// DeviceRegister     *devicehandlers.RegisterHandler
-	DeviceStatus       *devicehandlers.StatusHandler
-	DeviceUpdater      *devicehandlers.UpdaterHandler
-	DeviceList         *devicehandlers.ListHandler
-	Devices            *devicehandlers.DevicesHandler
-	Command            *cmdhandlers.ExecuteHandler
-	Stream             *websockethandlers.StreamHandler
-	TelemetryHistory   *handlers.TelemetryHistoryHandler
-	ConnectionStatus   *handlers.ConnectionStatusHandler
-	AdminClients       *admin.ClientsHandler
-	Updates            *updateshandlers.UpdatesHandler
-	UpdatesService     *updatesapplication.Service
-	Organization       *organizationhandlers.OrganizationHandler
-	Invitation         *organizationhandlers.InvitationHandler
-	Member             *organizationhandlers.MemberHandler
-	Transfer           *devicehandlers.TransferHandler
-	OrgService         *orgapplication.OrganizationService
-	MemberService      *orgapplication.MemberService
-	InvitationService  *orgapplication.InvitationService
+	DeviceStatus      *devicehandlers.StatusHandler
+	DeviceUpdater     *devicehandlers.UpdaterHandler
+	DeviceList        *devicehandlers.ListHandler
+	Devices           *devicehandlers.DevicesHandler
+	Command           *cmdhandlers.ExecuteHandler
+	Stream            *websockethandlers.StreamHandler
+	TelemetryHistory  *handlers.TelemetryHistoryHandler
+	ConnectionStatus  *handlers.ConnectionStatusHandler
+	AdminClients      *admin.ClientsHandler
+	Updates           *updateshandlers.UpdatesHandler
+	UpdatesService    *updatesapplication.Service
+	Organization      *organizationhandlers.OrganizationHandler
+	Invitation        *organizationhandlers.InvitationHandler
+	Member            *organizationhandlers.MemberHandler
+	Transfer          *devicehandlers.TransferHandler
+	OrgService        *orgapplication.OrganizationService
+	MemberService     *orgapplication.MemberService
+	InvitationService *orgapplication.InvitationService
+	OrgSettings       *organizationhandlers.SettingsHandler
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -196,6 +200,11 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		hs.OrgService = deps.OrgService
 		hs.MemberService = deps.MemberService
 		hs.InvitationService = deps.InvitationService
+
+		// Organization settings handler
+		if deps.OrgSettingsService != nil {
+			hs.OrgSettings = organizationhandlers.NewSettingsHandler(deps.OrgSettingsService, deps.MemberService, deps.Presenter)
+		}
 	}
 
 	// Device transfer handler
