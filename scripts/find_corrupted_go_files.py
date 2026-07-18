@@ -28,11 +28,33 @@ def find_go_files(root):
 
 
 def check_duplicate_functions(content):
-    """Check for duplicate function definitions - primary corruption indicator."""
-    func_pattern = re.compile(r'^func\s+(?:\([^)]+\)\s+)?(\w+)\s*\(', re.MULTILINE)
+    """Check for duplicate function definitions - primary corruption indicator.
+    
+    Only checks for duplicate TOP-LEVEL functions (not methods).
+    Methods like 'func (e *T) Error()' are fine to have the same method name
+    on different receiver types.
+    """
+    # Match only top-level functions: func Name( or func Name(args) returntype
+    # NOT methods: func (receiver) Name(
+    top_level_pattern = re.compile(
+        r'^func\s+([A-Z][a-zA-Z0-9]*)\s*\(',  # func NAME(
+        re.MULTILINE
+    )
+    
+    # Also catch lowercase top-level functions (less common but valid)
+    lowercase_pattern = re.compile(
+        r'^func\s+([a-z][a-zA-Z0-9]*)\s*\(',  # func name(
+        re.MULTILINE
+    )
     
     functions = defaultdict(list)
-    for match in func_pattern.finditer(content):
+    
+    for match in top_level_pattern.finditer(content):
+        func_name = match.group(1)
+        line_num = content[:match.start()].count('\n') + 1
+        functions[func_name].append(line_num)
+    
+    for match in lowercase_pattern.finditer(content):
         func_name = match.group(1)
         line_num = content[:match.start()].count('\n') + 1
         functions[func_name].append(line_num)
