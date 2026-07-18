@@ -125,6 +125,7 @@ type Server struct {
 	apiKeyRateLimiter          *middleware.InMemoryRateLimiter
 	organizationHandler         *organizationhandlers.OrganizationHandler
 	organizationSettingsHandler *organizationhandlers.SettingsHandler
+	deviceSettingsHandler      *devicehandlers.SettingsHandler
 	invitationHandler         *organizationhandlers.InvitationHandler
 	memberHandler             *organizationhandlers.MemberHandler
 	transferHandler          *devicehandlers.TransferHandler
@@ -469,6 +470,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	// Organization handlers
 	s.organizationHandler = cfg.HandlerSet.Organization
 	s.organizationSettingsHandler = cfg.HandlerSet.OrgSettings
+	s.deviceSettingsHandler = cfg.HandlerSet.DeviceSettings
 	s.invitationHandler = cfg.HandlerSet.Invitation
 	s.memberHandler = cfg.HandlerSet.Member
 	s.transferHandler = cfg.HandlerSet.Transfer

@@ -268,6 +268,14 @@ func (s *Server) setupDevicesRoutes(r *gin.RouterGroup) {
 		devices.GET("", s.deviceRegRateLimiter.DevicesListLimit(), s.devicesHandler.GetDevices)
 		devices.GET("/:imei", s.deviceRegRateLimiter.DevicesGetLimit(), s.devicesHandler.GetDeviceDetail)
 		devices.DELETE("/:imei", s.deviceRegRateLimiter.DevicesDeleteLimit(), s.devicesHandler.DeregisterDevice)
+
+		// Device settings routes
+		if s.deviceSettingsHandler != nil {
+			devices.GET("/:imei/settings", s.deviceSettingsHandler.GetSettings)
+			devices.PATCH("/:imei/settings", s.deviceSettingsHandler.UpdateSettings)
+			devices.GET("/:imei/settings/thresholds", s.deviceSettingsHandler.GetThresholds)
+			devices.PATCH("/:imei/settings/thresholds", s.deviceSettingsHandler.UpdateThresholds)
+		}
 	}
 }
 

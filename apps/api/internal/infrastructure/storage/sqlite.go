@@ -203,6 +203,8 @@ var migrations = []Migration{
 	{Apply: migrateAddInboxOrganizationColumn, Name: "add_inbox_organization_column", Version: 42},
 	// Organization settings table
 	{Apply: migrateOrganizationSettings, Name: "create_organization_settings_table", Version: 43},
+	// Device settings table
+	{Apply: migrateDeviceSettings, Name: "create_device_settings_table", Version: 44},
 }
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {

@@ -60,6 +60,7 @@ type HandlerDependencies struct {
 	OrgSettingsService       *orgapplication.OrganizationSettingsService
 	OrganizationRepo         orgapplication.OrganizationRepository
 	MemberRepo               orgapplication.MemberRepository
+	DeviceSettingsService    *device.DeviceSettingsService
 }
 
 // HandlerSet contains all handler instances.
@@ -71,6 +72,7 @@ type HandlerSet struct {
 	DeviceUpdater     *devicehandlers.UpdaterHandler
 	DeviceList        *devicehandlers.ListHandler
 	Devices           *devicehandlers.DevicesHandler
+	DeviceSettings    *devicehandlers.SettingsHandler
 	Command           *cmdhandlers.ExecuteHandler
 	Stream            *websockethandlers.StreamHandler
 	TelemetryHistory  *handlers.TelemetryHistoryHandler
@@ -130,8 +132,6 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		deps.Log,
 		telemetryRepo,
 		deps.DeviceRepo,
-		nil,
-	)
 		nil,
 	)
 
@@ -205,6 +205,18 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		if deps.OrgSettingsService != nil {
 			hs.OrgSettings = organizationhandlers.NewSettingsHandler(deps.OrgSettingsService, deps.MemberService, deps.Presenter)
 		}
+	}
+
+	// Device handlers
+	hs.Devices = devicehandlers.NewDevicesHandler(deps.DeviceService)
+
+	// Device settings handler
+	if deps.DeviceSettingsService != nil && deps.MemberService != nil {
+		// Create membership checker function
+		membershipChecker := func(ctx context.Context, operatorID, orgID string) error {
+			return deps.MemberService.CheckMembership(ctx, operatorID, orgID)
+		}
+		hs.DeviceSettings = devicehandlers.NewDeviceSettingsHandler(deps.DeviceSettingsService, membershipChecker, deps.Presenter)
 	}
 
 	// Device transfer handler

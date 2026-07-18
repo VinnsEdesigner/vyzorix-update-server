@@ -325,6 +325,20 @@ func ProvideOrganizationSettingsService(
 	return orgapplication.NewOrganizationSettingsService(settingsRepo, orgRepo, memberRepo)
 }
 
+// ProvideDeviceSettingsRepository creates the device settings repository.
+func ProvideDeviceSettingsRepository(db *sql.DB) *storage.DeviceSettingsRepository {
+	return storage.NewDeviceSettingsRepository(db)
+}
+
+// ProvideDeviceSettingsService creates the device settings service.
+func ProvideDeviceSettingsService(
+	settingsRepo *storage.DeviceSettingsRepository,
+	deviceRepo *storage.DeviceRepository,
+	orgSettingsRepo *storage.OrganizationSettingsRepository,
+) *device.DeviceSettingsService {
+	return device.NewDeviceSettingsService(settingsRepo, deviceRepo, orgSettingsRepo)
+}
+
 // HubResult holds the WebSocket hub components.
 type HubResult struct {
 	Hub        *hub.Hub
@@ -620,6 +634,8 @@ var WireInjector = wire.NewSet(
 	ProvideInvitationService,
 	ProvideOrganizationSettingsRepository,
 	ProvideOrganizationSettingsService,
+	ProvideDeviceSettingsRepository,
+	ProvideDeviceSettingsService,
 	wire.Bind(new(operator.Repository), new(*storage.OperatorRepository)),
 )
 
@@ -659,6 +675,7 @@ func ProvideServerDependencies(
 	memberService *orgapplication.MemberService,
 	invitationService *orgapplication.InvitationService,
 	orgSettingsService *orgapplication.OrganizationSettingsService,
+	deviceSettingsService *device.DeviceSettingsService,
 ) *ServerDependencies {
 	return &ServerDependencies{
 		FCMNotifier:         fcmNotifier,
@@ -688,6 +705,7 @@ func ProvideServerDependencies(
 		MemberService:      memberService,
 		InvitationService:  invitationService,
 		OrgSettingsService: orgSettingsService,
+		DeviceSettingsService: deviceSettingsService,
 	}
 }
 
