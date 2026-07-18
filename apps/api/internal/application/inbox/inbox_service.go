@@ -68,6 +68,9 @@ func NewService(
 // WithTxManager sets the transaction manager for ACID transactions.
 func (s *Service) WithTxManager(txManager transaction.TxManager) *Service {
 	s.txManager = txManager
+	return s
+}
+
 // GetInbox returns paginated inbox entries for a specific operator within an organization.
 func (s *Service) GetInbox(ctx context.Context, operatorID, orgID, status string, page, limit int) (*InboxListResponse, error) {
 	if page < 1 {
@@ -83,9 +86,6 @@ func (s *Service) GetInbox(ctx context.Context, operatorID, orgID, status string
 	offset := (page - 1) * limit
 
 	entries, total, err := s.repo.ListByOperator(ctx, operatorID, orgID, status, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list inbox entries: %w", err)
-	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to list inbox entries: %w", err)
 	}
@@ -125,7 +125,8 @@ func (s *Service) GetInbox(ctx context.Context, operatorID, orgID, status string
 			TotalPages: totalPages,
 		},
 	}, nil
-// GetInboxEntry returns a single inbox entry by IMEI within an organization.
+}
+
 // GetInboxEntry returns a single inbox entry by IMEI within an organization.
 func (s *Service) GetInboxEntry(ctx context.Context, imei, orgID string) (*InboxEntryResponse, error) {
 	entry, err := s.repo.GetByIMEI(ctx, imei)
@@ -136,7 +137,6 @@ func (s *Service) GetInboxEntry(ctx context.Context, imei, orgID string) (*Inbox
 		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
 	}
 
-	// Verify entry belongs to organization
 	if orgID != "" && entry.OrganizationID != orgID {
 		return nil, ErrInboxNotFound
 	}
@@ -150,7 +150,7 @@ func (s *Service) GetInboxEntry(ctx context.Context, imei, orgID string) (*Inbox
 		Manufacturer:      entry.Manufacturer,
 		OSVersion:         entry.OSVersion,
 		AppVersion:        entry.AppVersion,
-		FCMToken:          entry.FCMToken,
+		FCMToken:          e.FCMToken,
 		FirebaseInstallID: entry.FirebaseInstallID,
 		Status:            string(entry.Status),
 		CreatedAt:         entry.CreatedAt,
@@ -160,39 +160,18 @@ func (s *Service) GetInboxEntry(ctx context.Context, imei, orgID string) (*Inbox
 		OperatorID:        entry.OperatorID,
 	}, nil
 }
-		Notes:             entry.Notes,
-		OperatorID:        entry.OperatorID,
-	}, nil
-}
+
 // AckInbox handles the inbox acknowledgement based on action type.
-// Implements the 5-state model from SPEC:
-// - action=acknowledge: Device acknowledges receipt (PENDING -> ACKNOWLEDGED)
-// - action=approve: Operator approves registration (ACKNOWLEDGED -> APPROVING -> APPROVED)
-// - action=reject: Operator rejects registration (PENDING/ACKNOWLEDGED -> REJECTED).
 func (s *Service) AckInbox(ctx context.Context, imei, action, operatorID, orgID, notes string) (*AckResponse, error) {
-	// Validate action
 	if action == string(inbox.DeviceAckActionAcknowledge) {
-		// Device acknowledges receipt
 		return s.DeviceAcknowledge(ctx, imei)
 	} else if action == string(inbox.OperatorActionApprove) {
-		// Operator approves
 		return s.ApproveDevice(ctx, imei, operatorID, orgID, notes)
 	} else if action == string(inbox.OperatorActionReject) {
-		// Operator rejects
 		return s.RejectDevice(ctx, imei, operatorID, orgID, notes)
-	} else if action == string(inbox.AckActionApprove) || action == string(inbox.AckActionReject) {
-		// Legacy action names for backward compatibility
-		if action == string(inbox.AckActionApprove) {
-			return s.ApproveDevice(ctx, imei, operatorID, orgID, notes)
-		}
-		return s.RejectDevice(ctx, imei, operatorID, orgID, notes)
-	}
-
-	return nil, ErrInvalidAckAction
-}
-		if action == string(inbox.AckActionApprove) {
-			return s.ApproveDevice(ctx, imei, operatorID, orgID, notes)
-		}
+	} else if action == string(inbox.AckActionApprove) {
+		return s.ApproveDevice(ctx, imei, operatorID, orgID, notes)
+	} else if action == string(inbox.AckActionReject) {
 		return s.RejectDevice(ctx, imei, operatorID, orgID, notes)
 	}
 
@@ -210,7 +189,6 @@ func (s *Service) DeviceAcknowledge(ctx context.Context, imei string) (*AckRespo
 		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
 	}
 
-	// Validate state transition
 	if !entry.CanBeAcknowledged() {
 		return nil, ErrInboxCannotBeAcknowledged
 	}
@@ -219,9 +197,23 @@ func (s *Service) DeviceAcknowledge(ctx context.Context, imei string) (*AckRespo
 	entry.Status = inbox.StatusAcknowledged
 	entry.AcknowledgedAt = PtrToInt64(now.UnixMilli())
 	entry.UpdatedAt = now.UnixMilli()
+
+	if err := s.repo.Update(ctx, entry); err != nil {
+		return nil, fmt.Errorf("failed to update inbox entry: %w", err)
+	}
+
+	s.logRegistrationAction(ctx, entry, "acknowledged", "", "")
+
+	return &AckResponse{
+		ID:             entry.ID,
+		IMEI:           entry.IMEI,
+		Status:         string(entry.Status),
+		AcknowledgedAt: entry.AcknowledgedAt,
+	}, nil
+}
+
 // ApproveDevice handles operator approval of a device registration.
 // Transitions from ACKNOWLEDGED -> APPROVING -> APPROVED.
-// Generates commandSecret and sends FCM push to device.
 func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, orgID, notes string) (*AckResponse, error) {
 	entry, err := s.repo.GetByIMEI(ctx, imei)
 	if err != nil {
@@ -231,12 +223,10 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
 	}
 
-	// Verify entry belongs to organization
 	if orgID != "" && entry.OrganizationID != orgID {
 		return nil, ErrInboxNotFound
 	}
 
-	// Validate state transition - must be acknowledged first
 	if !entry.CanBeApproved() {
 		return nil, ErrInboxCannotBeApproved
 	}
@@ -244,7 +234,7 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 	now := time.Now()
 	entry.OperatorID = operatorID
 
-	// Transition to APPROVING (intermediate state while processing)
+	// Transition to APPROVING (intermediate state)
 	entry.Status = inbox.StatusApproving
 	entry.ApprovingAt = PtrToInt64(now.UnixMilli())
 
@@ -271,7 +261,7 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 		)
 	}
 
-	// Transition to APPROVED (final approved state)
+	// Transition to APPROVED
 	entry.Status = inbox.StatusApproved
 	entry.ApprovedAt = PtrToInt64(now.UnixMilli())
 	entry.UpdatedAt = now.UnixMilli()
@@ -302,7 +292,6 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 		}
 	}
 
-	// Log the approval
 	s.logRegistrationAction(ctx, entry, "approved", operatorID, "")
 
 	s.logger.Info("device approved by operator",
@@ -312,39 +301,16 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 	)
 
 	return &AckResponse{
-		ID:             entry.ID,
-		IMEI:           entry.IMEI,
-		Status:         string(entry.Status),
-		ApprovedAt:     entry.ApprovedAt,
-		CommandSecret:  secret,
-		FCMPushSent:    fcmPushSent,
-		Notes:          notes,
+		ID:            entry.ID,
+		IMEI:          entry.IMEI,
+		Status:        string(entry.Status),
+		ApprovedAt:    entry.ApprovedAt,
+		CommandSecret: secret,
+		FCMPushSent:  fcmPushSent,
+		Notes:         notes,
 	}, nil
 }
-		CommandSecret:  secret,
-		FCMPushSent:    fcmPushSent,
-		Notes:          notes,
-	}, nil
-}
-			)
-		} else {
-			fcmPushSent = true
-		}
-	}
 
-	// Log the approval
-	s.logRegistrationAction(ctx, entry, "approved", operatorID, "")
-
-	s.logger.Info("device approved by operator",
-		"imei", entry.IMEI,
-		"operator_id", operatorID,
-		"fcm_push_sent", fcmPushSent,
-	)
-
-	return &AckResponse{
-		ID:             entry.ID,
-		IMEI:           entry.IMEI,
-		Status:         string(entry.Status),
 // RejectDevice handles operator rejection of a device registration.
 // Transitions from PENDING/ACKNOWLEDGED -> REJECTED.
 func (s *Service) RejectDevice(ctx context.Context, imei string, operatorID, orgID, notes string) (*AckResponse, error) {
@@ -356,12 +322,10 @@ func (s *Service) RejectDevice(ctx context.Context, imei string, operatorID, org
 		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
 	}
 
-	// Verify entry belongs to organization
 	if orgID != "" && entry.OrganizationID != orgID {
 		return nil, ErrInboxNotFound
 	}
 
-	// Validate state transition - can reject from pending or acknowledged
 	if !entry.CanBeRejected() {
 		return nil, ErrInboxCannotBeRejected
 	}
@@ -377,7 +341,6 @@ func (s *Service) RejectDevice(ctx context.Context, imei string, operatorID, org
 		return nil, fmt.Errorf("failed to update inbox entry: %w", err)
 	}
 
-	// Log the rejection
 	s.logRegistrationAction(ctx, entry, "rejected", operatorID, notes)
 
 	s.logger.Info("device rejected by operator",
@@ -393,295 +356,56 @@ func (s *Service) RejectDevice(ctx context.Context, imei string, operatorID, org
 		Notes:      notes,
 	}, nil
 }
-		Status:     string(entry.Status),
-		RejectedAt: entry.RejectedAt,
-		Notes:      notes,
-	}, nil
-}
-		"imei", entry.IMEI,
-		"operator_id", operatorID,
-	)
 
-	return &AckResponse{
-		ID:         entry.ID,
-		IMEI:       entry.IMEI,
-		Status:     string(entry.Status),
-		RejectedAt: entry.RejectedAt,
-		Notes:      notes,
-	}, nil
-}
-
-// ackInboxWithTx executes ack within a database transaction for ACID guarantees.
-func (s *Service) ackInboxWithTx(ctx context.Context, imei string, action string, operatorID, notes string) (*AckResponse, error) {
-	var result *AckResponse
-	err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		entry, err := s.repo.GetByIMEI(txCtx, imei)
-		if err != nil {
-			if err == inbox.ErrInboxNotFound {
-				return ErrInboxNotFound
-			}
-			return fmt.Errorf("failed to get inbox entry: %w", err)
-		}
-
-		if !entry.CanBeAcknowledged() {
-			return ErrInboxNotPending
-		}
-
-		now := time.Now()
-		entry.OperatorID = operatorID
-
-		if action == string(inbox.AckActionApprove) {
-			entry.Status = inbox.StatusApproved
-			entry.ApprovedAt = PtrToInt64(now.UnixMilli())
-
-			// Generate command secret
-			secret, err := generateSecret(32)
-			if err != nil {
-				return ErrSecretGeneration
-			}
-			entry.CommandSecret = secret
-
-			// Create device in devices table from inbox entry (within same transaction)
-			if s.deviceSvc != nil {
-				createdDevice, err := s.deviceSvc.CreateFromInbox(txCtx, entry, secret)
-				if err != nil {
-					s.logger.Error("failed to create device from inbox entry",
-						"imei", entry.IMEI,
-						"error", err,
-					)
-					return fmt.Errorf("failed to create device: %w", err)
-				}
-				s.logger.Info("device created from inbox entry",
-					"imei", entry.IMEI,
-					"device_id", createdDevice.ID,
-				)
-			}
-
-			// Update inbox entry in database (within same transaction)
-			if err := s.repo.Update(txCtx, entry); err != nil {
-				return fmt.Errorf("failed to update inbox entry: %w", err)
-			}
-
-			// Send FCM notification (outside transaction - best effort)
-			fcmPushSent := false
-			if s.fcmNotifier != nil && entry.FCMToken != "" {
-				wake := fcm.SilentWake{
-					Token:         entry.FCMToken,
-					Command:       "REGISTRATION_APPROVED",
-					CommandSecret: secret,
-					DispatchID:    entry.ID,
-					DeviceID:      entry.IMEI,
-					Priority:      "high",
-				}
-				if err := s.fcmNotifier.SendSilentWake(ctx, wake); err != nil {
-					s.logger.Warn("failed to send FCM notification on approval",
-						"imei", entry.IMEI,
-						"error", err,
-					)
-				} else {
-					fcmPushSent = true
-				}
-			}
-
-			// Log the approval
-			s.logRegistrationAction(txCtx, entry, "approved", operatorID, "")
-
-			result = &AckResponse{
-				ID:            entry.ID,
-				IMEI:          entry.IMEI,
-				Status:        string(entry.Status),
-				ApprovedAt:    entry.ApprovedAt,
-				CommandSecret: secret,
-				FCMPushSent:   fcmPushSent,
-				Notes:         notes,
-			}
-			return nil
-		}
-
-		// Reject path
-		entry.Status = inbox.StatusRejected
-		entry.RejectedAt = PtrToInt64(now.UnixMilli())
-		entry.Notes = notes
-
-		if err := s.repo.Update(txCtx, entry); err != nil {
-			return fmt.Errorf("failed to update inbox entry: %w", err)
-		}
-
-		// Log the rejection
-		s.logRegistrationAction(txCtx, entry, "rejected", operatorID, notes)
-
-		result = &AckResponse{
-			ID:         entry.ID,
-			IMEI:       entry.IMEI,
-			Status:     string(entry.Status),
-			RejectedAt: entry.RejectedAt,
-			Notes:      notes,
-		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-// ackInboxWithoutTx executes ack without transaction (legacy behavior).
-func (s *Service) ackInboxWithoutTx(ctx context.Context, imei string, action string, operatorID, notes string) (*AckResponse, error) {
-	entry, err := s.repo.GetByIMEI(ctx, imei)
-	if err != nil {
-		if err == inbox.ErrInboxNotFound {
-			return nil, ErrInboxNotFound
-		}
-		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
-	}
-
-	if !entry.CanBeAcknowledged() {
-		return nil, ErrInboxNotPending
-	}
-
-	now := time.Now()
-	entry.OperatorID = operatorID
-
-	if action == string(inbox.AckActionApprove) {
-		entry.Status = inbox.StatusApproved
-		entry.ApprovedAt = PtrToInt64(now.UnixMilli())
-
-		// Generate command secret
-		secret, err := generateSecret(32)
-		if err != nil {
-			return nil, ErrSecretGeneration
-		}
-		entry.CommandSecret = secret
-
-		// Create device in devices table from inbox entry
-		if s.deviceSvc != nil {
-			createdDevice, err := s.deviceSvc.CreateFromInbox(ctx, entry, secret)
-			if err != nil {
-				s.logger.Error("failed to create device from inbox entry",
-					"imei", entry.IMEI,
-					"error", err,
-				)
-				return nil, fmt.Errorf("failed to create device: %w", err)
-			}
-			s.logger.Info("device created from inbox entry",
-				"imei", entry.IMEI,
-				"device_id", createdDevice.ID,
-			)
-		}
-
-		// Update inbox entry in database
-		if err := s.repo.Update(ctx, entry); err != nil {
-			return nil, fmt.Errorf("failed to update inbox entry: %w", err)
-		}
-
-		// Send FCM notification (best effort)
-		fcmPushSent := false
-		if s.fcmNotifier != nil && entry.FCMToken != "" {
-			wake := fcm.SilentWake{
-				Token:         entry.FCMToken,
-				Command:       "REGISTRATION_APPROVED",
-				CommandSecret: secret,
-				DispatchID:    entry.ID,
-				DeviceID:      entry.IMEI,
-				Priority:      "high",
-			}
-			if err := s.fcmNotifier.SendSilentWake(ctx, wake); err != nil {
-				s.logger.Warn("failed to send FCM notification on approval",
-					"imei", entry.IMEI,
-					"error", err,
-				)
-			} else {
-				fcmPushSent = true
-				s.logger.Info("FCM notification sent on approval",
-					"imei", entry.IMEI,
-				)
-			}
-		}
-
-		// Log the approval
-		s.logRegistrationAction(ctx, entry, "approved", operatorID, "")
-
-		return &AckResponse{
-			ID:            entry.ID,
-			IMEI:          entry.IMEI,
-			Status:        string(entry.Status),
-			ApprovedAt:    entry.ApprovedAt,
-			CommandSecret: secret,
-			FCMPushSent:   fcmPushSent,
-			Notes:         notes,
-		}, nil
-	}
-
-	// Reject action
-	entry.Status = inbox.StatusRejected
-	entry.RejectedAt = PtrToInt64(now.UnixMilli())
-	entry.Notes = notes
-
-	if err := s.repo.Update(ctx, entry); err != nil {
-		return nil, fmt.Errorf("failed to update inbox entry: %w", err)
-	}
-
-	// Log the rejection
-	s.logRegistrationAction(ctx, entry, "rejected", operatorID, notes)
-
-	return &AckResponse{
-		ID:         entry.ID,
-		IMEI:       entry.IMEI,
-		Status:     string(entry.Status),
-		RejectedAt: entry.RejectedAt,
-		Notes:      notes,
-	}, nil
-}
-
-// CreateInboxRequest creates a new inbox entry from a device registration request.
+// CreateInboxRequest creates a new inbox entry for device registration.
 func (s *Service) CreateInboxRequest(ctx context.Context, req *InboxRequest) (*InboxEntryResponse, error) {
 	if err := s.validateInboxRequest(req); err != nil {
-		metrics.Get().RecordDeviceRegistrationFailure()
 		return nil, err
 	}
 
-	existingInboxEntry, err := s.checkDeviceAndInboxStatus(ctx, req.IMEI)
+	// Check if device already exists or has pending registration
+	existingEntry, err := s.checkDeviceAndInboxStatus(ctx, req.IMEI)
 	if err != nil {
 		return nil, err
 	}
 
+	if existingEntry != nil {
+		return s.buildInboxEntryResponse(existingEntry), nil
+	}
+
+	// Create new inbox entry
 	entry, err := s.createInboxEntry(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	s.logAndRecordMetrics(ctx, req.IMEI, entry, existingInboxEntry)
+	s.logAndRecordMetrics(ctx, req.IMEI, entry, existingEntry)
 
 	return s.buildInboxEntryResponse(entry), nil
 }
 
-// validateInboxRequest validates the inbox request input.
 func (s *Service) validateInboxRequest(req *InboxRequest) error {
+	if req.IMEI == "" {
+		return ErrInvalidIMEI
+	}
 	if !isValidIMEI(req.IMEI) {
 		return ErrInvalidIMEI
 	}
 	if req.FCMToken != "" && !isValidFCMToken(req.FCMToken) {
 		return ErrInvalidFCMToken
 	}
-	if req.FirebaseInstallID != "" && !isValidFirebaseInstallID(req.FirebaseInstallID) {
-		return ErrInvalidFirebaseInstallID
-	}
 	return nil
 }
 
-// checkDeviceAndInboxStatus checks device and inbox status for the request.
 func (s *Service) checkDeviceAndInboxStatus(ctx context.Context, imei string) (*inbox.InboxEntry, error) {
 	if s.deviceLookup != nil {
 		if err := s.checkDeviceStatus(ctx, imei); err != nil {
 			return nil, err
 		}
 	}
-
 	return s.cleanupStaleInboxEntry(ctx, imei)
 }
 
-// checkDeviceStatus checks if device exists and is not already registered.
 func (s *Service) checkDeviceStatus(ctx context.Context, imei string) error {
 	existingDevice, err := s.deviceLookup.GetDeviceByIMEI(ctx, imei)
 	if err != nil && err != device.ErrNotFound {
@@ -699,7 +423,6 @@ func (s *Service) checkDeviceStatus(ctx context.Context, imei string) error {
 	return nil
 }
 
-// cleanupStaleInboxEntry cleans up stale inbox entries.
 func (s *Service) cleanupStaleInboxEntry(ctx context.Context, imei string) (*inbox.InboxEntry, error) {
 	existingInboxEntry, err := s.repo.GetByIMEI(ctx, imei)
 	if err != nil && err != inbox.ErrInboxNotFound {
@@ -720,23 +443,22 @@ func (s *Service) cleanupStaleInboxEntry(ctx context.Context, imei string) (*inb
 	return existingInboxEntry, nil
 }
 
-// createInboxEntry creates the inbox entry in the repository.
 func (s *Service) createInboxEntry(ctx context.Context, req *InboxRequest) (*inbox.InboxEntry, error) {
 	now := time.Now()
 	entry := &inbox.InboxEntry{
-		ID:                generateID(),
-		IMEI:              req.IMEI,
-		DeviceName:        req.DeviceName,
-		DeviceClass:       req.DeviceClass,
-		Model:             req.Model,
-		Manufacturer:      req.Manufacturer,
-		OSVersion:         req.OSVersion,
-		AppVersion:        req.AppVersion,
-		FCMToken:          req.FCMToken,
-		FirebaseInstallID: req.FirebaseInstallID,
-		Status:            inbox.StatusPending,
-		CreatedAt:         now.UnixMilli(),
-		UpdatedAt:         now.UnixMilli(),
+		ID:                 generateID(),
+		IMEI:               req.IMEI,
+		DeviceName:         req.DeviceName,
+		DeviceClass:        req.DeviceClass,
+		Model:              req.Model,
+		Manufacturer:       req.Manufacturer,
+		OSVersion:          req.OSVersion,
+		AppVersion:         req.AppVersion,
+		FCMToken:           req.FCMToken,
+		FirebaseInstallID:   req.FirebaseInstallID,
+		Status:             inbox.StatusPending,
+		CreatedAt:          now.UnixMilli(),
+		UpdatedAt:          now.UnixMilli(),
 	}
 
 	if err := s.repo.Create(ctx, entry); err != nil {
@@ -746,7 +468,6 @@ func (s *Service) createInboxEntry(ctx context.Context, req *InboxRequest) (*inb
 	return entry, nil
 }
 
-// logAndRecordMetrics logs and records metrics for the registration.
 func (s *Service) logAndRecordMetrics(ctx context.Context, imei string, entry *inbox.InboxEntry, existingInboxEntry *inbox.InboxEntry) {
 	s.logRegistrationAction(ctx, entry, "pending", "", "")
 	metrics.Get().RecordDeviceRegistrationSuccess()
@@ -758,26 +479,25 @@ func (s *Service) logAndRecordMetrics(ctx context.Context, imei string, entry *i
 	}
 }
 
-// buildInboxEntryResponse builds the response from the entry.
 func (s *Service) buildInboxEntryResponse(entry *inbox.InboxEntry) *InboxEntryResponse {
 	return &InboxEntryResponse{
-		ID:                entry.ID,
-		IMEI:              entry.IMEI,
-		DeviceName:        entry.DeviceName,
-		DeviceClass:       entry.DeviceClass,
-		Model:             entry.Model,
-		Manufacturer:      entry.Manufacturer,
-		OSVersion:         entry.OSVersion,
-		AppVersion:        entry.AppVersion,
-		FCMToken:          entry.FCMToken,
-		FirebaseInstallID: entry.FirebaseInstallID,
-		Status:            string(entry.Status),
-		AcknowledgedAt:    entry.AcknowledgedAt,
-		ApprovingAt:      entry.ApprovingAt,
+		ID:                 entry.ID,
+		IMEI:               entry.IMEI,
+		DeviceName:         entry.DeviceName,
+		DeviceClass:        entry.DeviceClass,
+		Model:              entry.Model,
+		Manufacturer:       entry.Manufacturer,
+		OSVersion:          entry.OSVersion,
+		AppVersion:         entry.AppVersion,
+		FCMToken:           entry.FCMToken,
+		FirebaseInstallID:   entry.FirebaseInstallID,
+		Status:             string(entry.Status),
+		AcknowledgedAt:     entry.AcknowledgedAt,
+		ApprovingAt:       entry.ApprovingAt,
 		ApprovedAt:        entry.ApprovedAt,
 		RejectedAt:        entry.RejectedAt,
-		Notes:             entry.Notes,
-		OperatorID:        entry.OperatorID,
+		Notes:              entry.Notes,
+		OperatorID:         entry.OperatorID,
 		CreatedAt:         entry.CreatedAt,
 	}
 }
@@ -804,23 +524,17 @@ func (s *Service) logRegistrationAction(ctx context.Context, entry *inbox.InboxE
 }
 
 // extractClientIP extracts the client IP from the context.
-// Looks for X-Forwarded-For, X-Real-IP headers or the request context.
 func extractClientIP(ctx context.Context) string {
-	// Try to get from Gin context if available
 	if ginCtx, ok := ctx.(*gin.Context); ok {
-		// Check X-Forwarded-For header (proxy)
 		if xff := ginCtx.GetHeader("X-Forwarded-For"); xff != "" {
-			// Take the first IP (original client)
 			if idx := strings.Index(xff, ","); idx != -1 {
 				return strings.TrimSpace(xff[:idx])
 			}
 			return strings.TrimSpace(xff)
 		}
-		// Check X-Real-IP header
 		if xri := ginCtx.GetHeader("X-Real-IP"); xri != "" {
 			return xri
 		}
-		// Fall back to remote address
 		return ginCtx.ClientIP()
 	}
 	return ""
@@ -828,7 +542,6 @@ func extractClientIP(ctx context.Context) string {
 
 // extractUserAgent extracts the User-Agent from the context.
 func extractUserAgent(ctx context.Context) string {
-	// Try to get from Gin context if available
 	if ginCtx, ok := ctx.(*gin.Context); ok {
 		return ginCtx.GetHeader("User-Agent")
 	}
@@ -852,72 +565,50 @@ func generateID() string {
 }
 
 // isValidIMEI validates IMEI format (15 digits) using Luhn checksum.
-// The IMEI is a 15-digit number where the last digit is a Luhn check digit.
 func isValidIMEI(imei string) bool {
 	if len(imei) != 15 {
 		return false
 	}
-	// Check all characters are digits
 	for _, c := range imei {
 		if c < '0' || c > '9' {
 			return false
 		}
 	}
-	// Validate using Luhn algorithm
 	return isValidLuhn(imei)
 }
 
 // isValidLuhn validates a number using the Luhn algorithm.
-// The Luhn algorithm is used to validate IMEI, credit card numbers, etc.
 func isValidLuhn(number string) bool {
 	sum := 0
 	isSecond := false
-
-	// Process digits from right to left
 	for i := len(number) - 1; i >= 0; i-- {
 		digit := int(number[i] - '0')
-
 		if isSecond {
 			digit *= 2
 			if digit > 9 {
 				digit -= 9
 			}
 		}
-
 		sum += digit
 		isSecond = !isSecond
 	}
-
 	return sum%10 == 0
 }
 
 // isValidFCMToken validates basic FCM token format.
-// FCM tokens are typically 152+ characters and alphanumeric with some special chars.
 func isValidFCMToken(token string) bool {
-	// FCM tokens are typically at least 100 characters ( from Firebase docs)
 	if len(token) < 100 {
 		return false
 	}
-	// FCM tokens should not contain spaces or control characters
 	for _, c := range token {
 		if c < 32 || c > 126 {
-			return false
-		}
-	}
-	// FCM tokens are generally alphanumeric with : and _ allowed
-	// Pattern: alphanumeric, colon, underscore, hyphen
-	for _, c := range token {
-		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') &&
-			c != ':' && c != '_' && c != '-' && c != '.' {
 			return false
 		}
 	}
 	return true
 }
 
-// isValidFirebaseInstallID validates Firebase Installation ID format.
 // UpdateInboxEntry updates an inbox entry (e.g., operator notes).
-// Only pending entries can be updated.
 func (s *Service) UpdateInboxEntry(ctx context.Context, imei, operatorID, orgID, notes string) (*InboxEntryResponse, error) {
 	entry, err := s.repo.GetByIMEI(ctx, imei)
 	if err != nil {
@@ -927,17 +618,14 @@ func (s *Service) UpdateInboxEntry(ctx context.Context, imei, operatorID, orgID,
 		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
 	}
 
-	// Verify entry belongs to organization
 	if orgID != "" && entry.OrganizationID != orgID {
 		return nil, ErrInboxNotFound
 	}
 
-	// Only pending entries can be updated
 	if !entry.CanBeAcknowledged() {
 		return nil, ErrInboxNotPending
 	}
 
-	// Update notes
 	entry.Notes = notes
 	entry.UpdatedAt = time.Now().UnixMilli()
 
@@ -945,31 +633,29 @@ func (s *Service) UpdateInboxEntry(ctx context.Context, imei, operatorID, orgID,
 		return nil, fmt.Errorf("failed to update inbox entry: %w", err)
 	}
 
-	// Log the update action
 	s.logRegistrationAction(ctx, entry, "updated", operatorID, notes)
 
 	return &InboxEntryResponse{
-		ID:                entry.ID,
-		IMEI:              entry.IMEI,
-		DeviceName:        entry.DeviceName,
-		DeviceClass:       entry.DeviceClass,
-		Model:             entry.Model,
-		Manufacturer:      entry.Manufacturer,
-		OSVersion:         entry.OSVersion,
-		AppVersion:        entry.AppVersion,
-		FCMToken:          entry.FCMToken,
-		FirebaseInstallID: entry.FirebaseInstallID,
-		Status:            string(entry.Status),
-		CreatedAt:         entry.CreatedAt,
-		ApprovedAt:        entry.ApprovedAt,
-		RejectedAt:        entry.RejectedAt,
-		Notes:             entry.Notes,
-		OperatorID:        entry.OperatorID,
+		ID:                 entry.ID,
+		IMEI:               entry.IMEI,
+		DeviceName:         entry.DeviceName,
+		DeviceClass:        entry.DeviceClass,
+		Model:              entry.Model,
+		Manufacturer:       entry.Manufacturer,
+		OSVersion:          entry.OSVersion,
+		AppVersion:         entry.AppVersion,
+		FCMToken:           entry.FCMToken,
+		FirebaseInstallID:   entry.FirebaseInstallID,
+		Status:             string(entry.Status),
+		CreatedAt:          entry.CreatedAt,
+		ApprovedAt:         entry.ApprovedAt,
+		RejectedAt:         entry.RejectedAt,
+		Notes:              entry.Notes,
+		OperatorID:         entry.OperatorID,
 	}, nil
 }
 
 // ResendApproval resends the FCM notification to a device that was approved.
-// This handles the race condition where the original FCM notification may have failed.
 func (s *Service) ResendApproval(ctx context.Context, imei, operatorID, orgID string) (*ResendResponse, error) {
 	entry, err := s.repo.GetByIMEI(ctx, imei)
 	if err != nil {
@@ -979,28 +665,24 @@ func (s *Service) ResendApproval(ctx context.Context, imei, operatorID, orgID st
 		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
 	}
 
-	// Verify entry belongs to organization
 	if orgID != "" && entry.OrganizationID != orgID {
 		return nil, ErrInboxNotFound
 	}
 
-	// Only approved entries can have their notification resent
 	if entry.Status != inbox.StatusApproved {
 		return nil, ErrInboxNotApproved
 	}
 
-	// Validate we have a command secret to resend
 	if entry.CommandSecret == "" {
 		return nil, fmt.Errorf("command secret not found for approved entry")
 	}
 
-	// Try to send FCM notification
 	fcmPushSent := false
 	if s.fcmNotifier != nil && entry.FCMToken != "" {
 		wake := fcm.SilentWake{
 			Token:         entry.FCMToken,
 			Command:       "REGISTRATION_APPROVED",
-			CommandSecret: entry.CommandSecret, // Plaintext secret stored in inbox entry
+			CommandSecret: entry.CommandSecret,
 			DispatchID:    entry.ID,
 			DeviceID:      entry.IMEI,
 			Priority:      "high",
@@ -1015,43 +697,6 @@ func (s *Service) ResendApproval(ctx context.Context, imei, operatorID, orgID st
 		}
 	}
 
-	// Log the resend action
-	s.logRegistrationAction(ctx, entry, "resend_approval", operatorID, "")
-
-	s.logger.Info("resent approval notification",
-		"imei", entry.IMEI,
-		"fcm_push_sent", fcmPushSent,
-	)
-
-	return &ResendResponse{
-		IMEI:        entry.IMEI,
-		FCMPushSent: fcmPushSent,
-		ResentAt:    time.Now().UnixMilli(),
-	}, nil
-}
-		"imei", entry.IMEI,
-		"fcm_push_sent", fcmPushSent,
-	)
-
-	return &ResendResponse{
-		IMEI:        entry.IMEI,
-		FCMPushSent: fcmPushSent,
-		ResentAt:    time.Now().UnixMilli(),
-	}, nil
-}
-			Priority:      "high",
-		}
-		if err := s.fcmNotifier.SendSilentWake(ctx, wake); err != nil {
-			s.logger.Warn("failed to resend FCM notification",
-				"imei", entry.IMEI,
-				"error", err,
-			)
-		} else {
-			fcmPushSent = true
-		}
-	}
-
-	// Log the resend action
 	s.logRegistrationAction(ctx, entry, "resend_approval", operatorID, "")
 
 	s.logger.Info("resent approval notification",
