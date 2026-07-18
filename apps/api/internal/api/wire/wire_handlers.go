@@ -62,7 +62,8 @@ type HandlerDependencies struct {
 // HandlerSet contains all handler instances.
 type HandlerSet struct {
 	Auth               *authhandlers.AllHandlers
-	DeviceRegister     *devicehandlers.RegisterHandler
+	// DEPRECATED: DeviceRegister - /v1/device/register endpoint removed
+	// DeviceRegister     *devicehandlers.RegisterHandler
 	DeviceStatus       *devicehandlers.StatusHandler
 	DeviceUpdater      *devicehandlers.UpdaterHandler
 	DeviceList         *devicehandlers.ListHandler
@@ -104,7 +105,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	})
 
 	// Device handlers
-	hs.DeviceRegister = devicehandlers.NewRegisterHandler(deps.DeviceService)
+	// DEPRECATED: hs.DeviceRegister = devicehandlers.NewRegisterHandler(deps.DeviceService) // /v1/device/register removed
 	hs.DeviceStatus = devicehandlers.NewStatusHandler(deps.DeviceService)
 	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deps.DeviceService)
 	hs.DeviceList = devicehandlers.NewListHandler(deps.DeviceService, deps.Hub)
