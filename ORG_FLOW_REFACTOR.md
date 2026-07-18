@@ -306,12 +306,12 @@ CREATE TABLE device_settings (
 - [x] Organization selection endpoint
 - [x] Description required validation
 
-### Phase 2: Settings Foundation ⏳ IN PROGRESS
+### Phase 2: Settings Foundation ✅ IN PROGRESS
 - [x] Operator client settings (Android app behavior)
 - [x] Operator notification preferences
-- [ ] organization_settings table
-- [ ] organization_settings CRUD endpoints
-- [ ] Move thresholds to org level defaults
+- [x] organization_settings table
+- [x] organization_settings CRUD endpoints
+- [x] Move thresholds to org level defaults
 - [ ] device_settings table
 - [ ] device_settings CRUD endpoints
 - [ ] Threshold resolution: device → org → default
