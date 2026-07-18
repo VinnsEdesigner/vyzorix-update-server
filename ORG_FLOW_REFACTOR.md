@@ -18,6 +18,13 @@
 - **MFA/Backup Codes remain per-operator (global)**
 - **Settings are hierarchical**: Operator → Organization → Device
 
+### About Devices
+**Devices are Android phones running the Vyzorix APK**, not industrial sensors:
+- They connect via WebSocket (WSS) to the server
+- They use HMAC-SHA256 signing for command verification
+- They receive FCM push notifications for commands
+- Device settings control the Android app behavior, not hardware sensors
+
 ### Data Model
 
 ```
@@ -25,26 +32,24 @@ OPERATOR (Global Identity)
 ├── id, email, name, password_hash
 ├── mfa_enabled, mfa_secret, backup_codes
 ├── last_organization_id (for auto-select)
-└── client_settings (server_url, timeouts, etc.)
-        │
-        │ is member of (via Membership)
-        ▼
+└── client_settings (Android app behavior)
+
 ORGANIZATION (Tenant - owns all resources)
 ├── id, name, description, created_by
 ├── max_members, is_active
 └── organization_settings
-     ├── default_thresholds (risk, thermal, buffer)
+     ├── default_thresholds
      ├── timezone, date_format
      └── alert_cooldown_minutes
-        │
-        │ has (via Device.organization_id)
-        ▼
-DEVICE (Owned by organization)
+
+DEVICE (Android Phone with Vyzorix APK)
 ├── imei, organization_id, registered_by
+├── fcm_token, firebase_install_id
+├── command_secret (HMAC key)
+├── state (REGISTERED, ONLINE, OFFLINE, DEREGISTERED)
 └── device_settings
      ├── thresholds (NULL = use org defaults)
-     ├── custom_name, location, metadata
-     └── ...
+     └── custom_name, location
 ```
 
 ---
@@ -77,15 +82,6 @@ POST /v1/auth/login
 }
 ```
 
-### Organization Selection
-```
-POST /v1/auth/organizations/select
-Body: { "organization_id": "org_xxx" }
-
-→ Updates session.SelectedOrganizationID
-→ Updates operator.LastOrganizationID
-```
-
 ---
 
 ## 🏢 ORGANIZATION CREATION
@@ -95,10 +91,10 @@ Body: { "organization_id": "org_xxx" }
 **Request:**
 ```json
 {
-  "name": "My Company",                    // Optional, defaults to "personal"
-  "description": "We build IoT devices",  // REQUIRED
-  "maxMembers": 50,                       // Optional, defaults to 100
-  "role": "super_admin"                   // REQUIRED: "super_admin" or "admin"
+  "name": "My Company",
+  "description": "We build IoT devices",
+  "maxMembers": 50,
+  "role": "super_admin"
 }
 ```
 
@@ -110,55 +106,61 @@ Body: { "organization_id": "org_xxx" }
 | maxMembers | Min 1, default 100 |
 | role | Must be exactly "super_admin" or "admin" |
 
-**Response (201):**
-```json
-{
-  "id": "org_abc123...",
-  "name": "My Company",
-  "description": "We build IoT devices",
-  "created_by": "op_xyz789...",
-  "created_at": "2026-07-17T01:15:00Z",
-  "max_members": 50,
-  "is_active": true
-}
-```
-
 ---
 
 ## 🛡️ ROUTE PROTECTION
 
 ### Middleware Chain (in order)
 1. **CookieAuth** - Validates session, sets operator + session in context
-2. **OrganizationContext** - Extracts org_id: query → header → context → session.SelectedOrganizationID
-3. **OrganizationMembership** - Validates operator is member of organization
+2. **OrganizationContext** - Extracts org_id from session
+3. **OrganizationMembership** - Validates operator is member
 
 ### Protected Routes (Require Organization)
-- `/dashboard/*` → Dashboard, devices, stats
-- `/devices/*` → Device management
-- `/v1/organizations/:id/*` → Org management
+- `/dashboard/*` - Dashboard, devices, stats
+- `/devices/*` - Device management
+- `/v1/organizations/:id/*` - Org management
 
 ### Public Routes (No Organization Required)
 - `/v1/auth/register`, `/v1/auth/login`
-- `/v1/auth/me/settings/client` → Client settings (operator-level)
-- `/v1/auth/me/notifications` → Personal notification prefs
+- `/v1/auth/me/settings/client` - Android app settings
+- `/v1/auth/me/notifications` - Personal notification prefs
 
 ---
 
 ## ⚙️ SETTINGS HIERARCHY
 
 ### Level 1: Operator Settings (Global)
-Available without organization:
+
 ```
-GET/PATCH /v1/auth/me              → Profile (name)
-/v1/auth/me/settings/client        → Client settings
-/v1/auth/me/notifications          → Personal notification prefs
+GET/PATCH /v1/auth/me
+GET/PATCH /v1/auth/me/settings/client
+GET/PATCH /v1/auth/me/notifications
 ```
 
-**Client Settings (Operator-Level):**
+---
+
+## 📱 CLIENT SETTINGS (Operator-Level)
+
+These settings control the **Android app behavior** on the device.
+
+### GET/PATCH /v1/auth/me/settings/client
+
+**Settings:**
+| Setting | Type | Description |
+|---------|------|-------------|
+| serverUrl | string | WebSocket server URL |
+| deviceId | string | Device identifier (UUID) |
+| requestTimeoutMs | int | HTTP request timeout (500-60000) |
+| autoReconnect | boolean | Automatically reconnect if WebSocket disconnects |
+| strictHmac | boolean | Strictly validate HMAC signatures on all commands |
+| logBufferLimit | int | Maximum log entries to buffer (50-5000) |
+| signalHistoryLimit | int | Signal history entries to retain (30-2000) |
+
+**Example:**
 ```json
 {
-  "serverUrl": "wss://api.vyzorix.com",
-  "deviceId": "device-001",
+  "serverUrl": "wss://updates.vyzorix.com/v1/ws",
+  "deviceId": "550e8400-e29b-41d4-a716-446655440000",
   "requestTimeoutMs": 5000,
   "autoReconnect": true,
   "strictHmac": true,
@@ -167,12 +169,10 @@ GET/PATCH /v1/auth/me              → Profile (name)
 }
 ```
 
-**Rationale:** Device/client configuration preferences, not org preferences.
-
 ---
 
 ### Level 2: Organization Settings
-Requires organization context:
+
 ```
 GET/PATCH /v1/organizations/:id/settings
 GET/PATCH /v1/organizations/:id/settings/thresholds
@@ -194,57 +194,16 @@ GET/PATCH /v1/organizations/:id/settings/thresholds
 
 ---
 
-### Level 3: Device Settings (Per-Device Override)
-Requires organization + device:
+### Level 3: Device Settings
+
 ```
 GET/PATCH /v1/devices/:imei/settings
 GET/PATCH /v1/devices/:imei/thresholds
 ```
 
-**Device Settings:**
-```json
-{
-  "customName": "Factory Floor Sensor A",
-  "location": "Building A, Floor 2",
-  "thresholds": {
-    // NULL = use organization defaults
-    "riskWarn": 80,
-    "riskCrit": 95
-  }
-}
-```
-
-### Threshold Resolution Flow
-```
-Device Alert Triggered
-         │
-         ▼
-┌────────────────────────────────┐
-│ Check device.thresholds        │
-│ (device_settings table)        │
-└────────────┬───────────────────┘
-             │ NULL?
-      ┌──────┴──────┐
-      Yes          No
-         │          ▼
-         │    Use device thresholds
-         │
-         ▼
-┌────────────────────────────────┐
-│ Check organization defaults     │
-└────────────────────────────────┘
-```
-
 ---
 
 ## 📊 THRESHOLDS SPECIFICATION
-
-### Threshold Types
-| Threshold | Rule | Description |
-|-----------|------|-------------|
-| riskWarn | < riskCrit | Device risk score |
-| thermalWarn | < thermalCrit | Temperature (°C) |
-| bufferWarn | > bufferCrit | Buffer level (inverted) |
 
 ### Default Values
 ```json
@@ -254,6 +213,8 @@ Device Alert Triggered
   "bufferWarn": 30, "bufferCrit": 10
 }
 ```
+
+### Threshold Resolution: device → org → default
 
 ---
 
@@ -272,7 +233,7 @@ Device Alert Triggered
 ### Operator Settings (No Org Required)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET/PATCH | /v1/auth/me/settings/client | Client settings |
+| GET/PATCH | /v1/auth/me/settings/client | Android app settings |
 | GET/PATCH | /v1/auth/me/notifications | Notification prefs |
 
 ### Organizations (Org Required)
@@ -300,9 +261,7 @@ Device Alert Triggered
 
 ## 🗄️ DATABASE SCHEMA
 
-### Tables to Create
-
-#### 1. organization_settings (NEW)
+### organization_settings (NEW)
 ```sql
 CREATE TABLE organization_settings (
     id TEXT PRIMARY KEY,
@@ -317,7 +276,7 @@ CREATE TABLE organization_settings (
 );
 ```
 
-#### 2. device_settings (NEW)
+### device_settings (NEW)
 ```sql
 CREATE TABLE device_settings (
     id TEXT PRIMARY KEY,
@@ -348,8 +307,8 @@ CREATE TABLE device_settings (
 - [x] Description required validation
 
 ### Phase 2: Settings Foundation ⏳ IN PROGRESS
-- [x] Operator client settings (operator level)
-- [x] Operator notification preferences (operator level)
+- [x] Operator client settings (Android app behavior)
+- [x] Operator notification preferences
 - [ ] organization_settings table
 - [ ] organization_settings CRUD endpoints
 - [ ] Move thresholds to org level defaults
@@ -361,7 +320,7 @@ CREATE TABLE device_settings (
 - [ ] Remove operator.thresholds column
 - [ ] Update all API paths to new structure
 
-### Phase 4: Role Management (Deferred - Future Discussion)
+### Phase 4: Role Management (Deferred)
 - [ ] Member role update endpoints
 - [ ] Admin can promote/demote members
 - [ ] Super_admin protection
@@ -370,7 +329,6 @@ CREATE TABLE device_settings (
 
 ## 🔑 ROLE SYSTEM
 
-### Roles (In Organization Context)
 | Role | Level | Permissions |
 |------|-------|-------------|
 | super_admin | 4 | Full access, manage admins, delete org |
@@ -378,57 +336,29 @@ CREATE TABLE device_settings (
 | operator | 2 | View devices, send commands |
 | viewer | 1 | Read-only access |
 
-**Role is NOT stored on Operator.** Determined by:
-1. Active session's SelectedOrganizationID
-2. Look up OrganizationMember record for (operator_id, organization_id)
+**Role is determined by:** Active session's SelectedOrganizationID + OrganizationMember lookup
 
 ---
 
-## 📝 NOTES
+## 📱 DEVICE LIFECYCLE
 
-### On Client Settings Being Operator-Level
-These are device/client configuration preferences:
-- serverUrl - Which server to connect to
-- requestTimeoutMs - Client network behavior
-- autoReconnect - Client persistence
-- logBufferLimit - Client local storage
+### Device States
+| State | Description |
+|-------|-------------|
+| REGISTERED | Initial state after first registration |
+| ONLINE | WebSocket connected or telemetry received |
+| OFFLINE | WebSocket disconnected |
+| DEREGISTERED | Terminal state after DELETE |
 
-These are NOT user preferences - they are device properties.
-
-### On Thresholds Being Per-Device
-Different devices in the same org can have different operating characteristics:
-- Temperature sensor in cold storage vs hot factory floor
-
-The hierarchy (device → org → default) allows:
-- Org admins set sensible defaults for new devices
-- Individual devices can be tuned without affecting others
-
-### Migration Notes (No Users in Production)
-Since no users yet:
-1. Drop old operator.thresholds column
-2. Create new tables
-3. Initialize org settings from defaults
-
----
-
-## 📁 KEY FILES
-| Component | Location |
-|-----------|----------|
-| Operator Entity | internal/domain/operator/operator_entity.go |
-| Organization Entity | internal/domain/organization/organization_entity.go |
-| Member Entity | internal/domain/organization/member_entity.go |
-| Create Org Handler | internal/api/handlers/organization/organization_handler.go |
-| Create Org Service | internal/application/organization/organization_service.go |
-| Auth Login | internal/application/auth/auth_login_session.go |
-| Auth Constructors | internal/application/auth/auth_constructors.go |
-| Org Context Middleware | internal/api/middleware/org_context.go |
-| Org Membership Middleware | internal/api/middleware/org_membership.go |
-| Settings Handler | internal/api/handlers/auth/auth_settings.go |
-| Settings Service | internal/application/auth/auth_settings_service.go |
-| Threshold Types | internal/domain/operator/settings_types.go |
-| Server Routes | internal/api/server_routes.go |
-| Auth Routes | internal/api/handlers/auth/auth_routes.go |
-| DTOs | internal/application/dto/auth.go |
+### Registration Flow
+```
+1. Device: POST /v1/device/inbox (registration request)
+2. Server: Stores in INBOX (pending)
+3. Operator: Views inbox, clicks Register
+4. Server: Generates commandSecret, FCM push
+5. Device: POST /v1/device/confirm
+6. Server: Marks as REGISTERED
+```
 
 ---
 
@@ -436,11 +366,11 @@ Since no users yet:
 
 ### Create Organization
 - ✅ Role validation: only "super_admin" or "admin" accepted
-- ✅ Description required (enforced in handler)
-- ✅ Name defaults to "personal" if empty
-- ✅ MaxMembers defaults to 100 if not positive
-- ✅ Operator added as member with specified role
-- ✅ LastOrganizationID updated after creation
+- ✅ Description required
+- ✅ Name defaults to "personal"
+- ✅ MaxMembers defaults to 100
+- ✅ Operator added as member
+- ✅ LastOrganizationID updated
 
 ### Login Auto-Selection
 - ✅ 0 memberships → needs_organization: true
@@ -451,10 +381,9 @@ Since no users yet:
 ### Route Protection
 - ✅ Dashboard routes require organization context
 - ✅ Device routes require organization context
-- ✅ Organization routes require organization + membership
+- ✅ Organization routes require membership
 
 ### Session Tracking
 - ✅ Session.SelectedOrganizationID field exists
-- ✅ Updated on login (auto-resolve)
+- ✅ Updated on login
 - ✅ Updated on organization switch
-- ✅ Read by OrganizationContext middleware
