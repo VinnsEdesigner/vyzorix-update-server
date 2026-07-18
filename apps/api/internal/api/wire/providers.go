@@ -511,7 +511,7 @@ func ProvideHandlerSet(
 		Lockout:        lockout,
 		OperatorRepo:   operatorRepo,
 		AuditLogger:    auditLogger,
-	hs.DeviceRegister = devicehandlers.NewRegisterHandler(deviceService)
+	// DEPRECATED: hs.DeviceRegister = devicehandlers.NewRegisterHandler(deviceService) // /v1/device/register removed
 	hs.DeviceStatus = devicehandlers.NewStatusHandler(deviceService)
 	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deviceService)
 	hs.DeviceList = devicehandlers.NewListHandler(deviceService, hubResult.Hub)

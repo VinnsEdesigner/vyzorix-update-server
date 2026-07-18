@@ -95,7 +95,8 @@ type Server struct {
 	dashboardRateLimiter       *middleware.DashboardRateLimiterMiddleware
 	deviceRegRateLimiter       *middleware.DeviceRegistrationRateLimiterMiddleware
 	AuditLogger                *audit.Logger
-	deviceRegisterHandler      *devicehandlers.RegisterHandler
+	// DEPRECATED: deviceRegisterHandler - /v1/device/register endpoint removed
+	// deviceRegisterHandler      *devicehandlers.RegisterHandler
 	deviceUpdaterHandler       *devicehandlers.UpdaterHandler
 	deviceListHandler          *devicehandlers.ListHandler
 	devicesHandler             *devicehandlers.DevicesHandler
@@ -219,7 +220,7 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	})
 
 	// Device handlers
-	s.deviceRegisterHandler = devicehandlers.NewRegisterHandler(cfg.DeviceService)
+	// DEPRECATED: s.deviceRegisterHandler = devicehandlers.NewRegisterHandler(cfg.DeviceService) // /v1/device/register removed
 	s.deviceStatusHandler = devicehandlers.NewStatusHandler(cfg.DeviceService)
 	s.deviceUpdaterHandler = devicehandlers.NewUpdaterHandler(cfg.DeviceService)
 	s.deviceListHandler = devicehandlers.NewListHandler(cfg.DeviceService, cfg.Hub)
@@ -452,7 +453,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 
 	// Wire handlers from HandlerSet
 	s.authHandlers = cfg.HandlerSet.Auth
-	s.deviceRegisterHandler = cfg.HandlerSet.DeviceRegister
+	// DEPRECATED: s.deviceRegisterHandler = cfg.HandlerSet.DeviceRegister // /v1/device/register removed
 	s.deviceStatusHandler = cfg.HandlerSet.DeviceStatus
 	s.deviceUpdaterHandler = cfg.HandlerSet.DeviceUpdater
 	s.deviceListHandler = cfg.HandlerSet.DeviceList

@@ -216,38 +216,38 @@ func (s *ChangePasswordSchema) Validate() ValidationErrors {
 	return errs
 }
 
-// DeviceRegisterSchema validates device registration requests.
-type DeviceRegisterSchema struct {
-	DeviceID          string `json:"deviceId"`
-	FirebaseInstallID string `json:"firebaseInstallId"`
-	FCMToken          string `json:"fcmToken"`
-	AppVersion        string `json:"appVersion"`
-	DeviceClass       string `json:"deviceClass"`
-}
-
-func (s *DeviceRegisterSchema) Validate() ValidationErrors {
-	var errs ValidationErrors
-
-	if s.DeviceID == "" {
-		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId is required"})
-	} else if !DeviceIDPattern.MatchString(s.DeviceID) {
-		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId must be 1-64 alphanumeric characters with underscores or hyphens"})
-	}
-
-	if s.FirebaseInstallID == "" {
-		errs = append(errs, ValidationError{Field: "firebaseInstallId", Message: "firebaseInstallId is required"})
-	}
-
-	if s.AppVersion != "" && len(s.AppVersion) > 32 {
-		errs = append(errs, ValidationError{Field: "appVersion", Message: "appVersion must be at most 32 characters"})
-	}
-
-	if s.DeviceClass != "" && len(s.DeviceClass) > 64 {
-		errs = append(errs, ValidationError{Field: "deviceClass", Message: "deviceClass must be at most 64 characters"})
-	}
-
-	return errs
-}
+// DEPRECATED: DeviceRegisterSchema - /v1/device/register endpoint removed. Use /v1/device/inbox instead.
+// type DeviceRegisterSchema struct {
+// 	DeviceID          string `json:"deviceId"`
+// 	FirebaseInstallID string `json:"firebaseInstallId"`
+// 	FCMToken          string `json:"fcmToken"`
+// 	AppVersion        string `json:"appVersion"`
+// 	DeviceClass       string `json:"deviceClass"`
+// }
+//
+// func (s *DeviceRegisterSchema) Validate() ValidationErrors {
+// 	var errs ValidationErrors
+//
+// 	if s.DeviceID == "" {
+// 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId is required"})
+// 	} else if !DeviceIDPattern.MatchString(s.DeviceID) {
+// 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId must be 1-64 alphanumeric characters with underscores or hyphens"})
+// 	}
+//
+// 	if s.FirebaseInstallID == "" {
+// 		errs = append(errs, ValidationError{Field: "firebaseInstallId", Message: "firebaseInstallId is required"})
+// 	}
+//
+// 	if s.AppVersion != "" && len(s.AppVersion) > 32 {
+// 		errs = append(errs, ValidationError{Field: "appVersion", Message: "appVersion must be at most 32 characters"})
+// 	}
+//
+// 	if s.DeviceClass != "" && len(s.DeviceClass) > 64 {
+// 		errs = append(errs, ValidationError{Field: "deviceClass", Message: "deviceClass must be at most 64 characters"})
+// 	}
+//
+// 	return errs
+// }
 
 // DeviceStatusSchema validates device status update requests.
 type DeviceStatusSchema struct {
