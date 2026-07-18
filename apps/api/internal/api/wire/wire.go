@@ -58,6 +58,7 @@ type ServerDependencies struct {
 	MemberService      *orgapplication.MemberService
 	InvitationService   *orgapplication.InvitationService
 	OrgSettingsService  *orgapplication.OrganizationSettingsService
+	DeviceSettingsService *device.DeviceSettingsService
 }
 
 // ServerResult contains the fully wired server components.
@@ -144,6 +145,7 @@ func WireServer(deps ServerDependencies) *ServerResult {
 		MemberService:      deps.MemberService,
 		InvitationService:  deps.InvitationService,
 		OrgSettingsService: deps.OrgSettingsService,
+		DeviceSettingsService: deps.DeviceSettingsService,
 	}
 	result.HandlerSet = WireHandlers(handlerDeps)
 
