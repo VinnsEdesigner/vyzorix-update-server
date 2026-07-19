@@ -40,7 +40,7 @@ func settingsQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get settings for a specific device including effective thresholds",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"deviceId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Device ID (IMEI)"},
+				"deviceImei":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Device IMEI"},
 			},
 			Resolve: res.GetDeviceSettings,
 		},
@@ -413,7 +413,7 @@ func settingsMutations(res *resolver.Resolver) graphql.Fields {
 			Description: "Update settings for a specific device",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"deviceId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Device ID (IMEI)"},
+				"deviceImei":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Device IMEI"},
 				"input": &graphql.ArgumentConfig{
 					Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
 						Name: "UpdateDeviceSettingsInput",
