@@ -316,9 +316,12 @@ CREATE TABLE device_settings (
 - [x] device_settings CRUD endpoints
 - [x] Threshold resolution: device → org → default
 
-### Phase 3: Cleanup (Deferred)
-- [ ] Remove operator.thresholds column
-- [ ] Update all API paths to new structure
+### Phase 3: Cleanup ✅ DONE
+- [x] Remove deprecated operator threshold endpoints (/v1/auth/me/thresholds)
+- [x] Remove ThresholdService from GraphQL layer
+- [x] Remove operator.thresholds from API responses
+- [x] Wire new device/org settings repos to metrics and event processor
+- [x] Clean up all backward compatibility code
 
 ### Phase 4: Role Management (Deferred)
 - [ ] Member role update endpoints
