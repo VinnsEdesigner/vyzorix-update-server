@@ -475,11 +475,14 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		settingsReq.Thresholds = parseDeviceThresholds(thresholds)
 	}
 
+	// First, ensure device settings exist (create with defaults if not)
+	if _, err := r.DeviceSettingsService.GetOrCreateSettings(ctx, deviceImei); err != nil {
+		return nil, r.Presenter.InternalError("failed to create device settings")
+	}
+
+	// Now update with the requested changes
 	settings, err := r.DeviceSettingsService.UpdateSettings(ctx, deviceImei, settingsReq)
 	if err != nil {
-		if errors.Is(err, devicedomain.ErrSettingsNotFound) {
-			return nil, r.Presenter.NotFoundError("device settings not found")
-		}
 		if errors.Is(err, devicedomain.ErrInvalidThreshold) {
 			return nil, r.Presenter.BadRequestError("invalid threshold values: warning must be less than critical")
 		}

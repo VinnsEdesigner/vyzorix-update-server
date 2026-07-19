@@ -1782,11 +1782,11 @@ var OrganizationSettingsType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "Organization ID",
 		},
 		"timezone": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.String),
+			Type:        graphql.String,
 			Description: "Organization timezone (e.g., UTC, America/New_York)",
 		},
 		"dateFormat": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.String),
+			Type:        graphql.String,
 			Description: "Date format (e.g., YYYY-MM-DD)",
 		},
 		"alertCooldownMinutes": &graphql.Field{
