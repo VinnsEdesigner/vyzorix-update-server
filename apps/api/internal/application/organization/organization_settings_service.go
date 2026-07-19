@@ -27,6 +27,11 @@ func NewOrganizationSettingsService(
 	}
 }
 
+// SettingsRepo returns the settings repository for use by other services.
+func (s *OrganizationSettingsService) SettingsRepo() organization.OrganizationSettingsRepository {
+	return s.settingsRepo
+}
+
 // CreateSettings creates organization settings with defaults for a new organization.
 func (s *OrganizationSettingsService) CreateSettings(ctx context.Context, orgID string) (*organization.OrganizationSettings, error) {
 	// Verify organization exists

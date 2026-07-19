@@ -242,6 +242,8 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 }
 
 // GetThresholds handles GET /v1/auth/me/thresholds.
+// DEPRECATED: Thresholds are now managed at device and organization level.
+// Use GET /v1/devices/:imei/settings/thresholds instead.
 func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -258,6 +260,11 @@ func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 		return
 	}
 
+	// Add deprecation header
+	c.Header("Deprecation", "true")
+	c.Header("Sunset", "2025-12-31")
+	c.Header("X_DEPRECATION_NOTICE", "Thresholds are now managed at device/organization level. Use /v1/devices/:imei/settings/thresholds instead.")
+
 	h.presenter.OK(c, thresholds)
 }
 
@@ -272,6 +279,8 @@ type ThresholdUpdateRequest struct {
 }
 
 // UpdateThresholds handles PATCH /v1/auth/me/thresholds.
+// DEPRECATED: Thresholds are now managed at device and organization level.
+// Use PATCH /v1/devices/:imei/settings/thresholds instead.
 func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -287,6 +296,11 @@ func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
+
+	// Add deprecation header
+	c.Header("Deprecation", "true")
+	c.Header("Sunset", "2025-12-31")
+	c.Header("X_DEPRECATION_NOTICE", "Thresholds are now managed at device/organization level. Use PATCH /v1/devices/:imei/settings/thresholds instead.")
 
 	// Get current thresholds
 	thresholds, err := h.operatorRepo.GetThresholds(ctx, operatorID)

@@ -5,21 +5,32 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/metrics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 )
 
 // Service handles metrics operations.
 type Service struct {
-	metricsRepo  metrics.Repository
-	operatorRepo operator.Repository
+	metricsRepo       metrics.Repository
+	operatorRepo      operator.Repository
+	deviceSettingsRepo device.DeviceSettingsRepository
+	orgSettingsRepo   organization.OrganizationSettingsRepository
 }
 
 // NewService creates a new metrics service.
-func NewService(metricsRepo metrics.Repository, operatorRepo operator.Repository) *Service {
+func NewService(
+	metricsRepo metrics.Repository,
+	operatorRepo operator.Repository,
+	deviceSettingsRepo device.DeviceSettingsRepository,
+	orgSettingsRepo organization.OrganizationSettingsRepository,
+) *Service {
 	return &Service{
-		metricsRepo:  metricsRepo,
-		operatorRepo: operatorRepo,
+		metricsRepo:       metricsRepo,
+		operatorRepo:      operatorRepo,
+		deviceSettingsRepo: deviceSettingsRepo,
+		orgSettingsRepo:   orgSettingsRepo,
 	}
 }
 
@@ -34,12 +45,8 @@ func (s *Service) GetDeviceMetrics(ctx context.Context, req *GetMetricsRequest) 
 		return nil, fmt.Errorf("failed to get latest telemetry: %w", err)
 	}
 
-	// Get thresholds from organization settings
-	thresholds, err := s.getOrganizationThresholds(ctx, req.OrganizationID)
-	if err != nil {
-		// Fall back to defaults if organization settings can't be fetched
-		thresholds = defaultThresholds()
-	}
+	// Get thresholds using hierarchical resolution: device → org → default
+	thresholds := s.getResolvedThresholds(ctx, req.DeviceID, req.OrganizationID)
 
 	// Get stats for each metric
 	riskScoreStats, err := s.metricsRepo.GetMetricStats(ctx, req.DeviceID, "riskScore", startTime, endTime)
@@ -300,25 +307,21 @@ func (s *Service) convertThresholdEvents(events []*metrics.MetricThresholdEvent)
 	return result
 }
 
-// getOperatorThresholds retrieves thresholds from operator settings.
+// getOperatorThresholds retrieves thresholds using hierarchical resolution.
+// DEPRECATED: Use getResolvedThresholds instead.
 func (s *Service) getOperatorThresholds(ctx context.Context, operatorID string) (*metrics.ThresholdPreset, error) {
-	if operatorID == "" || s.operatorRepo == nil {
+	if operatorID == "" {
 		return defaultThresholds(), nil
 	}
 
-	thresholds, err := s.operatorRepo.GetThresholds(ctx, operatorID)
-	if err != nil {
-		return nil, err
+	// Fall back to default if we don't have the new settings repos
+	if s.orgSettingsRepo == nil {
+		return defaultThresholds(), nil
 	}
 
-	return &metrics.ThresholdPreset{
-		RiskScoreWarning:  float64(thresholds.RiskWarn),
-		RiskScoreCritical: float64(thresholds.RiskCrit),
-		ThermalWarning:    float64(thresholds.ThermalWarn),
-		ThermalCritical:   float64(thresholds.ThermalCrit),
-		BufferWarning:     float64(thresholds.BufferWarn),
-		BufferCritical:    float64(thresholds.BufferCrit),
-	}, nil
+	// We need the org ID, but operator ID alone isn't enough
+	// Return default - the caller should use getResolvedThresholds with device ID
+	return defaultThresholds(), nil
 }
 
 // getOrganizationThresholds retrieves thresholds from organization settings.
@@ -327,9 +330,69 @@ func (s *Service) getOrganizationThresholds(ctx context.Context, orgID string) (
 		return defaultThresholds(), nil
 	}
 
-	// For now, fall back to default thresholds
-	// In the future, this can be extended to fetch organization-specific thresholds
-	return defaultThresholds(), nil
+	if s.orgSettingsRepo == nil {
+		return defaultThresholds(), nil
+	}
+
+	orgSettings, err := s.orgSettingsRepo.FindByOrganizationID(ctx, orgID)
+	if err != nil || orgSettings == nil || orgSettings.DefaultThresholds == nil {
+		return defaultThresholds(), nil
+	}
+
+	return &metrics.ThresholdPreset{
+		RiskScoreWarning:  float64(orgSettings.DefaultThresholds.RiskWarn),
+		RiskScoreCritical: float64(orgSettings.DefaultThresholds.RiskCrit),
+		ThermalWarning:    float64(orgSettings.DefaultThresholds.ThermalWarn),
+		ThermalCritical:   float64(orgSettings.DefaultThresholds.ThermalCrit),
+		BufferWarning:     float64(orgSettings.DefaultThresholds.BufferWarn),
+		BufferCritical:    float64(orgSettings.DefaultThresholds.BufferCrit),
+	}, nil
+}
+
+// getResolvedThresholds retrieves thresholds using hierarchical resolution:
+// device settings → organization settings → defaults
+func (s *Service) getResolvedThresholds(ctx context.Context, deviceID, orgID string) *metrics.ThresholdPreset {
+	result := defaultThresholds()
+
+	// Get organization thresholds
+	if orgID != "" && s.orgSettingsRepo != nil {
+		orgSettings, err := s.orgSettingsRepo.FindByOrganizationID(ctx, orgID)
+		if err == nil && orgSettings != nil && orgSettings.DefaultThresholds != nil {
+			result.RiskScoreWarning = float64(orgSettings.DefaultThresholds.RiskWarn)
+			result.RiskScoreCritical = float64(orgSettings.DefaultThresholds.RiskCrit)
+			result.ThermalWarning = float64(orgSettings.DefaultThresholds.ThermalWarn)
+			result.ThermalCritical = float64(orgSettings.DefaultThresholds.ThermalCrit)
+			result.BufferWarning = float64(orgSettings.DefaultThresholds.BufferWarn)
+			result.BufferCritical = float64(orgSettings.DefaultThresholds.BufferCrit)
+		}
+	}
+
+	// Override with device-specific thresholds
+	if deviceID != "" && s.deviceSettingsRepo != nil {
+		deviceSettings, err := s.deviceSettingsRepo.FindByDeviceIMEI(ctx, deviceID)
+		if err == nil && deviceSettings != nil && deviceSettings.HasThresholds() {
+			if deviceSettings.Thresholds.RiskWarn != 0 {
+				result.RiskScoreWarning = float64(deviceSettings.Thresholds.RiskWarn)
+			}
+			if deviceSettings.Thresholds.RiskCrit != 0 {
+				result.RiskScoreCritical = float64(deviceSettings.Thresholds.RiskCrit)
+			}
+			if deviceSettings.Thresholds.ThermalWarn != 0 {
+				result.ThermalWarning = float64(deviceSettings.Thresholds.ThermalWarn)
+			}
+			if deviceSettings.Thresholds.ThermalCrit != 0 {
+				result.ThermalCritical = float64(deviceSettings.Thresholds.ThermalCrit)
+			}
+			if deviceSettings.Thresholds.BufferWarn != 0 {
+				result.BufferWarning = float64(deviceSettings.Thresholds.BufferWarn)
+			}
+			if deviceSettings.Thresholds.BufferCrit != 0 {
+				result.BufferCritical = float64(deviceSettings.Thresholds.BufferCrit)
+			}
+		}
+	}
+
+	return result
 }
 
 // defaultThresholds returns default threshold values.
