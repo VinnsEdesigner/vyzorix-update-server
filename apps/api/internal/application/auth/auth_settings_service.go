@@ -49,7 +49,6 @@ func (s *ClientSettingsService) GetSettings(ctx context.Context, operatorID stri
 	}
 
 	return &SettingsResponse{
-		Thresholds:    settings.Thresholds,
 		Notifications: settings.Notifications,
 		Client:        &settings.Client,
 	}, nil
@@ -121,19 +120,12 @@ func (s *ClientSettingsService) UpdateClientSettings(ctx context.Context, operat
 		return nil, err
 	}
 
-	// Get full settings to return
-	thresholds, err := s.operatorRepo.GetThresholds(ctx, operatorID)
-	if err != nil {
-		return nil, err
-	}
-
 	notifications, err := s.operatorRepo.GetNotifications(ctx, operatorID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &SettingsResponse{
-		Thresholds:    thresholds,
 		Notifications: notifications,
 		Client:        &currentSettings.Client,
 	}, nil
@@ -153,5 +145,4 @@ func (s *ClientSettingsService) ResetSettings(ctx context.Context, operatorID st
 type SettingsResponse struct {
 	Notifications *operator.NotificationSettings `json:"notifications"`
 	Client        *operator.ClientSettings       `json:"client,omitempty"`
-	Thresholds    operator.Thresholds            `json:"thresholds"`
 }

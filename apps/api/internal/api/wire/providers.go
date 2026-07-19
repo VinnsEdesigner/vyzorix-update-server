@@ -140,7 +140,6 @@ func ProvideUpdatesStorage(db *sql.DB) *storage.UpdatesStorage {
 func ProvideEventProcessor(
 	eventRepo *storage.EventRepository,
 	deviceRepo *storage.DeviceRepository,
-	operatorRepo *storage.OperatorRepository,
 	deviceSettingsRepo *storage.DeviceSettingsRepository,
 	orgSettingsRepo *storage.OrganizationSettingsRepository,
 	hubResult *HubResult,
@@ -154,7 +153,6 @@ func ProvideEventProcessor(
 	processor := eventapp.NewProcessor(eventRepo, deviceRepo, broadcaster, log)
 
 	// Wire repositories for hierarchical threshold resolution
-	processor.SetOperatorRepo(operatorRepo)  // DEPRECATED: kept for backward compatibility
 	processor.SetDeviceSettingsRepo(deviceSettingsRepo)
 	processor.SetOrgSettingsRepo(orgSettingsRepo)
 

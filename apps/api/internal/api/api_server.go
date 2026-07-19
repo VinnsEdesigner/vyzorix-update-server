@@ -307,7 +307,7 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 		if cfg.OrgSettingsService != nil {
 			orgSettingsRepo = cfg.OrgSettingsService.SettingsRepo()
 		}
-		metricsSvc = appmetrics.NewService(metricsRepo, cfg.OperatorRepo, deviceSettingsRepo, orgSettingsRepo)
+		metricsSvc = appmetrics.NewService(metricsRepo, deviceSettingsRepo, orgSettingsRepo)
 	}
 
 	if cfg.CommandService != nil && cfg.DeviceService != nil && logsRepo != nil {
