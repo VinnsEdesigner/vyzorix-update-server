@@ -55,11 +55,11 @@ func (h *MeHandler) Handle(c *gin.Context) {
 	needsOrg := len(orgs) == 0
 
 	// Find selected organization from session or last used
-	var selectedOrg *dto.OrganizationInfo
+	var selectedOrg *auth.OrganizationInfo
 	if op.LastOrganizationID != "" && !needsOrg {
-		for _, org := range orgs {
+		for i, org := range orgs {
 			if org.ID == op.LastOrganizationID {
-				selectedOrg = &org
+				selectedOrg = &orgs[i]
 				break
 			}
 		}
@@ -75,6 +75,16 @@ func (h *MeHandler) Handle(c *gin.Context) {
 		needsOrg = true
 	}
 
+	// Convert selectedOrg to dto.OrganizationInfo if present
+	var selectedOrgDTO *dto.OrganizationInfo
+	if selectedOrg != nil {
+		selectedOrgDTO = &dto.OrganizationInfo{
+			ID:   selectedOrg.ID,
+			Name: selectedOrg.Name,
+			Role: selectedOrg.Role,
+		}
+	}
+
 	h.presenter.OK(c, gin.H{
 		"id":              op.ID,
 		"email":           op.Email,
@@ -84,6 +94,6 @@ func (h *MeHandler) Handle(c *gin.Context) {
 		"needs_organization": needsOrg,
 		"organizations":   orgs,
 		"last_organization_id": op.LastOrganizationID,
-		"selected_organization": selectedOrg,
+		"selected_organization": selectedOrgDTO,
 	})
 }

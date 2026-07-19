@@ -54,11 +54,11 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 	var invRole organization.OrganizationRole
 	switch req.Role {
 	case "admin":
-		invRole = organization.OrganizationRoleAdmin
+		invRole = organization.RoleAdmin
 	case "operator":
-		invRole = organization.OrganizationRoleOperator
+		invRole = organization.RoleOperator
 	case "viewer":
-		invRole = organization.OrganizationRoleViewer
+		invRole = organization.RoleViewer
 	default:
 		h.presenter.BadRequest(c, "invalid role")
 		return
@@ -169,7 +169,7 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 			"invited_by":       inv.InvitedBy,
 			"invited_at":       inv.InvitedAt,
 			"responded_at":     inv.RespondedAt,
-			"responder_id":     inv.ResponderID,
+			"responder_id":     inv.RespondedBy,
 			"expires_at":       inv.ExpiresAt,
 			"organization_name": inv.OrganizationName,
 			"inviter_name":     inv.InviterName,
@@ -273,7 +273,7 @@ func (h *InvitationHandler) Accept(c *gin.Context) {
 		req.Notes = ""
 	}
 
-	err := h.invitationService.AcceptInvitation(
+	_, err := h.invitationService.AcceptInvitation(
 		c.Request.Context(),
 		token,
 		op.ID,
