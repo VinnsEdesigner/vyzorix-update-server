@@ -328,52 +328,6 @@ func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error
 // Settings Mutation Resolvers
 // ============================================================
 
-// UpdateMyThresholds resolves the updateMyThresholds mutation.
-func (r *Resolver) UpdateMyThresholds(p graphql.ResolveParams) (interface{}, error) {
-	ctx := p.Context
-
-	op, ok := gqlcontext.GetOperator(ctx)
-	if !ok || op == nil {
-		return nil, r.Presenter.UnauthorizedError()
-	}
-
-	// Parse thresholds input
-	input, ok := p.Args["input"].(map[string]interface{})
-	if !ok {
-		return nil, r.Presenter.BadRequestError("invalid input")
-	}
-
-	thresholdsInput := &domainoperator.ThresholdsInput{}
-	if v, ok := input["riskWarn"].(int); ok {
-		thresholdsInput.RiskWarn = &v
-	}
-	if v, ok := input["riskCrit"].(int); ok {
-		thresholdsInput.RiskCrit = &v
-	}
-	if v, ok := input["thermalWarn"].(int); ok {
-		thresholdsInput.ThermalWarn = &v
-	}
-	if v, ok := input["thermalCrit"].(int); ok {
-		thresholdsInput.ThermalCrit = &v
-	}
-	if v, ok := input["bufferWarn"].(int); ok {
-		thresholdsInput.BufferWarn = &v
-	}
-	if v, ok := input["bufferCrit"].(int); ok {
-		thresholdsInput.BufferCrit = &v
-	}
-
-	thresholds, err := r.ThresholdService.UpdateThresholds(ctx, op.ID, thresholdsInput)
-	if err != nil {
-		if err == domainoperator.ErrValidation {
-			return nil, r.Presenter.BadRequestError(err.Error())
-		}
-		return nil, r.Presenter.InternalError("failed to update thresholds")
-	}
-
-	return thresholds, nil
-}
-
 // UpdateMyNotifications resolves the updateMyNotifications mutation.
 func (r *Resolver) UpdateMyNotifications(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
