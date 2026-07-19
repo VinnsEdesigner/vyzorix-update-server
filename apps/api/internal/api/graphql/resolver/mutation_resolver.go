@@ -431,9 +431,9 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		return nil, r.Presenter.BadRequestError("organization ID is required")
 	}
 
-	deviceID, ok := p.Args["deviceId"].(string)
+	deviceImei, ok := p.Args["deviceImei"].(string)
 	if !ok {
-		return nil, r.Presenter.BadRequestError("device ID is required")
+		return nil, r.Presenter.BadRequestError("device IMEI is required")
 	}
 
 	input, ok := p.Args["input"].(map[string]interface{})
@@ -469,7 +469,7 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		settingsReq.Thresholds = parseDeviceThresholds(thresholds)
 	}
 
-	settings, err := r.DeviceSettingsService.UpdateSettings(ctx, deviceID, settingsReq)
+	settings, err := r.DeviceSettingsService.UpdateSettings(ctx, deviceImei, settingsReq)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to update device settings")
 	}
@@ -480,18 +480,20 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		return nil, r.Presenter.InternalError("failed to get organization settings")
 	}
 
-	effectiveThresholds := devicedomain.ResolveThresholds(settings, orgSettings.DefaultThresholds)
+	// Convert org thresholds to device thresholds for resolution
+	orgThresholds := devicedomain.FromOrgThresholds(orgSettings.DefaultThresholds)
+	effectiveThresholds := devicedomain.ResolveThresholds(settings, orgThresholds)
 
 	return map[string]interface{}{
-		"id":                  settings.ID,
-		"deviceImei":          settings.DeviceIMEI,
-		"customName":          settings.CustomName,
-		"location":            settings.Location,
-		"metadata":            settings.Metadata,
-		"thresholds":          settings.Thresholds,
-		"effectiveThresholds": effectiveThresholds,
-		"createdAt":           settings.CreatedAt,
-		"updatedAt":           settings.UpdatedAt,
+		"id":                   settings.ID,
+		"deviceImei":           settings.DeviceIMEI,
+		"customName":           settings.CustomName,
+		"location":             settings.Location,
+		"metadata":             settings.Metadata,
+		"thresholds":           settings.Thresholds,
+		"effectiveThresholds":   effectiveThresholds,
+		"createdAt":            settings.CreatedAt,
+		"updatedAt":            settings.UpdatedAt,
 	}, nil
 }
 

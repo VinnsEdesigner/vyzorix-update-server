@@ -198,3 +198,18 @@ func ResolveThresholds(deviceSettings *DeviceSettings, orgThresholds *Thresholds
 
 	return result
 }
+
+// FromOrgThresholds converts organization thresholds to device thresholds.
+func FromOrgThresholds(org *Thresholds) *Thresholds {
+	if org == nil {
+		return nil
+	}
+	return &Thresholds{
+		RiskWarn:    org.RiskWarn,
+		RiskCrit:    org.RiskCrit,
+		ThermalWarn: org.ThermalWarn,
+		ThermalCrit: org.ThermalCrit,
+		BufferWarn:  org.BufferWarn,
+		BufferCrit:  org.BufferCrit,
+	}
+}

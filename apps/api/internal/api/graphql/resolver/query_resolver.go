@@ -11,6 +11,7 @@ import (
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/graphql-go/graphql"
 )
 
@@ -77,14 +78,17 @@ func (r *Resolver) GetDeviceSettings(p graphql.ResolveParams) (interface{}, erro
 		return nil, r.Presenter.BadRequestError("organization ID is required")
 	}
 
-	deviceID, ok := p.Args["deviceId"].(string)
+	deviceImei, ok := p.Args["deviceImei"].(string)
 	if !ok {
-		return nil, r.Presenter.BadRequestError("device ID is required")
+		return nil, r.Presenter.BadRequestError("device IMEI is required")
 	}
 
 	// Get device settings with effective thresholds (device → org → default)
-	settings, err := r.DeviceSettingsService.GetSettings(ctx, deviceID)
+	settings, err := r.DeviceSettingsService.GetSettings(ctx, deviceImei)
 	if err != nil {
+		if err == devicedomain.ErrSettingsNotFound {
+			return nil, r.Presenter.NotFoundError("device settings not found")
+		}
 		return nil, r.Presenter.InternalError("failed to get device settings")
 	}
 
@@ -94,8 +98,9 @@ func (r *Resolver) GetDeviceSettings(p graphql.ResolveParams) (interface{}, erro
 		return nil, r.Presenter.InternalError("failed to get organization settings")
 	}
 
-	// Calculate effective thresholds
-	effectiveThresholds := devicedomain.ResolveThresholds(settings, orgSettings.DefaultThresholds)
+	// Convert org thresholds to device thresholds for resolution
+	orgThresholds := devicedomain.FromOrgThresholds(orgSettings.DefaultThresholds)
+	effectiveThresholds := devicedomain.ResolveThresholds(settings, orgThresholds)
 
 	return map[string]interface{}{
 		"id":                   settings.ID,
@@ -103,7 +108,7 @@ func (r *Resolver) GetDeviceSettings(p graphql.ResolveParams) (interface{}, erro
 		"customName":           settings.CustomName,
 		"location":             settings.Location,
 		"metadata":             settings.Metadata,
-		"thresholds":           settings.Thresholds,
+		"thresholds":            settings.Thresholds,
 		"effectiveThresholds":  effectiveThresholds,
 		"createdAt":            settings.CreatedAt,
 		"updatedAt":            settings.UpdatedAt,
@@ -126,6 +131,9 @@ func (r *Resolver) GetOrganizationSettings(p graphql.ResolveParams) (interface{}
 
 	settings, err := r.OrgSettingsService.GetSettings(ctx, orgID)
 	if err != nil {
+		if err == orgdomain.ErrSettingsNotFound {
+			return nil, r.Presenter.NotFoundError("organization settings not found")
+		}
 		return nil, r.Presenter.InternalError("failed to get organization settings")
 	}
 
