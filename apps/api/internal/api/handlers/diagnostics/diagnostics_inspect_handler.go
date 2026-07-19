@@ -36,39 +36,8 @@ func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
 		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
-// GetDeviceInspection handles GET /v1/device/:imei/inspect.
-// Returns full device inspection data for the Diagnostics Inspector.
-func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
-	imei := c.Param("imei")
-	if imei == "" {
-		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
 			Error:   "bad_request",
 			Message: "IMEI is required",
-		})
-		return
-	}
-
-	// Require organization context for multi-tenant isolation
-	orgID := middleware.GetOrganizationID(c)
-// GetDeviceInspection handles GET /v1/device/:imei/inspect.
-// Returns full device inspection data for the Diagnostics Inspector.
-func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
-	imei := c.Param("imei")
-	if imei == "" {
-		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
-			Error:   "bad_request",
-			Message: "IMEI is required",
-		})
-		return
-	}
-
-	// Require organization context for multi-tenant isolation
-	orgID := middleware.GetOrganizationID(c)
-	if orgID == "" {
-		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
-			Error:   "bad_request",
-			Message: "organization context required",
-			Code:    "ORG_REQUIRED",
 		})
 		return
 	}
@@ -80,13 +49,13 @@ func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
 		operatorID = op.ID
 	}
 
-	// Verify device belongs to organization (org-scoped ownership check)
-	authResp := h.service.VerifyDeviceOwnership(c.Request.Context(), imei, operatorID, orgID)
+	// Verify operator authorization (DOA check)
+	authResp := h.service.VerifyDeviceOwnership(c.Request.Context(), imei, operatorID)
 	if !authResp.Authorized {
 		if authResp.Forbidden {
 			c.JSON(http.StatusForbidden, appdiagnostics.ErrorResponse{
 				Error:   "forbidden",
-				Message: "Access denied - device does not belong to organization",
+				Message: "Access denied - device does not belong to operator",
 				Code:    "FORBIDDEN",
 			})
 			return
@@ -99,7 +68,7 @@ func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
 		return
 	}
 
-	inspection, err := h.service.GetDeviceInspectionHTTP(c.Request.Context(), imei, orgID)
+	inspection, err := h.service.GetDeviceInspectionHTTP(c.Request.Context(), imei)
 	if err != nil {
 		switch err {
 		case domaindiagnostics.ErrDeviceNotFound:
@@ -117,8 +86,6 @@ func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, inspection)
-}
 	c.JSON(http.StatusOK, inspection)
 }
 

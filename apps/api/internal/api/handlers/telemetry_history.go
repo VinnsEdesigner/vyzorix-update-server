@@ -99,43 +99,6 @@ func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, dev
 	return true
 }
 
-// verifyDeviceInOrganization verifies that a device belongs to the given organization.
-func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, deviceID, orgID string) bool {
-	if h.deviceRepo == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "internal_error",
-			"message": "device repository not available",
-		})
-		return false
-	}
-
-	d, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
-	if err != nil {
-		if err == device.ErrNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error":   "not_found",
-				"message": "device not found in organization",
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "internal_error",
-				"message": "failed to verify device",
-			})
-		}
-		return false
-	}
-
-	// Verify the device ID matches (deviceID could be IMEI)
-	if d.ID != deviceID {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   "not_found",
-			"message": "device not found in organization",
-		})
-		return false
-	}
-
-	return true
-}
 
 // verifyDeviceInOrganization verifies that a device belongs to the given organization.
 func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, deviceID, orgID string) bool {
@@ -211,32 +174,6 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 	// Require organization context for multi-tenant isolation
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-// Query handles GET /v1/telemetry/history
-// Query telemetry history for a device within a time range.
-func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
-	// Require organization context for multi-tenant isolation
-	orgID := middleware.GetOrganizationID(c)
-	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "organization context required",
-		})
-		return
-	}
-
-	startTime := time.Now()
-
-// Query handles GET /v1/telemetry/history
-// Query telemetry history for a device within a time range.
-	switch req.Format {
-	case "csv":
-		h.exportCSV(c, response)
-		return
-	case "json":
-	}
-	c.JSON(http.StatusOK, response)
-}
 
 // exportCSV exports telemetry history as CSV.
 func (h *TelemetryHistoryHandler) exportCSV(c *gin.Context, data QueryHistoryResponse) {
