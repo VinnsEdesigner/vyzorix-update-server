@@ -11,7 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
 type InvitationHandler struct {
 	invitationService *appOrganization.InvitationService
 	memberService    *appOrganization.MemberService
@@ -51,15 +50,15 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Validate role - use organization.OrganizationRole
+	// Validate role
 	var invRole organization.OrganizationRole
 	switch req.Role {
 	case "admin":
-		invRole = organization.RoleAdmin
+		invRole = organization.OrganizationRoleAdmin
 	case "operator":
-		invRole = organization.RoleOperator
+		invRole = organization.OrganizationRoleOperator
 	case "viewer":
-		invRole = organization.RoleViewer
+		invRole = organization.OrganizationRoleViewer
 	default:
 		h.presenter.BadRequest(c, "invalid role")
 		return
@@ -82,7 +81,7 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 			h.presenter.NotFound(c, "organization not found")
 			return
 		}
-		if errors.Is(err, organization.ErrInvitationExists) {
+		if errors.Is(err, organization.ErrAlreadyExists) {
 			h.presenter.Conflict(c, "invitation already exists for this email")
 			return
 		}
@@ -125,17 +124,11 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 		return
 	}
 
-	// Use membership from context (set by OrganizationMembership middleware)
-	// If middleware didn't run, fall back to service call
-	member := middleware.GetMembership(c)
-	if member == nil {
-		// Fallback: check via service if middleware didn't set it
-		var err error
-		member, err = h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
-		if err != nil {
-			h.presenter.Forbidden(c, "access denied")
-			return
-		}
+	// Check if operator is a member of this org
+	_, err := h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
+	if err != nil {
+		h.presenter.Forbidden(c, "access denied")
+		return
 	}
 
 	// Optional status filter
@@ -176,7 +169,7 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 			"invited_by":       inv.InvitedBy,
 			"invited_at":       inv.InvitedAt,
 			"responded_at":     inv.RespondedAt,
-			"responder_id":     inv.RespondedBy,
+			"responder_id":     inv.ResponderID,
 			"expires_at":       inv.ExpiresAt,
 			"organization_name": inv.OrganizationName,
 			"inviter_name":     inv.InviterName,
@@ -432,33 +425,25 @@ func (h *InvitationHandler) Delete(c *gin.Context) {
 	}
 
 	// Only inviter or org admin can delete
-	canDelete := false
 	isInviter := inv.InvitedBy == op.ID
+	isOrgAdmin := false
 	if isInviter {
-		canDelete = true
+		isOrgAdmin = true // Inviter can always delete
 	} else {
-		// Use membership from context (set by OrganizationMembership middleware)
-		// If middleware didn't run, fall back to service call
-		member := middleware.GetMembership(c)
-		if member == nil {
-			member, err = h.memberService.GetMembership(c.Request.Context(), op.ID, inv.OrganizationID)
-			if err != nil {
-				h.presenter.Forbidden(c, "not a member of this organization")
-				return
-			}
-		}
-		if member.Role.CanManageMembers() {
-			canDelete = true
+		// Check if user is org admin
+		member, err := h.memberService.GetMembership(c.Request.Context(), op.ID, inv.OrganizationID)
+		if err == nil && member.Role.CanManageMembers() {
+			isOrgAdmin = true
 		}
 	}
 
-	if !canDelete {
+	if !isInviter && !isOrgAdmin {
 		h.presenter.Forbidden(c, "only inviter or organization admin can delete this invitation")
 		return
 	}
 
 	// Only pending invitations can be deleted
-	if !inv.IsPending() {
+	if inv.Status != organization.InvitationStatusPending {
 		h.presenter.Conflict(c, "only pending invitations can be deleted")
 		return
 	}
