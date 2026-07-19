@@ -541,6 +541,9 @@ func ProvideHandlerSet(
 		Lockout:        lockout,
 		OperatorRepo:   operatorRepo,
 		AuditLogger:    auditLogger,
+                IPIntelligence: ipIntelligence,
+                Presenter:      presenter,
+        })
 	// DEPRECATED: hs.DeviceRegister = devicehandlers.NewRegisterHandler(deviceService) // /v1/device/register removed
 	hs.DeviceStatus = devicehandlers.NewStatusHandler(deviceService)
 	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deviceService)
@@ -549,11 +552,6 @@ func ProvideHandlerSet(
 	hs.Stream = websockethandlers.NewStreamHandler(log, cfg, hubResult.Hub, *hmacVerifier, auditLogger)
 	hs.TelemetryHistory = handlers.NewTelemetryHistoryHandler(log, storage.NewTelemetryRepository(db), storage.NewDeviceRepository(db), nil)
 	hs.ConnectionStatus = handlers.NewConnectionStatusHandler(log, hubResult.Hub, storage.NewDeviceRepository(db))
-	hs.AdminClients = admin.NewClientsHandler(clientService)
-	hs.Updates = updatesHandler
-
-	return hs
-}
 	hs.AdminClients = admin.NewClientsHandler(clientService)
 	hs.Updates = updatesHandler
 
