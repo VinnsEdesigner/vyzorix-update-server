@@ -65,29 +65,31 @@ type HandlerDependencies struct {
 
 // HandlerSet contains all handler instances.
 type HandlerSet struct {
-	Auth              *authhandlers.AllHandlers
+	Auth               *authhandlers.AllHandlers
 	// DEPRECATED: DeviceRegister - /v1/device/register endpoint removed
 	// DeviceRegister     *devicehandlers.RegisterHandler
-	DeviceStatus      *devicehandlers.StatusHandler
-	DeviceUpdater     *devicehandlers.UpdaterHandler
-	DeviceList        *devicehandlers.ListHandler
-	Devices           *devicehandlers.DevicesHandler
-	DeviceSettings    *devicehandlers.SettingsHandler
-	Command           *cmdhandlers.ExecuteHandler
-	Stream            *websockethandlers.StreamHandler
-	TelemetryHistory  *handlers.TelemetryHistoryHandler
-	ConnectionStatus  *handlers.ConnectionStatusHandler
-	AdminClients      *admin.ClientsHandler
-	Updates           *updateshandlers.UpdatesHandler
-	UpdatesService    *updatesapplication.Service
-	Organization      *organizationhandlers.OrganizationHandler
-	Invitation        *organizationhandlers.InvitationHandler
-	Member            *organizationhandlers.MemberHandler
-	Transfer          *devicehandlers.TransferHandler
-	OrgService        *orgapplication.OrganizationService
-	MemberService     *orgapplication.MemberService
-	InvitationService *orgapplication.InvitationService
-	OrgSettings       *organizationhandlers.SettingsHandler
+	DeviceStatus       *devicehandlers.StatusHandler
+	DeviceUpdater      *devicehandlers.UpdaterHandler
+	DeviceList         *devicehandlers.ListHandler
+	Devices            *devicehandlers.DevicesHandler
+	DeviceSettings     *devicehandlers.SettingsHandler
+	Command            *cmdhandlers.ExecuteHandler
+	Stream             *websockethandlers.StreamHandler
+	TelemetryHistory   *handlers.TelemetryHistoryHandler
+	ConnectionStatus   *handlers.ConnectionStatusHandler
+	AdminClients       *admin.ClientsHandler
+	Updates            *updateshandlers.UpdatesHandler
+	UpdatesService     *updatesapplication.Service
+	Organization       *organizationhandlers.OrganizationHandler
+	Invitation         *organizationhandlers.InvitationHandler
+	Member             *organizationhandlers.MemberHandler
+	Transfer           *devicehandlers.TransferHandler
+	OrgService         *orgapplication.OrganizationService
+	OrgSettingsService *orgapplication.OrganizationSettingsService
+	MemberService      *orgapplication.MemberService
+	InvitationService  *orgapplication.InvitationService
+	OrgSettings        *organizationhandlers.SettingsHandler
+	DeviceSettingsService *device.DeviceSettingsService
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -198,6 +200,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		hs.Invitation = organizationhandlers.NewInvitationHandler(deps.InvitationService, deps.MemberService, deps.Presenter)
 		hs.Member = organizationhandlers.NewMemberHandler(deps.MemberService, deps.OrgService, deps.Presenter)
 		hs.OrgService = deps.OrgService
+		hs.OrgSettingsService = deps.OrgSettingsService
 		hs.MemberService = deps.MemberService
 		hs.InvitationService = deps.InvitationService
 
@@ -217,6 +220,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 			return deps.MemberService.CheckMembership(ctx, operatorID, orgID)
 		}
 		hs.DeviceSettings = devicehandlers.NewDeviceSettingsHandler(deps.DeviceSettingsService, membershipChecker, deps.Presenter)
+		hs.DeviceSettingsService = deps.DeviceSettingsService
 	}
 
 	// Device transfer handler
