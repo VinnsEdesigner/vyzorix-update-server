@@ -65,7 +65,7 @@ func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
 	result, err := h.authService.SelectOrganization(c.Request.Context(), op.ID, sess.ID, req.OrganizationID)
 	if err != nil {
 		if errors.Is(err, application.ErrForbidden) {
-			h.presenter.Error(c, http.StatusForbidden, "forbidden", "you are not a member of this organization")
+			h.presenter.Forbidden(c, "you are not a member of this organization")
 			return
 		}
 		if errors.Is(err, application.ErrUnauthorized) {

@@ -15,6 +15,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 
 	"github.com/gin-gonic/gin"
 )
@@ -126,6 +127,31 @@ func (h *SettingsHandler) getOperatorFromSession(c *gin.Context) (string, error)
 	return op.ID, nil
 }
 
+// getOperatorRoleString returns the role string for an operator based on organization context.
+func (h *SettingsHandler) getOperatorRoleString(c *gin.Context, op *operator.Operator) string {
+	// Try to get role from organization context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID != "" {
+		if m := op.GetMembership(orgID); m != nil && m.IsActive() {
+			return string(m.Role)
+		}
+	}
+
+	// Fallback to last organization
+	if m := op.GetMembership(op.LastOrganizationID); m != nil && m.IsActive() {
+		return string(m.Role)
+	}
+
+	// Fallback to first active membership
+	for _, m := range op.Memberships {
+		if m.IsActive() {
+			return string(m.Role)
+		}
+	}
+
+	return string(organization.RoleViewer) // Default role
+}
+
 // GetSettings handles GET /v1/auth/me/settings.
 func (h *SettingsHandler) GetSettings(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
@@ -181,11 +207,14 @@ func (h *SettingsHandler) UpdateName(c *gin.Context) {
 		return
 	}
 
+	// Get role from organization membership
+	roleStr := h.getOperatorRoleString(c, op)
+
 	h.presenter.OK(c, gin.H{
 		"id":              op.ID,
 		"email":           op.Email,
 		"name":            op.Name,
-		"role":            op.Role,
+		"role":            roleStr,
 		"mfa_enabled":     op.MFAEnabled,
 		"email_verified":  op.EmailVerified,
 		"client":          op.ClientSettings,
@@ -225,11 +254,14 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
+	// Get role from organization membership
+	roleStr := h.getOperatorRoleString(c, op)
+
 	h.presenter.OK(c, gin.H{
 		"id":              op.ID,
 		"email":           op.Email,
 		"name":            op.Name,
-		"role":            op.Role,
+		"role":            roleStr,
 		"mfa_enabled":     op.MFAEnabled,
 		"email_verified":  op.EmailVerified,
 		"client":          op.ClientSettings,
