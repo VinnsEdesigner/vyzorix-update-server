@@ -4,7 +4,6 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	"github.com/gin-gonic/gin"
 )
@@ -57,7 +56,7 @@ func (m *UpdatesAdminAuth) RequireSuperAdmin() gin.HandlerFunc {
 			return
 		}
 
-		if op.Role != operator.RoleSuperAdmin {
+		if !op.IsSuperAdmin() {
 			c.JSON(http.StatusForbidden, gin.H{
 				"error":   "forbidden",
 				"message": "Super admin privileges required for this operation",

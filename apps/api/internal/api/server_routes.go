@@ -148,6 +148,12 @@ func (s *Server) setupAuthenticatedRoutes() {
 	// These routes manage API keys - shouldn't use API key auth
 	s.setupAPIKeysRoutes(tenantGroup)
 
+	// Session management routes: Auth + Org required for org-scoped session management
+	s.setupSessionsRoutes(tenantGroup)
+
+	// Client credentials routes: Auth + Org required for org-scoped API key management
+	s.setupClientCredentialsRoutes(tenantGroup)
+
 	// Organization routes: Session required (operators, invitations, members)
 	s.setupOrganizationRoutes(tenantGroup)
 
@@ -339,6 +345,40 @@ func (s *Server) setupAPIKeysRoutes(r *gin.RouterGroup) {
 	}
 }
 
+// setupSessionsRoutes configures session management routes under /v1/auth/sessions
+// These routes require both authentication AND organization context for org-scoped session management.
+func (s *Server) setupSessionsRoutes(r *gin.RouterGroup) {
+	sessionsGroup := r.Group("/auth/sessions")
+	sessionsGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+	sessionsGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+	sessionsGroup.Use(middleware.NoCache())
+	{
+		sessionsGroup.GET("", s.authHandlers.Sessions.ListSessions)
+		sessionsGroup.GET("/concurrent", s.authHandlers.Sessions.CheckConcurrent)
+		sessionsGroup.DELETE("/:id", s.authHandlers.Sessions.RevokeSession)
+		sessionsGroup.DELETE("", s.authHandlers.Sessions.RevokeAllExceptCurrent)
+		sessionsGroup.POST("/revoke-all", s.authHandlers.Sessions.RevokeAllDevices)
+		sessionsGroup.GET("/:id", s.authHandlers.Sessions.GetSession)
+	}
+}
+
+// setupClientCredentialsRoutes configures client credentials (API key) routes under /v1/auth/client-credentials
+// These routes require both authentication AND organization context for org-scoped API key management.
+func (s *Server) setupClientCredentialsRoutes(r *gin.RouterGroup) {
+	clientCredsGroup := r.Group("/auth/client-credentials")
+	clientCredsGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+	clientCredsGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+	clientCredsGroup.Use(middleware.NoCache())
+	{
+		clientCredsGroup.POST("", s.authHandlers.ClientCreds.Create)
+		clientCredsGroup.GET("", s.authHandlers.ClientCreds.List)
+		clientCredsGroup.GET("/:clientId", s.authHandlers.ClientCreds.Get)
+		clientCredsGroup.DELETE("/:clientId", s.authHandlers.ClientCreds.Delete)
+		clientCredsGroup.PATCH("/:clientId", s.authHandlers.ClientCreds.Update)
+		clientCredsGroup.POST("/:clientId/rotate-secret", s.authHandlers.ClientCreds.RotateSecret)
+	}
+}
+
 func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 	if s.organizationHandler == nil {
 		return
@@ -358,6 +398,9 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 		orgs.GET("/:id/members", s.memberHandler.List)
 		orgs.DELETE("/:id/members/:memberId", s.memberHandler.Remove)
 		orgs.PATCH("/:id/members/:memberId", s.memberHandler.UpdateRole)
+		orgs.POST("/:id/members/:memberId/transfer", s.memberHandler.TransferOwnership)
+		orgs.POST("/:id/members/:memberId/suspend", s.memberHandler.Suspend)
+		orgs.POST("/:id/members/:memberId/reinstate", s.memberHandler.Reinstate)
 
 		// Invitation routes under organizations
 		orgs.GET("/:id/invitations", s.invitationHandler.ListByOrganization)

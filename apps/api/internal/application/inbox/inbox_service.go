@@ -150,7 +150,7 @@ func (s *Service) GetInboxEntry(ctx context.Context, imei, orgID string) (*Inbox
 		Manufacturer:      entry.Manufacturer,
 		OSVersion:         entry.OSVersion,
 		AppVersion:        entry.AppVersion,
-		FCMToken:          e.FCMToken,
+		FCMToken:          entry.FCMToken,
 		FirebaseInstallID: entry.FirebaseInstallID,
 		Status:            string(entry.Status),
 		CreatedAt:         entry.CreatedAt,

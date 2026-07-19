@@ -951,5 +951,50 @@ func organizationMutations(res *resolver.Resolver) graphql.Fields {
 			},
 			Resolve: res.TransferDevice,
 		},
+		"transferOwnership": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Transfer super_admin ownership to another member",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+					Description: "Organization ID",
+				},
+				"memberId": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+					Description: "Membership ID of the new super_admin",
+				},
+			},
+			Resolve: res.TransferOwnership,
+		},
+		"suspendMember": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Suspend an active member",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+					Description: "Organization ID",
+				},
+				"memberId": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+					Description: "Membership ID to suspend",
+				},
+			},
+			Resolve: res.SuspendMember,
+		},
+		"reinstateMember": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Reinstate a suspended member",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+					Description: "Organization ID",
+				},
+				"memberId": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+					Description: "Membership ID to reinstate",
+				},
+			},
+			Resolve: res.ReinstateMember,
+		},
 	}
 }

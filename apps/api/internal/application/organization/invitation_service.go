@@ -9,18 +9,18 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
+	emailSvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/google/uuid"
 )
 
 // InvitationDefaultTTL is the default time-to-live for invitations (7 days).
-InvitationDefaultTTL = 7 * 24 * time.Hour
+const InvitationDefaultTTL = 7 * 24 * time.Hour
 
 // InvitationMaxTTL is the maximum time-to-live for invitations (30 days).
-InvitationMaxTTL = 30 * 24 * time.Hour
+const InvitationMaxTTL = 30 * 24 * time.Hour
 
 // MaxPendingInvitationsPerOrg is the maximum pending invitations per organization.
-MaxPendingInvitationsPerOrg = 20
+const MaxPendingInvitationsPerOrg = 20
 
 var (
 	ErrMaxInvitationsReached = errors.New("maximum pending invitations reached")
@@ -32,9 +32,9 @@ var (
 
 // EmailService defines the interface for sending emails.
 type EmailService interface {
-	SendInvitationEmail(ctx context.Context, to string, data email.InvitationData) error
-	SendInvitationAcceptedEmail(ctx context.Context, to string, data email.InvitationData) error
-	SendInvitationRejectedEmail(ctx context.Context, to string, data email.InvitationData) error
+	SendInvitationEmail(ctx context.Context, to string, data emailSvc.InvitationData) error
+	SendInvitationAcceptedEmail(ctx context.Context, to string, data emailSvc.InvitationData) error
+	SendInvitationRejectedEmail(ctx context.Context, to string, data emailSvc.InvitationData) error
 }
 
 // InvitationService handles invitation operations.
@@ -167,15 +167,15 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 	// Send email (non-transactional)
 	if s.emailService != nil {
 		go func() {
-			inviteData := email.InvitationData{
-				InviteeName:      email,
-				InviterName:      member.OperatorName,
+			inviteData := emailSvc.InvitationData{
+				InviteeName:       email,
+				InviterName:       member.OperatorName,
 				OrganizationName:  org.Name,
-				Role:             string(inv.Role),
-				InviterNotes:     inv.InviterNotes,
-				AcceptURL:        fmt.Sprintf("%s/invite/%s/accept", s.getBaseURL(), inv.Token),
-				ExpiryDays:       7,
-				BaseURL:          s.getBaseURL(),
+				Role:              string(inv.Role),
+				InviterNotes:      inv.InviterNotes,
+				AcceptURL:         fmt.Sprintf("%s/invite/%s/accept", s.getBaseURL(), inv.Token),
+				ExpiryDays:        7,
+				BaseURL:           s.getBaseURL(),
 			}
 			if err := s.emailService.SendInvitationEmail(context.Background(), email, inviteData); err != nil {
 				s.logger.Error("failed to send invitation email",
@@ -313,7 +313,7 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 				if org != nil {
 					orgName = org.Name
 				}
-				inviteData := email.InvitationData{
+				inviteData := emailSvc.InvitationData{
 					InviteeName:      operatorEmail,
 					OrganizationName: orgName,
 					Role:             string(inv.Role),
@@ -378,7 +378,7 @@ func (s *InvitationService) RejectInvitation(ctx context.Context, token, operato
 				if org != nil {
 					orgName = org.Name
 				}
-				inviteData := email.InvitationData{
+				inviteData := emailSvc.InvitationData{
 					InviteeName:      operatorEmail,
 					OrganizationName: orgName,
 					Role:             string(inv.Role),

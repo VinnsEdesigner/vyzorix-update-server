@@ -309,3 +309,89 @@ func (h *MemberHandler) TransferOwnership(c *gin.Context) {
 		"message": "ownership transferred successfully",
 	})
 }
+
+// Suspend handles POST /v1/organizations/:id/members/:memberId/suspend.
+func (h *MemberHandler) Suspend(c *gin.Context) {
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		h.presenter.Unauthorized(c, "authentication required")
+		return
+	}
+
+	orgID := c.Param("id")
+	memberID := c.Param("memberId")
+
+	if orgID == "" || memberID == "" {
+		h.presenter.BadRequest(c, "organization id and member id are required")
+		return
+	}
+
+	err := h.memberService.SuspendMember(c.Request.Context(), orgID, memberID, op.ID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			h.presenter.NotFound(c, "member not found")
+			return
+		}
+		if errors.Is(err, appOrganization.ErrCannotModifyHigherRole) {
+			h.presenter.Forbidden(c, "cannot suspend member with equal or higher role")
+			return
+		}
+		if err.Error() == "cannot suspend yourself" {
+			h.presenter.Forbidden(c, "cannot suspend yourself")
+			return
+		}
+		if err.Error() == "member is already suspended" {
+			h.presenter.BadRequest(c, "member is already suspended")
+			return
+		}
+		h.presenter.InternalError(c, "failed to suspend member")
+		return
+	}
+
+	h.presenter.OK(c, gin.H{
+		"message": "member suspended",
+	})
+}
+
+// Reinstate handles POST /v1/organizations/:id/members/:memberId/reinstate.
+func (h *MemberHandler) Reinstate(c *gin.Context) {
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		h.presenter.Unauthorized(c, "authentication required")
+		return
+	}
+
+	orgID := c.Param("id")
+	memberID := c.Param("memberId")
+
+	if orgID == "" || memberID == "" {
+		h.presenter.BadRequest(c, "organization id and member id are required")
+		return
+	}
+
+	err := h.memberService.ReinstateMember(c.Request.Context(), orgID, memberID, op.ID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			h.presenter.NotFound(c, "member not found")
+			return
+		}
+		if errors.Is(err, appOrganization.ErrCannotModifyHigherRole) {
+			h.presenter.Forbidden(c, "cannot reinstate member with equal or higher role")
+			return
+		}
+		if err.Error() == "cannot reinstate yourself" {
+			h.presenter.Forbidden(c, "cannot reinstate yourself")
+			return
+		}
+		if err.Error() == "member is not suspended" {
+			h.presenter.BadRequest(c, "member is not suspended")
+			return
+		}
+		h.presenter.InternalError(c, "failed to reinstate member")
+		return
+	}
+
+	h.presenter.OK(c, gin.H{
+		"message": "member reinstated",
+	})
+}

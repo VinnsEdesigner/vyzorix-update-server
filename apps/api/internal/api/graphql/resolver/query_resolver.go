@@ -1020,17 +1020,17 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 			"manufacturer": inspection.Identity.Manufacturer,
 		},
 		"software": map[string]interface{}{
-			"osVersion":    inspection.Software.OSVersion,
-			"appVersion":   inspection.Software.AppVersion,
+			"osVersion":     inspection.Software.OSVersion,
+			"appVersion":    inspection.Software.AppVersion,
 			"securityPatch": inspection.Software.SecurityPatch,
 			"buildId":       inspection.Software.BuildID,
 		},
 		"registration": map[string]interface{}{
-			"status":               inspection.Registration.Status,
-			"registeredAt":        registeredAt,
-			"fcmTokenValid":       inspection.Registration.FCMTokenValid,
-			"fcmTokenRefreshedAt": fcmTokenRefreshedAt,
-			"commandSecretSet":     inspection.Registration.CommandSecretSet,
+			"status":                inspection.Registration.Status,
+			"registeredAt":          registeredAt,
+			"fcmTokenValid":        inspection.Registration.FCMTokenValid,
+			"fcmTokenRefreshedAt":   fcmTokenRefreshedAt,
+			"commandSecretSet":      inspection.Registration.CommandSecretSet,
 		},
 		"connection": map[string]interface{}{
 			"webSocketStatus": inspection.Connection.WebSocketStatus,
@@ -1043,11 +1043,10 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 		"telemetry": map[string]interface{}{
 			"lastTimestamp":   lastTimestamp,
 			"framesToday":     inspection.Telemetry.FramesToday,
-			"avgLatencyMs":   inspection.Telemetry.AvgLatencyMs,
+			"avgLatencyMs":    inspection.Telemetry.AvgLatencyMs,
 			"totalBytesToday": inspection.Telemetry.TotalBytesToday,
 		},
 	}, nil
-	}
 }
 
 // GetDeviceTimeline resolves the deviceTimeline query.

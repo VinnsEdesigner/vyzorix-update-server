@@ -18,9 +18,6 @@ type Repository interface {
 	// ListByOperator retrieves paginated inbox entries for a specific operator within an organization with optional status filter.
 	ListByOperator(ctx context.Context, operatorID, orgID, status string, limit, offset int) ([]*InboxEntry, int, error)
 
-	// ListByOperator retrieves paginated inbox entries for a specific operator within an organization with optional status filter.
-	ListByOperator(ctx context.Context, operatorID, orgID, status string, limit, offset int) ([]*InboxEntry, int, error)
-
 	// Update updates an existing inbox entry.
 	Update(ctx context.Context, e *InboxEntry) error
 

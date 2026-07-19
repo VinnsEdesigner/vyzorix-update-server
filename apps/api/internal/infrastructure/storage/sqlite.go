@@ -196,15 +196,14 @@ var migrations = []Migration{
 	{Apply: migrateAddMFASecretMAC, Name: "add_mfa_secret_mac_column", Version: 38},
 	// Multi-tenant organization model
 	{Apply: migrateOrganizations, Name: "create_organizations_tables", Version: 39},
-	{Apply: migrateOrgColumns, Name: "add_org_columns", Version: 40},
 	// Session and operator org context for multi-tenant
-	{Apply: migrateAddOrgContextColumns, Name: "add_org_context_columns", Version: 41},
+	{Apply: migrateAddOrgContextColumns, Name: "add_org_context_columns", Version: 40},
 	// Inbox organization column for multi-tenant
-	{Apply: migrateAddInboxOrganizationColumn, Name: "add_inbox_organization_column", Version: 42},
+	{Apply: migrateAddInboxOrganizationColumn, Name: "add_inbox_organization_column", Version: 41},
 	// Organization settings table
-	{Apply: migrateOrganizationSettings, Name: "create_organization_settings_table", Version: 43},
+	{Apply: migrateOrganizationSettings, Name: "create_organization_settings_table", Version: 42},
 	// Device settings table
-	{Apply: migrateDeviceSettings, Name: "create_device_settings_table", Version: 44},
+	{Apply: migrateDeviceSettings, Name: "create_device_settings_table", Version: 43},
 }
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {

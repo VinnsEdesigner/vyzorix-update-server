@@ -540,7 +540,7 @@ func (s *Service) GetDeviceDetailByOrganization(ctx context.Context, imei, orgID
 // DeregisterDeviceByOrganization deregisters a device within an organization.
 func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgID string, hard bool) (*dto.DeregisterResponse, error) {
 	// First verify device exists and belongs to this organization
-	d, err := s.deviceRepo.FindByIMEIAndOrganization(ctx, imei, orgID)
+	_, err := s.deviceRepo.FindByIMEIAndOrganization(ctx, imei, orgID)
 	if err != nil {
 		if err == device.ErrNotFound {
 			return nil, device.ErrNotFound
@@ -550,7 +550,7 @@ func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgI
 
 	now := time.Now()
 	deregisteredAt := now.UnixMilli()
-	deletionScheduledAt := now.Add(30 * 24 * time.Hour).UnixMilli() // 30 days retention
+	retentionUntil := now.Add(30 * 24 * time.Hour).UnixMilli() // 30 days retention
 
 	if hard {
 		// Hard delete - actually remove the device
@@ -568,7 +568,7 @@ func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgI
 	}
 
 	// Soft delete - mark as deregistered
-	if err := s.deviceRepo.SoftDelete(ctx, imei, deregisteredAt, deletionScheduledAt); err != nil {
+	if err := s.deviceRepo.SoftDelete(ctx, imei, deregisteredAt, retentionUntil); err != nil {
 		if err == device.ErrNotFound {
 			return nil, device.ErrNotFound
 		}
@@ -576,10 +576,10 @@ func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgI
 	}
 
 	return &dto.DeregisterResponse{
-		IMEI:                imei,
-		Status:              "deregistered",
-		DeregisteredAt:      deregisteredAt,
-		DeletionScheduledAt: deletionScheduledAt,
+		IMEI:           imei,
+		Status:         "deregistered",
+		DeregisteredAt: deregisteredAt,
+		RetentionUntil: retentionUntil,
 	}, nil
 }
 
@@ -696,16 +696,6 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 		Status:         "deregistered",
 		DeregisteredAt:  deregisteredAt,
 		RetentionUntil: deletionScheduledAt,
-	}, nil
-}
-		Status:         "deregistered",
-		DeregisteredAt:  deregisteredAt,
-		RetentionUntil: deletionScheduledAt,
-	}, nil
-}
-		Status:         "deregistered",
-		DeregisteredAt: deregisteredAt,
-		RetentionUntil: *d.DeletionScheduledAt,
 	}, nil
 }
 

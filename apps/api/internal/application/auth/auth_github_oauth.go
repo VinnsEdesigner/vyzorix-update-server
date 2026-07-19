@@ -38,17 +38,6 @@ func (s *AuthService) FindOrCreateGitHubOperator(ctx context.Context, githubID, 
 	}
 
 	// Create new operator.
-	count, err := s.operatorRepo.Count(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// First user is super_admin (system bootstrap), others get default OAuth role
-	role := DefaultOAuthRole
-	if count == 0 {
-		role = operator.RoleSuperAdmin
-	}
-
 	id := shared.GenerateID()
 
 	now := time.Now()
@@ -57,7 +46,6 @@ func (s *AuthService) FindOrCreateGitHubOperator(ctx context.Context, githubID, 
 		Email:         email,
 		Name:          name,
 		GitHubID:      githubID,
-		Role:          role,
 		EmailVerified: true, // GitHub verifies email
 		CreatedAt:     now,
 		UpdatedAt:     now,

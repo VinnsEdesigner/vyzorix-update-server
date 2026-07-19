@@ -424,3 +424,119 @@ func (s *MemberService) CheckMembership(ctx context.Context, operatorID, orgID s
 	_, err := s.GetMembership(ctx, operatorID, orgID)
 	return err
 }
+
+// SuspendMember suspends a member (only active members can be suspended).
+func (s *MemberService) SuspendMember(ctx context.Context, orgID, memberID, actorOperatorID string) error {
+	// Get the member to suspend
+	member, err := s.memberRepo.FindByID(ctx, memberID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			return organization.ErrMemberNotFound
+		}
+		return err
+	}
+
+	// Verify member belongs to this org
+	if member.OrganizationID != orgID {
+		return organization.ErrMemberNotFound
+	}
+
+	// Cannot suspend self
+	if member.OperatorID == actorOperatorID {
+		return errors.New("cannot suspend yourself")
+	}
+
+	// Get actor's membership to check permissions
+	actorMember, err := s.memberRepo.FindByOperatorAndOrg(ctx, actorOperatorID, orgID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			return organization.ErrForbidden
+		}
+		return err
+	}
+
+	// Cannot suspend if actor has equal or lower role
+	if actorMember.Role.Level() <= member.Role.Level() {
+		return ErrCannotModifyHigherRole
+	}
+
+	// Cannot suspend already suspended member
+	if member.IsSuspended() {
+		return errors.New("member is already suspended")
+	}
+
+	// Use domain method to suspend
+	if err := member.Suspend(); err != nil {
+		return err
+	}
+
+	if err := s.memberRepo.Update(ctx, member); err != nil {
+		return err
+	}
+
+	s.logger.Info("member suspended",
+		"org_id", orgID,
+		"member_id", memberID,
+		"actor_id", actorOperatorID,
+	)
+
+	return nil
+}
+
+// ReinstateMember reinstates a suspended member back to active.
+func (s *MemberService) ReinstateMember(ctx context.Context, orgID, memberID, actorOperatorID string) error {
+	// Get the member to reinstate
+	member, err := s.memberRepo.FindByID(ctx, memberID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			return organization.ErrMemberNotFound
+		}
+		return err
+	}
+
+	// Verify member belongs to this org
+	if member.OrganizationID != orgID {
+		return organization.ErrMemberNotFound
+	}
+
+	// Cannot reinstate self
+	if member.OperatorID == actorOperatorID {
+		return errors.New("cannot reinstate yourself")
+	}
+
+	// Get actor's membership to check permissions
+	actorMember, err := s.memberRepo.FindByOperatorAndOrg(ctx, actorOperatorID, orgID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			return organization.ErrForbidden
+		}
+		return err
+	}
+
+	// Cannot reinstate if actor has equal or lower role than the target
+	if actorMember.Role.Level() <= member.Role.Level() {
+		return ErrCannotModifyHigherRole
+	}
+
+	// Cannot reinstate non-suspended member
+	if !member.IsSuspended() {
+		return errors.New("member is not suspended")
+	}
+
+	// Use domain method to reinstate
+	if err := member.Reinstate(); err != nil {
+		return err
+	}
+
+	if err := s.memberRepo.Update(ctx, member); err != nil {
+		return err
+	}
+
+	s.logger.Info("member reinstated",
+		"org_id", orgID,
+		"member_id", memberID,
+		"actor_id", actorOperatorID,
+	)
+
+	return nil
+}

@@ -70,18 +70,15 @@ func (h *SettingsHandler) RateLimitMiddleware() gin.HandlersChain {
 }
 
 // logSettingsAudit logs an audit event for settings operations.
-func (h *SettingsHandler) logSettingsAudit(ctx context.Context, operatorID string, event *SettingsAuditEvent) {
+func (h *SettingsHandler) logSettingsAudit(c *gin.Context, operatorID string, event *SettingsAuditEvent) {
 	if h.auditLogger == nil {
 		return
 	}
 
-	// Extract client info from context if available
-	ipAddress := ""
-	userAgent := ""
-	if ginCtx, ok := ctx.(*gin.Context); ok {
-		ipAddress = ginCtx.ClientIP()
-		userAgent = ginCtx.GetHeader("User-Agent")
-	}
+	// Extract client info from gin context
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+	ctx := c.Request.Context()
 
 	// Build metadata from changes
 	metadata := make(map[string]string)
@@ -323,7 +320,7 @@ func (h *SettingsHandler) UpdateNotifications(c *gin.Context) {
 
 	// Save updated notifications
 	if err = h.operatorRepo.UpdateNotifications(ctx, operatorID, notifications); err != nil {
-		h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
+		h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 			Action:  "update",
 			Section: "notifications",
 			Changes: changes,
@@ -335,7 +332,7 @@ func (h *SettingsHandler) UpdateNotifications(c *gin.Context) {
 	}
 
 	// Log successful update
-	h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
+	h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 		Action:  "update",
 		Section: "notifications",
 		Changes: changes,
@@ -398,7 +395,7 @@ func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 	responseTime := time.Since(start).Milliseconds()
 
 	// Log webhook test attempt
-	h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
+	h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 		Action:  "webhook_test",
 		Section: "notifications",
 		Changes: map[string]interface{}{
@@ -458,7 +455,7 @@ func (h *SettingsHandler) RotateWebhookSecret(c *gin.Context) {
 
 	secret, err := h.operatorRepo.RotateWebhookSecret(ctx, operatorID)
 	if err != nil {
-		h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
+		h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 			Action:  "webhook_rotate",
 			Section: "notifications",
 			Success: false,
@@ -469,7 +466,7 @@ func (h *SettingsHandler) RotateWebhookSecret(c *gin.Context) {
 	}
 
 	// Log successful rotation
-	h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
+	h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 		Action:  "webhook_rotate",
 		Section: "notifications",
 		Success: true,
