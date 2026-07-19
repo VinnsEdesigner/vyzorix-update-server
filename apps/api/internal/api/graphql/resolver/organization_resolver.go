@@ -814,6 +814,150 @@ func (r *Resolver) TransferDevice(p graphql.ResolveParams) (interface{}, error) 
 	}, nil
 }
 
+// TransferOwnership resolves the transferOwnership mutation.
+func (r *Resolver) TransferOwnership(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	orgID, _ := p.Args["organizationId"].(string)
+	memberID, _ := p.Args["memberId"].(string)
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	// Check if operator is super_admin of this org
+	membership, err := r.MemberService.GetMembership(ctx, op.ID, orgID)
+	if err != nil {
+		return nil, r.Presenter.ForbiddenError("not a member of this organization")
+	}
+
+	if membership.Role != orgdomain.RoleSuperAdmin {
+		return nil, r.Presenter.ForbiddenError("only super_admin can transfer ownership")
+	}
+
+	// Transfer ownership
+	err = r.MemberService.TransferOwnership(ctx, orgID, op.ID, memberID)
+	if err != nil {
+		if err == orgdomain.ErrMemberNotFound {
+			return nil, r.Presenter.NotFoundError("member not found")
+		}
+		return nil, r.Presenter.InternalError("failed to transfer ownership")
+	}
+
+	// Publish ownership transferred event
+	if r.Hub != nil {
+		r.Hub.PublishMemberEvent(orgID, map[string]interface{}{
+			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
+			"type":           "ownership_transferred",
+			"organizationId": orgID,
+			"memberId":       memberID,
+			"operatorId":     op.ID,
+			"timestamp":      time.Now().UTC(),
+		})
+	}
+
+	return true, nil
+}
+
+// SuspendMember resolves the suspendMember mutation.
+func (r *Resolver) SuspendMember(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	orgID, _ := p.Args["organizationId"].(string)
+	memberID, _ := p.Args["memberId"].(string)
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	// Check if operator can manage members
+	if err := r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("insufficient permissions to suspend member")
+	}
+
+	err := r.MemberService.SuspendMember(ctx, orgID, memberID, op.ID)
+	if err != nil {
+		if err == orgdomain.ErrMemberNotFound {
+			return nil, r.Presenter.NotFoundError("member not found")
+		}
+		if err.Error() == "cannot suspend yourself" {
+			return nil, r.Presenter.BadRequestError("cannot suspend yourself")
+		}
+		if err.Error() == "member is already suspended" {
+			return nil, r.Presenter.BadRequestError("member is already suspended")
+		}
+		if err == orgapp.ErrCannotModifyHigherRole {
+			return nil, r.Presenter.ForbiddenError("cannot suspend member with equal or higher role")
+		}
+		return nil, r.Presenter.InternalError("failed to suspend member")
+	}
+
+	// Publish member suspended event
+	if r.Hub != nil {
+		r.Hub.PublishMemberEvent(orgID, map[string]interface{}{
+			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
+			"type":           "member_suspended",
+			"organizationId": orgID,
+			"memberId":       memberID,
+			"operatorId":     op.ID,
+			"timestamp":      time.Now().UTC(),
+		})
+	}
+
+	return true, nil
+}
+
+// ReinstateMember resolves the reinstateMember mutation.
+func (r *Resolver) ReinstateMember(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	orgID, _ := p.Args["organizationId"].(string)
+	memberID, _ := p.Args["memberId"].(string)
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	// Check if operator can manage members
+	if err := r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("insufficient permissions to reinstate member")
+	}
+
+	err := r.MemberService.ReinstateMember(ctx, orgID, memberID, op.ID)
+	if err != nil {
+		if err == orgdomain.ErrMemberNotFound {
+			return nil, r.Presenter.NotFoundError("member not found")
+		}
+		if err.Error() == "cannot reinstate yourself" {
+			return nil, r.Presenter.BadRequestError("cannot reinstate yourself")
+		}
+		if err.Error() == "member is not suspended" {
+			return nil, r.Presenter.BadRequestError("member is not suspended")
+		}
+		if err == orgapp.ErrCannotModifyHigherRole {
+			return nil, r.Presenter.ForbiddenError("cannot reinstate member with equal or higher role")
+		}
+		return nil, r.Presenter.InternalError("failed to reinstate member")
+	}
+
+	// Publish member reinstated event
+	if r.Hub != nil {
+		r.Hub.PublishMemberEvent(orgID, map[string]interface{}{
+			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
+			"type":           "member_reinstated",
+			"organizationId": orgID,
+			"memberId":       memberID,
+			"operatorId":     op.ID,
+			"timestamp":      time.Now().UTC(),
+		})
+	}
+
+	return true, nil
+}
+
 // ============================================================
 // Helper Functions
 // ============================================================

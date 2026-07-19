@@ -209,14 +209,21 @@ func (s *DeviceSettingsService) GetEffectiveThresholds(ctx context.Context, devi
 	}
 
 	// Get organization settings
-	var orgThresholds *organization.Thresholds
+	var orgThresholds *device.Thresholds
 	if d.OrganizationID != "" {
 		orgSettings, err := s.orgSettingsRepo.FindByOrganizationID(ctx, d.OrganizationID)
 		if err != nil && !errors.Is(err, organization.ErrSettingsNotFound) {
 			return nil, err
 		}
-		if orgSettings != nil {
-			orgThresholds = orgSettings.DefaultThresholds
+		if orgSettings != nil && orgSettings.DefaultThresholds != nil {
+			orgThresholds = &device.Thresholds{
+				RiskWarn:    orgSettings.DefaultThresholds.RiskWarn,
+				RiskCrit:    orgSettings.DefaultThresholds.RiskCrit,
+				ThermalWarn: orgSettings.DefaultThresholds.ThermalWarn,
+				ThermalCrit: orgSettings.DefaultThresholds.ThermalCrit,
+				BufferWarn:  orgSettings.DefaultThresholds.BufferWarn,
+				BufferCrit:  orgSettings.DefaultThresholds.BufferCrit,
+			}
 		}
 	}
 

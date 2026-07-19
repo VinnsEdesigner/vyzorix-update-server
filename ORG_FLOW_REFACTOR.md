@@ -115,15 +115,90 @@ POST /v1/auth/login
 2. **OrganizationContext** - Extracts org_id from session
 3. **OrganizationMembership** - Validates operator is member
 
-### Protected Routes (Require Organization)
-- `/dashboard/*` - Dashboard, devices, stats
-- `/devices/*` - Device management
-- `/v1/organizations/:id/*` - Org management
+### Route Protection Matrix
+
+| Route | Auth Required | Org Required | Description |
+|-------|--------------|--------------|-------------|
+| **Public Routes** | ❌ | ❌ | |
+| `/v1/auth/login` | ❌ | ❌ | Login page |
+| `/v1/auth/register` | ❌ | ❌ | Registration |
+| `/v1/auth/forgot-password` | ❌ | ❌ | Password reset flow |
+| `/v1/auth/reset-password` | ❌ | ❌ | Password reset flow |
+| `/v1/auth/refresh` | ❌ | ❌ | Token refresh |
+| `/v1/auth/verify-email` | ❌ | ❌ | Email verification |
+| `/v1/auth/resend-verification` | ❌ | ❌ | Resend verification |
+| `/v1/device/:imei/status` | ❌ | ❌ | Device public status |
+| `/v1/device/inbox` | ❌ | ❌ | Device registration inbox |
+| `/v1/device/confirm` | ❌ | ❌ | Device confirmation |
+| **Authenticated - No Org Required** | ✅ | ❌ | |
+| `/v1/auth/me` | ✅ | ❌ | Current operator profile |
+| `/v1/auth/me/settings` | ✅ | ❌ | Client settings (Android app behavior) |
+| `/v1/auth/me/notifications` | ✅ | ❌ | Personal notification preferences |
+| `/v1/auth/mfa/*` | ✅ | ❌ | MFA enrollment, verify, enable/disable, backup codes |
+| `/v1/auth/logout` | ✅ | ❌ | Logout |
+| **Authenticated - Org Required** | ✅ | ✅ | |
+| `/v1/auth/sessions/*` | ✅ | ✅ | Session management (org-scoped) |
+| `/v1/auth/client-credentials/*` | ✅ | ✅ | API key management (org-scoped) |
+| `/v1/auth/organizations` | ✅ | ❌ | List operator's organizations |
+| `/v1/auth/organizations/select` | ✅ | ❌ | Select active organization |
+| `/v1/organizations/*` | ✅ | ✅ | All organization routes |
+| `/v1/dashboard/*` | ✅ | ✅ | Dashboard, device stats |
+| `/v1/devices/*` | ✅ | ✅ | Device management |
+| `/v1/command/*` | ✅ | ✅ | Command dispatch |
+| `/v1/telemetry/*` | ✅ | ✅ | Telemetry history |
+| `/v1/connections/*` | ✅ | ✅ | Connection status |
+| `/v1/updates/*` | ✅ | ✅ | Update management |
+| `/v1/admin/*` | ✅ | ✅ | SuperAdmin routes |
 
 ### Public Routes (No Organization Required)
 - `/v1/auth/register`, `/v1/auth/login`
 - `/v1/auth/me/settings/client` - Android app settings
 - `/v1/auth/me/notifications` - Personal notification prefs
+
+### Settings Subroutes - Detailed Structure
+
+```
+/v1/auth/me/settings
+├── GET/PATCH                    → Client settings (serverUrl, deviceId, timeouts, HMAC)
+└── NO subroutes
+
+/v1/auth/me/notifications
+├── GET/PATCH                    → Notification preferences (email, webhook)
+├── POST /webhook/test           → Test webhook configuration
+├── POST /webhook/rotate         → Rotate webhook secret
+└── NO subroutes
+
+/v1/organizations/:id/settings   (REQUIRES ORG)
+├── GET/PATCH                    → Org general settings (timezone, date format)
+├── GET/PATCH /thresholds        → Default thresholds for new devices
+└── NO subroutes
+```
+
+### Settings Accessibility by Org Status
+
+**No Organization Created:**
+| Settings Area | Accessible | Notes |
+|--------------|------------|-------|
+| Profile (`/v1/auth/me`) | ✅ | Basic operator info |
+| Client Settings (`/v1/auth/me/settings`) | ✅ | Android app behavior |
+| Notifications (`/v1/auth/me/notifications`) | ✅ | Personal notification prefs |
+| MFA (`/v1/auth/mfa/*`) | ✅ | Auth required, no org |
+| Sessions (`/v1/auth/sessions/*`) | 🔒 | Locked - requires org |
+| API Keys (`/v1/auth/client-credentials/*`) | 🔒 | Locked - requires org |
+| Organization Settings | 🔒 | No org exists yet |
+| Device Settings | 🔒 | No org exists yet |
+
+**Organization Exists:**
+| Settings Area | Accessible | Notes |
+|--------------|------------|-------|
+| Profile | ✅ | |
+| Client Settings | ✅ | |
+| Notifications | ✅ | |
+| MFA | ✅ | Auth required, no org |
+| Sessions | ✅ | Org-scoped session management |
+| API Keys | ✅ | Org-scoped API keys |
+| Organization Settings | ✅ | Full access |
+| Device Settings | ✅ | Full access |
 
 ---
 
@@ -220,42 +295,122 @@ GET/PATCH /v1/devices/:imei/thresholds
 
 ## 🔄 API ENDPOINT SUMMARY
 
-### Authentication (No Org Required)
+### Public Authentication (No Auth Required)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | /v1/auth/register | Register new operator |
 | POST | /v1/auth/login | Login, auto-resolve org |
 | POST | /v1/auth/login/tokens | Login for API clients |
-| POST | /v1/auth/organizations/select | Switch organization |
+| POST | /v1/auth/forgot-password | Request password reset |
+| POST | /v1/auth/reset-password | Reset password with token |
+| POST | /v1/auth/refresh | Refresh access token |
+| GET/POST | /v1/auth/verify-email | Verify email address |
+| GET/POST | /v1/auth/resend-verification | Resend verification email |
+
+### Operator Settings (Auth Required - NO Org Required)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | GET | /v1/auth/me | Get current operator |
 | PATCH | /v1/auth/me | Update name |
+| GET/PATCH | /v1/auth/me/settings | Client settings (Android app behavior) |
+| GET/PATCH | /v1/auth/me/notifications | Notification preferences |
+| POST | /v1/auth/me/notifications/webhook/test | Test webhook |
+| POST | /v1/auth/me/notifications/webhook/rotate | Rotate webhook secret |
+| POST | /v1/auth/logout | Logout |
 
-### Operator Settings (No Org Required)
+### MFA & Security (Auth Required - NO Org Required)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET/PATCH | /v1/auth/me/settings/client | Android app settings |
-| GET/PATCH | /v1/auth/me/notifications | Notification prefs |
+| GET | /v1/auth/mfa/status | Get MFA status |
+| POST | /v1/auth/mfa/enroll | Start MFA enrollment |
+| POST | /v1/auth/mfa/verify-setup | Verify MFA setup |
+| POST | /v1/auth/mfa/enable | Enable MFA |
+| POST | /v1/auth/mfa/disable | Disable MFA |
+| POST | /v1/auth/mfa/verify | Verify MFA code |
+| POST | /v1/auth/mfa/verify-backup | Verify backup code |
+| POST | /v1/auth/mfa/regenerate-backup-codes | Regenerate backup codes |
 
-### Organizations (Org Required)
+### Organization Management (Auth + Org Required)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | /v1/auth/organizations | List operator's organizations |
+| POST | /v1/auth/organizations/select | Switch active organization |
 | GET | /v1/organizations | List operator's orgs |
 | POST | /v1/organizations | Create organization |
 | GET/PATCH/DELETE | /v1/organizations/:id | Manage organization |
+| GET | /v1/organizations/:id/members | List members |
+| PATCH/DELETE | /v1/organizations/:id/members/:memberId | Update/remove member |
+| POST | /v1/organizations/:id/members/:memberId/transfer | Transfer ownership |
+| POST | /v1/organizations/:id/members/:memberId/suspend | Suspend member |
+| POST | /v1/organizations/:id/members/:memberId/reinstate | Reinstate member |
+| GET | /v1/organizations/:id/invitations | List invitations |
+| GET | /v1/invite/:token | Get invitation by token |
+| POST | /v1/invite/:token/accept | Accept invitation |
+| POST | /v1/invite/:token/reject | Reject invitation |
 
-### Organization Settings (Org Required)
+### Organization Settings (Auth + Org Required)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET/PATCH | /v1/organizations/:id/settings | Org settings |
-| GET/PATCH | /v1/organizations/:id/settings/thresholds | Org defaults |
+| GET/PATCH | /v1/organizations/:id/settings/thresholds | Default thresholds |
 
-### Devices (Org Required)
+### Session & API Key Management (Auth + Org Required)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /v1/auth/sessions | List sessions |
+| GET | /v1/auth/sessions/concurrent | Check concurrent sessions |
+| GET/DELETE | /v1/auth/sessions/:id | Get/revoke specific session |
+| DELETE | /v1/auth/sessions | Revoke all except current |
+| POST | /v1/auth/sessions/revoke-all | Revoke all devices |
+| POST | /v1/auth/client-credentials | Create API key |
+| GET | /v1/auth/client-credentials | List API keys |
+| GET | /v1/auth/client-credentials/:clientId | Get API key details |
+| PATCH | /v1/auth/client-credentials/:clientId | Update API key |
+| DELETE | /v1/auth/client-credentials/:clientId | Delete API key |
+| POST | /v1/auth/client-credentials/:clientId/rotate-secret | Rotate secret |
+
+### Devices (Auth + Org Required)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | /v1/devices | List devices |
 | GET/DELETE | /v1/devices/:imei | Device operations |
 | GET/PATCH | /v1/devices/:imei/settings | Device settings |
 | GET/PATCH | /v1/devices/:imei/thresholds | Device thresholds |
+| GET | /v1/dashboard/devices | Dashboard device list |
+| GET | /v1/dashboard/devices/operator | Operator's devices |
+
+### Device Lifecycle (Public + Auth + Org)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /v1/device/:imei/status | Public device status |
+| POST | /v1/device/inbox | Device registration request (public) |
+| GET | /v1/inbox | Auth: List pending registrations |
+| GET/PATCH | /v1/inbox/:imei | Auth: Get/update inbox entry |
+| POST | /v1/inbox/:imei/ack | Auth: Approve device |
+| POST | /v1/inbox/:imei/resend | Auth: Resend approval |
+| POST | /v1/device/confirm | Device confirms registration (public) |
+
+### Commands & Telemetry (Auth + Org Required)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /v1/command/:dispatchId/status | Command status |
+| POST | /v1/command/:dispatchId/retry | Retry command |
+| DELETE | /v1/command/:dispatchId | Cancel command |
+| GET | /v1/telemetry/history | Query telemetry |
+| GET | /v1/telemetry/history/export | Export telemetry |
+| GET | /v1/telemetry/latest/:deviceId | Latest telemetry |
+| GET | /v1/telemetry/stats/:deviceId | Telemetry stats |
+| DELETE | /v1/telemetry/cleanup | Cleanup old telemetry |
+
+### Admin & SuperAdmin (Auth + Org + Role Required)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /v1/admin/clients | List all clients |
+| GET/PATCH/DELETE | /v1/admin/clients/:clientId | Manage client |
+| POST | /v1/admin/clients/:clientId/rotate-key | Rotate client key |
+| GET | /v1/admin/operators | List operators (SuperAdmin) |
+| POST | /v1/admin/operators | Create operator (SuperAdmin) |
+| GET/PATCH/DELETE | /v1/admin/operators/:id | Manage operator (SuperAdmin) |
 
 ---
 
@@ -323,10 +478,13 @@ CREATE TABLE device_settings (
 - [x] Wire new device/org settings repos to metrics and event processor
 - [x] Clean up all backward compatibility code
 
-### Phase 4: Role Management (Deferred)
-- [ ] Member role update endpoints
-- [ ] Admin can promote/demote members
-- [ ] Super_admin protection
+### Phase 4: Role Management ✅ DONE
+- [x] Member role update endpoints (PATCH /v1/organizations/:id/members/:memberId)
+- [x] Admin can promote/demote members (role update with permission checks)
+- [x] Super_admin protection (cannot change to super_admin, cannot remove last super_admin)
+- [x] Suspend member endpoint (POST /v1/organizations/:id/members/:memberId/suspend)
+- [x] Reinstate member endpoint (POST /v1/organizations/:id/members/:memberId/reinstate)
+- [x] Transfer ownership endpoint (POST /v1/organizations/:id/members/:memberId/transfer)
 
 ---
 
@@ -390,3 +548,46 @@ CREATE TABLE device_settings (
 - ✅ Session.SelectedOrganizationID field exists
 - ✅ Updated on login
 - ✅ Updated on organization switch
+
+---
+
+## 📊 GRAPHQL API
+
+The GraphQL API provides full parity with the REST API for organization and member management.
+
+### GraphQL Mutations
+
+| Mutation | Description |
+|---------|-------------|
+| `createOrganization` | Create a new organization |
+| `updateOrganization` | Update organization settings |
+| `deleteOrganization` | Soft-delete an organization |
+| `inviteMember` | Invite a member to an organization |
+| `removeMember` | Remove a member from an organization |
+| `updateMemberRole` | Promote/demote a member (admin+) |
+| `transferOwnership` | Transfer super_admin to another member |
+| `suspendMember` | Suspend an active member |
+| `reinstateMember` | Reinstate a suspended member |
+| `acceptInvitation` | Accept an invitation to join |
+| `rejectInvitation` | Reject an invitation |
+| `cancelInvitation` | Cancel a pending invitation |
+| `transferDevice` | Transfer a device between organizations |
+
+### GraphQL Queries
+
+| Query | Description |
+|-------|-------------|
+| `myMemberships` | Get current operator's organization memberships |
+| `organizations` | List all organizations for the operator |
+| `organization` | Get a specific organization |
+| `organizationMembers` | List members of an organization |
+| `organizationInvitations` | List pending invitations for an org |
+| `myInvitations` | List pending invitations for current operator |
+| `invitation` | Get invitation by token |
+
+### WebSocket Subscriptions (Real-time Events)
+
+| Subscription | Event Types |
+|-------------|-------------|
+| `organizationEvents` | `CREATED`, `UPDATED`, `DELETED`, `ACTIVATED`, `DEACTIVATED` |
+| `memberEvents` | `member_joined`, `member_invited`, `member_removed`, `member_suspended`, `member_reinstated`, `role_changed`, `ownership_transferred` |

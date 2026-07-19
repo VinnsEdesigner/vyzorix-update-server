@@ -1,8 +1,8 @@
 package device
 
 import (
+	"context"
 	"errors"
-	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"

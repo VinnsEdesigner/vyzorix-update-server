@@ -32,6 +32,9 @@ func NewUpdatesHandler(service *updates.Service, pushService *updates.PushServic
 		pushHandler:      NewUpdatesPushHandler(service, auditLogger),
 		historyHandler:   NewUpdatesHistoryHandler(service, auditLogger),
 		syncHandler:      NewUpdatesSyncHandler(service, auditLogger),
+	}
+}
+
 // RegisterRoutes registers all updates routes.
 func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth, membershipChecker middleware.OrganizationMembershipChecker) {
 	// Device callback endpoint - public (no auth required, device identifies itself)
@@ -127,11 +130,7 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 			updatesGroup.GET("/webhook/info",
 				h.webhookHandler.GetWebhookInfo)
 		}
-	}
-}
-		}
-	}
-}
+
 		updatesGroup.GET("/versions", h.versionsHandler.GetVersions)
 		updatesGroup.GET("/changelog", h.versionsHandler.GetChangelog)
 		updatesGroup.GET("/export", h.versionsHandler.Export)
@@ -146,7 +145,6 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 			updatesGroup.GET("/webhook/info",
 				h.webhookHandler.GetWebhookInfo)
 		}
-	}
 }
 
 // Stop stops all rate limiter cleanup goroutines.

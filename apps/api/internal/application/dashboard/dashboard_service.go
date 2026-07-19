@@ -134,7 +134,7 @@ func (s *Service) GetDashboardStatsByOrganization(ctx context.Context, orgID str
 	}
 
 	// Filter commands by organization
-	var orgCommands []*command.HistoryEntry
+	var orgCommands []*command.Command
 	orgDeviceIDs := make(map[string]bool)
 	for _, d := range allDevices {
 		orgDeviceIDs[d.ID] = true

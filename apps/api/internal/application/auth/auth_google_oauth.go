@@ -48,17 +48,6 @@ func (s *AuthService) FindOrCreateGoogleOperator(ctx context.Context, googleID, 
 	}
 
 	// Create new operator.
-	count, err := s.operatorRepo.Count(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// First user is super_admin (system bootstrap), others get default OAuth role
-	role := DefaultOAuthRole
-	if count == 0 {
-		role = operator.RoleSuperAdmin
-	}
-
 	id := shared.GenerateID()
 
 	now := time.Now()
@@ -67,7 +56,6 @@ func (s *AuthService) FindOrCreateGoogleOperator(ctx context.Context, googleID, 
 		Email:         email,
 		Name:          name,
 		GoogleID:      googleID,
-		Role:          role,
 		EmailVerified: true, // Google verifies email
 		CreatedAt:     now,
 		UpdatedAt:     now,

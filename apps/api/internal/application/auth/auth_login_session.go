@@ -15,31 +15,62 @@ infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/se
 
 // buildLoginResponse builds a LoginResponse with organization info.
 func (s *AuthService) buildLoginResponse(op *operator.Operator) *dto.LoginResponse {
-// Get operator's organizations
-orgs, _ := s.GetOperatorOrganizations(context.Background(), op)
-needsOrg := len(orgs) == 0
+	// Get operator's organizations
+	orgs, err := s.GetOperatorOrganizations(context.Background(), op)
+	if err != nil {
+		// If we can't get organizations, indicate org selection is needed
+		return &dto.LoginResponse{
+			OperatorID:           op.ID,
+			Email:               op.Email,
+			Name:                op.Name,
+			MFAEnabled:          op.MFAEnabled,
+			NeedsOrganization:    true,
+			Organizations:        nil,
+			LastOrganizationID:   op.LastOrganizationID,
+			SelectedOrganization: nil,
+		}
+	}
 
-// Find selected organization from LastOrganizationID
-var selectedOrg *dto.OrganizationInfo
-if op.LastOrganizationID != "" {
-for _, org := range orgs {
-if org.ID == op.LastOrganizationID {
-selectedOrg = &org
-break
-}
-}
-}
+	// Determine if organization selection is required:
+	// - 0 memberships: needs organization (create/join)
+	// - Multiple memberships without valid selected org: needs selection
+	needsOrg := len(orgs) == 0
 
-return &dto.LoginResponse{
-OperatorID:           op.ID,
-Email:               op.Email,
-Name:                op.Name,
-MFAEnabled:          op.MFAEnabled,
-NeedsOrganization:    needsOrg,
-Organizations:        orgs,
-LastOrganizationID:    op.LastOrganizationID,
-SelectedOrganization: selectedOrg,
-}
+	// Convert to dto.OrganizationInfo
+	dtoOrgs := make([]dto.OrganizationInfo, len(orgs))
+	var selectedOrg *dto.OrganizationInfo
+	for i, org := range orgs {
+		dtoOrgs[i] = dto.OrganizationInfo{
+			ID:   org.ID,
+			Name: org.Name,
+			Role: org.Role,
+		}
+		if org.ID == op.LastOrganizationID {
+			selectedOrg = &dtoOrgs[i]
+		}
+	}
+
+	// If LastOrganizationID is set but not found in active orgs,
+	// user has multiple orgs but the last one is invalid - needs selection
+	if op.LastOrganizationID != "" && selectedOrg == nil && len(orgs) > 1 {
+		needsOrg = true
+	}
+
+	// If multiple orgs exist but none is selected, needs organization selection
+	if !needsOrg && len(orgs) > 1 && selectedOrg == nil {
+		needsOrg = true
+	}
+
+	return &dto.LoginResponse{
+		OperatorID:           op.ID,
+		Email:               op.Email,
+		Name:                op.Name,
+		MFAEnabled:          op.MFAEnabled,
+		NeedsOrganization:    needsOrg,
+		Organizations:        dtoOrgs,
+		LastOrganizationID:   op.LastOrganizationID,
+		SelectedOrganization: selectedOrg,
+	}
 }
 
 // Login authenticates an operator and creates a session.
@@ -195,31 +226,62 @@ return resp, nil
 
 // buildLoginWithTokensResponse builds a LoginWithTokensResponse with organization info.
 func (s *AuthService) buildLoginWithTokensResponse(op *operator.Operator) *dto.LoginWithTokensResponse {
-// Get operator's organizations
-orgs, _ := s.GetOperatorOrganizations(context.Background(), op)
-needsOrg := len(orgs) == 0
+	// Get operator's organizations
+	orgs, err := s.GetOperatorOrganizations(context.Background(), op)
+	if err != nil {
+		// If we can't get organizations, indicate org selection is needed
+		return &dto.LoginWithTokensResponse{
+			OperatorID:           op.ID,
+			Email:               op.Email,
+			Name:                op.Name,
+			MFAEnabled:          op.MFAEnabled,
+			NeedsOrganization:    true,
+			Organizations:        nil,
+			LastOrganizationID:   op.LastOrganizationID,
+			SelectedOrganization: nil,
+		}
+	}
 
-// Find selected organization from LastOrganizationID
-var selectedOrg *dto.OrganizationInfo
-if op.LastOrganizationID != "" {
-for _, org := range orgs {
-if org.ID == op.LastOrganizationID {
-selectedOrg = &org
-break
-}
-}
-}
+	// Determine if organization selection is required:
+	// - 0 memberships: needs organization (create/join)
+	// - Multiple memberships without valid selected org: needs selection
+	needsOrg := len(orgs) == 0
 
-return &dto.LoginWithTokensResponse{
-OperatorID:           op.ID,
-Email:               op.Email,
-Name:                op.Name,
-MFAEnabled:          op.MFAEnabled,
-NeedsOrganization:    needsOrg,
-Organizations:        orgs,
-LastOrganizationID:    op.LastOrganizationID,
-SelectedOrganization: selectedOrg,
-}
+	// Convert to dto.OrganizationInfo
+	dtoOrgs := make([]dto.OrganizationInfo, len(orgs))
+	var selectedOrg *dto.OrganizationInfo
+	for i, org := range orgs {
+		dtoOrgs[i] = dto.OrganizationInfo{
+			ID:   org.ID,
+			Name: org.Name,
+			Role: org.Role,
+		}
+		if org.ID == op.LastOrganizationID {
+			selectedOrg = &dtoOrgs[i]
+		}
+	}
+
+	// If LastOrganizationID is set but not found in active orgs,
+	// user has multiple orgs but the last one is invalid - needs selection
+	if op.LastOrganizationID != "" && selectedOrg == nil && len(orgs) > 1 {
+		needsOrg = true
+	}
+
+	// If multiple orgs exist but none is selected, needs organization selection
+	if !needsOrg && len(orgs) > 1 && selectedOrg == nil {
+		needsOrg = true
+	}
+
+	return &dto.LoginWithTokensResponse{
+		OperatorID:           op.ID,
+		Email:               op.Email,
+		Name:                op.Name,
+		MFAEnabled:          op.MFAEnabled,
+		NeedsOrganization:    needsOrg,
+		Organizations:        dtoOrgs,
+		LastOrganizationID:   op.LastOrganizationID,
+		SelectedOrganization: selectedOrg,
+	}
 }
 
 // Register creates a new operator.

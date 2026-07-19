@@ -33,9 +33,9 @@ type PasswordError = operator.PasswordError
 
 // RefreshTokenRepository interface for refresh token operations.
 type RefreshTokenRepository interface {
-Create(ctx context.Context, rt *RefreshToken) error
-FindByID(ctx context.Context, id string) (*RefreshToken, error)
-FindByTokenHash(ctx context.Context, tokenHash string) (*RefreshToken, error)
+Create(ctx context.Context, rt *refresh_token.RefreshToken) error
+FindByID(ctx context.Context, id string) (*refresh_token.RefreshToken, error)
+FindByTokenHash(ctx context.Context, tokenHash string) (*refresh_token.RefreshToken, error)
 Revoke(ctx context.Context, id string) error
 RevokeByTokenHash(ctx context.Context, tokenHash string) error
 RevokeAllForOperator(ctx context.Context, operatorID string) error
@@ -282,7 +282,7 @@ if s.memberRepo == nil {
 return nil, application.ErrForbidden
 }
 
-member, err := s.memberRepo.GetMembership(ctx, operatorID, orgID)
+member, err := s.memberRepo.FindByOperatorAndOrg(ctx, operatorID, orgID)
 if err != nil {
 if err == organization.ErrMemberNotFound {
 return nil, application.ErrForbidden
