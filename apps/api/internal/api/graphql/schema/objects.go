@@ -1734,15 +1734,19 @@ var DeviceSettingsType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "Device location description",
 		},
 		"metadata": &graphql.Field{
-			Type:        graphql.NewObject(graphql.ObjectConfig{
-				Name:   "DeviceSettingsMetadata",
+			Type: graphql.NewList(graphql.NewNonNull(graphql.NewObject(graphql.ObjectConfig{
+				Name: "MetadataEntry",
 				Fields: graphql.Fields{
 					"key": &graphql.Field{
 						Type:        graphql.NewNonNull(graphql.String),
 						Description: "Metadata key",
 					},
+					"value": &graphql.Field{
+						Type:        graphql.NewNonNull(graphql.String),
+						Description: "Metadata value",
+					},
 				},
-			}),
+			}))),
 			Description: "Custom metadata key-value pairs",
 		},
 		"thresholds": &graphql.Field{
