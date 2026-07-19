@@ -41,33 +41,8 @@ func (r *Resolver) GetMySettings(p graphql.ResolveParams) (interface{}, error) {
 			"logBufferLimit":     settings.Client.LogBufferLimit,
 			"signalHistoryLimit":  settings.Client.SignalHistoryLimit,
 		},
-		"thresholds": map[string]interface{}{
-			"riskWarn":    settings.Thresholds.RiskWarn,
-			"riskCrit":    settings.Thresholds.RiskCrit,
-			"thermalWarn": settings.Thresholds.ThermalWarn,
-			"thermalCrit": settings.Thresholds.ThermalCrit,
-			"bufferWarn":  settings.Thresholds.BufferWarn,
-			"bufferCrit":  settings.Thresholds.BufferCrit,
-		},
 		"notifications": settings.Notifications,
 	}, nil
-}
-
-// GetMyThresholds resolves the myThresholds query.
-func (r *Resolver) GetMyThresholds(p graphql.ResolveParams) (interface{}, error) {
-	ctx := p.Context
-
-	op, ok := gqlcontext.GetOperator(ctx)
-	if !ok || op == nil {
-		return nil, r.Presenter.UnauthorizedError()
-	}
-
-	thresholds, err := r.ThresholdService.GetThresholds(ctx, op.ID)
-	if err != nil {
-		return nil, r.Presenter.InternalError("failed to get thresholds")
-	}
-
-	return thresholds, nil
 }
 
 // GetMyNotifications resolves the myNotifications query.

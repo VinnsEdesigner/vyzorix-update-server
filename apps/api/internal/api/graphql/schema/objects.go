@@ -1705,45 +1705,9 @@ var OperatorSettingsType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.NewNonNull(ClientSettingsType),
 			Description: "Client settings",
 		},
-		"thresholds": &graphql.Field{
-			Type:        graphql.NewNonNull(ThresholdsType),
-			Description: "Alert thresholds",
-		},
 		"notifications": &graphql.Field{
 			Type:        graphql.NewNonNull(NotificationSettingsType),
 			Description: "Notification settings",
-		},
-	},
-})
-
-// ThresholdUpdateResultType represents the result of updating thresholds.
-var ThresholdUpdateResultType = graphql.NewObject(graphql.ObjectConfig{
-	Name:        "ThresholdUpdateResult",
-	Description: "Result of updating thresholds",
-	Fields: graphql.Fields{
-		"riskWarn": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Risk warning threshold",
-		},
-		"riskCrit": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Risk critical threshold",
-		},
-		"thermalWarn": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Thermal warning threshold",
-		},
-		"thermalCrit": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Thermal critical threshold",
-		},
-		"bufferWarn": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Buffer warning threshold",
-		},
-		"bufferCrit": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Buffer critical threshold",
 		},
 	},
 })
