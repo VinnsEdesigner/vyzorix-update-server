@@ -83,6 +83,11 @@ func (r *Resolver) GetDeviceSettings(p graphql.ResolveParams) (interface{}, erro
 		return nil, r.Presenter.BadRequestError("device IMEI is required")
 	}
 
+	// Check if operator is a member of the organization
+	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("not a member of this organization")
+	}
+
 	// Get device settings with effective thresholds (device → org → default)
 	settings, err := r.DeviceSettingsService.GetSettings(ctx, deviceImei)
 	if err != nil {
@@ -139,6 +144,11 @@ func (r *Resolver) GetOrganizationSettings(p graphql.ResolveParams) (interface{}
 	orgID, ok := p.Args["organizationId"].(string)
 	if !ok {
 		return nil, r.Presenter.BadRequestError("organization ID is required")
+	}
+
+	// Check if operator is a member of the organization
+	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("not a member of this organization")
 	}
 
 	settings, err := r.OrgSettingsService.GetSettings(ctx, orgID)
