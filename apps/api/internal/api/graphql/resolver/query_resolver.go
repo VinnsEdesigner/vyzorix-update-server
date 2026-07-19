@@ -10,6 +10,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
+	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/graphql-go/graphql"
 )
 
@@ -60,6 +61,84 @@ func (r *Resolver) GetMyNotifications(p graphql.ResolveParams) (interface{}, err
 	}
 
 	return notifications, nil
+}
+
+// GetDeviceSettings resolves the deviceSettings query.
+func (r *Resolver) GetDeviceSettings(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organization ID is required")
+	}
+
+	deviceID, ok := p.Args["deviceId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("device ID is required")
+	}
+
+	// Get device settings with effective thresholds (device → org → default)
+	settings, err := r.DeviceSettingsService.GetSettings(ctx, deviceID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get device settings")
+	}
+
+	// Get organization settings for threshold resolution
+	orgSettings, err := r.OrgSettingsService.GetSettings(ctx, orgID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get organization settings")
+	}
+
+	// Calculate effective thresholds
+	effectiveThresholds := devicedomain.ResolveThresholds(settings, orgSettings.DefaultThresholds)
+
+	return map[string]interface{}{
+		"id":                   settings.ID,
+		"deviceImei":           settings.DeviceIMEI,
+		"customName":           settings.CustomName,
+		"location":             settings.Location,
+		"metadata":             settings.Metadata,
+		"thresholds":           settings.Thresholds,
+		"effectiveThresholds":  effectiveThresholds,
+		"createdAt":            settings.CreatedAt,
+		"updatedAt":            settings.UpdatedAt,
+	}, nil
+}
+
+// GetOrganizationSettings resolves the organizationSettings query.
+func (r *Resolver) GetOrganizationSettings(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organization ID is required")
+	}
+
+	settings, err := r.OrgSettingsService.GetSettings(ctx, orgID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get organization settings")
+	}
+
+	return map[string]interface{}{
+		"id":                    settings.ID,
+		"organizationId":        settings.OrganizationID,
+		"timezone":              settings.Timezone,
+		"dateFormat":            settings.DateFormat,
+		"alertCooldownMinutes":  settings.AlertCooldownMinutes,
+		"defaultThresholds":     settings.DefaultThresholds,
+		"createdAt":             settings.CreatedAt,
+		"updatedAt":             settings.UpdatedAt,
+	}, nil
 }
 
 // ============================================================

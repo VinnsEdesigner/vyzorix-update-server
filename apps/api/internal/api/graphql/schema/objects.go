@@ -1712,6 +1712,98 @@ var OperatorSettingsType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+// DeviceSettingsType represents settings for a specific device.
+var DeviceSettingsType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "DeviceSettings",
+	Description: "Settings for a device including custom name, location, and threshold overrides",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique settings identifier",
+		},
+		"deviceImei": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Device IMEI",
+		},
+		"customName": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Custom display name for the device",
+		},
+		"location": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device location description",
+		},
+		"metadata": &graphql.Field{
+			Type:        graphql.NewObject(graphql.ObjectConfig{
+				Name:   "DeviceSettingsMetadata",
+				Fields: graphql.Fields{
+					"key": &graphql.Field{
+						Type:        graphql.NewNonNull(graphql.String),
+						Description: "Metadata key",
+					},
+				},
+			}),
+			Description: "Custom metadata key-value pairs",
+		},
+		"thresholds": &graphql.Field{
+			Type:        ThresholdsType,
+			Description: "Device-specific threshold overrides (null = use org defaults)",
+		},
+		"effectiveThresholds": &graphql.Field{
+			Type:        graphql.NewNonNull(ThresholdsType),
+			Description: "Effective thresholds after applying hierarchy (device → org → default)",
+		},
+		"createdAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When settings were created",
+		},
+		"updatedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When settings were last updated",
+		},
+	},
+})
+
+// OrganizationSettingsType represents settings for an organization.
+var OrganizationSettingsType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "OrganizationSettings",
+	Description: "Settings for an organization including timezone and default thresholds",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique settings identifier",
+		},
+		"organizationId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Organization ID",
+		},
+		"timezone": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Organization timezone (e.g., UTC, America/New_York)",
+		},
+		"dateFormat": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Date format (e.g., YYYY-MM-DD)",
+		},
+		"alertCooldownMinutes": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "Minimum minutes between repeated alerts",
+		},
+		"defaultThresholds": &graphql.Field{
+			Type:        graphql.NewNonNull(ThresholdsType),
+			Description: "Default thresholds for devices without custom thresholds",
+		},
+		"createdAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When settings were created",
+		},
+		"updatedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When settings were last updated",
+		},
+	},
+})
+
 // WebhookTestResultType represents the result of testing a webhook.
 var WebhookTestResultType = graphql.NewObject(graphql.ObjectConfig{
 	Name:        "WebhookTestResult",

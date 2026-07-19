@@ -111,6 +111,7 @@ func main() {
 
 		if regErr := apiServer.RegisterGraphQL(
 			deps.DeviceService,
+			deps.DeviceSettingsService,
 			deps.CommandService,
 			historyService,
 			dashboardSvc,
@@ -127,6 +128,7 @@ func main() {
 			notificationSvc,
 			webhookClient,
 			result.HandlerSet.OrgService,
+			result.HandlerSet.OrgSettingsService,
 			result.HandlerSet.MemberService,
 			result.HandlerSet.InvitationService,
 		); regErr != nil {

@@ -21,10 +21,43 @@ func BuildSchema(res *resolver.Resolver) (graphql.Schema, error) {
 func buildQueryType(res *resolver.Resolver) *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name:   "Query",
-		Fields: mergeFields(inboxQueries(res), deviceQueries(res), commandQueries(res), telemetryQueries(res),
+		Fields: mergeFields(settingsQueries(res), inboxQueries(res), deviceQueries(res), commandQueries(res), telemetryQueries(res),
 			connectionQueries(res), dashboardQueries(res), updatesQueries(res), diagnosticsQueries(res),
 			organizationQueries(res)),
 	})
+}
+
+// settingsQueries returns GraphQL queries for settings management.
+func settingsQueries(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"mySettings": &graphql.Field{
+			Type:        OperatorSettingsType,
+			Description: "Get current operator's settings (client and notifications)",
+			Resolve:    res.GetMySettings,
+		},
+		"deviceSettings": &graphql.Field{
+			Type:        DeviceSettingsType,
+			Description: "Get settings for a specific device including effective thresholds",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+				"deviceId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Device ID (IMEI)"},
+			},
+			Resolve: res.GetDeviceSettings,
+		},
+		"organizationSettings": &graphql.Field{
+			Type:        OrganizationSettingsType,
+			Description: "Get settings for an organization including default thresholds",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+			},
+			Resolve: res.GetOrganizationSettings,
+		},
+		"myNotifications": &graphql.Field{
+			Type:        NotificationSettingsType,
+			Description: "Get current operator's notification settings",
+			Resolve:    res.GetMyNotifications,
+		},
+	}
 }
 
 func inboxQueries(res *resolver.Resolver) graphql.Fields {
@@ -306,6 +339,7 @@ func buildMutationType(res *resolver.Resolver) *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name: "Mutation",
 		Fields: mergeMutationFields(
+			settingsMutations(res),
 			inboxMutations(res),
 			deviceMutations(res),
 			commandMutations(res),
@@ -313,6 +347,137 @@ func buildMutationType(res *resolver.Resolver) *graphql.Object {
 			organizationMutations(res),
 		),
 	})
+}
+
+// settingsMutations returns GraphQL mutations for settings management.
+func settingsMutations(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"updateMyNotifications": &graphql.Field{
+			Type:        NotificationSettingsType,
+			Description: "Update current operator's notification settings",
+			Args: graphql.FieldConfigArgument{
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
+						Name: "UpdateNotificationsInput",
+						Fields: graphql.InputObjectConfigFieldMap{
+							"enabled": &graphql.InputObjectFieldConfig{
+								Type: graphql.Boolean,
+							},
+							"channels": &graphql.InputObjectFieldConfig{
+								Type: graphql.NewList(graphql.NewNonNull(graphql.String)),
+							},
+							"email": &graphql.InputObjectFieldConfig{
+								Type: graphql.NewInputObject(graphql.InputObjectConfig{
+									Name: "EmailNotificationInput",
+									Fields: graphql.InputObjectConfigFieldMap{
+										"thresholdBreach":     &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"deviceOffline":      &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"deviceOnline":       &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"updateAvailable":    &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"commandFailed":      &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"registrationRequest": &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+									},
+								}),
+							},
+							"push": &graphql.InputObjectFieldConfig{
+								Type: graphql.NewInputObject(graphql.InputObjectConfig{
+									Name: "PushNotificationInput",
+									Fields: graphql.InputObjectConfigFieldMap{
+										"thresholdBreach":     &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"deviceOffline":      &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"deviceOnline":       &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"updateAvailable":    &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"commandFailed":      &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"registrationRequest": &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+									},
+								}),
+							},
+							"webhook": &graphql.InputObjectFieldConfig{
+								Type: graphql.NewInputObject(graphql.InputObjectConfig{
+									Name: "WebhookNotificationInput",
+									Fields: graphql.InputObjectConfigFieldMap{
+										"enabled": &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"url":     &graphql.InputObjectFieldConfig{Type: graphql.String},
+										"types":   &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.String))},
+									},
+								}),
+							},
+						},
+					})),
+				},
+			},
+			Resolve: res.UpdateMyNotifications,
+		},
+		"updateDeviceSettings": &graphql.Field{
+			Type:        DeviceSettingsType,
+			Description: "Update settings for a specific device",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+				"deviceId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Device ID (IMEI)"},
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
+						Name: "UpdateDeviceSettingsInput",
+						Fields: graphql.InputObjectConfigFieldMap{
+							"customName": &graphql.InputObjectFieldConfig{Type: graphql.String},
+							"location":   &graphql.InputObjectFieldConfig{Type: graphql.String},
+							"metadata":   &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
+								Name: "MetadataInput",
+								Fields: graphql.InputObjectConfigFieldMap{
+									"key":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+									"value": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
+								},
+							})))},
+							"thresholds": &graphql.InputObjectFieldConfig{
+								Type: graphql.NewInputObject(graphql.InputObjectConfig{
+									Name: "DeviceThresholdsInput",
+									Fields: graphql.InputObjectConfigFieldMap{
+										"riskWarn":    &graphql.InputObjectFieldConfig{Type: graphql.Int},
+										"riskCrit":    &graphql.InputObjectFieldConfig{Type: graphql.Int},
+										"thermalWarn": &graphql.InputObjectFieldConfig{Type: graphql.Int},
+										"thermalCrit": &graphql.InputObjectFieldConfig{Type: graphql.Int},
+										"bufferWarn":  &graphql.InputObjectFieldConfig{Type: graphql.Int},
+										"bufferCrit":  &graphql.InputObjectFieldConfig{Type: graphql.Int},
+									},
+								}),
+							},
+						},
+					})),
+				},
+			},
+			Resolve: res.UpdateDeviceSettings,
+		},
+		"updateOrganizationSettings": &graphql.Field{
+			Type:        OrganizationSettingsType,
+			Description: "Update settings for an organization",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+				"input": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
+						Name: "UpdateOrganizationSettingsInput",
+						Fields: graphql.InputObjectConfigFieldMap{
+							"timezone":              &graphql.InputObjectFieldConfig{Type: graphql.String},
+							"dateFormat":            &graphql.InputObjectFieldConfig{Type: graphql.String},
+							"alertCooldownMinutes": &graphql.InputObjectFieldConfig{Type: graphql.Int},
+							"defaultThresholds": &graphql.InputObjectFieldConfig{
+								Type: graphql.NewInputObject(graphql.InputObjectConfig{
+									Name: "OrgDefaultThresholdsInput",
+									Fields: graphql.InputObjectConfigFieldMap{
+										"riskWarn":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
+										"riskCrit":    &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
+										"thermalWarn": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
+										"thermalCrit": &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
+										"bufferWarn":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
+										"bufferCrit":  &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.Int)},
+									},
+								}),
+							},
+						},
+					})),
+				},
+			},
+			Resolve: res.UpdateOrganizationSettings,
+		},
+	}
 }
 
 func inboxMutations(res *resolver.Resolver) graphql.Fields {

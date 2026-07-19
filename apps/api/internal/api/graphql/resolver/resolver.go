@@ -28,36 +28,38 @@ import (
 
 // Resolver is the root GraphQL resolver.
 type Resolver struct {
-	DeviceService     *device.Service
-	CommandService    *cmdapp.Service
-	HistoryService    *cmdapp.HistoryService
-	DashboardSvc      *dashboard.Service
-	LogsSvc           *logs.Service
-	MetricsSvc        *appmetrics.Service
-	UpdatesSvc        *updates.Service
-	InboxService      *inboxapp.Service
-	DiagnosticsSvc    *diagnostics.Service
-	Hub               *hub.Hub
-	TelemetryRepo     *storage.TelemetryRepository
-	LogsRepo          *storage.LogsRepository
-	MetricsRepo       *storage.MetricsRepository
-	FCMNotifier       fcm.Notifier
-	AuthMiddleware    *gqlmiddleware.AuthMiddleware
-	Presenter         *gqladapters.Presenter
-	Validator         *validator.Validator
-	OperatorRepo      operator.Repository
-	SettingsService   *auth.ClientSettingsService
-	NotificationSvc   *appoperator.NotificationService
-	WebhookClient     *infrawebhook.Client
-	// Organization services
-	OrgService        *orgapp.OrganizationService
-	MemberService     *orgapp.MemberService
-	InvitationService *orgapp.InvitationService
+	DeviceService          *device.Service
+	DeviceSettingsService  *device.DeviceSettingsService
+	CommandService         *cmdapp.Service
+	HistoryService         *cmdapp.HistoryService
+	DashboardSvc           *dashboard.Service
+	LogsSvc                *logs.Service
+	MetricsSvc             *appmetrics.Service
+	UpdatesSvc             *updates.Service
+	InboxService           *inboxapp.Service
+	DiagnosticsSvc         *diagnostics.Service
+	Hub                    *hub.Hub
+	TelemetryRepo          *storage.TelemetryRepository
+	LogsRepo               *storage.LogsRepository
+	MetricsRepo            *storage.MetricsRepository
+	FCMNotifier            fcm.Notifier
+	AuthMiddleware         *gqlmiddleware.AuthMiddleware
+	Presenter              *gqladapters.Presenter
+	Validator              *validator.Validator
+	OperatorRepo           operator.Repository
+	SettingsService        *auth.ClientSettingsService
+	NotificationSvc        *appoperator.NotificationService
+	WebhookClient          *infrawebhook.Client
+	OrgService             *orgapp.OrganizationService
+	OrgSettingsService     *orgapp.OrganizationSettingsService
+	MemberService          *orgapp.MemberService
+	InvitationService      *orgapp.InvitationService
 }
 
 // NewResolver creates a new GraphQL resolver.
 func NewResolver(
 	deviceService *device.Service,
+	deviceSettingsService *device.DeviceSettingsService,
 	commandService *cmdapp.Service,
 	historyService *cmdapp.HistoryService,
 	dashboardSvc *dashboard.Service,
@@ -77,33 +79,36 @@ func NewResolver(
 	notificationSvc *appoperator.NotificationService,
 	webhookClient *infrawebhook.Client,
 	orgService *orgapp.OrganizationService,
+	orgSettingsService *orgapp.OrganizationSettingsService,
 	memberService *orgapp.MemberService,
 	invitationService *orgapp.InvitationService,
 ) *Resolver {
 	return &Resolver{
-		DeviceService:    deviceService,
-		CommandService:   commandService,
-		HistoryService:   historyService,
-		DashboardSvc:     dashboardSvc,
-		LogsSvc:         logsSvc,
-		MetricsSvc:      metricsSvc,
-		UpdatesSvc:      updatesSvc,
-		DiagnosticsSvc:   diagnosticsSvc,
-		Hub:             hub,
-		TelemetryRepo:   telemetryRepo,
-		LogsRepo:        logsRepo,
-		MetricsRepo:     metricsRepo,
-		FCMNotifier:     fcmNotifier,
-		AuthMiddleware:  authMiddleware,
-		Presenter:       presenter,
-		Validator:       validator.New(),
-		OperatorRepo:    operatorRepo,
-		SettingsService: settingsService,
-		NotificationSvc: notificationSvc,
-		WebhookClient:   webhookClient,
-		OrgService:      orgService,
-		MemberService:   memberService,
-		InvitationService: invitationService,
+		DeviceService:          deviceService,
+		DeviceSettingsService:  deviceSettingsService,
+		CommandService:        commandService,
+		HistoryService:        historyService,
+		DashboardSvc:          dashboardSvc,
+		LogsSvc:               logsSvc,
+		MetricsSvc:            metricsSvc,
+		UpdatesSvc:            updatesSvc,
+		DiagnosticsSvc:        diagnosticsSvc,
+		Hub:                   hub,
+		TelemetryRepo:         telemetryRepo,
+		LogsRepo:             logsRepo,
+		MetricsRepo:          metricsRepo,
+		FCMNotifier:          fcmNotifier,
+		AuthMiddleware:       authMiddleware,
+		Presenter:            presenter,
+		Validator:            validator.New(),
+		OperatorRepo:         operatorRepo,
+		SettingsService:      settingsService,
+		NotificationSvc:      notificationSvc,
+		WebhookClient:        webhookClient,
+		OrgService:           orgService,
+		OrgSettingsService:    orgSettingsService,
+		MemberService:        memberService,
+		InvitationService:    invitationService,
 	}
 }
 
