@@ -14,7 +14,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/event"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 )
 
 // EventBroadcaster broadcasts events to subscribed clients.
@@ -68,11 +67,6 @@ func NewProcessor(repo event.Repository, deviceRepo device.Repository, broadcast
 		log:         log,
 		thresholds:  DefaultThresholdConfig(),
 	}
-}
-
-// SetOperatorRepo sets the operator repository (DEPRECATED: kept for backward compatibility).
-func (p *Processor) SetOperatorRepo(repo operator.Repository) {
-	p.operatorRepo = repo
 }
 
 // SetDeviceSettingsRepo sets the device settings repository for hierarchical threshold resolution.

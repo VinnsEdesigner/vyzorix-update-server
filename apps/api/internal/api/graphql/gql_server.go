@@ -54,7 +54,6 @@ type Config struct {
 	AuditLogger      *audit.Logger
 	OperatorRepo     operator.Repository
 	SettingsService  *auth.ClientSettingsService
-	ThresholdSvc     *appoperator.ThresholdService
 	NotificationSvc  *appoperator.NotificationService
 	WebhookClient    *infrawebhook.Client
 	OrgService       *orgapp.OrganizationService
@@ -94,7 +93,6 @@ func NewServer(cfg *Config) (*Server, error) {
 		presenter,
 		cfg.OperatorRepo,
 		cfg.SettingsService,
-		cfg.ThresholdSvc,
 		cfg.NotificationSvc,
 		cfg.WebhookClient,
 		cfg.OrgService,

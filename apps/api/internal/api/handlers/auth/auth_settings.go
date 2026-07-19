@@ -185,14 +185,13 @@ func (h *SettingsHandler) UpdateName(c *gin.Context) {
 	}
 
 	h.presenter.OK(c, gin.H{
-		"id":             op.ID,
-		"email":          op.Email,
-		"name":           op.Name,
-		"role":           op.Role,
-		"mfa_enabled":    op.MFAEnabled,
-		"email_verified": op.EmailVerified,
-		"thresholds":     op.Thresholds,
-		"client":         op.ClientSettings,
+		"id":              op.ID,
+		"email":           op.Email,
+		"name":            op.Name,
+		"role":            op.Role,
+		"mfa_enabled":     op.MFAEnabled,
+		"email_verified":  op.EmailVerified,
+		"client":          op.ClientSettings,
 	})
 }
 
@@ -230,150 +229,14 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 	}
 
 	h.presenter.OK(c, gin.H{
-		"id":             op.ID,
-		"email":          op.Email,
-		"name":           op.Name,
-		"role":           op.Role,
-		"mfa_enabled":    op.MFAEnabled,
-		"email_verified": op.EmailVerified,
-		"thresholds":     op.Thresholds,
-		"client":         op.ClientSettings,
+		"id":              op.ID,
+		"email":           op.Email,
+		"name":            op.Name,
+		"role":            op.Role,
+		"mfa_enabled":     op.MFAEnabled,
+		"email_verified":  op.EmailVerified,
+		"client":          op.ClientSettings,
 	})
-}
-
-// GetThresholds handles GET /v1/auth/me/thresholds.
-// DEPRECATED: Thresholds are now managed at device and organization level.
-// Use GET /v1/devices/:imei/settings/thresholds instead.
-func (h *SettingsHandler) GetThresholds(c *gin.Context) {
-	operatorID, err := h.getOperatorFromSession(c)
-	if err != nil {
-		h.presenter.Unauthorized(c, "not authenticated")
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
-	defer cancel()
-
-	thresholds, err := h.operatorRepo.GetThresholds(ctx, operatorID)
-	if err != nil {
-		h.presenter.InternalError(c, "failed to get thresholds")
-		return
-	}
-
-	// Add deprecation header
-	c.Header("Deprecation", "true")
-	c.Header("Sunset", "2025-12-31")
-	c.Header("X_DEPRECATION_NOTICE", "Thresholds are now managed at device/organization level. Use /v1/devices/:imei/settings/thresholds instead.")
-
-	h.presenter.OK(c, thresholds)
-}
-
-// ThresholdUpdateRequest represents threshold update request.
-type ThresholdUpdateRequest struct {
-	RiskWarn    *int `json:"riskWarn,omitempty"`
-	RiskCrit    *int `json:"riskCrit,omitempty"`
-	ThermalWarn *int `json:"thermalWarn,omitempty"`
-	ThermalCrit *int `json:"thermalCrit,omitempty"`
-	BufferWarn  *int `json:"bufferWarn,omitempty"`
-	BufferCrit  *int `json:"bufferCrit,omitempty"`
-}
-
-// UpdateThresholds handles PATCH /v1/auth/me/thresholds.
-// DEPRECATED: Thresholds are now managed at device and organization level.
-// Use PATCH /v1/devices/:imei/settings/thresholds instead.
-func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
-	operatorID, err := h.getOperatorFromSession(c)
-	if err != nil {
-		h.presenter.Unauthorized(c, "not authenticated")
-		return
-	}
-
-	var req ThresholdUpdateRequest
-	if err = c.ShouldBindJSON(&req); err != nil {
-		h.presenter.BadRequest(c, "invalid JSON body")
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
-	defer cancel()
-
-	// Add deprecation header
-	c.Header("Deprecation", "true")
-	c.Header("Sunset", "2025-12-31")
-	c.Header("X_DEPRECATION_NOTICE", "Thresholds are now managed at device/organization level. Use PATCH /v1/devices/:imei/settings/thresholds instead.")
-
-	// Get current thresholds
-	thresholds, err := h.operatorRepo.GetThresholds(ctx, operatorID)
-	if err != nil {
-		h.presenter.InternalError(c, "failed to get current thresholds")
-		return
-	}
-
-	// Track changes for audit
-	changes := make(map[string]interface{})
-
-	// Apply updates
-	if req.RiskWarn != nil {
-		changes["riskWarn"] = map[string]interface{}{"from": thresholds.RiskWarn, "to": *req.RiskWarn}
-		thresholds.RiskWarn = *req.RiskWarn
-	}
-	if req.RiskCrit != nil {
-		changes["riskCrit"] = map[string]interface{}{"from": thresholds.RiskCrit, "to": *req.RiskCrit}
-		thresholds.RiskCrit = *req.RiskCrit
-	}
-	if req.ThermalWarn != nil {
-		changes["thermalWarn"] = map[string]interface{}{"from": thresholds.ThermalWarn, "to": *req.ThermalWarn}
-		thresholds.ThermalWarn = *req.ThermalWarn
-	}
-	if req.ThermalCrit != nil {
-		changes["thermalCrit"] = map[string]interface{}{"from": thresholds.ThermalCrit, "to": *req.ThermalCrit}
-		thresholds.ThermalCrit = *req.ThermalCrit
-	}
-	if req.BufferWarn != nil {
-		changes["bufferWarn"] = map[string]interface{}{"from": thresholds.BufferWarn, "to": *req.BufferWarn}
-		thresholds.BufferWarn = *req.BufferWarn
-	}
-	if req.BufferCrit != nil {
-		changes["bufferCrit"] = map[string]interface{}{"from": thresholds.BufferCrit, "to": *req.BufferCrit}
-		thresholds.BufferCrit = *req.BufferCrit
-	}
-
-	// Validate threshold relationships
-	if thresholds.RiskWarn >= thresholds.RiskCrit {
-		h.presenter.BadRequest(c, "riskWarn must be less than riskCrit")
-		return
-	}
-	if thresholds.ThermalWarn >= thresholds.ThermalCrit {
-		h.presenter.BadRequest(c, "thermalWarn must be less than thermalCrit")
-		return
-	}
-	if thresholds.BufferCrit >= thresholds.BufferWarn {
-		h.presenter.BadRequest(c, "bufferCrit must be less than bufferWarn")
-		return
-	}
-
-	// Save updated thresholds
-	if err = h.operatorRepo.UpdateThresholds(ctx, operatorID, thresholds); err != nil {
-		h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
-			Action:  "update",
-			Section: "thresholds",
-			Changes: changes,
-			Success: false,
-			Error:   err.Error(),
-		})
-		h.presenter.InternalError(c, "failed to update thresholds")
-		return
-	}
-
-	// Log successful update
-	h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
-		Action:  "update",
-		Section: "thresholds",
-		Changes: changes,
-		Success: true,
-	})
-
-	h.presenter.OK(c, thresholds)
 }
 
 // GetNotifications handles GET /v1/auth/me/notifications.

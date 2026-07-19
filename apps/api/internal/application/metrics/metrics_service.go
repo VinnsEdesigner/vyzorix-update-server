@@ -8,29 +8,25 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 )
 
 // Service handles metrics operations.
 type Service struct {
-	metricsRepo       metrics.Repository
-	operatorRepo      operator.Repository
+	metricsRepo        metrics.Repository
 	deviceSettingsRepo device.DeviceSettingsRepository
-	orgSettingsRepo   organization.OrganizationSettingsRepository
+	orgSettingsRepo    organization.OrganizationSettingsRepository
 }
 
 // NewService creates a new metrics service.
 func NewService(
 	metricsRepo metrics.Repository,
-	operatorRepo operator.Repository,
 	deviceSettingsRepo device.DeviceSettingsRepository,
 	orgSettingsRepo organization.OrganizationSettingsRepository,
 ) *Service {
 	return &Service{
-		metricsRepo:       metricsRepo,
-		operatorRepo:      operatorRepo,
+		metricsRepo:        metricsRepo,
 		deviceSettingsRepo: deviceSettingsRepo,
-		orgSettingsRepo:   orgSettingsRepo,
+		orgSettingsRepo:    orgSettingsRepo,
 	}
 }
 
@@ -305,48 +301,6 @@ func (s *Service) convertThresholdEvents(events []*metrics.MetricThresholdEvent)
 		})
 	}
 	return result
-}
-
-// getOperatorThresholds retrieves thresholds using hierarchical resolution.
-// DEPRECATED: Use getResolvedThresholds instead.
-func (s *Service) getOperatorThresholds(ctx context.Context, operatorID string) (*metrics.ThresholdPreset, error) {
-	if operatorID == "" {
-		return defaultThresholds(), nil
-	}
-
-	// Fall back to default if we don't have the new settings repos
-	if s.orgSettingsRepo == nil {
-		return defaultThresholds(), nil
-	}
-
-	// We need the org ID, but operator ID alone isn't enough
-	// Return default - the caller should use getResolvedThresholds with device ID
-	return defaultThresholds(), nil
-}
-
-// getOrganizationThresholds retrieves thresholds from organization settings.
-func (s *Service) getOrganizationThresholds(ctx context.Context, orgID string) (*metrics.ThresholdPreset, error) {
-	if orgID == "" {
-		return defaultThresholds(), nil
-	}
-
-	if s.orgSettingsRepo == nil {
-		return defaultThresholds(), nil
-	}
-
-	orgSettings, err := s.orgSettingsRepo.FindByOrganizationID(ctx, orgID)
-	if err != nil || orgSettings == nil || orgSettings.DefaultThresholds == nil {
-		return defaultThresholds(), nil
-	}
-
-	return &metrics.ThresholdPreset{
-		RiskScoreWarning:  float64(orgSettings.DefaultThresholds.RiskWarn),
-		RiskScoreCritical: float64(orgSettings.DefaultThresholds.RiskCrit),
-		ThermalWarning:    float64(orgSettings.DefaultThresholds.ThermalWarn),
-		ThermalCritical:   float64(orgSettings.DefaultThresholds.ThermalCrit),
-		BufferWarning:     float64(orgSettings.DefaultThresholds.BufferWarn),
-		BufferCritical:    float64(orgSettings.DefaultThresholds.BufferCrit),
-	}, nil
 }
 
 // getResolvedThresholds retrieves thresholds using hierarchical resolution:

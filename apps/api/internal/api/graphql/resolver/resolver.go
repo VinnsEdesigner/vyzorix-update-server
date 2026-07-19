@@ -47,7 +47,6 @@ type Resolver struct {
 	Validator         *validator.Validator
 	OperatorRepo      operator.Repository
 	SettingsService   *auth.ClientSettingsService
-	ThresholdService  *appoperator.ThresholdService
 	NotificationSvc   *appoperator.NotificationService
 	WebhookClient     *infrawebhook.Client
 	// Organization services
@@ -75,7 +74,6 @@ func NewResolver(
 	presenter *gqladapters.Presenter,
 	operatorRepo operator.Repository,
 	settingsService *auth.ClientSettingsService,
-	thresholdService *appoperator.ThresholdService,
 	notificationSvc *appoperator.NotificationService,
 	webhookClient *infrawebhook.Client,
 	orgService *orgapp.OrganizationService,
@@ -101,7 +99,6 @@ func NewResolver(
 		Validator:       validator.New(),
 		OperatorRepo:    operatorRepo,
 		SettingsService: settingsService,
-		ThresholdService: thresholdService,
 		NotificationSvc: notificationSvc,
 		WebhookClient:   webhookClient,
 		OrgService:      orgService,

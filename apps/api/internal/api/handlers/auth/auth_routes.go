@@ -149,8 +149,6 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		authenticated.PATCH("/me", h.Settings.UpdateName)
 		authenticated.GET("/me/settings", h.Settings.GetSettings)
 		authenticated.PATCH("/me/settings", h.Settings.UpdateSettings)
-		authenticated.GET("/me/thresholds", h.Settings.GetThresholds)
-		authenticated.PATCH("/me/thresholds", h.Settings.UpdateThresholds)
 		authenticated.GET("/me/notifications", h.Settings.GetNotifications)
 		authenticated.PATCH("/me/notifications", h.Settings.UpdateNotifications)
 		authenticated.POST("/me/notifications/webhook/test", h.Settings.TestWebhook)
