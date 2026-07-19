@@ -33,6 +33,11 @@ func NewDeviceSettingsService(
 	}
 }
 
+// SettingsRepo returns the settings repository for use by other services.
+func (s *DeviceSettingsService) SettingsRepo() device.DeviceSettingsRepository {
+	return s.settingsRepo
+}
+
 // CreateSettings creates device settings with defaults for a new device.
 func (s *DeviceSettingsService) CreateSettings(ctx context.Context, deviceIMEI string) (*device.DeviceSettings, error) {
 	// Verify device exists

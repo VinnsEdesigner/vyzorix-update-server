@@ -13,6 +13,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/event"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 )
 
@@ -28,7 +29,8 @@ type EventBroadcaster interface {
 type Processor struct {
 	repo               event.Repository
 	deviceRepo         device.Repository
-	operatorRepo       operator.Repository
+	deviceSettingsRepo device.DeviceSettingsRepository
+	orgSettingsRepo   organization.OrganizationSettingsRepository
 	broadcaster        EventBroadcaster
 	notificationSvc    *notification.Service
 	log                *slog.Logger
@@ -68,9 +70,19 @@ func NewProcessor(repo event.Repository, deviceRepo device.Repository, broadcast
 	}
 }
 
-// SetOperatorRepo sets the operator repository for fetching per-operator thresholds.
+// SetOperatorRepo sets the operator repository (DEPRECATED: kept for backward compatibility).
 func (p *Processor) SetOperatorRepo(repo operator.Repository) {
 	p.operatorRepo = repo
+}
+
+// SetDeviceSettingsRepo sets the device settings repository for hierarchical threshold resolution.
+func (p *Processor) SetDeviceSettingsRepo(repo device.DeviceSettingsRepository) {
+	p.deviceSettingsRepo = repo
+}
+
+// SetOrgSettingsRepo sets the organization settings repository for hierarchical threshold resolution.
+func (p *Processor) SetOrgSettingsRepo(repo organization.OrganizationSettingsRepository) {
+	p.orgSettingsRepo = repo
 }
 
 // SetNotificationService sets the notification service for sending alerts.
@@ -81,6 +93,53 @@ func (p *Processor) SetNotificationService(svc *notification.Service) {
 // SetThresholds updates the threshold configuration.
 func (p *Processor) SetThresholds(cfg *ThresholdConfig) {
 	p.thresholds = cfg
+}
+
+// resolveThresholds resolves thresholds using hierarchical resolution:
+// device settings → organization settings → defaults
+func (p *Processor) resolveThresholds(ctx context.Context, deviceID, orgID string) *ThresholdConfig {
+	// Start with defaults
+	result := DefaultThresholdConfig()
+
+	// Get organization thresholds
+	if orgID != "" && p.orgSettingsRepo != nil {
+		orgSettings, err := p.orgSettingsRepo.FindByOrganizationID(ctx, orgID)
+		if err == nil && orgSettings != nil && orgSettings.DefaultThresholds != nil {
+			result.RiskScoreWarning = orgSettings.DefaultThresholds.RiskWarn
+			result.RiskScoreCritical = orgSettings.DefaultThresholds.RiskCrit
+			result.ThermalWarning = float64(orgSettings.DefaultThresholds.ThermalWarn)
+			result.ThermalCritical = float64(orgSettings.DefaultThresholds.ThermalCrit)
+			result.BufferWarning = orgSettings.DefaultThresholds.BufferWarn
+			result.BufferCritical = orgSettings.DefaultThresholds.BufferCrit
+		}
+	}
+
+	// Override with device-specific thresholds
+	if deviceID != "" && p.deviceSettingsRepo != nil {
+		deviceSettings, err := p.deviceSettingsRepo.FindByDeviceIMEI(ctx, deviceID)
+		if err == nil && deviceSettings != nil && deviceSettings.HasThresholds() {
+			if deviceSettings.Thresholds.RiskWarn != 0 {
+				result.RiskScoreWarning = deviceSettings.Thresholds.RiskWarn
+			}
+			if deviceSettings.Thresholds.RiskCrit != 0 {
+				result.RiskScoreCritical = deviceSettings.Thresholds.RiskCrit
+			}
+			if deviceSettings.Thresholds.ThermalWarn != 0 {
+				result.ThermalWarning = float64(deviceSettings.Thresholds.ThermalWarn)
+			}
+			if deviceSettings.Thresholds.ThermalCrit != 0 {
+				result.ThermalCritical = float64(deviceSettings.Thresholds.ThermalCrit)
+			}
+			if deviceSettings.Thresholds.BufferWarn != 0 {
+				result.BufferWarning = deviceSettings.Thresholds.BufferWarn
+			}
+			if deviceSettings.Thresholds.BufferCrit != 0 {
+				result.BufferCritical = deviceSettings.Thresholds.BufferCrit
+			}
+		}
+	}
+
+	return result
 }
 
 // ProcessDeviceConnected handles device connection events.
@@ -200,7 +259,7 @@ func (p *Processor) ProcessDeviceDisconnected(ctx context.Context, deviceID stri
 }
 
 // ProcessTelemetry processes telemetry data and emits events for threshold breaches.
-// It fetches operator-specific thresholds to ensure each operator's custom settings are used.
+// It uses hierarchical threshold resolution: device settings → organization settings → defaults.
 func (p *Processor) ProcessTelemetry(ctx context.Context, deviceID string, telemetryData map[string]any) error {
 	device, err := p.deviceRepo.FindByID(ctx, deviceID)
 	if err != nil {
@@ -208,31 +267,16 @@ func (p *Processor) ProcessTelemetry(ctx context.Context, deviceID string, telem
 	}
 
 	operatorID := ""
+	orgID := ""
 	if device != nil {
 		operatorID = device.OperatorID
+		orgID = device.OrganizationID
 	}
 
-	// Get operator-specific thresholds
-	thresholds := p.thresholds // Start with defaults
-	if operatorID != "" && p.operatorRepo != nil {
-		opThresholds, err := p.operatorRepo.GetThresholds(ctx, operatorID)
-		if err != nil {
-			p.log.Warn("failed to get operator thresholds, using defaults", "operatorId", operatorID, "err", err)
-		} else {
-			// Convert operator thresholds to ThresholdConfig
-			// Note: operator.Thresholds uses int for thermal values, ThresholdConfig uses float64
-			thresholds = &ThresholdConfig{
-				RiskScoreWarning:  opThresholds.RiskWarn,
-				RiskScoreCritical: opThresholds.RiskCrit,
-				ThermalWarning:    float64(opThresholds.ThermalWarn),
-				ThermalCritical:   float64(opThresholds.ThermalCrit),
-				BufferWarning:     opThresholds.BufferWarn,
-				BufferCritical:    opThresholds.BufferCrit,
-			}
-		}
-	}
+	// Get thresholds using hierarchical resolution: device → org → default
+	thresholds := p.resolveThresholds(ctx, deviceID, orgID)
 
-	// Check for threshold breaches using operator-specific thresholds
+	// Check for threshold breaches using resolved thresholds
 	events := p.checkThresholdsWithConfig(deviceID, operatorID, telemetryData, thresholds)
 
 	// Store and broadcast events

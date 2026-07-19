@@ -141,6 +141,8 @@ func ProvideEventProcessor(
 	eventRepo *storage.EventRepository,
 	deviceRepo *storage.DeviceRepository,
 	operatorRepo *storage.OperatorRepository,
+	deviceSettingsRepo *storage.DeviceSettingsRepository,
+	orgSettingsRepo *storage.OrganizationSettingsRepository,
 	hubResult *HubResult,
 	log *slog.Logger,
 ) *eventapp.Processor {
@@ -151,8 +153,10 @@ func ProvideEventProcessor(
 	// Create processor with broadcaster
 	processor := eventapp.NewProcessor(eventRepo, deviceRepo, broadcaster, log)
 
-	// Wire operator repository for per-operator threshold fetching
-	processor.SetOperatorRepo(operatorRepo)
+	// Wire repositories for hierarchical threshold resolution
+	processor.SetOperatorRepo(operatorRepo)  // DEPRECATED: kept for backward compatibility
+	processor.SetDeviceSettingsRepo(deviceSettingsRepo)
+	processor.SetOrgSettingsRepo(orgSettingsRepo)
 
 	hubResult.Hub.SetEventProcessor(processor)
 
