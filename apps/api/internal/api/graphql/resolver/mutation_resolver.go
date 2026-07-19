@@ -3,6 +3,7 @@ package resolver
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
@@ -471,12 +472,21 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 
 	settings, err := r.DeviceSettingsService.UpdateSettings(ctx, deviceImei, settingsReq)
 	if err != nil {
+		if errors.Is(err, devicedomain.ErrSettingsNotFound) {
+			return nil, r.Presenter.NotFoundError("device settings not found")
+		}
+		if errors.Is(err, devicedomain.ErrInvalidThreshold) {
+			return nil, r.Presenter.BadRequestError("invalid threshold values: warning must be less than critical")
+		}
 		return nil, r.Presenter.InternalError("failed to update device settings")
 	}
 
 	// Get organization settings for effective thresholds
 	orgSettings, err := r.OrgSettingsService.GetSettings(ctx, orgID)
 	if err != nil {
+		if errors.Is(err, orgdomain.ErrSettingsNotFound) {
+			return nil, r.Presenter.NotFoundError("organization settings not found")
+		}
 		return nil, r.Presenter.InternalError("failed to get organization settings")
 	}
 
@@ -489,7 +499,7 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		"deviceImei":           settings.DeviceIMEI,
 		"customName":           settings.CustomName,
 		"location":             settings.Location,
-		"metadata":             settings.Metadata,
+		"metadata":             convertMetadataToList(settings.Metadata),
 		"thresholds":           settings.Thresholds,
 		"effectiveThresholds":   effectiveThresholds,
 		"createdAt":            settings.CreatedAt,
@@ -537,6 +547,12 @@ func (r *Resolver) UpdateOrganizationSettings(p graphql.ResolveParams) (interfac
 
 	settings, err := r.OrgSettingsService.UpdateSettings(ctx, orgID, settingsReq)
 	if err != nil {
+		if errors.Is(err, orgdomain.ErrSettingsNotFound) {
+			return nil, r.Presenter.NotFoundError("organization settings not found")
+		}
+		if errors.Is(err, orgdomain.ErrInvalidThreshold) {
+			return nil, r.Presenter.BadRequestError("invalid threshold values: warning must be less than critical")
+		}
 		return nil, r.Presenter.InternalError("failed to update organization settings")
 	}
 

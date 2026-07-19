@@ -107,12 +107,24 @@ func (r *Resolver) GetDeviceSettings(p graphql.ResolveParams) (interface{}, erro
 		"deviceImei":           settings.DeviceIMEI,
 		"customName":           settings.CustomName,
 		"location":             settings.Location,
-		"metadata":             settings.Metadata,
+		"metadata":             convertMetadataToList(settings.Metadata),
 		"thresholds":            settings.Thresholds,
 		"effectiveThresholds":  effectiveThresholds,
 		"createdAt":            settings.CreatedAt,
 		"updatedAt":            settings.UpdatedAt,
 	}, nil
+}
+
+// convertMetadataToList converts a metadata map to a list of {key, value} entries.
+func convertMetadataToList(metadata map[string]string) []map[string]string {
+	if metadata == nil {
+		return nil
+	}
+	result := make([]map[string]string, 0, len(metadata))
+	for k, v := range metadata {
+		result = append(result, map[string]string{"key": k, "value": v})
+	}
+	return result
 }
 
 // GetOrganizationSettings resolves the organizationSettings query.
