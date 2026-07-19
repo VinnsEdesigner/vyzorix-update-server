@@ -437,6 +437,11 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		return nil, r.Presenter.BadRequestError("device IMEI is required")
 	}
 
+	// Check if operator is a member of the organization
+	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("not a member of this organization")
+	}
+
 	input, ok := p.Args["input"].(map[string]interface{})
 	if !ok {
 		return nil, r.Presenter.BadRequestError("invalid input")
@@ -519,6 +524,11 @@ func (r *Resolver) UpdateOrganizationSettings(p graphql.ResolveParams) (interfac
 	orgID, ok := p.Args["organizationId"].(string)
 	if !ok {
 		return nil, r.Presenter.BadRequestError("organization ID is required")
+	}
+
+	// Check if operator is a member of the organization
+	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("not a member of this organization")
 	}
 
 	input, ok := p.Args["input"].(map[string]interface{})
