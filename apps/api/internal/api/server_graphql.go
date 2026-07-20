@@ -32,6 +32,7 @@ import (
 // RegisterGraphQL initializes and registers the GraphQL server with the API server.
 func (s *Server) RegisterGraphQL(
 	deviceService *device.Service,
+	deviceSettingsService *device.DeviceSettingsService,
 	commandService *command.Service,
 	historyService *command.HistoryService,
 	dashboardSvc *dashboard.Service,
@@ -45,10 +46,10 @@ func (s *Server) RegisterGraphQL(
 	diagnosticsSvc *diagnosticsapp.Service,
 	operatorRepo operator.Repository,
 	settingsService *appsvc.ClientSettingsService,
-	thresholdService *appoperator.ThresholdService,
 	notificationSvc *appoperator.NotificationService,
 	webhookClient *infrawebhook.Client,
 	orgService *orgapp.OrganizationService,
+	orgSettingsService *orgapp.OrganizationSettingsService,
 	memberService *orgapp.MemberService,
 	invitationService *orgapp.InvitationService,
 ) error {
@@ -65,6 +66,7 @@ func (s *Server) RegisterGraphQL(
 	// Create resolver with presenter
 	res := resolver.NewResolver(
 		deviceService,
+		deviceSettingsService,
 		commandService,
 		historyService,
 		dashboardSvc,
@@ -81,10 +83,10 @@ func (s *Server) RegisterGraphQL(
 		gqlPresenter,
 		operatorRepo,
 		settingsService,
-		thresholdService,
 		notificationSvc,
 		webhookClient,
 		orgService,
+		orgSettingsService,
 		memberService,
 		invitationService,
 	)

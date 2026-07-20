@@ -36,26 +36,6 @@ func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
 		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
-// GetDeviceInspection handles GET /v1/device/:imei/inspect.
-// Returns full device inspection data for the Diagnostics Inspector.
-func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
-	imei := c.Param("imei")
-	if imei == "" {
-		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
-			Error:   "bad_request",
-			Message: "IMEI is required",
-		})
-		return
-	}
-
-	// Require organization context for multi-tenant isolation
-	orgID := middleware.GetOrganizationID(c)
-// GetDeviceInspection handles GET /v1/device/:imei/inspect.
-// Returns full device inspection data for the Diagnostics Inspector.
-func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
-	imei := c.Param("imei")
-	if imei == "" {
-		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
 			Error:   "bad_request",
 			Message: "IMEI is required",
 		})
@@ -117,8 +97,6 @@ func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, inspection)
-}
 	c.JSON(http.StatusOK, inspection)
 }
 

@@ -58,6 +58,12 @@ func (s *Service) cleanupCache() {
 		for key, entry := range s.inspectCache {
 			if entry.ExpiresAt.Before(now) {
 				delete(s.inspectCache, key)
+			}
+		}
+		s.cacheMu.Unlock()
+	}
+}
+
 // getCachedInspection retrieves cached inspection if not expired.
 func (s *Service) getCachedInspection(cacheKey string) *HTTPInspectionResponse {
 	s.cacheMu.RLock()
@@ -81,24 +87,6 @@ func (s *Service) cacheInspection(cacheKey string, data *HTTPInspectionResponse)
 // GetDeviceInspection retrieves full device inspection data.
 // Requires orgID for multi-tenant isolation.
 func (s *Service) GetDeviceInspection(ctx context.Context, imei, orgID string) (*diagnostics.DeviceInspection, error) {
-	dev, err := s.deviceRepo.FindByIMEI(ctx, imei)
-	if err != nil {
-		return nil, err
-	}
-	if dev == nil {
-		return nil, diagnostics.ErrDeviceNotFound
-	}
-
-	// Verify device belongs to organization
-	if orgID != "" && dev.OrganizationID != orgID {
-		return nil, diagnostics.ErrDeviceNotFound
-	}
-	}
-
-	// Verify device belongs to organization
-	if orgID != "" && dev.OrganizationID != orgID {
-		return nil, diagnostics.ErrDeviceNotFound
-	}
 	dev, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil {
 		return nil, err
@@ -177,9 +165,15 @@ func (s *Service) GetDeviceInspection(ctx context.Context, imei, orgID string) (
 		telemetry.AvgLatencyMs = s.hub.GetAverageLatency(dev.ID)
 	}
 
-	lastTelemetry, err := s.diagnosticsRepo.GetLastTelemetry(ctx, dev.ID)
-	// ErrNoTelemetryData is expected - device may have no telemetry yet
-	// Other errors are also treated as "no telemetry" since it's supplementary data
+	return &diagnostics.DeviceInspection{
+		Identity:     identity,
+		Software:     software,
+		Registration: registration,
+		Connection:   connection,
+		Telemetry:    *telemetry,
+	}, nil
+}
+
 // GetDeviceInspectionHTTP returns HTTP-specific response with int64 timestamps per spec.
 // Results are cached for 10 seconds per spec.
 // Requires orgID for multi-tenant isolation.
@@ -249,24 +243,7 @@ func (s *Service) GetDeviceInspectionHTTP(ctx context.Context, imei, orgID strin
 
 	return resp, nil
 }
-	return resp, nil
-}
-	}
-	if inspection.Connection.ConnectedAt != nil {
-		resp.Connection.ConnectedAt = inspection.Connection.ConnectedAt.UnixMilli()
-	}
-	if inspection.Connection.LastSeen != nil {
-		resp.Connection.LastSeen = inspection.Connection.LastSeen.UnixMilli()
-	}
-	if !inspection.Telemetry.LastTimestamp.IsZero() {
-		resp.Telemetry.LastTimestamp = inspection.Telemetry.LastTimestamp.UnixMilli()
-	}
 
-	// Cache the response
-	s.cacheInspection(cacheKey, resp)
-
-	return resp, nil
-}
 // GetDeviceTimeline retrieves paginated timeline events for a device.
 // Requires orgID for multi-tenant isolation.
 func (s *Service) GetDeviceTimeline(ctx context.Context, imei string, req *TimelineRequest, orgID string) (*TimelineResponse, error) {
@@ -276,19 +253,6 @@ func (s *Service) GetDeviceTimeline(ctx context.Context, imei string, req *Timel
 		return nil, err
 	}
 	if dev == nil {
-		return nil, diagnostics.ErrDeviceNotFound
-	}
-
-	// Verify device belongs to organization
-	if orgID != "" && dev.OrganizationID != orgID {
-		return nil, diagnostics.ErrDeviceNotFound
-	}
-	}
-
-	// Verify device belongs to organization
-	if orgID != "" && dev.OrganizationID != orgID {
-		return nil, diagnostics.ErrDeviceNotFound
-	}
 		return nil, diagnostics.ErrDeviceNotFound
 	}
 
@@ -494,6 +458,10 @@ func generateID() string {
 	if _, err := cryptoRand.Read(b); err != nil {
 		// Fallback to timestamp-based if crypto/rand fails
 		return fmt.Sprintf("evt_%d_%d", time.Now().UnixNano(), time.Now().UnixMicro())
+	}
+	return fmt.Sprintf("evt_%x", b)
+}
+
 // AuthorizationResponse represents device authorization result.
 type AuthorizationResponse struct {
 	Authorized bool
@@ -516,20 +484,6 @@ func (s *Service) VerifyDeviceOwnership(ctx context.Context, imei, operatorID, o
 	// Check org membership - device must belong to the organization
 	if orgID != "" && dev.OrganizationID != orgID {
 		return &AuthorizationResponse{Authorized: false, Forbidden: true}
-	}
-
-	if dev.OperatorID != operatorID {
-		// Device exists but belongs to different operator
-		return &AuthorizationResponse{Authorized: false, Forbidden: true}
-	}
-
-	return &AuthorizationResponse{Authorized: true, Forbidden: false}
-}
-		return &AuthorizationResponse{Authorized: false, Forbidden: true}
-	}
-
-	return &AuthorizationResponse{Authorized: true, Forbidden: false}
-}
 	}
 
 	if dev.OperatorID != operatorID {

@@ -383,9 +383,7 @@ func testCommandEndpoints() []EndpointResult {
 	base := "/v1"
 	dispatchID := fmt.Sprintf("dispatch-%d", time.Now().Unix())
 
-	// First register a device
-// DEPRECATED: 	testRequest("POST", BaseURL+base+"/device/register",
-		map[string]interface{}{"device_id": deviceID, "name": "Command Test", "platform": "android", "app_version": "1.0.0"})
+	// First register a device (deprecated)
 
 	// Send command
 	results = append(results, testRequest("POST", BaseURL+base+"/device/"+deviceID+"/command",
@@ -515,10 +513,8 @@ func testDatabaseOperations() []EndpointResult {
 
 	results = append(results, res)
 
-	// Register device
+	// Register device (deprecated)
 	deviceID := fmt.Sprintf("dbtest-device-%d", time.Now().Unix())
-// DEPRECATED: // DEPRECATED: 	res = testRequest("POST", BaseURL+"/v1/device/register",
-		map[string]interface{}{"device_id": deviceID, "name": "DB Test Device", "platform": "android", "app_version": "1.0.0"})
 	res.DBTested = true
 
 	if res.StatusCode >= 200 && res.StatusCode < 300 {

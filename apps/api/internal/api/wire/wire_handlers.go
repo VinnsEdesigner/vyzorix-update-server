@@ -2,6 +2,8 @@
 package wire
 
 import (
+	"context"
+
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
@@ -27,7 +29,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"log/slog"
 )
 
@@ -37,7 +39,7 @@ type HandlerDependencies struct {
 	FCMNotifier              fcm.Notifier
 	OAuthStateRepo           authhandlers.OAuthStateProvider
 	Presenter                *response.Presenter
-	Hub                      *ws.Hub
+	Hub                      *hub.Hub
 	EmailService             *emailService.Service
 	Lockout                  *middleware.Lockout
 	DB                       *storage.SQLite
@@ -58,36 +60,36 @@ type HandlerDependencies struct {
 	MemberService            *orgapplication.MemberService
 	InvitationService        *orgapplication.InvitationService
 	OrgSettingsService       *orgapplication.OrganizationSettingsService
-	OrganizationRepo         orgapplication.OrganizationRepository
-	MemberRepo               orgapplication.MemberRepository
 	DeviceSettingsService    *device.DeviceSettingsService
 }
 
 // HandlerSet contains all handler instances.
 type HandlerSet struct {
-	Auth              *authhandlers.AllHandlers
+	Auth               *authhandlers.AllHandlers
 	// DEPRECATED: DeviceRegister - /v1/device/register endpoint removed
 	// DeviceRegister     *devicehandlers.RegisterHandler
-	DeviceStatus      *devicehandlers.StatusHandler
-	DeviceUpdater     *devicehandlers.UpdaterHandler
-	DeviceList        *devicehandlers.ListHandler
-	Devices           *devicehandlers.DevicesHandler
-	DeviceSettings    *devicehandlers.SettingsHandler
-	Command           *cmdhandlers.ExecuteHandler
-	Stream            *websockethandlers.StreamHandler
-	TelemetryHistory  *handlers.TelemetryHistoryHandler
-	ConnectionStatus  *handlers.ConnectionStatusHandler
-	AdminClients      *admin.ClientsHandler
-	Updates           *updateshandlers.UpdatesHandler
-	UpdatesService    *updatesapplication.Service
-	Organization      *organizationhandlers.OrganizationHandler
-	Invitation        *organizationhandlers.InvitationHandler
-	Member            *organizationhandlers.MemberHandler
-	Transfer          *devicehandlers.TransferHandler
-	OrgService        *orgapplication.OrganizationService
-	MemberService     *orgapplication.MemberService
-	InvitationService *orgapplication.InvitationService
-	OrgSettings       *organizationhandlers.SettingsHandler
+	DeviceStatus       *devicehandlers.StatusHandler
+	DeviceUpdater      *devicehandlers.UpdaterHandler
+	DeviceList         *devicehandlers.ListHandler
+	Devices            *devicehandlers.DevicesHandler
+	DeviceSettings     *devicehandlers.SettingsHandler
+	Command            *cmdhandlers.ExecuteHandler
+	Stream             *websockethandlers.StreamHandler
+	TelemetryHistory   *handlers.TelemetryHistoryHandler
+	ConnectionStatus   *handlers.ConnectionStatusHandler
+	AdminClients       *admin.ClientsHandler
+	Updates            *updateshandlers.UpdatesHandler
+	UpdatesService     *updatesapplication.Service
+	Organization       *organizationhandlers.OrganizationHandler
+	Invitation         *organizationhandlers.InvitationHandler
+	Member             *organizationhandlers.MemberHandler
+	Transfer           *devicehandlers.TransferHandler
+	OrgService         *orgapplication.OrganizationService
+	OrgSettingsService *orgapplication.OrganizationSettingsService
+	MemberService      *orgapplication.MemberService
+	InvitationService  *orgapplication.InvitationService
+	OrgSettings        *organizationhandlers.SettingsHandler
+	DeviceSettingsService *device.DeviceSettingsService
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -196,8 +198,9 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	if deps.OrgService != nil && deps.MemberService != nil {
 		hs.Organization = organizationhandlers.NewOrganizationHandler(deps.OrgService, deps.MemberService, deps.Presenter)
 		hs.Invitation = organizationhandlers.NewInvitationHandler(deps.InvitationService, deps.MemberService, deps.Presenter)
-		hs.Member = organizationhandlers.NewMemberHandler(deps.MemberService, deps.OrgService, deps.Presenter)
+		hs.Member = organizationhandlers.NewMemberHandler(deps.MemberService, deps.Presenter)
 		hs.OrgService = deps.OrgService
+		hs.OrgSettingsService = deps.OrgSettingsService
 		hs.MemberService = deps.MemberService
 		hs.InvitationService = deps.InvitationService
 
@@ -217,6 +220,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 			return deps.MemberService.CheckMembership(ctx, operatorID, orgID)
 		}
 		hs.DeviceSettings = devicehandlers.NewDeviceSettingsHandler(deps.DeviceSettingsService, membershipChecker, deps.Presenter)
+		hs.DeviceSettingsService = deps.DeviceSettingsService
 	}
 
 	// Device transfer handler

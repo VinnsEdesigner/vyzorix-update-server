@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
@@ -28,6 +29,13 @@ func NewListHandler(deviceService *device.Service, hub *hub.Hub) *ListHandler {
 // Handle processes the device listing request with pagination.
 func (h *ListHandler) Handle(c *gin.Context) {
 	ctx := c.Request.Context()
+
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "organization context required"})
+		return
+	}
 
 	// Parse pagination parameters.
 	limit := 50
@@ -61,8 +69,8 @@ func (h *ListHandler) Handle(c *gin.Context) {
 		filterOnline = &v
 	}
 
-	// Get paginated devices.
-	response, err := h.deviceService.List(ctx, limit, offset)
+	// Get paginated devices filtered by organization.
+	response, err := h.deviceService.ListByOrganization(ctx, orgID, limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Invalid request"})
 		return
@@ -205,7 +213,13 @@ func (h *ListHandler) GetDevice(c *gin.Context) {
 
 // Count handles GET /v1/device/count.
 func (h *ListHandler) Count(c *gin.Context) {
-	count, err := h.deviceService.Count(c.Request.Context())
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "organization context required"})
+		return
+	}
+
+	count, err := h.deviceService.CountByOrganization(c.Request.Context(), orgID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 		return

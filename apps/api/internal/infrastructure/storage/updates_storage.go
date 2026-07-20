@@ -388,6 +388,30 @@ func (s *UpdatesStorage) GetPushDevices(ctx context.Context, pushID string, orgI
 	return devices, rows.Err()
 }
 
+// GetPushDevicesByPushID returns push devices for a push without org filtering (internal use only).
+func (s *UpdatesStorage) GetPushDevicesByPushID(ctx context.Context, pushID string) ([]*updates.UpdatePushDevice, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT upd.id, upd.push_id, upd.device_id, upd.status, upd.sent_at, upd.acknowledged_at, upd.error, upd.retry_count, upd.created_at, upd.updated_at
+		FROM update_push_devices upd
+		WHERE upd.push_id = ?
+		ORDER BY upd.created_at ASC
+	`, pushID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var devices []*updates.UpdatePushDevice
+	for rows.Next() {
+		d, err := s.scanPushDeviceRows(rows)
+		if err != nil {
+			return nil, err
+		}
+		devices = append(devices, d)
+	}
+	return devices, rows.Err()
+}
+
 func (s *UpdatesStorage) UpdatePushDeviceStatus(ctx context.Context, id string, status updates.DevicePushStatus, errorMsg string) error {
 	now := time.Now().UnixMilli()
 	var sentAt, ackAt *int64

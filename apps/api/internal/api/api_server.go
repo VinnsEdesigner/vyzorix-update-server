@@ -30,8 +30,11 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
@@ -69,6 +72,9 @@ type ServerConfig struct {
 	UpdatesService *updatesapp.Service
 	APIKeyService  *keys.APIKeyService
 	Config         config.Config
+	// New settings services for hierarchical threshold resolution
+	DeviceSettingsService *device.DeviceSettingsService
+	OrgSettingsService   *orgapplication.OrganizationSettingsService
 }
 
 // Server is the main API server.
@@ -232,14 +238,12 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 
 	// WebSocket handler
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
+
 	// Telemetry history handler
 	s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(
 		cfg.Log,
 		storage.NewTelemetryRepository(cfg.DB.DB()),
 		storage.NewDeviceRepository(cfg.DB.DB()),
-		nil,
-	)
-	)
 		nil,
 	)
 
@@ -293,7 +297,16 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	}
 
 	if metricsRepo != nil {
-		metricsSvc = appmetrics.NewService(metricsRepo, cfg.OperatorRepo)
+		// Get repositories for hierarchical threshold resolution
+		var deviceSettingsRepo devicedomain.DeviceSettingsRepository
+		var orgSettingsRepo organization.OrganizationSettingsRepository
+		if cfg.DeviceSettingsService != nil {
+			deviceSettingsRepo = cfg.DeviceSettingsService.SettingsRepo()
+		}
+		if cfg.OrgSettingsService != nil {
+			orgSettingsRepo = cfg.OrgSettingsService.SettingsRepo()
+		}
+		metricsSvc = appmetrics.NewService(metricsRepo, deviceSettingsRepo, orgSettingsRepo)
 	}
 
 	if cfg.CommandService != nil && cfg.DeviceService != nil && logsRepo != nil {
@@ -301,8 +314,8 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	}
 
 	// Create handlers
-	if historySvc != nil {
-		s.commandHistoryHandler = cmdhandlers.NewHistoryHandler(historySvc, cfg.Log)
+	if historySvc != nil && cfg.DeviceService != nil {
+		s.commandHistoryHandler = cmdhandlers.NewHistoryHandler(historySvc, cfg.DeviceService.DeviceRepo(), cfg.Log)
 	}
 
 	if logsSvc != nil && cfg.DeviceService != nil {

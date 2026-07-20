@@ -12,10 +12,9 @@ import (
 
 // UpdateSettingsRequest represents a request to update operator settings.
 type UpdateSettingsRequest struct {
-	Thresholds *operator.Thresholds     `json:"thresholds,omitempty"`
-	Client     *operator.ClientSettings `json:"client,omitempty"`
-	Name       *string                  `json:"name,omitempty"`
-	Reset      bool                     `json:"reset,omitempty"`
+	Client *operator.ClientSettings `json:"client,omitempty"`
+	Name   *string                  `json:"name,omitempty"`
+	Reset  bool                     `json:"reset,omitempty"`
 }
 
 // UpdateOperatorName updates an operator's name.
@@ -60,14 +59,6 @@ func (s *AuthService) UpdateSettings(ctx context.Context, operatorID string, req
 		if err := s.operatorRepo.Update(ctx, op); err != nil {
 			return nil, err
 		}
-	}
-
-	// Update thresholds in operator_settings table
-	if req.Thresholds != nil {
-		if err := s.operatorRepo.UpdateThresholds(ctx, operatorID, *req.Thresholds); err != nil {
-			return nil, err
-		}
-		op.Thresholds = *req.Thresholds
 	}
 
 	// Update client settings in operator_settings table with validation

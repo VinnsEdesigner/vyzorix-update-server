@@ -1,8 +1,6 @@
 package updates
 
 import (
-	"log/slog"
-
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
@@ -32,6 +30,11 @@ func NewUpdatesHandler(service *updates.Service, pushService *updates.PushServic
 		pushHandler:      NewUpdatesPushHandler(service, auditLogger),
 		historyHandler:   NewUpdatesHistoryHandler(service, auditLogger),
 		syncHandler:      NewUpdatesSyncHandler(service, auditLogger),
+		auditLogger:      auditLogger,
+		webhookSecret:    webhookSecret,
+	}
+}
+
 // RegisterRoutes registers all updates routes.
 func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth, membershipChecker middleware.OrganizationMembershipChecker) {
 	// Device callback endpoint - public (no auth required, device identifies itself)
@@ -113,25 +116,6 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 
 		// Remaining routes without rate limiting
 		updatesGroup.GET("/status", h.versionsHandler.GetStatus)
-		updatesGroup.GET("/versions", h.versionsHandler.GetVersions)
-		updatesGroup.GET("/changelog", h.versionsHandler.GetChangelog)
-		updatesGroup.GET("/export", h.versionsHandler.Export)
-		updatesGroup.GET("/history", h.historyHandler.GetHistory)
-		updatesGroup.GET("/history/:pushId", h.historyHandler.GetPushDetail)
-		updatesGroup.GET("/sync/status", h.syncHandler.GetSyncStatus)
-
-		// Webhook - no cookie auth (uses HMAC signature)
-		if h.webhookHandler != nil {
-			updatesGroup.POST("/webhook/github",
-				h.webhookHandler.HandleWebhook)
-			updatesGroup.GET("/webhook/info",
-				h.webhookHandler.GetWebhookInfo)
-		}
-	}
-}
-		}
-	}
-}
 		updatesGroup.GET("/versions", h.versionsHandler.GetVersions)
 		updatesGroup.GET("/changelog", h.versionsHandler.GetChangelog)
 		updatesGroup.GET("/export", h.versionsHandler.Export)

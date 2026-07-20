@@ -30,26 +30,6 @@ func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
 		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
-// GetDeviceTimeline handles GET /v1/device/:imei/timeline.
-// Returns chronological event timeline for the Diagnostics Timeline.
-func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
-	imei := c.Param("imei")
-	if imei == "" {
-		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
-			Error:   "bad_request",
-			Message: "IMEI is required",
-		})
-		return
-	}
-
-	// Require organization context for multi-tenant isolation
-	orgID := middleware.GetOrganizationID(c)
-// GetDeviceTimeline handles GET /v1/device/:imei/timeline.
-// Returns chronological event timeline for the Diagnostics Timeline.
-func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
-	imei := c.Param("imei")
-	if imei == "" {
-		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
 			Error:   "bad_request",
 			Message: "IMEI is required",
 		})
@@ -122,8 +102,6 @@ func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, result)
-}
 	c.JSON(http.StatusOK, result)
 }
 

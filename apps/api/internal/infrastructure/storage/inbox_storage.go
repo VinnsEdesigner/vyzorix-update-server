@@ -89,56 +89,6 @@ func (r *InboxRepository) GetByIMEI(ctx context.Context, imei string) (*inbox.In
 	return r.scanEntry(r.queryRow(ctx, query, imei))
 }
 
-// List retrieves paginated inbox entries with optional status filter.
-func (r *InboxRepository) List(ctx context.Context, status string, limit, offset int) ([]*inbox.InboxEntry, int, error) {
-	if limit <= 0 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
-
-	var whereClause string
-	args := []interface{}{}
-
-	switch strings.ToLower(status) {
-	case "pending", "approved", "rejected":
-		whereClause = "WHERE status = ?"
-		args = append(args, status)
-	case "all":
-		whereClause = ""
-	default:
-		whereClause = "WHERE status = 'pending'"
-		args = append(args, "pending")
-	}
-
-	// Get total count
-	var total int
-	countQuery := "SELECT COUNT(*) FROM inbox_requests " + whereClause
-	if err := r.queryRow(ctx, countQuery, args...).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	// Get entries
-	listQuery := `
-		SELECT id, device_imei, firebase_install_id, fcm_token, device_name,
-			   manufacturer, os_version, app_version, device_class, device_model, status,
-			   reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
-			   command_secret, created_at, updated_at
-		FROM inbox_requests
-		` + whereClause + `
-		ORDER BY created_at DESC
-		LIMIT ? OFFSET ?`
-
-	args = append(args, limit, offset)
-	rows, err := r.queryRows(ctx, listQuery, args...)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	var entries []*inbox.InboxEntry
-	for rows.Next() {
 // ListByOperator retrieves paginated inbox entries for a specific operator within an organization with optional status filter.
 func (r *InboxRepository) ListByOperator(ctx context.Context, operatorID, orgID, status string, limit, offset int) ([]*inbox.InboxEntry, int, error) {
 	if limit <= 0 {
@@ -178,18 +128,6 @@ func (r *InboxRepository) ListByOperator(ctx context.Context, operatorID, orgID,
 	var total int
 	countQuery := "SELECT COUNT(*) FROM inbox_requests " + whereClause
 	if err := r.queryRow(ctx, countQuery, args...).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	// Get entries
-	listQuery := `
-		SELECT id, device_imei, firebase_install_id, fcm_token, device_name,
-			   manufacturer, os_version, app_version, device_class, device_model, status,
-			   reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
-			   command_secret, created_at, updated_at
-		FROM inbox_requests
-		` + whereClause + `
-		` + whereClause + `
 		return nil, 0, err
 	}
 

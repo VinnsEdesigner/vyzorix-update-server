@@ -18,6 +18,8 @@ type ClientsHandler struct {
 // NewClientsHandler creates a new ClientsHandler.
 func NewClientsHandler(clientService *client.Service) *ClientsHandler {
 	return &ClientsHandler{clientService: clientService}
+}
+
 // requireAdmin is middleware that ensures the request is from an admin user in the org context.
 func requireAdmin(c *gin.Context) bool {
 	op := middleware.GetOperatorFromContext(c)
@@ -39,11 +41,6 @@ func requireAdmin(c *gin.Context) bool {
 		return false
 	}
 
-	return true
-}
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "admin access required"})
-		return false
-	}
 	return true
 }
 

@@ -140,7 +140,8 @@ func ProvideUpdatesStorage(db *sql.DB) *storage.UpdatesStorage {
 func ProvideEventProcessor(
 	eventRepo *storage.EventRepository,
 	deviceRepo *storage.DeviceRepository,
-	operatorRepo *storage.OperatorRepository,
+	deviceSettingsRepo *storage.DeviceSettingsRepository,
+	orgSettingsRepo *storage.OrganizationSettingsRepository,
 	hubResult *HubResult,
 	log *slog.Logger,
 ) *eventapp.Processor {
@@ -151,8 +152,9 @@ func ProvideEventProcessor(
 	// Create processor with broadcaster
 	processor := eventapp.NewProcessor(eventRepo, deviceRepo, broadcaster, log)
 
-	// Wire operator repository for per-operator threshold fetching
-	processor.SetOperatorRepo(operatorRepo)
+	// Wire repositories for hierarchical threshold resolution
+	processor.SetDeviceSettingsRepo(deviceSettingsRepo)
+	processor.SetOrgSettingsRepo(orgSettingsRepo)
 
 	hubResult.Hub.SetEventProcessor(processor)
 
@@ -277,7 +279,7 @@ func ProvideOrganizationService(
 	orgRepo *storage.OrganizationStorage,
 	memberRepo *storage.MemberStorage,
 	invitationRepo *storage.InvitationStorage,
-	operatorRepo *storage.OperatorStorage,
+	operatorRepo *storage.OperatorRepository,
 	txManager transaction.TxManager,
 	log *slog.Logger,
 ) *orgapplication.OrganizationService {
@@ -296,7 +298,6 @@ func ProvideMemberService(
 // ProvideInvitationService creates the invitation service.
 func ProvideInvitationService(
 	invitationRepo *storage.InvitationStorage,
-	operatorRepo *storage.OperatorStorage,
 	orgRepo *storage.OrganizationStorage,
 	memberRepo *storage.MemberStorage,
 	txManager transaction.TxManager,
@@ -539,7 +540,8 @@ func ProvideHandlerSet(
 		Lockout:        lockout,
 		OperatorRepo:   operatorRepo,
 		AuditLogger:    auditLogger,
-	// DEPRECATED: hs.DeviceRegister = devicehandlers.NewRegisterHandler(deviceService) // /v1/device/register removed
+	})
+
 	hs.DeviceStatus = devicehandlers.NewStatusHandler(deviceService)
 	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deviceService)
 	hs.DeviceList = devicehandlers.NewListHandler(deviceService, hubResult.Hub)
@@ -547,11 +549,6 @@ func ProvideHandlerSet(
 	hs.Stream = websockethandlers.NewStreamHandler(log, cfg, hubResult.Hub, *hmacVerifier, auditLogger)
 	hs.TelemetryHistory = handlers.NewTelemetryHistoryHandler(log, storage.NewTelemetryRepository(db), storage.NewDeviceRepository(db), nil)
 	hs.ConnectionStatus = handlers.NewConnectionStatusHandler(log, hubResult.Hub, storage.NewDeviceRepository(db))
-	hs.AdminClients = admin.NewClientsHandler(clientService)
-	hs.Updates = updatesHandler
-
-	return hs
-}
 	hs.AdminClients = admin.NewClientsHandler(clientService)
 	hs.Updates = updatesHandler
 

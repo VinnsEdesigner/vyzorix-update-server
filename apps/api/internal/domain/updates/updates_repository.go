@@ -28,6 +28,7 @@ type Repository interface {
 	// Push device operations
 	CreatePushDevice(ctx context.Context, d *UpdatePushDevice) error
 	GetPushDevices(ctx context.Context, pushID string, orgID string) ([]*UpdatePushDevice, error)
+	GetPushDevicesByPushID(ctx context.Context, pushID string) ([]*UpdatePushDevice, error)
 	GetPushDeviceByPushAndDevice(ctx context.Context, pushID, deviceID string) (*UpdatePushDevice, error)
 	UpdatePushDeviceStatus(ctx context.Context, id string, status DevicePushStatus, errorMsg string) error
 	UpdatePushDeviceStatusByDispatch(ctx context.Context, dispatchID, deviceID string, status DevicePushStatus, errorMsg string) error

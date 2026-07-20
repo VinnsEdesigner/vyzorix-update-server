@@ -65,12 +65,26 @@ func Injector(cfg config.Config) (*Server, error) {
 	notificationRepository := ProvideNotificationAuditRepository(db)
 	// Create notification service
 	notificationService := ProvideNotificationService(operatorRepository, emailService, webhookClient, notificationRepository, logger)
+	// Create organization repositories
+	orgStorage := ProvideOrganizationRepository(db)
+	memberStorage := ProvideMemberRepository(db)
+	invitationStorage := ProvideInvitationRepository(db)
+	txManager := ProvideTxManager(db)
+	// Create organization services
+	orgService := ProvideOrganizationService(orgStorage, memberStorage, invitationStorage, operatorRepository, txManager, logger)
+	memberService := ProvideMemberService(memberStorage, orgStorage, logger)
+	invitationService := ProvideInvitationService(invitationStorage, orgStorage, memberStorage, txManager, emailService, logger, cfg)
+	// Create settings repositories and services
+	orgSettingsRepository := ProvideOrganizationSettingsRepository(db)
+	orgSettingsService := ProvideOrganizationSettingsService(orgSettingsRepository, orgStorage, memberStorage)
+	deviceSettingsRepository := ProvideDeviceSettingsRepository(db)
+	deviceSettingsService := ProvideDeviceSettingsService(deviceSettingsRepository, deviceRepository, orgSettingsRepository)
 	// Create event processor and wire notification service
-	eventProcessor := ProvideEventProcessor(eventRepository, deviceRepository, operatorRepository, hubResult, logger)
+	eventProcessor := ProvideEventProcessor(eventRepository, deviceRepository, deviceSettingsRepository, orgSettingsRepository, hubResult, logger)
 	WireNotificationServiceToProcessor(eventProcessor, notificationService)
 	apiKeyRepository := ProvideAPIKeyRepository(db)
 	apiKeyService := ProvideAPIKeyService(apiKeyRepository, cfg)
-	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService, apiKeyService)
+	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService, apiKeyService, orgService, memberService, invitationService, orgSettingsService, deviceSettingsService)
 	serverResult := ProvideServerResult(serverDependencies)
 	server := ProvideServer(serverDependencies, serverResult)
 	return server, nil

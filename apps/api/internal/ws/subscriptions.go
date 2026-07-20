@@ -50,7 +50,7 @@ func (h *Hub) InitSubscriptions() {
 			hub:           h,
 			deviceUpdates: make(map[string][]callbackWrapper),
 			telemetry:     make(map[string][]callbackWrapper),
-			commandStatus: make(map[string]subscriptionCallback),
+			commandStatus: make(map[string][]callbackWrapper),
 			orgEvents:     make(map[string][]callbackWrapper),
 			memberEvents:  make(map[string][]callbackWrapper),
 		}

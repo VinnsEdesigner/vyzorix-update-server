@@ -1693,7 +1693,43 @@ var NotificationSettingsType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.NewNonNull(WebhookSettingsType),
 			Description: "Webhook notification settings",
 		},
-	},
+	        },
+})
+
+// OperatorType represents an operator/user in the system.
+var OperatorType = graphql.NewObject(graphql.ObjectConfig{
+        Name:        "Operator",
+        Description: "An operator/user in the system",
+        Fields: graphql.Fields{
+                "id": &graphql.Field{
+                        Type:        graphql.NewNonNull(graphql.ID),
+                        Description: "Unique operator identifier",
+                },
+                "name": &graphql.Field{
+                        Type:        graphql.NewNonNull(graphql.String),
+                        Description: "Operator's display name",
+                },
+                "email": &graphql.Field{
+                        Type:        graphql.NewNonNull(graphql.String),
+                        Description: "Operator's email address",
+                },
+                "emailVerified": &graphql.Field{
+                        Type:        graphql.NewNonNull(graphql.Boolean),
+                        Description: "Whether the email has been verified",
+                },
+                "mfaEnabled": &graphql.Field{
+                        Type:        graphql.NewNonNull(graphql.Boolean),
+                        Description: "Whether MFA is enabled",
+                },
+                "createdAt": &graphql.Field{
+                        Type:        DateTimeScalar,
+                        Description: "When the operator was created",
+                },
+                "updatedAt": &graphql.Field{
+                        Type:        DateTimeScalar,
+                        Description: "When the operator was last updated",
+                },
+        },
 })
 
 // OperatorSettingsType represents all operator settings.
@@ -1705,10 +1741,6 @@ var OperatorSettingsType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.NewNonNull(ClientSettingsType),
 			Description: "Client settings",
 		},
-		"thresholds": &graphql.Field{
-			Type:        graphql.NewNonNull(ThresholdsType),
-			Description: "Alert thresholds",
-		},
 		"notifications": &graphql.Field{
 			Type:        graphql.NewNonNull(NotificationSettingsType),
 			Description: "Notification settings",
@@ -1716,34 +1748,98 @@ var OperatorSettingsType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-// ThresholdUpdateResultType represents the result of updating thresholds.
-var ThresholdUpdateResultType = graphql.NewObject(graphql.ObjectConfig{
-	Name:        "ThresholdUpdateResult",
-	Description: "Result of updating thresholds",
+// DeviceSettingsType represents settings for a specific device.
+var DeviceSettingsType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "DeviceSettings",
+	Description: "Settings for a device including custom name, location, and threshold overrides",
 	Fields: graphql.Fields{
-		"riskWarn": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Risk warning threshold",
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique settings identifier",
 		},
-		"riskCrit": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Risk critical threshold",
+		"deviceImei": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Device IMEI",
 		},
-		"thermalWarn": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Thermal warning threshold",
+		"customName": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Custom display name for the device",
 		},
-		"thermalCrit": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Thermal critical threshold",
+		"location": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device location description",
 		},
-		"bufferWarn": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Buffer warning threshold",
+		"metadata": &graphql.Field{
+			Type: graphql.NewList(graphql.NewNonNull(graphql.NewObject(graphql.ObjectConfig{
+				Name: "MetadataEntry",
+				Fields: graphql.Fields{
+					"key": &graphql.Field{
+						Type:        graphql.NewNonNull(graphql.String),
+						Description: "Metadata key",
+					},
+					"value": &graphql.Field{
+						Type:        graphql.NewNonNull(graphql.String),
+						Description: "Metadata value",
+					},
+				},
+			}))),
+			Description: "Custom metadata key-value pairs",
 		},
-		"bufferCrit": &graphql.Field{
+		"thresholds": &graphql.Field{
+			Type:        ThresholdsType,
+			Description: "Device-specific threshold overrides (null = use org defaults)",
+		},
+		"effectiveThresholds": &graphql.Field{
+			Type:        graphql.NewNonNull(ThresholdsType),
+			Description: "Effective thresholds after applying hierarchy (device → org → default)",
+		},
+		"createdAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When settings were created",
+		},
+		"updatedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When settings were last updated",
+		},
+	},
+})
+
+// OrganizationSettingsType represents settings for an organization.
+var OrganizationSettingsType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "OrganizationSettings",
+	Description: "Settings for an organization including timezone and default thresholds",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique settings identifier",
+		},
+		"organizationId": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Organization ID",
+		},
+		"timezone": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Organization timezone (e.g., UTC, America/New_York)",
+		},
+		"dateFormat": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Date format (e.g., YYYY-MM-DD)",
+		},
+		"alertCooldownMinutes": &graphql.Field{
 			Type:        graphql.NewNonNull(graphql.Int),
-			Description: "Buffer critical threshold",
+			Description: "Minimum minutes between repeated alerts",
+		},
+		"defaultThresholds": &graphql.Field{
+			Type:        graphql.NewNonNull(ThresholdsType),
+			Description: "Default thresholds for devices without custom thresholds",
+		},
+		"createdAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When settings were created",
+		},
+		"updatedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When settings were last updated",
 		},
 	},
 })
@@ -1996,10 +2092,10 @@ var TransferDevicePayloadType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-// PaginationType represents pagination metadata.
-var PaginationType = graphql.NewObject(graphql.ObjectConfig{
-	Name:        "Pagination",
-	Description: "Pagination metadata for list queries",
+// OrgPaginationType represents pagination metadata for organization queries.
+var OrgPaginationType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "OrgPagination",
+	Description: "Pagination metadata for organization list queries",
 	Fields: graphql.Fields{
 		"page": &graphql.Field{
 			Type:        graphql.NewNonNull(graphql.Int),
@@ -2034,7 +2130,7 @@ var OrganizationListResponseType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "List of organizations",
 		},
 		"pagination": &graphql.Field{
-			Type:        graphql.NewNonNull(PaginationType),
+			Type:        graphql.NewNonNull(OrgPaginationType),
 			Description: "Pagination metadata",
 		},
 	},
@@ -2050,7 +2146,7 @@ var MemberListResponseType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "List of members",
 		},
 		"pagination": &graphql.Field{
-			Type:        graphql.NewNonNull(PaginationType),
+			Type:        graphql.NewNonNull(OrgPaginationType),
 			Description: "Pagination metadata",
 		},
 	},
@@ -2066,7 +2162,7 @@ var InvitationListResponseType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "List of invitations",
 		},
 		"pagination": &graphql.Field{
-			Type:        graphql.NewNonNull(PaginationType),
+			Type:        graphql.NewNonNull(OrgPaginationType),
 			Description: "Pagination metadata",
 		},
 	},
