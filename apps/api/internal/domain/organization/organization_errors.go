@@ -36,8 +36,8 @@ var (
 	// ErrInvitationExpired is returned when an invitation has expired.
 	ErrInvitationExpired = errors.New("invitation has expired")
 
-	// ErrInvitationAlreadyResponded is returned when an invitation has already been responded to.
-	ErrInvitationAlreadyResponded = errors.New("invitation has already been responded to")
+	// ErrAlreadyResponded is returned when an invitation has already been responded to.
+	ErrAlreadyResponded = errors.New("invitation has already been responded to")
 
 	// ErrEmailMismatch is returned when the invitee email doesn't match.
 	ErrEmailMismatch = errors.New("email does not match invitation")
@@ -47,4 +47,25 @@ var (
 
 	// ErrOperatorNotInOrganization is returned when operator is not a member of the organization.
 	ErrOperatorNotInOrganization = errors.New("operator is not a member of this organization")
+
+	// ErrAlreadyExists is a generic already exists error.
+	ErrAlreadyExists = errors.New("resource already exists")
+
+	// ErrCannotDeleteLastSuperAdmin is returned when trying to delete the last super_admin of an org.
+	ErrCannotDeleteLastSuperAdmin = errors.New("cannot delete the last super_admin of an organization")
+
+	// ErrTransferOwnershipNotAllowed is returned when transfer ownership is not allowed.
+	ErrTransferOwnershipNotAllowed = errors.New("transfer ownership not allowed")
+
+	// ErrDeviceTransferNotAllowed is returned when device transfer is not allowed.
+	ErrDeviceTransferNotAllowed = errors.New("device transfer not allowed")
+
+	// ErrDeviceOnline is returned when a device is still online.
+	ErrDeviceOnline = errors.New("device must be offline to transfer")
+
+	// ErrInvalidThreshold is returned when threshold values are invalid.
+	ErrInvalidThreshold = errors.New("invalid threshold values")
+
+	// ErrSettingsNotFound is returned when organization settings are not found.
+	ErrSettingsNotFound = errors.New("organization settings not found")
 )

@@ -26,6 +26,16 @@ func NewUpdatesHistoryHandler(service *updates.Service, auditLogger *audit.Logge
 
 // GetHistory handles GET /v1/updates/history.
 func (h *UpdatesHistoryHandler) GetHistory(c *gin.Context) {
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
+			Code:    "bad_request",
+			Message: "organization context required",
+		})
+		return
+	}
+
 	status := c.Query("status")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
@@ -40,7 +50,7 @@ func (h *UpdatesHistoryHandler) GetHistory(c *gin.Context) {
 		limit = 100
 	}
 
-	result, err := h.service.GetHistory(c.Request.Context(), status, page, limit)
+	result, err := h.service.GetHistory(c.Request.Context(), status, page, limit, orgID)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
 			c.JSON(se.Status, se.ToErrorResponse())
@@ -57,6 +67,16 @@ func (h *UpdatesHistoryHandler) GetHistory(c *gin.Context) {
 
 // GetPushDetail handles GET /v1/updates/history/:pushId.
 func (h *UpdatesHistoryHandler) GetPushDetail(c *gin.Context) {
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
+			Code:    "bad_request",
+			Message: "organization context required",
+		})
+		return
+	}
+
 	pushID := c.Param("pushId")
 	if pushID == "" {
 		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
@@ -66,7 +86,7 @@ func (h *UpdatesHistoryHandler) GetPushDetail(c *gin.Context) {
 		return
 	}
 
-	detail, err := h.service.GetPushDetail(c.Request.Context(), pushID)
+	detail, err := h.service.GetPushDetail(c.Request.Context(), pushID, orgID)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
 			c.JSON(se.Status, se.ToErrorResponse())
@@ -83,6 +103,16 @@ func (h *UpdatesHistoryHandler) GetPushDetail(c *gin.Context) {
 
 // CancelPush handles POST /v1/updates/history/:pushId/cancel.
 func (h *UpdatesHistoryHandler) CancelPush(c *gin.Context) {
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
+			Code:    "bad_request",
+			Message: "organization context required",
+		})
+		return
+	}
+
 	pushID := c.Param("pushId")
 	if pushID == "" {
 		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
@@ -101,7 +131,7 @@ func (h *UpdatesHistoryHandler) CancelPush(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.CancelPush(c.Request.Context(), pushID, operator.ID)
+	result, err := h.service.CancelPush(c.Request.Context(), pushID, operator.ID, orgID)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
 			c.JSON(se.Status, se.ToErrorResponse())

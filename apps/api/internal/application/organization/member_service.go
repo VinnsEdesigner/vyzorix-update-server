@@ -293,6 +293,44 @@ func (s *MemberService) ListMembers(ctx context.Context, orgID string) ([]*organ
 	return result, nil
 }
 
+// ListMembersPaginated lists all active members of an organization with pagination.
+func (s *MemberService) ListMembersPaginated(ctx context.Context, orgID string, page, limit int) (*MemberListResponse, error) {
+	// Apply defaults and limits
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = DefaultPageSize
+	}
+	if limit > MaxPageSize {
+		limit = MaxPageSize
+	}
+
+	offset := (page - 1) * limit
+
+	// Use repository paginated method - does LIMIT/OFFSET at DB level
+	members, total, err := s.memberRepo.FindActiveByOrganizationPaginated(ctx, orgID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := (total + limit - 1) / limit
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	return &MemberListResponse{
+		Items: members,
+		Pagination: Pagination{
+			Page:       page,
+			Limit:      limit,
+			Total:      total,
+			TotalPages: totalPages,
+			HasMore:    page < totalPages,
+		},
+	}, nil
+}
+
 // GetMembership retrieves a specific operator's membership in an org.
 func (s *MemberService) GetMembership(ctx context.Context, operatorID, orgID string) (*organization.OrganizationMember, error) {
 	member, err := s.memberRepo.FindByOperatorAndOrg(ctx, operatorID, orgID)
@@ -313,6 +351,44 @@ func (s *MemberService) GetMembership(ctx context.Context, operatorID, orgID str
 // ListOperatorMemberships lists all memberships for an operator across all orgs.
 func (s *MemberService) ListOperatorMemberships(ctx context.Context, operatorID string) ([]*organization.OrganizationMember, error) {
 	return s.memberRepo.ListByOperator(ctx, operatorID)
+}
+
+// ListOperatorMembershipsPaginated lists memberships with pagination.
+func (s *MemberService) ListOperatorMembershipsPaginated(ctx context.Context, operatorID string, page, limit int) (*MembershipListResponse, error) {
+	// Apply defaults and limits
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = DefaultPageSize
+	}
+	if limit > MaxPageSize {
+		limit = MaxPageSize
+	}
+
+	offset := (page - 1) * limit
+
+	// Use repository paginated method - does LIMIT/OFFSET at DB level
+	members, total, err := s.memberRepo.ListByOperatorPaginated(ctx, operatorID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := (total + limit - 1) / limit
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	return &MembershipListResponse{
+		Items: members,
+		Pagination: Pagination{
+			Page:       page,
+			Limit:      limit,
+			Total:      total,
+			TotalPages: totalPages,
+			HasMore:    page < totalPages,
+		},
+	}, nil
 }
 
 // CheckCanManageMembers checks if an operator can manage other members in an org.
@@ -339,6 +415,128 @@ func (s *MemberService) CheckCanManageOrganization(ctx context.Context, operator
 	if !member.Role.CanManageOrganization() {
 		return organization.ErrForbidden
 	}
+
+	return nil
+}
+
+// CheckMembership checks if an operator is a member of the organization.
+func (s *MemberService) CheckMembership(ctx context.Context, operatorID, orgID string) error {
+	_, err := s.GetMembership(ctx, operatorID, orgID)
+	return err
+}
+
+// SuspendMember suspends a member (only active members can be suspended).
+func (s *MemberService) SuspendMember(ctx context.Context, orgID, memberID, actorOperatorID string) error {
+	// Get the member to suspend
+	member, err := s.memberRepo.FindByID(ctx, memberID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			return organization.ErrMemberNotFound
+		}
+		return err
+	}
+
+	// Verify member belongs to this org
+	if member.OrganizationID != orgID {
+		return organization.ErrMemberNotFound
+	}
+
+	// Cannot suspend self
+	if member.OperatorID == actorOperatorID {
+		return errors.New("cannot suspend yourself")
+	}
+
+	// Get actor's membership to check permissions
+	actorMember, err := s.memberRepo.FindByOperatorAndOrg(ctx, actorOperatorID, orgID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			return organization.ErrForbidden
+		}
+		return err
+	}
+
+	// Cannot suspend if actor has equal or lower role
+	if actorMember.Role.Level() <= member.Role.Level() {
+		return ErrCannotModifyHigherRole
+	}
+
+	// Cannot suspend already suspended member
+	if member.IsSuspended() {
+		return errors.New("member is already suspended")
+	}
+
+	// Use domain method to suspend
+	if err := member.Suspend(); err != nil {
+		return err
+	}
+
+	if err := s.memberRepo.Update(ctx, member); err != nil {
+		return err
+	}
+
+	s.logger.Info("member suspended",
+		"org_id", orgID,
+		"member_id", memberID,
+		"actor_id", actorOperatorID,
+	)
+
+	return nil
+}
+
+// ReinstateMember reinstates a suspended member back to active.
+func (s *MemberService) ReinstateMember(ctx context.Context, orgID, memberID, actorOperatorID string) error {
+	// Get the member to reinstate
+	member, err := s.memberRepo.FindByID(ctx, memberID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			return organization.ErrMemberNotFound
+		}
+		return err
+	}
+
+	// Verify member belongs to this org
+	if member.OrganizationID != orgID {
+		return organization.ErrMemberNotFound
+	}
+
+	// Cannot reinstate self
+	if member.OperatorID == actorOperatorID {
+		return errors.New("cannot reinstate yourself")
+	}
+
+	// Get actor's membership to check permissions
+	actorMember, err := s.memberRepo.FindByOperatorAndOrg(ctx, actorOperatorID, orgID)
+	if err != nil {
+		if errors.Is(err, organization.ErrMemberNotFound) {
+			return organization.ErrForbidden
+		}
+		return err
+	}
+
+	// Cannot reinstate if actor has equal or lower role than the target
+	if actorMember.Role.Level() <= member.Role.Level() {
+		return ErrCannotModifyHigherRole
+	}
+
+	// Cannot reinstate non-suspended member
+	if !member.IsSuspended() {
+		return errors.New("member is not suspended")
+	}
+
+	// Use domain method to reinstate
+	if err := member.Reinstate(); err != nil {
+		return err
+	}
+
+	if err := s.memberRepo.Update(ctx, member); err != nil {
+		return err
+	}
+
+	s.logger.Info("member reinstated",
+		"org_id", orgID,
+		"member_id", memberID,
+		"actor_id", actorOperatorID,
+	)
 
 	return nil
 }

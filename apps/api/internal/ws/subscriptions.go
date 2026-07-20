@@ -29,11 +29,13 @@ func nextCallbackID() int {
 
 // SubscriptionManager manages real-time subscriptions for GraphQL subscriptions.
 type SubscriptionManager struct {
-	hub           *Hub
-	deviceUpdates map[string][]callbackWrapper
-	telemetry     map[string][]callbackWrapper
-	commandStatus map[string]subscriptionCallback
-	mu            sync.RWMutex
+	hub             *Hub
+	deviceUpdates   map[string][]callbackWrapper
+	telemetry       map[string][]callbackWrapper
+	commandStatus   map[string][]callbackWrapper
+	orgEvents       map[string][]callbackWrapper
+	memberEvents    map[string][]callbackWrapper
+	mu              sync.RWMutex
 }
 
 var (
@@ -48,7 +50,9 @@ func (h *Hub) InitSubscriptions() {
 			hub:           h,
 			deviceUpdates: make(map[string][]callbackWrapper),
 			telemetry:     make(map[string][]callbackWrapper),
-			commandStatus: make(map[string]subscriptionCallback),
+			commandStatus: make(map[string][]callbackWrapper),
+			orgEvents:     make(map[string][]callbackWrapper),
+			memberEvents:  make(map[string][]callbackWrapper),
 		}
 	})
 }
@@ -130,12 +134,83 @@ func (h *Hub) SubscribeCommandStatus(operatorID, dispatchID string, callback sub
 
 	key := operatorID + ":" + dispatchID
 
-	subMgr.commandStatus[key] = callback
+	wrapper := callbackWrapper{
+		id:       nextCallbackID(),
+		callback: callback,
+	}
+	subMgr.commandStatus[key] = append(subMgr.commandStatus[key], wrapper)
 
 	return func() {
 		subMgr.mu.Lock()
 		defer subMgr.mu.Unlock()
-		delete(subMgr.commandStatus, key)
+
+		subs := subMgr.commandStatus[key]
+		for i, w := range subs {
+			if w.id == wrapper.id {
+				subMgr.commandStatus[key] = append(subs[:i], subs[i+1:]...)
+				break
+			}
+		}
+	}
+}
+
+// SubscribeOrganizationEvents subscribes to organization events.
+func (h *Hub) SubscribeOrganizationEvents(operatorID, orgID string, callback subscriptionCallback) func() {
+	h.InitSubscriptions()
+
+	subMgr := subscriptionMgr
+	subMgr.mu.Lock()
+	defer subMgr.mu.Unlock()
+
+	key := orgID
+
+	wrapper := callbackWrapper{
+		id:       nextCallbackID(),
+		callback: callback,
+	}
+	subMgr.orgEvents[key] = append(subMgr.orgEvents[key], wrapper)
+
+	return func() {
+		subMgr.mu.Lock()
+		defer subMgr.mu.Unlock()
+
+		subs := subMgr.orgEvents[key]
+		for i, w := range subs {
+			if w.id == wrapper.id {
+				subMgr.orgEvents[key] = append(subs[:i], subs[i+1:]...)
+				break
+			}
+		}
+	}
+}
+
+// SubscribeMemberEvents subscribes to member events for an organization.
+func (h *Hub) SubscribeMemberEvents(operatorID, orgID string, callback subscriptionCallback) func() {
+	h.InitSubscriptions()
+
+	subMgr := subscriptionMgr
+	subMgr.mu.Lock()
+	defer subMgr.mu.Unlock()
+
+	key := orgID
+
+	wrapper := callbackWrapper{
+		id:       nextCallbackID(),
+		callback: callback,
+	}
+	subMgr.memberEvents[key] = append(subMgr.memberEvents[key], wrapper)
+
+	return func() {
+		subMgr.mu.Lock()
+		defer subMgr.mu.Unlock()
+
+		subs := subMgr.memberEvents[key]
+		for i, w := range subs {
+			if w.id == wrapper.id {
+				subMgr.memberEvents[key] = append(subs[:i], subs[i+1:]...)
+				break
+			}
+		}
 	}
 }
 
@@ -189,7 +264,39 @@ func (h *Hub) PublishCommandStatus(operatorID, dispatchID string, data interface
 	defer subMgr.mu.RUnlock()
 
 	key := operatorID + ":" + dispatchID
-	if cb, ok := subMgr.commandStatus[key]; ok {
-		go cb(data)
+	if wrappers, ok := subMgr.commandStatus[key]; ok {
+		for _, w := range wrappers {
+			go w.callback(data)
+		}
+	}
+}
+
+// PublishOrganizationEvent publishes an organization event.
+func (h *Hub) PublishOrganizationEvent(orgID string, data interface{}) {
+	h.InitSubscriptions()
+
+	subMgr := subscriptionMgr
+	subMgr.mu.RLock()
+	defer subMgr.mu.RUnlock()
+
+	if wrappers, ok := subMgr.orgEvents[orgID]; ok {
+		for _, w := range wrappers {
+			go w.callback(data)
+		}
+	}
+}
+
+// PublishMemberEvent publishes a member event.
+func (h *Hub) PublishMemberEvent(orgID string, data interface{}) {
+	h.InitSubscriptions()
+
+	subMgr := subscriptionMgr
+	subMgr.mu.RLock()
+	defer subMgr.mu.RUnlock()
+
+	if wrappers, ok := subMgr.memberEvents[orgID]; ok {
+		for _, w := range wrappers {
+			go w.callback(data)
+		}
 	}
 }

@@ -13,6 +13,9 @@ type Device struct {
 	// Lifecycle tracks the registration lifecycle state (pending → registered → deregistered)
 	Lifecycle Lifecycle
 
+	// OrganizationID is the organization this device belongs to (for multi-tenant).
+	OrganizationID string
+
 	// Infrastructure fields (kept as-is for backward compatibility)
 	UpdatedAt            time.Time
 	CreatedAt            time.Time
@@ -181,4 +184,14 @@ func (d *Device) GetStatus() string {
 		return "online"
 	}
 	return "offline"
+}
+
+// TransferToOrganization transfers the device to a new organization.
+// The device must be offline (not online) to be transferred.
+func (d *Device) TransferToOrganization(orgID string) error {
+	if d.Online {
+		return errors.New("device must be offline to transfer")
+	}
+	d.OrganizationID = orgID
+	return nil
 }

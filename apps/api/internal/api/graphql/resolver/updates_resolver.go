@@ -18,6 +18,7 @@ import (
 func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
+	orgID, _ := p.Args["organizationId"].(string)
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -38,9 +39,9 @@ func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error
 
 	// If deviceId is provided, get device-specific status
 	if deviceID != "" && r.DeviceService != nil {
-		dev, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+		dev, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 		if err == nil && dev != nil {
-			currentVersion = dev.AppVersion
+			currentVersion = dev.Device.AppVersion
 			// Compare versions to determine if update is needed
 			if status.Latest.Version != "" && currentVersion != "" {
 				needsUpdate = currentVersion != status.Latest.Version

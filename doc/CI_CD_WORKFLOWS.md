@@ -414,7 +414,7 @@ jobs:
 A fresh CI install of the APK — inside the Android emulator that `android_build.yml` spins up, or on a real test device that has never registered with the production update server — has **no `command_secret` stored in `DeviceSecretStore`**. The downstream consequences:
 
 1. `CommandHmacValidator.validate(frame)` returns `MISSING_SECRET` for every command, because `DeviceSecretStore.getSecret()` returns `null` (see <code>DOC_7_DATA_SECURITY_AND_PERSISTENCE.md</code> §3.9).
-2. `FcmTokenManager` cannot complete its `POST /v1/device/register` call against a real server because CI environments have no network egress to `updates.vyzorix.com` (and they should NOT — we don't want CI runs polluting the production fleet's device table).
+2. `FcmTokenManager` cannot complete its `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)` call against a real server because CI environments have no network egress to `updates.vyzorix.com` (and they should NOT — we don't want CI runs polluting the production fleet's device table).
 3. Any instrumented test that exercises the C2 stack (`RemoteCommandExecutor`, `WebSocketClientManager`, `FcmCommandParser`) fails with `INVALID_SIGNATURE` because there is no shared secret to sign with.
 
 Without a bypass, every PR that touches anywhere near the C2 stack will fail in CI for a reason that has nothing to do with the diff under review.
@@ -490,7 +490,7 @@ For tests that need a real registration round-trip (not just a mock secret), spi
     --no-daemon
 ```
 
-The mock server (`vyzorix/mock-update-server` — a stub Go server in `vyzorix-update-server/cmd/mockserver/`) accepts any fleet token, returns a deterministic `command_secret` (`0000…`) for any `deviceId`, and never persists state. This gives instrumented tests a real `POST /v1/device/register` flow without touching production.
+The mock server (`vyzorix/mock-update-server` — a stub Go server in `vyzorix-update-server/cmd/mockserver/`) accepts any fleet token, returns a deterministic `command_secret` (`0000…`) for any `deviceId`, and never persists state. This gives instrumented tests a real `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)` flow without touching production.
 
 ### Threat Model
 

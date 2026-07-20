@@ -65,32 +65,38 @@ func (s *Service) cleanupCache() {
 }
 
 // getCachedInspection retrieves cached inspection if not expired.
-func (s *Service) getCachedInspection(imei string) *HTTPInspectionResponse {
+func (s *Service) getCachedInspection(cacheKey string) *HTTPInspectionResponse {
 	s.cacheMu.RLock()
 	defer s.cacheMu.RUnlock()
-	if entry, ok := s.inspectCache[imei]; ok && entry.ExpiresAt.After(time.Now()) {
+	if entry, ok := s.inspectCache[cacheKey]; ok && entry.ExpiresAt.After(time.Now()) {
 		return entry.Data
 	}
 	return nil
 }
 
 // cacheInspection stores inspection in cache.
-func (s *Service) cacheInspection(imei string, data *HTTPInspectionResponse) {
+func (s *Service) cacheInspection(cacheKey string, data *HTTPInspectionResponse) {
 	s.cacheMu.Lock()
 	defer s.cacheMu.Unlock()
-	s.inspectCache[imei] = &InspectCacheEntry{
+	s.inspectCache[cacheKey] = &InspectCacheEntry{
 		Data:      data,
 		ExpiresAt: time.Now().Add(s.cacheTTL),
 	}
 }
 
 // GetDeviceInspection retrieves full device inspection data.
-func (s *Service) GetDeviceInspection(ctx context.Context, imei string) (*diagnostics.DeviceInspection, error) {
+// Requires orgID for multi-tenant isolation.
+func (s *Service) GetDeviceInspection(ctx context.Context, imei, orgID string) (*diagnostics.DeviceInspection, error) {
 	dev, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil {
 		return nil, err
 	}
 	if dev == nil {
+		return nil, diagnostics.ErrDeviceNotFound
+	}
+
+	// Verify device belongs to organization
+	if orgID != "" && dev.OrganizationID != orgID {
 		return nil, diagnostics.ErrDeviceNotFound
 	}
 
@@ -159,14 +165,6 @@ func (s *Service) GetDeviceInspection(ctx context.Context, imei string) (*diagno
 		telemetry.AvgLatencyMs = s.hub.GetAverageLatency(dev.ID)
 	}
 
-	lastTelemetry, err := s.diagnosticsRepo.GetLastTelemetry(ctx, dev.ID)
-	// ErrNoTelemetryData is expected - device may have no telemetry yet
-	// Other errors are also treated as "no telemetry" since it's supplementary data
-	_ = err // Explicitly acknowledge we ignore errors for supplementary telemetry
-	if lastTelemetry != nil {
-		telemetry.LastTimestamp = lastTelemetry.Timestamp
-	}
-
 	return &diagnostics.DeviceInspection{
 		Identity:     identity,
 		Software:     software,
@@ -178,13 +176,15 @@ func (s *Service) GetDeviceInspection(ctx context.Context, imei string) (*diagno
 
 // GetDeviceInspectionHTTP returns HTTP-specific response with int64 timestamps per spec.
 // Results are cached for 10 seconds per spec.
-func (s *Service) GetDeviceInspectionHTTP(ctx context.Context, imei string) (*HTTPInspectionResponse, error) {
-	// Check cache first
-	if cached := s.getCachedInspection(imei); cached != nil {
+// Requires orgID for multi-tenant isolation.
+func (s *Service) GetDeviceInspectionHTTP(ctx context.Context, imei, orgID string) (*HTTPInspectionResponse, error) {
+	// Check cache first (include orgID in cache key for multi-tenant isolation)
+	cacheKey := imei + ":" + orgID
+	if cached := s.getCachedInspection(cacheKey); cached != nil {
 		return cached, nil
 	}
 
-	inspection, err := s.GetDeviceInspection(ctx, imei)
+	inspection, err := s.GetDeviceInspection(ctx, imei, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -239,19 +239,25 @@ func (s *Service) GetDeviceInspectionHTTP(ctx context.Context, imei string) (*HT
 	}
 
 	// Cache the response
-	s.cacheInspection(imei, resp)
+	s.cacheInspection(cacheKey, resp)
 
 	return resp, nil
 }
 
 // GetDeviceTimeline retrieves paginated timeline events for a device.
-func (s *Service) GetDeviceTimeline(ctx context.Context, imei string, req *TimelineRequest) (*TimelineResponse, error) {
-	// Verify device exists
+// Requires orgID for multi-tenant isolation.
+func (s *Service) GetDeviceTimeline(ctx context.Context, imei string, req *TimelineRequest, orgID string) (*TimelineResponse, error) {
+	// Verify device exists and belongs to organization
 	dev, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil {
 		return nil, err
 	}
 	if dev == nil {
+		return nil, diagnostics.ErrDeviceNotFound
+	}
+
+	// Verify device belongs to organization
+	if orgID != "" && dev.OrganizationID != orgID {
 		return nil, diagnostics.ErrDeviceNotFound
 	}
 
@@ -462,8 +468,8 @@ type AuthorizationResponse struct {
 	Forbidden  bool
 }
 
-// VerifyDeviceOwnership checks if the operator owns the device (DOA check).
-func (s *Service) VerifyDeviceOwnership(ctx context.Context, imei, operatorID string) *AuthorizationResponse {
+// VerifyDeviceOwnership checks if the operator owns the device and device belongs to org (org-scoped DOA check).
+func (s *Service) VerifyDeviceOwnership(ctx context.Context, imei, operatorID, orgID string) *AuthorizationResponse {
 	if operatorID == "" {
 		// No operator context - unauthorized
 		return &AuthorizationResponse{Authorized: false, Forbidden: false}
@@ -472,6 +478,11 @@ func (s *Service) VerifyDeviceOwnership(ctx context.Context, imei, operatorID st
 	dev, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil || dev == nil {
 		// Device not found - treat as forbidden (not unauthorized - they found it but don't own it)
+		return &AuthorizationResponse{Authorized: false, Forbidden: true}
+	}
+
+	// Check org membership - device must belong to the organization
+	if orgID != "" && dev.OrganizationID != orgID {
 		return &AuthorizationResponse{Authorized: false, Forbidden: true}
 	}
 

@@ -2,6 +2,7 @@ package organization
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
@@ -40,21 +41,35 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 	}
 
 	var req struct {
-		Name       string `json:"name" binding:"required"`
-		MaxMembers int    `json:"maxMembers"`
+		Name        string `json:"name"`
+		Description string `json:"description" binding:"required"`
+		MaxMembers  int    `json:"maxMembers"`
+		Role        string `json:"role" binding:"required"` // Required: "super_admin" or "admin"
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.presenter.BadRequest(c, "Invalid request body")
+		h.presenter.BadRequest(c, "Invalid request body: description is required")
 		return
 	}
 
+	// Validate description is not empty after trimming
+	if strings.TrimSpace(req.Description) == "" {
+		h.presenter.BadRequest(c, "description is required and cannot be empty")
+		return
+	}
+
+	// Validate role
+	if req.Role != "super_admin" && req.Role != "admin" {
+		h.presenter.BadRequest(c, "role must be 'super_admin' or 'admin'")
+		return
+	}
+
+	// Name defaults to "personal" if empty
 	if req.Name == "" {
-		h.presenter.BadRequest(c, "organization name is required")
-		return
+		req.Name = "personal"
 	}
 
-	org, err := h.orgService.CreateOrganization(c.Request.Context(), op.ID, req.Name, req.MaxMembers)
+	org, err := h.orgService.CreateOrganization(c.Request.Context(), op.ID, req.Name, req.Description, req.MaxMembers, req.Role)
 	if err != nil {
 		if errors.Is(err, appOrganization.ErrMaxOrgsReached) {
 			h.presenter.Forbidden(c, "maximum 2 active organizations allowed")
@@ -71,6 +86,7 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 	h.presenter.Created(c, gin.H{
 		"id":           org.ID,
 		"name":         org.Name,
+		"description":  org.Description,
 		"created_by":   org.CreatedBy,
 		"created_at":   org.CreatedAt,
 		"max_members":  org.MaxMembers,
@@ -125,11 +141,16 @@ func (h *OrganizationHandler) Get(c *gin.Context) {
 		return
 	}
 
-	// Check if operator is a member of this org
-	_, err := h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
-	if err != nil {
-		h.presenter.Forbidden(c, "access denied")
-		return
+	// Use membership from context (set by OrganizationMembership middleware)
+	// If middleware didn't run, fall back to service call
+	member := middleware.GetMembership(c)
+	if member == nil {
+		var err error
+		_, err = h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
+		if err != nil {
+			h.presenter.Forbidden(c, "access denied")
+			return
+		}
 	}
 
 	org, err := h.orgService.GetOrganizationWithMembers(c.Request.Context(), orgID)
@@ -221,14 +242,19 @@ func (h *OrganizationHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Check if operator can manage organization (must be super_admin)
-	membership, err := h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
-	if err != nil {
-		h.presenter.Forbidden(c, "access denied")
-		return
+	// Use membership from context (set by OrganizationMembership middleware)
+	// If middleware didn't run, fall back to service call
+	member := middleware.GetMembership(c)
+	if member == nil {
+		var err error
+		member, err = h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
+		if err != nil {
+			h.presenter.Forbidden(c, "access denied")
+			return
+		}
 	}
 
-	if !membership.Role.CanDeleteOrganization() {
+	if !member.Role.CanDeleteOrganization() {
 		h.presenter.Forbidden(c, "only super_admin can delete organization")
 		return
 	}

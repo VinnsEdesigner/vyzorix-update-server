@@ -99,7 +99,7 @@ func TestTurnstileProtectedPaths(t *testing.T) {
 	}{
 		{"/v1/auth/register", true},
 		{"/v1/auth/login", true},
-		{"/v1/device/register", false},
+// DEPRECATED: // DEPRECATED: 		{"/v1/device/register", false},
 		{"/health", false},
 	}
 

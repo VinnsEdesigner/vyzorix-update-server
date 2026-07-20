@@ -10,10 +10,11 @@ var ErrNotFound = errors.New("session not found")
 
 // Session represents an authentication session.
 type Session struct {
-	ID         string
-	OperatorID string
-	ExpiresAt  time.Time
-	CreatedAt  time.Time
+	ID                       string
+	OperatorID               string
+	ExpiresAt                time.Time
+	CreatedAt                time.Time
+	SelectedOrganizationID    string
 
 	// Optional metadata.
 	IPAddress string

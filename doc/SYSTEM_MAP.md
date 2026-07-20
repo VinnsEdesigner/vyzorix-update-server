@@ -379,7 +379,7 @@ T+12s+
 | **CommandHmacValidator** | NonceCache | Validation step 5 | Replay detection via TTL-based nonce dedup | YES |
 | **CommandHmacValidator** | ServicePermissionVerifier | 3 rejections in 60s | Triggers 5min command execution cooldown | YES |
 | **SafeModeController** | NonceCache | Safe mode entry | Calls NonceCache.clear() to drop stale entries | NO |
-| **FcmTokenManager** | DeviceSecretStore | POST /v1/device/register response | Persists encrypted command_secret on first registration | YES |
+| **FcmTokenManager** | DeviceSecretStore | POST /v1/device/inbox (DEPRECATED: was /v1/device/register) response | Persists encrypted command_secret on first registration | YES |
 | **RemoteCommandResultDispatcher** | WebSocketClientManager | Command result ready | Checks isConnected() before send | YES |
 | **RemoteCommandResultDispatcher** | PendingResultQueue | WS disconnected | Enqueues result JSON instead of dropping | YES |
 | **WebSocketClientManager** | PendingResultQueue | onOpen (reconnect) | Flushes queued results in FIFO order before telemetry | YES |
@@ -715,7 +715,7 @@ AppDispatchers.IO (additional, beyond the items listed above)
 - `WebSocketKeepAliveEngine` — ping frames every 15s
 - `WebSocketTelemetryDispatcher` — outbound telemetry encoding
 - `SafeModeController.enter()` — calls `NonceCache.clear()` on transition
-- `FcmTokenManager` — POST /v1/device/register; persists encrypted command_secret via `DeviceSecretStore`
+- `FcmTokenManager` — POST /v1/device/inbox (DEPRECATED: was /v1/device/register); persists encrypted command_secret via `DeviceSecretStore`
 - `DeviceSecretStore` — DataStore read/write (encrypted blob); calls `TokenEncryptor` (AES-GCM via KeystoreManager key)
 
 ServiceScope (Long-Lived Service)
@@ -904,7 +904,7 @@ Phase 7b: C2 Stack (T+11s, deferred until network stable — Layer 8 in BUILD_OR
  7b.4 NonceCache.initialize()
  7b.5 PendingResultQueue.initialize()
  7b.6 FcmTokenManager.start()
-    If no command_secret: POST /v1/device/register; persist response
+    If no command_secret: POST /v1/device/inbox (DEPRECATED: was /v1/device/register); persist response
  7b.7 WebSocketClientManager.connect()
     On onOpen: drain PendingResultQueue (FIFO) before resuming telemetry
  7b.8 WebSocketKeepAliveEngine.start() (15s pings)

@@ -197,6 +197,11 @@ func (s *OrganizationStorage) FindByName(ctx context.Context, operatorID, name s
 	if deletedAt.Valid {
 		t := time.UnixMilli(deletedAt.Int64)
 		org.DeletedAt = &t
+		org.Lifecycle = organization.OrganizationLifecycleArchived
+	} else if isActive {
+		org.Lifecycle = organization.OrganizationLifecycleActive
+	} else {
+		org.Lifecycle = organization.OrganizationLifecycleInactive
 	}
 
 	return &org, nil
@@ -299,12 +304,89 @@ func (s *OrganizationStorage) ListByOperator(ctx context.Context, operatorID str
 		if deletedAt.Valid {
 			t := time.UnixMilli(deletedAt.Int64)
 			org.DeletedAt = &t
+			org.Lifecycle = organization.OrganizationLifecycleArchived
+		} else if isActive {
+			org.Lifecycle = organization.OrganizationLifecycleActive
+		} else {
+			org.Lifecycle = organization.OrganizationLifecycleInactive
 		}
 
 		orgs = append(orgs, &org)
 	}
 
 	return orgs, rows.Err()
+}
+
+// ListByOperatorPaginated lists organizations for an operator with pagination.
+func (s *OrganizationStorage) ListByOperatorPaginated(ctx context.Context, operatorID string, limit, offset int) ([]*organization.Organization, int, error) {
+	// Get total count first
+	countQuery := `
+		SELECT COUNT(DISTINCT o.id)
+		FROM organizations o
+		INNER JOIN organization_members om ON o.id = om.organization_id AND om.status = 'active'
+		WHERE om.operator_id = ? AND o.deleted_at IS NULL`
+
+	var total int
+	err := s.getQuerier(ctx).QueryRowContext(ctx, countQuery, operatorID).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	query := `
+		SELECT o.id, o.name, o.created_by, o.created_at, o.updated_at, o.deleted_at, o.is_active, o.max_members,
+			   COUNT(DISTINCT om2.id) as member_count
+		FROM organizations o
+		INNER JOIN organization_members om ON o.id = om.organization_id AND om.status = 'active'
+		LEFT JOIN organization_members om2 ON o.id = om2.organization_id AND om2.status = 'active'
+		WHERE om.operator_id = ? AND o.deleted_at IS NULL
+		GROUP BY o.id
+		ORDER BY o.created_at DESC
+		LIMIT ? OFFSET ?`
+
+	rows, err := s.getQuerier(ctx).QueryContext(ctx, query, operatorID, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var orgs []*organization.Organization
+	for rows.Next() {
+		var org organization.Organization
+		var deletedAt sql.NullInt64
+		var createdBy string
+		var isActive bool
+
+		err := rows.Scan(
+			&org.ID,
+			&org.Name,
+			&createdBy,
+			&org.CreatedAt,
+			&org.UpdatedAt,
+			&deletedAt,
+			&isActive,
+			&org.MaxMembers,
+			&org.MemberCount,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		org.CreatedBy = createdBy
+		if deletedAt.Valid {
+			t := time.UnixMilli(deletedAt.Int64)
+			org.DeletedAt = &t
+			org.Lifecycle = organization.OrganizationLifecycleArchived
+		} else if isActive {
+			org.Lifecycle = organization.OrganizationLifecycleActive
+		} else {
+			org.Lifecycle = organization.OrganizationLifecycleInactive
+		}
+
+		orgs = append(orgs, &org)
+	}
+
+	return orgs, total, rows.Err()
 }
 
 // CountActiveMembers counts the number of active members in an organization.

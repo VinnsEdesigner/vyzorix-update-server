@@ -40,7 +40,7 @@ This document maps out the server-side requirements to support the Device Regist
 | Inbox Entry | Single request details | GET /v1/device/inbox/:imei |
 | Acknowledge | Approve/reject registration | POST /v1/device/inbox/:imei/ack |
 | Deregister | Remove device | DELETE /v1/devices/:imei |
-| Register | Register new device | POST /v1/device/register |
+| Register | Register new device | POST /v1/device/inbox (DEPRECATED: was /v1/device/register) |
 | Confirm | Device confirms registration | POST /v1/device/confirm |
 | Devices List | All registered devices | GET /v1/devices |
 | Device Detail | Single device info | GET /v1/devices/:imei |
@@ -62,7 +62,7 @@ This document maps out the server-side requirements to support the Device Regist
 | GET /v1/device/inbox | EXISTS | InboxHandler.GetInbox | List pending requests |
 | GET /v1/device/inbox/:imei | EXISTS | InboxHandler.GetInboxEntry | Get single request |
 | POST /v1/device/inbox/:imei/ack | EXISTS | InboxHandler.AckInbox | Approve/reject request |
-| POST /v1/device/register | EXISTS | RegisterHandler.Handle | Register new device |
+| POST /v1/device/inbox (DEPRECATED: was /v1/device/register) | EXISTS | RegisterHandler.Handle | Register new device |
 
 ### 2.3 Existing Domain Entities
 
@@ -364,7 +364,7 @@ Deregister a device (soft delete).
 
 ### 4.3 Registration Endpoints (Update)
 
-#### POST /v1/device/register
+#### POST /v1/device/inbox (DEPRECATED: was /v1/device/register)
 
 Operator-initiated registration (alternative to inbox flow).
 

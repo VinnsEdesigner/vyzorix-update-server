@@ -426,12 +426,20 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 	// Require admin role
 	op := middleware.GetOperatorFromContext(c)
-	if op == nil || (op.Role != "admin" && op.Role != "operator") {
+	if op == nil {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error":   "forbidden",
-			"message": "admin or operator role required",
+			"message": "authentication required",
 		})
+		return
+	}
 
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" || !op.IsAdminIn(orgID) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "forbidden",
+			"message": "admin role required",
+		})
 		return
 	}
 

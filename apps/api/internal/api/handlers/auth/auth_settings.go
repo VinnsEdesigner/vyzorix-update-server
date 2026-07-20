@@ -15,6 +15,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 
 	"github.com/gin-gonic/gin"
 )
@@ -70,18 +71,15 @@ func (h *SettingsHandler) RateLimitMiddleware() gin.HandlersChain {
 }
 
 // logSettingsAudit logs an audit event for settings operations.
-func (h *SettingsHandler) logSettingsAudit(ctx context.Context, operatorID string, event *SettingsAuditEvent) {
+func (h *SettingsHandler) logSettingsAudit(c *gin.Context, operatorID string, event *SettingsAuditEvent) {
 	if h.auditLogger == nil {
 		return
 	}
 
-	// Extract client info from context if available
-	ipAddress := ""
-	userAgent := ""
-	if ginCtx, ok := ctx.(*gin.Context); ok {
-		ipAddress = ginCtx.ClientIP()
-		userAgent = ginCtx.GetHeader("User-Agent")
-	}
+	// Extract client info from gin context
+	ipAddress := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+	ctx := c.Request.Context()
 
 	// Build metadata from changes
 	metadata := make(map[string]string)
@@ -127,6 +125,31 @@ func (h *SettingsHandler) getOperatorFromSession(c *gin.Context) (string, error)
 	}
 
 	return op.ID, nil
+}
+
+// getOperatorRoleString returns the role string for an operator based on organization context.
+func (h *SettingsHandler) getOperatorRoleString(c *gin.Context, op *operator.Operator) string {
+	// Try to get role from organization context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID != "" {
+		if m := op.GetMembership(orgID); m != nil && m.IsActive() {
+			return string(m.Role)
+		}
+	}
+
+	// Fallback to last organization
+	if m := op.GetMembership(op.LastOrganizationID); m != nil && m.IsActive() {
+		return string(m.Role)
+	}
+
+	// Fallback to first active membership
+	for _, m := range op.Memberships {
+		if m.IsActive() {
+			return string(m.Role)
+		}
+	}
+
+	return string(organization.RoleViewer) // Default role
 }
 
 // GetSettings handles GET /v1/auth/me/settings.
@@ -184,15 +207,17 @@ func (h *SettingsHandler) UpdateName(c *gin.Context) {
 		return
 	}
 
+	// Get role from organization membership
+	roleStr := h.getOperatorRoleString(c, op)
+
 	h.presenter.OK(c, gin.H{
-		"id":             op.ID,
-		"email":          op.Email,
-		"name":           op.Name,
-		"role":           op.Role,
-		"mfa_enabled":    op.MFAEnabled,
-		"email_verified": op.EmailVerified,
-		"thresholds":     op.Thresholds,
-		"client":         op.ClientSettings,
+		"id":              op.ID,
+		"email":           op.Email,
+		"name":            op.Name,
+		"role":            roleStr,
+		"mfa_enabled":     op.MFAEnabled,
+		"email_verified":  op.EmailVerified,
+		"client":          op.ClientSettings,
 	})
 }
 
@@ -229,137 +254,18 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
+	// Get role from organization membership
+	roleStr := h.getOperatorRoleString(c, op)
+
 	h.presenter.OK(c, gin.H{
-		"id":             op.ID,
-		"email":          op.Email,
-		"name":           op.Name,
-		"role":           op.Role,
-		"mfa_enabled":    op.MFAEnabled,
-		"email_verified": op.EmailVerified,
-		"thresholds":     op.Thresholds,
-		"client":         op.ClientSettings,
+		"id":              op.ID,
+		"email":           op.Email,
+		"name":            op.Name,
+		"role":            roleStr,
+		"mfa_enabled":     op.MFAEnabled,
+		"email_verified":  op.EmailVerified,
+		"client":          op.ClientSettings,
 	})
-}
-
-// GetThresholds handles GET /v1/auth/me/thresholds.
-func (h *SettingsHandler) GetThresholds(c *gin.Context) {
-	operatorID, err := h.getOperatorFromSession(c)
-	if err != nil {
-		h.presenter.Unauthorized(c, "not authenticated")
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
-	defer cancel()
-
-	thresholds, err := h.operatorRepo.GetThresholds(ctx, operatorID)
-	if err != nil {
-		h.presenter.InternalError(c, "failed to get thresholds")
-		return
-	}
-
-	h.presenter.OK(c, thresholds)
-}
-
-// ThresholdUpdateRequest represents threshold update request.
-type ThresholdUpdateRequest struct {
-	RiskWarn    *int `json:"riskWarn,omitempty"`
-	RiskCrit    *int `json:"riskCrit,omitempty"`
-	ThermalWarn *int `json:"thermalWarn,omitempty"`
-	ThermalCrit *int `json:"thermalCrit,omitempty"`
-	BufferWarn  *int `json:"bufferWarn,omitempty"`
-	BufferCrit  *int `json:"bufferCrit,omitempty"`
-}
-
-// UpdateThresholds handles PATCH /v1/auth/me/thresholds.
-func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
-	operatorID, err := h.getOperatorFromSession(c)
-	if err != nil {
-		h.presenter.Unauthorized(c, "not authenticated")
-		return
-	}
-
-	var req ThresholdUpdateRequest
-	if err = c.ShouldBindJSON(&req); err != nil {
-		h.presenter.BadRequest(c, "invalid JSON body")
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
-	defer cancel()
-
-	// Get current thresholds
-	thresholds, err := h.operatorRepo.GetThresholds(ctx, operatorID)
-	if err != nil {
-		h.presenter.InternalError(c, "failed to get current thresholds")
-		return
-	}
-
-	// Track changes for audit
-	changes := make(map[string]interface{})
-
-	// Apply updates
-	if req.RiskWarn != nil {
-		changes["riskWarn"] = map[string]interface{}{"from": thresholds.RiskWarn, "to": *req.RiskWarn}
-		thresholds.RiskWarn = *req.RiskWarn
-	}
-	if req.RiskCrit != nil {
-		changes["riskCrit"] = map[string]interface{}{"from": thresholds.RiskCrit, "to": *req.RiskCrit}
-		thresholds.RiskCrit = *req.RiskCrit
-	}
-	if req.ThermalWarn != nil {
-		changes["thermalWarn"] = map[string]interface{}{"from": thresholds.ThermalWarn, "to": *req.ThermalWarn}
-		thresholds.ThermalWarn = *req.ThermalWarn
-	}
-	if req.ThermalCrit != nil {
-		changes["thermalCrit"] = map[string]interface{}{"from": thresholds.ThermalCrit, "to": *req.ThermalCrit}
-		thresholds.ThermalCrit = *req.ThermalCrit
-	}
-	if req.BufferWarn != nil {
-		changes["bufferWarn"] = map[string]interface{}{"from": thresholds.BufferWarn, "to": *req.BufferWarn}
-		thresholds.BufferWarn = *req.BufferWarn
-	}
-	if req.BufferCrit != nil {
-		changes["bufferCrit"] = map[string]interface{}{"from": thresholds.BufferCrit, "to": *req.BufferCrit}
-		thresholds.BufferCrit = *req.BufferCrit
-	}
-
-	// Validate threshold relationships
-	if thresholds.RiskWarn >= thresholds.RiskCrit {
-		h.presenter.BadRequest(c, "riskWarn must be less than riskCrit")
-		return
-	}
-	if thresholds.ThermalWarn >= thresholds.ThermalCrit {
-		h.presenter.BadRequest(c, "thermalWarn must be less than thermalCrit")
-		return
-	}
-	if thresholds.BufferCrit >= thresholds.BufferWarn {
-		h.presenter.BadRequest(c, "bufferCrit must be less than bufferWarn")
-		return
-	}
-
-	// Save updated thresholds
-	if err = h.operatorRepo.UpdateThresholds(ctx, operatorID, thresholds); err != nil {
-		h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
-			Action:  "update",
-			Section: "thresholds",
-			Changes: changes,
-			Success: false,
-			Error:   err.Error(),
-		})
-		h.presenter.InternalError(c, "failed to update thresholds")
-		return
-	}
-
-	// Log successful update
-	h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
-		Action:  "update",
-		Section: "thresholds",
-		Changes: changes,
-		Success: true,
-	})
-
-	h.presenter.OK(c, thresholds)
 }
 
 // GetNotifications handles GET /v1/auth/me/notifications.
@@ -446,7 +352,7 @@ func (h *SettingsHandler) UpdateNotifications(c *gin.Context) {
 
 	// Save updated notifications
 	if err = h.operatorRepo.UpdateNotifications(ctx, operatorID, notifications); err != nil {
-		h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
+		h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 			Action:  "update",
 			Section: "notifications",
 			Changes: changes,
@@ -458,7 +364,7 @@ func (h *SettingsHandler) UpdateNotifications(c *gin.Context) {
 	}
 
 	// Log successful update
-	h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
+	h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 		Action:  "update",
 		Section: "notifications",
 		Changes: changes,
@@ -521,7 +427,7 @@ func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 	responseTime := time.Since(start).Milliseconds()
 
 	// Log webhook test attempt
-	h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
+	h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 		Action:  "webhook_test",
 		Section: "notifications",
 		Changes: map[string]interface{}{
@@ -581,7 +487,7 @@ func (h *SettingsHandler) RotateWebhookSecret(c *gin.Context) {
 
 	secret, err := h.operatorRepo.RotateWebhookSecret(ctx, operatorID)
 	if err != nil {
-		h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
+		h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 			Action:  "webhook_rotate",
 			Section: "notifications",
 			Success: false,
@@ -592,7 +498,7 @@ func (h *SettingsHandler) RotateWebhookSecret(c *gin.Context) {
 	}
 
 	// Log successful rotation
-	h.logSettingsAudit(c.Request.Context(), operatorID, &SettingsAuditEvent{
+	h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 		Action:  "webhook_rotate",
 		Section: "notifications",
 		Success: true,

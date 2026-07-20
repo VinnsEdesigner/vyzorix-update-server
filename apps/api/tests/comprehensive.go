@@ -383,9 +383,7 @@ func testCommandEndpoints() []EndpointResult {
 	base := "/v1"
 	dispatchID := fmt.Sprintf("dispatch-%d", time.Now().Unix())
 
-	// First register a device
-	testRequest("POST", BaseURL+base+"/device/register",
-		map[string]interface{}{"device_id": deviceID, "name": "Command Test", "platform": "android", "app_version": "1.0.0"})
+	// First register a device (deprecated)
 
 	// Send command
 	results = append(results, testRequest("POST", BaseURL+base+"/device/"+deviceID+"/command",
@@ -462,7 +460,7 @@ func testMalformedData() []EndpointResult {
 		{"/v1/auth/login", `{}`, "Empty body"},
 		{"/v1/auth/login", `{"email":"a@b.com","password":"x"}`, "Short password"},
 		{"/v1/auth/register", `{"email":"a@b.com","password":"Valid123!"}`, "Missing name"},
-		{"/v1/device/register", `{"device_id":"","name":""}`, "Empty fields"},
+// DEPRECATED: 		{"/v1/device/register", `{"device_id":"","name":""}`, "Empty fields"},
 		{"/v1/device/test/command", `{"command":"","args":{}}`, "Empty command"},
 	}
 
@@ -515,10 +513,8 @@ func testDatabaseOperations() []EndpointResult {
 
 	results = append(results, res)
 
-	// Register device
+	// Register device (deprecated)
 	deviceID := fmt.Sprintf("dbtest-device-%d", time.Now().Unix())
-	res = testRequest("POST", BaseURL+"/v1/device/register",
-		map[string]interface{}{"device_id": deviceID, "name": "DB Test Device", "platform": "android", "app_version": "1.0.0"})
 	res.DBTested = true
 
 	if res.StatusCode >= 200 && res.StatusCode < 300 {

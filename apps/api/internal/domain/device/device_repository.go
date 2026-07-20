@@ -31,6 +31,14 @@ type Repository interface {
 	// This is used for DOA (Data Ownership Attribution) checks on deregistration.
 	FindByIMEIAndOperator(ctx context.Context, imei, operatorID string) (*Device, error)
 
+	// FindByIMEIAndOrganization retrieves a device by IMEI within an organization.
+	// Returns ErrNotFound if device doesn't exist or doesn't belong to the organization.
+	FindByIMEIAndOrganization(ctx context.Context, imei, orgID string) (*Device, error)
+
+	// FindByIDAndOrganization retrieves a device by ID within an organization.
+	// Returns ErrNotFound if device doesn't exist or doesn't belong to the organization.
+	FindByIDAndOrganization(ctx context.Context, id, orgID string) (*Device, error)
+
 	// Create creates a new device.
 	Create(ctx context.Context, d *Device) error
 
@@ -77,11 +85,17 @@ type Repository interface {
 	// ListByOperatorID returns all devices for an OperatorID.
 	ListByOperatorID(ctx context.Context, operatorID OperatorID) ([]*Device, error)
 
+	// ListByOrganization returns all devices for an organization.
+	ListByOrganization(ctx context.Context, orgID string) ([]*Device, error)
+
 	// Count returns the total number of devices.
 	Count(ctx context.Context) (int, error)
 
 	// CountByOperator returns the number of devices for an operator.
 	CountByOperator(ctx context.Context, operatorID string) (int, error)
+
+	// CountByOrganization returns the number of devices for an organization.
+	CountByOrganization(ctx context.Context, orgID string) (int, error)
 
 	// SoftDelete marks a device as deregistered (soft delete).
 	// Sets deregistered_at and deletion_scheduled_at for 30-day retention.

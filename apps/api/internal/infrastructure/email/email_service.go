@@ -33,6 +33,20 @@ type NotificationData struct {
 	BaseURL       string
 }
 
+// InvitationData contains data for invitation email templates.
+type InvitationData struct {
+	InviteeName      string
+	InviterName      string
+	OrganizationName string
+	Role             string
+	InviterNotes     string
+	InviteeNotes     string
+	AcceptURL        string
+	ExpiryDays       int
+	AcceptedAt       string
+	BaseURL          string
+}
+
 // Service handles sending emails via Resend API.
 type Service struct {
 	client    *http.Client
@@ -252,6 +266,51 @@ func (s *Service) SendNewLoginNotificationEmail(ctx context.Context, to string, 
 	}
 
 	subject := " New login to your account"
+	return s.send(ctx, to, subject, html)
+}
+
+// SendInvitationEmail sends an organization invitation email to the invitee.
+func (s *Service) SendInvitationEmail(ctx context.Context, to string, data InvitationData) error {
+	if s.apiKey == "" {
+		return errors.New("RESEND_API_KEY not configured")
+	}
+
+	html, err := s.parseTemplate(templates.InvitationEmail, data)
+	if err != nil {
+		return fmt.Errorf("failed to parse invitation template: %w", err)
+	}
+
+	subject := fmt.Sprintf("You've been invited to join %s", data.OrganizationName)
+	return s.send(ctx, to, subject, html)
+}
+
+// SendInvitationAcceptedEmail sends a notification when an invitation is accepted.
+func (s *Service) SendInvitationAcceptedEmail(ctx context.Context, to string, data InvitationData) error {
+	if s.apiKey == "" {
+		return errors.New("RESEND_API_KEY not configured")
+	}
+
+	html, err := s.parseTemplate(templates.InvitationAcceptedEmail, data)
+	if err != nil {
+		return fmt.Errorf("failed to parse invitation accepted template: %w", err)
+	}
+
+	subject := fmt.Sprintf("Invitation accepted - %s", data.OrganizationName)
+	return s.send(ctx, to, subject, html)
+}
+
+// SendInvitationRejectedEmail sends a notification when an invitation is rejected.
+func (s *Service) SendInvitationRejectedEmail(ctx context.Context, to string, data InvitationData) error {
+	if s.apiKey == "" {
+		return errors.New("RESEND_API_KEY not configured")
+	}
+
+	html, err := s.parseTemplate(templates.InvitationRejectedEmail, data)
+	if err != nil {
+		return fmt.Errorf("failed to parse invitation rejected template: %w", err)
+	}
+
+	subject := fmt.Sprintf("Invitation declined - %s", data.OrganizationName)
 	return s.send(ctx, to, subject, html)
 }
 

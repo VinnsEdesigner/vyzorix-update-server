@@ -47,7 +47,7 @@ The per-device `command_secret` follows an analogous but **separate** initializa
                                     
                                     
                FcmTokenManager.registerDevice()
-               POST /v1/device/register over HTTPS/WSS
+               POST /v1/device/inbox (DEPRECATED: was /v1/device/register) over HTTPS/WSS
                                     
                                      (Server response includes command_secret)
                   DeviceSecretStore.put(secret: String)
@@ -182,7 +182,7 @@ Note on layout: `KeystoreManager` is the canonical location for hardware-backed 
 
 ### 3.9 `DeviceSecretStore.kt`
 *   **Path**: `core/data/src/main/kotlin/com/vyzorix/audiorouter/data/datastore/DeviceSecretStore.kt`
-*   **Architectural Role**: Encrypted DataStore container for the per-device C2 `command_secret`. The secret is established once by `FcmTokenManager` during the first `POST /v1/device/register` round-trip (see `COMMAND_SECURITY.md` §5) and consumed thereafter only by `CommandHmacValidator.validate()`.
+*   **Architectural Role**: Encrypted DataStore container for the per-device C2 `command_secret`. The secret is established once by `FcmTokenManager` during the first `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)` round-trip (see `COMMAND_SECURITY.md` §5) and consumed thereafter only by `CommandHmacValidator.validate()`.
 *   **API surface**:
     ```kotlin
     suspend fun put(secret: String)

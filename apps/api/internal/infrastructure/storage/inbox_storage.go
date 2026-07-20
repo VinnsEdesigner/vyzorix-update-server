@@ -89,8 +89,8 @@ func (r *InboxRepository) GetByIMEI(ctx context.Context, imei string) (*inbox.In
 	return r.scanEntry(r.queryRow(ctx, query, imei))
 }
 
-// List retrieves paginated inbox entries with optional status filter.
-func (r *InboxRepository) List(ctx context.Context, status string, limit, offset int) ([]*inbox.InboxEntry, int, error) {
+// ListByOperator retrieves paginated inbox entries for a specific operator within an organization with optional status filter.
+func (r *InboxRepository) ListByOperator(ctx context.Context, operatorID, orgID, status string, limit, offset int) ([]*inbox.InboxEntry, int, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -98,70 +98,11 @@ func (r *InboxRepository) List(ctx context.Context, status string, limit, offset
 		limit = 100
 	}
 
-	var whereClause string
-	args := []interface{}{}
-
-	switch strings.ToLower(status) {
-	case "pending", "approved", "rejected":
-		whereClause = "WHERE status = ?"
-		args = append(args, status)
-	case "all":
-		whereClause = ""
-	default:
-		whereClause = "WHERE status = 'pending'"
-		args = append(args, "pending")
-	}
-
-	// Get total count
-	var total int
-	countQuery := "SELECT COUNT(*) FROM inbox_requests " + whereClause
-	if err := r.queryRow(ctx, countQuery, args...).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	// Get entries
-	listQuery := `
-		SELECT id, device_imei, firebase_install_id, fcm_token, device_name,
-			   manufacturer, os_version, app_version, device_class, device_model, status,
-			   reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
-			   command_secret, created_at, updated_at
-		FROM inbox_requests
-		` + whereClause + `
-		ORDER BY created_at DESC
-		LIMIT ? OFFSET ?`
-
-	args = append(args, limit, offset)
-	rows, err := r.queryRows(ctx, listQuery, args...)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	var entries []*inbox.InboxEntry
-	for rows.Next() {
-		entry, err := r.scanEntryRows(rows)
-		if err != nil {
-			return nil, 0, err
-		}
-		entries = append(entries, entry)
-	}
-
-	return entries, total, rows.Err()
-}
-
-// ListByOperator retrieves paginated inbox entries for a specific operator with optional status filter.
-func (r *InboxRepository) ListByOperator(ctx context.Context, operatorID, status string, limit, offset int) ([]*inbox.InboxEntry, int, error) {
-	if limit <= 0 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
-
-	// Build WHERE clause based on status:
+	// Build WHERE clause based on status and organization:
 	// - "pending": show ALL pending entries (no operator filter - any operator can see pending)
 	// - "approved"/"rejected": show entries with that status AND reviewed_by = operatorID
 	// - "all"/"": show pending entries + entries reviewed by this operator
+	// Always filter by organization ID for multi-tenant isolation
 	var whereClause string
 	var args []interface{}
 
@@ -169,18 +110,18 @@ func (r *InboxRepository) ListByOperator(ctx context.Context, operatorID, status
 	switch statusLower {
 	case "pending":
 		// Show pending entries that are either unassigned (reviewed_by IS NULL)
-		// or assigned to this specific operator
+		// or assigned to this specific operator, within the organization
 		// This ensures operators only see pending entries they can work on
-		whereClause = "WHERE status = ? AND (reviewed_by IS NULL OR reviewed_by = ?)"
-		args = append(args, inbox.StatusPending, operatorID)
+		whereClause = "WHERE organization_id = ? AND status = ? AND (reviewed_by IS NULL OR reviewed_by = ?)"
+		args = append(args, orgID, inbox.StatusPending, operatorID)
 	case "approved", "rejected":
-		// Show entries with this status that were reviewed by this operator
-		whereClause = "WHERE status = ? AND reviewed_by = ?"
-		args = append(args, statusLower, operatorID)
+		// Show entries with this status that were reviewed by this operator within the organization
+		whereClause = "WHERE organization_id = ? AND status = ? AND reviewed_by = ?"
+		args = append(args, orgID, statusLower, operatorID)
 	default:
 		// "all" or empty: show pending entries (unassigned or mine) + entries reviewed by this operator
-		whereClause = "WHERE (status = ? AND (reviewed_by IS NULL OR reviewed_by = ?)) OR reviewed_by = ?"
-		args = append(args, inbox.StatusPending, operatorID, operatorID)
+		whereClause = "WHERE organization_id = ? AND ((status = ? AND (reviewed_by IS NULL OR reviewed_by = ?)) OR reviewed_by = ?)"
+		args = append(args, orgID, inbox.StatusPending, operatorID, operatorID)
 	}
 
 	// Get total count

@@ -46,6 +46,12 @@ func (h *ExecuteHandler) verifyDeviceOwnership(ctx context.Context, deviceID, op
 	return err
 }
 
+// verifyDeviceInOrganization verifies the device belongs to the organization.
+func (h *ExecuteHandler) verifyDeviceInOrganization(ctx context.Context, deviceID, orgID string) error {
+	_, err := h.deviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
+	return err
+}
+
 // Handle handles POST /v1/device/:imei/command.
 func (h *ExecuteHandler) Handle(c *gin.Context) {
 	imei := c.Param("imei")
@@ -73,7 +79,6 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// DOA: Verify device belongs to the authenticated operator
 	// Get operator from context (set by cookie auth middleware)
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -81,9 +86,15 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Verify the device belongs to this operator (DOA check)
-	// This returns the same error whether device doesn't exist OR isn't owned by operator
-	if err := h.verifyDeviceOwnership(c.Request.Context(), imei, op.ID); err != nil {
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		return
+	}
+
+	// Verify the device belongs to this organization
+	if err := h.verifyDeviceInOrganization(c.Request.Context(), imei, orgID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
 		return
 	}
@@ -173,11 +184,24 @@ func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		return
+	}
+
 	cmdStatus, err := h.commandService.GetCommandByDispatchID(c.Request.Context(), dispatchID)
 	if err != nil {
 		h.log.Error("failed to get command status", "error", err, "dispatchId", dispatchID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to get command status"})
 
+		return
+	}
+
+	// Verify the device belongs to this organization
+	if err := h.verifyDeviceInOrganization(c.Request.Context(), cmdStatus.DeviceID, orgID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
 		return
 	}
 
@@ -199,10 +223,17 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 		return
 	}
 
-	// DOA: First get the command to find the device, then verify ownership
+	// Get operator from context
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
+		return
+	}
+
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
 		return
 	}
 
@@ -213,8 +244,8 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 		return
 	}
 
-	// Verify the device belongs to this operator
-	if err = h.verifyDeviceOwnership(c.Request.Context(), cmd.DeviceID, op.ID); err != nil {
+	// Verify the device belongs to this organization
+	if err = h.verifyDeviceInOrganization(c.Request.Context(), cmd.DeviceID, orgID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
 		return
 	}
@@ -243,14 +274,22 @@ func (h *ExecuteHandler) GetPending(c *gin.Context) {
 		return
 	}
 
-	// DOA: Verify device belongs to the authenticated operator
+	// Get operator from context
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
 		return
 	}
 
-	if err := h.verifyDeviceOwnership(c.Request.Context(), imei, op.ID); err != nil {
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		return
+	}
+
+	// Verify the device belongs to this organization
+	if err := h.verifyDeviceInOrganization(c.Request.Context(), imei, orgID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
 		return
 	}
@@ -276,10 +315,17 @@ func (h *ExecuteHandler) Cancel(c *gin.Context) {
 		return
 	}
 
-	// DOA: First get the command to find the device, then verify ownership
+	// Get operator from context
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
+		return
+	}
+
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
 		return
 	}
 
@@ -290,8 +336,8 @@ func (h *ExecuteHandler) Cancel(c *gin.Context) {
 		return
 	}
 
-	// Verify the device belongs to this operator
-	if err = h.verifyDeviceOwnership(c.Request.Context(), cmd.DeviceID, op.ID); err != nil {
+	// Verify the device belongs to this organization
+	if err = h.verifyDeviceInOrganization(c.Request.Context(), cmd.DeviceID, orgID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
 		return
 	}

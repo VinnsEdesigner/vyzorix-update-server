@@ -3,11 +3,39 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/gin-gonic/gin"
 )
 
-// RequirePermission returns middleware that checks for a specific permission.
+// RequireOrgRole returns middleware that requires a minimum role level in the organization.
+func RequireOrgRole(minRole organization.OrganizationRole) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		op := GetOperatorFromContext(c)
+		if op == nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "unauthorized",
+				"message": "authentication required",
+			})
+			c.Abort()
+			return
+		}
+
+		membership := op.GetMembership(c.GetString("organizationId"))
+		if membership == nil || membership.Role.Level() < minRole.Level() {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "forbidden",
+				"message": "insufficient organization role",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// RequirePermission returns middleware that requires a specific permission.
 func RequirePermission(perm operator.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		op := GetOperatorFromContext(c)

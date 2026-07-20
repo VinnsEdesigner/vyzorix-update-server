@@ -36,6 +36,17 @@ func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
 		return
 	}
 
+	// Require organization context for multi-tenant isolation
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
+			Error:   "bad_request",
+			Message: "organization context required",
+			Code:    "ORG_REQUIRED",
+		})
+		return
+	}
+
 	// Get operator from context for DOA check
 	op := middleware.GetOperatorFromContext(c)
 	operatorID := ""
@@ -44,12 +55,12 @@ func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
 	}
 
 	// Verify operator authorization (DOA check)
-	authResp := h.service.VerifyDeviceOwnership(c.Request.Context(), imei, operatorID)
+	authResp := h.service.VerifyDeviceOwnership(c.Request.Context(), imei, operatorID, orgID)
 	if !authResp.Authorized {
 		if authResp.Forbidden {
 			c.JSON(http.StatusForbidden, appdiagnostics.ErrorResponse{
 				Error:   "forbidden",
-				Message: "Access denied - device does not belong to operator",
+				Message: "Access denied - device does not belong to organization",
 				Code:    "FORBIDDEN",
 			})
 			return
@@ -73,7 +84,7 @@ func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
 
 	req.IMEI = imei
 
-	result, err := h.service.GetDeviceTimeline(c.Request.Context(), imei, &req)
+	result, err := h.service.GetDeviceTimeline(c.Request.Context(), imei, &req, orgID)
 	if err != nil {
 		switch err {
 		case domaindiagnostics.ErrDeviceNotFound:

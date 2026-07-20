@@ -21,7 +21,11 @@ func (r *Resolver) GetInbox(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Get inbox service if available
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
 	if r.InboxService == nil {
 		return nil, r.Presenter.InternalError("inbox service not available")
 	}
@@ -44,28 +48,27 @@ func (r *Resolver) GetInbox(p graphql.ResolveParams) (interface{}, error) {
 		limit = 100
 	}
 
-	result, err := r.InboxService.GetInbox(ctx, op.ID, status, page, limit)
+	result, err := r.InboxService.GetInbox(ctx, op.ID, orgID, status, page, limit)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to get inbox")
 	}
 
-	// Convert to GraphQL response format
 	requests := make([]map[string]interface{}, 0, len(result.Requests))
 	for _, req := range result.Requests {
 		requests = append(requests, map[string]interface{}{
-			"id":                   req.ID,
-			"imei":                 req.IMEI,
-			"model":                req.Model,
-			"manufacturer":         req.Manufacturer,
-			"osVersion":            req.OSVersion,
-			"appVersion":           req.AppVersion,
-			"firebaseInstallId":    req.FirebaseInstallID,
-			"status":               req.Status,
-			"createdAt":            req.CreatedAt,
-			"approvedAt":           req.ApprovedAt,
-			"rejectedAt":           req.RejectedAt,
-			"notes":                req.Notes,
-			"operatorId":           req.OperatorID,
+			"id":                req.ID,
+			"imei":              req.IMEI,
+			"model":             req.Model,
+			"manufacturer":       req.Manufacturer,
+			"osVersion":         req.OSVersion,
+			"appVersion":        req.AppVersion,
+			"firebaseInstallId": req.FirebaseInstallID,
+			"status":           req.Status,
+			"createdAt":         req.CreatedAt,
+			"approvedAt":        req.ApprovedAt,
+			"rejectedAt":        req.RejectedAt,
+			"notes":            req.Notes,
+			"operatorId":       req.OperatorID,
 		})
 	}
 
@@ -89,19 +92,22 @@ func (r *Resolver) GetInboxEntry(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.BadRequestError("IMEI is required")
 	}
 
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Get inbox service if available
 	if r.InboxService == nil {
 		return nil, r.Presenter.InternalError("inbox service not available")
 	}
 
-	entry, err := r.InboxService.GetInboxEntry(ctx, imei)
+	entry, err := r.InboxService.GetInboxEntry(ctx, imei, orgID)
 	if err != nil {
-		// Map domain errors to GraphQL errors
 		if err == inbox.ErrInboxNotFound {
 			return nil, r.Presenter.NotFoundError("inbox entry not found")
 		}
@@ -109,19 +115,19 @@ func (r *Resolver) GetInboxEntry(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	return map[string]interface{}{
-		"id":                   entry.ID,
-		"imei":                 entry.IMEI,
-		"model":                entry.Model,
-		"manufacturer":         entry.Manufacturer,
-		"osVersion":            entry.OSVersion,
-		"appVersion":           entry.AppVersion,
-		"firebaseInstallId":    entry.FirebaseInstallID,
-		"status":               entry.Status,
-		"createdAt":            entry.CreatedAt,
-		"approvedAt":           entry.ApprovedAt,
-		"rejectedAt":           entry.RejectedAt,
-		"notes":                entry.Notes,
-		"operatorId":           entry.OperatorID,
+		"id":                entry.ID,
+		"imei":              entry.IMEI,
+		"model":             entry.Model,
+		"manufacturer":       entry.Manufacturer,
+		"osVersion":         entry.OSVersion,
+		"appVersion":        entry.AppVersion,
+		"firebaseInstallId":   entry.FirebaseInstallID,
+		"status":            entry.Status,
+		"createdAt":         entry.CreatedAt,
+		"approvedAt":        entry.ApprovedAt,
+		"rejectedAt":        entry.RejectedAt,
+		"notes":             entry.Notes,
+		"operatorId":        entry.OperatorID,
 	}, nil
 }
 
@@ -138,6 +144,11 @@ func (r *Resolver) AckInbox(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.BadRequestError("IMEI is required")
 	}
 
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
 	action, _ := p.Args["action"].(string)
 	if action == "" {
 		return nil, r.Presenter.BadRequestError("action is required")
@@ -150,14 +161,12 @@ func (r *Resolver) AckInbox(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Get inbox service if available
 	if r.InboxService == nil {
 		return nil, r.Presenter.InternalError("inbox service not available")
 	}
 
-	result, err := r.InboxService.AckInbox(ctx, imei, action, op.ID, notes)
+	result, err := r.InboxService.AckInbox(ctx, imei, action, op.ID, orgID, notes)
 	if err != nil {
-		// Map domain errors to GraphQL errors using error codes
 		se := inbox.ToServiceError(err)
 		switch se.Code {
 		case "not_found":
@@ -172,11 +181,11 @@ func (r *Resolver) AckInbox(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	response := map[string]interface{}{
-		"id":            result.ID,
-		"imei":          result.IMEI,
-		"status":        result.Status,
-		"fcmPushSent":   result.FCMPushSent,
-		"notes":         result.Notes,
+		"id":          result.ID,
+		"imei":        result.IMEI,
+		"status":      result.Status,
+		"fcmPushSent": result.FCMPushSent,
+		"notes":       result.Notes,
 	}
 
 	if result.ApprovedAt != nil {
@@ -193,6 +202,11 @@ func (r *Resolver) AckInbox(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) DeregisterDeviceGraphQL(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
 	imei, ok := p.Args["imei"].(string)
 	if !ok || imei == "" {
 		return nil, r.Presenter.BadRequestError("IMEI is required")
@@ -205,8 +219,7 @@ func (r *Resolver) DeregisterDeviceGraphQL(p graphql.ResolveParams) (interface{}
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Use DOA-verified deregistration method
-	result, err := r.DeviceService.DeregisterDeviceByOperator(ctx, imei, op.ID, hard)
+	result, err := r.DeviceService.DeregisterDeviceByOperator(ctx, imei, op.ID, orgID, hard)
 	if err != nil {
 		if err == device.ErrNotFound {
 			return nil, r.Presenter.NotFoundError("device not found or not owned by operator")
@@ -214,13 +227,12 @@ func (r *Resolver) DeregisterDeviceGraphQL(p graphql.ResolveParams) (interface{}
 		return nil, r.Presenter.InternalError("failed to deregister device")
 	}
 
-	// Log via presenter
 	r.Presenter.DeviceDelete(ctx, op.ID, imei)
 
 	return map[string]interface{}{
-		"imei":             result.IMEI,
-		"status":           result.Status,
-		"deregisteredAt":   result.DeregisteredAt,
-		"retentionUntil":   result.RetentionUntil,
+		"imei":           result.IMEI,
+		"status":         result.Status,
+		"deregisteredAt": result.DeregisteredAt,
+		"retentionUntil":  result.RetentionUntil,
 	}, nil
 }

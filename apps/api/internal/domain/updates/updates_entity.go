@@ -76,16 +76,17 @@ func (v *UpdateVersion) ReleaseDateTime() time.Time {
 
 // UpdatePush represents an update push operation.
 type UpdatePush struct {
-	ScheduledAt *int64       `json:"scheduledAt,omitempty"`
-	CompletedAt *int64       `json:"completedAt,omitempty"`
-	CancelledAt *int64       `json:"cancelledAt,omitempty"`
-	InstallType InstallType  `json:"installType"`
-	Status      UpdateStatus `json:"status"`
-	InitiatedBy string       `json:"initiatedBy"`
-	CancelledBy string       `json:"cancelledBy,omitempty"`
-	ID          string       `json:"id"`
-	VersionID   string       `json:"versionId"`
-	InitiatedAt int64        `json:"initiatedAt"`
+	ScheduledAt    *int64       `json:"scheduledAt,omitempty"`
+	CompletedAt    *int64       `json:"completedAt,omitempty"`
+	CancelledAt    *int64       `json:"cancelledAt,omitempty"`
+	InstallType    InstallType  `json:"installType"`
+	Status         UpdateStatus `json:"status"`
+	InitiatedBy    string       `json:"initiatedBy"`
+	CancelledBy    string       `json:"cancelledBy,omitempty"`
+	ID             string       `json:"id"`
+	VersionID      string       `json:"versionId"`
+	OrganizationID string       `json:"organizationId"`
+	InitiatedAt    int64        `json:"initiatedAt"`
 }
 
 // InitiatedAtTime returns the InitiatedAt as a time.Time.

@@ -77,18 +77,18 @@ func (s *Service) PushUpdate(ctx context.Context, req *PushUpdateRequest, initia
 }
 
 // GetHistory returns paginated push history.
-func (s *Service) GetHistory(ctx context.Context, status string, page, limit int) (*ListHistoryResponse, error) {
-	return s.historySvc.GetHistory(ctx, status, page, limit)
+func (s *Service) GetHistory(ctx context.Context, status string, page, limit int, orgID string) (*ListHistoryResponse, error) {
+	return s.historySvc.GetHistory(ctx, status, page, limit, orgID)
 }
 
 // GetPushDetail returns detailed information about a specific push.
-func (s *Service) GetPushDetail(ctx context.Context, pushID string) (*PushDetailResponse, error) {
-	return s.historySvc.GetPushDetail(ctx, pushID)
+func (s *Service) GetPushDetail(ctx context.Context, pushID string, orgID string) (*PushDetailResponse, error) {
+	return s.historySvc.GetPushDetail(ctx, pushID, orgID)
 }
 
 // CancelPush cancels a pending push.
-func (s *Service) CancelPush(ctx context.Context, pushID, cancelledBy string) (*CancelPushResponse, error) {
-	return s.historySvc.CancelPush(ctx, pushID, cancelledBy)
+func (s *Service) CancelPush(ctx context.Context, pushID, cancelledBy string, orgID string) (*CancelPushResponse, error) {
+	return s.historySvc.CancelPush(ctx, pushID, cancelledBy, orgID)
 }
 
 // SyncFromGitHub triggers a manual sync from GitHub.

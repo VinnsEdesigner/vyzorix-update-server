@@ -23,10 +23,12 @@ import (
 	eventapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/event"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
+	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
@@ -138,7 +140,8 @@ func ProvideUpdatesStorage(db *sql.DB) *storage.UpdatesStorage {
 func ProvideEventProcessor(
 	eventRepo *storage.EventRepository,
 	deviceRepo *storage.DeviceRepository,
-	operatorRepo *storage.OperatorRepository,
+	deviceSettingsRepo *storage.DeviceSettingsRepository,
+	orgSettingsRepo *storage.OrganizationSettingsRepository,
 	hubResult *HubResult,
 	log *slog.Logger,
 ) *eventapp.Processor {
@@ -149,8 +152,9 @@ func ProvideEventProcessor(
 	// Create processor with broadcaster
 	processor := eventapp.NewProcessor(eventRepo, deviceRepo, broadcaster, log)
 
-	// Wire operator repository for per-operator threshold fetching
-	processor.SetOperatorRepo(operatorRepo)
+	// Wire repositories for hierarchical threshold resolution
+	processor.SetDeviceSettingsRepo(deviceSettingsRepo)
+	processor.SetOrgSettingsRepo(orgSettingsRepo)
 
 	hubResult.Hub.SetEventProcessor(processor)
 
@@ -248,6 +252,93 @@ func ProvideEmailService() *emailService.Service {
 // ProvideMetrics creates the metrics service.
 func ProvideMetrics() *metrics.Metrics {
 	return metrics.New()
+}
+
+// ProvideOrganizationRepository creates the organization repository.
+func ProvideOrganizationRepository(db *sql.DB) *storage.OrganizationStorage {
+	return storage.NewOrganizationStorage(db)
+}
+
+// ProvideMemberRepository creates the member repository.
+func ProvideMemberRepository(db *sql.DB) *storage.MemberStorage {
+	return storage.NewMemberStorage(db)
+}
+
+// ProvideInvitationRepository creates the invitation repository.
+func ProvideInvitationRepository(db *sql.DB) *storage.InvitationStorage {
+	return storage.NewInvitationStorage(db)
+}
+
+// ProvideTxManager creates a simple transaction manager for SQLite.
+func ProvideTxManager(db *sql.DB) transaction.TxManager {
+	return storage.NewTxManager(db)
+}
+
+// ProvideOrganizationService creates the organization service.
+func ProvideOrganizationService(
+	orgRepo *storage.OrganizationStorage,
+	memberRepo *storage.MemberStorage,
+	invitationRepo *storage.InvitationStorage,
+	operatorRepo *storage.OperatorStorage,
+	txManager transaction.TxManager,
+	log *slog.Logger,
+) *orgapplication.OrganizationService {
+	return orgapplication.NewOrganizationService(orgRepo, memberRepo, invitationRepo, operatorRepo, txManager, log)
+}
+
+// ProvideMemberService creates the member service.
+func ProvideMemberService(
+	memberRepo *storage.MemberStorage,
+	orgRepo *storage.OrganizationStorage,
+	log *slog.Logger,
+) *orgapplication.MemberService {
+	return orgapplication.NewMemberService(memberRepo, orgRepo, log)
+}
+
+// ProvideInvitationService creates the invitation service.
+func ProvideInvitationService(
+	invitationRepo *storage.InvitationStorage,
+	operatorRepo *storage.OperatorStorage,
+	orgRepo *storage.OrganizationStorage,
+	memberRepo *storage.MemberStorage,
+	txManager transaction.TxManager,
+	emailSvc *emailService.Service,
+	log *slog.Logger,
+	cfg config.Config,
+) *orgapplication.InvitationService {
+	baseURL := cfg.FrontendURL
+	if baseURL == "" {
+		baseURL = "http://localhost:5173"
+	}
+	return orgapplication.NewInvitationService(invitationRepo, orgRepo, memberRepo, txManager, emailSvc, log, baseURL)
+}
+
+// ProvideOrganizationSettingsRepository creates the organization settings repository.
+func ProvideOrganizationSettingsRepository(db *sql.DB) *storage.OrganizationSettingsRepository {
+	return storage.NewOrganizationSettingsRepository(db)
+}
+
+// ProvideOrganizationSettingsService creates the organization settings service.
+func ProvideOrganizationSettingsService(
+	settingsRepo *storage.OrganizationSettingsRepository,
+	orgRepo *storage.OrganizationStorage,
+	memberRepo *storage.MemberStorage,
+) *orgapplication.OrganizationSettingsService {
+	return orgapplication.NewOrganizationSettingsService(settingsRepo, orgRepo, memberRepo)
+}
+
+// ProvideDeviceSettingsRepository creates the device settings repository.
+func ProvideDeviceSettingsRepository(db *sql.DB) *storage.DeviceSettingsRepository {
+	return storage.NewDeviceSettingsRepository(db)
+}
+
+// ProvideDeviceSettingsService creates the device settings service.
+func ProvideDeviceSettingsService(
+	settingsRepo *storage.DeviceSettingsRepository,
+	deviceRepo *storage.DeviceRepository,
+	orgSettingsRepo *storage.OrganizationSettingsRepository,
+) *device.DeviceSettingsService {
+	return device.NewDeviceSettingsService(settingsRepo, deviceRepo, orgSettingsRepo)
 }
 
 // HubResult holds the WebSocket hub components.
@@ -450,19 +541,17 @@ func ProvideHandlerSet(
 		Lockout:        lockout,
 		OperatorRepo:   operatorRepo,
 		AuditLogger:    auditLogger,
-		IPIntelligence: ipIntelligence,
-		Presenter:      presenter,
-		OAuthStateRepo: nil, // Will be set via WithOAuthStateRepo if needed
-	})
-
-	hs.DeviceRegister = devicehandlers.NewRegisterHandler(deviceService)
+                IPIntelligence: ipIntelligence,
+                Presenter:      presenter,
+        })
+	// DEPRECATED: hs.DeviceRegister = devicehandlers.NewRegisterHandler(deviceService) // /v1/device/register removed
 	hs.DeviceStatus = devicehandlers.NewStatusHandler(deviceService)
 	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deviceService)
 	hs.DeviceList = devicehandlers.NewListHandler(deviceService, hubResult.Hub)
 	hs.Command = cmdhandlers.NewExecuteHandler(commandService, deviceService, hubResult.Hub, fcmNotifier)
 	hs.Stream = websockethandlers.NewStreamHandler(log, cfg, hubResult.Hub, *hmacVerifier, auditLogger)
-	hs.TelemetryHistory = handlers.NewTelemetryHistoryHandler(log, storage.NewTelemetryRepository(db), nil)
-	hs.ConnectionStatus = handlers.NewConnectionStatusHandler(log, hubResult.Hub)
+	hs.TelemetryHistory = handlers.NewTelemetryHistoryHandler(log, storage.NewTelemetryRepository(db), storage.NewDeviceRepository(db), nil)
+	hs.ConnectionStatus = handlers.NewConnectionStatusHandler(log, hubResult.Hub, storage.NewDeviceRepository(db))
 	hs.AdminClients = admin.NewClientsHandler(clientService)
 	hs.Updates = updatesHandler
 
@@ -512,6 +601,11 @@ var WireInjector = wire.NewSet(
 	ProvideEventProcessor,
 	ProvideEmailVerificationRepository,
 	ProvidePasswordResetRepository,
+	ProvideRefreshTokenRepository,
+	ProvideOrganizationRepository,
+	ProvideMemberRepository,
+	ProvideInvitationRepository,
+	ProvideTxManager,
 	ProvideAuthService,
 	ProvideDeviceService,
 	ProvideClientService,
@@ -535,6 +629,13 @@ var WireInjector = wire.NewSet(
 	ProvideServerDependencies,
 	ProvideServerResult,
 	ProvideServer,
+	ProvideOrganizationService,
+	ProvideMemberService,
+	ProvideInvitationService,
+	ProvideOrganizationSettingsRepository,
+	ProvideOrganizationSettingsService,
+	ProvideDeviceSettingsRepository,
+	ProvideDeviceSettingsService,
 	wire.Bind(new(operator.Repository), new(*storage.OperatorRepository)),
 )
 
@@ -570,31 +671,41 @@ func ProvideServerDependencies(
 	ipIntelligence *middleware.IPIntelligence,
 	updatesService *updatesapp.Service,
 	apiKeyService *keys.APIKeyService,
+	orgService *orgapplication.OrganizationService,
+	memberService *orgapplication.MemberService,
+	invitationService *orgapplication.InvitationService,
+	orgSettingsService *orgapplication.OrganizationSettingsService,
+	deviceSettingsService *device.DeviceSettingsService,
 ) *ServerDependencies {
 	return &ServerDependencies{
-		FCMNotifier:     fcmNotifier,
-		OperatorRepo:    operatorRepo,
-		RateLimiter:     rateLimiter,
-		Hub:             hubResult.Hub,
-		AuthService:     authService,
-		AuthLimiter:     middleware.NewRateLimiter(5, time.Minute),
-		IPIntelligence:  ipIntelligence,
-		Log:             log,
-		SessionManager:  sessionManager,
-		GoogleVerifier:  googleVerifier,
-		EmailService:    emailService,
-		CommandService:  commandService,
-		ClientService:   clientService,
-		DB:              sqlite,
-		Lockout:         lockout,
-		DeviceService:   deviceService,
-		Metrics:         metrics,
-		AuditLogger:     auditLogger,
-		Config:          cfg,
-		UpdatesStorage:  updatesStorage,
-		UpdatesService:  updatesService,
-		TelemetryRepo:   telemetryRepo,
-		APIKeyService:   apiKeyService,
+		FCMNotifier:         fcmNotifier,
+		OperatorRepo:        operatorRepo,
+		RateLimiter:         rateLimiter,
+		Hub:                 hubResult.Hub,
+		AuthService:         authService,
+		AuthLimiter:         middleware.NewRateLimiter(5, time.Minute),
+		IPIntelligence:      ipIntelligence,
+		Log:                 log,
+		SessionManager:      sessionManager,
+		GoogleVerifier:      googleVerifier,
+		EmailService:        emailService,
+		CommandService:      commandService,
+		ClientService:       clientService,
+		DB:                 sqlite,
+		Lockout:            lockout,
+		DeviceService:       deviceService,
+		Metrics:            metrics,
+		AuditLogger:        auditLogger,
+		Config:             cfg,
+		UpdatesStorage:     updatesStorage,
+		UpdatesService:     updatesService,
+		TelemetryRepo:      telemetryRepo,
+		APIKeyService:      apiKeyService,
+		OrgService:         orgService,
+		MemberService:      memberService,
+		InvitationService:  invitationService,
+		OrgSettingsService: orgSettingsService,
+		DeviceSettingsService: deviceSettingsService,
 	}
 }
 

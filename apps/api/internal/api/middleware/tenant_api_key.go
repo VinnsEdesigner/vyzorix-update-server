@@ -30,7 +30,7 @@ var PathBoundaries = map[string]PathType{
 	// PUBLIC - No auth required
 	"/health":              PathTypePublic,
 	"/v1/auth/":           PathTypePublic,
-	"/v1/device/register":  PathTypePublic,
+	// DEPRECATED: "/v1/device/register":  PathTypePublic // Use /v1/device/inbox,
 	"/v1/device/inbox":     PathTypePublic,
 	"/v1/device/confirm":   PathTypePublic,
 	"/v1/device/":          PathTypePublic, // /v1/device/:imei/status - device status check

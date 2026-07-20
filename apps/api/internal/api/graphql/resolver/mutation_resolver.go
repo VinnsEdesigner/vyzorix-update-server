@@ -3,11 +3,14 @@ package resolver
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
+	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	domainoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/graphql-go/graphql"
@@ -22,6 +25,7 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
 	token, _ := p.Args["token"].(string)
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
@@ -31,13 +35,17 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 		return nil, r.Presenter.BadRequestError("FCM token is required")
 	}
 
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device ownership - returns *dto.DeviceResponse
-	_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+	// Verify device exists in organization using org-scoped method
+	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -52,21 +60,26 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 	r.Presenter.FCMTokenUpdate(ctx, op.ID, deviceID)
 
 	// Fetch updated device to return fresh data
-	updatedDev, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+	updatedDev, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
 
-	return r.deviceDTOToMap(updatedDev), nil
+	return r.deviceDetailToMap(updatedDev), nil
 }
 
 // DeleteDevice resolves the deleteDevice mutation.
 func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["id"].(string)
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
+	}
+
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -74,13 +87,8 @@ func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device ownership
-	_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
-	if err != nil {
-		return nil, r.Presenter.NotFoundError("device not found")
-	}
-
-	err = r.DeviceService.DeleteDevice(ctx, deviceID)
+	// Use organization-scoped deregistration method
+	_, err := r.DeviceService.DeregisterDeviceByOrganization(ctx, deviceID, orgID, true)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to delete device")
 	}
@@ -97,6 +105,7 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 	deviceID, _ := p.Args["deviceId"].(string)
 	cmdStr, _ := p.Args["command"].(string)
 	args, _ := p.Args["args"].(map[string]interface{})
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
@@ -106,13 +115,17 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.BadRequestError("command is required")
 	}
 
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device ownership
-	_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+	// Verify device exists in organization using org-scoped method
+	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -155,17 +168,6 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 
 	// If not sent via WebSocket, try FCM
 	if delivery == "queued" && r.FCMNotifier != nil {
-		// First verify ownership before sending FCM
-		_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
-		if err != nil {
-			//
-			return map[string]interface{}{
-				"dispatchId":   cmdResp.DispatchID,
-				"commandId":    cmdResp.CommandID,
-				"status":       delivery,
-				"deviceOnline": false,
-			}, nil
-		}
 		dev, _ := r.DeviceService.GetDevice(ctx, deviceID)
 		if dev != nil && dev.FCMToken != "" {
 			wake := fcm.SilentWake{
@@ -175,7 +177,6 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 				DeviceID:   deviceID,
 			}
 			if err := r.FCMNotifier.SendSilentWake(ctx, wake); err != nil {
-				// Log but don't fail - command remains queued
 				r.Presenter.LogAction(ctx, op.ID, "fcm_send_failed", "device", deviceID)
 			} else {
 				delivery = "queued_fcm"
@@ -198,9 +199,14 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	dispatchID, _ := p.Args["dispatchId"].(string)
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if dispatchID == "" {
 		return nil, r.Presenter.BadRequestError("dispatch ID is required")
+	}
+
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -214,8 +220,8 @@ func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.NotFoundError("command not found")
 	}
 
-	// Verify device ownership
-	_, err = r.DeviceService.GetDeviceByOperator(ctx, cmd.DeviceID, op.ID)
+	// Verify device exists in organization
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, cmd.DeviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("command not found")
 	}
@@ -236,9 +242,14 @@ func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	dispatchID, _ := p.Args["dispatchId"].(string)
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if dispatchID == "" {
 		return nil, r.Presenter.BadRequestError("dispatch ID is required")
+	}
+
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -252,8 +263,8 @@ func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.NotFoundError("command not found")
 	}
 
-	// Verify device ownership
-	_, err = r.DeviceService.GetDeviceByOperator(ctx, cmd.DeviceID, op.ID)
+	// Verify device exists in organization
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, cmd.DeviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("command not found")
 	}
@@ -277,9 +288,14 @@ func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
+	orgID, _ := p.Args["organizationId"].(string)
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
+	}
+
+	if orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -287,8 +303,8 @@ func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device ownership
-	_, err := r.DeviceService.GetDeviceByOperator(ctx, deviceID, op.ID)
+	// Verify device exists in organization
+	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -314,52 +330,6 @@ func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error
 // ============================================================
 // Settings Mutation Resolvers
 // ============================================================
-
-// UpdateMyThresholds resolves the updateMyThresholds mutation.
-func (r *Resolver) UpdateMyThresholds(p graphql.ResolveParams) (interface{}, error) {
-	ctx := p.Context
-
-	op, ok := gqlcontext.GetOperator(ctx)
-	if !ok || op == nil {
-		return nil, r.Presenter.UnauthorizedError()
-	}
-
-	// Parse thresholds input
-	input, ok := p.Args["input"].(map[string]interface{})
-	if !ok {
-		return nil, r.Presenter.BadRequestError("invalid input")
-	}
-
-	thresholdsInput := &domainoperator.ThresholdsInput{}
-	if v, ok := input["riskWarn"].(int); ok {
-		thresholdsInput.RiskWarn = &v
-	}
-	if v, ok := input["riskCrit"].(int); ok {
-		thresholdsInput.RiskCrit = &v
-	}
-	if v, ok := input["thermalWarn"].(int); ok {
-		thresholdsInput.ThermalWarn = &v
-	}
-	if v, ok := input["thermalCrit"].(int); ok {
-		thresholdsInput.ThermalCrit = &v
-	}
-	if v, ok := input["bufferWarn"].(int); ok {
-		thresholdsInput.BufferWarn = &v
-	}
-	if v, ok := input["bufferCrit"].(int); ok {
-		thresholdsInput.BufferCrit = &v
-	}
-
-	thresholds, err := r.ThresholdService.UpdateThresholds(ctx, op.ID, thresholdsInput)
-	if err != nil {
-		if err == domainoperator.ErrValidation {
-			return nil, r.Presenter.BadRequestError(err.Error())
-		}
-		return nil, r.Presenter.InternalError("failed to update thresholds")
-	}
-
-	return thresholds, nil
-}
 
 // UpdateMyNotifications resolves the updateMyNotifications mutation.
 func (r *Resolver) UpdateMyNotifications(p graphql.ResolveParams) (interface{}, error) {
@@ -446,6 +416,221 @@ func (r *Resolver) UpdateMyNotifications(p graphql.ResolveParams) (interface{}, 
 	}
 
 	return notifications, nil
+}
+
+// UpdateDeviceSettings resolves the updateDeviceSettings mutation.
+func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organization ID is required")
+	}
+
+	deviceImei, ok := p.Args["deviceImei"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("device IMEI is required")
+	}
+
+	// Check if operator is a member of the organization
+	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("not a member of this organization")
+	}
+
+	input, ok := p.Args["input"].(map[string]interface{})
+	if !ok {
+		return nil, r.Presenter.BadRequestError("invalid input")
+	}
+
+	// Parse device settings input
+	settingsReq := &devicedomain.UpdateDeviceSettingsRequest{}
+
+	if v, ok := input["customName"].(string); ok {
+		settingsReq.CustomName = &v
+	}
+
+	if v, ok := input["location"].(string); ok {
+		settingsReq.Location = &v
+	}
+
+	if metadata, ok := input["metadata"].([]interface{}); ok {
+		settingsReq.Metadata = make(map[string]string)
+		for _, m := range metadata {
+			if kv, ok := m.(map[string]interface{}); ok {
+				if k, ok := kv["key"].(string); ok {
+					if v, ok := kv["value"].(string); ok {
+						settingsReq.Metadata[k] = v
+					}
+				}
+			}
+		}
+	}
+
+	if thresholds, ok := input["thresholds"].(map[string]interface{}); ok {
+		settingsReq.Thresholds = parseDeviceThresholds(thresholds)
+	}
+
+	// First, ensure device settings exist (create with defaults if not)
+	if _, err := r.DeviceSettingsService.GetOrCreateSettings(ctx, deviceImei); err != nil {
+		return nil, r.Presenter.InternalError("failed to create device settings")
+	}
+
+	// Now update with the requested changes
+	settings, err := r.DeviceSettingsService.UpdateSettings(ctx, deviceImei, settingsReq)
+	if err != nil {
+		if errors.Is(err, devicedomain.ErrInvalidThreshold) {
+			return nil, r.Presenter.BadRequestError("invalid threshold values: warning must be less than critical")
+		}
+		return nil, r.Presenter.InternalError("failed to update device settings")
+	}
+
+	// Get organization settings for effective thresholds
+	orgSettings, err := r.OrgSettingsService.GetSettings(ctx, orgID)
+	if err != nil {
+		if errors.Is(err, orgdomain.ErrSettingsNotFound) {
+			return nil, r.Presenter.NotFoundError("organization settings not found")
+		}
+		return nil, r.Presenter.InternalError("failed to get organization settings")
+	}
+
+	// Convert org thresholds to device thresholds for resolution
+	orgThresholds := devicedomain.FromOrgThresholds(orgSettings.DefaultThresholds)
+	effectiveThresholds := devicedomain.ResolveThresholds(settings, orgThresholds)
+
+	return map[string]interface{}{
+		"id":                   settings.ID,
+		"deviceImei":           settings.DeviceIMEI,
+		"customName":           settings.CustomName,
+		"location":             settings.Location,
+		"metadata":             convertMetadataToList(settings.Metadata),
+		"thresholds":           settings.Thresholds,
+		"effectiveThresholds":   effectiveThresholds,
+		"createdAt":            settings.CreatedAt,
+		"updatedAt":            settings.UpdatedAt,
+	}, nil
+}
+
+// UpdateOrganizationSettings resolves the updateOrganizationSettings mutation.
+func (r *Resolver) UpdateOrganizationSettings(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organization ID is required")
+	}
+
+	// Check if operator is a member of the organization
+	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("not a member of this organization")
+	}
+
+	input, ok := p.Args["input"].(map[string]interface{})
+	if !ok {
+		return nil, r.Presenter.BadRequestError("invalid input")
+	}
+
+	// Parse organization settings input
+	settingsReq := &orgdomain.UpdateOrganizationSettingsRequest{}
+
+	if v, ok := input["timezone"].(string); ok {
+		settingsReq.Timezone = &v
+	}
+
+	if v, ok := input["dateFormat"].(string); ok {
+		settingsReq.DateFormat = &v
+	}
+
+	if v, ok := input["alertCooldownMinutes"].(int); ok {
+		settingsReq.AlertCooldownMinutes = &v
+	}
+
+	if thresholds, ok := input["defaultThresholds"].(map[string]interface{}); ok {
+		settingsReq.DefaultThresholds = parseOrgThresholds(thresholds)
+	}
+
+	settings, err := r.OrgSettingsService.UpdateSettings(ctx, orgID, settingsReq)
+	if err != nil {
+		if errors.Is(err, orgdomain.ErrSettingsNotFound) {
+			return nil, r.Presenter.NotFoundError("organization settings not found")
+		}
+		if errors.Is(err, orgdomain.ErrInvalidThreshold) {
+			return nil, r.Presenter.BadRequestError("invalid threshold values: warning must be less than critical")
+		}
+		return nil, r.Presenter.InternalError("failed to update organization settings")
+	}
+
+	return map[string]interface{}{
+		"id":                    settings.ID,
+		"organizationId":        settings.OrganizationID,
+		"timezone":              settings.Timezone,
+		"dateFormat":           settings.DateFormat,
+		"alertCooldownMinutes":  settings.AlertCooldownMinutes,
+		"defaultThresholds":     settings.DefaultThresholds,
+		"createdAt":             settings.CreatedAt,
+		"updatedAt":             settings.UpdatedAt,
+	}, nil
+}
+
+// parseDeviceThresholds parses device threshold input.
+func parseDeviceThresholds(input map[string]interface{}) *devicedomain.Thresholds {
+	thresholds := &devicedomain.Thresholds{}
+
+	if v, ok := input["riskWarn"].(int); ok {
+		thresholds.RiskWarn = v
+	}
+	if v, ok := input["riskCrit"].(int); ok {
+		thresholds.RiskCrit = v
+	}
+	if v, ok := input["thermalWarn"].(int); ok {
+		thresholds.ThermalWarn = v
+	}
+	if v, ok := input["thermalCrit"].(int); ok {
+		thresholds.ThermalCrit = v
+	}
+	if v, ok := input["bufferWarn"].(int); ok {
+		thresholds.BufferWarn = v
+	}
+	if v, ok := input["bufferCrit"].(int); ok {
+		thresholds.BufferCrit = v
+	}
+
+	return thresholds
+}
+
+// parseOrgThresholds parses organization threshold input.
+func parseOrgThresholds(input map[string]interface{}) *orgdomain.Thresholds {
+	thresholds := &orgdomain.Thresholds{}
+
+	if v, ok := input["riskWarn"].(int); ok {
+		thresholds.RiskWarn = v
+	}
+	if v, ok := input["riskCrit"].(int); ok {
+		thresholds.RiskCrit = v
+	}
+	if v, ok := input["thermalWarn"].(int); ok {
+		thresholds.ThermalWarn = v
+	}
+	if v, ok := input["thermalCrit"].(int); ok {
+		thresholds.ThermalCrit = v
+	}
+	if v, ok := input["bufferWarn"].(int); ok {
+		thresholds.BufferWarn = v
+	}
+	if v, ok := input["bufferCrit"].(int); ok {
+		thresholds.BufferCrit = v
+	}
+
+	return thresholds
 }
 
 // TestWebhook resolves the testWebhook mutation.

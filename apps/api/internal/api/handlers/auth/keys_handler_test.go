@@ -190,16 +190,192 @@ func (r *mockAPIKeyRepository) ExistsByOperatorAndNameExcluding(ctx context.Cont
 	return false, nil
 }
 
+func (r *mockAPIKeyRepository) ExistsByOrganizationAndName(ctx context.Context, orgID, name string) (bool, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, k := range r.keys {
+		if k.OrganizationID == orgID && k.Name == name && k.IsActive {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (r *mockAPIKeyRepository) ExistsByOrganizationAndNameExcluding(ctx context.Context, orgID, name, excludeKeyID string) (bool, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, k := range r.keys {
+		if k.OrganizationID == orgID && k.Name == name && k.ID != excludeKeyID && k.IsActive {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (r *mockAPIKeyRepository) CountByOrganizationThisMonth(ctx context.Context, orgID string) (int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	monthStart := time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.UTC).UnixMilli()
+	count := 0
+	for _, k := range r.keys {
+		if k.OrganizationID == orgID && k.CreatedAt >= monthStart {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (r *mockAPIKeyRepository) DeleteByOrganization(ctx context.Context, id, orgID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if key, ok := r.keys[id]; ok && key.OrganizationID == orgID {
+		key.IsActive = false
+	}
+	delete(r.keys, id)
+	return nil
+}
+
+func (r *mockAPIKeyRepository) RevokeByOrganization(ctx context.Context, id, orgID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if key, ok := r.keys[id]; ok && key.OrganizationID == orgID {
+		key.IsActive = false
+		now := time.Now().UnixMilli()
+		key.RevokedAt = &now
+		key.UpdatedAt = now
+	}
+	return nil
+}
+
+func (r *mockAPIKeyRepository) GetByIDAndOrganization(ctx context.Context, id, orgID string) (*infraStorage.APIKey, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if key, ok := r.keys[id]; ok && key.OrganizationID == orgID {
+		return key, nil
+	}
+	return nil, sql.ErrNoRows
+}
+
+func (r *mockAPIKeyRepository) ListByOrganization(ctx context.Context, orgID string, page, limit int) ([]*infraStorage.APIKey, int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var result []*infraStorage.APIKey
+	for _, k := range r.keys {
+		if k.OrganizationID == orgID {
+			result = append(result, k)
+		}
+	}
+	total := len(result)
+	offset := (page - 1) * limit
+	if offset >= len(result) {
+		return []*infraStorage.APIKey{}, total, nil
+	}
+	end := page * limit
+	if end > len(result) {
+		end = len(result)
+	}
+	return result[offset:end], total, nil
+}
+
+func (r *mockAPIKeyRepository) ExistsByOrganizationAndName(ctx context.Context, orgID, name string) (bool, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, k := range r.keys {
+		if k.OrganizationID == orgID && k.Name == name && k.IsActive {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (r *mockAPIKeyRepository) ExistsByOrganizationAndNameExcluding(ctx context.Context, orgID, name, excludeKeyID string) (bool, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, k := range r.keys {
+		if k.OrganizationID == orgID && k.Name == name && k.ID != excludeKeyID && k.IsActive {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (r *mockAPIKeyRepository) CountByOrganizationThisMonth(ctx context.Context, orgID string) (int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	monthStart := time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.UTC).UnixMilli()
+	count := 0
+	for _, k := range r.keys {
+		if k.OrganizationID == orgID && k.CreatedAt >= monthStart {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (r *mockAPIKeyRepository) DeleteByOrganization(ctx context.Context, id, orgID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if key, ok := r.keys[id]; ok && key.OrganizationID == orgID {
+		key.IsActive = false
+	}
+	delete(r.keys, id)
+	return nil
+}
+
+func (r *mockAPIKeyRepository) RevokeByOrganization(ctx context.Context, id, orgID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if key, ok := r.keys[id]; ok && key.OrganizationID == orgID {
+		key.IsActive = false
+		now := time.Now().UnixMilli()
+		key.RevokedAt = &now
+		key.UpdatedAt = now
+	}
+	return nil
+}
+
+func (r *mockAPIKeyRepository) GetByIDAndOrganization(ctx context.Context, id, orgID string) (*infraStorage.APIKey, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if key, ok := r.keys[id]; ok && key.OrganizationID == orgID {
+		return key, nil
+	}
+	return nil, sql.ErrNoRows
+}
+
+func (r *mockAPIKeyRepository) ListByOrganization(ctx context.Context, orgID string, page, limit int) ([]*infraStorage.APIKey, int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var result []*infraStorage.APIKey
+	for _, k := range r.keys {
+		if k.OrganizationID == orgID {
+			result = append(result, k)
+		}
+	}
+	total := len(result)
+	offset := (page - 1) * limit
+	if offset >= len(result) {
+		return []*infraStorage.APIKey{}, total, nil
+	}
+	end := page * limit
+	if end > len(result) {
+		end = len(result)
+	}
+	return result[offset:end], total, nil
+}
+
 // =============================================================================
 // Test Setup
 // =============================================================================
 
-// testOperatorMiddleware sets a default operator_id in context for testing.
-func testOperatorMiddleware(operatorID string) gin.HandlerFunc {
+// testOperatorMiddleware sets default operator_id and organization_id in context for testing.
+func testOperatorMiddleware(operatorID, organizationID string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("operator_id", operatorID)
+		c.Set("organization_id", organizationID)
 		c.Next()
 	}
+}
 }
 
 func setupTestRouter(t *testing.T) (*gin.Engine, *Handler, *mockAPIKeyRepository) {
@@ -213,12 +389,12 @@ func setupTestRouter(t *testing.T) (*gin.Engine, *Handler, *mockAPIKeyRepository
 	config.PrefixLength = 8
 	service := apikeyapp.NewAPIKeyService(repo, config)
 
-	handler := NewHandler(service, &audit.NoOpLogger{})
+	handler := NewHandler(service, nil, &audit.NoOpLogger{})
 
 	r := gin.New()
 	keysGroup := r.Group("/v1")
-	// Apply test middleware to set operator_id
-	keysGroup.Use(testOperatorMiddleware("test-operator-001"))
+	// Apply test middleware to set operator_id and organization_id
+	keysGroup.Use(testOperatorMiddleware("test-operator-001", "test-org-001"))
 	handler.RegisterRoutes(keysGroup)
 
 	return r, handler, repo

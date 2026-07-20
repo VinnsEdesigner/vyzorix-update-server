@@ -263,3 +263,53 @@ var MemberLifecycleEnum = graphql.NewEnum(graphql.EnumConfig{
 		},
 	},
 })
+
+// OrgRoleEnum represents the role of an organization member.
+// Maps to domain/organization.OrganizationRole: super_admin, admin, operator, viewer
+var OrgRoleEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "OrgRole",
+	Description: "Role of an organization member",
+	Values: graphql.EnumValueConfigMap{
+		"SUPER_ADMIN": &graphql.EnumValueConfig{
+			Value:       "super_admin",
+			Description: "Super admin - full control including deletion",
+		},
+		"ADMIN": &graphql.EnumValueConfig{
+			Value:       "admin",
+			Description: "Admin - can manage members and devices",
+		},
+		"OPERATOR": &graphql.EnumValueConfig{
+			Value:       "operator",
+			Description: "Operator - can send commands and manage devices",
+		},
+		"VIEWER": &graphql.EnumValueConfig{
+			Value:       "viewer",
+			Description: "Viewer - read-only access",
+		},
+	},
+})
+
+// InvitationStatusEnum represents the status of an invitation.
+// Maps to domain/organization.InvitationStatus: pending, accepted, rejected, expired
+var InvitationStatusEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "InvitationStatus",
+	Description: "Status of an organization invitation",
+	Values: graphql.EnumValueConfigMap{
+		"PENDING": &graphql.EnumValueConfig{
+			Value:       "pending",
+			Description: "Invitation is pending",
+		},
+		"ACCEPTED": &graphql.EnumValueConfig{
+			Value:       "accepted",
+			Description: "Invitation was accepted",
+		},
+		"REJECTED": &graphql.EnumValueConfig{
+			Value:       "rejected",
+			Description: "Invitation was rejected",
+		},
+		"EXPIRED": &graphql.EnumValueConfig{
+			Value:       "expired",
+			Description: "Invitation has expired",
+		},
+	},
+})

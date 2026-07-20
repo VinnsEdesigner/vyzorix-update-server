@@ -225,6 +225,77 @@ func (s *MemberStorage) FindByOrganization(ctx context.Context, orgID string) ([
 	return members, rows.Err()
 }
 
+// FindActiveByOrganizationPaginated lists active members with pagination.
+func (s *MemberStorage) FindActiveByOrganizationPaginated(ctx context.Context, orgID string, limit, offset int) ([]*organization.OrganizationMember, int, error) {
+	// Get total count
+	countQuery := `
+		SELECT COUNT(*) FROM organization_members
+		WHERE organization_id = ? AND status = 'active'`
+
+	var total int
+	err := s.getQuerier(ctx).QueryRowContext(ctx, countQuery, orgID).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	query := `
+		SELECT om.id, om.organization_id, om.operator_id, om.role, om.invited_by, om.joined_at, om.removed_at, om.status,
+			   COALESCE(op.name, '') as operator_name, COALESCE(op.email, '') as operator_email
+		FROM organization_members om
+		LEFT JOIN operators op ON om.operator_id = op.id
+		WHERE om.organization_id = ? AND om.status = 'active'
+		ORDER BY om.joined_at ASC
+		LIMIT ? OFFSET ?`
+
+	rows, err := s.getQuerier(ctx).QueryContext(ctx, query, orgID, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var members []*organization.OrganizationMember
+	for rows.Next() {
+		var member organization.OrganizationMember
+		var invitedBy sql.NullString
+		var removedAt sql.NullInt64
+		var status string
+		var operatorName, operatorEmail sql.NullString
+
+		err := rows.Scan(
+			&member.ID,
+			&member.OrganizationID,
+			&member.OperatorID,
+			&member.Role,
+			&invitedBy,
+			&member.JoinedAt,
+			&removedAt,
+			&status,
+			&operatorName,
+			&operatorEmail,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		member.Lifecycle = memberStatusToLifecycle(status)
+
+		if invitedBy.Valid {
+			member.InvitedBy = &invitedBy.String
+		}
+		if removedAt.Valid {
+			t := time.UnixMilli(removedAt.Int64)
+			member.RemovedAt = &t
+		}
+		member.OperatorName = operatorName.String
+		member.OperatorEmail = operatorEmail.String
+
+		members = append(members, &member)
+	}
+
+	return members, total, rows.Err()
+}
+
 // Update updates an existing membership.
 func (s *MemberStorage) Update(ctx context.Context, member *organization.OrganizationMember) error {
 	query := `
@@ -374,6 +445,77 @@ func (s *MemberStorage) ListByOperator(ctx context.Context, operatorID string) (
 	return members, rows.Err()
 }
 
+// ListByOperatorPaginated lists memberships for an operator with pagination.
+func (s *MemberStorage) ListByOperatorPaginated(ctx context.Context, operatorID string, limit, offset int) ([]*organization.OrganizationMember, int, error) {
+	// Get total count
+	countQuery := `
+		SELECT COUNT(*) FROM organization_members
+		WHERE operator_id = ? AND status = 'active'`
+
+	var total int
+	err := s.getQuerier(ctx).QueryRowContext(ctx, countQuery, operatorID).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	query := `
+		SELECT om.id, om.organization_id, om.operator_id, om.role, om.invited_by, om.joined_at, om.removed_at, om.status,
+			   COALESCE(op.name, '') as operator_name, COALESCE(op.email, '') as operator_email
+		FROM organization_members om
+		LEFT JOIN operators op ON om.operator_id = op.id
+		WHERE om.operator_id = ? AND om.status = 'active'
+		ORDER BY om.joined_at DESC
+		LIMIT ? OFFSET ?`
+
+	rows, err := s.getQuerier(ctx).QueryContext(ctx, query, operatorID, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var members []*organization.OrganizationMember
+	for rows.Next() {
+		var member organization.OrganizationMember
+		var invitedBy sql.NullString
+		var removedAt sql.NullInt64
+		var status string
+		var operatorName, operatorEmail sql.NullString
+
+		err := rows.Scan(
+			&member.ID,
+			&member.OrganizationID,
+			&member.OperatorID,
+			&member.Role,
+			&invitedBy,
+			&member.JoinedAt,
+			&removedAt,
+			&status,
+			&operatorName,
+			&operatorEmail,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		member.Lifecycle = memberStatusToLifecycle(status)
+
+		if invitedBy.Valid {
+			member.InvitedBy = &invitedBy.String
+		}
+		if removedAt.Valid {
+			t := time.UnixMilli(removedAt.Int64)
+			member.RemovedAt = &t
+		}
+		member.OperatorName = operatorName.String
+		member.OperatorEmail = operatorEmail.String
+
+		members = append(members, &member)
+	}
+
+	return members, total, rows.Err()
+}
+
 
 // SoftDeleteByOperator soft-deletes all memberships for an operator (used during operator deletion).
 func (s *MemberStorage) SoftDeleteByOperator(ctx context.Context, operatorID string) error {
@@ -415,6 +557,18 @@ func (s *MemberStorage) SoftDeleteByMemberID(ctx context.Context, id organizatio
 // SoftDeleteByOperatorID soft-deletes all memberships for an OperatorID.
 func (s *MemberStorage) SoftDeleteByOperatorID(ctx context.Context, operatorID organization.OperatorID) error {
 	return s.SoftDeleteByOperator(ctx, operatorID.String())
+}
+
+// SoftDeleteByOrganization soft-deletes all memberships for an organization.
+func (s *MemberStorage) SoftDeleteByOrganization(ctx context.Context, orgID string) error {
+	query := `
+		UPDATE organization_members
+		SET status = 'removed', removed_at = ?
+		WHERE organization_id = ? AND status = 'active'`
+
+	now := time.Now().UnixMilli()
+	_, err := s.getQuerier(ctx).ExecContext(ctx, query, now, orgID)
+	return err
 }
 
 // CountByOrganizationID counts members by OrganizationID.

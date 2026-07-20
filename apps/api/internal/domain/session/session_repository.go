@@ -31,6 +31,9 @@ type Repository interface {
 	// Extend extends a session's expiration time.
 	Extend(ctx context.Context, id string, newExpiry time.Time) error
 
+	// UpdateOrganizationID updates the selected organization ID for a session.
+	UpdateOrganizationID(ctx context.Context, sessionID, organizationID string) error
+
 	// AddSessionRevocation adds a session token hash to the revocation list.
 	AddSessionRevocation(ctx context.Context, tokenHash, reason string) error
 

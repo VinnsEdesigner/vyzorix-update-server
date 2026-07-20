@@ -15,6 +15,14 @@ const (
 	RoleViewer    OrganizationRole = "viewer"
 )
 
+// Level constants for role hierarchy comparisons
+const (
+	LevelViewer    = 1
+	LevelOperator  = 2
+	LevelAdmin     = 3
+	LevelSuperAdmin = 4
+)
+
 // RoleLevel returns the privilege level for a role (higher = more privileges).
 func (r OrganizationRole) Level() int {
 	switch r {
@@ -79,6 +87,7 @@ type Organization struct {
 	// Infrastructure fields
 	ID          string
 	Name        string
+	Description string // Optional description of the organization
 	CreatedBy   string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
@@ -250,20 +259,27 @@ func (m *OrganizationMember) UpdateRole(role OrganizationRole) {
 
 // CreateOrganizationRequest represents a request to create an organization.
 type CreateOrganizationRequest struct {
-	Name       string
-	MaxMembers int
+	Name        string // Optional - defaults to "personal" if empty
+	Description string // Optional - organization description
+	MaxMembers int    // Optional - max members limit (0 = default)
+	Role        string // Required - creator's role: "super_admin" or "admin"
 }
 
 // Validate validates the create organization request.
 func (r *CreateOrganizationRequest) Validate() error {
+	// Name is optional - defaults to "personal"
 	if r.Name == "" {
-		return errors.New("organization name is required")
+		r.Name = "personal"
 	}
 	if len(r.Name) < 2 {
 		return errors.New("organization name must be at least 2 characters")
 	}
 	if len(r.Name) > 100 {
 		return errors.New("organization name must be at most 100 characters")
+	}
+	// Role is required - only super_admin or admin allowed
+	if r.Role != "super_admin" && r.Role != "admin" {
+		return errors.New("role must be 'super_admin' or 'admin'")
 	}
 	return nil
 }

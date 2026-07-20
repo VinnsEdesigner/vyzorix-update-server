@@ -24,13 +24,13 @@ func NewHistoryService(commandRepo command.Repository, devRepo device.Repository
 
 // GetHistoryRequest represents a request for command history.
 type GetHistoryRequest struct {
-	DeviceID   string
-	OperatorID string
-	Status     string
-	Page       int
-	Limit      int
-	StartTime  int64
-	EndTime    int64
+	DeviceID       string
+	OrganizationID string
+	Status         string
+	Page           int
+	Limit          int
+	StartTime      int64
+	EndTime        int64
 }
 
 // HistoryResponse represents paginated command history.
@@ -43,6 +43,7 @@ type HistoryResponse struct {
 type CommandEntry struct {
 	ID            string `json:"id,omitempty"`
 	DispatchID    string `json:"dispatchId"`
+	DeviceID      string `json:"deviceId"`
 	Command       string `json:"command"`
 	Status        string `json:"status"`
 	FailureReason string `json:"failureReason,omitempty"`
@@ -63,8 +64,8 @@ type PaginationInfo struct {
 
 // GetHistory retrieves paginated command history for a device.
 func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest) (*HistoryResponse, error) {
-	// Validate device ownership (DOA check)
-	if _, err := s.devRepo.FindByIDAndOperator(ctx, req.DeviceID, req.OperatorID); err != nil {
+	// Validate device belongs to organization
+	if _, err := s.devRepo.FindByIDAndOrganization(ctx, req.DeviceID, req.OrganizationID); err != nil {
 		if err == device.ErrNotFound {
 			return nil, err
 		}
@@ -110,6 +111,7 @@ func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest)
 		entry := CommandEntry{
 			ID:            cmd.ID,
 			DispatchID:    cmd.DispatchID,
+			DeviceID:      req.DeviceID,
 			Command:       string(cmd.Command),
 			Status:        string(cmd.Status),
 			SentAt:        sentAt,

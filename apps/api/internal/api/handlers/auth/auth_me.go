@@ -6,6 +6,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,12 +42,58 @@ func (h *MeHandler) Handle(c *gin.Context) {
 		return
 	}
 
+	// Get operator's organizations
+	orgs, err := h.authService.GetOperatorOrganizations(c.Request.Context(), op)
+	if err != nil {
+		h.presenter.InternalError(c, "failed to get organizations")
+		return
+	}
+
+	// Determine if organization selection is required:
+	// - 0 memberships: needs organization (create/join)
+	// - Multiple memberships without valid selected org: needs selection
+	needsOrg := len(orgs) == 0
+
+	// Find selected organization from session or last used
+	var selectedOrg *auth.OrganizationInfo
+	if op.LastOrganizationID != "" && !needsOrg {
+		for i, org := range orgs {
+			if org.ID == op.LastOrganizationID {
+				selectedOrg = &orgs[i]
+				break
+			}
+		}
+		// If LastOrganizationID is set but not found in active orgs,
+		// user has multiple orgs but the last one is invalid - needs selection
+		if selectedOrg == nil && len(orgs) > 1 {
+			needsOrg = true
+		}
+	}
+
+	// If multiple orgs exist but none is selected, needs organization selection
+	if !needsOrg && len(orgs) > 1 && selectedOrg == nil {
+		needsOrg = true
+	}
+
+	// Convert selectedOrg to dto.OrganizationInfo if present
+	var selectedOrgDTO *dto.OrganizationInfo
+	if selectedOrg != nil {
+		selectedOrgDTO = &dto.OrganizationInfo{
+			ID:   selectedOrg.ID,
+			Name: selectedOrg.Name,
+			Role: selectedOrg.Role,
+		}
+	}
+
 	h.presenter.OK(c, gin.H{
-		"id":             op.ID,
-		"email":          op.Email,
-		"name":           op.Name,
-		"role":           op.Role,
-		"mfa_enabled":    op.MFAEnabled,
-		"email_verified": op.EmailVerified,
+		"id":              op.ID,
+		"email":           op.Email,
+		"name":            op.Name,
+		"mfa_enabled":     op.MFAEnabled,
+		"email_verified":  op.EmailVerified,
+		"needs_organization": needsOrg,
+		"organizations":   orgs,
+		"last_organization_id": op.LastOrganizationID,
+		"selected_organization": selectedOrgDTO,
 	})
 }
