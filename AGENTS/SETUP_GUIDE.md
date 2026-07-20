@@ -226,8 +226,8 @@ export PNPM_TELEMETRY=0
 **Solution:** Install Go and add to PATH:
 
 ```bash
-wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.24.2.linux-amd64.tar.gz
+wget https://go.dev/dl/go1.26.0.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.26.0.linux-amd64.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 go version
 ```
