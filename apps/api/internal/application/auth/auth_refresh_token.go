@@ -7,6 +7,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/refresh_token"
 )
 
 // RefreshTokenResult holds the result of a refresh token rotation.
@@ -80,12 +81,14 @@ func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken st
 		return nil, application.ErrUnauthorized
 	}
 
-	// Generate new JWT access token with full operator details
+	// Generate new JWT access token with full operator details.
+	// Note: Role is org-scoped, not per-operator. Use default role for JWT.
+	role := "operator"
 	accessToken, expiresAt, err := s.jwtManager.Generate(
 		op.ID,
 		op.Email,
 		op.Name,
-		string(op.Role),
+		role,
 	)
 	if err != nil {
 		return nil, err
@@ -128,7 +131,7 @@ func (s *AuthService) IssueRefreshToken(ctx context.Context, operatorID, session
 		expiry = 7 * 24 * time.Hour
 	}
 
-	rt := &RefreshToken{
+	rt := &refresh_token.RefreshToken{
 		ID:         id,
 		OperatorID: operatorID,
 		SessionID:  sessionID,

@@ -20,17 +20,27 @@ func NewClientsHandler(clientService *client.Service) *ClientsHandler {
 	return &ClientsHandler{clientService: clientService}
 }
 
-// requireAdmin is middleware that ensures the request is from an admin user.
+// requireAdmin is middleware that ensures the request is from an admin user in the org context.
 func requireAdmin(c *gin.Context) bool {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return false
 	}
-	if op.Role != "admin" && op.Role != "super_admin" {
+
+	// Require org context for admin access
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Organization ID required"})
+		return false
+	}
+
+	// Check if operator is super_admin in this specific organization
+	if !op.IsSuperAdminIn(orgID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "admin access required"})
 		return false
 	}
+
 	return true
 }
 

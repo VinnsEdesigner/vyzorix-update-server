@@ -259,7 +259,7 @@ VyzorixAudioRouter/
                   RuntimeFlagsStore.kt               # Dynamic feature flags
                   ProjectionMetadataStore.kt         # Projection metadata persistence only
                   DeviceSecretStore.kt               # Encrypted persistence of per-device command_secret
-                                                        # received from server during POST /v1/device/register;
+                                                        # received from server during POST /v1/device/inbox (DEPRECATED: was /v1/device/register);
                                                         # encrypted via TokenEncryptor.kt before write using AES-GCM
                                                         # key from KeystoreManager; never stored plaintext anywhere;
                                                         # read-only after initial write to prevent tampering;
@@ -770,7 +770,7 @@ VyzorixAudioRouter/
                    FcmCommandParser.kt                # Deserializes CommandFrame JSON; passes to
                                                         # CommandHmacValidator.validate() before any execution;
                                                         # FCM commands use identical HMAC signing contract as WS commands
-                   FcmTokenManager.kt                 # Uploads FCM token via POST /v1/device/register; receives
+                   FcmTokenManager.kt                 # Uploads FCM token via POST /v1/device/inbox (DEPRECATED: was /v1/device/register); receives
                                                         # command_secret in response; passes to DeviceSecretStore
                                                         # for encrypted persistence; monitors token refresh callbacks
                    FcmNotificationGateway.kt          # High-priority heads-up intents for re-grant trampolines

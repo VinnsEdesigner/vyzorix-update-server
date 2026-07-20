@@ -18,8 +18,10 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/logging"
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
@@ -88,19 +90,28 @@ func main() {
 		logsRepo := storage.NewLogsRepository(db)
 		metricsRepo := storage.NewMetricsRepository(db)
 		logsSvc := logs.NewService(logsRepo, deps.Log)
-		metricsSvc := appmetrics.NewService(metricsRepo, deps.OperatorRepo)
+		// Get repositories for hierarchical threshold resolution
+		var deviceSettingsRepo device.DeviceSettingsRepository
+		var orgSettingsRepo organization.OrganizationSettingsRepository
+		if deps.DeviceSettingsService != nil {
+			deviceSettingsRepo = deps.DeviceSettingsService.SettingsRepo()
+		}
+		if deps.OrgSettingsService != nil {
+			orgSettingsRepo = deps.OrgSettingsService.SettingsRepo()
+		}
+		metricsSvc := appmetrics.NewService(metricsRepo, deviceSettingsRepo, orgSettingsRepo)
 		dashboardSvc := dashboard.NewService(deviceRepo, commandRepo, logsRepo)
 		diagnosticsRepo := storage.NewDiagnosticsRepository(db)
 		diagnosticsSvc := diagnosticsapp.NewService(diagnosticsRepo, deviceRepo, deps.Hub, cfg.DiagnosticsConfig)
 
 		// Create settings-related services for GraphQL
 		settingsService := auth.NewClientSettingsService(deps.OperatorRepo)
-		thresholdService := appoperator.NewThresholdService(deps.OperatorRepo)
 		notificationSvc := appoperator.NewNotificationService(deps.OperatorRepo)
 		webhookClient := infrawebhook.NewClient(10 * time.Second)
 
 		if regErr := apiServer.RegisterGraphQL(
 			deps.DeviceService,
+			deps.DeviceSettingsService,
 			deps.CommandService,
 			historyService,
 			dashboardSvc,
@@ -114,9 +125,12 @@ func main() {
 			diagnosticsSvc,
 			deps.OperatorRepo,
 			settingsService,
-			thresholdService,
 			notificationSvc,
 			webhookClient,
+			result.HandlerSet.OrgService,
+			result.HandlerSet.OrgSettingsService,
+			result.HandlerSet.MemberService,
+			result.HandlerSet.InvitationService,
 		); regErr != nil {
 			log.Error("failed to register GraphQL", "err", regErr)
 			PrintWarning("GraphQL", "Registration failed")

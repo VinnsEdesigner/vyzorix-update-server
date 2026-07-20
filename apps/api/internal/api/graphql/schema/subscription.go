@@ -44,6 +44,28 @@ func BuildSubscriptionType(res *resolver.Resolver) *graphql.Object {
 				},
 				Resolve: res.CommandStatusChanged,
 			},
+			"organizationEvent": &graphql.Field{
+				Type:        OrganizationEventType,
+				Description: "Subscribe to organization events",
+				Args: graphql.FieldConfigArgument{
+					"orgId": &graphql.ArgumentConfig{
+						Type:        graphql.NewNonNull(graphql.ID),
+						Description: "Organization ID to subscribe to",
+					},
+				},
+				Resolve: res.OrganizationEvent,
+			},
+			"memberEvent": &graphql.Field{
+				Type:        MemberEventType,
+				Description: "Subscribe to organization member events",
+				Args: graphql.FieldConfigArgument{
+					"orgId": &graphql.ArgumentConfig{
+						Type:        graphql.NewNonNull(graphql.ID),
+						Description: "Organization ID to subscribe to",
+					},
+				},
+				Resolve: res.MemberEvent,
+			},
 		},
 	})
 }

@@ -93,6 +93,11 @@ func (h *Handler) Handle(c *gin.Context) {
 	ctx := gqlcontext.WithOperator(c.Request.Context(), op)
 	ctx = gqlcontext.WithRequestMetadata(ctx, c.ClientIP(), c.GetHeader("User-Agent"))
 
+	// Extract organizationId from URL parameter and add to context
+	if orgID := c.Param("organizationId"); orgID != "" {
+		ctx = gqlcontext.WithOrganizationID(ctx, orgID)
+	}
+
 	result := gql.Do(gql.Params{
 		Schema:         h.Schema(),
 		RequestString:  req.Query,
@@ -171,14 +176,26 @@ func (h *Handler) Playground(c *gin.Context) {
 }
 
 // Routes registers GraphQL routes with the Gin engine.
+// Routes are scoped under /v1/orgs/:organizationId/graphql for multi-tenant isolation.
 func (h *Handler) Routes(r *gin.Engine) {
+	// Organization-scoped GraphQL routes for multi-tenant isolation
+	orgGraphQL := r.Group("/v1/orgs/:organizationId/graphql")
+	orgGraphQL.POST("", h.Handle)
+	orgGraphQL.GET("", h.Handle)
+	orgGraphQL.GET(h.playgroundPath, h.Playground)
+
+	// Legacy routes for backward compatibility (deprecated - use org-scoped routes)
 	r.POST("/graphql", h.Handle)
 	r.GET("/graphql", h.Handle)
-	r.GET(h.playgroundPath, h.Playground)
 }
 
 // RegisterSubscriptions registers the WebSocket endpoint for subscriptions.
 func (h *Handler) RegisterSubscriptions(r *gin.Engine, wsHandler func(*gin.Context)) {
+	// Organization-scoped WebSocket endpoint for subscriptions
+	orgGraphQL := r.Group("/v1/orgs/:organizationId/graphql")
+	orgGraphQL.GET("/ws", wsHandler)
+
+	// Legacy route for backward compatibility
 	r.GET("/graphql/ws", wsHandler)
 }
 

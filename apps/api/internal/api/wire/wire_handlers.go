@@ -8,6 +8,7 @@ import (
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
+	organizationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/organization"
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
@@ -15,6 +16,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -25,49 +27,69 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
-	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"log/slog"
 )
 
 // HandlerDependencies contains all dependencies needed by handlers.
 type HandlerDependencies struct {
-	OperatorRepo   operator.Repository
-	FCMNotifier    fcm.Notifier
-	OAuthStateRepo authhandlers.OAuthStateProvider
-	Presenter      *response.Presenter
-	Hub            *hub.Hub
-	EmailService   *emailService.Service
-	Lockout        *middleware.Lockout
-	DB             *storage.SQLite
-	AuditLogger    *audit.Logger
-	GoogleVerifier *infraauth.GoogleTokenVerifier
-	DeviceService  *device.Service
-	IPIntelligence *middleware.IPIntelligence
-	ClientService  *client.Service
-	CommandService *command.Service
-	SessionManager *infraauth.SessionManager
-	Log            *slog.Logger
-	HmacVerifier   *cryptohmac.Verifier
-	UpdatesStorage *storage.UpdatesStorage
-	AuthService    *auth.AuthService
-	Config         config.Config
+	OperatorRepo              operator.Repository
+	FCMNotifier              fcm.Notifier
+	OAuthStateRepo           authhandlers.OAuthStateProvider
+	Presenter                *response.Presenter
+	Hub                      *ws.Hub
+	EmailService             *emailService.Service
+	Lockout                  *middleware.Lockout
+	DB                       *storage.SQLite
+	AuditLogger              *audit.Logger
+	GoogleVerifier           *infraauth.GoogleTokenVerifier
+	DeviceService            *device.Service
+	DeviceRepo               *storage.DeviceRepository
+	IPIntelligence           *middleware.IPIntelligence
+	ClientService            *client.Service
+	CommandService           *command.Service
+	SessionManager           *infraauth.SessionManager
+	Log                      *slog.Logger
+	HmacVerifier             *cryptohmac.Verifier
+	UpdatesStorage           *storage.UpdatesStorage
+	AuthService              *auth.AuthService
+	Config                   config.Config
+	OrgService               *orgapplication.OrganizationService
+	MemberService            *orgapplication.MemberService
+	InvitationService        *orgapplication.InvitationService
+	OrgSettingsService       *orgapplication.OrganizationSettingsService
+	OrganizationRepo         orgapplication.OrganizationRepository
+	MemberRepo               orgapplication.MemberRepository
+	DeviceSettingsService    *device.DeviceSettingsService
 }
 
 // HandlerSet contains all handler instances.
 type HandlerSet struct {
-	Auth             *authhandlers.AllHandlers
-	DeviceRegister   *devicehandlers.RegisterHandler
-	DeviceStatus     *devicehandlers.StatusHandler
-	DeviceUpdater    *devicehandlers.UpdaterHandler
-	DeviceList       *devicehandlers.ListHandler
-	Devices          *devicehandlers.DevicesHandler
-	Command          *cmdhandlers.ExecuteHandler
-	Stream           *websockethandlers.StreamHandler
-	TelemetryHistory *handlers.TelemetryHistoryHandler
-	ConnectionStatus *handlers.ConnectionStatusHandler
-	AdminClients     *admin.ClientsHandler
-	Updates          *updateshandlers.UpdatesHandler
-	UpdatesService   *updatesapplication.Service
+	Auth               *authhandlers.AllHandlers
+	// DEPRECATED: DeviceRegister - /v1/device/register endpoint removed
+	// DeviceRegister     *devicehandlers.RegisterHandler
+	DeviceStatus       *devicehandlers.StatusHandler
+	DeviceUpdater      *devicehandlers.UpdaterHandler
+	DeviceList         *devicehandlers.ListHandler
+	Devices            *devicehandlers.DevicesHandler
+	DeviceSettings     *devicehandlers.SettingsHandler
+	Command            *cmdhandlers.ExecuteHandler
+	Stream             *websockethandlers.StreamHandler
+	TelemetryHistory   *handlers.TelemetryHistoryHandler
+	ConnectionStatus   *handlers.ConnectionStatusHandler
+	AdminClients       *admin.ClientsHandler
+	Updates            *updateshandlers.UpdatesHandler
+	UpdatesService     *updatesapplication.Service
+	Organization       *organizationhandlers.OrganizationHandler
+	Invitation         *organizationhandlers.InvitationHandler
+	Member             *organizationhandlers.MemberHandler
+	Transfer           *devicehandlers.TransferHandler
+	OrgService         *orgapplication.OrganizationService
+	OrgSettingsService *orgapplication.OrganizationSettingsService
+	MemberService      *orgapplication.MemberService
+	InvitationService  *orgapplication.InvitationService
+	OrgSettings        *organizationhandlers.SettingsHandler
+	DeviceSettingsService *device.DeviceSettingsService
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -91,7 +113,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	})
 
 	// Device handlers
-	hs.DeviceRegister = devicehandlers.NewRegisterHandler(deps.DeviceService)
+	// DEPRECATED: hs.DeviceRegister = devicehandlers.NewRegisterHandler(deps.DeviceService) // /v1/device/register removed
 	hs.DeviceStatus = devicehandlers.NewStatusHandler(deps.DeviceService)
 	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deps.DeviceService)
 	hs.DeviceList = devicehandlers.NewListHandler(deps.DeviceService, deps.Hub)
@@ -102,7 +124,6 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 
 	// WebSocket handler
 	hs.Stream = websockethandlers.NewStreamHandler(deps.Log, deps.Config, deps.Hub, *deps.HmacVerifier, deps.AuditLogger)
-
 	// Telemetry history handler
 	var telemetryRepo *storage.TelemetryRepository
 	if deps.DB != nil {
@@ -112,11 +133,12 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	hs.TelemetryHistory = handlers.NewTelemetryHistoryHandler(
 		deps.Log,
 		telemetryRepo,
+		deps.DeviceRepo,
 		nil,
 	)
 
 	// Connection status handler
-	hs.ConnectionStatus = handlers.NewConnectionStatusHandler(deps.Log, deps.Hub)
+	hs.ConnectionStatus = handlers.NewConnectionStatusHandler(deps.Log, deps.Hub, deps.DeviceRepo)
 
 	// Admin handlers
 	hs.AdminClients = admin.NewClientsHandler(deps.ClientService)
@@ -170,6 +192,40 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 
 		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, pushSvc, updatesRateLimiters, deps.AuditLogger, deps.Config.GitHubWebhookSecret)
 		hs.UpdatesService = updatesService
+	}
+
+	// Organization handlers
+	if deps.OrgService != nil && deps.MemberService != nil {
+		hs.Organization = organizationhandlers.NewOrganizationHandler(deps.OrgService, deps.MemberService, deps.Presenter)
+		hs.Invitation = organizationhandlers.NewInvitationHandler(deps.InvitationService, deps.MemberService, deps.Presenter)
+		hs.Member = organizationhandlers.NewMemberHandler(deps.MemberService, deps.OrgService, deps.Presenter)
+		hs.OrgService = deps.OrgService
+		hs.OrgSettingsService = deps.OrgSettingsService
+		hs.MemberService = deps.MemberService
+		hs.InvitationService = deps.InvitationService
+
+		// Organization settings handler
+		if deps.OrgSettingsService != nil {
+			hs.OrgSettings = organizationhandlers.NewSettingsHandler(deps.OrgSettingsService, deps.MemberService, deps.Presenter)
+		}
+	}
+
+	// Device handlers
+	hs.Devices = devicehandlers.NewDevicesHandler(deps.DeviceService)
+
+	// Device settings handler
+	if deps.DeviceSettingsService != nil && deps.MemberService != nil {
+		// Create membership checker function
+		membershipChecker := func(ctx context.Context, operatorID, orgID string) error {
+			return deps.MemberService.CheckMembership(ctx, operatorID, orgID)
+		}
+		hs.DeviceSettings = devicehandlers.NewDeviceSettingsHandler(deps.DeviceSettingsService, membershipChecker, deps.Presenter)
+		hs.DeviceSettingsService = deps.DeviceSettingsService
+	}
+
+	// Device transfer handler
+	if deps.DeviceService != nil {
+		hs.Transfer = devicehandlers.NewTransferHandler(deps.DeviceService, deps.Presenter)
 	}
 
 	return hs

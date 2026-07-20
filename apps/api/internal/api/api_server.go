@@ -8,6 +8,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
+	organizationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/organization"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	dashboardhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/dashboard"
@@ -29,8 +30,10 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
@@ -68,6 +71,9 @@ type ServerConfig struct {
 	UpdatesService *updatesapp.Service
 	APIKeyService  *keys.APIKeyService
 	Config         config.Config
+	// New settings services for hierarchical threshold resolution
+	DeviceSettingsService *device.DeviceSettingsService
+	OrgSettingsService   *orgapplication.OrganizationSettingsService
 }
 
 // Server is the main API server.
@@ -94,7 +100,8 @@ type Server struct {
 	dashboardRateLimiter       *middleware.DashboardRateLimiterMiddleware
 	deviceRegRateLimiter       *middleware.DeviceRegistrationRateLimiterMiddleware
 	AuditLogger                *audit.Logger
-	deviceRegisterHandler      *devicehandlers.RegisterHandler
+	// DEPRECATED: deviceRegisterHandler - /v1/device/register endpoint removed
+	// deviceRegisterHandler      *devicehandlers.RegisterHandler
 	deviceUpdaterHandler       *devicehandlers.UpdaterHandler
 	deviceListHandler          *devicehandlers.ListHandler
 	devicesHandler             *devicehandlers.DevicesHandler
@@ -121,6 +128,12 @@ type Server struct {
 	superAdminAPIKeys          *admin.SuperAdminHandler
 	tenantAPIKeyAuth           *middleware.TenantAPIKeyAuth
 	apiKeyRateLimiter          *middleware.InMemoryRateLimiter
+	organizationHandler         *organizationhandlers.OrganizationHandler
+	organizationSettingsHandler *organizationhandlers.SettingsHandler
+	deviceSettingsHandler      *devicehandlers.SettingsHandler
+	invitationHandler         *organizationhandlers.InvitationHandler
+	memberHandler             *organizationhandlers.MemberHandler
+	transferHandler          *devicehandlers.TransferHandler
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -214,7 +227,7 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	})
 
 	// Device handlers
-	s.deviceRegisterHandler = devicehandlers.NewRegisterHandler(cfg.DeviceService)
+	// DEPRECATED: s.deviceRegisterHandler = devicehandlers.NewRegisterHandler(cfg.DeviceService) // /v1/device/register removed
 	s.deviceStatusHandler = devicehandlers.NewStatusHandler(cfg.DeviceService)
 	s.deviceUpdaterHandler = devicehandlers.NewUpdaterHandler(cfg.DeviceService)
 	s.deviceListHandler = devicehandlers.NewListHandler(cfg.DeviceService, cfg.Hub)
@@ -224,16 +237,19 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 
 	// WebSocket handler
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
-
 	// Telemetry history handler
 	s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(
 		cfg.Log,
 		storage.NewTelemetryRepository(cfg.DB.DB()),
+		storage.NewDeviceRepository(cfg.DB.DB()),
+		nil,
+	)
+	)
 		nil,
 	)
 
 	// Connection status handler
-	s.connectionStatusHandler = handlers.NewConnectionStatusHandler(cfg.Log, cfg.Hub)
+	s.connectionStatusHandler = handlers.NewConnectionStatusHandler(cfg.Log, cfg.Hub, storage.NewDeviceRepository(cfg.DB.DB()))
 
 	// Admin handlers
 	s.adminClientsHandler = admin.NewClientsHandler(cfg.ClientService)
@@ -282,7 +298,16 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	}
 
 	if metricsRepo != nil {
-		metricsSvc = appmetrics.NewService(metricsRepo, cfg.OperatorRepo)
+		// Get repositories for hierarchical threshold resolution
+		var deviceSettingsRepo device.DeviceSettingsRepository
+		var orgSettingsRepo organization.OrganizationSettingsRepository
+		if cfg.DeviceSettingsService != nil {
+			deviceSettingsRepo = cfg.DeviceSettingsService.SettingsRepo()
+		}
+		if cfg.OrgSettingsService != nil {
+			orgSettingsRepo = cfg.OrgSettingsService.SettingsRepo()
+		}
+		metricsSvc = appmetrics.NewService(metricsRepo, deviceSettingsRepo, orgSettingsRepo)
 	}
 
 	if cfg.CommandService != nil && cfg.DeviceService != nil && logsRepo != nil {
@@ -444,7 +469,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 
 	// Wire handlers from HandlerSet
 	s.authHandlers = cfg.HandlerSet.Auth
-	s.deviceRegisterHandler = cfg.HandlerSet.DeviceRegister
+	// DEPRECATED: s.deviceRegisterHandler = cfg.HandlerSet.DeviceRegister // /v1/device/register removed
 	s.deviceStatusHandler = cfg.HandlerSet.DeviceStatus
 	s.deviceUpdaterHandler = cfg.HandlerSet.DeviceUpdater
 	s.deviceListHandler = cfg.HandlerSet.DeviceList
@@ -455,6 +480,14 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.connectionStatusHandler = cfg.HandlerSet.ConnectionStatus
 	s.adminClientsHandler = cfg.HandlerSet.AdminClients
 	s.updatesHandler = cfg.HandlerSet.Updates
+
+	// Organization handlers
+	s.organizationHandler = cfg.HandlerSet.Organization
+	s.organizationSettingsHandler = cfg.HandlerSet.OrgSettings
+	s.deviceSettingsHandler = cfg.HandlerSet.DeviceSettings
+	s.invitationHandler = cfg.HandlerSet.Invitation
+	s.memberHandler = cfg.HandlerSet.Member
+	s.transferHandler = cfg.HandlerSet.Transfer
 
 	// API key handlers
 	if cfg.APIKeyService != nil {

@@ -4,6 +4,7 @@ package middleware
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"strings"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
@@ -33,8 +34,8 @@ func NewAuthMiddleware(sessionManager *infraauth.SessionManager, authService *ap
 // Returns an error if authentication fails.
 func (m *AuthMiddleware) Authenticate(ctx context.Context, headers map[string]string) (*operator.Operator, error) {
 	// Try session cookie first
-	if cookie, ok := headers["Cookie"]; ok {
-		op, err := m.authenticateSession(ctx, cookie)
+	if cookieHeader, ok := headers["Cookie"]; ok {
+		op, err := m.authenticateSession(ctx, cookieHeader)
 		if err == nil && op != nil {
 			return op, nil
 		}
@@ -53,23 +54,18 @@ func (m *AuthMiddleware) Authenticate(ctx context.Context, headers map[string]st
 
 // authenticateSession validates the session cookie.
 func (m *AuthMiddleware) authenticateSession(ctx context.Context, cookieHeader string) (*operator.Operator, error) {
-	var sessionID string
+	// Parse cookies using net/http
+	cookieJar := http.Header{}
+	cookieJar["Cookie"] = []string{cookieHeader}
+	cookieReq := &http.Request{Header: cookieJar}
 
-	cookies := strings.Split(cookieHeader, ";")
-	for _, cookie := range cookies {
-		parts := strings.SplitN(strings.TrimSpace(cookie), "=", 2)
-		if len(parts) == 2 && strings.TrimSpace(parts[0]) == "vyz_session" {
-			sessionID = parts[1]
-			break
-		}
-	}
-
-	if sessionID == "" {
+	sessionCookie, err := cookieReq.Cookie("vyz_session")
+	if err != nil || sessionCookie.Value == "" {
 		return nil, gqlerrors.ErrUnauthorized
 	}
 
 	// Decrypt session ID from cookie
-	decryptedSessionID, err := m.SessionManager.DecryptSessionID(sessionID)
+	decryptedSessionID, err := m.SessionManager.DecryptSessionID(sessionCookie.Value)
 	if err != nil {
 		m.Log.Debug("session decryption failed", "err", err)
 		return nil, gqlerrors.ErrUnauthorized
@@ -122,22 +118,66 @@ func RequireAuth(resolverFunc func(ctx context.Context) (interface{}, error)) fu
 	}
 }
 
-// RequireRole returns a middleware that requires a specific role.
-func RequireRole(roles ...operator.OperatorRole) func(resolverFunc func(ctx context.Context) (interface{}, error)) func(ctx context.Context) (interface{}, error) {
-	return func(resolverFunc func(ctx context.Context) (interface{}, error)) func(ctx context.Context) (interface{}, error) {
-		return func(ctx context.Context) (interface{}, error) {
-			op, ok := gqlcontext.GetOperator(ctx)
-			if !ok || op == nil {
-				return nil, gqlerrors.ErrUnauthorized
-			}
-
-			for _, role := range roles {
-				if op.Role == role {
-					return resolverFunc(ctx)
-				}
-			}
-
-			return nil, gqlerrors.Forbidden("role %v required", roles)
+// RequireSuperAdmin requires the operator to be a SuperAdmin.
+func RequireSuperAdmin(resolverFunc func(ctx context.Context) (interface{}, error)) func(ctx context.Context) (interface{}, error) {
+	return func(ctx context.Context) (interface{}, error) {
+		op, ok := gqlcontext.GetOperator(ctx)
+		if !ok || op == nil {
+			return nil, gqlerrors.ErrUnauthorized
 		}
+
+		if !op.IsSuperAdmin() {
+			return nil, gqlerrors.Forbidden("superadmin required")
+		}
+
+		return resolverFunc(ctx)
+	}
+}
+
+// RequireAdmin requires the operator to be an Admin in at least one organization.
+func RequireAdmin(resolverFunc func(ctx context.Context) (interface{}, error)) func(ctx context.Context) (interface{}, error) {
+	return func(ctx context.Context) (interface{}, error) {
+		op, ok := gqlcontext.GetOperator(ctx)
+		if !ok || op == nil {
+			return nil, gqlerrors.ErrUnauthorized
+		}
+
+		if !op.IsAdmin() {
+			return nil, gqlerrors.Forbidden("admin required")
+		}
+
+		return resolverFunc(ctx)
+	}
+}
+
+// RequireOperator requires the operator to be an Operator in at least one organization.
+func RequireOperator(resolverFunc func(ctx context.Context) (interface{}, error)) func(ctx context.Context) (interface{}, error) {
+	return func(ctx context.Context) (interface{}, error) {
+		op, ok := gqlcontext.GetOperator(ctx)
+		if !ok || op == nil {
+			return nil, gqlerrors.ErrUnauthorized
+		}
+
+		if !op.IsOperator() {
+			return nil, gqlerrors.Forbidden("operator required")
+		}
+
+		return resolverFunc(ctx)
+	}
+}
+
+// RequireViewer requires the operator to be a Viewer in at least one organization.
+func RequireViewer(resolverFunc func(ctx context.Context) (interface{}, error)) func(ctx context.Context) (interface{}, error) {
+	return func(ctx context.Context) (interface{}, error) {
+		op, ok := gqlcontext.GetOperator(ctx)
+		if !ok || op == nil {
+			return nil, gqlerrors.ErrUnauthorized
+		}
+
+		if !op.IsViewer() {
+			return nil, gqlerrors.Forbidden("viewer required")
+		}
+
+		return resolverFunc(ctx)
 	}
 }

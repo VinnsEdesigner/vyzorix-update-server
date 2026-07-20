@@ -216,3 +216,24 @@ func (h *ListHandler) Count(c *gin.Context) {
 		"serverTime": c.GetInt64("serverTime"),
 	})
 }
+
+// CountByOrganization handles GET /v1/device/count?organizationId=<id>.
+// Returns the count of devices for a specific organization.
+func (h *ListHandler) CountByOrganization(c *gin.Context) {
+	orgID := c.Query("organizationId")
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "organizationId is required"})
+		return
+	}
+
+	count, err := h.deviceService.CountByOrganization(c.Request.Context(), orgID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"count":      count,
+		"serverTime": c.GetInt64("serverTime"),
+	})
+}

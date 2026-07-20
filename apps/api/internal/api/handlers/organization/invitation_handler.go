@@ -7,13 +7,10 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	appOrganization "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/invitation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 
 	"github.com/gin-gonic/gin"
 )
-
-// InvitationHandler handles invitation-related HTTP requests.
 type InvitationHandler struct {
 	invitationService *appOrganization.InvitationService
 	memberService    *appOrganization.MemberService
@@ -54,14 +51,14 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 	}
 
 	// Validate role
-	var invRole invitation.InvitationRole
+	var invRole organization.OrganizationRole
 	switch req.Role {
 	case "admin":
-		invRole = invitation.InvitationRoleAdmin
+		invRole = organization.RoleAdmin
 	case "operator":
-		invRole = invitation.InvitationRoleOperator
+		invRole = organization.RoleOperator
 	case "viewer":
-		invRole = invitation.InvitationRoleViewer
+		invRole = organization.RoleViewer
 	default:
 		h.presenter.BadRequest(c, "invalid role")
 		return
@@ -84,7 +81,7 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 			h.presenter.NotFound(c, "organization not found")
 			return
 		}
-		if errors.Is(err, invitation.ErrAlreadyExists) {
+		if errors.Is(err, organization.ErrAlreadyExists) {
 			h.presenter.Conflict(c, "invitation already exists for this email")
 			return
 		}
@@ -135,19 +132,19 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 	}
 
 	// Optional status filter
-	var status *invitation.InvitationStatus
+	var status *organization.InvitationStatus
 	statusStr := c.Query("status")
 	if statusStr != "" {
-		var s invitation.InvitationStatus
+		var s organization.InvitationStatus
 		switch statusStr {
 		case "pending":
-			s = invitation.InvitationStatusPending
+			s = organization.InvitationStatusPending
 		case "approved":
-			s = invitation.InvitationStatusApproved
+			s = organization.InvitationStatusApproved
 		case "rejected":
-			s = invitation.InvitationStatusRejected
+			s = organization.InvitationStatusRejected
 		case "expired":
-			s = invitation.InvitationStatusExpired
+			s = organization.InvitationStatusExpired
 		default:
 			h.presenter.BadRequest(c, "invalid status filter")
 			return
@@ -172,7 +169,7 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 			"invited_by":       inv.InvitedBy,
 			"invited_at":       inv.InvitedAt,
 			"responded_at":     inv.RespondedAt,
-			"responder_id":     inv.ResponderID,
+			"responder_id":     inv.RespondedBy,
 			"expires_at":       inv.ExpiresAt,
 			"organization_name": inv.OrganizationName,
 			"inviter_name":     inv.InviterName,
@@ -232,7 +229,7 @@ func (h *InvitationHandler) GetByToken(c *gin.Context) {
 			h.presenter.NotFound(c, "invitation not found")
 			return
 		}
-		if errors.Is(err, invitation.ErrExpired) {
+		if errors.Is(err, organization.ErrInvitationExpired) {
 			c.JSON(http.StatusGone, gin.H{"error": "gone", "message": "invitation has expired"})
 			return
 		}
@@ -276,7 +273,7 @@ func (h *InvitationHandler) Accept(c *gin.Context) {
 		req.Notes = ""
 	}
 
-	err := h.invitationService.AcceptInvitation(
+	_, err := h.invitationService.AcceptInvitation(
 		c.Request.Context(),
 		token,
 		op.ID,
@@ -288,15 +285,15 @@ func (h *InvitationHandler) Accept(c *gin.Context) {
 			h.presenter.NotFound(c, "invitation not found")
 			return
 		}
-		if errors.Is(err, invitation.ErrExpired) {
+		if errors.Is(err, organization.ErrInvitationExpired) {
 			c.JSON(http.StatusGone, gin.H{"error": "gone", "message": "invitation has expired"})
 			return
 		}
-		if errors.Is(err, invitation.ErrAlreadyResponded) {
+		if errors.Is(err, organization.ErrAlreadyResponded) {
 			h.presenter.Conflict(c, "invitation has already been processed")
 			return
 		}
-		if errors.Is(err, invitation.ErrEmailMismatch) {
+		if errors.Is(err, organization.ErrEmailMismatch) {
 			h.presenter.Forbidden(c, "email does not match invitation")
 			return
 		}
@@ -351,11 +348,11 @@ func (h *InvitationHandler) Reject(c *gin.Context) {
 			h.presenter.NotFound(c, "invitation not found")
 			return
 		}
-		if errors.Is(err, invitation.ErrAlreadyResponded) {
+		if errors.Is(err, organization.ErrAlreadyResponded) {
 			h.presenter.Conflict(c, "invitation has already been processed")
 			return
 		}
-		if errors.Is(err, invitation.ErrEmailMismatch) {
+		if errors.Is(err, organization.ErrEmailMismatch) {
 			h.presenter.Forbidden(c, "email does not match invitation")
 			return
 		}
@@ -446,7 +443,7 @@ func (h *InvitationHandler) Delete(c *gin.Context) {
 	}
 
 	// Only pending invitations can be deleted
-	if inv.Status != invitation.InvitationStatusPending {
+	if inv.Status != organization.InvitationStatusPending {
 		h.presenter.Conflict(c, "only pending invitations can be deleted")
 		return
 	}

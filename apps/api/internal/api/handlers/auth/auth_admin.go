@@ -4,13 +4,15 @@ import (
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 
 	"github.com/gin-gonic/gin"
 )
 
-// AdminHandler handles admin endpoints.
+// AdminHandler handles admin endpoints with organization-scoped access control.
+// All endpoints require the operator to be a super_admin in the current organization.
 type AdminHandler struct {
 	authService *auth.AuthService
 	presenter   *response.Presenter
@@ -22,22 +24,17 @@ func NewAdminHandler(authService *auth.AuthService, presenter *response.Presente
 }
 
 // ListOperators handles GET /v1/auth/admin/operators.
+// Lists all operators in the system (for super_admin reference).
 func (h *AdminHandler) ListOperators(c *gin.Context) {
-	// Verify session first
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
+	op := middleware.GetOperatorFromContext(c)
+	orgID := middleware.GetOrganizationID(c)
+	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
 		return
 	}
 
-	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
-		return
-	}
-
-	// Check role
-	if !op.Role.IsAdmin() {
+	// Org-scoped check - operator must be super_admin in this organization
+	if !op.IsSuperAdminIn(orgID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
 		return
 	}
@@ -53,27 +50,21 @@ func (h *AdminHandler) ListOperators(c *gin.Context) {
 
 // CreateOperator handles POST /v1/auth/admin/operators.
 func (h *AdminHandler) CreateOperator(c *gin.Context) {
-	// Verify session first
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
+	op := middleware.GetOperatorFromContext(c)
+	orgID := middleware.GetOrganizationID(c)
+	if op == nil {
 		h.presenter.Unauthorized(c, "not authenticated")
 		return
 	}
 
-	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		h.presenter.Unauthorized(c, "not authenticated")
-		return
-	}
-
-	// Check role
-	if !op.Role.IsAdmin() {
+	// Org-scoped check
+	if !op.IsSuperAdminIn(orgID) {
 		h.presenter.Forbidden(c, "insufficient privileges")
 		return
 	}
 
 	var req dto.RegisterRequest
-	if err = c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "invalid request body")
 		return
 	}
@@ -99,28 +90,21 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 		"id":         newOp.ID,
 		"email":      newOp.Email,
 		"name":       newOp.Name,
-		"role":       string(newOp.Role),
 		"created_at": newOp.CreatedAt.UnixMilli(),
 	})
 }
 
 // GetOperator handles GET /v1/auth/admin/operators/:id.
 func (h *AdminHandler) GetOperator(c *gin.Context) {
-	// Verify session first
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
+	op := middleware.GetOperatorFromContext(c)
+	orgID := middleware.GetOrganizationID(c)
+	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
 		return
 	}
 
-	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
-		return
-	}
-
-	// Check role
-	if !op.Role.IsAdmin() {
+	// Org-scoped check
+	if !op.IsSuperAdminIn(orgID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
 		return
 	}
@@ -141,7 +125,6 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 		"id":             targetOp.ID,
 		"email":          targetOp.Email,
 		"name":           targetOp.Name,
-		"role":           string(targetOp.Role),
 		"mfa_enabled":    targetOp.MFASecret != "",
 		"email_verified": targetOp.EmailVerified,
 		"created_at":     targetOp.CreatedAt.UnixMilli(),
@@ -151,21 +134,15 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 
 // UpdateOperator handles PATCH /v1/auth/admin/operators/:id.
 func (h *AdminHandler) UpdateOperator(c *gin.Context) {
-	// Verify session first
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
+	op := middleware.GetOperatorFromContext(c)
+	orgID := middleware.GetOrganizationID(c)
+	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
 		return
 	}
 
-	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
-		return
-	}
-
-	// Check role
-	if !op.Role.IsAdmin() {
+	// Org-scoped check
+	if !op.IsSuperAdminIn(orgID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
 		return
 	}
@@ -177,7 +154,7 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 	}
 
 	var req auth.UpdateOperatorRequest
-	if err = c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid request body"})
 		return
 	}
@@ -192,28 +169,21 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 		"id":         updatedOp.ID,
 		"email":      updatedOp.Email,
 		"name":       updatedOp.Name,
-		"role":       string(updatedOp.Role),
 		"updated_at": updatedOp.UpdatedAt.UnixMilli(),
 	})
 }
 
 // DeleteOperator handles DELETE /v1/auth/admin/operators/:id.
 func (h *AdminHandler) DeleteOperator(c *gin.Context) {
-	// Verify session first
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
+	op := middleware.GetOperatorFromContext(c)
+	orgID := middleware.GetOrganizationID(c)
+	if op == nil {
 		h.presenter.Unauthorized(c, "not authenticated")
 		return
 	}
 
-	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		h.presenter.Unauthorized(c, "not authenticated")
-		return
-	}
-
-	// Check role
-	if !op.Role.IsAdmin() {
+	// Org-scoped check
+	if !op.IsSuperAdminIn(orgID) {
 		h.presenter.Forbidden(c, "insufficient privileges")
 		return
 	}
@@ -224,7 +194,6 @@ func (h *AdminHandler) DeleteOperator(c *gin.Context) {
 		return
 	}
 
-	// Prevent deleting yourself
 	if operatorID == op.ID {
 		h.presenter.BadRequest(c, "cannot delete your own account")
 		return

@@ -69,7 +69,7 @@ func drLoadSpec() *drSpec {
 		{"GET", "/v1/device/inbox/:imei", "InboxHandler", "GetInboxEntry"},
 		{"POST", "/v1/device/inbox/:imei/ack", "InboxHandler", "AckInbox"},
 		{"DELETE", "/v1/device/:id", "DeviceHandler", "Deregister"},
-		{"POST", "/v1/device/register", "DeviceRegisterHandler", "Handle"},
+		// DEPRECATED: {"POST", "/v1/device/register", "DeviceRegisterHandler", "Handle"},
 		{"POST", "/v1/device/confirm", "DeviceConfirmHandler", "Handle"},
 		{"GET", "/v1/devices", "DevicesHandler", "GetDevices"},
 		{"GET", "/v1/devices/:id", "DevicesHandler", "GetDeviceDetail"},

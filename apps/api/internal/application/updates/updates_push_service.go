@@ -76,12 +76,13 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 
 	now := time.Now()
 	push := &updates.UpdatePush{
-		VersionID:    version.ID,
-		InstallType: updates.InstallType(req.InstallType),
-		ScheduledAt:  req.ScheduledAt,
-		Status:       updates.UpdateStatusPending,
-		InitiatedBy:  initiatedBy,
-		InitiatedAt:  now.UnixMilli(),
+		VersionID:      version.ID,
+		OrganizationID: req.OrganizationID,
+		InstallType:   updates.InstallType(req.InstallType),
+		ScheduledAt:    req.ScheduledAt,
+		Status:         updates.UpdateStatusPending,
+		InitiatedBy:    initiatedBy,
+		InitiatedAt:    now.UnixMilli(),
 	}
 
 	if err := s.repo.CreatePush(ctx, push); err != nil {
@@ -303,7 +304,7 @@ func (s *PushService) Hub() *ws.Hub {
 // checkPushCompletion checks if all devices in a push have completed
 // and updates the push status accordingly.
 func (s *PushService) checkPushCompletion(ctx context.Context, pushID string) error {
-	devices, err := s.repo.GetPushDevices(ctx, pushID)
+	devices, err := s.repo.GetPushDevicesByPushID(ctx, pushID)
 	if err != nil {
 		return err
 	}

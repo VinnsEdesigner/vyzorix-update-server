@@ -7,19 +7,22 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/gin-gonic/gin"
 )
 
 // HistoryHandler handles command history endpoints.
 type HistoryHandler struct {
 	historySvc *command.HistoryService
+	devRepo    device.Repository
 	logger     *slog.Logger
 }
 
 // NewHistoryHandler creates a new command history handler.
-func NewHistoryHandler(historySvc *command.HistoryService, logger *slog.Logger) *HistoryHandler {
+func NewHistoryHandler(historySvc *command.HistoryService, devRepo device.Repository, logger *slog.Logger) *HistoryHandler {
 	return &HistoryHandler{
 		historySvc: historySvc,
+		devRepo:    devRepo,
 		logger:     logger,
 	}
 }
@@ -29,16 +32,31 @@ func NewHistoryHandler(historySvc *command.HistoryService, logger *slog.Logger) 
 func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	// Extract operator for DOA check
+	// Extract operator for auth check
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
 		return
 	}
 
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		return
+	}
+
 	deviceID := c.Param("imei")
 	if deviceID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Device ID is required"})
+		return
+	}
+
+	// Verify device belongs to this organization
+	_, err := h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
+	if err != nil {
+		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Device not found"})
 		return
 	}
 
@@ -80,13 +98,13 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	}
 
 	req := &command.GetHistoryRequest{
-		DeviceID:   deviceID,
-		OperatorID: op.ID,
-		Status:     status,
-		Page:       page,
-		Limit:      limit,
-		StartTime:  startTime,
-		EndTime:    endTime,
+		DeviceID:       deviceID,
+		OrganizationID: orgID,
+		Status:         status,
+		Page:           page,
+		Limit:          limit,
+		StartTime:      startTime,
+		EndTime:        endTime,
 	}
 
 	resp, err := h.historySvc.GetHistory(ctx, req)

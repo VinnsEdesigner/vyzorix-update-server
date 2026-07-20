@@ -19,12 +19,22 @@ var (
 	ErrOAuthFailed     = errors.New("oauth authentication failed")
 	ErrOperatorNotFound = errors.New("not_found")
 
+	// Organization errors (multi-tenant).
+	ErrNoOrganization        = errors.New("no organization found, please create or join one")
+	ErrOrgSelectionRequired  = errors.New("organization selection required")
+	ErrInvalidOrganization  = errors.New("invalid organization")
+	ErrOrganizationInactive  = errors.New("organization is inactive")
+	ErrMembershipInactive    = errors.New("membership is not active")
+	ErrNotOrgMember          = errors.New("not a member of this organization")
+	ErrCannotDeleteLastSuperAdmin = errors.New("cannot delete the last super_admin of an organization")
+
 	// Device errors.
 	ErrDeviceNotFound   = errors.New("device not found")
 	ErrDeviceHijack     = errors.New("device registration conflict")
 	ErrDeviceExists     = errors.New("device already exists")
 	ErrCommandNotFound  = errors.New("command not found")
 	ErrCommandFailed    = errors.New("command failed")
+	ErrDeviceOnline     = errors.New("device must be offline to transfer")
 
 	// General errors.
 	ErrInvalidInput  = errors.New("invalid input")

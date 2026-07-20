@@ -137,7 +137,7 @@ vyzorix-update-server/
     updater.go                                         # OTA distribution; serves version.json + APK binaries; Gin
                                                           # file-serving with Range header support for resumable downloads
     device.go                                          # Device registration handler
-                                                          # POST /v1/device/register:
+                                                          # POST /v1/device/inbox (DEPRECATED: was /v1/device/register):
                                                           # 1. Validates request payload
                                                           # 2. Generates command_secret = crypto/rand 32 bytes → hex
                                                           # 3. Stores device + command_secret in devices table

@@ -195,9 +195,16 @@ var migrations = []Migration{
 	{Apply: migrateCreateOAuthStates, Name: "create_oauth_states_table", Version: 37},
 	{Apply: migrateAddMFASecretMAC, Name: "add_mfa_secret_mac_column", Version: 38},
 	// Multi-tenant organization model
-	{Apply: migrateOrganizations, Name: "create_organizations_tables", Version: 40},
+	{Apply: migrateOrganizations, Name: "create_organizations_tables", Version: 39},
+	// Session and operator org context for multi-tenant
+	{Apply: migrateAddOrgContextColumns, Name: "add_org_context_columns", Version: 40},
+	// Inbox organization column for multi-tenant
+	{Apply: migrateAddInboxOrganizationColumn, Name: "add_inbox_organization_column", Version: 41},
+	// Organization settings table
+	{Apply: migrateOrganizationSettings, Name: "create_organization_settings_table", Version: 42},
+	// Device settings table
+	{Apply: migrateDeviceSettings, Name: "create_device_settings_table", Version: 43},
 }
-
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {
 	// Ensure migrations table exists
@@ -342,6 +349,7 @@ func migrateCreateOperators(db *sql.DB) error {
 			github_id TEXT,
 			thresholds TEXT,
 			client_settings TEXT,
+			last_organization_id TEXT,
 			created_at INTEGER NOT NULL,
 			updated_at INTEGER NOT NULL
 		)
@@ -356,6 +364,7 @@ func migrateCreateAuthSessions(db *sql.DB) error {
 			id TEXT PRIMARY KEY,
 			operator_id TEXT NOT NULL,
 			token_hash TEXT NOT NULL UNIQUE,
+			organization_id TEXT,
 			expires_at INTEGER NOT NULL,
 			created_at INTEGER NOT NULL,
 			user_agent TEXT,
@@ -621,4 +630,46 @@ func migrateCreateOAuthStates(db *sql.DB) error {
 	`)
 
 	return err
+}
+
+// migrateAddOrgContextColumns adds organization context columns for multi-tenant session support.
+func migrateAddOrgContextColumns(db *sql.DB) error {
+	// Add last_organization_id to operators table for auto-select on login
+	_, err := db.ExecContext(context.Background(), `
+		ALTER TABLE operators ADD COLUMN last_organization_id TEXT
+	`)
+	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
+		return err
+	}
+
+	// Add organization_id to auth_sessions table for session-scoped org context
+	_, err = db.ExecContext(context.Background(), `
+		ALTER TABLE auth_sessions ADD COLUMN organization_id TEXT
+	`)
+	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
+		return err
+	}
+
+	return nil
+}
+
+// migrateAddInboxOrganizationColumn adds organization_id to inbox_requests table for multi-tenant isolation.
+func migrateAddInboxOrganizationColumn(db *sql.DB) error {
+	_, err := db.ExecContext(context.Background(), `
+		ALTER TABLE inbox_requests ADD COLUMN organization_id TEXT
+	`)
+	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
+		return err
+	}
+
+	// Create index for org-scoped queries
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_inbox_organization 
+		ON inbox_requests(organization_id, status, created_at DESC)
+	`)
+	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
+		return err
+	}
+
+	return nil
 }

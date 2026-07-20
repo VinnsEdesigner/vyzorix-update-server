@@ -3,25 +3,24 @@ package organization
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/invitation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
+	emailSvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/google/uuid"
 )
 
-const (
-	// InvitationDefaultTTL is the default time-to-live for invitations (7 days).
-	InvitationDefaultTTL = 7 * 24 * time.Hour
+// InvitationDefaultTTL is the default time-to-live for invitations (7 days).
+const InvitationDefaultTTL = 7 * 24 * time.Hour
 
-	// InvitationMaxTTL is the maximum time-to-live for invitations (30 days).
-	InvitationMaxTTL = 30 * 24 * time.Hour
+// InvitationMaxTTL is the maximum time-to-live for invitations (30 days).
+const InvitationMaxTTL = 30 * 24 * time.Hour
 
-	// MaxPendingInvitationsPerOrg is the maximum pending invitations per organization.
-	MaxPendingInvitationsPerOrg = 20
-)
+// MaxPendingInvitationsPerOrg is the maximum pending invitations per organization.
+const MaxPendingInvitationsPerOrg = 20
 
 var (
 	ErrMaxInvitationsReached = errors.New("maximum pending invitations reached")
@@ -33,32 +32,37 @@ var (
 
 // EmailService defines the interface for sending emails.
 type EmailService interface {
-	SendInvitationEmail(ctx context.Context, inv *invitation.Invitation, orgName string, inviterName string) error
-	SendInvitationAcceptedEmail(ctx context.Context, inv *invitation.Invitation, orgName string) error
-	SendInvitationRejectedEmail(ctx context.Context, inv *invitation.Invitation, orgName string) error
+	SendInvitationEmail(ctx context.Context, to string, data emailSvc.InvitationData) error
+	SendInvitationAcceptedEmail(ctx context.Context, to string, data emailSvc.InvitationData) error
+	SendInvitationRejectedEmail(ctx context.Context, to string, data emailSvc.InvitationData) error
 }
 
 // InvitationService handles invitation operations.
 type InvitationService struct {
-	invitationRepo  invitation.Repository
+	invitationRepo  organization.InvitationRepository
 	orgRepo         organization.OrganizationRepository
 	memberRepo      organization.MemberRepository
 	txManager       transaction.TxManager
 	emailService    EmailService
 	logger          *slog.Logger
+	baseURL         string
 }
 
 // NewInvitationService creates a new InvitationService.
 func NewInvitationService(
-	invitationRepo invitation.Repository,
+	invitationRepo organization.InvitationRepository,
 	orgRepo organization.OrganizationRepository,
 	memberRepo organization.MemberRepository,
 	txManager transaction.TxManager,
 	emailService EmailService,
 	logger *slog.Logger,
+	baseURL string,
 ) *InvitationService {
 	if logger == nil {
 		logger = slog.Default()
+	}
+	if baseURL == "" {
+		baseURL = "http://localhost:5173"
 	}
 	return &InvitationService{
 		invitationRepo: invitationRepo,
@@ -67,18 +71,27 @@ func NewInvitationService(
 		txManager:      txManager,
 		emailService:   emailService,
 		logger:         logger,
+		baseURL:        baseURL,
 	}
 }
 
+// getBaseURL returns the base URL for the application.
+func (s *InvitationService) getBaseURL() string {
+	return s.baseURL
+}
+
 // CreateInvitation creates a new invitation and sends an email.
-func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviterID, email string, role invitation.InvitationRole, notes string) (*invitation.Invitation, error) {
+func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviterID, email string, role organization.OrganizationRole, notes string) (*organization.Invitation, error) {
 	// Validate email
 	if email == "" {
 		return nil, errors.New("email is required")
 	}
 
-	// Validate role - super_admin cannot be invited via invitation
-	// Admin, operator, and viewer roles are allowed
+	// Validate role - must be a valid organization role (admin, operator, or viewer)
+	// Note: super_admin cannot be invited via invitation
+	if role != organization.RoleAdmin && role != organization.RoleOperator && role != organization.RoleViewer {
+		return nil, errors.New("invalid invitation role")
+	}
 
 	// Check if inviter is a member of the org with permission to invite
 	member, err := s.memberRepo.FindByOperatorAndOrg(ctx, inviterID, orgID)
@@ -109,9 +122,7 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 	}
 
 	// Check pending invitation limit
-	pending, err := s.invitationRepo.ListByOrganization(ctx, orgID, &invitation.InvitationFilter{
-		Status: invitation.InvitationStatusPtr(invitation.InvitationStatusPending),
-	})
+	pending, err := s.invitationRepo.FindPendingByOrganization(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -120,12 +131,12 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 	}
 
 	// Check for existing pending invitation for this email in this org
-	existing, err := s.invitationRepo.FindPendingByEmailAndOrg(ctx, email, orgID)
-	if err != nil && !errors.Is(err, invitation.ErrNotFound) {
+	existing, err := s.invitationRepo.FindPendingByOrganizationAndEmail(ctx, orgID, email)
+	if err != nil && !errors.Is(err, organization.ErrInvitationNotFound) {
 		return nil, err
 	}
-	if existing != nil {
-		return nil, invitation.ErrAlreadyExists
+	if len(existing) > 0 {
+		return nil, organization.ErrInvitationExists
 	}
 
 	// Check if user is already a member of this org
@@ -133,33 +144,20 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 	// Since we don't have operatorRepo here, we'll skip this check and let AcceptInvitation
 	// handle the "already a member" case when the user tries to accept
 
-	// Generate secure token
-	token, err := invitation.GenerateSecureToken(32)
+	// Create invitation using domain constructor (includes lifecycle initialization)
+	inv, err := organization.NewInvitation(
+		uuid.New().String(),
+		orgID,
+		email,
+		role,
+		inviterID,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	now := time.Now()
-	ttl := InvitationDefaultTTL
-	if ttl > InvitationMaxTTL {
-		ttl = InvitationMaxTTL
-	}
-
-	inv := &invitation.Invitation{
-		ID:             uuid.New().String(),
-		OrganizationID:  orgID,
-		Email:           email,
-		Role:            role,
-		Status:          invitation.InvitationStatusPending,
-		Token:           token,
-		InvitedBy:       inviterID,
-		InvitedAt:       now,
-		ExpiresAt:       now.Add(ttl),
-		OrganizationName: org.Name,
-	}
-
 	if notes != "" {
-		inv.InviterNotes = &notes
+		inv.InviterNotes = notes
 	}
 
 	if err := s.invitationRepo.Create(ctx, inv); err != nil {
@@ -169,7 +167,17 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 	// Send email (non-transactional)
 	if s.emailService != nil {
 		go func() {
-			if err := s.emailService.SendInvitationEmail(context.Background(), inv, org.Name, member.OperatorName); err != nil {
+			inviteData := emailSvc.InvitationData{
+				InviteeName:       email,
+				InviterName:       member.OperatorName,
+				OrganizationName:  org.Name,
+				Role:              string(inv.Role),
+				InviterNotes:      inv.InviterNotes,
+				AcceptURL:         fmt.Sprintf("%s/invite/%s/accept", s.getBaseURL(), inv.Token),
+				ExpiryDays:        7,
+				BaseURL:           s.getBaseURL(),
+			}
+			if err := s.emailService.SendInvitationEmail(context.Background(), email, inviteData); err != nil {
 				s.logger.Error("failed to send invitation email",
 					"invitation_id", inv.ID,
 					"email", email,
@@ -190,28 +198,28 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 }
 
 // GetInvitationByToken retrieves an invitation by its token (public endpoint).
-func (s *InvitationService) GetInvitationByToken(ctx context.Context, token string) (*invitation.Invitation, error) {
+func (s *InvitationService) GetInvitationByToken(ctx context.Context, token string) (*organization.Invitation, error) {
 	inv, err := s.invitationRepo.FindByToken(ctx, token)
 	if err != nil {
-		if errors.Is(err, invitation.ErrNotFound) {
+		if errors.Is(err, organization.ErrInvitationNotFound) {
 			return nil, ErrInvitationNotFound
 		}
 		return nil, err
 	}
 
-	// Check if expired
-	if inv.IsExpired() && inv.Status == invitation.InvitationStatusPending {
-		return nil, invitation.ErrExpired
+	// Check if expired using lifecycle method
+	if inv.IsExpired() {
+		return nil, organization.ErrInvitationExpired
 	}
 
 	return inv, nil
 }
 
 // GetInvitationByID retrieves an invitation by its ID.
-func (s *InvitationService) GetInvitationByID(ctx context.Context, invitationID string) (*invitation.Invitation, error) {
+func (s *InvitationService) GetInvitationByID(ctx context.Context, invitationID string) (*organization.Invitation, error) {
 	inv, err := s.invitationRepo.FindByID(ctx, invitationID)
 	if err != nil {
-		if errors.Is(err, invitation.ErrNotFound) {
+		if errors.Is(err, organization.ErrInvitationNotFound) {
 			return nil, ErrInvitationNotFound
 		}
 		return nil, err
@@ -225,27 +233,28 @@ func (s *InvitationService) CancelInvitation(ctx context.Context, invitationID s
 }
 
 // AcceptInvitation accepts an invitation (for authenticated users).
-func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operatorID, operatorEmail, notes string) error {
-	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
+func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operatorID, operatorEmail, notes string) (*organization.OrganizationMember, error) {
+	var resultMember *organization.OrganizationMember
+	err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
 		inv, err := s.invitationRepo.FindByToken(txCtx, token)
 		if err != nil {
-			if errors.Is(err, invitation.ErrNotFound) {
+			if errors.Is(err, organization.ErrInvitationNotFound) {
 				return ErrInvitationNotFound
 			}
 			return err
 		}
 
-		// Check if invitation can be accepted
+		// Check if invitation can be accepted using lifecycle method
 		if !inv.CanBeAccepted() {
-			if inv.Status != invitation.InvitationStatusPending {
-				return invitation.ErrAlreadyResponded
+			if inv.HasResponded() {
+				return organization.ErrAlreadyResponded
 			}
-			return invitation.ErrExpired
+			return organization.ErrInvitationExpired
 		}
 
 		// Verify email matches
 		if inv.Email != operatorEmail {
-			return invitation.ErrEmailMismatch
+			return organization.ErrEmailMismatch
 		}
 
 		// Check if operator is already a member of this org
@@ -263,14 +272,9 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 			return ErrOrgAtCapacity
 		}
 
-		now := time.Now()
-
-		// Update invitation status
-		inv.Status = invitation.InvitationStatusApproved
-		inv.RespondedAt = &now
-		inv.ResponderID = &operatorID
-		if notes != "" {
-			inv.InviteeNotes = &notes
+		// Use lifecycle Accept() method to properly transition invitation state
+		if err := inv.Accept(operatorID, notes); err != nil {
+			return err
 		}
 
 		if err := s.invitationRepo.Update(txCtx, inv); err != nil {
@@ -282,9 +286,11 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 			uuid.New().String(),
 			inv.OrganizationID,
 			operatorID,
-			organization.OrganizationRole(inv.Role.ToOrgRole()),
+			inv.Role, // Role is already OrganizationRole
 		)
-		member.InvitedBy = &inv.InvitedBy
+		if inv.InvitedBy != "" {
+			member.InvitedBy = &inv.InvitedBy
+		}
 
 		if err := s.memberRepo.Create(txCtx, member); err != nil {
 			return err
@@ -296,6 +302,9 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 			"org_id", inv.OrganizationID,
 		)
 
+		// Store member reference for return value
+		resultMember = member
+
 		// Send notification email to inviter (async)
 		if s.emailService != nil {
 			go func() {
@@ -304,14 +313,26 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 				if org != nil {
 					orgName = org.Name
 				}
-				if err := s.emailService.SendInvitationAcceptedEmail(context.Background(), inv, orgName); err != nil {
-					s.logger.Error("failed to send acceptance notification", "error", err)
+				inviteData := emailSvc.InvitationData{
+					InviteeName:      operatorEmail,
+					OrganizationName: orgName,
+					Role:             string(inv.Role),
+					InviteeNotes:     notes,
+					AcceptedAt:       time.Now().Format("2006-01-02 15:04:05"),
+					BaseURL:          s.getBaseURL(),
+				}
+				if inv.InviterEmail != "" {
+					if err := s.emailService.SendInvitationAcceptedEmail(context.Background(), inv.InviterEmail, inviteData); err != nil {
+						s.logger.Error("failed to send acceptance notification", "error", err)
+					}
 				}
 			}()
 		}
 
 		return nil
 	})
+
+	return resultMember, err
 }
 
 // RejectInvitation rejects an invitation.
@@ -319,30 +340,25 @@ func (s *InvitationService) RejectInvitation(ctx context.Context, token, operato
 	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
 		inv, err := s.invitationRepo.FindByToken(txCtx, token)
 		if err != nil {
-			if errors.Is(err, invitation.ErrNotFound) {
+			if errors.Is(err, organization.ErrInvitationNotFound) {
 				return ErrInvitationNotFound
 			}
 			return err
 		}
 
-		// Check if invitation can be rejected
-		if inv.Status != invitation.InvitationStatusPending {
-			return invitation.ErrAlreadyResponded
+		// Check if invitation can be rejected (must be pending)
+		if !inv.IsPending() {
+			return organization.ErrAlreadyResponded
 		}
 
 		// Verify email matches
 		if inv.Email != operatorEmail {
-			return invitation.ErrEmailMismatch
+			return organization.ErrEmailMismatch
 		}
 
-		now := time.Now()
-
-		// Update invitation status
-		inv.Status = invitation.InvitationStatusRejected
-		inv.RespondedAt = &now
-		inv.ResponderID = &operatorID
-		if notes != "" {
-			inv.InviteeNotes = &notes
+		// Use lifecycle Reject() method to properly transition invitation state
+		if err := inv.Reject(operatorID, notes); err != nil {
+			return err
 		}
 
 		if err := s.invitationRepo.Update(txCtx, inv); err != nil {
@@ -362,8 +378,17 @@ func (s *InvitationService) RejectInvitation(ctx context.Context, token, operato
 				if org != nil {
 					orgName = org.Name
 				}
-				if err := s.emailService.SendInvitationRejectedEmail(context.Background(), inv, orgName); err != nil {
-					s.logger.Error("failed to send rejection notification", "error", err)
+				inviteData := emailSvc.InvitationData{
+					InviteeName:      operatorEmail,
+					OrganizationName: orgName,
+					Role:             string(inv.Role),
+					InviteeNotes:     notes,
+					BaseURL:          s.getBaseURL(),
+				}
+				if inv.InviterEmail != "" {
+					if err := s.emailService.SendInvitationRejectedEmail(context.Background(), inv.InviterEmail, inviteData); err != nil {
+						s.logger.Error("failed to send rejection notification", "error", err)
+					}
 				}
 			}()
 		}
@@ -373,24 +398,75 @@ func (s *InvitationService) RejectInvitation(ctx context.Context, token, operato
 }
 
 // ListInvitationsByOrganization lists all invitations for an organization.
-func (s *InvitationService) ListInvitationsByOrganization(ctx context.Context, orgID string, status *invitation.InvitationStatus) ([]*invitation.Invitation, error) {
-	invitations, err := s.invitationRepo.ListByOrganization(ctx, orgID, &invitation.InvitationFilter{
-		Status: status,
-	})
+func (s *InvitationService) ListInvitationsByOrganization(ctx context.Context, orgID string, status *organization.InvitationStatus) ([]*organization.Invitation, error) {
+	var filter *organization.InvitationFilter
+	if status != nil {
+		filter = &organization.InvitationFilter{Status: status}
+	}
+
+	// If no filter, get all invitations
+	if filter == nil {
+		return s.invitationRepo.FindByOrganization(ctx, orgID)
+	}
+
+	// Use paginated method with filter
+	invitations, _, err := s.invitationRepo.FindByOrganizationPaginated(ctx, orgID, 1000, 0, filter)
+	if err != nil {
+		return nil, err
+	}
+	return invitations, nil
+}
+
+// ListInvitationsByOrganizationPaginated lists invitations with pagination.
+func (s *InvitationService) ListInvitationsByOrganizationPaginated(ctx context.Context, orgID string, page, limit int, status *organization.InvitationStatus) (*InvitationListResponse, error) {
+	// Apply defaults and limits
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = DefaultPageSize
+	}
+	if limit > MaxPageSize {
+		limit = MaxPageSize
+	}
+
+	offset := (page - 1) * limit
+
+	var filter *organization.InvitationFilter
+	if status != nil {
+		filter = &organization.InvitationFilter{Status: status}
+	}
+
+	// Use repository paginated method - does LIMIT/OFFSET at DB level
+	invitations, total, err := s.invitationRepo.FindByOrganizationPaginated(ctx, orgID, limit, offset, filter)
 	if err != nil {
 		return nil, err
 	}
 
-	return invitations, nil
+	totalPages := (total + limit - 1) / limit
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	return &InvitationListResponse{
+		Items: invitations,
+		Pagination: Pagination{
+			Page:       page,
+			Limit:      limit,
+			Total:      total,
+			TotalPages: totalPages,
+			HasMore:    page < totalPages,
+		},
+	}, nil
 }
 
 // ListInvitationsByInviter lists all invitations sent by an operator.
-func (s *InvitationService) ListInvitationsByInviter(ctx context.Context, inviterID string) ([]*invitation.Invitation, error) {
+func (s *InvitationService) ListInvitationsByInviter(ctx context.Context, inviterID string) ([]*organization.Invitation, error) {
 	return s.invitationRepo.ListByInviter(ctx, inviterID)
 }
 
 // ListPendingInvitationsForEmail lists all pending invitations for an email.
-func (s *InvitationService) ListPendingInvitationsForEmail(ctx context.Context, email string) ([]*invitation.Invitation, error) {
+func (s *InvitationService) ListPendingInvitationsForEmail(ctx context.Context, email string) ([]*organization.Invitation, error) {
 	return s.invitationRepo.FindPendingByEmail(ctx, email)
 }
 
@@ -399,7 +475,7 @@ func (s *InvitationService) ExpireInvitation(ctx context.Context, invitationID, 
 	// Get invitation to verify actor has permission
 	inv, err := s.invitationRepo.FindByID(ctx, invitationID)
 	if err != nil {
-		if errors.Is(err, invitation.ErrNotFound) {
+		if errors.Is(err, organization.ErrInvitationNotFound) {
 			return ErrInvitationNotFound
 		}
 		return err
@@ -415,9 +491,19 @@ func (s *InvitationService) ExpireInvitation(ctx context.Context, invitationID, 
 		return organization.ErrForbidden
 	}
 
-	if err := s.invitationRepo.Delete(ctx, invitationID); err != nil {
+	// Use lifecycle Expire() method to properly transition invitation state
+	if err := inv.Expire(); err != nil {
 		return err
 	}
+
+	if err := s.invitationRepo.Update(ctx, inv); err != nil {
+		return err
+	}
+
+	s.logger.Info("invitation expired",
+		"invitation_id", invitationID,
+		"actor_id", actorID,
+	)
 
 	return nil
 }

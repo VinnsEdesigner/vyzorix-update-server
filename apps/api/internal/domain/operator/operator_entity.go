@@ -3,6 +3,8 @@ package operator
 import (
 	"strings"
 	"time"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 )
 
 // Thresholds define alert levels for device telemetry.
@@ -15,7 +17,14 @@ type Thresholds struct {
 	BufferCrit  int `json:"bufferCrit"`
 }
 
-// ClientSettings holds operator preferences that control dashboard behavior.
+// OperatorSettings holds all settings for an operator.
+type OperatorSettings struct {
+	Client        ClientSettings       `json:"client"`
+	Thresholds    Thresholds          `json:"thresholds"`
+	Notifications *NotificationSettings `json:"notifications"`
+}
+
+// ClientSettings control dashboard behavior.
 type ClientSettings struct {
 	ServerURL            string `json:"serverUrl"`
 	DeviceID             string `json:"deviceId"`
@@ -27,14 +36,6 @@ type ClientSettings struct {
 	NotificationsEnabled bool   `json:"notificationsEnabled"`
 }
 
-// OperatorSettings represents all settings for an operator.
-type OperatorSettings struct {
-	Notifications *NotificationSettings `json:"notifications"`
-	Client        ClientSettings        `json:"client"`
-	Thresholds    Thresholds            `json:"thresholds"`
-	Security      SecuritySettings      `json:"security"`
-}
-
 // SecuritySettings holds security-related settings per operator.
 type SecuritySettings struct {
 	MaxConcurrentSessions int  `json:"maxConcurrentSessions"` // 0 = unlimited
@@ -42,6 +43,36 @@ type SecuritySettings struct {
 	PasswordMaxAgeDays    int  `json:"passwordMaxAgeDays"`    // 0 = no expiry
 	PasswordHistoryCount  int  `json:"passwordHistoryCount"`  // remember N passwords
 	SessionPinRequired    bool `json:"sessionPinRequired"`    // require PIN for sensitive ops
+}
+
+// Operator represents a system operator (user).
+type Operator struct {
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	Email            string
+	FCMToken         string `json:"fcmToken,omitempty"`
+	GoogleID         string
+	ID               string
+	MFASecret        string
+	MFASecretMAC     string
+	Name             string
+	GitHubID         string
+	PasswordHash     string
+	BackupCodes      []string
+	ClientSettings   ClientSettings   `json:"client"`
+	Thresholds       Thresholds       `json:"thresholds"`
+	SecuritySettings SecuritySettings `json:"security"`
+	MFAEnabled       bool
+	MFARequired      bool
+	EmailVerified    bool
+
+	// Memberships holds the operator's memberships in organizations.
+	// Role is org-scoped via these memberships.
+	Memberships []*organization.OrganizationMember
+
+	// LastOrganizationID is the most recently accessed organization for this operator.
+	// Used to auto-select the organization when logging in.
+	LastOrganizationID string
 }
 
 // DefaultSecuritySettings returns default security settings.
@@ -64,71 +95,176 @@ func DefaultClientSettings() *ClientSettings {
 		AutoReconnect:        true,
 		StrictHmac:           false,
 		LogBufferLimit:       500,
-		SignalHistoryLimit:   240,
+		SignalHistoryLimit:   100,
 		NotificationsEnabled: true,
 	}
 }
 
-// Operator represents a system operator (user).
-type Operator struct {
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Email            string
-	FCMToken         string `json:"fcmToken,omitempty"`
-	Role             OperatorRole
-	GoogleID         string
-	ID               string
-	MFASecret        string
-	MFASecretMAC     string
-	Name             string
-	GitHubID         string
-	PasswordHash     string
-	BackupCodes      []string
-	Permissions      []Permission
-	ClientSettings   ClientSettings   `json:"client"`
-	Thresholds       Thresholds       `json:"thresholds"`
-	SecuritySettings SecuritySettings `json:"security"`
-	MFAEnabled       bool
-	MFARequired      bool
-	EmailVerified    bool
+// DefaultThresholds returns default thresholds.
+func DefaultThresholds() Thresholds {
+	return Thresholds{
+		RiskWarn:    70,
+		RiskCrit:    90,
+		ThermalWarn: 75,
+		ThermalCrit: 85,
+		BufferWarn:  80,
+		BufferCrit:  95,
+	}
 }
 
-// IsSuperAdmin returns true if the operator is a super admin.
+// IsSuperAdminIn returns true if the operator is a super admin in the specified organization.
+func (o *Operator) IsSuperAdminIn(orgID string) bool {
+	m := o.GetMembership(orgID)
+	if m == nil {
+		return false
+	}
+	return m.Role.IsSuperAdmin() && m.IsActive()
+}
+
+// IsAdminIn returns true if the operator is an admin or super admin in the specified organization.
+func (o *Operator) IsAdminIn(orgID string) bool {
+	m := o.GetMembership(orgID)
+	if m == nil {
+		return false
+	}
+	return m.Role.IsAdmin() && m.IsActive()
+}
+
+// GetMembership returns the operator's membership in the specified organization.
+func (o *Operator) GetMembership(orgID string) *organization.OrganizationMember {
+	for _, m := range o.Memberships {
+		if m.OrganizationID == orgID && m.IsActive() {
+			return m
+		}
+	}
+	return nil
+}
+
+// CanManageOperatorsIn returns true if the operator can manage other operators in the specified organization.
+func (o *Operator) CanManageOperatorsIn(orgID string) bool {
+	m := o.GetMembership(orgID)
+	if m == nil {
+		return false
+	}
+	return m.Role.IsAdmin()
+}
+
+// CanManageDevicesIn returns true if the operator can manage devices in the specified organization.
+func (o *Operator) CanManageDevicesIn(orgID string) bool {
+	m := o.GetMembership(orgID)
+	if m == nil {
+		return false
+	}
+	return m.Role.CanManageDevices()
+}
+
+// CanManageAPIKeysIn returns true if the operator can manage API keys in the specified organization.
+func (o *Operator) CanManageAPIKeysIn(orgID string) bool {
+	m := o.GetMembership(orgID)
+	if m == nil {
+		return false
+	}
+	return m.Role.CanManageAPIKeys()
+}
+
+// CanViewLogsIn returns true if the operator can view logs in the specified organization.
+func (o *Operator) CanViewLogsIn(orgID string) bool {
+	return o.GetMembership(orgID) != nil
+}
+
+// CanManageSettingsIn returns true if the operator can manage settings in the specified organization.
+func (o *Operator) CanManageSettingsIn(orgID string) bool {
+	m := o.GetMembership(orgID)
+	if m == nil {
+		return false
+	}
+	return m.Role.Level() >= organization.LevelAdmin
+}
+
+// IsSuperAdmin returns true if the operator has super_admin role in any organization.
 func (o *Operator) IsSuperAdmin() bool {
-	return o.Role.IsSuperAdmin()
+	for _, m := range o.Memberships {
+		if m.Role.IsSuperAdmin() && m.IsActive() {
+			return true
+		}
+	}
+	return false
 }
 
-// IsAdmin returns true if the operator is an admin or super admin.
+// IsAdmin returns true if the operator has admin or super_admin role in any organization.
 func (o *Operator) IsAdmin() bool {
-	return o.Role.IsAdmin()
+	for _, m := range o.Memberships {
+		if m.Role.IsAdmin() && m.IsActive() {
+			return true
+		}
+	}
+	return false
 }
 
-// CanManageOperators returns true if the operator can manage other operators.
-func (o *Operator) CanManageOperators() bool {
-	return o.Role.IsAdmin()
+// IsOperator returns true if the operator has operator role in any organization.
+func (o *Operator) IsOperator() bool {
+	for _, m := range o.Memberships {
+		if m.Role.Level() == organization.LevelOperator && m.IsActive() {
+			return true
+		}
+	}
+	return false
 }
 
-// CanManageDevices returns true if the operator can manage devices.
-func (o *Operator) CanManageDevices() bool {
-	// All roles except viewer can manage devices
-	return o.Role.Level() >= LevelOperator
+// IsViewer returns true if the operator has viewer role in any organization.
+func (o *Operator) IsViewer() bool {
+	for _, m := range o.Memberships {
+		if m.Role.Level() == organization.LevelViewer && m.IsActive() {
+			return true
+		}
+	}
+	return false
 }
 
-// CanViewLogs returns true if the operator can view logs.
-func (o *Operator) CanViewLogs() bool {
-	// All roles can view logs
+// HasPermission returns true if the operator has the given permission in any organization.
+func (o *Operator) HasPermission(perm Permission) bool {
+	for _, m := range o.Memberships {
+		if !m.IsActive() {
+			continue
+		}
+		// Admin and super_admin have all permissions
+		if m.Role.IsAdmin() {
+			return true
+		}
+		// Check specific permissions based on role
+		switch m.Role {
+		case organization.RoleOperator:
+			if perm == PermissionDeviceRead || perm == PermissionDeviceWrite ||
+				perm == PermissionUpdateRead || perm == PermissionSettingsRead {
+				return true
+			}
+		case organization.RoleViewer:
+			if perm == PermissionDeviceRead || perm == PermissionUpdateRead || perm == PermissionSettingsRead {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// HasAnyPermission returns true if the operator has any of the given permissions.
+func (o *Operator) HasAnyPermission(perms ...Permission) bool {
+	for _, perm := range perms {
+		if o.HasPermission(perm) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasAllPermissions returns true if the operator has all of the given permissions.
+func (o *Operator) HasAllPermissions(perms ...Permission) bool {
+	for _, perm := range perms {
+		if !o.HasPermission(perm) {
+			return false
+		}
+	}
 	return true
-}
-
-// CanManageSettings returns true if the operator can manage settings.
-func (o *Operator) CanManageSettings() bool {
-	// Admin+ can manage settings, operators can manage their own
-	return o.Role.Level() >= LevelAdmin
-}
-
-// CanManageAPIKeys returns true if the operator can manage API keys.
-func (o *Operator) CanManageAPIKeys() bool {
-	return o.Role.Level() >= LevelOperator
 }
 
 // HasMFA returns true if MFA is enabled for this operator.

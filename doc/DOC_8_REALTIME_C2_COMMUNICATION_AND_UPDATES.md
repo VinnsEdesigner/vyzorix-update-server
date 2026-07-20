@@ -164,7 +164,7 @@ core/services/src/main/kotlin/com/vyzorix/audiorouter/services/fcm/
 ### 3.3 `FcmTokenManager.kt`
 *   **Path**: `core/services/.../fcm/FcmTokenManager.kt`
 *   **Architectural Role**: Binds the FCM registration token. On first registration, calls
-    `POST /v1/device/register` which returns the per-device `command_secret`. Passes secret
+    `POST /v1/device/inbox (DEPRECATED: was /v1/device/register)` which returns the per-device `command_secret`. Passes secret
     to `DeviceSecretStore.kt` for encrypted persistence. Monitors token refresh callbacks
     and re-uploads updated tokens to the Render server.
 

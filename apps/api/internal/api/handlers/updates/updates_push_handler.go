@@ -49,11 +49,22 @@ func (h *UpdatesPushHandler) PushUpdate(c *gin.Context) {
 		return
 	}
 
+	// Get organization ID from context
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
+			Code:    "bad_request",
+			Message: "organization context required",
+		})
+		return
+	}
+
 	pushReq := &updates.PushUpdateRequest{
-		Version:     req.Version,
-		DeviceIDs:   req.DeviceIDs,
-		InstallType: req.InstallType,
-		ScheduledAt: req.ScheduledAt,
+		Version:        req.Version,
+		DeviceIDs:      req.DeviceIDs,
+		InstallType:    req.InstallType,
+		ScheduledAt:    req.ScheduledAt,
+		OrganizationID: orgID,
 	}
 
 	pushResp, err := h.service.PushUpdate(c.Request.Context(), pushReq, operator.ID)

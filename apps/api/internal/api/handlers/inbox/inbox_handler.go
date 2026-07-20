@@ -20,8 +20,17 @@ func NewHandler(service *inbox.Service) *Handler {
 }
 
 // GetInbox handles GET /v1/device/inbox.
-// Returns paginated list of inbox entries for the authenticated operator.
+// Returns paginated list of inbox entries for the authenticated operator within the organization.
 func (h *Handler) GetInbox(c *gin.Context) {
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "organization context required",
+		})
+		return
+	}
+
 	status := c.DefaultQuery("status", "pending")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
@@ -36,14 +45,13 @@ func (h *Handler) GetInbox(c *gin.Context) {
 		limit = 100
 	}
 
-	// Get operator from context (set by auth middleware)
 	operator := middleware.GetOperatorFromContext(c)
 	operatorID := ""
 	if operator != nil {
 		operatorID = operator.ID
 	}
 
-	result, err := h.service.GetInbox(c.Request.Context(), operatorID, status, page, limit)
+	result, err := h.service.GetInbox(c.Request.Context(), operatorID, orgID, status, page, limit)
 	if err != nil {
 		se := inbox.ToServiceError(err)
 		c.JSON(se.Status, se.ToErrorResponse())
@@ -54,8 +62,17 @@ func (h *Handler) GetInbox(c *gin.Context) {
 }
 
 // GetInboxEntry handles GET /v1/device/inbox/:imei.
-// Returns a single inbox entry by IMEI.
+// Returns a single inbox entry by IMEI within the organization.
 func (h *Handler) GetInboxEntry(c *gin.Context) {
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "organization context required",
+		})
+		return
+	}
+
 	imei := c.Param("imei")
 	if imei == "" {
 		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
@@ -65,7 +82,7 @@ func (h *Handler) GetInboxEntry(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.GetInboxEntry(c.Request.Context(), imei)
+	result, err := h.service.GetInboxEntry(c.Request.Context(), imei, orgID)
 	if err != nil {
 		se := inbox.ToServiceError(err)
 		c.JSON(se.Status, se.ToErrorResponse())
@@ -76,8 +93,17 @@ func (h *Handler) GetInboxEntry(c *gin.Context) {
 }
 
 // AckInbox handles POST /v1/device/inbox/:imei/ack.
-// Acknowledges (approves or rejects) an inbox entry.
+// Acknowledges (approves or rejects) an inbox entry within the organization.
 func (h *Handler) AckInbox(c *gin.Context) {
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "organization context required",
+		})
+		return
+	}
+
 	imei := c.Param("imei")
 	if imei == "" {
 		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
@@ -96,7 +122,6 @@ func (h *Handler) AckInbox(c *gin.Context) {
 		return
 	}
 
-	// Validate action - support all 3 actions from 5-state model
 	if req.Action != "acknowledge" && req.Action != "approve" && req.Action != "reject" {
 		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
 			Code:    "bad_request",
@@ -105,8 +130,6 @@ func (h *Handler) AckInbox(c *gin.Context) {
 		return
 	}
 
-	// For acknowledge action, no operator ID needed (device-side action)
-	// For approve/reject actions, get operator ID from context
 	var operatorID string
 	if req.Action != "acknowledge" {
 		operator := middleware.GetOperatorFromContext(c)
@@ -115,8 +138,7 @@ func (h *Handler) AckInbox(c *gin.Context) {
 		}
 	}
 
-	// Timeout is handled by middleware (Bug 49)
-	result, err := h.service.AckInbox(c.Request.Context(), imei, req.Action, operatorID, req.Notes)
+	result, err := h.service.AckInbox(c.Request.Context(), imei, req.Action, operatorID, orgID, req.Notes)
 	if err != nil {
 		se := inbox.ToServiceError(err)
 		c.JSON(se.Status, se.ToErrorResponse())
@@ -138,15 +160,6 @@ func (h *Handler) CreateInboxRequest(c *gin.Context) {
 		return
 	}
 
-	if req.IMEI == "" {
-		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
-			Code:    "bad_request",
-			Message: "IMEI is required",
-		})
-		return
-	}
-
-	// Timeout and idempotency are handled by middleware (Bug 49, Bug 45)
 	result, err := h.service.CreateInboxRequest(c.Request.Context(), &req)
 	if err != nil {
 		se := inbox.ToServiceError(err)
@@ -163,8 +176,17 @@ type UpdateInboxEntryRequest struct {
 }
 
 // UpdateInboxEntry handles PATCH /v1/device/inbox/:imei.
-// Updates an inbox entry (e.g., add operator notes).
+// Updates an inbox entry (e.g., add operator notes) within the organization.
 func (h *Handler) UpdateInboxEntry(c *gin.Context) {
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "organization context required",
+		})
+		return
+	}
+
 	imei := c.Param("imei")
 	if imei == "" {
 		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
@@ -189,7 +211,7 @@ func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 		operatorID = operator.ID
 	}
 
-	result, err := h.service.UpdateInboxEntry(c.Request.Context(), imei, operatorID, req.Notes)
+	result, err := h.service.UpdateInboxEntry(c.Request.Context(), imei, operatorID, orgID, req.Notes)
 	if err != nil {
 		se := inbox.ToServiceError(err)
 		c.JSON(se.Status, se.ToErrorResponse())
@@ -202,6 +224,15 @@ func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 // ResendApproval handles POST /v1/device/inbox/:imei/resend.
 // Resends the FCM notification to a device that was approved but may have missed the notification.
 func (h *Handler) ResendApproval(c *gin.Context) {
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+			Code:    "bad_request",
+			Message: "organization context required",
+		})
+		return
+	}
+
 	imei := c.Param("imei")
 	if imei == "" {
 		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
@@ -217,7 +248,7 @@ func (h *Handler) ResendApproval(c *gin.Context) {
 		operatorID = operator.ID
 	}
 
-	result, err := h.service.ResendApproval(c.Request.Context(), imei, operatorID)
+	result, err := h.service.ResendApproval(c.Request.Context(), imei, operatorID, orgID)
 	if err != nil {
 		se := inbox.ToServiceError(err)
 		c.JSON(se.Status, se.ToErrorResponse())

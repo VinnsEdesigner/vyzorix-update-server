@@ -30,6 +30,9 @@ type MemberRepository interface {
 	// FindActiveByOrganization lists all active members of an organization.
 	FindActiveByOrganization(ctx context.Context, orgID string) ([]*OrganizationMember, error)
 
+	// FindActiveByOrganizationPaginated lists active members with pagination.
+	FindActiveByOrganizationPaginated(ctx context.Context, orgID string, limit, offset int) ([]*OrganizationMember, int, error)
+
 	// FindActiveByOrganizationID lists all active members by OrganizationID.
 	FindActiveByOrganizationID(ctx context.Context, orgID OrganizationID) ([]*OrganizationMember, error)
 
@@ -47,6 +50,9 @@ type MemberRepository interface {
 
 	// SoftDeleteByOperatorID soft-deletes all memberships for an OperatorID.
 	SoftDeleteByOperatorID(ctx context.Context, operatorID OperatorID) error
+
+	// SoftDeleteByOrganization soft-deletes all memberships for an organization (used during org deletion).
+	SoftDeleteByOrganization(ctx context.Context, orgID string) error
 
 	// CountByOrganization counts members in an organization.
 	CountByOrganization(ctx context.Context, orgID string) (int, error)
@@ -68,6 +74,9 @@ type MemberRepository interface {
 
 	// ListByOperator lists all memberships for an operator.
 	ListByOperator(ctx context.Context, operatorID string) ([]*OrganizationMember, error)
+
+	// ListByOperatorPaginated lists memberships for an operator with pagination.
+	ListByOperatorPaginated(ctx context.Context, operatorID string, limit, offset int) ([]*OrganizationMember, int, error)
 
 	// ListByOperatorID lists all memberships by OperatorID.
 	ListByOperatorID(ctx context.Context, operatorID OperatorID) ([]*OrganizationMember, error)

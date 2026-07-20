@@ -16,6 +16,7 @@ type Client struct {
 	ctx       context.Context
 	conn      *websocket.Conn
 	operator  *operator.Operator
+	orgID     string
 	subs      map[string]func()
 	done      chan struct{}
 	handler   *Handler
@@ -24,10 +25,11 @@ type Client struct {
 }
 
 // NewClient creates a new subscription client.
-func NewClient(conn *websocket.Conn, op *operator.Operator, handler *Handler, presenter *Presenter) *Client {
+func NewClient(conn *websocket.Conn, op *operator.Operator, orgID string, handler *Handler, presenter *Presenter) *Client {
 	return &Client{
 		conn:      conn,
 		operator:  op,
+		orgID:     orgID,
 		subs:      make(map[string]func()),
 		done:      make(chan struct{}),
 		ctx:       context.Background(),
@@ -134,6 +136,10 @@ func (c *Client) handleSubscribe(id string, payload json.RawMessage) {
 		c.subscribeTelemetry(id, sub)
 	case contains(sub.Query, "commandStatusChanged"):
 		c.subscribeCommandStatus(id, sub)
+	case contains(sub.Query, "organizationEvent"):
+		c.subscribeOrganizationEvent(id, sub)
+	case contains(sub.Query, "memberEvent"):
+		c.subscribeMemberEvent(id, sub)
 	default:
 		// For unknown subscriptions, just acknowledge
 		c.sendMessage(wsMessage{
@@ -236,6 +242,66 @@ func (c *Client) subscribeCommandStatus(id string, sub SubscribePayload) {
 	c.presenter.AuditSubscribe(c.ctx, c.operator, "command_status", dispatchID)
 
 	c.sendMessage(wsMessage{Type: "next", ID: id, Payload: json.RawMessage(`{"data":{"commandStatusChanged":null}}`)})
+}
+
+// subscribeOrganizationEvent subscribes to organization events.
+func (c *Client) subscribeOrganizationEvent(id string, sub SubscribePayload) {
+	orgID, _ := sub.Variables["orgId"].(string)
+	if orgID == "" {
+		orgID = c.orgID // Use connection orgID as fallback
+	}
+
+	// Check hub availability
+	if c.handler.hub == nil {
+		c.sendError(id, "subscription service unavailable")
+		return
+	}
+
+	unsubscribe := c.handler.hub.SubscribeOrganizationEvents(c.operator.ID, orgID, func(data interface{}) {
+		c.sendMessage(wsMessage{
+			Type:    "next",
+			ID:      id,
+			Payload: json.RawMessage(`{"data":{"organizationEvent":` + mustMarshal(data) + `}}`),
+		})
+	})
+
+	c.mu.Lock()
+	c.subs[id] = unsubscribe
+	c.mu.Unlock()
+
+	c.presenter.AuditSubscribe(c.ctx, c.operator, "organization_event", orgID)
+
+	c.sendMessage(wsMessage{Type: "next", ID: id, Payload: json.RawMessage(`{"data":{"organizationEvent":null}}`)})
+}
+
+// subscribeMemberEvent subscribes to member events for an organization.
+func (c *Client) subscribeMemberEvent(id string, sub SubscribePayload) {
+	orgID, _ := sub.Variables["orgId"].(string)
+	if orgID == "" {
+		orgID = c.orgID // Use connection orgID as fallback
+	}
+
+	// Check hub availability
+	if c.handler.hub == nil {
+		c.sendError(id, "subscription service unavailable")
+		return
+	}
+
+	unsubscribe := c.handler.hub.SubscribeMemberEvents(c.operator.ID, orgID, func(data interface{}) {
+		c.sendMessage(wsMessage{
+			Type:    "next",
+			ID:      id,
+			Payload: json.RawMessage(`{"data":{"memberEvent":` + mustMarshal(data) + `}}`),
+		})
+	})
+
+	c.mu.Lock()
+	c.subs[id] = unsubscribe
+	c.mu.Unlock()
+
+	c.presenter.AuditSubscribe(c.ctx, c.operator, "member_event", orgID)
+
+	c.sendMessage(wsMessage{Type: "next", ID: id, Payload: json.RawMessage(`{"data":{"memberEvent":null}}`)})
 }
 
 // cleanup removes the client and unsubscribes from all subscriptions.

@@ -1,13 +1,11 @@
 package inbox
 
-import (
-	"time"
-)
+import "time"
 
 // InboxEntry represents a device registration request in the inbox.
 type InboxEntry struct {
 	AcknowledgedAt    *int64      `json:"acknowledgedAt,omitempty"`
-	ApprovingAt       *int64      `json:"approvingAt,omitempty"`
+	ApprovingAt      *int64      `json:"approvingAt,omitempty"`
 	ApprovedAt        *int64      `json:"approvedAt,omitempty"`
 	RejectedAt        *int64      `json:"rejectedAt,omitempty"`
 	FCMToken          string      `json:"fcmToken"`
@@ -22,6 +20,7 @@ type InboxEntry struct {
 	CommandSecret     string      `json:"commandSecret,omitempty"`
 	Notes             string      `json:"notes,omitempty"`
 	OperatorID        string      `json:"operatorId,omitempty"`
+	OrganizationID    string      `json:"organizationId,omitempty"`
 	IMEI              string      `json:"imei"`
 	DeviceName        string      `json:"deviceName,omitempty"`
 	UpdatedAt         int64       `json:"updatedAt,omitempty"`
