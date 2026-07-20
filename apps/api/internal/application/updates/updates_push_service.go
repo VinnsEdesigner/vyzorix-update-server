@@ -304,7 +304,7 @@ func (s *PushService) Hub() *ws.Hub {
 // checkPushCompletion checks if all devices in a push have completed
 // and updates the push status accordingly.
 func (s *PushService) checkPushCompletion(ctx context.Context, pushID string) error {
-	devices, err := s.repo.GetPushDevices(ctx, pushID)
+	devices, err := s.repo.GetPushDevicesByPushID(ctx, pushID)
 	if err != nil {
 		return err
 	}

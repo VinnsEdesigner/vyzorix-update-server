@@ -125,19 +125,6 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 		return
 	}
 
-	// Use membership from context (set by OrganizationMembership middleware)
-	// If middleware didn't run, fall back to service call
-	member := middleware.GetMembership(c)
-	if member == nil {
-		// Fallback: check via service if middleware didn't set it
-		var err error
-		member, err = h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
-		if err != nil {
-			h.presenter.Forbidden(c, "access denied")
-			return
-		}
-	}
-
 	// Optional status filter
 	var status *organization.InvitationStatus
 	statusStr := c.Query("status")
@@ -280,7 +267,7 @@ func (h *InvitationHandler) Accept(c *gin.Context) {
 		req.Notes = ""
 	}
 
-	err := h.invitationService.AcceptInvitation(
+	_, err := h.invitationService.AcceptInvitation(
 		c.Request.Context(),
 		token,
 		op.ID,

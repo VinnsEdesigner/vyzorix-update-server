@@ -14,14 +14,6 @@ func boolToInt(b bool) int {
 	return 0
 }
 
-// nullStringPtr returns a sql.NullString from a string pointer.
-func nullStringPtr(s *string) sql.NullString {
-	if s == nil || *s == "" {
-		return sql.NullString{}
-	}
-	return sql.NullString{String: *s, Valid: true}
-}
-
 // nullTimePtr returns a sql.NullInt64 from a time.Time pointer (stored as milliseconds).
 func nullTimePtr(t *time.Time) sql.NullInt64 {
 	if t == nil {

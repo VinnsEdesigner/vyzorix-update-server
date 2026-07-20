@@ -33,6 +33,11 @@ func NewDeviceSettingsService(
 	}
 }
 
+// SettingsRepo returns the settings repository for use by other services.
+func (s *DeviceSettingsService) SettingsRepo() device.DeviceSettingsRepository {
+	return s.settingsRepo
+}
+
 // CreateSettings creates device settings with defaults for a new device.
 func (s *DeviceSettingsService) CreateSettings(ctx context.Context, deviceIMEI string) (*device.DeviceSettings, error) {
 	// Verify device exists
@@ -204,14 +209,21 @@ func (s *DeviceSettingsService) GetEffectiveThresholds(ctx context.Context, devi
 	}
 
 	// Get organization settings
-	var orgThresholds *organization.Thresholds
+	var orgThresholds *device.Thresholds
 	if d.OrganizationID != "" {
 		orgSettings, err := s.orgSettingsRepo.FindByOrganizationID(ctx, d.OrganizationID)
 		if err != nil && !errors.Is(err, organization.ErrSettingsNotFound) {
 			return nil, err
 		}
-		if orgSettings != nil {
-			orgThresholds = orgSettings.DefaultThresholds
+		if orgSettings != nil && orgSettings.DefaultThresholds != nil {
+			orgThresholds = &device.Thresholds{
+				RiskWarn:    orgSettings.DefaultThresholds.RiskWarn,
+				RiskCrit:    orgSettings.DefaultThresholds.RiskCrit,
+				ThermalWarn: orgSettings.DefaultThresholds.ThermalWarn,
+				ThermalCrit: orgSettings.DefaultThresholds.ThermalCrit,
+				BufferWarn:  orgSettings.DefaultThresholds.BufferWarn,
+				BufferCrit:  orgSettings.DefaultThresholds.BufferCrit,
+			}
 		}
 	}
 

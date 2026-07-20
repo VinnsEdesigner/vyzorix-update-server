@@ -17,10 +17,11 @@ type Thresholds struct {
 	BufferCrit  int `json:"bufferCrit"`
 }
 
-// NotificationSettings holds notification preferences per operator.
-type NotificationSettings struct {
-	Email bool `json:"email"`
-	Push  bool `json:"push"`
+// OperatorSettings holds all settings for an operator.
+type OperatorSettings struct {
+	Client        ClientSettings       `json:"client"`
+	Thresholds    Thresholds          `json:"thresholds"`
+	Notifications *NotificationSettings `json:"notifications"`
 }
 
 // ClientSettings control dashboard behavior.
@@ -232,12 +233,12 @@ func (o *Operator) HasPermission(perm Permission) bool {
 		}
 		// Check specific permissions based on role
 		switch m.Role {
-		case RoleOperator:
+		case organization.RoleOperator:
 			if perm == PermissionDeviceRead || perm == PermissionDeviceWrite ||
 				perm == PermissionUpdateRead || perm == PermissionSettingsRead {
 				return true
 			}
-		case RoleViewer:
+		case organization.RoleViewer:
 			if perm == PermissionDeviceRead || perm == PermissionUpdateRead || perm == PermissionSettingsRead {
 				return true
 			}

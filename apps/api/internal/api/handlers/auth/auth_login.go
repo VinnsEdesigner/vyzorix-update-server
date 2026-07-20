@@ -290,12 +290,17 @@ func (h *LoginHandler) HandleWithTokens(c *gin.Context) {
 		switch {
 		case errors.Is(err, application.ErrMFARequired):
 			// MFA is required - return partial response with mfa_required flag
+			// Get role from selected organization if available
+			role := ""
+			if result.SelectedOrganization != nil {
+				role = result.SelectedOrganization.Role
+			}
 			h.presenter.OK(c, gin.H{
 				"mfa_required": true,
 				"operator_id":  result.OperatorID,
 				"email":        result.Email,
 				"name":         result.Name,
-				"role":         result.Role,
+				"role":         role,
 				"mfa_enabled": true,
 			})
 		case errors.Is(err, application.ErrInvalidCredentials):

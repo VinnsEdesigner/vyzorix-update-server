@@ -10,6 +10,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
+	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/graphql-go/graphql"
 )
 
@@ -41,33 +43,8 @@ func (r *Resolver) GetMySettings(p graphql.ResolveParams) (interface{}, error) {
 			"logBufferLimit":     settings.Client.LogBufferLimit,
 			"signalHistoryLimit":  settings.Client.SignalHistoryLimit,
 		},
-		"thresholds": map[string]interface{}{
-			"riskWarn":    settings.Thresholds.RiskWarn,
-			"riskCrit":    settings.Thresholds.RiskCrit,
-			"thermalWarn": settings.Thresholds.ThermalWarn,
-			"thermalCrit": settings.Thresholds.ThermalCrit,
-			"bufferWarn":  settings.Thresholds.BufferWarn,
-			"bufferCrit":  settings.Thresholds.BufferCrit,
-		},
 		"notifications": settings.Notifications,
 	}, nil
-}
-
-// GetMyThresholds resolves the myThresholds query.
-func (r *Resolver) GetMyThresholds(p graphql.ResolveParams) (interface{}, error) {
-	ctx := p.Context
-
-	op, ok := gqlcontext.GetOperator(ctx)
-	if !ok || op == nil {
-		return nil, r.Presenter.UnauthorizedError()
-	}
-
-	thresholds, err := r.ThresholdService.GetThresholds(ctx, op.ID)
-	if err != nil {
-		return nil, r.Presenter.InternalError("failed to get thresholds")
-	}
-
-	return thresholds, nil
 }
 
 // GetMyNotifications resolves the myNotifications query.
@@ -85,6 +62,113 @@ func (r *Resolver) GetMyNotifications(p graphql.ResolveParams) (interface{}, err
 	}
 
 	return notifications, nil
+}
+
+// GetDeviceSettings resolves the deviceSettings query.
+func (r *Resolver) GetDeviceSettings(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organization ID is required")
+	}
+
+	deviceImei, ok := p.Args["deviceImei"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("device IMEI is required")
+	}
+
+	// Check if operator is a member of the organization
+	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("not a member of this organization")
+	}
+
+	// Get device settings with effective thresholds (device → org → default)
+	settings, err := r.DeviceSettingsService.GetSettings(ctx, deviceImei)
+	if err != nil {
+		if err == devicedomain.ErrSettingsNotFound {
+			return nil, r.Presenter.NotFoundError("device settings not found")
+		}
+		return nil, r.Presenter.InternalError("failed to get device settings")
+	}
+
+	// Get organization settings for threshold resolution
+	orgSettings, err := r.OrgSettingsService.GetSettings(ctx, orgID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get organization settings")
+	}
+
+	// Convert org thresholds to device thresholds for resolution
+	orgThresholds := devicedomain.FromOrgThresholds(orgSettings.DefaultThresholds)
+	effectiveThresholds := devicedomain.ResolveThresholds(settings, orgThresholds)
+
+	return map[string]interface{}{
+		"id":                   settings.ID,
+		"deviceImei":           settings.DeviceIMEI,
+		"customName":           settings.CustomName,
+		"location":             settings.Location,
+		"metadata":             convertMetadataToList(settings.Metadata),
+		"thresholds":            settings.Thresholds,
+		"effectiveThresholds":  effectiveThresholds,
+		"createdAt":            settings.CreatedAt,
+		"updatedAt":            settings.UpdatedAt,
+	}, nil
+}
+
+// convertMetadataToList converts a metadata map to a list of {key, value} entries.
+func convertMetadataToList(metadata map[string]string) []map[string]string {
+	if metadata == nil {
+		return nil
+	}
+	result := make([]map[string]string, 0, len(metadata))
+	for k, v := range metadata {
+		result = append(result, map[string]string{"key": k, "value": v})
+	}
+	return result
+}
+
+// GetOrganizationSettings resolves the organizationSettings query.
+func (r *Resolver) GetOrganizationSettings(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organization ID is required")
+	}
+
+	// Check if operator is a member of the organization
+	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("not a member of this organization")
+	}
+
+	settings, err := r.OrgSettingsService.GetSettings(ctx, orgID)
+	if err != nil {
+		if err == orgdomain.ErrSettingsNotFound {
+			return nil, r.Presenter.NotFoundError("organization settings not found")
+		}
+		return nil, r.Presenter.InternalError("failed to get organization settings")
+	}
+
+	return map[string]interface{}{
+		"id":                    settings.ID,
+		"organizationId":        settings.OrganizationID,
+		"timezone":              settings.Timezone,
+		"dateFormat":            settings.DateFormat,
+		"alertCooldownMinutes":  settings.AlertCooldownMinutes,
+		"defaultThresholds":     settings.DefaultThresholds,
+		"createdAt":             settings.CreatedAt,
+		"updatedAt":             settings.UpdatedAt,
+	}, nil
 }
 
 // ============================================================
@@ -834,19 +918,6 @@ func (r *Resolver) convertThresholdEvents(events []appmetrics.ThresholdEventDTO)
 	return result
 }
 
-func (r *Resolver) convertLogEvents(events []logs.LogEvent) []map[string]interface{} {
-	result := make([]map[string]interface{}, 0, len(events))
-	for _, e := range events {
-		result = append(result, map[string]interface{}{
-			"id":        e.ID,
-			"type":      e.Type,
-			"timestamp": e.Timestamp,
-			"data":      e.Data,
-		})
-	}
-	return result
-}
-
 func (r *Resolver) convertCommandHistory(commands []cmdapp.CommandEntry) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(commands))
 	for _, c := range commands {
@@ -904,6 +975,7 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to get device inspection")
 	}
+	registeredAt := ""
 	if inspection.Registration.RegisteredAt != nil {
 		registeredAt = inspection.Registration.RegisteredAt.Format(time.RFC3339)
 	}
@@ -936,17 +1008,17 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 			"manufacturer": inspection.Identity.Manufacturer,
 		},
 		"software": map[string]interface{}{
-			"osVersion":    inspection.Software.OSVersion,
-			"appVersion":   inspection.Software.AppVersion,
+			"osVersion":     inspection.Software.OSVersion,
+			"appVersion":    inspection.Software.AppVersion,
 			"securityPatch": inspection.Software.SecurityPatch,
 			"buildId":       inspection.Software.BuildID,
 		},
 		"registration": map[string]interface{}{
-			"status":               inspection.Registration.Status,
-			"registeredAt":        registeredAt,
-			"fcmTokenValid":       inspection.Registration.FCMTokenValid,
-			"fcmTokenRefreshedAt": fcmTokenRefreshedAt,
-			"commandSecretSet":     inspection.Registration.CommandSecretSet,
+			"status":                inspection.Registration.Status,
+			"registeredAt":          registeredAt,
+			"fcmTokenValid":        inspection.Registration.FCMTokenValid,
+			"fcmTokenRefreshedAt":   fcmTokenRefreshedAt,
+			"commandSecretSet":      inspection.Registration.CommandSecretSet,
 		},
 		"connection": map[string]interface{}{
 			"webSocketStatus": inspection.Connection.WebSocketStatus,
@@ -959,11 +1031,10 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 		"telemetry": map[string]interface{}{
 			"lastTimestamp":   lastTimestamp,
 			"framesToday":     inspection.Telemetry.FramesToday,
-			"avgLatencyMs":   inspection.Telemetry.AvgLatencyMs,
+			"avgLatencyMs":    inspection.Telemetry.AvgLatencyMs,
 			"totalBytesToday": inspection.Telemetry.TotalBytesToday,
 		},
 	}, nil
-	}
 }
 
 // GetDeviceTimeline resolves the deviceTimeline query.
@@ -1028,5 +1099,77 @@ func (r *Resolver) GetDeviceTimeline(p graphql.ResolveParams) (interface{}, erro
 		"events":     events,
 		"hasMore":    resp.Pagination.HasMore,
 		"nextCursor": resp.Pagination.NextCursor,
+	}, nil
+}
+
+// GetDeviceLogs resolves the deviceLogs query.
+func (r *Resolver) GetDeviceLogs(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	imei, ok := p.Args["imei"].(string)
+	if !ok || imei == "" {
+		return nil, r.Presenter.BadRequestError("IMEI is required")
+	}
+
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	// Check if operator is a member of the organization
+	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("not a member of this organization")
+	}
+
+	if r.LogsSvc == nil {
+		return nil, r.Presenter.InternalError("logs service not available")
+	}
+
+	eventType, _ := p.Args["type"].(string)
+	startTime, _ := p.Args["startTime"].(int64)
+	endTime, _ := p.Args["endTime"].(int64)
+	limit, _ := p.Args["limit"].(int)
+	cursor, _ := p.Args["cursor"].(string)
+
+	if limit <= 0 {
+		limit = 100
+	}
+
+	req := &logs.ListLogsRequest{
+		DeviceID:  imei,
+		EventType: eventType,
+		StartTime: startTime,
+		EndTime:   endTime,
+		Limit:     limit,
+		Cursor:    cursor,
+	}
+
+	resp, err := r.LogsSvc.GetDeviceLogs(ctx, req)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get device logs")
+	}
+
+	events := make([]map[string]interface{}, 0, len(resp.Events))
+	for _, e := range resp.Events {
+		events = append(events, map[string]interface{}{
+			"id":        e.ID,
+			"type":      e.Type,
+			"timestamp": e.Timestamp,
+			"data":      e.Data,
+		})
+	}
+
+	return map[string]interface{}{
+		"events": events,
+		"pagination": map[string]interface{}{
+			"limit":      resp.Pagination.Limit,
+			"hasMore":    resp.Pagination.HasMore,
+			"nextCursor": resp.Pagination.NextCursor,
+		},
 	}, nil
 }

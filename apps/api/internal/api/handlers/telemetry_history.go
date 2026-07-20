@@ -10,7 +10,6 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/telemetry"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/gin-gonic/gin"
 )
@@ -61,89 +60,7 @@ func NewTelemetryHistoryHandler(
 	}
 }
 
-// verifyDeviceInOrganization verifies that a device belongs to the given organization.
-func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, deviceID, orgID string) bool {
-	if h.deviceRepo == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "internal_error",
-			"message": "device repository not available",
-		})
-		return false
-	}
 
-	d, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
-	if err != nil {
-		if err == device.ErrNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error":   "not_found",
-				"message": "device not found in organization",
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "internal_error",
-				"message": "failed to verify device",
-			})
-		}
-		return false
-	}
-
-	// Verify the device ID matches (deviceID could be IMEI)
-	if d.ID != deviceID {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   "not_found",
-			"message": "device not found in organization",
-		})
-		return false
-	}
-
-	return true
-}
-		deviceRepo:    deviceRepo,
-		config:        cfg,
-	}
-}
-
-// verifyDeviceInOrganization verifies that a device belongs to the given organization.
-func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, deviceID, orgID string) bool {
-	if h.deviceRepo == nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "internal_error",
-			"message": "device repository not available",
-		})
-		return false
-	}
-
-	d, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
-	if err != nil {
-		if err == device.ErrNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error":   "not_found",
-				"message": "device not found in organization",
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "internal_error",
-				"message": "failed to verify device",
-			})
-		}
-		return false
-	}
-
-	// Verify the device ID matches (deviceID could be IMEI)
-	if d.ID != deviceID {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   "not_found",
-			"message": "device not found in organization",
-		})
-		return false
-	}
-
-	return true
-}
-		deviceRepo:    deviceRepo,
-		config:        cfg,
-	}
-}
 
 // verifyDeviceInOrganization verifies that a device belongs to the given organization.
 func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, deviceID, orgID string) bool {
@@ -220,35 +137,11 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-// Query handles GET /v1/telemetry/history
-// Query telemetry history for a device within a time range.
-func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
-	// Require organization context for multi-tenant isolation
-	orgID := middleware.GetOrganizationID(c)
-	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "bad_request",
 			"message": "organization context required",
 		})
 		return
 	}
-
-	startTime := time.Now()
-
-// Query handles GET /v1/telemetry/history
-// Query telemetry history for a device within a time range.
-func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
-	// Require organization context for multi-tenant isolation
-	orgID := middleware.GetOrganizationID(c)
-	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "organization context required",
-		})
-		return
-	}
-
-	startTime := time.Now()
 
 	var req QueryHistoryRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -256,16 +149,6 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 			"error":   "bad_request",
 			"message": "invalid query parameters",
 		})
-
-		return
-	}
-
-	if req.DeviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "deviceId is required",
-		})
-
 		return
 	}
 
@@ -274,80 +157,47 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 		return
 	}
 
-	// Apply defaults
-	if req.Limit <= 0 || req.Limit > h.config.MaxResults {
-		req.Limit = h.config.MaxResults
-	}
-
-	// Default time range to last hour if not specified
-	now := time.Now()
-	if req.EndTime <= 0 {
-		req.EndTime = now.UnixMilli()
-	}
-
-	if req.StartTime <= 0 {
-		req.StartTime = now.Add(-1 * time.Hour).UnixMilli()
-	}
+	startTime := time.Now()
 
 	// Query telemetry
 	entries, err := h.telemetryRepo.ListSince(
 		c.Request.Context(),
 		req.DeviceID,
 		req.StartTime,
-		req.Limit,
+		h.config.MaxResults,
 	)
 	if err != nil {
-		h.log.Error("failed to query telemetry history",
-			"err", err,
-			"deviceId", req.DeviceID,
-		)
+		h.log.Error("failed to query telemetry", "err", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "internal_error",
-			"message": "failed to query telemetry history",
+			"message": "failed to query telemetry",
 		})
-
 		return
 	}
 
-	// Filter by end time
-	var filtered []telemetry.TelemetryEntry
-
-	for _, e := range entries {
-		if e.ReceivedAt.UnixMilli() <= req.EndTime {
-			filtered = append(filtered, e)
-		}
-	}
-
-	// Build response
-	response := QueryHistoryResponse{
-		DeviceID:   req.DeviceID,
-		Entries:    make([]telemetryEntry, len(filtered)),
-		TotalCount: len(filtered),
-		StartTime:  req.StartTime,
-		EndTime:    req.EndTime,
-		QueryTime:  time.Since(startTime).Milliseconds(),
-	}
-
-	for i, e := range filtered {
-		response.Entries[i] = telemetryEntry{
+	// Convert domain entries to response entries
+	responseEntries := make([]telemetryEntry, len(entries))
+	for i, e := range entries {
+		responseEntries[i] = telemetryEntry{
+			ReceivedAt:  e.ReceivedAt,
 			ID:          e.ID,
 			DeviceID:    e.DeviceID,
-			ReceivedAt:  e.ReceivedAt,
+			Payload:     e.Payload,
 			RiskScore:   e.RiskScore,
 			BufferLevel: e.BufferLevel,
 			ThermalTemp: e.ThermalTemp,
 		}
 	}
 
-	// Handle export formats
-	switch req.Format {
-	case "csv":
-		h.exportCSV(c, response)
-		return
-	case "json":
+	response := QueryHistoryResponse{
+		DeviceID:   req.DeviceID,
+		Entries:    responseEntries,
+		TotalCount: len(entries),
+		StartTime:  req.StartTime,
+		EndTime:    req.EndTime,
+		QueryTime:  time.Since(startTime).Milliseconds(),
 	}
-	c.JSON(http.StatusOK, response)
-}
+
 	switch req.Format {
 	case "csv":
 		h.exportCSV(c, response)
@@ -595,9 +445,9 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 // CleanupOld handles DELETE /v1/telemetry/cleanup
 // Cleans up telemetry older than the specified timestamp.
 func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
-	// Require admin role
+	// Require admin or operator role
 	op := middleware.GetOperatorFromContext(c)
-	if op == nil || (op.Role != "admin" && op.Role != "operator") {
+	if op == nil || (!op.IsAdmin() && !op.IsOperator()) {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error":   "forbidden",
 			"message": "admin or operator role required",

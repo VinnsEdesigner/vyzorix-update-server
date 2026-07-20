@@ -149,8 +149,6 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		authenticated.PATCH("/me", h.Settings.UpdateName)
 		authenticated.GET("/me/settings", h.Settings.GetSettings)
 		authenticated.PATCH("/me/settings", h.Settings.UpdateSettings)
-		authenticated.GET("/me/thresholds", h.Settings.GetThresholds)
-		authenticated.PATCH("/me/thresholds", h.Settings.UpdateThresholds)
 		authenticated.GET("/me/notifications", h.Settings.GetNotifications)
 		authenticated.PATCH("/me/notifications", h.Settings.UpdateNotifications)
 		authenticated.POST("/me/notifications/webhook/test", h.Settings.TestWebhook)
@@ -197,48 +195,13 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		mfa.POST("/disable", h.MFA.DisableMFA)
 		mfa.POST("/verify-backup", h.MFA.VerifyBackupCode)
 		mfa.POST("/regenerate-backup-codes", h.MFA.RegenerateBackupCodes)
-
-		// MFA Verify - CRITICAL: rate limited by operator_id to prevent brute force
-		// 3: Also apply lockout middleware to check for locked accounts
-		// 3 attempts per minute per operator_id
 		mfa.POST("/verify", h.Lockout.Middleware(), mfaRateLimitMiddleware(), h.MFA.VerifyMFA)
-	}
-
-	// Session management endpoints
-	sessions := rg.Group("/sessions")
-	sessions.Use(cookieAuth.Middleware())
-	sessions.Use(middleware.NoCache())
-	{
-		sessions.GET("", h.Sessions.ListSessions)
-		sessions.GET("/concurrent", h.Sessions.CheckConcurrent)
-		sessions.DELETE("/:id", h.Sessions.RevokeSession)
-		sessions.DELETE("", h.Sessions.RevokeAllExceptCurrent)
-		sessions.POST("/revoke-all", h.Sessions.RevokeAllDevices)
-		sessions.GET("/:id", h.Sessions.GetSession) // GET specific session
-	}
-
-	// Client credentials (require authentication)
-	clientCreds := rg.Group("/client-credentials")
-	clientCreds.Use(cookieAuth.Middleware())
-	clientCreds.Use(middleware.NoCache())
-	{
-		clientCreds.POST("", h.ClientCreds.Create)
-		clientCreds.GET("", h.ClientCreds.List)
-		clientCreds.GET("/:clientId", h.ClientCreds.Get)
-		clientCreds.DELETE("/:clientId", h.ClientCreds.Delete)
-		clientCreds.PATCH("/:clientId", h.ClientCreds.Update) // Update client
-		clientCreds.POST("/:clientId/rotate-secret", h.ClientCreds.RotateSecret) // Rotate secret
 	}
 }
 
-// mfaRateLimitMiddleware returns a rate limiting middleware for MFA verify endpoint.
-// Uses operator_id as key to prevent brute force attacks on TOTP codes.
-// Allows 3 attempts per minute per operator_id.
 func mfaRateLimitMiddleware() gin.HandlerFunc {
 	return ratelimit.MFAVerifyLimiter.Middleware(ratelimit.Config{
 		KeyFunc: func(c *gin.Context) string {
-			// Extract operator_id from request body for rate limiting
-			// Must restore body after reading since Gin doesn't support body rewind
 			bodyBytes, _ := io.ReadAll(c.Request.Body)
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
