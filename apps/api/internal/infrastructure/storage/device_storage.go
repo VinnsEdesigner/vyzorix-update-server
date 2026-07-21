@@ -362,10 +362,22 @@ func (r *DeviceRepository) UpdateLastSeen(ctx context.Context, id string) error 
 }
 
 // List returns a paginated list of devices.
-func (r *DeviceRepository) List(ctx context.Context, limit, offset int) ([]*device.Device, int, error) {
-	query := `SELECT ` + deviceColumns + ` FROM devices ORDER BY created_at DESC LIMIT ? OFFSET ?`
+func (r *DeviceRepository) List(ctx context.Context, orgID string, limit, offset int) ([]*device.Device, int, error) {
+	var query string
+	var countQuery string
+	var args []interface{}
 
-	rows, err := r.queryRows(ctx, query, limit, offset)
+	if orgID != "" {
+		query = `SELECT ` + deviceColumns + ` FROM devices WHERE organization_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
+		countQuery = `SELECT COUNT(*) FROM devices WHERE organization_id = ?`
+		args = []interface{}{orgID, limit, offset}
+	} else {
+		query = `SELECT ` + deviceColumns + ` FROM devices ORDER BY created_at DESC LIMIT ? OFFSET ?`
+		countQuery = `SELECT COUNT(*) FROM devices`
+		args = []interface{}{limit, offset}
+	}
+
+	rows, err := r.queryRows(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -378,7 +390,12 @@ func (r *DeviceRepository) List(ctx context.Context, limit, offset int) ([]*devi
 	}
 
 	var total int
-	if err := r.queryRow(ctx, "SELECT COUNT(*) FROM devices").Scan(&total); err != nil {
+	if orgID != "" {
+		err = r.queryRow(ctx, countQuery, orgID).Scan(&total)
+	} else {
+		err = r.queryRow(ctx, countQuery).Scan(&total)
+	}
+	if err != nil {
 		return nil, 0, err
 	}
 
@@ -399,10 +416,16 @@ func (r *DeviceRepository) ListByOperator(ctx context.Context, operatorID string
 	return scanDevices(rows)
 }
 
-// Count returns the total number of devices.
-func (r *DeviceRepository) Count(ctx context.Context) (int, error) {
+// Count returns the total number of devices filtered by organization.
+func (r *DeviceRepository) Count(ctx context.Context, orgID string) (int, error) {
 	var count int
-	err := r.queryRow(ctx, "SELECT COUNT(*) FROM devices").Scan(&count)
+	var err error
+
+	if orgID != "" {
+		err = r.queryRow(ctx, "SELECT COUNT(*) FROM devices WHERE organization_id = ?", orgID).Scan(&count)
+	} else {
+		err = r.queryRow(ctx, "SELECT COUNT(*) FROM devices").Scan(&count)
+	}
 
 	return count, err
 }
@@ -611,6 +634,31 @@ func (r *DeviceRepository) ListByOrganization(ctx context.Context, orgID string)
 	defer func() { _ = rows.Close() }()
 
 	return scanDevices(rows)
+}
+
+// ListByOrganizationPaginated returns paginated devices for an organization.
+func (r *DeviceRepository) ListByOrganizationPaginated(ctx context.Context, orgID string, limit, offset int) ([]*device.Device, int, error) {
+	countQuery := `SELECT COUNT(*) FROM devices WHERE organization_id = ?`
+	var total int
+	err := r.db.QueryRowContext(ctx, countQuery, orgID).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	query := `SELECT ` + deviceColumns + ` FROM devices WHERE organization_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	rows, err := r.queryRows(ctx, query, orgID, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	devices, err := scanDevices(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return devices, total, nil
 }
 
 // ListPending returns all devices in pending lifecycle state.

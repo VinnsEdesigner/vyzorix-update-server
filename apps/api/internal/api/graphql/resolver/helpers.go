@@ -2,29 +2,16 @@
 package resolver
 
 import (
-	"context"
 	"encoding/json"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 )
 
 // ============================================================
 // Helper Methods
 // ============================================================
-
-// deviceToMap converts a domain Device entity to a GraphQL map.
-func (r *Resolver) deviceToMap(_ context.Context, dev *device.Device) map[string]interface{} {
-	return map[string]interface{}{
-		"id":       dev.ID,
-		"name":     dev.DeviceName,
-		"online":   r.Hub != nil && r.Hub.Online(dev.ID),
-		"lastSeen": time.UnixMilli(dev.LastSeen).Format(time.RFC3339),
-		"version":  dev.AppVersion,
-	}
-}
 
 // deviceDTOToMap converts a DeviceResponse DTO to a GraphQL map.
 func (r *Resolver) deviceDTOToMap(dev *dto.DeviceResponse) map[string]interface{} {

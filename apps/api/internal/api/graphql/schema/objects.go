@@ -1693,7 +1693,43 @@ var NotificationSettingsType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.NewNonNull(WebhookSettingsType),
 			Description: "Webhook notification settings",
 		},
-	},
+	        },
+})
+
+// OperatorType represents an operator/user in the system.
+var OperatorType = graphql.NewObject(graphql.ObjectConfig{
+        Name:        "Operator",
+        Description: "An operator/user in the system",
+        Fields: graphql.Fields{
+                "id": &graphql.Field{
+                        Type:        graphql.NewNonNull(graphql.ID),
+                        Description: "Unique operator identifier",
+                },
+                "name": &graphql.Field{
+                        Type:        graphql.NewNonNull(graphql.String),
+                        Description: "Operator's display name",
+                },
+                "email": &graphql.Field{
+                        Type:        graphql.NewNonNull(graphql.String),
+                        Description: "Operator's email address",
+                },
+                "emailVerified": &graphql.Field{
+                        Type:        graphql.NewNonNull(graphql.Boolean),
+                        Description: "Whether the email has been verified",
+                },
+                "mfaEnabled": &graphql.Field{
+                        Type:        graphql.NewNonNull(graphql.Boolean),
+                        Description: "Whether MFA is enabled",
+                },
+                "createdAt": &graphql.Field{
+                        Type:        DateTimeScalar,
+                        Description: "When the operator was created",
+                },
+                "updatedAt": &graphql.Field{
+                        Type:        DateTimeScalar,
+                        Description: "When the operator was last updated",
+                },
+        },
 })
 
 // OperatorSettingsType represents all operator settings.
@@ -2056,10 +2092,10 @@ var TransferDevicePayloadType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-// PaginationType represents pagination metadata.
-var PaginationType = graphql.NewObject(graphql.ObjectConfig{
-	Name:        "Pagination",
-	Description: "Pagination metadata for list queries",
+// OrgPaginationType represents pagination metadata for organization queries.
+var OrgPaginationType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "OrgPagination",
+	Description: "Pagination metadata for organization list queries",
 	Fields: graphql.Fields{
 		"page": &graphql.Field{
 			Type:        graphql.NewNonNull(graphql.Int),
@@ -2094,7 +2130,7 @@ var OrganizationListResponseType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "List of organizations",
 		},
 		"pagination": &graphql.Field{
-			Type:        graphql.NewNonNull(PaginationType),
+			Type:        graphql.NewNonNull(OrgPaginationType),
 			Description: "Pagination metadata",
 		},
 	},
@@ -2110,7 +2146,7 @@ var MemberListResponseType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "List of members",
 		},
 		"pagination": &graphql.Field{
-			Type:        graphql.NewNonNull(PaginationType),
+			Type:        graphql.NewNonNull(OrgPaginationType),
 			Description: "Pagination metadata",
 		},
 	},
@@ -2126,7 +2162,7 @@ var InvitationListResponseType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "List of invitations",
 		},
 		"pagination": &graphql.Field{
-			Type:        graphql.NewNonNull(PaginationType),
+			Type:        graphql.NewNonNull(OrgPaginationType),
 			Description: "Pagination metadata",
 		},
 	},

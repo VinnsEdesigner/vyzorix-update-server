@@ -599,6 +599,7 @@ func updatesMutations(res *resolver.Resolver) graphql.Fields {
 			Type:        PushUpdateResponseType,
 			Description: "Push an update to devices",
 			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
 				"version": &graphql.ArgumentConfig{
 					Type: graphql.NewNonNull(graphql.String),
 				},
@@ -618,6 +619,7 @@ func updatesMutations(res *resolver.Resolver) graphql.Fields {
 			Type:        CancelPushResponseType,
 			Description: "Cancel a pending update push",
 			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
 				"id": &graphql.ArgumentConfig{
 					Type: graphql.NewNonNull(graphql.ID),
 				},

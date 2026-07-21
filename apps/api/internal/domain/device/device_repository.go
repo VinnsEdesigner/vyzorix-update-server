@@ -76,8 +76,8 @@ type Repository interface {
 	// This is a migration helper for existing databases.
 	HashAllSecrets(ctx context.Context) (int, error)
 
-	// List returns a paginated list of devices.
-	List(ctx context.Context, limit, offset int) ([]*Device, int, error)
+	// List returns a paginated list of devices filtered by organization.
+	List(ctx context.Context, orgID string, limit, offset int) ([]*Device, int, error)
 
 	// ListByOperator returns all devices for an operator.
 	ListByOperator(ctx context.Context, operatorID string) ([]*Device, error)
@@ -88,8 +88,11 @@ type Repository interface {
 	// ListByOrganization returns all devices for an organization.
 	ListByOrganization(ctx context.Context, orgID string) ([]*Device, error)
 
-	// Count returns the total number of devices.
-	Count(ctx context.Context) (int, error)
+	// ListByOrganizationPaginated returns paginated devices for an organization.
+	ListByOrganizationPaginated(ctx context.Context, orgID string, limit, offset int) ([]*Device, int, error)
+
+	// Count returns the total number of devices filtered by organization.
+	Count(ctx context.Context, orgID string) (int, error)
 
 	// CountByOperator returns the number of devices for an operator.
 	CountByOperator(ctx context.Context, operatorID string) (int, error)

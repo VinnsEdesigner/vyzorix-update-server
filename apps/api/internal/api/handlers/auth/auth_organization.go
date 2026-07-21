@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
@@ -46,18 +45,12 @@ func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
 	// Parse request
 	var req dto.SelectOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid_request",
-			"message": "organization_id is required",
-		})
+		h.presenter.BadRequest(c, "organization_id is required")
 		return
 	}
 
 	if req.OrganizationID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid_request",
-			"message": "organization_id is required",
-		})
+		h.presenter.BadRequest(c, "organization_id is required")
 		return
 	}
 

@@ -2,6 +2,8 @@
 package wire
 
 import (
+	"context"
+
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
@@ -27,7 +29,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"log/slog"
 )
 
@@ -37,7 +39,7 @@ type HandlerDependencies struct {
 	FCMNotifier              fcm.Notifier
 	OAuthStateRepo           authhandlers.OAuthStateProvider
 	Presenter                *response.Presenter
-	Hub                      *ws.Hub
+	Hub                      *hub.Hub
 	EmailService             *emailService.Service
 	Lockout                  *middleware.Lockout
 	DB                       *storage.SQLite
@@ -58,8 +60,6 @@ type HandlerDependencies struct {
 	MemberService            *orgapplication.MemberService
 	InvitationService        *orgapplication.InvitationService
 	OrgSettingsService       *orgapplication.OrganizationSettingsService
-	OrganizationRepo         orgapplication.OrganizationRepository
-	MemberRepo               orgapplication.MemberRepository
 	DeviceSettingsService    *device.DeviceSettingsService
 }
 
@@ -198,7 +198,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	if deps.OrgService != nil && deps.MemberService != nil {
 		hs.Organization = organizationhandlers.NewOrganizationHandler(deps.OrgService, deps.MemberService, deps.Presenter)
 		hs.Invitation = organizationhandlers.NewInvitationHandler(deps.InvitationService, deps.MemberService, deps.Presenter)
-		hs.Member = organizationhandlers.NewMemberHandler(deps.MemberService, deps.OrgService, deps.Presenter)
+		hs.Member = organizationhandlers.NewMemberHandler(deps.MemberService, deps.Presenter)
 		hs.OrgService = deps.OrgService
 		hs.OrgSettingsService = deps.OrgSettingsService
 		hs.MemberService = deps.MemberService

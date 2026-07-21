@@ -39,7 +39,7 @@ FindByTokenHash(ctx context.Context, tokenHash string) (*refresh_token.RefreshTo
 Revoke(ctx context.Context, id string) error
 RevokeByTokenHash(ctx context.Context, tokenHash string) error
 RevokeAllForOperator(ctx context.Context, operatorID string) error
-CleanupExpired(ctx context.Context) error
+CleanupExpired(ctx context.Context, olderThan time.Duration) (int, error)
 }
 
 // SelectOrganizationResult contains the result of selecting an organization.

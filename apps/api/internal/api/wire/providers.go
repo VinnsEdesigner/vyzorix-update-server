@@ -279,7 +279,7 @@ func ProvideOrganizationService(
 	orgRepo *storage.OrganizationStorage,
 	memberRepo *storage.MemberStorage,
 	invitationRepo *storage.InvitationStorage,
-	operatorRepo *storage.OperatorStorage,
+	operatorRepo *storage.OperatorRepository,
 	txManager transaction.TxManager,
 	log *slog.Logger,
 ) *orgapplication.OrganizationService {
@@ -298,7 +298,6 @@ func ProvideMemberService(
 // ProvideInvitationService creates the invitation service.
 func ProvideInvitationService(
 	invitationRepo *storage.InvitationStorage,
-	operatorRepo *storage.OperatorStorage,
 	orgRepo *storage.OrganizationStorage,
 	memberRepo *storage.MemberStorage,
 	txManager transaction.TxManager,
@@ -541,10 +540,8 @@ func ProvideHandlerSet(
 		Lockout:        lockout,
 		OperatorRepo:   operatorRepo,
 		AuditLogger:    auditLogger,
-                IPIntelligence: ipIntelligence,
-                Presenter:      presenter,
-        })
-	// DEPRECATED: hs.DeviceRegister = devicehandlers.NewRegisterHandler(deviceService) // /v1/device/register removed
+	})
+
 	hs.DeviceStatus = devicehandlers.NewStatusHandler(deviceService)
 	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deviceService)
 	hs.DeviceList = devicehandlers.NewListHandler(deviceService, hubResult.Hub)

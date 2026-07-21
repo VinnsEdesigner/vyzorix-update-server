@@ -55,11 +55,15 @@ func (h *MeHandler) Handle(c *gin.Context) {
 	needsOrg := len(orgs) == 0
 
 	// Find selected organization from session or last used
-	var selectedOrg *auth.OrganizationInfo
+	var selectedOrg *dto.OrganizationInfo
 	if op.LastOrganizationID != "" && !needsOrg {
-		for i, org := range orgs {
+		for _, org := range orgs {
 			if org.ID == op.LastOrganizationID {
-				selectedOrg = &orgs[i]
+				selectedOrg = &dto.OrganizationInfo{
+					ID:   org.ID,
+					Name: org.Name,
+					Role: string(org.Role),
+				}
 				break
 			}
 		}
@@ -73,16 +77,6 @@ func (h *MeHandler) Handle(c *gin.Context) {
 	// If multiple orgs exist but none is selected, needs organization selection
 	if !needsOrg && len(orgs) > 1 && selectedOrg == nil {
 		needsOrg = true
-	}
-
-	// Convert selectedOrg to dto.OrganizationInfo if present
-	var selectedOrgDTO *dto.OrganizationInfo
-	if selectedOrg != nil {
-		selectedOrgDTO = &dto.OrganizationInfo{
-			ID:   selectedOrg.ID,
-			Name: selectedOrg.Name,
-			Role: selectedOrg.Role,
-		}
 	}
 
 	h.presenter.OK(c, gin.H{

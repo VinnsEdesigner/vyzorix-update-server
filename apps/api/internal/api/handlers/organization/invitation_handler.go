@@ -124,13 +124,6 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 		return
 	}
 
-	// Check if operator is a member of this org
-	_, err := h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
-	if err != nil {
-		h.presenter.Forbidden(c, "access denied")
-		return
-	}
-
 	// Optional status filter
 	var status *organization.InvitationStatus
 	statusStr := c.Query("status")
