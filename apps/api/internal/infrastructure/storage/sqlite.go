@@ -204,10 +204,8 @@ var migrations = []Migration{
 	{Apply: migrateOrganizationSettings, Name: "create_organization_settings_table", Version: 42},
 	// Device settings table
 	{Apply: migrateDeviceSettings, Name: "create_device_settings_table", Version: 43},
-	// MFA tracking: add mfa_enabled_at to operators
-	{Apply: migrateAddMFAEnabledAt, Name: "add_mfa_enabled_at_column", Version: 44},
-	// MFA tracking: add mfa_verified_at to sessions
-	{Apply: migrateAddMFAVerifiedAt, Name: "add_mfa_verified_at_column", Version: 45},
+	// MFA tracking: add mfa_enabled_at to operators and mfa_verified_at to sessions
+	{Apply: migrateAddMFATracking, Name: "add_mfa_tracking_columns", Version: 44},
 }
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {
@@ -678,24 +676,23 @@ func migrateAddInboxOrganizationColumn(db *sql.DB) error {
 	return nil
 }
 
-// migrateAddMFAEnabledAt adds mfa_enabled_at column to operators table for MFA session tracking.
-func migrateAddMFAEnabledAt(db *sql.DB) error {
+// migrateAddMFATracking adds MFA tracking columns for session verification.
+func migrateAddMFATracking(db *sql.DB) error {
+	// Add mfa_enabled_at column to operators table
 	_, err := db.ExecContext(context.Background(), `
 		ALTER TABLE operators ADD COLUMN mfa_enabled_at INTEGER
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
 		return err
 	}
-	return nil
-}
 
-// migrateAddMFAVerifiedAt adds mfa_verified_at column to auth_sessions table for MFA session tracking.
-func migrateAddMFAVerifiedAt(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+	// Add mfa_verified_at column to auth_sessions table
+	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE auth_sessions ADD COLUMN mfa_verified_at INTEGER
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
 		return err
 	}
+
 	return nil
 }
