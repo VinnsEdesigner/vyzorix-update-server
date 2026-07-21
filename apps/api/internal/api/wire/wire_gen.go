@@ -11,7 +11,6 @@ import (
 	"time"
 
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	infranotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"

@@ -93,7 +93,7 @@ type HandlerSet struct {
 	InvitationService  *orgapplication.InvitationService
 	OrgSettings        *organizationhandlers.SettingsHandler
 	DeviceSettingsService *device.DeviceSettingsService
-	FCMNotifier       *fcm.Notifier
+	FCMNotifier       fcm.Notifier
 	AppCheckVerifier  *appcheck.Verifier
 }
 
