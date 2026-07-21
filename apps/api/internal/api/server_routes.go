@@ -242,9 +242,9 @@ func (s *Server) setupDeviceManagementRoutes(r *gin.RouterGroup) {
 		s.deviceUpdaterHandler.UpdateFCMToken,
 	)
 	deviceMgmt.POST("/:imei/command",
+		s.requireStrictHMAC(),
 		middleware.ValidationMiddleware(&middleware.CommandExecuteSchema{}),
 		s.commandHandler.Handle,
-		s.requireStrictHMAC(),
 	)
 	deviceMgmt.GET("/:imei/commands/pending", s.commandHandler.GetPending)
 	deviceMgmt.DELETE("/:imei", s.deviceUpdaterHandler.Delete)

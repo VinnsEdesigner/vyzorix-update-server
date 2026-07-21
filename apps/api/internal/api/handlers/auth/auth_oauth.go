@@ -129,6 +129,12 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 		return
 	}
 
+	// OAuth state repository is required for CSRF protection
+	if h.oauthStateRepo == nil {
+		h.presenter.InternalError(c, "OAuth state repository is required for CSRF protection")
+		return
+	}
+
 	frontendURL := h.config.FrontendURL
 	if frontendURL == "" {
 		frontendURL = "http://localhost:5173"
@@ -142,12 +148,10 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 	}
 	state := hex.EncodeToString(stateBytes)
 
-	// 8: Persist OAuth state to database if repository is configured
-	if h.oauthStateRepo != nil {
-		if _, err := h.oauthStateRepo.Create(c.Request.Context(), state, frontendURL, "google"); err != nil {
-			h.presenter.InternalError(c, "failed to create OAuth state")
-			return
-		}
+	// Persist OAuth state to database for CSRF validation
+	if _, err := h.oauthStateRepo.Create(c.Request.Context(), state, frontendURL, "google"); err != nil {
+		h.presenter.InternalError(c, "failed to create OAuth state")
+		return
 	}
 
 	callbackURL := h.config.BaseURL + "/v1/auth/google/callback"
@@ -321,6 +325,12 @@ func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 		return
 	}
 
+	// OAuth state repository is required for CSRF protection
+	if h.oauthStateRepo == nil {
+		h.presenter.InternalError(c, "OAuth state repository is required for CSRF protection")
+		return
+	}
+
 	frontendURL := h.config.FrontendURL
 	if frontendURL == "" {
 		frontendURL = "http://localhost:5173"
@@ -335,12 +345,10 @@ func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 		state = hex.EncodeToString(b)
 	}
 
-	// 8: Persist OAuth state to database if repository is configured
-	if h.oauthStateRepo != nil {
-		if _, err := h.oauthStateRepo.Create(c.Request.Context(), state, frontendURL, "github"); err != nil {
-			h.presenter.InternalError(c, "failed to create OAuth state")
-			return
-		}
+	// Persist OAuth state to database for CSRF validation
+	if _, err := h.oauthStateRepo.Create(c.Request.Context(), state, frontendURL, "github"); err != nil {
+		h.presenter.InternalError(c, "failed to create OAuth state")
+		return
 	}
 
 	githubURL := fmt.Sprintf(
@@ -458,11 +466,17 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		}
 	}
 
-	// Allow sign-up with unverified email if it's the primary email from profile
-	// but warn that they won't receive password reset emails
-	if !hasVerifiedEmail && ghUser.Email != "" {
-		// Primary email from GitHub profile - allow but note it
-		h.logger.Info("GitHub user signing up with unverified primary email", "email", email)
+	// Reject unverified emails to prevent account takeover
+	if !hasVerifiedEmail {
+		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
+			Code:      ErrOAuthEmailNotVerified,
+			Message:   "Your GitHub email must be verified to sign up. Please verify your email in GitHub Settings, then try again.",
+			Provider:  "github",
+			HelpURL:   "https://github.com/settings/emails",
+			Retryable: false,
+		})
+		c.Redirect(http.StatusTemporaryRedirect, errURL)
+		return
 	}
 
 	// Generate stable GitHub ID

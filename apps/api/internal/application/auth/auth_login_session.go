@@ -327,14 +327,19 @@ EmailVerified: false,
 }
 
 if err := s.operatorRepo.Create(ctx, op); err != nil {
-return nil, err
-}
+		// Handle race condition: if UNIQUE constraint fails due to concurrent registration,
+		// return ErrUserExists instead of opaque database error
+		if err == operator.ErrEmailExists {
+			return nil, application.ErrUserExists
+		}
+		return nil, err
+	}
 
-return &dto.RegisterResponse{
-OperatorID: id,
-Email:     email,
-Name:      name,
-}, nil
+	return &dto.RegisterResponse{
+		OperatorID: id,
+		Email:      email,
+		Name:       name,
+	}, nil
 }
 
 // RegisterAsSuperAdmin registers the first operator as super admin.
@@ -547,5 +552,13 @@ return err
 op.PasswordHash = hash
 op.UpdatedAt = time.Now()
 
-return s.operatorRepo.Update(ctx, op)
+if err := s.operatorRepo.Update(ctx, op); err != nil {
+return err
+}
+
+// Invalidate all sessions and refresh tokens for security
+_ = s.LogoutAll(ctx, operatorID)
+_ = s.RevokeAllRefreshTokens(ctx, operatorID)
+
+return nil
 }

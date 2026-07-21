@@ -66,6 +66,10 @@ type Operator struct {
 	MFARequired      bool
 	EmailVerified    bool
 
+	// MFAEnabledAt is set when MFA is enabled on the account.
+	// Used to invalidate pre-MFA sessions when MFA is enforced.
+	MFAEnabledAt *time.Time
+
 	// Memberships holds the operator's memberships in organizations.
 	// Role is org-scoped via these memberships.
 	Memberships []*organization.OrganizationMember

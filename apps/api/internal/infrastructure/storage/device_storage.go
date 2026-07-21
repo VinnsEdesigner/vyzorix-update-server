@@ -118,12 +118,13 @@ func scanDevices(rows *sql.Rows) ([]*device.Device, error) {
 
 	for rows.Next() {
 		var d device.Device
-		var fcmToken, operatorID, deviceName, manufacturer, model, osVersion, securityPatch sql.NullString
+		var fcmToken, operatorID, organizationID, deviceName, manufacturer, model, osVersion, securityPatch sql.NullString
 		var deregisteredAt, deletionScheduledAt, fcmTokenRefreshedAt sql.NullInt64
 
 		if err := rows.Scan(
 			&d.ID, &d.FirebaseInstallID, &fcmToken, &d.AppVersion, &d.DeviceClass,
 			&d.CommandSecretHash, &d.Online, &d.RegisteredAt, &d.LastSeen, &operatorID,
+			&organizationID,
 			&d.CreatedAt, &d.UpdatedAt, &deviceName, &manufacturer, &model, &osVersion, &securityPatch,
 			&deregisteredAt, &deletionScheduledAt, &fcmTokenRefreshedAt,
 		); err != nil {
@@ -132,6 +133,7 @@ func scanDevices(rows *sql.Rows) ([]*device.Device, error) {
 
 		d.FCMToken = fcmToken.String
 		d.OperatorID = operatorID.String
+		d.OrganizationID = organizationID.String
 		d.DeviceName = deviceName.String
 		d.Manufacturer = manufacturer.String
 		d.Model = model.String

@@ -81,9 +81,17 @@ func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken st
 		return nil, application.ErrUnauthorized
 	}
 
-	// Generate new JWT access token with full operator details.
-	// Note: Role is org-scoped, not per-operator. Use default role for JWT.
+	// Determine the role from organization membership.
+	// Role is org-scoped, so we use the operator's LastOrganizationID to determine context.
 	role := "operator"
+	if s.memberRepo != nil && op.LastOrganizationID != "" {
+		member, err := s.memberRepo.FindByOperatorAndOrg(ctx, op.ID, op.LastOrganizationID)
+		if err == nil && member.IsActive() {
+			role = string(member.Role)
+		}
+	}
+
+	// Generate new JWT access token with full operator details.
 	accessToken, expiresAt, err := s.jwtManager.Generate(
 		op.ID,
 		op.Email,
