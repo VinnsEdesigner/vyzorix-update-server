@@ -196,8 +196,12 @@ var migrations = []Migration{
 	{Apply: migrateAddMFASecretMAC, Name: "add_mfa_secret_mac_column", Version: 38},
 	// Multi-tenant organization model
 	{Apply: migrateOrganizations, Name: "create_organizations_tables", Version: 39},
-	// Combined post-V40 migrations: org context, inbox org, settings, MFA tracking
-	{Apply: migratePostV40Combined, Name: "post_v40_combined", Version: 40},
+	// Organization settings table
+	{Apply: migrateOrganizationSettings, Name: "create_organization_settings_table", Version: 40},
+	// Device settings table
+	{Apply: migrateDeviceSettings, Name: "create_device_settings_table", Version: 41},
+	// Combined post-V41 migrations: org context, inbox org, MFA tracking
+	{Apply: migratePostV41Combined, Name: "post_v41_combined", Version: 42},
 }
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {
@@ -626,9 +630,9 @@ func migrateCreateOAuthStates(db *sql.DB) error {
 	return err
 }
 
-// migratePostV40Combined combines all post-V40 migrations into a single migration.
-// This includes: org context columns, inbox org column, settings tables, and MFA tracking.
-func migratePostV40Combined(db *sql.DB) error {
+// migratePostV41Combined combines all post-V41 migrations into a single migration.
+// This includes: org context columns, inbox org column, and MFA tracking.
+func migratePostV41Combined(db *sql.DB) error {
 	// Add last_organization_id to operators table for auto-select on login
 	_, err := db.ExecContext(context.Background(), `
 		ALTER TABLE operators ADD COLUMN last_organization_id TEXT
