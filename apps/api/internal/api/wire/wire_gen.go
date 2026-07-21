@@ -11,6 +11,7 @@ import (
 	"time"
 
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	infranotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
@@ -54,6 +55,11 @@ func Injector(cfg config.Config) (*Server, error) {
 	metrics := ProvideMetrics()
 	hubResult := ProvideWebSocketHub(logger, deviceRepository, telemetryRepository, db)
 	notifier := ProvideFCMNotifier(logger, cfg)
+	appCheckVerifier, err := ProvideAppCheckVerifier(logger, cfg)
+	if err != nil {
+		return nil, err
+	}
+	deviceDeletionWorker := ProvideDeviceDeletionWorker(deviceRepository, logger, cfg)
 	middlewareFactory := ProvideMiddlewareFactory(logger, manager, authService, clientService, cfg)
 	rateLimiter := ProvideRateLimiter()
 	lockout := ProvideLockout()
@@ -84,7 +90,7 @@ func Injector(cfg config.Config) (*Server, error) {
 	WireNotificationServiceToProcessor(eventProcessor, notificationService)
 	apiKeyRepository := ProvideAPIKeyRepository(db)
 	apiKeyService := ProvideAPIKeyService(apiKeyRepository, cfg)
-	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService, apiKeyService, orgService, memberService, invitationService, orgSettingsService, deviceSettingsService)
+	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, appCheckVerifier, deviceDeletionWorker, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService, apiKeyService, orgService, memberService, invitationService, orgSettingsService, deviceSettingsService)
 	serverResult := ProvideServerResult(serverDependencies)
 	server := ProvideServer(serverDependencies, serverResult)
 	return server, nil

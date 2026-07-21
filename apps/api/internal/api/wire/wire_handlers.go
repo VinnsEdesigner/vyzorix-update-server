@@ -38,6 +38,7 @@ import (
 type HandlerDependencies struct {
 	OperatorRepo              operator.Repository
 	FCMNotifier              fcm.Notifier
+	AppCheckVerifier         *appcheck.Verifier
 	OAuthStateRepo           authhandlers.OAuthStateProvider
 	Presenter                *response.Presenter
 	Hub                      *hub.Hub
@@ -231,6 +232,9 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	if deps.DeviceService != nil {
 		hs.Transfer = devicehandlers.NewTransferHandler(deps.DeviceService, deps.Presenter)
 	}
+
+	// Set AppCheck verifier for device attestation
+	hs.AppCheckVerifier = deps.AppCheckVerifier
 
 	return hs
 }
