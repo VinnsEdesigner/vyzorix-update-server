@@ -196,16 +196,8 @@ var migrations = []Migration{
 	{Apply: migrateAddMFASecretMAC, Name: "add_mfa_secret_mac_column", Version: 38},
 	// Multi-tenant organization model
 	{Apply: migrateOrganizations, Name: "create_organizations_tables", Version: 39},
-	// Session and operator org context for multi-tenant
-	{Apply: migrateAddOrgContextColumns, Name: "add_org_context_columns", Version: 40},
-	// Inbox organization column for multi-tenant
-	{Apply: migrateAddInboxOrganizationColumn, Name: "add_inbox_organization_column", Version: 41},
-	// Organization settings table
-	{Apply: migrateOrganizationSettings, Name: "create_organization_settings_table", Version: 42},
-	// Device settings table
-	{Apply: migrateDeviceSettings, Name: "create_device_settings_table", Version: 43},
-	// MFA tracking: add mfa_enabled_at to operators and mfa_verified_at to sessions
-	{Apply: migrateAddMFATracking, Name: "add_mfa_tracking_columns", Version: 44},
+	// Combined post-V40 migrations: org context, inbox org, settings, MFA tracking
+	{Apply: migratePostV40Combined, Name: "post_v40_combined", Version: 40},
 }
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {
@@ -634,8 +626,9 @@ func migrateCreateOAuthStates(db *sql.DB) error {
 	return err
 }
 
-// migrateAddOrgContextColumns adds organization context columns for multi-tenant session support.
-func migrateAddOrgContextColumns(db *sql.DB) error {
+// migratePostV40Combined combines all post-V40 migrations into a single migration.
+// This includes: org context columns, inbox org column, settings tables, and MFA tracking.
+func migratePostV40Combined(db *sql.DB) error {
 	// Add last_organization_id to operators table for auto-select on login
 	_, err := db.ExecContext(context.Background(), `
 		ALTER TABLE operators ADD COLUMN last_organization_id TEXT
@@ -652,12 +645,8 @@ func migrateAddOrgContextColumns(db *sql.DB) error {
 		return err
 	}
 
-	return nil
-}
-
-// migrateAddInboxOrganizationColumn adds organization_id to inbox_requests table for multi-tenant isolation.
-func migrateAddInboxOrganizationColumn(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+	// Add organization_id to inbox_requests table for multi-tenant isolation
+	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE inbox_requests ADD COLUMN organization_id TEXT
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
@@ -673,20 +662,15 @@ func migrateAddInboxOrganizationColumn(db *sql.DB) error {
 		return err
 	}
 
-	return nil
-}
-
-// migrateAddMFATracking adds MFA tracking columns for session verification.
-func migrateAddMFATracking(db *sql.DB) error {
-	// Add mfa_enabled_at column to operators table
-	_, err := db.ExecContext(context.Background(), `
+	// Add mfa_enabled_at column to operators table for MFA tracking
+	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE operators ADD COLUMN mfa_enabled_at INTEGER
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
 		return err
 	}
 
-	// Add mfa_verified_at column to auth_sessions table
+	// Add mfa_verified_at column to auth_sessions table for MFA session tracking
 	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE auth_sessions ADD COLUMN mfa_verified_at INTEGER
 	`)
