@@ -40,7 +40,7 @@ Findings are grouped by area, then ordered by severity within each group.
 
 ---
 
-### BUG-01 🔴 Critical → `scanDevices` missing `organization_id` in Scan — all device list queries broken
+### BUG-01 ✅ 🔴 Critical → `scanDevices` missing `organization_id` in Scan — all device list queries broken
 
 **File:** `apps/api/internal/infrastructure/storage/device_storage.go` ~line 155
 
@@ -85,7 +85,7 @@ Every refresh token rotation issues a new JWT with `role = "operator"` regardles
 
 ---
 
-### BUG-04 🟠 High → Pre-MFA sessions bypass MFA enforcement permanently
+### BUG-04 ✅ 🟠 High → Pre-MFA sessions bypass MFA enforcement permanently
 
 **File:** `apps/api/internal/api/middleware/cookie_auth.go:62`
 
@@ -95,7 +95,7 @@ Every refresh token rotation issues a new JWT with `role = "operator"` regardles
 
 ---
 
-### BUG-05 🟠 High → Disabling MFA does not revoke active sessions or refresh tokens
+### BUG-05 ✅ 🟠 High → Disabling MFA does not revoke active sessions or refresh tokens
 
 **File:** `apps/api/internal/application/auth/auth_totp_mfa.go:90`
 
@@ -105,7 +105,7 @@ Every refresh token rotation issues a new JWT with `role = "operator"` regardles
 
 ---
 
-### BUG-06 🟡 Medium → Password *change* does not invalidate existing sessions
+### BUG-06 ✅ 🟡 Medium → Password *change* does not invalidate existing sessions
 
 **File:** `apps/api/internal/application/auth/auth_login_session.go:528`
 
@@ -115,7 +115,7 @@ The password *reset* flow (via reset token) correctly calls `LogoutAll` + `Revok
 
 ---
 
-### BUG-07 🟡 Medium → GitHub OAuth allows account creation with unverified email — account takeover risk
+### BUG-07 ✅ 🟡 Medium → GitHub OAuth allows account creation with unverified email — account takeover risk
 
 **File:** `apps/api/internal/api/handlers/auth/auth_oauth.go:461`
 
@@ -125,7 +125,7 @@ Google OAuth (line 258) correctly checks `googleClaims.EmailVerified` and reject
 
 ---
 
-### BUG-08 🟡 Medium → Registration has a TOCTOU race on email uniqueness
+### BUG-08 ✅ 🟡 Medium → Registration has a TOCTOU race on email uniqueness
 
 **File:** `apps/api/internal/application/auth/auth_login_session.go:302`
 
@@ -142,7 +142,7 @@ Two concurrent registrations for the same email both pass the existence check an
 
 ---
 
-### BUG-09 🟡 Medium → `oauthStateRepo` nil check skips CSRF state validation silently
+### BUG-09 ✅ 🟡 Medium → `oauthStateRepo` nil check skips CSRF state validation silently
 
 **File:** `apps/api/internal/api/handlers/auth/auth_oauth.go:146, 339`
 
@@ -156,7 +156,7 @@ If `oauthStateRepo` is nil, state validation is either skipped or produces a 500
 
 ---
 
-### BUG-10 🔴 Critical → Command handler runs before `requireStrictHMAC()` — commands execute unsigned
+### BUG-10 ✅ 🔴 Critical → Command handler runs before `requireStrictHMAC()` — commands execute unsigned
 
 **File:** `apps/api/internal/api/server_routes.go:244–247`
 
