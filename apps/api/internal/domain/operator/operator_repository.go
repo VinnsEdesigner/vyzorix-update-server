@@ -2,6 +2,7 @@ package operator
 
 import (
 	"context"
+	"time"
 )
 
 // Repository defines the interface for operator data access.
@@ -37,7 +38,9 @@ type Repository interface {
 	UpdatePassword(ctx context.Context, id, passwordHash string) error
 	
 	// UpdateMFA updates MFA settings for an operator.
-	UpdateMFA(ctx context.Context, id, secret, secretMAC string, enabled bool) error
+	// When enabled is true, mfaEnabledAt should be set to the current time.
+	// When enabled is false, mfaEnabledAt is ignored (will be set to nil).
+	UpdateMFA(ctx context.Context, id, secret, secretMAC string, enabled bool, mfaEnabledAt *time.Time) error
 	
 	// UpdateOperatorMFA updates the MFA secret, MAC, and backup codes for an operator.
 	UpdateOperatorMFA(ctx context.Context, operatorID, mfaSecret, mfaSecretMAC string, backupCodes []string) error

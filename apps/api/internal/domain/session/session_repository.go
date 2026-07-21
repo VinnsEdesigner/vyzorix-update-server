@@ -34,6 +34,10 @@ type Repository interface {
 	// UpdateOrganizationID updates the selected organization ID for a session.
 	UpdateOrganizationID(ctx context.Context, sessionID, organizationID string) error
 
+	// SetMFAVerifiedAt sets the MFAVerifiedAt timestamp for a session.
+	// This is called after successful MFA verification during login.
+	SetMFAVerifiedAt(ctx context.Context, sessionID string, verifiedAt time.Time) error
+
 	// AddSessionRevocation adds a session token hash to the revocation list.
 	AddSessionRevocation(ctx context.Context, tokenHash, reason string) error
 
