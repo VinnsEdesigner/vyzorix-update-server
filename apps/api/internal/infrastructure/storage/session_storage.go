@@ -25,14 +25,15 @@ func NewSessionRepository(db *sql.DB) *SessionRepository {
 
 // FindByID retrieves a session by ID.
 func (r *SessionRepository) FindByID(ctx context.Context, id string) (*session.Session, error) {
-	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id FROM auth_sessions WHERE id = ?`
+	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id, mfa_verified_at FROM auth_sessions WHERE id = ?`
 
 	var s session.Session
 
 	var ipAddress, userAgent, orgID sql.NullString
+	var mfaVerifiedAt sql.NullInt64
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID,
+		&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID, &mfaVerifiedAt,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -47,12 +48,18 @@ func (r *SessionRepository) FindByID(ctx context.Context, id string) (*session.S
 	s.UserAgent = userAgent.String
 	s.SelectedOrganizationID = orgID.String
 
+	// Parse mfa_verified_at timestamp
+	if mfaVerifiedAt.Valid {
+		t := time.UnixMilli(mfaVerifiedAt.Int64)
+		s.MFAVerifiedAt = &t
+	}
+
 	return &s, nil
 }
 
 // FindByOperatorID retrieves all sessions for an operator.
 func (r *SessionRepository) FindByOperatorID(ctx context.Context, operatorID string) ([]*session.Session, error) {
-	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id FROM auth_sessions WHERE operator_id = ?`
+	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id, mfa_verified_at FROM auth_sessions WHERE operator_id = ?`
 
 	rows, err := r.db.QueryContext(ctx, query, operatorID)
 	if err != nil {
@@ -67,14 +74,22 @@ func (r *SessionRepository) FindByOperatorID(ctx context.Context, operatorID str
 		var s session.Session
 
 		var ipAddress, userAgent, orgID sql.NullString
+		var mfaVerifiedAt sql.NullInt64
 
-		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID); err != nil {
+		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID, &mfaVerifiedAt); err != nil {
 			return nil, err
 		}
 
 		s.IPAddress = ipAddress.String
 		s.UserAgent = userAgent.String
 		s.SelectedOrganizationID = orgID.String
+
+		// Parse mfa_verified_at timestamp
+		if mfaVerifiedAt.Valid {
+			t := time.UnixMilli(mfaVerifiedAt.Int64)
+			s.MFAVerifiedAt = &t
+		}
+
 		sessions = append(sessions, &s)
 	}
 
@@ -83,7 +98,7 @@ func (r *SessionRepository) FindByOperatorID(ctx context.Context, operatorID str
 
 // ListActiveByOperator retrieves active (non-expired) sessions for an operator, ordered by creation time.
 func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID string) ([]*session.Session, error) {
-	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id
+	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id, mfa_verified_at
 		FROM auth_sessions
 		WHERE operator_id = ? AND expires_at > ?
 		ORDER BY created_at ASC`
@@ -101,14 +116,22 @@ func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID
 		var s session.Session
 
 		var ipAddress, userAgent, orgID sql.NullString
+		var mfaVerifiedAt sql.NullInt64
 
-		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID); err != nil {
+		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID, &mfaVerifiedAt); err != nil {
 			return nil, err
 		}
 
 		s.IPAddress = ipAddress.String
 		s.UserAgent = userAgent.String
 		s.SelectedOrganizationID = orgID.String
+
+		// Parse mfa_verified_at timestamp
+		if mfaVerifiedAt.Valid {
+			t := time.UnixMilli(mfaVerifiedAt.Int64)
+			s.MFAVerifiedAt = &t
+		}
+
 		sessions = append(sessions, &s)
 	}
 
@@ -117,11 +140,16 @@ func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID
 
 // Create creates a new session.
 func (r *SessionRepository) Create(ctx context.Context, s *session.Session) error {
-	query := `INSERT INTO auth_sessions (id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id) VALUES (?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO auth_sessions (id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id, mfa_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+
+	var mfaVerifiedAt interface{}
+	if s.MFAVerifiedAt != nil {
+		mfaVerifiedAt = s.MFAVerifiedAt.UnixMilli()
+	}
 
 	_, err := r.db.ExecContext(ctx, query,
 		s.ID, s.OperatorID, s.ExpiresAt, s.CreatedAt,
-		nullString(s.IPAddress), nullString(s.UserAgent), nullString(s.SelectedOrganizationID),
+		nullString(s.IPAddress), nullString(s.UserAgent), nullString(s.SelectedOrganizationID), mfaVerifiedAt,
 	)
 
 	return err
@@ -191,6 +219,29 @@ func (r *SessionRepository) UpdateOrganizationID(ctx context.Context, sessionID,
 	result, err := r.db.ExecContext(ctx,
 		"UPDATE auth_sessions SET organization_id = ? WHERE id = ?",
 		nullString(organizationID), sessionID,
+	)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return session.ErrNotFound
+	}
+
+	return nil
+}
+
+// SetMFAVerifiedAt sets the MFAVerifiedAt timestamp for a session.
+// This is called after successful MFA verification during login.
+func (r *SessionRepository) SetMFAVerifiedAt(ctx context.Context, sessionID string, verifiedAt time.Time) error {
+	result, err := r.db.ExecContext(ctx,
+		"UPDATE auth_sessions SET mfa_verified_at = ? WHERE id = ?",
+		verifiedAt.UnixMilli(), sessionID,
 	)
 	if err != nil {
 		return err

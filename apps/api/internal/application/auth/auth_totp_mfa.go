@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
@@ -17,6 +18,7 @@ type MFAEnrollResult struct {
 }
 
 // VerifyMFACode verifies a TOTP code for an operator.
+// After successful verification, it creates a session and marks it as MFA-verified.
 func (s *AuthService) VerifyMFACode(ctx context.Context, operatorID, code string) (*session.Session, error) {
 	op, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
@@ -49,7 +51,22 @@ func (s *AuthService) VerifyMFACode(ctx context.Context, operatorID, code string
 		return nil, application.ErrInvalidCredentials
 	}
 
-	return s.CreateSession(ctx, operatorID)
+	// Create session and mark it as MFA-verified
+	sess, err := s.CreateSession(ctx, operatorID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set MFAVerifiedAt on the session
+	now := time.Now()
+	if err := s.sessionRepo.SetMFAVerifiedAt(ctx, sess.ID, now); err != nil {
+		return nil, err
+	}
+
+	// Update the session object with the MFAVerifiedAt timestamp
+	sess.MFAVerifiedAt = &now
+
+	return sess, nil
 }
 
 // EnrollMFA generates a new MFA secret for enrollment.
@@ -83,7 +100,8 @@ func (s *AuthService) EnrollMFA(ctx context.Context, operatorID, email string) (
 // It invalidates all existing sessions to ensure MFA is enforced on next login.
 func (s *AuthService) EnableMFA(ctx context.Context, operatorID, secret string, backupCodes []string) error {
 	binding := infraauth.CreateMFASecretBinding(operatorID, secret)
-	if err := s.operatorRepo.UpdateMFA(ctx, operatorID, secret, binding.MAC, true); err != nil {
+	now := time.Now()
+	if err := s.operatorRepo.UpdateMFA(ctx, operatorID, secret, binding.MAC, true, &now); err != nil {
 		return err
 	}
 
@@ -99,7 +117,7 @@ func (s *AuthService) EnableMFA(ctx context.Context, operatorID, secret string, 
 // DisableMFA disables MFA for an operator.
 // It revokes all sessions and refresh tokens to ensure security after MFA is disabled.
 func (s *AuthService) DisableMFA(ctx context.Context, operatorID string) error {
-	if err := s.operatorRepo.UpdateMFA(ctx, operatorID, "", "", false); err != nil {
+	if err := s.operatorRepo.UpdateMFA(ctx, operatorID, "", "", false, nil); err != nil {
 		return err
 	}
 

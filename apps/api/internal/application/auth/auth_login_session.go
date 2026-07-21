@@ -484,49 +484,61 @@ return s.sessionRepo.FindByID(ctx, id)
 }
 
 // ValidateSession validates a session and returns the operator.
-// It checks expiration and revocation status.
+// It checks expiration, revocation status, and MFA requirements.
 // It also loads memberships so that operator.GetMembership() works correctly.
 func (s *AuthService) ValidateSession(ctx context.Context, sessionID string) (*session.Session, *operator.Operator, error) {
-sess, err := s.sessionRepo.FindByID(ctx, sessionID)
-if err != nil {
-if err == session.ErrNotFound {
-return nil, nil, application.ErrUnauthorized
-}
-return nil, nil, err
-}
+	sess, err := s.sessionRepo.FindByID(ctx, sessionID)
+	if err != nil {
+		if err == session.ErrNotFound {
+			return nil, nil, application.ErrUnauthorized
+		}
+		return nil, nil, err
+	}
 
-// Check if session is expired.
-if sess.IsExpired() {
-// Clean up expired session.
-_ = s.sessionRepo.Delete(ctx, sessionID)
-return nil, nil, application.ErrTokenExpired
-}
+	// Check if session is expired.
+	if sess.IsExpired() {
+		// Clean up expired session.
+		_ = s.sessionRepo.Delete(ctx, sessionID)
+		return nil, nil, application.ErrTokenExpired
+	}
 
-// Check if session has been revoked (server-side logout).
-revoked, err := s.sessionRepo.IsSessionRevoked(ctx, sessionID)
-if err != nil {
-return nil, nil, err
-}
+	// Check if session has been revoked (server-side logout).
+	revoked, err := s.sessionRepo.IsSessionRevoked(ctx, sessionID)
+	if err != nil {
+		return nil, nil, err
+	}
 
-if revoked {
-return nil, nil, application.ErrUnauthorized
-}
+	if revoked {
+		return nil, nil, application.ErrUnauthorized
+	}
 
-op, err := s.operatorRepo.FindByID(ctx, sess.OperatorID)
-if err != nil {
-return nil, nil, err
-}
+	op, err := s.operatorRepo.FindByID(ctx, sess.OperatorID)
+	if err != nil {
+		return nil, nil, err
+	}
 
-// Load memberships so that operator.GetMembership() works correctly
-if s.memberRepo != nil {
-memberships, err := s.memberRepo.ListByOperator(ctx, op.ID)
-if err != nil {
-return nil, nil, err
-}
-op.Memberships = memberships
-}
+	// MFA enforcement: If operator has MFA enabled and MFA was enabled at a specific time,
+	// reject sessions that were not MFA-verified after MFA was enabled.
+	// This prevents pre-MFA sessions from bypassing MFA requirements.
+	if op.MFAEnabled && op.MFAEnabledAt != nil {
+		// Session must have been MFA-verified after MFA was enabled
+		if sess.MFAVerifiedAt == nil || sess.MFAVerifiedAt.Before(*op.MFAEnabledAt) {
+			// Clean up the session and require re-authentication with MFA
+			_ = s.sessionRepo.Delete(ctx, sessionID)
+			return nil, nil, application.ErrUnauthorized
+		}
+	}
 
-return sess, op, nil
+	// Load memberships so that operator.GetMembership() works correctly
+	if s.memberRepo != nil {
+		memberships, err := s.memberRepo.ListByOperator(ctx, op.ID)
+		if err != nil {
+			return nil, nil, err
+		}
+		op.Memberships = memberships
+	}
+
+	return sess, op, nil
 }
 
 // ChangePassword changes an operator's password.
