@@ -113,6 +113,7 @@ type Server struct {
 	metricsHandler             *infraMetrics.MetricsHandler
 	commandHistoryHandler      *cmdhandlers.HistoryHandler
 	deviceLogsHandler          *devicehandlers.LogsHandler
+	deviceEventsHandler       *devicehandlers.EventsHandler
 	deviceMetricsHandler       *devicehandlers.MetricsHandler
 	deviceTelemetryHandler     *devicehandlers.TelemetryHandler
 	dashboardStatsHandler      *dashboardhandlers.StatsHandler
@@ -277,10 +278,12 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	// Create repositories
 	var logsRepo *storage.LogsRepository
 	var metricsRepo *storage.MetricsRepository
+	var eventRepo *storage.EventRepository
 
 	if cfg.DB != nil {
 		logsRepo = storage.NewLogsRepository(cfg.DB.DB())
 		metricsRepo = storage.NewMetricsRepository(cfg.DB.DB())
+		eventRepo = storage.NewEventRepository(cfg.DB.DB())
 	}
 
 	// Create services
@@ -321,6 +324,10 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 
 	if logsSvc != nil && cfg.DeviceService != nil {
 		s.deviceLogsHandler = devicehandlers.NewLogsHandler(logsSvc, cfg.DeviceService.DeviceRepo(), cfg.Log)
+	}
+
+	if eventRepo != nil && cfg.DeviceService != nil {
+		s.deviceEventsHandler = devicehandlers.NewEventsHandler(eventRepo, cfg.DeviceService.DeviceRepo(), cfg.Log)
 	}
 
 	if metricsSvc != nil && cfg.DeviceService != nil {

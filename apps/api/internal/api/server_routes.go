@@ -188,6 +188,15 @@ func (s *Server) setupDashboardRoutes(r ...*gin.RouterGroup) {
 	if s.deviceLogsHandler != nil {
 		s.deviceLogsHandler.RegisterRoutes(dashboard, s.dashboardRateLimiter)
 	}
+
+	// Device events history endpoints
+	if s.deviceEventsHandler != nil {
+		dashboard.GET("/device/:imei/events", s.deviceEventsHandler.GetEvents)
+		dashboard.GET("/events/recent", s.deviceEventsHandler.GetRecentEvents)
+		dashboard.GET("/events/types/:type", s.deviceEventsHandler.GetEventsByType)
+		dashboard.GET("/events/:id", s.deviceEventsHandler.GetEventByID)
+	}
+
 	if s.deviceMetricsHandler != nil {
 		s.deviceMetricsHandler.RegisterMetricsRoutes(dashboard, s.dashboardRateLimiter)
 	}
