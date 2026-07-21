@@ -18,11 +18,20 @@ import (
 func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
-	orgID, _ := p.Args["organizationId"].(string)
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	if r.MemberService != nil {
+		if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
+		}
 	}
 
 	if r.UpdatesSvc == nil {
@@ -41,7 +50,7 @@ func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error
 	if deviceID != "" && r.DeviceService != nil {
 		dev, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 		if err == nil && dev != nil {
-			currentVersion = dev.Device.AppVersion
+			currentVersion = dev.AppVersion
 			// Compare versions to determine if update is needed
 			if status.Latest.Version != "" && currentVersion != "" {
 				needsUpdate = currentVersion != status.Latest.Version
@@ -181,6 +190,17 @@ func (r *Resolver) GetUpdatesHistory(p graphql.ResolveParams) (interface{}, erro
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
+	if r.MemberService != nil {
+		if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
+		}
+	}
+
 	if r.UpdatesSvc == nil {
 		return nil, r.Presenter.InternalError("updates service not available")
 	}
@@ -197,7 +217,7 @@ func (r *Resolver) GetUpdatesHistory(p graphql.ResolveParams) (interface{}, erro
 		limit = 20
 	}
 
-	resp, err := r.UpdatesSvc.GetHistory(ctx, filterStatus, page, limit)
+	resp, err := r.UpdatesSvc.GetHistory(ctx, filterStatus, page, limit, orgID)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to get push history")
 	}
@@ -248,11 +268,22 @@ func (r *Resolver) GetUpdatesHistoryDetail(p graphql.ResolveParams) (interface{}
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
+	if r.MemberService != nil {
+		if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
+		}
+	}
+
 	if r.UpdatesSvc == nil {
 		return nil, r.Presenter.InternalError("updates service not available")
 	}
 
-	push, err := r.UpdatesSvc.GetPushDetail(ctx, id)
+	push, err := r.UpdatesSvc.GetPushDetail(ctx, id, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("push not found")
 	}
@@ -320,6 +351,11 @@ func (r *Resolver) GetUpdatesSyncStatus(p graphql.ResolveParams) (interface{}, e
 func (r *Resolver) PushUpdate(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
 	version, _ := p.Args["version"].(string)
 	deviceIdsRaw, _ := p.Args["deviceIds"].([]interface{})
 	installType, _ := p.Args["installType"].(string)
@@ -345,6 +381,12 @@ func (r *Resolver) PushUpdate(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
+	if r.MemberService != nil {
+		if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
+		}
+	}
+
 	if r.UpdatesSvc == nil {
 		return nil, r.Presenter.InternalError("updates service not available")
 	}
@@ -355,10 +397,11 @@ func (r *Resolver) PushUpdate(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	pushReq := &updates.PushUpdateRequest{
-		Version:     version,
-		DeviceIDs:   deviceIds,
-		InstallType: installType,
-		ScheduledAt: schedPtr,
+		Version:        version,
+		DeviceIDs:      deviceIds,
+		InstallType:    installType,
+		ScheduledAt:    schedPtr,
+		OrganizationID: orgID,
 	}
 
 	resp, err := r.UpdatesSvc.PushUpdate(ctx, pushReq, op.ID)
@@ -397,11 +440,22 @@ func (r *Resolver) CancelUpdate(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
+	if r.MemberService != nil {
+		if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
+		}
+	}
+
 	if r.UpdatesSvc == nil {
 		return nil, r.Presenter.InternalError("updates service not available")
 	}
 
-	resp, err := r.UpdatesSvc.CancelPush(ctx, id, op.ID)
+	resp, err := r.UpdatesSvc.CancelPush(ctx, id, op.ID, orgID)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to cancel push")
 	}

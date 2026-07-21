@@ -1,8 +1,6 @@
 package updates
 
 import (
-	"log/slog"
-
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
@@ -32,17 +30,9 @@ func NewUpdatesHandler(service *updates.Service, pushService *updates.PushServic
 		pushHandler:      NewUpdatesPushHandler(service, auditLogger),
 		historyHandler:   NewUpdatesHistoryHandler(service, auditLogger),
 		syncHandler:      NewUpdatesSyncHandler(service, auditLogger),
-		deviceStatusHandler: NewDeviceStatusHandler(pushService),
-		rateLimiters:     rateLimiters,
-		adminAuth:        middleware.NewUpdatesAdminAuth(),
 		auditLogger:      auditLogger,
 		webhookSecret:    webhookSecret,
 	}
-}
-
-// InitWebhookHandler initializes the webhook handler after service is set.
-func (h *UpdatesHandler) InitWebhookHandler(log *slog.Logger) {
-	h.webhookHandler = NewGitHubWebhookHandler(h.service, h.webhookSecret, h.auditLogger, log)
 }
 
 // RegisterRoutes registers all updates routes.

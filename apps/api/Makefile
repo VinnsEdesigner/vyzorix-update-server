@@ -1,4 +1,4 @@
-.PHONY: all build run test clean docker-build docker-run docker-stop lint lint-go lint-js fmt vet deps tidy check lint-fix lint-go-fix lint-js-fix
+.PHONY: all build run test test-quick test-race clean docker-build docker-run docker-stop lint lint-go lint-js fmt vet deps tidy check lint-fix lint-go-fix lint-js-fix wire migrate seed dev profile race
 
 # Go parameters
 GOCMD=go
@@ -63,6 +63,56 @@ test-coverage:
 bench:
 	$(GOTEST) -bench=. -benchmem -memprofile=mem.out ./...
 	$(GOCMD) tool pprof -http=:8080 mem.out
+
+# =============================================
+# WIRE DEPENDENCY INJECTION
+# =============================================
+
+wire:
+	@echo "Generating wire dependencies..."
+	@cd internal/api/wire && wire
+
+# =============================================
+# TEST VARIANTS
+# =============================================
+
+test-quick:
+	$(GOTEST) ./...
+
+test-race:
+	$(GOTEST) -v -race ./...
+
+race:
+	$(GOTEST) -race ./...
+
+# =============================================
+# PROFILING
+# =============================================
+
+profile:
+	$(GOTEST) -cpuprofile=cpu.out -memprofile=mem.out ./...
+	@echo "Profiles saved to cpu.out and mem.out"
+	@echo "View with: go tool pprof -http=:8080 cpu.out"
+
+# =============================================
+# DATABASE
+# =============================================
+
+migrate:
+	@echo "Running migrations (automatic on startup)..."
+	@$(GOCMD) run ./cmd/api -migrate 2>/dev/null || echo "Migrations run automatically on server start"
+
+seed:
+	@echo "Seeding database..."
+	@$(GOCMD) run ./cmd/api -seed 2>/dev/null || echo "Seed command not configured"
+
+# =============================================
+# DEVELOPMENT
+# =============================================
+
+dev:
+	@echo "Starting development server..."
+	@$(GOCMD) run ./cmd/api
 
 # =============================================
 # STRICT LINTING - CATCHES ALL THE BUGS

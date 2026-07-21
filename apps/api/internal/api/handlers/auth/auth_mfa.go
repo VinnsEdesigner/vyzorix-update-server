@@ -311,24 +311,11 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	var refreshToken string
 	var accessToken string
 	var expiresAt int64
-
-	// Get role from the operator's last organization membership
-	var roleStr string
+	// Get role from operator's membership in their last organization
+	role := ""
 	if m := op.GetMembership(op.LastOrganizationID); m != nil {
-		roleStr = string(m.Role)
-	} else if len(op.Memberships) > 0 {
-		// Fallback to first active membership
-		for _, m := range op.Memberships {
-			if m.IsActive() {
-				roleStr = string(m.Role)
-				break
-			}
-		}
+		role = string(m.Role)
 	}
-	if roleStr == "" {
-		roleStr = string(organization.RoleViewer) // Default role
-	}
-
 	if h.authService != nil {
 		refreshToken, err = h.authService.IssueRefreshToken(c.Request.Context(), req.OperatorID, session.ID)
 		if err != nil {
@@ -337,7 +324,7 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		}
 
 		// Generate proper JWT access token
-		tokenResult, tokenErr := h.authService.GenerateAccessToken(c.Request.Context(), op.ID, op.Email, op.Name, roleStr)
+		tokenResult, tokenErr := h.authService.GenerateAccessToken(c.Request.Context(), op.ID, op.Email, op.Name, role)
 		if tokenErr != nil {
 			h.presenter.InternalError(c, "Failed to generate access token")
 			return
@@ -362,7 +349,7 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 			"id":          op.ID,
 			"email":       op.Email,
 			"name":        op.Name,
-			"role":        roleStr,
+			"role":        role,
 			"mfa_enabled": op.MFAEnabled,
 		},
 	})

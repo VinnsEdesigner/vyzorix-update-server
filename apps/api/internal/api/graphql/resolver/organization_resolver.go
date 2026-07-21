@@ -76,7 +76,7 @@ func (r *Resolver) GetOrganizations(p graphql.ResolveParams) (interface{}, error
 
 	return map[string]interface{}{
 		"items":      items,
-		"pagination": r.paginationToMap(result.Pagination),
+		"pagination": r.orgPaginationToMap(result.Pagination),
 	}, nil
 }
 
@@ -113,7 +113,7 @@ func (r *Resolver) GetMyMemberships(p graphql.ResolveParams) (interface{}, error
 
 	return map[string]interface{}{
 		"items":      items,
-		"pagination": r.paginationToMap(result.Pagination),
+		"pagination": r.orgPaginationToMap(result.Pagination),
 	}, nil
 }
 
@@ -160,7 +160,7 @@ func (r *Resolver) GetOrganizationMembers(p graphql.ResolveParams) (interface{},
 
 	return map[string]interface{}{
 		"items":      items,
-		"pagination": r.paginationToMap(result.Pagination),
+		"pagination": r.orgPaginationToMap(result.Pagination),
 	}, nil
 }
 
@@ -207,7 +207,7 @@ func (r *Resolver) GetOrganizationInvitations(p graphql.ResolveParams) (interfac
 
 	return map[string]interface{}{
 		"items":      items,
-		"pagination": r.paginationToMap(result.Pagination),
+		"pagination": r.orgPaginationToMap(result.Pagination),
 	}, nil
 }
 
@@ -281,23 +281,23 @@ func (r *Resolver) CreateOrganization(p graphql.ResolveParams) (interface{}, err
 
 	// Note: CreateOrganization creates the org AND the creator's membership as super_admin
 	// The membership is created inside the transaction, so we get it from there
-	org, err := r.OrgService.CreateOrganization(ctx, op.ID, name, maxMembers)
+	org, err := r.OrgService.CreateOrganization(ctx, op.ID, name, "", maxMembers, "super_admin")
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to create organization")
 	}
 
 	// Get the creator's membership
-	membership, err := r.MemberService.GetMembership(ctx, op.ID, org.ID.String())
+	membership, err := r.MemberService.GetMembership(ctx, op.ID, org.ID)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to get membership")
 	}
 
 	// Publish organization created event
 	if r.Hub != nil {
-		r.Hub.PublishOrganizationEvent(org.ID.String(), map[string]interface{}{
+		r.Hub.PublishOrganizationEvent(org.ID, map[string]interface{}{
 			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
 			"type":           "created",
-			"organizationId": org.ID.String(),
+			"organizationId": org.ID,
 			"operatorId":     op.ID,
 			"timestamp":      time.Now().UTC(),
 		})
@@ -329,19 +329,17 @@ func (r *Resolver) UpdateOrganization(p graphql.ResolveParams) (interface{}, err
 	}
 
 	// Prepare pointer arguments for optional fields
-	var namePtr, maxMembersPtr, isActivePtr *string
+	var namePtr *string
 	if name != "" {
 		namePtr = &name
 	}
-	var maxMembersVal int
+	var maxMembersPtr *int
 	if maxMembers > 0 {
-		maxMembersVal = maxMembers
-		maxMembersPtr = &maxMembersVal
+		maxMembersPtr = &maxMembers
 	}
-	var isActiveVal bool
+	var isActivePtr *bool
 	if p.Args["isActive"] != nil {
-		isActiveVal = isActive
-		isActivePtr = &isActiveVal
+		isActivePtr = &isActive
 	}
 
 	org, err := r.OrgService.UpdateOrganization(ctx, id, namePtr, maxMembersPtr, isActivePtr)
@@ -447,7 +445,7 @@ func (r *Resolver) InviteMember(p graphql.ResolveParams) (interface{}, error) {
 			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
 			"type":           "member_invited",
 			"organizationId": orgID,
-			"memberId":       invitation.ID.String(),
+			"memberId":       invitation.ID,
 			"operatorId":     op.ID,
 			"timestamp":      time.Now().UTC(),
 			"data": map[string]interface{}{
@@ -480,7 +478,7 @@ func (r *Resolver) RemoveMember(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	// Prevent self-removal - compare actor's membership ID with target
-	if actorMembership.ID.String() == memberID {
+	if actorMembership.ID == memberID {
 		return nil, r.Presenter.BadRequestError("cannot remove yourself from the organization")
 	}
 
@@ -530,7 +528,7 @@ func (r *Resolver) canRemoveMember(ctx context.Context, orgID, memberID string) 
 	var targetLifecycle orgdomain.MemberLifecycle
 	var memberFound bool
 	for _, m := range memberships {
-		if m.ID.String() == memberID {
+		if m.ID == memberID {
 			targetRole = m.Role
 			targetLifecycle = m.Lifecycle
 			memberFound = true
@@ -551,7 +549,7 @@ func (r *Resolver) canRemoveMember(ctx context.Context, orgID, memberID string) 
 	// Count other active super_admins
 	superAdminCount := 0
 	for _, m := range memberships {
-		if m.Role == orgdomain.RoleSuperAdmin && m.ID.String() != memberID && m.Lifecycle == orgdomain.MemberLifecycleActive {
+		if m.Role == orgdomain.RoleSuperAdmin && m.ID != memberID && m.Lifecycle == orgdomain.MemberLifecycleActive {
 			superAdminCount++
 		}
 	}
@@ -579,15 +577,15 @@ func (r *Resolver) UpdateMemberRole(p graphql.ResolveParams) (interface{}, error
 	}
 
 	// Find the operator's own membership in this org
-	var ownMembership *orgdomain.Membership
+	var ownMembership *orgdomain.OrganizationMember
 	for _, m := range memberships {
-		if m.OperatorID.String() == op.ID {
+		if m.OperatorID == op.ID {
 			ownMembership = m
 			break
 		}
 	}
 
-	if ownMembership != nil && ownMembership.ID.String() == memberID {
+	if ownMembership != nil && ownMembership.ID == memberID {
 		return nil, r.Presenter.BadRequestError("cannot change your own role")
 	}
 
@@ -614,7 +612,7 @@ func (r *Resolver) UpdateMemberRole(p graphql.ResolveParams) (interface{}, error
 	// Get the old role before updating for the event
 	var oldRole string
 	for _, m := range memberships {
-		if m.ID.String() == memberID {
+		if m.ID == memberID {
 			oldRole = string(m.Role)
 			break
 		}
@@ -654,7 +652,7 @@ func (r *Resolver) canDemoteSuperAdmin(ctx context.Context, orgID, memberID stri
 	// Count super_admins excluding the member being demoted
 	superAdminCount := 0
 	for _, m := range memberships {
-		if m.Role == orgdomain.RoleSuperAdmin && m.ID.String() != memberID && m.Lifecycle == orgdomain.MemberLifecycleActive {
+		if m.Role == orgdomain.RoleSuperAdmin && m.ID != memberID && m.Lifecycle == orgdomain.MemberLifecycleActive {
 			superAdminCount++
 		}
 	}
@@ -686,7 +684,7 @@ func (r *Resolver) AcceptInvitation(p graphql.ResolveParams) (interface{}, error
 		switch err {
 		case orgdomain.ErrInvitationNotFound, orgdomain.ErrAlreadyResponded:
 			return nil, r.Presenter.NotFoundError(err.Error())
-		case orgdomain.ErrExpired:
+		case orgdomain.ErrInvitationExpired:
 			return nil, r.Presenter.BadRequestError("invitation has expired")
 		case orgdomain.ErrEmailMismatch:
 			return nil, r.Presenter.ForbiddenError("this invitation was sent to a different email address")
@@ -697,11 +695,11 @@ func (r *Resolver) AcceptInvitation(p graphql.ResolveParams) (interface{}, error
 
 	// Publish member joined event
 	if r.Hub != nil {
-		r.Hub.PublishMemberEvent(membership.OrganizationID.String(), map[string]interface{}{
+		r.Hub.PublishMemberEvent(membership.OrganizationID, map[string]interface{}{
 			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
 			"type":           "member_joined",
-			"organizationId": membership.OrganizationID.String(),
-			"memberId":       membership.ID.String(),
+			"organizationId": membership.OrganizationID,
+			"memberId":       membership.ID,
 			"operatorId":     op.ID,
 			"timestamp":      time.Now().UTC(),
 		})
@@ -734,7 +732,7 @@ func (r *Resolver) RejectInvitation(p graphql.ResolveParams) (interface{}, error
 		switch err {
 		case orgdomain.ErrInvitationNotFound, orgdomain.ErrAlreadyResponded:
 			return nil, r.Presenter.NotFoundError(err.Error())
-		case orgdomain.ErrExpired:
+		case orgdomain.ErrInvitationExpired:
 			return nil, r.Presenter.BadRequestError("invitation has expired")
 		case orgdomain.ErrEmailMismatch:
 			return nil, r.Presenter.ForbiddenError("this invitation was sent to a different email address")
@@ -767,7 +765,7 @@ func (r *Resolver) CancelInvitation(p graphql.ResolveParams) (interface{}, error
 	}
 
 	// Check if operator can manage members in this org
-	if err := r.MemberService.CheckCanManageMembers(ctx, op.ID, inv.OrganizationID.String()); err != nil {
+	if err := r.MemberService.CheckCanManageMembers(ctx, op.ID, inv.OrganizationID); err != nil {
 		return nil, r.Presenter.ForbiddenError("insufficient permissions to cancel invitation")
 	}
 
@@ -965,43 +963,42 @@ func (r *Resolver) ReinstateMember(p graphql.ResolveParams) (interface{}, error)
 
 func (r *Resolver) orgToMap(org *orgdomain.Organization) map[string]interface{} {
 	result := map[string]interface{}{
-		"id":          org.ID.String(),
+		"id":          org.ID,
 		"name":        org.Name,
 		"lifecycle":   org.Lifecycle,
 		"maxMembers":  org.MaxMembers,
 		"memberCount": org.MemberCount,
-		"createdBy":   org.CreatedBy.String(),
+		"createdBy":   org.CreatedBy,
 		"createdAt":   formatTime(org.CreatedAt),
 		"updatedAt":   formatTime(org.UpdatedAt),
 	}
 
-	if !org.DeletedAt.IsZero() {
-		result["deletedAt"] = formatTime(org.DeletedAt)
+	if org.DeletedAt != nil && !org.DeletedAt.IsZero() {
+		result["deletedAt"] = formatTime(*org.DeletedAt)
 	}
 
 	return result
 }
 
-func (r *Resolver) membershipToMap(m *orgdomain.Membership) map[string]interface{} {
+func (r *Resolver) membershipToMap(m *orgdomain.OrganizationMember) map[string]interface{} {
 	result := map[string]interface{}{
-		"id":             m.ID.String(),
-		"organizationId": m.OrganizationID.String(),
-		"operatorId":     m.OperatorID.String(),
+		"id":             m.ID,
+		"organizationId": m.OrganizationID,
+		"operatorId":     m.OperatorID,
 		"role":           m.Role,
 		"lifecycle":      m.Lifecycle,
-		"invitedAt":      formatTime(m.InvitedAt),
 	}
 
 	if !m.JoinedAt.IsZero() {
 		result["joinedAt"] = formatTime(m.JoinedAt)
 	}
 
-	if !m.RemovedAt.IsZero() {
-		result["removedAt"] = formatTime(m.RemovedAt)
+	if m.RemovedAt != nil && !m.RemovedAt.IsZero() {
+		result["removedAt"] = formatTime(*m.RemovedAt)
 	}
 
-	if !m.SuspendedAt.IsZero() {
-		result["suspendedAt"] = formatTime(m.SuspendedAt)
+	if m.SuspendedAt != nil && !m.SuspendedAt.IsZero() {
+		result["suspendedAt"] = formatTime(*m.SuspendedAt)
 	}
 
 	return result
@@ -1009,39 +1006,35 @@ func (r *Resolver) membershipToMap(m *orgdomain.Membership) map[string]interface
 
 func (r *Resolver) invitationToMap(inv *orgdomain.Invitation) map[string]interface{} {
 	result := map[string]interface{}{
-		"id":               inv.ID.String(),
-		"organizationId":    inv.OrganizationID.String(),
+		"id":               inv.ID,
+		"organizationId":    inv.OrganizationID,
 		"organizationName": inv.OrganizationName,
 		"email":            inv.Email,
 		"role":             inv.Role,
 		"status":           inv.Status,
 		"token":            inv.Token,
-		"inviterId":        inv.InviterID.String(),
+		"inviterId":        inv.InvitedBy,
 		"inviterName":      inv.InviterName,
-		"createdAt":        formatTime(inv.CreatedAt),
+		"invitedAt":        formatTime(inv.InvitedAt),
 		"expiresAt":        formatTime(inv.ExpiresAt),
 	}
 
-	if inv.InviteeID.Valid {
-		result["inviteeId"] = inv.InviteeID.String
+	if inv.InviteeNotes != "" {
+		result["inviteeNotes"] = inv.InviteeNotes
 	}
 
-	if inv.InviteeNotes.Valid {
-		result["inviteeNotes"] = inv.InviteeNotes.String
+	if inv.InviterNotes != "" {
+		result["inviterNotes"] = inv.InviterNotes
 	}
 
-	if inv.InviterNotes.Valid {
-		result["inviterNotes"] = inv.InviterNotes.String
-	}
-
-	if !inv.RespondedAt.IsZero() {
-		result["respondedAt"] = formatTime(inv.RespondedAt)
+	if inv.RespondedAt != nil && !inv.RespondedAt.IsZero() {
+		result["respondedAt"] = formatTime(*inv.RespondedAt)
 	}
 
 	return result
 }
 
-func (r *Resolver) paginationToMap(p orgapp.Pagination) map[string]interface{} {
+func (r *Resolver) orgPaginationToMap(p orgapp.Pagination) map[string]interface{} {
 	return map[string]interface{}{
 		"page":       p.Page,
 		"limit":      p.Limit,

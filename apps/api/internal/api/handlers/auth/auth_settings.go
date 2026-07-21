@@ -214,11 +214,23 @@ func (h *SettingsHandler) UpdateName(c *gin.Context) {
 		"id":              op.ID,
 		"email":           op.Email,
 		"name":            op.Name,
-		"role":            roleStr,
+		"role":            h.getOperatorRole(c, op),
 		"mfa_enabled":     op.MFAEnabled,
 		"email_verified":  op.EmailVerified,
 		"client":          op.ClientSettings,
 	})
+}
+
+// getOperatorRole returns the operator's role in the current organization context.
+func (h *SettingsHandler) getOperatorRole(c *gin.Context, op *operator.Operator) string {
+	orgID := middleware.GetOrganizationID(c)
+	if orgID == "" {
+		return ""
+	}
+	if m := op.GetMembership(orgID); m != nil {
+		return string(m.Role)
+	}
+	return ""
 }
 
 // UpdateSettings handles PATCH /v1/auth/me/settings.
@@ -261,7 +273,7 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 		"id":              op.ID,
 		"email":           op.Email,
 		"name":            op.Name,
-		"role":            roleStr,
+		"role":            h.getOperatorRole(c, op),
 		"mfa_enabled":     op.MFAEnabled,
 		"email_verified":  op.EmailVerified,
 		"client":          op.ClientSettings,

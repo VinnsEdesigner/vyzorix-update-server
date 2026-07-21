@@ -21,7 +21,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
+	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/logging"
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
@@ -91,8 +92,8 @@ func main() {
 		metricsRepo := storage.NewMetricsRepository(db)
 		logsSvc := logs.NewService(logsRepo, deps.Log)
 		// Get repositories for hierarchical threshold resolution
-		var deviceSettingsRepo device.DeviceSettingsRepository
-		var orgSettingsRepo organization.OrganizationSettingsRepository
+		var deviceSettingsRepo devicedomain.DeviceSettingsRepository
+		var orgSettingsRepo orgdomain.OrganizationSettingsRepository
 		if deps.DeviceSettingsService != nil {
 			deviceSettingsRepo = deps.DeviceSettingsService.SettingsRepo()
 		}

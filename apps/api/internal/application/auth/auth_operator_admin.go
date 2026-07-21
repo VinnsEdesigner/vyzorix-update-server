@@ -146,9 +146,9 @@ func (s *AuthService) UpdateOperator(ctx context.Context, operatorID string, req
 	}
 
 	if req.Role != nil {
-		// Note: Role is org-scoped, not per-operator.
-		// Role updates should be done through organization membership updates.
-		// This field is deprecated and ignored.
+		// Role field is intentionally ignored here.
+		// Role is org-scoped and updates should be done through organization membership.
+		_ = req.Role // Acknowledge the field is set but not used
 	}
 
 	op.UpdatedAt = time.Now()

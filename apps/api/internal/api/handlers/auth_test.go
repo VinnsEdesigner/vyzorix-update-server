@@ -69,6 +69,9 @@ func TestAuthController_RegisterRequest_JSON(t *testing.T) {
 
 	if result["email"] != "new@example.com" {
 		t.Errorf("email = %v, want new@example.com", result["email"])
+	}
+}
+
 func TestAuthController_AuthResponse_JSON(t *testing.T) {
 	resp := dto.AuthResponse{
 		Token: "jwt-token-abc123",
@@ -92,10 +95,6 @@ func TestAuthController_AuthResponse_JSON(t *testing.T) {
 	if result["token"] != "jwt-token-abc123" {
 		t.Errorf("token = %v, want jwt-token-abc123", result["token"])
 	}
-	if result["operator"] == nil {
-		t.Error("operator should not be nil")
-	}
-}
 	if result["operator"] == nil {
 		t.Error("operator should not be nil")
 	}
@@ -309,7 +308,8 @@ func TestAuthController_ClientSettings_PartialJSON(t *testing.T) {
 	if !client.StrictHmac {
 		t.Error("StrictHmac = false, want true")
 	}
-	// Other fields should be zero values when not provided.
+}
+
 func TestAuthController_OperatorResponse_IncludesClientSettings(t *testing.T) {
 	thresholds := dto.Thresholds{
 		RiskWarn:    50,
@@ -328,9 +328,6 @@ func TestAuthController_OperatorResponse_IncludesClientSettings(t *testing.T) {
 		ID:         "op-001",
 		Email:      "test@example.com",
 		Name:       "Test User",
-		Thresholds: &thresholds,
-		Client:     &client,
-	}
 		Thresholds: &thresholds,
 		Client:     &client,
 	}

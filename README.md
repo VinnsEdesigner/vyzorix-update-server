@@ -16,7 +16,7 @@
 
 <!-- Badges Row -->
 <p align="center">
-  <img src="https://img.shields.io/badge/Go-1.22+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go">
+  <img src="https://img.shields.io/badge/Go-1.26-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go">
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
   <img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
@@ -53,8 +53,10 @@
 | **OTA Updates** | Version manifest and APK distribution |
 | **HMAC Commands** | SHA256-signed commands per device |
 | **FCM Notifications** | Firebase Cloud Messaging integration |
-| **Operator Auth** | JWT + Google OAuth authentication |
-| **Dashboard API** | Device status, registration, management |
+| **Multi-Tenant Organizations** | Team-based access with role-based permissions |
+| **Operator Auth** | JWT + Google OAuth + MFA authentication |
+| **GraphQL API** | Comprehensive GraphQL API for all operations |
+| **REST API** | RESTful endpoints for device management |
 | **CORS Security** | Configurable origin validation |
 | **Rate Limiting** | Token-bucket per IP |
 
@@ -90,13 +92,13 @@
              
     
                                       
-                              WebSocket + REST
+                              WebSocket + REST + GraphQL
                                       
     
                               Backend (Go)                                 
         
                                Gin HTTP Router                           
-        /v1/auth/*    /v1/device/*    /api/v1/*    /healthz           
+        /v1/auth/*    /v1/device/*    /graphql/*    /healthz           
         
                        
         WebSocket Hub                           Services                
@@ -113,7 +115,8 @@
     
                              Storage Layer                                  
                           SQLite (WAL Mode)                                 
-       Operators    Sessions    Devices    Commands    Secrets     
+       	       Operators    Sessions    Devices    Commands    Secrets     
+	       Organizations  Memberships  Invitations  API Keys     
     
 ```
 
@@ -121,17 +124,18 @@
 
 | Layer | Technology |
 |:------|:------------|
-| **Backend** | Go 1.22+, Gin web framework |
-| **Database** | SQLite (WAL mode) |
+| **Backend** | Go 1.26, Gin web framework, Wire DI |
+| **Database** | SQLite (WAL mode) with auto-migrations |
 | **WebSocket** | gorilla/websocket |
+| **GraphQL** | graphql-go library |
 | **Push** | Firebase Admin SDK |
-| **Auth** | JWT, Google OAuth (JWKS) |
-| **Email** | Resend API |
+| **Auth** | JWT, Google OAuth (JWKS), TOTP MFA |
+| **Email** | SMTP support via Resend API |
 | **Frontend** | React 18, TanStack Start, Vite |
 | **Styling** | Tailwind CSS, shadcn/ui |
 | **Testing** | Vitest (frontend), Go testing (backend) |
-| **Linting** | ESLint, golangci-lint |
-| **Security** | Gosec, Dependency Review |
+| **Linting** | ESLint, golangci-lint v2 |
+| **Container** | Docker, Docker Compose |
 | **Deployment** | Render (persistent disk) |
 
 ---
@@ -140,9 +144,10 @@
 
 ### Prerequisites
 
-- Go 1.22+
+- Go 1.26+
 - Node.js 20+
-- SQLite
+- pnpm (for frontend)
+- Docker (optional)
 
 ### 1. Clone the Repository
 
@@ -151,157 +156,76 @@ git clone https://github.com/VinnsEdesigner/vyzorix-update-server.git
 cd vyzorix-update-server
 ```
 
-### 2. Environment Setup
+### 2. Setup and Run
 
 ```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit with your configuration
-nano .env
-```
-
-**Required variables:**
-
-```env
-PORT=3000
-DATABASE_URL=./data/vyzorix.db
-JWT_SECRET=your-jwt-secret-min-32-chars
-TOKEN_SECRET=your-dashboard-token-secret
-ENFORCE_HMAC=false
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
-```
-
-**Optional (for full features):**
-
-```env
-# Google OAuth
-GOOGLE_OAUTH_CLIENT_ID=your-client-id
-GOOGLE_OAUTH_CLIENT_SECRET=your-client-secret
-
-# Email (Resend)
-RESEND_API_KEY=your-resend-api-key
-EMAIL_FROM=your@email.com
-```
-
-### 3. Run the Server
-
-```bash
-# Using the automated startup script (recommended)
 cd apps/api
-./scripts/startup.sh
 
-# Or manually:
-go run .
+# Install dependencies and build
+make all
+
+# Or step by step:
+make deps
+make build
+
+# Run the server
+make run
 ```
 
-### 4. Access Dashboard
+### 3. Access Dashboard
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## Automated Startup Script
+## Makefile Commands
 
-The `apps/api/scripts/startup.sh` script provides a comprehensive, fully-automated server startup experience:
+The API server includes a comprehensive Makefile for development:
 
-### Features
-
-| Feature | Description |
+| Command | Description |
 |:--------|:-------------|
-| **Build Verification** | Automatically builds Go server if binary is missing |
-| **Asset Validation** | Counts and validates JS, CSS, HTML, and image assets |
-| **Out-of-Sync Detection** | Warns when `dist/client` and `public` are out of sync |
-| **Auto-Sync** | Automatically copies assets to public directory |
-| **Critical File Checks** | Validates presence of index.html, landing.html, manifest.json |
-| **SSR Auto-Start** | Go server automatically spawns SSR subprocess |
-| **Health Monitoring** | Verifies both Go and SSR servers are healthy |
-| **Browser Auto-Open** | Automatically opens dashboard in browser |
+| `make all` | Install deps, tidy, build, and frontend |
+| `make deps` | Download Go dependencies |
+| `make tidy` | Clean up go.mod |
+| `make build` | Build the Go binary |
+| `make run` | Run the server |
+| `make test` | Run tests with race detector |
+| `make test-quick` | Fast tests without race detector |
+| `make lint` | Run all linters |
+| `make wire` | Generate wire dependency injection |
+| `make dev` | Start development server |
+| `make docker-build` | Build Docker image |
+| `make docker-up` | Start with Docker Compose |
 
-### Usage
+---
 
-```bash
-cd apps/api
+## Multi-Tenant Organization Model
 
-# Full startup with browser (default)
-./scripts/startup.sh
+The server supports multi-tenant organizations with role-based access control:
 
-# Start without auto-opening browser
-./scripts/startup.sh --no-browser
+### Organization Roles
 
-# Development mode
-./scripts/startup.sh --dev
+| Role | Permissions |
+|:-----|:------------|
+| `super_admin` | Full access, can manage members, transfer ownership |
+| `admin` | Can manage devices, send commands, manage settings |
+| `operator` | Can view devices and telemetry |
+| `viewer` | Read-only access to assigned devices |
 
-# Production mode (default)
-./scripts/startup.sh --prod
+### Key Features
 
-# Check only (validate without starting servers)
-./scripts/startup.sh --check-only
-```
-
-### Environment Variables
-
-| Variable | Default | Description |
-|:---------|:--------|:------------|
-| `AUTO_OPEN_BROWSER` | `true` | Set to `false` to disable browser auto-open |
-| `BUILD_MODE` | `production` | Set to `development` for dev mode |
-
-### Example
-
-```bash
-# Disable browser auto-open
-AUTO_OPEN_BROWSER=false ./scripts/startup.sh
-
-# Development with custom settings
-AUTO_OPEN_BROWSER=false BUILD_MODE=development ./scripts/startup.sh
-```
-
-### Output
-
-```
-+-------------------------------------------------------------+
-  |   _   _           _        ____                           |
-  |  |_| |_|   ___   | |__    |  _|  ___  ___                 |
-  |  | | | |  / _ \  | '_ \  | |_  / _ \/ __|                |
-  |  | |_| | | (_) | | |_) | |  _|  __/\__ \                |
-  |  |___|_|  \___/  |_.__/   |_|   \___||___/               |
-  |                                                              |
-  |              SERVER STARTUP v1.0.0                          |
-  +-------------------------------------------------------------+
-
-[STEP 1: Go Server Binary]
-   /path/to/vyzorix-server exists (35M bytes)
-
-[STEP 2: Web App Build]
-   dist/client exists (89 files)
-  > Assets found:
-    JS:  40 files
-    CSS: 2 files
-    HTML: 2 files
-    Images: 2 files
-
-[STEP 3: Asset Validation]
-   Assets in sync
-   index.html exists
-   landing.html exists
-   manifest.json exists
-
-[STEP 8: Starting Servers]
-   Go server started (PID: 12345)
-   Go server health check passed
-   SSR server health check passed
-
-[STARTUP COMPLETE]
-  Go Server:   http://localhost:3000
-  SSR Server:  http://localhost:3001
-  Health:      http://localhost:3000/health
-```
+- **Organization-scoped access**: All API operations are scoped to organizations
+- **Invitation system**: Invite members via email
+- **API Keys**: Per-operator API keys for programmatic access
+- **Audit logging**: Track all operations with audit logs
 
 ---
 
 ## API Reference
 
-### Authentication Endpoints
+### REST API
+
+#### Authentication Endpoints
 
 | Method | Endpoint | Description |
 |:-------|:---------|:------------|
@@ -310,10 +234,12 @@ AUTO_OPEN_BROWSER=false BUILD_MODE=development ./scripts/startup.sh
 | `POST` | `/v1/auth/logout` | Operator logout |
 | `GET` | `/v1/auth/me` | Get current operator |
 | `PATCH` | `/v1/auth/me` | Update operator profile |
+| `POST` | `/v1/auth/mfa/enroll` | Enroll MFA |
+| `POST` | `/v1/auth/mfa/verify` | Verify MFA code |
 | `GET` | `/v1/auth/google` | Initiate Google OAuth |
 | `GET` | `/v1/auth/google/callback` | OAuth callback |
 
-### Device Endpoints
+#### Device Endpoints
 
 | Method | Endpoint | Description |
 |:-------|:---------|:------------|
@@ -324,20 +250,42 @@ AUTO_OPEN_BROWSER=false BUILD_MODE=development ./scripts/startup.sh
 | `GET` | `/v1/device/:id/stream` | WebSocket stream |
 | `DELETE` | `/v1/device/:id` | Deregister device |
 
-### Dashboard Endpoints
+#### Organization Endpoints
 
 | Method | Endpoint | Description |
 |:-------|:---------|:------------|
-| `GET` | `/v1/dashboard/devices` | List all devices (JWT required) |
+| `POST` | `/v1/organizations` | Create organization |
+| `GET` | `/v1/organizations` | List my organizations |
+| `GET` | `/v1/organizations/:id` | Get organization |
+| `POST` | `/v1/organizations/:id/invite` | Invite member |
+| `POST` | `/v1/organizations/:id/join` | Accept invitation |
 
-### Update Endpoints
+#### API Key Endpoints
 
 | Method | Endpoint | Description |
 |:-------|:---------|:------------|
-| `GET` | `/api/v1/version` | Get version manifest |
-| `HEAD` | `/api/v1/apk/:filename` | Check APK size |
+| `POST` | `/v1/api-keys` | Create API key |
+| `GET` | `/v1/api-keys` | List API keys |
+| `GET` | `/v1/api-keys/:id` | Get API key |
+| `PATCH` | `/v1/api-keys/:id` | Update API key |
+| `DELETE` | `/v1/api-keys/:id` | Revoke API key |
+| `POST` | `/v1/api-keys/:id/rotate` | Rotate API key |
 
-### Health
+### GraphQL API
+
+The server provides a comprehensive GraphQL API at `/graphql`:
+
+```bash
+# Query devices
+curl -X POST http://localhost:3000/graphql \
+  -H "Content-Type: application/json" \
+  -H "Cookie: vyz_session=<session>" \
+  -d '{"query": "query { devices(organizationId: \"org-123\") { id name online } }"}'
+```
+
+See [GraphQL README](./apps/api/internal/api/graphql/README.md) for full documentation.
+
+### Health Check
 
 | Method | Endpoint | Description |
 |:-------|:---------|:------------|
@@ -350,30 +298,38 @@ AUTO_OPEN_BROWSER=false BUILD_MODE=development ./scripts/startup.sh
 ### Run All Tests
 
 ```bash
-# Go backend tests
-go test ./...
+cd apps/api
 
-# Go with coverage
-go test -coverprofile=coverage.out ./...
+# Go backend tests (with race detector)
+make test
 
-# Frontend tests
-cd src && npx vitest run
+# Fast tests without race detector
+make test-quick
 
-# Frontend with coverage
-cd src && npx vitest run --coverage
+# With coverage
+make test-coverage
 ```
-
-### Test Results
-
-| Suite | Status |
-|:------|:-------|
-| Go Tests (12 packages) | [OK] All passing |
-| Vitest Tests (79 tests) | [OK] All passing |
-| Build | [OK] Successful |
 
 ---
 
 ## Deployment
+
+### Docker
+
+```bash
+# Build and run
+docker build -t vyzorix-update-server:latest -f apps/api/Dockerfile .
+docker run -p 3000:3000 \
+  -e JWT_SECRET=your-secret \
+  -e TOKEN_SECRET=your-secret \
+  -v ./data:/data \
+  vyzorix-update-server:latest
+
+# Or with Docker Compose
+docker compose up -d
+```
+
+See [Docker README](./apps/api/README_DOCKER.md) for full deployment guide.
 
 ### Render (Recommended)
 
@@ -381,20 +337,6 @@ cd src && npx vitest run --coverage
 2. Use `render.yaml` as the blueprint
 3. Set environment variables in Render dashboard
 4. The `/data` disk persists SQLite across redeploys
-
-### Docker
-
-```bash
-# Build image
-docker build -t vyzorix-update-server .
-
-# Run container
-docker run -p 3000:3000 \
-  -e DATABASE_URL=/data/vyzorix.db \
-  -e JWT_SECRET=your-secret \
-  -v ./data:/data \
-  vyzorix-update-server
-```
 
 ---
 
@@ -408,50 +350,36 @@ docker run -p 3000:3000 \
 | [Device Registration](./doc/DEVICE_REGISTRATION.md) | Device lifecycle |
 | [Command Security](./doc/COMMAND_SECURITY.md) | HMAC signing details |
 | [Setup Guide](./SETUP-GUIDE.md) | Google OAuth, Resend, Render setup |
+| [Docker Guide](./apps/api/README_DOCKER.md) | Docker deployment |
+| [GraphQL API](./apps/api/internal/api/graphql/README.md) | GraphQL API reference |
 
 ---
 
-## Development
-
-### Project Structure
+## Project Structure
 
 ```
 vyzorix-update-server/
- cmd/
-    mockserver/           # Phase 1 mock server
- controllers/               # HTTP handlers
- hub/                      # WebSocket broker
- middleware/               # Auth, CORS, rate limit
- models/                   # Type definitions
- security/                # JWT, HMAC, password
- services/                # FCM, email
- storage/                  # SQLite operations
- src/                      # React frontend
-    lib/                  # API clients, config
-    hooks/                # Custom React hooks
-    components/          # UI components
-    routes/               # Page routes
- doc/                      # Documentation
+├── apps/
+│   ├── api/                    # Go backend server
+│   │   ├── cmd/api/           # Main entry point
+│   │   ├── internal/
+│   │   │   ├── api/           # HTTP handlers, middleware, GraphQL
+│   │   │   ├── application/   # Business logic services
+│   │   │   ├── audit/         # Audit logging
+│   │   │   ├── domain/        # Domain models and interfaces
+│   │   │   ├── infrastructure/# DB, email, Firebase, etc.
+│   │   │   └── ws/            # WebSocket hub
+│   │   ├── Makefile
+│   │   └── README_DOCKER.md
+│   ├── web/                    # React frontend
+│   └── VyzoriX_mobile/        # Android client
+├── packages/                   # Shared packages
+│   ├── types/                 # TypeScript types
+│   ├── config/                # Shared config
+│   └── ui/                    # Shared UI components
+├── tooling/                   # Build and deployment tools
+└── doc/                       # Documentation
 ```
-
-### Available Scripts
-
-```bash
-# Backend
-go build -o bin/server .       # Build server
-go run .                       # Run server
-go test ./...                  # Run tests
-golangci-lint run             # Lint
-
-# Frontend
-cd src && npm install          # Install deps
-npm run dev                    # Dev server
-npm run build                  # Production build
-npm run lint                   # Lint
-npx vitest run                 # Run tests
-```
-
-
 
 ---
 
@@ -476,5 +404,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **[↑ Back to top](#vyzorix-update-server)**
 
 development by [VinnsEdesigner](https://github.com/VinnsEdesigner)
-
-# Empty commit marker

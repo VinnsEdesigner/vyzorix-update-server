@@ -918,19 +918,6 @@ func (r *Resolver) convertThresholdEvents(events []appmetrics.ThresholdEventDTO)
 	return result
 }
 
-func (r *Resolver) convertLogEvents(events []logs.LogEvent) []map[string]interface{} {
-	result := make([]map[string]interface{}, 0, len(events))
-	for _, e := range events {
-		result = append(result, map[string]interface{}{
-			"id":        e.ID,
-			"type":      e.Type,
-			"timestamp": e.Timestamp,
-			"data":      e.Data,
-		})
-	}
-	return result
-}
-
 func (r *Resolver) convertCommandHistory(commands []cmdapp.CommandEntry) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0, len(commands))
 	for _, c := range commands {
@@ -988,6 +975,7 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to get device inspection")
 	}
+	registeredAt := ""
 	if inspection.Registration.RegisteredAt != nil {
 		registeredAt = inspection.Registration.RegisteredAt.Format(time.RFC3339)
 	}
@@ -1111,5 +1099,77 @@ func (r *Resolver) GetDeviceTimeline(p graphql.ResolveParams) (interface{}, erro
 		"events":     events,
 		"hasMore":    resp.Pagination.HasMore,
 		"nextCursor": resp.Pagination.NextCursor,
+	}, nil
+}
+
+// GetDeviceLogs resolves the deviceLogs query.
+func (r *Resolver) GetDeviceLogs(p graphql.ResolveParams) (interface{}, error) {
+	ctx := p.Context
+
+	imei, ok := p.Args["imei"].(string)
+	if !ok || imei == "" {
+		return nil, r.Presenter.BadRequestError("IMEI is required")
+	}
+
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok || orgID == "" {
+		return nil, r.Presenter.BadRequestError("organizationId is required")
+	}
+
+	op, ok := gqlcontext.GetOperator(ctx)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+
+	// Check if operator is a member of the organization
+	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		return nil, r.Presenter.ForbiddenError("not a member of this organization")
+	}
+
+	if r.LogsSvc == nil {
+		return nil, r.Presenter.InternalError("logs service not available")
+	}
+
+	eventType, _ := p.Args["type"].(string)
+	startTime, _ := p.Args["startTime"].(int64)
+	endTime, _ := p.Args["endTime"].(int64)
+	limit, _ := p.Args["limit"].(int)
+	cursor, _ := p.Args["cursor"].(string)
+
+	if limit <= 0 {
+		limit = 100
+	}
+
+	req := &logs.ListLogsRequest{
+		DeviceID:  imei,
+		EventType: eventType,
+		StartTime: startTime,
+		EndTime:   endTime,
+		Limit:     limit,
+		Cursor:    cursor,
+	}
+
+	resp, err := r.LogsSvc.GetDeviceLogs(ctx, req)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to get device logs")
+	}
+
+	events := make([]map[string]interface{}, 0, len(resp.Events))
+	for _, e := range resp.Events {
+		events = append(events, map[string]interface{}{
+			"id":        e.ID,
+			"type":      e.Type,
+			"timestamp": e.Timestamp,
+			"data":      e.Data,
+		})
+	}
+
+	return map[string]interface{}{
+		"events": events,
+		"pagination": map[string]interface{}{
+			"limit":      resp.Pagination.Limit,
+			"hasMore":    resp.Pagination.HasMore,
+			"nextCursor": resp.Pagination.NextCursor,
+		},
 	}, nil
 }

@@ -13,14 +13,12 @@ This guide covers building and running the Vyzorix Update Server using Docker.
 ### Build the Image
 
 ```bash
-cd apps/api
-
-# Build with default tag
-docker build -t vyzorix-update-server:latest -f Dockerfile ../..
-
-# Or build from repository root
-cd ../..
+# From repository root
 docker build -t vyzorix-update-server:latest -f apps/api/Dockerfile .
+
+# Or from apps/api directory
+cd apps/api
+docker build -t vyzorix-update-server:latest .
 ```
 
 ### Run the Container
@@ -51,6 +49,12 @@ docker run -d --name vyzorix \
 | `SSR_AUTO_BUILD` | No | `false` | Auto-build web assets (not needed with pre-built) |
 | `PORT` | No | `3000` | Server port |
 | `DATABASE_URL` | No | `/data/vyzorix.db` | SQLite database path |
+| `FIREBASE_CREDENTIALS` | No | - | Firebase service account JSON |
+| `SMTP_HOST` | No | - | SMTP server host |
+| `SMTP_PORT` | No | `587` | SMTP server port |
+| `SMTP_USER` | No | - | SMTP username |
+| `SMTP_PASS` | No | - | SMTP password |
+| `SMTP_FROM` | No | - | From email address |
 
 ### Volume Mounts
 
@@ -98,7 +102,7 @@ version: '3.8'
 services:
   vyzorix:
     build:
-      context: ..
+      context: .
       dockerfile: apps/api/Dockerfile
     container_name: vyzorix-server
     restart: unless-stopped
@@ -129,13 +133,13 @@ echo "TOKEN_SECRET=your-secure-token-secret-min-32-chars" > .env
 echo "JWT_SECRET=your-secure-jwt-secret-min-32-chars" >> .env
 
 # Build and start
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop
-docker-compose down
+docker compose down
 ```
 
 ## Health Checks
@@ -240,7 +244,7 @@ lsof -i :3000
 docker port vyzorix
 ```
 
-## Image Variants
+## Image Details
 
 ### Image Size
 
@@ -249,9 +253,9 @@ docker port vyzorix
 
 The image includes:
 - Ubuntu 24.04 base
-- Go 1.24 runtime
+- Go 1.26 runtime
 - Node.js 18 runtime
-- SQLite
+- SQLite with WAL mode
 - Full node_modules (for SSR)
 
 ### Multi-Platform Build
@@ -263,7 +267,7 @@ docker buildx build \
   -t vyzorix-update-server:latest \
   -f apps/api/Dockerfile \
   --push \
-  ..
+  .
 ```
 
 ## Cleanup
@@ -286,3 +290,5 @@ docker volume rm vyzorix_data
 3. Configure monitoring and alerting
 4. Review and apply security hardening options
 5. Set up backup strategy for `/data` volume
+6. Configure Firebase Cloud Messaging for push notifications
+7. Set up email notifications via SMTP

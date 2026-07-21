@@ -238,8 +238,8 @@ func (s *Service) SetOnline(ctx context.Context, deviceID string, online bool) e
 	return s.deviceRepo.SetOnline(ctx, deviceID, online)
 }
 
-// List returns a paginated list of devices.
-func (s *Service) List(ctx context.Context, limit, offset int) (*dto.DeviceListResponse, error) {
+// List returns a paginated list of devices filtered by organization.
+func (s *Service) List(ctx context.Context, orgID string, limit, offset int) (*dto.DeviceListResponse, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -248,7 +248,57 @@ func (s *Service) List(ctx context.Context, limit, offset int) (*dto.DeviceListR
 		limit = 100
 	}
 
-	devices, total, err := s.deviceRepo.List(ctx, limit, offset)
+	devices, total, err := s.deviceRepo.List(ctx, orgID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	response := &dto.DeviceListResponse{
+		Devices: make([]dto.DeviceResponse, len(devices)),
+		Pagination: dto.PaginationInfo{
+			Total: total,
+			Limit: limit,
+		},
+	}
+
+	for i, d := range devices {
+		response.Devices[i] = dto.DeviceResponse{
+			ID:           d.ID,
+			IMEI:         d.ID,
+			DeviceName:   d.DeviceName,
+			Model:        d.Model,
+			Manufacturer: d.Manufacturer,
+			OSVersion:    d.OSVersion,
+			AppVersion:  d.AppVersion,
+			Status:       d.GetStatus(),
+			Online:       d.Online,
+			RegisteredAt: d.RegisteredAt,
+			LastSeen:     d.LastSeen,
+		}
+	}
+
+	// Calculate pagination info
+	totalPages := 0
+	if total > 0 {
+		totalPages = (total + limit - 1) / limit
+	}
+	response.Pagination.Page = (offset / limit) + 1
+	response.Pagination.TotalPages = totalPages
+
+	return response, nil
+}
+
+// ListByOrganization returns a paginated list of devices for an organization.
+func (s *Service) ListByOrganization(ctx context.Context, orgID string, limit, offset int) (*dto.DeviceListResponse, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+
+	if limit > 100 {
+		limit = 100
+	}
+
+	devices, total, err := s.deviceRepo.ListByOrganizationPaginated(ctx, orgID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -335,9 +385,9 @@ func (s *Service) GetDevice(ctx context.Context, deviceID string) (*device.Devic
 	return s.deviceRepo.FindByID(ctx, deviceID)
 }
 
-// Count returns the total number of devices.
-func (s *Service) Count(ctx context.Context) (int, error) {
-	return s.deviceRepo.Count(ctx)
+// Count returns the total number of devices filtered by organization.
+func (s *Service) Count(ctx context.Context, orgID string) (int, error) {
+	return s.deviceRepo.Count(ctx, orgID)
 }
 
 // CountByOperator returns the total number of devices for an operator.
@@ -412,8 +462,8 @@ func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.Device
 
 	offset := (query.Page - 1) * query.Limit
 
-	// Get all devices and filter
-	allDevices, _, err := s.deviceRepo.List(ctx, 10000, 0) // Get all for filtering
+	// Get devices filtered by organization using the paginated method
+	allDevices, _, err := s.deviceRepo.ListByOrganizationPaginated(ctx, query.OrganizationID, 10000, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -421,11 +471,6 @@ func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.Device
 	// Apply filters
 	var filtered []*device.Device
 	for _, d := range allDevices {
-		// Apply organization filter first (required for multi-tenant)
-		if query.OrganizationID != "" && d.OrganizationID != query.OrganizationID {
-			continue
-		}
-
 		// Apply status filter
 		if query.Status != "" && query.Status != "all" {
 			isOnline := d.Online

@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"time"
+
+	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 )
 
 // ErrSettingsNotFound is returned when device settings are not found.
@@ -200,7 +202,7 @@ func ResolveThresholds(deviceSettings *DeviceSettings, orgThresholds *Thresholds
 }
 
 // FromOrgThresholds converts organization thresholds to device thresholds.
-func FromOrgThresholds(org *Thresholds) *Thresholds {
+func FromOrgThresholds(org *orgdomain.Thresholds) *Thresholds {
 	if org == nil {
 		return nil
 	}

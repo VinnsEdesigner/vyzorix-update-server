@@ -38,14 +38,6 @@ func NewExecuteHandler(commandService *cmdSvc.Service, deviceService *device.Ser
 	}
 }
 
-// verifyDeviceOwnership verifies the device belongs to the operator (DOA check).
-// Returns unauthorized if the device doesn't exist OR doesn't belong to the operator.
-// This prevents enumeration attacks by returning the same error for both cases.
-func (h *ExecuteHandler) verifyDeviceOwnership(ctx context.Context, deviceID, operatorID string) error {
-	_, err := h.deviceService.GetDeviceByOperator(ctx, deviceID, operatorID)
-	return err
-}
-
 // verifyDeviceInOrganization verifies the device belongs to the organization.
 func (h *ExecuteHandler) verifyDeviceInOrganization(ctx context.Context, deviceID, orgID string) error {
 	_, err := h.deviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
