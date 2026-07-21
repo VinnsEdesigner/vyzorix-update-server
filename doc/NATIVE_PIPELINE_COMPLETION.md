@@ -180,11 +180,11 @@ When native engine is unavailable (handle = 0L):
 
 ```
 AudioPipelineController.state:
-  Idle → Initializing → Streaming ↔ Paused → Idle
-                     ↘ Error
+  Idle → Initializing → Streaming  Paused → Idle
+                      Error
 
 CaptureLifecycleController.state:
-  IDLE → PROVISIONING → ACTIVE ↔ PAUSED → STOPPED
+  IDLE → PROVISIONING → ACTIVE  PAUSED → STOPPED
 ```
 
 ---

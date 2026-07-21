@@ -88,7 +88,7 @@ def analyze_file(filepath):
 
 
 def main():
-    print("🔍 Scanning for corrupted Go files (duplicate function detection)...\n")
+    print(" Scanning for corrupted Go files (duplicate function detection)...\n")
     
     go_files = find_go_files(ROOT)
     print(f"Found {len(go_files)} Go files\n")
@@ -100,14 +100,14 @@ def main():
             all_results.append(result)
     
     if not all_results:
-        print("✅ No corrupted files found!")
+        print(" No corrupted files found!")
         return 0
     
-    print(f"⚠️  Found {len(all_results)} files with duplicate functions:\n")
+    print(f"️  Found {len(all_results)} files with duplicate functions:\n")
     print("=" * 60)
     
     for r in all_results:
-        print(f"\n❌ {r['path']}")
+        print(f"\n {r['path']}")
         for issue in r["issues"]:
             print(f"   - {issue}")
     

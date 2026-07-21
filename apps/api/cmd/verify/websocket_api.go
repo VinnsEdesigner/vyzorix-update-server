@@ -292,7 +292,7 @@ func wsVerifyMessages(_ *wsSpec, _ *wsImpl, _ string) {
 	protocols := []struct{ Direction string; Messages []string }{
 		{"Device → Server", []string{"AUTH", "TELEMETRY", "PONG", "CMD_ACK"}},
 		{"Server → Device", []string{"CMD", "PING", "ACK"}},
-		{"Dashboard ↔ Server", []string{"AUTH", "SUBSCRIBE", "UNSUBSCRIBE", "COMMAND", "TELEMETRY", "EVENT"}},
+		{"Dashboard  Server", []string{"AUTH", "SUBSCRIBE", "UNSUBSCRIBE", "COMMAND", "TELEMETRY", "EVENT"}},
 	}
 	for _, p := range protocols {
 		fmt.Printf("    %s:\n", p.Direction)

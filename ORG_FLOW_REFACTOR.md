@@ -8,7 +8,7 @@
 
 ---
 
-## 🎯 MODEL OVERVIEW
+##  MODEL OVERVIEW
 
 ### Core Principles
 - **Operators** are global identities (email, password, OAuth) - **NO global role**
@@ -54,7 +54,7 @@ DEVICE (Android Phone with Vyzorix APK)
 
 ---
 
-## 🔐 AUTHENTICATION & SESSION FLOW
+##  AUTHENTICATION & SESSION FLOW
 
 ### Login Flow
 ```
@@ -84,7 +84,7 @@ POST /v1/auth/login
 
 ---
 
-## 🏢 ORGANIZATION CREATION
+##  ORGANIZATION CREATION
 
 ### POST /v1/organizations
 
@@ -108,7 +108,7 @@ POST /v1/auth/login
 
 ---
 
-## 🛡️ ROUTE PROTECTION
+## ️ ROUTE PROTECTION
 
 ### Middleware Chain (in order)
 1. **CookieAuth** - Validates session, sets operator + session in context
@@ -119,36 +119,36 @@ POST /v1/auth/login
 
 | Route | Auth Required | Org Required | Description |
 |-------|--------------|--------------|-------------|
-| **Public Routes** | ❌ | ❌ | |
-| `/v1/auth/login` | ❌ | ❌ | Login page |
-| `/v1/auth/register` | ❌ | ❌ | Registration |
-| `/v1/auth/forgot-password` | ❌ | ❌ | Password reset flow |
-| `/v1/auth/reset-password` | ❌ | ❌ | Password reset flow |
-| `/v1/auth/refresh` | ❌ | ❌ | Token refresh |
-| `/v1/auth/verify-email` | ❌ | ❌ | Email verification |
-| `/v1/auth/resend-verification` | ❌ | ❌ | Resend verification |
-| `/v1/device/:imei/status` | ❌ | ❌ | Device public status |
-| `/v1/device/inbox` | ❌ | ❌ | Device registration inbox |
-| `/v1/device/confirm` | ❌ | ❌ | Device confirmation |
-| **Authenticated - No Org Required** | ✅ | ❌ | |
-| `/v1/auth/me` | ✅ | ❌ | Current operator profile |
-| `/v1/auth/me/settings` | ✅ | ❌ | Client settings (Android app behavior) |
-| `/v1/auth/me/notifications` | ✅ | ❌ | Personal notification preferences |
-| `/v1/auth/mfa/*` | ✅ | ❌ | MFA enrollment, verify, enable/disable, backup codes |
-| `/v1/auth/logout` | ✅ | ❌ | Logout |
-| **Authenticated - Org Required** | ✅ | ✅ | |
-| `/v1/auth/sessions/*` | ✅ | ✅ | Session management (org-scoped) |
-| `/v1/auth/client-credentials/*` | ✅ | ✅ | API key management (org-scoped) |
-| `/v1/auth/organizations` | ✅ | ❌ | List operator's organizations |
-| `/v1/auth/organizations/select` | ✅ | ❌ | Select active organization |
-| `/v1/organizations/*` | ✅ | ✅ | All organization routes |
-| `/v1/dashboard/*` | ✅ | ✅ | Dashboard, device stats |
-| `/v1/devices/*` | ✅ | ✅ | Device management |
-| `/v1/command/*` | ✅ | ✅ | Command dispatch |
-| `/v1/telemetry/*` | ✅ | ✅ | Telemetry history |
-| `/v1/connections/*` | ✅ | ✅ | Connection status |
-| `/v1/updates/*` | ✅ | ✅ | Update management |
-| `/v1/admin/*` | ✅ | ✅ | SuperAdmin routes |
+| **Public Routes** |  |  | |
+| `/v1/auth/login` |  |  | Login page |
+| `/v1/auth/register` |  |  | Registration |
+| `/v1/auth/forgot-password` |  |  | Password reset flow |
+| `/v1/auth/reset-password` |  |  | Password reset flow |
+| `/v1/auth/refresh` |  |  | Token refresh |
+| `/v1/auth/verify-email` |  |  | Email verification |
+| `/v1/auth/resend-verification` |  |  | Resend verification |
+| `/v1/device/:imei/status` |  |  | Device public status |
+| `/v1/device/inbox` |  |  | Device registration inbox |
+| `/v1/device/confirm` |  |  | Device confirmation |
+| **Authenticated - No Org Required** |  |  | |
+| `/v1/auth/me` |  |  | Current operator profile |
+| `/v1/auth/me/settings` |  |  | Client settings (Android app behavior) |
+| `/v1/auth/me/notifications` |  |  | Personal notification preferences |
+| `/v1/auth/mfa/*` |  |  | MFA enrollment, verify, enable/disable, backup codes |
+| `/v1/auth/logout` |  |  | Logout |
+| **Authenticated - Org Required** |  |  | |
+| `/v1/auth/sessions/*` |  |  | Session management (org-scoped) |
+| `/v1/auth/client-credentials/*` |  |  | API key management (org-scoped) |
+| `/v1/auth/organizations` |  |  | List operator's organizations |
+| `/v1/auth/organizations/select` |  |  | Select active organization |
+| `/v1/organizations/*` |  |  | All organization routes |
+| `/v1/dashboard/*` |  |  | Dashboard, device stats |
+| `/v1/devices/*` |  |  | Device management |
+| `/v1/command/*` |  |  | Command dispatch |
+| `/v1/telemetry/*` |  |  | Telemetry history |
+| `/v1/connections/*` |  |  | Connection status |
+| `/v1/updates/*` |  |  | Update management |
+| `/v1/admin/*` |  |  | SuperAdmin routes |
 
 ### Public Routes (No Organization Required)
 - `/v1/auth/register`, `/v1/auth/login`
@@ -179,26 +179,26 @@ POST /v1/auth/login
 **No Organization Created:**
 | Settings Area | Accessible | Notes |
 |--------------|------------|-------|
-| Profile (`/v1/auth/me`) | ✅ | Basic operator info |
-| Client Settings (`/v1/auth/me/settings`) | ✅ | Android app behavior |
-| Notifications (`/v1/auth/me/notifications`) | ✅ | Personal notification prefs |
-| MFA (`/v1/auth/mfa/*`) | ✅ | Auth required, no org |
-| Sessions (`/v1/auth/sessions/*`) | 🔒 | Locked - requires org |
-| API Keys (`/v1/auth/client-credentials/*`) | 🔒 | Locked - requires org |
-| Organization Settings | 🔒 | No org exists yet |
-| Device Settings | 🔒 | No org exists yet |
+| Profile (`/v1/auth/me`) |  | Basic operator info |
+| Client Settings (`/v1/auth/me/settings`) |  | Android app behavior |
+| Notifications (`/v1/auth/me/notifications`) |  | Personal notification prefs |
+| MFA (`/v1/auth/mfa/*`) |  | Auth required, no org |
+| Sessions (`/v1/auth/sessions/*`) |  | Locked - requires org |
+| API Keys (`/v1/auth/client-credentials/*`) |  | Locked - requires org |
+| Organization Settings |  | No org exists yet |
+| Device Settings |  | No org exists yet |
 
 **Organization Exists:**
 | Settings Area | Accessible | Notes |
 |--------------|------------|-------|
-| Profile | ✅ | |
-| Client Settings | ✅ | |
-| Notifications | ✅ | |
-| MFA | ✅ | Auth required, no org |
-| Sessions | ✅ | Org-scoped session management |
-| API Keys | ✅ | Org-scoped API keys |
-| Organization Settings | ✅ | Full access |
-| Device Settings | ✅ | Full access |
+| Profile |  | |
+| Client Settings |  | |
+| Notifications |  | |
+| MFA |  | Auth required, no org |
+| Sessions |  | Org-scoped session management |
+| API Keys |  | Org-scoped API keys |
+| Organization Settings |  | Full access |
+| Device Settings |  | Full access |
 
 ---
 
@@ -214,7 +214,7 @@ GET/PATCH /v1/auth/me/notifications
 
 ---
 
-## 📱 CLIENT SETTINGS (Operator-Level)
+##  CLIENT SETTINGS (Operator-Level)
 
 These settings control the **Android app behavior** on the device.
 
@@ -278,7 +278,7 @@ GET/PATCH /v1/devices/:imei/thresholds
 
 ---
 
-## 📊 THRESHOLDS SPECIFICATION
+##  THRESHOLDS SPECIFICATION
 
 ### Default Values
 ```json
@@ -293,7 +293,7 @@ GET/PATCH /v1/devices/:imei/thresholds
 
 ---
 
-## 🔄 API ENDPOINT SUMMARY
+##  API ENDPOINT SUMMARY
 
 ### Public Authentication (No Auth Required)
 | Method | Endpoint | Description |
@@ -414,7 +414,7 @@ GET/PATCH /v1/devices/:imei/thresholds
 
 ---
 
-## 🗄️ DATABASE SCHEMA
+## ️ DATABASE SCHEMA
 
 ### organization_settings (NEW)
 ```sql
@@ -448,9 +448,9 @@ CREATE TABLE device_settings (
 
 ---
 
-## 📋 IMPLEMENTATION CHECKLIST
+##  IMPLEMENTATION CHECKLIST
 
-### Phase 1: Core Organization Flow ✅ DONE
+### Phase 1: Core Organization Flow  DONE
 - [x] Operator struct (no global role)
 - [x] Organization entity with description
 - [x] Membership linking operators to orgs
@@ -461,7 +461,7 @@ CREATE TABLE device_settings (
 - [x] Organization selection endpoint
 - [x] Description required validation
 
-### Phase 2: Settings Foundation ✅ DONE
+### Phase 2: Settings Foundation  DONE
 - [x] Operator client settings (Android app behavior)
 - [x] Operator notification preferences
 - [x] organization_settings table
@@ -471,14 +471,14 @@ CREATE TABLE device_settings (
 - [x] device_settings CRUD endpoints
 - [x] Threshold resolution: device → org → default
 
-### Phase 3: Cleanup ✅ DONE
+### Phase 3: Cleanup  DONE
 - [x] Remove deprecated operator threshold endpoints (/v1/auth/me/thresholds)
 - [x] Remove ThresholdService from GraphQL layer
 - [x] Remove operator.thresholds from API responses
 - [x] Wire new device/org settings repos to metrics and event processor
 - [x] Clean up all backward compatibility code
 
-### Phase 4: Role Management ✅ DONE
+### Phase 4: Role Management  DONE
 - [x] Member role update endpoints (PATCH /v1/organizations/:id/members/:memberId)
 - [x] Admin can promote/demote members (role update with permission checks)
 - [x] Super_admin protection (cannot change to super_admin, cannot remove last super_admin)
@@ -488,7 +488,7 @@ CREATE TABLE device_settings (
 
 ---
 
-## 🔑 ROLE SYSTEM
+##  ROLE SYSTEM
 
 | Role | Level | Permissions |
 |------|-------|-------------|
@@ -501,7 +501,7 @@ CREATE TABLE device_settings (
 
 ---
 
-## 📱 DEVICE LIFECYCLE
+##  DEVICE LIFECYCLE
 
 ### Device States
 | State | Description |
@@ -523,35 +523,35 @@ CREATE TABLE device_settings (
 
 ---
 
-## ✅ VERIFIED IMPLEMENTATIONS
+##  VERIFIED IMPLEMENTATIONS
 
 ### Create Organization
-- ✅ Role validation: only "super_admin" or "admin" accepted
-- ✅ Description required
-- ✅ Name defaults to "personal"
-- ✅ MaxMembers defaults to 100
-- ✅ Operator added as member
-- ✅ LastOrganizationID updated
+-  Role validation: only "super_admin" or "admin" accepted
+-  Description required
+-  Name defaults to "personal"
+-  MaxMembers defaults to 100
+-  Operator added as member
+-  LastOrganizationID updated
 
 ### Login Auto-Selection
-- ✅ 0 memberships → needs_organization: true
-- ✅ 1 membership → auto-selected
-- ✅ 2+ with valid LastOrganizationID → auto-selected
-- ✅ 2+ without LastOrganizationID → needs_organization: true
+-  0 memberships → needs_organization: true
+-  1 membership → auto-selected
+-  2+ with valid LastOrganizationID → auto-selected
+-  2+ without LastOrganizationID → needs_organization: true
 
 ### Route Protection
-- ✅ Dashboard routes require organization context
-- ✅ Device routes require organization context
-- ✅ Organization routes require membership
+-  Dashboard routes require organization context
+-  Device routes require organization context
+-  Organization routes require membership
 
 ### Session Tracking
-- ✅ Session.SelectedOrganizationID field exists
-- ✅ Updated on login
-- ✅ Updated on organization switch
+-  Session.SelectedOrganizationID field exists
+-  Updated on login
+-  Updated on organization switch
 
 ---
 
-## 📊 GRAPHQL API
+##  GRAPHQL API
 
 The GraphQL API provides full parity with the REST API for organization and member management.
 

@@ -262,7 +262,7 @@ module.exports = withTamagui(config, {
  Triggers frame-accurate, hardware-accelerated physics animations.
 
 
- ⚠️ Network Cleartext & API Sandbox Verification
+ ️ Network Cleartext & API Sandbox Verification
 
 
  As this UI system maps directly to your active Go Gin server instances, verify your backend connection profiles. Maintain secure cross-origin settings inside the Go Gin router definitions to handle both local dev sandboxes and live web routes without causing security blocks.

@@ -8,7 +8,7 @@ import (
 // InboxStatus represents the status of an inbox entry.
 // Implements the 5-state model from SPEC:
 // PENDING -> ACKNOWLEDGED -> APPROVING -> APPROVED
-//              ↘ REJECTED ↗                      ↘ (device confirms) -> REGISTERED (external)
+//               REJECTED                        (device confirms) -> REGISTERED (external)
 // StatusExpired for auto-cleanup after 30 days
 type InboxStatus string
 
