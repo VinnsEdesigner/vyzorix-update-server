@@ -37,6 +37,7 @@ func DefaultTelemetryHistoryConfig() *TelemetryHistoryConfig {
 type TelemetryHistoryHandler struct {
 	log           *slog.Logger
 	telemetryRepo *storage.TelemetryRepository
+	deviceRepo    *storage.DeviceRepository
 	config        *TelemetryHistoryConfig
 }
 
@@ -44,6 +45,7 @@ type TelemetryHistoryHandler struct {
 func NewTelemetryHistoryHandler(
 	log *slog.Logger,
 	telemetryRepo *storage.TelemetryRepository,
+	deviceRepo *storage.DeviceRepository,
 	cfg *TelemetryHistoryConfig,
 ) *TelemetryHistoryHandler {
 	if cfg == nil {
@@ -53,6 +55,7 @@ func NewTelemetryHistoryHandler(
 	return &TelemetryHistoryHandler{
 		log:           log,
 		telemetryRepo: telemetryRepo,
+		deviceRepo:    deviceRepo,
 		config:        cfg,
 	}
 }
