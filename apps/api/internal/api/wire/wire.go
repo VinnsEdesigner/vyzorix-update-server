@@ -16,7 +16,9 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	infraConfig "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
@@ -32,6 +34,8 @@ import (
 // ServerDependencies contains all dependencies needed to create a Server.
 type ServerDependencies struct {
 	FCMNotifier          fcm.Notifier
+	AppCheckVerifier     *appcheck.Verifier
+	DeviceDeletionWorker *worker.DeviceDeletionWorker
 	OperatorRepo        operator.Repository
 	EmailService        *emailService.Service
 	CommandService      *command.Service
@@ -137,6 +141,7 @@ func WireServer(deps ServerDependencies) *ServerResult {
 		Hub:                deps.Hub,
 		CommandService:     deps.CommandService,
 		FCMNotifier:        deps.FCMNotifier,
+		AppCheckVerifier:   deps.AppCheckVerifier,
 		Log:                deps.Log,
 		HmacVerifier:       result.HmacVerifier,
 		DB:                 deps.DB,

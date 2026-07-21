@@ -29,8 +29,10 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
@@ -393,6 +395,37 @@ func ProvideFCMNotifier(log *slog.Logger, cfg config.Config) fcm.Notifier {
 	return fcm.NewEnhancedNotifier(fcmClient, fcm.DefaultFCMConfig())
 }
 
+// ProvideAppCheckVerifier creates the Firebase App Check verifier.
+// Returns nil if FIREBASE_CREDENTIALS is not configured.
+func ProvideAppCheckVerifier(log *slog.Logger, cfg config.Config) (*appcheck.Verifier, error) {
+	if cfg.FirebaseCreds == "" {
+		log.Warn("Firebase credentials not configured, App Check disabled")
+		return nil, nil
+	}
+	verifier, err := appcheck.NewVerifier(log, cfg.FirebaseCreds, cfg.FirebaseAppID)
+	if err != nil {
+		return nil, err
+	}
+	return verifier, nil
+}
+
+// ProvideDeviceDeletionWorker creates the background worker for scheduled device deletion.
+// Returns nil if the worker is disabled.
+func ProvideDeviceDeletionWorker(deviceRepo *storage.DeviceRepository, log *slog.Logger, cfg config.Config) *worker.DeviceDeletionWorker {
+	if !cfg.DeviceDeletionEnabled {
+		log.Info("device deletion worker disabled via config")
+		return nil
+	}
+	interval := time.Duration(cfg.DeviceDeletionIntervalMinutes) * time.Minute
+	if interval <= 0 {
+		interval = 5 * time.Minute // default 5 minutes
+	}
+	w := worker.NewDeviceDeletionWorker(deviceRepo, log, interval)
+	w.Start()
+	log.Info("device deletion worker started", "interval", interval.String())
+	return w
+}
+
 // ProvideMiddlewareFactory creates the middleware factory.
 func ProvideMiddlewareFactory(
 	log *slog.Logger,
@@ -671,6 +704,8 @@ func ProvideServerDependencies(
 	metrics *metrics.Metrics,
 	hubResult *HubResult,
 	fcmNotifier fcm.Notifier,
+	appCheckVerifier *appcheck.Verifier,
+	deviceDeletionWorker *worker.DeviceDeletionWorker,
 	factory *middleware.MiddlewareFactory,
 	rateLimiter *middleware.RateLimiter,
 	lockout *middleware.Lockout,
@@ -685,6 +720,8 @@ func ProvideServerDependencies(
 ) *ServerDependencies {
 	return &ServerDependencies{
 		FCMNotifier:         fcmNotifier,
+		AppCheckVerifier:    appCheckVerifier,
+		DeviceDeletionWorker: deviceDeletionWorker,
 		OperatorRepo:        operatorRepo,
 		RateLimiter:         rateLimiter,
 		Hub:                 hubResult.Hub,

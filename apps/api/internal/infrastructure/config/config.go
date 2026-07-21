@@ -119,6 +119,8 @@ type Config struct {
 	AuditLogPath             string
 	DeviceSecret             string
 	FirebaseAppID            string // Firebase App ID for App Check validation
+	DeviceDeletionEnabled     bool   // Enable background worker for device deletion
+	DeviceDeletionIntervalMinutes int // Interval in minutes for device deletion worker
 }
 
 // DiagnosticsConfig holds configuration for the diagnostics API.
@@ -279,6 +281,10 @@ func Load() (Config, error) {
 	// Firebase App ID for App Check validation
 	c.FirebaseAppID = os.Getenv("FIREBASE_APP_ID")
 
+	// Device deletion worker configuration
+	c.DeviceDeletionEnabled = getBool("DEVICE_DELETION_ENABLED", false)
+	c.DeviceDeletionIntervalMinutes = getenvInt("DEVICE_DELETION_INTERVAL_MINUTES", 5)
+
 	return c, nil
 }
 
@@ -303,6 +309,20 @@ func getBool(k string, fallback bool) bool {
 	}
 
 	return b
+}
+
+func getenvInt(k string, fallback int) int {
+	v := strings.TrimSpace(os.Getenv(k))
+	if v == "" {
+		return fallback
+	}
+
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return fallback
+	}
+
+	return n
 }
 
 func splitCSV(v string) []string {
