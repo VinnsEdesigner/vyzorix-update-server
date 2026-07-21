@@ -75,49 +75,113 @@
 ## Architecture
 
 ```
-                           
-                                 VYZORIX CONTROL PLATFORM       
-                           
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         VYZORIX UPDATE SERVER                               │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-    
-                              Frontend (React)                             
-        
-                          TanStack Start Router                          
-        Dashboard    Device    Diagnostics    Alerts    Settings   
-        
-             
-       WS Stream       Config         Logs           Operator   
-       useDevice       useVyzorix      useLogs        Auth       
-       Stream          Config                        useAuth     
-             
-    
-                                      
-                              WebSocket + REST + GraphQL
-                                      
-    
-                              Backend (Go)                                 
-        
-                               Gin HTTP Router                           
-        /v1/auth/*    /v1/device/*    /graphql/*    /healthz           
-        
-                       
-        WebSocket Hub                           Services                
-        /v1/device/:id/                         
-        stream                                FCM Notifier            
-                        (SafeNotifier)          
-                                                     
-         
-                          Middleware Stack                                
-        CORS Handler    JWT Auth    Rate Limiter    Request Logger    
-         
-    
-                                      
-    
-                             Storage Layer                                  
-                          SQLite (WAL Mode)                                 
-       	       Operators    Sessions    Devices    Commands    Secrets     
-	       Organizations  Memberships  Invitations  API Keys     
-    
+                              ┌─────────────┐
+                              │   Clients   │
+                              │ (Android)   │
+                              └──────┬──────┘
+                                     │
+                                     │ HTTP/HTTPS + WebSocket
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           GIN HTTP SERVER (Go)                              │
+│                              Port 3000                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ROUTES                                                                   │
+│  ┌─────────────┬──────────────┬────────────┬──────────┬────────────────┐  │
+│  │ /v1/auth/* │ /v1/*        │ /graphql/* │ /api/*   │ /healthz       │  │
+│  │ Login       │ Devices      │ Queries    │ Updates  │ Server Health  │  │
+│  │ Register    │ Dashboard    │ Mutations  │ APK      │                │  │
+│  │ MFA         │ Commands     │ Subscript. │ Version  │                │  │
+│  │ OAuth       │ Telemetry    │            │          │                │  │
+│  │ Sessions    │ Metrics      │            │          │                │  │
+│  │ API Keys    │ Logs         │            │          │                │  │
+│  │ Orgs        │ Diagnostics  │            │          │                │  │
+│  │ Members     │ Events       │            │          │                │  │
+│  └─────────────┴──────────────┴────────────┴──────────┴────────────────┘  │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                        MIDDLEWARE STACK                               │   │
+│  │  Request ID │ Logger │ CORS │ Security │ Body Limit │ Disable Trace │   │
+│  │  Rate Limiter │ HMAC Signing │ JWT Auth │ Org Context │ API Key Auth │   │
+│  │  Organization Membership │ SSR Proxy │ Turnstile │ CSRF │ Lockout    │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                     │
+         ┌───────────────────────────┼───────────────────────────┐
+         │                           │                           │
+         ▼                           ▼                           ▼
+┌─────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐
+│  WebSocket Hub  │     │   REST Handlers      │     │   GraphQL Server    │
+│                 │     │                     │     │                     │
+│ • Device Stream │     │ • Auth Handlers     │     │ • Query Resolvers   │
+│ • Telemetry     │     │ • Device Handlers   │     │ • Mutation Resolver  │
+│ • Subscriptions │     │ • Command Handlers  │     │ • Subscription Res. │
+│ • Message Queue │     │ • Org Handlers     │     │ • Schema Types      │
+│ • Rate Limiting │     │ • Dashboard API    │     │                     │
+└────────┬────────┘     │ • Updates Handler │     │                     │
+         │               │ • Diagnostics API  │     │                     │
+         │               │ • Metrics/Logs API │     │                     │
+         │               └─────────┬─────────┘     └─────────────────────┘
+         │                         │
+         └─────────────────────────┼─────────────────────────┘
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         APPLICATION LAYER                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Services                                                                  │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────────┐  │
+│  │ AuthService  │ │DeviceService │ │OrgService    │ │ CommandService   │  │
+│  │              │ │              │ │              │ │                  │  │
+│  │ • Login      │ │ • Register   │ │ • Create    │ │ • Dispatch      │  │
+│  │ • Register   │ │ • Status     │ │ • Members   │ │ • Status        │  │
+│  │ • MFA        │ │ • Settings   │ │ • Invite    │ │ • Retry/Cancel  │  │
+│  │ • OAuth      │ │ • Transfer   │ │ • Settings  │ │ • History       │  │
+│  │ • Sessions   │ │ • Deregister │ │              │ │                  │  │
+│  │ • API Keys   │ │ • Events     │ │              │ │                  │  │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────────┘  │
+│                                                                             │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────────┐  │
+│  │MetricsService│ │UpdatesService│ │DiagService  │ │ EventProcessor   │  │
+│  │              │ │              │ │              │ │                  │  │
+│  │ • Aggregate  │ │ • Versions   │ │ • Inspect   │ │ • Broadcast     │  │
+│  │ • Timeline   │ │ • Changelog │ │ • Timeline  │ │ • Telemetry     │  │
+│  │ • Stats      │ │ • APK Dist   │ │ • Commands  │ │ • Notifications │  │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           DOMAIN LAYER                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Entities                        Repositories                              │
+│  ┌─────────────┐ ┌─────────────┐  ┌─────────────────────────────────────┐│
+│  │ Operator    │ │ Organization│  │ Device │ Command │ Operator │ Session ││
+│  │ Membership  │ │ Invitation  │  │ APIKey │ Client  │ Inbox   │ Logs   ││
+│  │ Device      │ │ APIKey      │  │ Metrics│ Updates │ Telemetry│ Org   ││
+│  │ Command     │ │ ClientCreds │  └─────────────────────────────────────┘│
+│  │ DeviceSettings│ │ OrgSettings│                                        │
+│  │ InboxEntry  │ │ Threshold   │                                          │
+│  └─────────────┘ └─────────────┘                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      INFRASTRUCTURE LAYER                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────────┐    │
+│  │ Storage  │ │  Config  │ │ Logging  │ │  Email   │ │      FCM       │    │
+│  │ SQLite   │ │  Env     │ │ slog     │ │ Resend   │ │ Firebase      │    │
+│  │ WAL Mode │ │  .env    │ │          │ │ SMTP     │ │ Cloud Message  │    │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └────────────────┘    │
+│                                                                             │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐                      │
+│  │  Crypto  │ │  OAuth   │ │ Webhook  │ │   SSR    │                      │
+│  │ HMAC/SHA │ │ GitHub   │ │ HTTP     │ │ TanStack │                      │
+│  │ JWT/Keys │ │ Google   │ │          │ │ Start    │                      │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘                      │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Tech Stack
