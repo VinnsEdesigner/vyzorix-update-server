@@ -28,7 +28,7 @@
 
 ### Real-time Device Management & OTA Updates for VyzorixAudioRouter
 
-**A production-ready C2 server for managing Android device fleets with WebSocket telemetry, FCM push notifications, and secure command dispatch.**
+**A C2 server for managing Android device fleets with WebSocket , FCM push notifications, and secure command dispatch.**
 
 ---
 
