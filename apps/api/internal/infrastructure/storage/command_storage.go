@@ -226,12 +226,12 @@ func (r *CommandRepository) Create(ctx context.Context, cmd *command.Command) er
 	}
 
 	query := `
-		INSERT INTO commands (id, device_id, dispatch_id, command, args, status, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+		INSERT INTO commands (id, device_id, dispatch_id, command, args, status, created_at, updated_at, retry_count, max_retries)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err = r.exec(ctx, query,
 		cmd.ID, cmd.DeviceID, cmd.DispatchID, cmd.Command, argsJSON,
-		cmd.Status, cmd.CreatedAt, cmd.UpdatedAt,
+		cmd.Status, cmd.CreatedAt, cmd.UpdatedAt, cmd.RetryCount, cmd.MaxRetries,
 	)
 
 	return err
@@ -582,4 +582,102 @@ func (r *CommandRepository) CancelByDispatchPrefix(ctx context.Context, prefix s
 	}
 
 	return result.RowsAffected()
+}
+
+// FindPending retrieves pending commands for the outbox worker.
+// Returns commands with status=pending where next_retry_at is null or in the past,
+// ordered by creation time (oldest first).
+func (r *CommandRepository) FindPending(ctx context.Context, limit int) ([]*command.Command, error) {
+	now := time.Now().UnixMilli()
+	query := `
+		SELECT id, device_id, dispatch_id, command, args, status,
+		       delivered_at, completed_at, created_at, updated_at, failure_reason,
+		       retry_count, max_retries, next_retry_at
+		FROM commands
+		WHERE status = 'pending' AND (next_retry_at IS NULL OR next_retry_at <= ?)
+		ORDER BY created_at ASC
+		LIMIT ?`
+
+	rows, err := r.queryRows(ctx, query, now, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	var commands []*command.Command
+
+	for rows.Next() {
+		var cmd command.Command
+		var argsJSON []byte
+		var deliveredAt, completedAt sql.NullInt64
+		var failureReason sql.NullString
+		var nextRetryAt sql.NullInt64
+
+		err := rows.Scan(
+			&cmd.ID, &cmd.DeviceID, &cmd.DispatchID, &cmd.Command, &argsJSON,
+			&cmd.Status, &deliveredAt, &completedAt, &cmd.CreatedAt, &cmd.UpdatedAt,
+			&failureReason, &cmd.RetryCount, &cmd.MaxRetries, &nextRetryAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if argsJSON != nil {
+			_ = json.Unmarshal(argsJSON, &cmd.Args)
+		}
+
+		if deliveredAt.Valid {
+			cmd.DeliveredAt = &deliveredAt.Int64
+		}
+
+		if completedAt.Valid {
+			cmd.CompletedAt = &completedAt.Int64
+		}
+
+		if failureReason.Valid {
+			cmd.FailureReason = failureReason.String
+		}
+
+		if nextRetryAt.Valid {
+			t := time.UnixMilli(nextRetryAt.Int64)
+			cmd.NextRetryAt = &t
+		}
+
+		commands = append(commands, &cmd)
+	}
+
+	return commands, rows.Err()
+}
+
+// UpdateRetryInfo updates the retry tracking fields for a command.
+func (r *CommandRepository) UpdateRetryInfo(ctx context.Context, id string, retryCount int, maxRetries int, nextRetryAt *time.Time) error {
+	now := time.Now()
+
+	var query string
+	var args []interface{}
+
+	if nextRetryAt != nil {
+		query = `UPDATE commands SET retry_count = ?, max_retries = ?, next_retry_at = ?, updated_at = ? WHERE id = ?`
+		args = []interface{}{retryCount, maxRetries, nextRetryAt.UnixMilli(), now, id}
+	} else {
+		query = `UPDATE commands SET retry_count = ?, max_retries = ?, next_retry_at = NULL, updated_at = ? WHERE id = ?`
+		args = []interface{}{retryCount, maxRetries, now, id}
+	}
+
+	result, err := r.exec(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return command.ErrNotFound
+	}
+
+	return nil
 }

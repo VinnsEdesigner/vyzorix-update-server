@@ -75,10 +75,11 @@ func ProvideDB(s *storage.SQLite) *sql.DB {
 	return s.DB()
 }
 
-// ProvideAuditLogger creates the audit logger.
-func ProvideAuditLogger(db *sql.DB, log *slog.Logger) *audit.Logger {
+// ProvideAuditLogger creates the audit logger with a dedicated file-based logger.
+func ProvideAuditLogger(db *sql.DB, cfg config.Config) *audit.Logger {
 	auditRepo := audit.NewRepository(db)
-	return audit.NewLogger(auditRepo, log, audit.DefaultLoggerConfig())
+	auditLog := logging.NewAuditFileLogger(cfg.AuditLogPath)
+	return audit.NewLogger(auditRepo, auditLog, audit.DefaultLoggerConfig())
 }
 
 // ProvidePasswordHasher creates the password hasher.

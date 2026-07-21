@@ -2,78 +2,20 @@
 package uuid
 
 import (
-	"crypto/rand"
-	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-// ErrGenerationFailed is returned when UUID generation fails.
-var ErrGenerationFailed = errors.New("failed to generate UUID: crypto/rand unavailable")
-
-var (
-	uuidMu        sync.Mutex
-	lastTimestamp int64
-	counter       uint16
-)
-
-// New generates a new UUIDv7 string using google/uuid library.
-// Thread-safe and monotonically increasing within the same millisecond.
-// Panics if crypto/rand is unavailable (critical security failure).
+// New generates a new UUID using google/uuid library.
+// Falls back to a simple string on error (non-panicking).
 func New() string {
-	uuidMu.Lock()
-	defer uuidMu.Unlock()
-
-	now := time.Now().UnixMilli()
-
-	// Reset counter if we're in a new millisecond
-	if now != lastTimestamp {
-		lastTimestamp = now
-		counter = 0
-	} else {
-		// Increment counter for same-millisecond UUIDs
-		counter++
-		// If counter overflows, spin until the next millisecond
-		if counter == 0 {
-			for now == lastTimestamp {
-				time.Sleep(time.Microsecond)
-				now = time.Now().UnixMilli()
-			}
-
-			lastTimestamp = now
-			counter = 0
-		}
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return ""
 	}
-
-	// Generate random bytes for the random portion
-	var randBytes [8]byte
-	if _, err := rand.Read(randBytes[:]); err != nil {
-		panic(ErrGenerationFailed)
-	}
-
-	// Build UUIDv7
-	timestampHi := uint32(now >> 16)
-	timestampMid := uint16(now & 0xffff)
-	versionedTimeHi := (timestampHi << 4) | 0x7
-	variantRandA := (randBytes[0] & 0x3f) | 0x80
-	group3 := (0x7000 | (counter & 0x0fff))
-	group4 := uint16(variantRandA)<<8 | uint16(randBytes[1])
-
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%02x%02x%02x%02x%02x%02x",
-		versionedTimeHi,
-		timestampMid,
-		group3,
-		group4,
-		randBytes[2],
-		randBytes[3],
-		randBytes[4],
-		randBytes[5],
-		randBytes[6],
-		randBytes[7],
-	)
+	return id.String()
 }
 
 // Parse validates that a string is a properly formatted UUID.

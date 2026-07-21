@@ -118,7 +118,7 @@ cd apps/api
 go test ./...
 ```
 
-### Run Linter (golangci-lint v2.12.2)
+### Run Linter (golangci-lint v2.12.2, version locked via `.golangci-version`)
 ```bash
 cd apps/api
 make lint-go

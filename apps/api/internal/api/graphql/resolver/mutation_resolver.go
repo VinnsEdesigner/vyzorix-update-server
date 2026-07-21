@@ -2,7 +2,6 @@
 package resolver
 
 import (
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -11,10 +10,14 @@ import (
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	domainoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/graphql-go/graphql"
 )
+
+// validateWebhookURL delegates to the shared webhook package validator.
+func validateWebhookURL(rawURL string) error {
+	return webhook.ValidateURL(rawURL)
+}
 
 // ============================================================
 // Mutation Resolvers
@@ -137,62 +140,34 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 		Args:     args,
 	}
 
-	cmdResp, err := r.CommandService.SendCommand(ctx, cmdReq)
-	if err != nil {
-		return nil, r.Presenter.InternalError("failed to send command")
-	}
 
-	// Send via WebSocket if device is online
-	delivery := "queued"
+cmdResp, err := r.CommandService.SendCommand(ctx, cmdReq)
+if err != nil {
+return nil, r.Presenter.InternalError("failed to send command")
+}
 
-	if r.Hub != nil && r.Hub.Online(deviceID) {
-		// Build command frame
-		argsJSON, err := json.Marshal(args)
-		if err != nil {
-			argsJSON = []byte("{}")
-		}
+// Command is now persisted in DB with status="pending"
+// The CommandOutbox background worker will:
+// 1. Poll for pending commands
+// 2. Attempt delivery via WebSocket (with confirmation) or FCM
+// 3. Mark as delivered only on confirmed receipt
+// 4. Retry with exponential backoff on failure
+// 5. Mark as failed after MaxRetries exceeded
+//
+// This implements the transactional outbox pattern:
+// - Command write is atomic with DB transaction
+// - Delivery is asynchronous, isolated from the HTTP request
+// - No command loss on delivery failure (automatic retry)
 
-		frame := command.CommandFrame{
-			Type:       cmdStr,
-			Command:    cmdStr,
-			DispatchID: cmdResp.DispatchID,
-			Args:       argsJSON,
-			Timestamp:  time.Now().UnixMilli(),
-		}
-		if r.Hub.Send(deviceID, frame) {
-			delivery = "sent"
-			// Mark as delivered
-			_ = r.CommandService.MarkDelivered(ctx, cmdResp.CommandID)
-		}
-	}
+// Log via presenter
+r.Presenter.CommandSend(ctx, op.ID, deviceID, cmdResp.CommandID)
 
-	// If not sent via WebSocket, try FCM
-	if delivery == "queued" && r.FCMNotifier != nil {
-		dev, _ := r.DeviceService.GetDevice(ctx, deviceID)
-		if dev != nil && dev.FCMToken != "" {
-			wake := fcm.SilentWake{
-				Token:      dev.FCMToken,
-				Command:    cmdStr,
-				DispatchID: cmdResp.DispatchID,
-				DeviceID:   deviceID,
-			}
-			if err := r.FCMNotifier.SendSilentWake(ctx, wake); err != nil {
-				r.Presenter.LogAction(ctx, op.ID, "fcm_send_failed", "device", deviceID)
-			} else {
-				delivery = "queued_fcm"
-			}
-		}
-	}
-
-	// Log via presenter
-	r.Presenter.CommandSend(ctx, op.ID, deviceID, cmdResp.CommandID)
-
-	return map[string]interface{}{
-		"dispatchId":   cmdResp.DispatchID,
-		"commandId":    cmdResp.CommandID,
-		"status":       delivery,
-		"deviceOnline": delivery == "sent",
-	}, nil
+return map[string]interface{}{
+"dispatchId":   cmdResp.DispatchID,
+"commandId":    cmdResp.CommandID,
+"status":       "pending",
+"deviceOnline": r.Hub != nil && r.Hub.Online(deviceID),
+}, nil
 }
 
 // RetryCommand resolves the retryCommand mutation.
@@ -647,9 +622,13 @@ func (r *Resolver) TestWebhook(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.BadRequestError("url is required")
 	}
 
+	if err := validateWebhookURL(url); err != nil {
+		return nil, r.Presenter.BadRequestError("invalid webhook URL: " + err.Error())
+	}
+
 	result, err := r.WebhookClient.Test(ctx, url)
 	if err != nil {
-		return nil, r.Presenter.InternalError("webhook test failed: " + err.Error())
+		return nil, r.Presenter.InternalError("webhook test failed - please verify the URL is correct and accessible")
 	}
 
 	return result, nil

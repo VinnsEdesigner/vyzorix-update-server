@@ -67,4 +67,13 @@ type Repository interface {
 
 	// CancelByDispatchPrefix marks all pending commands whose dispatch_id starts with the given prefix as cancelled.
 	CancelByDispatchPrefix(ctx context.Context, prefix string) (int64, error)
+
+	// FindPending retrieves pending commands for the outbox worker.
+	// Returns commands with status=pending where next_retry_at is null or in the past,
+	// ordered by creation time (oldest first).
+	FindPending(ctx context.Context, limit int) ([]*Command, error)
+
+	// UpdateRetryInfo updates the retry tracking fields for a command.
+	// Used by the outbox worker to track delivery attempts with exponential backoff.
+	UpdateRetryInfo(ctx context.Context, id string, retryCount int, maxRetries int, nextRetryAt *time.Time) error
 }

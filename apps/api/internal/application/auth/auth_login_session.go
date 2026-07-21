@@ -2,6 +2,7 @@ package auth
 
 import (
 "context"
+"errors"
 "strings"
 "time"
 
@@ -79,7 +80,7 @@ email := strings.ToLower(strings.TrimSpace(req.Email))
 
 op, err := s.operatorRepo.FindByEmail(ctx, email)
 if err != nil {
-if err == operator.ErrNotFound {
+if errors.Is(err, operator.ErrNotFound) {
 _ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
 return nil, nil, application.ErrInvalidCredentials
 }
@@ -154,7 +155,7 @@ email := strings.ToLower(strings.TrimSpace(req.Email))
 
 op, err := s.operatorRepo.FindByEmail(ctx, email)
 if err != nil {
-if err == operator.ErrNotFound {
+if errors.Is(err, operator.ErrNotFound) {
 _ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
 return nil, application.ErrInvalidCredentials
 }
@@ -329,7 +330,7 @@ EmailVerified: false,
 if err := s.operatorRepo.Create(ctx, op); err != nil {
 		// Handle race condition: if UNIQUE constraint fails due to concurrent registration,
 		// return ErrUserExists instead of opaque database error
-		if err == operator.ErrEmailExists {
+		if errors.Is(err, operator.ErrEmailExists) {
 			return nil, application.ErrUserExists
 		}
 		return nil, err

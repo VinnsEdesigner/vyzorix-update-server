@@ -130,7 +130,7 @@ func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) 
 func (s *Service) ApproveDevice(ctx context.Context, deviceID string) error {
 	d, err := s.deviceRepo.FindByID(ctx, deviceID)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return ErrDeviceNotFound
 		}
 		return err
@@ -156,7 +156,7 @@ func (s *Service) ApproveDevice(ctx context.Context, deviceID string) error {
 func (s *Service) GetStatus(ctx context.Context, deviceID string) (*dto.DeviceStatusResponse, error) {
 	d, err := s.deviceRepo.FindByID(ctx, deviceID)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, application.ErrDeviceNotFound
 		}
 
@@ -177,7 +177,7 @@ func (s *Service) GetStatus(ctx context.Context, deviceID string) (*dto.DeviceSt
 func (s *Service) GetStatusByOperator(ctx context.Context, deviceID, operatorID string) (*dto.DeviceStatusResponse, error) {
 	d, err := s.deviceRepo.FindByIDAndOperator(ctx, deviceID, operatorID)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, application.ErrDeviceNotFound
 		}
 
@@ -197,7 +197,7 @@ func (s *Service) GetStatusByOperator(ctx context.Context, deviceID, operatorID 
 func (s *Service) GetDeviceByOperator(ctx context.Context, deviceID, operatorID string) (*dto.DeviceResponse, error) {
 	d, err := s.deviceRepo.FindByIDAndOperator(ctx, deviceID, operatorID)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, application.ErrDeviceNotFound
 		}
 
@@ -547,7 +547,7 @@ func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.Device
 func (s *Service) GetDeviceDetail(ctx context.Context, imei string) (*dto.DeviceDetailResponse, error) {
 	d, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, device.ErrNotFound
 		}
 		return nil, err
@@ -560,7 +560,7 @@ func (s *Service) GetDeviceDetail(ctx context.Context, imei string) (*dto.Device
 func (s *Service) GetDeviceDetailByOperator(ctx context.Context, imei, operatorID string) (*dto.DeviceDetailResponse, error) {
 	d, err := s.deviceRepo.FindByIMEIAndOperator(ctx, imei, operatorID)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, device.ErrNotFound
 		}
 		return nil, err
@@ -573,7 +573,7 @@ func (s *Service) GetDeviceDetailByOperator(ctx context.Context, imei, operatorI
 func (s *Service) GetDeviceDetailByOrganization(ctx context.Context, imei, orgID string) (*dto.DeviceDetailResponse, error) {
 	d, err := s.deviceRepo.FindByIMEIAndOrganization(ctx, imei, orgID)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, device.ErrNotFound
 		}
 		return nil, err
@@ -587,7 +587,7 @@ func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgI
 	// First verify device exists and belongs to this organization
 	_, err := s.deviceRepo.FindByIMEIAndOrganization(ctx, imei, orgID)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, device.ErrNotFound
 		}
 		return nil, err
@@ -600,7 +600,7 @@ func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgI
 	if hard {
 		// Hard delete - actually remove the device
 		if err := s.deviceRepo.Delete(ctx, imei); err != nil {
-			if err == device.ErrNotFound {
+			if errors.Is(err, device.ErrNotFound) {
 				return nil, device.ErrNotFound
 			}
 			return nil, err
@@ -614,7 +614,7 @@ func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgI
 
 	// Soft delete - mark as deregistered
 	if err := s.deviceRepo.SoftDelete(ctx, imei, deregisteredAt, retentionUntil); err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, device.ErrNotFound
 		}
 		return nil, err
@@ -667,7 +667,7 @@ func (s *Service) DeregisterDevice(ctx context.Context, imei string, hard bool) 
 	if hard {
 		// Hard delete - actually remove the device
 		if err := s.deviceRepo.Delete(ctx, imei); err != nil {
-			if err == device.ErrNotFound {
+			if errors.Is(err, device.ErrNotFound) {
 				return nil, device.ErrNotFound
 			}
 			return nil, err
@@ -681,7 +681,7 @@ func (s *Service) DeregisterDevice(ctx context.Context, imei string, hard bool) 
 
 	// Soft delete - mark as deregistered
 	if err := s.deviceRepo.SoftDeleteByIMEI(ctx, imei, deregisteredAt, deletionScheduledAt); err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, device.ErrNotFound
 		}
 		return nil, err
@@ -701,7 +701,7 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 	// First verify device exists and belongs to this operator and organization
 	d, err := s.deviceRepo.FindByIDAndOrganization(ctx, imei, orgID)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, device.ErrNotFound
 		}
 		return nil, err
@@ -817,7 +817,7 @@ func (s *Service) ConfirmDevice(ctx context.Context, imei, commandSecret string)
 	// Find device by IMEI
 	d, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, ErrDeviceNotFound
 		}
 		return nil, fmt.Errorf("failed to find device: %w", err)
@@ -852,7 +852,7 @@ func (s *Service) ConfirmDevice(ctx context.Context, imei, commandSecret string)
 func (s *Service) GetDeviceByIMEI(ctx context.Context, imei string) (*device.Device, error) {
 	d, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, ErrDeviceNotFound
 		}
 		return nil, err
@@ -888,7 +888,7 @@ func (s *Service) TransferDevice(ctx context.Context, imei, sourceOrgID, targetO
 	// Get the device
 	d, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return ErrDeviceNotFound
 		}
 		return err

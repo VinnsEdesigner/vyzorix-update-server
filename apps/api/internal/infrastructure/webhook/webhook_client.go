@@ -7,11 +7,57 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"time"
 )
+
+// ErrPrivateOrInternalIP indicates the URL resolves to a private/internal IP.
+var ErrPrivateOrInternalIP = errors.New("webhook URL cannot resolve to a private or internal IP address")
+
+// ValidateURL validates a webhook URL to prevent SSRF attacks.
+// Returns nil if valid, or ErrPrivateOrInternalIP if the URL resolves to a private/internal IP.
+// Requires HTTPS scheme.
+func ValidateURL(rawURL string) error {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return errors.New("invalid URL format")
+	}
+
+	if parsedURL.Scheme != "https" {
+		return errors.New("webhook URL must use HTTPS")
+	}
+
+	hostname := parsedURL.Hostname()
+	if hostname == "" {
+		return errors.New("webhook URL must have a valid host")
+	}
+
+	// Check if hostname itself is an IP
+	if ip := net.ParseIP(hostname); ip != nil {
+		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
+			return ErrPrivateOrInternalIP
+		}
+	}
+
+	// Resolve hostname and check all IPs
+	ips, err := net.LookupIP(hostname)
+	if err != nil {
+		return nil // DNS failure will fail at connection time anyway
+	}
+
+	for _, ip := range ips {
+		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
+			return ErrPrivateOrInternalIP
+		}
+	}
+
+	return nil
+}
 
 // EventType represents the type of webhook event.
 type EventType string
@@ -134,6 +180,11 @@ func (c *Client) Test(ctx context.Context, url string) (*TestResult, error) {
 
 // Send sends a webhook notification with HMAC signature.
 func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload) error {
+	// Reject private/internal IPs to prevent SSRF
+	if err := ValidateURL(url); err != nil {
+		return fmt.Errorf("webhook URL rejected: %w", err)
+	}
+
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return err

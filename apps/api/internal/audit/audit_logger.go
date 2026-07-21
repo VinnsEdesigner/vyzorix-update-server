@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/uuid"
@@ -23,6 +24,7 @@ type AuditLogger interface {
 type Logger struct {
 	repo *Repository
 	log  *slog.Logger
+	wg   sync.WaitGroup
 }
 
 // Compile-time check that Logger implements AuditLogger.
@@ -69,13 +71,31 @@ func (l *Logger) LogEvent(ctx context.Context, entry *Entry) {
 		entry.CreatedAt = time.Now()
 	}
 
+	l.wg.Add(1)
 	go func() {
+		defer l.wg.Done()
 		if err := l.repo.Log(context.Background(), entry); err != nil {
 			l.log.Error("failed to write audit log",
 				slog.String("action", string(entry.Action)),
 				slog.String("error", err.Error()))
 		}
 	}()
+}
+
+// Shutdown waits for all pending audit log writes to complete.
+// Call this during graceful shutdown to ensure audit events are not dropped.
+func (l *Logger) Shutdown(ctx context.Context) error {
+	done := make(chan struct{})
+	go func() {
+		l.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // LoginSuccess logs a successful login event.

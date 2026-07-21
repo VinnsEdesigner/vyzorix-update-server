@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"strings"
 	"sync"
 	"time"
@@ -193,7 +194,7 @@ func (s *AuthService) LoginWithDevice(ctx context.Context, req *dto.LoginRequest
 	// Verify credentials
 	op, err := s.operatorRepo.FindByEmail(ctx, email)
 	if err != nil {
-		if err == operator.ErrNotFound {
+		if errors.Is(err, operator.ErrNotFound) {
 			// Constant-time fake hash to prevent timing attacks
 			_ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
 			return nil, nil, application.ErrInvalidCredentials

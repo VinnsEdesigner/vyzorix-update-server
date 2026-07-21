@@ -140,15 +140,12 @@ func (s *CommandSigner) GenerateTimestampMs() int64 {
 
 // HashSecret creates an Argon2id hash of the command secret for secure storage.
 // Uses OWASP 2023 recommended parameters for strong protection against brute force.
-// Panics if hashing fails since this is a critical security operation.
-func (s *CommandSigner) HashSecret(secret string) string {
+func (s *CommandSigner) HashSecret(secret string) (string, error) {
 	hash, err := password.HashSecret(secret)
 	if err != nil {
-		// crypto/rand failure is critical - panic rather than using weak fallback.
-		panic(ErrHashSecretFailed)
+		return "", ErrHashSecretFailed
 	}
-
-	return hash
+	return hash, nil
 }
 
 // VerifySecretHash verifies a secret against its Argon2id hash.

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -43,7 +44,7 @@ func (s *AuthService) UpdateOperatorName(ctx context.Context, operatorID, name s
 func (s *AuthService) UpdateSettings(ctx context.Context, operatorID string, req *UpdateSettingsRequest) (*operator.Operator, error) {
 	op, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
-		if err == operator.ErrNotFound {
+		if errors.Is(err, operator.ErrNotFound) {
 			return nil, application.ErrUnauthorized
 		}
 		return nil, err
@@ -89,7 +90,7 @@ func (s *AuthService) UpdateSettings(ctx context.Context, operatorID string, req
 func (s *AuthService) ResetSettings(ctx context.Context, operatorID string) (*operator.Operator, error) {
 	_, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
-		if err == operator.ErrNotFound {
+		if errors.Is(err, operator.ErrNotFound) {
 			return nil, application.ErrUnauthorized
 		}
 		return nil, err

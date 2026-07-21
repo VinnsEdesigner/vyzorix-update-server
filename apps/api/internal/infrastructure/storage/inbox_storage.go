@@ -54,14 +54,14 @@ func (r *InboxRepository) Create(ctx context.Context, e *inbox.InboxEntry) error
 			id, device_imei, firebase_install_id, fcm_token, device_name,
 			manufacturer, os_version, app_version, device_class, device_model, status,
 			reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
-			command_secret, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+			command_secret, organization_id, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := r.exec(ctx, query,
 		e.ID, e.IMEI, e.FirebaseInstallID, e.FCMToken, e.DeviceName,
 		e.Manufacturer, e.OSVersion, e.AppVersion, e.DeviceClass, e.Model, e.Status,
 		"", nil, "", "",
-		e.CommandSecret, e.CreatedAt, now)
+		e.CommandSecret, e.OrganizationID, e.CreatedAt, now)
 	return err
 }
 
@@ -71,7 +71,7 @@ func (r *InboxRepository) GetByID(ctx context.Context, id string) (*inbox.InboxE
 		SELECT id, device_imei, firebase_install_id, fcm_token, device_name,
 			   manufacturer, os_version, app_version, device_class, device_model, status,
 			   reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
-			   command_secret, created_at, updated_at
+			   command_secret, organization_id, created_at, updated_at
 		FROM inbox_requests WHERE id = ?`
 
 	return r.scanEntry(r.queryRow(ctx, query, id))
@@ -83,7 +83,7 @@ func (r *InboxRepository) GetByIMEI(ctx context.Context, imei string) (*inbox.In
 		SELECT id, device_imei, firebase_install_id, fcm_token, device_name,
 			   manufacturer, os_version, app_version, device_class, device_model, status,
 			   reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
-			   command_secret, created_at, updated_at
+			   command_secret, organization_id, created_at, updated_at
 		FROM inbox_requests WHERE device_imei = ?`
 
 	return r.scanEntry(r.queryRow(ctx, query, imei))
@@ -136,7 +136,7 @@ func (r *InboxRepository) ListByOperator(ctx context.Context, operatorID, orgID,
 		SELECT id, device_imei, firebase_install_id, fcm_token, device_name,
 			   manufacturer, os_version, app_version, device_class, device_model, status,
 			   reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
-			   command_secret, created_at, updated_at
+			   command_secret, organization_id, created_at, updated_at
 		FROM inbox_requests
 		` + whereClause + `
 		ORDER BY created_at DESC
@@ -170,7 +170,7 @@ func (r *InboxRepository) Update(ctx context.Context, e *inbox.InboxEntry) error
 			device_name = ?, manufacturer = ?, os_version = ?, app_version = ?,
 			device_class = ?, device_model = ?, status = ?,
 			reviewed_by = ?, reviewed_at = ?, reviewed_reason = ?,
-			rejection_reason = ?, command_secret = ?, updated_at = ?
+			rejection_reason = ?, command_secret = ?, organization_id = ?, updated_at = ?
 		WHERE id = ?`
 
 	// Map entity fields to schema columns:
@@ -198,7 +198,7 @@ func (r *InboxRepository) Update(ctx context.Context, e *inbox.InboxEntry) error
 		e.DeviceName, e.Manufacturer, e.OSVersion, e.AppVersion,
 		e.DeviceClass, e.Model, e.Status,
 		e.OperatorID, reviewedAt, reviewedReason,
-		rejectionReason, e.CommandSecret, now, e.ID)
+		rejectionReason, e.CommandSecret, e.OrganizationID, now, e.ID)
 	return err
 }
 
@@ -254,17 +254,18 @@ func (r *InboxRepository) scanEntry(row *sql.Row) (*inbox.InboxEntry, error) {
 	var reviewedAt sql.NullInt64
 	var reviewedReason, rejectionReason sql.NullString
 	var commandSecret sql.NullString
+	var organizationID sql.NullString
 	var updatedAt int64
 
 	// SELECT order: id, device_imei, firebase_install_id, fcm_token, device_name,
 	//               manufacturer, os_version, app_version, device_class, device_model, status,
 	//               reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
-	//               command_secret, created_at, updated_at
+	//               command_secret, organization_id, created_at, updated_at
 	err := row.Scan(
 		&e.ID, &e.IMEI, &e.FirebaseInstallID, &e.FCMToken, &e.DeviceName,
 		&e.Manufacturer, &e.OSVersion, &e.AppVersion, &e.DeviceClass, &e.Model, &e.Status,
 		&e.OperatorID, &reviewedAt, &reviewedReason, &rejectionReason,
-		&commandSecret, &e.CreatedAt, &updatedAt,
+		&commandSecret, &organizationID, &e.CreatedAt, &updatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, inbox.ErrInboxNotFound
@@ -275,6 +276,7 @@ func (r *InboxRepository) scanEntry(row *sql.Row) (*inbox.InboxEntry, error) {
 
 	e.UpdatedAt = updatedAt
 	e.CommandSecret = commandSecret.String
+	e.OrganizationID = organizationID.String
 
 	// DB schema has single reviewed_at column - use ApprovedAt for approved status
 	// RejectedAt remains nil since there's no separate column
@@ -296,17 +298,18 @@ func (r *InboxRepository) scanEntryRows(rows *sql.Rows) (*inbox.InboxEntry, erro
 	var reviewedAt sql.NullInt64
 	var reviewedReason, rejectionReason sql.NullString
 	var commandSecret sql.NullString
+	var organizationID sql.NullString
 	var updatedAt int64
 
 	// SELECT order: id, device_imei, firebase_install_id, fcm_token, device_name,
 	//               manufacturer, os_version, app_version, device_class, device_model, status,
 	//               reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
-	//               command_secret, created_at, updated_at
+	//               command_secret, organization_id, created_at, updated_at
 	err := rows.Scan(
 		&e.ID, &e.IMEI, &e.FirebaseInstallID, &e.FCMToken, &e.DeviceName,
 		&e.Manufacturer, &e.OSVersion, &e.AppVersion, &e.DeviceClass, &e.Model, &e.Status,
 		&e.OperatorID, &reviewedAt, &reviewedReason, &rejectionReason,
-		&commandSecret, &e.CreatedAt, &updatedAt,
+		&commandSecret, &organizationID, &e.CreatedAt, &updatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -314,6 +317,7 @@ func (r *InboxRepository) scanEntryRows(rows *sql.Rows) (*inbox.InboxEntry, erro
 
 	e.UpdatedAt = updatedAt
 	e.CommandSecret = commandSecret.String
+	e.OrganizationID = organizationID.String
 
 	// DB schema has single reviewed_at column - use ApprovedAt for approved status
 	// RejectedAt remains nil since there's no separate column

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
@@ -15,6 +14,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 
 	"github.com/gin-gonic/gin"
 )
@@ -379,9 +379,9 @@ func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 		return
 	}
 
-	// Validate URL format
-	if _, urlErr := url.Parse(req.URL); urlErr != nil {
-		h.presenter.BadRequest(c, "invalid webhook URL format")
+	// Validate URL format and block SSRF (private/internal IPs)
+	if err := webhook.ValidateURL(req.URL); err != nil {
+		h.presenter.BadRequest(c, "invalid webhook URL: "+err.Error())
 		return
 	}
 

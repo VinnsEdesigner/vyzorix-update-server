@@ -202,6 +202,8 @@ var migrations = []Migration{
 	{Apply: migrateDeviceSettings, Name: "create_device_settings_table", Version: 41},
 	// Combined post-V41 migrations: org context, inbox org, MFA tracking
 	{Apply: migratePostV41Combined, Name: "post_v41_combined", Version: 42},
+	// Command outbox retry support
+	{Apply: migrateAddCommandRetryColumns, Name: "add_command_retry_columns", Version: 43},
 }
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {
@@ -222,12 +224,24 @@ func runMigrations(db *sql.DB) error {
 			continue
 		}
 
+		// Wrap each migration in a transaction
+		tx, err := db.Begin()
+		if err != nil {
+			return fmt.Errorf("migration %d (%s) failed to begin transaction: %w", m.Version, m.Name, err)
+		}
+
 		if err := m.Apply(db); err != nil {
+			tx.Rollback()
 			return fmt.Errorf("migration %d (%s) failed: %w", m.Version, m.Name, err)
 		}
 
-		if err := setVersion(db, m.Version); err != nil {
+		if err := setVersionTx(tx, m.Version); err != nil {
+			tx.Rollback()
 			return fmt.Errorf("failed to set version after migration %d: %w", m.Version, err)
+		}
+
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("migration %d (%s) failed to commit: %w", m.Version, m.Name, err)
 		}
 
 		fmt.Printf("Applied migration %d: %s\n", m.Version, m.Name)
@@ -254,6 +268,11 @@ func getCurrentVersion(db *sql.DB) (int, error) {
 
 func setVersion(db *sql.DB, version int) error {
 	_, err := db.Exec(`INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)`, version, time.Now().UTC().UnixMilli())
+	return err
+}
+
+func setVersionTx(tx *sql.Tx, version int) error {
+	_, err := tx.Exec(`INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)`, version, time.Now().UTC().UnixMilli())
 	return err
 }
 
@@ -677,6 +696,46 @@ func migratePostV41Combined(db *sql.DB) error {
 	// Add mfa_verified_at column to auth_sessions table for MFA session tracking
 	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE auth_sessions ADD COLUMN mfa_verified_at INTEGER
+	`)
+	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
+		return err
+	}
+
+	return nil
+}
+
+// migrateAddCommandRetryColumns adds retry tracking columns for the outbox pattern.
+// This enables the background worker to track retry attempts with exponential backoff.
+func migrateAddCommandRetryColumns(db *sql.DB) error {
+	// Add retry_count column to track number of delivery attempts
+	_, err := db.ExecContext(context.Background(), `
+		ALTER TABLE commands ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0
+	`)
+	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
+		return err
+	}
+
+	// Add max_retries column to set maximum delivery attempts before marking failed
+	_, err = db.ExecContext(context.Background(), `
+		ALTER TABLE commands ADD COLUMN max_retries INTEGER NOT NULL DEFAULT 5
+	`)
+	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
+		return err
+	}
+
+	// Add next_retry_at column for exponential backoff scheduling
+	_, err = db.ExecContext(context.Background(), `
+		ALTER TABLE commands ADD COLUMN next_retry_at INTEGER
+	`)
+	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
+		return err
+	}
+
+	// Create index for efficient pending retry queries
+	_, err = db.ExecContext(context.Background(), `
+		CREATE INDEX IF NOT EXISTS idx_commands_pending_retry
+		ON commands(status, next_retry_at)
+		WHERE status = 'pending'
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
 		return err

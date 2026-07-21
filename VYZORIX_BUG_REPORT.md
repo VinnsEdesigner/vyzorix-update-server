@@ -60,7 +60,7 @@ rows.Scan(&d.ID, ..., &operatorID, &d.CreatedAt, ...)     // column order shifts
 
 ---
 
-### BUG-02 🔴 Critical → Risk score is fully device-controlled — server never recalculates it
+### BUG-02 ✅ 🔴 Critical → Risk score is fully device-controlled — server never recalculates it
 
 **File:** `apps/api/internal/application/event/event_processor.go:300, 469`
 
@@ -70,7 +70,7 @@ The event processor reads `riskScore` directly from the device-supplied telemetr
 
 ---
 
-### BUG-03 🟠 High → Token rotation hardcodes `role := "operator"` — admins lose their role on first refresh
+### BUG-03 ✅ 🟠 High → Token rotation hardcodes `role := "operator"` — admins lose their role on first refresh
 
 **File:** `apps/api/internal/application/auth/auth_refresh_token.go:86`
 
@@ -173,7 +173,7 @@ In Gin, handlers listed in `POST(path, h1, h2, ...)` execute in order. The stric
 
 ---
 
-### BUG-11 🟠 High → A device can forge signed requests for any other device's IMEI
+### BUG-11 ✅ 🟠 High → A device can forge signed requests for any other device's IMEI
 
 **File:** `apps/api/internal/api/middleware/request_signing.go:202` + `server_routes.go:237`
 
@@ -232,7 +232,7 @@ Error code `SIGN_004: Unknown or inactive client` is distinct from `SIGN_003: In
 
 ---
 
-### BUG-16 🟠 High → Message queue partial replay is silently dropped on reconnect
+### BUG-16 ✅ 🟠 High → Message queue partial replay is silently dropped on reconnect
 
 **File:** `apps/api/internal/ws/message_queue.go:414`
 
@@ -242,7 +242,7 @@ When a device reconnects, `ReplayQueue` replays persisted messages into the dest
 
 ---
 
-### BUG-17 🟠 High → `time.After()` inside `SendWithDeliveryConfirmation` leaks timer goroutines
+### BUG-17 ✅ 🟠 High → `time.After()` inside `SendWithDeliveryConfirmation` leaks timer goroutines
 
 **File:** `apps/api/internal/ws/hub.go:503`
 
@@ -261,7 +261,7 @@ If `confirmCh` fires first, the `time.After` goroutine leaks until the timeout e
 
 ---
 
-### BUG-18 🟠 High → Message queue async persist/delete races itself — messages can be replayed before persisted or deleted before written
+### BUG-18 ✅ 🟠 High → Message queue async persist/delete races itself — messages can be replayed before persisted or deleted before written
 
 **File:** `apps/api/internal/ws/message_queue.go:188, 197, 412, 435`
 
@@ -271,7 +271,7 @@ If `confirmCh` fires first, the `time.After` goroutine leaks until the timeout e
 
 ---
 
-### BUG-19 🟠 High → WebSocket device connection is unauthenticated when `EnforceHMAC=false`
+### BUG-19 ✅ 🟠 High → WebSocket device connection is unauthenticated when `EnforceHMAC=false`
 
 **File:** `apps/api/internal/ws/websocket_stream.go:52`
 
@@ -281,7 +281,7 @@ HMAC verification on the WebSocket upgrade path is gated on `config.EnforceHMAC`
 
 ---
 
-### BUG-20 🟡 Medium → Hub `Run` loop has no panic recovery — one nil pointer crashes all real-time connections
+### BUG-20 ✅ 🟡 Medium → Hub `Run` loop has no panic recovery — one nil pointer crashes all real-time connections
 
 **File:** `apps/api/internal/ws/hub.go:180`
 
@@ -291,7 +291,7 @@ A nil pointer or closed-channel panic inside the hub's main goroutine kills the 
 
 ---
 
-### BUG-21 🟡 Medium → Subscription callbacks spawn unbounded goroutines with no concurrency limit
+### BUG-21 ✅ 🟡 Medium → Subscription callbacks spawn unbounded goroutines with no concurrency limit
 
 **File:** `apps/api/internal/ws/subscriptions.go:229, 246, 253, 269, 284, 299`
 
@@ -365,7 +365,7 @@ Individual metric fields (`LastConnectedAt`, etc.) are updated with `sync/atomic
 
 ---
 
-### BUG-28 🟠 High → No query depth or complexity limit — GraphQL DoS via deeply nested queries
+### BUG-28 ✅ 🟠 High → No query depth or complexity limit — GraphQL DoS via deeply nested queries
 
 **File:** `apps/api/internal/api/graphql/handler/graphql_handler.go:101`
 
@@ -375,7 +375,7 @@ Individual metric fields (`LastConnectedAt`, etc.) are updated with `sync/atomic
 
 ---
 
-### BUG-29 🟠 High → `TestWebhook` mutation is an SSRF vector — URL argument not validated
+### BUG-29 ✅ 🟠 High → `TestWebhook` mutation is an SSRF vector — URL argument not validated
 
 **File:** `apps/api/internal/api/graphql/resolver/mutation_resolver.go:637, 652`
 
@@ -512,7 +512,7 @@ If a device confirms registration via REST and simultaneously connects via WebSo
 
 ---
 
-### BUG-41 🟠 High → Invitation email goroutines capture variables from a loop — classic Go closure bug potential
+### BUG-41 ✅ 🟠 High → Invitation email goroutines capture variables from a loop — classic Go closure bug potential
 
 **File:** `apps/api/internal/application/organization/invitation_service.go:169, 310, 375`
 
@@ -546,7 +546,7 @@ Background goroutines started inside the hub (pump goroutines per client) are no
 
 ---
 
-### BUG-44 🟠 High → `panic()` in non-test infrastructure code — crypto and domain failures crash the API
+### BUG-44 ✅ 🟠 High → `panic()` in non-test infrastructure code — crypto and domain failures crash the API
 
 **Files & lines:**
 - `apps/api/internal/infrastructure/uuid/uuid.go:54` — panics on crypto reader failure
@@ -561,7 +561,7 @@ These panics propagate up through Gin's recovery middleware and result in a 500 
 
 ---
 
-### BUG-45 🟠 High → Sentinel errors compared with `==` instead of `errors.Is()` — breaks when errors are wrapped
+### BUG-45 ✅ 🟠 High → Sentinel errors compared with `==` instead of `errors.Is()` — breaks when errors are wrapped
 
 **Files:** `auth_login_session.go:103, 174`, `updates_storage.go`, `device_service.go`, `inbox_service.go`, GraphQL resolvers (extensive)
 
@@ -652,7 +652,7 @@ Login notification failures are never logged or surfaced. While not security-cri
 
 ---
 
-### BUG-51 🔴 Critical → Migrations are not wrapped in transactions — partial migration leaves DB in unknown state
+### BUG-51 ✅ 🔴 Critical → Migrations are not wrapped in transactions — partial migration leaves DB in unknown state
 
 **File:** `apps/api/internal/infrastructure/storage/sqlite.go:222`
 
@@ -683,7 +683,7 @@ A failed rollback (e.g. connection lost) leaves the transaction in an indetermin
 
 ---
 
-### BUG-53 🟠 High → Audit log goroutines are fire-and-forget — security events dropped on shutdown
+### BUG-53 ✅ 🟠 High → Audit log goroutines are fire-and-forget — security events dropped on shutdown
 
 **File:** `apps/api/internal/audit/audit_logger.go:72`
 
@@ -693,7 +693,7 @@ A failed rollback (e.g. connection lost) leaves the transaction in an indetermin
 
 ---
 
-### BUG-54 🟠 High → Audit logs co-located with application data — trivially tampered
+### BUG-54 ✅ 🟠 High → Audit logs co-located with application data — trivially tampered
 
 **File:** `apps/api/internal/audit/audit_repository.go:82`
 
@@ -807,71 +807,71 @@ The health check returns OK as long as the process is up. If the SQLite file is 
 
 ## 12. Complete Issue Index
 
-| ID | Severity | Area | One-liner |
-|----|----------|------|-----------|
-| BUG-01 | 🔴 Critical | Storage | `scanDevices` missing `organization_id` — device list queries broken at runtime |
-| BUG-02 | 🔴 Critical | Device/Telemetry | Risk score fully device-controlled — server never recalculates or validates |
-| BUG-10 | 🔴 Critical | Commands | Strict HMAC middleware runs after the command handler — commands execute unsigned |
-| BUG-51 | 🔴 Critical | Migrations | Migrations not wrapped in transactions — partial migration leaves DB in unknown state |
-| BUG-03 | 🟠 High | Auth | Token rotation hardcodes `"operator"` role — admins lose privileges on first refresh |
-| BUG-04 | 🟠 High | Auth | Pre-MFA sessions bypass MFA enforcement permanently |
-| BUG-05 | 🟠 High | Auth | Disabling MFA does not revoke active sessions or refresh tokens |
-| BUG-11 | 🟠 High | HMAC | Device can forge signed requests for any other device's IMEI |
-| BUG-16 | 🟠 High | WebSocket | Message queue partial replay is silently dropped on reconnect |
-| BUG-17 | 🟠 High | WebSocket | `time.After()` in `SendWithDeliveryConfirmation` leaks timer goroutines |
-| BUG-18 | 🟠 High | WebSocket | Async persist/delete races itself — messages lost or replayed out of order |
-| BUG-19 | 🟠 High | WebSocket | WS device connection unauthenticated when `EnforceHMAC=false` |
-| BUG-28 | 🟠 High | GraphQL | No query depth/complexity limit — GraphQL DoS via nested queries |
-| BUG-29 | 🟠 High | GraphQL | `TestWebhook` mutation is an SSRF vector — URL not validated |
-| BUG-41 | 🟠 High | Concurrency | Invitation email goroutines unmanaged — leak on slow/blocked email service |
-| BUG-44 | 🟠 High | Error Handling | `panic()` in non-test infrastructure code crashes API on crypto/domain errors |
-| BUG-45 | 🟠 High | Error Handling | Sentinels compared with `==` not `errors.Is()` — silently breaks on wrapped errors |
-| BUG-53 | 🟠 High | Audit | Audit goroutines fire-and-forget — security events dropped on shutdown |
-| BUG-54 | 🟠 High | Audit | Audit logs co-located with app data — trivially tampered by attacker |
-| BUG-06 | 🟡 Medium | Auth | Password change does not invalidate existing sessions |
-| BUG-07 | 🟡 Medium | Auth | GitHub OAuth allows unverified email — account takeover risk |
-| BUG-08 | 🟡 Medium | Auth | Registration has TOCTOU race on email uniqueness |
-| BUG-09 | 🟡 Medium | Auth | OAuth state repo nil check silently skips CSRF validation |
-| BUG-12 | 🟡 Medium | HMAC | Ciphertext (not plaintext) restored to request body — downstream parse fails |
-| BUG-13 | 🟡 Medium | HMAC | Rate limiter discards fractional refill time — effective rate lower than configured |
-| BUG-14 | 🟡 Medium | HMAC | Replay cache eviction is O(N) — latency spike under load |
-| BUG-20 | 🟡 Medium | WebSocket | Hub `Run` loop has no panic recovery — one nil-pointer crashes all WS connections |
-| BUG-21 | 🟡 Medium | WebSocket | Subscription callbacks spawn unbounded goroutines with no concurrency limit |
-| BUG-22 | 🟡 Medium | WebSocket | `SetOnline`/`SetOffline` called outside hub lock — race with concurrent unregister |
-| BUG-23 | 🟡 Medium | WebSocket | Rate limiter acquires two locks in inconsistent order — deadlock risk |
-| BUG-24 | 🟡 Medium | WebSocket | Large broadcast holds `RLock` for full iteration — starves new connections |
-| BUG-30 | 🟡 Medium | GraphQL | Playground and introspection enabled in production — schema exposure |
-| BUG-31 | 🟡 Medium | GraphQL | `SendCommand` not transactional — DB write succeeds but device never receives command |
-| BUG-32 | 🟡 Medium | GraphQL | Legacy `/graphql` route misses org membership checks in some resolvers |
-| BUG-33 | 🟡 Medium | GraphQL | `GetAllConnections` is O(N×M) — iterates all WS clients per device |
-| BUG-35 | 🟡 Medium | OTA | APK path traversal not fully blocked — encoded sequences pass |
-| BUG-36 | 🟡 Medium | OTA | Server never verifies APK integrity against manifest before serving |
-| BUG-37 | 🟡 Medium | Device | Device re-registration delete+create not atomic — race condition |
-| BUG-38 | 🟡 Medium | Device | `GetLatest`/`GetStats` have no org isolation — cross-tenant data leak |
-| BUG-39 | 🟡 Medium | Device | Telemetry field parse errors silently default to 0 — no range validation |
-| BUG-40 | 🟡 Medium | Device | WebSocket `SetOnline` and REST `ConfirmDevice` race each other |
-| BUG-42 | 🟡 Medium | Concurrency | Hub shutdown has no `WaitGroup` for client pump goroutines |
-| BUG-46 | 🟡 Medium | Error Handling | Logout failure silently ignored — server-side session may persist |
-| BUG-47 | 🟡 Medium | Error Handling | Verification email failure silently ignored — user cannot activate account |
-| BUG-48 | 🟡 Medium | Error Handling | Command delivery status sync failure ignored — dashboard shows wrong state |
-| BUG-49 | 🟡 Medium | Error Handling | `operatorRepo.Update()` return ignored — operator record silently stale |
-| BUG-52 | 🟡 Medium | Storage | Transaction rollback errors silently discarded |
-| BUG-55 | 🟡 Medium | Audit | Audit log failure in inbox service silently ignored |
-| BUG-56 | 🟡 Medium | FCM | Circuit breaker half-open counter not reset on panics — stays open permanently |
-| BUG-57 | 🟡 Medium | FCM | Malformed Firebase credentials crash startup instead of graceful degradation |
-| BUG-58 | 🟡 Medium | FCM | No persistent retry queue — FCM notifications lost on process restart |
-| BUG-60 | 🟡 Medium | Lifecycle | No fail-fast validation of required env vars at startup |
-| BUG-61 | 🟡 Medium | Lifecycle | HTTP server accepts requests before DB migration completes |
-| BUG-62 | 🟡 Medium | Lifecycle | No graceful drain of in-flight HTTP requests on SIGTERM |
-| BUG-15 | 🟢 Low | HMAC | Error codes let attackers oracle-test valid client IDs |
-| BUG-25 | 🟢 Low | WebSocket | Gzip writers not pooled — GC pressure under high telemetry |
-| BUG-26 | 🟢 Low | WebSocket | 500 ms latency threshold measured but never enforced |
-| BUG-27 | 🟢 Low | WebSocket | 64-bit metric fields read without atomics — race on 32-bit targets |
-| BUG-34 | 🟢 Low | GraphQL | GraphQL argument type assertions discard `ok` — zero-value used silently |
-| BUG-43 | 🟢 Low | Concurrency | Subscription callback errors never propagated or logged |
-| BUG-50 | 🟢 Low | Error Handling | Login notification email errors silently discarded |
-| BUG-59 | 🟢 Low | FCM | `SafeNotifier` swallows all FCM errors — security notifications fail silently |
-| BUG-63 | 🟢 Low | Lifecycle | Health check does not probe DB — unhealthy service looks healthy to orchestrator |
+| ID | Status | Severity | Area | One-liner |
+|----|--------|----------|------|-----------|
+| BUG-01 | ✅ | 🔴 Critical | Storage | `scanDevices` missing `organization_id` — device list queries broken at runtime |
+| BUG-02 | ✅ | 🔴 Critical | Device/Telemetry | Risk score fully device-controlled — server never recalculates or validates |
+| BUG-10 | ✅ | 🔴 Critical | Commands | Strict HMAC middleware runs after the command handler — commands execute unsigned |
+| BUG-51 | | 🔴 Critical | Migrations | Migrations not wrapped in transactions — partial migration leaves DB in unknown state |
+| BUG-03 | | 🟠 High | Auth | Token rotation hardcodes `"operator"` role — admins lose privileges on first refresh |
+| BUG-04 | ✅ | 🟠 High | Auth | Pre-MFA sessions bypass MFA enforcement permanently |
+| BUG-05 | ✅ | 🟠 High | Auth | Disabling MFA does not revoke active sessions or refresh tokens |
+| BUG-11 | ✅ | 🟠 High | HMAC | Device can forge signed requests for any other device's IMEI |
+| BUG-16 | ✅ | 🟠 High | WebSocket | Message queue partial replay is silently dropped on reconnect |
+| BUG-17 | ✅ | 🟠 High | WebSocket | `time.After()` in `SendWithDeliveryConfirmation` leaks timer goroutines |
+| BUG-18 | ✅ | 🟠 High | WebSocket | Async persist/delete races itself — messages lost or replayed out of order |
+| BUG-19 | ✅ | 🟠 High | WebSocket | WS device connection unauthenticated when `EnforceHMAC=false` |
+| BUG-28 | ✅ | 🟠 High | GraphQL | No query depth/complexity limit — GraphQL DoS via nested queries |
+| BUG-29 | ✅ | 🟠 High | GraphQL/REST | `TestWebhook` SSRF vector — URL not validated (fixed in both GraphQL and REST) |
+| BUG-41 | | 🟠 High | Concurrency | Invitation email goroutines unmanaged — leak on slow/blocked email service |
+| BUG-44 | | 🟠 High | Error Handling | `panic()` in non-test infrastructure code crashes API on crypto/domain errors |
+| BUG-45 | | 🟠 High | Error Handling | Sentinels compared with `==` not `errors.Is()` — silently breaks on wrapped errors |
+| BUG-53 | | 🟠 High | Audit | Audit goroutines fire-and-forget — security events dropped on shutdown |
+| BUG-54 | | 🟠 High | Audit | Audit logs co-located with app data — trivially tampered by attacker |
+| BUG-06 | ✅ | 🟡 Medium | Auth | Password change does not invalidate existing sessions |
+| BUG-07 | ✅ | 🟡 Medium | Auth | GitHub OAuth allows unverified email — account takeover risk |
+| BUG-08 | ✅ | 🟡 Medium | Auth | Registration has TOCTOU race on email uniqueness |
+| BUG-09 | ✅ | 🟡 Medium | Auth | OAuth state repo nil check silently skips CSRF validation |
+| BUG-12 | | 🟡 Medium | HMAC | Ciphertext (not plaintext) restored to request body — downstream parse fails |
+| BUG-13 | | 🟡 Medium | HMAC | Rate limiter discards fractional refill time — effective rate lower than configured |
+| BUG-14 | | 🟡 Medium | HMAC | Replay cache eviction is O(N) — latency spike under load |
+| BUG-20 | ✅ | 🟡 Medium | WebSocket | Hub `Run` loop has no panic recovery — one nil-pointer crashes all WS connections |
+| BUG-21 | ✅ | 🟡 Medium | WebSocket | Subscription callbacks spawn unbounded goroutines with no concurrency limit |
+| BUG-22 | | 🟡 Medium | WebSocket | `SetOnline`/`SetOffline` called outside hub lock — race with concurrent unregister |
+| BUG-23 | | 🟡 Medium | WebSocket | Rate limiter acquires two locks in inconsistent order — deadlock risk |
+| BUG-24 | | 🟡 Medium | WebSocket | Large broadcast holds `RLock` for full iteration — starves new connections |
+| BUG-30 | | 🟡 Medium | GraphQL | Playground and introspection enabled in production — schema exposure |
+| BUG-31 | | 🟡 Medium | GraphQL | `SendCommand` not transactional — DB write succeeds but device never receives command |
+| BUG-32 | | 🟡 Medium | GraphQL | Legacy `/graphql` route misses org membership checks in some resolvers |
+| BUG-33 | | 🟡 Medium | GraphQL | `GetAllConnections` is O(N×M) — iterates all WS clients per device |
+| BUG-35 | | 🟡 Medium | OTA | APK path traversal not fully blocked — encoded sequences pass |
+| BUG-36 | | 🟡 Medium | OTA | Server never verifies APK integrity against manifest before serving |
+| BUG-37 | | 🟡 Medium | Device | Device re-registration delete+create not atomic — race condition |
+| BUG-38 | | 🟡 Medium | Device | `GetLatest`/`GetStats` have no org isolation — cross-tenant data leak |
+| BUG-39 | | 🟡 Medium | Device | Telemetry field parse errors silently default to 0 — no range validation |
+| BUG-40 | | 🟡 Medium | Device | WebSocket `SetOnline` and REST `ConfirmDevice` race each other |
+| BUG-42 | | 🟡 Medium | Concurrency | Hub shutdown has no `WaitGroup` for client pump goroutines |
+| BUG-46 | | 🟡 Medium | Error Handling | Logout failure silently ignored — server-side session may persist |
+| BUG-47 | | 🟡 Medium | Error Handling | Verification email failure silently ignored — user cannot activate account |
+| BUG-48 | | 🟡 Medium | Error Handling | Command delivery status sync failure ignored — dashboard shows wrong state |
+| BUG-49 | | 🟡 Medium | Error Handling | `operatorRepo.Update()` return ignored — operator record silently stale |
+| BUG-52 | | 🟡 Medium | Storage | Transaction rollback errors silently discarded |
+| BUG-55 | | 🟡 Medium | Audit | Audit log failure in inbox service silently ignored |
+| BUG-56 | | 🟡 Medium | FCM | Circuit breaker half-open counter not reset on panics — stays open permanently |
+| BUG-57 | | 🟡 Medium | FCM | Malformed Firebase credentials crash startup instead of graceful degradation |
+| BUG-58 | | 🟡 Medium | FCM | No persistent retry queue — FCM notifications lost on process restart |
+| BUG-60 | | 🟡 Medium | Lifecycle | No fail-fast validation of required env vars at startup |
+| BUG-61 | | 🟡 Medium | Lifecycle | HTTP server accepts requests before DB migration completes |
+| BUG-62 | | 🟡 Medium | Lifecycle | No graceful drain of in-flight HTTP requests on SIGTERM |
+| BUG-15 | | 🟢 Low | HMAC | Error codes let attackers oracle-test valid client IDs |
+| BUG-25 | | 🟢 Low | WebSocket | Gzip writers not pooled — GC pressure under high telemetry |
+| BUG-26 | | 🟢 Low | WebSocket | 500 ms latency threshold measured but never enforced |
+| BUG-27 | | 🟢 Low | WebSocket | 64-bit metric fields read without atomics — race on 32-bit targets |
+| BUG-34 | | 🟢 Low | GraphQL | GraphQL argument type assertions discard `ok` — zero-value used silently |
+| BUG-43 | | 🟢 Low | Concurrency | Subscription callback errors never propagated or logged |
+| BUG-50 | | 🟢 Low | Error Handling | Login notification email errors silently discarded |
+| BUG-59 | | 🟢 Low | FCM | `SafeNotifier` swallows all FCM errors — security notifications fail silently |
+| BUG-63 | | 🟢 Low | Lifecycle | Health check does not probe DB — unhealthy service looks healthy to orchestrator |
 
 ---
 
@@ -893,7 +893,7 @@ The health check returns OK as long as the process is up. If the SQLite file is 
 
 ---
 
-### BUG-64 🔴 Critical → `inbox_storage.go` never persists `organization_id` — all inbox entries have NULL org, breaking multi-tenant inbox entirely
+### BUG-64 ✅ 🔴 Critical → `inbox_storage.go` never persists `organization_id` — all inbox entries have NULL org, breaking multi-tenant inbox entirely
 
 **File:** `apps/api/internal/infrastructure/storage/inbox_storage.go:50`
 
@@ -1144,7 +1144,7 @@ No `binding:"max=..."` or manual length check is applied to free-text fields (op
 
 ---
 
-### BUG-87 🔴 Critical → Webhook URL is never validated — SSRF allows scanning internal network from the server
+### BUG-87 ✅ 🔴 Critical → Webhook URL is never validated — SSRF allows scanning internal network from the server
 
 **File:** `apps/api/internal/infrastructure/fcm/webhook_client.go:145` (or equivalent webhook client file)
 
@@ -1259,104 +1259,104 @@ The webhook client has a 10-second timeout but no retry on transient failure and
 
 ## Complete Issue Index — All 3 Passes
 
-| ID | Sev | Area | One-liner |
-|----|-----|------|-----------|
-| BUG-01 | 🔴 | Storage | `scanDevices` missing `organization_id` — device list queries broken |
-| BUG-02 | 🔴 | Telemetry | Risk score fully device-controlled — no server validation |
-| BUG-10 | 🔴 | Commands | Strict HMAC middleware runs after command handler |
-| BUG-51 | 🔴 | Migrations | Migrations not in transactions — partial migration possible |
-| BUG-64 | 🔴 | Inbox | `inbox_storage` never persists `organization_id` — multi-tenant inbox broken |
-| BUG-65 | 🔴 | Inbox | `/inbox` public with no auth — unlimited fake registration flood |
-| BUG-87 | 🔴 | Webhooks | Webhook URL not validated — SSRF internal network pivot |
-| BUG-88 | 🔴 | Alerts | No alert deduplication — 1 telemetry sample = 1 alert, 1 notification |
-| BUG-03 | 🟠 | Auth | Token rotation hardcodes `"operator"` — admins lose role on first refresh |
-| BUG-04 | 🟠 | Auth | Pre-MFA sessions bypass MFA enforcement |
-| BUG-05 | 🟠 | Auth | Disabling MFA doesn't revoke sessions |
-| BUG-11 | 🟠 | HMAC | Device can forge requests for any other device's IMEI |
-| BUG-16 | 🟠 | WebSocket | Message queue partial replay silently dropped on reconnect |
-| BUG-17 | 🟠 | WebSocket | `time.After()` in delivery confirmation leaks timer goroutines |
-| BUG-18 | 🟠 | WebSocket | Async persist/delete races itself — messages lost or replayed out of order |
-| BUG-19 | 🟠 | WebSocket | WS unauthenticated when `EnforceHMAC=false` |
-| BUG-28 | 🟠 | GraphQL | No query depth/complexity limit — DoS via nested queries |
-| BUG-29 | 🟠 | GraphQL | `TestWebhook` mutation is an SSRF vector |
-| BUG-41 | 🟠 | Concurrency | Invitation email goroutines unmanaged — leak on slow email service |
-| BUG-44 | 🟠 | Errors | `panic()` in non-test infrastructure crashes API |
-| BUG-45 | 🟠 | Errors | Sentinels compared with `==` — silently breaks on wrapped errors |
-| BUG-53 | 🟠 | Audit | Audit goroutines fire-and-forget — events dropped on shutdown |
-| BUG-54 | 🟠 | Audit | Audit logs co-located with app data — trivially tampered |
-| BUG-66 | 🟠 | Inbox | `commandSecret` stored in plaintext in `inbox_requests` table |
-| BUG-67 | 🟠 | Inbox | Confirmation token is not single-use — `/confirm` succeeds repeatedly |
-| BUG-68 | 🟠 | Inbox | No background worker for `deletion_scheduled_at` — devices never actually deleted |
-| BUG-69 | 🟠 | Inbox | Device reconnecting during deletion window doesn't cancel scheduled deletion |
-| BUG-72 | 🟠 | Org/RBAC | Removing a member doesn't revoke their sessions — access persists |
-| BUG-73 | 🟠 | Org/RBAC | `GET /organizations/:id` has no role check — viewer sees full org details |
-| BUG-74 | 🟠 | Org/RBAC | `GET /organizations/:id/members` — any member enumerates all members + roles |
-| BUG-89 | 🟠 | Telemetry | Global 5000-row cap — Device B's data silently deletes Device A's history |
-| BUG-90 | 🟠 | Telemetry | O(N) DELETE on every INSERT — DB performance degrades continuously |
-| BUG-06 | 🟡 | Auth | Password change doesn't invalidate existing sessions |
-| BUG-07 | 🟡 | Auth | GitHub OAuth allows unverified email |
-| BUG-08 | 🟡 | Auth | Registration has TOCTOU race on email uniqueness |
-| BUG-09 | 🟡 | Auth | OAuth state repo nil silently skips CSRF validation |
-| BUG-12 | 🟡 | HMAC | Ciphertext not plaintext restored to request body |
-| BUG-13 | 🟡 | HMAC | Rate limiter discards fractional refill time |
-| BUG-14 | 🟡 | HMAC | Replay cache eviction is O(N) |
-| BUG-20 | 🟡 | WebSocket | Hub `Run` loop has no panic recovery |
-| BUG-21 | 🟡 | WebSocket | Subscription callbacks spawn unbounded goroutines |
-| BUG-22 | 🟡 | WebSocket | `SetOnline`/`SetOffline` race outside hub lock |
-| BUG-23 | 🟡 | WebSocket | Rate limiter inconsistent lock ordering — deadlock risk |
-| BUG-24 | 🟡 | WebSocket | Large broadcast holds `RLock` for full iteration |
-| BUG-30 | 🟡 | GraphQL | Playground + introspection enabled in production |
-| BUG-31 | 🟡 | GraphQL | `SendCommand` not transactional across DB + WS + FCM |
-| BUG-32 | 🟡 | GraphQL | Legacy `/graphql` route misses org membership checks |
-| BUG-33 | 🟡 | GraphQL | `GetAllConnections` is O(N×M) |
-| BUG-35 | 🟡 | OTA | APK path traversal not fully blocked |
-| BUG-36 | 🟡 | OTA | Server never verifies APK integrity before serving |
-| BUG-37 | 🟡 | Device | Device re-registration delete+create not atomic |
-| BUG-38 | 🟡 | Device | `GetLatest`/`GetStats` have no org isolation |
-| BUG-39 | 🟡 | Device | Telemetry field parse errors silently default to 0 |
-| BUG-40 | 🟡 | Device | WS `SetOnline` and REST `ConfirmDevice` race each other |
-| BUG-42 | 🟡 | Concurrency | Hub shutdown no `WaitGroup` for client pump goroutines |
-| BUG-46 | 🟡 | Errors | Logout failure silently ignored — session may persist |
-| BUG-47 | 🟡 | Errors | Verification email failure silently ignored |
-| BUG-48 | 🟡 | Errors | Command delivery status sync failure ignored |
-| BUG-49 | 🟡 | Errors | `operatorRepo.Update()` return ignored |
-| BUG-52 | 🟡 | Storage | Transaction rollback errors silently discarded |
-| BUG-55 | 🟡 | Audit | Audit log failure in inbox service silently ignored |
-| BUG-56 | 🟡 | FCM | Circuit breaker half-open counter not reset on panics |
-| BUG-57 | 🟡 | FCM | Malformed Firebase credentials crash startup |
-| BUG-58 | 🟡 | FCM | No persistent retry queue for FCM notifications |
-| BUG-60 | 🟡 | Lifecycle | No fail-fast env var validation at startup |
-| BUG-61 | 🟡 | Lifecycle | HTTP server accepts requests before migrations complete |
-| BUG-62 | 🟡 | Lifecycle | No graceful drain of in-flight requests on SIGTERM |
-| BUG-70 | 🟡 | Inbox | Successful registration doesn't clean up inbox entry |
-| BUG-71 | 🟡 | Inbox | CreateInboxRequest cleanup+create not in transaction |
-| BUG-75 | 🟡 | Org/RBAC | `admin` can modify `maxMembers`/`isActive` without superadmin |
-| BUG-76 | 🟡 | Org/RBAC | Org deletion doesn't clean up devices, telemetry, sessions |
-| BUG-77 | 🟡 | Org/RBAC | Invitation accept has no DB-level uniqueness guard |
-| BUG-78 | 🟡 | Commands | Global HMAC middleware passes empty `deviceID` |
-| BUG-79 | 🟡 | Commands | No TTL on commands — stuck commands accumulate forever |
-| BUG-80 | 🟡 | Commands | No cap on pending commands per device |
-| BUG-81 | 🟡 | Commands | No automatic retry/backoff — all retries are manual |
-| BUG-82 | 🟡 | Input | `limit` params have no upper bound — full table scan possible |
-| BUG-83 | 🟡 | Input | Time-range params accept arbitrary values including epoch 0 and year 9999 |
-| BUG-84 | 🟡 | Input | Threshold values accept negative or million-percent — silent alert breakage |
-| BUG-91 | 🟡 | Alerts | No alert auto-resolution — alert appears active forever after metric recovers |
-| BUG-92 | 🟡 | Alerts | No hysteresis — alert flapping when metric oscillates near threshold |
-| BUG-93 | 🟡 | Alerts | Concurrent telemetry frames create duplicate alerts |
-| BUG-94 | 🟡 | Metrics | `GetAggregatedMetrics` no row limit for large time ranges |
-| BUG-95 | 🟡 | Webhooks | No retry or circuit breaker for webhook delivery |
-| BUG-96 | 🟡 | WebSocket | `ProcessTelemetry` panic kills device connection — no recover() |
-| BUG-15 | 🟢 | HMAC | Error codes oracle valid client IDs |
-| BUG-25 | 🟢 | WebSocket | Gzip writers not pooled — GC pressure |
-| BUG-26 | 🟢 | WebSocket | 500 ms latency threshold measured but never enforced |
-| BUG-27 | 🟢 | WebSocket | 64-bit metric fields read without atomics on 32-bit targets |
-| BUG-34 | 🟢 | GraphQL | Argument type assertions discard `ok` — zero-value used silently |
-| BUG-43 | 🟢 | Concurrency | Subscription callback errors never propagated |
-| BUG-50 | 🟢 | Errors | Login notification email errors silently discarded |
-| BUG-59 | 🟢 | FCM | `SafeNotifier` swallows all FCM errors |
-| BUG-63 | 🟢 | Lifecycle | Health check doesn't probe DB |
-| BUG-85 | 🟢 | Input | Path params not validated for format (UUID, IMEI digits) |
-| BUG-86 | 🟢 | Input | String fields in JSON models have no length bounds |
+| ID | Status | Sev | Area | One-liner |
+|----|--------|----|-----|---------|
+| BUG-01 | ✅ | 🔴 | Storage | `scanDevices` missing `organization_id` — device list queries broken |
+| BUG-02 | ✅ | 🔴 | Telemetry | Risk score fully device-controlled — no server validation |
+| BUG-10 | ✅ | 🔴 | Commands | Strict HMAC middleware runs after command handler |
+| BUG-51 | | 🔴 | Migrations | Migrations not in transactions — partial migration possible |
+| BUG-64 | | 🔴 | Inbox | `inbox_storage` never persists `organization_id` — multi-tenant inbox broken |
+| BUG-65 | | 🔴 | Inbox | `/inbox` public with no auth — unlimited fake registration flood |
+| BUG-87 | | 🔴 | Webhooks | Webhook URL not validated — SSRF internal network pivot |
+| BUG-88 | | 🔴 | Alerts | No alert deduplication — 1 telemetry sample = 1 alert, 1 notification |
+| BUG-03 | | 🟠 | Auth | Token rotation hardcodes `"operator"` — admins lose role on first refresh |
+| BUG-04 | ✅ | 🟠 | Auth | Pre-MFA sessions bypass MFA enforcement |
+| BUG-05 | ✅ | 🟠 | Auth | Disabling MFA doesn't revoke sessions |
+| BUG-11 | ✅ | 🟠 | HMAC | Device can forge requests for any other device's IMEI |
+| BUG-16 | ✅ | 🟠 | WebSocket | Message queue partial replay silently dropped on reconnect |
+| BUG-17 | ✅ | 🟠 | WebSocket | `time.After()` in delivery confirmation leaks timer goroutines |
+| BUG-18 | ✅ | 🟠 | WebSocket | Async persist/delete races itself — messages lost or replayed out of order |
+| BUG-19 | ✅ | 🟠 | WebSocket | WS unauthenticated when `EnforceHMAC=false` |
+| BUG-28 | ✅ | 🟠 | GraphQL | No query depth/complexity limit — DoS via nested queries |
+| BUG-29 | ✅ | 🟠 | GraphQL/REST | `TestWebhook` SSRF vector — URL not validated (fixed in both GraphQL and REST) |
+| BUG-41 | | 🟠 | Concurrency | Invitation email goroutines unmanaged — leak on slow email service |
+| BUG-44 | | 🟠 | Errors | `panic()` in non-test infrastructure crashes API |
+| BUG-45 | | 🟠 | Errors | Sentinels compared with `==` — silently breaks on wrapped errors |
+| BUG-53 | | 🟠 | Audit | Audit goroutines fire-and-forget — events dropped on shutdown |
+| BUG-54 | | 🟠 | Audit | Audit logs co-located with app data — trivially tampered |
+| BUG-66 | | 🟠 | Inbox | `commandSecret` stored in plaintext in `inbox_requests` table |
+| BUG-67 | | 🟠 | Inbox | Confirmation token is not single-use — `/confirm` succeeds repeatedly |
+| BUG-68 | | 🟠 | Inbox | No background worker for `deletion_scheduled_at` — devices never actually deleted |
+| BUG-69 | | 🟠 | Inbox | Device reconnecting during deletion window doesn't cancel scheduled deletion |
+| BUG-72 | | 🟠 | Org/RBAC | Removing a member doesn't revoke their sessions — access persists |
+| BUG-73 | | 🟠 | Org/RBAC | `GET /organizations/:id` has no role check — viewer sees full org details |
+| BUG-74 | | 🟠 | Org/RBAC | `GET /organizations/:id/members` — any member enumerates all members + roles |
+| BUG-89 | | 🟠 | Telemetry | Global 5000-row cap — Device B's data silently deletes Device A's history |
+| BUG-90 | | 🟠 | Telemetry | O(N) DELETE on every INSERT — DB performance degrades continuously |
+| BUG-06 | ✅ | 🟡 | Auth | Password change doesn't invalidate existing sessions |
+| BUG-07 | ✅ | 🟡 | Auth | GitHub OAuth allows unverified email |
+| BUG-08 | ✅ | 🟡 | Auth | Registration has TOCTOU race on email uniqueness |
+| BUG-09 | ✅ | 🟡 | Auth | OAuth state repo nil silently skips CSRF validation |
+| BUG-12 | | 🟡 | HMAC | Ciphertext not plaintext restored to request body |
+| BUG-13 | | 🟡 | HMAC | Rate limiter discards fractional refill time |
+| BUG-14 | | 🟡 | HMAC | Replay cache eviction is O(N) |
+| BUG-20 | ✅ | 🟡 | WebSocket | Hub `Run` loop has no panic recovery |
+| BUG-21 | ✅ | 🟡 | WebSocket | Subscription callbacks spawn unbounded goroutines |
+| BUG-22 | | 🟡 | WebSocket | `SetOnline`/`SetOffline` race outside hub lock |
+| BUG-23 | | 🟡 | WebSocket | Rate limiter inconsistent lock ordering — deadlock risk |
+| BUG-24 | | 🟡 | WebSocket | Large broadcast holds `RLock` for full iteration |
+| BUG-30 | | 🟡 | GraphQL | Playground + introspection enabled in production |
+| BUG-31 | | 🟡 | GraphQL | `SendCommand` not transactional across DB + WS + FCM |
+| BUG-32 | | 🟡 | GraphQL | Legacy `/graphql` route misses org membership checks |
+| BUG-33 | | 🟡 | GraphQL | `GetAllConnections` is O(N×M) |
+| BUG-35 | | 🟡 | OTA | APK path traversal not fully blocked |
+| BUG-36 | | 🟡 | OTA | Server never verifies APK integrity before serving |
+| BUG-37 | | 🟡 | Device | Device re-registration delete+create not atomic |
+| BUG-38 | | 🟡 | Device | `GetLatest`/`GetStats` have no org isolation |
+| BUG-39 | | 🟡 | Device | Telemetry field parse errors silently default to 0 |
+| BUG-40 | | 🟡 | Device | WS `SetOnline` and REST `ConfirmDevice` race each other |
+| BUG-42 | | 🟡 | Concurrency | Hub shutdown no `WaitGroup` for client pump goroutines |
+| BUG-46 | | 🟡 | Errors | Logout failure silently ignored — session may persist |
+| BUG-47 | | 🟡 | Errors | Verification email failure silently ignored |
+| BUG-48 | | 🟡 | Errors | Command delivery status sync failure ignored |
+| BUG-49 | | 🟡 | Errors | `operatorRepo.Update()` return ignored |
+| BUG-52 | | 🟡 | Storage | Transaction rollback errors silently discarded |
+| BUG-55 | | 🟡 | Audit | Audit log failure in inbox service silently ignored |
+| BUG-56 | | 🟡 | FCM | Circuit breaker half-open counter not reset on panics |
+| BUG-57 | | 🟡 | FCM | Malformed Firebase credentials crash startup |
+| BUG-58 | | 🟡 | FCM | No persistent retry queue for FCM notifications |
+| BUG-60 | | 🟡 | Lifecycle | No fail-fast env var validation at startup |
+| BUG-61 | | 🟡 | Lifecycle | HTTP server accepts requests before migrations complete |
+| BUG-62 | | 🟡 | Lifecycle | No graceful drain of in-flight requests on SIGTERM |
+| BUG-70 | | 🟡 | Inbox | Successful registration doesn't clean up inbox entry |
+| BUG-71 | | 🟡 | Inbox | CreateInboxRequest cleanup+create not in transaction |
+| BUG-75 | | 🟡 | Org/RBAC | `admin` can modify `maxMembers`/`isActive` without superadmin |
+| BUG-76 | | 🟡 | Org/RBAC | Org deletion doesn't clean up devices, telemetry, sessions |
+| BUG-77 | | 🟡 | Org/RBAC | Invitation accept has no DB-level uniqueness guard |
+| BUG-78 | | 🟡 | Commands | Global HMAC middleware passes empty `deviceID` |
+| BUG-79 | | 🟡 | Commands | No TTL on commands — stuck commands accumulate forever |
+| BUG-80 | | 🟡 | Commands | No cap on pending commands per device |
+| BUG-81 | | 🟡 | Commands | No automatic retry/backoff — all retries are manual |
+| BUG-82 | | 🟡 | Input | `limit` params have no upper bound — full table scan possible |
+| BUG-83 | | 🟡 | Input | Time-range params accept arbitrary values including epoch 0 and year 9999 |
+| BUG-84 | | 🟡 | Input | Threshold values accept negative or million-percent — silent alert breakage |
+| BUG-91 | | 🟡 | Alerts | No alert auto-resolution — alert appears active forever after metric recovers |
+| BUG-92 | | 🟡 | Alerts | No hysteresis — alert flapping when metric oscillates near threshold |
+| BUG-93 | | 🟡 | Alerts | Concurrent telemetry frames create duplicate alerts |
+| BUG-94 | | 🟡 | Metrics | `GetAggregatedMetrics` no row limit for large time ranges |
+| BUG-95 | | 🟡 | Webhooks | No retry or circuit breaker for webhook delivery |
+| BUG-96 | | 🟡 | WebSocket | `ProcessTelemetry` panic kills device connection — no recover() |
+| BUG-15 | | 🟢 | HMAC | Error codes oracle valid client IDs |
+| BUG-25 | | 🟢 | WebSocket | Gzip writers not pooled — GC pressure |
+| BUG-26 | | 🟢 | WebSocket | 500 ms latency threshold measured but never enforced |
+| BUG-27 | | 🟢 | WebSocket | 64-bit metric fields read without atomics on 32-bit targets |
+| BUG-34 | | 🟢 | GraphQL | Argument type assertions discard `ok` — zero-value used silently |
+| BUG-43 | | 🟢 | Concurrency | Subscription callback errors never propagated |
+| BUG-50 | | 🟢 | Errors | Login notification email errors silently discarded |
+| BUG-59 | | 🟢 | FCM | `SafeNotifier` swallows all FCM errors |
+| BUG-63 | | 🟢 | Lifecycle | Health check doesn't probe DB |
+| BUG-85 | | 🟢 | Input | Path params not validated for format (UUID, IMEI digits) |
+| BUG-86 | | 🟢 | Input | String fields in JSON models have no length bounds |
 
 ---
 

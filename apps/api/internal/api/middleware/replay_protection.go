@@ -4,7 +4,6 @@ package middleware
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"sort"
 	"sync"
 	"time"
 
@@ -14,11 +13,13 @@ import (
 // ReplayProtection provides thread-safe replay attack prevention.
 // It maintains an in-memory cache of recently seen signatures to detect.
 // and reject replay attacks within the configured time window.
+// Uses O(1) eviction by maintaining insertion order in a slice.
 type ReplayProtection struct {
-	cache  map[string]time.Time
-	window time.Duration
-	max    int
-	mu     sync.RWMutex
+	cache     map[string]time.Time
+	order     []string
+	window    time.Duration
+	max       int
+	mu        sync.RWMutex
 }
 
 // NewReplayProtection creates a new replay protection cache.
@@ -27,6 +28,7 @@ type ReplayProtection struct {
 func NewReplayProtection(cfg config.SigningConfig) *ReplayProtection {
 	return &ReplayProtection{
 		cache:  make(map[string]time.Time),
+		order:  make([]string, 0, cfg.MaxCacheSize),
 		window: time.Duration(cfg.TimestampWindow) * time.Second,
 		max:    cfg.MaxCacheSize,
 	}
@@ -44,11 +46,21 @@ func (rp *ReplayProtection) IsReplay(clientID, signature string) bool {
 		return true
 	}
 
-	// Add to cache with current timestamp.
-	rp.cache[key] = time.Now()
+	now := time.Now()
 
-	// Evict old entries and trim to max size if needed.
-	rp.evictOldLocked()
+	// Add to cache and order tracking.
+	rp.cache[key] = now
+	rp.order = append(rp.order, key)
+
+	// O(1) eviction if over capacity - remove oldest entry.
+	if len(rp.cache) > rp.max {
+		oldestKey := rp.order[0]
+		delete(rp.cache, oldestKey)
+		rp.order = rp.order[1:]
+	}
+
+	// Evict expired entries (front of order slice may contain expired entries).
+	rp.evictExpiredLocked(now)
 
 	return false
 }
@@ -62,67 +74,29 @@ func (rp *ReplayProtection) buildKey(clientID, signature string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// evictOldLocked removes entries older than the configured window.
-// Caller must hold the lock. This is a no-op if cache is empty.
-func (rp *ReplayProtection) evictOldLocked() {
-	if len(rp.cache) == 0 {
+// evictExpiredLocked removes entries older than the configured window.
+// Uses the ordered slice for efficient O(N) eviction of expired entries from front.
+func (rp *ReplayProtection) evictExpiredLocked(now time.Time) {
+	if len(rp.order) == 0 {
 		return
 	}
 
-	now := time.Now()
 	window := rp.window
+	cutoff := now.Add(-window)
 
-	// Collect keys to delete to avoid modifying map during iteration.
-	var expiredKeys []string
-
-	for key, timestamp := range rp.cache {
-		if now.Sub(timestamp) > window {
-			expiredKeys = append(expiredKeys, key)
+	// Find the first non-expired entry index.
+	firstValidIdx := 0
+	for i, key := range rp.order {
+		if ts, exists := rp.cache[key]; exists && ts.After(cutoff) {
+			firstValidIdx = i
+			break
 		}
+		firstValidIdx = i + 1
 	}
 
-	// Delete all expired entries.
-	for _, key := range expiredKeys {
-		delete(rp.cache, key)
-	}
-
-	// If still over capacity, trim to max using proper sorting.
-	if len(rp.cache) > rp.max {
-		rp.trimToMaxLocked()
-	}
-}
-
-// trimToMaxLocked removes the oldest entries to bring cache under max size.
-// Uses stable sort by timestamp (oldest first) to ensure consistent eviction.
-// Caller must hold the lock.
-func (rp *ReplayProtection) trimToMaxLocked() {
-	if len(rp.cache) <= rp.max {
-		return
-	}
-
-	// Create a sortable slice of entries.
-	type cacheEntry struct {
-		timestamp time.Time
-		key       string
-	}
-
-	entries := make([]cacheEntry, 0, len(rp.cache))
-	for key, timestamp := range rp.cache {
-		entries = append(entries, cacheEntry{key: key, timestamp: timestamp})
-	}
-
-	// Sort by timestamp ascending (oldest first) using stable sort.
-	// This ensures consistent ordering when timestamps are equal.
-	sort.SliceStable(entries, func(i, j int) bool {
-		return entries[i].timestamp.Before(entries[j].timestamp)
-	})
-
-	// Calculate how many entries to remove.
-	entriesToRemove := len(entries) - rp.max
-
-	// Remove the oldest entries (they're at the beginning after sorting).
-	for i := 0; i < entriesToRemove; i++ {
-		delete(rp.cache, entries[i].key)
+	// Remove all expired entries from front.
+	if firstValidIdx > 0 {
+		rp.order = rp.order[firstValidIdx:]
 	}
 }
 
@@ -131,6 +105,7 @@ func (rp *ReplayProtection) Clear() {
 	rp.mu.Lock()
 	defer rp.mu.Unlock()
 	rp.cache = make(map[string]time.Time)
+	rp.order = make([]string, 0, rp.max)
 }
 
 // Size returns the current number of entries in the cache.

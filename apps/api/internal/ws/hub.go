@@ -180,6 +180,13 @@ func (h *Hub) RateLimiter() *RateLimiter {
 func (h *Hub) Run(ctx context.Context) {
 	dbTimeout := 5 * time.Second
 
+	defer func() {
+		if r := recover(); r != nil {
+			h.log.Error("hub panic recovered, restarting run loop", "panic", r)
+			go h.Run(ctx)
+		}
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -196,23 +203,28 @@ func (h *Hub) Run(ctx context.Context) {
 
 			c.log = h.log
 			h.clients[c.DeviceID] = c
-			h.mu.Unlock()
 
-			// Set device online with timeout context
+			// Set device online atomically with client registration to prevent race
 			opCtx, cancel := context.WithTimeout(ctx, dbTimeout)
 			if err := h.deviceRepo.SetOnline(opCtx, c.DeviceID, true); err != nil {
 				h.log.Warn("set online failed", "deviceId", c.DeviceID, "err", err)
 			}
 			cancel()
 
+			h.mu.Unlock()
+
 			// Replay queued messages to the newly connected device
 			if h.messageQueue != nil {
-				count := h.messageQueue.ReplayQueue(c.DeviceID, c.Send)
-				if count > 0 {
+				result := h.messageQueue.ReplayQueue(c.DeviceID, c.Send)
+				if result.Count > 0 {
 					h.log.Info("replayed queued messages to device",
 						"deviceId", c.DeviceID,
-						"count", count,
+						"count", result.Count,
 					)
+				}
+				
+				if result.HasMore {
+					h.schedulePartialReplay(c.DeviceID, result.Remaining)
 				}
 			}
 
@@ -329,10 +341,16 @@ func (h *Hub) BroadcastTelemetryToFiltered(senderDeviceID string, raw []byte) {
 		return
 	}
 
+	// Snapshot clients under RLock, then release lock before iterating
 	h.mu.RLock()
-	defer h.mu.RUnlock()
+	clients := make(map[string]*Client, len(h.clients))
+	for id, c := range h.clients {
+		clients[id] = c
+	}
+	h.mu.RUnlock()
 
-	for clientID, c := range h.clients {
+	// Iterate snapshot without holding lock
+	for clientID, c := range clients {
 		// Skip the sender
 		if clientID == senderDeviceID {
 			continue
@@ -496,11 +514,13 @@ func (h *Hub) SendWithDeliveryConfirmation(deviceID string, frame command.Comman
 
 	select {
 	case c.Send <- frame:
-		// Wait for confirmation or timeout
+		// Wait for confirmation or timeout using timer that can be stopped
+		timer := time.NewTimer(timeout)
+		defer timer.Stop()
 		select {
 		case confirmed := <-confirmation:
 			return confirmed, nil
-		case <-time.After(timeout):
+		case <-timer.C:
 			// Timeout - try to queue if available
 			if h.messageQueue != nil {
 				return h.messageQueue.EnqueueWithConfirmation(deviceID, frame), nil
@@ -543,6 +563,54 @@ func (h *Hub) TotalQueuedMessages() int {
 	}
 
 	return h.messageQueue.TotalQueuedMessages()
+}
+
+// schedulePartialReplay schedules a retry for partially replayed messages.
+// Uses exponential backoff with a maximum of 3 retries.
+func (h *Hub) schedulePartialReplay(deviceID string, remaining int) {
+	h.mu.RLock()
+	client, exists := h.clients[deviceID]
+	h.mu.RUnlock()
+
+	if !exists {
+		return
+	}
+
+	// Schedule retry with exponential backoff (100ms, 200ms, 400ms)
+	go func() {
+		for attempt := 0; attempt < 3; attempt++ {
+			backoff := time.Duration(100<<attempt) * time.Millisecond
+			time.Sleep(backoff)
+
+			// Check if client still exists
+			h.mu.RLock()
+			client, exists = h.clients[deviceID]
+			h.mu.RUnlock()
+
+			if !exists || client == nil {
+				return
+			}
+
+			// Try to replay remaining messages
+			result := h.messageQueue.ReplayQueue(deviceID, client.Send)
+			if result.Count > 0 {
+				h.log.Info("retry replayed queued messages to device",
+					"deviceId", deviceID,
+					"count", result.Count,
+					"attempt", attempt+1,
+				)
+			}
+
+			if !result.HasMore {
+				return
+			}
+		}
+
+		h.log.Warn("partial replay exhausted retries",
+			"deviceId", deviceID,
+			"remaining", remaining,
+		)
+	}()
 }
 
 // BroadcastEvent emits an event to all subscribed dashboard clients.

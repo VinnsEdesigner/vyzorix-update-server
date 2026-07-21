@@ -106,7 +106,11 @@ func (s *Server) RegisterGraphQL(
 	// Register routes with org-scoped paths
 	s.engine.POST("/:org/graphql", h.Handle)
 	s.engine.GET("/:org/graphql", h.Handle)
-	s.engine.GET("/:org/playground", h.Playground)
+
+	// Playground is only enabled in non-production environments
+	if s.config.Env != "production" {
+		s.engine.GET("/:org/playground", h.Playground)
+	}
 
 	// Create subscription handler
 	subsHandler := subscription.NewHandler(&subscription.Config{

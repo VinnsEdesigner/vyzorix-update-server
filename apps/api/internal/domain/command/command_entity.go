@@ -122,6 +122,9 @@ type Command struct {
 	Status        Status
 	FailureReason string
 	Args          []byte
+	RetryCount    int        // Number of delivery attempts made
+	MaxRetries    int        // Maximum delivery attempts before marking failed
+	NextRetryAt   *time.Time // When to attempt next delivery (for backoff)
 }
 
 // CommandFrame is the internal representation of a command for the WebSocket hub.
@@ -198,4 +201,31 @@ func (c *Command) SetArgs(v interface{}) error {
 // GetArgs unmarshals the arguments into a struct.
 func (c *Command) GetArgs(v interface{}) error {
 	return json.Unmarshal(c.Args, v)
+}
+
+// CanRetry returns true if the command can be retried.
+func (c *Command) CanRetry() bool {
+	return c.MaxRetries == 0 || c.RetryCount < c.MaxRetries
+}
+
+// ShouldRetryNow returns true if enough time has passed since the last attempt.
+func (c *Command) ShouldRetryNow() bool {
+	if c.NextRetryAt == nil {
+		return true // First attempt or no backoff set
+	}
+	return time.Now().After(*c.NextRetryAt)
+}
+
+// IncrementRetry sets up the command for the next retry attempt.
+// Returns false if max retries exceeded.
+func (c *Command) IncrementRetry(baseDelay time.Duration) bool {
+	c.RetryCount++
+	if c.MaxRetries > 0 && c.RetryCount >= c.MaxRetries {
+		return false
+	}
+	// Exponential backoff: baseDelay * 2^(retryCount-1)
+	delay := baseDelay * time.Duration(1<<(c.RetryCount-1))
+	next := time.Now().Add(delay)
+	c.NextRetryAt = &next
+	return true
 }

@@ -61,6 +61,7 @@ type Config struct {
 	OrgSettingsService     *orgapp.OrganizationSettingsService
 	MemberService          *orgapp.MemberService
 	InvitationService      *orgapp.InvitationService
+	Env                    string
 }
 
 // Server provides GraphQL HTTP handling.
@@ -109,6 +110,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		Resolver:       res,
 		AuthMiddleware: authMw,
 		PlaygroundPath: "/playground",
+		Env:            cfg.Env,
 	})
 	if err != nil {
 		return nil, err
