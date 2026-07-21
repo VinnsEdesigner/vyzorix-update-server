@@ -7,6 +7,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/refresh_token"
 )
 
@@ -84,10 +85,26 @@ func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken st
 	// Determine the role from organization membership.
 	// Role is org-scoped, so we use the operator's LastOrganizationID to determine context.
 	role := "operator"
-	if s.memberRepo != nil && op.LastOrganizationID != "" {
-		member, err := s.memberRepo.FindByOperatorAndOrg(ctx, op.ID, op.LastOrganizationID)
-		if err == nil && member.IsActive() {
-			role = string(member.Role)
+	if s.memberRepo != nil {
+		if op.LastOrganizationID != "" {
+			// Try the operator's last accessed org first
+			member, err := s.memberRepo.FindByOperatorAndOrg(ctx, op.ID, op.LastOrganizationID)
+			if err == nil && member.IsActive() {
+				role = string(member.Role)
+			}
+		} else {
+			// No LastOrganizationID — load all memberships to find the highest role
+			memberships, err := s.memberRepo.ListByOperator(ctx, op.ID)
+			if err == nil {
+				for _, m := range memberships {
+					if m.IsActive() && m.Role.Level() > organization.LevelOperator {
+						role = string(m.Role)
+						if m.Role.IsSuperAdmin() {
+							break
+						}
+					}
+				}
+			}
 		}
 	}
 

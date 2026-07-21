@@ -153,17 +153,21 @@ func (rl *RateLimiter) AllowN(clientID string, n int) bool {
 }
 
 func (rl *RateLimiter) incrementAllowed() {
+	rl.mu.RLock()
+	defer rl.mu.RUnlock()
 	rl.metricsMu.Lock()
+	defer rl.metricsMu.Unlock()
 	rl.metrics.TotalRequests++
 	rl.metrics.TotalAllowed++
-	rl.metricsMu.Unlock()
 }
 
 func (rl *RateLimiter) incrementLimited() {
+	rl.mu.RLock()
+	defer rl.mu.RUnlock()
 	rl.metricsMu.Lock()
+	defer rl.metricsMu.Unlock()
 	rl.metrics.TotalRequests++
 	rl.metrics.TotalLimited++
-	rl.metricsMu.Unlock()
 }
 
 // Reset resets the rate limit for a client.

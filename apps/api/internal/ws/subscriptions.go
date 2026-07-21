@@ -2,7 +2,10 @@
 package hub
 
 import (
+	"log/slog"
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
 // subscriptionCallback is a function that receives subscription data.
@@ -27,6 +30,64 @@ func nextCallbackID() int {
 	return callbackIDCounter
 }
 
+const (
+	maxConcurrentCallbacks = 100      // Maximum concurrent callback goroutines
+	callbackTimeout        = 30 * time.Second // Timeout for callback execution
+	droppedCounterMax      = 1000      // Max dropped events before logging
+)
+
+// subscriptionWorker handles bounded callback execution.
+type subscriptionWorker struct {
+	sem     chan struct{}   // Semaphore for limiting concurrency
+	dropped atomic.Int64    // Counter for dropped events
+	log     *slog.Logger
+	wg      sync.WaitGroup
+}
+
+// newSubscriptionWorker creates a new subscription worker pool.
+func newSubscriptionWorker(log *slog.Logger) *subscriptionWorker {
+	return &subscriptionWorker{
+		sem: make(chan struct{}, maxConcurrentCallbacks),
+		log: log,
+	}
+}
+
+// execute runs the callback with bounded concurrency and timeout.
+func (w *subscriptionWorker) execute(callback subscriptionCallback, data interface{}) {
+	select {
+	case w.sem <- struct{}{}:
+		
+		w.wg.Add(1)
+		go func() {
+			defer w.wg.Done()
+			defer func() { <-w.sem }() // Release semaphore
+
+			// Execute with panic recovery
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				callback(data)
+			}()
+
+			select {
+			case <-done:
+				return
+			case <-time.After(callbackTimeout):
+				w.log.Warn("subscription callback timed out", "timeout", callbackTimeout)
+			}
+		}()
+	default:
+		// Semaphore full - drop the event
+		dropped := w.dropped.Add(1)
+		if dropped%100 == 0 {
+			w.log.Warn("subscription callback dropped (worker pool saturated)",
+				"droppedCount", dropped,
+				"maxConcurrent", maxConcurrentCallbacks,
+			)
+		}
+	}
+}
+
 // SubscriptionManager manages real-time subscriptions for GraphQL subscriptions.
 type SubscriptionManager struct {
 	hub             *Hub
@@ -36,6 +97,7 @@ type SubscriptionManager struct {
 	orgEvents       map[string][]callbackWrapper
 	memberEvents    map[string][]callbackWrapper
 	mu              sync.RWMutex
+	worker          *subscriptionWorker
 }
 
 var (
@@ -53,6 +115,8 @@ func (h *Hub) InitSubscriptions() {
 			commandStatus: make(map[string][]callbackWrapper),
 			orgEvents:     make(map[string][]callbackWrapper),
 			memberEvents:  make(map[string][]callbackWrapper),
+			
+			worker: newSubscriptionWorker(h.log),
 		}
 	})
 }
@@ -226,7 +290,8 @@ func (h *Hub) PublishDeviceUpdate(operatorID, deviceID string, data interface{})
 	for key, wrappers := range subMgr.deviceUpdates {
 		if key == operatorID || key == operatorID+":"+deviceID {
 			for _, w := range wrappers {
-				go w.callback(data)
+				
+				subMgr.worker.execute(w.callback, data)
 			}
 		}
 	}
@@ -243,14 +308,16 @@ func (h *Hub) PublishTelemetry(operatorID, deviceID string, data interface{}) {
 	key := operatorID + ":" + deviceID
 	if wrappers, ok := subMgr.telemetry[key]; ok {
 		for _, w := range wrappers {
-			go w.callback(data)
+			
+			subMgr.worker.execute(w.callback, data)
 		}
 	}
 
 	// Also notify operator-wide subscriptions
 	if wrappers, ok := subMgr.telemetry[operatorID]; ok {
 		for _, w := range wrappers {
-			go w.callback(data)
+			
+			subMgr.worker.execute(w.callback, data)
 		}
 	}
 }
@@ -266,7 +333,8 @@ func (h *Hub) PublishCommandStatus(operatorID, dispatchID string, data interface
 	key := operatorID + ":" + dispatchID
 	if wrappers, ok := subMgr.commandStatus[key]; ok {
 		for _, w := range wrappers {
-			go w.callback(data)
+			
+			subMgr.worker.execute(w.callback, data)
 		}
 	}
 }
@@ -281,7 +349,8 @@ func (h *Hub) PublishOrganizationEvent(orgID string, data interface{}) {
 
 	if wrappers, ok := subMgr.orgEvents[orgID]; ok {
 		for _, w := range wrappers {
-			go w.callback(data)
+			
+			subMgr.worker.execute(w.callback, data)
 		}
 	}
 }
@@ -296,7 +365,8 @@ func (h *Hub) PublishMemberEvent(orgID string, data interface{}) {
 
 	if wrappers, ok := subMgr.memberEvents[orgID]; ok {
 		for _, w := range wrappers {
-			go w.callback(data)
+			
+			subMgr.worker.execute(w.callback, data)
 		}
 	}
 }

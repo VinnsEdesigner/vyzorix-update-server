@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"log/slog"
 	"strings"
 	"time"
@@ -57,7 +58,7 @@ func (s *AuthService) ResendVerification(ctx context.Context, email string) erro
 
 	op, err := s.operatorRepo.FindByEmail(ctx, email)
 	if err != nil {
-		if err == operator.ErrNotFound {
+		if errors.Is(err, operator.ErrNotFound) {
 			return nil
 		}
 		return err
@@ -152,7 +153,7 @@ func (s *AuthService) CancelVerification(ctx context.Context, email string) erro
 
 	op, err := s.operatorRepo.FindByEmail(ctx, email)
 	if err != nil {
-		if err == operator.ErrNotFound {
+		if errors.Is(err, operator.ErrNotFound) {
 			return nil
 		}
 		return err

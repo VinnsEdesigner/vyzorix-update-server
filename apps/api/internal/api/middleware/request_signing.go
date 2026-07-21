@@ -29,6 +29,7 @@ var (
 	ErrInvalidEncryptedBody   = errors.New("invalid encrypted body")
 	ErrUnknownClient          = errors.New("unknown or inactive client")
 	ErrDecryptionFailed       = errors.New("decryption failed")
+		ErrClientIDMismatch       = errors.New("client ID does not match device IMEI in request path")
 )
 
 // SigningConfig holds request signing configuration.
@@ -165,14 +166,21 @@ func (v *SignatureVerifier) ReadAndVerifyHTTP(r *http.Request) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Restore body for downstream handlers.
-	r.Body = io.NopCloser(bytes.NewReader(body))
 
-	return body, v.Verify(r.Method, r.URL.RequestURI(), body, r.Header)
+	verifiedBody, err := v.Verify(r.Method, r.URL.RequestURI(), body, r.Header)
+	if err != nil {
+		return nil, err
+	}
+
+	// Restore verified body (decrypted if encrypted) for downstream handlers.
+	r.Body = io.NopCloser(bytes.NewReader(verifiedBody))
+
+	return verifiedBody, nil
 }
 
 // Verify verifies a request signature.
-func (v *SignatureVerifier) Verify(method, path string, body []byte, h http.Header) error {
+// Returns the body used for verification (decrypted if encrypted, original otherwise).
+func (v *SignatureVerifier) Verify(method, path string, body []byte, h http.Header) ([]byte, error) {
 	// Extract headers.
 	clientID := h.Get("X-Client-ID")
 	timestamp := h.Get("X-Timestamp")
@@ -181,13 +189,13 @@ func (v *SignatureVerifier) Verify(method, path string, body []byte, h http.Head
 
 	// Check required headers.
 	if clientID == "" || timestamp == "" || signature == "" {
-		return ErrMissingHeaders
+		return nil, ErrMissingHeaders
 	}
 
 	// Parse and validate timestamp.
 	ts, err := strconv.ParseInt(timestamp, 10, 64)
 	if err != nil {
-		return ErrInvalidTimestamp
+		return nil, ErrInvalidTimestamp
 	}
 
 	now := v.Now()
@@ -195,13 +203,13 @@ func (v *SignatureVerifier) Verify(method, path string, body []byte, h http.Head
 
 	// Check timestamp window.
 	if requestTime.Before(now.Add(-v.Config.TimestampWindow)) || requestTime.After(now.Add(v.Config.TimestampWindow)) {
-		return ErrTimestampOutsideWindow
+		return nil, ErrTimestampOutsideWindow
 	}
 
 	// Get client secret.
 	secret, ok := v.ClientSecret(clientID)
 	if !ok || secret == "" {
-		return ErrUnknownClient
+		return nil, ErrUnknownClient
 	}
 
 	// For requests with encrypted body, decrypt first.
@@ -210,7 +218,7 @@ func (v *SignatureVerifier) Verify(method, path string, body []byte, h http.Head
 	if encryptedBody != "" {
 		decrypted, err := v.decryptBody(encryptedBody, secret)
 		if err != nil {
-			return ErrInvalidEncryptedBody
+			return nil, ErrInvalidEncryptedBody
 		}
 
 		bodyToVerify = decrypted
@@ -222,16 +230,16 @@ func (v *SignatureVerifier) Verify(method, path string, body []byte, h http.Head
 	// Verify signature.
 	expectedSig := v.computeSignature(method, path, timestamp, bodyToVerify, secret)
 	if !hmac.Equal([]byte(expectedSig), []byte(signature)) {
-		return ErrInvalidSignature
+		return nil, ErrInvalidSignature
 	}
 
 	// Check replay cache (only if not using encrypted body replay protection).
 	sigKey := clientID + ":" + signature
 	if !v.replayCache.Use(sigKey) {
-		return ErrReplayDetected
+		return nil, ErrReplayDetected
 	}
 
-	return nil
+	return bodyToVerify, nil
 }
 
 // computeSignature computes the HMAC-SHA512 signature.
@@ -375,6 +383,9 @@ func RequestSigningMiddleware(verifier *SignatureVerifier) func(c *gin.Context) 
 			return
 		}
 
+		// Extract clientID from header for IMEI verification after successful auth.
+		clientID := c.GetHeader("X-Client-ID")
+
 		// Read body and verify signature.
 		body, err := verifier.ReadAndVerifyHTTP(c.Request)
 		if err != nil {
@@ -422,6 +433,16 @@ func RequestSigningMiddleware(verifier *SignatureVerifier) func(c *gin.Context) 
 				})
 			}
 
+			return
+		}
+
+		
+		// This prevents a compromised device from forging requests for another device's IMEI.
+		if imei := c.Param("imei"); imei != "" && clientID != imei {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error":   "SIGN_008",
+				"message": "Client ID does not match device IMEI in request path",
+			})
 			return
 		}
 

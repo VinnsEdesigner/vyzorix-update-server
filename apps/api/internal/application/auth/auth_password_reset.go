@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"strings"
 	"time"
 
@@ -43,7 +44,7 @@ func (s *AuthService) GeneratePasswordResetToken(ctx context.Context, email stri
 	// Check if operator exists.
 	op, err := s.operatorRepo.FindByEmail(ctx, email)
 	if err != nil {
-		if err == operator.ErrNotFound {
+		if errors.Is(err, operator.ErrNotFound) {
 			// Return success anyway to prevent email enumeration.
 			return "", nil
 		}
@@ -93,7 +94,7 @@ func (s *AuthService) ValidatePasswordResetToken(ctx context.Context, token, ema
 	// Look up token.
 	prt, err := s.passwordResetRepo.FindByTokenHash(ctx, tokenHash)
 	if err != nil {
-		if err == password_reset.ErrNotFound {
+		if errors.Is(err, password_reset.ErrNotFound) {
 			return application.ErrInvalidInput
 		}
 
@@ -142,7 +143,7 @@ func (s *AuthService) ResetPassword(ctx context.Context, token, _email string, n
 	// Look up token.
 	prt, err := s.passwordResetRepo.FindByTokenHash(ctx, tokenHash)
 	if err != nil {
-		if err == password_reset.ErrNotFound {
+		if errors.Is(err, password_reset.ErrNotFound) {
 			return application.ErrInvalidInput
 		}
 		return err
@@ -199,7 +200,7 @@ func (s *AuthService) GetResendTracker(ctx context.Context, email string) (*pass
 func (s *AuthService) CheckResendRateLimit(ctx context.Context, email string) (*ResendRateLimitResult, error) {
 	tracker, err := s.GetResendTracker(ctx, email)
 	if err != nil {
-		if err == password_reset.ErrNotFound {
+		if errors.Is(err, password_reset.ErrNotFound) {
 			return &ResendRateLimitResult{Allowed: true, TotalSent: 0}, nil
 		}
 
@@ -234,7 +235,7 @@ func (s *AuthService) UpdateResendTracker(ctx context.Context, email string) err
 	// Get existing tracker.
 	tracker, err := s.passwordResetRepo.GetResendTracker(ctx, emailHash)
 	if err != nil {
-		if err == password_reset.ErrNotFound {
+		if errors.Is(err, password_reset.ErrNotFound) {
 			// Create new tracker.
 			newCount = 1
 		} else {

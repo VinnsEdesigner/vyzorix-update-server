@@ -11,6 +11,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/schema"
 	"github.com/gin-gonic/gin"
 	gql "github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/parser"
 	gqlerrors "github.com/graphql-go/graphql/gqlerrors"
 )
 
@@ -20,6 +22,9 @@ type Config struct {
 	Resolver       *resolver.Resolver
 	AuthMiddleware *middleware.AuthMiddleware
 	PlaygroundPath string
+	Env            string // Environment: "production" disables Playground
+	MaxDepth       int    // Maximum query depth (default 15)
+	MaxComplexity  int    // Maximum query complexity score (default 1000)
 }
 
 // Handler is the GraphQL HTTP handler.
@@ -29,7 +34,10 @@ type Handler struct {
 	authMiddleware *middleware.AuthMiddleware
 	presenter      *ResponsePresenter
 	playgroundPath string
+	env            string
 	schema         gql.Schema
+	maxDepth       int
+	maxComplexity  int
 }
 
 // NewHandler creates a new GraphQL handler.
@@ -44,13 +52,26 @@ func NewHandler(cfg *Config) (*Handler, error) {
 		path = "/playground"
 	}
 
+	maxDepth := cfg.MaxDepth
+	if maxDepth <= 0 {
+		maxDepth = 15 // Default max depth
+	}
+
+	maxComplexity := cfg.MaxComplexity
+	if maxComplexity <= 0 {
+		maxComplexity = 1000 // Default max complexity
+	}
+
 	h := &Handler{
 		schema:         gqlSchema,
 		resolver:       cfg.Resolver,
 		authMiddleware: cfg.AuthMiddleware,
 		playgroundPath: path,
+		env:            cfg.Env,
 		logger:         cfg.Logger,
 		presenter:      NewResponsePresenter(),
+		maxDepth:       maxDepth,
+		maxComplexity:  maxComplexity,
 	}
 
 	return h, nil
@@ -69,6 +90,80 @@ type Response struct {
 	Errors interface{} `json:"errors,omitempty"`
 }
 
+
+func (h *Handler) validateQuery(query string) (int, int, error) {
+	// Parse the query to get the AST
+	doc, err := parser.Parse(parser.ParseParams{
+		Source: query,
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+
+	// Calculate depth and complexity
+	depth := 0
+	complexity := 0
+
+	for _, definition := range doc.Definitions {
+		switch def := definition.(type) {
+		case *ast.OperationDefinition:
+			d, c := h.calculateDepthAndComplexity(def.SelectionSet)
+			if d > depth {
+				depth = d
+			}
+			complexity += c
+		case *ast.FragmentDefinition:
+			d, c := h.calculateDepthAndComplexity(def.SelectionSet)
+			if d > depth {
+				depth = d
+			}
+			complexity += c
+		}
+	}
+
+	return depth, complexity, nil
+}
+
+// calculateDepthAndComplexity recursively calculates depth and complexity of a selection set.
+func (h *Handler) calculateDepthAndComplexity(selectionSet *ast.SelectionSet) (int, int) {
+	if selectionSet == nil {
+		return 0, 0
+	}
+
+	maxChildDepth := 0
+	complexity := 1 // Each selection adds at least 1 to complexity
+
+	for _, selection := range selectionSet.Selections {
+		switch sel := selection.(type) {
+		case *ast.Field:
+			if sel.SelectionSet != nil {
+				childDepth, childComplexity := h.calculateDepthAndComplexity(sel.SelectionSet)
+				if childDepth+1 > maxChildDepth {
+					maxChildDepth = childDepth + 1
+				}
+				complexity += childComplexity
+			}
+		case *ast.InlineFragment:
+			if sel.SelectionSet != nil {
+				childDepth, childComplexity := h.calculateDepthAndComplexity(sel.SelectionSet)
+				if childDepth+1 > maxChildDepth {
+					maxChildDepth = childDepth + 1
+				}
+				complexity += childComplexity
+			}
+		case *ast.FragmentSpread:
+			// Fragment spreads add to complexity due to potential nested selections
+			complexity += 2
+		}
+	}
+
+	if maxChildDepth == 0 {
+		maxChildDepth = 1
+	}
+
+	return maxChildDepth, complexity
+}
+
 // Handle processes GraphQL requests.
 func (h *Handler) Handle(c *gin.Context) {
 	startTime := time.Now()
@@ -77,6 +172,25 @@ func (h *Handler) Handle(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.sendError(c, http.StatusBadRequest, h.presenter.BadRequest("invalid request body"))
 		return
+	}
+
+	
+	if req.Query != "" {
+		depth, complexity, err := h.validateQuery(req.Query)
+		if err != nil {
+			h.sendError(c, http.StatusBadRequest, h.presenter.BadRequest("invalid query syntax"))
+			return
+		}
+
+		if depth > h.maxDepth {
+			h.sendError(c, http.StatusBadRequest, h.presenter.Forbidden("query depth exceeds maximum allowed"))
+			return
+		}
+
+		if complexity > h.maxComplexity {
+			h.sendError(c, http.StatusBadRequest, h.presenter.Forbidden("query complexity exceeds maximum allowed"))
+			return
+		}
 	}
 
 	headers := map[string]string{
@@ -182,11 +296,14 @@ func (h *Handler) Routes(r *gin.Engine) {
 	orgGraphQL := r.Group("/v1/orgs/:organizationId/graphql")
 	orgGraphQL.POST("", h.Handle)
 	orgGraphQL.GET("", h.Handle)
-	orgGraphQL.GET(h.playgroundPath, h.Playground)
 
-	// Legacy routes for backward compatibility (deprecated - use org-scoped routes)
-	r.POST("/graphql", h.Handle)
-	r.GET("/graphql", h.Handle)
+	// Playground is only enabled in non-production environments
+	if h.env != "production" {
+		orgGraphQL.GET(h.playgroundPath, h.Playground)
+	}
+
+	// Legacy routes have been removed - they lacked proper org membership checks
+	// Use /v1/orgs/:organizationId/graphql for multi-tenant isolation
 }
 
 // RegisterSubscriptions registers the WebSocket endpoint for subscriptions.
@@ -195,8 +312,7 @@ func (h *Handler) RegisterSubscriptions(r *gin.Engine, wsHandler func(*gin.Conte
 	orgGraphQL := r.Group("/v1/orgs/:organizationId/graphql")
 	orgGraphQL.GET("/ws", wsHandler)
 
-	// Legacy route for backward compatibility
-	r.GET("/graphql/ws", wsHandler)
+	// Legacy WebSocket route removed - use /v1/orgs/:organizationId/graphql/ws instead
 }
 
 const playgroundHTML = `<!DOCTYPE html>

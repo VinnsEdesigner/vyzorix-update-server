@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -118,7 +119,7 @@ func (s *AuthService) VerifyJWT(token string) (*infraauth.OperatorClaims, error)
 func (s *AuthService) UpdateOperator(ctx context.Context, operatorID string, req *UpdateOperatorRequest) (*operator.Operator, error) {
 	op, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
-		if err == operator.ErrNotFound {
+		if errors.Is(err, operator.ErrNotFound) {
 			return nil, application.ErrOperatorNotFound
 		}
 		return nil, err
@@ -176,7 +177,7 @@ func (s *AuthService) UpdateOperator(ctx context.Context, operatorID string, req
 func (s *AuthService) DeleteOperator(ctx context.Context, operatorID string) error {
 	op, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
-		if err == operator.ErrNotFound {
+		if errors.Is(err, operator.ErrNotFound) {
 			return application.ErrOperatorNotFound
 		}
 		return err
@@ -230,7 +231,7 @@ func (s *AuthService) DeleteOperator(ctx context.Context, operatorID string) err
 func (s *AuthService) DeleteOwnAccount(ctx context.Context, operatorID, password string) error {
 	op, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
-		if err == operator.ErrNotFound {
+		if errors.Is(err, operator.ErrNotFound) {
 			return application.ErrOperatorNotFound
 		}
 		return err

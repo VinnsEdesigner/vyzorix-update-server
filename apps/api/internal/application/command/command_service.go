@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
@@ -31,7 +32,7 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 	// Check if device exists.
 	_, err := s.deviceRepo.FindByID(ctx, req.DeviceID)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, application.ErrDeviceNotFound
 		}
 
@@ -83,6 +84,8 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 		Command:    req.Command,
 		Args:       args,
 		Status:     command.StatusPending,
+		RetryCount: 0,
+		MaxRetries: 5, // Default max retries for outbox pattern
 		CreatedAt:  now,
 		UpdatedAt:  now,
 	}
@@ -104,7 +107,7 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 func (s *Service) GetCommandStatus(ctx context.Context, commandID string) (*dto.CommandStatusResponse, error) {
 	cmd, err := s.commandRepo.FindByID(ctx, commandID)
 	if err != nil {
-		if err == command.ErrNotFound {
+		if errors.Is(err, command.ErrNotFound) {
 			return nil, application.ErrCommandNotFound
 		}
 
@@ -224,7 +227,7 @@ func (s *Service) RetryCommand(ctx context.Context, dispatchID string) (*dto.Sen
 func (s *Service) GetCommandByDispatchID(ctx context.Context, dispatchID string) (*dto.CommandStatusResponse, error) {
 	cmd, err := s.commandRepo.FindByDispatchIDOnly(ctx, dispatchID)
 	if err != nil {
-		if err == command.ErrNotFound {
+		if errors.Is(err, command.ErrNotFound) {
 			return nil, application.ErrCommandNotFound
 		}
 

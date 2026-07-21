@@ -177,12 +177,26 @@ FRONTEND_URL=http://localhost:5173
 
 The project uses `golangci-lint v2.12.2` for strict Go linting. The linter is automatically installed when running `make lint-go`.
 
+### Version Locking
+
+The golangci-lint version is **locked** via the `.golangci-version` file in `apps/api/`. This ensures all developers and CI use the same version:
+
+```bash
+# View locked version
+cat apps/api/.golangci-version
+```
+
+To upgrade the linter version:
+1. Update `apps/api/.golangci-version` with the new version (e.g., `v2.13.0`)
+2. Run `make lint-go` to install and test the new version
+3. Commit the change to ensure CI uses the new version
+
 ### Running Linting
 
 ```bash
 cd apps/api
 
-# Run linting (auto-installs golangci-lint v2.12.2 if not present)
+# Run linting (auto-installs version from .golangci-version if not present)
 make lint-go
 
 # Run linting with auto-fix capabilities
@@ -197,17 +211,6 @@ The linting configuration is in `.golangci.yml` with strict settings:
 - `godot` - Comment formatting (all comments must end with periods)
 - `perfsprint` - Faster string formatting alternatives
 - Many other linters for code quality
-
-### Version Control
-
-The linter version is controlled by the `GOLANGCILINT_VERSION` variable in the Makefile. To upgrade:
-
-1. Update the version in `apps/api/Makefile`:
-```makefile
-GOLANGCILINT_VERSION=v2.x.x
-```
-
-2. Run `make lint-go` to install and test the new version.
 
 ## Troubleshooting
 

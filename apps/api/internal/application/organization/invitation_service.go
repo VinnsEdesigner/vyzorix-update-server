@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
@@ -46,6 +47,7 @@ type InvitationService struct {
 	emailService    EmailService
 	logger          *slog.Logger
 	baseURL         string
+	emailWg         sync.WaitGroup // tracks background email goroutines
 }
 
 // NewInvitationService creates a new InvitationService.
@@ -72,6 +74,22 @@ func NewInvitationService(
 		emailService:   emailService,
 		logger:         logger,
 		baseURL:        baseURL,
+	}
+}
+
+// Shutdown waits for all pending email goroutines to complete.
+// Call this during graceful shutdown to ensure no emails are dropped.
+func (s *InvitationService) Shutdown(ctx context.Context) error {
+	done := make(chan struct{})
+	go func() {
+		s.emailWg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
 
@@ -166,18 +184,26 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 
 	// Send email (non-transactional)
 	if s.emailService != nil {
+		inv := inv // capture loop var if in loop
+		email := email
+		memberName := member.OperatorName
+		orgName := org.Name
+		s.emailWg.Add(1)
 		go func() {
+			defer s.emailWg.Done()
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
 			inviteData := emailSvc.InvitationData{
 				InviteeName:       email,
-				InviterName:       member.OperatorName,
-				OrganizationName:  org.Name,
+				InviterName:       memberName,
+				OrganizationName:  orgName,
 				Role:              string(inv.Role),
 				InviterNotes:      inv.InviterNotes,
 				AcceptURL:         fmt.Sprintf("%s/invite/%s/accept", s.getBaseURL(), inv.Token),
 				ExpiryDays:        7,
 				BaseURL:           s.getBaseURL(),
 			}
-			if err := s.emailService.SendInvitationEmail(context.Background(), email, inviteData); err != nil {
+			if err := s.emailService.SendInvitationEmail(ctx, email, inviteData); err != nil {
 				s.logger.Error("failed to send invitation email",
 					"invitation_id", inv.ID,
 					"email", email,
@@ -307,22 +333,32 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 
 		// Send notification email to inviter (async)
 		if s.emailService != nil {
+			inv := inv // capture loop var
+			opEmail := operatorEmail
+			invNotes := notes
+			invOrgID := inv.OrganizationID
+			invRole := inv.Role
+			invInviterEmail := inv.InviterEmail
+			s.emailWg.Add(1)
 			go func() {
-				org, _ := s.orgRepo.FindByID(context.Background(), inv.OrganizationID)
+				defer s.emailWg.Done()
+				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				org, _ := s.orgRepo.FindByID(ctx, invOrgID)
 				orgName := ""
 				if org != nil {
 					orgName = org.Name
 				}
 				inviteData := emailSvc.InvitationData{
-					InviteeName:      operatorEmail,
+					InviteeName:      opEmail,
 					OrganizationName: orgName,
-					Role:             string(inv.Role),
-					InviteeNotes:     notes,
+					Role:             string(invRole),
+					InviteeNotes:     invNotes,
 					AcceptedAt:       time.Now().Format("2006-01-02 15:04:05"),
 					BaseURL:          s.getBaseURL(),
 				}
-				if inv.InviterEmail != "" {
-					if err := s.emailService.SendInvitationAcceptedEmail(context.Background(), inv.InviterEmail, inviteData); err != nil {
+				if invInviterEmail != "" {
+					if err := s.emailService.SendInvitationAcceptedEmail(ctx, invInviterEmail, inviteData); err != nil {
 						s.logger.Error("failed to send acceptance notification", "error", err)
 					}
 				}
@@ -372,21 +408,31 @@ func (s *InvitationService) RejectInvitation(ctx context.Context, token, operato
 
 		// Send notification email to inviter (async)
 		if s.emailService != nil {
+			inv := inv // capture loop var
+			opEmail := operatorEmail
+			invNotes := notes
+			invOrgID := inv.OrganizationID
+			invRole := inv.Role
+			invInviterEmail := inv.InviterEmail
+			s.emailWg.Add(1)
 			go func() {
-				org, _ := s.orgRepo.FindByID(context.Background(), inv.OrganizationID)
+				defer s.emailWg.Done()
+				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				org, _ := s.orgRepo.FindByID(ctx, invOrgID)
 				orgName := ""
 				if org != nil {
 					orgName = org.Name
 				}
 				inviteData := emailSvc.InvitationData{
-					InviteeName:      operatorEmail,
+					InviteeName:      opEmail,
 					OrganizationName: orgName,
-					Role:             string(inv.Role),
-					InviteeNotes:     notes,
+					Role:             string(invRole),
+					InviteeNotes:     invNotes,
 					BaseURL:          s.getBaseURL(),
 				}
-				if inv.InviterEmail != "" {
-					if err := s.emailService.SendInvitationRejectedEmail(context.Background(), inv.InviterEmail, inviteData); err != nil {
+				if invInviterEmail != "" {
+					if err := s.emailService.SendInvitationRejectedEmail(ctx, invInviterEmail, inviteData); err != nil {
 						s.logger.Error("failed to send rejection notification", "error", err)
 					}
 				}

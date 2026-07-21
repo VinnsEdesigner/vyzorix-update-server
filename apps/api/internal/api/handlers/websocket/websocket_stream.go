@@ -22,6 +22,8 @@ type StreamUpgrader struct {
 	upgrader        websocket.Upgrader
 	hmacVerifier    cryptohmac.Verifier
 	config          config.Config
+	log             *slog.Logger
+	allowDevAuth    bool
 }
 
 // NewStreamUpgrader creates a new StreamUpgrader.
@@ -33,10 +35,22 @@ func NewStreamUpgrader(
 	originValidator := infraauth.NewOriginValidator(cfg.AllowedOrigins)
 	originValidator.SetLogger(log)
 
+	
+	allowDevAuth := false
+	if cfg.Env != "production" && !cfg.EnforceHMAC {
+		log.Warn("WebSocket HMAC authentication is disabled - this is insecure and should not be used in production",
+			"env", cfg.Env,
+			"enforceHMAC", cfg.EnforceHMAC,
+		)
+		allowDevAuth = true
+	}
+
 	return &StreamUpgrader{
 		originValidator: originValidator,
 		hmacVerifier:    hmacVerifier,
 		config:          cfg,
+		log:             log,
+		allowDevAuth:    allowDevAuth,
 		upgrader: websocket.Upgrader{
 			CheckOrigin:      originValidator.CheckOrigin(),
 			HandshakeTimeout: 10 * time.Second,
@@ -48,12 +62,17 @@ func NewStreamUpgrader(
 // Returns the WebSocket connection and registered client on success.
 // Returns an error and sends appropriate HTTP response on failure.
 func (u *StreamUpgrader) Upgrade(c *gin.Context, deviceID string) (*websocket.Conn, *hub.Client, error) {
-	// Verify HMAC signature if enforced
-	if u.config.EnforceHMAC {
+	
+	// In development, only skip if allowDevAuth is true (meaning EnforceHMAC=false was set)
+	if u.config.Env == "production" || u.config.EnforceHMAC {
 		if err := u.verifyHMAC(c.Request); err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Invalid request"})
 			return nil, nil, err
 		}
+	} else if !u.allowDevAuth {
+		// This case handles production with EnforceHMAC=false (shouldn't happen but is defensive)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "WebSocket authentication is required"})
+		return nil, nil, http.ErrNotSupported
 	}
 
 	// Perform WebSocket upgrade

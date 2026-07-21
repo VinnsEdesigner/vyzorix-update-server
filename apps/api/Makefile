@@ -8,7 +8,8 @@ GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 GOFMT=gofmt
 GOVET=$(GOCMD) vet
-GOLANGCILINT_VERSION=v2.12.2
+# Version locked via .golangci-version file
+GOLANGCILINT_VERSION=$(shell cat .golangci-version)
 GOLANGCILINT_INSTALL_DIR=/workspace/go/bin
 GOLANGCILINT=$(GOLANGCILINT_INSTALL_DIR)/golangci-lint
 
@@ -126,16 +127,19 @@ vet:
 
 lint-go:
 	@echo "Installing golangci-lint $(GOLANGCILINT_VERSION)..."
-	@if [ ! -f "$(GOLANGCILINT)" ] || [ "$$($(GOLANGCILINT) --version 2>/dev/null | grep -o 'version [0-9.]*' | cut -d' ' -f2)" != "2.12.2" ]; then \
+	@REQUIRED_VERSION=$(shell cat .golangci-version) && \
+	VERSION_NO_V=$$(echo "$$REQUIRED_VERSION" | sed 's/^v//') && \
+	INSTALLED_VERSION=$$($(GOLANGCILINT) --version 2>/dev/null | grep -o 'version [0-9.]*' | cut -d' ' -f2) && \
+	if [ ! -f "$(GOLANGCILINT)" ] || [ "$$INSTALLED_VERSION" != "$$VERSION_NO_V" ]; then \
 		mkdir -p $(GOLANGCILINT_INSTALL_DIR); \
-		curl -sSfL https://github.com/golangci/golangci-lint/releases/download/$(GOLANGCILINT_VERSION)/golangci-lint-$(GOLANGCILINT_VERSION)-linux-amd64.tar.gz -o /tmp/golangci-lint.tar.gz && \
+		curl -sSfL https://github.com/golangci/golangci-lint/releases/download/$$REQUIRED_VERSION/golangci-lint-$$VERSION_NO_V-linux-amd64.tar.gz -o /tmp/golangci-lint.tar.gz && \
 		tar -xzf /tmp/golangci-lint.tar.gz -C /tmp && \
-		cp /tmp/golangci-lint-$(GOLANGCILINT_VERSION)-linux-amd64/golangci-lint $(GOLANGCILINT) && \
+		cp /tmp/golangci-lint-$$VERSION_NO_V-linux-amd64/golangci-lint $(GOLANGCILINT) && \
 		chmod +x $(GOLANGCILINT) && \
-		rm -rf /tmp/golangci-lint* /tmp/golangci-lint-$(GOLANGCILINT_VERSION)-linux-amd64 && \
-		echo "Installed $(GOLANGCILINT_VERSION)"; \
+		rm -rf /tmp/golangci-lint* /tmp/golangci-lint-$$VERSION_NO_V-linux-amd64 && \
+		echo "Installed $$REQUIRED_VERSION"; \
 	else \
-		echo "golangci-lint $(GOLANGCILINT_VERSION) already installed"; \
+		echo "golangci-lint $$VERSION_NO_V already installed (version locked via .golangci-version)"; \
 	fi
 	@echo "Running Go linting..."
 	$(GOLANGCILINT) run ./...

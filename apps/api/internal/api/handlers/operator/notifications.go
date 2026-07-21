@@ -82,6 +82,12 @@ func (h *NotificationHandler) TestWebhook(c *gin.Context) {
 		return
 	}
 
+	// Block SSRF: reject URLs resolving to private/internal IPs
+	if err := infrawebhook.ValidateURL(req.URL); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid webhook URL: " + err.Error()})
+		return
+	}
+
 	result, err := h.webhookClient.Test(c.Request.Context(), req.URL)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{

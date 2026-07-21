@@ -1,0 +1,2 @@
+module github.com/VinnsEdesigner/vyzorix/apps/api
+golangci-lint: v2.12.2

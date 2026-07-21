@@ -116,6 +116,7 @@ type Config struct {
 	EnforceHMAC              bool
 	EnableGraphQL            bool
 	RequireKeyName           bool
+	AuditLogPath             string
 }
 
 // DiagnosticsConfig holds configuration for the diagnostics API.
@@ -238,6 +239,7 @@ func Load() (Config, error) {
 		EmailVerifyTokenExpiry:   emailVerifyExpiry,
 		PasswordResetTokenExpiry: passwordResetExpiry,
 		EnableGraphQL:            getBool("ENABLE_GRAPHQL", true), // Enabled by default
+		AuditLogPath:             get("AUDIT_LOG_PATH", "./data/audit.log"),
 		DiagnosticsConfig:        LoadDiagnosticsConfig(),
 	}
 

@@ -2,6 +2,8 @@
 package resolver
 
 import (
+	"errors"
+
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
@@ -221,7 +223,7 @@ func (r *Resolver) DeregisterDeviceGraphQL(p graphql.ResolveParams) (interface{}
 
 	result, err := r.DeviceService.DeregisterDeviceByOperator(ctx, imei, op.ID, orgID, hard)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, r.Presenter.NotFoundError("device not found or not owned by operator")
 		}
 		return nil, r.Presenter.InternalError("failed to deregister device")

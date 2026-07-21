@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -74,7 +75,7 @@ func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, dev
 
 	d, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
 	if err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{
 				"error":   "not_found",
 				"message": "device not found in organization",

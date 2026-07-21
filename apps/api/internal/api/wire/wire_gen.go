@@ -27,7 +27,7 @@ func Injector(cfg config.Config) (*Server, error) {
 		return nil, err
 	}
 	db := ProvideDB(sqLite)
-	auditLogger := ProvideAuditLogger(db, logger)
+	auditLogger := ProvideAuditLogger(db, cfg)
 	manager := ProvideSessionManager(cfg)
 	verifier := ProvideGoogleVerifier(cfg)
 	operatorRepository := ProvideOperatorRepository(db)

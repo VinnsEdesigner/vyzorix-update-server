@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
@@ -66,7 +67,7 @@ type PaginationInfo struct {
 func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest) (*HistoryResponse, error) {
 	// Validate device belongs to organization
 	if _, err := s.devRepo.FindByIDAndOrganization(ctx, req.DeviceID, req.OrganizationID); err != nil {
-		if err == device.ErrNotFound {
+		if errors.Is(err, device.ErrNotFound) {
 			return nil, err
 		}
 		return nil, err
