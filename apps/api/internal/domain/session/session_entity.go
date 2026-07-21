@@ -16,6 +16,10 @@ type Session struct {
 	CreatedAt                time.Time
 	SelectedOrganizationID    string
 
+	// MFA verification - if set, this session was created after MFA was verified.
+	// Required when operator has MFA enabled.
+	MFAVerifiedAt *time.Time
+
 	// Optional metadata.
 	IPAddress string
 	UserAgent string

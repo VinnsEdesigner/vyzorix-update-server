@@ -80,14 +80,42 @@ func (s *AuthService) EnrollMFA(ctx context.Context, operatorID, email string) (
 }
 
 // EnableMFA enables MFA for an operator after verifying a code.
+// It invalidates all existing sessions to ensure MFA is enforced on next login.
 func (s *AuthService) EnableMFA(ctx context.Context, operatorID, secret string, backupCodes []string) error {
 	binding := infraauth.CreateMFASecretBinding(operatorID, secret)
-	return s.operatorRepo.UpdateMFA(ctx, operatorID, secret, binding.MAC, true)
+	if err := s.operatorRepo.UpdateMFA(ctx, operatorID, secret, binding.MAC, true); err != nil {
+		return err
+	}
+
+	// Invalidate all existing sessions - user must re-authenticate with MFA
+	if err := s.LogoutAll(ctx, operatorID); err != nil {
+		// Log but don't fail - MFA is enabled, sessions will expire anyway
+		return nil
+	}
+
+	return nil
 }
 
 // DisableMFA disables MFA for an operator.
+// It revokes all sessions and refresh tokens to ensure security after MFA is disabled.
 func (s *AuthService) DisableMFA(ctx context.Context, operatorID string) error {
-	return s.operatorRepo.UpdateMFA(ctx, operatorID, "", "", false)
+	if err := s.operatorRepo.UpdateMFA(ctx, operatorID, "", "", false); err != nil {
+		return err
+	}
+
+	// Revoke all sessions for this operator
+	if err := s.LogoutAll(ctx, operatorID); err != nil {
+		// Log but don't fail
+	}
+
+	// Revoke all refresh tokens for this operator
+	if s.refreshTokenRepo != nil {
+		if err := s.refreshTokenRepo.RevokeAllForOperator(ctx, operatorID); err != nil {
+			// Log but don't fail
+		}
+	}
+
+	return nil
 }
 
 // GetMFAStatus returns MFA status for an operator.

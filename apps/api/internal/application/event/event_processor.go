@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"math"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
@@ -465,9 +466,36 @@ func (p *Processor) ProcessError(ctx context.Context, deviceID string, errMsg st
 func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data map[string]any, thresholds *ThresholdConfig) []*event.Event {
 	var events []*event.Event
 
-	// Check risk score
-	if riskScore, ok := data["riskScore"].(float64); ok {
-		if riskScore >= float64(thresholds.RiskScoreCritical) {
+	// Calculate server-side risk score from corroborating telemetry fields
+	serverRiskScore := calculateServerSideRiskScore(data, thresholds)
+
+	// Check risk score - use server-calculated score for threshold checks
+	// Clamp device-reported riskScore to [0, 100] and emit security event if divergence is significant
+	if deviceRiskScore, ok := data["riskScore"].(float64); ok {
+		// Clamp to valid range
+		if deviceRiskScore < 0 {
+			deviceRiskScore = 0
+		} else if deviceRiskScore > 100 {
+			deviceRiskScore = 100
+		}
+
+		// Check for significant divergence (> 20 points) between device-reported and server-calculated
+		divergence := math.Abs(deviceRiskScore - serverRiskScore)
+		if divergence > 20 {
+			events = append(events, &event.Event{
+				ID:         generateEventID(),
+				DeviceID:   deviceID,
+				OperatorID: operatorID,
+				Type:       event.EventTypeError,
+				Severity:   event.SeverityWarning,
+				Timestamp:  time.Now(),
+				Data:       map[string]any{"riskScoreDivergence": divergence, "deviceReported": deviceRiskScore, "serverCalculated": serverRiskScore, "issue": "risk_score_manipulation_detected"},
+				Source:     "server",
+			})
+		}
+
+		// Use the server-calculated risk score for threshold checks
+		if serverRiskScore >= float64(thresholds.RiskScoreCritical) {
 			events = append(events, &event.Event{
 				ID:         generateEventID(),
 				DeviceID:   deviceID,
@@ -475,10 +503,10 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 				Type:       event.EventTypeRiskScoreAlert,
 				Severity:   event.SeverityCritical,
 				Timestamp:  time.Now(),
-				Data:       map[string]any{"riskScore": riskScore, "threshold": thresholds.RiskScoreCritical},
+				Data:       map[string]any{"riskScore": serverRiskScore, "threshold": thresholds.RiskScoreCritical, "deviceReported": deviceRiskScore},
 				Source:     "server",
 			})
-		} else if riskScore >= float64(thresholds.RiskScoreWarning) {
+		} else if serverRiskScore >= float64(thresholds.RiskScoreWarning) {
 			events = append(events, &event.Event{
 				ID:         generateEventID(),
 				DeviceID:   deviceID,
@@ -486,7 +514,7 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 				Type:       event.EventTypeThresholdBreach,
 				Severity:   event.SeverityWarning,
 				Timestamp:  time.Now(),
-				Data:       map[string]any{"riskScore": riskScore, "threshold": thresholds.RiskScoreWarning},
+				Data:       map[string]any{"riskScore": serverRiskScore, "threshold": thresholds.RiskScoreWarning, "deviceReported": deviceRiskScore},
 				Source:     "server",
 			})
 		}
@@ -547,6 +575,48 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 	}
 
 	return events
+}
+
+// calculateServerSideRiskScore derives a risk score from corroborating telemetry fields.
+// This prevents devices from manipulating their reported riskScore to suppress or flood alerts.
+func calculateServerSideRiskScore(data map[string]any, thresholds *ThresholdConfig) float64 {
+	var score float64
+
+	hasThermal := false
+	hasBuffer := false
+
+	// Thermal contribution: 0-40 points (normalized from 0 to ThermalCritical*1.5)
+	if thermalTemp, ok := data["thermalTemp"].(float64); ok {
+		hasThermal = true
+		thermalScore := (thermalTemp / (thresholds.ThermalCritical * 1.5)) * 40
+		if thermalScore > 40 {
+			thermalScore = 40
+		}
+		score += thermalScore
+	}
+
+	// Buffer contribution: 0-40 points (inverse - low buffer is high risk)
+	if bufferLevel, ok := data["bufferLevel"].(float64); ok {
+		hasBuffer = true
+		// Buffer 100% = 0 risk, buffer 0% = 40 risk
+		bufferScore := (100 - bufferLevel) / 100 * 40
+		score += bufferScore
+	}
+
+	// Additional factor: if both thermal and buffer are present, add 20 points for combined risk
+	if hasThermal && hasBuffer {
+		score += 20
+	}
+
+	// Clamp to [0, 100]
+	if score > 100 {
+		score = 100
+	}
+	if score < 0 {
+		score = 0
+	}
+
+	return score
 }
 
 // getDeviceName extracts the device name from a device entity.
