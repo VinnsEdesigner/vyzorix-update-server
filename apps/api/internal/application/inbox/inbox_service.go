@@ -14,6 +14,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/password"
 	"github.com/gin-gonic/gin"
 )
 
@@ -243,7 +244,15 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 	if err != nil {
 		return nil, ErrSecretGeneration
 	}
+	// Store plaintext temporarily for FCM notification (never persisted)
 	entry.CommandSecret = secret
+
+	// Hash the secret for secure storage in DB
+	secretHash, err := password.HashSecret(secret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash command secret: %w", err)
+	}
+	entry.CommandSecretHash = secretHash
 
 	// Create device in devices table
 	if s.deviceSvc != nil {
@@ -363,7 +372,39 @@ func (s *Service) CreateInboxRequest(ctx context.Context, req *InboxRequest) (*I
 		return nil, err
 	}
 
-	// Check if device already exists or has pending registration
+	// Use transaction to prevent TOCTOU race on IMEI uniqueness
+	// The cleanup + create must be atomic to avoid duplicate entries
+	if s.txManager != nil {
+		var response *InboxEntryResponse
+		err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
+			// Check if device already exists or has pending registration
+			existingEntry, err := s.checkDeviceAndInboxStatus(txCtx, req.IMEI)
+			if err != nil {
+				return err
+			}
+
+			if existingEntry != nil {
+				response = s.buildInboxEntryResponse(existingEntry)
+				return nil
+			}
+
+			// Create new inbox entry within transaction
+			entry, err := s.createInboxEntry(txCtx, req)
+			if err != nil {
+				return err
+			}
+
+			s.logAndRecordMetrics(txCtx, req.IMEI, entry, existingEntry)
+			response = s.buildInboxEntryResponse(entry)
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	}
+
+	// Fallback without transaction (should not happen in production)
 	existingEntry, err := s.checkDeviceAndInboxStatus(ctx, req.IMEI)
 	if err != nil {
 		return nil, err
@@ -373,7 +414,6 @@ func (s *Service) CreateInboxRequest(ctx context.Context, req *InboxRequest) (*I
 		return s.buildInboxEntryResponse(existingEntry), nil
 	}
 
-	// Create new inbox entry
 	entry, err := s.createInboxEntry(ctx, req)
 	if err != nil {
 		return nil, err
@@ -432,13 +472,10 @@ func (s *Service) cleanupStaleInboxEntry(ctx context.Context, imei string) (*inb
 		if existingInboxEntry.IsPending() {
 			return nil, ErrAlreadyExists
 		}
-		s.logger.Info("cleaning up stale inbox entry for re-registration",
+		s.logger.Info("will replace stale inbox entry for re-registration",
 			"imei", imei,
 			"old_status", existingInboxEntry.Status,
 		)
-		if err := s.repo.DeleteByIMEI(ctx, imei); err != nil {
-			return nil, fmt.Errorf("failed to clean up stale inbox entry: %w", err)
-		}
 	}
 	return existingInboxEntry, nil
 }
@@ -461,7 +498,9 @@ func (s *Service) createInboxEntry(ctx context.Context, req *InboxRequest) (*inb
 		UpdatedAt:          now.UnixMilli(),
 	}
 
-	if err := s.repo.Create(ctx, entry); err != nil {
+	// Use CreateOrReplace to atomically handle the case where a stale entry exists.
+	// This avoids TOCTOU races between delete and create.
+	if err := s.repo.CreateOrReplace(ctx, entry); err != nil {
 		metrics.Get().RecordDeviceRegistrationFailure()
 		return nil, fmt.Errorf("failed to create inbox entry: %w", err)
 	}

@@ -117,6 +117,8 @@ type Config struct {
 	EnableGraphQL            bool
 	RequireKeyName           bool
 	AuditLogPath             string
+	DeviceSecret             string
+	FirebaseAppID            string // Firebase App ID for App Check validation
 }
 
 // DiagnosticsConfig holds configuration for the diagnostics API.
@@ -270,6 +272,12 @@ func Load() (Config, error) {
 	if c.Env == "production" && c.ServerAPIToken == "" {
 		return c, errors.New("SERVER_API_TOKEN is required in production")
 	}
+
+	// Device secret for device attestation (HMAC-SHA256)
+	c.DeviceSecret = os.Getenv("DEVICE_SECRET")
+
+	// Firebase App ID for App Check validation
+	c.FirebaseAppID = os.Getenv("FIREBASE_APP_ID")
 
 	return c, nil
 }

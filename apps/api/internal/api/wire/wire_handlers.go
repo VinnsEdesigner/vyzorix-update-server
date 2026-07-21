@@ -22,6 +22,7 @@ import (
 	updatesapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
@@ -73,6 +74,7 @@ type HandlerSet struct {
 	DeviceList         *devicehandlers.ListHandler
 	Devices            *devicehandlers.DevicesHandler
 	DeviceSettings     *devicehandlers.SettingsHandler
+	DeviceService      *device.Service
 	Command            *cmdhandlers.ExecuteHandler
 	Stream             *websockethandlers.StreamHandler
 	TelemetryHistory   *handlers.TelemetryHistoryHandler
@@ -90,6 +92,8 @@ type HandlerSet struct {
 	InvitationService  *orgapplication.InvitationService
 	OrgSettings        *organizationhandlers.SettingsHandler
 	DeviceSettingsService *device.DeviceSettingsService
+	FCMNotifier       *fcm.Notifier
+	AppCheckVerifier  *appcheck.Verifier
 }
 
 // WireHandlers creates and wires all handler instances.

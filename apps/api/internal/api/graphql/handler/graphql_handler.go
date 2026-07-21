@@ -3,6 +3,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
@@ -164,6 +165,21 @@ func (h *Handler) calculateDepthAndComplexity(selectionSet *ast.SelectionSet) (i
 	return maxChildDepth, complexity
 }
 
+// isIntrospectionQuery checks if the query is an introspection query.
+func isIntrospectionQuery(query string) bool {
+	return len(query) >= 10 && (containsIntrospectionField(query) || hasIntrospectionDirective(query))
+}
+
+// containsIntrospectionField checks for __schema or __type in query.
+func containsIntrospectionField(query string) bool {
+	return strings.Contains(query, "__schema") || strings.Contains(query, "__type")
+}
+
+// hasIntrospectionDirective checks for @include(if: true) or @skip(if: true) directives.
+func hasIntrospectionDirective(query string) bool {
+	return strings.Contains(query, "@include") || strings.Contains(query, "@skip")
+}
+
 // Handle processes GraphQL requests.
 func (h *Handler) Handle(c *gin.Context) {
 	startTime := time.Now()
@@ -174,7 +190,12 @@ func (h *Handler) Handle(c *gin.Context) {
 		return
 	}
 
-	
+	// Block introspection queries in production
+	if h.env == "production" && isIntrospectionQuery(req.Query) {
+		h.sendError(c, http.StatusForbidden, h.presenter.Forbidden("introspection disabled in production"))
+		return
+	}
+
 	if req.Query != "" {
 		depth, complexity, err := h.validateQuery(req.Query)
 		if err != nil {

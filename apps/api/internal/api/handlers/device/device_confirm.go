@@ -1,7 +1,9 @@
 package device
 
 import (
+	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -9,14 +11,34 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// InboxCleanup defines the interface for cleaning up inbox entries after device confirmation.
+type InboxCleanup interface {
+	// DeleteByIMEI deletes all inbox entries for a given IMEI.
+	DeleteByIMEI(ctx context.Context, imei string) error
+}
+
 // ConfirmHandler handles POST /v1/device/confirm.
 type ConfirmHandler struct {
 	deviceService *device.Service
+	inboxCleanup  InboxCleanup
+	logger        *slog.Logger
 }
 
 // NewConfirmHandler creates a new ConfirmHandler.
 func NewConfirmHandler(deviceService *device.Service) *ConfirmHandler {
-	return &ConfirmHandler{deviceService: deviceService}
+	return &ConfirmHandler{
+		deviceService: deviceService,
+		logger:        slog.Default(),
+	}
+}
+
+// NewConfirmHandlerWithCleanup creates a new ConfirmHandler with inbox cleanup capability.
+func NewConfirmHandlerWithCleanup(deviceService *device.Service, inboxCleanup InboxCleanup) *ConfirmHandler {
+	return &ConfirmHandler{
+		deviceService: deviceService,
+		inboxCleanup:  inboxCleanup,
+		logger:        slog.Default(),
+	}
 }
 
 // Handle processes the device confirmation request.
@@ -77,11 +99,35 @@ func (h *ConfirmHandler) Handle(c *gin.Context) {
 			return
 		}
 
+		if errors.Is(err, device.ErrDeviceAlreadyConfirmed) {
+			c.JSON(http.StatusConflict, gin.H{
+				"error":   "already_confirmed",
+				"message": "Device has already been confirmed. The command secret is single-use.",
+			})
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "internal_error",
 			"message": "Failed to confirm device registration",
 		})
 		return
+	}
+
+	// Clean up inbox entry after successful confirmation
+	// This prevents inbox records from accumulating forever after device registration completes
+	if h.inboxCleanup != nil {
+		if err := h.inboxCleanup.DeleteByIMEI(c.Request.Context(), req.IMEI); err != nil {
+			// Log but don't fail the request - confirmation was successful
+			h.logger.Warn("failed to clean up inbox entry after device confirmation",
+				"imei", req.IMEI,
+				"error", err,
+			)
+		} else {
+			h.logger.Info("cleaned up inbox entry after device confirmation",
+				"imei", req.IMEI,
+			)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

@@ -152,12 +152,18 @@ func (h *Handler) serveJSON(c *gin.Context, path string) {
 // serveAPK serves an APK file with proper headers and Range support.
 // Security: Verifies APK hash if X-APK-SHA256 header is provided by client.
 func (h *Handler) serveAPK(c *gin.Context, filename string) {
-	if filename == "" || strings.ContainsAny(filename, "/\\") {
+	// Use filepath.Base to normalize path and prevent traversal attacks
+	// This handles .., %2F, %5C and other encoded sequences
+	baseFilename := filepath.Base(filename)
+
+	// Ensure the result is a valid filename (not empty, no path separators)
+	if baseFilename == "" || baseFilename == "." || baseFilename == ".." ||
+		strings.ContainsAny(baseFilename, "/\\") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid filename"})
 		return
 	}
 
-	fpath := filepath.Join(h.binDir, filename)
+	fpath := filepath.Join(h.binDir, baseFilename)
 
 	// Verify APK hash if client provides expected SHA256
 	if clientHash := c.GetHeader("X-APK-SHA256"); clientHash != "" {

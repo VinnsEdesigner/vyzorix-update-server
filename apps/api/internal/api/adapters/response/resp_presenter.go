@@ -69,6 +69,17 @@ func (p *Presenter) LogoutSuccess(c *gin.Context, operatorID string) {
 	}
 }
 
+// LogoutFailure logs a failed logout attempt.
+func (p *Presenter) LogoutFailure(c *gin.Context, operatorID, reason string) {
+	if p.auditLogger != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			p.auditLogger.SessionRevoked(ctx, operatorID, c.ClientIP(), c.GetHeader("User-Agent"), reason)
+		}()
+	}
+}
+
 // RegisterSuccess logs a successful registration.
 func (p *Presenter) RegisterSuccess(c *gin.Context, operatorID string) {
 	if p.auditLogger != nil {

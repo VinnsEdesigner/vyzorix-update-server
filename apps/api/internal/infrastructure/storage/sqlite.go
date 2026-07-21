@@ -204,6 +204,10 @@ var migrations = []Migration{
 	{Apply: migratePostV41Combined, Name: "post_v41_combined", Version: 42},
 	// Command outbox retry support
 	{Apply: migrateAddCommandRetryColumns, Name: "add_command_retry_columns", Version: 43},
+	// Secure command secret storage - hash instead of plaintext
+	{Apply: migrateCommandSecretHash, Name: "add_command_secret_hash", Version: 44},
+	// Single-use confirmation token tracking
+	{Apply: migrateConfirmedAt, Name: "add_confirmed_at", Version: 45},
 }
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {
@@ -231,12 +235,12 @@ func runMigrations(db *sql.DB) error {
 		}
 
 		if err := m.Apply(db); err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			return fmt.Errorf("migration %d (%s) failed: %w", m.Version, m.Name, err)
 		}
 
 		if err := setVersionTx(tx, m.Version); err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			return fmt.Errorf("failed to set version after migration %d: %w", m.Version, err)
 		}
 
@@ -264,11 +268,6 @@ func getCurrentVersion(db *sql.DB) (int, error) {
 	}
 
 	return version, err
-}
-
-func setVersion(db *sql.DB, version int) error {
-	_, err := db.Exec(`INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)`, version, time.Now().UTC().UnixMilli())
-	return err
 }
 
 func setVersionTx(tx *sql.Tx, version int) error {

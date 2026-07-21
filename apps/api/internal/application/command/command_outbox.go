@@ -266,6 +266,18 @@ func (o *Outbox) markDelivered(cmd *command.Command) {
 // Implements retry with exponential backoff up to MaxRetries.
 func (o *Outbox) handleFailedDelivery(cmd *command.Command) {
 	ctx := context.Background()
+	if cmd.IsExpired() {
+		errMsg := "command expired before delivery"
+		if err := o.repo.MarkFailed(ctx, cmd.DispatchID, errMsg); err != nil {
+			o.log.Error("failed to mark expired command as failed",
+				"dispatchID", cmd.DispatchID,
+				"err", err)
+		}
+		o.log.Warn("command marked as failed - expired",
+			"dispatchID", cmd.DispatchID,
+			"deviceID", cmd.DeviceID)
+		return
+	}
 
 	// Increment retry count and set max retries from config
 	cmd.RetryCount++

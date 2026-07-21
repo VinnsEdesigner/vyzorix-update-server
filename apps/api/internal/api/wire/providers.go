@@ -207,6 +207,7 @@ func ProvideJWTManager(cfg config.Config) (*infraauth.JWTManager, error) {
 
 // ProvideAuthService creates the auth service with full refresh token support.
 func ProvideAuthService(
+	log *slog.Logger,
 	operatorRepo *storage.OperatorRepository,
 	sessionRepo *storage.SessionRepository,
 	emailVerifyRepo *storage.EmailVerificationRepository,
@@ -216,7 +217,7 @@ func ProvideAuthService(
 	jwtManager *infraauth.JWTManager,
 ) *auth.AuthService {
 	sessionTTL := 7 * 24 * time.Hour
-	return auth.NewAuthServiceWithRefresh(
+	svc := auth.NewAuthServiceWithRefresh(
 		operatorRepo,
 		sessionRepo,
 		emailVerifyRepo,
@@ -228,6 +229,8 @@ func ProvideAuthService(
 		jwtManager,
 		nil, // ldapConfig - not used currently
 	)
+	svc.SetLogger(log)
+	return svc
 }
 
 // ProvideDeviceService creates the device service.
@@ -281,19 +284,24 @@ func ProvideOrganizationService(
 	memberRepo *storage.MemberStorage,
 	invitationRepo *storage.InvitationStorage,
 	operatorRepo *storage.OperatorRepository,
+	sessionRepo *storage.SessionRepository,
+	deviceRepo *storage.DeviceRepository,
+	telemetryRepo *storage.TelemetryRepository,
+	commandRepo *storage.CommandRepository,
 	txManager transaction.TxManager,
 	log *slog.Logger,
 ) *orgapplication.OrganizationService {
-	return orgapplication.NewOrganizationService(orgRepo, memberRepo, invitationRepo, operatorRepo, txManager, log)
+	return orgapplication.NewOrganizationService(orgRepo, memberRepo, invitationRepo, operatorRepo, sessionRepo, deviceRepo, telemetryRepo, commandRepo, txManager, log)
 }
 
 // ProvideMemberService creates the member service.
 func ProvideMemberService(
 	memberRepo *storage.MemberStorage,
 	orgRepo *storage.OrganizationStorage,
+	authSvc *auth.AuthService,
 	log *slog.Logger,
 ) *orgapplication.MemberService {
-	return orgapplication.NewMemberService(memberRepo, orgRepo, log)
+	return orgapplication.NewMemberService(memberRepo, orgRepo, authSvc, log)
 }
 
 // ProvideInvitationService creates the invitation service.

@@ -125,6 +125,15 @@ type Command struct {
 	RetryCount    int        // Number of delivery attempts made
 	MaxRetries    int        // Maximum delivery attempts before marking failed
 	NextRetryAt   *time.Time // When to attempt next delivery (for backoff)
+	ExpiresAt     *time.Time // BUG-79: TTL for command - if set and passed, command is considered expired
+}
+
+// IsExpired returns true if the command has expired based on its TTL.
+func (c *Command) IsExpired() bool {
+	if c.ExpiresAt == nil {
+		return false // No TTL set, never expires
+	}
+	return time.Now().After(*c.ExpiresAt)
 }
 
 // CommandFrame is the internal representation of a command for the WebSocket hub.

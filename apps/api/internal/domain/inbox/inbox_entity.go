@@ -8,6 +8,7 @@ type InboxEntry struct {
 	ApprovingAt      *int64      `json:"approvingAt,omitempty"`
 	ApprovedAt        *int64      `json:"approvedAt,omitempty"`
 	RejectedAt        *int64      `json:"rejectedAt,omitempty"`
+	ConfirmedAt       *int64      `json:"confirmedAt,omitempty"`
 	FCMToken          string      `json:"fcmToken"`
 	FirebaseInstallID string      `json:"firebaseInstallId"`
 	Model             string      `json:"model"`
@@ -18,6 +19,7 @@ type InboxEntry struct {
 	DeviceClass       string      `json:"deviceClass,omitempty"`
 	Status            InboxStatus `json:"status"`
 	CommandSecret     string      `json:"commandSecret,omitempty"`
+	CommandSecretHash string      `json:"-"` // Internal only, never exposed via JSON
 	Notes             string      `json:"notes,omitempty"`
 	OperatorID        string      `json:"operatorId,omitempty"`
 	OrganizationID    string      `json:"organizationId,omitempty"`

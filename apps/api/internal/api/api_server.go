@@ -36,6 +36,7 @@ import (
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
@@ -75,6 +76,8 @@ type ServerConfig struct {
 	// New settings services for hierarchical threshold resolution
 	DeviceSettingsService *device.DeviceSettingsService
 	OrgSettingsService   *orgapplication.OrganizationSettingsService
+	// AppCheckVerifier provides Firebase App Check verification for device attestation
+	AppCheckVerifier *appcheck.Verifier
 }
 
 // Server is the main API server.
@@ -136,6 +139,7 @@ type Server struct {
 	invitationHandler         *organizationhandlers.InvitationHandler
 	memberHandler             *organizationhandlers.MemberHandler
 	transferHandler          *devicehandlers.TransferHandler
+	DeviceRepo              *storage.DeviceRepository
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -380,8 +384,21 @@ func (s *Server) wireInboxHandler(cfg *ServerConfig) {
 	// Create device registration rate limiter
 	s.deviceRegRateLimiter = middleware.NewDeviceRegistrationRateLimiterMiddleware(nil)
 
-	// Create handler
-	s.inboxHandler = inboxhandlers.NewHandler(inboxService)
+	// Create handler with device attestation
+	if cfg.AppCheckVerifier != nil && cfg.AppCheckVerifier.Enabled() {
+		s.log.Info("using Firebase App Check for device attestation")
+		s.inboxHandler = inboxhandlers.NewHandlerWithAppCheck(
+			inboxService,
+			cfg.Config.DeviceSecret,
+			cfg.AppCheckVerifier,
+		)
+	} else if cfg.Config.DeviceSecret != "" {
+		s.log.Warn("using HMAC-SHA256 for device attestation - consider enabling Firebase App Check")
+		s.inboxHandler = inboxhandlers.NewHandlerWithAttestation(inboxService, cfg.Config.DeviceSecret)
+	} else {
+		s.log.Warn("no device attestation configured - /v1/device/inbox is public")
+		s.inboxHandler = inboxhandlers.NewHandler(inboxService, cfg.Config.DeviceSecret)
+	}
 }
 
 // wireConfirmHandler creates and assigns the device confirm handler.
@@ -390,8 +407,11 @@ func (s *Server) wireConfirmHandler(cfg *ServerConfig) {
 		return
 	}
 
-	// Create confirm handler
-	s.deviceConfirmHandler = devicehandlers.NewConfirmHandler(cfg.DeviceService)
+	// Create inbox repository for cleanup after device confirmation
+	inboxRepo := storage.NewInboxRepository(cfg.DB.DB())
+
+	// Create confirm handler with inbox cleanup capability
+	s.deviceConfirmHandler = devicehandlers.NewConfirmHandlerWithCleanup(cfg.DeviceService, inboxRepo)
 }
 
 // wireDiagnosticsHandler creates and assigns the diagnostics handlers.
@@ -443,6 +463,7 @@ type ServerConfigWithDeps struct {
 	UpdatesService *updatesapp.Service
 	APIKeyService  *keys.APIKeyService
 	Config         config.Config
+	DeviceRepo     *storage.DeviceRepository
 }
 
 // NewServerWithDeps creates a Server using pre-wired dependencies from wire.
@@ -500,6 +521,22 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		s.apiKeysHandler = authhandlers.NewHandler(cfg.APIKeyService, cfg.AuditLogger)
 		s.superAdminAPIKeys = admin.NewSuperAdminHandler(cfg.APIKeyService, cfg.AuditLogger)
 	}
+
+	// Wire inbox and confirm handlers using ServerConfig
+	// Note: FCMNotifier and AppCheckVerifier are passed via HandlerSet
+	serverCfg := &ServerConfig{
+		DB:                cfg.DB,
+		DeviceService:     cfg.HandlerSet.DeviceService,
+		FCMNotifier:       cfg.HandlerSet.FCMNotifier,
+		Config:            cfg.Config,
+		Log:               cfg.Log,
+		AppCheckVerifier:  cfg.HandlerSet.AppCheckVerifier,
+	}
+	s.wireInboxHandler(serverCfg)
+	s.wireConfirmHandler(serverCfg)
+
+	// Store deviceRepo for the deletion worker in api_main.go
+	s.DeviceRepo = cfg.DeviceRepo
 
 	s.setupRoutes()
 

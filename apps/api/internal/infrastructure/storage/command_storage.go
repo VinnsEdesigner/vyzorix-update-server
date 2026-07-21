@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
@@ -460,6 +462,12 @@ func (r *CommandRepository) CountPending(ctx context.Context) (int, error) {
 
 	return count, err
 }
+func (r *CommandRepository) CountPendingByDevice(ctx context.Context, deviceID string) (int, error) {
+	var count int
+	err := r.queryRow(ctx, "SELECT COUNT(*) FROM commands WHERE device_id = ? AND status = 'pending'", deviceID).Scan(&count)
+
+	return count, err
+}
 
 // MarkWake marks whether a wake command was sent successfully for a command dispatch.
 func (r *CommandRepository) MarkWake(ctx context.Context, dispatchID string, errText string) error {
@@ -680,4 +688,29 @@ func (r *CommandRepository) UpdateRetryInfo(ctx context.Context, id string, retr
 	}
 
 	return nil
+}
+
+// DeleteByDeviceIDs deletes all commands for the given device IDs.
+// This is used during organization deletion.
+func (r *CommandRepository) DeleteByDeviceIDs(ctx context.Context, deviceIDs []string) (int64, error) {
+	if len(deviceIDs) == 0 {
+		return 0, nil
+	}
+
+	// Build query with placeholders for each device ID
+	placeholders := make([]string, len(deviceIDs))
+	args := make([]interface{}, len(deviceIDs))
+	for i, id := range deviceIDs {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`DELETE FROM commands WHERE device_id IN (%s)`, strings.Join(placeholders, ","))
+
+	result, err := r.exec(ctx, query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected()
 }

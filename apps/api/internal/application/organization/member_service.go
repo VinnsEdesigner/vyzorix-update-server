@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/google/uuid"
 )
@@ -19,6 +20,7 @@ var (
 type MemberService struct {
 	memberRepo organization.MemberRepository
 	orgRepo    organization.OrganizationRepository
+	authSvc   *auth.AuthService
 	logger     *slog.Logger
 }
 
@@ -26,6 +28,7 @@ type MemberService struct {
 func NewMemberService(
 	memberRepo organization.MemberRepository,
 	orgRepo organization.OrganizationRepository,
+	authSvc *auth.AuthService,
 	logger *slog.Logger,
 ) *MemberService {
 	if logger == nil {
@@ -34,6 +37,7 @@ func NewMemberService(
 	return &MemberService{
 		memberRepo: memberRepo,
 		orgRepo:    orgRepo,
+		authSvc:   authSvc,
 		logger:     logger,
 	}
 }
@@ -135,6 +139,31 @@ func (s *MemberService) RemoveMember(ctx context.Context, orgID, memberID, actor
 	// Soft delete the membership
 	if err := s.memberRepo.SoftDelete(ctx, memberID); err != nil {
 		return err
+	}
+
+	// Revoke all sessions and refresh tokens for the removed member
+	// This ensures they lose access immediately
+	if s.authSvc != nil {
+		// Logout all sessions for this operator
+		if err := s.authSvc.LogoutAll(ctx, member.OperatorID); err != nil {
+			s.logger.Warn("failed to logout removed member sessions",
+				"org_id", orgID,
+				"member_id", memberID,
+				"operator_id", member.OperatorID,
+				"error", err,
+			)
+			// Don't fail the operation - membership removal is more important
+		}
+
+		// Revoke all refresh tokens
+		if err := s.authSvc.RevokeAllRefreshTokens(ctx, member.OperatorID); err != nil {
+			s.logger.Warn("failed to revoke refresh tokens for removed member",
+				"org_id", orgID,
+				"member_id", memberID,
+				"operator_id", member.OperatorID,
+				"error", err,
+			)
+		}
 	}
 
 	s.logger.Info("member removed from organization",

@@ -110,11 +110,11 @@ func New(log *slog.Logger, deviceRepo device.Repository, telemetryRepo telemetry
 
 	h.telemetryFilter = NewTelemetryFilter(log, cfg.Filter)
 
-	// Initialize latency tracking (G6: sub-500ms latency)
+	// Initialize latency tracking
 	if cfg.Latency == nil {
 		cfg.Latency = &LatencyConfig{
 			Enabled:      true,
-			MaxLatencyMS: 500, // Target: sub-500ms
+			MaxLatencyMS: 500, // Informational target (not enforced)
 			SampleRate:   0.1, // 10% sampling
 		}
 	}
@@ -475,7 +475,7 @@ func (h *Hub) trackLatency(deviceID, dispatchID string, startTime time.Time, suc
 		h.metrics.LatencyMetrics.MaxLatencyMS = latencyMS
 	}
 
-	// Check if exceeds target (G6: sub-500ms)
+	// Check if exceeds target (threshold is informational only)
 	if latencyMS > int64(h.latencyConfig.MaxLatencyMS) {
 		h.metrics.LatencyMetrics.ExceededCount++
 		h.metrics.LatencyMetrics.LastExceededAt = time.Now().Unix()

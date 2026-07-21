@@ -6,8 +6,12 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/telemetry"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	"github.com/google/uuid"
 )
@@ -65,12 +69,16 @@ type MembershipListResponse struct {
 
 // OrganizationService handles organization operations.
 type OrganizationService struct {
-	orgRepo         organization.OrganizationRepository
-	memberRepo      organization.MemberRepository
-	invitationRepo  organization.InvitationRepository
-	operatorRepo    operator.Repository
-	txManager       transaction.TxManager
-	logger          *slog.Logger
+	orgRepo        organization.OrganizationRepository
+	memberRepo     organization.MemberRepository
+	invitationRepo organization.InvitationRepository
+	operatorRepo   operator.Repository
+	sessionRepo    session.Repository
+	deviceRepo     device.Repository
+	telemetryRepo  telemetry.Repository
+	commandRepo    command.Repository
+	txManager      transaction.TxManager
+	logger         *slog.Logger
 }
 
 // NewOrganizationService creates a new OrganizationService.
@@ -79,6 +87,10 @@ func NewOrganizationService(
 	memberRepo organization.MemberRepository,
 	invitationRepo organization.InvitationRepository,
 	operatorRepo operator.Repository,
+	sessionRepo session.Repository,
+	deviceRepo device.Repository,
+	telemetryRepo telemetry.Repository,
+	commandRepo command.Repository,
 	txManager transaction.TxManager,
 	logger *slog.Logger,
 ) *OrganizationService {
@@ -90,8 +102,12 @@ func NewOrganizationService(
 		memberRepo:     memberRepo,
 		invitationRepo: invitationRepo,
 		operatorRepo:   operatorRepo,
+		sessionRepo:    sessionRepo,
+		deviceRepo:    deviceRepo,
+		telemetryRepo: telemetryRepo,
+		commandRepo:   commandRepo,
 		txManager:      txManager,
-		logger:          logger,
+		logger:         logger,
 	}
 }
 
@@ -188,7 +204,9 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 		op, opErr := s.operatorRepo.FindByID(ctx, operatorID)
 		if opErr == nil && op.LastOrganizationID != createdOrg.ID {
 			op.LastOrganizationID = createdOrg.ID
-			_ = s.operatorRepo.Update(ctx, op)
+			if err := s.operatorRepo.Update(ctx, op); err != nil {
+				s.logger.Warn("failed to update operator LastOrganizationID", "operatorID", operatorID, "error", err)
+			}
 		}
 	}
 
@@ -261,11 +279,87 @@ func (s *OrganizationService) UpdateOrganization(ctx context.Context, orgID stri
 	return org, nil
 }
 
-// DeleteOrganization soft-deletes an organization and all its memberships, cancels all pending invitations.
+// DeleteOrganization soft-deletes an organization and all its resources.
 func (s *OrganizationService) DeleteOrganization(ctx context.Context, orgID string) error {
+	// Get all members before deleting them so we can revoke their sessions
+	members, err := s.memberRepo.FindByOrganization(ctx, orgID)
+	if err != nil {
+		s.logger.Error("failed to get members for session revocation", "org_id", orgID, "error", err)
+		// Continue anyway - we still want to delete the org
+	}
+
+	// Get all devices for this organization before soft-deleting them
+	var deviceIDs []string
+	if s.deviceRepo != nil {
+		devices, err := s.deviceRepo.ListByOrganization(ctx, orgID)
+		if err != nil {
+			s.logger.Error("failed to get devices for org", "org_id", orgID, "error", err)
+		} else {
+			for _, d := range devices {
+				deviceIDs = append(deviceIDs, d.ID)
+			}
+		}
+	}
+
 	// Use transaction to ensure atomic deletion
 	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		// First, soft-delete all memberships (cascade)
+		// Revoke sessions for all members first
+		for _, member := range members {
+			if err := s.sessionRepo.RevokeAllOperatorSessions(txCtx, member.OperatorID); err != nil {
+				s.logger.Error("failed to revoke sessions for member",
+					"org_id", orgID,
+					"operator_id", member.OperatorID,
+					"error", err)
+				// Continue anyway - best effort cleanup
+			}
+		}
+
+		// Delete telemetry for all devices in this org
+		if len(deviceIDs) > 0 && s.telemetryRepo != nil {
+			deleted, err := s.telemetryRepo.DeleteByDeviceIDs(txCtx, deviceIDs)
+			if err != nil {
+				s.logger.Error("failed to delete telemetry for org",
+					"org_id", orgID,
+					"count", deleted,
+					"error", err)
+				// Continue anyway - best effort cleanup
+			} else {
+				s.logger.Info("deleted telemetry for org", "org_id", orgID, "count", deleted)
+			}
+		}
+
+		// Delete commands for all devices in this org
+		if len(deviceIDs) > 0 && s.commandRepo != nil {
+			deleted, err := s.commandRepo.DeleteByDeviceIDs(txCtx, deviceIDs)
+			if err != nil {
+				s.logger.Error("failed to delete commands for org",
+					"org_id", orgID,
+					"count", deleted,
+					"error", err)
+				// Continue anyway - best effort cleanup
+			} else {
+				s.logger.Info("deleted commands for org", "org_id", orgID, "count", deleted)
+			}
+		}
+
+		// Soft-delete all devices in this org
+		if len(deviceIDs) > 0 && s.deviceRepo != nil {
+			now := time.Now()
+			deregisteredAt := now.UnixMilli()
+			deletionScheduledAt := now.Add(30 * 24 * time.Hour).UnixMilli()
+			deleted, err := s.deviceRepo.SoftDeleteByOrganization(txCtx, orgID, deregisteredAt, deletionScheduledAt)
+			if err != nil {
+				s.logger.Error("failed to soft-delete devices for org",
+					"org_id", orgID,
+					"count", deleted,
+					"error", err)
+				// Continue anyway - best effort cleanup
+			} else {
+				s.logger.Info("soft-deleted devices for org", "org_id", orgID, "count", deleted)
+			}
+		}
+
+		// Soft-delete all memberships (cascade)
 		if err := s.memberRepo.SoftDeleteByOrganization(txCtx, orgID); err != nil {
 			s.logger.Error("failed to remove members from org", "org_id", orgID, "error", err)
 			// Continue anyway - this is a best-effort cleanup

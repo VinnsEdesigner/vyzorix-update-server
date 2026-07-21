@@ -144,7 +144,9 @@ _ = s.sessionRepo.UpdateOrganizationID(ctx, sess.ID, orgID)
 // Also update operators LastOrganizationID for persistence
 if s.operatorRepo != nil && op.LastOrganizationID != orgID {
     op.LastOrganizationID = orgID
-    _ = s.operatorRepo.Update(ctx, op)
+    if err := s.operatorRepo.Update(ctx, op); err != nil {
+        s.logger.Warn("failed to update operator LastOrganizationID", "operatorID", op.ID, "error", err)
+    }
 }
 }
 

@@ -118,4 +118,12 @@ type Repository interface {
 
 	// ListPendingByOperator returns all pending devices for an operator.
 	ListPendingByOperator(ctx context.Context, operatorID OperatorID) ([]*Device, error)
+
+	// DeleteScheduled deletes all devices where deletion_scheduled_at <= now AND deregistered_at IS NOT NULL.
+	// Returns the number of devices deleted.
+	DeleteScheduled(ctx context.Context) (int, error)
+
+	// SoftDeleteByOrganization soft-deletes all devices for an organization.
+	// This is used during organization deletion.
+	SoftDeleteByOrganization(ctx context.Context, orgID string, deregisteredAt, deletionScheduledAt int64) (int, error)
 }

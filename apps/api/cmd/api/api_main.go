@@ -27,6 +27,7 @@ import (
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/ssr"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 )
 
 func main() {
@@ -74,6 +75,8 @@ func main() {
 		Hub:            deps.Hub,
 		AuditLogger:    deps.AuditLogger,
 		UpdatesService: deps.UpdatesService,
+		APIKeyService:  deps.APIKeyService,
+		DeviceRepo:     deps.DeviceRepo,
 	})
 
 	// Register GraphQL if enabled
@@ -177,6 +180,14 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 		IdleTimeout:  60 * time.Second,
 	}
 
+	// Start device deletion worker
+	deviceDeletionWorker := worker.NewDeviceDeletionWorker(
+		apiServer.DeviceRepo,
+		log,
+		1*time.Hour, // Run every hour
+	)
+	deviceDeletionWorker.Start()
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -190,6 +201,9 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 
 	<-ctx.Done()
 	log.Info("shutting down")
+
+	// Stop the device deletion worker
+	deviceDeletionWorker.Stop()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

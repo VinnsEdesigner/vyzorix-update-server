@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
@@ -176,6 +178,31 @@ func (r *TelemetryRepository) DeleteOlderThan(ctx context.Context, olderThanTime
 		`DELETE FROM telemetry WHERE received_at < ?`,
 		olderThanTimestamp,
 	)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected()
+}
+
+// DeleteByDeviceIDs deletes all telemetry entries for the given device IDs.
+// This is used during organization deletion.
+func (r *TelemetryRepository) DeleteByDeviceIDs(ctx context.Context, deviceIDs []string) (int64, error) {
+	if len(deviceIDs) == 0 {
+		return 0, nil
+	}
+
+	// Build query with placeholders for each device ID
+	placeholders := make([]string, len(deviceIDs))
+	args := make([]interface{}, len(deviceIDs))
+	for i, id := range deviceIDs {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`DELETE FROM telemetry WHERE device_id IN (%s)`, strings.Join(placeholders, ","))
+
+	result, err := r.exec(ctx, query, args...)
 	if err != nil {
 		return 0, err
 	}

@@ -45,6 +45,7 @@ type Repository interface {
 
 	// CountPending returns the number of pending commands.
 	CountPending(ctx context.Context) (int, error)
+	CountPendingByDevice(ctx context.Context, deviceID string) (int, error)
 
 	// MarkWake marks whether a wake command was sent successfully for a command dispatch.
 	MarkWake(ctx context.Context, dispatchID string, errText string) error
@@ -76,4 +77,8 @@ type Repository interface {
 	// UpdateRetryInfo updates the retry tracking fields for a command.
 	// Used by the outbox worker to track delivery attempts with exponential backoff.
 	UpdateRetryInfo(ctx context.Context, id string, retryCount int, maxRetries int, nextRetryAt *time.Time) error
+
+	// DeleteByDeviceIDs deletes all commands for the given device IDs.
+	// This is used during organization deletion.
+	DeleteByDeviceIDs(ctx context.Context, deviceIDs []string) (int64, error)
 }

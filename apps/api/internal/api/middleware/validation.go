@@ -59,6 +59,7 @@ var (
 
 	// UUIDPattern validates any UUID format.
 	UUIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+	IMEIPattern = regexp.MustCompile(`^[0-9]{15}$`)
 
 	// PasswordPattern validates password meets policy.
 	PasswordPattern = regexp.MustCompile(`^.{12,128}$`)

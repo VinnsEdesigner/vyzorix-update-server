@@ -37,7 +37,12 @@ func (h *LogoutHandler) Handle(c *gin.Context) {
 		operatorID = session.OperatorID
 	}
 
-	_ = h.authService.Logout(c.Request.Context(), sessionID)
+	// Attempt to logout - fail if session deletion fails
+	if err := h.authService.Logout(c.Request.Context(), sessionID); err != nil {
+		h.presenter.LogoutFailure(c, operatorID, err.Error())
+		h.presenter.InternalError(c, "logout failed")
+		return
+	}
 
 	// Clear session cookie
 	h.presenter.ClearSessionCookie(c)

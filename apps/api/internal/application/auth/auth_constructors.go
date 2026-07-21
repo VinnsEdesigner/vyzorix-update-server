@@ -2,6 +2,7 @@ package auth
 
 import (
 "context"
+"log/slog"
 "time"
 
 "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
@@ -75,6 +76,7 @@ deviceStore        *DeviceStore
 deviceRepo         device.Repository
 sessionTTL         time.Duration
 refreshTokenExpiry time.Duration
+logger             *slog.Logger
 }
 
 // NewAuthService creates a new AuthService.
@@ -156,6 +158,11 @@ s.memberRepo = memberRepo
 // SetOrganizationRepository sets the organization repository.
 func (s *AuthService) SetOrganizationRepository(orgRepo organization.OrganizationRepository) {
 s.orgRepo = orgRepo
+}
+
+// SetLogger sets the logger for the auth service.
+func (s *AuthService) SetLogger(logger *slog.Logger) {
+s.logger = logger
 }
 
 // GetSessionManager returns the session manager.
