@@ -722,6 +722,7 @@ func ProvideServerDependencies(
 		FCMNotifier:         fcmNotifier,
 		AppCheckVerifier:    appCheckVerifier,
 		DeviceDeletionWorker: deviceDeletionWorker,
+		DeviceRepo:          deviceRepo,
 		OperatorRepo:        operatorRepo,
 		RateLimiter:         rateLimiter,
 		Hub:                 hubResult.Hub,

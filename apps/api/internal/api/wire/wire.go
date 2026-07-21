@@ -36,6 +36,7 @@ type ServerDependencies struct {
 	FCMNotifier          fcm.Notifier
 	AppCheckVerifier     *appcheck.Verifier
 	DeviceDeletionWorker *worker.DeviceDeletionWorker
+	DeviceRepo           *storage.DeviceRepository
 	OperatorRepo        operator.Repository
 	EmailService        *emailService.Service
 	CommandService      *command.Service
