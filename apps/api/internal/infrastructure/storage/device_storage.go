@@ -304,6 +304,7 @@ func (r *DeviceRepository) UpdateFCMToken(ctx context.Context, id, fcmToken stri
 }
 
 // SetOnline sets the online status of a device.
+// When coming online, clears deletion_scheduled_at to cancel scheduled deletion.
 func (r *DeviceRepository) SetOnline(ctx context.Context, id string, online bool) error {
 	now := time.Now().UnixMilli()
 
@@ -312,8 +313,9 @@ func (r *DeviceRepository) SetOnline(ctx context.Context, id string, online bool
 	var err error
 
 	if online {
+		// Coming online cancels scheduled deletion
 		result, err = r.exec(ctx,
-			"UPDATE devices SET online = ?, last_seen = ?, updated_at = ? WHERE id = ?",
+			"UPDATE devices SET online = ?, last_seen = ?, updated_at = ?, deletion_scheduled_at = 0 WHERE id = ?",
 			online, now, now, id,
 		)
 	} else {
@@ -689,4 +691,41 @@ func (r *DeviceRepository) ListPendingByOperator(ctx context.Context, operatorID
 	defer func() { _ = rows.Close() }()
 
 	return scanDevices(rows)
+}
+
+// DeleteScheduled deletes all devices where deletion_scheduled_at <= now AND deregistered_at IS NOT NULL.
+// Returns the number of devices deleted.
+func (r *DeviceRepository) DeleteScheduled(ctx context.Context) (int, error) {
+	now := time.Now().UnixMilli()
+	query := `DELETE FROM devices WHERE deletion_scheduled_at > 0 AND deletion_scheduled_at <= ? AND deregistered_at IS NOT NULL`
+
+	result, err := r.exec(ctx, query, now)
+	if err != nil {
+		return 0, err
+	}
+
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(deleted), nil
+}
+
+// SoftDeleteByOrganization soft-deletes all devices for an organization.
+// This is used during organization deletion.
+func (r *DeviceRepository) SoftDeleteByOrganization(ctx context.Context, orgID string, deregisteredAt, deletionScheduledAt int64) (int, error) {
+	query := `UPDATE devices SET deregistered_at = ?, deletion_scheduled_at = ? WHERE organization_id = ? AND deregistered_at IS NULL`
+
+	result, err := r.exec(ctx, query, deregisteredAt, deletionScheduledAt, orgID)
+	if err != nil {
+		return 0, err
+	}
+
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(deleted), nil
 }

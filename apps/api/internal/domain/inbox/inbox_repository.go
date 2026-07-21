@@ -9,6 +9,10 @@ type Repository interface {
 	// Create creates a new inbox entry.
 	Create(ctx context.Context, e *InboxEntry) error
 
+	// CreateOrReplace creates a new inbox entry or replaces an existing one for the same IMEI.
+	// This is atomic and avoids TOCTOU races between delete and create.
+	CreateOrReplace(ctx context.Context, e *InboxEntry) error
+
 	// GetByID retrieves an inbox entry by ID.
 	GetByID(ctx context.Context, id string) (*InboxEntry, error)
 

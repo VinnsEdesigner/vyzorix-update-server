@@ -79,6 +79,16 @@ func (s *OrganizationSettings) UpdateThresholds(t *Thresholds) error {
 
 // Validate validates the thresholds.
 func (t *Thresholds) Validate() error {
+	if t.RiskWarn <= 0 || t.RiskCrit <= 0 {
+		return ErrInvalidThreshold
+	}
+	if t.ThermalWarn <= 0 || t.ThermalCrit <= 0 {
+		return ErrInvalidThreshold
+	}
+	if t.BufferWarn <= 0 || t.BufferCrit <= 0 {
+		return ErrInvalidThreshold
+	}
+	// Ensure warn values are less than crit values
 	if t.RiskWarn >= t.RiskCrit {
 		return ErrInvalidThreshold
 	}

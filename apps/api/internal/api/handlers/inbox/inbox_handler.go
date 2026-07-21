@@ -1,22 +1,57 @@
 package inbox
 
 import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/hex"
+	"io"
 	"net/http"
 	"strconv"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	"github.com/gin-gonic/gin"
 )
 
 // Handler handles inbox-related HTTP requests.
 type Handler struct {
-	service *inbox.Service
+	service              *inbox.Service
+	deviceSecret        string
+	attestationRequired bool // BUG-65: Force attestation even without device secret
+	appCheckVerifier    *appcheck.Verifier
 }
 
 // NewHandler creates a new InboxHandler.
-func NewHandler(service *inbox.Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service *inbox.Service, deviceSecret string) *Handler {
+	return &Handler{
+		service:              service,
+		deviceSecret:        deviceSecret,
+		attestationRequired: false,
+	}
+}
+
+// NewHandlerWithAttestation creates a new InboxHandler with required attestation.
+// Use this in production where device attestation is mandatory.
+func NewHandlerWithAttestation(service *inbox.Service, deviceSecret string) *Handler {
+	return &Handler{
+		service:              service,
+		deviceSecret:        deviceSecret,
+		attestationRequired: true,
+	}
+}
+
+// NewHandlerWithAppCheck creates a new InboxHandler with Firebase App Check verification.
+// This is the recommended configuration for production.
+func NewHandlerWithAppCheck(service *inbox.Service, deviceSecret string, appCheckVerifier *appcheck.Verifier) *Handler {
+	return &Handler{
+		service:              service,
+		deviceSecret:        deviceSecret,
+		attestationRequired: true,
+		appCheckVerifier:    appCheckVerifier,
+	}
 }
 
 // GetInbox handles GET /v1/device/inbox.
@@ -150,7 +185,72 @@ func (h *Handler) AckInbox(c *gin.Context) {
 
 // CreateInboxRequest handles POST /v1/device/inbox.
 // Creates a new inbox entry (used by device registration flow).
+// Requires attestation via Firebase App Check (preferred) or X-Device-Signature header (HMAC fallback).
 func (h *Handler) CreateInboxRequest(c *gin.Context) {
+	requiresAttestation := h.deviceSecret != "" || h.attestationRequired
+
+	if requiresAttestation {
+		// Priority 1: Firebase App Check (hardware-backed attestation)
+		if h.appCheckVerifier != nil && h.appCheckVerifier.Enabled() {
+			token := c.GetHeader("X-Firebase-AppCheck")
+			if token == "" {
+				c.JSON(http.StatusUnauthorized, inbox.ErrorResponse{
+					Code:    "unauthorized",
+					Message: "Missing X-Firebase-AppCheck header",
+				})
+				return
+			}
+
+			decoded, err := h.appCheckVerifier.VerifyToken(c.Request.Context(), token)
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, inbox.ErrorResponse{
+					Code:    "unauthorized",
+					Message: "Invalid Firebase App Check token",
+				})
+				return
+			}
+
+			// Log successful attestation for monitoring
+			c.Set("app_check_app_id", decoded.AppID)
+
+		} else if h.deviceSecret != "" {
+			// Priority 2: HMAC-SHA256 signature (legacy fallback)
+			signature := c.GetHeader("X-Device-Signature")
+			if signature == "" {
+				c.JSON(http.StatusUnauthorized, inbox.ErrorResponse{
+					Code:    "unauthorized",
+					Message: "Missing X-Device-Signature header",
+				})
+				return
+			}
+
+			// Read body for signature verification
+			body, err := io.ReadAll(c.Request.Body)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
+					Code:    "bad_request",
+					Message: "Failed to read request body",
+				})
+				return
+			}
+
+			// Verify HMAC-SHA256 signature
+			mac := hmac.New(sha256.New, []byte(h.deviceSecret))
+			mac.Write(body)
+			expectedSig := hex.EncodeToString(mac.Sum(nil))
+			if subtle.ConstantTimeCompare([]byte(signature), []byte(expectedSig)) != 1 {
+				c.JSON(http.StatusUnauthorized, inbox.ErrorResponse{
+					Code:    "unauthorized",
+					Message: "Invalid X-Device-Signature header",
+				})
+				return
+			}
+
+			// Restore body for binding
+			c.Request.Body = io.NopCloser(bytes.NewReader(body))
+		}
+	}
+
 	var req inbox.InboxRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, inbox.ErrorResponse{

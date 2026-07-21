@@ -407,14 +407,15 @@ func RequestSigningMiddleware(verifier *SignatureVerifier) func(c *gin.Context) 
 					"message": "Request timestamp outside allowed window",
 				})
 			case errors.Is(err, ErrUnknownClient):
+				// Return generic error to prevent client ID enumeration
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_004",
-					"message": "Unknown or inactive client",
+					"error":   "SIGN_003",
+					"message": "Signature verification failed",
 				})
 			case errors.Is(err, ErrInvalidSignature):
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_005",
-					"message": "Invalid signature",
+					"error":   "SIGN_003",
+					"message": "Signature verification failed",
 				})
 			case errors.Is(err, ErrReplayDetected):
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -435,12 +436,20 @@ func RequestSigningMiddleware(verifier *SignatureVerifier) func(c *gin.Context) 
 
 			return
 		}
-
-		
-		// This prevents a compromised device from forging requests for another device's IMEI.
-		if imei := c.Param("imei"); imei != "" && clientID != imei {
+		// This prevents requests where the clientID header is missing/empty
+		imei := c.Param("imei")
+		if imei != "" && clientID == "" {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":   "SIGN_008",
+				"message": "Client ID header is required for device endpoints",
+			})
+			return
+		}
+
+		// This prevents a compromised device from forging requests for another device's IMEI.
+		if imei != "" && clientID != imei {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error":   "SIGN_009",
 				"message": "Client ID does not match device IMEI in request path",
 			})
 			return

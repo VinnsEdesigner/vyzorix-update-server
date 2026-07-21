@@ -193,7 +193,7 @@ When `X-Encrypted-Body` is present, the middleware decrypts the body and stores 
 
 ---
 
-### BUG-13 🟡 Medium → Rate limiter silently loses fractional token-refill time — effective rate is lower than configured
+### BUG-13 ✅ 🟡 Medium → Rate limiter silently loses fractional token-refill time — effective rate is lower than configured
 
 **File:** `apps/api/internal/api/middleware/api_rate_limiter.go:177–184`
 
@@ -218,7 +218,7 @@ When the replay cache is full, 10% of entries are evicted by iterating the whole
 
 ---
 
-### BUG-15 🟢 Low → Signing error codes let attackers oracle-test valid client IDs
+### BUG-15 ✅ 🟢 Low → Signing error codes let attackers oracle-test valid client IDs
 
 **File:** `apps/api/internal/api/middleware/request_signing.go:382–423`
 
@@ -341,7 +341,7 @@ A new `gzip.Writer` is created for every compressed message. Under high telemetr
 
 ---
 
-### BUG-26 🟢 Low → 500 ms latency threshold is measured but never acted on
+### BUG-26 ✅ 🟢 Low → 500 ms latency threshold is measured but never acted on
 
 **File:** `apps/api/internal/ws/hub.go:428–430`
 
@@ -385,7 +385,7 @@ The mutation accepts a raw URL string and passes it directly to `r.WebhookClient
 
 ---
 
-### BUG-30 🟡 Medium → GraphQL Playground and introspection are enabled in production
+### BUG-30 ✅ 🟡 Medium → GraphQL Playground and introspection are enabled in production
 
 **File:** `apps/api/internal/api/graphql/handler/graphql_handler.go:185`
 
@@ -444,7 +444,7 @@ A type mismatch (e.g. client sends an integer where a string is expected) silent
 
 ---
 
-### BUG-35 🟡 Medium → APK path traversal not fully blocked — encoded sequences not checked
+### BUG-35 ✅ 🟡 Medium → APK path traversal not fully blocked — encoded sequences not checked
 
 **File:** `apps/api/internal/api/handlers/updater/update_check.go:155`
 
@@ -478,7 +478,7 @@ Re-registering a previously deregistered device deletes the old record and inser
 
 ---
 
-### BUG-38 🟡 Medium → Telemetry `GetLatest` and `GetStats` have no organization ownership check
+### BUG-38 ✅ 🟡 Medium → Telemetry `GetLatest` and `GetStats` have no organization ownership check
 
 **File:** `apps/api/internal/api/handlers/telemetry_history.go:308, 352`
 
@@ -488,7 +488,7 @@ Both handlers take `deviceId` from the URL and query the telemetry repository di
 
 ---
 
-### BUG-39 🟡 Medium → Telemetry field values are not validated — devices can send extreme/corrupt values
+### BUG-39 ✅ 🟡 Medium → Telemetry field values are not validated — devices can send extreme/corrupt values
 
 **File:** `apps/api/internal/api/handlers/device/device_telemetry_handler.go:68, 71, 74`
 
@@ -576,7 +576,7 @@ Any wrapping with `fmt.Errorf("...: %w", err)` breaks `==` comparisons. Most of 
 
 ---
 
-### BUG-46 🟡 Medium → Logout failure is silently ignored — user appears logged out but session may persist
+### BUG-46 ✅ 🟡 Medium → Logout failure is silently ignored — user appears logged out but session may persist
 
 **File:** `apps/api/internal/api/handlers/auth/auth_logout.go:40`
 
@@ -618,7 +618,7 @@ If `MarkDelivered` fails, the command record stays in `pending` state in the DB 
 
 ---
 
-### BUG-49 🟡 Medium → `operatorRepo.Update()` return value ignored in multiple call sites
+### BUG-49 ✅ 🟡 Medium → `operatorRepo.Update()` return value ignored in multiple call sites
 
 **Files:**
 - `apps/api/internal/application/organization/organization_service.go:191`
@@ -662,7 +662,7 @@ Login notification failures are never logged or surfaced. While not security-cri
 
 ---
 
-### BUG-52 🟡 Medium → Transaction `Rollback` errors are silently discarded throughout storage layer
+### BUG-52 ✅ 🟡 Medium → Transaction `Rollback` errors are silently discarded throughout storage layer
 
 **Files:** Throughout `apps/api/internal/infrastructure/storage/` (WithTx wrapper)
 
@@ -903,73 +903,73 @@ The `Create` and `Update` methods on `InboxRepository` do not include `organizat
 
 ---
 
-### BUG-65 🔴 Critical → `/v1/device/inbox` is public with no authentication — anyone can flood pending registrations (DoS)
+### BUG-65 ✅ 🔴 Critical → `/v1/device/inbox` is public with no authentication — anyone can flood pending registrations (DoS)
 
 **File:** `apps/api/internal/api/server_routes.go:106` + `apps/api/internal/application/inbox/inbox_service.go`
 
 The inbox endpoint accepts device registration requests with no proof of device identity beyond a Luhn-checked IMEI. There is no API key, no challenge-response, and no device attestation required. Any actor with a list of valid IMEIs (obtainable from public databases or by sniffing) can create thousands of pending registrations. Rate limiting is IP-based only, making it trivially bypassable with a proxy list.
 
-**Fix:** Require a device-side attestation (e.g. a short-lived HMAC signed with the app's embedded key, or a Firebase App Check token) on the inbox endpoint to prove the request originates from the legitimate app binary, not an arbitrary HTTP client.
+**Fix:** ✅ Fixed with Firebase App Check verification for device attestation.
 
 ---
 
-### BUG-66 🟠 High → `commandSecret` stored in plaintext in `inbox_requests` table
+### BUG-66 ✅ 🟠 High → `commandSecret` stored in plaintext in `inbox_requests` table
 
 **File:** `apps/api/internal/application/inbox/inbox_service.go:242, 552` + `inbox_storage.go:64, 201`
 
 The `commandSecret` is generated with `crypto/rand` (correct). It is stored hashed in the `devices` table (correct). However, the plaintext secret is also written into the `inbox_requests` table for the duration of the pending registration window — potentially 30+ days. Anyone who gains read access to the database (via SQL injection, a backup leak, or a compromised read replica) obtains the plaintext command secret for every pending device.
 
-**Fix:** Store only the hash (same as in `devices`) in `inbox_requests`. Deliver the plaintext secret to the operator's approval UI at approval time only, and never persist it again.
+**Fix:** ✅ Fixed — only `command_secret_hash` is stored in `inbox_requests` table, not plaintext.
 
 ---
 
-### BUG-67 🟠 High → Confirmation token (`commandSecret`) is not single-use — `/v1/device/confirm` can be called repeatedly
+### BUG-67 ✅ 🟠 High → Confirmation token (`commandSecret`) is not single-use — `/v1/device/confirm` can be called repeatedly
 
 **File:** `apps/api/internal/application/device/device_service.go:816`
 
 `ConfirmDevice` validates the `commandSecret`, updates `LastSeen`, marks the device online, and returns 200 OK. There is no state transition that marks the secret as consumed. Calling `/confirm` a second time with the same secret succeeds again. An attacker who intercepts the secret in transit (or reads it from the plaintext inbox table — BUG-66) can re-confirm the device at any time, resetting its `LastSeen` timestamp and masking its true last-contact time from the operator.
 
-**Fix:** Add a `confirmed_at` timestamp or a `lifecycle` state transition on the inbox record. Reject any confirmation attempt where `confirmed_at IS NOT NULL`.
+**Fix:** ✅ Fixed — `ConfirmDevice` checks `Lifecycle.IsRegistered()` which prevents repeat confirmations.
 
 ---
 
-### BUG-68 🟠 High → No background worker executes `deletion_scheduled_at` — deregistered devices are never actually deleted
+### BUG-68 ✅ 🟠 High → No background worker executes `deletion_scheduled_at` — deregistered devices are never actually deleted
 
 **File:** `apps/api/internal/application/device/device_service.go:661`
 
 `DeregisterDevice` sets `deletion_scheduled_at = now + 30 days`. There is no scheduler, ticker, or cron job anywhere in the codebase that reads this column and performs the actual deletion. Deregistered devices accumulate indefinitely. The 30-day grace period is documented as a hard promise but is never honored.
 
-**Fix:** Add a background worker (started in `main()` and stopped on shutdown) that runs periodically (e.g. every hour), queries `WHERE deletion_scheduled_at <= now AND deregistered_at IS NOT NULL`, and hard-deletes (or anonymizes) those records.
+**Fix:** ✅ Fixed — `DeviceDeletionWorker` exists and runs periodically to delete scheduled devices.
 
 ---
 
-### BUG-69 🟠 High → Device reconnecting during deletion window does not cancel the scheduled deletion
+### BUG-69 ✅ 🟠 High → Device reconnecting during deletion window does not cancel the scheduled deletion
 
 **File:** `apps/api/internal/ws/hub.go` + `apps/api/internal/application/device/device_service.go`
 
 If a device reconnects via WebSocket after being deregistered, `SetOnline(true)` is called and it starts sending telemetry again. But `deletion_scheduled_at` remains set. When the background worker from BUG-68 is eventually added, it will delete an actively communicating device.
 
-**Fix:** In `SetOnline(true)`, check if `deletion_scheduled_at IS NOT NULL` and clear it (or emit a warning event requiring operator confirmation before allowing the reconnection).
+**Fix:** ✅ Fixed — `SetOnline(true)` clears `deletion_scheduled_at` when device reconnects.
 
 ---
 
-### BUG-70 🟡 Medium → Successful registration does not clean up the inbox entry — records accumulate forever
+### BUG-70 ✅ 🟡 Medium → Successful registration does not clean up the inbox entry — records accumulate forever
 
 **File:** `apps/api/internal/application/inbox/inbox_service.go:426`
 
 Inbox cleanup only triggers when the *same IMEI re-registers*. After a device completes registration (inbox → confirmed → active), its `inbox_requests` row is never deleted. Over time the table grows without bound.
 
-**Fix:** Call `inboxRepo.Delete(ctx, inboxID)` at the end of the successful `ConfirmDevice` flow, or add a cleanup pass to the deletion worker from BUG-68.
+**Fix:** ✅ Fixed — confirm handler calls `DeleteByIMEI` after successful device confirmation.
 
 ---
 
-### BUG-71 🟡 Medium → `CreateInboxRequest` cleanup + create are not in a transaction — TOCTOU race for same IMEI
+### BUG-71 ✅ 🟡 Medium → `CreateInboxRequest` cleanup + create are not in a transaction — TOCTOU race for same IMEI
 
 **File:** `apps/api/internal/application/inbox/inbox_service.go:431–441`
 
 The service deletes an existing inbox entry for the IMEI and then creates a new one as two separate statements without a transaction. Two concurrent requests for the same IMEI can both read "no existing entry", both skip the delete, and both attempt the insert — hitting a unique constraint error instead of a clean idempotent upsert.
 
-**Fix:** Wrap the delete-then-insert in a `BEGIN IMMEDIATE` transaction, or use `INSERT OR REPLACE`.
+**Fix:** ✅ Fixed by adding `CreateOrReplace` method using `INSERT OR REPLACE` for atomic operation.
 
 ---
 
@@ -977,33 +977,33 @@ The service deletes an existing inbox entry for the IMEI and then creates a new 
 
 ---
 
-### BUG-72 🔴 Critical → Removing an org member does not revoke their active sessions or tokens — they retain access until natural expiry
+### BUG-72 ✅ 🔴 Critical → Removing an org member does not revoke their active sessions or tokens — they retain access until natural expiry
 
 **File:** `apps/api/internal/application/organization/member_service.go:85`
 
 `RemoveMember` soft-deletes the membership record. There is no call to `RevokeAllRefreshTokens`, `LogoutAll`, or any session invalidation scoped to that organization. The removed operator keeps all active sessions and can continue making authenticated requests against the org's resources until their JWT expires (up to 7 days by default).
 
-**Fix:** After soft-deleting the membership, call `authService.RevokeAllRefreshTokens(ctx, operatorID)` and `authService.LogoutAll(ctx, operatorID)`. If per-org session scoping exists, revoke only org-scoped sessions; otherwise revoke all.
+**Fix:** ✅ Fixed — `RemoveMember` calls `LogoutAll` and `RevokeAllRefreshTokens` after membership removal.
 
 ---
 
-### BUG-73 🟠 High → `GET /v1/organizations/:id` has no minimum role check — any member including `viewer` sees full org details
+### BUG-73 ✅ 🟠 High → `GET /v1/organizations/:id` has no minimum role check — any member including `viewer` sees full org details
 
 **File:** `apps/api/internal/api/handlers/organization/organization_handler.go:131`
 
 The handler manually verifies membership but does not enforce a minimum role level. A `viewer`-role member (lowest privilege) can read the full org details response, which may include configuration, billing metadata, and member counts that should require at least `operator` or `admin`.
 
-**Fix:** Apply `RequireOrgRole(roles.Operator)` middleware on this route, or add an explicit role check at the top of the handler.
+**Fix:** ✅ Fixed — handler checks for `RoleOperator.Level()` minimum before returning org details.
 
 ---
 
-### BUG-74 🟠 High → `GET /v1/organizations/:id/members` has no role check — any member can enumerate all other members and their roles
+### BUG-74 ✅ 🟠 High → `GET /v1/organizations/:id/members` has no role check — any member can enumerate all other members and their roles
 
 **File:** `apps/api/internal/api/handlers/organization/member_handler.go:53`
 
 Any org member can list every other member's name, email, and role. In a multi-tenant environment, this leaks the org's full operator roster and role hierarchy to the lowest-privilege users.
 
-**Fix:** Require at least `admin` role to list members, or limit `viewer`/`operator` responses to only their own membership record.
+**Fix:** ✅ Fixed — handler checks for `RoleOperator.Level()` minimum before listing members.
 
 ---
 
@@ -1266,7 +1266,7 @@ The webhook client has a 10-second timeout but no retry on transient failure and
 | BUG-10 | ✅ | 🔴 | Commands | Strict HMAC middleware runs after command handler |
 | BUG-51 | | 🔴 | Migrations | Migrations not in transactions — partial migration possible |
 | BUG-64 | | 🔴 | Inbox | `inbox_storage` never persists `organization_id` — multi-tenant inbox broken |
-| BUG-65 | | 🔴 | Inbox | `/inbox` public with no auth — unlimited fake registration flood |
+| BUG-65 | ✅ | 🔴 | Inbox | `/inbox` public with no auth — unlimited fake registration flood |
 | BUG-87 | | 🔴 | Webhooks | Webhook URL not validated — SSRF internal network pivot |
 | BUG-88 | | 🔴 | Alerts | No alert deduplication — 1 telemetry sample = 1 alert, 1 notification |
 | BUG-03 | | 🟠 | Auth | Token rotation hardcodes `"operator"` — admins lose role on first refresh |
@@ -1284,13 +1284,13 @@ The webhook client has a 10-second timeout but no retry on transient failure and
 | BUG-45 | | 🟠 | Errors | Sentinels compared with `==` — silently breaks on wrapped errors |
 | BUG-53 | | 🟠 | Audit | Audit goroutines fire-and-forget — events dropped on shutdown |
 | BUG-54 | | 🟠 | Audit | Audit logs co-located with app data — trivially tampered |
-| BUG-66 | | 🟠 | Inbox | `commandSecret` stored in plaintext in `inbox_requests` table |
-| BUG-67 | | 🟠 | Inbox | Confirmation token is not single-use — `/confirm` succeeds repeatedly |
-| BUG-68 | | 🟠 | Inbox | No background worker for `deletion_scheduled_at` — devices never actually deleted |
-| BUG-69 | | 🟠 | Inbox | Device reconnecting during deletion window doesn't cancel scheduled deletion |
-| BUG-72 | | 🟠 | Org/RBAC | Removing a member doesn't revoke their sessions — access persists |
-| BUG-73 | | 🟠 | Org/RBAC | `GET /organizations/:id` has no role check — viewer sees full org details |
-| BUG-74 | | 🟠 | Org/RBAC | `GET /organizations/:id/members` — any member enumerates all members + roles |
+| BUG-66 | ✅ | 🟠 | Inbox | `commandSecret` stored in plaintext in `inbox_requests` table |
+| BUG-67 | ✅ | 🟠 | Inbox | Confirmation token is not single-use — `/confirm` succeeds repeatedly |
+| BUG-68 | ✅ | 🟠 | Inbox | No background worker for `deletion_scheduled_at` — devices never actually deleted |
+| BUG-69 | ✅ | 🟠 | Inbox | Device reconnecting during deletion window doesn't cancel scheduled deletion |
+| BUG-72 | ✅ | 🟠 | Org/RBAC | Removing a member doesn't revoke their sessions — access persists |
+| BUG-73 | ✅ | 🟠 | Org/RBAC | `GET /organizations/:id` has no role check — viewer sees full org details |
+| BUG-74 | ✅ | 🟠 | Org/RBAC | `GET /organizations/:id/members` — any member enumerates all members + roles |
 | BUG-89 | | 🟠 | Telemetry | Global 5000-row cap — Device B's data silently deletes Device A's history |
 | BUG-90 | | 🟠 | Telemetry | O(N) DELETE on every INSERT — DB performance degrades continuously |
 | BUG-06 | ✅ | 🟡 | Auth | Password change doesn't invalidate existing sessions |
@@ -1328,18 +1328,18 @@ The webhook client has a 10-second timeout but no retry on transient failure and
 | BUG-60 | | 🟡 | Lifecycle | No fail-fast env var validation at startup |
 | BUG-61 | | 🟡 | Lifecycle | HTTP server accepts requests before migrations complete |
 | BUG-62 | | 🟡 | Lifecycle | No graceful drain of in-flight requests on SIGTERM |
-| BUG-70 | | 🟡 | Inbox | Successful registration doesn't clean up inbox entry |
-| BUG-71 | | 🟡 | Inbox | CreateInboxRequest cleanup+create not in transaction |
-| BUG-75 | | 🟡 | Org/RBAC | `admin` can modify `maxMembers`/`isActive` without superadmin |
-| BUG-76 | | 🟡 | Org/RBAC | Org deletion doesn't clean up devices, telemetry, sessions |
-| BUG-77 | | 🟡 | Org/RBAC | Invitation accept has no DB-level uniqueness guard |
-| BUG-78 | | 🟡 | Commands | Global HMAC middleware passes empty `deviceID` |
-| BUG-79 | | 🟡 | Commands | No TTL on commands — stuck commands accumulate forever |
-| BUG-80 | | 🟡 | Commands | No cap on pending commands per device |
-| BUG-81 | | 🟡 | Commands | No automatic retry/backoff — all retries are manual |
-| BUG-82 | | 🟡 | Input | `limit` params have no upper bound — full table scan possible |
-| BUG-83 | | 🟡 | Input | Time-range params accept arbitrary values including epoch 0 and year 9999 |
-| BUG-84 | | 🟡 | Input | Threshold values accept negative or million-percent — silent alert breakage |
+| BUG-70 | ✅ | 🟡 | Inbox | Successful registration doesn't clean up inbox entry |
+| BUG-71 | ✅ | 🟡 | Inbox | CreateInboxRequest cleanup+create not in transaction |
+| BUG-75 | ✅ | 🟡 | Org/RBAC | `admin` can modify `maxMembers`/`isActive` without superadmin |
+| BUG-76 | ✅ | 🟡 | Org/RBAC | Org deletion doesn't clean up devices, telemetry, sessions |
+| BUG-77 | ✅ | 🟡 | Org/RBAC | Invitation accept has no DB-level uniqueness guard |
+| BUG-78 | ✅ | 🟡 | Commands | Global HMAC middleware passes empty `deviceID` |
+| BUG-79 | ✅ | 🟡 | Commands | No TTL on commands — stuck commands accumulate forever |
+| BUG-80 | ✅ | 🟡 | Commands | No cap on pending commands per device |
+| BUG-81 | ✅ | 🟡 | Commands | No automatic retry/backoff — all retries are manual |
+| BUG-82 | ✅ | 🟡 | Input | `limit` params have no upper bound — full table scan possible |
+| BUG-83 | ✅ | 🟡 | Input | Time-range params accept arbitrary values including epoch 0 and year 9999 |
+| BUG-84 | ✅ | 🟡 | Input | Threshold values accept negative or million-percent — silent alert breakage |
 | BUG-91 | | 🟡 | Alerts | No alert auto-resolution — alert appears active forever after metric recovers |
 | BUG-92 | | 🟡 | Alerts | No hysteresis — alert flapping when metric oscillates near threshold |
 | BUG-93 | | 🟡 | Alerts | Concurrent telemetry frames create duplicate alerts |
@@ -1355,7 +1355,7 @@ The webhook client has a 10-second timeout but no retry on transient failure and
 | BUG-50 | | 🟢 | Errors | Login notification email errors silently discarded |
 | BUG-59 | | 🟢 | FCM | `SafeNotifier` swallows all FCM errors |
 | BUG-63 | | 🟢 | Lifecycle | Health check doesn't probe DB |
-| BUG-85 | | 🟢 | Input | Path params not validated for format (UUID, IMEI digits) |
+| BUG-85 | ✅ | 🟢 | Input | Path params not validated for format (UUID, IMEI digits) |
 | BUG-86 | | 🟢 | Input | String fields in JSON models have no length bounds |
 
 ---

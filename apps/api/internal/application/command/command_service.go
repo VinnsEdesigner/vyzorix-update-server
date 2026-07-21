@@ -12,6 +12,11 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 )
+const DefaultCommandTTL = 5 * time.Minute
+const MaxPendingCommandsPerDevice = 50
+
+// ErrTooManyPendingCommands is returned when a device has too many pending commands.
+var ErrTooManyPendingCommands = errors.New("device has too many pending commands")
 
 // Service handles command operations.
 type Service struct {
@@ -37,6 +42,13 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 		}
 
 		return nil, err
+	}
+	pendingCount, err := s.commandRepo.CountPendingByDevice(ctx, req.DeviceID)
+	if err != nil {
+		return nil, err
+	}
+	if pendingCount >= MaxPendingCommandsPerDevice {
+		return nil, ErrTooManyPendingCommands
 	}
 
 	// Generate dispatch ID for idempotency.
@@ -77,6 +89,7 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 	cmdID := shared.GenerateID()
 
 	now := time.Now()
+	expiresAt := now.Add(DefaultCommandTTL)
 	cmd := &command.Command{
 		ID:         cmdID,
 		DeviceID:   req.DeviceID,
@@ -88,6 +101,7 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 		MaxRetries: 5, // Default max retries for outbox pattern
 		CreatedAt:  now,
 		UpdatedAt:  now,
+		ExpiresAt:  &expiresAt,
 	}
 
 	if err := s.commandRepo.Create(ctx, cmd); err != nil {

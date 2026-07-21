@@ -24,6 +24,7 @@ var (
 	ErrCommandSecretNotSet   = errors.New("command secret not set for device")
 	ErrInvalidCommandSecret  = errors.New("invalid command secret")
 	ErrDeviceAlreadyApproved = errors.New("device already approved and registered")
+	ErrDeviceAlreadyConfirmed = errors.New("device already confirmed (command secret is single-use)")
 	ErrDeviceNotPending      = errors.New("device is not in pending state")
 	ErrInvalidLifecycleTransition = errors.New("invalid lifecycle state transition")
 )
@@ -48,6 +49,53 @@ func NewService(
 		deviceRepo:   deviceRepo,
 		operatorRepo: operatorRepo,
 		logger:       logger,
+	}
+}
+
+// StartDeletionWorker starts a background worker that periodically cleans up
+// deregistered devices whose deletion_scheduled_at time has passed.
+// This implements the 30-day retention policy for deregistered devices.
+func (s *Service) StartDeletionWorker(ctx context.Context, interval time.Duration) {
+	if interval <= 0 {
+		interval = 1 * time.Hour // Default to 1 hour
+	}
+
+	s.logger.Info("starting device deletion worker",
+		"interval", interval,
+	)
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				s.logger.Info("stopping device deletion worker")
+				return
+			case <-ticker.C:
+				s.runScheduledDeletion()
+			}
+		}
+	}()
+}
+
+// runScheduledDeletion performs the actual deletion of scheduled devices.
+func (s *Service) runScheduledDeletion() {
+	ctx := context.Background()
+
+	deleted, err := s.deviceRepo.DeleteScheduled(ctx)
+	if err != nil {
+		s.logger.Error("failed to run scheduled device deletion",
+			"error", err,
+		)
+		return
+	}
+
+	if deleted > 0 {
+		s.logger.Info("completed scheduled device deletion",
+			"deleted_count", deleted,
+		)
 	}
 }
 
@@ -813,6 +861,7 @@ func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, 
 
 // ConfirmDevice confirms a device registration by validating the command secret.
 // Returns the confirmed device if successful.
+// Rejects if device is already registered (single-use token).
 func (s *Service) ConfirmDevice(ctx context.Context, imei, commandSecret string) (*device.Device, error) {
 	// Find device by IMEI
 	d, err := s.deviceRepo.FindByIMEI(ctx, imei)
@@ -821,6 +870,11 @@ func (s *Service) ConfirmDevice(ctx context.Context, imei, commandSecret string)
 			return nil, ErrDeviceNotFound
 		}
 		return nil, fmt.Errorf("failed to find device: %w", err)
+	}
+
+	// Check if device is already registered (single-use confirmation)
+	if d.Lifecycle.IsRegistered() {
+		return nil, ErrDeviceAlreadyConfirmed
 	}
 
 	// Validate command secret
@@ -836,7 +890,10 @@ func (s *Service) ConfirmDevice(ctx context.Context, imei, commandSecret string)
 		return nil, ErrInvalidCommandSecret
 	}
 
-	// Mark device as online and update last seen
+	// Mark device as registered (confirmed) and online
+	if err := d.Lifecycle.TransitionTo(device.LifecycleRegistered); err != nil {
+		return nil, fmt.Errorf("failed to transition device to registered: %w", err)
+	}
 	d.Online = true
 	d.LastSeen = time.Now().UnixMilli()
 	d.UpdatedAt = time.Now()

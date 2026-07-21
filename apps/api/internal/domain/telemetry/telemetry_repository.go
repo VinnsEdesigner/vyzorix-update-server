@@ -21,4 +21,8 @@ type Repository interface {
 
 	// DeleteOlderThan removes telemetry entries older than the given timestamp.
 	DeleteOlderThan(ctx context.Context, olderThanTimestamp int64) (int64, error)
+
+	// DeleteByDeviceIDs deletes all telemetry entries for the given device IDs.
+	// This is used during organization deletion.
+	DeleteByDeviceIDs(ctx context.Context, deviceIDs []string) (int64, error)
 }

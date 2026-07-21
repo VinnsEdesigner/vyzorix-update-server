@@ -46,7 +46,7 @@ func Injector(cfg config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	authService := ProvideAuthService(operatorRepository, sessionRepository, emailVerificationRepository, passwordResetRepository, refreshTokenRepository, argon2idHasher, jwtManager)
+	authService := ProvideAuthService(logger, operatorRepository, sessionRepository, emailVerificationRepository, passwordResetRepository, refreshTokenRepository, argon2idHasher, jwtManager)
 	service := ProvideDeviceService(deviceRepository, operatorRepository, logger)
 	clientService := ProvideClientService(clientRepository)
 	commandService := ProvideCommandService(commandRepository, deviceRepository)
@@ -71,8 +71,8 @@ func Injector(cfg config.Config) (*Server, error) {
 	invitationStorage := ProvideInvitationRepository(db)
 	txManager := ProvideTxManager(db)
 	// Create organization services
-	orgService := ProvideOrganizationService(orgStorage, memberStorage, invitationStorage, operatorRepository, txManager, logger)
-	memberService := ProvideMemberService(memberStorage, orgStorage, logger)
+	orgService := ProvideOrganizationService(orgStorage, memberStorage, invitationStorage, operatorRepository, sessionRepository, deviceRepository, telemetryRepository, commandRepository, txManager, logger)
+	memberService := ProvideMemberService(memberStorage, orgStorage, authService, logger)
 	invitationService := ProvideInvitationService(invitationStorage, orgStorage, memberStorage, txManager, emailService, logger, cfg)
 	// Create settings repositories and services
 	orgSettingsRepository := ProvideOrganizationSettingsRepository(db)

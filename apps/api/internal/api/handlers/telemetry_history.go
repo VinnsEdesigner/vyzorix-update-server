@@ -320,6 +320,12 @@ func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 		return
 	}
 
+	// Verify device belongs to the caller's organization
+	orgID := middleware.GetOrganizationID(c)
+	if orgID != "" && !h.verifyDeviceInOrganization(c, deviceID, orgID) {
+		return // verifyDeviceInOrganization already sent error response
+	}
+
 	entries, err := h.telemetryRepo.List(c.Request.Context(), deviceID, 1)
 	if err != nil {
 		h.log.Error("failed to get latest telemetry", "err", err, "deviceId", deviceID)
@@ -362,6 +368,12 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 		})
 
 		return
+	}
+
+	// Verify device belongs to the caller's organization
+	orgID := middleware.GetOrganizationID(c)
+	if orgID != "" && !h.verifyDeviceInOrganization(c, deviceID, orgID) {
+		return // verifyDeviceInOrganization already sent error response
 	}
 
 	// Get last 100 entries for stats calculation

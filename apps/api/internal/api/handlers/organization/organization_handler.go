@@ -151,6 +151,12 @@ func (h *OrganizationHandler) Get(c *gin.Context) {
 			h.presenter.Forbidden(c, "access denied")
 			return
 		}
+	} else {
+		// Check minimum role: require at least operator role
+		if member.Role.Level() < organization.RoleOperator.Level() {
+			h.presenter.Forbidden(c, "insufficient permissions: operator role required")
+			return
+		}
 	}
 
 	org, err := h.orgService.GetOrganizationWithMembers(c.Request.Context(), orgID)
@@ -189,12 +195,6 @@ func (h *OrganizationHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// Check if operator can manage organization settings
-	if err := h.memberService.CheckCanManageOrganization(c.Request.Context(), op.ID, orgID); err != nil {
-		h.presenter.Forbidden(c, "access denied")
-		return
-	}
-
 	var req struct {
 		Name       *string `json:"name"`
 		MaxMembers *int    `json:"maxMembers"`
@@ -204,6 +204,24 @@ func (h *OrganizationHandler) Update(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "Invalid request body")
 		return
+	}
+	// These are sensitive fields that affect billing and org lifecycle
+	if req.MaxMembers != nil || req.IsActive != nil {
+		member, err := h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
+		if err != nil {
+			h.presenter.Forbidden(c, "access denied")
+			return
+		}
+		if !member.Role.IsSuperAdmin() {
+			h.presenter.Forbidden(c, "modifying maxMembers or isActive requires super_admin role")
+			return
+		}
+	} else {
+		// For non-sensitive fields, just check if operator can manage organization
+		if err := h.memberService.CheckCanManageOrganization(c.Request.Context(), op.ID, orgID); err != nil {
+			h.presenter.Forbidden(c, "access denied")
+			return
+		}
 	}
 
 	org, err := h.orgService.UpdateOrganization(c.Request.Context(), orgID, req.Name, req.MaxMembers, req.IsActive)

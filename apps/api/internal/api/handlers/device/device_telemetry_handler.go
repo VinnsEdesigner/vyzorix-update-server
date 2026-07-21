@@ -65,13 +65,28 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 	}
 
 	if st := c.Query("startTime"); st != "" {
-		req.StartTime, _ = strconv.ParseInt(st, 10, 64)
+		val, err := strconv.ParseInt(st, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid startTime format"})
+			return
+		}
+		req.StartTime = val
 	}
 	if et := c.Query("endTime"); et != "" {
-		req.EndTime, _ = strconv.ParseInt(et, 10, 64)
+		val, err := strconv.ParseInt(et, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid endTime format"})
+			return
+		}
+		req.EndTime = val
 	}
 	if l := c.Query("limit"); l != "" {
-		req.Limit, _ = strconv.Atoi(l)
+		val, err := strconv.Atoi(l)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid limit format"})
+			return
+		}
+		req.Limit = val
 	}
 
 	response, err := h.metricsSvc.GetTelemetry(ctx, req)

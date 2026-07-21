@@ -71,12 +71,16 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	}
 
 	if l := c.Query("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
-			limit = parsed
-			if limit > 100 {
-				limit = 100
-			}
+		parsed, err := strconv.Atoi(l)
+		if err != nil || parsed <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "limit must be a positive integer"})
+			return
 		}
+		if parsed > 100 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "limit cannot exceed 100"})
+			return
+		}
+		limit = parsed
 	}
 
 	var startTime, endTime int64
@@ -95,6 +99,10 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 			return
 		}
 		endTime = parsed
+	}
+	if startTime > 0 && endTime > 0 && startTime >= endTime {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "startTime must be before endTime"})
+		return
 	}
 
 	req := &command.GetHistoryRequest{

@@ -73,6 +73,12 @@ func (h *MemberHandler) List(c *gin.Context) {
 			h.presenter.Forbidden(c, "access denied")
 			return
 		}
+	} else {
+		// Check minimum role: require at least operator role to list members
+		if member.Role.Level() < organization.RoleOperator.Level() {
+			h.presenter.Forbidden(c, "insufficient permissions: operator role required")
+			return
+		}
 	}
 
 	members, err := h.memberService.ListMembers(c.Request.Context(), orgID)

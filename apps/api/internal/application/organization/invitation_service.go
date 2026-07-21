@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,6 +31,16 @@ var (
 	ErrAlreadyOrgMember      = errors.New("operator is already a member of this organization")
 	ErrOrgAtCapacity        = errors.New("organization has reached its member limit")
 )
+
+// isUniqueConstraintError checks if the error is a unique constraint violation.
+func isUniqueConstraintError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// SQLite unique constraint error message contains "UNIQUE constraint failed"
+	errStr := err.Error()
+	return strings.Contains(errStr, "UNIQUE constraint failed") || strings.Contains(errStr, "unique constraint")
+}
 
 // EmailService defines the interface for sending emails.
 type EmailService interface {
@@ -319,6 +330,11 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 		}
 
 		if err := s.memberRepo.Create(txCtx, member); err != nil {
+			// This can happen in a race condition where two concurrent AcceptInvitation
+			// calls both pass the CanBeAccepted check before either creates the membership.
+			if isUniqueConstraintError(err) {
+				return ErrAlreadyOrgMember
+			}
 			return err
 		}
 

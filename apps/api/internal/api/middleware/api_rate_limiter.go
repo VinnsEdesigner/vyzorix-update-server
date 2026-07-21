@@ -180,8 +180,8 @@ func (l *RateLimiter) Allow(key string) bool {
 			if b.tokens > l.Capacity {
 				b.tokens = l.Capacity
 			}
-			// Update last refill time to current time to preserve fractional elapsed time
-			b.last = now
+			// Advance last by only the consumed time, preserving fractional remainder for next call
+			b.last = b.last.Add(time.Duration(tokensToAdd) * l.Refill)
 		}
 	}
 
