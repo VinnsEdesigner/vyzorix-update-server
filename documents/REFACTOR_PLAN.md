@@ -526,7 +526,7 @@ apps/api/internal/infrastructure/storage/
 
 ---
 
-## ⚠️ CRITICAL GAPS IDENTIFIED & ADDRESSED
+## ️ CRITICAL GAPS IDENTIFIED & ADDRESSED
 
 ### 1. Race Condition: Max 2 Orgs Check
 
@@ -1087,7 +1087,7 @@ const (
 
 ---
 
-## ❓ ADDITIONAL DESIGN QUESTIONS REQUIRING CLARIFICATION
+##  ADDITIONAL DESIGN QUESTIONS REQUIRING CLARIFICATION
 
 ### 1. Device Registration Without Organization
 
@@ -1388,26 +1388,26 @@ Option C: Invitation required even for first user
 
 | # | Question | Options | Recommendation | Status |
 |---|----------|---------|---------------|--------|
-| 1 | Device registration without org | Require org / Personal space / Auto-create | Require org | ✅ CONFIRMED |
-| 2 | API key org scope | Org-scoped / Operator-scoped | Org-scoped | ✅ CONFIRMED |
-| 3 | IMEI uniqueness | Global / Per-org | Global (IMEI is device hardware ID) | ✅ CONFIRMED |
-| 4 | Invitation email match | Strict / Loose | Strict | ✅ CONFIRMED |
-| 5 | Last super_admin leaving | Block / Allow | Block | ✅ CONFIRMED |
-| 6 | Org deletion prerequisites | Checklist enforced | Enforce all | ✅ CONFIRMED |
-| 7 | Role hierarchy | As specified | As specified | ✅ CONFIRMED |
-| 8 | Org name uniqueness | Global / Per-operator | Per-operator | ✅ CONFIRMED |
-| 9 | Webhook scope | Org-scoped / Operator-scoped | Org-scoped | ✅ CONFIRMED |
-| 10 | Cross-org dashboard | Org-scoped only / Aggregate / Both | Org-scoped only | ✅ CONFIRMED |
-| 11 | Device transfer feature | Required | Implement | ✅ CONFIRMED |
-| 12 | Membership limits | Default 100 | Implement | ✅ CONFIRMED |
-| 13 | Device limits | Unlimited / Tiered | Unlimited initially | ✅ CONFIRMED |
-| 14 | First org creation | Auto / CLI / Invite | Auto-create | ✅ CONFIRMED |
+| 1 | Device registration without org | Require org / Personal space / Auto-create | Require org |  CONFIRMED |
+| 2 | API key org scope | Org-scoped / Operator-scoped | Org-scoped |  CONFIRMED |
+| 3 | IMEI uniqueness | Global / Per-org | Global (IMEI is device hardware ID) |  CONFIRMED |
+| 4 | Invitation email match | Strict / Loose | Strict |  CONFIRMED |
+| 5 | Last super_admin leaving | Block / Allow | Block |  CONFIRMED |
+| 6 | Org deletion prerequisites | Checklist enforced | Enforce all |  CONFIRMED |
+| 7 | Role hierarchy | As specified | As specified |  CONFIRMED |
+| 8 | Org name uniqueness | Global / Per-operator | Per-operator |  CONFIRMED |
+| 9 | Webhook scope | Org-scoped / Operator-scoped | Org-scoped |  CONFIRMED |
+| 10 | Cross-org dashboard | Org-scoped only / Aggregate / Both | Org-scoped only |  CONFIRMED |
+| 11 | Device transfer feature | Required | Implement |  CONFIRMED |
+| 12 | Membership limits | Default 100 | Implement |  CONFIRMED |
+| 13 | Device limits | Unlimited / Tiered | Unlimited initially |  CONFIRMED |
+| 14 | First org creation | Auto / CLI / Invite | Auto-create |  CONFIRMED |
 
-### All 14 Questions CONFIRMED ✅
+### All 14 Questions CONFIRMED 
 
 ---
 
-## 🚨 GRAPHQL SCHEMA IMPACT ANALYSIS
+##  GRAPHQL SCHEMA IMPACT ANALYSIS
 
 ### Files to Check and Refactor
 
@@ -1768,11 +1768,11 @@ func RequireOrgRole(orgID string, minRole OrgRole) func(graphql.ResolveParams) (
 
 ---
 
-## 🚨 MIGRATION STRATEGY (SIMPLIFIED)
+##  MIGRATION STRATEGY (SIMPLIFIED)
 
 ### Important: No Existing Data
 
-**⚠️ ASSUMPTION: There are NO existing users, devices, or organizations in the system.**
+**️ ASSUMPTION: There are NO existing users, devices, or organizations in the system.**
 
 This is a greenfield implementation for org features. All data is created fresh.
 
@@ -1785,7 +1785,7 @@ CURRENT STATE (Greenfield):
 
 TARGET STATE (With Organizations):
 ┌────────────┐     ┌────────────┐     ┌────────────┐
-│  Operator  │────▶│ Membership │────▶│Organization│
+│  Operator  │────│ Membership │────│Organization│
 │           │     │  (role)   │     │            │
 └────────────┘     └────────────┘     └────────────┘
                          │
@@ -1911,7 +1911,7 @@ COMMIT;
 
 ---
 
-## 📋 IMPLEMENTATION PHASES
+##  IMPLEMENTATION PHASES
 
 ### Phase 1: Foundation (Database + Domain)
 1. Create migration 040_organizations.sql

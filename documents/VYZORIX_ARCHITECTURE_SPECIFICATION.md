@@ -133,7 +133,7 @@ module.exports = config;
 "version": "1.0.0",
 Vyzorix Architecture Specification 3
 
-⚠️ Network Communication Strategy for Go Gin Integration
+️ Network Communication Strategy for Go Gin Integration
 Setting "usesCleartextTraffic": true  instructs the Android manifest compiler to allow unencrypted HTTP calls
 during development and staging pipelines inside your cloud sandbox.
 Without this configuration, the native Android OS
@@ -253,7 +253,7 @@ Vyzorix Architecture Specification 5
 Once  the  generation  engine  finishes,  the  directory  below  is  fully  populated.
 This  is  the  complete  system
 specification parsed natively by the Android Runtime (ART) on the device:
-🔒 Production Security & Submission Assets
+ Production Security & Submission Assets
 To finalize a Play Store submission, engineers provide a vyzorix-release.keystore  file.
 This private cryptographic
 identity key signs the .aab package.

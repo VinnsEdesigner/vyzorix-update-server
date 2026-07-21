@@ -113,7 +113,7 @@ DEVICE                         SERVER                        DASHBOARD
 | `PING` | Heartbeat request | `{timestamp}` |
 | `ACK` | Authentication response | `{success, error?}` |
 
-#### Dashboard ↔ Server Messages
+#### Dashboard  Server Messages
 
 | Type | Direction | Purpose |
 |------|-----------|---------|

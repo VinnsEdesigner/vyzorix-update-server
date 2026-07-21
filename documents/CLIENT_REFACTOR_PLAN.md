@@ -527,13 +527,13 @@ apps/web/src/components/
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌─────────────────────────────────────────────────────┐  │
-│  │  🏢 Acme Corp [Super Admin]  ▼                        │  │
+│  │   Acme Corp [Super Admin]  ▼                        │  │
 │  └─────────────────────────────────────────────────────┘  │
 │                                                              │
 │  Click → Dropdown:                                        │
 │  ┌─────────────────────────────────────────────────────┐  │
-│  │  🏢 Acme Corp                           [Current ✓]  │  │
-│  │  🏢 Personal Projects                      [Admin]  │  │
+│  │   Acme Corp                           [Current ✓]  │  │
+│  │   Personal Projects                      [Admin]  │  │
 │  │  ──────────────────────────────────────────────────  │  │
 │  │  + Create Organization                                  │  │
 │  │  Leave Organization                                    │  │
