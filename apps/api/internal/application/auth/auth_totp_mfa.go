@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
@@ -123,13 +124,13 @@ func (s *AuthService) DisableMFA(ctx context.Context, operatorID string) error {
 
 	// Revoke all sessions for this operator
 	if err := s.LogoutAll(ctx, operatorID); err != nil {
-		// Log but don't fail
+		slog.Warn("failed to revoke sessions during MFA disable", "operator_id", operatorID, "error", err)
 	}
 
 	// Revoke all refresh tokens for this operator
 	if s.refreshTokenRepo != nil {
 		if err := s.refreshTokenRepo.RevokeAllForOperator(ctx, operatorID); err != nil {
-			// Log but don't fail
+			slog.Warn("failed to revoke refresh tokens during MFA disable", "operator_id", operatorID, "error", err)
 		}
 	}
 

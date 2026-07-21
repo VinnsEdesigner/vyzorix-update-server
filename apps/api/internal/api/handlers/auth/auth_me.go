@@ -88,6 +88,6 @@ func (h *MeHandler) Handle(c *gin.Context) {
 		"needs_organization": needsOrg,
 		"organizations":   orgs,
 		"last_organization_id": op.LastOrganizationID,
-		"selected_organization": selectedOrgDTO,
+		"selected_organization": selectedOrg,
 	})
 }

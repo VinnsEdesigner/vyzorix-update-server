@@ -331,7 +331,7 @@ func (s *Server) setupUpdatesRoutes(r *gin.RouterGroup) {
 		// All updates routes require organization context for multi-tenant isolation
 		updatesGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
 		updatesGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
-		s.updatesHandler.RegisterRoutes(updatesGroup, s.cookieAuth, s.memberHandler.MembershipChecker())
+		s.updatesHandler.RegisterRoutes(updatesGroup, s.cookieAuth)
 	}
 }
 
