@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/metrics"
@@ -94,7 +95,7 @@ func (r *MetricsRepository) GetLatestTelemetry(ctx context.Context, deviceID str
 		&frame.BufferLevel, &timestamp, &frame.Uptime,
 	)
 
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, metrics.ErrNotFound
 	}
 
@@ -107,6 +108,7 @@ func (r *MetricsRepository) GetLatestTelemetry(ctx context.Context, deviceID str
 }
 
 // GetAggregatedMetrics retrieves aggregated metrics for charting with specified resolution.
+
 func (r *MetricsRepository) GetAggregatedMetrics(ctx context.Context, deviceID string, metric string, startTime, endTime time.Time, resolution string) ([]*metrics.MetricDataPoint, error) {
 	// Map metric name to column
 	column := metricToColumn(metric)
@@ -117,6 +119,13 @@ func (r *MetricsRepository) GetAggregatedMetrics(ctx context.Context, deviceID s
 	// SQLite uses strftime for time bucketing - group by minute buckets
 	format := resolutionToStrftime(resolution)
 
+	
+	maxTimeWindow := 30 * 24 * time.Hour
+	if endTime.Sub(startTime) > maxTimeWindow {
+		startTime = endTime.Add(-maxTimeWindow)
+	}
+	maxRows := 1000
+
 	query := `
 		SELECT 
 			strftime('` + format + `', received_at / 1000, 'unixepoch') as bucket,
@@ -125,9 +134,10 @@ func (r *MetricsRepository) GetAggregatedMetrics(ctx context.Context, deviceID s
 		FROM telemetry
 		WHERE device_id = ? AND received_at >= ? AND received_at <= ?
 		GROUP BY bucket
-		ORDER BY bucket ASC`
+		ORDER BY bucket ASC
+		LIMIT ?`
 
-	rows, err := r.queryRows(ctx, query, deviceID, startTime.UnixMilli(), endTime.UnixMilli())
+	rows, err := r.queryRows(ctx, query, deviceID, startTime.UnixMilli(), endTime.UnixMilli(), maxRows)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +184,7 @@ func (r *MetricsRepository) GetMetricStats(ctx context.Context, deviceID string,
 		&stats.Avg, &stats.Min, &stats.Max,
 	)
 
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return &metrics.MetricStats{}, nil
 	}
 
@@ -186,7 +196,7 @@ func (r *MetricsRepository) GetMetricStats(ctx context.Context, deviceID string,
 	var current float64
 	currentQuery := `SELECT ` + column + ` FROM telemetry WHERE device_id = ? AND received_at >= ? AND received_at <= ? ORDER BY received_at DESC LIMIT 1`
 	err = r.queryRow(ctx, currentQuery, deviceID, startTime.UnixMilli(), endTime.UnixMilli()).Scan(&current)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 	stats.Current = current

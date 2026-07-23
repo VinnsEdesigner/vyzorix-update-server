@@ -64,10 +64,18 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 		DeviceID: deviceID,
 	}
 
+	
+	// Max allowed range: 90 days in milliseconds.
+	const maxTimeWindowMs = 90 * 24 * 60 * 60 * 1000 // 7,776,000,000 ms
+
 	if st := c.Query("startTime"); st != "" {
 		val, err := strconv.ParseInt(st, 10, 64)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid startTime format"})
+			return
+		}
+		if val < 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "startTime must be >= 0"})
 			return
 		}
 		req.StartTime = val
@@ -79,6 +87,17 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 			return
 		}
 		req.EndTime = val
+	}
+	// Enforce max query window after both values are parsed.
+	if req.StartTime > 0 && req.EndTime > 0 {
+		if req.EndTime <= req.StartTime {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "endTime must be greater than startTime"})
+			return
+		}
+		if req.EndTime-req.StartTime > maxTimeWindowMs {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "time range exceeds maximum allowed window of 90 days"})
+			return
+		}
 	}
 	if l := c.Query("limit"); l != "" {
 		val, err := strconv.Atoi(l)

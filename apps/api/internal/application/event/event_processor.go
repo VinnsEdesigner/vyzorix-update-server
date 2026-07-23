@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
@@ -35,6 +36,16 @@ type Processor struct {
 	notificationSvc    *notification.Service
 	log                *slog.Logger
 	thresholds         *ThresholdConfig
+
+	
+	dedupMu          sync.RWMutex
+	activeAlerts     map[string]time.Time // key: "deviceID:metric:type", value: last alert time
+	dedupWindow      time.Duration        // cooldown period before new alert
+
+	
+	breachMu       sync.RWMutex
+	breachState    map[string]bool // key: "deviceID:metric", value: true if currently in breach
+	hysteresisBand float64         // hysteresis band as percentage of threshold (0.1 = 10%)
 }
 
 // ThresholdConfig holds event emission thresholds.
@@ -62,11 +73,15 @@ func DefaultThresholdConfig() *ThresholdConfig {
 // NewProcessor creates a new event processor.
 func NewProcessor(repo event.Repository, deviceRepo device.Repository, broadcaster EventBroadcaster, log *slog.Logger) *Processor {
 	return &Processor{
-		repo:        repo,
-		deviceRepo:  deviceRepo,
-		broadcaster: broadcaster,
-		log:         log,
-		thresholds:  DefaultThresholdConfig(),
+		repo:          repo,
+		deviceRepo:    deviceRepo,
+		broadcaster:   broadcaster,
+		log:           log,
+		thresholds:    DefaultThresholdConfig(),
+		activeAlerts:  make(map[string]time.Time),
+		dedupWindow:   5 * time.Minute, // Default 5-minute dedup window
+		breachState:   make(map[string]bool),
+		hysteresisBand: 0.1, 
 	}
 }
 
@@ -496,81 +511,99 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 
 		// Use the server-calculated risk score for threshold checks
 		if serverRiskScore >= float64(thresholds.RiskScoreCritical) {
-			events = append(events, &event.Event{
-				ID:         generateEventID(),
-				DeviceID:   deviceID,
-				OperatorID: operatorID,
-				Type:       event.EventTypeRiskScoreAlert,
-				Severity:   event.SeverityCritical,
-				Timestamp:  time.Now(),
-				Data:       map[string]any{"riskScore": serverRiskScore, "threshold": thresholds.RiskScoreCritical, "deviceReported": deviceRiskScore},
-				Source:     "server",
-			})
+			
+			if p.shouldSendAlert(deviceID, "riskScore", event.EventTypeRiskScoreAlert) {
+				events = append(events, &event.Event{
+					ID:         generateEventID(),
+					DeviceID:   deviceID,
+					OperatorID: operatorID,
+					Type:       event.EventTypeRiskScoreAlert,
+					Severity:   event.SeverityCritical,
+					Timestamp:  time.Now(),
+					Data:       map[string]any{"riskScore": serverRiskScore, "threshold": thresholds.RiskScoreCritical, "deviceReported": deviceRiskScore},
+					Source:     "server",
+				})
+			}
 		} else if serverRiskScore >= float64(thresholds.RiskScoreWarning) {
-			events = append(events, &event.Event{
-				ID:         generateEventID(),
-				DeviceID:   deviceID,
-				OperatorID: operatorID,
-				Type:       event.EventTypeThresholdBreach,
-				Severity:   event.SeverityWarning,
-				Timestamp:  time.Now(),
-				Data:       map[string]any{"riskScore": serverRiskScore, "threshold": thresholds.RiskScoreWarning, "deviceReported": deviceRiskScore},
-				Source:     "server",
-			})
+			
+			if p.shouldSendAlert(deviceID, "riskScore", event.EventTypeThresholdBreach) {
+				events = append(events, &event.Event{
+					ID:         generateEventID(),
+					DeviceID:   deviceID,
+					OperatorID: operatorID,
+					Type:       event.EventTypeThresholdBreach,
+					Severity:   event.SeverityWarning,
+					Timestamp:  time.Now(),
+					Data:       map[string]any{"riskScore": serverRiskScore, "threshold": thresholds.RiskScoreWarning, "deviceReported": deviceRiskScore},
+					Source:     "server",
+				})
+			}
 		}
 	}
 
 	// Check thermal temp
 	if thermalTemp, ok := data["thermalTemp"].(float64); ok {
 		if thermalTemp >= thresholds.ThermalCritical {
-			events = append(events, &event.Event{
-				ID:         generateEventID(),
-				DeviceID:   deviceID,
-				OperatorID: operatorID,
-				Type:       event.EventTypeThermalAlert,
-				Severity:   event.SeverityCritical,
-				Timestamp:  time.Now(),
-				Data:       map[string]any{"thermalTemp": thermalTemp, "threshold": thresholds.ThermalCritical},
-				Source:     "server",
-			})
+			
+			if p.shouldSendAlert(deviceID, "thermal", event.EventTypeThermalAlert) {
+				events = append(events, &event.Event{
+					ID:         generateEventID(),
+					DeviceID:   deviceID,
+					OperatorID: operatorID,
+					Type:       event.EventTypeThermalAlert,
+					Severity:   event.SeverityCritical,
+					Timestamp:  time.Now(),
+					Data:       map[string]any{"thermalTemp": thermalTemp, "threshold": thresholds.ThermalCritical},
+					Source:     "server",
+				})
+			}
 		} else if thermalTemp >= thresholds.ThermalWarning {
-			events = append(events, &event.Event{
-				ID:         generateEventID(),
-				DeviceID:   deviceID,
-				OperatorID: operatorID,
-				Type:       event.EventTypeThresholdBreach,
-				Severity:   event.SeverityWarning,
-				Timestamp:  time.Now(),
-				Data:       map[string]any{"thermalTemp": thermalTemp, "threshold": thresholds.ThermalWarning},
-				Source:     "server",
-			})
+			
+			if p.shouldSendAlert(deviceID, "thermal", event.EventTypeThresholdBreach) {
+				events = append(events, &event.Event{
+					ID:         generateEventID(),
+					DeviceID:   deviceID,
+					OperatorID: operatorID,
+					Type:       event.EventTypeThresholdBreach,
+					Severity:   event.SeverityWarning,
+					Timestamp:  time.Now(),
+					Data:       map[string]any{"thermalTemp": thermalTemp, "threshold": thresholds.ThermalWarning},
+					Source:     "server",
+				})
+			}
 		}
 	}
 
 	// Check buffer level
 	if bufferLevel, ok := data["bufferLevel"].(float64); ok {
 		if bufferLevel <= float64(thresholds.BufferCritical) {
-			events = append(events, &event.Event{
-				ID:         generateEventID(),
-				DeviceID:   deviceID,
-				OperatorID: operatorID,
-				Type:       event.EventTypeBufferLevelAlert,
-				Severity:   event.SeverityCritical,
-				Timestamp:  time.Now(),
-				Data:       map[string]any{"bufferLevel": bufferLevel, "threshold": thresholds.BufferCritical},
-				Source:     "server",
-			})
+			
+			if p.shouldSendAlert(deviceID, "buffer", event.EventTypeBufferLevelAlert) {
+				events = append(events, &event.Event{
+					ID:         generateEventID(),
+					DeviceID:   deviceID,
+					OperatorID: operatorID,
+					Type:       event.EventTypeBufferLevelAlert,
+					Severity:   event.SeverityCritical,
+					Timestamp:  time.Now(),
+					Data:       map[string]any{"bufferLevel": bufferLevel, "threshold": thresholds.BufferCritical},
+					Source:     "server",
+				})
+			}
 		} else if bufferLevel <= float64(thresholds.BufferWarning) {
-			events = append(events, &event.Event{
-				ID:         generateEventID(),
-				DeviceID:   deviceID,
-				OperatorID: operatorID,
-				Type:       event.EventTypeThresholdBreach,
-				Severity:   event.SeverityWarning,
-				Timestamp:  time.Now(),
-				Data:       map[string]any{"bufferLevel": bufferLevel, "threshold": thresholds.BufferWarning},
-				Source:     "server",
-			})
+			
+			if p.shouldSendAlert(deviceID, "buffer", event.EventTypeThresholdBreach) {
+				events = append(events, &event.Event{
+					ID:         generateEventID(),
+					DeviceID:   deviceID,
+					OperatorID: operatorID,
+					Type:       event.EventTypeThresholdBreach,
+					Severity:   event.SeverityWarning,
+					Timestamp:  time.Now(),
+					Data:       map[string]any{"bufferLevel": bufferLevel, "threshold": thresholds.BufferWarning},
+					Source:     "server",
+				})
+			}
 		}
 	}
 
@@ -640,6 +673,44 @@ func isThresholdBreachEvent(evtType event.EventType) bool {
 		return true
 	default:
 		return false
+	}
+}
+// shouldSendAlert checks if an alert should be sent based on deduplication.
+// Returns false if an alert was recently sent for the same device/metric/type combination.
+
+func (p *Processor) shouldSendAlert(deviceID, metric string, evtType event.EventType) bool {
+	key := fmt.Sprintf("%s:%s:%s", deviceID, metric, evtType)
+
+	p.dedupMu.Lock()
+	defer p.dedupMu.Unlock()
+
+	now := time.Now()
+	if lastTime, exists := p.activeAlerts[key]; exists {
+		// Check if we're still within the dedup window
+		if now.Sub(lastTime) < p.dedupWindow {
+			return false // Duplicate alert, suppress
+		}
+	}
+
+	// Mark this alert as sent
+	p.activeAlerts[key] = now
+
+	// Periodic cleanup of old entries to prevent memory leaks
+	if len(p.activeAlerts) > 10000 {
+		p.cleanupActiveAlertsLocked(now)
+	}
+
+	return true
+}
+
+// cleanupActiveAlertsLocked removes expired entries from activeAlerts map.
+// Caller must hold p.dedupMu.
+func (p *Processor) cleanupActiveAlertsLocked(now time.Time) {
+	cutoff := now.Add(-p.dedupWindow * 2)
+	for key, lastTime := range p.activeAlerts {
+		if lastTime.Before(cutoff) {
+			delete(p.activeAlerts, key)
+		}
 	}
 }
 

@@ -16,6 +16,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 )
 
 var (
@@ -31,9 +32,17 @@ var (
 
 // Service handles device operations.
 type Service struct {
-	deviceRepo   device.Repository
-	operatorRepo operator.Repository
-	logger       *slog.Logger
+	deviceRepo    device.Repository
+	operatorRepo  operator.Repository
+	txManager     transaction.TxManager
+	logger        *slog.Logger
+	statusUpdater DeviceStatusUpdater 
+}
+
+// DeviceStatusUpdater defines the interface for updating device online status.
+
+type DeviceStatusUpdater interface {
+	SetDeviceOnline(deviceID string, online bool)
 }
 
 // NewService creates a new DeviceService.
@@ -50,6 +59,19 @@ func NewService(
 		operatorRepo: operatorRepo,
 		logger:       logger,
 	}
+}
+
+// WithStatusUpdater sets the status updater (typically the hub) for serialized status updates.
+
+func (s *Service) WithStatusUpdater(updater DeviceStatusUpdater) *Service {
+	s.statusUpdater = updater
+	return s
+}
+
+// WithTxManager sets the transaction manager for ACID transactions.
+func (s *Service) WithTxManager(txManager transaction.TxManager) *Service {
+	s.txManager = txManager
+	return s
 }
 
 // StartDeletionWorker starts a background worker that periodically cleans up
@@ -800,34 +822,8 @@ func (s *Service) logDeviceAction(ctx context.Context, deviceID, imei, action, o
 
 // CreateFromInbox creates a device from an approved inbox entry.
 // This is called after an operator approves a device registration request.
-func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, commandSecret string) (*device.Device, error) {
-	// Check if device already exists by IMEI
-	existing, err := s.deviceRepo.FindByIMEI(ctx, entry.IMEI)
-	if err != nil && err != device.ErrNotFound {
-		return nil, fmt.Errorf("failed to check existing device: %w", err)
-	}
-	if existing != nil {
-		// Device already exists - this shouldn't happen if flow is correct
-		// Return error to prevent silent duplicate creation (Bug 33 fix)
-		if existing.IsDeregistered() {
-			// Device was deregistered - allow re-registration
-			// MUST delete the old device first to avoid primary key constraint
-			if err := s.deviceRepo.Delete(ctx, entry.IMEI); err != nil {
-				s.logger.Error("failed to delete old deregistered device for re-registration",
-					"imei", entry.IMEI,
-					"error", err,
-				)
-				return nil, fmt.Errorf("failed to cleanup old device: %w", err)
-			}
-			s.logger.Info("deleted old deregistered device for re-registration",
-				"imei", entry.IMEI,
-			)
-		} else {
-			// Device is active - this is a conflict
-			return nil, ErrDeviceAlreadyApproved
-		}
-	}
 
+func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, commandSecret string) (*device.Device, error) {
 	// Hash the command secret for storage
 	h := sha256.Sum256([]byte(commandSecret))
 	commandSecretHash := hex.EncodeToString(h[:])
@@ -852,8 +848,72 @@ func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, 
 		UpdatedAt:          now,
 	}
 
-	if err := s.deviceRepo.Create(ctx, d); err != nil {
-		return nil, fmt.Errorf("failed to create device from inbox: %w", err)
+	// If txManager is available, wrap everything in a transaction
+	if s.txManager != nil {
+		err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
+			// Check if device already exists by IMEI
+			existing, err := s.deviceRepo.FindByIMEI(txCtx, entry.IMEI)
+			if err != nil && err != device.ErrNotFound {
+				return fmt.Errorf("failed to check existing device: %w", err)
+			}
+			if existing != nil {
+				// Device already exists - this shouldn't happen if flow is correct
+				
+				if existing.IsDeregistered() {
+					// Device was deregistered - allow re-registration
+					// MUST delete the old device first to avoid primary key constraint
+					if err := s.deviceRepo.Delete(txCtx, entry.IMEI); err != nil {
+						s.logger.Error("failed to delete old deregistered device for re-registration",
+							"imei", entry.IMEI,
+							"error", err,
+						)
+						return fmt.Errorf("failed to cleanup old device: %w", err)
+					}
+					s.logger.Info("deleted old deregistered device for re-registration",
+						"imei", entry.IMEI,
+					)
+				} else {
+					// Device is active - this is a conflict
+					return ErrDeviceAlreadyApproved
+				}
+			}
+
+			// Create the new device within the transaction
+			if err := s.deviceRepo.Create(txCtx, d); err != nil {
+				return fmt.Errorf("failed to create device from inbox: %w", err)
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Fallback without transaction (not recommended but kept for backward compatibility)
+		// Check if device already exists by IMEI
+		existing, err := s.deviceRepo.FindByIMEI(ctx, entry.IMEI)
+		if err != nil && err != device.ErrNotFound {
+			return nil, fmt.Errorf("failed to check existing device: %w", err)
+		}
+		if existing != nil {
+			if existing.IsDeregistered() {
+				if err := s.deviceRepo.Delete(ctx, entry.IMEI); err != nil {
+					s.logger.Error("failed to delete old deregistered device for re-registration",
+						"imei", entry.IMEI,
+						"error", err,
+					)
+					return nil, fmt.Errorf("failed to cleanup old device: %w", err)
+				}
+				s.logger.Info("deleted old deregistered device for re-registration",
+					"imei", entry.IMEI,
+				)
+			} else {
+				return nil, ErrDeviceAlreadyApproved
+			}
+		}
+
+		if err := s.deviceRepo.Create(ctx, d); err != nil {
+			return nil, fmt.Errorf("failed to create device from inbox: %w", err)
+		}
 	}
 
 	return d, nil
@@ -894,12 +954,22 @@ func (s *Service) ConfirmDevice(ctx context.Context, imei, commandSecret string)
 	if err := d.Lifecycle.TransitionTo(device.LifecycleRegistered); err != nil {
 		return nil, fmt.Errorf("failed to transition device to registered: %w", err)
 	}
-	d.Online = true
 	d.LastSeen = time.Now().UnixMilli()
 	d.UpdatedAt = time.Now()
 
 	if err := s.deviceRepo.Update(ctx, d); err != nil {
 		return nil, fmt.Errorf("failed to update device on confirm: %w", err)
+	}
+
+	
+	// This prevents race conditions between WS SetOnline and REST ConfirmDevice
+	if s.statusUpdater != nil {
+		s.statusUpdater.SetDeviceOnline(d.ID, true)
+	} else {
+		// Fallback: direct DB update if no hub available
+		if err := s.deviceRepo.SetOnline(ctx, d.ID, true); err != nil {
+			s.logger.Warn("failed to set device online after confirm", "deviceId", d.ID, "err", err)
+		}
 	}
 
 	return d, nil

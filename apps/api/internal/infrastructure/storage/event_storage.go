@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -55,9 +56,7 @@ func (r *EventRepository) StoreBatch(ctx context.Context, events []*event.Event)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
+	defer SafeRollbackNoLog(tx)
 
 	stmt, err := tx.PrepareContext(ctx, `
 		INSERT INTO device_events (id, device_id, event_type, timestamp, data, severity, source, operator_id)
@@ -114,7 +113,7 @@ func (r *EventRepository) GetByID(ctx context.Context, id string) (*event.Event,
 		&evt.Source,
 		&evt.OperatorID,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, domain.ErrNotFound
 	}
 	if err != nil {

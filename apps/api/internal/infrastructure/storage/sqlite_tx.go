@@ -29,6 +29,22 @@ func (t *SQLiteTxManager) BeginTx() (*sql.Tx, error) {
 	return t.db.Begin()
 }
 
+// SafeRollback handles transaction rollback safely, logging any errors.
+// This should be used in defer statements to ensure rollback errors are not silently discarded.
+func SafeRollback(tx *sql.Tx, logger *slog.Logger) {
+	if err := tx.Rollback(); err != nil && err != sql.ErrTxDone && logger != nil {
+		logger.Error("transaction rollback failed", "error", err)
+	}
+}
+
+// SafeRollbackNoLog handles transaction rollback safely without logging.
+// Use this when you don't have access to a logger but still want to check for errors.
+func SafeRollbackNoLog(tx *sql.Tx) {
+	_ = tx.Rollback() // We intentionally ignore the error here as we can't do much about it
+	// Note: sql.ErrTxDone is returned if the transaction was already committed or rolled back
+	// which is not an error condition in most cases
+}
+
 // WithTx executes a function within a transaction.
 func (t *SQLiteTxManager) WithTx(ctx context.Context, fn func(ctx context.Context) error) error {
 	tx, err := t.db.BeginTx(ctx, nil)
@@ -40,17 +56,13 @@ func (t *SQLiteTxManager) WithTx(ctx context.Context, fn func(ctx context.Contex
 
 	defer func() {
 		if p := recover(); p != nil {
-			if rbErr := tx.Rollback(); rbErr != nil && t.logger != nil {
-				t.logger.Error("transaction rollback failed after panic", "error", rbErr)
-			}
+			SafeRollback(tx, t.logger)
 			panic(p)
 		}
 	}()
 
 	if err := fn(txCtx); err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil && t.logger != nil {
-			t.logger.Error("transaction rollback failed", "error", rbErr, "tx_error", err)
-		}
+		SafeRollback(tx, t.logger)
 		return err
 	}
 

@@ -202,14 +202,42 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 	<-ctx.Done()
 	log.Info("shutting down")
 
-	// Stop the device deletion worker
+	// Stop background workers first - they may be generating new requests
 	deviceDeletionWorker.Stop()
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// Graceful drain: give in-flight requests time to complete
+	// Use a longer timeout for server shutdown to ensure graceful drain
+	drainCtx, drainCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer drainCancel()
+
+	// Shutdown the HTTP server gracefully - this stops accepting new connections
+	// and waits for existing connections to finish their requests
+	if err := server.Shutdown(drainCtx); err != nil {
+		log.Error("server graceful shutdown error", "err", err)
+	} else {
+		log.Info("server gracefully drained in-flight requests")
+	}
+
+	// Short timeout for remaining services
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Error("shutdown error", "err", err)
+	// Shutdown AuditLogger to flush pending audit log writes
+	if apiServer.AuditLogger != nil {
+		if err := apiServer.AuditLogger.Shutdown(shutdownCtx); err != nil {
+			log.Error("audit logger shutdown error", "err", err)
+		} else {
+			log.Info("audit logger shutdown complete")
+		}
+	}
+
+	// Shutdown InvitationService to flush pending email goroutines
+	if apiServer.InvitationService != nil {
+		if err := apiServer.InvitationService.Shutdown(shutdownCtx); err != nil {
+			log.Error("invitation service shutdown error", "err", err)
+		} else {
+			log.Info("invitation service shutdown complete")
+		}
 	}
 
 	if ssrConfig.EnableSSR && ssrManager != nil {

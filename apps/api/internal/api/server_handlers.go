@@ -136,9 +136,17 @@ func (s *Server) dashboardHandler(c *gin.Context) {
 }
 
 // requireHMAC is middleware that validates HMAC signatures for device API requests.
+
 func (s *Server) requireHMAC() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		body, err := s.hmacVerifier.ReadAndVerifyHTTP(c.Request)
+		deviceID := c.Param("imei")
+		if deviceID == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "device ID required for HMAC verification"})
+			c.Abort()
+			return
+		}
+
+		body, err := s.hmacVerifier.ReadAndVerify(c.Request, deviceID)
 		if err != nil {
 			if !s.config.EnforceHMAC {
 				c.Next()

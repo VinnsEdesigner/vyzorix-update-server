@@ -559,7 +559,15 @@ func (s *Service) logRegistrationAction(ctx context.Context, entry *inbox.InboxE
 		UserAgent:  extractUserAgent(ctx),
 	}
 
-	_ = s.logRepo.Create(ctx, log)
+	
+	if err := s.logRepo.Create(ctx, log); err != nil {
+		s.logger.Error("failed to create audit log entry",
+			"action", action,
+			"imei", entry.IMEI,
+			"operatorId", operatorID,
+			"error", err,
+		)
+	}
 }
 
 // extractClientIP extracts the client IP from the context.

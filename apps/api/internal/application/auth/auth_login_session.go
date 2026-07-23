@@ -3,6 +3,7 @@ package auth
 import (
 "context"
 "errors"
+"fmt"
 "strings"
 "time"
 
@@ -439,36 +440,60 @@ return sess, nil
 }
 
 // Logout destroys a session and revokes associated refresh tokens.
+
 func (s *AuthService) Logout(ctx context.Context, sessionID string) error {
-// Get operator ID before deleting session for refresh token revocation
-var operatorID string
-if sess, err := s.sessionRepo.FindByID(ctx, sessionID); err == nil && sess != nil {
-operatorID = sess.OperatorID
-}
+	// Get operator ID before deleting session for refresh token revocation
+	var operatorID string
+	if sess, err := s.sessionRepo.FindByID(ctx, sessionID); err == nil && sess != nil {
+		operatorID = sess.OperatorID
+	}
 
-// Add to revocation list for audit
-_ = s.sessionRepo.AddSessionRevocation(ctx, sessionID, "operator_logout")
+	// Add to revocation list for audit - log error but continue
+	if err := s.sessionRepo.AddSessionRevocation(ctx, sessionID, "operator_logout"); err != nil {
+		if s.logger != nil {
+			s.logger.Warn("failed to add session revocation during logout",
+				"sessionID", sessionID,
+				"error", err)
+		}
+	}
 
-// Delete the session
-if err := s.sessionRepo.Delete(ctx, sessionID); err != nil {
-return err
-}
+	// Delete the session
+	if err := s.sessionRepo.Delete(ctx, sessionID); err != nil {
+		return err
+	}
 
-// Revoke all refresh tokens for this operator on logout
-if operatorID != "" {
-_ = s.RevokeAllRefreshTokens(ctx, operatorID)
-}
+	
+	// Return error if revocation fails to ensure session is fully invalidated
+	if operatorID != "" {
+		if err := s.RevokeAllRefreshTokens(ctx, operatorID); err != nil {
+			if s.logger != nil {
+				s.logger.Error("failed to revoke refresh tokens during logout - session may persist",
+					"operatorID", operatorID,
+					"error", err)
+			}
+			return fmt.Errorf("logout incomplete: failed to revoke refresh tokens: %w", err)
+		}
+	}
 
-return nil
+	return nil
 }
 
 // LogoutAll destroys all sessions for an operator.
+
 func (s *AuthService) LogoutAll(ctx context.Context, operatorID string) error {
-if err := s.sessionRepo.RevokeAllOperatorSessions(ctx, operatorID); err != nil {
-return err
-}
-_ = s.RevokeAllRefreshTokens(ctx, operatorID)
-return nil
+	if err := s.sessionRepo.RevokeAllOperatorSessions(ctx, operatorID); err != nil {
+		return err
+	}
+	
+	if err := s.RevokeAllRefreshTokens(ctx, operatorID); err != nil {
+		if s.logger != nil {
+			s.logger.Error("failed to revoke refresh tokens during logout all - sessions may persist",
+				"operatorID", operatorID,
+				"error", err)
+		}
+		return fmt.Errorf("logout incomplete: failed to revoke refresh tokens: %w", err)
+	}
+	return nil
 }
 
 // GetOperator retrieves an operator by ID.

@@ -2,8 +2,11 @@ package fcm
 
 import (
 	"context"
+	"database/sql"
 	"sync"
 	"time"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 )
 
 // CircuitState represents the state of the circuit breaker.
@@ -167,6 +170,7 @@ func (cb *CircuitBreaker) transitionTo(state CircuitState) {
 type CircuitBreakerClient struct {
 	client         *Client
 	circuitBreaker *CircuitBreaker
+	db             *sql.DB 
 }
 
 // NewCircuitBreakerClient creates a new CircuitBreakerClient.
@@ -177,21 +181,74 @@ func NewCircuitBreakerClient(client *Client) *CircuitBreakerClient {
 	}
 }
 
+// NewCircuitBreakerClientWithDB creates a new CircuitBreakerClient with database support.
+
+func NewCircuitBreakerClientWithDB(client *Client, db *sql.DB) *CircuitBreakerClient {
+	return &CircuitBreakerClient{
+		client:         client,
+		circuitBreaker: NewCircuitBreaker(DefaultCircuitBreakerConfig()),
+		db:             db,
+	}
+}
+
 // SendSilentWake sends a silent wake notification with circuit breaker protection.
 // Returns ErrFCMCircuitOpen if the circuit is open.
+
+
 func (c *CircuitBreakerClient) SendSilentWake(ctx context.Context, wake SilentWake) error {
 	if !c.circuitBreaker.Allow() {
+		
+		c.persistForRetry(ctx, wake, "circuit_open")
 		return ErrFCMCircuitOpen
 	}
 
+	
+	// unless RecordSuccess is called. This handles panics and early returns.
+	didSuccess := false
+	defer func() {
+		if !didSuccess {
+			c.circuitBreaker.RecordFailure()
+		}
+	}()
+
 	err := c.client.SendSilentWake(ctx, wake)
 	if err != nil {
-		c.circuitBreaker.RecordFailure()
+		
+		c.persistForRetry(ctx, wake, err.Error())
 		return err
 	}
 
+	didSuccess = true
 	c.circuitBreaker.RecordSuccess()
 	return nil
+}
+
+// persistForRetry saves a failed notification to the pending_fcm table for later retry.
+
+func (c *CircuitBreakerClient) persistForRetry(ctx context.Context, wake SilentWake, reason string) {
+	if c.db == nil {
+		return
+	}
+
+	notification := &storage.PendingFCMNotification{
+		DispatchID:  wake.DispatchID,
+		DeviceID:    wake.DeviceID,
+		Token:       wake.Token,
+		Command:     wake.Command,
+		Priority:    wake.Priority,
+		RetryCount:  0,
+		NextRetryAt: time.Now().Add(time.Minute).UnixMilli(), // First retry in 1 minute
+		LastError:   reason,
+		CreatedAt:   time.Now().UnixMilli(),
+		UpdatedAt:   time.Now().UnixMilli(),
+	}
+
+	repo := storage.NewPendingFCMRepository(c.db)
+	if err := repo.Create(ctx, notification); err != nil {
+		// Log but don't fail the main operation
+		// This would require a logger - for now just silently fail
+		_ = err
+	}
 }
 
 // State returns the current circuit breaker state.

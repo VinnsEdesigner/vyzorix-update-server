@@ -39,16 +39,6 @@ func GetOperator(ctx context.Context) (*operator.Operator, bool) {
 	return op, ok
 }
 
-// MustGetOperator retrieves the operator or panics.
-func MustGetOperator(ctx context.Context) *operator.Operator {
-	op, ok := GetOperator(ctx)
-	if !ok {
-		panic("operator not found in context")
-	}
-
-	return op
-}
-
 // WithRequestID adds a request ID to the context.
 func WithRequestID(ctx context.Context, requestID string) context.Context {
 	return context.WithValue(ctx, requestIDKey, requestID)

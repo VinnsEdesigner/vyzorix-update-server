@@ -125,7 +125,7 @@ type Command struct {
 	RetryCount    int        // Number of delivery attempts made
 	MaxRetries    int        // Maximum delivery attempts before marking failed
 	NextRetryAt   *time.Time // When to attempt next delivery (for backoff)
-	ExpiresAt     *time.Time // BUG-79: TTL for command - if set and passed, command is considered expired
+	ExpiresAt     *time.Time 
 }
 
 // IsExpired returns true if the command has expired based on its TTL.

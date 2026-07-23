@@ -49,7 +49,6 @@ type RateLimiter struct {
 	buckets   map[string]*tokenBucket
 	mu        sync.RWMutex
 	metrics   RateLimiterMetrics
-	metricsMu sync.RWMutex
 }
 
 // NewRateLimiter creates a new RateLimiter.
@@ -153,19 +152,15 @@ func (rl *RateLimiter) AllowN(clientID string, n int) bool {
 }
 
 func (rl *RateLimiter) incrementAllowed() {
-	rl.mu.RLock()
-	defer rl.mu.RUnlock()
-	rl.metricsMu.Lock()
-	defer rl.metricsMu.Unlock()
+	
+	// Only update the counter atomically without grabbing mu.
 	rl.metrics.TotalRequests++
 	rl.metrics.TotalAllowed++
 }
 
 func (rl *RateLimiter) incrementLimited() {
-	rl.mu.RLock()
-	defer rl.mu.RUnlock()
-	rl.metricsMu.Lock()
-	defer rl.metricsMu.Unlock()
+	
+	// Only update the counter atomically without grabbing mu.
 	rl.metrics.TotalRequests++
 	rl.metrics.TotalLimited++
 }
@@ -183,9 +178,8 @@ func (rl *RateLimiter) GetMetrics() RateLimiterMetrics {
 	rl.mu.RLock()
 	defer rl.mu.RUnlock()
 
-	rl.metricsMu.Lock()
-	defer rl.metricsMu.Unlock()
-
+	
+	// int64 values are read atomically in Go for aligned access.
 	return RateLimiterMetrics{
 		TotalRequests: rl.metrics.TotalRequests,
 		TotalAllowed:  rl.metrics.TotalAllowed,

@@ -36,9 +36,11 @@ type ServerDependencies struct {
 	FCMNotifier          fcm.Notifier
 	AppCheckVerifier     *appcheck.Verifier
 	DeviceDeletionWorker *worker.DeviceDeletionWorker
+	CommandOutbox       *command.Outbox
 	DeviceRepo           *storage.DeviceRepository
 	OperatorRepo        operator.Repository
 	EmailService        *emailService.Service
+	EmailVerificationRepo *storage.EmailVerificationRepository
 	CommandService      *command.Service
 	AuthService        *auth.AuthService
 	AuthLimiter        *middleware.RateLimiter
@@ -127,31 +129,32 @@ func WireServer(deps ServerDependencies) *ServerResult {
 
 	// Wire handlers
 	handlerDeps := HandlerDependencies{
-		AuthService:        deps.AuthService,
-		SessionManager:     deps.SessionManager,
-		Config:             deps.Config,
-		GoogleVerifier:     deps.GoogleVerifier,
-		ClientService:      deps.ClientService,
-		EmailService:       deps.EmailService,
-		Lockout:            deps.Lockout,
-		OperatorRepo:       deps.OperatorRepo,
-		AuditLogger:        deps.AuditLogger,
-		IPIntelligence:     deps.IPIntelligence,
-		Presenter:          result.Presenter,
-		DeviceService:      deps.DeviceService,
-		Hub:                deps.Hub,
-		CommandService:     deps.CommandService,
-		FCMNotifier:        deps.FCMNotifier,
-		AppCheckVerifier:   deps.AppCheckVerifier,
-		Log:                deps.Log,
-		HmacVerifier:       result.HmacVerifier,
-		DB:                 deps.DB,
-		UpdatesStorage:     deps.UpdatesStorage,
-		OrgService:         deps.OrgService,
-		MemberService:      deps.MemberService,
-		InvitationService:  deps.InvitationService,
-		OrgSettingsService: deps.OrgSettingsService,
-		DeviceSettingsService: deps.DeviceSettingsService,
+		AuthService:            deps.AuthService,
+		SessionManager:        deps.SessionManager,
+		Config:                deps.Config,
+		GoogleVerifier:         deps.GoogleVerifier,
+		ClientService:          deps.ClientService,
+		EmailService:           deps.EmailService,
+		EmailVerificationRepo:  deps.EmailVerificationRepo,
+		Lockout:                deps.Lockout,
+		OperatorRepo:           deps.OperatorRepo,
+		AuditLogger:            deps.AuditLogger,
+		IPIntelligence:         deps.IPIntelligence,
+		Presenter:              result.Presenter,
+		DeviceService:          deps.DeviceService,
+		Hub:                    deps.Hub,
+		CommandService:         deps.CommandService,
+		FCMNotifier:            deps.FCMNotifier,
+		AppCheckVerifier:       deps.AppCheckVerifier,
+		Log:                    deps.Log,
+		HmacVerifier:           result.HmacVerifier,
+		DB:                     deps.DB,
+		UpdatesStorage:         deps.UpdatesStorage,
+		OrgService:             deps.OrgService,
+		MemberService:          deps.MemberService,
+		InvitationService:      deps.InvitationService,
+		OrgSettingsService:     deps.OrgSettingsService,
+		DeviceSettingsService:  deps.DeviceSettingsService,
 	}
 	result.HandlerSet = WireHandlers(handlerDeps)
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"strconv"
 	"time"
 
@@ -88,7 +89,7 @@ func (r *LogsRepository) GetLogByID(ctx context.Context, id string) (*logs.Devic
 		&log.ID, &log.DeviceID, &log.EventType, &timestamp, &data,
 	)
 
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, logs.ErrLogNotFound
 	}
 

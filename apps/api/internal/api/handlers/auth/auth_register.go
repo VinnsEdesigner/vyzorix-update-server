@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -12,23 +13,31 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 
 	"github.com/gin-gonic/gin"
 )
 
 // RegisterHandler handles POST /v1/auth/register.
 type RegisterHandler struct {
-	authService *auth.AuthService
-	emailSvc    *emailService.Service
-	presenter   *response.Presenter
+	authService     *auth.AuthService
+	emailSvc        *emailService.Service
+	emailVerifyRepo *storage.EmailVerificationRepository
+	presenter       *response.Presenter
+	log             *slog.Logger
 }
 
 // NewRegisterHandler creates a new RegisterHandler.
-func NewRegisterHandler(authService *auth.AuthService, emailSvc *emailService.Service, presenter *response.Presenter) *RegisterHandler {
+func NewRegisterHandler(authService *auth.AuthService, emailSvc *emailService.Service, emailVerifyRepo *storage.EmailVerificationRepository, presenter *response.Presenter, log *slog.Logger) *RegisterHandler {
+	if log == nil {
+		log = slog.Default()
+	}
 	return &RegisterHandler{
-		authService: authService,
-		emailSvc:    emailSvc,
-		presenter:   presenter,
+		authService:     authService,
+		emailSvc:        emailSvc,
+		emailVerifyRepo: emailVerifyRepo,
+		presenter:       presenter,
+		log:             log,
 	}
 }
 
@@ -37,6 +46,12 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "Invalid request")
+		return
+	}
+
+	
+	if err := dto.ValidateRegisterRequest(&req); err != nil {
+		h.presenter.BadRequest(c, err.Error())
 		return
 	}
 
@@ -82,31 +97,58 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 
 	// Send verification email after successful registration
 	if err := h.sendVerificationEmail(c.Request.Context(), req.Email, req.Name, result.OperatorID); err != nil {
-		h.presenter.InternalError(c, "Registration successful but failed to send verification email")
+		h.presenter.InternalError(c, "Registration successful but failed to send verification email: "+err.Error())
 		return
 	}
 
 	h.presenter.Created(c, result)
 }
 
-// sendVerificationEmail creates a verification token and sends the verification email.
+// sendVerificationEmail creates a verification token and sends the verification email synchronously.
+// If email sending fails, the failure is recorded in the database so the operator can see it on the verification page.
 func (h *RegisterHandler) sendVerificationEmail(ctx context.Context, email, name, operatorID string) error {
 	if h.emailSvc == nil || !h.emailSvc.IsConfigured() {
 		return nil
 	}
 
 	// Create verification token - MUST succeed for email verification to work
-	token, err := h.authService.CreateEmailVerification(ctx, operatorID)
+	token, verificationID, err := h.authService.CreateEmailVerification(ctx, operatorID)
 	if err != nil {
 		return err
 	}
 
-	// Send email asynchronously (email send failure is non-fatal)
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		_ = h.emailSvc.SendVerificationEmail(ctx, email, name, token)
-	}()
+	// Send email synchronously with a timeout
+	sendCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	if err := h.emailSvc.SendVerificationEmail(sendCtx, email, name, token); err != nil {
+		// Record the email failure in the database so the operator can see it
+		if h.emailVerifyRepo != nil {
+			if markErr := h.emailVerifyRepo.MarkEmailFailed(ctx, verificationID, err.Error()); markErr != nil {
+				h.log.Error("failed to record email failure",
+					"verificationID", verificationID,
+					"emailError", err.Error(),
+					"markError", markErr,
+				)
+			}
+		}
+		h.log.Error("failed to send verification email",
+			"email", email,
+			"operatorID", operatorID,
+			"error", err,
+		)
+		return err
+	}
+
+	// Record successful email delivery
+	if h.emailVerifyRepo != nil {
+		if markErr := h.emailVerifyRepo.MarkEmailSent(ctx, verificationID, time.Now().UTC()); markErr != nil {
+			h.log.Error("failed to record email success",
+				"verificationID", verificationID,
+				"markError", markErr,
+			)
+		}
+	}
 
 	return nil
 }

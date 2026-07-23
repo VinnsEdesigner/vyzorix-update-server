@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
@@ -143,7 +144,7 @@ func (r *DeviceSettingsRepository) scanSettings(row *sql.Row) (*device.DeviceSet
 
 	err := row.Scan(&id, &deviceIMEI, &customName, &location, &metadataJSON, &thresholdsJSON, &createdAt, &updatedAt)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, device.ErrSettingsNotFound
 		}
 		return nil, err

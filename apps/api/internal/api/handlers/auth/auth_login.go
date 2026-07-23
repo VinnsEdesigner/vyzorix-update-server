@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -231,7 +232,13 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 					Device:       userAgent,
 					Timestamp:    time.Now().Format(time.RFC1123),
 				}
-				_ = h.emailService.SendNewLoginNotificationEmail(context.Background(), result.Email, loginData)
+				
+				if err := h.emailService.SendNewLoginNotificationEmail(context.Background(), result.Email, loginData); err != nil {
+					slog.Warn("failed to send login notification email",
+						"operatorId", result.OperatorID,
+						"email", result.Email,
+						"error", err)
+				}
 			}
 		}()
 	}

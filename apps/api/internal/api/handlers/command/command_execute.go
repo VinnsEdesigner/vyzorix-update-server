@@ -66,6 +66,22 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 		return
 	}
 
+	
+	if err := dto.ValidateCommand(req.Command); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": err.Error()})
+		return
+	}
+	if err := dto.ValidateDeviceID(imei); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": err.Error()})
+		return
+	}
+	if req.Nonce != "" {
+		if err := dto.ValidateNonce(req.Nonce); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": err.Error()})
+			return
+		}
+	}
+
 	if req.Command == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "command is required"})
 		return

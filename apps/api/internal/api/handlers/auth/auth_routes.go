@@ -15,6 +15,7 @@ import (
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/ratelimit"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,6 +28,7 @@ type Dependencies struct {
 	GoogleVerifier      *infraauth.GoogleTokenVerifier
 	ClientService       *client.Service
 	EmailService        *emailService.Service
+	EmailVerifyRepo     *storage.EmailVerificationRepository
 	SessionManager      *infraauth.SessionManager
 	AuditLogger         *audit.Logger
 	IPIntelligence      *middleware.IPIntelligence
@@ -67,7 +69,7 @@ func NewAllHandlers(deps *Dependencies) *AllHandlers {
 	return &AllHandlers{
 		AuthService:   deps.AuthService,
 		Login:         NewLoginHandler(deps.AuthService, deps.Presenter, deps.EmailService),
-		Register:      NewRegisterHandler(deps.AuthService, deps.EmailService, deps.Presenter),
+		Register:      NewRegisterHandler(deps.AuthService, deps.EmailService, deps.EmailVerifyRepo, deps.Presenter, nil),
 		Logout:        NewLogoutHandler(deps.AuthService, deps.Presenter),
 		Me:            NewMeHandler(deps.AuthService, deps.Presenter),
 		EmailVerify:   NewEmailVerifyHandler(deps.AuthService, deps.EmailService, deps.Presenter),

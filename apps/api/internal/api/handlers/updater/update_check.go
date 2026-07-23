@@ -29,10 +29,11 @@ type VersionManifest struct {
 
 // Handler handles OTA update distribution endpoints.
 type Handler struct {
-	log     *slog.Logger
-	dataDir string
-	binDir  string
-	config  config.Config
+	log       *slog.Logger
+	dataDir   string
+	binDir    string
+	config    config.Config
+	manifest  *VersionManifest // Cached manifest for APK integrity verification
 }
 
 // NewHandler creates a new UpdaterHandler.
@@ -42,6 +43,32 @@ func NewHandler(log *slog.Logger, cfg config.Config) *Handler {
 		config:  cfg,
 		dataDir: cfg.DataDir,
 		binDir:  cfg.BinDir,
+	}
+}
+
+// loadManifest loads the version manifest for APK integrity verification.
+
+func (h *Handler) loadManifest() error {
+	data, err := os.ReadFile(filepath.Join(h.dataDir, "version.json"))
+	if err != nil {
+		return err
+	}
+
+	var manifest VersionManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return err
+	}
+
+	h.manifest = &manifest
+	return nil
+}
+
+// ensureManifestLoaded loads the manifest if not already loaded.
+func (h *Handler) ensureManifestLoaded() {
+	if h.manifest == nil {
+		if err := h.loadManifest(); err != nil {
+			h.log.Warn("failed to load manifest for APK verification", "error", err)
+		}
 	}
 }
 
@@ -150,7 +177,8 @@ func (h *Handler) serveJSON(c *gin.Context, path string) {
 }
 
 // serveAPK serves an APK file with proper headers and Range support.
-// Security: Verifies APK hash if X-APK-SHA256 header is provided by client.
+// Security: Verifies APK hash against manifest before serving.
+
 func (h *Handler) serveAPK(c *gin.Context, filename string) {
 	// Use filepath.Base to normalize path and prevent traversal attacks
 	// This handles .., %2F, %5C and other encoded sequences
@@ -165,7 +193,35 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 
 	fpath := filepath.Join(h.binDir, baseFilename)
 
-	// Verify APK hash if client provides expected SHA256
+	
+	// This ensures the APK hasn't been tampered with since the manifest was created
+	h.ensureManifestLoaded()
+	if h.manifest != nil && h.manifest.APKFilename == baseFilename && h.manifest.APKSHA256 != "" {
+		actualHash, err := h.computeFileHash(fpath)
+		if err != nil {
+			h.log.Error("failed to compute APK hash", "error", err, "file", fpath)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to verify APK integrity"})
+			return
+		}
+
+		// Constant-time comparison to prevent timing attacks
+		if !secureCompare(h.manifest.APKSHA256, actualHash) {
+			h.log.Error("APK integrity check failed - hash mismatch with manifest",
+				"file", baseFilename,
+				"manifest_hash", h.manifest.APKSHA256,
+				"actual_hash", actualHash,
+			)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "integrity_check_failed",
+				"message": "APK integrity verification failed - file may have been tampered with",
+			})
+			return
+		}
+
+		h.log.Info("APK integrity verified against manifest", "file", baseFilename)
+	}
+
+	// Also verify if client provides expected SHA256 (client-side verification)
 	if clientHash := c.GetHeader("X-APK-SHA256"); clientHash != "" {
 		actualHash, err := h.computeFileHash(fpath)
 		if err != nil {

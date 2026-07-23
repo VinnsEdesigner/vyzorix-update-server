@@ -3,8 +3,10 @@ package fcm
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"sync"
@@ -103,13 +105,18 @@ func (s *SafeNotifier) SendSilentWake(ctx context.Context, wake SilentWake) erro
 			s.circuitBreaker.RecordFailure()
 		}
 
-		// Log the error but don't propagate - graceful degradation.
 		if errors.Is(err, ErrDisabled) {
 			// Not an error - FCM is intentionally disabled.
 			return nil
 		}
-		// Log the FCM failure but don't fail the caller.
-		// The device will be notified via WebSocket or next poll.
+		
+		slog.Warn("fcm: failed to send silent wake",
+			"deviceToken", wake.Token,
+			"deviceID", wake.DeviceID,
+			"command", wake.Command,
+			"dispatchID", wake.DispatchID,
+			"error", err,
+		)
 		return nil
 	}
 
@@ -130,11 +137,13 @@ func (s *SafeNotifier) CircuitBreakerState() string {
 }
 
 // EnhancedNotifier wraps Client with retry logic, metrics, and token validation.
+
 type EnhancedNotifier struct {
 	*Client
 	config    *FCMConfig
 	metrics   FCMMetrics
 	metricsMu sync.RWMutex
+	db        *sql.DB
 }
 
 // NewEnhancedNotifier creates a new enhanced FCM notifier with retry and metrics.
@@ -149,7 +158,16 @@ func NewEnhancedNotifier(client *Client, cfg *FCMConfig) *EnhancedNotifier {
 	}
 }
 
+// NewEnhancedNotifierWithDB creates a new enhanced FCM notifier with persistent retry support.
+func NewEnhancedNotifierWithDB(client *Client, cfg *FCMConfig, db *sql.DB) *EnhancedNotifier {
+	notifier := NewEnhancedNotifier(client, cfg)
+	notifier.db = db
+	return notifier
+}
+
 // SendSilentWake sends a silent wake notification with retry logic and metrics tracking.
+
+// table for the background worker to retry later.
 func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) error {
 	if e == nil || !e.Enabled() {
 		return ErrDisabled
@@ -256,7 +274,49 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 		"lastErr", lastErr,
 	)
 
+	
+	if e.db != nil {
+		if persistErr := e.persistForRetry(ctx, wake, lastErr); persistErr != nil {
+			e.log.Warn("fcm: failed to persist for retry",
+				"deviceId", wake.DeviceID,
+				"dispatchId", wake.DispatchID,
+				"error", persistErr,
+			)
+		} else {
+			e.log.Info("fcm: persisted for background retry",
+				"deviceId", wake.DeviceID,
+				"dispatchId", wake.DispatchID,
+			)
+			// Return nil since we're persisting for retry - caller doesn't need to know
+			return nil
+		}
+	}
+
 	return fmt.Errorf("fcm send failed after %d attempts: %w", e.config.MaxRetries, lastErr)
+}
+
+// persistForRetry saves a failed notification to the pending_fcm table for background retry.
+func (e *EnhancedNotifier) persistForRetry(ctx context.Context, wake SilentWake, lastErr error) error {
+	query := `
+		INSERT INTO pending_fcm (dispatch_id, device_id, token, command, priority, retry_count, next_retry_at, last_error, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+	`
+	now := time.Now().UnixMilli()
+	// First retry in 1 minute
+	nextRetry := now + int64(time.Minute/time.Millisecond)
+
+	_, err := e.db.ExecContext(ctx, query,
+		wake.DispatchID,
+		wake.DeviceID,
+		wake.Token,
+		wake.Command,
+		wake.Priority,
+		nextRetry,
+		lastErr.Error(),
+		now,
+		now,
+	)
+	return err
 }
 
 // TopicMessage represents a message to be sent to an FCM topic (FR-8: Topic Messaging Support).

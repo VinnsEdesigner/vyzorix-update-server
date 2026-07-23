@@ -53,6 +53,9 @@ func (s *Server) RegisterGraphQL(
 	memberService *orgapp.MemberService,
 	invitationService *orgapp.InvitationService,
 ) error {
+	// Store InvitationService for graceful shutdown
+	s.InvitationService = invitationService
+
 	// Get auth services from server config
 	authService := s.getAuthService()
 	sessionManager := s.getSessionManager()

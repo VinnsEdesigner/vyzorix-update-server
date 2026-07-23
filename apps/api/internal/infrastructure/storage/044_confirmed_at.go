@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 )
 
 // migrateConfirmedAt adds confirmed_at column to inbox_requests.
@@ -16,7 +17,7 @@ func migrateConfirmedAt(db *sql.DB) error {
 		// Column already exists
 		return nil
 	}
-	if err != sql.ErrNoRows {
+	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 

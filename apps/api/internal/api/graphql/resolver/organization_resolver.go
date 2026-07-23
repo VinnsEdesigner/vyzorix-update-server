@@ -269,8 +269,8 @@ func (r *Resolver) CreateOrganization(p graphql.ResolveParams) (interface{}, err
 		return nil, r.Presenter.BadRequestError("name is required")
 	}
 
-	maxMembers, _ := p.Args["maxMembers"].(int)
-	if maxMembers <= 0 {
+	maxMembers, ok := p.Args["maxMembers"].(int)
+	if !ok || maxMembers <= 0 {
 		maxMembers = 100
 	}
 
@@ -313,10 +313,23 @@ func (r *Resolver) CreateOrganization(p graphql.ResolveParams) (interface{}, err
 func (r *Resolver) UpdateOrganization(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	id, _ := p.Args["id"].(string)
-	name, _ := p.Args["name"].(string)
-	maxMembers, _ := p.Args["maxMembers"].(int)
-	isActive, _ := p.Args["isActive"].(bool)
+	
+	id, ok := p.Args["id"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("id must be a string")
+	}
+	name, ok := p.Args["name"].(string)
+	if !ok {
+		name = "" // name is optional
+	}
+	maxMembers, ok := p.Args["maxMembers"].(int)
+	if !ok || maxMembers <= 0 {
+		maxMembers = 0 // 0 means don't update
+	}
+	isActive, ok := p.Args["isActive"].(bool)
+	if !ok {
+		isActive = false // false means don't update
+	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -416,10 +429,21 @@ func (r *Resolver) DeleteOrganization(p graphql.ResolveParams) (interface{}, err
 func (r *Resolver) InviteMember(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, _ := p.Args["organizationId"].(string)
-	email, _ := p.Args["email"].(string)
-	roleStr, _ := p.Args["role"].(string)
-	notes, _ := p.Args["notes"].(string)
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
+	email, ok := p.Args["email"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("email must be a string")
+	}
+	roleStr, ok := p.Args["role"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("role must be a string")
+	}
+	, ok := p.Args["notes"].(notes)
+stringif !ok {
+string		 = "" // optional field
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -462,8 +486,14 @@ func (r *Resolver) InviteMember(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) RemoveMember(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, _ := p.Args["organizationId"].(string)
-	memberID, _ := p.Args["memberId"].(string)
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
+	memberID, ok := p.Args["memberId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("memberId must be a string")
+	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -561,9 +591,18 @@ func (r *Resolver) canRemoveMember(ctx context.Context, orgID, memberID string) 
 func (r *Resolver) UpdateMemberRole(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, _ := p.Args["organizationId"].(string)
-	memberID, _ := p.Args["memberId"].(string)
-	roleStr, _ := p.Args["role"].(string)
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
+	memberID, ok := p.Args["memberId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("memberId must be a string")
+	}
+	roleStr, ok := p.Args["role"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("role must be a string")
+	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -664,8 +703,13 @@ func (r *Resolver) canDemoteSuperAdmin(ctx context.Context, orgID, memberID stri
 func (r *Resolver) AcceptInvitation(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	token, _ := p.Args["token"].(string)
-	notes, _ := p.Args["notes"].(string)
+	token, ok := p.Args["token"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("token must be a string")
+	}
+	, ok := p.Args["notes"].(notes)
+stringif !ok {
+string		 = "" // optional field
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -713,8 +757,13 @@ func (r *Resolver) AcceptInvitation(p graphql.ResolveParams) (interface{}, error
 func (r *Resolver) RejectInvitation(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	token, _ := p.Args["token"].(string)
-	notes, _ := p.Args["notes"].(string)
+	token, ok := p.Args["token"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("token must be a string")
+	}
+	, ok := p.Args["notes"].(notes)
+stringif !ok {
+string		 = "" // optional field
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -781,9 +830,18 @@ func (r *Resolver) CancelInvitation(p graphql.ResolveParams) (interface{}, error
 func (r *Resolver) TransferDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	imei, _ := p.Args["imei"].(string)
-	sourceOrgID, _ := p.Args["sourceOrganizationId"].(string)
-	targetOrgID, _ := p.Args["targetOrganizationId"].(string)
+	imei, ok := p.Args["imei"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("imei must be a string")
+	}
+	sourceOrgID, ok := p.Args["sourceOrganizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("sourceOrganizationId must be a string")
+	}
+	targetOrgID, ok := p.Args["targetOrganizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("targetOrganizationId must be a string")
+	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -817,8 +875,14 @@ func (r *Resolver) TransferDevice(p graphql.ResolveParams) (interface{}, error) 
 func (r *Resolver) TransferOwnership(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, _ := p.Args["organizationId"].(string)
-	memberID, _ := p.Args["memberId"].(string)
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
+	memberID, ok := p.Args["memberId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("memberId must be a string")
+	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -863,8 +927,14 @@ func (r *Resolver) TransferOwnership(p graphql.ResolveParams) (interface{}, erro
 func (r *Resolver) SuspendMember(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, _ := p.Args["organizationId"].(string)
-	memberID, _ := p.Args["memberId"].(string)
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
+	memberID, ok := p.Args["memberId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("memberId must be a string")
+	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -912,8 +982,14 @@ func (r *Resolver) SuspendMember(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) ReinstateMember(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, _ := p.Args["organizationId"].(string)
-	memberID, _ := p.Args["memberId"].(string)
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
+	memberID, ok := p.Args["memberId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("memberId must be a string")
+	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {

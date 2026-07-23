@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 )
 
 // migrateOrganizations creates the organizations, organization_members, and invitations tables.
@@ -195,7 +196,7 @@ func addOrganizationIDToAPIKeys(db *sql.DB) error {
 		SELECT name FROM sqlite_master WHERE type='table' AND name IN ('api_keys', 'api_clients')
 	`).Scan(&tableName)
 
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		// Table doesn't exist yet, nothing to migrate
 		return nil
 	}

@@ -41,6 +41,7 @@ type Hub struct {
 	clients              map[string]*Client
 	register             chan *Client
 	unreg                chan *Client
+	deviceStatus         chan DeviceStatusUpdate 
 	log                  *slog.Logger
 	messageQueue         *MessageQueue
 	rateLimiter          *RateLimiter
@@ -50,6 +51,14 @@ type Hub struct {
 	metrics              HubMetrics
 	mu                   sync.RWMutex
 	metricsMu            sync.RWMutex
+}
+
+// DeviceStatusUpdate represents a device online/offline status change.
+
+type DeviceStatusUpdate struct {
+	DeviceID string
+	Online   bool
+	Source   string // "websocket" or "rest"
 }
 
 // HubMetrics holds metrics for the WebSocket hub.
@@ -88,6 +97,7 @@ func New(log *slog.Logger, deviceRepo device.Repository, telemetryRepo telemetry
 		clients:       make(map[string]*Client),
 		register:      make(chan *Client),
 		unreg:         make(chan *Client),
+		deviceStatus:  make(chan DeviceStatusUpdate, 256), 
 		broadcast:     make(chan []byte, 256),
 	}
 
@@ -204,14 +214,10 @@ func (h *Hub) Run(ctx context.Context) {
 			c.log = h.log
 			h.clients[c.DeviceID] = c
 
-			// Set device online atomically with client registration to prevent race
-			opCtx, cancel := context.WithTimeout(ctx, dbTimeout)
-			if err := h.deviceRepo.SetOnline(opCtx, c.DeviceID, true); err != nil {
-				h.log.Warn("set online failed", "deviceId", c.DeviceID, "err", err)
-			}
-			cancel()
-
 			h.mu.Unlock()
+
+			
+			h.deviceStatus <- DeviceStatusUpdate{DeviceID: c.DeviceID, Online: true, Source: "websocket"}
 
 			// Replay queued messages to the newly connected device
 			if h.messageQueue != nil {
@@ -247,13 +253,6 @@ func (h *Hub) Run(ctx context.Context) {
 				delete(h.clients, c.DeviceID)
 				close(c.Send)
 
-				// Set device offline with timeout context
-				opCtx, cancel := context.WithTimeout(ctx, dbTimeout)
-				if err := h.deviceRepo.SetOnline(opCtx, c.DeviceID, false); err != nil {
-					h.log.Warn("set offline failed", "deviceId", c.DeviceID, "err", err)
-				}
-				cancel()
-
 				// Emit device disconnected event
 				if h.eventProcessor != nil {
 					metadata := map[string]any{
@@ -265,6 +264,9 @@ func (h *Hub) Run(ctx context.Context) {
 				}
 			}
 			h.mu.Unlock()
+
+			
+			h.deviceStatus <- DeviceStatusUpdate{DeviceID: c.DeviceID, Online: false, Source: "websocket"}
 			h.log.Info("device websocket offline", "deviceId", c.DeviceID)
 
 		case raw := <-h.broadcast:
@@ -278,6 +280,19 @@ func (h *Hub) Run(ctx context.Context) {
 			h.mu.RUnlock()
 
 			_ = raw // prevent unused variable warning from channel receive
+
+		case status := <-h.deviceStatus:
+			
+			opCtx, cancel := context.WithTimeout(ctx, dbTimeout)
+			if err := h.deviceRepo.SetOnline(opCtx, status.DeviceID, status.Online); err != nil {
+				h.log.Warn("device status update failed",
+					"deviceId", status.DeviceID,
+					"online", status.Online,
+					"source", status.Source,
+					"err", err,
+				)
+			}
+			cancel()
 		}
 	}
 }
@@ -294,6 +309,13 @@ func (h *Hub) Online(deviceID string) bool {
 	defer h.mu.RUnlock()
 
 	return h.clients[deviceID] != nil
+}
+
+// SetDeviceOnline updates device online status via hub's event loop.
+
+// channel, ensuring all status changes (from WS and REST) are serialized.
+func (h *Hub) SetDeviceOnline(deviceID string, online bool) {
+	h.deviceStatus <- DeviceStatusUpdate{DeviceID: deviceID, Online: online, Source: "rest"}
 }
 
 // Clients returns a copy of the current clients map.

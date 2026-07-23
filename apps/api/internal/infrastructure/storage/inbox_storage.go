@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strings"
 	"time"
 
@@ -293,7 +294,7 @@ func (r *InboxRepository) scanEntry(row *sql.Row) (*inbox.InboxEntry, error) {
 		&commandSecretHash, &organizationID, &e.CreatedAt, &updatedAt,
 		&confirmedAt,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, inbox.ErrInboxNotFound
 	}
 	if err != nil {

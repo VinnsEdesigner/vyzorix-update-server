@@ -72,7 +72,7 @@ func (s *AuthService) ResendVerification(ctx context.Context, email string) erro
 	_ = s.emailVerifyRepo.DeleteByOperator(ctx, op.ID)
 
 	// Create new verification token
-	token, err := s.CreateEmailVerification(ctx, op.ID)
+	token, _, err := s.CreateEmailVerification(ctx, op.ID)
 	if err != nil {
 		return err
 	}
@@ -88,17 +88,17 @@ func (s *AuthService) ResendVerification(ctx context.Context, email string) erro
 	return nil
 }
 
-// CreateEmailVerification creates a new email verification token and returns the raw token.
-func (s *AuthService) CreateEmailVerification(ctx context.Context, operatorID string) (string, error) {
+// CreateEmailVerification creates a new email verification token and returns the raw token and ID.
+func (s *AuthService) CreateEmailVerification(ctx context.Context, operatorID string) (token string, id string, err error) {
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	token := hex.EncodeToString(tokenBytes)
+	token = hex.EncodeToString(tokenBytes)
 	tokenHash := hashTokenSha256(token)
 
-	id := shared.GenerateID()
+	id = shared.GenerateID()
 
 	ev := &email_verification.EmailVerification{
 		ID:         id,
@@ -109,42 +109,64 @@ func (s *AuthService) CreateEmailVerification(ctx context.Context, operatorID st
 	}
 
 	if err := s.emailVerifyRepo.Create(ctx, ev); err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return token, nil
+	return token, id, nil
 }
 
-// PollVerification checks the status of a verification token.
-func (s *AuthService) PollVerification(ctx context.Context, token string) (string, string, error) {
+// PollVerification checks the status of a verification token and returns a structured result.
+func (s *AuthService) PollVerification(ctx context.Context, token string) (*email_verification.PollVerificationResult, error) {
 	tokenHash := hashTokenSha256(token)
 
 	ev, err := s.emailVerifyRepo.FindByTokenHash(ctx, tokenHash)
 	if err != nil {
 		if err == email_verification.ErrNotFound {
-			return "invalid", "", nil
+			return &email_verification.PollVerificationResult{
+				Status: email_verification.PollStatusInvalid,
+			}, nil
 		}
-		return "", "", err
+		return nil, err
 	}
 
 	if ev.IsExpired() {
 		_ = s.emailVerifyRepo.Delete(ctx, ev.ID)
-		return "expired", "", nil
+		return &email_verification.PollVerificationResult{
+			Status: email_verification.PollStatusExpired,
+		}, nil
+	}
+
+	// Check if email delivery failed
+	if ev.HasEmailFailed() {
+		return &email_verification.PollVerificationResult{
+			Status:     email_verification.PollStatusEmailFailed,
+			EmailError: ev.EmailError,
+		}, nil
 	}
 
 	op, err := s.operatorRepo.FindByID(ctx, ev.OperatorID)
 	if err != nil {
-		return "waiting", "", err
+		return &email_verification.PollVerificationResult{
+			Status: email_verification.PollStatusWaiting,
+		}, err
 	}
 	if op == nil {
-		return "waiting", "", nil
+		return &email_verification.PollVerificationResult{
+			Status: email_verification.PollStatusWaiting,
+		}, nil
 	}
 
 	if op.EmailVerified {
-		return "success", op.Email, nil
+		return &email_verification.PollVerificationResult{
+			Status: email_verification.PollStatusSuccess,
+			Email:  op.Email,
+		}, nil
 	}
 
-	return "waiting", op.Email, nil
+	return &email_verification.PollVerificationResult{
+		Status: email_verification.PollStatusWaiting,
+		Email:  op.Email,
+	}, nil
 }
 
 // CancelVerification removes pending verification tokens.

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/diagnostics"
@@ -155,7 +156,7 @@ func (r *DiagnosticsRepository) GetTelemetryStats(ctx context.Context, deviceID 
 	
 	var framesToday int
 	err := r.db.QueryRowContext(ctx, framesQuery, deviceID, startOfDayMs).Scan(&framesToday)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 	
@@ -166,7 +167,7 @@ func (r *DiagnosticsRepository) GetTelemetryStats(ctx context.Context, deviceID 
 	
 	var totalBytesToday int64
 	err = r.db.QueryRowContext(ctx, bytesQuery, deviceID, startOfDayMs).Scan(&totalBytesToday)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 	
@@ -177,7 +178,7 @@ func (r *DiagnosticsRepository) GetTelemetryStats(ctx context.Context, deviceID 
 	
 	var sessionsToday int
 	err = r.db.QueryRowContext(ctx, sessionsQuery, deviceID, startOfDayMs).Scan(&sessionsToday)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 	
@@ -199,7 +200,7 @@ func (r *DiagnosticsRepository) GetLastTelemetry(ctx context.Context, deviceID s
 	var frameData []byte
 	
 	err := r.db.QueryRowContext(ctx, query, deviceID).Scan(&receivedAtMs, &frameData)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, diagnostics.ErrNoTelemetryData
 	}
 	if err != nil {

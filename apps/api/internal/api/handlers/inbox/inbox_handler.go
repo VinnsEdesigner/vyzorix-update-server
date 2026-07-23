@@ -20,7 +20,7 @@ import (
 type Handler struct {
 	service              *inbox.Service
 	deviceSecret        string
-	attestationRequired bool // BUG-65: Force attestation even without device secret
+	attestationRequired bool 
 	appCheckVerifier    *appcheck.Verifier
 }
 

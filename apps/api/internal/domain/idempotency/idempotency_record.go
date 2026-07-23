@@ -1,5 +1,5 @@
 // Package idempotency provides idempotency key support for API requests.
-// This implements Bug 45 fix - enterprise-grade idempotency.
+
 package idempotency
 
 import (

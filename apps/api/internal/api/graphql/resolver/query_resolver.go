@@ -637,22 +637,25 @@ func (r *Resolver) GetAllConnections(p graphql.ResolveParams) (interface{}, erro
 		return nil, r.Presenter.InternalError("failed to get organization devices")
 	}
 
-	// Create a map of device IDs for the organization
-	orgDevices := make(map[string]bool)
+	
+	// Iterate over org devices and directly look up each client by device ID
+	result := make([]map[string]interface{}, 0, len(devices.Devices))
+
 	for _, d := range devices.Devices {
-		orgDevices[d.ID] = true
-	}
-
-	clients := r.Hub.Clients()
-	result := make([]map[string]interface{}, 0, len(clients))
-
-	for deviceID := range clients {
-		// Only include devices in this organization
-		if !orgDevices[deviceID] {
+		// Direct O(1) lookup instead of iterating all clients
+		client := r.Hub.GetClient(d.ID)
+		if client == nil {
+			// Device not connected - still include it with connected=false
+			result = append(result, map[string]interface{}{
+				"deviceId":      d.ID,
+				"connected":     false,
+				"connectedAt":   nil,
+				"lastMessageAt": nil,
+				"uptimeSeconds": 0,
+			})
 			continue
 		}
 
-		client := clients[deviceID]
 		metrics := client.GetMetrics()
 
 		var lastMsgAt interface{}
@@ -660,10 +663,15 @@ func (r *Resolver) GetAllConnections(p graphql.ResolveParams) (interface{}, erro
 			lastMsgAt = time.Unix(metrics.LastMessageAt, 0).Format(time.RFC3339)
 		}
 
+		var connectedAt interface{}
+		if metrics.LastConnectedAt > 0 {
+			connectedAt = time.Unix(metrics.LastConnectedAt, 0).Format(time.RFC3339)
+		}
+
 		result = append(result, map[string]interface{}{
-			"deviceId":      deviceID,
+			"deviceId":      d.ID,
 			"connected":     client.IsConnected(),
-			"connectedAt":   time.Unix(metrics.LastConnectedAt, 0).Format(time.RFC3339),
+			"connectedAt":   connectedAt,
 			"lastMessageAt": lastMsgAt,
 			"uptimeSeconds": client.Uptime(),
 		})

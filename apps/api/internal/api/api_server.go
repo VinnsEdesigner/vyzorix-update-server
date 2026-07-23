@@ -140,6 +140,7 @@ type Server struct {
 	memberHandler             *organizationhandlers.MemberHandler
 	transferHandler          *devicehandlers.TransferHandler
 	DeviceRepo              *storage.DeviceRepository
+	InvitationService       *orgapplication.InvitationService
 }
 
 // NewServer creates a new API server with wired-up dependencies.
