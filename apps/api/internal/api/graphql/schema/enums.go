@@ -26,7 +26,7 @@ var InboxStatusEnum = graphql.NewEnum(graphql.EnumConfig{
 })
 
 // DeviceLifecycleEnum represents the lifecycle state of a device.
-// Maps to domain/device.Lifecycle: Pending → Registered → Deregistered
+// Maps to domain/device.Lifecycle: Pending → Registered → Deregistered.
 var DeviceLifecycleEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name:        "DeviceLifecycle",
 	Description: "Lifecycle state of a device registration",
@@ -219,7 +219,7 @@ var TimelineEventTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 })
 
 // OrganizationLifecycleEnum represents the lifecycle state of an organization.
-// Maps to domain/organization.OrganizationLifecycle: Active → Inactive/Archived
+// Maps to domain/organization.OrganizationLifecycle: Active → Inactive/Archived.
 var OrganizationLifecycleEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name:        "OrganizationLifecycle",
 	Description: "Lifecycle state of an organization",
@@ -240,7 +240,7 @@ var OrganizationLifecycleEnum = graphql.NewEnum(graphql.EnumConfig{
 })
 
 // MemberLifecycleEnum represents the lifecycle state of an organization member.
-// Maps to domain/organization.MemberLifecycle: Invited → Active → Suspended/Removed
+// Maps to domain/organization.MemberLifecycle: Invited → Active → Suspended/Removed.
 var MemberLifecycleEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name:        "MemberLifecycle",
 	Description: "Lifecycle state of an organization member",
@@ -265,7 +265,7 @@ var MemberLifecycleEnum = graphql.NewEnum(graphql.EnumConfig{
 })
 
 // OrgRoleEnum represents the role of an organization member.
-// Maps to domain/organization.OrganizationRole: super_admin, admin, operator, viewer
+// Maps to domain/organization.OrganizationRole: super_admin, admin, operator, viewer.
 var OrgRoleEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name:        "OrgRole",
 	Description: "Role of an organization member",
@@ -290,7 +290,7 @@ var OrgRoleEnum = graphql.NewEnum(graphql.EnumConfig{
 })
 
 // InvitationStatusEnum represents the status of an invitation.
-// Maps to domain/organization.InvitationStatus: pending, accepted, rejected, expired
+// Maps to domain/organization.InvitationStatus: pending, accepted, rejected, expired.
 var InvitationStatusEnum = graphql.NewEnum(graphql.EnumConfig{
 	Name:        "InvitationStatus",
 	Description: "Status of an organization invitation",

@@ -28,7 +28,7 @@ func NewService(deviceRepo device.Repository, commandRepo command.Repository, lo
 
 // GetDashboardStats retrieves aggregated dashboard statistics for an operator.
 func (s *Service) GetDashboardStats(ctx context.Context, operatorID string) (*DashboardStatsResponse, error) {
-	// Get device stats filtered by operator
+	// Get device stats filtered by operator.
 	allDevices, err := s.deviceRepo.ListByOperator(ctx, operatorID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list devices: %w", err)
@@ -41,24 +41,24 @@ func (s *Service) GetDashboardStats(ctx context.Context, operatorID string) (*Da
 		}
 	}
 
-	// Get command stats
+	// Get command stats.
 	pendingCount, err := s.commandRepo.CountPending(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count pending commands: %w", err)
 	}
 
-	// Get last 24h time range
+	// Get last 24h time range.
 	now := time.Now()
 	last24h := now.Add(-24 * time.Hour)
 
-	// Count commands in last 24 hours
+	// Count commands in last 24 hours.
 	commandsLast24h, _, err := s.commandRepo.FindHistoryByDeviceID(ctx, "", "all", last24h, now, 10000, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commands from last 24h: %w", err)
 	}
 	commandsLast24hCount := len(commandsLast24h)
 
-	// Count failed commands in last 24 hours
+	// Count failed commands in last 24 hours.
 	failedCount := 0
 	for _, cmd := range commandsLast24h {
 		if cmd.Status == command.StatusFailed {
@@ -66,12 +66,12 @@ func (s *Service) GetDashboardStats(ctx context.Context, operatorID string) (*Da
 		}
 	}
 
-	// Count registrations and deregistrations from device logs in last 24h
+	// Count registrations and deregistrations from device logs in last 24h.
 	var registrations, deregistrations int
 	if s.logsRepo != nil {
 		registrations, err = s.logsRepo.CountLogs(ctx, "", logs.EventTypeRegistration, last24h, now)
 		if err != nil {
-			// Log error but don't fail the entire request
+			// Log error but don't fail the entire request.
 			registrations = 0
 		}
 
@@ -104,7 +104,7 @@ func (s *Service) GetDashboardStats(ctx context.Context, operatorID string) (*Da
 
 // GetDashboardStatsByOrganization retrieves aggregated dashboard statistics for an organization.
 func (s *Service) GetDashboardStatsByOrganization(ctx context.Context, orgID string) (*DashboardStatsResponse, error) {
-	// Get device stats filtered by organization
+	// Get device stats filtered by organization.
 	allDevices, err := s.deviceRepo.ListByOrganization(ctx, orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list devices: %w", err)
@@ -117,23 +117,23 @@ func (s *Service) GetDashboardStatsByOrganization(ctx context.Context, orgID str
 		}
 	}
 
-	// Get command stats (filtered by organization in the future)
+	// Get command stats (filtered by organization in the future).
 	pendingCount, err := s.commandRepo.CountPending(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count pending commands: %w", err)
 	}
 
-	// Get last 24h time range
+	// Get last 24h time range.
 	now := time.Now()
 	last24h := now.Add(-24 * time.Hour)
 
-	// Count commands in last 24 hours (organization-filtered)
+	// Count commands in last 24 hours (organization-filtered).
 	commandsLast24h, _, err := s.commandRepo.FindHistoryByDeviceID(ctx, "", "all", last24h, now, 10000, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commands from last 24h: %w", err)
 	}
 
-	// Filter commands by organization
+	// Filter commands by organization.
 	var orgCommands []*command.Command
 	orgDeviceIDs := make(map[string]bool)
 	for _, d := range allDevices {
@@ -146,7 +146,7 @@ func (s *Service) GetDashboardStatsByOrganization(ctx context.Context, orgID str
 	}
 	commandsLast24hCount := len(orgCommands)
 
-	// Count failed commands in last 24 hours
+	// Count failed commands in last 24 hours.
 	failedCount := 0
 	for _, cmd := range orgCommands {
 		if cmd.Status == command.StatusFailed {
@@ -154,7 +154,7 @@ func (s *Service) GetDashboardStatsByOrganization(ctx context.Context, orgID str
 		}
 	}
 
-	// Count registrations and deregistrations from device logs in last 24h
+	// Count registrations and deregistrations from device logs in last 24h.
 	var registrations, deregistrations int
 	if s.logsRepo != nil {
 		registrations, err = s.logsRepo.CountLogs(ctx, "", logs.EventTypeRegistration, last24h, now)

@@ -60,7 +60,7 @@ type AllHandlers struct {
 
 // NewAllHandlers creates all auth handlers with proper dependencies.
 func NewAllHandlers(deps *Dependencies) *AllHandlers {
-	// Create settings rate limiter if not provided
+	// Create settings rate limiter if not provided.
 	settingsRateLimiter := deps.SettingsRateLimiter
 	if settingsRateLimiter == nil {
 		settingsRateLimiter = middleware.NewSettingsRateLimiterMiddleware(nil)
@@ -88,29 +88,29 @@ func NewAllHandlers(deps *Dependencies) *AllHandlers {
 
 // RegisterRoutes registers all auth routes under the given router group.
 func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth) {
-	// Public auth endpoints with NoCache and POST-only restriction
+	// Public auth endpoints with NoCache and POST-only restriction.
 	publicAuth := rg.Group("")
 	publicAuth.Use(middleware.NoCache())
 	{
-		// Login with validation (browser clients - sets session cookie)
+		// Login with validation (browser clients - sets session cookie).
 		publicAuth.POST("/login", middleware.POST(),
 			middleware.ValidationMiddleware(&middleware.LoginSchema{}),
 			h.Login.Handle,
 		)
 
-		// Login with tokens for API clients (non-browser - returns JWT + refresh token)
+		// Login with tokens for API clients (non-browser - returns JWT + refresh token).
 		publicAuth.POST("/login/tokens", middleware.POST(),
 			middleware.ValidationMiddleware(&middleware.LoginSchema{}),
 			h.Login.HandleWithTokens,
 		)
 
-		// Register with validation
+		// Register with validation.
 		publicAuth.POST("/register", middleware.POST(),
 			middleware.ValidationMiddleware(&middleware.RegisterSchema{}),
 			h.Register.Handle,
 		)
 
-		// Password reset with validation
+		// Password reset with validation.
 		publicAuth.POST("/forgot-password", middleware.POST(),
 			middleware.ValidationMiddleware(&middleware.ForgotPasswordSchema{}),
 			h.PasswordReset.ForgotPassword,
@@ -124,7 +124,7 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 			h.PasswordReset.ResendPasswordReset,
 		)
 
-		// Email verification
+		// Email verification.
 		publicAuth.POST("/verify-email", middleware.POST(), h.EmailVerify.VerifyEmail)
 		publicAuth.GET("/verify-email", middleware.GET(), h.EmailVerify.VerifyEmailGet)
 		publicAuth.POST("/resend-verification", middleware.POST(), h.EmailVerify.ResendVerification)
@@ -132,17 +132,17 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		publicAuth.POST("/cancel-verification", middleware.POST(), h.EmailVerify.CancelVerification)
 		publicAuth.GET("/poll-verification", middleware.GET(), h.EmailVerify.PollVerification)
 
-		// Token refresh
+		// Token refresh.
 		publicAuth.POST("/refresh", h.Refresh.Handle)
 	}
 
-	// OAuth endpoints (GET only)
+	// OAuth endpoints (GET only).
 	rg.GET("/google", h.OAuth.GoogleLogin)
 	rg.GET("/google/callback", h.OAuth.GoogleCallback)
 	rg.GET("/github", h.OAuth.GitHubLogin)
 	rg.GET("/github/callback", h.OAuth.GitHubCallback)
 
-	// Authenticated endpoints (require session cookie)
+	// Authenticated endpoints (require session cookie).
 	authenticated := rg.Group("")
 	authenticated.Use(cookieAuth.Middleware())
 	authenticated.Use(middleware.NoCache())
@@ -158,12 +158,12 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		authenticated.POST("/logout", h.Logout.Handle)
 		authenticated.GET("/lockout/status", h.Lockout.GetLockoutStatus)
 
-		// Organization selection endpoints
+		// Organization selection endpoints.
 		authenticated.GET("/organizations", h.Organization.GetOrganizations)
 		authenticated.POST("/organizations/select", h.Organization.SelectOrganization)
 	}
 
-	// SuperAdmin-only operator management routes
+	// SuperAdmin-only operator management routes.
 	adminOperators := rg.Group("/admin")
 	adminOperators.Use(cookieAuth.Middleware())
 	adminOperators.Use(middleware.RequireSuperAdmin())
@@ -176,7 +176,7 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		adminOperators.DELETE("/operators/:id", h.Admin.DeleteOperator)
 	}
 
-	// Admin lockout management (SuperAdmin only)
+	// Admin lockout management (SuperAdmin only).
 	adminLockout := rg.Group("/admin/lockout")
 	adminLockout.Use(cookieAuth.Middleware())
 	adminLockout.Use(middleware.RequireSuperAdmin())
@@ -185,7 +185,7 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 		adminLockout.POST("/unlock/:operator_id", h.Lockout.UnlockAccount)
 	}
 
-	// MFA endpoints (require authentication)
+	// MFA endpoints (require authentication).
 	mfa := rg.Group("/mfa")
 	mfa.Use(cookieAuth.Middleware())
 	mfa.Use(middleware.NoCache())
@@ -213,7 +213,7 @@ func mfaRateLimitMiddleware() gin.HandlerFunc {
 			if err := json.Unmarshal(bodyBytes, &req); err == nil && req.OperatorID != "" {
 				return "mfa_verify:" + req.OperatorID
 			}
-			// Fallback to IP if operator_id not available
+			// Fallback to IP if operator_id not available.
 			return "mfa_verify:ip:" + c.ClientIP()
 		},
 	})

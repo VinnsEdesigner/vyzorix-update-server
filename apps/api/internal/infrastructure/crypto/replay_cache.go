@@ -102,7 +102,7 @@ func (rc *ReplayCache) cleanup() {
 
 	if removed > 0 {
 		// In production, this could log the cleanup stats.
-		_ = removed // suppress unused variable warning
+		_ = removed // suppress unused variable warning.
 	}
 }
 
@@ -114,12 +114,12 @@ func (rc *ReplayCache) Use(signature string) bool {
 
 	// Check if signature already exists.
 	if _, exists := rc.entries[signature]; exists {
-		return false // Replay detected
+		return false // Replay detected.
 	}
 
 	// Evict oldest entries if at capacity.
 	if len(rc.entries) >= rc.maxSize {
-		rc.evictOldest(rc.maxSize / 10) // Evict 10%
+		rc.evictOldest(rc.maxSize / 10) // Evict 10%.
 	}
 
 	// Mark signature as seen.

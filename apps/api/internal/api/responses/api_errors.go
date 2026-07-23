@@ -41,7 +41,7 @@ type APIError struct {
 // Logs the actual error internally but returns only safe info to client.
 func RespondWithError(c *gin.Context, statusCode int, code string, err error) {
 	if err != nil {
-		// Log actual error internally - not exposed to client
+		// Log actual error internally - not exposed to client.
 		slog.Warn("api_error",
 			slog.String("path", c.Request.URL.Path),
 			slog.String("error", err.Error()),

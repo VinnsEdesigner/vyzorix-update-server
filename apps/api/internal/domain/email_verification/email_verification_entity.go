@@ -19,8 +19,8 @@ type EmailVerification struct {
 	ID          string
 	OperatorID  string
 	TokenHash   string
-	EmailSentAt *time.Time // Time when verification email was successfully sent
-	EmailError  string     // Error message if email failed to send
+	EmailSentAt *time.Time // Time when verification email was successfully sent.
+	EmailError  string     // Error message if email failed to send.
 }
 
 // IsExpired returns true if the verification has expired.

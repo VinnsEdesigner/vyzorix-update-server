@@ -19,8 +19,8 @@ import (
 type Config struct {
 	Path        string
 	JournalMode string // WAL, DELETE, etc.
-	CacheSize   int    // KB, negative means MB
-	BusyTimeout int    // milliseconds
+	CacheSize   int    // KB, negative means MB.
+	BusyTimeout int    // milliseconds.
 	ForeignKeys bool
 }
 
@@ -29,8 +29,8 @@ func DefaultConfig(dbPath string) *Config {
 	return &Config{
 		Path:        dbPath,
 		JournalMode: "WAL",
-		CacheSize:   -2000, // 2GB cache
-		BusyTimeout: 5000,  // 5 seconds
+		CacheSize:   -2000, // 2GB cache.
+		BusyTimeout: 5000,  // 5 seconds.
 		ForeignKeys: true,
 	}
 }
@@ -73,7 +73,7 @@ func Open(cfg *Config) (*SQLite, error) {
 	}
 
 	// Configure connection pool.
-	db.SetMaxOpenConns(1) // SQLite doesn't handle concurrent writes well
+	db.SetMaxOpenConns(1) // SQLite doesn't handle concurrent writes well.
 	db.SetMaxIdleConns(1)
 	db.SetConnMaxLifetime(time.Hour)
 
@@ -82,7 +82,7 @@ func Open(cfg *Config) (*SQLite, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	// Run migrations
+	// Run migrations.
 	if err := runMigrations(db); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
@@ -119,10 +119,10 @@ func (s *SQLite) WithTx(ctx context.Context, fn func(ctx context.Context) error)
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	// Attach transaction to context
+	// Attach transaction to context.
 	txCtx := transaction.ContextWithTx(ctx, tx)
 
-	// Execute function with transaction context
+	// Execute function with transaction context.
 	if err := fn(txCtx); err != nil {
 		if rbErr := tx.Rollback(); rbErr != nil {
 			return fmt.Errorf("tx failed: %v, rollback failed: %w", err, rbErr)
@@ -130,7 +130,7 @@ func (s *SQLite) WithTx(ctx context.Context, fn func(ctx context.Context) error)
 		return err
 	}
 
-	// Commit transaction
+	// Commit transaction.
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -143,9 +143,9 @@ func (s *SQLite) TxManager() transaction.TxManager {
 	return s
 }
 
-// =============================================================================
-// Migrations
-// =============================================================================
+// =============================================================================.
+// Migrations.
+// =============================================================================.
 
 // Migration represents a database migration.
 type Migration struct {
@@ -175,7 +175,7 @@ var migrations = []Migration{
 	{Apply: migrateCreateAccountLockouts, Name: "create_account_lockouts", Version: 17},
 	{Apply: migrateCreateAuditLogs, Name: "create_audit_logs", Version: 18},
 	{Apply: migrateCreateMessageQueue, Name: "create_message_queue_table", Version: 19},
-	// v20-v27: New tables for enterprise features
+	// v20-v27: New tables for enterprise features.
 	{Apply: migrateCreateEvents, Name: "create_events_table", Version: 20},
 	{Apply: migrateCreateInboxAndRegistration, Name: "create_inbox_and_registration_tables", Version: 21},
 	{Apply: migrateCreateDeviceLogsAndEvents, Name: "create_device_logs_and_events_tables", Version: 22},
@@ -195,45 +195,45 @@ var migrations = []Migration{
 	{Apply: migrateOperatorFCMToken, Name: "add_operator_fcm_token_column", Version: 36},
 	{Apply: migrateCreateOAuthStates, Name: "create_oauth_states_table", Version: 37},
 	{Apply: migrateAddMFASecretMAC, Name: "add_mfa_secret_mac_column", Version: 38},
-	// Multi-tenant organization model
+	// Multi-tenant organization model.
 	{Apply: migrateOrganizations, Name: "create_organizations_tables", Version: 39},
-	// Organization settings table
+	// Organization settings table.
 	{Apply: migrateOrganizationSettings, Name: "create_organization_settings_table", Version: 40},
-	// Device settings table
+	// Device settings table.
 	{Apply: migrateDeviceSettings, Name: "create_device_settings_table", Version: 41},
-	// Combined post-V41 migrations: org context, inbox org, MFA tracking
+	// Combined post-V41 migrations: org context, inbox org, MFA tracking.
 	{Apply: migratePostV41Combined, Name: "post_v41_combined", Version: 42},
-	// Command outbox retry support
+	// Command outbox retry support.
 	{Apply: migrateAddCommandRetryColumns, Name: "add_command_retry_columns", Version: 43},
-	// Secure command secret storage - hash instead of plaintext
+	// Secure command secret storage - hash instead of plaintext.
 	{Apply: migrateCommandSecretHash, Name: "add_command_secret_hash", Version: 44},
-	// Single-use confirmation token tracking
+	// Single-use confirmation token tracking.
 	{Apply: migrateConfirmedAt, Name: "add_confirmed_at", Version: 45},
-	// Email verification delivery tracking
+	// Email verification delivery tracking.
 	{Apply: migrateEmailVerificationTracking, Name: "add_email_verification_tracking", Version: 46},
 	
 	{Apply: migrateCreatePendingFCM, Name: "create_pending_fcm_table", Version: 47},
 }
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {
-	// Ensure migrations table exists
+	// Ensure migrations table exists.
 	if err := createMigrationsTable(db); err != nil {
 		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
 
-	// Get current version
+	// Get current version.
 	currentVersion, err := getCurrentVersion(db)
 	if err != nil {
 		return fmt.Errorf("failed to get current version: %w", err)
 	}
 
-	// Apply pending migrations
+	// Apply pending migrations.
 	for _, m := range migrations {
 		if m.Version <= currentVersion {
 			continue
 		}
 
-		// Wrap each migration in a transaction
+		// Wrap each migration in a transaction.
 		tx, err := db.Begin()
 		if err != nil {
 			return fmt.Errorf("migration %d (%s) failed to begin transaction: %w", m.Version, m.Name, err)
@@ -280,9 +280,9 @@ func setVersionTx(tx *sql.Tx, version int) error {
 	return err
 }
 
-// =============================================================================
-// Individual Migration Functions
-// =============================================================================
+// =============================================================================.
+// Individual Migration Functions.
+// =============================================================================.
 
 func migrateCreateDevices(db *sql.DB) error {
 	_, err := db.ExecContext(context.Background(), `
@@ -441,7 +441,7 @@ func migrateCreateSettings(db *sql.DB) error {
 }
 
 func migrateAddCommandsColumns(db *sql.DB) error {
-	// Add columns if they don't exist (with idempotent error handling for SQLite)
+	// Add columns if they don't exist (with idempotent error handling for SQLite).
 	cols := []struct {
 		sql  string
 		name string
@@ -452,7 +452,7 @@ func migrateAddCommandsColumns(db *sql.DB) error {
 	for _, col := range cols {
 		_, err := db.ExecContext(context.Background(), col.sql)
 		if err != nil {
-			// Column may already exist (SQLite ignores duplicate column additions)
+			// Column may already exist (SQLite ignores duplicate column additions).
 			if !isColumnExistsError(err) {
 				return fmt.Errorf("failed to add %s column: %w", col.name, err)
 			}
@@ -465,7 +465,7 @@ func migrateAddCommandsColumns(db *sql.DB) error {
 func migrateAddDeviceSecretHash(db *sql.DB) error {
 	_, err := db.ExecContext(context.Background(), `ALTER TABLE devices ADD COLUMN command_secret_hash TEXT`)
 	if err != nil {
-		// Column may already exist (SQLite ignores duplicate column additions)
+		// Column may already exist (SQLite ignores duplicate column additions).
 		if !isColumnExistsError(err) {
 			return fmt.Errorf("failed to add command_secret_hash column: %w", err)
 		}
@@ -476,7 +476,7 @@ func migrateAddDeviceSecretHash(db *sql.DB) error {
 func migrateAddOperatorsGitHubID(db *sql.DB) error {
 	_, err := db.ExecContext(context.Background(), `ALTER TABLE operators ADD COLUMN github_id TEXT`)
 	if err != nil {
-		// Column may already exist
+		// Column may already exist.
 		if !isColumnExistsError(err) {
 			return fmt.Errorf("failed to add github_id column: %w", err)
 		}
@@ -487,7 +487,7 @@ func migrateAddOperatorsGitHubID(db *sql.DB) error {
 func migrateAddMFASecretMAC(db *sql.DB) error {
 	_, err := db.ExecContext(context.Background(), `ALTER TABLE operators ADD COLUMN mfa_secret_mac TEXT`)
 	if err != nil {
-		// Column may already exist
+		// Column may already exist.
 		if !isColumnExistsError(err) {
 			return fmt.Errorf("failed to add mfa_secret_mac column: %w", err)
 		}
@@ -499,9 +499,9 @@ func migrateAddMFASecretMAC(db *sql.DB) error {
 // SQLite silently ignores duplicate column additions.
 func isColumnExistsError(err error) bool {
 	if err == nil {
-		return true // No error means success (column added or already exists)
+		return true // No error means success (column added or already exists).
 	}
-	// SQLite doesn't error on duplicate column - it just ignores it
+	// SQLite doesn't error on duplicate column - it just ignores it.
 	return strings.Contains(err.Error(), "duplicate column")
 }
 
@@ -619,7 +619,7 @@ func migrateCreateMessageQueue(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for efficient queries
+	// Create index for efficient queries.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_message_queue_device_expires 
 		ON message_queue(device_id, expires_at)
@@ -629,7 +629,7 @@ func migrateCreateMessageQueue(db *sql.DB) error {
 }
 
 func migrateCreateOAuthStates(db *sql.DB) error {
-	// 8: Persist OAuth state to database to prevent CSRF attacks
+	// 8: Persist OAuth state to database to prevent CSRF attacks.
 	_, err := db.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS oauth_states (
 			id TEXT PRIMARY KEY,
@@ -644,7 +644,7 @@ func migrateCreateOAuthStates(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for state lookups and cleanup
+	// Create index for state lookups and cleanup.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_oauth_states_expires 
 		ON oauth_states(expires_at)
@@ -656,7 +656,7 @@ func migrateCreateOAuthStates(db *sql.DB) error {
 // migratePostV41Combined combines all post-V41 migrations into a single migration.
 // This includes: org context columns, inbox org column, and MFA tracking.
 func migratePostV41Combined(db *sql.DB) error {
-	// Add last_organization_id to operators table for auto-select on login
+	// Add last_organization_id to operators table for auto-select on login.
 	_, err := db.ExecContext(context.Background(), `
 		ALTER TABLE operators ADD COLUMN last_organization_id TEXT
 	`)
@@ -664,7 +664,7 @@ func migratePostV41Combined(db *sql.DB) error {
 		return err
 	}
 
-	// Add organization_id to auth_sessions table for session-scoped org context
+	// Add organization_id to auth_sessions table for session-scoped org context.
 	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE auth_sessions ADD COLUMN organization_id TEXT
 	`)
@@ -672,7 +672,7 @@ func migratePostV41Combined(db *sql.DB) error {
 		return err
 	}
 
-	// Add organization_id to inbox_requests table for multi-tenant isolation
+	// Add organization_id to inbox_requests table for multi-tenant isolation.
 	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE inbox_requests ADD COLUMN organization_id TEXT
 	`)
@@ -680,7 +680,7 @@ func migratePostV41Combined(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for org-scoped queries
+	// Create index for org-scoped queries.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_inbox_organization 
 		ON inbox_requests(organization_id, status, created_at DESC)
@@ -689,7 +689,7 @@ func migratePostV41Combined(db *sql.DB) error {
 		return err
 	}
 
-	// Add mfa_enabled_at column to operators table for MFA tracking
+	// Add mfa_enabled_at column to operators table for MFA tracking.
 	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE operators ADD COLUMN mfa_enabled_at INTEGER
 	`)
@@ -697,7 +697,7 @@ func migratePostV41Combined(db *sql.DB) error {
 		return err
 	}
 
-	// Add mfa_verified_at column to auth_sessions table for MFA session tracking
+	// Add mfa_verified_at column to auth_sessions table for MFA session tracking.
 	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE auth_sessions ADD COLUMN mfa_verified_at INTEGER
 	`)
@@ -711,7 +711,7 @@ func migratePostV41Combined(db *sql.DB) error {
 // migrateAddCommandRetryColumns adds retry tracking columns for the outbox pattern.
 // This enables the background worker to track retry attempts with exponential backoff.
 func migrateAddCommandRetryColumns(db *sql.DB) error {
-	// Add retry_count column to track number of delivery attempts
+	// Add retry_count column to track number of delivery attempts.
 	_, err := db.ExecContext(context.Background(), `
 		ALTER TABLE commands ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0
 	`)
@@ -719,7 +719,7 @@ func migrateAddCommandRetryColumns(db *sql.DB) error {
 		return err
 	}
 
-	// Add max_retries column to set maximum delivery attempts before marking failed
+	// Add max_retries column to set maximum delivery attempts before marking failed.
 	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE commands ADD COLUMN max_retries INTEGER NOT NULL DEFAULT 5
 	`)
@@ -727,7 +727,7 @@ func migrateAddCommandRetryColumns(db *sql.DB) error {
 		return err
 	}
 
-	// Add next_retry_at column for exponential backoff scheduling
+	// Add next_retry_at column for exponential backoff scheduling.
 	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE commands ADD COLUMN next_retry_at INTEGER
 	`)
@@ -735,7 +735,7 @@ func migrateAddCommandRetryColumns(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for efficient pending retry queries
+	// Create index for efficient pending retry queries.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_commands_pending_retry
 		ON commands(status, next_retry_at)

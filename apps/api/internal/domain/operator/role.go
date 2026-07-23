@@ -1,11 +1,11 @@
 package operator
 
 // OperatorRole represents the role of an operator in the system.
-// Role hierarchy (higher level = more permissions):
-//   - Viewer (10): Read-only access
-//   - Operator (50): Standard operations, manage own resources
-//   - Admin (80): Tenant management, manage other operators
-//   - SuperAdmin (100): System-wide ownership, can do anything
+// Role hierarchy (higher level = more permissions):.
+//   - Viewer (10): Read-only access.
+//   - Operator (50): Standard operations, manage own resources.
+//   - Admin (80): Tenant management, manage other operators.
+//   - SuperAdmin (100): System-wide ownership, can do anything.
 type OperatorRole string
 
 const (
@@ -15,7 +15,7 @@ const (
 	RoleSuperAdmin OperatorRole = "super_admin"
 )
 
-// Role levels for hierarchy comparisons
+// Role levels for hierarchy comparisons.
 const (
 	LevelViewer     = 10
 	LevelOperator   = 50
@@ -23,7 +23,7 @@ const (
 	LevelSuperAdmin = 100
 )
 
-// roleLevels maps roles to their permission levels
+// roleLevels maps roles to their permission levels.
 var roleLevels = map[OperatorRole]int{
 	RoleViewer:     LevelViewer,
 	RoleOperator:   LevelOperator,
@@ -56,13 +56,13 @@ func (r OperatorRole) IsAtLeast(other OperatorRole) bool {
 
 // CanPromoteTo checks if this role can promote to the target role.
 func (r OperatorRole) CanPromoteTo(target OperatorRole) bool {
-	// Can only promote to roles at or below own level, but not equal or higher
+	// Can only promote to roles at or below own level, but not equal or higher.
 	return r.Level() > target.Level() && r.Level() >= LevelAdmin
 }
 
 // CanDemote checks if this role can demote the target role.
 func (r OperatorRole) CanDemote(target OperatorRole) bool {
-	// Can only demote roles strictly below own level
+	// Can only demote roles strictly below own level.
 	return r.Level() > target.Level() && r.Level() >= LevelAdmin
 }
 

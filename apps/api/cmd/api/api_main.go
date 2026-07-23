@@ -42,7 +42,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Wire up all dependencies using google/wire
+	// Wire up all dependencies using google/wire.
 	PrintSection("Dependency Injection")
 	PrintStatus("Wire", "Injecting dependencies...")
 
@@ -54,16 +54,16 @@ func main() {
 
 	PrintStatus("Wire", "All dependencies injected")
 
-	// Extract components from wire result
+	// Extract components from wire result.
 	deps := server.Dependencies
 	result := server.Result
 
-	// Initialize SSR if enabled
+	// Initialize SSR if enabled.
 	ssrConfig := config.LoadSSRConfig()
 	var ssrManager *ssr.Manager
 	initSSR(log, ssrConfig, &ssrManager)
 
-	// Create API server using wire outputs
+	// Create API server using wire outputs.
 	apiServer := api.NewServerWithDeps(&api.ServerConfigWithDeps{
 		Config:         cfg,
 		Log:            deps.Log,
@@ -79,12 +79,12 @@ func main() {
 		DeviceRepo:     deps.DeviceRepo,
 	})
 
-	// Register GraphQL if enabled
+	// Register GraphQL if enabled.
 	if cfg.EnableGraphQL {
 		PrintSection("GraphQL")
 		PrintStatus("GraphQL", "Registering...")
 
-		// Create GraphQL-specific services not in main wire graph
+		// Create GraphQL-specific services not in main wire graph.
 		db := deps.DB.DB()
 		deviceRepo := deps.DeviceService.DeviceRepo()
 		commandRepo := deps.CommandService.CommandRepo()
@@ -93,7 +93,7 @@ func main() {
 		logsRepo := storage.NewLogsRepository(db)
 		metricsRepo := storage.NewMetricsRepository(db)
 		logsSvc := logs.NewService(logsRepo, deps.Log)
-		// Get repositories for hierarchical threshold resolution
+		// Get repositories for hierarchical threshold resolution.
 		var deviceSettingsRepo devicedomain.DeviceSettingsRepository
 		var orgSettingsRepo orgdomain.OrganizationSettingsRepository
 		if deps.DeviceSettingsService != nil {
@@ -107,7 +107,7 @@ func main() {
 		diagnosticsRepo := storage.NewDiagnosticsRepository(db)
 		diagnosticsSvc := diagnosticsapp.NewService(diagnosticsRepo, deviceRepo, deps.Hub, cfg.DiagnosticsConfig)
 
-		// Create settings-related services for GraphQL
+		// Create settings-related services for GraphQL.
 		settingsService := auth.NewClientSettingsService(deps.OperatorRepo)
 		notificationSvc := appoperator.NewNotificationService(deps.OperatorRepo)
 		webhookClient := infrawebhook.NewClient(10 * time.Second)
@@ -180,11 +180,11 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Start device deletion worker
+	// Start device deletion worker.
 	deviceDeletionWorker := worker.NewDeviceDeletionWorker(
 		apiServer.DeviceRepo,
 		log,
-		1*time.Hour, // Run every hour
+		1*time.Hour, // Run every hour.
 	)
 	deviceDeletionWorker.Start()
 
@@ -202,27 +202,27 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 	<-ctx.Done()
 	log.Info("shutting down")
 
-	// Stop background workers first - they may be generating new requests
+	// Stop background workers first - they may be generating new requests.
 	deviceDeletionWorker.Stop()
 
-	// Graceful drain: give in-flight requests time to complete
-	// Use a longer timeout for server shutdown to ensure graceful drain
+	// Graceful drain: give in-flight requests time to complete.
+	// Use a longer timeout for server shutdown to ensure graceful drain.
 	drainCtx, drainCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer drainCancel()
 
-	// Shutdown the HTTP server gracefully - this stops accepting new connections
-	// and waits for existing connections to finish their requests
+	// Shutdown the HTTP server gracefully - this stops accepting new connections.
+	// and waits for existing connections to finish their requests.
 	if err := server.Shutdown(drainCtx); err != nil {
 		log.Error("server graceful shutdown error", "err", err)
 	} else {
 		log.Info("server gracefully drained in-flight requests")
 	}
 
-	// Short timeout for remaining services
+	// Short timeout for remaining services.
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Shutdown AuditLogger to flush pending audit log writes
+	// Shutdown AuditLogger to flush pending audit log writes.
 	if apiServer.AuditLogger != nil {
 		if err := apiServer.AuditLogger.Shutdown(shutdownCtx); err != nil {
 			log.Error("audit logger shutdown error", "err", err)
@@ -231,7 +231,7 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 		}
 	}
 
-	// Shutdown InvitationService to flush pending email goroutines
+	// Shutdown InvitationService to flush pending email goroutines.
 	if apiServer.InvitationService != nil {
 		if err := apiServer.InvitationService.Shutdown(shutdownCtx); err != nil {
 			log.Error("invitation service shutdown error", "err", err)

@@ -19,9 +19,9 @@ func validateWebhookURL(rawURL string) error {
 	return webhook.ValidateURL(rawURL)
 }
 
-// ============================================================
-// Mutation Resolvers
-// ============================================================
+// ============================================================.
+// Mutation Resolvers.
+// ============================================================.
 
 // UpdateFCMToken resolves the updateFCMToken mutation.
 func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) {
@@ -57,22 +57,22 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device exists in organization using org-scoped method
+	// Verify device exists in organization using org-scoped method.
 	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
 
-	// Update FCM token
+	// Update FCM token.
 	err = r.DeviceService.UpdateFCMToken(ctx, deviceID, token)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to update FCM token")
 	}
 
-	// Log via presenter
+	// Log via presenter.
 	r.Presenter.FCMTokenUpdate(ctx, op.ID, deviceID)
 
-	// Fetch updated device to return fresh data
+	// Fetch updated device to return fresh data.
 	updatedDev, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
@@ -107,13 +107,13 @@ func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Use organization-scoped deregistration method
+	// Use organization-scoped deregistration method.
 	_, err := r.DeviceService.DeregisterDeviceByOrganization(ctx, deviceID, orgID, true)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to delete device")
 	}
 
-	// Log via presenter
+	// Log via presenter.
 	r.Presenter.DeviceDelete(ctx, op.ID, deviceID)
 
 	return true, nil
@@ -133,7 +133,7 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 	}
 	args, ok := p.Args["args"].(map[string]interface{})
 	if !ok {
-		args = nil // args is optional, default to nil
+		args = nil // args is optional, default to nil.
 	}
 	orgID, ok := p.Args["organizationId"].(string)
 	if !ok {
@@ -157,13 +157,13 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device exists in organization using org-scoped method
+	// Verify device exists in organization using org-scoped method.
 	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
 
-	// Use command service for proper command creation and idempotency
+	// Use command service for proper command creation and idempotency.
 	cmdReq := &dto.SendCommandRequest{
 		DeviceID: deviceID,
 		Command:  cmdStr,
@@ -176,20 +176,20 @@ if err != nil {
 return nil, r.Presenter.InternalError("failed to send command")
 }
 
-// Command is now persisted in DB with status="pending"
-// The CommandOutbox background worker will:
-// 1. Poll for pending commands
-// 2. Attempt delivery via WebSocket (with confirmation) or FCM
-// 3. Mark as delivered only on confirmed receipt
-// 4. Retry with exponential backoff on failure
-// 5. Mark as failed after MaxRetries exceeded
+// Command is now persisted in DB with status="pending".
+// The CommandOutbox background worker will:.
+// 1. Poll for pending commands.
+// 2. Attempt delivery via WebSocket (with confirmation) or FCM.
+// 3. Mark as delivered only on confirmed receipt.
+// 4. Retry with exponential backoff on failure.
+// 5. Mark as failed after MaxRetries exceeded.
 //
-// This implements the transactional outbox pattern:
-// - Command write is atomic with DB transaction
-// - Delivery is asynchronous, isolated from the HTTP request
-// - No command loss on delivery failure (automatic retry)
+// This implements the transactional outbox pattern:.
+// - Command write is atomic with DB transaction.
+// - Delivery is asynchronous, isolated from the HTTP request.
+// - No command loss on delivery failure (automatic retry).
 
-// Log via presenter
+// Log via presenter.
 r.Presenter.CommandSend(ctx, op.ID, deviceID, cmdResp.CommandID)
 
 return map[string]interface{}{
@@ -226,13 +226,13 @@ func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Get command to find device
+	// Get command to find device.
 	cmd, err := r.CommandService.GetCommandByDispatchID(ctx, dispatchID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("command not found")
 	}
 
-	// Verify device exists in organization
+	// Verify device exists in organization.
 	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, cmd.DeviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("command not found")
@@ -276,13 +276,13 @@ func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Get command to find device
+	// Get command to find device.
 	cmd, err := r.CommandService.GetCommandByDispatchID(ctx, dispatchID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("command not found")
 	}
 
-	// Verify device exists in organization
+	// Verify device exists in organization.
 	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, cmd.DeviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("command not found")
@@ -293,7 +293,7 @@ func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.InternalError("failed to cancel command")
 	}
 
-	// Log via presenter
+	// Log via presenter.
 	r.Presenter.CommandCancel(ctx, op.ID, cmd.CommandID)
 
 	return map[string]interface{}{
@@ -329,7 +329,7 @@ func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device exists in organization
+	// Verify device exists in organization.
 	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
@@ -344,18 +344,18 @@ func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error
 		return false, nil
 	}
 
-	// Close the connection
+	// Close the connection.
 	_ = client.Conn.Close()
 
-	// Log via presenter
+	// Log via presenter.
 	r.Presenter.LogAction(ctx, op.ID, "graphql_device_disconnect", "device", deviceID)
 
 	return true, nil
 }
 
-// ============================================================
-// Settings Mutation Resolvers
-// ============================================================
+// ============================================================.
+// Settings Mutation Resolvers.
+// ============================================================.
 
 // UpdateMyNotifications resolves the updateMyNotifications mutation.
 func (r *Resolver) UpdateMyNotifications(p graphql.ResolveParams) (interface{}, error) {
@@ -366,7 +366,7 @@ func (r *Resolver) UpdateMyNotifications(p graphql.ResolveParams) (interface{}, 
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Parse notification input
+	// Parse notification input.
 	input, ok := p.Args["input"].(map[string]interface{})
 	if !ok {
 		return nil, r.Presenter.BadRequestError("invalid input")
@@ -463,7 +463,7 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		return nil, r.Presenter.BadRequestError("device IMEI is required")
 	}
 
-	// Check if operator is a member of the organization
+	// Check if operator is a member of the organization.
 	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
 		return nil, r.Presenter.ForbiddenError("not a member of this organization")
 	}
@@ -473,7 +473,7 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		return nil, r.Presenter.BadRequestError("invalid input")
 	}
 
-	// Parse device settings input
+	// Parse device settings input.
 	settingsReq := &devicedomain.UpdateDeviceSettingsRequest{}
 
 	if v, ok := input["customName"].(string); ok {
@@ -501,12 +501,12 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		settingsReq.Thresholds = parseDeviceThresholds(thresholds)
 	}
 
-	// First, ensure device settings exist (create with defaults if not)
+	// First, ensure device settings exist (create with defaults if not).
 	if _, err := r.DeviceSettingsService.GetOrCreateSettings(ctx, deviceImei); err != nil {
 		return nil, r.Presenter.InternalError("failed to create device settings")
 	}
 
-	// Now update with the requested changes
+	// Now update with the requested changes.
 	settings, err := r.DeviceSettingsService.UpdateSettings(ctx, deviceImei, settingsReq)
 	if err != nil {
 		if errors.Is(err, devicedomain.ErrInvalidThreshold) {
@@ -515,7 +515,7 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		return nil, r.Presenter.InternalError("failed to update device settings")
 	}
 
-	// Get organization settings for effective thresholds
+	// Get organization settings for effective thresholds.
 	orgSettings, err := r.OrgSettingsService.GetSettings(ctx, orgID)
 	if err != nil {
 		if errors.Is(err, orgdomain.ErrSettingsNotFound) {
@@ -524,7 +524,7 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		return nil, r.Presenter.InternalError("failed to get organization settings")
 	}
 
-	// Convert org thresholds to device thresholds for resolution
+	// Convert org thresholds to device thresholds for resolution.
 	orgThresholds := devicedomain.FromOrgThresholds(orgSettings.DefaultThresholds)
 	effectiveThresholds := devicedomain.ResolveThresholds(settings, orgThresholds)
 
@@ -555,7 +555,7 @@ func (r *Resolver) UpdateOrganizationSettings(p graphql.ResolveParams) (interfac
 		return nil, r.Presenter.BadRequestError("organization ID is required")
 	}
 
-	// Check if operator is a member of the organization
+	// Check if operator is a member of the organization.
 	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
 		return nil, r.Presenter.ForbiddenError("not a member of this organization")
 	}
@@ -565,7 +565,7 @@ func (r *Resolver) UpdateOrganizationSettings(p graphql.ResolveParams) (interfac
 		return nil, r.Presenter.BadRequestError("invalid input")
 	}
 
-	// Parse organization settings input
+	// Parse organization settings input.
 	settingsReq := &orgdomain.UpdateOrganizationSettingsRequest{}
 
 	if v, ok := input["timezone"].(string); ok {

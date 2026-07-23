@@ -21,11 +21,11 @@ var ErrUnavailable = errors.New("fcm: temporarily unavailable")
 
 // FCMConfig holds configuration for FCM behavior.
 type FCMConfig struct {
-	// MaxRetries is the maximum number of retry attempts (default 3)
+	// MaxRetries is the maximum number of retry attempts (default 3).
 	MaxRetries int
-	// BaseRetryDelay is the base delay for exponential backoff (default 1 second)
+	// BaseRetryDelay is the base delay for exponential backoff (default 1 second).
 	BaseRetryDelay time.Duration
-	// TokenValidationEnabled enables FCM token validation before sending
+	// TokenValidationEnabled enables FCM token validation before sending.
 	TokenValidationEnabled bool
 }
 
@@ -69,7 +69,7 @@ type Notifier interface {
 }
 
 // SafeNotifier wraps a Notifier with graceful degradation and circuit breaker.
-// If FCM fails, it logs the error but doesn't propagate it,
+// If FCM fails, it logs the error but doesn't propagate it,.
 // allowing the service to continue operating.
 // Includes circuit breaker to prevent cascading failures.
 type SafeNotifier struct {
@@ -89,18 +89,18 @@ func NewSafeNotifier(notifier Notifier) *SafeNotifier {
 // Returns nil if FCM is disabled or fails, allowing the service to continue.
 func (s *SafeNotifier) SendSilentWake(ctx context.Context, wake SilentWake) error {
 	if s.Notifier == nil {
-		return nil // Graceful degradation: no notifier configured
+		return nil // Graceful degradation: no notifier configured.
 	}
 
-	// Check circuit breaker before attempting FCM call
+	// Check circuit breaker before attempting FCM call.
 	if s.circuitBreaker != nil && !s.circuitBreaker.Allow() {
-		s.Notifier.GetMetrics() // Trigger any side effects
-		return nil              // Fail fast but gracefully
+		s.Notifier.GetMetrics() // Trigger any side effects.
+		return nil              // Fail fast but gracefully.
 	}
 
 	err := s.Notifier.SendSilentWake(ctx, wake)
 	if err != nil {
-		// Record failure in circuit breaker
+		// Record failure in circuit breaker.
 		if s.circuitBreaker != nil {
 			s.circuitBreaker.RecordFailure()
 		}
@@ -120,7 +120,7 @@ func (s *SafeNotifier) SendSilentWake(ctx context.Context, wake SilentWake) erro
 		return nil
 	}
 
-	// Record success in circuit breaker
+	// Record success in circuit breaker.
 	if s.circuitBreaker != nil {
 		s.circuitBreaker.RecordSuccess()
 	}
@@ -173,7 +173,7 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 		return ErrDisabled
 	}
 
-	// Validate token before attempting send
+	// Validate token before attempting send.
 	if e.config.TokenValidationEnabled {
 		if !validateFCMToken(wake.Token) {
 			e.incrementTokenError()
@@ -191,7 +191,7 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 		return ErrUnavailable
 	}
 
-	// Determine message priority
+	// Determine message priority.
 	priority := "high"
 	if wake.Priority == "normal" {
 		priority = "normal"
@@ -206,7 +206,7 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 		default:
 		}
 
-		// Build FCM message
+		// Build FCM message.
 		msg := &messaging.Message{
 			Token: wake.Token,
 			Android: &messaging.AndroidConfig{
@@ -235,7 +235,7 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 
 		e.incrementRetry()
 
-		// Log failure
+		// Log failure.
 		e.log.Warn("fcm send failed",
 			"deviceId", wake.DeviceID,
 			"dispatchId", wake.DispatchID,
@@ -244,12 +244,12 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 			"err", err,
 		)
 
-		// Don't retry on last attempt
+		// Don't retry on last attempt.
 		if attempt == e.config.MaxRetries {
 			break
 		}
 
-		// Exponential backoff: 1s, 4s, 9s (attempt^2 seconds)
+		// Exponential backoff: 1s, 4s, 9s (attempt^2 seconds).
 		delay := e.config.BaseRetryDelay * time.Duration(attempt*attempt)
 		e.log.Debug("fcm retrying after backoff",
 			"deviceId", wake.DeviceID,
@@ -264,7 +264,7 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 		}
 	}
 
-	// All retries exhausted
+	// All retries exhausted.
 	e.incrementFailure()
 	e.setLastFailure(wake.DispatchID)
 	e.log.Error("fcm send failed after all retries",
@@ -287,7 +287,7 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 				"deviceId", wake.DeviceID,
 				"dispatchId", wake.DispatchID,
 			)
-			// Return nil since we're persisting for retry - caller doesn't need to know
+			// Return nil since we're persisting for retry - caller doesn't need to know.
 			return nil
 		}
 	}
@@ -302,7 +302,7 @@ func (e *EnhancedNotifier) persistForRetry(ctx context.Context, wake SilentWake,
 		VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
 	`
 	now := time.Now().UnixMilli()
-	// First retry in 1 minute
+	// First retry in 1 minute.
 	nextRetry := now + int64(time.Minute/time.Millisecond)
 
 	_, err := e.db.ExecContext(ctx, query,
@@ -324,7 +324,7 @@ type TopicMessage struct {
 	Topic      string
 	Command    string
 	DispatchID string
-	Priority   string // "high" or "normal"
+	Priority   string // "high" or "normal".
 }
 
 // SendToTopic sends a message to an FCM topic.
@@ -343,7 +343,7 @@ func (e *EnhancedNotifier) SendToTopic(ctx context.Context, msg TopicMessage) er
 		return ErrUnavailable
 	}
 
-	// Determine priority (FR-8.5: Message Prioritization)
+	// Determine priority (FR-8.5: Message Prioritization).
 	priority := "high"
 	if msg.Priority == "normal" {
 		priority = "normal"
@@ -433,12 +433,12 @@ func validateFCMToken(token string) bool {
 		return false
 	}
 
-	// FCM tokens are typically 150-200 characters
+	// FCM tokens are typically 150-200 characters.
 	if len(token) < 50 || len(token) > 500 {
 		return false
 	}
 
-	// FCM tokens are base64-like (alphanumeric with -_=)
+	// FCM tokens are base64-like (alphanumeric with -_=).
 	validChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_="
 	for _, c := range token {
 		if !strings.Contains(validChars, string(c)) {
@@ -511,17 +511,17 @@ func buildFCMData(wake SilentWake) map[string]string {
 		"device_id":   wake.DeviceID,
 	}
 
-	// Include CommandSecret for registration approval
+	// Include CommandSecret for registration approval.
 	if wake.CommandSecret != "" {
 		data["command_secret"] = wake.CommandSecret
 	}
 
-	// Include APK info for update commands
+	// Include APK info for update commands.
 	if wake.APKFilename != "" {
 		data["apkFilename"] = wake.APKFilename
 		data["sha256"] = wake.SHA256
 		data["apkSize"] = strconv.FormatInt(wake.APKSize, 10)
-		// Include download URL if provided, otherwise device can construct from filename
+		// Include download URL if provided, otherwise device can construct from filename.
 		if wake.DownloadURL != "" {
 			data["downloadUrl"] = wake.DownloadURL
 		}

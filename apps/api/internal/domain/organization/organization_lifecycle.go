@@ -31,7 +31,7 @@ var OrganizationLifecycleTransitions = map[OrganizationLifecycle]map[Organizatio
 		OrganizationLifecycleActive:  true,
 		OrganizationLifecycleArchived: true,
 	},
-	OrganizationLifecycleArchived: {}, // No transitions allowed from archived
+	OrganizationLifecycleArchived: {}, // No transitions allowed from archived.
 }
 
 // CanTransitionTo returns true if the lifecycle can transition to the target state.
@@ -118,7 +118,7 @@ var MemberLifecycleTransitions = map[MemberLifecycle]map[MemberLifecycle]bool{
 		MemberLifecycleActive:  true,
 		MemberLifecycleRemoved: true,
 	},
-	MemberLifecycleRemoved: {}, // No transitions allowed from removed
+	MemberLifecycleRemoved: {}, // No transitions allowed from removed.
 }
 
 // CanTransitionTo returns true if the lifecycle can transition to the target state.

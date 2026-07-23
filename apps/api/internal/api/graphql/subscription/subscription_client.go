@@ -84,7 +84,7 @@ func (c *Client) writePump() {
 		case <-c.done:
 			return
 		case <-ticker.C:
-			// Send periodic ping to keep connection alive
+			// Send periodic ping to keep connection alive.
 			if err := c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
 				return
 			}
@@ -106,7 +106,7 @@ func (c *Client) handleMessage(message []byte) {
 
 	switch msg.Type {
 	case "connection_init":
-		// Send connection acknowledgment
+		// Send connection acknowledgment.
 		c.sendMessage(wsMessage{Type: "connection_ack"})
 
 	case "subscribe":
@@ -128,7 +128,7 @@ func (c *Client) handleSubscribe(id string, payload json.RawMessage) {
 		return
 	}
 
-	// Parse the subscription query to determine what to subscribe to
+	// Parse the subscription query to determine what to subscribe to.
 	switch {
 	case contains(sub.Query, "deviceUpdated"):
 		c.subscribeDeviceUpdates(id, sub)
@@ -141,7 +141,7 @@ func (c *Client) handleSubscribe(id string, payload json.RawMessage) {
 	case contains(sub.Query, "memberEvent"):
 		c.subscribeMemberEvent(id, sub)
 	default:
-		// For unknown subscriptions, just acknowledge
+		// For unknown subscriptions, just acknowledge.
 		c.sendMessage(wsMessage{
 			Type:    "next",
 			ID:      id,
@@ -162,16 +162,16 @@ func (c *Client) handleComplete(id string) {
 
 // subscribeDeviceUpdates subscribes to device update events.
 func (c *Client) subscribeDeviceUpdates(id string, sub SubscribePayload) {
-	// Extract device ID from variables if present
+	// Extract device ID from variables if present.
 	deviceID, _ := sub.Variables["deviceId"].(string)
 
-	// Check hub availability
+	// Check hub availability.
 	if c.handler.hub == nil {
 		c.sendError(id, "subscription service unavailable")
 		return
 	}
 
-	// Subscribe to hub for device updates
+	// Subscribe to hub for device updates.
 	unsubscribe := c.handler.hub.SubscribeDeviceUpdates(c.operator.ID, deviceID, func(data interface{}) error {
 		c.sendMessage(wsMessage{
 			Type:    "next",
@@ -187,7 +187,7 @@ func (c *Client) subscribeDeviceUpdates(id string, sub SubscribePayload) {
 
 	c.presenter.AuditSubscribe(c.ctx, c.operator, "device_updates", deviceID)
 
-	// Send initial confirmation
+	// Send initial confirmation.
 	c.sendMessage(wsMessage{Type: "next", ID: id, Payload: json.RawMessage(`{"data":{"deviceUpdated":null}}`)})
 }
 
@@ -195,7 +195,7 @@ func (c *Client) subscribeDeviceUpdates(id string, sub SubscribePayload) {
 func (c *Client) subscribeTelemetry(id string, sub SubscribePayload) {
 	deviceID, _ := sub.Variables["deviceId"].(string)
 
-	// Check hub availability
+	// Check hub availability.
 	if c.handler.hub == nil {
 		c.sendError(id, "subscription service unavailable")
 		return
@@ -223,7 +223,7 @@ func (c *Client) subscribeTelemetry(id string, sub SubscribePayload) {
 func (c *Client) subscribeCommandStatus(id string, sub SubscribePayload) {
 	dispatchID, _ := sub.Variables["dispatchId"].(string)
 
-	// Check hub availability
+	// Check hub availability.
 	if c.handler.hub == nil {
 		c.sendError(id, "subscription service unavailable")
 		return
@@ -251,10 +251,10 @@ func (c *Client) subscribeCommandStatus(id string, sub SubscribePayload) {
 func (c *Client) subscribeOrganizationEvent(id string, sub SubscribePayload) {
 	orgID, _ := sub.Variables["orgId"].(string)
 	if orgID == "" {
-		orgID = c.orgID // Use connection orgID as fallback
+		orgID = c.orgID // Use connection orgID as fallback.
 	}
 
-	// Check hub availability
+	// Check hub availability.
 	if c.handler.hub == nil {
 		c.sendError(id, "subscription service unavailable")
 		return
@@ -282,10 +282,10 @@ func (c *Client) subscribeOrganizationEvent(id string, sub SubscribePayload) {
 func (c *Client) subscribeMemberEvent(id string, sub SubscribePayload) {
 	orgID, _ := sub.Variables["orgId"].(string)
 	if orgID == "" {
-		orgID = c.orgID // Use connection orgID as fallback
+		orgID = c.orgID // Use connection orgID as fallback.
 	}
 
-	// Check hub availability
+	// Check hub availability.
 	if c.handler.hub == nil {
 		c.sendError(id, "subscription service unavailable")
 		return
@@ -386,9 +386,9 @@ func equalFold(s, t string) bool {
 		}
 
 		if cs >= 'A' && cs <= 'Z' && ct >= 'a' && ct <= 'z' {
-			// cs is uppercase, ct is lowercase - case fold
+			// cs is uppercase, ct is lowercase - case fold.
 		} else if ct >= 'A' && ct <= 'Z' && cs >= 'a' && cs <= 'z' {
-			// ct is uppercase, cs is lowercase - case fold
+			// ct is uppercase, cs is lowercase - case fold.
 		} else {
 			return false
 		}

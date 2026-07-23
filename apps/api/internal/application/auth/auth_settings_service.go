@@ -42,7 +42,7 @@ func NewClientSettingsService(repo operator.Repository) *ClientSettingsService {
 
 // GetSettings retrieves all settings for an operator.
 func (s *ClientSettingsService) GetSettings(ctx context.Context, operatorID string) (*SettingsResponse, error) {
-	// Get full operator settings in single query
+	// Get full operator settings in single query.
 	settings, err := s.operatorRepo.GetOperatorSettings(ctx, operatorID)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (s *ClientSettingsService) GetSettings(ctx context.Context, operatorID stri
 
 // UpdateClientSettings updates client settings for an operator.
 func (s *ClientSettingsService) UpdateClientSettings(ctx context.Context, operatorID string, input *ClientSettingsInput) (*SettingsResponse, error) {
-	// Validate input
+	// Validate input.
 	if input.RequestTimeoutMs != nil {
 		if *input.RequestTimeoutMs < 500 || *input.RequestTimeoutMs > 60000 {
 			return nil, &ValidationError{Message: "requestTimeoutMs must be between 500 and 60000"}
@@ -75,7 +75,7 @@ func (s *ClientSettingsService) UpdateClientSettings(ctx context.Context, operat
 		}
 	}
 
-	// Validate ServerURL format if provided
+	// Validate ServerURL format if provided.
 	if input.ServerURL != nil && *input.ServerURL != "" {
 		parsedURL, urlErr := url.Parse(*input.ServerURL)
 		if urlErr != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
@@ -86,13 +86,13 @@ func (s *ClientSettingsService) UpdateClientSettings(ctx context.Context, operat
 		}
 	}
 
-	// Get current operator settings to merge with input
+	// Get current operator settings to merge with input.
 	currentSettings, err := s.operatorRepo.GetOperatorSettings(ctx, operatorID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Apply updates from input to client settings
+	// Apply updates from input to client settings.
 	if input.ServerURL != nil {
 		currentSettings.Client.ServerURL = *input.ServerURL
 	}
@@ -115,7 +115,7 @@ func (s *ClientSettingsService) UpdateClientSettings(ctx context.Context, operat
 		currentSettings.Client.SignalHistoryLimit = *input.SignalHistoryLimit
 	}
 
-	// Save updated client settings
+	// Save updated client settings.
 	if err = s.operatorRepo.UpdateClientSettings(ctx, operatorID, currentSettings.Client); err != nil {
 		return nil, err
 	}

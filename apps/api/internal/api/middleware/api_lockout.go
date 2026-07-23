@@ -190,7 +190,7 @@ func LockoutMiddleware(lockout *Lockout) func(c *gin.Context) {
 func LoadLockoutConfig() LockoutConfig {
 	enabled := os.Getenv("ACCOUNT_LOCKOUT_ENABLED") == "true"
 
-	// Clamp maxAttempts to reasonable bounds [1, 20]
+	// Clamp maxAttempts to reasonable bounds [1, 20].
 	maxAttempts := 5
 	if v := os.Getenv("ACCOUNT_LOCKOUT_ATTEMPTS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n >= 1 {
@@ -201,7 +201,7 @@ func LoadLockoutConfig() LockoutConfig {
 		}
 	}
 
-	// Clamp duration to reasonable bounds [1 second, 24 hours]
+	// Clamp duration to reasonable bounds [1 second, 24 hours].
 	duration := time.Hour
 	if v := os.Getenv("ACCOUNT_LOCKOUT_DURATION"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n >= 1 {
@@ -212,7 +212,7 @@ func LoadLockoutConfig() LockoutConfig {
 		}
 	}
 
-	// Clamp max lockout duration to [1 hour, 7 days]
+	// Clamp max lockout duration to [1 hour, 7 days].
 	maxLockoutDuration := 24 * time.Hour
 	if v := os.Getenv("ACCOUNT_LOCKOUT_MAX_DURATION"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n >= 1 {

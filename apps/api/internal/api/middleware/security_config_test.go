@@ -28,7 +28,7 @@ func TestSigningConfig(t *testing.T) {
 	t.Run("signing_config_from_pkg", func(t *testing.T) {
 		cfg := config.SigningConfig{
 			Enabled:         true,
-			TimestampWindow: 300, // 5 minutes in seconds
+			TimestampWindow: 300, // 5 minutes in seconds.
 			MaxCacheSize:    1000,
 		}
 		assert.True(t, cfg.Enabled)
@@ -99,7 +99,7 @@ func TestTurnstileProtectedPaths(t *testing.T) {
 	}{
 		{"/v1/auth/register", true},
 		{"/v1/auth/login", true},
-// DEPRECATED: // DEPRECATED: 		{"/v1/device/register", false},
+// DEPRECATED: // DEPRECATED: 		{"/v1/device/register", false},.
 		{"/health", false},
 	}
 

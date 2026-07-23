@@ -313,7 +313,7 @@ func (r *DeviceRepository) SetOnline(ctx context.Context, id string, online bool
 	var err error
 
 	if online {
-		// Coming online cancels scheduled deletion
+		// Coming online cancels scheduled deletion.
 		result, err = r.exec(ctx,
 			"UPDATE devices SET online = ?, last_seen = ?, updated_at = ?, deletion_scheduled_at = 0 WHERE id = ?",
 			online, now, now, id,

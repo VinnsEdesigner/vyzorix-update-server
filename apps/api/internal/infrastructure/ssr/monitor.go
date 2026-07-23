@@ -34,7 +34,7 @@ func NewMonitor(process *ProcessManager, logger *slog.Logger, interval time.Dura
 		logger:         logger,
 		interval:       interval,
 		lastState:      ProcessStateStopped,
-		restartBackoff: 10 * time.Second, // Minimum time between restarts
+		restartBackoff: 10 * time.Second, // Minimum time between restarts.
 	}
 }
 
@@ -155,7 +155,7 @@ func (m *Monitor) check() {
 
 				m.logger.Info("Calling restart callback for SSR")
 
-				go cb() // Call restart in goroutine to avoid deadlock
+				go cb() // Call restart in goroutine to avoid deadlock.
 			} else {
 				m.logger.Warn("SSR restart skipped (backoff period)", "backoff", backoff)
 			}

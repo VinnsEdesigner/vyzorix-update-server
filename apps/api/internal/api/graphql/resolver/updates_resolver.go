@@ -10,9 +10,9 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
-// ============================================================
-// Updates Query Resolvers
-// ============================================================
+// ============================================================.
+// Updates Query Resolvers.
+// ============================================================.
 
 // GetUpdatesStatus resolves the updatesStatus query.
 func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error) {
@@ -46,12 +46,12 @@ func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error
 	var currentVersion string
 	var needsUpdate bool
 
-	// If deviceId is provided, get device-specific status
+	// If deviceId is provided, get device-specific status.
 	if deviceID != "" && r.DeviceService != nil {
 		dev, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 		if err == nil && dev != nil {
 			currentVersion = dev.AppVersion
-			// Compare versions to determine if update is needed
+			// Compare versions to determine if update is needed.
 			if status.Latest.Version != "" && currentVersion != "" {
 				needsUpdate = currentVersion != status.Latest.Version
 			}
@@ -343,9 +343,9 @@ func (r *Resolver) GetUpdatesSyncStatus(p graphql.ResolveParams) (interface{}, e
 	}, nil
 }
 
-// ============================================================
-// Updates Mutation Resolvers
-// ============================================================
+// ============================================================.
+// Updates Mutation Resolvers.
+// ============================================================.
 
 // PushUpdate resolves the pushUpdate mutation.
 func (r *Resolver) PushUpdate(p graphql.ResolveParams) (interface{}, error) {
@@ -494,9 +494,9 @@ func (r *Resolver) SyncFromGitHub(p graphql.ResolveParams) (interface{}, error) 
 	}, nil
 }
 
-// ============================================================
-// Helper Functions
-// ============================================================
+// ============================================================.
+// Helper Functions.
+// ============================================================.
 
 func formatDateTimeInt64(ts int64) *string {
 	if ts == 0 {

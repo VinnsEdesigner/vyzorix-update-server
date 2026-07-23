@@ -68,7 +68,7 @@ func (h *MFAHandler) EnrollMFA(c *gin.Context) {
 		return
 	}
 
-	// Get operator for email
+	// Get operator for email.
 	op, err := h.operatorRepo.FindByID(c.Request.Context(), opID)
 	if err != nil {
 		h.presenter.InternalError(c, "")
@@ -91,7 +91,7 @@ func (h *MFAHandler) EnrollMFA(c *gin.Context) {
 func (h *MFAHandler) VerifySetupMFA(c *gin.Context) {
 	var req struct {
 		Code  string `json:"code"`
-		Token string `json:"token"` // TOTP code to verify
+		Token string `json:"token"` // TOTP code to verify.
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -105,7 +105,7 @@ func (h *MFAHandler) VerifySetupMFA(c *gin.Context) {
 		return
 	}
 
-	// Verify TOTP code
+	// Verify TOTP code.
 	_, err = h.authService.VerifyMFACode(c.Request.Context(), opID, req.Token)
 	if err != nil {
 		h.presenter.Unauthorized(c, "")
@@ -133,14 +133,14 @@ func (h *MFAHandler) EnableMFA(c *gin.Context) {
 		return
 	}
 
-	// Verify TOTP code first
+	// Verify TOTP code first.
 	_, err = h.authService.VerifyMFACode(c.Request.Context(), opID, req.Token)
 	if err != nil {
 		h.presenter.Unauthorized(c, "")
 		return
 	}
 
-	// Generate backup codes
+	// Generate backup codes.
 	backupCodes, err := infraauth.GenerateBackupCodes(8)
 	if err != nil {
 		h.presenter.InternalError(c, "")
@@ -149,7 +149,7 @@ func (h *MFAHandler) EnableMFA(c *gin.Context) {
 
 	binding := infraauth.CreateMFASecretBinding(opID, req.Token)
 
-	// Enable MFA and save backup codes using UpdateOperatorMFA
+	// Enable MFA and save backup codes using UpdateOperatorMFA.
 	err = h.operatorRepo.UpdateOperatorMFA(c.Request.Context(), opID, req.Token, binding.MAC, backupCodes)
 	if err != nil {
 		h.presenter.InternalError(c, "")
@@ -181,7 +181,7 @@ func (h *MFAHandler) DisableMFA(c *gin.Context) {
 		return
 	}
 
-	// Verify TOTP code before disabling MFA
+	// Verify TOTP code before disabling MFA.
 	_, err = h.authService.VerifyMFACode(c.Request.Context(), opID, req.Code)
 	if err != nil {
 		h.presenter.Unauthorized(c, "Invalid MFA code")
@@ -214,14 +214,14 @@ func (h *MFAHandler) VerifyBackupCode(c *gin.Context) {
 		return
 	}
 
-	// Verify the operator has MFA enabled
+	// Verify the operator has MFA enabled.
 	mfaEnabled, err := h.authService.GetMFAStatus(c.Request.Context(), opID)
 	if err != nil || !mfaEnabled {
 		h.presenter.Forbidden(c, "")
 		return
 	}
 
-	// Verify as backup code using service method
+	// Verify as backup code using service method.
 	valid, err := h.authService.VerifyBackupCode(c.Request.Context(), opID, req.Code)
 	if err != nil || !valid {
 		h.presenter.Unauthorized(c, "")
@@ -239,7 +239,7 @@ func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 		return
 	}
 
-	// Generate and persist new backup codes via service
+	// Generate and persist new backup codes via service.
 	backupCodes, err := h.authService.RegenerateBackupCodes(c.Request.Context(), opID)
 	if err != nil {
 		h.presenter.InternalError(c, "")
@@ -261,15 +261,15 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		return
 	}
 
-	// 2: Log MFA verify attempt
+	// 2: Log MFA verify attempt.
 	if h.auditLogger != nil {
 		h.auditLogger.MFAVerifyAttempt(c.Request.Context(), req.OperatorID, c.ClientIP(), c.GetHeader("User-Agent"))
 	}
 
-	// Verify the MFA code first
+	// Verify the MFA code first.
 	session, err := h.authService.VerifyMFACode(c.Request.Context(), req.OperatorID, req.Code)
 	if err != nil {
-		// 2: Log failed MFA attempt
+		// 2: Log failed MFA attempt.
 		if h.auditLogger != nil {
 			h.auditLogger.MFAVerifyFailed(c.Request.Context(), req.OperatorID, c.ClientIP())
 		}
@@ -277,26 +277,26 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		return
 	}
 
-	// 2: Re-validate operator state before session creation
-	// This prevents race conditions where operator could be:
-	// - Deleted between MFA verify and session creation
-	// - MFA disabled
-	// - Role changed
+	// 2: Re-validate operator state before session creation.
+	// This prevents race conditions where operator could be:.
+	// - Deleted between MFA verify and session creation.
+	// - MFA disabled.
+	// - Role changed.
 	op, err := h.operatorRepo.FindByID(c.Request.Context(), req.OperatorID)
 	if err != nil {
 		h.presenter.Unauthorized(c, "Operator not found or invalid")
 		return
 	}
 
-	// Verify operator is still valid (not deleted, has required fields)
+	// Verify operator is still valid (not deleted, has required fields).
 	if !op.IsValid() {
 		h.presenter.Unauthorized(c, "Operator is invalid")
 		return
 	}
 
-	// 2 END: Operator state validated, safe to create session
+	// 2 END: Operator state validated, safe to create session.
 
-	// Create session cookie with session ID (critical - must not fail silently)
+	// Create session cookie with session ID (critical - must not fail silently).
 	if h.authService.GetSessionManager() != nil {
 		cookie, cookieErr := h.authService.GetSessionManager().CreateCookie(session.ID)
 		if cookieErr != nil {
@@ -306,11 +306,11 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		h.presenter.SetSessionCookie(c, cookie)
 	}
 
-	// Issue refresh token and access token for API clients
+	// Issue refresh token and access token for API clients.
 	var refreshToken string
 	var accessToken string
 	var expiresAt int64
-	// Get role from operator's membership in their last organization
+	// Get role from operator's membership in their last organization.
 	role := ""
 	if m := op.GetMembership(op.LastOrganizationID); m != nil {
 		role = string(m.Role)
@@ -322,7 +322,7 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 			return
 		}
 
-		// Generate proper JWT access token
+		// Generate proper JWT access token.
 		tokenResult, tokenErr := h.authService.GenerateAccessToken(c.Request.Context(), op.ID, op.Email, op.Name, role)
 		if tokenErr != nil {
 			h.presenter.InternalError(c, "Failed to generate access token")
@@ -332,8 +332,8 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		expiresAt = tokenResult.ExpiresAt
 	}
 
-	// Return success with session info and tokens
-	// 2: Log MFA verify success
+	// Return success with session info and tokens.
+	// 2: Log MFA verify success.
 	if h.auditLogger != nil {
 		h.auditLogger.MFAVerifySuccess(c.Request.Context(), req.OperatorID, session.ID, c.ClientIP())
 	}
@@ -341,7 +341,7 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	h.presenter.OK(c, gin.H{
 		"success":       true,
 		"session_id":    session.ID,
-		"access_token":  accessToken, // Proper JWT access token
+		"access_token":  accessToken, // Proper JWT access token.
 		"refresh_token": refreshToken,
 		"expires_at":    expiresAt,
 		"operator": gin.H{

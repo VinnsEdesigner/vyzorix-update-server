@@ -50,10 +50,10 @@ import (
 )
 
 const (
-	// Default JWT expiry for access tokens
+	// Default JWT expiry for access tokens.
 	defaultJWTAccessExpiry = 15 * time.Minute
-	// Default refresh token expiry
-	defaultRefreshTokenExpiry = 7 * 24 * time.Hour // 7 days
+	// Default refresh token expiry.
+	defaultRefreshTokenExpiry = 7 * 24 * time.Hour // 7 days.
 )
 
 // ProvideConfig returns the application config.
@@ -165,14 +165,14 @@ func ProvideEventProcessor(
 	hubResult *HubResult,
 	log *slog.Logger,
 ) *eventapp.Processor {
-	// Create broadcaster first
+	// Create broadcaster first.
 	broadcaster := eventapp.NewBroadcaster(log)
 	hubResult.Hub.SetDashboardBroadcaster(broadcaster)
 
-	// Create processor with broadcaster
+	// Create processor with broadcaster.
 	processor := eventapp.NewProcessor(eventRepo, deviceRepo, broadcaster, log)
 
-	// Wire repositories for hierarchical threshold resolution
+	// Wire repositories for hierarchical threshold resolution.
 	processor.SetDeviceSettingsRepo(deviceSettingsRepo)
 	processor.SetOrgSettingsRepo(orgSettingsRepo)
 
@@ -246,7 +246,7 @@ func ProvideAuthService(
 		refreshTokenRepo,
 		defaultRefreshTokenExpiry,
 		jwtManager,
-		nil, // ldapConfig - not used currently
+		nil, // ldapConfig - not used currently.
 	)
 	svc.SetLogger(log)
 	return svc
@@ -453,7 +453,7 @@ func ProvideDeviceDeletionWorker(deviceRepo *storage.DeviceRepository, log *slog
 	}
 	interval := time.Duration(cfg.DeviceDeletionIntervalMinutes) * time.Minute
 	if interval <= 0 {
-		interval = 5 * time.Minute // default 5 minutes
+		interval = 5 * time.Minute // default 5 minutes.
 	}
 	w := worker.NewDeviceDeletionWorker(deviceRepo, log, interval)
 	w.Start()
@@ -661,7 +661,7 @@ func ProvideMiddlewareSet(
 	hmacVerifier *cryptohmac.Verifier,
 	rateLimiter *middleware.RateLimiter,
 ) *MiddlewareSet {
-	// Create a separate rate limiter for auth with different limits
+	// Create a separate rate limiter for auth with different limits.
 	authLimiter := middleware.NewRateLimiter(5, time.Minute)
 	return &MiddlewareSet{
 		Factory:          factory,

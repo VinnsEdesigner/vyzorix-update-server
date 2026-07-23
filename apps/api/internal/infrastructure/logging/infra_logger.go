@@ -9,7 +9,7 @@ import (
 )
 
 // NewAuditFileLogger creates a dedicated logger that writes audit events to a separate file.
-// Audit logs are always JSON formatted for machine parsing and are never redacted
+// Audit logs are always JSON formatted for machine parsing and are never redacted.
 // (unlike application logs which may redact PII).
 func NewAuditFileLogger(path string) *slog.Logger {
 	if path == "" {
@@ -18,7 +18,7 @@ func NewAuditFileLogger(path string) *slog.Logger {
 
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
-		// Fall back to stdout if file cannot be opened
+		// Fall back to stdout if file cannot be opened.
 		return slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	}
 

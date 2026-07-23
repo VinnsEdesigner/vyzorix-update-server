@@ -10,9 +10,9 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
-// ============================================================
-// Inbox Query Resolvers
-// ============================================================
+// ============================================================.
+// Inbox Query Resolvers.
+// ============================================================.
 
 // GetInbox resolves the inbox query.
 func (r *Resolver) GetInbox(p graphql.ResolveParams) (interface{}, error) {
@@ -133,9 +133,9 @@ func (r *Resolver) GetInboxEntry(p graphql.ResolveParams) (interface{}, error) {
 	}, nil
 }
 
-// ============================================================
-// Inbox Mutation Resolvers
-// ============================================================
+// ============================================================.
+// Inbox Mutation Resolvers.
+// ============================================================.
 
 // AckInbox resolves the ackInbox mutation.
 func (r *Resolver) AckInbox(p graphql.ResolveParams) (interface{}, error) {

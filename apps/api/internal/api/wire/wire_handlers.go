@@ -69,8 +69,8 @@ type HandlerDependencies struct {
 // HandlerSet contains all handler instances.
 type HandlerSet struct {
 	Auth               *authhandlers.AllHandlers
-	// DEPRECATED: DeviceRegister - /v1/device/register endpoint removed
-	// DeviceRegister     *devicehandlers.RegisterHandler
+	// DEPRECATED: DeviceRegister - /v1/device/register endpoint removed.
+	// DeviceRegister     *devicehandlers.RegisterHandler.
 	DeviceStatus       *devicehandlers.StatusHandler
 	DeviceUpdater      *devicehandlers.UpdaterHandler
 	DeviceList         *devicehandlers.ListHandler
@@ -102,7 +102,7 @@ type HandlerSet struct {
 func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	hs := &HandlerSet{}
 
-	// Auth handlers
+	// Auth handlers.
 	hs.Auth = authhandlers.NewAllHandlers(&authhandlers.Dependencies{
 		AuthService:        deps.AuthService,
 		SessionManager:     deps.SessionManager,
@@ -119,19 +119,19 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		OAuthStateRepo:     deps.OAuthStateRepo,
 	})
 
-	// Device handlers
-	// DEPRECATED: hs.DeviceRegister = devicehandlers.NewRegisterHandler(deps.DeviceService) // /v1/device/register removed
+	// Device handlers.
+	// DEPRECATED: hs.DeviceRegister = devicehandlers.NewRegisterHandler(deps.DeviceService) // /v1/device/register removed.
 	hs.DeviceStatus = devicehandlers.NewStatusHandler(deps.DeviceService)
 	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deps.DeviceService)
 	hs.DeviceList = devicehandlers.NewListHandler(deps.DeviceService, deps.Hub)
 	hs.Devices = devicehandlers.NewDevicesHandler(deps.DeviceService)
 
-	// Command handler
+	// Command handler.
 	hs.Command = cmdhandlers.NewExecuteHandler(deps.CommandService, deps.DeviceService, deps.Hub, deps.FCMNotifier)
 
-	// WebSocket handler
+	// WebSocket handler.
 	hs.Stream = websockethandlers.NewStreamHandler(deps.Log, deps.Config, deps.Hub, *deps.HmacVerifier, deps.AuditLogger)
-	// Telemetry history handler
+	// Telemetry history handler.
 	var telemetryRepo *storage.TelemetryRepository
 	if deps.DB != nil {
 		telemetryRepo = storage.NewTelemetryRepository(deps.DB.DB())
@@ -144,15 +144,15 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		nil,
 	)
 
-	// Connection status handler
+	// Connection status handler.
 	hs.ConnectionStatus = handlers.NewConnectionStatusHandler(deps.Log, deps.Hub, deps.DeviceRepo)
 
-	// Admin handlers
+	// Admin handlers.
 	hs.AdminClients = admin.NewClientsHandler(deps.ClientService)
 
-	// Updates handlers
+	// Updates handlers.
 	if deps.UpdatesStorage != nil && deps.DeviceService != nil {
-		// Create sub-services
+		// Create sub-services.
 		versionsStatusSvc := updatesapplication.NewVersionsStatusService(deps.UpdatesStorage)
 		versionsListSvc := updatesapplication.NewVersionsListService(deps.UpdatesStorage)
 		changelogSvc := updatesapplication.NewChangelogService(deps.UpdatesStorage)
@@ -163,7 +163,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		var githubSyncSvc *github.SyncService
 		if deps.Config.GitHubReleaseToken != "" && deps.Config.GitHubReleaseRepo != "" {
 			githubClient := github.NewClient(
-				"VinnsEdesigner", // owner - could be made configurable
+				"VinnsEdesigner", // owner - could be made configurable.
 				deps.Config.GitHubReleaseRepo,
 				deps.Config.GitHubReleaseToken,
 			)
@@ -171,7 +171,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		}
 		syncSvc := updatesapplication.NewSyncService(deps.UpdatesStorage, githubSyncSvc)
 
-		// PushService needs Hub (for WSS), FCM (for offline wake), CommandService (for persistence),
+		// PushService needs Hub (for WSS), FCM (for offline wake), CommandService (for persistence),.
 		// and DeviceService (for FCM token lookup). All wired from deps.
 		pushSvc := updatesapplication.NewPushService(
 			deps.UpdatesStorage,
@@ -182,7 +182,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 			deps.Log,
 		)
 
-		// Create main service with all sub-services
+		// Create main service with all sub-services.
 		updatesService := updatesapplication.NewService(
 			deps.UpdatesStorage,
 			versionsStatusSvc,
@@ -194,14 +194,14 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 			syncSvc,
 		)
 
-		// Create rate limiter middleware for updates endpoints
+		// Create rate limiter middleware for updates endpoints.
 		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(nil)
 
 		hs.Updates = updateshandlers.NewUpdatesHandler(updatesService, pushSvc, updatesRateLimiters, deps.AuditLogger, deps.Config.GitHubWebhookSecret)
 		hs.UpdatesService = updatesService
 	}
 
-	// Organization handlers
+	// Organization handlers.
 	if deps.OrgService != nil && deps.MemberService != nil {
 		hs.Organization = organizationhandlers.NewOrganizationHandler(deps.OrgService, deps.MemberService, deps.Presenter)
 		hs.Invitation = organizationhandlers.NewInvitationHandler(deps.InvitationService, deps.MemberService, deps.Presenter)
@@ -211,18 +211,18 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		hs.MemberService = deps.MemberService
 		hs.InvitationService = deps.InvitationService
 
-		// Organization settings handler
+		// Organization settings handler.
 		if deps.OrgSettingsService != nil {
 			hs.OrgSettings = organizationhandlers.NewSettingsHandler(deps.OrgSettingsService, deps.MemberService, deps.Presenter)
 		}
 	}
 
-	// Device handlers
+	// Device handlers.
 	hs.Devices = devicehandlers.NewDevicesHandler(deps.DeviceService)
 
-	// Device settings handler
+	// Device settings handler.
 	if deps.DeviceSettingsService != nil && deps.MemberService != nil {
-		// Create membership checker function
+		// Create membership checker function.
 		membershipChecker := func(ctx context.Context, operatorID, orgID string) error {
 			return deps.MemberService.CheckMembership(ctx, operatorID, orgID)
 		}
@@ -230,12 +230,12 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 		hs.DeviceSettingsService = deps.DeviceSettingsService
 	}
 
-	// Device transfer handler
+	// Device transfer handler.
 	if deps.DeviceService != nil {
 		hs.Transfer = devicehandlers.NewTransferHandler(deps.DeviceService, deps.Presenter)
 	}
 
-	// Set AppCheck verifier for device attestation
+	// Set AppCheck verifier for device attestation.
 	hs.AppCheckVerifier = deps.AppCheckVerifier
 
 	return hs

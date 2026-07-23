@@ -126,7 +126,7 @@ func loadAuthSpec() *authSpec {
 		security:    make(map[string]bool),
 	}
 
-	// Define expected endpoints from spec
+	// Define expected endpoints from spec.
 	endpoints := []endpointSpec{
 		{"POST", "/v1/auth/login", "LoginHandler", "Credential login", false},
 		{"POST", "/v1/auth/register", "RegisterHandler", "Register new operator", false},
@@ -180,7 +180,7 @@ func loadAuthSpec() *authSpec {
 		spec.endpoints[key] = ep
 	}
 
-	// Define expected handlers with their methods
+	// Define expected handlers with their methods.
 	handlers := []struct {
 		file    string
 		methods []string
@@ -205,7 +205,7 @@ func loadAuthSpec() *authSpec {
 		spec.handlers[h.file] = handlerSpec{file: h.file, methods: h.methods}
 	}
 
-	// Define expected domain layer structure (from spec section 4)
+	// Define expected domain layer structure (from spec section 4).
 	spec.domain["operator"] = domainSpec{
 		dir: "operator",
 		files: []string{
@@ -253,8 +253,8 @@ func loadAuthSpec() *authSpec {
 		},
 	}
 
-	// Define expected infrastructure (from spec section 7)
-	// Note: security subdirectories are checked in Security verification
+	// Define expected infrastructure (from spec section 7).
+	// Note: security subdirectories are checked in Security verification.
 	spec.infra["security"] = infraSpec{
 		dir: "security",
 		files: []string{
@@ -278,13 +278,13 @@ func loadAuthSpec() *authSpec {
 		},
 	}
 
-	// Define expected middleware (from spec Section 7)
+	// Define expected middleware (from spec Section 7).
 	spec.middleware["cookie_auth.go"] = middlewareSpec{name: "CookieAuth", order: 4, type_: "bearer"}
 	spec.middleware["api_lockout.go"] = middlewareSpec{name: "APILockout", order: 1, type_: "security"}
 	spec.middleware["api_rate_limiter.go"] = middlewareSpec{name: "RateLimiter", order: 1, type_: "throttle"}
 	spec.middleware["validation.go"] = middlewareSpec{name: "Validation", order: 2, type_: "validation"}
 
-	// Define expected session configuration (from spec Section 7.3)
+	// Define expected session configuration (from spec Section 7.3).
 	spec.sessionConfig = sessionConfigSpec{
 		JWTExpiryMin:      15,
 		RefreshExpiryDays: 7,
@@ -294,7 +294,7 @@ func loadAuthSpec() *authSpec {
 		StorageType:       "hybrid",
 	}
 
-	// Define expected application layer files
+	// Define expected application layer files.
 	spec.application["auth_service.go"] = true
 	spec.application["auth_password.go"] = true
 
@@ -329,7 +329,7 @@ func scanAuthImplementation(root string) *authImplementation {
 	appDir := filepath.Join(root, "apps/api/internal/application/auth")
 	securityDir := filepath.Join(root, "apps/api/internal/infrastructure/security")
 
-	// Scan handlers
+	// Scan handlers.
 	if entries, err := os.ReadDir(handlerDir); err == nil {
 		for _, entry := range entries {
 			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") {
@@ -341,7 +341,7 @@ func scanAuthImplementation(root string) *authImplementation {
 		}
 	}
 
-	// Scan domain files
+	// Scan domain files.
 	domainDir := filepath.Join(root, "apps/api/internal/domain")
 	if entries, err := os.ReadDir(domainDir); err == nil {
 		for _, entry := range entries {
@@ -359,7 +359,7 @@ func scanAuthImplementation(root string) *authImplementation {
 		}
 	}
 
-	// Scan infrastructure files
+	// Scan infrastructure files.
 	infraDir := filepath.Join(root, "apps/api/internal/infrastructure")
 	if entries, err := os.ReadDir(infraDir); err == nil {
 		for _, entry := range entries {
@@ -377,7 +377,7 @@ func scanAuthImplementation(root string) *authImplementation {
 		}
 	}
 
-	// Scan middleware files
+	// Scan middleware files.
 	if entries, err := os.ReadDir(middlewareDir); err == nil {
 		for _, entry := range entries {
 			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
@@ -386,7 +386,7 @@ func scanAuthImplementation(root string) *authImplementation {
 		}
 	}
 
-	// Scan application layer files
+	// Scan application layer files.
 	if entries, err := os.ReadDir(appDir); err == nil {
 		for _, entry := range entries {
 			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
@@ -395,15 +395,15 @@ func scanAuthImplementation(root string) *authImplementation {
 		}
 	}
 
-	// Scan security files and subdirectories
+	// Scan security files and subdirectories.
 	if entries, err := os.ReadDir(securityDir); err == nil {
 		for _, entry := range entries {
 			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
 				impl.securityFiles[entry.Name()] = true
 			} else if entry.IsDir() {
-				// Mark directory as existing
+				// Mark directory as existing.
 				impl.securityFiles[entry.Name()+"/"] = true
-				// Also scan files within the subdirectory
+				// Also scan files within the subdirectory.
 				subDir := filepath.Join(securityDir, entry.Name())
 				if subEntries, err := os.ReadDir(subDir); err == nil {
 					for _, subEntry := range subEntries {
@@ -416,7 +416,7 @@ func scanAuthImplementation(root string) *authImplementation {
 		}
 	}
 
-	// Scan routes
+	// Scan routes.
 	routesPath := filepath.Join(handlerDir, "auth_routes.go")
 	if content, err := os.ReadFile(routesPath); err == nil {
 		contentStr := string(content)
@@ -424,7 +424,7 @@ func scanAuthImplementation(root string) *authImplementation {
 		for _, route := range routes {
 			impl.endpoints[route] = true
 		}
-		// Scan for error codes
+		// Scan for error codes.
 		scanErrorCodes(contentStr, impl.errorCodes)
 	}
 
@@ -459,12 +459,12 @@ func scanGoMethods(filePath string) map[string]bool {
 func parseRegisteredRoutes(content string) []string {
 	var routes []string
 
-	// Remove newlines and extra whitespace for simpler matching
+	// Remove newlines and extra whitespace for simpler matching.
 	normalized := strings.ReplaceAll(content, "\n", " ")
 	normalized = strings.ReplaceAll(normalized, "\t", " ")
 	normalized = regexp.MustCompile(`\s+`).ReplaceAllString(normalized, " ")
 
-	// Map of subgroup names to their base paths
+	// Map of subgroup names to their base paths.
 	subgroupPaths := map[string]string{
 		"publicAuth":    "",
 		"authenticated": "",
@@ -475,7 +475,7 @@ func parseRegisteredRoutes(content string) []string {
 		"rg":            "",
 	}
 
-	// Pattern to match all route registrations (allowing empty path "")
+	// Pattern to match all route registrations (allowing empty path "").
 	pattern := `(publicAuth|authenticated|mfa|sessions|clientCreds|adminLockout|rg)\.(POST|GET|PATCH|DELETE)\s*\(\s*"([^"]*)"`
 	re := regexp.MustCompile(pattern)
 	matches := re.FindAllStringSubmatch(normalized, -1)
@@ -640,7 +640,7 @@ func verifyAuthApplication(spec *authSpec, impl *authImplementation, _ string) {
 	fmt.Printf("\n  APPLICATION LAYER VERIFICATION (Section 5 of Spec)")
 	fmt.Printf("\n  \n")
 
-	// Check application layer files
+	// Check application layer files.
 	appFilesFound := 0
 	appFilesExpected := 0
 	for appFile := range spec.application {
@@ -655,7 +655,7 @@ func verifyAuthApplication(spec *authSpec, impl *authImplementation, _ string) {
 		}
 	}
 
-	// Check for service files (methods are in separate files)
+	// Check for service files (methods are in separate files).
 	fmt.Printf("\n    Auth Service Files:\n")
 	serviceFiles := []string{
 		"auth_login_session.go",
@@ -685,13 +685,13 @@ func verifyAuthSecurity(_ *authSpec, impl *authImplementation, _ string) {
 	fmt.Printf("\n  SECURITY VERIFICATION")
 	fmt.Printf("\n  \n")
 
-	// Check for main security files
+	// Check for main security files.
 	if impl.securityFiles["security.go"] {
 		fmt.Printf("     security/security.go\n")
 		atomic.AddUint64(&authPassCount, 1)
 	}
 
-	// Check for security subdirectories
+	// Check for security subdirectories.
 	securityDirs := []string{"jwt", "password", "session", "totp", "lockout", "oauth", "ratelimit", "origin", "secretstore", "revocation", "request_signer", "validate"}
 	for _, dir := range securityDirs {
 		dirKey := dir + "/"
@@ -700,7 +700,7 @@ func verifyAuthSecurity(_ *authSpec, impl *authImplementation, _ string) {
 		}
 	}
 
-	// Check for TOTP implementation
+	// Check for TOTP implementation.
 	totpFound := false
 	for sf := range impl.securityFiles {
 		if strings.Contains(sf, "totp") {
@@ -719,7 +719,7 @@ func verifyAuthDatabaseSchema(_ *authSpec, root string) {
 	fmt.Printf("\n  DATABASE SCHEMA VERIFICATION (Section 8 of Spec)")
 	fmt.Printf("\n  \n")
 
-	// Check for SQL migration files
+	// Check for SQL migration files.
 	migrationDirs := []string{
 		"migrations",
 		"database/migrations",
@@ -733,7 +733,7 @@ func verifyAuthDatabaseSchema(_ *authSpec, root string) {
 			fmt.Printf("     Migration directory found: %s\n", mdir)
 			schemaFound = true
 
-			// Check for auth-related migrations
+			// Check for auth-related migrations.
 			entries, _ := os.ReadDir(path)
 			authMigrations := 0
 			for _, e := range entries {
@@ -753,7 +753,7 @@ func verifyAuthDatabaseSchema(_ *authSpec, root string) {
 		fmt.Printf("      No migration directory found (may be managed elsewhere)\n")
 	}
 
-	// Check for schema definitions in domain files
+	// Check for schema definitions in domain files.
 	schemaFiles := []string{
 		"apps/api/internal/domain/operator/operator_entity.go",
 		"apps/api/internal/domain/session/session_entity.go",
@@ -775,7 +775,7 @@ func verifyAuthErrorCodes(_ *authSpec, _ *authImplementation, root string) {
 	fmt.Printf("\n  ERROR CODES VERIFICATION (Appendix of Spec)")
 	fmt.Printf("\n  \n")
 
-	// Expected error codes from spec
+	// Expected error codes from spec.
 	expectedCodes := []string{
 		"invalid_credentials",
 		"mfa_required",
@@ -787,7 +787,7 @@ func verifyAuthErrorCodes(_ *authSpec, _ *authImplementation, root string) {
 		"account_locked",
 	}
 
-	// Check domain/errors or application/errors
+	// Check domain/errors or application/errors.
 	errorFiles := []string{
 		"apps/api/internal/domain/operator/operator_errors.go",
 		"apps/api/internal/domain/oauth/oauth_errors.go",
@@ -816,7 +816,7 @@ func verifyAuthErrorCodes(_ *authSpec, _ *authImplementation, root string) {
 }
 
 func scanErrorCodes(content string, codes map[string]bool) {
-	// Scan for error code definitions
+	// Scan for error code definitions.
 	re := regexp.MustCompile(`"(invalid_credentials|mfa_required|mfa_invalid|token_expired|token_invalid|email_exists|rate_limited|account_locked)"`)
 	matches := re.FindAllStringSubmatch(content, -1)
 	for _, m := range matches {
@@ -842,7 +842,7 @@ func verifyAuthRoutes(_ *authSpec, _ *authImplementation, root string) {
 	content, _ := os.ReadFile(routesPath)
 	contentStr := string(content)
 
-	// Simple string matching for route verification
+	// Simple string matching for route verification.
 	routePatterns := []struct {
 		pattern string
 		desc    string
@@ -1041,7 +1041,7 @@ func verifyAuthSessionConfig(spec *authSpec, _ *authImplementation, root string)
 
 	sessionConfigFound := false
 
-	// Check auth_service.go for session config
+	// Check auth_service.go for session config.
 	authServicePath := filepath.Join(root, "apps/api/internal/application/auth/auth_service.go")
 	if content, err := os.ReadFile(authServicePath); err == nil {
 		contentStr := string(content)
@@ -1063,7 +1063,7 @@ func verifyAuthSessionConfig(spec *authSpec, _ *authImplementation, root string)
 		}
 	}
 
-	// Check for session manager
+	// Check for session manager.
 	sessionManagerPath := filepath.Join(root, "apps/api/internal/infrastructure/security/session/manager.go")
 	if _, err := os.Stat(sessionManagerPath); err == nil {
 		fmt.Printf("     Session manager found at infrastructure/security/session/\n")
@@ -1071,7 +1071,7 @@ func verifyAuthSessionConfig(spec *authSpec, _ *authImplementation, root string)
 		sessionConfigFound = true
 	}
 
-	// Report expected config values from spec
+	// Report expected config values from spec.
 	fmt.Printf("\n  Expected Session Configuration (from Spec):\n")
 	fmt.Printf("    JWT Expiry:           %d minutes\n", spec.sessionConfig.JWTExpiryMin)
 	fmt.Printf("    Refresh Token Expiry: %d days\n", spec.sessionConfig.RefreshExpiryDays)

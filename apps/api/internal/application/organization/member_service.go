@@ -44,12 +44,12 @@ func NewMemberService(
 
 // AddMember adds a member to an organization (called after invitation acceptance).
 func (s *MemberService) AddMember(ctx context.Context, orgID, operatorID string, role organization.OrganizationRole, invitedBy string) (*organization.OrganizationMember, error) {
-	// Validate role - super_admin cannot be invited
+	// Validate role - super_admin cannot be invited.
 	if role == organization.RoleSuperAdmin {
 		return nil, organization.ErrCannotInviteSuperAdmin
 	}
 
-	// Check if already a member
+	// Check if already a member.
 	existing, err := s.memberRepo.FindByOperatorAndOrg(ctx, operatorID, orgID)
 	if err != nil && !errors.Is(err, organization.ErrMemberNotFound) {
 		return nil, err
@@ -58,7 +58,7 @@ func (s *MemberService) AddMember(ctx context.Context, orgID, operatorID string,
 		return nil, organization.ErrMemberExists
 	}
 
-	// Check org member limit
+	// Check org member limit.
 	org, err := s.orgRepo.FindByID(ctx, orgID)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (s *MemberService) AddMember(ctx context.Context, orgID, operatorID string,
 		return nil, organization.ErrMaxMembersReached
 	}
 
-	// Use domain constructor for new member
+	// Use domain constructor for new member.
 	member := organization.NewMember(uuid.New().String(), orgID, operatorID, role)
 	member.InvitedBy = &invitedBy
 
@@ -87,7 +87,7 @@ func (s *MemberService) AddMember(ctx context.Context, orgID, operatorID string,
 
 // RemoveMember removes a member from an organization.
 func (s *MemberService) RemoveMember(ctx context.Context, orgID, memberID, actorOperatorID string) error {
-	// Get the member to remove
+	// Get the member to remove.
 	member, err := s.memberRepo.FindByID(ctx, memberID)
 	if err != nil {
 		if errors.Is(err, organization.ErrMemberNotFound) {
@@ -96,17 +96,17 @@ func (s *MemberService) RemoveMember(ctx context.Context, orgID, memberID, actor
 		return err
 	}
 
-	// Verify member belongs to this org
+	// Verify member belongs to this org.
 	if member.OrganizationID != orgID {
 		return organization.ErrMemberNotFound
 	}
 
-	// Check if member is active
+	// Check if member is active.
 	if !member.IsActive() {
 		return organization.ErrMemberNotFound
 	}
 
-	// Get actor's membership to check permissions
+	// Get actor's membership to check permissions.
 	actorMember, err := s.memberRepo.FindByOperatorAndOrg(ctx, actorOperatorID, orgID)
 	if err != nil {
 		if errors.Is(err, organization.ErrMemberNotFound) {
@@ -115,17 +115,17 @@ func (s *MemberService) RemoveMember(ctx context.Context, orgID, memberID, actor
 		return err
 	}
 
-	// Cannot remove self
+	// Cannot remove self.
 	if member.OperatorID == actorOperatorID {
 		return errors.New("cannot remove yourself from organization")
 	}
 
-	// Cannot remove if actor has equal or lower role
+	// Cannot remove if actor has equal or lower role.
 	if actorMember.Role.Level() <= member.Role.Level() {
 		return ErrCannotModifyHigherRole
 	}
 
-	// If removing super_admin, check if it's the last one
+	// If removing super_admin, check if it's the last one.
 	if member.Role == organization.RoleSuperAdmin {
 		superAdminCount, err := s.memberRepo.CountSuperAdminsByOrganization(ctx, orgID)
 		if err != nil {
@@ -136,15 +136,15 @@ func (s *MemberService) RemoveMember(ctx context.Context, orgID, memberID, actor
 		}
 	}
 
-	// Soft delete the membership
+	// Soft delete the membership.
 	if err := s.memberRepo.SoftDelete(ctx, memberID); err != nil {
 		return err
 	}
 
-	// Revoke all sessions and refresh tokens for the removed member
-	// This ensures they lose access immediately
+	// Revoke all sessions and refresh tokens for the removed member.
+	// This ensures they lose access immediately.
 	if s.authSvc != nil {
-		// Logout all sessions for this operator
+		// Logout all sessions for this operator.
 		if err := s.authSvc.LogoutAll(ctx, member.OperatorID); err != nil {
 			s.logger.Warn("failed to logout removed member sessions",
 				"org_id", orgID,
@@ -152,10 +152,10 @@ func (s *MemberService) RemoveMember(ctx context.Context, orgID, memberID, actor
 				"operator_id", member.OperatorID,
 				"error", err,
 			)
-			// Don't fail the operation - membership removal is more important
+			// Don't fail the operation - membership removal is more important.
 		}
 
-		// Revoke all refresh tokens
+		// Revoke all refresh tokens.
 		if err := s.authSvc.RevokeAllRefreshTokens(ctx, member.OperatorID); err != nil {
 			s.logger.Warn("failed to revoke refresh tokens for removed member",
 				"org_id", orgID,
@@ -177,12 +177,12 @@ func (s *MemberService) RemoveMember(ctx context.Context, orgID, memberID, actor
 
 // UpdateMemberRole updates a member's role.
 func (s *MemberService) UpdateMemberRole(ctx context.Context, orgID, memberID, actorOperatorID string, newRole organization.OrganizationRole) (*organization.OrganizationMember, error) {
-	// Cannot change to super_admin via update
+	// Cannot change to super_admin via update.
 	if newRole == organization.RoleSuperAdmin {
 		return nil, organization.ErrCannotInviteSuperAdmin
 	}
 
-	// Get the member to update
+	// Get the member to update.
 	member, err := s.memberRepo.FindByID(ctx, memberID)
 	if err != nil {
 		if errors.Is(err, organization.ErrMemberNotFound) {
@@ -191,12 +191,12 @@ func (s *MemberService) UpdateMemberRole(ctx context.Context, orgID, memberID, a
 		return nil, err
 	}
 
-	// Verify member belongs to this org
+	// Verify member belongs to this org.
 	if member.OrganizationID != orgID {
 		return nil, organization.ErrMemberNotFound
 	}
 
-	// Get actor's membership to check permissions
+	// Get actor's membership to check permissions.
 	actorMember, err := s.memberRepo.FindByOperatorAndOrg(ctx, actorOperatorID, orgID)
 	if err != nil {
 		if errors.Is(err, organization.ErrMemberNotFound) {
@@ -205,17 +205,17 @@ func (s *MemberService) UpdateMemberRole(ctx context.Context, orgID, memberID, a
 		return nil, err
 	}
 
-	// Cannot modify equal or lower role
+	// Cannot modify equal or lower role.
 	if actorMember.Role.Level() <= member.Role.Level() {
 		return nil, ErrCannotModifyHigherRole
 	}
 
-	// Actor must have higher level than new role
+	// Actor must have higher level than new role.
 	if actorMember.Role.Level() <= newRole.Level() {
 		return nil, ErrCannotModifyHigherRole
 	}
 
-	// Update the role
+	// Update the role.
 	member.Role = newRole
 	if err := s.memberRepo.Update(ctx, member); err != nil {
 		return nil, err
@@ -233,7 +233,7 @@ func (s *MemberService) UpdateMemberRole(ctx context.Context, orgID, memberID, a
 
 // TransferOwnership transfers super_admin ownership to another member.
 func (s *MemberService) TransferOwnership(ctx context.Context, orgID, currentSuperAdminID, newSuperAdminMemberID string) error {
-	// Get the current super_admin
+	// Get the current super_admin.
 	currentAdmin, err := s.memberRepo.FindByOperatorAndOrg(ctx, currentSuperAdminID, orgID)
 	if err != nil {
 		if errors.Is(err, organization.ErrMemberNotFound) {
@@ -242,12 +242,12 @@ func (s *MemberService) TransferOwnership(ctx context.Context, orgID, currentSup
 		return err
 	}
 
-	// Must be super_admin to transfer
+	// Must be super_admin to transfer.
 	if currentAdmin.Role != organization.RoleSuperAdmin {
 		return organization.ErrForbidden
 	}
 
-	// Get the new super_admin member
+	// Get the new super_admin member.
 	newAdmin, err := s.memberRepo.FindByID(ctx, newSuperAdminMemberID)
 	if err != nil {
 		if errors.Is(err, organization.ErrMemberNotFound) {
@@ -256,17 +256,17 @@ func (s *MemberService) TransferOwnership(ctx context.Context, orgID, currentSup
 		return err
 	}
 
-	// Verify new admin belongs to this org
+	// Verify new admin belongs to this org.
 	if newAdmin.OrganizationID != orgID {
 		return organization.ErrMemberNotFound
 	}
 
-	// New admin must be active
+	// New admin must be active.
 	if !newAdmin.IsActive() {
 		return organization.ErrMemberNotFound
 	}
 
-	// Transfer ownership: new admin becomes super_admin, current becomes admin
+	// Transfer ownership: new admin becomes super_admin, current becomes admin.
 	newAdmin.Role = organization.RoleSuperAdmin
 	if err := s.memberRepo.Update(ctx, newAdmin); err != nil {
 		return err
@@ -296,7 +296,7 @@ func (s *MemberService) GetMember(ctx context.Context, memberID string) (*organi
 		return nil, err
 	}
 
-	// Only return if active
+	// Only return if active.
 	if !member.IsActive() {
 		return nil, organization.ErrMemberNotFound
 	}
@@ -311,7 +311,7 @@ func (s *MemberService) ListMembers(ctx context.Context, orgID string) ([]*organ
 		return nil, err
 	}
 
-	// Filter to only active members
+	// Filter to only active members.
 	result := make([]*organization.OrganizationMember, 0, len(members))
 	for _, m := range members {
 		if m.IsActive() {
@@ -324,7 +324,7 @@ func (s *MemberService) ListMembers(ctx context.Context, orgID string) ([]*organ
 
 // ListMembersPaginated lists all active members of an organization with pagination.
 func (s *MemberService) ListMembersPaginated(ctx context.Context, orgID string, page, limit int) (*MemberListResponse, error) {
-	// Apply defaults and limits
+	// Apply defaults and limits.
 	if page <= 0 {
 		page = 1
 	}
@@ -337,7 +337,7 @@ func (s *MemberService) ListMembersPaginated(ctx context.Context, orgID string, 
 
 	offset := (page - 1) * limit
 
-	// Use repository paginated method - does LIMIT/OFFSET at DB level
+	// Use repository paginated method - does LIMIT/OFFSET at DB level.
 	members, total, err := s.memberRepo.FindActiveByOrganizationPaginated(ctx, orgID, limit, offset)
 	if err != nil {
 		return nil, err
@@ -384,7 +384,7 @@ func (s *MemberService) ListOperatorMemberships(ctx context.Context, operatorID 
 
 // ListOperatorMembershipsPaginated lists memberships with pagination.
 func (s *MemberService) ListOperatorMembershipsPaginated(ctx context.Context, operatorID string, page, limit int) (*MembershipListResponse, error) {
-	// Apply defaults and limits
+	// Apply defaults and limits.
 	if page <= 0 {
 		page = 1
 	}
@@ -397,7 +397,7 @@ func (s *MemberService) ListOperatorMembershipsPaginated(ctx context.Context, op
 
 	offset := (page - 1) * limit
 
-	// Use repository paginated method - does LIMIT/OFFSET at DB level
+	// Use repository paginated method - does LIMIT/OFFSET at DB level.
 	members, total, err := s.memberRepo.ListByOperatorPaginated(ctx, operatorID, limit, offset)
 	if err != nil {
 		return nil, err
@@ -456,7 +456,7 @@ func (s *MemberService) CheckMembership(ctx context.Context, operatorID, orgID s
 
 // SuspendMember suspends a member (only active members can be suspended).
 func (s *MemberService) SuspendMember(ctx context.Context, orgID, memberID, actorOperatorID string) error {
-	// Get the member to suspend
+	// Get the member to suspend.
 	member, err := s.memberRepo.FindByID(ctx, memberID)
 	if err != nil {
 		if errors.Is(err, organization.ErrMemberNotFound) {
@@ -465,17 +465,17 @@ func (s *MemberService) SuspendMember(ctx context.Context, orgID, memberID, acto
 		return err
 	}
 
-	// Verify member belongs to this org
+	// Verify member belongs to this org.
 	if member.OrganizationID != orgID {
 		return organization.ErrMemberNotFound
 	}
 
-	// Cannot suspend self
+	// Cannot suspend self.
 	if member.OperatorID == actorOperatorID {
 		return errors.New("cannot suspend yourself")
 	}
 
-	// Get actor's membership to check permissions
+	// Get actor's membership to check permissions.
 	actorMember, err := s.memberRepo.FindByOperatorAndOrg(ctx, actorOperatorID, orgID)
 	if err != nil {
 		if errors.Is(err, organization.ErrMemberNotFound) {
@@ -484,17 +484,17 @@ func (s *MemberService) SuspendMember(ctx context.Context, orgID, memberID, acto
 		return err
 	}
 
-	// Cannot suspend if actor has equal or lower role
+	// Cannot suspend if actor has equal or lower role.
 	if actorMember.Role.Level() <= member.Role.Level() {
 		return ErrCannotModifyHigherRole
 	}
 
-	// Cannot suspend already suspended member
+	// Cannot suspend already suspended member.
 	if member.IsSuspended() {
 		return errors.New("member is already suspended")
 	}
 
-	// Use domain method to suspend
+	// Use domain method to suspend.
 	if err := member.Suspend(); err != nil {
 		return err
 	}
@@ -514,7 +514,7 @@ func (s *MemberService) SuspendMember(ctx context.Context, orgID, memberID, acto
 
 // ReinstateMember reinstates a suspended member back to active.
 func (s *MemberService) ReinstateMember(ctx context.Context, orgID, memberID, actorOperatorID string) error {
-	// Get the member to reinstate
+	// Get the member to reinstate.
 	member, err := s.memberRepo.FindByID(ctx, memberID)
 	if err != nil {
 		if errors.Is(err, organization.ErrMemberNotFound) {
@@ -523,17 +523,17 @@ func (s *MemberService) ReinstateMember(ctx context.Context, orgID, memberID, ac
 		return err
 	}
 
-	// Verify member belongs to this org
+	// Verify member belongs to this org.
 	if member.OrganizationID != orgID {
 		return organization.ErrMemberNotFound
 	}
 
-	// Cannot reinstate self
+	// Cannot reinstate self.
 	if member.OperatorID == actorOperatorID {
 		return errors.New("cannot reinstate yourself")
 	}
 
-	// Get actor's membership to check permissions
+	// Get actor's membership to check permissions.
 	actorMember, err := s.memberRepo.FindByOperatorAndOrg(ctx, actorOperatorID, orgID)
 	if err != nil {
 		if errors.Is(err, organization.ErrMemberNotFound) {
@@ -542,17 +542,17 @@ func (s *MemberService) ReinstateMember(ctx context.Context, orgID, memberID, ac
 		return err
 	}
 
-	// Cannot reinstate if actor has equal or lower role than the target
+	// Cannot reinstate if actor has equal or lower role than the target.
 	if actorMember.Role.Level() <= member.Role.Level() {
 		return ErrCannotModifyHigherRole
 	}
 
-	// Cannot reinstate non-suspended member
+	// Cannot reinstate non-suspended member.
 	if !member.IsSuspended() {
 		return errors.New("member is not suspended")
 	}
 
-	// Use domain method to reinstate
+	// Use domain method to reinstate.
 	if err := member.Reinstate(); err != nil {
 		return err
 	}

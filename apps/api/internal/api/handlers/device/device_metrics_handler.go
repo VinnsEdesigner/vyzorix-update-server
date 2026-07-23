@@ -35,14 +35,14 @@ func NewMetricsHandler(metricsSvc *metrics.Service, devRepo device.Repository, l
 func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	// Extract operator for auth check
+	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
 		return
 	}
 
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
@@ -55,7 +55,7 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 		return
 	}
 
-	// Verify device belongs to this organization
+	// Verify device belongs to this organization.
 	dev, err := h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
@@ -72,7 +72,7 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 
 	
 	// Max allowed range: 90 days in milliseconds.
-	const maxTimeWindowMs = 90 * 24 * 60 * 60 * 1000 // 7,776,000,000 ms
+	const maxTimeWindowMs = 90 * 24 * 60 * 60 * 1000 // 7,776,000,000 ms.
 
 	if st := c.Query("startTime"); st != "" {
 		val, err := strconv.ParseInt(st, 10, 64)
@@ -119,14 +119,14 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	// Extract operator for auth check
+	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
 		return
 	}
 
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
@@ -139,7 +139,7 @@ func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 		return
 	}
 
-	// Verify device belongs to this organization
+	// Verify device belongs to this organization.
 	_, err := h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
@@ -149,7 +149,7 @@ func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 
 	format := c.DefaultQuery("format", "json")
 
-	// Calculate time range from range parameter (default: 24h)
+	// Calculate time range from range parameter (default: 24h).
 	now := time.Now()
 	var startTime, endTime time.Time
 	
@@ -158,9 +158,9 @@ func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 		endTime = now
 	} else if et := c.Query("endTime"); et != "" {
 		endTime = time.UnixMilli(parseInt64(et))
-		startTime = endTime.Add(-24 * time.Hour) // Default to 24h range
+		startTime = endTime.Add(-24 * time.Hour) // Default to 24h range.
 	} else {
-		// Default to last 24 hours as per spec
+		// Default to last 24 hours as per spec.
 		endTime = now
 		startTime = endTime.Add(-24 * time.Hour)
 	}
@@ -187,7 +187,7 @@ func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 		h.writeCSV(c, response)
 	default:
-		// For JSON, still provide as file download
+		// For JSON, still provide as file download.
 		c.Header("Content-Type", "application/json")
 		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 		c.JSON(http.StatusOK, response)

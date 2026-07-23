@@ -11,9 +11,9 @@ import (
 // Subscriptions in this implementation use WebSocket-based transport instead.
 var ErrSubscriptionsNotSupported = errors.New("subscriptions are handled via WebSocket")
 
-// ============================================================
-// Subscription Resolvers
-// ============================================================
+// ============================================================.
+// Subscription Resolvers.
+// ============================================================.
 
 // DeviceUpdated resolves the deviceUpdated subscription field.
 // Subscriptions are handled via WebSocket, not GraphQL queries.

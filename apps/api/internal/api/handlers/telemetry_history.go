@@ -17,11 +17,11 @@ import (
 
 // TelemetryHistoryConfig holds configuration for telemetry history.
 type TelemetryHistoryConfig struct {
-	// MaxResults is the maximum number of results to return (default 1000)
+	// MaxResults is the maximum number of results to return (default 1000).
 	MaxResults int
-	// CacheTTL is the cache TTL for recent queries (default 1 hour)
+	// CacheTTL is the cache TTL for recent queries (default 1 hour).
 	CacheTTL time.Duration
-	// EnableExport enables CSV/JSON export (default true)
+	// EnableExport enables CSV/JSON export (default true).
 	EnableExport bool
 }
 
@@ -89,7 +89,7 @@ func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, dev
 		return false
 	}
 
-	// Verify the device ID matches (deviceID could be IMEI)
+	// Verify the device ID matches (deviceID could be IMEI).
 	if d.ID != deviceID {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   "not_found",
@@ -117,7 +117,7 @@ type QueryHistoryResponse struct {
 	TotalCount int              `json:"totalCount"`
 	StartTime  int64            `json:"startTime"`
 	EndTime    int64            `json:"endTime"`
-	QueryTime  int64            `json:"queryTime"` // Server-side query duration in ms
+	QueryTime  int64            `json:"queryTime"` // Server-side query duration in ms.
 }
 
 // TelemetryEntry represents a single telemetry entry for the API response.
@@ -131,10 +131,10 @@ type telemetryEntry struct {
 	ThermalTemp float64   `json:"thermalTemp,omitempty"`
 }
 
-// Query handles GET /v1/telemetry/history
+// Query handles GET /v1/telemetry/history.
 // Query telemetry history for a device within a time range.
 func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
-	// Require organization context for multi-tenant isolation
+	// Require organization context for multi-tenant isolation.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -153,14 +153,14 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 		return
 	}
 
-	// Verify device belongs to organization
+	// Verify device belongs to organization.
 	if !h.verifyDeviceInOrganization(c, req.DeviceID, orgID) {
 		return
 	}
 
 	startTime := time.Now()
 
-	// Query telemetry
+	// Query telemetry.
 	entries, err := h.telemetryRepo.ListSince(
 		c.Request.Context(),
 		req.DeviceID,
@@ -176,7 +176,7 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 		return
 	}
 
-	// Convert domain entries to response entries
+	// Convert domain entries to response entries.
 	responseEntries := make([]telemetryEntry, len(entries))
 	for i, e := range entries {
 		responseEntries[i] = telemetryEntry{
@@ -230,7 +230,7 @@ func (h *TelemetryHistoryHandler) exportCSV(c *gin.Context, data QueryHistoryRes
 	writer := csv.NewWriter(c.Writer)
 	defer writer.Flush()
 
-	// Write header
+	// Write header.
 	_ = writer.Write([]string{
 		"id",
 		"device_id",
@@ -240,7 +240,7 @@ func (h *TelemetryHistoryHandler) exportCSV(c *gin.Context, data QueryHistoryRes
 		"thermal_temp",
 	})
 
-	// Write data
+	// Write data.
 	for _, e := range data.Entries {
 		_ = writer.Write([]string{
 			e.ID,
@@ -274,7 +274,7 @@ func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 		return
 	}
 
-	// Query telemetry
+	// Query telemetry.
 	entries, err := h.telemetryRepo.ListSince(
 		c.Request.Context(),
 		req.DeviceID,
@@ -307,7 +307,7 @@ func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 	})
 }
 
-// GetLatest handles GET /v1/telemetry/latest/:deviceId
+// GetLatest handles GET /v1/telemetry/latest/:deviceId.
 // Gets the latest telemetry entry for a device.
 func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 	deviceID := c.Param("deviceId")
@@ -320,10 +320,10 @@ func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 		return
 	}
 
-	// Verify device belongs to the caller's organization
+	// Verify device belongs to the caller's organization.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID != "" && !h.verifyDeviceInOrganization(c, deviceID, orgID) {
-		return // verifyDeviceInOrganization already sent error response
+		return // verifyDeviceInOrganization already sent error response.
 	}
 
 	entries, err := h.telemetryRepo.List(c.Request.Context(), deviceID, 1)
@@ -357,7 +357,7 @@ func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 	})
 }
 
-// GetStats handles GET /v1/telemetry/stats/:deviceId
+// GetStats handles GET /v1/telemetry/stats/:deviceId.
 // Gets telemetry statistics for a device.
 func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 	deviceID := c.Param("deviceId")
@@ -370,13 +370,13 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 		return
 	}
 
-	// Verify device belongs to the caller's organization
+	// Verify device belongs to the caller's organization.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID != "" && !h.verifyDeviceInOrganization(c, deviceID, orgID) {
-		return // verifyDeviceInOrganization already sent error response
+		return // verifyDeviceInOrganization already sent error response.
 	}
 
-	// Get last 100 entries for stats calculation
+	// Get last 100 entries for stats calculation.
 	entries, err := h.telemetryRepo.List(c.Request.Context(), deviceID, 100)
 	if err != nil {
 		h.log.Error("failed to get telemetry for stats", "err", err, "deviceId", deviceID)
@@ -397,7 +397,7 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 		return
 	}
 
-	// Calculate statistics
+	// Calculate statistics.
 	var totalRisk, totalBuffer, totalTemp int
 
 	minRisk, maxRisk := 999, -1
@@ -426,7 +426,7 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 	}
 
 	count := len(entries)
-	// Safety: should never happen due to early return, but double-check
+	// Safety: should never happen due to early return, but double-check.
 	if count == 0 {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   "not_found",
@@ -455,10 +455,10 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 	})
 }
 
-// CleanupOld handles DELETE /v1/telemetry/cleanup
+// CleanupOld handles DELETE /v1/telemetry/cleanup.
 // Cleans up telemetry older than the specified timestamp.
 func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
-	// Require admin or operator role
+	// Require admin or operator role.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil || (!op.IsAdmin() && !op.IsOperator()) {
 		c.JSON(http.StatusForbidden, gin.H{

@@ -14,18 +14,18 @@ import (
 
 // MessageQueueConfig holds configuration for the message queue.
 type MessageQueueConfig struct {
-	MaxQueueSize    int           // Max messages per device (default 1000)
-	MessageTTL      time.Duration // Message TTL (default 7 days)
-	MaxMessageAge   time.Duration // Max age before cleanup (default 7 days)
-	CleanupInterval time.Duration // Cleanup interval (default 1 hour)
+	MaxQueueSize    int           // Max messages per device (default 1000).
+	MessageTTL      time.Duration // Message TTL (default 7 days).
+	MaxMessageAge   time.Duration // Max age before cleanup (default 7 days).
+	CleanupInterval time.Duration // Cleanup interval (default 1 hour).
 }
 
 // DefaultMessageQueueConfig returns the default message queue configuration.
 func DefaultMessageQueueConfig() *MessageQueueConfig {
 	return &MessageQueueConfig{
 		MaxQueueSize:    1000,
-		MessageTTL:      7 * 24 * time.Hour, // 7 days
-		MaxMessageAge:   7 * 24 * time.Hour, // 7 days
+		MessageTTL:      7 * 24 * time.Hour, // 7 days.
+		MaxMessageAge:   7 * 24 * time.Hour, // 7 days.
 		CleanupInterval: 1 * time.Hour,
 	}
 }
@@ -41,9 +41,9 @@ type QueuedMessage struct {
 
 // ReplayResult holds the result of a replay operation.
 type ReplayResult struct {
-	Count     int  // Number of messages successfully replayed
-	HasMore   bool // True if there are more messages that couldn't be replayed due to full buffer
-	Remaining int // Estimated count of messages still pending replay
+	Count     int  // Number of messages successfully replayed.
+	HasMore   bool // True if there are more messages that couldn't be replayed due to full buffer.
+	Remaining int // Estimated count of messages still pending replay.
 }
 
 // QueueMetrics holds queue metrics.
@@ -56,7 +56,7 @@ type QueueMetrics struct {
 }
 
 // MessageQueue manages queued messages for offline devices.
-// It uses a two-tier storage approach: in-memory channels for low-latency access
+// It uses a two-tier storage approach: in-memory channels for low-latency access.
 // and SQLite persistence for durability across restarts.
 type MessageQueue struct {
 	log       *slog.Logger
@@ -84,15 +84,15 @@ func NewMessageQueue(log *slog.Logger, db *sql.DB, cfg *MessageQueueConfig) *Mes
 		config:      cfg,
 		db:          db,
 		queues:      make(map[string]chan *QueuedMessage),
-		persistChan: make(chan *QueuedMessage, 1000), // Buffered to handle bursts
+		persistChan: make(chan *QueuedMessage, 1000), // Buffered to handle bursts.
 		deleteChan:  make(chan string, 1000),
 		closeChan:   make(chan struct{}),
 	}
 
-	// Start sequenced persistence worker
+	// Start sequenced persistence worker.
 	go q.persistenceWorker()
 
-	// Pre-warm queues from persisted data if db is available
+	// Pre-warm queues from persisted data if db is available.
 	if db != nil {
 		go q.preWarmQueues()
 	}
@@ -109,7 +109,7 @@ func (q *MessageQueue) preWarmQueues() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Get distinct device IDs with pending messages
+	// Get distinct device IDs with pending messages.
 	rows, err := q.db.QueryContext(ctx,
 		`SELECT DISTINCT device_id FROM message_queue WHERE expires_at > ?`,
 		time.Now().UnixMilli(),
@@ -136,7 +136,7 @@ func (q *MessageQueue) preWarmQueues() {
 		q.log.Warn("error iterating device IDs", "err", err)
 	}
 
-	// Pre-warm each queue
+	// Pre-warm each queue.
 	for _, deviceID := range deviceIDs {
 		messages := q.LoadPersistedMessages(deviceID)
 		if len(messages) > 0 {
@@ -156,7 +156,7 @@ func (q *MessageQueue) preWarmQueues() {
 
 // Start starts the message queue background workers.
 func (q *MessageQueue) Start(ctx context.Context) {
-	// Start cleanup worker
+	// Start cleanup worker.
 	go q.cleanupWorker(ctx)
 }
 
@@ -199,7 +199,7 @@ func (q *MessageQueue) Enqueue(deviceID string, frame command.CommandFrame) bool
 
 	ch := q.GetOrCreateQueue(deviceID)
 
-	// Try to enqueue (non-blocking)
+	// Try to enqueue (non-blocking).
 	select {
 	case ch <- msg:
 		q.incrementEnqueued()
@@ -207,7 +207,7 @@ func (q *MessageQueue) Enqueue(deviceID string, frame command.CommandFrame) bool
 		select {
 		case q.persistChan <- msg:
 		default:
-			// Channel full, persist synchronously as fallback
+			// Channel full, persist synchronously as fallback.
 			if err := q.persistMessageSync(msg); err != nil {
 				q.log.Warn("failed to persist message synchronously", "messageId", msg.ID, "err", err)
 			}
@@ -215,7 +215,7 @@ func (q *MessageQueue) Enqueue(deviceID string, frame command.CommandFrame) bool
 
 		return true
 	default:
-		// Queue full - evict oldest and retry once
+		// Queue full - evict oldest and retry once.
 		q.evictOldest(deviceID)
 		select {
 		case ch <- msg:
@@ -224,7 +224,7 @@ func (q *MessageQueue) Enqueue(deviceID string, frame command.CommandFrame) bool
 			select {
 			case q.persistChan <- msg:
 			default:
-				// Channel full, persist synchronously as fallback
+				// Channel full, persist synchronously as fallback.
 				if err := q.persistMessageSync(msg); err != nil {
 					q.log.Warn("failed to persist message synchronously", "messageId", msg.ID, "err", err)
 				}
@@ -256,11 +256,11 @@ func (q *MessageQueue) EnqueueWithConfirmation(deviceID string, frame command.Co
 
 	ch := q.GetOrCreateQueue(deviceID)
 
-	// Try to enqueue (non-blocking)
+	// Try to enqueue (non-blocking).
 	select {
 	case ch <- msg:
 		q.incrementEnqueued()
-		// Synchronous DB write for 100% delivery guarantee (G1)
+		// Synchronous DB write for 100% delivery guarantee (G1).
 		if err := q.persistMessageSync(msg); err != nil {
 			q.log.Error("failed to persist queued message (delivery not guaranteed)",
 				"deviceId", deviceID,
@@ -274,12 +274,12 @@ func (q *MessageQueue) EnqueueWithConfirmation(deviceID string, frame command.Co
 
 		return true
 	default:
-		// Queue full - evict oldest and retry once
+		// Queue full - evict oldest and retry once.
 		q.evictOldest(deviceID)
 		select {
 		case ch <- msg:
 			q.incrementEnqueued()
-			// Synchronous DB write for 100% delivery guarantee (G1)
+			// Synchronous DB write for 100% delivery guarantee (G1).
 			if err := q.persistMessageSync(msg); err != nil {
 				q.log.Error("failed to persist queued message (delivery not guaranteed)",
 					"deviceId", deviceID,
@@ -331,7 +331,7 @@ func (q *MessageQueue) Close() {
 // persistMessageSync persists a message synchronously for 100% delivery guarantee.
 func (q *MessageQueue) persistMessageSync(msg *QueuedMessage) error {
 	if q.db == nil {
-		return nil // No DB configured, but message is in memory
+		return nil // No DB configured, but message is in memory.
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -354,7 +354,7 @@ func (q *MessageQueue) persistMessageSync(msg *QueuedMessage) error {
 
 // evictOldest removes the oldest message from a device's queue.
 func (q *MessageQueue) evictOldest(deviceID string) {
-	// Use write lock to prevent race with queue deletion
+	// Use write lock to prevent race with queue deletion.
 	q.mu.Lock()
 	ch, ok := q.queues[deviceID]
 	if !ok {
@@ -363,10 +363,10 @@ func (q *MessageQueue) evictOldest(deviceID string) {
 	}
 	q.mu.Unlock()
 
-	// Channel send/receive are atomic - safe to do without lock
+	// Channel send/receive are atomic - safe to do without lock.
 	select {
 	case <-ch:
-		// Evicted oldest
+		// Evicted oldest.
 	default:
 	}
 }
@@ -432,10 +432,10 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 	count := 0
 	remaining := 0
 
-	// First, replay persisted messages in FIFO order
+	// First, replay persisted messages in FIFO order.
 	persistedIdx := 0
 	for _, msg := range persisted {
-		// DeliveryConfirmation cannot be fulfilled after replay - clear it
+		// DeliveryConfirmation cannot be fulfilled after replay - clear it.
 		msg.Frame.DeliveryConfirmation = nil
 		select {
 		case dest <- msg.Frame:
@@ -446,11 +446,11 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 			select {
 			case q.deleteChan <- msg.ID:
 			default:
-				// Channel full, delete synchronously as fallback
+				// Channel full, delete synchronously as fallback.
 				q.deleteMessage(msg.ID)
 			}
 		default:
-			// Buffer full - remaining persisted messages need to be replayed later
+			// Buffer full - remaining persisted messages need to be replayed later.
 			remaining = len(persisted) - persistedIdx
 			q.log.Warn("destination buffer full during replay",
 				"deviceId", deviceID,
@@ -465,11 +465,11 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 		}
 	}
 
-	// Then drain in-memory channel
+	// Then drain in-memory channel.
 	for {
 		select {
 		case msg := <-ch:
-			// DeliveryConfirmation cannot be fulfilled after replay - clear it
+			// DeliveryConfirmation cannot be fulfilled after replay - clear it.
 			msg.Frame.DeliveryConfirmation = nil
 			select {
 			case dest <- msg.Frame:
@@ -479,20 +479,20 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 				select {
 				case q.deleteChan <- msg.ID:
 				default:
-					// Channel full, delete synchronously as fallback
+					// Channel full, delete synchronously as fallback.
 					q.deleteMessage(msg.ID)
 				}
 			default:
-				// Put it back and stop - this message stays in the in-memory queue
+				// Put it back and stop - this message stays in the in-memory queue.
 				select {
 				case ch <- msg:
 				default:
 				}
-				// We don't know exact remaining in channel, estimate based on queue depth
+				// We don't know exact remaining in channel, estimate based on queue depth.
 				q.mu.RLock()
 				chLen := len(ch)
 				q.mu.RUnlock()
-				remaining = chLen + 1 // +1 for the message we just put back
+				remaining = chLen + 1 // +1 for the message we just put back.
 
 				q.log.Warn("destination buffer full during in-memory replay",
 					"deviceId", deviceID,

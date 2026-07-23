@@ -68,21 +68,21 @@ func (s *AuthService) ResendVerification(ctx context.Context, email string) erro
 		return application.ErrEmailAlreadyVerified
 	}
 
-	// Delete old verification tokens
+	// Delete old verification tokens.
 	_ = s.emailVerifyRepo.DeleteByOperator(ctx, op.ID)
 
-	// Create new verification token
+	// Create new verification token.
 	token, _, err := s.CreateEmailVerification(ctx, op.ID)
 	if err != nil {
 		return err
 	}
 
-	// Log the token for email sending (actual email sending should be done at handler level)
-	// This is the standard pattern: service creates token, handler sends email
+	// Log the token for email sending (actual email sending should be done at handler level).
+	// This is the standard pattern: service creates token, handler sends email.
 	slog.Default().Info("email_verification_resent",
 		"operator_id", op.ID,
 		"email", email,
-		"token_hint", token[:8]+"...", // Only log partial token for debugging
+		"token_hint", token[:8]+"...", // Only log partial token for debugging.
 	)
 
 	return nil
@@ -136,7 +136,7 @@ func (s *AuthService) PollVerification(ctx context.Context, token string) (*emai
 		}, nil
 	}
 
-	// Check if email delivery failed
+	// Check if email delivery failed.
 	if ev.HasEmailFailed() {
 		return &email_verification.PollVerificationResult{
 			Status:     email_verification.PollStatusEmailFailed,

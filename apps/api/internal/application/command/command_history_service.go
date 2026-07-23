@@ -65,7 +65,7 @@ type PaginationInfo struct {
 
 // GetHistory retrieves paginated command history for a device.
 func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest) (*HistoryResponse, error) {
-	// Validate device belongs to organization
+	// Validate device belongs to organization.
 	if _, err := s.devRepo.FindByIDAndOrganization(ctx, req.DeviceID, req.OrganizationID); err != nil {
 		if errors.Is(err, device.ErrNotFound) {
 			return nil, err
@@ -73,7 +73,7 @@ func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest)
 		return nil, err
 	}
 
-	// Apply defaults
+	// Apply defaults.
 	if req.Page <= 0 {
 		req.Page = 1
 	}
@@ -84,7 +84,7 @@ func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest)
 		req.Limit = 100
 	}
 
-	// Default time range: last 30 days
+	// Default time range: last 30 days.
 	startTime := time.Now().Add(-30 * 24 * time.Hour)
 	endTime := time.Now()
 
@@ -97,7 +97,7 @@ func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest)
 
 	offset := (req.Page - 1) * req.Limit
 
-	// Get command history
+	// Get command history.
 	commands, total, err := s.commandRepo.FindHistoryByDeviceID(
 		ctx, req.DeviceID, req.Status, startTime, endTime, req.Limit, offset,
 	)
@@ -105,7 +105,7 @@ func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest)
 		return nil, err
 	}
 
-	// Build response
+	// Build response.
 	entries := make([]CommandEntry, 0, len(commands))
 	for _, cmd := range commands {
 		sentAt := cmd.CreatedAt.UnixMilli()
@@ -121,7 +121,7 @@ func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest)
 
 		if cmd.DeliveredAt != nil {
 			entry.DeliveredAt = *cmd.DeliveredAt
-			// Calculate latency: time from sent to delivered
+			// Calculate latency: time from sent to delivered.
 			entry.LatencyMs = *cmd.DeliveredAt - sentAt
 		}
 		if cmd.CompletedAt != nil {

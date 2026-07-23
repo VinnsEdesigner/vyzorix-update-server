@@ -58,7 +58,7 @@ func (r *LogsRepository) CreateLog(ctx context.Context, log *logs.DeviceLog) err
 		dataJSON = []byte("{}")
 	}
 
-	// Generate ID if not set
+	// Generate ID if not set.
 	id := log.ID
 	if id == "" {
 		id = uuid.New()
@@ -108,11 +108,11 @@ func (r *LogsRepository) GetLogByID(ctx context.Context, id string) (*logs.Devic
 // ListLogs retrieves paginated device logs with cursor-based pagination.
 // Returns logs ordered by timestamp DESC, id DESC.
 func (r *LogsRepository) ListLogs(ctx context.Context, deviceID string, eventType string, startTime, endTime time.Time, limit int, cursor string) ([]*logs.DeviceLog, string, error) {
-	// Convert time to milliseconds for INTEGER column
+	// Convert time to milliseconds for INTEGER column.
 	startMs := startTime.UnixMilli()
 	endMs := endTime.UnixMilli()
 
-	// Build query with time range filter
+	// Build query with time range filter.
 	baseQuery := `FROM device_logs WHERE device_id = ? AND timestamp >= ? AND timestamp <= ?`
 	args := []interface{}{deviceID, startMs, endMs}
 
@@ -121,9 +121,9 @@ func (r *LogsRepository) ListLogs(ctx context.Context, deviceID string, eventTyp
 		args = append(args, eventType)
 	}
 
-	// Apply cursor if provided (cursor format: timestampMs_id)
+	// Apply cursor if provided (cursor format: timestampMs_id).
 	if cursor != "" {
-		// Parse cursor - format: timestampMs_id
+		// Parse cursor - format: timestampMs_id.
 		idx := -1
 		for i := len(cursor) - 1; i >= 0; i-- {
 			if cursor[i] == '_' {
@@ -142,7 +142,7 @@ func (r *LogsRepository) ListLogs(ctx context.Context, deviceID string, eventTyp
 		}
 	}
 
-	// Get one extra to determine if there's a next page
+	// Get one extra to determine if there's a next page.
 	query := `SELECT id, device_id, event_type, timestamp, data ` + baseQuery + ` ORDER BY timestamp DESC, id DESC LIMIT ?`
 	args = append(args, limit+1)
 
@@ -174,10 +174,10 @@ func (r *LogsRepository) ListLogs(ctx context.Context, deviceID string, eventTyp
 		logList = append(logList, &log)
 	}
 
-	// Determine next cursor
+	// Determine next cursor.
 	var nextCursor string
 	if len(logList) > limit {
-		// There's a next page, use the last item as cursor
+		// There's a next page, use the last item as cursor.
 		logList = logList[:limit]
 		lastLog = logList[len(logList)-1]
 		nextCursor = strconv.FormatInt(lastLog.Timestamp.UnixMilli(), 10) + "_" + lastLog.ID
@@ -189,7 +189,7 @@ func (r *LogsRepository) ListLogs(ctx context.Context, deviceID string, eventTyp
 // CountLogs counts logs matching the criteria.
 // If deviceID is empty, counts across all devices.
 func (r *LogsRepository) CountLogs(ctx context.Context, deviceID string, eventType string, startTime, endTime time.Time) (int, error) {
-	// Convert time to milliseconds for INTEGER column
+	// Convert time to milliseconds for INTEGER column.
 	startMs := startTime.UnixMilli()
 	endMs := endTime.UnixMilli()
 
@@ -197,7 +197,7 @@ func (r *LogsRepository) CountLogs(ctx context.Context, deviceID string, eventTy
 	var args []interface{}
 
 	if deviceID == "" {
-		// Global count - no device filter
+		// Global count - no device filter.
 		query = `SELECT COUNT(*) FROM device_logs WHERE timestamp >= ? AND timestamp <= ?`
 		args = []interface{}{startMs, endMs}
 	} else {

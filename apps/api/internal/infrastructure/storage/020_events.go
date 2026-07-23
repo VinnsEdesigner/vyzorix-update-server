@@ -21,7 +21,7 @@ func migrateCreateEvents(db *sql.DB) error {
 		return err
 	}
 
-	// Index for querying events by device
+	// Index for querying events by device.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_events_device_id 
 		ON events(device_id, created_at DESC)
@@ -30,7 +30,7 @@ func migrateCreateEvents(db *sql.DB) error {
 		return err
 	}
 
-	// Index for querying events by operator
+	// Index for querying events by operator.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_events_operator_id 
 		ON events(operator_id, created_at DESC)
@@ -39,7 +39,7 @@ func migrateCreateEvents(db *sql.DB) error {
 		return err
 	}
 
-	// Index for querying events by type
+	// Index for querying events by type.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_events_type 
 		ON events(event_type, created_at DESC)

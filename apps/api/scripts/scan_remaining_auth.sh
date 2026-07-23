@@ -130,7 +130,7 @@ for f in internal/auth/*.go; do
         case "$name" in
             "password.go") grep -q "HashPassword" internal/infrastructure/auth/argon2_hasher.go 2>/dev/null && migrated="yes" ;;
             "lockout.go"|"totp.go"|"totp_qr.go"|"origin.go"|"ratelimit.go")
-                grep -rq "$(echo $name | sed 's/.go//')" internal/infrastructure/security/ 2>/dev/null && migrated="yes" ;;
+                grep -rq "$(echo $name | sed 's/.go//')" internal/infrastructure/security/ 2>/dev/null && migrated="yes" ;;.
             "jwt.go") grep -rq "JWTManager" internal/application/auth/ 2>/dev/null && migrated="yes" ;;
             "google_token.go"|"github.go") grep -rq "Google\|GitHub" internal/domain/oauth/ 2>/dev/null && migrated="yes" ;;
         esac

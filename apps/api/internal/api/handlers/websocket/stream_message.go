@@ -61,7 +61,7 @@ func (r *MessageRouter) handleTelemetry(client *hub.Client, raw []byte) error {
 		t.DeviceID = client.DeviceID
 	}
 
-	// Broadcast to dashboard
+	// Broadcast to dashboard.
 	r.hub.BroadcastTelemetry(raw)
 
 	r.logTelemetryReceived(client.DeviceID, t.RiskScore)
@@ -92,7 +92,7 @@ func (r *MessageRouter) DisconnectClient(deviceID string) {
 	}
 }
 
-// Logging helpers
+// Logging helpers.
 
 func (r *MessageRouter) logBadFrame(deviceID string, err error) {
 	if r.log != nil {

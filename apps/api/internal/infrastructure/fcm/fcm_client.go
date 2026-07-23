@@ -41,8 +41,8 @@ func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 		return c, nil
 	}
 
-	// Write credentials to a temporary file and use WithAuthCredentialsFile
-	// This is the recommended approach to avoid the deprecated WithCredentialsJSON
+	// Write credentials to a temporary file and use WithAuthCredentialsFile.
+	// This is the recommended approach to avoid the deprecated WithCredentialsJSON.
 	// by explicitly specifying the credential type as ServiceAccount.
 	tmpFile, err := os.CreateTemp("", "fcm-credentials-*.json")
 	if err != nil {
@@ -51,7 +51,7 @@ func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 	}
 	tmpPath := tmpFile.Name()
 
-	// Write credentials and close file before using it
+	// Write credentials and close file before using it.
 	if _, err := tmpFile.WriteString(rawCredentials); err != nil {
 		_ = tmpFile.Close()
 		_ = os.Remove(tmpPath)
@@ -64,8 +64,8 @@ func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 		return c, nil
 	}
 
-	// Use WithAuthCredentialsFile with explicit ServiceAccount type
-	// This validates that the credentials are actually a service account
+	// Use WithAuthCredentialsFile with explicit ServiceAccount type.
+	// This validates that the credentials are actually a service account.
 	creds := option.WithAuthCredentialsFile(option.ServiceAccount, tmpPath)
 
 	app, err := firebase.NewApp(context.Background(), nil, creds)
@@ -78,7 +78,7 @@ func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 		return c, nil
 	}
 
-	// Clean up temp file after Firebase app is initialized
+	// Clean up temp file after Firebase app is initialized.
 	_ = os.Remove(tmpPath)
 
 	c.app = app

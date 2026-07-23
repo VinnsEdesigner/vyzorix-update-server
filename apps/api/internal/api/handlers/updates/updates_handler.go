@@ -37,9 +37,9 @@ func NewUpdatesHandler(service *updates.Service, pushService *updates.PushServic
 
 // RegisterRoutes registers all updates routes.
 func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth) {
-	// Device callback endpoint - public (no auth required, device identifies itself)
-	// This must be registered BEFORE the cookie auth middleware is applied
-	// Note: rg is already at /v1/updates path, so we use /device-status directly
+	// Device callback endpoint - public (no auth required, device identifies itself).
+	// This must be registered BEFORE the cookie auth middleware is applied.
+	// Note: rg is already at /v1/updates path, so we use /device-status directly.
 	if h.deviceStatusHandler != nil {
 		rg.POST("/device-status", h.deviceStatusHandler.HandleDeviceUpdateStatus)
 	}
@@ -47,9 +47,9 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 	updatesGroup := rg.Group("/updates")
 	updatesGroup.Use(cookieAuth.Middleware())
 
-	// Apply rate limiting per endpoint if configured
+	// Apply rate limiting per endpoint if configured.
 	if h.rateLimiters != nil {
-		// Status and versions - rate limited
+		// Status and versions - rate limited.
 		updatesGroup.GET("/status",
 			h.rateLimiters.StatusLimit(),
 			h.versionsHandler.GetStatus)
@@ -63,13 +63,13 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 			h.rateLimiters.VersionsLimit(),
 			h.versionsHandler.Export)
 
-		// Push - rate limited + admin only
+		// Push - rate limited + admin only.
 		updatesGroup.POST("/push",
 			h.rateLimiters.PushLimit(),
 			h.adminAuth.RequireAdmin(),
 			h.pushHandler.PushUpdate)
 
-		// History - rate limited
+		// History - rate limited.
 		updatesGroup.GET("/history",
 			h.rateLimiters.HistoryLimit(),
 			h.historyHandler.GetHistory)
@@ -80,7 +80,7 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 			h.rateLimiters.CancelLimit(),
 			h.historyHandler.CancelPush)
 
-		// Sync - rate limited + admin only
+		// Sync - rate limited + admin only.
 		updatesGroup.POST("/sync",
 			h.rateLimiters.SyncLimit(),
 			h.adminAuth.RequireAdmin(),
@@ -89,7 +89,7 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 			h.rateLimiters.SyncLimit(),
 			h.syncHandler.GetSyncStatus)
 
-		// Webhook - no cookie auth (uses HMAC signature), admin only for info endpoint
+		// Webhook - no cookie auth (uses HMAC signature), admin only for info endpoint.
 		if h.webhookHandler != nil {
 			updatesGroup.POST("/webhook/github",
 				h.webhookHandler.HandleWebhook)
@@ -97,21 +97,21 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 				h.webhookHandler.GetWebhookInfo)
 		}
 	} else {
-		// No rate limiting configured
-		// Push - admin only
+		// No rate limiting configured.
+		// Push - admin only.
 		updatesGroup.POST("/push",
 			h.adminAuth.RequireAdmin(),
 			h.pushHandler.PushUpdate)
-		// Sync - admin only
+		// Sync - admin only.
 		updatesGroup.POST("/sync",
 			h.adminAuth.RequireAdmin(),
 			h.syncHandler.SyncVersions)
-		// Cancel - admin only
+		// Cancel - admin only.
 		updatesGroup.POST("/history/:pushId/cancel",
 			h.adminAuth.RequireAdmin(),
 			h.historyHandler.CancelPush)
 
-		// Remaining routes without rate limiting
+		// Remaining routes without rate limiting.
 		updatesGroup.GET("/status", h.versionsHandler.GetStatus)
 		updatesGroup.GET("/versions", h.versionsHandler.GetVersions)
 		updatesGroup.GET("/changelog", h.versionsHandler.GetChangelog)
@@ -120,7 +120,7 @@ func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middlew
 		updatesGroup.GET("/history/:pushId", h.historyHandler.GetPushDetail)
 		updatesGroup.GET("/sync/status", h.syncHandler.GetSyncStatus)
 
-		// Webhook - no cookie auth (uses HMAC signature)
+		// Webhook - no cookie auth (uses HMAC signature).
 		if h.webhookHandler != nil {
 			updatesGroup.POST("/webhook/github",
 				h.webhookHandler.HandleWebhook)
@@ -137,7 +137,7 @@ func (h *UpdatesHandler) Stop() {
 	}
 }
 
-// Alias methods to match expected handler names in verify script
+// Alias methods to match expected handler names in verify script.
 
 // GetUpdateStatus is an alias for GetStatus.
 func (h *UpdatesHandler) GetUpdateStatus(c *gin.Context) {

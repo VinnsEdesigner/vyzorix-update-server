@@ -48,7 +48,7 @@ func NewE2EGraphQLClient(t *testing.T) *E2EGraphQLClient {
 
 // Login authenticates with the API and stores session cookies.
 func (c *E2EGraphQLClient) Login(t *testing.T, email, password string) {
-	// First, check if we need to create an account or use test credentials
+	// First, check if we need to create an account or use test credentials.
 	loginData := map[string]string{
 		"email":    email,
 		"password": password,
@@ -371,7 +371,7 @@ func E2ETestGraphQLConnectionStatus(t *testing.T) {
 	})
 
 	t.Run("QueryConnectionForDevice", func(t *testing.T) {
-		// First get a device ID
+		// First get a device ID.
 		query := `query { devices(limit: 1) { deviceId } }`
 		result := client.GraphQLRequest(t, query, nil)
 
@@ -468,13 +468,13 @@ func E2ETestGraphQLDashboard(t *testing.T) {
 // E2ETestGraphQLAuthentication tests GraphQL authentication.
 func E2ETestGraphQLAuthentication(t *testing.T) {
 	t.Run("UnauthenticatedRequest", func(t *testing.T) {
-		// Create a client without login
+		// Create a client without login.
 		client := NewE2EGraphQLClient(t)
 
 		query := `query { devices(limit: 1) { id } }`
 		result := client.GraphQLRequest(t, query, nil)
 
-		// Without auth, we expect either errors or empty data
+		// Without auth, we expect either errors or empty data.
 		if errors, ok := result["errors"].([]interface{}); ok && len(errors) > 0 {
 			for _, e := range errors {
 				errMap, mapOk := e.(map[string]interface{})
@@ -493,7 +493,7 @@ func E2ETestGraphQLAuthentication(t *testing.T) {
 	t.Run("AuthenticatedRequest", func(t *testing.T) {
 		client := NewE2EGraphQLClient(t)
 
-		// Try to login with test credentials
+		// Try to login with test credentials.
 		client.Login(t, "test@example.com", "password123")
 
 		query := `query { devices(limit: 1) { id } }`

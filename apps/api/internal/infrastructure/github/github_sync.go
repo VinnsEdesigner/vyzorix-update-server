@@ -15,7 +15,7 @@ type SyncService struct {
 	client *Client
 	repo   updates.Repository
 	logger *slog.Logger
-	skipSHA256 bool // For testing or when checksums not available
+	skipSHA256 bool // For testing or when checksums not available.
 }
 
 // VersionAsset represents APK asset information.
@@ -106,14 +106,14 @@ func (s *SyncService) SyncFromGitHub(ctx context.Context) (*SyncResult, error) {
 		}
 		versionsSynced++
 
-		// Track the version with the most recent release date
+		// Track the version with the most recent release date.
 		if latestVersion == nil || version.ReleaseDate > latestReleaseDate {
 			latestVersion = version
 			latestReleaseDate = version.ReleaseDate
 		}
 	}
 
-	// Update latest flag based on release date, not GitHub's "Latest" flag
+	// Update latest flag based on release date, not GitHub's "Latest" flag.
 	if latestVersion != nil {
 		if err := s.repo.UpdateLatestFlag(ctx, latestVersion.ID); err != nil {
 			s.logger.Warn("Failed to update latest flag", "error", err)
@@ -158,16 +158,16 @@ func (s *SyncService) findAPKAsset(ctx context.Context, release GitHubRelease) (
 				Size:               asset.Size,
 			}
 
-			// Try to fetch SHA256 checksum if not in skip mode
+			// Try to fetch SHA256 checksum if not in skip mode.
 			if !s.skipSHA256 {
 				sha256, err := s.client.FetchAssetChecksum(ctx, release.TagName, asset.Name)
 				if err != nil {
-					// Log warning - checksum is important for security
+					// Log warning - checksum is important for security.
 					s.logger.Error("Failed to fetch SHA256 for asset - security risk",
 						"asset", asset.Name,
 						"release", release.TagName,
 						"error", err)
-					// Continue with empty SHA256 but log as error (not just warning)
+					// Continue with empty SHA256 but log as error (not just warning).
 				} else {
 					versionAsset.SHA256 = sha256
 				}
@@ -193,12 +193,12 @@ func (s *SyncService) createUpdateVersion(release GitHubRelease, asset *VersionA
 	if notes == "" {
 		notes = release.Name
 	}
-	// If both are empty, set a placeholder
+	// If both are empty, set a placeholder.
 	if notes == "" {
 		notes = "No release notes provided"
 	}
 
-	// NOTE: IsLatest is NOT set here. The latest version is determined by release date
+	// NOTE: IsLatest is NOT set here. The latest version is determined by release date.
 	// during the sync process to avoid relying on GitHub's manually-set "Latest" flag.
 	return &updates.UpdateVersion{
 		Version:      extractVersionFromTag(release.TagName),
@@ -208,7 +208,7 @@ func (s *SyncService) createUpdateVersion(release GitHubRelease, asset *VersionA
 		ReleaseNotes: notes,
 		ReleaseType:  releaseType,
 		ReleaseDate:  publishedTime.UnixMilli(),
-		IsLatest:     false, // Will be set correctly during sync based on release date
+		IsLatest:     false, // Will be set correctly during sync based on release date.
 		CreatedAt:    time.Now().UnixMilli(),
 		UpdatedAt:    time.Now().UnixMilli(),
 	}

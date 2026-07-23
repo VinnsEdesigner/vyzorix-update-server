@@ -15,10 +15,10 @@ import (
 
 // OutboxConfig holds configuration for the command outbox worker.
 type OutboxConfig struct {
-	PollInterval    time.Duration // How often to poll for pending commands
-	MaxRetries      int           // Maximum retry attempts before marking failed
-	RetryBaseDelay  time.Duration // Base delay for exponential backoff
-	BatchSize       int           // Number of commands to process per poll
+	PollInterval    time.Duration // How often to poll for pending commands.
+	MaxRetries      int           // Maximum retry attempts before marking failed.
+	RetryBaseDelay  time.Duration // Base delay for exponential backoff.
+	BatchSize       int           // Number of commands to process per poll.
 }
 
 // DefaultOutboxConfig returns the default outbox configuration.
@@ -32,7 +32,7 @@ func DefaultOutboxConfig() OutboxConfig {
 }
 
 // Outbox processes pending commands from the outbox table.
-// It implements the transactional outbox pattern: commands are written to the DB
+// It implements the transactional outbox pattern: commands are written to the DB.
 // atomically with their status, then processed asynchronously by this worker.
 type Outbox struct {
 	repo        command.Repository
@@ -43,7 +43,7 @@ type Outbox struct {
 	log         *slog.Logger
 	stopCh      chan struct{}
 	wg          sync.WaitGroup
-	mu          sync.Mutex // Protects running state
+	mu          sync.Mutex // Protects running state.
 	running     bool
 }
 
@@ -121,7 +121,7 @@ func (o *Outbox) run() {
 func (o *Outbox) processPendingCommands() {
 	ctx := context.Background()
 
-	// Get pending commands from the outbox using FindPending
+	// Get pending commands from the outbox using FindPending.
 	cmds, err := o.repo.FindPending(ctx, o.cfg.BatchSize)
 	if err != nil {
 		o.log.Error("failed to fetch pending commands", "err", err)
@@ -142,21 +142,21 @@ func (o *Outbox) processPendingCommands() {
 func (o *Outbox) processCommand(cmd *command.Command) bool {
 	ctx := context.Background()
 
-	// Try WebSocket delivery first if device is online
+	// Try WebSocket delivery first if device is online.
 	if o.hub != nil && o.hub.Online(cmd.DeviceID) {
 		if o.deliverViaWebSocket(ctx, cmd) {
 			return true
 		}
 	}
 
-	// Try FCM delivery
+	// Try FCM delivery.
 	if o.fcmNotifier != nil && o.deviceRepo != nil {
 		if o.deliverViaFCM(ctx, cmd) {
 			return true
 		}
 	}
 
-	// Delivery failed - handle retry or mark as failed
+	// Delivery failed - handle retry or mark as failed.
 	o.handleFailedDelivery(cmd)
 	return false
 }
@@ -167,7 +167,7 @@ func (o *Outbox) deliverViaWebSocket(ctx context.Context, cmd *command.Command) 
 		return false
 	}
 
-	// Build command frame
+	// Build command frame.
 	var args json.RawMessage
 	if cmd.Args != nil {
 		args = cmd.Args
@@ -183,7 +183,7 @@ func (o *Outbox) deliverViaWebSocket(ctx context.Context, cmd *command.Command) 
 		Timestamp:  time.Now().UnixMilli(),
 	}
 
-	// Use delivery confirmation with 5 second timeout
+	// Use delivery confirmation with 5 second timeout.
 	confirmed, err := o.hub.SendWithDeliveryConfirmation(cmd.DeviceID, frame, 5*time.Second)
 	if err != nil {
 		o.log.Warn("websocket delivery error",
@@ -199,7 +199,7 @@ func (o *Outbox) deliverViaWebSocket(ctx context.Context, cmd *command.Command) 
 				"dispatchID", cmd.DispatchID,
 				"deviceID", cmd.DeviceID,
 				"err", err)
-			// Don't return true - delivery confirmation failed to persist
+			// Don't return true - delivery confirmation failed to persist.
 			return false
 		}
 		o.log.Info("command delivered via websocket",
@@ -217,7 +217,7 @@ func (o *Outbox) deliverViaFCM(ctx context.Context, cmd *command.Command) bool {
 		return false
 	}
 
-	// Get device to retrieve FCM token
+	// Get device to retrieve FCM token.
 	dev, err := o.deviceRepo.FindByID(ctx, cmd.DeviceID)
 	if err != nil {
 		o.log.Warn("device not found for FCM delivery",
@@ -234,7 +234,7 @@ func (o *Outbox) deliverViaFCM(ctx context.Context, cmd *command.Command) bool {
 		return false
 	}
 
-	// Build and send FCM wake notification
+	// Build and send FCM wake notification.
 	wake := fcm.SilentWake{
 		Token:      fcmToken,
 		Command:    cmd.Command,
@@ -254,8 +254,8 @@ func (o *Outbox) deliverViaFCM(ctx context.Context, cmd *command.Command) bool {
 		"dispatchID", cmd.DispatchID,
 		"deviceID", cmd.DeviceID)
 
-	// FCM is fire-and-forget, so we mark as queued - device will poll for commands
-	// The command remains in pending status until device confirms receipt
+	// FCM is fire-and-forget, so we mark as queued - device will poll for commands.
+	// The command remains in pending status until device confirms receipt.
 	return true
 }
 
@@ -286,12 +286,12 @@ func (o *Outbox) handleFailedDelivery(cmd *command.Command) {
 		return
 	}
 
-	// Increment retry count and set max retries from config
+	// Increment retry count and set max retries from config.
 	cmd.RetryCount++
 	cmd.MaxRetries = o.cfg.MaxRetries
 
 	if cmd.RetryCount >= cmd.MaxRetries {
-		// Mark as failed
+		// Mark as failed.
 		errMsg := "max delivery retries exceeded"
 		if err := o.repo.MarkFailed(ctx, cmd.DispatchID, errMsg); err != nil {
 			o.log.Error("failed to mark command as failed",
@@ -305,13 +305,13 @@ func (o *Outbox) handleFailedDelivery(cmd *command.Command) {
 		return
 	}
 
-	// Calculate next retry time with exponential backoff
-	// Exponential backoff: baseDelay * 2^(retryCount-1)
+	// Calculate next retry time with exponential backoff.
+	// Exponential backoff: baseDelay * 2^(retryCount-1).
 	delay := o.cfg.RetryBaseDelay * time.Duration(1<<(cmd.RetryCount-1))
 	nextRetry := time.Now().Add(delay)
 	cmd.NextRetryAt = &nextRetry
 
-	// Persist retry info to database for outbox pattern durability
+	// Persist retry info to database for outbox pattern durability.
 	if err := o.repo.UpdateRetryInfo(ctx, cmd.ID, cmd.RetryCount, cmd.MaxRetries, cmd.NextRetryAt); err != nil {
 		o.log.Error("failed to persist retry info",
 			"dispatchID", cmd.DispatchID,

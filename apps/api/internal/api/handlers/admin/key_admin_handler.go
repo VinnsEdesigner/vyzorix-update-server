@@ -27,7 +27,7 @@ func NewSuperAdminHandler(service *apikeyapp.APIKeyService, auditLogger *audit.L
 // RegisterRoutes registers the super admin API key routes.
 // Note: The /admin/api-keys prefix is already added by the caller in setupAdminRoutes.
 func (h *SuperAdminHandler) RegisterRoutes(r *gin.RouterGroup) {
-	// r is already the /admin/api-keys group from setupAdminRoutes
+	// r is already the /admin/api-keys group from setupAdminRoutes.
 	r.GET("", h.ListAllKeys)
 	r.GET("/operator/:operatorId", h.GetOperatorKeys)
 	r.DELETE("/:keyId", h.ForceRevokeKey)
@@ -97,7 +97,7 @@ func (h *SuperAdminHandler) GetOperatorKeys(c *gin.Context) {
 func (h *SuperAdminHandler) ForceRevokeKey(c *gin.Context) {
 	keyID := c.Param("keyId")
 
-	// Get key info for audit before revoking
+	// Get key info for audit before revoking.
 	key, err := h.service.GetKey(c.Request.Context(), "", keyID)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
@@ -118,7 +118,7 @@ func (h *SuperAdminHandler) ForceRevokeKey(c *gin.Context) {
 		return
 	}
 
-	// Audit log force revocation by super admin
+	// Audit log force revocation by super admin.
 	if h.auditLogger != nil {
 		h.auditLogger.APIKeyRevoked(
 			c.Request.Context(),

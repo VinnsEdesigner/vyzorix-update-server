@@ -36,7 +36,7 @@ func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
 		return
 	}
 
-	// Require organization context for multi-tenant isolation
+	// Require organization context for multi-tenant isolation.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
@@ -47,14 +47,14 @@ func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
 		return
 	}
 
-	// Get operator from context for DOA check
+	// Get operator from context for DOA check.
 	op := middleware.GetOperatorFromContext(c)
 	operatorID := ""
 	if op != nil {
 		operatorID = op.ID
 	}
 
-	// Verify operator authorization (DOA check)
+	// Verify operator authorization (DOA check).
 	authResp := h.service.VerifyDeviceOwnership(c.Request.Context(), imei, operatorID, orgID)
 	if !authResp.Authorized {
 		if authResp.Forbidden {

@@ -23,7 +23,7 @@ func NewService(logsRepo logs.Repository, logger *slog.Logger) *Service {
 
 // GetDeviceLogs retrieves paginated device logs with cursor-based pagination.
 func (s *Service) GetDeviceLogs(ctx context.Context, req *ListLogsRequest) (*ListLogsResponse, error) {
-	// Apply defaults
+	// Apply defaults.
 	if req.Limit <= 0 {
 		req.Limit = 100
 	}
@@ -31,29 +31,29 @@ func (s *Service) GetDeviceLogs(ctx context.Context, req *ListLogsRequest) (*Lis
 		req.Limit = 500
 	}
 
-	// Calculate time range
+	// Calculate time range.
 	endTime := time.Now()
 	if req.EndTime > 0 {
 		endTime = time.UnixMilli(req.EndTime)
 	}
 
-	startTime := endTime.Add(-24 * time.Hour) // Default: last 24 hours
+	startTime := endTime.Add(-24 * time.Hour) // Default: last 24 hours.
 	if req.StartTime > 0 {
 		startTime = time.UnixMilli(req.StartTime)
 	}
 
-	// Validate event type if provided
+	// Validate event type if provided.
 	if req.EventType != "" && !logs.IsValidEventType(req.EventType) {
 		return nil, logs.ErrInvalidEventType
 	}
 
-	// Fetch logs
+	// Fetch logs.
 	logList, nextCursor, err := s.logsRepo.ListLogs(ctx, req.DeviceID, req.EventType, startTime, endTime, req.Limit, req.Cursor)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list device logs: %w", err)
 	}
 
-	// Convert to response format
+	// Convert to response format.
 	events := make([]LogEvent, 0, len(logList))
 	for _, log := range logList {
 		var data map[string]interface{}

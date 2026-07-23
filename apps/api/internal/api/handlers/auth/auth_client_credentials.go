@@ -69,7 +69,7 @@ func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Set defaults
+	// Set defaults.
 	if req.RateLimit == 0 {
 		req.RateLimit = 100
 	}
@@ -90,7 +90,7 @@ func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 	h.presenter.APIClientCreated(c, operatorID, clientResp.ID)
 	h.presenter.OK(c, gin.H{
 		"clientId":     clientResp.ID,
-		"clientSecret": secret, // Only returned once!
+		"clientSecret": secret, // Only returned once!.
 		"platform":     clientResp.Platform,
 		"name":         clientResp.Name,
 		"createdAt":    clientResp.CreatedAt,
@@ -169,7 +169,7 @@ func (h *ClientCredentialsHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Verify ownership first
+	// Verify ownership first.
 	_, err = h.clientService.GetByOperatorID(c.Request.Context(), clientID, operatorID)
 	if err != nil {
 		h.presenter.NotFound(c, "Client not found")
@@ -217,14 +217,14 @@ func (h *ClientCredentialsHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// Verify ownership
+	// Verify ownership.
 	clientResp, err := h.clientService.GetByOperatorID(c.Request.Context(), clientID, operatorID)
 	if err != nil {
 		h.presenter.NotFound(c, "Client not found")
 		return
 	}
 
-	// Update fields if provided
+	// Update fields if provided.
 	if req.Name != nil {
 		clientResp.Name = *req.Name
 	}
@@ -241,7 +241,7 @@ func (h *ClientCredentialsHandler) Update(c *gin.Context) {
 		clientResp.IsActive = *req.Active
 	}
 
-	// Note: In a real implementation, you'd call a service method to update
+	// Note: In a real implementation, you'd call a service method to update.
 	h.presenter.OK(c, gin.H{
 		"client": clientResp,
 		"message": "Client updated successfully",
@@ -267,15 +267,15 @@ func (h *ClientCredentialsHandler) RotateSecret(c *gin.Context) {
 		return
 	}
 
-	// Verify ownership
+	// Verify ownership.
 	_, err = h.clientService.GetByOperatorID(c.Request.Context(), clientID, operatorID)
 	if err != nil {
 		h.presenter.NotFound(c, "Client not found")
 		return
 	}
 
-	// In a real implementation, this would call a service to regenerate the secret
-	// For now, we'll just return a success response
+	// In a real implementation, this would call a service to regenerate the secret.
+	// For now, we'll just return a success response.
 	h.presenter.OK(c, gin.H{
 		"success": true,
 		"message": "Client secret rotated. The new secret will be provided via secure channel.",

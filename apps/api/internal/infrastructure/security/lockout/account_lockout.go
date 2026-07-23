@@ -90,7 +90,7 @@ func (h *Handler) IsLocked(ctx context.Context, operatorID string) (bool, *Reaso
 		}, nil
 	}
 
-	// Expired lockout - clear it and log any errors
+	// Expired lockout - clear it and log any errors.
 	if err := h.storage.ClearAccountLockout(ctx, operatorID); err != nil {
 		h.logger.Warn("failed to clear expired lockout",
 			"operator_id", operatorID,
@@ -111,7 +111,7 @@ func (h *Handler) RecordFailedAttempt(ctx context.Context, operatorID string) er
 		return nil
 	}
 
-	// Use atomic increment to prevent race conditions
+	// Use atomic increment to prevent race conditions.
 	attempts, err := h.storage.IncrementFailedAttempts(ctx, operatorID)
 	if err != nil {
 		return err
@@ -151,12 +151,12 @@ var dummyPasswordHash = argon2.IDKey(
 
 // FakeHash performs constant-time comparison to prevent timing attacks.
 func FakeHash(a, b string) bool {
-	// Always perform constant-time comparison to avoid timing leaks
+	// Always perform constant-time comparison to avoid timing leaks.
 	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
 }
 
 // IsValidPassword always returns false to prevent user enumeration.
-// This is a timing-attack mitigation - even if an attacker tries different
+// This is a timing-attack mitigation - even if an attacker tries different.
 // passwords, the function always takes the same time to return false.
 func IsValidPassword(password string) bool {
 	if len(password) == 0 {
@@ -174,10 +174,10 @@ func IsValidPassword(password string) bool {
 		32,
 	)
 
-	// Constant-time comparison with the dummy hash
+	// Constant-time comparison with the dummy hash.
 	_ = subtle.ConstantTimeCompare(computedHash, dummyPasswordHash)
 
-	// Always return false - we never validate passwords here
+	// Always return false - we never validate passwords here.
 	return false
 }
 

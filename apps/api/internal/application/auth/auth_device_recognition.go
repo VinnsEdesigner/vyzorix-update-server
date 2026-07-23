@@ -120,7 +120,7 @@ func (ds *DeviceStore) GetDevices(operatorID string) []*KnownDevice {
 
 	devices := make([]*KnownDevice, 0, len(operatorDevices))
 	for _, device := range operatorDevices {
-		// Create a copy to prevent external modification
+		// Create a copy to prevent external modification.
 		deviceCopy := &KnownDevice{
 			Fingerprint: device.Fingerprint,
 			FirstSeenAt: device.FirstSeenAt,
@@ -150,33 +150,33 @@ func HashFingerprint(combined string) string {
 // Returns false for known devices with consistent IP/UserAgent.
 // Returns true for new devices or significant parameter changes.
 func (s *AuthService) ShouldNotifyLogin(ctx context.Context, operatorID, ipAddress, userAgent, fingerprint string) bool {
-	// If device store is not configured, always notify
+	// If device store is not configured, always notify.
 	if s.deviceStore == nil {
 		return true
 	}
 
-	// Check if device is known
+	// Check if device is known.
 	isKnown := s.deviceStore.IsKnownDevice(operatorID, fingerprint)
 	if !isKnown {
-		// New device - notify and register
+		// New device - notify and register.
 		s.deviceStore.RegisterDevice(operatorID, fingerprint, ipAddress, userAgent)
 		return true
 	}
 
-	// Device is known - get info to check for IP changes
+	// Device is known - get info to check for IP changes.
 	devices := s.deviceStore.GetDevices(operatorID)
 	for _, device := range devices {
 		if device.Fingerprint == fingerprint {
-			// Check for IP change - notify if different IP (potential account sharing or theft)
+			// Check for IP change - notify if different IP (potential account sharing or theft).
 			if !device.IPAddresses[ipAddress] {
-				// Update device with new IP
+				// Update device with new IP.
 				s.deviceStore.RegisterDevice(operatorID, fingerprint, ipAddress, userAgent)
-				return true // New IP from known device - flag it
+				return true // New IP from known device - flag it.
 			}
 
-			// Update last seen timestamp only (no data changes)
+			// Update last seen timestamp only (no data changes).
 			s.deviceStore.TouchDevice(operatorID, fingerprint)
-			return false // Known device, consistent IP
+			return false // Known device, consistent IP.
 		}
 	}
 
@@ -184,63 +184,63 @@ func (s *AuthService) ShouldNotifyLogin(ctx context.Context, operatorID, ipAddre
 }
 
 // LoginWithDevice performs login with device fingerprint verification.
-// This is the hardened version that:
-// 1. Tracks device fingerprints
-// 2. Only sends notifications for new/unusual logins
+// This is the hardened version that:.
+// 1. Tracks device fingerprints.
+// 2. Only sends notifications for new/unusual logins.
 // 3. Performs strict verification. for remembered devices.
 func (s *AuthService) LoginWithDevice(ctx context.Context, req *dto.LoginRequest, device *DeviceInfo) (*dto.LoginResponse, *session.Session, error) {
 	email := strings.ToLower(strings.TrimSpace(req.Email))
 
-	// Verify credentials
+	// Verify credentials.
 	op, err := s.operatorRepo.FindByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, operator.ErrNotFound) {
-			// Constant-time fake hash to prevent timing attacks
+			// Constant-time fake hash to prevent timing attacks.
 			_ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
 			return nil, nil, application.ErrInvalidCredentials
 		}
 		return nil, nil, err
 	}
 
-	// Prevent nil pointer dereference if FindByEmail returns (nil, nil)
+	// Prevent nil pointer dereference if FindByEmail returns (nil, nil).
 	if op == nil {
 		_ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
 		return nil, nil, application.ErrInvalidCredentials
 	}
 
-	// OAuth-only accounts have no password
+	// OAuth-only accounts have no password.
 	if op.PasswordHash == "" {
 		return nil, nil, application.ErrInvalidCredentials
 	}
 
-	// Verify password with proper error handling
+	// Verify password with proper error handling.
 	if err = s.passwordHasher.Verify(req.Password, op.PasswordHash); err != nil {
-		// Only return ErrInvalidCredentials for wrong password
-		// Propagate other errors (crypto failures, corrupted hashes) for proper logging
+		// Only return ErrInvalidCredentials for wrong password.
+		// Propagate other errors (crypto failures, corrupted hashes) for proper logging.
 		if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" ||
 			err.Error() == "crypto/scrypt: password hash does not match" ||
 			err.Error() == "crypto/argon2: invalid hash" {
 			return nil, nil, application.ErrInvalidCredentials
 		}
-		// For other unexpected errors, log and return a generic error
-		// This prevents leaking internal error details while still allowing monitoring
+		// For other unexpected errors, log and return a generic error.
+		// This prevents leaking internal error details while still allowing monitoring.
 		return nil, nil, application.ErrInvalidCredentials
 	}
 
-	// MFA check
+	// MFA check.
 	if op.MFARequired || op.HasMFA() {
 		resp := s.buildLoginResponse(op)
 		resp.MFAEnabled = true
 		return resp, nil, application.ErrMFARequired
 	}
 
-	// Create session
+	// Create session.
 	sess, err := s.CreateSession(ctx, op.ID)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Register known device if this is a new login
+	// Register known device if this is a new login.
 	if s.deviceStore != nil && device != nil && device.DeviceFingerprint != "" {
 		s.deviceStore.RegisterDevice(op.ID, device.DeviceFingerprint, device.IPAddress, device.UserAgent)
 	}

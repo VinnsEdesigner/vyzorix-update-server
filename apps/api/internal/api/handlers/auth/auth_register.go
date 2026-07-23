@@ -55,9 +55,9 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Normalize email (trim whitespace and lowercase) - matches old behavior
+	// Normalize email (trim whitespace and lowercase) - matches old behavior.
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
-	// Also normalize name
+	// Also normalize name.
 	req.Name = strings.TrimSpace(req.Name)
 
 	if req.Email == "" || req.Password == "" || req.Name == "" {
@@ -65,13 +65,13 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Validate email format using enterprise-grade validator
+	// Validate email format using enterprise-grade validator.
 	if _, err := infraauth.ValidateEmail(req.Email); err != nil {
 		h.presenter.BadRequest(c, "Invalid request")
 		return
 	}
 
-	// Add request timeout - prevents hanging on slow DB queries (matches old behavior)
+	// Add request timeout - prevents hanging on slow DB queries (matches old behavior).
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
@@ -92,10 +92,10 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Log successful registration
+	// Log successful registration.
 	h.presenter.RegisterSuccess(c, result.OperatorID)
 
-	// Send verification email after successful registration
+	// Send verification email after successful registration.
 	if err := h.sendVerificationEmail(c.Request.Context(), req.Email, req.Name, result.OperatorID); err != nil {
 		h.presenter.InternalError(c, "Registration successful but failed to send verification email: "+err.Error())
 		return
@@ -111,18 +111,18 @@ func (h *RegisterHandler) sendVerificationEmail(ctx context.Context, email, name
 		return nil
 	}
 
-	// Create verification token - MUST succeed for email verification to work
+	// Create verification token - MUST succeed for email verification to work.
 	token, verificationID, err := h.authService.CreateEmailVerification(ctx, operatorID)
 	if err != nil {
 		return err
 	}
 
-	// Send email synchronously with a timeout
+	// Send email synchronously with a timeout.
 	sendCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	if err := h.emailSvc.SendVerificationEmail(sendCtx, email, name, token); err != nil {
-		// Record the email failure in the database so the operator can see it
+		// Record the email failure in the database so the operator can see it.
 		if h.emailVerifyRepo != nil {
 			if markErr := h.emailVerifyRepo.MarkEmailFailed(ctx, verificationID, err.Error()); markErr != nil {
 				h.log.Error("failed to record email failure",
@@ -140,7 +140,7 @@ func (h *RegisterHandler) sendVerificationEmail(ctx context.Context, email, name
 		return err
 	}
 
-	// Record successful email delivery
+	// Record successful email delivery.
 	if h.emailVerifyRepo != nil {
 		if markErr := h.emailVerifyRepo.MarkEmailSent(ctx, verificationID, time.Now().UTC()); markErr != nil {
 			h.log.Error("failed to record email success",

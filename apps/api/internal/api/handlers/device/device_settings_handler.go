@@ -66,7 +66,7 @@ func (h *SettingsHandler) GetSettings(c *gin.Context) {
 		return
 	}
 
-	// Check membership
+	// Check membership.
 	if h.membershipChecker != nil {
 		if err := h.membershipChecker(c.Request.Context(), operatorID, orgID); err != nil {
 			h.presenter.Forbidden(c, "access denied")
@@ -107,7 +107,7 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	// Check membership
+	// Check membership.
 	if h.membershipChecker != nil {
 		if err := h.membershipChecker(c.Request.Context(), operatorID, orgID); err != nil {
 			h.presenter.Forbidden(c, "access denied")
@@ -139,7 +139,7 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 }
 
 // GetThresholds handles GET /v1/devices/:imei/settings/thresholds.
-// Returns the effective thresholds using hierarchy: device → org → default
+// Returns the effective thresholds using hierarchy: device → org → default.
 func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 	operatorID := h.getOperator(c)
 	if operatorID == "" {
@@ -159,7 +159,7 @@ func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 		return
 	}
 
-	// Check membership - anyone in org can view thresholds
+	// Check membership - anyone in org can view thresholds.
 	if h.membershipChecker != nil {
 		if err := h.membershipChecker(c.Request.Context(), operatorID, orgID); err != nil {
 			h.presenter.Forbidden(c, "access denied")
@@ -202,7 +202,7 @@ func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
 		return
 	}
 
-	// Check membership
+	// Check membership.
 	if h.membershipChecker != nil {
 		if err := h.membershipChecker(c.Request.Context(), operatorID, orgID); err != nil {
 			h.presenter.Forbidden(c, "access denied")

@@ -21,14 +21,14 @@ func allowedOrigins(cfg config.Config) func(r *http.Request) bool {
 	return func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
 		if origin == "" {
-			return true // Allow empty origin (e.g., same-origin requests)
+			return true // Allow empty origin (e.g., same-origin requests).
 		}
-		// Check against allowed origins
+		// Check against allowed origins.
 		for _, allowed := range origins {
 			if allowed == "*" || allowed == origin {
 				return true
 			}
-			// Support wildcard subdomains (e.g., *.example.com)
+			// Support wildcard subdomains (e.g., *.example.com).
 			if strings.HasPrefix(allowed, "*.") {
 				domain := allowed[2:]
 				if strings.HasSuffix(origin, domain) {
@@ -43,7 +43,7 @@ func allowedOrigins(cfg config.Config) func(r *http.Request) bool {
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin:     nil, // Set during initialization
+	CheckOrigin:     nil, // Set during initialization.
 }
 
 // AuditLogger interface for audit logging.
@@ -73,7 +73,7 @@ type Handler struct {
 
 // NewHandler creates a new subscription handler.
 func NewHandler(cfg *Config) *Handler {
-	// Set origin check function based on config
+	// Set origin check function based on config.
 	upgrader.CheckOrigin = allowedOrigins(cfg.Config)
 
 	return &Handler{
@@ -94,7 +94,7 @@ func (h *Handler) removeClient(conn *websocket.Conn) {
 
 // HandleWebSocket upgrades HTTP to WebSocket and handles subscription connections.
 func (h *Handler) HandleWebSocket(c *gin.Context) {
-	// Extract org from URL parameter
+	// Extract org from URL parameter.
 	orgID := c.Param("org")
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "organization ID required"})

@@ -96,7 +96,7 @@ type Server struct {
 func WireServer(deps ServerDependencies) *ServerResult {
 	result := &ServerResult{}
 
-	// Wire middleware first
+	// Wire middleware first.
 	mwCfg := MiddlewareConfig{
 		Log:              deps.Log,
 		SessionManager:   deps.SessionManager,
@@ -112,7 +112,7 @@ func WireServer(deps ServerDependencies) *ServerResult {
 	}
 	result.MiddlewareSet = WireMiddleware(mwCfg)
 
-	// Get middleware instances
+	// Get middleware instances.
 	result.HmacVerifier = result.MiddlewareSet.HmacVerifier
 	result.EncryptKeyFn = result.MiddlewareSet.EncryptKeyFn
 	result.CookieAuth = result.MiddlewareSet.CookieAuth
@@ -124,10 +124,10 @@ func WireServer(deps ServerDependencies) *ServerResult {
 	result.IPIntelligence = result.MiddlewareSet.IPIntelligence
 	result.SessionManager = deps.SessionManager
 
-	// Create presenter
+	// Create presenter.
 	result.Presenter = response.NewPresenter(deps.AuthService, deps.AuditLogger, deps.IPIntelligence)
 
-	// Wire handlers
+	// Wire handlers.
 	handlerDeps := HandlerDependencies{
 		AuthService:            deps.AuthService,
 		SessionManager:        deps.SessionManager,
@@ -158,7 +158,7 @@ func WireServer(deps ServerDependencies) *ServerResult {
 	}
 	result.HandlerSet = WireHandlers(handlerDeps)
 
-	// Create Gin engine
+	// Create Gin engine.
 	if deps.Config.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}

@@ -115,10 +115,10 @@ func (r *TestReport) generateReport() string {
 	fmt.Fprintf(&sb, "| DB Passed | %d |\n", r.DBPassed)
 	fmt.Fprintf(&sb, "| DB Failed | %d |\n", r.DBFailed)
 
-	// Group by category
+	// Group by category.
 	sb.WriteString("\n## Detailed Results\n\n")
 
-	// Group results by path prefix
+	// Group results by path prefix.
 	categories := map[string][]EndpointResult{}
 
 	for _, res := range r.Results {
@@ -164,7 +164,7 @@ func (r *TestReport) generateReport() string {
 		sb.WriteString("\n")
 	}
 
-	// DB Summary
+	// DB Summary.
 	sb.WriteString("## Database Operations Summary\n\n")
 
 	for _, res := range r.Results {
@@ -244,7 +244,7 @@ func checkDBFile() bool {
 	return err == nil
 }
 
-// ==================== TEST CATEGORIES ====================
+// ==================== TEST CATEGORIES ====================.
 
 func testHealthEndpoints() []EndpointResult {
 	return []EndpointResult{
@@ -266,7 +266,7 @@ func testAuthEndpoints() []EndpointResult {
 	results := make([]EndpointResult, 0, 30)
 	base := "/v1/auth"
 
-	// Login tests
+	// Login tests.
 	results = append(results, testRequest("POST", BaseURL+base+"/login",
 		map[string]string{"email": "test@example.com", "password": "wrongpassword"}))
 	results = append(results, testRequest("POST", BaseURL+base+"/login",
@@ -275,7 +275,7 @@ func testAuthEndpoints() []EndpointResult {
 		map[string]string{"email": "", "password": ""}))
 	results = append(results, testRequest("POST", BaseURL+base+"/login", nil))
 
-	// Register tests
+	// Register tests.
 	results = append(results, testRequest("POST", BaseURL+base+"/register",
 		map[string]interface{}{"email": fmt.Sprintf("user-%d@test.com", time.Now().Unix()), "password": "ValidPass123!", "name": "Test User"}))
 	results = append(results, testRequest("POST", BaseURL+base+"/register",
@@ -283,13 +283,13 @@ func testAuthEndpoints() []EndpointResult {
 	results = append(results, testRequest("POST", BaseURL+base+"/register",
 		map[string]string{"email": "short"}))
 
-	// Password reset
+	// Password reset.
 	results = append(results, testRequest("POST", BaseURL+base+"/forgot-password",
 		map[string]string{"email": "test@example.com"}))
 	results = append(results, testRequest("POST", BaseURL+base+"/forgot-password",
 		map[string]string{"email": "invalid"}))
 
-	// Email verification
+	// Email verification.
 	results = append(results, testRequest("POST", BaseURL+base+"/verify-email",
 		map[string]string{"token": "invalid-token"}))
 	results = append(results, testRequest("POST", BaseURL+base+"/resend-verification",
@@ -298,7 +298,7 @@ func testAuthEndpoints() []EndpointResult {
 		map[string]string{"token": "invalid-token"}))
 	results = append(results, testRequest("GET", BaseURL+base+"/poll-verification?email=test@example.com", nil))
 
-	// MFA
+	// MFA.
 	results = append(results, testRequest("GET", BaseURL+base+"/mfa/status", nil))
 	results = append(results, testRequest("POST", BaseURL+base+"/mfa/enroll", nil))
 	results = append(results, testRequest("POST", BaseURL+base+"/mfa/verify-setup",
@@ -311,20 +311,20 @@ func testAuthEndpoints() []EndpointResult {
 		map[string]string{"code": "12345678"}))
 	results = append(results, testRequest("POST", BaseURL+base+"/mfa/regenerate-backup-codes", nil))
 
-	// Logout
+	// Logout.
 	results = append(results, testRequest("POST", BaseURL+base+"/logout", nil))
 
-	// Me
+	// Me.
 	results = append(results, testRequest("GET", BaseURL+base+"/me", nil))
 	results = append(results, testRequest("PATCH", BaseURL+base+"/me",
 		map[string]string{"name": "Updated Name"}))
 	results = append(results, testRequest("PATCH", BaseURL+base+"/me/settings",
 		map[string]interface{}{"theme": "dark"}))
 
-	// Lockout
+	// Lockout.
 	results = append(results, testRequest("GET", BaseURL+base+"/lockout/status", nil))
 
-	// Admin operators
+	// Admin operators.
 	results = append(results, testRequest("GET", BaseURL+base+"/admin/operators", nil))
 	results = append(results, testRequest("POST", BaseURL+base+"/admin/operators",
 		map[string]interface{}{"email": fmt.Sprintf("admin-%d@test.com", time.Now().Unix()), "password": "AdminPass123!", "name": "Test Admin", "role": "admin"}))
@@ -334,12 +334,12 @@ func testAuthEndpoints() []EndpointResult {
 	results = append(results, testRequest("DELETE", BaseURL+base+"/admin/operators/1", nil))
 	results = append(results, testRequest("POST", BaseURL+base+"/admin/lockout/unlock/1", nil))
 
-	// Client credentials
+	// Client credentials.
 	results = append(results, testRequest("POST", BaseURL+base+"/client-credentials",
 		map[string]interface{}{"name": fmt.Sprintf("client-%d", time.Now().Unix())}))
 	results = append(results, testRequest("GET", BaseURL+base+"/client-credentials", nil))
 
-	// OAuth (just reachability)
+	// OAuth (just reachability).
 	results = append(results, testRequest("GET", BaseURL+base+"/google", nil))
 	results = append(results, testRequest("GET", BaseURL+base+"/github", nil))
 
@@ -351,7 +351,7 @@ func testDeviceEndpoints() []EndpointResult {
 	deviceID := fmt.Sprintf("test-device-%d", time.Now().Unix())
 	base := "/v1/device"
 
-	// Register
+	// Register.
 	results = append(results, testRequest("POST", BaseURL+base+"/register",
 		map[string]interface{}{"device_id": deviceID, "name": "Test Device", "platform": "android", "app_version": "1.0.0"}))
 	results = append(results, testRequest("POST", BaseURL+base+"/register",
@@ -359,18 +359,18 @@ func testDeviceEndpoints() []EndpointResult {
 	results = append(results, testRequest("POST", BaseURL+base+"/register",
 		map[string]string{"device_id": "", "name": ""}))
 
-	// Status
+	// Status.
 	results = append(results, testRequest("GET", BaseURL+base+"/"+deviceID+"/status", nil))
 	results = append(results, testRequest("GET", BaseURL+base+"/invalid-id/status", nil))
 
-	// Get device
+	// Get device.
 	results = append(results, testRequest("GET", BaseURL+base+"/"+deviceID, nil))
 
-	// Update FCM token
+	// Update FCM token.
 	results = append(results, testRequest("PATCH", BaseURL+base+"/"+deviceID+"/fcm-token",
 		map[string]string{"fcm_token": "new-fcm-token-123"}))
 
-	// Delete
+	// Delete.
 	results = append(results, testRequest("DELETE", BaseURL+base+"/"+deviceID, nil))
 	results = append(results, testRequest("DELETE", BaseURL+base+"/nonexistent-id", nil))
 
@@ -383,9 +383,9 @@ func testCommandEndpoints() []EndpointResult {
 	base := "/v1"
 	dispatchID := fmt.Sprintf("dispatch-%d", time.Now().Unix())
 
-	// First register a device (deprecated)
+	// First register a device (deprecated).
 
-	// Send command
+	// Send command.
 	results = append(results, testRequest("POST", BaseURL+base+"/device/"+deviceID+"/command",
 		map[string]interface{}{"command": "FORCE_SPEAKER", "args": map[string]int{"volume": 80}, "priority": 5}))
 	results = append(results, testRequest("POST", BaseURL+base+"/device/"+deviceID+"/command",
@@ -393,16 +393,16 @@ func testCommandEndpoints() []EndpointResult {
 	results = append(results, testRequest("POST", BaseURL+base+"/device/"+deviceID+"/command",
 		map[string]string{"command": "", "args": "{}"}))
 
-	// Get pending commands
+	// Get pending commands.
 	results = append(results, testRequest("GET", BaseURL+base+"/device/"+deviceID+"/commands/pending", nil))
 
-	// Command status
+	// Command status.
 	results = append(results, testRequest("GET", BaseURL+base+"/command/"+dispatchID+"/status", nil))
 
-	// Retry command
+	// Retry command.
 	results = append(results, testRequest("POST", BaseURL+base+"/command/"+dispatchID+"/retry", nil))
 
-	// Cancel command
+	// Cancel command.
 	results = append(results, testRequest("DELETE", BaseURL+base+"/command/"+dispatchID, nil))
 
 	return results
@@ -460,7 +460,7 @@ func testMalformedData() []EndpointResult {
 		{"/v1/auth/login", `{}`, "Empty body"},
 		{"/v1/auth/login", `{"email":"a@b.com","password":"x"}`, "Short password"},
 		{"/v1/auth/register", `{"email":"a@b.com","password":"Valid123!"}`, "Missing name"},
-// DEPRECATED: 		{"/v1/device/register", `{"device_id":"","name":""}`, "Empty fields"},
+// DEPRECATED: 		{"/v1/device/register", `{"device_id":"","name":""}`, "Empty fields"},.
 		{"/v1/device/test/command", `{"command":"","args":{}}`, "Empty command"},
 	}
 
@@ -487,7 +487,7 @@ func testDatabaseOperations() []EndpointResult {
 		return results
 	}
 
-	// Create operator
+	// Create operator.
 	email := fmt.Sprintf("dbtest-%d@example.com", time.Now().Unix())
 	res := testRequest("POST", BaseURL+"/v1/auth/admin/operators",
 		map[string]interface{}{"email": email, "password": "TestPass123!", "name": "DB Test", "role": "user"})
@@ -501,7 +501,7 @@ func testDatabaseOperations() []EndpointResult {
 
 	results = append(results, res)
 
-	// List operators (verify read)
+	// List operators (verify read).
 	res = testRequest("GET", BaseURL+"/v1/auth/admin/operators", nil)
 	res.DBTested = true
 
@@ -513,7 +513,7 @@ func testDatabaseOperations() []EndpointResult {
 
 	results = append(results, res)
 
-	// Register device (deprecated)
+	// Register device (deprecated).
 	deviceID := fmt.Sprintf("dbtest-device-%d", time.Now().Unix())
 	res.DBTested = true
 
@@ -525,7 +525,7 @@ func testDatabaseOperations() []EndpointResult {
 
 	results = append(results, res)
 
-	// List devices
+	// List devices.
 	res = testRequest("GET", BaseURL+"/v1/dashboard/devices", nil)
 	res.DBTested = true
 
@@ -537,7 +537,7 @@ func testDatabaseOperations() []EndpointResult {
 
 	results = append(results, res)
 
-	// Get device count
+	// Get device count.
 	res = testRequest("GET", BaseURL+"/v1/device/count", nil)
 	res.DBTested = true
 
@@ -549,7 +549,7 @@ func testDatabaseOperations() []EndpointResult {
 
 	results = append(results, res)
 
-	// Send command
+	// Send command.
 	res = testRequest("POST", BaseURL+"/v1/device/"+deviceID+"/command",
 		map[string]interface{}{"command": "TEST_CMD", "args": map[string]bool{"test": true}, "priority": 5})
 	res.DBTested = true
@@ -562,7 +562,7 @@ func testDatabaseOperations() []EndpointResult {
 
 	results = append(results, res)
 
-	// Get pending commands
+	// Get pending commands.
 	res = testRequest("GET", BaseURL+"/v1/device/"+deviceID+"/commands/pending", nil)
 	res.DBTested = true
 
@@ -577,7 +577,7 @@ func testDatabaseOperations() []EndpointResult {
 	return results
 }
 
-// ==================== MAIN ====================
+// ==================== MAIN ====================.
 
 func RunAllTests() error {
 	fmt.Println(" Comprehensive API Testing Suite")
@@ -651,7 +651,7 @@ func RunAllTests() error {
 	report.addResult(results...)
 	fmt.Printf("Done (%d)\n", len(results))
 
-	// Generate report
+	// Generate report.
 	_ = os.MkdirAll("./data", 0755)
 	reportContent := report.generateReport()
 	reportPath := filepath.Join(".", ReportFile)

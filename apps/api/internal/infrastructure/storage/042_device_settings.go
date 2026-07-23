@@ -39,7 +39,7 @@ func migrateDeviceSettings(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for efficient lookups
+	// Create index for efficient lookups.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_device_settings_imei ON device_settings(device_imei)
 	`)

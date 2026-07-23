@@ -42,9 +42,9 @@ var CommandStatusTransitions = map[Status]map[Status]bool{
 		StatusFailed:   true,
 		StatusCancelled: true,
 	},
-	StatusCompleted: {}, // Terminal state
-	StatusFailed:   {}, // Terminal state
-	StatusCancelled: {}, // Terminal state
+	StatusCompleted: {}, // Terminal state.
+	StatusFailed:   {}, // Terminal state.
+	StatusCancelled: {}, // Terminal state.
 }
 
 // CanTransitionTo returns true if the status can transition to the target status.
@@ -122,16 +122,16 @@ type Command struct {
 	Status        Status
 	FailureReason string
 	Args          []byte
-	RetryCount    int        // Number of delivery attempts made
-	MaxRetries    int        // Maximum delivery attempts before marking failed
-	NextRetryAt   *time.Time // When to attempt next delivery (for backoff)
+	RetryCount    int        // Number of delivery attempts made.
+	MaxRetries    int        // Maximum delivery attempts before marking failed.
+	NextRetryAt   *time.Time // When to attempt next delivery (for backoff).
 	ExpiresAt     *time.Time 
 }
 
 // IsExpired returns true if the command has expired based on its TTL.
 func (c *Command) IsExpired() bool {
 	if c.ExpiresAt == nil {
-		return false // No TTL set, never expires
+		return false // No TTL set, never expires.
 	}
 	return time.Now().After(*c.ExpiresAt)
 }
@@ -220,7 +220,7 @@ func (c *Command) CanRetry() bool {
 // ShouldRetryNow returns true if enough time has passed since the last attempt.
 func (c *Command) ShouldRetryNow() bool {
 	if c.NextRetryAt == nil {
-		return true // First attempt or no backoff set
+		return true // First attempt or no backoff set.
 	}
 	return time.Now().After(*c.NextRetryAt)
 }
@@ -232,7 +232,7 @@ func (c *Command) IncrementRetry(baseDelay time.Duration) bool {
 	if c.MaxRetries > 0 && c.RetryCount >= c.MaxRetries {
 		return false
 	}
-	// Exponential backoff: baseDelay * 2^(retryCount-1)
+	// Exponential backoff: baseDelay * 2^(retryCount-1).
 	delay := baseDelay * time.Duration(1<<(c.RetryCount-1))
 	next := time.Now().Add(delay)
 	c.NextRetryAt = &next

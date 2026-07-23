@@ -29,7 +29,7 @@ func (h *LogoutHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Get operator ID from session before logout
+	// Get operator ID from session before logout.
 	var operatorID string
 
 	session, err := h.authService.GetSession(c.Request.Context(), sessionID)
@@ -37,17 +37,17 @@ func (h *LogoutHandler) Handle(c *gin.Context) {
 		operatorID = session.OperatorID
 	}
 
-	// Attempt to logout - fail if session deletion fails
+	// Attempt to logout - fail if session deletion fails.
 	if err := h.authService.Logout(c.Request.Context(), sessionID); err != nil {
 		h.presenter.LogoutFailure(c, operatorID, err.Error())
 		h.presenter.InternalError(c, "logout failed")
 		return
 	}
 
-	// Clear session cookie
+	// Clear session cookie.
 	h.presenter.ClearSessionCookie(c)
 
-	// Log successful logout
+	// Log successful logout.
 	if operatorID != "" {
 		h.presenter.LogoutSuccess(c, operatorID)
 	}

@@ -56,7 +56,7 @@ func (s *AuthService) FindOrCreateGoogleOperator(ctx context.Context, googleID, 
 		Email:         email,
 		Name:          name,
 		GoogleID:      googleID,
-		EmailVerified: true, // Google verifies email
+		EmailVerified: true, // Google verifies email.
 		CreatedAt:     now,
 		UpdatedAt:     now,
 	}

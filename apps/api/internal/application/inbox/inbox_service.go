@@ -235,26 +235,26 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 	now := time.Now()
 	entry.OperatorID = operatorID
 
-	// Transition to APPROVING (intermediate state)
+	// Transition to APPROVING (intermediate state).
 	entry.Status = inbox.StatusApproving
 	entry.ApprovingAt = PtrToInt64(now.UnixMilli())
 
-	// Generate command secret
+	// Generate command secret.
 	secret, err := generateSecret(32)
 	if err != nil {
 		return nil, ErrSecretGeneration
 	}
-	// Store plaintext temporarily for FCM notification (never persisted)
+	// Store plaintext temporarily for FCM notification (never persisted).
 	entry.CommandSecret = secret
 
-	// Hash the secret for secure storage in DB
+	// Hash the secret for secure storage in DB.
 	secretHash, err := password.HashSecret(secret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash command secret: %w", err)
 	}
 	entry.CommandSecretHash = secretHash
 
-	// Create device in devices table
+	// Create device in devices table.
 	if s.deviceSvc != nil {
 		createdDevice, err := s.deviceSvc.CreateFromInbox(ctx, entry, secret)
 		if err != nil {
@@ -270,7 +270,7 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 		)
 	}
 
-	// Transition to APPROVED
+	// Transition to APPROVED.
 	entry.Status = inbox.StatusApproved
 	entry.ApprovedAt = PtrToInt64(now.UnixMilli())
 	entry.UpdatedAt = now.UnixMilli()
@@ -280,7 +280,7 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 		return nil, fmt.Errorf("failed to update inbox entry: %w", err)
 	}
 
-	// Send FCM notification (best effort)
+	// Send FCM notification (best effort).
 	fcmPushSent := false
 	if s.fcmNotifier != nil && entry.FCMToken != "" {
 		wake := fcm.SilentWake{
@@ -372,12 +372,12 @@ func (s *Service) CreateInboxRequest(ctx context.Context, req *InboxRequest) (*I
 		return nil, err
 	}
 
-	// Use transaction to prevent TOCTOU race on IMEI uniqueness
-	// The cleanup + create must be atomic to avoid duplicate entries
+	// Use transaction to prevent TOCTOU race on IMEI uniqueness.
+	// The cleanup + create must be atomic to avoid duplicate entries.
 	if s.txManager != nil {
 		var response *InboxEntryResponse
 		err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-			// Check if device already exists or has pending registration
+			// Check if device already exists or has pending registration.
 			existingEntry, err := s.checkDeviceAndInboxStatus(txCtx, req.IMEI)
 			if err != nil {
 				return err
@@ -388,7 +388,7 @@ func (s *Service) CreateInboxRequest(ctx context.Context, req *InboxRequest) (*I
 				return nil
 			}
 
-			// Create new inbox entry within transaction
+			// Create new inbox entry within transaction.
 			entry, err := s.createInboxEntry(txCtx, req)
 			if err != nil {
 				return err
@@ -404,7 +404,7 @@ func (s *Service) CreateInboxRequest(ctx context.Context, req *InboxRequest) (*I
 		return response, nil
 	}
 
-	// Fallback without transaction (should not happen in production)
+	// Fallback without transaction (should not happen in production).
 	existingEntry, err := s.checkDeviceAndInboxStatus(ctx, req.IMEI)
 	if err != nil {
 		return nil, err

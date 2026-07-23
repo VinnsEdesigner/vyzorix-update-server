@@ -27,7 +27,7 @@ func BodySizeLimit(limit int64) gin.HandlerFunc {
 }
 
 // DefaultBodySizeLimit is 1MB - reasonable for most API requests.
-const DefaultBodySizeLimit int64 = 1 << 20 // 1 MB
+const DefaultBodySizeLimit int64 = 1 << 20 // 1 MB.
 
 // LargeBodySizeLimit is 8MB - for file uploads like APKs.
-const LargeBodySizeLimit int64 = 8 << 20 // 8 MB
+const LargeBodySizeLimit int64 = 8 << 20 // 8 MB.

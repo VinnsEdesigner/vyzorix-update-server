@@ -54,7 +54,7 @@ type MiddlewareSet struct {
 func WireMiddleware(cfg MiddlewareConfig) *MiddlewareSet {
 	ms := &MiddlewareSet{}
 
-	// Create MiddlewareFactory to centralize all middleware creation
+	// Create MiddlewareFactory to centralize all middleware creation.
 	ms.Factory = middleware.NewMiddlewareFactory(
 		cfg.Log,
 		cfg.SessionManager,
@@ -71,7 +71,7 @@ func WireMiddleware(cfg MiddlewareConfig) *MiddlewareSet {
 		},
 	)
 
-	// Get middleware instances for server use
+	// Get middleware instances for server use.
 	ms.HmacVerifier = ms.Factory.GetHmacVerifier()
 	ms.EncryptKeyFn = ms.Factory.GetEncryptionKeyFn()
 	ms.CookieAuth = middleware.NewCookieAuth(cfg.SessionManager, cfg.AuthService)
@@ -82,7 +82,7 @@ func WireMiddleware(cfg MiddlewareConfig) *MiddlewareSet {
 	ms.IPIntelligence = ms.Factory.IPIntelligence()
 	ms.SignatureVerifier = ms.Factory.GetSignatureVerifier()
 
-	// Wire API key middleware if service is available
+	// Wire API key middleware if service is available.
 	if cfg.APIKeyService != nil && cfg.AuditLogger != nil {
 		ms.TenantAPIKeyAuth = middleware.NewTenantAPIKeyAuth(cfg.APIKeyService, cfg.AuditLogger)
 		ms.APIKeyRateLimiter = middleware.NewInMemoryRateLimiter(100, time.Minute)

@@ -17,21 +17,21 @@ type ThresholdsInput struct {
 
 // Validate validates the threshold input.
 func (t *ThresholdsInput) Validate() error {
-	// If both risk values are provided, validate relationship
+	// If both risk values are provided, validate relationship.
 	if t.RiskWarn != nil && t.RiskCrit != nil {
 		if *t.RiskWarn >= *t.RiskCrit {
 			return errors.New("riskWarn must be less than riskCrit")
 		}
 	}
 
-	// If both thermal values are provided, validate relationship
+	// If both thermal values are provided, validate relationship.
 	if t.ThermalWarn != nil && t.ThermalCrit != nil {
 		if *t.ThermalWarn >= *t.ThermalCrit {
 			return errors.New("thermalWarn must be less than thermalCrit")
 		}
 	}
 
-	// If both buffer values are provided, validate relationship (inverted)
+	// If both buffer values are provided, validate relationship (inverted).
 	if t.BufferWarn != nil && t.BufferCrit != nil {
 		if *t.BufferCrit >= *t.BufferWarn {
 			return errors.New("bufferCrit must be less than bufferWarn")

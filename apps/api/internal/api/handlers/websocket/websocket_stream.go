@@ -63,30 +63,30 @@ func NewStreamUpgrader(
 // Returns an error and sends appropriate HTTP response on failure.
 func (u *StreamUpgrader) Upgrade(c *gin.Context, deviceID string) (*websocket.Conn, *hub.Client, error) {
 	
-	// In development, only skip if allowDevAuth is true (meaning EnforceHMAC=false was set)
+	// In development, only skip if allowDevAuth is true (meaning EnforceHMAC=false was set).
 	if u.config.Env == "production" || u.config.EnforceHMAC {
 		if err := u.verifyHMAC(c.Request); err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Invalid request"})
 			return nil, nil, err
 		}
 	} else if !u.allowDevAuth {
-		// This case handles production with EnforceHMAC=false (shouldn't happen but is defensive)
+		// This case handles production with EnforceHMAC=false (shouldn't happen but is defensive).
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "WebSocket authentication is required"})
 		return nil, nil, http.ErrNotSupported
 	}
 
-	// Perform WebSocket upgrade
+	// Perform WebSocket upgrade.
 	conn, err := u.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Create client for hub
+	// Create client for hub.
 	client := &hub.Client{
 		DeviceID: deviceID,
 		Conn:     conn,
 		Send:     make(chan command.CommandFrame, 32),
-		Hub:      nil, // Will be set by caller
+		Hub:      nil, // Will be set by caller.
 		
 		Done: make(chan struct{}),
 	}

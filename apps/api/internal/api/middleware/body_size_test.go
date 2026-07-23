@@ -16,7 +16,7 @@ func TestBodySizeLimit(t *testing.T) {
 		name          string
 		limit         int64
 		bodySize      int
-		contentLength int64 // 0 means use bodySize
+		contentLength int64 // 0 means use bodySize.
 		wantStatus    int
 	}{
 		{
@@ -41,7 +41,7 @@ func TestBodySizeLimit(t *testing.T) {
 			name:          "Content-Length exceeds limit",
 			limit:         100,
 			bodySize:      50,
-			contentLength: 150, // Content-Length > limit but body is smaller
+			contentLength: 150, // Content-Length > limit but body is smaller.
 			wantStatus:    http.StatusRequestEntityTooLarge,
 		},
 	}

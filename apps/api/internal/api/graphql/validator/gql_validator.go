@@ -57,7 +57,7 @@ func (v *Validator) ValidateCommand(cmd string) error {
 	if len(cmd) > 100 {
 		return errors.BadRequest("command too long")
 	}
-	// Allow alphanumeric, underscore, hyphen
+	// Allow alphanumeric, underscore, hyphen.
 	if !regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*$`).MatchString(cmd) {
 		return errors.BadRequest("invalid command format")
 	}
@@ -131,11 +131,11 @@ func (v *Validator) ValidateArgs(args map[string]interface{}) error {
 	if args == nil {
 		return nil
 	}
-	// Limit args size to prevent abuse
+	// Limit args size to prevent abuse.
 	if len(args) > 50 {
 		return errors.BadRequest("too many arguments")
 	}
-	// Check total size
+	// Check total size.
 	for k, val := range args {
 		if len(k) > 100 {
 			return errors.BadRequest("argument key too long")
@@ -147,7 +147,7 @@ func (v *Validator) ValidateArgs(args map[string]interface{}) error {
 				return errors.BadRequest("argument value too long")
 			}
 		case map[string]interface{}, []interface{}:
-			// For complex types, just check depth
+			// For complex types, just check depth.
 			if !checkDepth(v, 0, 5) {
 				return errors.BadRequest("argument nested too deeply")
 			}

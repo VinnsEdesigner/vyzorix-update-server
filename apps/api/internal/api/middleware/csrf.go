@@ -41,7 +41,7 @@ func DefaultCSRFConfig() CSRFConfig {
 		TokenLength: 32,
 		CookieName:  "_csrf",
 		HeaderName:  "X-CSRF-Token",
-		MaxAge:      3600, // 1 hour
+		MaxAge:      3600, // 1 hour.
 	}
 }
 
@@ -208,7 +208,7 @@ func (p *CSRFProtector) verifyToken(signed string) (string, bool) {
 // Middleware returns a Gin middleware that validates CSRF tokens.
 func (p *CSRFProtector) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Add cache control headers early to prevent caching of sensitive responses
+		// Add cache control headers early to prevent caching of sensitive responses.
 		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
 		c.Header("Pragma", "no-cache")
 		c.Header("Expires", "0")

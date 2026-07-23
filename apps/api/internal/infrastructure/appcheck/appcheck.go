@@ -39,8 +39,8 @@ func NewVerifier(log *slog.Logger, rawCredentials, expectedAppID string) (*Verif
 		return v, nil
 	}
 
-	// Write credentials to a temporary file and use WithAuthCredentialsFile
-	// This is the recommended approach to avoid the deprecated WithCredentialsJSON
+	// Write credentials to a temporary file and use WithAuthCredentialsFile.
+	// This is the recommended approach to avoid the deprecated WithCredentialsJSON.
 	// by explicitly specifying the credential type as ServiceAccount.
 	tmpFile, err := os.CreateTemp("", "appcheck-credentials-*.json")
 	if err != nil {
@@ -48,7 +48,7 @@ func NewVerifier(log *slog.Logger, rawCredentials, expectedAppID string) (*Verif
 	}
 	tmpPath := tmpFile.Name()
 
-	// Write credentials and close file before using it
+	// Write credentials and close file before using it.
 	if _, err := tmpFile.WriteString(rawCredentials); err != nil {
 		_ = tmpFile.Close()
 		_ = os.Remove(tmpPath)
@@ -59,8 +59,8 @@ func NewVerifier(log *slog.Logger, rawCredentials, expectedAppID string) (*Verif
 		return nil, fmt.Errorf("failed to close temp credentials file: %w", err)
 	}
 
-	// Use WithAuthCredentialsFile with explicit ServiceAccount type
-	// This validates that the credentials are actually a service account
+	// Use WithAuthCredentialsFile with explicit ServiceAccount type.
+	// This validates that the credentials are actually a service account.
 	creds := option.WithAuthCredentialsFile(option.ServiceAccount, tmpPath)
 
 	app, err := firebase.NewApp(context.Background(), nil, creds)
@@ -75,7 +75,7 @@ func NewVerifier(log *slog.Logger, rawCredentials, expectedAppID string) (*Verif
 		return nil, err
 	}
 
-	// Clean up temp file after Firebase app is initialized
+	// Clean up temp file after Firebase app is initialized.
 	_ = os.Remove(tmpPath)
 
 	v.client = client
@@ -108,8 +108,8 @@ func (v *Verifier) VerifyToken(ctx context.Context, token string) (*appcheck.Dec
 		return nil, ErrInvalidToken
 	}
 
-	// Optionally verify the app ID matches
-	// This ensures the token was issued to the expected application
+	// Optionally verify the app ID matches.
+	// This ensures the token was issued to the expected application.
 	if v.appID != "" && decoded.AppID != v.appID {
 		v.log.Warn("app check token app ID mismatch",
 			"expected", v.appID,

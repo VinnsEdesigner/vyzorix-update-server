@@ -42,21 +42,21 @@ func (t *Thresholds) HasValues() bool {
 
 func (t *Thresholds) Validate() error {
 	
-	// Risk scores should be 0-100
+	// Risk scores should be 0-100.
 	if t.RiskWarn < 0 || t.RiskWarn > 100 {
 		return ErrInvalidThreshold
 	}
 	if t.RiskCrit < 0 || t.RiskCrit > 100 {
 		return ErrInvalidThreshold
 	}
-	// Thermal thresholds should be reasonable (0-200 degrees Celsius)
+	// Thermal thresholds should be reasonable (0-200 degrees Celsius).
 	if t.ThermalWarn < 0 || t.ThermalWarn > 200 {
 		return ErrInvalidThreshold
 	}
 	if t.ThermalCrit < 0 || t.ThermalCrit > 200 {
 		return ErrInvalidThreshold
 	}
-	// Buffer levels should be 0-100 (percentage)
+	// Buffer levels should be 0-100 (percentage).
 	if t.BufferWarn < 0 || t.BufferWarn > 100 {
 		return ErrInvalidThreshold
 	}
@@ -64,8 +64,8 @@ func (t *Thresholds) Validate() error {
 		return ErrInvalidThreshold
 	}
 
-	// Relative validation: warning must be less than critical for risk/thermal,
-	// but for buffer, critical (low) must be less than warning (low)
+	// Relative validation: warning must be less than critical for risk/thermal,.
+	// but for buffer, critical (low) must be less than warning (low).
 	if t.RiskWarn >= t.RiskCrit && t.RiskWarn != 0 && t.RiskCrit != 0 {
 		return ErrInvalidThreshold
 	}
@@ -167,10 +167,10 @@ func (r *UpdateThresholdsRequest) ToThresholds() *Thresholds {
 	return t
 }
 
-// ResolveThresholds resolves the effective thresholds using the hierarchy:
-// device settings → organization settings → default thresholds
+// ResolveThresholds resolves the effective thresholds using the hierarchy:.
+// device settings → organization settings → default thresholds.
 func ResolveThresholds(deviceSettings *DeviceSettings, orgThresholds *Thresholds) *Thresholds {
-	// Start with organization thresholds or defaults
+	// Start with organization thresholds or defaults.
 	result := &Thresholds{
 		RiskWarn:    70,
 		RiskCrit:    90,
@@ -180,7 +180,7 @@ func ResolveThresholds(deviceSettings *DeviceSettings, orgThresholds *Thresholds
 		BufferCrit:  10,
 	}
 
-	// Apply organization thresholds if provided
+	// Apply organization thresholds if provided.
 	if orgThresholds != nil {
 		if orgThresholds.RiskWarn != 0 {
 			result.RiskWarn = orgThresholds.RiskWarn
@@ -202,7 +202,7 @@ func ResolveThresholds(deviceSettings *DeviceSettings, orgThresholds *Thresholds
 		}
 	}
 
-	// Apply device-specific thresholds if set (they override org defaults)
+	// Apply device-specific thresholds if set (they override org defaults).
 	if deviceSettings != nil && deviceSettings.HasThresholds() {
 		if deviceSettings.Thresholds.RiskWarn != 0 {
 			result.RiskWarn = deviceSettings.Thresholds.RiskWarn

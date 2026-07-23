@@ -258,7 +258,7 @@ func (r *CommandRepository) UpdateStatus(ctx context.Context, id string, status 
 		query = "UPDATE commands SET status = ?, updated_at = ? WHERE id = ?"
 		args = []interface{}{status, now, id}
 	case command.StatusPending, command.StatusCancelled:
-		// StatusPending and StatusCancelled - no additional timestamp fields
+		// StatusPending and StatusCancelled - no additional timestamp fields.
 		query = "UPDATE commands SET status = ?, updated_at = ? WHERE id = ?"
 		args = []interface{}{status, now, id}
 	}
@@ -377,7 +377,7 @@ func (r *CommandRepository) FindPendingByDeviceID(ctx context.Context, deviceID 
 
 // FindHistoryByDeviceID retrieves paginated command history for a device with time range filtering.
 func (r *CommandRepository) FindHistoryByDeviceID(ctx context.Context, deviceID string, status string, startTime, endTime time.Time, limit, offset int) ([]*command.Command, int, error) {
-	// Build query with optional status filter
+	// Build query with optional status filter.
 	baseQuery := `FROM commands WHERE device_id = ? AND created_at >= ? AND created_at <= ?`
 	args := []interface{}{deviceID, startTime.UnixMilli(), endTime.UnixMilli()}
 
@@ -386,7 +386,7 @@ func (r *CommandRepository) FindHistoryByDeviceID(ctx context.Context, deviceID 
 		args = append(args, status)
 	}
 
-	// Get total count
+	// Get total count.
 	countQuery := `SELECT COUNT(*) ` + baseQuery
 	var total int
 	err := r.queryRow(ctx, countQuery, args...).Scan(&total)
@@ -394,7 +394,7 @@ func (r *CommandRepository) FindHistoryByDeviceID(ctx context.Context, deviceID 
 		return nil, 0, err
 	}
 
-	// Get paginated results - include failure_reason
+	// Get paginated results - include failure_reason.
 	query := `SELECT id, device_id, dispatch_id, command, args, status, delivered_at, completed_at, created_at, updated_at, failure_reason ` + baseQuery + ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
 	args = append(args, limit, offset)
 
@@ -593,7 +593,7 @@ func (r *CommandRepository) CancelByDispatchPrefix(ctx context.Context, prefix s
 }
 
 // FindPending retrieves pending commands for the outbox worker.
-// Returns commands with status=pending where next_retry_at is null or in the past,
+// Returns commands with status=pending where next_retry_at is null or in the past,.
 // ordered by creation time (oldest first).
 func (r *CommandRepository) FindPending(ctx context.Context, limit int) ([]*command.Command, error) {
 	now := time.Now().UnixMilli()
@@ -697,7 +697,7 @@ func (r *CommandRepository) DeleteByDeviceIDs(ctx context.Context, deviceIDs []s
 		return 0, nil
 	}
 
-	// Build query with placeholders for each device ID
+	// Build query with placeholders for each device ID.
 	placeholders := make([]string, len(deviceIDs))
 	args := make([]interface{}, len(deviceIDs))
 	for i, id := range deviceIDs {

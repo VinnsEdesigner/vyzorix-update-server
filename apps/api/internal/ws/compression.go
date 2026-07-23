@@ -11,11 +11,11 @@ import (
 
 // CompressionConfig holds configuration for message compression.
 type CompressionConfig struct {
-	// Threshold is the minimum message size in bytes to trigger compression (default 1024)
+	// Threshold is the minimum message size in bytes to trigger compression (default 1024).
 	Threshold int
-	// Level is the gzip compression level (default gzip.DefaultCompression)
+	// Level is the gzip compression level (default gzip.DefaultCompression).
 	Level int
-	// EnableCompression enables compression (default true)
+	// EnableCompression enables compression (default true).
 	EnableCompression bool
 }
 
@@ -96,7 +96,7 @@ func (c *Compression) CompressMessage(data []byte) ([]byte, bool, error) {
 		c.gzipPool.Put(buf)
 	}()
 
-	// Create a new gzip writer - lightweight allocation
+	// Create a new gzip writer - lightweight allocation.
 	writer, err := gzip.NewWriterLevel(buf, c.config.Level)
 	if err != nil {
 		c.log.Warn("failed to create gzip writer", "err", err)
@@ -118,7 +118,7 @@ func (c *Compression) CompressMessage(data []byte) ([]byte, bool, error) {
 
 	compressed := buf.Bytes()
 
-	// Only use compressed if it's actually smaller
+	// Only use compressed if it's actually smaller.
 	if len(compressed) >= len(data) {
 		c.incrementBypassed()
 		return data, false, nil
@@ -126,18 +126,18 @@ func (c *Compression) CompressMessage(data []byte) ([]byte, bool, error) {
 
 	c.incrementCompressed(len(data), len(compressed))
 
-	// Calculate compression ratio for G4 verification
+	// Calculate compression ratio for G4 verification.
 	return compressed, true, nil
 }
 
 // RecordCompression records compression statistics for monitoring.
 func (c *Compression) RecordCompression(originalSize, compressedSize int) {
-	// Metrics are already recorded in incrementCompressed
+	// Metrics are already recorded in incrementCompressed.
 }
 
 // DecompressMessage decompresses a GZIP compressed message.
 func (c *Compression) DecompressMessage(data []byte) ([]byte, error) {
-	// Check for gzip magic bytes
+	// Check for gzip magic bytes.
 	if len(data) < 2 || data[0] != 0x1f || data[1] != 0x8b {
 		return data, nil
 	}

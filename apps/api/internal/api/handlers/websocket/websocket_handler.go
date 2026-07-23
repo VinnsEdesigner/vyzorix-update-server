@@ -56,10 +56,10 @@ func (h *StreamHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Attempt WebSocket upgrade
+	// Attempt WebSocket upgrade.
 	_, client, err := h.upgrader.Upgrade(c, deviceID)
 	if err != nil {
-		// Log failure via presenter
+		// Log failure via presenter.
 		if h.config.EnforceHMAC {
 			h.presenter.LogHMACFailed(c.Request.Context(), deviceID)
 		} else {
@@ -69,23 +69,23 @@ func (h *StreamHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Defensive: ensure client is not nil
+	// Defensive: ensure client is not nil.
 	if client == nil {
 		h.presenter.LogUpgradeFailed(c.Request.Context(), deviceID, "client was nil after upgrade")
 		return
 	}
 
-	// Set hub on client
+	// Set hub on client.
 	client.Hub = h.hub
 
-	// Register client with hub
+	// Register client with hub.
 	h.hub.Register(client)
 
-	// Log connection and audit
+	// Log connection and audit.
 	h.presenter.LogConnect(c.Request.Context(), deviceID)
 	h.presenter.AuditDeviceConnect(c.Request.Context(), deviceID)
 
-	// Start pumps - ReadPump blocks, so run WritePump in goroutine
+	// Start pumps - ReadPump blocks, so run WritePump in goroutine.
 	go client.WritePump()
 	client.ReadPump()
 }

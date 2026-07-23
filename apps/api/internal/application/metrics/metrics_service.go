@@ -32,19 +32,19 @@ func NewService(
 
 // GetDeviceMetrics retrieves aggregated metrics for chart visualization.
 func (s *Service) GetDeviceMetrics(ctx context.Context, req *GetMetricsRequest) (*GetMetricsResponse, error) {
-	// Determine time range
+	// Determine time range.
 	timeRange, resolution, startTime, endTime := s.parseTimeRange(req)
 
-	// Get latest telemetry for current values
+	// Get latest telemetry for current values.
 	latest, err := s.metricsRepo.GetLatestTelemetry(ctx, req.DeviceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get latest telemetry: %w", err)
 	}
 
-	// Get thresholds using hierarchical resolution: device → org → default
+	// Get thresholds using hierarchical resolution: device → org → default.
 	thresholds := s.getResolvedThresholds(ctx, req.DeviceID, req.OrganizationID)
 
-	// Get stats for each metric
+	// Get stats for each metric.
 	riskScoreStats, err := s.metricsRepo.GetMetricStats(ctx, req.DeviceID, "riskScore", startTime, endTime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get risk score stats: %w", err)
@@ -60,7 +60,7 @@ func (s *Service) GetDeviceMetrics(ctx context.Context, req *GetMetricsRequest) 
 		return nil, fmt.Errorf("failed to get buffer stats: %w", err)
 	}
 
-	// Get chart data for each metric
+	// Get chart data for each metric.
 	riskScoreChart, err := s.metricsRepo.GetAggregatedMetrics(ctx, req.DeviceID, "riskScore", startTime, endTime, resolution)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get risk score chart: %w", err)
@@ -76,13 +76,13 @@ func (s *Service) GetDeviceMetrics(ctx context.Context, req *GetMetricsRequest) 
 		return nil, fmt.Errorf("failed to get buffer chart: %w", err)
 	}
 
-	// Get threshold breach events
+	// Get threshold breach events.
 	events, err := s.metricsRepo.GetThresholdBreachEvents(ctx, req.DeviceID, startTime, endTime, thresholds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get threshold events: %w", err)
 	}
 
-	// Get current values from latest telemetry
+	// Get current values from latest telemetry.
 	currentRiskScore := float64(0)
 	currentThermal := float64(0)
 	currentBuffer := float64(0)
@@ -94,7 +94,7 @@ func (s *Service) GetDeviceMetrics(ctx context.Context, req *GetMetricsRequest) 
 		currentUptime = latest.Uptime
 	}
 
-	// Build response
+	// Build response.
 	return &GetMetricsResponse{
 		Device: DeviceInfoResponse{
 			IMEI: req.DeviceID,
@@ -161,7 +161,7 @@ func (s *Service) GetDeviceMetrics(ctx context.Context, req *GetMetricsRequest) 
 
 // GetTelemetry retrieves raw telemetry frames.
 func (s *Service) GetTelemetry(ctx context.Context, req *GetTelemetryRequest) (*GetTelemetryResponse, error) {
-	// Apply defaults
+	// Apply defaults.
 	if req.Limit <= 0 {
 		req.Limit = 500
 	}
@@ -169,24 +169,24 @@ func (s *Service) GetTelemetry(ctx context.Context, req *GetTelemetryRequest) (*
 		req.Limit = 10000
 	}
 
-	// Calculate time range
+	// Calculate time range.
 	endTime := time.Now()
 	if req.EndTime > 0 {
 		endTime = time.UnixMilli(req.EndTime)
 	}
 
-	startTime := endTime.Add(-6 * time.Hour) // Default: last 6 hours
+	startTime := endTime.Add(-6 * time.Hour) // Default: last 6 hours.
 	if req.StartTime > 0 {
 		startTime = time.UnixMilli(req.StartTime)
 	}
 
-	// Get telemetry frames
+	// Get telemetry frames.
 	frames, err := s.metricsRepo.GetTelemetryFrames(ctx, req.DeviceID, startTime, endTime, req.Limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get telemetry frames: %w", err)
 	}
 
-	// Build response
+	// Build response.
 	response := &GetTelemetryResponse{
 		Frames: make([]TelemetryFrameDTO, 0, len(frames)),
 		Stats: TelemetryStatsDTO{
@@ -212,7 +212,7 @@ func (s *Service) GetTelemetry(ctx context.Context, req *GetTelemetryRequest) (*
 		buffers = append(buffers, frame.BufferLevel)
 	}
 
-	// Calculate stats
+	// Calculate stats.
 	if len(riskScores) > 0 {
 		response.Stats.RiskScore = s.calculateStats(riskScores)
 		response.Stats.ThermalTemp = s.calculateStats(thermals)
@@ -227,7 +227,7 @@ func (s *Service) parseTimeRange(req *GetMetricsRequest) (rangeStr, resolution s
 	endTime = time.Now()
 	resolution = req.Resolution
 
-	// Handle explicit time range
+	// Handle explicit time range.
 	if req.StartTime > 0 && req.EndTime > 0 {
 		startTime = time.UnixMilli(req.StartTime)
 		endTime = time.UnixMilli(req.EndTime)
@@ -238,10 +238,10 @@ func (s *Service) parseTimeRange(req *GetMetricsRequest) (rangeStr, resolution s
 		return rangeStr, resolution, startTime, endTime
 	}
 
-	// Handle range preset
+	// Handle range preset.
 	rangeStr = req.Range
 	if rangeStr == "" {
-		rangeStr = TimeRange6h // Default
+		rangeStr = TimeRange6h // Default.
 	}
 
 	switch rangeStr {
@@ -303,12 +303,12 @@ func (s *Service) convertThresholdEvents(events []*metrics.MetricThresholdEvent)
 	return result
 }
 
-// getResolvedThresholds retrieves thresholds using hierarchical resolution:
-// device settings → organization settings → defaults
+// getResolvedThresholds retrieves thresholds using hierarchical resolution:.
+// device settings → organization settings → defaults.
 func (s *Service) getResolvedThresholds(ctx context.Context, deviceID, orgID string) *metrics.ThresholdPreset {
 	result := defaultThresholds()
 
-	// Get organization thresholds
+	// Get organization thresholds.
 	if orgID != "" && s.orgSettingsRepo != nil {
 		orgSettings, err := s.orgSettingsRepo.FindByOrganizationID(ctx, orgID)
 		if err == nil && orgSettings != nil && orgSettings.DefaultThresholds != nil {
@@ -321,7 +321,7 @@ func (s *Service) getResolvedThresholds(ctx context.Context, deviceID, orgID str
 		}
 	}
 
-	// Override with device-specific thresholds
+	// Override with device-specific thresholds.
 	if deviceID != "" && s.deviceSettingsRepo != nil {
 		deviceSettings, err := s.deviceSettingsRepo.FindByDeviceIMEI(ctx, deviceID)
 		if err == nil && deviceSettings != nil && deviceSettings.HasThresholds() {

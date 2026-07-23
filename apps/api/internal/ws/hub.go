@@ -58,7 +58,7 @@ type Hub struct {
 type DeviceStatusUpdate struct {
 	DeviceID string
 	Online   bool
-	Source   string // "websocket" or "rest"
+	Source   string // "websocket" or "rest".
 }
 
 // HubMetrics holds metrics for the WebSocket hub.
@@ -84,8 +84,8 @@ type HubConfig struct {
 // LatencyConfig holds configuration for latency tracking.
 type LatencyConfig struct {
 	Enabled      bool
-	MaxLatencyMS int     // Maximum acceptable latency in milliseconds (G6: sub-500ms)
-	SampleRate   float64 // Percentage of messages to track (0.01 = 1%)
+	MaxLatencyMS int     // Maximum acceptable latency in milliseconds (G6: sub-500ms).
+	SampleRate   float64 // Percentage of messages to track (0.01 = 1%).
 }
 
 // New creates a new Hub instance.
@@ -101,31 +101,31 @@ func New(log *slog.Logger, deviceRepo device.Repository, telemetryRepo telemetry
 		broadcast:     make(chan []byte, 256),
 	}
 
-	// Initialize with defaults if no config
+	// Initialize with defaults if no config.
 	if cfg == nil {
 		cfg = &HubConfig{}
 	}
 
-	// Initialize compression
+	// Initialize compression.
 	if cfg.Compression == nil {
 		cfg.Compression = DefaultCompressionConfig()
 	}
 
 	h.compression = NewCompression(log, cfg.Compression)
 
-	// Initialize telemetry filter
+	// Initialize telemetry filter.
 	if cfg.Filter == nil {
 		cfg.Filter = DefaultTelemetryFilterConfig()
 	}
 
 	h.telemetryFilter = NewTelemetryFilter(log, cfg.Filter)
 
-	// Initialize latency tracking
+	// Initialize latency tracking.
 	if cfg.Latency == nil {
 		cfg.Latency = &LatencyConfig{
 			Enabled:      true,
-			MaxLatencyMS: 500, // Informational target (not enforced)
-			SampleRate:   0.1, // 10% sampling
+			MaxLatencyMS: 500, // Informational target (not enforced).
+			SampleRate:   0.1, // 10% sampling.
 		}
 	}
 
@@ -219,7 +219,7 @@ func (h *Hub) Run(ctx context.Context) {
 			
 			h.deviceStatus <- DeviceStatusUpdate{DeviceID: c.DeviceID, Online: true, Source: "websocket"}
 
-			// Replay queued messages to the newly connected device
+			// Replay queued messages to the newly connected device.
 			if h.messageQueue != nil {
 				result := h.messageQueue.ReplayQueue(c.DeviceID, c.Send)
 				if result.Count > 0 {
@@ -234,7 +234,7 @@ func (h *Hub) Run(ctx context.Context) {
 				}
 			}
 
-			// Emit device connected event
+			// Emit device connected event.
 			if h.eventProcessor != nil {
 				metadata := map[string]any{
 					"clientIP":  c.Conn.RemoteAddr().String(),
@@ -253,7 +253,7 @@ func (h *Hub) Run(ctx context.Context) {
 				delete(h.clients, c.DeviceID)
 				close(c.Send)
 
-				// Emit device disconnected event
+				// Emit device disconnected event.
 				if h.eventProcessor != nil {
 					metadata := map[string]any{
 						"timestamp": time.Now().UnixMilli(),
@@ -279,7 +279,7 @@ func (h *Hub) Run(ctx context.Context) {
 			}
 			h.mu.RUnlock()
 
-			_ = raw // prevent unused variable warning from channel receive
+			_ = raw // prevent unused variable warning from channel receive.
 
 		case status := <-h.deviceStatus:
 			
@@ -358,12 +358,12 @@ func (h *Hub) BroadcastTelemetry(raw []byte) {
 // BroadcastTelemetryToFiltered sends telemetry only to subscribed clients.
 func (h *Hub) BroadcastTelemetryToFiltered(senderDeviceID string, raw []byte) {
 	if h.telemetryFilter == nil {
-		// No filter configured, broadcast to all
+		// No filter configured, broadcast to all.
 		h.BroadcastTelemetry(raw)
 		return
 	}
 
-	// Snapshot clients under RLock, then release lock before iterating
+	// Snapshot clients under RLock, then release lock before iterating.
 	h.mu.RLock()
 	clients := make(map[string]*Client, len(h.clients))
 	for id, c := range h.clients {
@@ -371,16 +371,16 @@ func (h *Hub) BroadcastTelemetryToFiltered(senderDeviceID string, raw []byte) {
 	}
 	h.mu.RUnlock()
 
-	// Iterate snapshot without holding lock
+	// Iterate snapshot without holding lock.
 	for clientID, c := range clients {
-		// Skip the sender
+		// Skip the sender.
 		if clientID == senderDeviceID {
 			continue
 		}
 
-		// Check if this client is subscribed to the sender's telemetry
+		// Check if this client is subscribed to the sender's telemetry.
 		if h.telemetryFilter.ShouldForward(clientID, senderDeviceID) {
-			// Client buffer full, skip
+			// Client buffer full, skip.
 			select {
 			case c.Send <- command.CommandFrame{Type: "telemetry", Args: raw}:
 			default:
@@ -428,9 +428,9 @@ func (h *Hub) Send(deviceID string, frame command.CommandFrame) bool {
 	h.mu.RUnlock()
 
 	if c == nil {
-		// Device offline - try to queue if message queue is available
+		// Device offline - try to queue if message queue is available.
 		if h.messageQueue != nil {
-			// Use synchronous DB write for 100% delivery guarantee (G1)
+			// Use synchronous DB write for 100% delivery guarantee (G1).
 			success := h.messageQueue.EnqueueWithConfirmation(deviceID, frame)
 			if h.latencyConfig != nil && h.latencyConfig.Enabled {
 				h.trackLatency(deviceID, frame.DispatchID, startTime, success)
@@ -450,9 +450,9 @@ func (h *Hub) Send(deviceID string, frame command.CommandFrame) bool {
 
 		return true
 	default:
-		// Client buffer full - try queue if available
+		// Client buffer full - try queue if available.
 		if h.messageQueue != nil {
-			// Use synchronous DB write for 100% delivery guarantee (G1)
+			// Use synchronous DB write for 100% delivery guarantee (G1).
 			success := h.messageQueue.EnqueueWithConfirmation(deviceID, frame)
 			if h.latencyConfig != nil && h.latencyConfig.Enabled {
 				h.trackLatency(deviceID, frame.DispatchID, startTime, success)
@@ -473,7 +473,7 @@ func (h *Hub) trackLatency(deviceID, dispatchID string, startTime time.Time, suc
 
 	latencyMS := time.Since(startTime).Milliseconds()
 
-	// Sample based on configuration
+	// Sample based on configuration.
 	if rand.Float64() > h.latencyConfig.SampleRate {
 		return
 	}
@@ -488,7 +488,7 @@ func (h *Hub) trackLatency(deviceID, dispatchID string, startTime time.Time, suc
 		h.metrics.LatencyMetrics.FailedMessages++
 	}
 	h.metrics.LatencyMetrics.TotalLatencyMS += latencyMS
-	// Update min/max
+	// Update min/max.
 	if h.metrics.LatencyMetrics.MinLatencyMS == 0 || latencyMS < h.metrics.LatencyMetrics.MinLatencyMS {
 		h.metrics.LatencyMetrics.MinLatencyMS = latencyMS
 	}
@@ -497,7 +497,7 @@ func (h *Hub) trackLatency(deviceID, dispatchID string, startTime time.Time, suc
 		h.metrics.LatencyMetrics.MaxLatencyMS = latencyMS
 	}
 
-	// Check if exceeds target (threshold is informational only)
+	// Check if exceeds target (threshold is informational only).
 	if latencyMS > int64(h.latencyConfig.MaxLatencyMS) {
 		h.metrics.LatencyMetrics.ExceededCount++
 		h.metrics.LatencyMetrics.LastExceededAt = time.Now().Unix()
@@ -510,7 +510,7 @@ func (h *Hub) trackLatency(deviceID, dispatchID string, startTime time.Time, suc
 		)
 	}
 
-	// Update average
+	// Update average.
 	h.metrics.LatencyMetrics.AverageLatencyMS = float64(h.metrics.LatencyMetrics.TotalLatencyMS) / float64(h.metrics.LatencyMetrics.TotalMessages)
 }
 
@@ -522,7 +522,7 @@ func (h *Hub) SendWithDeliveryConfirmation(deviceID string, frame command.Comman
 	h.mu.RUnlock()
 
 	if c == nil {
-		// Device offline - queue with synchronous DB write
+		// Device offline - queue with synchronous DB write.
 		if h.messageQueue != nil {
 			return h.messageQueue.EnqueueWithConfirmation(deviceID, frame), nil
 		}
@@ -530,20 +530,20 @@ func (h *Hub) SendWithDeliveryConfirmation(deviceID string, frame command.Comman
 		return false, nil
 	}
 
-	// Create a channel for delivery confirmation
+	// Create a channel for delivery confirmation.
 	confirmation := make(chan bool, 1)
 	frame.DeliveryConfirmation = confirmation
 
 	select {
 	case c.Send <- frame:
-		// Wait for confirmation or timeout using timer that can be stopped
+		// Wait for confirmation or timeout using timer that can be stopped.
 		timer := time.NewTimer(timeout)
 		defer timer.Stop()
 		select {
 		case confirmed := <-confirmation:
 			return confirmed, nil
 		case <-timer.C:
-			// Timeout - try to queue if available
+			// Timeout - try to queue if available.
 			if h.messageQueue != nil {
 				return h.messageQueue.EnqueueWithConfirmation(deviceID, frame), nil
 			}
@@ -551,7 +551,7 @@ func (h *Hub) SendWithDeliveryConfirmation(deviceID string, frame command.Comman
 			return false, fmt.Errorf("delivery confirmation timeout")
 		}
 	default:
-		// Client buffer full - queue with synchronous write
+		// Client buffer full - queue with synchronous write.
 		if h.messageQueue != nil {
 			return h.messageQueue.EnqueueWithConfirmation(deviceID, frame), nil
 		}
@@ -598,13 +598,13 @@ func (h *Hub) schedulePartialReplay(deviceID string, remaining int) {
 		return
 	}
 
-	// Schedule retry with exponential backoff (100ms, 200ms, 400ms)
+	// Schedule retry with exponential backoff (100ms, 200ms, 400ms).
 	go func() {
 		for attempt := 0; attempt < 3; attempt++ {
 			backoff := time.Duration(100<<attempt) * time.Millisecond
 			time.Sleep(backoff)
 
-			// Check if client still exists
+			// Check if client still exists.
 			h.mu.RLock()
 			client, exists = h.clients[deviceID]
 			h.mu.RUnlock()
@@ -613,7 +613,7 @@ func (h *Hub) schedulePartialReplay(deviceID string, remaining int) {
 				return
 			}
 
-			// Try to replay remaining messages
+			// Try to replay remaining messages.
 			result := h.messageQueue.ReplayQueue(deviceID, client.Send)
 			if result.Count > 0 {
 				h.log.Info("retry replayed queued messages to device",
@@ -641,7 +641,7 @@ func (h *Hub) BroadcastEvent(evtType string, data []byte) error {
 		return nil
 	}
 
-	// Broadcast to all connected dashboards
+	// Broadcast to all connected dashboards.
 	return h.dashboardBroadcaster.BroadcastToDashboard("", "", evtType, data)
 }
 
@@ -703,7 +703,7 @@ func (h *Hub) GetConnectionInfo(deviceID string) *ConnectionInfo {
 		return nil
 	}
 
-	// Check actual connection state, not just presence in map
+	// Check actual connection state, not just presence in map.
 	isConnected := c.IsConnected()
 	if !isConnected {
 		return nil

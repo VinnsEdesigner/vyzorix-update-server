@@ -28,14 +28,14 @@ type ClientMetrics struct {
 	ConnectAttempts    int32 `json:"connectAttempts"`
 	ConnectSuccesses   int32 `json:"connectSuccesses"`
 	ConnectFailures    int32 `json:"connectFailures"`
-	LastConnectedAt    int64 `json:"lastConnectedAt"`    // Unix timestamp
-	LastDisconnectedAt int64 `json:"lastDisconnectedAt"` // Unix timestamp
-	LastMessageAt      int64 `json:"lastMessageAt"`      // Unix timestamp of last message received
+	LastConnectedAt    int64 `json:"lastConnectedAt"`    // Unix timestamp.
+	LastDisconnectedAt int64 `json:"lastDisconnectedAt"` // Unix timestamp.
+	LastMessageAt      int64 `json:"lastMessageAt"`      // Unix timestamp of last message received.
 	MessagesSent       int32 `json:"messagesSent"`
 	MessagesReceived   int32 `json:"messagesReceived"`
 	PongMissedCount    int32 `json:"pongMissedCount"`
 	RateLimitedCount   int32 `json:"rateLimitedCount"`
-	LastRateLimitedAt  int64 `json:"lastRateLimitedAt"` // Unix timestamp
+	LastRateLimitedAt  int64 `json:"lastRateLimitedAt"` // Unix timestamp.
 }
 
 // Client represents a WebSocket client connection to a device.
@@ -45,11 +45,11 @@ type Client struct {
 	Hub      *Hub
 	log      *slog.Logger
 	DeviceID string
-	ClientID string // Dashboard client ID for subscription tracking
+	ClientID string // Dashboard client ID for subscription tracking.
 	
 	Done chan struct{}
 
-	// Metrics and state
+	// Metrics and state.
 	metrics     ClientMetrics
 	connectedAt int64
 	isConnected atomic.Bool
@@ -171,10 +171,10 @@ func (c *Client) ReadPump() {
 		closeConn(c.Conn, c.log, "readPump")
 	}()
 
-	// Mark as connected
+	// Mark as connected.
 	c.RecordConnectSuccess()
 
-	c.Conn.SetReadLimit(1 << 20) // 1MB
+	c.Conn.SetReadLimit(1 << 20) // 1MB.
 	setReadDeadline(c.Conn, time.Now().Add(pongWait), c.log)
 	c.Conn.SetPongHandler(func(string) error {
 		setReadDeadline(c.Conn, time.Now().Add(pongWait), c.log)
@@ -237,7 +237,7 @@ func (c *Client) processTelemetry(raw []byte) {
 	}
 	c.Hub.BroadcastTelemetry(raw)
 
-	// Process telemetry for threshold breach events
+	// Process telemetry for threshold breach events.
 	if c.Hub.eventProcessor != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -301,7 +301,7 @@ func (c *Client) WritePump() {
 				return
 			}
 
-			// Apply rate limiting before sending
+			// Apply rate limiting before sending.
 			if c.Hub.rateLimiter != nil {
 				if !c.Hub.rateLimiter.Allow(c.DeviceID) {
 					c.RecordRateLimited()
@@ -310,11 +310,11 @@ func (c *Client) WritePump() {
 						"dispatchId", frame.DispatchID,
 					)
 
-					continue // Skip this message but don't close connection
+					continue // Skip this message but don't close connection.
 				}
 			}
 
-			// Compress message if needed and configured (G4: 60% bandwidth reduction)
+			// Compress message if needed and configured (G4: 60% bandwidth reduction).
 			if c.Hub.compression != nil {
 				if err := c.writeCompressed(frame); err != nil {
 					return
@@ -325,8 +325,8 @@ func (c *Client) WritePump() {
 
 			c.RecordMessageSent()
 
-			// Send delivery confirmation if requested (G1: 100% delivery guarantee)
-			// Set to nil after close to prevent double-close panic
+			// Send delivery confirmation if requested (G1: 100% delivery guarantee).
+			// Set to nil after close to prevent double-close panic.
 			if frame.DeliveryConfirmation != nil {
 				frame.DeliveryConfirmation <- true
 				close(frame.DeliveryConfirmation)

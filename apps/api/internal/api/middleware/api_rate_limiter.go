@@ -173,14 +173,14 @@ func (l *RateLimiter) Allow(key string) bool {
 	// Only refill tokens if refill duration is > 0 (avoid divide by zero).
 	if l.Refill > 0 {
 		elapsed := now.Sub(b.last)
-		// Calculate tokens to add based on elapsed time
+		// Calculate tokens to add based on elapsed time.
 		tokensToAdd := int(elapsed / l.Refill)
 		if tokensToAdd > 0 {
 			b.tokens += tokensToAdd
 			if b.tokens > l.Capacity {
 				b.tokens = l.Capacity
 			}
-			// Advance last by only the consumed time, preserving fractional remainder for next call
+			// Advance last by only the consumed time, preserving fractional remainder for next call.
 			b.last = b.last.Add(time.Duration(tokensToAdd) * l.Refill)
 		}
 	}

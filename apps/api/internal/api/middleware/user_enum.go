@@ -74,7 +74,7 @@ func PreventUserEnum() gin.HandlerFunc {
 			// Add fake processing delay if this was an auth endpoint.
 			path := c.Request.URL.Path
 			if isAuthEndpoint(path) {
-				// Use the domain auth package's timing-safe implementation
+				// Use the domain auth package's timing-safe implementation.
 				auth.ComputeFakePasswordHash()
 			}
 		}

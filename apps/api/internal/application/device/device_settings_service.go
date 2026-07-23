@@ -40,7 +40,7 @@ func (s *DeviceSettingsService) SettingsRepo() device.DeviceSettingsRepository {
 
 // CreateSettings creates device settings with defaults for a new device.
 func (s *DeviceSettingsService) CreateSettings(ctx context.Context, deviceIMEI string) (*device.DeviceSettings, error) {
-	// Verify device exists
+	// Verify device exists.
 	d, err := s.deviceRepo.FindByIMEI(ctx, deviceIMEI)
 	if err != nil {
 		if errors.Is(err, device.ErrNotFound) {
@@ -53,16 +53,16 @@ func (s *DeviceSettingsService) CreateSettings(ctx context.Context, deviceIMEI s
 		return nil, errors.New("device must belong to an organization before creating settings")
 	}
 
-	// Check if settings already exist
+	// Check if settings already exist.
 	existing, err := s.settingsRepo.FindByDeviceIMEI(ctx, deviceIMEI)
 	if err != nil && !errors.Is(err, device.ErrSettingsNotFound) {
 		return nil, err
 	}
 	if existing != nil {
-		return existing, nil // Already exists, return it
+		return existing, nil // Already exists, return it.
 	}
 
-	// Create new settings
+	// Create new settings.
 	settings := device.NewDeviceSettings(deviceIMEI)
 
 	if err := s.settingsRepo.Create(ctx, settings); err != nil {
@@ -96,7 +96,7 @@ func (s *DeviceSettingsService) GetOrCreateSettings(ctx context.Context, deviceI
 		return settings, nil
 	}
 
-	// Create with defaults
+	// Create with defaults.
 	return s.CreateSettings(ctx, deviceIMEI)
 }
 
@@ -110,7 +110,7 @@ func (s *DeviceSettingsService) UpdateSettings(ctx context.Context, deviceIMEI s
 		return nil, err
 	}
 
-	// Apply updates
+	// Apply updates.
 	if req.CustomName != nil {
 		settings.CustomName = *req.CustomName
 	}
@@ -143,13 +143,13 @@ func (s *DeviceSettingsService) UpdateThresholds(ctx context.Context, deviceIMEI
 		return nil, err
 	}
 
-	// Merge with existing thresholds or create new
+	// Merge with existing thresholds or create new.
 	thresholds := settings.Thresholds
 	if thresholds == nil {
 		thresholds = &device.Thresholds{}
 	}
 
-	// Apply updates from request (only update non-nil values)
+	// Apply updates from request (only update non-nil values).
 	if req.RiskWarn != nil {
 		thresholds.RiskWarn = *req.RiskWarn
 	}
@@ -169,7 +169,7 @@ func (s *DeviceSettingsService) UpdateThresholds(ctx context.Context, deviceIMEI
 		thresholds.BufferCrit = *req.BufferCrit
 	}
 
-	// Validate the merged thresholds
+	// Validate the merged thresholds.
 	if err := thresholds.Validate(); err != nil {
 		return nil, err
 	}
@@ -192,23 +192,23 @@ func (s *DeviceSettingsService) DeleteSettings(ctx context.Context, deviceIMEI s
 	return nil
 }
 
-// GetEffectiveThresholds returns the effective thresholds for a device using the hierarchy:
-// device settings → organization settings → default thresholds
+// GetEffectiveThresholds returns the effective thresholds for a device using the hierarchy:.
+// device settings → organization settings → default thresholds.
 func (s *DeviceSettingsService) GetEffectiveThresholds(ctx context.Context, deviceIMEI string) (*device.Thresholds, error) {
-	// Get device to find organization
+	// Get device to find organization.
 	d, err := s.deviceRepo.FindByIMEI(ctx, deviceIMEI)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get device settings
+	// Get device settings.
 	var deviceSettings *device.DeviceSettings
 	deviceSettings, err = s.settingsRepo.FindByDeviceIMEI(ctx, deviceIMEI)
 	if err != nil && !errors.Is(err, device.ErrSettingsNotFound) {
 		return nil, err
 	}
 
-	// Get organization settings
+	// Get organization settings.
 	var orgThresholds *device.Thresholds
 	if d.OrganizationID != "" {
 		orgSettings, err := s.orgSettingsRepo.FindByOrganizationID(ctx, d.OrganizationID)
@@ -227,6 +227,6 @@ func (s *DeviceSettingsService) GetEffectiveThresholds(ctx context.Context, devi
 		}
 	}
 
-	// Resolve using hierarchy
+	// Resolve using hierarchy.
 	return device.ResolveThresholds(deviceSettings, orgThresholds), nil
 }

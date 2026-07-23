@@ -35,14 +35,14 @@ type OAuthStateRepository interface {
 // OAuthStateRepositoryImpl handles OAuth state persistence.
 type OAuthStateRepositoryImpl struct {
 	db     *sql.DB
-	encKey []byte // 32 bytes for AES-256
+	encKey []byte // 32 bytes for AES-256.
 }
 
 // NewOAuthStateRepository creates a new OAuthStateRepository.
 func NewOAuthStateRepository(db *sql.DB, encKey string) (OAuthStateRepository, error) {
 	key, err := hex.DecodeString(encKey)
 	if err != nil || len(key) != 32 {
-		// Generate a random key if not provided
+		// Generate a random key if not provided.
 		key = make([]byte, 32)
 		if _, err := rand.Read(key); err != nil {
 			return nil, err
@@ -53,16 +53,16 @@ func NewOAuthStateRepository(db *sql.DB, encKey string) (OAuthStateRepository, e
 
 // Create stores a new OAuth state.
 func (r *OAuthStateRepositoryImpl) Create(ctx context.Context, state, redirectURL, provider string) (string, error) {
-	// Encrypt the state for storage
+	// Encrypt the state for storage.
 	encryptedState, err := r.encrypt(state)
 	if err != nil {
 		return "", err
 	}
 
 	now := time.Now()
-	expiresAt := now.Add(10 * time.Minute) // State expires in 10 minutes
+	expiresAt := now.Add(10 * time.Minute) // State expires in 10 minutes.
 
-	// Generate unique ID
+	// Generate unique ID.
 	idBytes := make([]byte, 16)
 	if _, randErr := rand.Read(idBytes); randErr != nil {
 		return "", randErr
@@ -101,13 +101,13 @@ func (r *OAuthStateRepositoryImpl) GetByState(ctx context.Context, state string)
 	oauth.ExpiresAt = time.UnixMilli(expiresAtMillis)
 	oauth.CreatedAt = time.UnixMilli(createdAtMillis)
 
-	// Decrypt the state
+	// Decrypt the state.
 	decryptedState, err := r.decrypt(encryptedState)
 	if err != nil {
 		return nil, err
 	}
 
-	// Verify the state matches
+	// Verify the state matches.
 	if decryptedState != state {
 		return nil, errors.New("oauth state mismatch")
 	}

@@ -199,7 +199,7 @@ func (c *Client) FetchAssetChecksum(ctx context.Context, releaseTag, assetName s
 			continue
 		}
 
-		// Parse checksum file - format is typically: "sha256  filename" or "sha256 *filename"
+		// Parse checksum file - format is typically: "sha256  filename" or "sha256 *filename".
 		content := string(body)
 		lines := strings.Split(content, "\n")
 		for _, line := range lines {
@@ -207,12 +207,12 @@ func (c *Client) FetchAssetChecksum(ctx context.Context, releaseTag, assetName s
 			if line == "" {
 				continue
 			}
-			// Handle both "sha256  filename" and "sha256 *filename" formats
+			// Handle both "sha256  filename" and "sha256 *filename" formats.
 			parts := strings.Fields(line)
 			if len(parts) >= 2 {
 				checksum := parts[0]
-				name := parts[len(parts)-1] // Last field is the filename
-				// Remove any leading * for globs
+				name := parts[len(parts)-1] // Last field is the filename.
+				// Remove any leading * for globs.
 				name = strings.TrimPrefix(name, "*")
 				if name == assetName {
 					return checksum, nil

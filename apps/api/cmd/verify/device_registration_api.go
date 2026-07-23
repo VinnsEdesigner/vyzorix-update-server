@@ -69,7 +69,7 @@ func drLoadSpec() *drSpec {
 		{"GET", "/v1/device/inbox/:imei", "InboxHandler", "GetInboxEntry"},
 		{"POST", "/v1/device/inbox/:imei/ack", "InboxHandler", "AckInbox"},
 		{"DELETE", "/v1/device/:id", "DeviceHandler", "Deregister"},
-		// DEPRECATED: {"POST", "/v1/device/register", "DeviceRegisterHandler", "Handle"},
+		// DEPRECATED: {"POST", "/v1/device/register", "DeviceRegisterHandler", "Handle"},.
 		{"POST", "/v1/device/confirm", "DeviceConfirmHandler", "Handle"},
 		{"GET", "/v1/devices", "DevicesHandler", "GetDevices"},
 		{"GET", "/v1/devices/:id", "DevicesHandler", "GetDeviceDetail"},
@@ -171,13 +171,13 @@ func drGetRouteContent(root string) string {
 	for _, rf := range routeFiles {
 		if data, err := os.ReadFile(rf); err == nil {
 			routeData := string(data)
-			// Add pseudo full paths for routes defined under router groups
-			// deviceInbox := r.Group("/device") means routes like "/inbox/:imei"
-			// become "/device/inbox/:imei"
+			// Add pseudo full paths for routes defined under router groups.
+			// deviceInbox := r.Group("/device") means routes like "/inbox/:imei".
+			// become "/device/inbox/:imei".
 			routeData = strings.ReplaceAll(routeData, "\"/inbox\"", "\"/device/inbox\"")
 			routeData = strings.ReplaceAll(routeData, "\"/inbox/:imei\"", "\"/device/inbox/:imei\"")
 			routeData = strings.ReplaceAll(routeData, "\"/inbox/:imei/ack\"", "\"/device/inbox/:imei/ack\"")
-			// devices := r.Group("/devices") for /v1/devices endpoints
+			// devices := r.Group("/devices") for /v1/devices endpoints.
 			routeData = strings.ReplaceAll(routeData, "\"/:imei\"", "\"/devices/:imei\"")
 			routeData = strings.ReplaceAll(routeData, "\"/devices/:imei\"", "\"/devices/:id\"")
 			routeData = strings.ReplaceAll(routeData, "\"/count\"", "\"/device/count\"")

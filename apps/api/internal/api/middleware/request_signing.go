@@ -103,7 +103,7 @@ func (c *ReplayCache) Use(signature string) bool {
 
 	// Check if signature was already used (O(1) lookup).
 	if _, exists := c.seen[signature]; exists {
-		return false // Replay detected
+		return false // Replay detected.
 	}
 
 	// Periodic cleanup: only clean when cache is getting full or every minute.
@@ -115,7 +115,7 @@ func (c *ReplayCache) Use(signature string) bool {
 		// If still at capacity after cleanup, remove oldest entries directly.
 		// Use simple truncation instead of iterating all entries.
 		if len(c.seen) >= c.maxSize {
-			evictCount := c.maxSize / 10 // Remove 10%
+			evictCount := c.maxSize / 10 // Remove 10%.
 			removed := 0
 			for sig := range c.seen {
 				if removed >= evictCount {
@@ -333,8 +333,8 @@ func SignRequest(method, path string, body []byte, clientID, clientSecret string
 // IsSigningRequiredPath checks if a path requires request signing.
 // Per PRD: Only truly public endpoints are exempt; everything else requires signing.
 func IsSigningRequiredPath(path string) bool {
-	// Exempt ONLY these truly public endpoints:
-	// Health checks - no auth required, just liveness probes
+	// Exempt ONLY these truly public endpoints:.
+	// Health checks - no auth required, just liveness probes.
 	if path == "/health/live" ||
 		path == "/health/ready" ||
 		path == "/healthz" ||
@@ -342,35 +342,35 @@ func IsSigningRequiredPath(path string) bool {
 		return false
 	}
 
-	// Static assets - no sensitive data
+	// Static assets - no sensitive data.
 	if strings.HasPrefix(path, "/assets/") ||
 		path == "/favicon.ico" {
 		return false
 	}
 
-	// Auth endpoints use their own session/cookie auth mechanism
-	// These are exempt because they establish the session used for signing
+	// Auth endpoints use their own session/cookie auth mechanism.
+	// These are exempt because they establish the session used for signing.
 	if strings.HasPrefix(path, "/v1/auth/") {
 		return false
 	}
 
-	// Device status is public - used by devices to check in
+	// Device status is public - used by devices to check in.
 	if path == "/v1/device/status" {
 		return false
 	}
 
-	// API info - no sensitive data
+	// API info - no sensitive data.
 	if path == "/api/v1/version" || path == "/api/v1/changelog" {
 		return false
 	}
 
-	// ALL other endpoints REQUIRE request signing
-	// This includes:
-	// - /metrics (Prometheus metrics - sensitive operational data)
-	// - /health/secure (security status - requires signing)
-	// - All /v1/device/* endpoints except register
-	// - All /v1/command/* endpoints
-	// - All admin endpoints
+	// ALL other endpoints REQUIRE request signing.
+	// This includes:.
+	// - /metrics (Prometheus metrics - sensitive operational data).
+	// - /health/secure (security status - requires signing).
+	// - All /v1/device/* endpoints except register.
+	// - All /v1/command/* endpoints.
+	// - All admin endpoints.
 	return true
 }
 
@@ -415,7 +415,7 @@ func RequestSigningMiddleware(verifier *SignatureVerifier) func(c *gin.Context) 
 					"message": "Request timestamp outside allowed window",
 				})
 			case errors.Is(err, ErrUnknownClient):
-				// Return generic error to prevent client ID enumeration
+				// Return generic error to prevent client ID enumeration.
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 					"error":   "SIGN_003",
 					"message": "Signature verification failed",
@@ -444,7 +444,7 @@ func RequestSigningMiddleware(verifier *SignatureVerifier) func(c *gin.Context) 
 
 			return
 		}
-		// This prevents requests where the clientID header is missing/empty
+		// This prevents requests where the clientID header is missing/empty.
 		imei := c.Param("imei")
 		if imei != "" && clientID == "" {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{

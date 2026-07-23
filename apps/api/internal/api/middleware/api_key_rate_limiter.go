@@ -93,10 +93,10 @@ func (r *InMemoryRateLimiter) Cleanup() {
 // APIKeyRateLimitMiddleware creates middleware that rate limits requests by API key.
 func APIKeyRateLimitMiddleware(limiter *InMemoryRateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get API key ID from context (set by tenant_api_key middleware)
+		// Get API key ID from context (set by tenant_api_key middleware).
 		keyIDVal, exists := c.Get("api_key_id")
 		if !exists {
-			// No API key, skip rate limiting
+			// No API key, skip rate limiting.
 			c.Next()
 			return
 		}
@@ -109,7 +109,7 @@ func APIKeyRateLimitMiddleware(limiter *InMemoryRateLimiter) gin.HandlerFunc {
 
 		result := limiter.Allow(keyID)
 
-		// Set rate limit headers
+		// Set rate limit headers.
 		c.Header("X-RateLimit-Limit", strconv.Itoa(limiter.limit))
 		c.Header("X-RateLimit-Remaining", strconv.Itoa(result.Remaining))
 		c.Header("X-RateLimit-Reset", strconv.FormatInt(result.ResetAt.Unix(), 10))

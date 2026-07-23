@@ -30,7 +30,7 @@ var LifecycleTransitions = map[Lifecycle]map[Lifecycle]bool{
 	LifecycleRegistered: {
 		LifecycleDeregistered: true,
 	},
-	LifecycleDeregistered: {}, // No transitions allowed from deregistered
+	LifecycleDeregistered: {}, // No transitions allowed from deregistered.
 }
 
 // CanTransitionTo returns true if the lifecycle can transition to the target state.

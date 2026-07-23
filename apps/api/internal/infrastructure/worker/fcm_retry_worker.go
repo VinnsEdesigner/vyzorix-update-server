@@ -75,7 +75,7 @@ func (w *FCMRetryWorker) processRetries() {
 	repo := storage.NewPendingFCMRepository(w.db)
 	now := time.Now().UnixMilli()
 
-	// Get pending notifications due for retry
+	// Get pending notifications due for retry.
 	notifications, err := w.getPendingNotifications(ctx, repo, now, 100)
 	if err != nil {
 		w.logger.Error("failed to get pending FCM notifications",
@@ -119,7 +119,7 @@ func (w *FCMRetryWorker) getPendingNotifications(ctx context.Context, repo *stor
 }
 
 func (w *FCMRetryWorker) processNotification(ctx context.Context, repo *storage.PendingFCMRepository, n *storage.PendingFCMNotification) {
-	// Build the silent wake notification
+	// Build the silent wake notification.
 	wake := fcm.SilentWake{
 		Token:      n.Token,
 		Command:    n.Command,
@@ -128,10 +128,10 @@ func (w *FCMRetryWorker) processNotification(ctx context.Context, repo *storage.
 		Priority:  n.Priority,
 	}
 
-	// Attempt to send
+	// Attempt to send.
 	err := w.fcmNotifier.SendSilentWake(ctx, wake)
 	if err == nil {
-		// Success - delete the pending notification
+		// Success - delete the pending notification.
 		if deleteErr := repo.Delete(ctx, n.ID); deleteErr != nil {
 			w.logger.Warn("failed to delete pending FCM notification after success",
 				"id", n.ID,
@@ -146,13 +146,13 @@ func (w *FCMRetryWorker) processNotification(ctx context.Context, repo *storage.
 		return
 	}
 
-	// Failure - update retry count and schedule next attempt
+	// Failure - update retry count and schedule next attempt.
 	n.RetryCount++
 	n.LastError = err.Error()
 	n.UpdatedAt = time.Now().UnixMilli()
 
 	if n.RetryCount >= w.maxRetries {
-		// Max retries exceeded - delete and log
+		// Max retries exceeded - delete and log.
 		if deleteErr := repo.Delete(ctx, n.ID); deleteErr != nil {
 			w.logger.Warn("failed to delete maxed-out FCM notification",
 				"id", n.ID,
@@ -168,7 +168,7 @@ func (w *FCMRetryWorker) processNotification(ctx context.Context, repo *storage.
 		return
 	}
 
-	// Schedule exponential backoff: 1min, 2min, 4min, 8min, 16min
+	// Schedule exponential backoff: 1min, 2min, 4min, 8min, 16min.
 	delay := w.baseDelay * time.Duration(1<<(n.RetryCount-1))
 	n.NextRetryAt = time.Now().Add(delay).UnixMilli()
 
@@ -198,7 +198,7 @@ func PersistPendingNotification(ctx context.Context, db *sql.DB, wake fcm.Silent
 		Command:    wake.Command,
 		Priority:   wake.Priority,
 		RetryCount: 0,
-		NextRetryAt: time.Now().Add(time.Minute).UnixMilli(), // First retry in 1 minute
+		NextRetryAt: time.Now().Add(time.Minute).UnixMilli(), // First retry in 1 minute.
 		CreatedAt:  time.Now().UnixMilli(),
 		UpdatedAt:  time.Now().UnixMilli(),
 	}

@@ -10,9 +10,9 @@ import (
 func migrateDeviceEvents(db *sql.DB) error {
 	ctx := context.Background()
 
-	// Create device_events table
-	// Note: SQLite uses TEXT for timestamps (stored as ISO8601 strings) and TEXT for JSON
-	// TIMESTAMPTZ and JSONB are PostgreSQL-specific types not supported by SQLite
+	// Create device_events table.
+	// Note: SQLite uses TEXT for timestamps (stored as ISO8601 strings) and TEXT for JSON.
+	// TIMESTAMPTZ and JSONB are PostgreSQL-specific types not supported by SQLite.
 	query := `
 	CREATE TABLE IF NOT EXISTS device_events (
 		id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
@@ -30,7 +30,7 @@ func migrateDeviceEvents(db *sql.DB) error {
 		return err
 	}
 
-	// Create index on device_id and timestamp for efficient timeline queries
+	// Create index on device_id and timestamp for efficient timeline queries.
 	indexQuery := `
 	CREATE INDEX IF NOT EXISTS idx_device_events_device_timestamp 
 		ON device_events(device_id, timestamp DESC)`
@@ -39,7 +39,7 @@ func migrateDeviceEvents(db *sql.DB) error {
 		return err
 	}
 
-	// Create composite index for cursor-based pagination
+	// Create composite index for cursor-based pagination.
 	cursorIndex := `
 	CREATE INDEX IF NOT EXISTS idx_device_events_cursor 
 		ON device_events(device_id, timestamp DESC, id)`
@@ -48,7 +48,7 @@ func migrateDeviceEvents(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for event type filtering
+	// Create index for event type filtering.
 	typeIndex := `
 	CREATE INDEX IF NOT EXISTS idx_device_events_type 
 		ON device_events(device_id, event_type, timestamp DESC)`

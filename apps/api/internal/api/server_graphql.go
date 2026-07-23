@@ -53,20 +53,20 @@ func (s *Server) RegisterGraphQL(
 	memberService *orgapp.MemberService,
 	invitationService *orgapp.InvitationService,
 ) error {
-	// Store InvitationService for graceful shutdown
+	// Store InvitationService for graceful shutdown.
 	s.InvitationService = invitationService
 
-	// Get auth services from server config
+	// Get auth services from server config.
 	authService := s.getAuthService()
 	sessionManager := s.getSessionManager()
 
-	// Create auth middleware for GraphQL
+	// Create auth middleware for GraphQL.
 	authMw := gqlmiddleware.NewAuthMiddleware(sessionManager, authService, s.log)
 
-	// Create GraphQL presenter for audit logging
+	// Create GraphQL presenter for audit logging.
 	gqlPresenter := gqladapters.NewPresenter(s.AuditLogger)
 
-	// Create resolver with presenter
+	// Create resolver with presenter.
 	res := resolver.NewResolver(
 		deviceService,
 		deviceSettingsService,
@@ -81,7 +81,7 @@ func (s *Server) RegisterGraphQL(
 		telemetryRepo,
 		logsRepo,
 		metricsRepo,
-		nil, // FCM notifier
+		nil, // FCM notifier.
 		authMw,
 		gqlPresenter,
 		operatorRepo,
@@ -94,28 +94,28 @@ func (s *Server) RegisterGraphQL(
 		invitationService,
 	)
 
-	// Build schema
+	// Build schema.
 	gqlSchema, err := schema.BuildSchema(res)
 	if err != nil {
 		return err
 	}
 
-	// Create handler
+	// Create handler.
 	h := &gqlHandler{
 		schema:         gqlSchema,
 		authMiddleware: authMw,
 	}
 
-	// Register routes with org-scoped paths
+	// Register routes with org-scoped paths.
 	s.engine.POST("/:org/graphql", h.Handle)
 	s.engine.GET("/:org/graphql", h.Handle)
 
-	// Playground is only enabled in non-production environments
+	// Playground is only enabled in non-production environments.
 	if s.config.Env != "production" {
 		s.engine.GET("/:org/playground", h.Playground)
 	}
 
-	// Create subscription handler
+	// Create subscription handler.
 	subsHandler := subscription.NewHandler(&subscription.Config{
 		Hub:         wsHub,
 		Resolver:    res,
@@ -155,7 +155,7 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Extract org from URL parameter
+	// Extract org from URL parameter.
 	orgID := c.Param("org")
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -165,7 +165,7 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Authenticate
+	// Authenticate.
 	headers := map[string]string{
 		"Cookie":        c.GetHeader("Cookie"),
 		"Authorization": c.GetHeader("Authorization"),
@@ -180,11 +180,11 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Add operator and organization to context
+	// Add operator and organization to context.
 	ctx := gqlcontext.WithOperator(c.Request.Context(), op)
 	ctx = gqlcontext.WithOrganizationID(ctx, orgID)
 
-	// Execute query
+	// Execute query.
 	result := gql.Do(gql.Params{
 		Schema:         h.schema,
 		RequestString:  req.Query,
@@ -193,7 +193,7 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 		Context:        ctx,
 	})
 
-	// Convert errors
+	// Convert errors.
 	if len(result.Errors) > 0 {
 		gqlErrs := make([]map[string]interface{}, 0, len(result.Errors))
 

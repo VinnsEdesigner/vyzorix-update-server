@@ -9,11 +9,11 @@ import (
 
 // RateLimiterConfig holds configuration for the rate limiter.
 type RateLimiterConfig struct {
-	// Rate is the number of tokens added per second (default 100)
+	// Rate is the number of tokens added per second (default 100).
 	Rate float64
-	// Burst is the maximum bucket size (default 200)
+	// Burst is the maximum bucket size (default 200).
 	Burst int
-	// CleanupInterval is how often to clean up idle entries
+	// CleanupInterval is how often to clean up idle entries.
 	CleanupInterval time.Duration
 }
 
@@ -83,18 +83,18 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 		rl.buckets[clientID] = bucket
 	}
 
-	// Refill tokens based on elapsed time
+	// Refill tokens based on elapsed time.
 	now := time.Now()
 	elapsed := now.Sub(bucket.lastUpdate).Seconds()
 	bucket.lastUpdate = now
 
-	// Add tokens based on rate
+	// Add tokens based on rate.
 	bucket.tokens += elapsed * bucket.rate
 	if bucket.tokens > float64(bucket.burst) {
 		bucket.tokens = float64(bucket.burst)
 	}
 
-	// Check if we have tokens
+	// Check if we have tokens.
 	if bucket.tokens >= 1 {
 		bucket.tokens--
 
@@ -126,18 +126,18 @@ func (rl *RateLimiter) AllowN(clientID string, n int) bool {
 		rl.buckets[clientID] = bucket
 	}
 
-	// Refill tokens based on elapsed time
+	// Refill tokens based on elapsed time.
 	now := time.Now()
 	elapsed := now.Sub(bucket.lastUpdate).Seconds()
 	bucket.lastUpdate = now
 
-	// Add tokens based on rate
+	// Add tokens based on rate.
 	bucket.tokens += elapsed * bucket.rate
 	if bucket.tokens > float64(bucket.burst) {
 		bucket.tokens = float64(bucket.burst)
 	}
 
-	// Check if we have enough tokens
+	// Check if we have enough tokens.
 	if bucket.tokens >= float64(n) {
 		bucket.tokens -= float64(n)
 
@@ -215,7 +215,7 @@ func (rl *RateLimiter) cleanupIdle() {
 	removed := 0
 
 	for clientID, bucket := range rl.buckets {
-		// Remove entries that haven't been used in a while and have no tokens
+		// Remove entries that haven't been used in a while and have no tokens.
 		if bucket.tokens < 1 && now.Sub(bucket.lastUpdate) > idleThreshold {
 			delete(rl.buckets, clientID)
 
@@ -246,7 +246,7 @@ func (rl *RateLimiter) TokenLevel(clientID string) float64 {
 		return float64(rl.config.Burst)
 	}
 
-	// Calculate current tokens including refill
+	// Calculate current tokens including refill.
 	now := time.Now()
 	elapsed := now.Sub(bucket.lastUpdate).Seconds()
 

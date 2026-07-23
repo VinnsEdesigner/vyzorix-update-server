@@ -17,9 +17,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// =============================================================================
-// Mock Repository
-// =============================================================================
+// =============================================================================.
+// Mock Repository.
+// =============================================================================.
 
 type mockAPIKeyRepository struct {
 	mu     sync.RWMutex
@@ -190,9 +190,9 @@ func (r *mockAPIKeyRepository) ExistsByOperatorAndNameExcluding(ctx context.Cont
 	return false, nil
 }
 
-// =============================================================================
-// Test Setup
-// =============================================================================
+// =============================================================================.
+// Test Setup.
+// =============================================================================.
 
 // testOperatorMiddleware sets default operator_id and organization_id in context for testing.
 func testOperatorMiddleware(operatorID, organizationID string) gin.HandlerFunc {
@@ -218,16 +218,16 @@ func setupTestRouter(t *testing.T) (*gin.Engine, *Handler, *mockAPIKeyRepository
 
 	r := gin.New()
 	keysGroup := r.Group("/v1")
-	// Apply test middleware to set operator_id and organization_id
+	// Apply test middleware to set operator_id and organization_id.
 	keysGroup.Use(testOperatorMiddleware("test-operator-001", "test-org-001"))
 	handler.RegisterRoutes(keysGroup)
 
 	return r, handler, repo
 }
 
-// =============================================================================
-// CreateKey Tests - Full Router Context
-// =============================================================================
+// =============================================================================.
+// CreateKey Tests - Full Router Context.
+// =============================================================================.
 
 func TestCreateKey_Success(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
@@ -307,7 +307,7 @@ func TestCreateKey_DuplicateName(t *testing.T) {
 		t.Fatalf("First request failed: %d", w.Code)
 	}
 
-	// Second request with same name
+	// Second request with same name.
 	req2, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
 	req2.Header.Set("Content-Type", "application/json")
 
@@ -329,7 +329,7 @@ func TestCreateKey_DuplicateName(t *testing.T) {
 func TestCreateKey_MonthlyLimit(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create 10 keys (max per month)
+	// Create 10 keys (max per month).
 	for i := 0; i < 10; i++ {
 		body := `{"name": "Key ` + string(rune('A'+i)) + `", "scope": "read"}`
 		req, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
@@ -343,7 +343,7 @@ func TestCreateKey_MonthlyLimit(t *testing.T) {
 		}
 	}
 
-	// 11th key should fail
+	// 11th key should fail.
 	body := `{"name": "Key Overflow", "scope": "read"}`
 	req, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -412,14 +412,14 @@ func TestCreateKey_MissingName(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// ListKeys Tests - Full Router Context
-// =============================================================================
+// =============================================================================.
+// ListKeys Tests - Full Router Context.
+// =============================================================================.
 
 func TestListKeys_Success(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create some keys first
+	// Create some keys first.
 	for i := 0; i < 3; i++ {
 		body := `{"name": "List Test Key ` + string(rune('0'+i)) + `", "scope": "read"}`
 		req, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
@@ -429,7 +429,7 @@ func TestListKeys_Success(t *testing.T) {
 		router.ServeHTTP(w, req)
 	}
 
-	// List keys
+	// List keys.
 	req, _ := http.NewRequest("GET", "/v1/api-keys", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -463,7 +463,7 @@ func TestListKeys_Success(t *testing.T) {
 func TestListKeys_Pagination(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create 5 keys
+	// Create 5 keys.
 	for i := 0; i < 5; i++ {
 		body := `{"name": "Page Key ` + string(rune('A'+i)) + `", "scope": "read"}`
 		req, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
@@ -473,7 +473,7 @@ func TestListKeys_Pagination(t *testing.T) {
 		router.ServeHTTP(w, req)
 	}
 
-	// List with limit
+	// List with limit.
 	req, _ := http.NewRequest("GET", "/v1/api-keys?page=1&limit=2", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -496,14 +496,14 @@ func TestListKeys_Pagination(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// GetKey Tests - Full Router Context
-// =============================================================================
+// =============================================================================.
+// GetKey Tests - Full Router Context.
+// =============================================================================.
 
 func TestGetKey_Success(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create a key
+	// Create a key.
 	body := `{"name": "Get Test Key", "scope": "read"}`
 	createReq, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
 	createReq.Header.Set("Content-Type", "application/json")
@@ -515,7 +515,7 @@ func TestGetKey_Success(t *testing.T) {
 	json.Unmarshal(createW.Body.Bytes(), &created)
 	keyID := created["id"].(string)
 
-	// Get the key
+	// Get the key.
 	req, _ := http.NewRequest("GET", "/v1/api-keys/"+keyID, nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -535,7 +535,7 @@ func TestGetKey_Success(t *testing.T) {
 		t.Errorf("Name = %v, want Get Test Key", response["name"])
 	}
 
-	// Full key should NOT be in response
+	// Full key should NOT be in response.
 	if response["api_key"] != nil {
 		t.Error("Response should NOT contain api_key (full key)")
 	}
@@ -553,14 +553,14 @@ func TestGetKey_NotFound(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// UpdateKey Tests - Full Router Context
-// =============================================================================
+// =============================================================================.
+// UpdateKey Tests - Full Router Context.
+// =============================================================================.
 
 func TestUpdateKey_Rename(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create a key
+	// Create a key.
 	body := `{"name": "Original Name", "scope": "read"}`
 	createReq, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
 	createReq.Header.Set("Content-Type", "application/json")
@@ -572,7 +572,7 @@ func TestUpdateKey_Rename(t *testing.T) {
 	json.Unmarshal(createW.Body.Bytes(), &created)
 	keyID := created["id"].(string)
 
-	// Update the name
+	// Update the name.
 	updateBody := `{"name": "Updated Name"}`
 	updateReq, _ := http.NewRequest("PATCH", "/v1/api-keys/"+keyID, bytes.NewBufferString(updateBody))
 	updateReq.Header.Set("Content-Type", "application/json")
@@ -595,7 +595,7 @@ func TestUpdateKey_Rename(t *testing.T) {
 func TestUpdateKey_ChangeScope(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create a key with read scope
+	// Create a key with read scope.
 	body := `{"name": "Scope Change Test", "scope": "read"}`
 	createReq, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
 	createReq.Header.Set("Content-Type", "application/json")
@@ -607,7 +607,7 @@ func TestUpdateKey_ChangeScope(t *testing.T) {
 	json.Unmarshal(createW.Body.Bytes(), &created)
 	keyID := created["id"].(string)
 
-	// Update scope to write
+	// Update scope to write.
 	updateBody := `{"scope": "write"}`
 	updateReq, _ := http.NewRequest("PATCH", "/v1/api-keys/"+keyID, bytes.NewBufferString(updateBody))
 	updateReq.Header.Set("Content-Type", "application/json")
@@ -630,7 +630,7 @@ func TestUpdateKey_ChangeScope(t *testing.T) {
 func TestUpdateKey_DuplicateName(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create two keys
+	// Create two keys.
 	body1 := `{"name": "Key One", "scope": "read"}`
 	createReq1, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body1))
 	createReq1.Header.Set("Content-Type", "application/json")
@@ -647,7 +647,7 @@ func TestUpdateKey_DuplicateName(t *testing.T) {
 	json.Unmarshal(createW2.Body.Bytes(), &created2)
 	key2ID := created2["id"].(string)
 
-	// Try to rename key2 to key1's name
+	// Try to rename key2 to key1's name.
 	updateBody := `{"name": "Key One"}`
 	updateReq, _ := http.NewRequest("PATCH", "/v1/api-keys/"+key2ID, bytes.NewBufferString(updateBody))
 	updateReq.Header.Set("Content-Type", "application/json")
@@ -660,14 +660,14 @@ func TestUpdateKey_DuplicateName(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// RevokeKey Tests - Full Router Context
-// =============================================================================
+// =============================================================================.
+// RevokeKey Tests - Full Router Context.
+// =============================================================================.
 
 func TestRevokeKey_Success(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create a key
+	// Create a key.
 	body := `{"name": "Key To Revoke", "scope": "read"}`
 	createReq, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
 	createReq.Header.Set("Content-Type", "application/json")
@@ -680,7 +680,7 @@ func TestRevokeKey_Success(t *testing.T) {
 	json.Unmarshal(createW.Body.Bytes(), &created)
 	keyID := created["id"].(string)
 
-	// Revoke the key
+	// Revoke the key.
 	revokeReq, _ := http.NewRequest("DELETE", "/v1/api-keys/"+keyID, nil)
 	revokeReq.Header.Set("User-Agent", "TestClient/1.0")
 
@@ -691,7 +691,7 @@ func TestRevokeKey_Success(t *testing.T) {
 		t.Errorf("Status = %d, want %d. Body: %s", revokeW.Code, http.StatusNoContent, revokeW.Body.String())
 	}
 
-	// Verify key is no longer accessible
+	// Verify key is no longer accessible.
 	getReq, _ := http.NewRequest("GET", "/v1/api-keys/"+keyID, nil)
 	getW := httptest.NewRecorder()
 	router.ServeHTTP(getW, getReq)
@@ -713,14 +713,14 @@ func TestRevokeKey_NotFound(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// RotateKey Tests - Full Router Context
-// =============================================================================
+// =============================================================================.
+// RotateKey Tests - Full Router Context.
+// =============================================================================.
 
 func TestRotateKey_Success(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create a key
+	// Create a key.
 	body := `{"name": "Key To Rotate", "scope": "read"}`
 	createReq, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
 	createReq.Header.Set("Content-Type", "application/json")
@@ -734,7 +734,7 @@ func TestRotateKey_Success(t *testing.T) {
 	keyID := created["id"].(string)
 	originalFullKey := created["api_key"].(string)
 
-	// Rotate the key
+	// Rotate the key.
 	rotateReq, _ := http.NewRequest("POST", "/v1/api-keys/"+keyID+"/rotate", nil)
 	rotateReq.Header.Set("User-Agent", "TestClient/1.0")
 
@@ -765,7 +765,7 @@ func TestRotateKey_Success(t *testing.T) {
 func TestRotateKey_MonthlyLimit(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create 10 keys (max)
+	// Create 10 keys (max).
 	for i := 0; i < 10; i++ {
 		body := `{"name": "Rotate Limit ` + string(rune('A'+i)) + `", "scope": "read"}`
 		req, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
@@ -775,7 +775,7 @@ func TestRotateKey_MonthlyLimit(t *testing.T) {
 		router.ServeHTTP(w, req)
 	}
 
-	// Get first key ID
+	// Get first key ID.
 	listReq, _ := http.NewRequest("GET", "/v1/api-keys?limit=1", nil)
 	listW := httptest.NewRecorder()
 	router.ServeHTTP(listW, listReq)
@@ -785,7 +785,7 @@ func TestRotateKey_MonthlyLimit(t *testing.T) {
 	keys := listResp["keys"].([]interface{})
 	firstKeyID := keys[0].(map[string]interface{})["id"].(string)
 
-	// Rotate should fail due to monthly limit
+	// Rotate should fail due to monthly limit.
 	rotateReq, _ := http.NewRequest("POST", "/v1/api-keys/"+firstKeyID+"/rotate", nil)
 	rotateW := httptest.NewRecorder()
 	router.ServeHTTP(rotateW, rotateReq)
@@ -807,15 +807,15 @@ func TestRotateKey_NotFound(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// Tenant Isolation Tests - Full Router Context
-// =============================================================================
+// =============================================================================.
+// Tenant Isolation Tests - Full Router Context.
+// =============================================================================.
 
 func TestTenantIsolation_ListKeys(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create keys for operator-1 (simulated via session)
-	// In real test, we'd use different sessions
+	// Create keys for operator-1 (simulated via session).
+	// In real test, we'd use different sessions.
 	for i := 0; i < 3; i++ {
 		body := `{"name": "Op1 Key ` + string(rune('A'+i)) + `", "scope": "read"}`
 		req, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
@@ -825,7 +825,7 @@ func TestTenantIsolation_ListKeys(t *testing.T) {
 		router.ServeHTTP(w, req)
 	}
 
-	// List should only show keys for this operator
+	// List should only show keys for this operator.
 	req, _ := http.NewRequest("GET", "/v1/api-keys", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -842,7 +842,7 @@ func TestTenantIsolation_ListKeys(t *testing.T) {
 func TestTenantIsolation_GetOtherTenantKey(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create a key
+	// Create a key.
 	body := `{"name": "Private Key", "scope": "read"}`
 	createReq, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
 	createReq.Header.Set("Content-Type", "application/json")
@@ -854,9 +854,9 @@ func TestTenantIsolation_GetOtherTenantKey(t *testing.T) {
 	json.Unmarshal(createW.Body.Bytes(), &created)
 	keyID := created["id"].(string)
 
-	// Note: In this test setup, operator_id comes from context
-	// In real scenario, another operator would get 404
-	// This tests that keys are isolated by operator_id in context
+	// Note: In this test setup, operator_id comes from context.
+	// In real scenario, another operator would get 404.
+	// This tests that keys are isolated by operator_id in context.
 	req, _ := http.NewRequest("GET", "/v1/api-keys/"+keyID, nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -866,9 +866,9 @@ func TestTenantIsolation_GetOtherTenantKey(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// Scope Enforcement Tests - Full Router Context
-// =============================================================================
+// =============================================================================.
+// Scope Enforcement Tests - Full Router Context.
+// =============================================================================.
 
 func TestScopeEnforcement_ReadScope(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
@@ -936,14 +936,14 @@ func TestScopeEnforcement_AdminScope(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// Full Flow Integration Tests
-// =============================================================================
+// =============================================================================.
+// Full Flow Integration Tests.
+// =============================================================================.
 
 func TestFullFlow_CreateListGetUpdateRotateRevoke(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// 1. Create a key
+	// 1. Create a key.
 	createBody := `{"name": "Flow Test Key", "scope": "write"}`
 	createReq, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(createBody))
 	createReq.Header.Set("Content-Type", "application/json")
@@ -960,7 +960,7 @@ func TestFullFlow_CreateListGetUpdateRotateRevoke(t *testing.T) {
 	keyID := created["id"].(string)
 	originalKey := created["api_key"].(string)
 
-	// 2. List keys - should have 1
+	// 2. List keys - should have 1.
 	listReq, _ := http.NewRequest("GET", "/v1/api-keys", nil)
 	listW := httptest.NewRecorder()
 	router.ServeHTTP(listW, listReq)
@@ -972,7 +972,7 @@ func TestFullFlow_CreateListGetUpdateRotateRevoke(t *testing.T) {
 		t.Errorf("Step 2: Keys count = %d, want 1", len(keys))
 	}
 
-	// 3. Get the specific key
+	// 3. Get the specific key.
 	getReq, _ := http.NewRequest("GET", "/v1/api-keys/"+keyID, nil)
 	getW := httptest.NewRecorder()
 	router.ServeHTTP(getW, getReq)
@@ -983,7 +983,7 @@ func TestFullFlow_CreateListGetUpdateRotateRevoke(t *testing.T) {
 		t.Errorf("Step 3: Name = %v, want Flow Test Key", getResp["name"])
 	}
 
-	// 4. Update the key name
+	// 4. Update the key name.
 	updateBody := `{"name": "Updated Flow Key"}`
 	updateReq, _ := http.NewRequest("PATCH", "/v1/api-keys/"+keyID, bytes.NewBufferString(updateBody))
 	updateReq.Header.Set("Content-Type", "application/json")
@@ -1001,7 +1001,7 @@ func TestFullFlow_CreateListGetUpdateRotateRevoke(t *testing.T) {
 		t.Errorf("Step 4: Name = %v, want Updated Flow Key", updateResp["name"])
 	}
 
-	// 5. Rotate the key - this revokes the original keyID
+	// 5. Rotate the key - this revokes the original keyID.
 	rotateReq, _ := http.NewRequest("POST", "/v1/api-keys/"+keyID+"/rotate", nil)
 	rotateW := httptest.NewRecorder()
 	router.ServeHTTP(rotateW, rotateReq)
@@ -1018,7 +1018,7 @@ func TestFullFlow_CreateListGetUpdateRotateRevoke(t *testing.T) {
 		t.Error("Step 5: Rotated key should be different")
 	}
 
-	// 6. Revoke the NEW key (original was already revoked by rotation)
+	// 6. Revoke the NEW key (original was already revoked by rotation).
 	revokeReq, _ := http.NewRequest("DELETE", "/v1/api-keys/"+newKeyID, nil)
 	revokeW := httptest.NewRecorder()
 	router.ServeHTTP(revokeW, revokeReq)
@@ -1027,7 +1027,7 @@ func TestFullFlow_CreateListGetUpdateRotateRevoke(t *testing.T) {
 		t.Fatalf("Step 6: Revoke failed: %d", revokeW.Code)
 	}
 
-	// 7. Verify new key is gone
+	// 7. Verify new key is gone.
 	getReq2, _ := http.NewRequest("GET", "/v1/api-keys/"+newKeyID, nil)
 	getW2 := httptest.NewRecorder()
 	router.ServeHTTP(getW2, getReq2)
@@ -1040,7 +1040,7 @@ func TestFullFlow_CreateListGetUpdateRotateRevoke(t *testing.T) {
 func TestCreateKey_FullKeyReturnedOnce(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// Create a key
+	// Create a key.
 	body := `{"name": "One Time View", "scope": "read"}`
 	createReq, _ := http.NewRequest("POST", "/v1/api-keys", bytes.NewBufferString(body))
 	createReq.Header.Set("Content-Type", "application/json")
@@ -1053,7 +1053,7 @@ func TestCreateKey_FullKeyReturnedOnce(t *testing.T) {
 	keyID := created["id"].(string)
 	fullKey := created["api_key"].(string)
 
-	// Get the key - full key should NOT be there
+	// Get the key - full key should NOT be there.
 	getReq, _ := http.NewRequest("GET", "/v1/api-keys/"+keyID, nil)
 	getW := httptest.NewRecorder()
 	router.ServeHTTP(getW, getReq)
@@ -1065,12 +1065,12 @@ func TestCreateKey_FullKeyReturnedOnce(t *testing.T) {
 		t.Error("GET response should NOT contain api_key")
 	}
 
-	_ = fullKey // Use it to avoid unused variable
+	_ = fullKey // Use it to avoid unused variable.
 }
 
-// =============================================================================
-// Error Response Format Tests
-// =============================================================================
+// =============================================================================.
+// Error Response Format Tests.
+// =============================================================================.
 
 func TestErrorResponse_Format(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
@@ -1089,7 +1089,7 @@ func TestErrorResponse_Format(t *testing.T) {
 	var response map[string]interface{}
 	json.Unmarshal(w2.Body.Bytes(), &response)
 
-	// Should have error and message
+	// Should have error and message.
 	if response["error"] == nil {
 		t.Error("Response should have 'error' field")
 	}
@@ -1098,7 +1098,7 @@ func TestErrorResponse_Format(t *testing.T) {
 		t.Error("Response should have 'message' field")
 	}
 
-	// Error code should be machine-readable
+	// Error code should be machine-readable.
 	errorCodes := []string{
 		"key_name_conflict",
 		"monthly_limit_exceeded",
@@ -1118,19 +1118,19 @@ func TestErrorResponse_Format(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// HTTP Method Tests
-// =============================================================================
+// =============================================================================.
+// HTTP Method Tests.
+// =============================================================================.
 
 func TestHTTPMethods_NotAllowed(t *testing.T) {
 	router, _, _ := setupTestRouter(t)
 
-	// GET on POST-only endpoint should 404 (no route)
+	// GET on POST-only endpoint should 404 (no route).
 	req, _ := http.NewRequest("GET", "/v1/api-keys/some-id/method", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	// Gin returns 404 for unknown routes, 405 for method not allowed
+	// Gin returns 404 for unknown routes, 405 for method not allowed.
 	if w.Code != http.StatusNotFound && w.Code != http.StatusMethodNotAllowed {
 		t.Logf("Status: %d", w.Code)
 	}

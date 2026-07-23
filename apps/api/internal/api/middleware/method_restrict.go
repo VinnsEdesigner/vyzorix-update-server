@@ -29,7 +29,7 @@ func (m *MethodRestriction) Middleware() gin.HandlerFunc {
 			}
 		}
 
-		// Method not allowed - return 405 with proper error
+		// Method not allowed - return 405 with proper error.
 		c.JSON(http.StatusMethodNotAllowed, gin.H{
 			"error":   "method_not_allowed",
 			"message": "the requested method is not allowed for this endpoint",

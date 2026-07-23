@@ -20,7 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// OAuth error codes for frontend handling
+// OAuth error codes for frontend handling.
 const (
 	ErrOAuthEmailRequired    = "email_required"
 	ErrOAuthEmailNotVerified = "email_not_verified"
@@ -30,7 +30,7 @@ const (
 	ErrOAuthConfigMissing    = "oauth_not_configured"
 )
 
-// OAuthErrorDetails holds structured error information for the frontend
+// OAuthErrorDetails holds structured error information for the frontend.
 type OAuthErrorDetails struct {
 	Code       string `json:"code"`
 	Message    string `json:"message"`
@@ -53,11 +53,11 @@ type OAuthHandler struct {
 // OAuthStateProvider interface for OAuth state operations.
 // 8: This interface allows persisting OAuth state to prevent CSRF attacks.
 type OAuthStateProvider interface {
-	// Create stores a new OAuth state and returns the state ID
+	// Create stores a new OAuth state and returns the state ID.
 	Create(ctx context.Context, state, redirectURL, provider string) (string, error)
-	// Validate retrieves and validates an OAuth state, returning the redirect URL and state
+	// Validate retrieves and validates an OAuth state, returning the redirect URL and state.
 	Validate(ctx context.Context, state string) (redirectURL string, stateID string, err error)
-	// Delete removes an OAuth state after use
+	// Delete removes an OAuth state after use.
 	Delete(ctx context.Context, stateID string) error
 }
 
@@ -84,7 +84,7 @@ func (h *OAuthHandler) WithLogger(logger *slog.Logger) *OAuthHandler {
 	return h
 }
 
-// getOAuthRedirectURL builds a redirect URL with error parameters for OAuth errors
+// getOAuthRedirectURL builds a redirect URL with error parameters for OAuth errors.
 func (h *OAuthHandler) getOAuthRedirectURL(redirectURL string, err OAuthErrorDetails) string {
 	baseURL := redirectURL
 	if baseURL == "" {
@@ -110,7 +110,7 @@ func (h *OAuthHandler) getOAuthRedirectURL(redirectURL string, err OAuthErrorDet
 	return errURL
 }
 
-// getDefaultRedirectURL returns the default redirect URL
+// getDefaultRedirectURL returns the default redirect URL.
 func (h *OAuthHandler) getDefaultRedirectURL(redirectURL string) string {
 	baseURL := redirectURL
 	if baseURL == "" {
@@ -129,7 +129,7 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 		return
 	}
 
-	// OAuth state repository is required for CSRF protection
+	// OAuth state repository is required for CSRF protection.
 	if h.oauthStateRepo == nil {
 		h.presenter.InternalError(c, "OAuth state repository is required for CSRF protection")
 		return
@@ -140,7 +140,7 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 		frontendURL = "http://localhost:5173"
 	}
 
-	// Generate random state for CSRF protection
+	// Generate random state for CSRF protection.
 	stateBytes := make([]byte, 16)
 	if _, err := rand.Read(stateBytes); err != nil {
 		h.presenter.InternalError(c, "failed to generate OAuth state")
@@ -148,7 +148,7 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 	}
 	state := hex.EncodeToString(stateBytes)
 
-	// Persist OAuth state to database for CSRF validation
+	// Persist OAuth state to database for CSRF validation.
 	if _, err := h.oauthStateRepo.Create(c.Request.Context(), state, frontendURL, "google"); err != nil {
 		h.presenter.InternalError(c, "failed to create OAuth state")
 		return
@@ -180,7 +180,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// 8: Validate state from database if repository is configured
+	// 8: Validate state from database if repository is configured.
 	var redirectURL string
 	if h.oauthStateRepo == nil {
 		h.presenter.InternalError(c, "OAuth state repository not configured")
@@ -199,13 +199,13 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
-	// Delete the state after successful validation (one-time use)
+	// Delete the state after successful validation (one-time use).
 	_ = h.oauthStateRepo.Delete(c.Request.Context(), state)
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	// Exchange code for tokens
+	// Exchange code for tokens.
 	tokenURL := "https://oauth2.googleapis.com/token"
 	tokenReq := map[string]string{
 		"code":          code,
@@ -233,7 +233,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Verify ID token
+	// Verify ID token.
 	googleClaims, err := h.googleVer.Verify(tokenResp.IDToken)
 	if err != nil {
 		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
@@ -246,7 +246,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Check for email requirement - Google requires verified email
+	// Check for email requirement - Google requires verified email.
 	if googleClaims.Email == "" {
 		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
 			Code:      ErrOAuthEmailRequired,
@@ -271,7 +271,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Find or create operator via application service
+	// Find or create operator via application service.
 	result, err := h.authService.FindOrCreateGoogleOperator(ctx, googleClaims.Sub, googleClaims.Email, googleClaims.Name)
 	if err != nil {
 		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
@@ -284,7 +284,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Create session (validates operator was found/created)
+	// Create session (validates operator was found/created).
 	session, err := h.authService.CreateSession(ctx, result.Operator.ID)
 	if err != nil {
 		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
@@ -297,7 +297,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Set session cookie with session ID
+	// Set session cookie with session ID.
 	cookie, err := h.sessionMgr.CreateCookieWithExpiry(session.ID, h.config.SessionMaxAge)
 	if err != nil {
 		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
@@ -312,7 +312,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 
 	http.SetCookie(c.Writer, cookie)
 
-	// Redirect to frontend with success
+	// Redirect to frontend with success.
 	baseURL := h.getDefaultRedirectURL(redirectURL)
 	successURL := fmt.Sprintf("%s/auth/callback?oauth=success&new=%t", baseURL, result.IsNew)
 	c.Redirect(http.StatusTemporaryRedirect, successURL)
@@ -325,7 +325,7 @@ func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 		return
 	}
 
-	// OAuth state repository is required for CSRF protection
+	// OAuth state repository is required for CSRF protection.
 	if h.oauthStateRepo == nil {
 		h.presenter.InternalError(c, "OAuth state repository is required for CSRF protection")
 		return
@@ -345,7 +345,7 @@ func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 		state = hex.EncodeToString(b)
 	}
 
-	// Persist OAuth state to database for CSRF validation
+	// Persist OAuth state to database for CSRF validation.
 	if _, err := h.oauthStateRepo.Create(c.Request.Context(), state, frontendURL, "github"); err != nil {
 		h.presenter.InternalError(c, "failed to create OAuth state")
 		return
@@ -376,7 +376,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	// 8: Validate state from database - REQUIRED for CSRF protection
+	// 8: Validate state from database - REQUIRED for CSRF protection.
 	var redirectURL string
 	if h.oauthStateRepo == nil {
 		h.presenter.InternalError(c, "OAuth state repository not configured")
@@ -395,7 +395,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, errURL)
 		return
 	}
-	// Delete the state after successful validation (one-time use)
+	// Delete the state after successful validation (one-time use).
 	_ = h.oauthStateRepo.Delete(c.Request.Context(), state)
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
@@ -403,7 +403,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 
 	callbackURL := h.config.BaseURL + "/v1/auth/github/callback"
 
-	// Exchange code for access token
+	// Exchange code for access token.
 	tokenResp, err := infraauth.ExchangeGitHubCode(ctx, code, infraauth.GitHubOAuthConfig{
 		ClientID:     h.config.GitHubOAuthClientID,
 		ClientSecret: h.config.GitHubOAuthClientSecret,
@@ -420,7 +420,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	// Fetch GitHub user profile
+	// Fetch GitHub user profile.
 	ghUser, err := infraauth.FetchGitHubUserProfile(ctx, tokenResp.AccessToken)
 	if err != nil {
 		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
@@ -433,7 +433,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	// Fetch user emails - REQUIRED for sign up
+	// Fetch user emails - REQUIRED for sign up.
 	emails, fetchErr := infraauth.FetchGitHubEmails(ctx, tokenResp.AccessToken)
 	if fetchErr != nil {
 		h.logger.Warn("Failed to fetch GitHub emails", "err", fetchErr)
@@ -444,7 +444,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		email = infraauth.GetPrimaryEmail(emails)
 	}
 
-	// If no email found, redirect with error - email is REQUIRED
+	// If no email found, redirect with error - email is REQUIRED.
 	if email == "" {
 		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
 			Code:      ErrOAuthEmailRequired,
@@ -457,7 +457,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	// Check if email is verified
+	// Check if email is verified.
 	hasVerifiedEmail := false
 	for _, e := range emails {
 		if e.Email == email && e.Verified {
@@ -466,7 +466,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		}
 	}
 
-	// Reject unverified emails to prevent account takeover
+	// Reject unverified emails to prevent account takeover.
 	if !hasVerifiedEmail {
 		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
 			Code:      ErrOAuthEmailNotVerified,
@@ -479,16 +479,16 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	// Generate stable GitHub ID
+	// Generate stable GitHub ID.
 	githubID := fmt.Sprintf("gh_%d", ghUser.ID)
 
-	// Get name
+	// Get name.
 	name := ghUser.Name
 	if name == "" {
 		name = ghUser.Login
 	}
 
-	// Find or create operator
+	// Find or create operator.
 	result, err := h.authService.FindOrCreateGitHubOperator(ctx, githubID, email, name)
 	if err != nil {
 		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
@@ -501,7 +501,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	// Create session (validates operator was found/created)
+	// Create session (validates operator was found/created).
 	session, err := h.authService.CreateSession(ctx, result.Operator.ID)
 	if err != nil {
 		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
@@ -514,7 +514,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 		return
 	}
 
-	// Set session cookie with session ID
+	// Set session cookie with session ID.
 	cookie, err := h.sessionMgr.CreateCookieWithExpiry(session.ID, h.config.SessionMaxAge)
 	if err != nil {
 		errURL := h.getOAuthRedirectURL(redirectURL, OAuthErrorDetails{
@@ -529,7 +529,7 @@ func (h *OAuthHandler) GitHubCallback(c *gin.Context) {
 
 	http.SetCookie(c.Writer, cookie)
 
-	// Redirect to frontend with success
+	// Redirect to frontend with success.
 	baseURL := h.getDefaultRedirectURL(redirectURL)
 	successURL := fmt.Sprintf("%s/auth/callback?oauth=success&new=%t&provider=github", baseURL, result.IsNew)
 	c.Redirect(http.StatusTemporaryRedirect, successURL)

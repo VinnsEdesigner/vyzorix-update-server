@@ -70,7 +70,7 @@ type Repository interface {
 	CancelByDispatchPrefix(ctx context.Context, prefix string) (int64, error)
 
 	// FindPending retrieves pending commands for the outbox worker.
-	// Returns commands with status=pending where next_retry_at is null or in the past,
+	// Returns commands with status=pending where next_retry_at is null or in the past,.
 	// ordered by creation time (oldest first).
 	FindPending(ctx context.Context, limit int) ([]*Command, error)
 

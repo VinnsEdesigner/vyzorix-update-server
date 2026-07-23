@@ -44,17 +44,17 @@ func ValidateURL(rawURL string) error {
 		return errors.New("webhook URL must have a valid host")
 	}
 
-	// Check if hostname itself is an IP
+	// Check if hostname itself is an IP.
 	if ip := net.ParseIP(hostname); ip != nil {
 		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
 			return ErrPrivateOrInternalIP
 		}
 	}
 
-	// Resolve hostname and check all IPs
+	// Resolve hostname and check all IPs.
 	ips, err := net.LookupIP(hostname)
 	if err != nil {
-		return nil // DNS failure will fail at connection time anyway
+		return nil // DNS failure will fail at connection time anyway.
 	}
 
 	for _, ip := range ips {
@@ -188,7 +188,7 @@ func (c *Client) Test(ctx context.Context, url string) (*TestResult, error) {
 // Send sends a webhook notification with HMAC signature.
 
 func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload) error {
-	// Reject private/internal IPs to prevent SSRF
+	// Reject private/internal IPs to prevent SSRF.
 	if err := ValidateURL(url); err != nil {
 		return fmt.Errorf("webhook URL rejected: %w", err)
 	}
@@ -202,7 +202,7 @@ func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload)
 	var lastErr error
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if attempt > 0 {
-			// Exponential backoff: 1s, 2s, 4s
+			// Exponential backoff: 1s, 2s, 4s.
 			delay := baseRetryDelay * time.Duration(1<<(attempt-1))
 			select {
 			case <-ctx.Done():
@@ -216,13 +216,13 @@ func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload)
 			return nil
 		}
 
-		// Check if error is retryable (5xx status code)
+		// Check if error is retryable (5xx status code).
 		if !isRetryableError(err) {
 			return err
 		}
 		lastErr = err
 
-		// Log retry attempt
+		// Log retry attempt.
 		if slog.Default().Enabled(ctx, slog.LevelWarn) {
 			slog.Default().Warn("webhook delivery failed, retrying",
 				"attempt", attempt+1,
@@ -248,7 +248,7 @@ func (c *Client) doSend(ctx context.Context, url, secret string, body []byte, pa
 	req.Header.Set("User-Agent", "Vyzorix-Webhook/1.0")
 	req.Header.Set("X-Vyzorix-Event", string(payload.Type))
 
-	// Add HMAC signature if secret is provided
+	// Add HMAC signature if secret is provided.
 	if secret != "" {
 		signature := computeHMAC(body, secret)
 		req.Header.Set("X-Vyzorix-Signature", signature)
@@ -260,12 +260,12 @@ func (c *Client) doSend(ctx context.Context, url, secret string, body []byte, pa
 		return err
 	}
 
-	// Check resp before dereferencing
+	// Check resp before dereferencing.
 	if resp == nil {
 		return fmt.Errorf("webhook returned nil response")
 	}
 
-	// Close body and discard contents
+	// Close body and discard contents.
 	if resp.Body != nil {
 		_, _ = io.Copy(io.Discard, resp.Body)
 		_ = resp.Body.Close()
@@ -293,16 +293,16 @@ func isRetryableError(err error) bool {
 	if err == nil {
 		return false
 	}
-	// Check for retryable error type
+	// Check for retryable error type.
 	if re, ok := err.(*retryableError); ok {
-		// Only retry 5xx errors (server errors), not 4xx (client errors)
+		// Only retry 5xx errors (server errors), not 4xx (client errors).
 		return re.statusCode >= 500 && re.statusCode < 600
 	}
-	// Retry on context deadline exceeded (might succeed on retry)
+	// Retry on context deadline exceeded (might succeed on retry).
 	if errors.Is(err, context.DeadlineExceeded) {
 		return true
 	}
-	// Retry on temporary network errors
+	// Retry on temporary network errors.
 	return false
 }
 

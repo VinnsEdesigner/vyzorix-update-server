@@ -216,7 +216,7 @@ func (s *InvitationStorage) FindPendingByOrganizationAndEmail(ctx context.Contex
 
 // FindByOrganizationPaginated retrieves invitations with pagination.
 func (s *InvitationStorage) FindByOrganizationPaginated(ctx context.Context, orgID string, limit, offset int, filter *organization.InvitationFilter) ([]*organization.Invitation, int, error) {
-	// Build count query
+	// Build count query.
 	countQuery := `SELECT COUNT(*) FROM invitations WHERE organization_id = ?`
 	args := []interface{}{orgID}
 
@@ -231,7 +231,7 @@ func (s *InvitationStorage) FindByOrganizationPaginated(ctx context.Context, org
 		return nil, 0, err
 	}
 
-	// Build paginated query
+	// Build paginated query.
 	query := `
 		SELECT i.id, i.organization_id, i.email, i.role, i.status, i.token, i.inviter_notes, i.invitee_notes, 
 			   i.invited_by, i.invited_at, i.responded_at, i.responder_id, i.expires_at,
@@ -416,7 +416,7 @@ func (s *InvitationStorage) ExpireByOrganization(ctx context.Context, orgID stri
 func (s *InvitationStorage) ExpireOldThan(ctx context.Context, duration string) error {
 	query := `DELETE FROM invitations WHERE status = 'pending' AND expires_at < ?`
 
-	// Parse duration and calculate cutoff time
+	// Parse duration and calculate cutoff time.
 	d, err := time.ParseDuration(duration)
 	if err != nil {
 		return err
@@ -492,7 +492,7 @@ func (s *InvitationStorage) scanInvitation(row *sql.Row) (*organization.Invitati
 	invite.InviterName = inviterName.String
 	invite.InviterEmail = inviterEmail.String
 
-	// Derive lifecycle from status since database only stores status
+	// Derive lifecycle from status since database only stores status.
 	invite.Lifecycle = statusToLifecycle(invite.Status)
 
 	return &invite, nil
@@ -547,7 +547,7 @@ func (s *InvitationStorage) scanInvitations(rows *sql.Rows) ([]*organization.Inv
 		invite.InviterName = inviterName.String
 		invite.InviterEmail = inviterEmail.String
 
-		// Derive lifecycle from status since database only stores status
+		// Derive lifecycle from status since database only stores status.
 		invite.Lifecycle = statusToLifecycle(invite.Status)
 
 		invitations = append(invitations, &invite)

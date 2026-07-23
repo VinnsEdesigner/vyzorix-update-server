@@ -114,11 +114,11 @@ func (h *ConfirmHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Clean up inbox entry after successful confirmation
-	// This prevents inbox records from accumulating forever after device registration completes
+	// Clean up inbox entry after successful confirmation.
+	// This prevents inbox records from accumulating forever after device registration completes.
 	if h.inboxCleanup != nil {
 		if err := h.inboxCleanup.DeleteByIMEI(c.Request.Context(), req.IMEI); err != nil {
-			// Log but don't fail the request - confirmation was successful
+			// Log but don't fail the request - confirmation was successful.
 			h.logger.Warn("failed to clean up inbox entry after device confirmation",
 				"imei", req.IMEI,
 				"error", err,

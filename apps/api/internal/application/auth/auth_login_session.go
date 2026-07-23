@@ -17,10 +17,10 @@ infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/se
 
 // buildLoginResponse builds a LoginResponse with organization info.
 func (s *AuthService) buildLoginResponse(op *operator.Operator) *dto.LoginResponse {
-	// Get operator's organizations
+	// Get operator's organizations.
 	orgs, err := s.GetOperatorOrganizations(context.Background(), op)
 	if err != nil {
-		// If we can't get organizations, indicate org selection is needed
+		// If we can't get organizations, indicate org selection is needed.
 		return &dto.LoginResponse{
 			OperatorID:           op.ID,
 			Email:               op.Email,
@@ -33,12 +33,12 @@ func (s *AuthService) buildLoginResponse(op *operator.Operator) *dto.LoginRespon
 		}
 	}
 
-	// Determine if organization selection is required:
-	// - 0 memberships: needs organization (create/join)
-	// - Multiple memberships without valid selected org: needs selection
+	// Determine if organization selection is required:.
+	// - 0 memberships: needs organization (create/join).
+	// - Multiple memberships without valid selected org: needs selection.
 	needsOrg := len(orgs) == 0
 
-	// Convert to dto.OrganizationInfo
+	// Convert to dto.OrganizationInfo.
 	dtoOrgs := make([]dto.OrganizationInfo, len(orgs))
 	var selectedOrg *dto.OrganizationInfo
 	for i, org := range orgs {
@@ -52,13 +52,13 @@ func (s *AuthService) buildLoginResponse(op *operator.Operator) *dto.LoginRespon
 		}
 	}
 
-	// If LastOrganizationID is set but not found in active orgs,
-	// user has multiple orgs but the last one is invalid - needs selection
+	// If LastOrganizationID is set but not found in active orgs,.
+	// user has multiple orgs but the last one is invalid - needs selection.
 	if op.LastOrganizationID != "" && selectedOrg == nil && len(orgs) > 1 {
 		needsOrg = true
 	}
 
-	// If multiple orgs exist but none is selected, needs organization selection
+	// If multiple orgs exist but none is selected, needs organization selection.
 	if !needsOrg && len(orgs) > 1 && selectedOrg == nil {
 		needsOrg = true
 	}
@@ -88,7 +88,7 @@ return nil, nil, application.ErrInvalidCredentials
 return nil, nil, err
 }
 
-// Prevent nil pointer dereference if FindByEmail returns (nil, nil)
+// Prevent nil pointer dereference if FindByEmail returns (nil, nil).
 if op == nil {
 _ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
 return nil, nil, application.ErrInvalidCredentials
@@ -98,10 +98,10 @@ if op.PasswordHash == "" {
 return nil, nil, application.ErrInvalidCredentials
 }
 
-// Verify password with proper error handling
+// Verify password with proper error handling.
 if err = s.passwordHasher.Verify(req.Password, op.PasswordHash); err != nil {
-// Only return ErrInvalidCredentials for wrong password
-// For other crypto errors, still return generic error to prevent info leak
+// Only return ErrInvalidCredentials for wrong password.
+// For other crypto errors, still return generic error to prevent info leak.
 if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" ||
    err.Error() == "crypto/scrypt: password hash does not match" ||
    err.Error() == "crypto/argon2: invalid hash" {
@@ -110,7 +110,7 @@ return nil, nil, application.ErrInvalidCredentials
  return nil, nil, application.ErrInvalidCredentials
 }
 
-// If MFA is required for this operator, enforce it
+// If MFA is required for this operator, enforce it.
 if op.MFARequired || op.HasMFA() {
 resp := s.buildLoginResponse(op)
 resp.MFAEnabled = true
@@ -122,8 +122,8 @@ if err != nil {
 return nil, nil, err
 }
 
-// Auto-resolve and set organization for the session
-// This enables single-org and last-used-org auto-selection
+// Auto-resolve and set organization for the session.
+// This enables single-org and last-used-org auto-selection.
 s.resolveAndSetOrganization(ctx, op, sess)
 
 return s.buildLoginResponse(op), sess, nil
@@ -134,15 +134,15 @@ return s.buildLoginResponse(op), sess, nil
 func (s *AuthService) resolveAndSetOrganization(ctx context.Context, op *operator.Operator, sess *session.Session) {
 orgID, _, err := s.ResolveOrganizationForOperator(ctx, op)
 if err != nil {
-    // No organization or selection required - dont set anything on session
+    // No organization or selection required - dont set anything on session.
     return
 }
 
-// Valid org found - set on session and update LastOrganizationID
+// Valid org found - set on session and update LastOrganizationID.
 sess.SelectedOrganizationID = orgID
 _ = s.sessionRepo.UpdateOrganizationID(ctx, sess.ID, orgID)
 
-// Also update operators LastOrganizationID for persistence
+// Also update operators LastOrganizationID for persistence.
 if s.operatorRepo != nil && op.LastOrganizationID != orgID {
     op.LastOrganizationID = orgID
     if err := s.operatorRepo.Update(ctx, op); err != nil {
@@ -183,20 +183,20 @@ return nil, application.ErrInvalidCredentials
 return nil, application.ErrInvalidCredentials
 }
 
-// If MFA is required, return partial response indicating MFA is needed
+// If MFA is required, return partial response indicating MFA is needed.
 if op.MFARequired || op.HasMFA() {
 resp := s.buildLoginWithTokensResponse(op)
 resp.MFAEnabled = true
 return resp, application.ErrMFARequired
 }
 
-// Create session
+// Create session.
 sess, err := s.CreateSession(ctx, op.ID)
 if err != nil {
 return nil, err
 }
 
-// Generate JWT access token
+// Generate JWT access token.
 var accessToken string
 var expiresAt int64
 if s.jwtManager != nil {
@@ -207,7 +207,7 @@ return nil, err
 expiresAt = time.Now().Add(15 * time.Minute).Unix()
 }
 
-// Issue refresh token
+// Issue refresh token.
 var refreshTokenVal string
 if s.refreshTokenRepo != nil {
 refreshTokenVal, err = s.IssueRefreshToken(ctx, op.ID, sess.ID)
@@ -216,8 +216,8 @@ return nil, err
 }
 }
 
-// Auto-resolve and set organization for the session
-// This enables single-org and last-used-org auto-selection
+// Auto-resolve and set organization for the session.
+// This enables single-org and last-used-org auto-selection.
 s.resolveAndSetOrganization(ctx, op, sess)
 
 resp := s.buildLoginWithTokensResponse(op)
@@ -230,10 +230,10 @@ return resp, nil
 
 // buildLoginWithTokensResponse builds a LoginWithTokensResponse with organization info.
 func (s *AuthService) buildLoginWithTokensResponse(op *operator.Operator) *dto.LoginWithTokensResponse {
-	// Get operator's organizations
+	// Get operator's organizations.
 	orgs, err := s.GetOperatorOrganizations(context.Background(), op)
 	if err != nil {
-		// If we can't get organizations, indicate org selection is needed
+		// If we can't get organizations, indicate org selection is needed.
 		return &dto.LoginWithTokensResponse{
 			OperatorID:           op.ID,
 			Email:               op.Email,
@@ -246,12 +246,12 @@ func (s *AuthService) buildLoginWithTokensResponse(op *operator.Operator) *dto.L
 		}
 	}
 
-	// Determine if organization selection is required:
-	// - 0 memberships: needs organization (create/join)
-	// - Multiple memberships without valid selected org: needs selection
+	// Determine if organization selection is required:.
+	// - 0 memberships: needs organization (create/join).
+	// - Multiple memberships without valid selected org: needs selection.
 	needsOrg := len(orgs) == 0
 
-	// Convert to dto.OrganizationInfo
+	// Convert to dto.OrganizationInfo.
 	dtoOrgs := make([]dto.OrganizationInfo, len(orgs))
 	var selectedOrg *dto.OrganizationInfo
 	for i, org := range orgs {
@@ -265,13 +265,13 @@ func (s *AuthService) buildLoginWithTokensResponse(op *operator.Operator) *dto.L
 		}
 	}
 
-	// If LastOrganizationID is set but not found in active orgs,
-	// user has multiple orgs but the last one is invalid - needs selection
+	// If LastOrganizationID is set but not found in active orgs,.
+	// user has multiple orgs but the last one is invalid - needs selection.
 	if op.LastOrganizationID != "" && selectedOrg == nil && len(orgs) > 1 {
 		needsOrg = true
 	}
 
-	// If multiple orgs exist but none is selected, needs organization selection
+	// If multiple orgs exist but none is selected, needs organization selection.
 	if !needsOrg && len(orgs) > 1 && selectedOrg == nil {
 		needsOrg = true
 	}
@@ -297,7 +297,7 @@ if validatePassword {
 if err := ValidatePassword(req.Password, DefaultPasswordPolicy); err != nil {
 return nil, err
 }
-// Check if password was found in known data breaches
+// Check if password was found in known data breaches.
 if breached, _ := infraauth.CheckPasswordBreached(req.Password); breached {
 return nil, application.ErrPasswordBreached
 }
@@ -331,8 +331,8 @@ EmailVerified: false,
 }
 
 if err := s.operatorRepo.Create(ctx, op); err != nil {
-		// Handle race condition: if UNIQUE constraint fails due to concurrent registration,
-		// return ErrUserExists instead of opaque database error
+		// Handle race condition: if UNIQUE constraint fails due to concurrent registration,.
+		// return ErrUserExists instead of opaque database error.
 		if errors.Is(err, operator.ErrEmailExists) {
 			return nil, application.ErrUserExists
 		}
@@ -394,28 +394,28 @@ Name:      name,
 }
 
 // CreateSession creates a new session for an operator.
-// If the operator has reached their max concurrent sessions limit,
+// If the operator has reached their max concurrent sessions limit,.
 // the oldest session is revoked.
 func (s *AuthService) CreateSession(ctx context.Context, operatorID string) (*session.Session, error) {
-// Get operator security settings for session limit
+// Get operator security settings for session limit.
 op, err := s.operatorRepo.FindByID(ctx, operatorID)
 if err != nil {
 return nil, err
 }
 
-maxSessions := 5 // default
+maxSessions := 5 // default.
 settings := op.SecuritySettings
 if settings.MaxConcurrentSessions > 0 {
 maxSessions = settings.MaxConcurrentSessions
 }
 
-// Count active sessions
+// Count active sessions.
 activeSessions, err := s.sessionRepo.ListActiveByOperator(ctx, operatorID)
 if err != nil {
 return nil, err
 }
 
-// If at limit, revoke the oldest session
+// If at limit, revoke the oldest session.
 if len(activeSessions) >= maxSessions {
 oldest := activeSessions[0]
 _ = s.sessionRepo.AddSessionRevocation(ctx, oldest.ID, "max_sessions_reached")
@@ -442,13 +442,13 @@ return sess, nil
 // Logout destroys a session and revokes associated refresh tokens.
 
 func (s *AuthService) Logout(ctx context.Context, sessionID string) error {
-	// Get operator ID before deleting session for refresh token revocation
+	// Get operator ID before deleting session for refresh token revocation.
 	var operatorID string
 	if sess, err := s.sessionRepo.FindByID(ctx, sessionID); err == nil && sess != nil {
 		operatorID = sess.OperatorID
 	}
 
-	// Add to revocation list for audit - log error but continue
+	// Add to revocation list for audit - log error but continue.
 	if err := s.sessionRepo.AddSessionRevocation(ctx, sessionID, "operator_logout"); err != nil {
 		if s.logger != nil {
 			s.logger.Warn("failed to add session revocation during logout",
@@ -457,13 +457,13 @@ func (s *AuthService) Logout(ctx context.Context, sessionID string) error {
 		}
 	}
 
-	// Delete the session
+	// Delete the session.
 	if err := s.sessionRepo.Delete(ctx, sessionID); err != nil {
 		return err
 	}
 
 	
-	// Return error if revocation fails to ensure session is fully invalidated
+	// Return error if revocation fails to ensure session is fully invalidated.
 	if operatorID != "" {
 		if err := s.RevokeAllRefreshTokens(ctx, operatorID); err != nil {
 			if s.logger != nil {
@@ -545,19 +545,19 @@ func (s *AuthService) ValidateSession(ctx context.Context, sessionID string) (*s
 		return nil, nil, err
 	}
 
-	// MFA enforcement: If operator has MFA enabled and MFA was enabled at a specific time,
+	// MFA enforcement: If operator has MFA enabled and MFA was enabled at a specific time,.
 	// reject sessions that were not MFA-verified after MFA was enabled.
 	// This prevents pre-MFA sessions from bypassing MFA requirements.
 	if op.MFAEnabled && op.MFAEnabledAt != nil {
-		// Session must have been MFA-verified after MFA was enabled
+		// Session must have been MFA-verified after MFA was enabled.
 		if sess.MFAVerifiedAt == nil || sess.MFAVerifiedAt.Before(*op.MFAEnabledAt) {
-			// Clean up the session and require re-authentication with MFA
+			// Clean up the session and require re-authentication with MFA.
 			_ = s.sessionRepo.Delete(ctx, sessionID)
 			return nil, nil, application.ErrUnauthorized
 		}
 	}
 
-	// Load memberships so that operator.GetMembership() works correctly
+	// Load memberships so that operator.GetMembership() works correctly.
 	if s.memberRepo != nil {
 		memberships, err := s.memberRepo.ListByOperator(ctx, op.ID)
 		if err != nil {
@@ -596,7 +596,7 @@ if err := s.operatorRepo.Update(ctx, op); err != nil {
 return err
 }
 
-// Invalidate all sessions and refresh tokens for security
+// Invalidate all sessions and refresh tokens for security.
 _ = s.LogoutAll(ctx, operatorID)
 _ = s.RevokeAllRefreshTokens(ctx, operatorID)
 

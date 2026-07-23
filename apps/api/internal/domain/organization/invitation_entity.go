@@ -20,10 +20,10 @@ const (
 
 // Invitation represents an invitation to join an organization.
 type Invitation struct {
-	// Lifecycle tracks the invitation lifecycle state
+	// Lifecycle tracks the invitation lifecycle state.
 	Lifecycle InvitationLifecycle
 
-	// Core fields
+	// Core fields.
 	ID             string
 	OrganizationID string
 	Email          string
@@ -31,20 +31,20 @@ type Invitation struct {
 	Status         InvitationStatus
 	Token          string
 
-	// Notes
-	InviterNotes string // Notes from inviter
-	InviteeNotes string // Notes from invitee on accept/reject
+	// Notes.
+	InviterNotes string // Notes from inviter.
+	InviteeNotes string // Notes from invitee on accept/reject.
 
-	// References
-	InvitedBy   string // OperatorID of inviter
-	RespondedBy string // OperatorID of responder (when responded)
+	// References.
+	InvitedBy   string // OperatorID of inviter.
+	RespondedBy string // OperatorID of responder (when responded).
 
-	// Timestamps
+	// Timestamps.
 	InvitedAt  time.Time
-	RespondedAt *time.Time // When invitation was responded to
-	ExpiresAt  time.Time  // When invitation expires
+	RespondedAt *time.Time // When invitation was responded to.
+	ExpiresAt  time.Time  // When invitation expires.
 
-	// Populated fields
+	// Populated fields.
 	OrganizationName string
 	InviterName     string
 	InviterEmail    string
@@ -74,9 +74,9 @@ var InvitationLifecycleTransitions = map[InvitationLifecycle]map[InvitationLifec
 		InvitationLifecycleRejected: true,
 		InvitationLifecycleExpired: true,
 	},
-	InvitationLifecycleAccepted: {}, // No transitions allowed from accepted
-	InvitationLifecycleRejected: {}, // No transitions allowed from rejected
-	InvitationLifecycleExpired: {}, // No transitions allowed from expired
+	InvitationLifecycleAccepted: {}, // No transitions allowed from accepted.
+	InvitationLifecycleRejected: {}, // No transitions allowed from rejected.
+	InvitationLifecycleExpired: {}, // No transitions allowed from expired.
 }
 
 // CanTransitionTo returns true if the lifecycle can transition to the target state.
@@ -134,7 +134,7 @@ func NewInvitation(id, organizationID, email string, role OrganizationRole, invi
 		return nil, err
 	}
 
-	// Default expiry: 7 days
+	// Default expiry: 7 days.
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	return &Invitation{
@@ -250,7 +250,7 @@ func (r *CreateInvitationRequest) Validate() error {
 	if r.Role == "" {
 		return errors.New("role is required")
 	}
-	// Cannot invite super_admin role
+	// Cannot invite super_admin role.
 	if r.Role == RoleSuperAdmin {
 		return ErrCannotInviteSuperAdmin
 	}

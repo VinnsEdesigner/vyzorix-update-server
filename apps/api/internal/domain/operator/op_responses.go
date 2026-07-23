@@ -38,7 +38,7 @@ type AuthErrorResponse struct {
 // ToResponse converts an Operator to its safe JSON representation.
 // Note: Role is not included as it's now org-scoped only.
 func (o *Operator) ToResponse() OperatorResponse {
-    // Build organization info from memberships
+    // Build organization info from memberships.
     var orgs []OrganizationInfo
     for _, m := range o.Memberships {
         if m.IsActive() {
@@ -49,7 +49,7 @@ func (o *Operator) ToResponse() OperatorResponse {
         }
     }
 
-    // Find selected org
+    // Find selected org.
     var selectedOrg *OrganizationInfo
     if o.LastOrganizationID != "" {
         for _, org := range o.Memberships {

@@ -85,7 +85,7 @@ func TestHealth_ResponseJSON(t *testing.T) {
 // Verify context cancellation is handled.
 func TestHealth_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // Cancel immediately
+	cancel() // Cancel immediately.
 
 	// Verify that cancelled context is handled gracefully.
 	select {

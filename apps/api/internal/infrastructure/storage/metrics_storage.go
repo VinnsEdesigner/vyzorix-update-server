@@ -110,13 +110,13 @@ func (r *MetricsRepository) GetLatestTelemetry(ctx context.Context, deviceID str
 // GetAggregatedMetrics retrieves aggregated metrics for charting with specified resolution.
 
 func (r *MetricsRepository) GetAggregatedMetrics(ctx context.Context, deviceID string, metric string, startTime, endTime time.Time, resolution string) ([]*metrics.MetricDataPoint, error) {
-	// Map metric name to column
+	// Map metric name to column.
 	column := metricToColumn(metric)
 	if column == "" {
 		return nil, nil
 	}
 
-	// SQLite uses strftime for time bucketing - group by minute buckets
+	// SQLite uses strftime for time bucketing - group by minute buckets.
 	format := resolutionToStrftime(resolution)
 
 	
@@ -192,7 +192,7 @@ func (r *MetricsRepository) GetMetricStats(ctx context.Context, deviceID string,
 		return nil, err
 	}
 
-	// Get the current (latest) value
+	// Get the current (latest) value.
 	var current float64
 	currentQuery := `SELECT ` + column + ` FROM telemetry WHERE device_id = ? AND received_at >= ? AND received_at <= ? ORDER BY received_at DESC LIMIT 1`
 	err = r.queryRow(ctx, currentQuery, deviceID, startTime.UnixMilli(), endTime.UnixMilli()).Scan(&current)
@@ -208,7 +208,7 @@ func (r *MetricsRepository) GetMetricStats(ctx context.Context, deviceID string,
 func (r *MetricsRepository) GetThresholdBreachEvents(ctx context.Context, deviceID string, startTime, endTime time.Time, thresholds *metrics.ThresholdPreset) ([]*metrics.MetricThresholdEvent, error) {
 	var events []*metrics.MetricThresholdEvent
 
-	// Query for risk score threshold breaches (high = bad)
+	// Query for risk score threshold breaches (high = bad).
 	riskQuery := `
 		SELECT received_at, 'riskScore' as metric, risk_score, ?
 		FROM telemetry
@@ -242,7 +242,7 @@ func (r *MetricsRepository) GetThresholdBreachEvents(ctx context.Context, device
 		return nil, scanErr
 	}
 
-	// Query for thermal temp threshold breaches (high = bad)
+	// Query for thermal temp threshold breaches (high = bad).
 	thermalQuery := `
 		SELECT received_at, 'thermalTemp' as metric, thermal_temp, ?
 		FROM telemetry
@@ -276,8 +276,8 @@ func (r *MetricsRepository) GetThresholdBreachEvents(ctx context.Context, device
 		return nil, scanErr
 	}
 
-	// Query for buffer level threshold breaches (low = bad for buffer, high = bad for risk)
-	// Buffer level: warning when <= 30%, critical when <= 10%
+	// Query for buffer level threshold breaches (low = bad for buffer, high = bad for risk).
+	// Buffer level: warning when <= 30%, critical when <= 10%.
 	bufferQuery := `
 		SELECT received_at, 'bufferLevel' as metric, buffer_level, ?
 		FROM telemetry

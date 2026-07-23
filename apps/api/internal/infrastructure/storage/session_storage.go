@@ -48,7 +48,7 @@ func (r *SessionRepository) FindByID(ctx context.Context, id string) (*session.S
 	s.UserAgent = userAgent.String
 	s.SelectedOrganizationID = orgID.String
 
-	// Parse mfa_verified_at timestamp
+	// Parse mfa_verified_at timestamp.
 	if mfaVerifiedAt.Valid {
 		t := time.UnixMilli(mfaVerifiedAt.Int64)
 		s.MFAVerifiedAt = &t
@@ -84,7 +84,7 @@ func (r *SessionRepository) FindByOperatorID(ctx context.Context, operatorID str
 		s.UserAgent = userAgent.String
 		s.SelectedOrganizationID = orgID.String
 
-		// Parse mfa_verified_at timestamp
+		// Parse mfa_verified_at timestamp.
 		if mfaVerifiedAt.Valid {
 			t := time.UnixMilli(mfaVerifiedAt.Int64)
 			s.MFAVerifiedAt = &t
@@ -126,7 +126,7 @@ func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID
 		s.UserAgent = userAgent.String
 		s.SelectedOrganizationID = orgID.String
 
-		// Parse mfa_verified_at timestamp
+		// Parse mfa_verified_at timestamp.
 		if mfaVerifiedAt.Valid {
 			t := time.UnixMilli(mfaVerifiedAt.Int64)
 			s.MFAVerifiedAt = &t
@@ -381,9 +381,9 @@ func (r *SessionRepository) RevokeAllOperatorSessions(ctx context.Context, opera
 	return rows.Err()
 }
 
-// =============================================================================
-// Refresh Token Repository (Implements refresh_token.Repository)
-// =============================================================================
+// =============================================================================.
+// Refresh Token Repository (Implements refresh_token.Repository).
+// =============================================================================.
 
 // Ensure RefreshTokenRepository implements refresh_token.Repository.
 var _ refresh_token.Repository = (*RefreshTokenRepository)(nil)

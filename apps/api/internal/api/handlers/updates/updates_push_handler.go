@@ -49,7 +49,7 @@ func (h *UpdatesPushHandler) PushUpdate(c *gin.Context) {
 		return
 	}
 
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
@@ -80,7 +80,7 @@ func (h *UpdatesPushHandler) PushUpdate(c *gin.Context) {
 		return
 	}
 
-	// Audit log the push
+	// Audit log the push.
 	if h.auditLogger != nil {
 		h.auditLogger.UpdatePushed(
 			c.Request.Context(),

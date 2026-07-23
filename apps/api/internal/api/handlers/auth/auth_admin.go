@@ -33,7 +33,7 @@ func (h *AdminHandler) ListOperators(c *gin.Context) {
 		return
 	}
 
-	// Org-scoped check - operator must be super_admin in this organization
+	// Org-scoped check - operator must be super_admin in this organization.
 	if !op.IsSuperAdminIn(orgID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
 		return
@@ -57,7 +57,7 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 		return
 	}
 
-	// Org-scoped check
+	// Org-scoped check.
 	if !op.IsSuperAdminIn(orgID) {
 		h.presenter.Forbidden(c, "insufficient privileges")
 		return
@@ -103,7 +103,7 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 		return
 	}
 
-	// Org-scoped check
+	// Org-scoped check.
 	if !op.IsSuperAdminIn(orgID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
 		return
@@ -141,7 +141,7 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 		return
 	}
 
-	// Org-scoped check
+	// Org-scoped check.
 	if !op.IsSuperAdminIn(orgID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
 		return
@@ -182,7 +182,7 @@ func (h *AdminHandler) DeleteOperator(c *gin.Context) {
 		return
 	}
 
-	// Org-scoped check
+	// Org-scoped check.
 	if !op.IsSuperAdminIn(orgID) {
 		h.presenter.Forbidden(c, "insufficient privileges")
 		return

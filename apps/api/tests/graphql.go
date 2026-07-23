@@ -58,7 +58,7 @@ func TestGraphQLHealth(t *testing.T) {
 		t.Errorf("Expected status 200, got %d", resp.StatusCode)
 	}
 
-	// Try an introspection query
+	// Try an introspection query.
 	introspectionQuery := `{"query":"{ __schema { queryType { name } } }"}`
 
 	resp, err = http.Post(GraphQLEndpoint, "application/json", bytes.NewBufferString(introspectionQuery))
@@ -138,9 +138,9 @@ func TestGraphQLMutationSendCommand(t *testing.T) {
 	}
 
 	result := executeGraphQLQuery(t, query)
-	// This may fail if no device exists - that's expected
+	// This may fail if no device exists - that's expected.
 	if result.Response != nil && len(result.Response.Errors) > 0 {
-		// Check if it's an auth error (expected without session)
+		// Check if it's an auth error (expected without session).
 		for _, err := range result.Response.Errors {
 			if err.Code == "UNAUTHORIZED" {
 				t.Log("Expected UNAUTHORIZED error without session")
@@ -274,7 +274,7 @@ func TestGraphQLMutationCancelCommand(t *testing.T) {
 	}
 
 	result := executeGraphQLQuery(t, query)
-	// May fail if command doesn't exist - expected
+	// May fail if command doesn't exist - expected.
 	if result.Response != nil && len(result.Response.Errors) > 0 {
 		for _, err := range result.Response.Errors {
 			t.Logf("Error (expected if no command): %s - %s", err.Code, err.Message)
@@ -325,7 +325,7 @@ func TestGraphQLMissingVariables(t *testing.T) {
 				id
 			}
 		}`,
-		// No variables provided for required $id
+		// No variables provided for required $id.
 	}
 
 	result := executeGraphQLQuery(t, query)

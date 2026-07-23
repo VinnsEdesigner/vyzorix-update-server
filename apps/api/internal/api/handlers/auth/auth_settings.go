@@ -75,12 +75,12 @@ func (h *SettingsHandler) logSettingsAudit(c *gin.Context, operatorID string, ev
 		return
 	}
 
-	// Extract client info from gin context
+	// Extract client info from gin context.
 	ipAddress := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 	ctx := c.Request.Context()
 
-	// Build metadata from changes
+	// Build metadata from changes.
 	metadata := make(map[string]string)
 	if event.Changes != nil {
 		for k, v := range event.Changes {
@@ -137,7 +137,7 @@ func (h *SettingsHandler) GetSettings(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	// Get all operator settings
+	// Get all operator settings.
 	settings, err := h.operatorRepo.GetOperatorSettings(ctx, operatorID)
 	if err != nil {
 		h.presenter.InternalError(c, "failed to get settings")
@@ -294,14 +294,14 @@ func (h *SettingsHandler) UpdateNotifications(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	// Get current notifications
+	// Get current notifications.
 	notifications, err := h.operatorRepo.GetNotifications(ctx, operatorID)
 	if err != nil {
 		h.presenter.InternalError(c, "failed to get current notifications")
 		return
 	}
 
-	// Apply updates
+	// Apply updates.
 	if req.Enabled != nil {
 		notifications.Enabled = *req.Enabled
 	}
@@ -318,19 +318,19 @@ func (h *SettingsHandler) UpdateNotifications(c *gin.Context) {
 		notifications.Webhook = *req.Webhook
 	}
 
-	// Validate webhook URL if enabled
+	// Validate webhook URL if enabled.
 	if notifications.Webhook.Enabled && notifications.Webhook.URL == "" {
 		h.presenter.BadRequest(c, "webhook URL is required when webhook is enabled")
 		return
 	}
 
-	// Track changes for audit
+	// Track changes for audit.
 	changes := map[string]interface{}{
 		"enabled":  notifications.Enabled,
 		"channels": notifications.Channels,
 	}
 
-	// Save updated notifications
+	// Save updated notifications.
 	if err = h.operatorRepo.UpdateNotifications(ctx, operatorID, notifications); err != nil {
 		h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 			Action:  "update",
@@ -343,7 +343,7 @@ func (h *SettingsHandler) UpdateNotifications(c *gin.Context) {
 		return
 	}
 
-	// Log successful update
+	// Log successful update.
 	h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 		Action:  "update",
 		Section: "notifications",
@@ -373,19 +373,19 @@ func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 		return
 	}
 
-	// Validate URL
+	// Validate URL.
 	if req.URL == "" {
 		h.presenter.BadRequest(c, "url is required")
 		return
 	}
 
-	// Validate URL format and block SSRF (private/internal IPs)
+	// Validate URL format and block SSRF (private/internal IPs).
 	if err := webhook.ValidateURL(req.URL); err != nil {
 		h.presenter.BadRequest(c, "invalid webhook URL: "+err.Error())
 		return
 	}
 
-	// Test webhook with a ping
+	// Test webhook with a ping.
 	start := time.Now()
 	client := &http.Client{Timeout: 10 * time.Second}
 
@@ -406,7 +406,7 @@ func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 	resp, err := client.Do(httpReq)
 	responseTime := time.Since(start).Milliseconds()
 
-	// Log webhook test attempt
+	// Log webhook test attempt.
 	h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 		Action:  "webhook_test",
 		Section: "notifications",
@@ -427,7 +427,7 @@ func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 		return
 	}
 
-	// Close body and check status
+	// Close body and check status.
 	if resp != nil && resp.Body != nil {
 		_, _ = io.Copy(io.Discard, resp.Body)
 		_ = resp.Body.Close()
@@ -477,7 +477,7 @@ func (h *SettingsHandler) RotateWebhookSecret(c *gin.Context) {
 		return
 	}
 
-	// Log successful rotation
+	// Log successful rotation.
 	h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
 		Action:  "webhook_rotate",
 		Section: "notifications",

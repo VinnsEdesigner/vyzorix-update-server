@@ -11,35 +11,35 @@ import (
 
 // SettingsRateLimits defines rate limits for settings endpoints per the spec.
 type SettingsRateLimits struct {
-	// GET /v1/auth/me/settings: 120 requests per minute
+	// GET /v1/auth/me/settings: 120 requests per minute.
 	SettingsGetLimit int
 	SettingsGetRefill time.Duration
 
-	// PATCH /v1/auth/me/settings: 30 requests per minute
+	// PATCH /v1/auth/me/settings: 30 requests per minute.
 	SettingsUpdateLimit int
 	SettingsUpdateRefill time.Duration
 
-	// GET /v1/auth/me/thresholds: 60 requests per minute
+	// GET /v1/auth/me/thresholds: 60 requests per minute.
 	ThresholdsGetLimit int
 	ThresholdsGetRefill time.Duration
 
-	// PATCH /v1/auth/me/thresholds: 30 requests per minute
+	// PATCH /v1/auth/me/thresholds: 30 requests per minute.
 	ThresholdsUpdateLimit int
 	ThresholdsUpdateRefill time.Duration
 
-	// GET /v1/auth/me/notifications: 60 requests per minute
+	// GET /v1/auth/me/notifications: 60 requests per minute.
 	NotificationsGetLimit int
 	NotificationsGetRefill time.Duration
 
-	// PATCH /v1/auth/me/notifications: 30 requests per minute
+	// PATCH /v1/auth/me/notifications: 30 requests per minute.
 	NotificationsUpdateLimit int
 	NotificationsUpdateRefill time.Duration
 
-	// POST /v1/auth/me/notifications/webhook/test: 10 requests per minute
+	// POST /v1/auth/me/notifications/webhook/test: 10 requests per minute.
 	WebhookTestLimit int
 	WebhookTestRefill time.Duration
 
-	// POST /v1/auth/me/notifications/webhook/rotate: 5 requests per minute
+	// POST /v1/auth/me/notifications/webhook/rotate: 5 requests per minute.
 	WebhookRotateLimit int
 	WebhookRotateRefill time.Duration
 }
@@ -47,35 +47,35 @@ type SettingsRateLimits struct {
 // DefaultSettingsRateLimits returns the default rate limits.
 func DefaultSettingsRateLimits() *SettingsRateLimits {
 	return &SettingsRateLimits{
-		// GET /v1/auth/me/settings: 120 per minute
+		// GET /v1/auth/me/settings: 120 per minute.
 		SettingsGetLimit:  120,
 		SettingsGetRefill: time.Minute,
 
-		// PATCH /v1/auth/me/settings: 30 per minute
+		// PATCH /v1/auth/me/settings: 30 per minute.
 		SettingsUpdateLimit:  30,
 		SettingsUpdateRefill: time.Minute,
 
-		// GET /v1/auth/me/thresholds: 60 per minute
+		// GET /v1/auth/me/thresholds: 60 per minute.
 		ThresholdsGetLimit:  60,
 		ThresholdsGetRefill: time.Minute,
 
-		// PATCH /v1/auth/me/thresholds: 30 per minute
+		// PATCH /v1/auth/me/thresholds: 30 per minute.
 		ThresholdsUpdateLimit:  30,
 		ThresholdsUpdateRefill: time.Minute,
 
-		// GET /v1/auth/me/notifications: 60 per minute
+		// GET /v1/auth/me/notifications: 60 per minute.
 		NotificationsGetLimit:  60,
 		NotificationsGetRefill: time.Minute,
 
-		// PATCH /v1/auth/me/notifications: 30 per minute
+		// PATCH /v1/auth/me/notifications: 30 per minute.
 		NotificationsUpdateLimit:  30,
 		NotificationsUpdateRefill: time.Minute,
 
-		// POST /v1/auth/me/notifications/webhook/test: 10 per minute
+		// POST /v1/auth/me/notifications/webhook/test: 10 per minute.
 		WebhookTestLimit:  10,
 		WebhookTestRefill: time.Minute,
 
-		// POST /v1/auth/me/notifications/webhook/rotate: 5 per minute
+		// POST /v1/auth/me/notifications/webhook/rotate: 5 per minute.
 		WebhookRotateLimit:  5,
 		WebhookRotateRefill: time.Minute,
 	}
@@ -180,7 +180,7 @@ func (m *SettingsRateLimiterMiddleware) Stats() map[string]RateLimiterStats {
 // settingsRateLimitMiddleware creates a Gin middleware for rate limiting.
 func settingsRateLimitMiddleware(limiter *RateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Use operator ID if available, otherwise use IP
+		// Use operator ID if available, otherwise use IP.
 		key := c.ClientIP()
 		if op, exists := c.Get("operator_id"); exists {
 			if opID, ok := op.(string); ok && opID != "" {

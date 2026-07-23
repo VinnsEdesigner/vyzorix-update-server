@@ -24,7 +24,7 @@ func migrateCreateUpdateSyncStatus(db *sql.DB) error {
 		return err
 	}
 
-	// Insert default row if not exists
+	// Insert default row if not exists.
 	_, err = db.ExecContext(context.Background(), `
 		INSERT OR IGNORE INTO update_sync_status (id, status, created_at, updated_at)
 		VALUES (1, 'idle', ?, ?)

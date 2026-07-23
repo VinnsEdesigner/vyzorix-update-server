@@ -30,7 +30,7 @@ func NewListHandler(deviceService *device.Service, hub *hub.Hub) *ListHandler {
 func (h *ListHandler) Handle(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "organization context required"})
@@ -101,7 +101,7 @@ func (h *ListHandler) Handle(c *gin.Context) {
 			Online:      isOnline,
 			LastSeen:    d.LastSeen,
 			AppVersion:  d.AppVersion,
-			DeviceClass: d.Model, // Use Model as DeviceClass
+			DeviceClass: d.Model, // Use Model as DeviceClass.
 		})
 
 		// Stop if we have enough results.

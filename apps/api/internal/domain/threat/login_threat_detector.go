@@ -30,7 +30,7 @@ func NewDefaultLoggerWith(logger *slog.Logger) *DefaultLogger {
 }
 
 func (l *DefaultLogger) LogThreat(response *ThreatResponse, ctx *LoginContext) {
-	// Use structured logging for security events - avoid logging sensitive data
+	// Use structured logging for security events - avoid logging sensitive data.
 	l.logger.Warn("threat_detected",
 		"threat_type", response.Type,
 		"severity", response.Severity,
@@ -46,13 +46,13 @@ func hashIdentifier(id string) string {
 	if id == "" {
 		return "<empty>"
 	}
-	// Use a simple hash with unsigned arithmetic to avoid overflow
+	// Use a simple hash with unsigned arithmetic to avoid overflow.
 	var h uint64
 	for _, c := range id {
 		h = h*31 + uint64(c)
 	}
-	// Convert hash to two letters A-Z using modulo
-	// Use uint64 to prevent negative values from overflow
+	// Convert hash to two letters A-Z using modulo.
+	// Use uint64 to prevent negative values from overflow.
 	return string(rune('A'+rune(h%26))) + string(rune('A'+rune((h/26)%26)))
 }
 
@@ -61,21 +61,21 @@ func sanitizeIP(ip string) string {
 	if ip == "" {
 		return "<empty>"
 	}
-	// For privacy, show only first 3 octets of IPv4
+	// For privacy, show only first 3 octets of IPv4.
 	parts := strings.Split(ip, ".")
 	if len(parts) == 4 {
 		return parts[0] + "." + parts[1] + "." + parts[2] + ".x"
 	}
-	// For IPv6, find the colon separator and take first half
+	// For IPv6, find the colon separator and take first half.
 	colonIdx := strings.Index(ip, ":")
 	if colonIdx > 0 {
-		// This looks like IPv6 - show up to the first colon group
+		// This looks like IPv6 - show up to the first colon group.
 		return ip[:colonIdx] + ":...x"
 	}
 	return ip
 }
 
-// Evaluate checks the login context against all detection rules and returns
+// Evaluate checks the login context against all detection rules and returns.
 // the first matched threat. For multiple threats, use EvaluateAll.
 func (d *Detector) Evaluate(ctx *LoginContext, logger Logger) *ThreatResponse {
 	if ctx == nil {
@@ -111,7 +111,7 @@ func (d *Detector) AddRule(rule *DetectionRule) {
 
 // EvaluateForBlocking checks if the login should be blocked based on failed attempts.
 func EvaluateForBlocking(ctx *LoginContext) bool {
-	// Lowered from 10 to 5 for earlier blocking
+	// Lowered from 10 to 5 for earlier blocking.
 	if ctx == nil {
 		return false
 	}

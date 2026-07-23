@@ -76,7 +76,7 @@ func (v *ConfigValidator) validatePort() {
 
 // validateSecrets validates all secret values meet minimum requirements.
 func (v *ConfigValidator) validateSecrets() {
-	// SERVER_API_TOKEN: min 32 chars in production
+	// SERVER_API_TOKEN: min 32 chars in production.
 	if v.config.ServerAPIToken == "" {
 		if v.config.Env == "production" {
 			v.addError("SERVER_API_TOKEN", "is required in production")
@@ -85,7 +85,7 @@ func (v *ConfigValidator) validateSecrets() {
 		v.addError("SERVER_API_TOKEN", "must be at least 32 characters in production")
 	}
 
-	// JWT_SECRET: min 32 chars in production
+	// JWT_SECRET: min 32 chars in production.
 	if v.config.JWTSecret == "" {
 		if v.config.Env == "production" {
 			v.addError("JWT_SECRET", "is required in production")
@@ -94,18 +94,18 @@ func (v *ConfigValidator) validateSecrets() {
 		v.addError("JWT_SECRET", "must be at least 32 characters in production")
 	}
 
-	// SESSION_SECRET: must be exactly 32 chars (AES-256 key)
+	// SESSION_SECRET: must be exactly 32 chars (AES-256 key).
 	if v.config.SessionSecret != "" && len(v.config.SessionSecret) != 32 {
 		v.addError("SESSION_SECRET", "must be exactly 32 characters for AES-256 encryption")
 	}
 
-	// CSRF_SECRET: min 32 chars if enabled
+	// CSRF_SECRET: min 32 chars if enabled.
 	csrfSecret := os.Getenv("CSRF_SECRET")
 	if getBool("CSRF_ENABLED", false) && len(csrfSecret) < 32 {
 		v.addError("CSRF_SECRET", "must be at least 32 characters when CSRF is enabled")
 	}
 
-	// TURNSTILE_SECRET: required if enabled
+	// TURNSTILE_SECRET: required if enabled.
 	turnstileSecret := os.Getenv("TURNSTILE_SECRET")
 	if getBool("TURNSTILE_ENABLED", false) && turnstileSecret == "" {
 		v.addError("TURNSTILE_SECRET", "is required when Turnstile is enabled")
@@ -170,7 +170,7 @@ func (v *ConfigValidator) validateSigning() {
 		return
 	}
 
-	// SIGNING_TIMESTAMP_WINDOW: must be 60-600 seconds
+	// SIGNING_TIMESTAMP_WINDOW: must be 60-600 seconds.
 	if window := os.Getenv("SIGNING_TIMESTAMP_WINDOW"); window != "" {
 		w, err := strconv.Atoi(window)
 		if err != nil || w < 60 || w > 600 {
@@ -178,7 +178,7 @@ func (v *ConfigValidator) validateSigning() {
 		}
 	}
 
-	// SIGNING_MAX_CACHE_SIZE: must be positive
+	// SIGNING_MAX_CACHE_SIZE: must be positive.
 	if cacheSize := os.Getenv("SIGNING_MAX_CACHE_SIZE"); cacheSize != "" {
 		cs, err := strconv.Atoi(cacheSize)
 		if err != nil || cs <= 0 {
@@ -186,7 +186,7 @@ func (v *ConfigValidator) validateSigning() {
 		}
 	}
 
-	// SIGNING_GRACE_PERIOD: must be positive
+	// SIGNING_GRACE_PERIOD: must be positive.
 	if grace := os.Getenv("SIGNING_GRACE_PERIOD"); grace != "" {
 		g, err := strconv.Atoi(grace)
 		if err != nil || g <= 0 {
@@ -277,28 +277,28 @@ func (v *ConfigValidator) validateSSR() {
 		return
 	}
 
-	// SSR_SERVER_URL is required when SSR is enabled
+	// SSR_SERVER_URL is required when SSR is enabled.
 	if v.ssrCfg.SSRServerURL == "" {
 		v.addError("SSR_SERVER_URL", "is required when SSR_ENABLED=true")
 		return
 	}
 
-	// Validate URL format
+	// Validate URL format.
 	if _, err := url.Parse(v.ssrCfg.SSRServerURL); err != nil {
 		v.addError("SSR_SERVER_URL", fmt.Sprintf("must be a valid URL, got: %q", v.ssrCfg.SSRServerURL))
 	}
 
-	// SSR_BUILD_TIMEOUT: should be reasonable (30s - 10min)
+	// SSR_BUILD_TIMEOUT: should be reasonable (30s - 10min).
 	if v.ssrCfg.SSRBuildTimeout < 30 || v.ssrCfg.SSRBuildTimeout > 600 {
 		v.addError("SSR_BUILD_TIMEOUT", "should be between 30 and 600 seconds")
 	}
 
-	// SSR_HEALTH_CHECK_INTERVAL: should be reasonable (5s - 5min)
+	// SSR_HEALTH_CHECK_INTERVAL: should be reasonable (5s - 5min).
 	if v.ssrCfg.SSRHealthCheckInterval < 5 || v.ssrCfg.SSRHealthCheckInterval > 300 {
 		v.addError("SSR_HEALTH_CHECK_INTERVAL", "should be between 5 and 300 seconds")
 	}
 
-	// SSR_RETRY_ATTEMPTS: should be reasonable (1 - 10)
+	// SSR_RETRY_ATTEMPTS: should be reasonable (1 - 10).
 	if v.ssrCfg.SSRRetryAttempts < 1 || v.ssrCfg.SSRRetryAttempts > 10 {
 		v.addError("SSR_RETRY_ATTEMPTS", "should be between 1 and 10")
 	}

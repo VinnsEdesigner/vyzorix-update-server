@@ -99,14 +99,14 @@ func (r *APIKeyRepositoryImpl) GetByKeyHash(ctx context.Context, keyHash string)
 
 // ListByOperator retrieves all API keys for an operator with pagination.
 func (r *APIKeyRepositoryImpl) ListByOperator(ctx context.Context, operatorID string, limit, offset int) ([]*APIKey, int, error) {
-	// Get total count
+	// Get total count.
 	var total int
 	countQuery := `SELECT COUNT(*) FROM api_keys WHERE operator_id = ?`
 	if err := r.db.QueryRowContext(ctx, countQuery, operatorID).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// Get paginated results
+	// Get paginated results.
 	query := `
 		SELECT id, operator_id, name, key_prefix, key_hash, scope, expires_at, is_active, request_count, last_request_at, created_at, updated_at, revoked_at
 		FROM api_keys WHERE operator_id = ?
@@ -164,11 +164,11 @@ func (r *APIKeyRepositoryImpl) Delete(ctx context.Context, id string) error {
 // CountByOperatorThisMonth counts all API keys created by an operator this month (including revoked).
 // This enforces the "20 keys per operator per month" limit properly, preventing bypass via rotation.
 func (r *APIKeyRepositoryImpl) CountByOperatorThisMonth(ctx context.Context, operatorID string) (int, error) {
-	// Get start of current month
+	// Get start of current month.
 	now := currentTimeMillis()
 	monthStart := getMonthStartMillis(now)
 
-	// Count ALL keys including revoked - this prevents circumvention via rotation
+	// Count ALL keys including revoked - this prevents circumvention via rotation.
 	query := `SELECT COUNT(*) FROM api_keys WHERE operator_id = ? AND created_at >= ?`
 	var count int
 	if err := r.db.QueryRowContext(ctx, query, operatorID, monthStart).Scan(&count); err != nil {
@@ -252,14 +252,14 @@ func (r *APIKeyRepositoryImpl) ListAll(ctx context.Context, limit, offset int) (
 		limit = 100
 	}
 
-	// Get total count
+	// Get total count.
 	var total int
 	countQuery := `SELECT COUNT(*) FROM api_keys WHERE is_active = 1`
 	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("failed to count all keys: %w", err)
 	}
 
-	// Get keys
+	// Get keys.
 	query := `
 		SELECT id, operator_id, name, key_prefix, key_hash, scope, expires_at,
 		       is_active, request_count, last_request_at, created_at, updated_at, revoked_at
@@ -319,7 +319,7 @@ func (r *APIKeyRepositoryImpl) ExistsByOperatorAndNameExcluding(ctx context.Cont
 
 // SetupAPIKeysTable creates the api_keys table if it doesn't exist.
 func SetupAPIKeysTable(db *sql.DB) error {
-	// Create api_keys table
+	// Create api_keys table.
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS api_keys (
 			id TEXT PRIMARY KEY,
@@ -342,7 +342,7 @@ func SetupAPIKeysTable(db *sql.DB) error {
 		return err
 	}
 
-	// Create indexes
+	// Create indexes.
 	indexes := []string{
 		`CREATE INDEX IF NOT EXISTS idx_api_keys_operator_id ON api_keys(operator_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash)`,

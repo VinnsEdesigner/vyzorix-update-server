@@ -98,7 +98,7 @@ func (s *Service) SendCommand(ctx context.Context, req *dto.SendCommandRequest) 
 		Args:       args,
 		Status:     command.StatusPending,
 		RetryCount: 0,
-		MaxRetries: 5, // Default max retries for outbox pattern
+		MaxRetries: 5, // Default max retries for outbox pattern.
 		CreatedAt:  now,
 		UpdatedAt:  now,
 		ExpiresAt:  &expiresAt,
@@ -195,13 +195,13 @@ func (s *Service) MarkCompleted(ctx context.Context, commandID string) error {
 
 // MarkFailed marks a command as failed with an error message.
 func (s *Service) MarkFailed(ctx context.Context, commandID string, failureReason string) error {
-	// Get the command to verify it exists and get dispatch_id
+	// Get the command to verify it exists and get dispatch_id.
 	cmd, err := s.commandRepo.FindByID(ctx, commandID)
 	if err != nil {
 		return err
 	}
 
-	// Use repository's MarkFailed which sets failure_reason properly
+	// Use repository's MarkFailed which sets failure_reason properly.
 	return s.commandRepo.MarkFailed(ctx, cmd.DispatchID, failureReason)
 }
 
@@ -213,7 +213,7 @@ func (s *Service) CancelCommand(ctx context.Context, commandID string) error {
 	}
 
 	if !cmd.IsPending() {
-		return application.ErrCommandFailed // Can only cancel pending commands
+		return application.ErrCommandFailed // Can only cancel pending commands.
 	}
 
 	return s.commandRepo.Delete(ctx, commandID)
@@ -221,13 +221,13 @@ func (s *Service) CancelCommand(ctx context.Context, commandID string) error {
 
 // RetryCommand retries a failed or pending command by creating a new command with the same parameters.
 func (s *Service) RetryCommand(ctx context.Context, dispatchID string) (*dto.SendCommandResponse, error) {
-	// Find the original command by dispatch ID only (globally unique)
+	// Find the original command by dispatch ID only (globally unique).
 	original, err := s.commandRepo.FindByDispatchIDOnly(ctx, dispatchID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a new command with new IDs
+	// Create a new command with new IDs.
 	cmdReq := &dto.SendCommandRequest{
 		DeviceID: original.DeviceID,
 		Command:  original.Command,
@@ -269,7 +269,7 @@ func (s *Service) CancelCommandByDispatchID(ctx context.Context, dispatchID stri
 	}
 
 	if !cmd.IsPending() {
-		return application.ErrCommandFailed // Can only cancel pending commands
+		return application.ErrCommandFailed // Can only cancel pending commands.
 	}
 
 	return s.commandRepo.Delete(ctx, cmd.ID)

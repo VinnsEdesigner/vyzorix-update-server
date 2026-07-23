@@ -311,7 +311,7 @@ func updatesQueries(res *resolver.Resolver) graphql.Fields {
 			},
 			Resolve: res.GetUpdatesSyncStatus,
 		},
-		// Spec-compliant aliases
+		// Spec-compliant aliases.
 		"updateHistory": &graphql.Field{
 			Type:        UpdateHistoryType,
 			Description: "Get a single update history record by ID (spec-compliant name)",
@@ -631,7 +631,7 @@ func updatesMutations(res *resolver.Resolver) graphql.Fields {
 			Description: "Trigger a GitHub sync",
 			Resolve:     res.SyncFromGitHub,
 		},
-		// Spec-compliant alias
+		// Spec-compliant alias.
 		"syncUpdates": &graphql.Field{
 			Type:        SyncResponseType,
 			Description: "Sync updates from GitHub (spec-compliant name)",

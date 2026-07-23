@@ -30,7 +30,7 @@ func DefaultTimeoutConfig() TimeoutConfig {
 // This is the enterprise-grade solution for Bug 49 - timeouts at middleware level.
 func GinTimeout(config TimeoutConfig) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		// Check if this path should skip timeout
+		// Check if this path should skip timeout.
 		for _, path := range config.SkipPaths {
 			if c.Request.URL.Path == path {
 				c.Next()
@@ -38,32 +38,32 @@ func GinTimeout(config TimeoutConfig) func(c *gin.Context) {
 			}
 		}
 
-		// Determine timeout for this request
+		// Determine timeout for this request.
 		timeout := config.DefaultTimeout
 		if routeTimeout, ok := config.RouteTimeouts[c.Request.URL.Path]; ok {
 			timeout = routeTimeout
 		}
 
-		// Create context with timeout
+		// Create context with timeout.
 		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
 		defer cancel()
 
-		// Replace request context with timeout context
+		// Replace request context with timeout context.
 		c.Request = c.Request.WithContext(ctx)
 
-		// Process request in goroutine to allow timeout detection
+		// Process request in goroutine to allow timeout detection.
 		done := make(chan struct{})
 		go func() {
 			c.Next()
 			close(done)
 		}()
 
-		// Wait for either completion or timeout
+		// Wait for either completion or timeout.
 		select {
 		case <-done:
-			// Request completed normally
+			// Request completed normally.
 		case <-ctx.Done():
-			// Timeout occurred
+			// Timeout occurred.
 			c.Abort()
 			if !c.Writer.Written() {
 				c.JSON(http.StatusGatewayTimeout, gin.H{
@@ -94,7 +94,7 @@ func TimeoutMiddleware(defaultTimeout time.Duration) func(http.Handler) http.Han
 
 			select {
 			case <-done:
-				// Request completed
+				// Request completed.
 			case <-ctx.Done():
 				http.Error(w, `{"error":"timeout","code":"REQUEST_TIMEOUT","message":"request timed out"}`,
 					http.StatusGatewayTimeout)

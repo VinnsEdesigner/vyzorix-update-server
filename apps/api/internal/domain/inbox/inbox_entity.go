@@ -19,7 +19,7 @@ type InboxEntry struct {
 	DeviceClass       string      `json:"deviceClass,omitempty"`
 	Status            InboxStatus `json:"status"`
 	CommandSecret     string      `json:"commandSecret,omitempty"`
-	CommandSecretHash string      `json:"-"` // Internal only, never exposed via JSON
+	CommandSecretHash string      `json:"-"` // Internal only, never exposed via JSON.
 	Notes             string      `json:"notes,omitempty"`
 	OperatorID        string      `json:"operatorId,omitempty"`
 	OrganizationID    string      `json:"organizationId,omitempty"`
@@ -87,7 +87,7 @@ type RegistrationLog struct {
 	ID         string `json:"id"`
 	DeviceID   string `json:"deviceId"`
 	IMEI       string `json:"imei"`
-	Action     string `json:"action"` // registered, approved, rejected, deregistered
+	Action     string `json:"action"` // registered, approved, rejected, deregistered.
 	OperatorID string `json:"operatorId"`
 	ClientIP   string `json:"clientIp"`
 	UserAgent  string `json:"userAgent"`

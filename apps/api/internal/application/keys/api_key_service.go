@@ -17,12 +17,12 @@ import (
 
 // Config holds the API key service configuration.
 type Config struct {
-	Prefix           string // e.g., "vxyz"
-	MaxPerMonth      int    // Max keys per operator per month
-	MaxNameLength    int    // Max key name length
-	DefaultExpiryDays int   // Default expiry (0 = never)
-	MaxExpiryDays    int    // Max expiry days
-	PrefixLength     int    // Prefix length for display
+	Prefix           string // e.g., "vxyz".
+	MaxPerMonth      int    // Max keys per operator per month.
+	MaxNameLength    int    // Max key name length.
+	DefaultExpiryDays int   // Default expiry (0 = never).
+	MaxExpiryDays    int    // Max expiry days.
+	PrefixLength     int    // Prefix length for display.
 }
 
 // DefaultConfig returns the default configuration.
@@ -53,17 +53,17 @@ func NewAPIKeyService(repo infraStorage.APIKeyRepository, config Config) *APIKey
 
 // GenerateKey generates a new API key and returns the full key (only time it's available).
 func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req *domain.CreateAPIKeyRequest) (*domain.APIKeyWithFullKey, error) {
-	// Validate name
+	// Validate name.
 	if len(req.Name) > s.config.MaxNameLength {
 		return nil, domain.ErrKeyNameTooLong
 	}
 
-	// Validate scope
+	// Validate scope.
 	if !req.Scope.IsValid() {
 		return nil, domain.ErrInvalidScope
 	}
 
-	// Check for duplicate name per operator
+	// Check for duplicate name per operator.
 	exists, err := s.repo.ExistsByOperatorAndName(ctx, operatorID, req.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check key name: %w", err)
@@ -72,7 +72,7 @@ func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req 
 		return nil, domain.ErrKeyNameConflict
 	}
 
-	// Check monthly limit
+	// Check monthly limit.
 	count, err := s.repo.CountByOperatorThisMonth(ctx, operatorID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count keys: %w", err)
@@ -81,22 +81,22 @@ func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req 
 		return nil, domain.ErrMonthlyLimitExceeded
 	}
 
-	// Generate the full key
+	// Generate the full key.
 	fullKey, err := generateRandomKey(s.config.Prefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate key: %w", err)
 	}
 
-	// Hash the key
+	// Hash the key.
 	keyHash, err := hashKey(fullKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash key: %w", err)
 	}
 
-	// Calculate prefix
+	// Calculate prefix.
 	prefix := fullKey[:s.config.PrefixLength]
 
-	// Calculate expiry
+	// Calculate expiry.
 	var expiresAt *time.Time
 	if req.ExpiresInDays != nil && *req.ExpiresInDays > 0 {
 		if *req.ExpiresInDays > s.config.MaxExpiryDays {
@@ -167,7 +167,7 @@ func (s *APIKeyService) ValidateKey(ctx context.Context, fullKey string) (*domai
 // VerifyKey verifies a key against a stored hash using constant-time comparison.
 func (s *APIKeyService) VerifyKey(fullKey, keyHash string) bool {
 	hashedKey := hashKeyValue(fullKey)
-	// Use constant-time comparison to prevent timing attacks
+	// Use constant-time comparison to prevent timing attacks.
 	return subtle.ConstantTimeCompare([]byte(hashedKey), []byte(keyHash)) == 1
 }
 
@@ -191,7 +191,7 @@ func (s *APIKeyService) ListKeys(ctx context.Context, operatorID string, page, l
 		return nil, fmt.Errorf("failed to list keys: %w", err)
 	}
 
-	// Count keys created this month
+	// Count keys created this month.
 	monthlyCount, err := s.repo.CountByOperatorThisMonth(ctx, operatorID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count monthly keys: %w", err)
@@ -224,7 +224,7 @@ func (s *APIKeyService) GetKey(ctx context.Context, operatorID, keyID string) (*
 		return nil, domain.ErrAPIKeyNotFound
 	}
 
-	// Ensure the key belongs to the operator
+	// Ensure the key belongs to the operator.
 	if key.OperatorID != operatorID {
 		return nil, domain.ErrAPIKeyNotFound
 	}
@@ -239,17 +239,17 @@ func (s *APIKeyService) UpdateKey(ctx context.Context, operatorID, keyID string,
 		return nil, domain.ErrAPIKeyNotFound
 	}
 
-	// Ensure the key belongs to the operator
+	// Ensure the key belongs to the operator.
 	if key.OperatorID != operatorID {
 		return nil, domain.ErrAPIKeyNotFound
 	}
 
-	// Validate name if provided
+	// Validate name if provided.
 	if req.Name != nil {
 		if len(*req.Name) > s.config.MaxNameLength {
 			return nil, domain.ErrKeyNameTooLong
 		}
-		// Check for duplicate name (excluding current key)
+		// Check for duplicate name (excluding current key).
 		exists, err := s.repo.ExistsByOperatorAndNameExcluding(ctx, operatorID, *req.Name, keyID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check key name: %w", err)
@@ -260,7 +260,7 @@ func (s *APIKeyService) UpdateKey(ctx context.Context, operatorID, keyID string,
 		key.Name = *req.Name
 	}
 
-	// Validate scope if provided
+	// Validate scope if provided.
 	if req.Scope != nil {
 		if !req.Scope.IsValid() {
 			return nil, domain.ErrInvalidScope
@@ -284,7 +284,7 @@ func (s *APIKeyService) RevokeKey(ctx context.Context, operatorID, keyID string)
 		return domain.ErrAPIKeyNotFound
 	}
 
-	// Ensure the key belongs to the operator
+	// Ensure the key belongs to the operator.
 	if key.OperatorID != operatorID {
 		return domain.ErrAPIKeyNotFound
 	}
@@ -304,24 +304,24 @@ func (s *APIKeyService) RotateKey(ctx context.Context, operatorID, keyID string)
 		return nil, domain.ErrAPIKeyNotFound
 	}
 
-	// Ensure the key belongs to the operator
+	// Ensure the key belongs to the operator.
 	if key.OperatorID != operatorID {
 		return nil, domain.ErrAPIKeyNotFound
 	}
 
-	// Preserve expiry time before revoking (copy value, not pointer)
+	// Preserve expiry time before revoking (copy value, not pointer).
 	var expiresAt *int64
 	if key.ExpiresAt != nil {
 		expiresAtVal := *key.ExpiresAt
 		expiresAt = &expiresAtVal
 	}
 
-	// Revoke the old key
+	// Revoke the old key.
 	if revokeErr := s.repo.Revoke(ctx, keyID); revokeErr != nil {
 		return nil, fmt.Errorf("failed to revoke old key: %w", revokeErr)
 	}
 
-	// Re-check monthly limit (we're creating a new key)
+	// Re-check monthly limit (we're creating a new key).
 	count, err := s.repo.CountByOperatorThisMonth(ctx, operatorID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count keys: %w", err)
@@ -330,7 +330,7 @@ func (s *APIKeyService) RotateKey(ctx context.Context, operatorID, keyID string)
 		return nil, domain.ErrMonthlyLimitExceeded
 	}
 
-	// Generate the new key
+	// Generate the new key.
 	fullKey, err := generateRandomKey(s.config.Prefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate key: %w", err)
@@ -351,7 +351,7 @@ func (s *APIKeyService) RotateKey(ctx context.Context, operatorID, keyID string)
 		KeyPrefix:  prefix,
 		KeyHash:    keyHash,
 		Scope:      key.Scope,
-		ExpiresAt:  expiresAt, // Keep the same expiry (copied value, not pointer)
+		ExpiresAt:  expiresAt, // Keep the same expiry (copied value, not pointer).
 		IsActive:   true,
 		CreatedAt:  now.UnixMilli(),
 		UpdatedAt:  now.UnixMilli(),
@@ -378,7 +378,7 @@ func (s *APIKeyService) RotateKey(ctx context.Context, operatorID, keyID string)
 
 // generateRandomKey generates a random API key with the given prefix.
 func generateRandomKey(prefix string) (string, error) {
-	const keyLength = 32 // 32 bytes = 64 hex characters
+	const keyLength = 32 // 32 bytes = 64 hex characters.
 	bytes := make([]byte, keyLength)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
@@ -387,8 +387,8 @@ func generateRandomKey(prefix string) (string, error) {
 }
 
 // hashKey hashes a key using Argon2id.
-func hashKey(key string) (string, error) { //nolint:unparam
-	// Use a fixed salt for deterministic hashing (the key itself is the secret)
+func hashKey(key string) (string, error) { //nolint:unparam.
+	// Use a fixed salt for deterministic hashing (the key itself is the secret).
 	salt := []byte("vyzorix-api-key-v1")
 	hash := argon2.IDKey([]byte(key), salt, 1, 64*1024, 4, 32)
 	return hex.EncodeToString(hash), nil

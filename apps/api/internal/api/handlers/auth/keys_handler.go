@@ -75,7 +75,7 @@ func (h *Handler) CreateKey(c *gin.Context) {
 		return
 	}
 
-	// Audit log successful key creation
+	// Audit log successful key creation.
 	h.auditLogger.APIKeyCreated(
 		c.Request.Context(),
 		operatorID,
@@ -87,11 +87,11 @@ func (h *Handler) CreateKey(c *gin.Context) {
 		c.GetHeader("User-Agent"),
 	)
 
-	// Return the full key only on creation
+	// Return the full key only on creation.
 	c.JSON(http.StatusCreated, gin.H{
 		"id":          result.ID,
 		"name":        result.Name,
-		"api_key":     result.FullKey, // Full key - only time it's shown!
+		"api_key":     result.FullKey, // Full key - only time it's shown!.
 		"key_prefix":  result.KeyPrefix,
 		"scope":       result.Scope,
 		"expires_at":  result.ExpiresAt,
@@ -213,8 +213,8 @@ func (h *Handler) UpdateKey(c *gin.Context) {
 		return
 	}
 
-	// Audit log successful key update
-	// Build changes summary
+	// Audit log successful key update.
+	// Build changes summary.
 	changes := ""
 	if req.Name != nil {
 		changes += "name"
@@ -259,7 +259,7 @@ func (h *Handler) RevokeKey(c *gin.Context) {
 
 	keyID := c.Param("keyId")
 
-	// Get key info for audit before revoking
+	// Get key info for audit before revoking.
 	key, err := h.service.GetKey(c.Request.Context(), operatorID, keyID)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
@@ -280,7 +280,7 @@ func (h *Handler) RevokeKey(c *gin.Context) {
 		return
 	}
 
-	// Audit log successful key revocation
+	// Audit log successful key revocation.
 	h.auditLogger.APIKeyRevoked(
 		c.Request.Context(),
 		operatorID,
@@ -324,7 +324,7 @@ func (h *Handler) RotateKey(c *gin.Context) {
 		return
 	}
 
-	// Audit log successful key rotation
+	// Audit log successful key rotation.
 	h.auditLogger.APIKeyRotated(
 		c.Request.Context(),
 		operatorID,
@@ -334,11 +334,11 @@ func (h *Handler) RotateKey(c *gin.Context) {
 		c.GetHeader("User-Agent"),
 	)
 
-	// Return the new full key
+	// Return the new full key.
 	c.JSON(http.StatusOK, gin.H{
 		"id":          result.ID,
 		"name":        result.Name,
-		"api_key":     result.FullKey, // New full key - only time it's shown!
+		"api_key":     result.FullKey, // New full key - only time it's shown!.
 		"key_prefix":  result.KeyPrefix,
 		"scope":       result.Scope,
 		"expires_at":  result.ExpiresAt,

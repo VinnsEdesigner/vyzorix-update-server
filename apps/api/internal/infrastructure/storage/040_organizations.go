@@ -7,38 +7,38 @@ import (
 )
 
 // migrateOrganizations creates the organizations, organization_members, and invitations tables.
-// This migration implements the multi-tenant organization model where:
-// - Operators are global identities (email, password, OAuth)
-// - Organizations are tenants that own resources
-// - Memberships link operators to organizations with scoped roles
-// - Invitations manage the join request flow
+// This migration implements the multi-tenant organization model where:.
+// - Operators are global identities (email, password, OAuth).
+// - Organizations are tenants that own resources.
+// - Memberships link operators to organizations with scoped roles.
+// - Invitations manage the join request flow.
 func migrateOrganizations(db *sql.DB) error {
-	// Create organizations table
+	// Create organizations table.
 	if err := createOrganizationsTable(db); err != nil {
 		return err
 	}
 
-	// Create organization_members table
+	// Create organization_members table.
 	if err := createOrganizationMembersTable(db); err != nil {
 		return err
 	}
 
-	// Create invitations table
+	// Create invitations table.
 	if err := createInvitationsTable(db); err != nil {
 		return err
 	}
 
-	// Add organization_id to devices table
+	// Add organization_id to devices table.
 	if err := addOrganizationIDToDevices(db); err != nil {
 		return err
 	}
 
-	// Add organization_id to sessions table
+	// Add organization_id to sessions table.
 	if err := addOrganizationIDToSessions(db); err != nil {
 		return err
 	}
 
-	// Add organization_id to api_keys table
+	// Add organization_id to api_keys table.
 	if err := addOrganizationIDToAPIKeys(db); err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func createOrganizationsTable(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for looking up organizations by creator
+	// Create index for looking up organizations by creator.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_organizations_created_by ON organizations(created_by)
 	`)
@@ -96,7 +96,7 @@ func createOrganizationMembersTable(db *sql.DB) error {
 		return err
 	}
 
-	// Create indexes for efficient lookups
+	// Create indexes for efficient lookups.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_org_members_operator ON organization_members(operator_id)
 	`)
@@ -137,7 +137,7 @@ func createInvitationsTable(db *sql.DB) error {
 		return err
 	}
 
-	// Create indexes for efficient lookups
+	// Create indexes for efficient lookups.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token)
 	`)
@@ -165,7 +165,7 @@ func addOrganizationIDToDevices(db *sql.DB) error {
 		ALTER TABLE devices ADD COLUMN organization_id TEXT
 	`)
 	if err != nil {
-		// Column may already exist (SQLite ignores duplicate column additions)
+		// Column may already exist (SQLite ignores duplicate column additions).
 		if !isColumnExistsError(err) {
 			return err
 		}
@@ -179,7 +179,7 @@ func addOrganizationIDToSessions(db *sql.DB) error {
 		ALTER TABLE sessions ADD COLUMN organization_id TEXT
 	`)
 	if err != nil {
-		// Column may already exist (SQLite ignores duplicate column additions)
+		// Column may already exist (SQLite ignores duplicate column additions).
 		if !isColumnExistsError(err) {
 			return err
 		}
@@ -189,23 +189,23 @@ func addOrganizationIDToSessions(db *sql.DB) error {
 
 // addOrganizationIDToAPIKeys adds organization_id column to api_keys table.
 func addOrganizationIDToAPIKeys(db *sql.DB) error {
-	// Note: api_keys table might be named differently, check for api_clients
-	// First check if api_keys table exists
+	// Note: api_keys table might be named differently, check for api_clients.
+	// First check if api_keys table exists.
 	var tableName string
 	err := db.QueryRowContext(context.Background(), `
 		SELECT name FROM sqlite_master WHERE type='table' AND name IN ('api_keys', 'api_clients')
 	`).Scan(&tableName)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		// Table doesn't exist yet, nothing to migrate
+		// Table doesn't exist yet, nothing to migrate.
 		return nil
 	}
 	if err != nil {
 		return err
 	}
 
-	// Use the actual table name found
-	actualTableName := "api_clients" // default
+	// Use the actual table name found.
+	actualTableName := "api_clients" // default.
 	if tableName != "" {
 		actualTableName = tableName
 	}
@@ -213,7 +213,7 @@ func addOrganizationIDToAPIKeys(db *sql.DB) error {
 	query := `ALTER TABLE ` + actualTableName + ` ADD COLUMN organization_id TEXT`
 	_, err = db.ExecContext(context.Background(), query)
 	if err != nil {
-		// Column may already exist (SQLite ignores duplicate column additions)
+		// Column may already exist (SQLite ignores duplicate column additions).
 		if !isColumnExistsError(err) {
 			return err
 		}

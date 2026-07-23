@@ -73,10 +73,10 @@ type ServerConfig struct {
 	UpdatesService *updatesapp.Service
 	APIKeyService  *keys.APIKeyService
 	Config         config.Config
-	// New settings services for hierarchical threshold resolution
+	// New settings services for hierarchical threshold resolution.
 	DeviceSettingsService *device.DeviceSettingsService
 	OrgSettingsService   *orgapplication.OrganizationSettingsService
-	// AppCheckVerifier provides Firebase App Check verification for device attestation
+	// AppCheckVerifier provides Firebase App Check verification for device attestation.
 	AppCheckVerifier *appcheck.Verifier
 }
 
@@ -104,8 +104,8 @@ type Server struct {
 	dashboardRateLimiter       *middleware.DashboardRateLimiterMiddleware
 	deviceRegRateLimiter       *middleware.DeviceRegistrationRateLimiterMiddleware
 	AuditLogger                *audit.Logger
-	// DEPRECATED: deviceRegisterHandler - /v1/device/register endpoint removed
-	// deviceRegisterHandler      *devicehandlers.RegisterHandler
+	// DEPRECATED: deviceRegisterHandler - /v1/device/register endpoint removed.
+	// deviceRegisterHandler      *devicehandlers.RegisterHandler.
 	deviceUpdaterHandler       *devicehandlers.UpdaterHandler
 	deviceListHandler          *devicehandlers.ListHandler
 	devicesHandler             *devicehandlers.DevicesHandler
@@ -152,7 +152,7 @@ func NewServer(cfg *ServerConfig) *Server {
 	engine := gin.New()
 	engine.Use(middleware.GinPanicRecovery(cfg.Log))
 
-	// Wire middleware using wire package
+	// Wire middleware using wire package.
 	mwSet := wire.WireMiddleware(wire.MiddlewareConfig{
 		Log:              cfg.Log,
 		SessionManager:   cfg.SessionManager,
@@ -192,16 +192,16 @@ func NewServer(cfg *ServerConfig) *Server {
 		apiKeyRateLimiter: mwSet.APIKeyRateLimiter,
 	}
 
-	// Create presenter and wire handlers
+	// Create presenter and wire handlers.
 	presenter := response.NewPresenter(cfg.AuthService, cfg.AuditLogger, cfg.IPIntelligence)
 	s.wireHandlers(cfg, presenter, mwSet)
 
-	// Start Hub if available
+	// Start Hub if available.
 	if cfg.Hub != nil {
 		go cfg.Hub.Run(context.Background())
 	}
 
-	// Initialize metrics handler
+	// Initialize metrics handler.
 	if cfg.Metrics != nil {
 		s.metricsHandler = infraMetrics.NewMetricsHandler(cfg.Metrics)
 		s.engine.Use(infraMetrics.Middleware(cfg.Metrics))
@@ -209,7 +209,7 @@ func NewServer(cfg *ServerConfig) *Server {
 
 	s.setupRoutes()
 
-	// Set audit logger
+	// Set audit logger.
 	s.AuditLogger = cfg.AuditLogger
 
 	return s
@@ -217,7 +217,7 @@ func NewServer(cfg *ServerConfig) *Server {
 
 // wireHandlers creates and assigns all handler instances.
 func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, mwSet *wire.MiddlewareSet) {
-	// Auth handlers
+	// Auth handlers.
 	s.authHandlers = authhandlers.NewAllHandlers(&authhandlers.Dependencies{
 		AuthService:    cfg.AuthService,
 		SessionManager: cfg.SessionManager,
@@ -233,19 +233,19 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		OAuthStateRepo: cfg.OAuthStateRepo,
 	})
 
-	// Device handlers
-	// DEPRECATED: s.deviceRegisterHandler = devicehandlers.NewRegisterHandler(cfg.DeviceService) // /v1/device/register removed
+	// Device handlers.
+	// DEPRECATED: s.deviceRegisterHandler = devicehandlers.NewRegisterHandler(cfg.DeviceService) // /v1/device/register removed.
 	s.deviceStatusHandler = devicehandlers.NewStatusHandler(cfg.DeviceService)
 	s.deviceUpdaterHandler = devicehandlers.NewUpdaterHandler(cfg.DeviceService)
 	s.deviceListHandler = devicehandlers.NewListHandler(cfg.DeviceService, cfg.Hub)
 
-	// Command handler
+	// Command handler.
 	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier)
 
-	// WebSocket handler
+	// WebSocket handler.
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
 
-	// Telemetry history handler
+	// Telemetry history handler.
 	s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(
 		cfg.Log,
 		storage.NewTelemetryRepository(cfg.DB.DB()),
@@ -253,22 +253,22 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		nil,
 	)
 
-	// Connection status handler
+	// Connection status handler.
 	s.connectionStatusHandler = handlers.NewConnectionStatusHandler(cfg.Log, cfg.Hub, storage.NewDeviceRepository(cfg.DB.DB()))
 
-	// Admin handlers
+	// Admin handlers.
 	s.adminClientsHandler = admin.NewClientsHandler(cfg.ClientService)
 
-	// API key handlers
+	// API key handlers.
 	if cfg.APIKeyService != nil {
 		s.apiKeysHandler = authhandlers.NewHandler(cfg.APIKeyService, cfg.AuditLogger)
 		s.superAdminAPIKeys = admin.NewSuperAdminHandler(cfg.APIKeyService, cfg.AuditLogger)
 	}
 
-	// Dashboard command handlers - wire up new handlers
+	// Dashboard command handlers - wire up new handlers.
 	s.wireDashboardHandlers(cfg)
 
-	// Initialize dashboard rate limiter
+	// Initialize dashboard rate limiter.
 	s.dashboardRateLimiter = middleware.NewDashboardRateLimiterMiddleware(nil)
 }
 
@@ -279,7 +279,7 @@ func (s *Server) Routes() http.Handler {
 
 // wireDashboardHandlers creates and assigns dashboard command handler instances.
 func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
-	// Create repositories
+	// Create repositories.
 	var logsRepo *storage.LogsRepository
 	var metricsRepo *storage.MetricsRepository
 	var eventRepo *storage.EventRepository
@@ -290,7 +290,7 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 		eventRepo = storage.NewEventRepository(cfg.DB.DB())
 	}
 
-	// Create services
+	// Create services.
 	var historySvc *command.HistoryService
 	var logsSvc *logs.Service
 	var metricsSvc *appmetrics.Service
@@ -305,7 +305,7 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	}
 
 	if metricsRepo != nil {
-		// Get repositories for hierarchical threshold resolution
+		// Get repositories for hierarchical threshold resolution.
 		var deviceSettingsRepo devicedomain.DeviceSettingsRepository
 		var orgSettingsRepo organization.OrganizationSettingsRepository
 		if cfg.DeviceSettingsService != nil {
@@ -321,7 +321,7 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 		dashboardSvc = dashboard.NewService(cfg.DeviceService.DeviceRepo(), cfg.CommandService.CommandRepo(), logsRepo)
 	}
 
-	// Create handlers
+	// Create handlers.
 	if historySvc != nil && cfg.DeviceService != nil {
 		s.commandHistoryHandler = cmdhandlers.NewHistoryHandler(historySvc, cfg.DeviceService.DeviceRepo(), cfg.Log)
 	}
@@ -343,21 +343,21 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 		s.dashboardStatsHandler = dashboardhandlers.NewStatsHandler(dashboardSvc, cfg.Log)
 	}
 
-	// Updates handler
+	// Updates handler.
 	if cfg.UpdatesService != nil {
-	// Updater handler for OTA updates
+	// Updater handler for OTA updates.
 	s.updaterHandler = updaterhandlers.NewHandler(cfg.Log, cfg.Config)
 		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(middleware.DefaultUpdatesRateLimits())
 		s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, cfg.UpdatesService.GetPushService(), updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
 	}
 
-	// Inbox handler
+	// Inbox handler.
 	s.wireInboxHandler(cfg)
 
-	// Device confirm handler
+	// Device confirm handler.
 	s.wireConfirmHandler(cfg)
 
-	// Diagnostics handler
+	// Diagnostics handler.
 	s.wireDiagnosticsHandler(cfg)
 }
 
@@ -367,25 +367,25 @@ func (s *Server) wireInboxHandler(cfg *ServerConfig) {
 		return
 	}
 
-	// Create inbox repository
+	// Create inbox repository.
 	inboxRepo := storage.NewInboxRepository(cfg.DB.DB())
 	regLogRepo := storage.NewRegistrationLogRepository(cfg.DB.DB())
 
-	// Create inbox service with FCM notifier (SafeNotifier for graceful degradation)
-	// and device service for creating devices on approval and device lookup
+	// Create inbox service with FCM notifier (SafeNotifier for graceful degradation).
+	// and device service for creating devices on approval and device lookup.
 	var fcmNotifier inbox.FCMNotifier
 	if cfg.FCMNotifier != nil {
 		fcmNotifier = &fcm.SafeNotifier{Notifier: cfg.FCMNotifier}
 	}
 	inboxService := inbox.NewService(inboxRepo, regLogRepo, cfg.DeviceService, cfg.DeviceService, fcmNotifier, s.log)
 
-	// Enable ACID transactions for enterprise production
+	// Enable ACID transactions for enterprise production.
 	inboxService.WithTxManager(cfg.DB)
 
-	// Create device registration rate limiter
+	// Create device registration rate limiter.
 	s.deviceRegRateLimiter = middleware.NewDeviceRegistrationRateLimiterMiddleware(nil)
 
-	// Create handler with device attestation
+	// Create handler with device attestation.
 	if cfg.AppCheckVerifier != nil && cfg.AppCheckVerifier.Enabled() {
 		s.log.Info("using Firebase App Check for device attestation")
 		s.inboxHandler = inboxhandlers.NewHandlerWithAppCheck(
@@ -408,10 +408,10 @@ func (s *Server) wireConfirmHandler(cfg *ServerConfig) {
 		return
 	}
 
-	// Create inbox repository for cleanup after device confirmation
+	// Create inbox repository for cleanup after device confirmation.
 	inboxRepo := storage.NewInboxRepository(cfg.DB.DB())
 
-	// Create confirm handler with inbox cleanup capability
+	// Create confirm handler with inbox cleanup capability.
 	s.deviceConfirmHandler = devicehandlers.NewConfirmHandlerWithCleanup(cfg.DeviceService, inboxRepo)
 }
 
@@ -421,35 +421,35 @@ func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
 		return
 	}
 
-	// Create diagnostics repository
+	// Create diagnostics repository.
 	diagnosticsRepo := storage.NewDiagnosticsRepository(cfg.DB.DB())
 
-	// Create diagnostics service
+	// Create diagnostics service.
 	diagnosticsService := diagnosticsapp.NewService(diagnosticsRepo, cfg.DeviceService.DeviceRepo(), s.hub, cfg.Config.DiagnosticsConfig)
 
-	// Get rate limiters
+	// Get rate limiters.
 	var inspectLimit, timelineLimit func(c *gin.Context)
 	if s.dashboardRateLimiter != nil {
 		inspectLimit = s.dashboardRateLimiter.DeviceInspectLimit()
 		timelineLimit = s.dashboardRateLimiter.DeviceTimelineLimit()
 	}
 
-	// Create inspect handler
+	// Create inspect handler.
 	s.diagnosticsInspectHandler = diagnosticshandlers.NewInspectHandler(diagnosticsService, inspectLimit)
 
-	// Create timeline handler
+	// Create timeline handler.
 	s.diagnosticsTimelineHandler = diagnosticshandlers.NewTimelineHandler(diagnosticsService, timelineLimit)
 
-	// Create combined handler for backwards compatibility
+	// Create combined handler for backwards compatibility.
 	s.diagnosticsHandler = &diagnosticshandlers.Handler{
 		InspectHandler:  s.diagnosticsInspectHandler,
 		TimelineHandler: s.diagnosticsTimelineHandler,
 	}
 }
 
-// Handlers are defined in server_handlers.go
-// Routes are defined in server_routes.go
-// GraphQL is defined in server_graphql.go
+// Handlers are defined in server_handlers.go.
+// Routes are defined in server_routes.go.
+// GraphQL is defined in server_graphql.go.
 
 // ServerConfigWithDeps is the config for NewServerWithDeps using pre-wired dependencies.
 type ServerConfigWithDeps struct {
@@ -495,9 +495,9 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		apiKeyRateLimiter: cfg.Middleware.APIKeyRateLimiter,
 	}
 
-	// Wire handlers from HandlerSet
+	// Wire handlers from HandlerSet.
 	s.authHandlers = cfg.HandlerSet.Auth
-	// DEPRECATED: s.deviceRegisterHandler = cfg.HandlerSet.DeviceRegister // /v1/device/register removed
+	// DEPRECATED: s.deviceRegisterHandler = cfg.HandlerSet.DeviceRegister // /v1/device/register removed.
 	s.deviceStatusHandler = cfg.HandlerSet.DeviceStatus
 	s.deviceUpdaterHandler = cfg.HandlerSet.DeviceUpdater
 	s.deviceListHandler = cfg.HandlerSet.DeviceList
@@ -509,7 +509,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.adminClientsHandler = cfg.HandlerSet.AdminClients
 	s.updatesHandler = cfg.HandlerSet.Updates
 
-	// Organization handlers
+	// Organization handlers.
 	s.organizationHandler = cfg.HandlerSet.Organization
 	s.organizationSettingsHandler = cfg.HandlerSet.OrgSettings
 	s.deviceSettingsHandler = cfg.HandlerSet.DeviceSettings
@@ -517,14 +517,14 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.memberHandler = cfg.HandlerSet.Member
 	s.transferHandler = cfg.HandlerSet.Transfer
 
-	// API key handlers
+	// API key handlers.
 	if cfg.APIKeyService != nil {
 		s.apiKeysHandler = authhandlers.NewHandler(cfg.APIKeyService, cfg.AuditLogger)
 		s.superAdminAPIKeys = admin.NewSuperAdminHandler(cfg.APIKeyService, cfg.AuditLogger)
 	}
 
-	// Wire inbox and confirm handlers using ServerConfig
-	// Note: FCMNotifier and AppCheckVerifier are passed via HandlerSet
+	// Wire inbox and confirm handlers using ServerConfig.
+	// Note: FCMNotifier and AppCheckVerifier are passed via HandlerSet.
 	serverCfg := &ServerConfig{
 		DB:                cfg.DB,
 		DeviceService:     cfg.HandlerSet.DeviceService,
@@ -536,7 +536,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.wireInboxHandler(serverCfg)
 	s.wireConfirmHandler(serverCfg)
 
-	// Store deviceRepo for the deletion worker in api_main.go
+	// Store deviceRepo for the deletion worker in api_main.go.
 	s.DeviceRepo = cfg.DeviceRepo
 
 	s.setupRoutes()

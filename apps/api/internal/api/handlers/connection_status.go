@@ -58,7 +58,7 @@ type AllConnectionsResponse struct {
 	TotalQueued    int                    `json:"totalQueued"`
 }
 
-// GetStatus handles GET /v1/device/:id/connection-status
+// GetStatus handles GET /v1/device/:id/connection-status.
 // Returns the WebSocket connection status for a specific device.
 func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 	deviceID := c.Param("id")
@@ -70,7 +70,7 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	// Get client from hub
+	// Get client from hub.
 	client := h.hub.GetClient(deviceID)
 
 	response := ConnectionStatusResponse{
@@ -85,7 +85,7 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 		response.ClientMetrics = &metrics
 	}
 
-	// Get queue status for this device
+	// Get queue status for this device.
 	{
 		response.QueueMetrics = &hub.QueueMetrics{}
 
@@ -99,7 +99,7 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// GetAllStatus handles GET /v1/connections
+// GetAllStatus handles GET /v1/connections.
 // Returns the status of all WebSocket connections within the organization.
 func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 	if h.hub == nil {
@@ -119,7 +119,7 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 		return
 	}
 
-	// Get devices in this organization
+	// Get devices in this organization.
 	var orgDeviceIDs = make(map[string]bool)
 	if h.deviceRepo != nil {
 		orgDevices, err := h.deviceRepo.ListByOrganization(c.Request.Context(), orgID)
@@ -130,7 +130,7 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 		}
 	}
 
-	// Get all clients and filter by organization
+	// Get all clients and filter by organization.
 	allClients := h.hub.Clients()
 	orgClients := make(map[string]*hub.Client)
 	for deviceID, client := range allClients {
@@ -176,7 +176,7 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// GetMetrics handles GET /v1/connections/metrics
+// GetMetrics handles GET /v1/connections/metrics.
 // Returns aggregate WebSocket metrics for the organization.
 func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -188,7 +188,7 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 		return
 	}
 
-	// Get devices in this organization
+	// Get devices in this organization.
 	var orgDeviceIDs = make(map[string]bool)
 	if h.deviceRepo != nil {
 		orgDevices, err := h.deviceRepo.ListByOrganization(c.Request.Context(), orgID)
@@ -199,7 +199,7 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 		}
 	}
 
-	// Get all clients and filter by organization
+	// Get all clients and filter by organization.
 	allClients := h.hub.Clients()
 	orgClients := make(map[string]*hub.Client)
 	for deviceID, client := range allClients {
@@ -208,7 +208,7 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 		}
 	}
 
-	// Aggregate metrics
+	// Aggregate metrics.
 	var totalMessagesSent, totalMessagesReceived int64
 	var totalConnectAttempts, totalConnectSuccesses, totalConnectFailures int64
 
@@ -241,7 +241,7 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 	})
 }
 
-// DisconnectDevice handles POST /v1/device/:id/disconnect
+// DisconnectDevice handles POST /v1/device/:id/disconnect.
 // Forcefully disconnects a device's WebSocket connection within the organization.
 func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -262,7 +262,7 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 		return
 	}
 
-	// Verify device belongs to organization
+	// Verify device belongs to organization.
 	if h.deviceRepo != nil {
 		_, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
 		if err != nil {
@@ -274,7 +274,7 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 		}
 	}
 
-	// Require operator auth
+	// Require operator auth.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -284,7 +284,7 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 		return
 	}
 
-	// Get and disconnect client
+	// Get and disconnect client.
 	client := h.hub.GetClient(deviceID)
 	if client == nil {
 		c.JSON(http.StatusNotFound, gin.H{

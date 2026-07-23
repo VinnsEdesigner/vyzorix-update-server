@@ -33,7 +33,7 @@ func NewAuthMiddleware(sessionManager *infraauth.SessionManager, authService *ap
 // Authenticate extracts and validates the operator from request headers/cookies.
 // Returns an error if authentication fails.
 func (m *AuthMiddleware) Authenticate(ctx context.Context, headers map[string]string) (*operator.Operator, error) {
-	// Try session cookie first
+	// Try session cookie first.
 	if cookieHeader, ok := headers["Cookie"]; ok {
 		op, err := m.authenticateSession(ctx, cookieHeader)
 		if err == nil && op != nil {
@@ -41,7 +41,7 @@ func (m *AuthMiddleware) Authenticate(ctx context.Context, headers map[string]st
 		}
 	}
 
-	// Try Authorization header (Bearer token)
+	// Try Authorization header (Bearer token).
 	if authHeader, ok := headers["Authorization"]; ok {
 		op, err := m.authenticateBearer(ctx, authHeader)
 		if err == nil && op != nil {
@@ -54,7 +54,7 @@ func (m *AuthMiddleware) Authenticate(ctx context.Context, headers map[string]st
 
 // authenticateSession validates the session cookie.
 func (m *AuthMiddleware) authenticateSession(ctx context.Context, cookieHeader string) (*operator.Operator, error) {
-	// Parse cookies using net/http
+	// Parse cookies using net/http.
 	cookieJar := http.Header{}
 	cookieJar["Cookie"] = []string{cookieHeader}
 	cookieReq := &http.Request{Header: cookieJar}
@@ -64,14 +64,14 @@ func (m *AuthMiddleware) authenticateSession(ctx context.Context, cookieHeader s
 		return nil, gqlerrors.ErrUnauthorized
 	}
 
-	// Decrypt session ID from cookie
+	// Decrypt session ID from cookie.
 	decryptedSessionID, err := m.SessionManager.DecryptSessionID(sessionCookie.Value)
 	if err != nil {
 		m.Log.Debug("session decryption failed", "err", err)
 		return nil, gqlerrors.ErrUnauthorized
 	}
 
-	// Validate the session
+	// Validate the session.
 	_, op, err := m.AuthService.ValidateSession(ctx, decryptedSessionID)
 	if err != nil || op == nil {
 		m.Log.Debug("session validation failed", "sessionID", decryptedSessionID, "err", err)

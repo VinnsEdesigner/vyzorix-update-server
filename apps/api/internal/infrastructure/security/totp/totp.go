@@ -23,8 +23,8 @@ const (
 
 // MFASecretBinding contains the TOTP secret and its cryptographic binding.
 type MFASecretBinding struct {
-	Secret string // The base32-encoded TOTP secret
-	MAC    string // HMAC-SHA256 of the secret, keyed by operator ID
+	Secret string // The base32-encoded TOTP secret.
+	MAC    string // HMAC-SHA256 of the secret, keyed by operator ID.
 }
 
 // Config holds TOTP configuration.

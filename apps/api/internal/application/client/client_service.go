@@ -194,7 +194,7 @@ func (s *Service) GetByOperatorID(ctx context.Context, clientID, operatorID stri
 		return nil, err
 	}
 
-	// Verify ownership
+	// Verify ownership.
 	if c.OperatorID != operatorID {
 		return nil, application.ErrClientNotFound
 	}

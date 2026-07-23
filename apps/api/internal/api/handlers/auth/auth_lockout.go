@@ -38,7 +38,7 @@ func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
 		return
 	}
 
-	// Get operator email to check lockout status
+	// Get operator email to check lockout status.
 	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
 	if err != nil {
 		h.presenter.Unauthorized(c, "")
@@ -72,14 +72,14 @@ func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 		return
 	}
 
-	// Check if admin
+	// Check if admin.
 	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
 	if err != nil {
 		h.presenter.Unauthorized(c, "")
 		return
 	}
 
-	// Org-scoped check
+	// Org-scoped check.
 	orgID := middleware.GetOrganizationID(c)
 	if !op.IsSuperAdminIn(orgID) {
 		h.presenter.Forbidden(c, "")
@@ -92,14 +92,14 @@ func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 		return
 	}
 
-	// Get target operator email to clear their lockout
+	// Get target operator email to clear their lockout.
 	targetOp, err := h.authService.GetOperatorByID(c.Request.Context(), targetOperatorID)
 	if err != nil || targetOp == nil {
 		h.presenter.NotFound(c, "")
 		return
 	}
 
-	// Clear lockout using in-memory lockout (email-based)
+	// Clear lockout using in-memory lockout (email-based).
 	h.lockout.RecordSuccessfulAttempt(targetOp.Email)
 
 	h.presenter.AdminAction(c, op.ID, "unlock_account", "operator", targetOperatorID, nil)

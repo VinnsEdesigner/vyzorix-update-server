@@ -27,5 +27,5 @@ type UpdateSettingsRequest struct {
     Name       *string         `json:"name,omitempty"`
     Thresholds *Thresholds     `json:"thresholds,omitempty"`
     Client     *ClientSettings `json:"client,omitempty"`
-    Reset      bool            `json:"reset,omitempty"` // Reset all settings to defaults
+    Reset      bool            `json:"reset,omitempty"` // Reset all settings to defaults.
 }

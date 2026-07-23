@@ -45,7 +45,7 @@ func (h *SettingsHandler) GetSettings(c *gin.Context) {
 		return
 	}
 
-	// Check membership and permissions
+	// Check membership and permissions.
 	if err := h.memberService.CheckCanManageOrganization(c.Request.Context(), op.ID, orgID); err != nil {
 		h.presenter.Forbidden(c, "access denied")
 		return
@@ -78,7 +78,7 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	// Check membership and permissions
+	// Check membership and permissions.
 	if err := h.memberService.CheckCanManageOrganization(c.Request.Context(), op.ID, orgID); err != nil {
 		h.presenter.Forbidden(c, "access denied")
 		return
@@ -121,7 +121,7 @@ func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 		return
 	}
 
-	// Check membership - anyone in org can view thresholds
+	// Check membership - anyone in org can view thresholds.
 	if err := h.memberService.CheckMembership(c.Request.Context(), op.ID, orgID); err != nil {
 		h.presenter.Forbidden(c, "access denied")
 		return
@@ -156,7 +156,7 @@ func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
 		return
 	}
 
-	// Check membership and permissions
+	// Check membership and permissions.
 	if err := h.memberService.CheckCanManageOrganization(c.Request.Context(), op.ID, orgID); err != nil {
 		h.presenter.Forbidden(c, "access denied")
 		return

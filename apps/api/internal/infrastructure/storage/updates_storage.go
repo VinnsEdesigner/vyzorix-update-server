@@ -24,7 +24,7 @@ func NewUpdatesStorage(db *sql.DB) *UpdatesStorage {
 // Ensure UpdatesStorage implements updates.Repository.
 var _ updates.Repository = (*UpdatesStorage)(nil)
 
-// Version operations
+// Version operations.
 
 func (s *UpdatesStorage) CreateVersion(ctx context.Context, v *updates.UpdateVersion) error {
 	_, err := s.db.ExecContext(ctx, `
@@ -82,14 +82,14 @@ func (s *UpdatesStorage) ListVersions(ctx context.Context, status string, limit,
 		whereClause = ""
 	}
 
-	// Get total count
+	// Get total count.
 	var total int
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM update_versions %s", whereClause)
 	if err := s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// Get versions
+	// Get versions.
 	query := fmt.Sprintf(`
 		SELECT id, version, apk_filename, apk_size, sha256, release_date, release_notes, release_type, is_latest, created_at, updated_at
 		FROM update_versions
@@ -124,12 +124,12 @@ func (s *UpdatesStorage) UpdateLatestFlag(ctx context.Context, versionID string)
 	}
 	defer SafeRollbackNoLog(tx)
 
-	// Clear all latest flags
+	// Clear all latest flags.
 	if _, err := tx.ExecContext(ctx, "UPDATE update_versions SET is_latest = 0"); err != nil {
 		return err
 	}
 
-	// Set new latest
+	// Set new latest.
 	if _, err := tx.ExecContext(ctx, "UPDATE update_versions SET is_latest = 1 WHERE id = ?", versionID); err != nil {
 		return err
 	}
@@ -196,7 +196,7 @@ func (s *UpdatesStorage) scanVersionRows(rows *sql.Rows) (*updates.UpdateVersion
 	return &v, nil
 }
 
-// Push operations
+// Push operations.
 
 func (s *UpdatesStorage) CreatePush(ctx context.Context, p *updates.UpdatePush) error {
 	_, err := s.db.ExecContext(ctx, `
@@ -256,7 +256,7 @@ func (s *UpdatesStorage) ListPushes(ctx context.Context, status string, limit, o
 	var whereClause string
 	args := make([]interface{}, 0, 3)
 
-	// Always filter by organization
+	// Always filter by organization.
 	whereClause = "WHERE organization_id = ?"
 	args = append(args, orgID)
 
@@ -265,14 +265,14 @@ func (s *UpdatesStorage) ListPushes(ctx context.Context, status string, limit, o
 		args = append(args, status)
 	}
 
-	// Get total count
+	// Get total count.
 	var total int
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM update_pushes %s", whereClause)
 	if err := s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// Get pushes
+	// Get pushes.
 	query := fmt.Sprintf(`
 		SELECT id, version_id, organization_id, install_type, scheduled_at, status, initiated_by, initiated_at, completed_at, cancelled_at, cancelled_by
 		FROM update_pushes
@@ -355,7 +355,7 @@ func (s *UpdatesStorage) scanPushRows(rows *sql.Rows) (*updates.UpdatePush, erro
 	return &p, nil
 }
 
-// Push device operations
+// Push device operations.
 
 func (s *UpdatesStorage) CreatePushDevice(ctx context.Context, d *updates.UpdatePushDevice) error {
 	_, err := s.db.ExecContext(ctx, `
@@ -469,9 +469,9 @@ func (s *UpdatesStorage) GetPushDeviceByPushAndDevice(ctx context.Context, pushI
 }
 
 func (s *UpdatesStorage) UpdatePushDeviceStatusByDispatch(ctx context.Context, dispatchID, deviceID string, status updates.DevicePushStatus, errorMsg string) error {
-	// Find the push device by looking up the command with the given dispatch_id
-	// The dispatch_id for update push is the push_id itself
-	// We need to find the device's push record by device_id and then update by id
+	// Find the push device by looking up the command with the given dispatch_id.
+	// The dispatch_id for update push is the push_id itself.
+	// We need to find the device's push record by device_id and then update by id.
 	var devicePushID string
 	err := s.db.QueryRowContext(ctx, `
 		SELECT upd.id FROM update_push_devices upd
@@ -509,7 +509,7 @@ func (s *UpdatesStorage) scanPushDeviceRows(rows *sql.Rows) (*updates.UpdatePush
 	return &d, nil
 }
 
-// Sync state operations
+// Sync state operations.
 
 func (s *UpdatesStorage) GetSyncState(ctx context.Context) (*updates.SyncState, error) {
 	row := s.db.QueryRowContext(ctx, `
@@ -565,14 +565,14 @@ func (s *UpdatesStorage) UpdateSyncState(ctx context.Context, state *updates.Syn
 func (s *UpdatesStorage) TryAcquireSyncLock(ctx context.Context) (bool, *updates.SyncState, error) {
 	now := time.Now().UnixMilli()
 
-	// Use a transaction to atomically check and update
+	// Use a transaction to atomically check and update.
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return false, nil, err
 	}
 	defer SafeRollbackNoLog(tx)
 
-	// Get current state with row lock
+	// Get current state with row lock.
 	row := tx.QueryRowContext(ctx, `
 		SELECT status, last_sync_at, next_sync_at, last_error, versions_found
 		FROM update_sync_status WHERE id = 1
@@ -583,7 +583,7 @@ func (s *UpdatesStorage) TryAcquireSyncLock(ctx context.Context) (bool, *updates
 	var versionsFound int
 	err = row.Scan(&state.Status, &lastSyncAt, &nextSyncAt, &lastError, &versionsFound)
 	if errors.Is(err, sql.ErrNoRows) {
-		// No state exists - try to create with syncing status
+		// No state exists - try to create with syncing status.
 		_, insertErr := tx.ExecContext(ctx, `
 			INSERT INTO update_sync_status (id, status, created_at, updated_at)
 			VALUES (1, ?, ?, ?)
@@ -600,9 +600,9 @@ func (s *UpdatesStorage) TryAcquireSyncLock(ctx context.Context) (bool, *updates
 		return false, nil, err
 	}
 
-	// Check if already syncing
+	// Check if already syncing.
 	if state.Status == updates.SyncStatusSyncing {
-		// Still syncing, don't acquire
+		// Still syncing, don't acquire.
 		if lastSyncAt.Valid {
 			state.LastSyncAt = &lastSyncAt.Int64
 		}
@@ -616,7 +616,7 @@ func (s *UpdatesStorage) TryAcquireSyncLock(ctx context.Context) (bool, *updates
 		return false, &state, nil
 	}
 
-	// Try to update to syncing
+	// Try to update to syncing.
 	_, updateErr := tx.ExecContext(ctx, `
 		UPDATE update_sync_status SET status = ?, last_sync_at = ?, last_error = '', updated_at = ?
 		WHERE id = 1 AND status != ?

@@ -23,9 +23,9 @@ type Config struct {
 	Resolver       *resolver.Resolver
 	AuthMiddleware *middleware.AuthMiddleware
 	PlaygroundPath string
-	Env            string // Environment: "production" disables Playground
-	MaxDepth       int    // Maximum query depth (default 15)
-	MaxComplexity  int    // Maximum query complexity score (default 1000)
+	Env            string // Environment: "production" disables Playground.
+	MaxDepth       int    // Maximum query depth (default 15).
+	MaxComplexity  int    // Maximum query complexity score (default 1000).
 }
 
 // Handler is the GraphQL HTTP handler.
@@ -55,12 +55,12 @@ func NewHandler(cfg *Config) (*Handler, error) {
 
 	maxDepth := cfg.MaxDepth
 	if maxDepth <= 0 {
-		maxDepth = 15 // Default max depth
+		maxDepth = 15 // Default max depth.
 	}
 
 	maxComplexity := cfg.MaxComplexity
 	if maxComplexity <= 0 {
-		maxComplexity = 1000 // Default max complexity
+		maxComplexity = 1000 // Default max complexity.
 	}
 
 	h := &Handler{
@@ -93,7 +93,7 @@ type Response struct {
 
 
 func (h *Handler) validateQuery(query string) (int, int, error) {
-	// Parse the query to get the AST
+	// Parse the query to get the AST.
 	doc, err := parser.Parse(parser.ParseParams{
 		Source: query,
 	})
@@ -101,7 +101,7 @@ func (h *Handler) validateQuery(query string) (int, int, error) {
 		return 0, 0, err
 	}
 
-	// Calculate depth and complexity
+	// Calculate depth and complexity.
 	depth := 0
 	complexity := 0
 
@@ -132,7 +132,7 @@ func (h *Handler) calculateDepthAndComplexity(selectionSet *ast.SelectionSet) (i
 	}
 
 	maxChildDepth := 0
-	complexity := 1 // Each selection adds at least 1 to complexity
+	complexity := 1 // Each selection adds at least 1 to complexity.
 
 	for _, selection := range selectionSet.Selections {
 		switch sel := selection.(type) {
@@ -153,7 +153,7 @@ func (h *Handler) calculateDepthAndComplexity(selectionSet *ast.SelectionSet) (i
 				complexity += childComplexity
 			}
 		case *ast.FragmentSpread:
-			// Fragment spreads add to complexity due to potential nested selections
+			// Fragment spreads add to complexity due to potential nested selections.
 			complexity += 2
 		}
 	}
@@ -190,7 +190,7 @@ func (h *Handler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Block introspection queries in production
+	// Block introspection queries in production.
 	if h.env == "production" && isIntrospectionQuery(req.Query) {
 		h.sendError(c, http.StatusForbidden, h.presenter.Forbidden("introspection disabled in production"))
 		return
@@ -228,7 +228,7 @@ func (h *Handler) Handle(c *gin.Context) {
 	ctx := gqlcontext.WithOperator(c.Request.Context(), op)
 	ctx = gqlcontext.WithRequestMetadata(ctx, c.ClientIP(), c.GetHeader("User-Agent"))
 
-	// Extract organizationId from URL parameter and add to context
+	// Extract organizationId from URL parameter and add to context.
 	if orgID := c.Param("organizationId"); orgID != "" {
 		ctx = gqlcontext.WithOrganizationID(ctx, orgID)
 	}
@@ -313,27 +313,27 @@ func (h *Handler) Playground(c *gin.Context) {
 // Routes registers GraphQL routes with the Gin engine.
 // Routes are scoped under /v1/orgs/:organizationId/graphql for multi-tenant isolation.
 func (h *Handler) Routes(r *gin.Engine) {
-	// Organization-scoped GraphQL routes for multi-tenant isolation
+	// Organization-scoped GraphQL routes for multi-tenant isolation.
 	orgGraphQL := r.Group("/v1/orgs/:organizationId/graphql")
 	orgGraphQL.POST("", h.Handle)
 	orgGraphQL.GET("", h.Handle)
 
-	// Playground is only enabled in non-production environments
+	// Playground is only enabled in non-production environments.
 	if h.env != "production" {
 		orgGraphQL.GET(h.playgroundPath, h.Playground)
 	}
 
-	// Legacy routes have been removed - they lacked proper org membership checks
-	// Use /v1/orgs/:organizationId/graphql for multi-tenant isolation
+	// Legacy routes have been removed - they lacked proper org membership checks.
+	// Use /v1/orgs/:organizationId/graphql for multi-tenant isolation.
 }
 
 // RegisterSubscriptions registers the WebSocket endpoint for subscriptions.
 func (h *Handler) RegisterSubscriptions(r *gin.Engine, wsHandler func(*gin.Context)) {
-	// Organization-scoped WebSocket endpoint for subscriptions
+	// Organization-scoped WebSocket endpoint for subscriptions.
 	orgGraphQL := r.Group("/v1/orgs/:organizationId/graphql")
 	orgGraphQL.GET("/ws", wsHandler)
 
-	// Legacy WebSocket route removed - use /v1/orgs/:organizationId/graphql/ws instead
+	// Legacy WebSocket route removed - use /v1/orgs/:organizationId/graphql/ws instead.
 }
 
 const playgroundHTML = `<!DOCTYPE html>
@@ -364,8 +364,8 @@ const playgroundHTML = `<!DOCTYPE html>
           'request.credentials': 'include',
         },
         headers: {
-          // Example headers - uncomment and configure as needed
-          // 'Authorization': 'Bearer YOUR_TOKEN_HERE',
+          // Example headers - uncomment and configure as needed.
+          // 'Authorization': 'Bearer YOUR_TOKEN_HERE',.
         }
       })
     })

@@ -32,7 +32,7 @@ check_missing() {
 # Check commands.go
 echo " commands.go:"
 echo "  OLD methods:"
-for method in $(grep "^func (s \*Store)" pkg/storage/commands.go | sed 's/func (s \*Store)//' | sed 's/(ctx/\n(/g' | grep -v "^$"); do
+for method in $(grep "^func (s \*Store)" pkg/storage/commands.go | sed 's/func (s \*Store)//' | sed 's/(ctx/\n(/g' | grep -v "^$"); do.
     if [ -n "$method" ]; then
         check_missing "$method" internal/infrastructure/storage/command.go
     fi
@@ -133,7 +133,7 @@ echo ""
 # Check standalone functions
 echo " crypto.go - Standalone functions:"
 grep "^func Hash\|^func Verify\|^func Generate\|^func Decode" pkg/storage/crypto.go | while read line; do
-    method=$(echo "$line" | sed 's/func //' | cut -d"(" -f1 | tr -d " ")
+    method=$(echo "$line" | sed 's/func //' | cut -d"(" -f1 | tr -d " ").
     if ! grep -q "$method" internal/infrastructure/auth/argon2_hasher.go 2>/dev/null; then
         echo "   $line"
         MISSING_COUNT=$((MISSING_COUNT + 1))
@@ -143,7 +143,7 @@ echo ""
 
 echo " clients.go - Standalone functions:"
 grep "^func Hash\|^func Derive\|^func Verify" pkg/storage/clients.go | while read line; do
-    method=$(echo "$line" | sed 's/func //' | cut -d"(" -f1 | tr -d " ")
+    method=$(echo "$line" | sed 's/func //' | cut -d"(" -f1 | tr -d " ").
     if ! grep -q "$method" internal/infrastructure/storage/client.go 2>/dev/null; then
         echo "   $line"
         MISSING_COUNT=$((MISSING_COUNT + 1))

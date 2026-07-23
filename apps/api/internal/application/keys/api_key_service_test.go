@@ -11,9 +11,9 @@ import (
 	infraStorage "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 )
 
-// =============================================================================
-// Mock Repository for Testing
-// =============================================================================
+// =============================================================================.
+// Mock Repository for Testing.
+// =============================================================================.
 
 type mockAPIKeyRepository struct {
 	mu     sync.RWMutex
@@ -185,9 +185,9 @@ func (r *mockAPIKeyRepository) ExistsByOperatorAndNameExcluding(ctx context.Cont
 }
 
 
-// =============================================================================
-// Test Fixtures
-// =============================================================================
+// =============================================================================.
+// Test Fixtures.
+// =============================================================================.
 
 func setupTestService(t *testing.T) (*APIKeyService, *mockAPIKeyRepository) {
 	repo := newMockRepository()
@@ -199,7 +199,7 @@ func setupTestService(t *testing.T) (*APIKeyService, *mockAPIKeyRepository) {
 	svc := NewAPIKeyService(repo, config)
 	return svc, repo
 }
-// =============================================================================
+// =============================================================================.
 
 func TestAPIKeyService_CreateKey(t *testing.T) {
 	svc, repo := setupTestService(t)
@@ -392,7 +392,7 @@ func TestAPIKeyService_ValidateKey_Revoked(t *testing.T) {
 		t.Fatalf("RevokeKey failed: %v", err)
 	}
 
-	// Revoked keys are not returned by GetByKeyHash (security: no existence leakage)
+	// Revoked keys are not returned by GetByKeyHash (security: no existence leakage).
 	_, err = svc.ValidateKey(ctx, result.FullKey)
 	if err != domain.ErrInvalidAPIKey {
 		t.Errorf("ValidateKey error = %v, want ErrInvalidAPIKey (revoked keys not returned)", err)
@@ -474,13 +474,13 @@ func TestAPIKeyService_RotateKey(t *testing.T) {
 		t.Error("Rotated key should be different from original")
 	}
 
-	// Original key should be revoked (not returned by GetByKeyHash)
+	// Original key should be revoked (not returned by GetByKeyHash).
 	_, err = svc.ValidateKey(ctx, original.FullKey)
 	if err != domain.ErrInvalidAPIKey {
 		t.Errorf("Original key validation error = %v, want ErrInvalidAPIKey (revoked)", err)
 	}
 
-	// New key should be valid
+	// New key should be valid.
 	_, err = svc.ValidateKey(ctx, newKey.FullKey)
 	if err != nil {
 		t.Errorf("New key validation failed: %v", err)
@@ -610,9 +610,9 @@ func TestAPIKeyService_UpdateKey_DuplicateName(t *testing.T) {
 	_ = key1
 }
 
-// =============================================================================
-// Tenant Isolation Tests
-// =============================================================================
+// =============================================================================.
+// Tenant Isolation Tests.
+// =============================================================================.
 
 func TestAPIKeyService_TenantIsolation_ValidateKey(t *testing.T) {
 	svc, _ := setupTestService(t)
@@ -729,9 +729,9 @@ func TestAPIKeyService_TenantIsolation_ListKeys(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// Security Tests
-// =============================================================================
+// =============================================================================.
+// Security Tests.
+// =============================================================================.
 
 func TestAPIKeyService_KeyGeneration_Uniqueness(t *testing.T) {
 	svc, _ := setupTestService(t)
@@ -850,9 +850,9 @@ func TestAPIKeyService_IncrementUsage(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// Scope Tests
-// =============================================================================
+// =============================================================================.
+// Scope Tests.
+// =============================================================================.
 
 func TestAPIKeyService_ScopeEnforcement(t *testing.T) {
 	svc, _ := setupTestService(t)
@@ -894,9 +894,9 @@ func TestAPIKeyService_ScopeEnforcement(t *testing.T) {
 	}
 }
 
-// =============================================================================
-// Validation Tests
-// =============================================================================
+// =============================================================================.
+// Validation Tests.
+// =============================================================================.
 
 func TestAPIKeyService_Validation_InvalidScope(t *testing.T) {
 	svc, _ := setupTestService(t)

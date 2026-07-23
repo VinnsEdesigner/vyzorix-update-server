@@ -32,15 +32,15 @@ func nextCallbackID() int {
 }
 
 const (
-	maxConcurrentCallbacks = 100      // Maximum concurrent callback goroutines
-	callbackTimeout        = 30 * time.Second // Timeout for callback execution
-	droppedCounterMax      = 1000      // Max dropped events before logging
+	maxConcurrentCallbacks = 100      // Maximum concurrent callback goroutines.
+	callbackTimeout        = 30 * time.Second // Timeout for callback execution.
+	droppedCounterMax      = 1000      // Max dropped events before logging.
 )
 
 // subscriptionWorker handles bounded callback execution.
 type subscriptionWorker struct {
-	sem     chan struct{}   // Semaphore for limiting concurrency
-	dropped atomic.Int64    // Counter for dropped events
+	sem     chan struct{}   // Semaphore for limiting concurrency.
+	dropped atomic.Int64    // Counter for dropped events.
 	log     *slog.Logger
 	wg      sync.WaitGroup
 }
@@ -61,9 +61,9 @@ func (w *subscriptionWorker) execute(callback subscriptionCallback, data interfa
 		w.wg.Add(1)
 		go func() {
 			defer w.wg.Done()
-			defer func() { <-w.sem }() // Release semaphore
+			defer func() { <-w.sem }() // Release semaphore.
 
-			// Execute with panic recovery
+			// Execute with panic recovery.
 			done := make(chan error, 1)
 			go func() {
 				defer func() {
@@ -86,7 +86,7 @@ func (w *subscriptionWorker) execute(callback subscriptionCallback, data interfa
 			}
 		}()
 	default:
-		// Semaphore full - drop the event
+		// Semaphore full - drop the event.
 		dropped := w.dropped.Add(1)
 		if dropped%100 == 0 {
 			w.log.Warn("subscription callback dropped (worker pool saturated)",
@@ -171,7 +171,7 @@ func (h *Hub) SubscribeTelemetry(operatorID, deviceID string, callback subscript
 	subMgr.mu.Lock()
 	defer subMgr.mu.Unlock()
 
-	// If deviceID is empty, subscribe to all devices for this operator
+	// If deviceID is empty, subscribe to all devices for this operator.
 	key := operatorID
 	if deviceID != "" {
 		key = operatorID + ":" + deviceID
@@ -295,7 +295,7 @@ func (h *Hub) PublishDeviceUpdate(operatorID, deviceID string, data interface{})
 	subMgr.mu.RLock()
 	defer subMgr.mu.RUnlock()
 
-	// Notify all subscriptions for this operator
+	// Notify all subscriptions for this operator.
 	for key, wrappers := range subMgr.deviceUpdates {
 		if key == operatorID || key == operatorID+":"+deviceID {
 			for _, w := range wrappers {
@@ -322,7 +322,7 @@ func (h *Hub) PublishTelemetry(operatorID, deviceID string, data interface{}) {
 		}
 	}
 
-	// Also notify operator-wide subscriptions
+	// Also notify operator-wide subscriptions.
 	if wrappers, ok := subMgr.telemetry[operatorID]; ok {
 		for _, w := range wrappers {
 			

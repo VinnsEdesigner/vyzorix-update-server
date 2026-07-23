@@ -38,11 +38,11 @@ type ClientSettings struct {
 
 // SecuritySettings holds security-related settings per operator.
 type SecuritySettings struct {
-	MaxConcurrentSessions int  `json:"maxConcurrentSessions"` // 0 = unlimited
-	PasswordMinAgeDays    int  `json:"passwordMinAgeDays"`    // 0 = no minimum
-	PasswordMaxAgeDays    int  `json:"passwordMaxAgeDays"`    // 0 = no expiry
-	PasswordHistoryCount  int  `json:"passwordHistoryCount"`  // remember N passwords
-	SessionPinRequired    bool `json:"sessionPinRequired"`    // require PIN for sensitive ops
+	MaxConcurrentSessions int  `json:"maxConcurrentSessions"` // 0 = unlimited.
+	PasswordMinAgeDays    int  `json:"passwordMinAgeDays"`    // 0 = no minimum.
+	PasswordMaxAgeDays    int  `json:"passwordMaxAgeDays"`    // 0 = no expiry.
+	PasswordHistoryCount  int  `json:"passwordHistoryCount"`  // remember N passwords.
+	SessionPinRequired    bool `json:"sessionPinRequired"`    // require PIN for sensitive ops.
 }
 
 // Operator represents a system operator (user).
@@ -231,11 +231,11 @@ func (o *Operator) HasPermission(perm Permission) bool {
 		if !m.IsActive() {
 			continue
 		}
-		// Admin and super_admin have all permissions
+		// Admin and super_admin have all permissions.
 		if m.Role.IsAdmin() {
 			return true
 		}
-		// Check specific permissions based on role
+		// Check specific permissions based on role.
 		switch m.Role {
 		case organization.RoleOperator:
 			if perm == PermissionDeviceRead || perm == PermissionDeviceWrite ||

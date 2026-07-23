@@ -120,9 +120,9 @@ type Config struct {
 	AuditLogSeparateDB       bool   
 	AuditLogSeparateDBPath   string 
 	DeviceSecret             string
-	FirebaseAppID            string // Firebase App ID for App Check validation
-	DeviceDeletionEnabled     bool   // Enable background worker for device deletion
-	DeviceDeletionIntervalMinutes int // Interval in minutes for device deletion worker
+	FirebaseAppID            string // Firebase App ID for App Check validation.
+	DeviceDeletionEnabled     bool   // Enable background worker for device deletion.
+	DeviceDeletionIntervalMinutes int // Interval in minutes for device deletion worker.
 }
 
 // DiagnosticsConfig holds configuration for the diagnostics API.
@@ -188,7 +188,7 @@ func Load() (Config, error) {
 		if n <= 0 {
 			return Config{}, errors.New("JWT_DURATION_HOURS must be positive")
 		}
-		if n > 8760 { // 1 year
+		if n > 8760 { // 1 year.
 			return Config{}, errors.New("JWT_DURATION_HOURS exceeds maximum of 8760 (1 year)")
 		}
 		jwtDuration = time.Duration(n) * time.Hour
@@ -204,7 +204,7 @@ func Load() (Config, error) {
 		if n <= 0 {
 			return Config{}, errors.New("SESSION_MAX_AGE_SECONDS must be positive")
 		}
-		if n > 604800 { // 7 days
+		if n > 604800 { // 7 days.
 			return Config{}, errors.New("SESSION_MAX_AGE_SECONDS exceeds maximum of 604800 (7 days)")
 		}
 		sessionMaxAge = n
@@ -220,7 +220,7 @@ func Load() (Config, error) {
 		if n <= 0 {
 			return Config{}, errors.New("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS must be positive")
 		}
-		if n > 168 { // 7 days
+		if n > 168 { // 7 days.
 			return Config{}, errors.New("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS exceeds maximum of 168 (7 days)")
 		}
 		emailVerifyExpiry = time.Duration(n) * time.Hour
@@ -236,7 +236,7 @@ func Load() (Config, error) {
 		if n <= 0 {
 			return Config{}, errors.New("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES must be positive")
 		}
-		if n > 1440 { // 24 hours
+		if n > 1440 { // 24 hours.
 			return Config{}, errors.New("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES exceeds maximum of 1440 (24 hours)")
 		}
 		passwordResetExpiry = time.Duration(n) * time.Minute
@@ -278,7 +278,7 @@ func Load() (Config, error) {
 		JWTDuration:              jwtDuration,
 		EmailVerifyTokenExpiry:   emailVerifyExpiry,
 		PasswordResetTokenExpiry: passwordResetExpiry,
-		EnableGraphQL:            getBool("ENABLE_GRAPHQL", true), // Enabled by default
+		EnableGraphQL:            getBool("ENABLE_GRAPHQL", true), // Enabled by default.
 		AuditLogPath:             get("AUDIT_LOG_PATH", "./data/audit.log"),
 		
 		AuditLogSeparateDB:       getBool("AUDIT_LOG_SEPARATE_DB", false),
@@ -286,8 +286,8 @@ func Load() (Config, error) {
 		DiagnosticsConfig:        LoadDiagnosticsConfig(),
 	}
 
-	// Load API keys (supports multiple for rotation)
-	// Format: API_KEY_<id>=<key_value> (e.g., API_KEY_primary=abc123, API_KEY_backup=def456)
+	// Load API keys (supports multiple for rotation).
+	// Format: API_KEY_<id>=<key_value> (e.g., API_KEY_primary=abc123, API_KEY_backup=def456).
 	c.APIKeys = loadAPIKeys()
 
 	enforceDefault := strings.EqualFold(c.Env, "production")
@@ -298,7 +298,7 @@ func Load() (Config, error) {
 		if err != nil || n <= 0 {
 			return c, fmt.Errorf("invalid HMAC_WINDOW_SECONDS: %q", v)
 		}
-		if n > 300 { // 5 minutes max
+		if n > 300 { // 5 minutes max.
 			return c, fmt.Errorf("HMAC_WINDOW_SECONDS exceeds maximum of 300 (5 minutes)")
 		}
 
@@ -306,7 +306,7 @@ func Load() (Config, error) {
 	}
 
 	
-	// Collect all missing or invalid required values
+	// Collect all missing or invalid required values.
 	var missingVars []string
 
 	if strings.TrimSpace(c.DatabaseURL) == "" {
@@ -317,24 +317,24 @@ func Load() (Config, error) {
 		missingVars = append(missingVars, "at least one API_KEY_* (e.g., API_KEY_primary=<key>)")
 	}
 
-	// JWT_SECRET is required regardless of environment
-	// It is used for signing tokens and cannot have a safe default
+	// JWT_SECRET is required regardless of environment.
+	// It is used for signing tokens and cannot have a safe default.
 	if c.JWTSecret == "" {
 		missingVars = append(missingVars, "JWT_SECRET")
 	}
 
-	// SESSION_SECRET is required regardless of environment
-	// It is used for session encryption and cannot have a safe default
+	// SESSION_SECRET is required regardless of environment.
+	// It is used for session encryption and cannot have a safe default.
 	if c.SessionSecret == "" {
 		missingVars = append(missingVars, "SESSION_SECRET")
 	}
 
-	// Return all missing variables at once for clear diagnosis
+	// Return all missing variables at once for clear diagnosis.
 	if len(missingVars) > 0 {
 		return c, fmt.Errorf("missing required environment variables: %v", missingVars)
 	}
 
-	// Production-specific validations
+	// Production-specific validations.
 	if c.Env == "production" {
 		if c.ServerAPIToken == "" {
 			return c, errors.New("SERVER_API_TOKEN is required in production")
@@ -347,16 +347,16 @@ func Load() (Config, error) {
 		}
 	}
 
-	// Validate port is a valid number
+	// Validate port is a valid number.
 	if port, err := strconv.Atoi(c.Port); err != nil || port < 1 || port > 65535 {
 		return c, fmt.Errorf("invalid PORT: %q (must be between 1 and 65535)", c.Port)
 	}
 
-	// Device deletion worker configuration
+	// Device deletion worker configuration.
 	c.DeviceDeletionEnabled = getBool("DEVICE_DELETION_ENABLED", false)
 	c.DeviceDeletionIntervalMinutes = getenvInt("DEVICE_DELETION_INTERVAL_MINUTES", 5)
 
-	// Validate DeviceDeletionIntervalMinutes
+	// Validate DeviceDeletionIntervalMinutes.
 	if c.DeviceDeletionIntervalMinutes < 1 {
 		return c, errors.New("DEVICE_DELETION_INTERVAL_MINUTES must be at least 1")
 	}
@@ -364,10 +364,10 @@ func Load() (Config, error) {
 		return c, errors.New("DEVICE_DELETION_INTERVAL_MINUTES exceeds maximum of 60 (1 hour)")
 	}
 
-	// Device secret for device attestation (HMAC-SHA256)
+	// Device secret for device attestation (HMAC-SHA256).
 	c.DeviceSecret = os.Getenv("DEVICE_SECRET")
 
-	// Firebase App ID for App Check validation
+	// Firebase App ID for App Check validation.
 	c.FirebaseAppID = os.Getenv("FIREBASE_APP_ID")
 
 	return c, nil
@@ -477,7 +477,7 @@ func parseIntEnv(key string, fallback int) int {
 }
 
 // loadAPIKeys loads API keys from environment variables.
-// Supports multiple keys for rotation: API_KEY_<id>=<value>
+// Supports multiple keys for rotation: API_KEY_<id>=<value>.
 // Example: API_KEY_primary=abc123, API_KEY_backup=def456.
 func loadAPIKeys() map[string]string {
 	keys := make(map[string]string)
@@ -487,7 +487,7 @@ func loadAPIKeys() map[string]string {
 		if !strings.HasPrefix(env, prefix) {
 			continue
 		}
-		// Parse KEY=VALUE
+		// Parse KEY=VALUE.
 		if idx := strings.Index(env, "="); idx > 0 {
 			keyID := env[len(prefix):idx]
 			keyValue := env[idx+1:]

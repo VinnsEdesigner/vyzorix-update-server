@@ -62,9 +62,9 @@ func (s *AuthService) UpdateSettings(ctx context.Context, operatorID string, req
 		}
 	}
 
-	// Update client settings in operator_settings table with validation
+	// Update client settings in operator_settings table with validation.
 	if req.Client != nil {
-		// Validate client settings
+		// Validate client settings.
 		if req.Client.RequestTimeoutMs < 500 || req.Client.RequestTimeoutMs > 60000 {
 			return nil, fmt.Errorf("requestTimeoutMs must be between 500 and 60000")
 		}
@@ -100,7 +100,7 @@ func (s *AuthService) ResetSettings(ctx context.Context, operatorID string) (*op
 		return nil, resetErr
 	}
 
-	// Reload operator to get fresh data
+	// Reload operator to get fresh data.
 	op, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
 		return nil, err

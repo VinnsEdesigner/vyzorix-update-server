@@ -50,7 +50,7 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Validate role
+	// Validate role.
 	var invRole organization.OrganizationRole
 	switch req.Role {
 	case "admin":
@@ -124,7 +124,7 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 		return
 	}
 
-	// Optional status filter
+	// Optional status filter.
 	var status *organization.InvitationStatus
 	statusStr := c.Query("status")
 	if statusStr != "" {
@@ -262,7 +262,7 @@ func (h *InvitationHandler) Accept(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		// Notes is optional, so we can ignore bind errors
+		// Notes is optional, so we can ignore bind errors.
 		req.Notes = ""
 	}
 
@@ -406,7 +406,7 @@ func (h *InvitationHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Get invitation to verify permissions
+	// Get invitation to verify permissions.
 	inv, err := h.invitationService.GetInvitationByID(c.Request.Context(), invitationID)
 	if err != nil {
 		if errors.Is(err, appOrganization.ErrInvitationNotFound) {
@@ -417,13 +417,13 @@ func (h *InvitationHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Only inviter or org admin can delete
+	// Only inviter or org admin can delete.
 	isInviter := inv.InvitedBy == op.ID
 	isOrgAdmin := false
 	if isInviter {
-		isOrgAdmin = true // Inviter can always delete
+		isOrgAdmin = true // Inviter can always delete.
 	} else {
-		// Check if user is org admin
+		// Check if user is org admin.
 		member, err := h.memberService.GetMembership(c.Request.Context(), op.ID, inv.OrganizationID)
 		if err == nil && member.Role.CanManageMembers() {
 			isOrgAdmin = true
@@ -435,7 +435,7 @@ func (h *InvitationHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Only pending invitations can be deleted
+	// Only pending invitations can be deleted.
 	if inv.Status != organization.InvitationStatusPending {
 		h.presenter.Conflict(c, "only pending invitations can be deleted")
 		return

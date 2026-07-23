@@ -31,7 +31,7 @@ func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
 		return
 	}
 
-	// Validate session and get operator
+	// Validate session and get operator.
 	sess, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
 	if err != nil {
 		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
@@ -42,7 +42,7 @@ func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
 		return
 	}
 
-	// Parse request
+	// Parse request.
 	var req dto.SelectOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.presenter.BadRequest(c, "organization_id is required")
@@ -54,7 +54,7 @@ func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
 		return
 	}
 
-	// Select organization
+	// Select organization.
 	result, err := h.authService.SelectOrganization(c.Request.Context(), op.ID, sess.ID, req.OrganizationID)
 	if err != nil {
 		if errors.Is(err, application.ErrForbidden) {

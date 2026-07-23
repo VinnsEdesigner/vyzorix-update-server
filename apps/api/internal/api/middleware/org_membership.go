@@ -40,7 +40,7 @@ func (m *OrganizationMembership) Middleware() gin.HandlerFunc {
 			return
 		}
 
-		// Get operator from context (set by auth middleware)
+		// Get operator from context (set by auth middleware).
 		operator := GetOperatorFromContext(c)
 		if operator == nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -50,7 +50,7 @@ func (m *OrganizationMembership) Middleware() gin.HandlerFunc {
 			return
 		}
 
-		// If no membership checker is configured, deny access (fail secure)
+		// If no membership checker is configured, deny access (fail secure).
 		if m.membershipChecker == nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error":   "server_error",
@@ -59,7 +59,7 @@ func (m *OrganizationMembership) Middleware() gin.HandlerFunc {
 			return
 		}
 
-		// Check if operator is a member of the organization
+		// Check if operator is a member of the organization.
 		membership, err := m.membershipChecker.GetMembership(c.Request.Context(), operator.ID, orgID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
@@ -69,12 +69,12 @@ func (m *OrganizationMembership) Middleware() gin.HandlerFunc {
 			return
 		}
 
-		// Store actual membership object in context for downstream use
-		// GetMembership returns interface{}, so we need to assert the type
+		// Store actual membership object in context for downstream use.
+		// GetMembership returns interface{}, so we need to assert the type.
 		if member, ok := membership.(*organization.OrganizationMember); ok {
 			c.Set(ContextKeyMembership, member)
 		} else {
-			// Fallback: store the raw value if it's not the expected type
+			// Fallback: store the raw value if it's not the expected type.
 			c.Set(ContextKeyMembership, membership)
 		}
 

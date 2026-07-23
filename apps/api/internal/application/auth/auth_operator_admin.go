@@ -149,7 +149,7 @@ func (s *AuthService) UpdateOperator(ctx context.Context, operatorID string, req
 	if req.Role != nil {
 		// Role field is intentionally ignored here.
 		// Role is org-scoped and updates should be done through organization membership.
-		_ = req.Role // Acknowledge the field is set but not used
+		_ = req.Role // Acknowledge the field is set but not used.
 	}
 
 	op.UpdatedAt = time.Now()
@@ -162,18 +162,18 @@ func (s *AuthService) UpdateOperator(ctx context.Context, operatorID string, req
 }
 
 // DeleteOperator deletes an operator (admin only).
-// Implements the operator deletion flow:
-// 1. Check if operator is last super_admin of any org - CANNOT delete if so
-// 2. Cancel pending invitations sent by user
-// 3. Remove from all org memberships
-// 4. Delete sessions
+// Implements the operator deletion flow:.
+// 1. Check if operator is last super_admin of any org - CANNOT delete if so.
+// 2. Cancel pending invitations sent by user.
+// 3. Remove from all org memberships.
+// 4. Delete sessions.
 // DeleteOperator deletes an operator (admin only).
-// Implements the operator deletion flow:
-// 1. Check if operator is last super_admin of any org - CANNOT delete if so
-// 2. Cancel pending invitations sent by user
-// 3. Remove from all org memberships
-// 4. Delete sessions
-// 5. Delete operator record
+// Implements the operator deletion flow:.
+// 1. Check if operator is last super_admin of any org - CANNOT delete if so.
+// 2. Cancel pending invitations sent by user.
+// 3. Remove from all org memberships.
+// 4. Delete sessions.
+// 5. Delete operator record.
 func (s *AuthService) DeleteOperator(ctx context.Context, operatorID string) error {
 	op, err := s.operatorRepo.FindByID(ctx, operatorID)
 	if err != nil {
@@ -183,7 +183,7 @@ func (s *AuthService) DeleteOperator(ctx context.Context, operatorID string) err
 		return err
 	}
 
-	// Check if operator is the last super_admin of any organization
+	// Check if operator is the last super_admin of any organization.
 	memberships, err := s.memberRepo.ListByOperator(ctx, operatorID)
 	if err != nil {
 		return err
@@ -191,7 +191,7 @@ func (s *AuthService) DeleteOperator(ctx context.Context, operatorID string) err
 
 	for _, m := range memberships {
 		if m.Role.IsSuperAdmin() && m.IsActive() {
-			// Check if this is the last super_admin
+			// Check if this is the last super_admin.
 			count, err := s.memberRepo.CountSuperAdminsByOrganization(ctx, m.OrganizationID)
 			if err != nil {
 				return err
@@ -202,27 +202,27 @@ func (s *AuthService) DeleteOperator(ctx context.Context, operatorID string) err
 		}
 	}
 
-	// Cancel all pending invitations sent by this operator
+	// Cancel all pending invitations sent by this operator.
 	if err := s.invitationRepo.SoftDeleteByInvitedBy(ctx, operatorID); err != nil {
 		return err
 	}
 
-	// Remove from all organization memberships
+	// Remove from all organization memberships.
 	if err := s.memberRepo.SoftDeleteByOperator(ctx, operatorID); err != nil {
 		return err
 	}
 
-	// Delete all sessions for this operator
+	// Delete all sessions for this operator.
 	if err := s.sessionRepo.DeleteByOperatorID(ctx, operatorID); err != nil {
 		return err
 	}
 
-	// Delete the operator record
+	// Delete the operator record.
 	if err := s.operatorRepo.Delete(ctx, operatorID); err != nil {
 		return err
 	}
 
-	_ = op // op loaded for validation above
+	_ = op // op loaded for validation above.
 	return nil
 }
 
@@ -237,14 +237,14 @@ func (s *AuthService) DeleteOwnAccount(ctx context.Context, operatorID, password
 		return err
 	}
 
-	// Verify password
+	// Verify password.
 	if op.PasswordHash != "" {
 		if err := s.passwordHasher.Verify(password, op.PasswordHash); err != nil {
 			return application.ErrInvalidCredentials
 		}
 	}
 
-	// Check if operator is the last super_admin of any organization
+	// Check if operator is the last super_admin of any organization.
 	memberships, err := s.memberRepo.ListByOperator(ctx, operatorID)
 	if err != nil {
 		return err
@@ -262,22 +262,22 @@ func (s *AuthService) DeleteOwnAccount(ctx context.Context, operatorID, password
 		}
 	}
 
-	// Cancel all pending invitations sent by this operator
+	// Cancel all pending invitations sent by this operator.
 	if err := s.invitationRepo.SoftDeleteByInvitedBy(ctx, operatorID); err != nil {
 		return err
 	}
 
-	// Remove from all organization memberships
+	// Remove from all organization memberships.
 	if err := s.memberRepo.SoftDeleteByOperator(ctx, operatorID); err != nil {
 		return err
 	}
 
-	// Delete all sessions for this operator
+	// Delete all sessions for this operator.
 	if err := s.sessionRepo.DeleteByOperatorID(ctx, operatorID); err != nil {
 		return err
 	}
 
-	// Delete the operator record
+	// Delete the operator record.
 	return s.operatorRepo.Delete(ctx, operatorID)
 }
 

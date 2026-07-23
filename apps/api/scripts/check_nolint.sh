@@ -55,7 +55,7 @@ else
     echo ""
 fi
 
-# Search for linter skip comments (//lint comments)
+# Search for linter skip comments (//lint comments).
 echo -e "${YELLOW}Searching for linter skip patterns...${NC}"
 echo ""
 

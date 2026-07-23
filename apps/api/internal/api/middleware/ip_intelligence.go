@@ -101,7 +101,7 @@ func NewIPIntelligence(config IPIntelligenceConfig) *IPIntelligence {
 		blocked:  make(map[string]time.Time),
 	}
 
-	// Parse whitelist
+	// Parse whitelist.
 	ii.whitelist = make(map[string]bool)
 
 	if config.Whitelist != "" {
@@ -116,9 +116,9 @@ func NewIPIntelligence(config IPIntelligenceConfig) *IPIntelligence {
 // GetClientIP extracts the real client IP from the request.
 // Handles X-Forwarded-For, X-Real-IP, and direct connection.
 func (ii *IPIntelligence) GetClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header (may contain multiple IPs)
+	// Check X-Forwarded-For header (may contain multiple IPs).
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		// Take the first IP (original client)
+		// Take the first IP (original client).
 		if idx := strings.Index(xff, ","); idx != -1 {
 			xff = xff[:idx]
 		}
@@ -126,12 +126,12 @@ func (ii *IPIntelligence) GetClientIP(r *http.Request) string {
 		return strings.TrimSpace(xff)
 	}
 
-	// Check X-Real-IP header
+	// Check X-Real-IP header.
 	if xri := r.Header.Get("X-Real-IP"); xri != "" {
 		return strings.TrimSpace(xri)
 	}
 
-	// Fall back to RemoteAddr
+	// Fall back to RemoteAddr.
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return r.RemoteAddr
@@ -158,7 +158,7 @@ func (ii *IPIntelligence) IsBlocked(ip string) bool {
 		return false
 	}
 
-	// Check if block has expired
+	// Check if block has expired.
 	if time.Now().After(blockedUntil) {
 		return false
 	}
@@ -185,7 +185,7 @@ func (ii *IPIntelligence) RecordFailedAttempt(ip string) {
 		return
 	}
 
-	// Reset if outside window
+	// Reset if outside window.
 	if record.FirstSeen.Before(cutoff) {
 		ii.failures[ip] = &ipFailureRecord{
 			Count:     1,
@@ -196,11 +196,11 @@ func (ii *IPIntelligence) RecordFailedAttempt(ip string) {
 		return
 	}
 
-	// Increment
+	// Increment.
 	record.Count++
 	record.LastSeen = now
 
-	// Check if we should block
+	// Check if we should block.
 	if record.Count >= ii.config.MaxFailedAttempts {
 		ii.blocked[ip] = now.Add(ii.config.BlockDuration)
 	}
@@ -240,14 +240,14 @@ func (ii *IPIntelligence) Cleanup() {
 	cutoff := now.Add(-ii.config.WindowDuration)
 	failureCutoff := now.Add(-ii.config.BlockDuration * 2)
 
-	// Clean expired blocks
+	// Clean expired blocks.
 	for ip, blockedUntil := range ii.blocked {
 		if blockedUntil.Before(failureCutoff) {
 			delete(ii.blocked, ip)
 		}
 	}
 
-	// Clean old failure records
+	// Clean old failure records.
 	for ip, record := range ii.failures {
 		if record.FirstSeen.Before(cutoff) {
 			delete(ii.failures, ip)
@@ -296,13 +296,13 @@ func (ii *IPIntelligence) Middleware() gin.HandlerFunc {
 
 		ip := ii.GetClientIP(c.Request)
 
-		// Skip whitelisted IPs
+		// Skip whitelisted IPs.
 		if ii.IsWhitelisted(ip) {
 			c.Next()
 			return
 		}
 
-		// Check if blocked
+		// Check if blocked.
 		if ii.IsBlocked(ip) {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":   "ip_blocked",
@@ -349,13 +349,13 @@ func (ii *IPIntelligence) CheckAbuseIPDB(ctx context.Context, ip string) (bool, 
 		return false, 0, nil
 	}
 
-	// Skip private IPs
+	// Skip private IPs.
 	parsedIP := net.ParseIP(ip)
 	if parsedIP == nil || parsedIP.IsPrivate() || parsedIP.IsLoopback() {
 		return false, 0, nil
 	}
 
-	// Call AbuseIPDB API
+	// Call AbuseIPDB API.
 	url := "https://api.abuseipdb.com/api/v2/check"
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
@@ -378,7 +378,7 @@ func (ii *IPIntelligence) CheckAbuseIPDB(ctx context.Context, ip string) (bool, 
 
 	defer func() { _ = resp.Body.Close() }()
 
-	// Parse response
+	// Parse response.
 	type abuseIPDBResponse struct {
 		Data struct {
 			IPAddress            string `json:"ipAddress"`

@@ -57,12 +57,12 @@ func (co CORS) Handler() gin.HandlerFunc {
 
 func (co CORS) allowed(origin string) bool {
 	if origin == "" {
-		return false // Reject requests without Origin header for security
+		return false // Reject requests without Origin header for security.
 	}
 
 	for _, v := range co.AllowedOrigins {
 		if v == "*" {
-			return true // Wildcard only allowed if explicitly configured
+			return true // Wildcard only allowed if explicitly configured.
 		}
 
 		if strings.EqualFold(v, origin) {

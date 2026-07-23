@@ -26,7 +26,7 @@ func NewDiagnosticsRepository(db *sql.DB) *DiagnosticsRepository {
 
 // GetTimelineEvents retrieves paginated timeline events for a device.
 func (r *DiagnosticsRepository) GetTimelineEvents(ctx context.Context, deviceID string, filter *diagnostics.TimelineFilter) (*diagnostics.TimelineResult, error) {
-	// Build query based on filter
+	// Build query based on filter.
 	query := `
 		SELECT id, event_type, timestamp, data
 		FROM device_events
@@ -34,13 +34,13 @@ func (r *DiagnosticsRepository) GetTimelineEvents(ctx context.Context, deviceID 
 	
 	args := []interface{}{deviceID}
 	
-	// Apply event type filter if specified (empty means no filter)
+	// Apply event type filter if specified (empty means no filter).
 	if filter.EventType != "" {
 		query += " AND event_type = ?"
 		args = append(args, filter.EventType)
 	}
 	
-	// Apply cursor-based pagination
+	// Apply cursor-based pagination.
 	if filter.Cursor != "" {
 		cursorTime, cursorID := r.decodeCursor(filter.Cursor)
 		if !cursorTime.IsZero() {
@@ -49,7 +49,7 @@ func (r *DiagnosticsRepository) GetTimelineEvents(ctx context.Context, deviceID 
 		}
 	}
 	
-	// Apply time range filters
+	// Apply time range filters.
 	if !filter.StartTime.IsZero() {
 		query += " AND timestamp >= ?"
 		args = append(args, filter.StartTime)
@@ -59,10 +59,10 @@ func (r *DiagnosticsRepository) GetTimelineEvents(ctx context.Context, deviceID 
 		args = append(args, filter.EndTime)
 	}
 	
-	// Order by timestamp desc, then id desc
+	// Order by timestamp desc, then id desc.
 	query += " ORDER BY timestamp DESC, id DESC"
 	
-	// Fetch limit + 1 to check for more results
+	// Fetch limit + 1 to check for more results.
 	limit := filter.Limit
 	if limit <= 0 {
 		limit = 50
@@ -91,7 +91,7 @@ func (r *DiagnosticsRepository) GetTimelineEvents(ctx context.Context, deviceID 
 		
 		if len(dataBytes) > 0 {
 			if err := json.Unmarshal(dataBytes, &event.Data); err != nil {
-				// Log error but continue
+				// Log error but continue.
 				event.Data = nil
 			}
 		}
@@ -103,13 +103,13 @@ func (r *DiagnosticsRepository) GetTimelineEvents(ctx context.Context, deviceID 
 		return nil, err
 	}
 	
-	// Check if there are more results
+	// Check if there are more results.
 	hasMore := len(events) > limit
 	if hasMore {
 		events = events[:limit]
 	}
 	
-	// Generate next cursor
+	// Generate next cursor.
 	var nextCursor string
 	if hasMore && len(events) > 0 {
 		last := events[len(events)-1]
@@ -149,7 +149,7 @@ func (r *DiagnosticsRepository) GetTelemetryStats(ctx context.Context, deviceID 
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	startOfDayMs := startOfDay.UnixMilli()
 	
-	// Count frames today
+	// Count frames today.
 	framesQuery := `
 		SELECT COUNT(*) FROM telemetry 
 		WHERE device_id = ? AND received_at >= ?`
@@ -160,7 +160,7 @@ func (r *DiagnosticsRepository) GetTelemetryStats(ctx context.Context, deviceID 
 		return nil, err
 	}
 	
-	// Get total bytes today (from telemetry size estimate)
+	// Get total bytes today (from telemetry size estimate).
 	bytesQuery := `
 		SELECT COALESCE(SUM(length(frame_data)), 0) FROM telemetry 
 		WHERE device_id = ? AND received_at >= ?`
@@ -171,7 +171,7 @@ func (r *DiagnosticsRepository) GetTelemetryStats(ctx context.Context, deviceID 
 		return nil, err
 	}
 	
-	// Count sessions today (distinct connection sessions based on telemetry)
+	// Count sessions today (distinct connection sessions based on telemetry).
 	sessionsQuery := `
 		SELECT COUNT(DISTINCT strftime('%Y-%m-%d %H', datetime(received_at/1000, 'unixepoch'))) FROM telemetry 
 		WHERE device_id = ? AND received_at >= ?`
@@ -207,7 +207,7 @@ func (r *DiagnosticsRepository) GetLastTelemetry(ctx context.Context, deviceID s
 		return nil, err
 	}
 	
-	// Parse frame data to extract telemetry info
+	// Parse frame data to extract telemetry info.
 	var data map[string]any
 	if len(frameData) > 0 {
 		if err := json.Unmarshal(frameData, &data); err != nil {

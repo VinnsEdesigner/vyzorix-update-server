@@ -33,23 +33,23 @@ var FieldsToRedact = []string{
 func NewRedactor() *Redactor {
 	r := &Redactor{
 		patterns: []*regexp.Regexp{
-			// Email addresses
+			// Email addresses.
 			regexp.MustCompile(`[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}`),
-			// Credit card numbers (basic pattern)
+			// Credit card numbers (basic pattern).
 			regexp.MustCompile(`\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b`),
-			// Social Security Numbers
+			// Social Security Numbers.
 			regexp.MustCompile(`\b\d{3}-\d{2}-\d{4}\b`),
-			// Phone numbers
+			// Phone numbers.
 			regexp.MustCompile(`\b\d{3}[-.]?\d{3}[-.]?\d{4}\b`),
-			// IP addresses
+			// IP addresses.
 			regexp.MustCompile(`\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b`),
-			// API keys (generic patterns)
+			// API keys (generic patterns).
 			regexp.MustCompile(`(?i)(api[_-]?key|secret[_-]?key|access[_-]?token|auth[_-]?token|bearer)["\s:=]+["']?[a-zA-Z0-9_-]{20,}["']?`),
-			// Passwords in JSON
+			// Passwords in JSON.
 			regexp.MustCompile(`(?i)"(password|passwd|pwd|secret)["\s:]+["'][^"']{4,}["']`),
-			// JWT tokens
+			// JWT tokens.
 			regexp.MustCompile(`eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+`),
-			// Firebase credentials
+			// Firebase credentials.
 			regexp.MustCompile(`"type"\s*:\s*"service_account"`),
 		},
 	}

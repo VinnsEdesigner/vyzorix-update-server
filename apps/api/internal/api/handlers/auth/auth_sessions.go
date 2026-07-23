@@ -54,7 +54,7 @@ func (h *SessionsHandler) ListSessions(c *gin.Context) {
 		return
 	}
 
-	// Build response with session metadata (excluding sensitive data)
+	// Build response with session metadata (excluding sensitive data).
 	sessionList := make([]gin.H, 0, len(sessions))
 	currentSessionID, _ := c.Cookie("vyz_session")
 
@@ -89,7 +89,7 @@ func (h *SessionsHandler) CheckConcurrent(c *gin.Context) {
 		return
 	}
 
-	// Check for different IPs or user agents
+	// Check for different IPs or user agents.
 	var concurrentLogins []gin.H
 	currentSessionID, _ := c.Cookie("vyz_session")
 
@@ -125,14 +125,14 @@ func (h *SessionsHandler) RevokeSession(c *gin.Context) {
 		return
 	}
 
-	// Prevent revoking current session via this endpoint
+	// Prevent revoking current session via this endpoint.
 	currentSessionID, _ := c.Cookie("vyz_session")
 	if sessionID == currentSessionID {
 		h.presenter.BadRequest(c, "Cannot revoke current session. Use logout instead.")
 		return
 	}
 
-	// Verify session belongs to this operator
+	// Verify session belongs to this operator.
 	sessions, err := h.sessionManager.ListActiveSessions(c.Request.Context(), operatorID)
 	if err != nil {
 		h.presenter.InternalError(c, "Failed to verify session")
@@ -152,7 +152,7 @@ func (h *SessionsHandler) RevokeSession(c *gin.Context) {
 		return
 	}
 
-	// Revoke the session
+	// Revoke the session.
 	if err := h.sessionManager.RevokeSession(c.Request.Context(), sessionID); err != nil {
 		h.presenter.InternalError(c, "Failed to revoke session")
 		return
@@ -171,14 +171,14 @@ func (h *SessionsHandler) RevokeAllExceptCurrent(c *gin.Context) {
 
 	currentSessionID, _ := c.Cookie("vyz_session")
 
-	// Get all sessions
+	// Get all sessions.
 	sessions, err := h.sessionManager.ListActiveSessions(c.Request.Context(), operatorID)
 	if err != nil {
 		h.presenter.InternalError(c, "Failed to list sessions")
 		return
 	}
 
-	// Revoke all except current
+	// Revoke all except current.
 	count := 0
 	for _, sess := range sessions {
 		if sess.ID != currentSessionID {
@@ -203,14 +203,14 @@ func (h *SessionsHandler) RevokeAllDevices(c *gin.Context) {
 		return
 	}
 
-	// Get all sessions
+	// Get all sessions.
 	sessions, err := h.sessionManager.ListActiveSessions(c.Request.Context(), operatorID)
 	if err != nil {
 		h.presenter.InternalError(c, "Failed to list sessions")
 		return
 	}
 
-	// Revoke all sessions (including current)
+	// Revoke all sessions (including current).
 	count := 0
 	for _, sess := range sessions {
 		if err := h.sessionManager.RevokeSession(c.Request.Context(), sess.ID); err == nil {
@@ -218,7 +218,7 @@ func (h *SessionsHandler) RevokeAllDevices(c *gin.Context) {
 		}
 	}
 
-	// Clear the session cookie
+	// Clear the session cookie.
 	c.SetCookie("vyz_session", "", -1, "/", "", false, true)
 
 	h.presenter.OK(c, gin.H{
@@ -242,7 +242,7 @@ func (h *SessionsHandler) GetSession(c *gin.Context) {
 		return
 	}
 
-	// Get all sessions and find the one with matching ID
+	// Get all sessions and find the one with matching ID.
 	sessions, err := h.sessionManager.ListActiveSessions(c.Request.Context(), operatorID)
 	if err != nil {
 		h.presenter.InternalError(c, "Failed to list sessions")

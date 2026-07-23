@@ -44,7 +44,7 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 		Name        string `json:"name"`
 		Description string `json:"description" binding:"required"`
 		MaxMembers  int    `json:"maxMembers"`
-		Role        string `json:"role" binding:"required"` // Required: "super_admin" or "admin"
+		Role        string `json:"role" binding:"required"` // Required: "super_admin" or "admin".
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -52,19 +52,19 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Validate description is not empty after trimming
+	// Validate description is not empty after trimming.
 	if strings.TrimSpace(req.Description) == "" {
 		h.presenter.BadRequest(c, "description is required and cannot be empty")
 		return
 	}
 
-	// Validate role
+	// Validate role.
 	if req.Role != "super_admin" && req.Role != "admin" {
 		h.presenter.BadRequest(c, "role must be 'super_admin' or 'admin'")
 		return
 	}
 
-	// Name defaults to "personal" if empty
+	// Name defaults to "personal" if empty.
 	if req.Name == "" {
 		req.Name = "personal"
 	}
@@ -141,8 +141,8 @@ func (h *OrganizationHandler) Get(c *gin.Context) {
 		return
 	}
 
-	// Use membership from context (set by OrganizationMembership middleware)
-	// If middleware didn't run, fall back to service call
+	// Use membership from context (set by OrganizationMembership middleware).
+	// If middleware didn't run, fall back to service call.
 	member := middleware.GetMembership(c)
 	if member == nil {
 		var err error
@@ -152,7 +152,7 @@ func (h *OrganizationHandler) Get(c *gin.Context) {
 			return
 		}
 	} else {
-		// Check minimum role: require at least operator role
+		// Check minimum role: require at least operator role.
 		if member.Role.Level() < organization.RoleOperator.Level() {
 			h.presenter.Forbidden(c, "insufficient permissions: operator role required")
 			return
@@ -205,7 +205,7 @@ func (h *OrganizationHandler) Update(c *gin.Context) {
 		h.presenter.BadRequest(c, "Invalid request body")
 		return
 	}
-	// These are sensitive fields that affect billing and org lifecycle
+	// These are sensitive fields that affect billing and org lifecycle.
 	if req.MaxMembers != nil || req.IsActive != nil {
 		member, err := h.memberService.GetMembership(c.Request.Context(), op.ID, orgID)
 		if err != nil {
@@ -217,7 +217,7 @@ func (h *OrganizationHandler) Update(c *gin.Context) {
 			return
 		}
 	} else {
-		// For non-sensitive fields, just check if operator can manage organization
+		// For non-sensitive fields, just check if operator can manage organization.
 		if err := h.memberService.CheckCanManageOrganization(c.Request.Context(), op.ID, orgID); err != nil {
 			h.presenter.Forbidden(c, "access denied")
 			return
@@ -260,8 +260,8 @@ func (h *OrganizationHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Use membership from context (set by OrganizationMembership middleware)
-	// If middleware didn't run, fall back to service call
+	// Use membership from context (set by OrganizationMembership middleware).
+	// If middleware didn't run, fall back to service call.
 	member := middleware.GetMembership(c)
 	if member == nil {
 		var err error

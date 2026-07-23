@@ -266,7 +266,7 @@ func (r *EventRepository) GetByOperator(ctx context.Context, operatorID string, 
 		filter = &event.EventFilter{Limit: 50}
 	}
 
-	// First get device IDs for this operator
+	// First get device IDs for this operator.
 	devicesQuery := `SELECT id FROM devices WHERE operator_id = ?`
 	rows, err := r.db.QueryContext(ctx, devicesQuery, operatorID)
 	if err != nil {
@@ -282,7 +282,7 @@ func (r *EventRepository) GetByOperator(ctx context.Context, operatorID string, 
 		}
 		deviceIDs = append(deviceIDs, id)
 	}
-	// Check rows.Err() after iteration
+	// Check rows.Err() after iteration.
 	if rowsErr := rows.Err(); rowsErr != nil {
 		return nil, rowsErr
 	}

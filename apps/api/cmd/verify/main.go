@@ -81,6 +81,6 @@ func main() {
 }
 
 func getRoot() string {
-	// Hardcoded for now - the project root
+	// Hardcoded for now - the project root.
 	return "/workspace/project/vyzorix-update-server"
 }

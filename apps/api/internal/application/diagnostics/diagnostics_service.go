@@ -43,7 +43,7 @@ func NewService(diagnosticsRepo diagnostics.Repository, deviceRepo device.Reposi
 		cacheTTL:       time.Duration(cfg.InspectionCacheTTLSeconds) * time.Second,
 		cfg:            cfg,
 	}
-	// Start cache cleanup goroutine
+	// Start cache cleanup goroutine.
 	go s.cleanupCache()
 	return s
 }
@@ -95,7 +95,7 @@ func (s *Service) GetDeviceInspection(ctx context.Context, imei, orgID string) (
 		return nil, diagnostics.ErrDeviceNotFound
 	}
 
-	// Verify device belongs to organization
+	// Verify device belongs to organization.
 	if orgID != "" && dev.OrganizationID != orgID {
 		return nil, diagnostics.ErrDeviceNotFound
 	}
@@ -178,7 +178,7 @@ func (s *Service) GetDeviceInspection(ctx context.Context, imei, orgID string) (
 // Results are cached for 10 seconds per spec.
 // Requires orgID for multi-tenant isolation.
 func (s *Service) GetDeviceInspectionHTTP(ctx context.Context, imei, orgID string) (*HTTPInspectionResponse, error) {
-	// Check cache first (include orgID in cache key for multi-tenant isolation)
+	// Check cache first (include orgID in cache key for multi-tenant isolation).
 	cacheKey := imei + ":" + orgID
 	if cached := s.getCachedInspection(cacheKey); cached != nil {
 		return cached, nil
@@ -221,7 +221,7 @@ func (s *Service) GetDeviceInspectionHTTP(ctx context.Context, imei, orgID strin
 		},
 	}
 
-	// Convert timestamps to int64 ms
+	// Convert timestamps to int64 ms.
 	if inspection.Registration.RegisteredAt != nil {
 		resp.Registration.RegisteredAt = inspection.Registration.RegisteredAt.UnixMilli()
 	}
@@ -238,7 +238,7 @@ func (s *Service) GetDeviceInspectionHTTP(ctx context.Context, imei, orgID strin
 		resp.Telemetry.LastTimestamp = inspection.Telemetry.LastTimestamp.UnixMilli()
 	}
 
-	// Cache the response
+	// Cache the response.
 	s.cacheInspection(cacheKey, resp)
 
 	return resp, nil
@@ -247,7 +247,7 @@ func (s *Service) GetDeviceInspectionHTTP(ctx context.Context, imei, orgID strin
 // GetDeviceTimeline retrieves paginated timeline events for a device.
 // Requires orgID for multi-tenant isolation.
 func (s *Service) GetDeviceTimeline(ctx context.Context, imei string, req *TimelineRequest, orgID string) (*TimelineResponse, error) {
-	// Verify device exists and belongs to organization
+	// Verify device exists and belongs to organization.
 	dev, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil {
 		return nil, err
@@ -256,25 +256,25 @@ func (s *Service) GetDeviceTimeline(ctx context.Context, imei string, req *Timel
 		return nil, diagnostics.ErrDeviceNotFound
 	}
 
-	// Verify device belongs to organization
+	// Verify device belongs to organization.
 	if orgID != "" && dev.OrganizationID != orgID {
 		return nil, diagnostics.ErrDeviceNotFound
 	}
 
-	// Map frontend event type categories to actual event types per spec
+	// Map frontend event type categories to actual event types per spec.
 	eventTypes := s.mapEventTypeCategory(req.EventType)
 
-	// Build filter
+	// Build filter.
 	filter := &diagnostics.TimelineFilter{
 		Limit:    req.Limit,
 		Cursor:   req.Cursor,
 	}
 
-	// Apply time range
+	// Apply time range.
 	if req.StartTime > 0 {
 		filter.StartTime = time.UnixMilli(req.StartTime)
 	} else {
-		// Default to last 24 hours
+		// Default to last 24 hours.
 		filter.StartTime = time.Now().Add(-24 * time.Hour)
 	}
 
@@ -282,38 +282,38 @@ func (s *Service) GetDeviceTimeline(ctx context.Context, imei string, req *Timel
 		filter.EndTime = time.UnixMilli(req.EndTime)
 	}
 
-	// Enforce max limit
+	// Enforce max limit.
 	if filter.Limit <= 0 || filter.Limit > 200 {
 		filter.Limit = 50
 	}
 
-	// Get timeline events for each mapped event type
+	// Get timeline events for each mapped event type.
 	var allEvents []diagnostics.TimelineEvent
 
-	// Build a set for efficient lookup when filtering
+	// Build a set for efficient lookup when filtering.
 	eventTypeSet := make(map[string]bool)
 	for _, et := range eventTypes {
 		eventTypeSet[et] = true
 	}
 
-	// When eventTypes is nil/empty, fetch all events (no type filter)
+	// When eventTypes is nil/empty, fetch all events (no type filter).
 	if len(eventTypes) == 0 {
-		filter.EventType = "" // Clear any previous filter
+		filter.EventType = "" // Clear any previous filter.
 		result, err := s.diagnosticsRepo.GetTimelineEvents(ctx, dev.ID, filter)
 		if err != nil {
 			return nil, err
 		}
 		allEvents = result.Events
 	} else {
-		// Fetch all events without type filter to get correct chronological order
-		// then filter by type in memory
+		// Fetch all events without type filter to get correct chronological order.
+		// then filter by type in memory.
 		filter.EventType = ""
 		result, err := s.diagnosticsRepo.GetTimelineEvents(ctx, dev.ID, filter)
 		if err != nil {
 			return nil, err
 		}
 
-		// Filter by event types in memory to maintain correct chronological order
+		// Filter by event types in memory to maintain correct chronological order.
 		for _, event := range result.Events {
 			if eventTypeSet[string(event.Type)] {
 				allEvents = append(allEvents, event)
@@ -321,20 +321,20 @@ func (s *Service) GetDeviceTimeline(ctx context.Context, imei string, req *Timel
 		}
 	}
 
-	// Check limit
+	// Check limit.
 	hasMore := len(allEvents) > filter.Limit
 	if hasMore {
 		allEvents = allEvents[:filter.Limit]
 	}
 
-	// Generate next cursor
+	// Generate next cursor.
 	var nextCursor string
 	if hasMore && len(allEvents) > 0 {
 		last := allEvents[len(allEvents)-1]
 		nextCursor = encodeCursor(last.Timestamp, last.ID)
 	}
 
-	// Convert to response DTOs
+	// Convert to response DTOs.
 	events := make([]EventDTO, len(allEvents))
 	for i, e := range allEvents {
 		events[i] = EventDTO{
@@ -379,10 +379,10 @@ func (s *Service) mapEventTypeCategory(category string) []string {
 			string(diagnostics.EventTypeThresholdBreach),
 		}
 	case "all", "":
-		// Return empty to indicate no filter (fetch all)
+		// Return empty to indicate no filter (fetch all).
 		return nil
 	default:
-		// Assume it's an exact event type match
+		// Assume it's an exact event type match.
 		return []string{category}
 	}
 }
@@ -414,12 +414,12 @@ func (s *Service) RecordDeviceEvent(ctx context.Context, deviceID string, eventT
 
 // determineDeviceStatus determines the device registration status.
 func (s *Service) determineDeviceStatus(dev *device.Device) string {
-	// Use domain lifecycle method
+	// Use domain lifecycle method.
 	if dev.IsDeregistered() {
 		return "deregistered"
 	}
 	if dev.RegisteredAt > 0 {
-		// Device is registered
+		// Device is registered.
 		if dev.LastSeen > 0 && time.Since(time.UnixMilli(dev.LastSeen)) > time.Duration(s.cfg.OfflineThresholdMinutes)*time.Minute {
 			return "offline"
 		}
@@ -434,7 +434,7 @@ func (s *Service) determineWebSocketStatus(dev *device.Device, wsConnected bool)
 		return "connected"
 	}
 	if dev.LastSeen > 0 && time.Since(time.UnixMilli(dev.LastSeen)) < time.Duration(s.cfg.OfflineThresholdMinutes)*time.Minute {
-		return "connected" // Might be using FCM
+		return "connected" // Might be using FCM.
 	}
 	return "disconnected"
 }
@@ -456,7 +456,7 @@ func (s *Service) determineFCMStatus(dev *device.Device) string {
 func generateID() string {
 	b := make([]byte, 16)
 	if _, err := cryptoRand.Read(b); err != nil {
-		// Fallback to timestamp-based if crypto/rand fails
+		// Fallback to timestamp-based if crypto/rand fails.
 		return fmt.Sprintf("evt_%d_%d", time.Now().UnixNano(), time.Now().UnixMicro())
 	}
 	return fmt.Sprintf("evt_%x", b)
@@ -471,23 +471,23 @@ type AuthorizationResponse struct {
 // VerifyDeviceOwnership checks if the operator owns the device and device belongs to org (org-scoped DOA check).
 func (s *Service) VerifyDeviceOwnership(ctx context.Context, imei, operatorID, orgID string) *AuthorizationResponse {
 	if operatorID == "" {
-		// No operator context - unauthorized
+		// No operator context - unauthorized.
 		return &AuthorizationResponse{Authorized: false, Forbidden: false}
 	}
 
 	dev, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil || dev == nil {
-		// Device not found - treat as forbidden (not unauthorized - they found it but don't own it)
+		// Device not found - treat as forbidden (not unauthorized - they found it but don't own it).
 		return &AuthorizationResponse{Authorized: false, Forbidden: true}
 	}
 
-	// Check org membership - device must belong to the organization
+	// Check org membership - device must belong to the organization.
 	if orgID != "" && dev.OrganizationID != orgID {
 		return &AuthorizationResponse{Authorized: false, Forbidden: true}
 	}
 
 	if dev.OperatorID != operatorID {
-		// Device exists but belongs to different operator
+		// Device exists but belongs to different operator.
 		return &AuthorizationResponse{Authorized: false, Forbidden: true}
 	}
 

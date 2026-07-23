@@ -44,39 +44,39 @@ func (s *AuthService) GenerateAccessToken(ctx context.Context, operatorID, email
 
 // RotateRefreshToken rotates a refresh token, revoking the old one and issuing a new one.
 func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken string) (*RefreshTokenResult, error) {
-	// Check if refresh token repository is configured
+	// Check if refresh token repository is configured.
 	if s.refreshTokenRepo == nil {
 		return nil, application.ErrUnauthorized
 	}
 
-	// Check if JWT manager is configured
+	// Check if JWT manager is configured.
 	if s.jwtManager == nil {
 		return nil, application.ErrUnauthorized
 	}
 
-	// Hash the incoming token
+	// Hash the incoming token.
 	tokenHash := hashTokenSha256(oldRefreshToken)
 
-	// Find the existing refresh token
+	// Find the existing refresh token.
 	existing, err := s.refreshTokenRepo.FindByTokenHash(ctx, tokenHash)
 	if err != nil {
 		return nil, application.ErrUnauthorized
 	}
 
-	// 10: Check if token was used from a different operator (cross-account theft!)
+	// 10: Check if token was used from a different operator (cross-account theft!).
 	if existing.IsRevoked {
-		// Token was already used after rotation - potential theft!
-		// Revoke ALL refresh tokens for the original operator (force re-login)
+		// Token was already used after rotation - potential theft!.
+		// Revoke ALL refresh tokens for the original operator (force re-login).
 		_ = s.refreshTokenRepo.RevokeAllForOperator(ctx, existing.OperatorID)
 		return nil, application.ErrUnauthorized
 	}
 
-	// Check if expired
+	// Check if expired.
 	if existing.IsExpired() {
 		return nil, application.ErrTokenExpired
 	}
 
-	// Fetch operator details for the JWT claims
+	// Fetch operator details for the JWT claims.
 	op, err := s.operatorRepo.FindByID(ctx, existing.OperatorID)
 	if err != nil {
 		return nil, application.ErrUnauthorized
@@ -87,13 +87,13 @@ func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken st
 	role := "operator"
 	if s.memberRepo != nil {
 		if op.LastOrganizationID != "" {
-			// Try the operator's last accessed org first
+			// Try the operator's last accessed org first.
 			member, err := s.memberRepo.FindByOperatorAndOrg(ctx, op.ID, op.LastOrganizationID)
 			if err == nil && member.IsActive() {
 				role = string(member.Role)
 			}
 		} else {
-			// No LastOrganizationID — load all memberships to find the highest role
+			// No LastOrganizationID — load all memberships to find the highest role.
 			memberships, err := s.memberRepo.ListByOperator(ctx, op.ID)
 			if err == nil {
 				for _, m := range memberships {
@@ -119,10 +119,10 @@ func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken st
 		return nil, err
 	}
 
-	// Revoke old token
+	// Revoke old token.
 	_ = s.refreshTokenRepo.Revoke(ctx, existing.ID)
 
-	// Issue new refresh token
+	// Issue new refresh token.
 	newRefreshToken, err := s.IssueRefreshToken(ctx, existing.OperatorID, existing.SessionID)
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (s *AuthService) IssueRefreshToken(ctx context.Context, operatorID, session
 	tokenHash := hashTokenSha256(token)
 	id := shared.GenerateID()
 
-	// Default to 7 days if refreshTokenExpiry not set
+	// Default to 7 days if refreshTokenExpiry not set.
 	expiry := s.refreshTokenExpiry
 	if expiry == 0 {
 		expiry = 7 * 24 * time.Hour

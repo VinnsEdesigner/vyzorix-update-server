@@ -96,7 +96,7 @@ for pattern in "${!PATTERNS[@]}"; do
             content=$(echo "$line" | cut -d: -f3-)
             
             # Trim whitespace
-            content=$(echo "$content" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            content=$(echo "$content" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//').
             
             echo "$file:$linenum:$pattern:$content" >> "$RESULTS_FILE"
             TOTAL_FINDINGS=$((TOTAL_FINDINGS + 1))

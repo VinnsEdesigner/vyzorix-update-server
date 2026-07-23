@@ -56,7 +56,7 @@ type NoOpAuditRepo struct{}
 
 func (n *NoOpAuditRepo) Log(ctx context.Context, entry *Entry) error { return nil }
 
-// Compile-time check that NoOpAuditRepo implements the interface
+// Compile-time check that NoOpAuditRepo implements the interface.
 var _ interface{ Log(context.Context, *Entry) error } = (*NoOpAuditRepo)(nil)
 
 // LoggerConfig holds configuration for the audit logger.
@@ -64,7 +64,7 @@ type LoggerConfig struct {
 	Enabled       bool
 	RetentionDays int
 	SeparateDB    bool   
-	SeparateDBPath string // Path for separate audit DB (when SeparateDB is true)
+	SeparateDBPath string // Path for separate audit DB (when SeparateDB is true).
 }
 
 // DefaultLoggerConfig returns the default audit logger configuration.
@@ -72,7 +72,7 @@ func DefaultLoggerConfig() LoggerConfig {
 	return LoggerConfig{
 		Enabled:       true,
 		RetentionDays: 90,
-		SeparateDB:    false, // Default to co-located for backward compatibility
+		SeparateDB:    false, // Default to co-located for backward compatibility.
 	}
 }
 
@@ -87,14 +87,14 @@ func NewLogger(repo *Repository, log *slog.Logger, cfg LoggerConfig, separateRep
 		separateRepo: separateRepo, 
 	}
 
-	// Start single writer goroutine that drains the channel
+	// Start single writer goroutine that drains the channel.
 	l.wg.Add(1)
 	go l.writer()
 
 	return l
 }
 
-// writer is the single goroutine that processes audit events from the channel
+// writer is the single goroutine that processes audit events from the channel.
 // and writes them to the repository.
 func (l *Logger) writer() {
 	defer l.wg.Done()
@@ -103,7 +103,7 @@ func (l *Logger) writer() {
 		select {
 		case entry := <-l.events:
 			if entry == nil {
-				// Channel closed, flush remaining events
+				// Channel closed, flush remaining events.
 				for entry := range l.events {
 					l.writeEntry(entry)
 				}
@@ -111,7 +111,7 @@ func (l *Logger) writer() {
 			}
 			l.writeEntry(entry)
 		case <-l.done:
-			// Shutdown requested, flush remaining events
+			// Shutdown requested, flush remaining events.
 			close(l.events)
 			for entry := range l.events {
 				l.writeEntry(entry)
@@ -124,7 +124,7 @@ func (l *Logger) writer() {
 // writeEntry writes a single audit entry to the repository.
 
 func (l *Logger) writeEntry(entry *Entry) {
-	// Write to primary repository
+	// Write to primary repository.
 	if err := l.repo.Log(context.Background(), entry); err != nil {
 		l.log.Error("failed to write audit log",
 			slog.String("action", string(entry.Action)),
@@ -155,19 +155,19 @@ func (l *Logger) LogEvent(ctx context.Context, entry *Entry) {
 
 	select {
 	case l.events <- entry:
-		// Event queued successfully
+		// Event queued successfully.
 	case <-l.done:
-		// Logger is shutting down, log directly (may block briefly)
+		// Logger is shutting down, log directly (may block briefly).
 		l.writeEntry(entry)
 	default:
-		// Buffer full - log and warn that buffer is saturated
+		// Buffer full - log and warn that buffer is saturated.
 		l.log.Warn("audit log buffer full, logging synchronously",
 			slog.String("action", string(entry.Action)))
 		l.writeEntry(entry)
 	}
 }
 
-// Shutdown gracefully shuts down the audit logger, ensuring all pending events
+// Shutdown gracefully shuts down the audit logger, ensuring all pending events.
 // are written before returning. Call this during application shutdown.
 
 func (l *Logger) Shutdown(ctx context.Context) error {

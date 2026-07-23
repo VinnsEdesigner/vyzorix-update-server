@@ -13,7 +13,7 @@ import (
 // ErrHashFailed is returned when hashing fails.
 var ErrHashFailed = errors.New("hash failed")
 
-// ErrInvalidHash = errors.New("invalid hash")
+// ErrInvalidHash = errors.New("invalid hash").
 
 // Argon2idParams holds Argon2id configuration following OWASP 2023 recommendations.
 type Argon2idParams struct {
@@ -26,7 +26,7 @@ type Argon2idParams struct {
 
 // DefaultArgon2idParams returns the default Argon2id parameters.
 var DefaultArgon2idParams = Argon2idParams{
-	Memory:      64 * 1024, // 64 MB
+	Memory:      64 * 1024, // 64 MB.
 	Iterations:  3,
 	Parallelism: 4,
 	SaltLength:  16,
@@ -63,7 +63,7 @@ func (h *Argon2idHasher) Hash(password string) (string, error) {
 		h.params.KeyLength,
 	)
 
-	// Format: $argon2id$v=19$m=65536,t=3,p=4$<salt>$<hash>
+	// Format: $argon2id$v=19$m=65536,t=3,p=4$<salt>$<hash>.
 	encodedSalt := base64.RawStdEncoding.EncodeToString(salt)
 	encodedHash := base64.RawStdEncoding.EncodeToString(hash)
 
@@ -176,7 +176,7 @@ func HashSecret(secret string) (string, error) {
 		DefaultArgon2idParams.KeyLength,
 	)
 
-	// Format: $argon2id$v=19$m=65536,t=3,p=4$<salt>$<hash>
+	// Format: $argon2id$v=19$m=65536,t=3,p=4$<salt>$<hash>.
 	encodedSalt := base64.RawStdEncoding.EncodeToString(salt)
 	encodedHash := base64.RawStdEncoding.EncodeToString(hash)
 
@@ -196,7 +196,7 @@ func VerifySecret(secret, hash string) error {
 		return fmt.Errorf("secret or hash cannot be empty")
 	}
 
-	// Check if it's the legacy SHA512-based hash format (no $argon2id$ prefix)
+	// Check if it's the legacy SHA512-based hash format (no $argon2id$ prefix).
 	if len(hash) > 0 && hash[0] != '$' {
 		return errors.New("invalid hash format")
 	}
@@ -243,7 +243,7 @@ func HashPassword(password string) (string, error) {
 		DefaultArgon2idParams.KeyLength,
 	)
 
-	// Format: $argon2id$v=19$m=65536,t=3,p=4$<salt>$<hash>
+	// Format: $argon2id$v=19$m=65536,t=3,p=4$<salt>$<hash>.
 	encodedSalt := base64.RawStdEncoding.EncodeToString(salt)
 	encodedHash := base64.RawStdEncoding.EncodeToString(hash)
 

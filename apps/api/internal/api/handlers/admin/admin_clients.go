@@ -28,14 +28,14 @@ func requireAdmin(c *gin.Context) bool {
 		return false
 	}
 
-	// Require org context for admin access
+	// Require org context for admin access.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Organization ID required"})
 		return false
 	}
 
-	// Check if operator is super_admin in this specific organization
+	// Check if operator is super_admin in this specific organization.
 	if !op.IsSuperAdminIn(orgID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "admin access required"})
 		return false

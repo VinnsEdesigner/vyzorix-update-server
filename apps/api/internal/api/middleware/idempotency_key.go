@@ -42,7 +42,7 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 	}
 
 	return func(c *gin.Context) {
-		// Only apply to configured paths
+		// Only apply to configured paths.
 		pathSupported := false
 		for _, p := range config.Paths {
 			if c.Request.URL.Path == p {
@@ -55,7 +55,7 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 			return
 		}
 
-		// Only apply to POST/PATCH/PUT methods
+		// Only apply to POST/PATCH/PUT methods.
 		if c.Request.Method != http.MethodPost &&
 			c.Request.Method != http.MethodPatch &&
 			c.Request.Method != http.MethodPut {
@@ -63,15 +63,15 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 			return
 		}
 
-		// Get idempotency key from header
+		// Get idempotency key from header.
 		idempotencyKey := c.GetHeader(config.HeaderName)
 		if idempotencyKey == "" {
-			// No idempotency key provided - proceed normally (not an error)
+			// No idempotency key provided - proceed normally (not an error).
 			c.Next()
 			return
 		}
 
-		// Validate idempotency key format
+		// Validate idempotency key format.
 		if len(idempotencyKey) < 8 || len(idempotencyKey) > 128 {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"error":   "bad_request",
@@ -81,17 +81,17 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 			return
 		}
 
-		// Check if we have a cached response
+		// Check if we have a cached response.
 		if config.Repository != nil {
 			record, err := config.Repository.Get(c.Request.Context(), idempotencyKey)
 			if err != nil {
-				// Log error but continue without idempotency
+				// Log error but continue without idempotency.
 				c.Next()
 				return
 			}
 
 			if record != nil {
-				// Return cached response
+				// Return cached response.
 				c.Header("X-Idempotency-Replay", "true")
 				c.Header("Content-Type", record.ContentType)
 				c.Header("X-Idempotency-Recorded-At", record.CreatedAt.Format(time.RFC3339))
@@ -101,14 +101,14 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 			}
 		}
 
-		// Capture request body for hashing
+		// Capture request body for hashing.
 		var bodyBytes []byte
 		if c.Request.Body != nil {
 			bodyBytes, _ = io.ReadAll(c.Request.Body)
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		}
 
-		// Create response recorder
+		// Create response recorder.
 		recorder := &responseRecorder{
 			ResponseWriter: c.Writer,
 			statusCode:     http.StatusOK,
@@ -116,10 +116,10 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 		}
 		c.Writer = recorder
 
-		// Process request
+		// Process request.
 		c.Next()
 
-		// Store response if successful (2xx status codes)
+		// Store response if successful (2xx status codes).
 		if config.Repository != nil && recorder.statusCode >= 200 && recorder.statusCode < 300 {
 			body := recorder.body.Bytes()
 			hash := sha256.Sum256(body)
@@ -138,7 +138,7 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 				UserAgent:    c.Request.UserAgent(),
 			}
 
-			// Store asynchronously to not delay response
+			// Store asynchronously to not delay response.
 			go func() {
 				_ = config.Repository.Create(c.Request.Context(), record)
 			}()
@@ -156,7 +156,7 @@ type responseRecorder struct {
 
 func (r *responseRecorder) WriteHeader(code int) {
 	r.statusCode = code
-	// Capture Content-Type when it's set
+	// Capture Content-Type when it's set.
 	if ct := r.Header().Get("Content-Type"); ct != "" {
 		r.contentType = ct
 	}
@@ -180,7 +180,7 @@ func ValidateIdempotencyKey(key string) error {
 	if len(key) > 128 {
 		return fmt.Errorf("idempotency key must not exceed 128 characters")
 	}
-	// Allow alphanumeric, hyphens, underscores
+	// Allow alphanumeric, hyphens, underscores.
 	for _, c := range key {
 		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' && c != '_' {
 			return fmt.Errorf("idempotency key contains invalid characters")

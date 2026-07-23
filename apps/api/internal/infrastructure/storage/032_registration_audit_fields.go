@@ -11,7 +11,7 @@ import (
 func migrateRegistrationAuditFields(db *sql.DB) error {
 	ctx := context.Background()
 
-	// Add client_ip column if not exists
+	// Add client_ip column if not exists.
 	_, err := db.ExecContext(ctx, `
 		ALTER TABLE registration_logs ADD COLUMN client_ip TEXT
 	`)
@@ -19,7 +19,7 @@ func migrateRegistrationAuditFields(db *sql.DB) error {
 		return err
 	}
 
-	// Add user_agent column if not exists (same approach)
+	// Add user_agent column if not exists (same approach).
 	_, err = db.ExecContext(ctx, `
 		ALTER TABLE registration_logs ADD COLUMN user_agent TEXT
 	`)

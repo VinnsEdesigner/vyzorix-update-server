@@ -111,7 +111,7 @@ def fix_fieldalignment(content):
     return content
 
 def add_lint_ignore(content, line_num, linter, reason=""):
-    """Add //nolint comment to ignore a specific linter."""
+    """Add //nolint comment to ignore a specific linter.""".
     # This is a fallback for hard-to-fix issues
     return content
 

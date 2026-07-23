@@ -26,7 +26,7 @@ func (s *SuperAdminAuth) Middleware() gin.HandlerFunc {
 			return
 		}
 
-		// Require organization context
+		// Require organization context.
 		orgID := GetOrganizationID(c)
 		if orgID == "" {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -36,7 +36,7 @@ func (s *SuperAdminAuth) Middleware() gin.HandlerFunc {
 			return
 		}
 
-		// Check if operator is super_admin in this specific organization
+		// Check if operator is super_admin in this specific organization.
 		if !op.IsSuperAdminIn(orgID) {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":   "forbidden",
@@ -63,7 +63,7 @@ func RequireSuperAdmin() gin.HandlerFunc {
 			return
 		}
 
-		// Require organization context for super admin access
+		// Require organization context for super admin access.
 		orgID := GetOrganizationID(c)
 		if orgID == "" {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -73,7 +73,7 @@ func RequireSuperAdmin() gin.HandlerFunc {
 			return
 		}
 
-		// Check if operator is super_admin in this specific organization
+		// Check if operator is super_admin in this specific organization.
 		if !op.IsSuperAdminIn(orgID) {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":   "forbidden",

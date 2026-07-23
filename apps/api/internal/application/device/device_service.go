@@ -74,12 +74,12 @@ func (s *Service) WithTxManager(txManager transaction.TxManager) *Service {
 	return s
 }
 
-// StartDeletionWorker starts a background worker that periodically cleans up
+// StartDeletionWorker starts a background worker that periodically cleans up.
 // deregistered devices whose deletion_scheduled_at time has passed.
 // This implements the 30-day retention policy for deregistered devices.
 func (s *Service) StartDeletionWorker(ctx context.Context, interval time.Duration) {
 	if interval <= 0 {
-		interval = 1 * time.Hour // Default to 1 hour
+		interval = 1 * time.Hour // Default to 1 hour.
 	}
 
 	s.logger.Info("starting device deletion worker",
@@ -136,9 +136,9 @@ func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) 
 			return nil, ErrDeviceHijack
 		}
 
-		// If device was deregistered, allow re-registration with new pending state
+		// If device was deregistered, allow re-registration with new pending state.
 		if existing.IsDeregistered() {
-			// Use domain method to transition back to pending
+			// Use domain method to transition back to pending.
 			existing.Lifecycle = device.LifecyclePending
 			existing.DeregisteredAt = nil
 			existing.DeletionScheduledAt = nil
@@ -158,7 +158,7 @@ func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) 
 		// Return existing command secret (we don't regenerate it).
 		return &dto.RegisterDeviceResponse{
 			DeviceID:      existing.ID,
-			CommandSecret: "", // Don't return secret on re-registration
+			CommandSecret: "", // Don't return secret on re-registration.
 			RegisteredAt:  existing.RegisteredAt,
 			Lifecycle:     string(existing.Lifecycle),
 		}, nil
@@ -171,7 +171,7 @@ func (s *Service) Register(ctx context.Context, req *dto.RegisterDeviceRequest) 
 	}
 
 	now := time.Now()
-	// Use NewDevice constructor which sets LifecyclePending by default
+	// Use NewDevice constructor which sets LifecyclePending by default.
 	d := device.NewDevice(req.DeviceID, req.FirebaseInstallID)
 	d.FCMToken = req.FCMToken
 	d.AppVersion = req.AppVersion
@@ -206,12 +206,12 @@ func (s *Service) ApproveDevice(ctx context.Context, deviceID string) error {
 		return err
 	}
 
-	// Use domain method to enforce valid transitions
+	// Use domain method to enforce valid transitions.
 	if err := d.Approve(); err != nil {
 		return ErrInvalidLifecycleTransition
 	}
 
-	// Set RegisteredAt when transitioning to registered
+	// Set RegisteredAt when transitioning to registered.
 	d.RegisteredAt = time.Now().UnixMilli()
 	d.UpdatedAt = time.Now()
 
@@ -347,7 +347,7 @@ func (s *Service) List(ctx context.Context, orgID string, limit, offset int) (*d
 		}
 	}
 
-	// Calculate pagination info
+	// Calculate pagination info.
 	totalPages := 0
 	if total > 0 {
 		totalPages = (total + limit - 1) / limit
@@ -397,7 +397,7 @@ func (s *Service) ListByOrganization(ctx context.Context, orgID string, limit, o
 		}
 	}
 
-	// Calculate pagination info
+	// Calculate pagination info.
 	totalPages := 0
 	if total > 0 {
 		totalPages = (total + limit - 1) / limit
@@ -532,16 +532,16 @@ func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.Device
 
 	offset := (query.Page - 1) * query.Limit
 
-	// Get devices filtered by organization using the paginated method
+	// Get devices filtered by organization using the paginated method.
 	allDevices, _, err := s.deviceRepo.ListByOrganizationPaginated(ctx, query.OrganizationID, 10000, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	// Apply filters
+	// Apply filters.
 	var filtered []*device.Device
 	for _, d := range allDevices {
-		// Apply status filter
+		// Apply status filter.
 		if query.Status != "" && query.Status != "all" {
 			isOnline := d.Online
 			if query.Status == "online" && !isOnline {
@@ -552,9 +552,9 @@ func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.Device
 			}
 		}
 
-		// Apply search filter
+		// Apply search filter.
 		if query.Search != "" {
-			// Search by ID (IMEI) or other fields
+			// Search by ID (IMEI) or other fields.
 			searchLower := toLower(query.Search)
 			idMatch := contains(toLower(d.ID), searchLower)
 			classMatch := contains(toLower(d.DeviceClass), searchLower)
@@ -566,14 +566,14 @@ func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.Device
 		filtered = append(filtered, d)
 	}
 
-	// Calculate pagination
+	// Calculate pagination.
 	total := len(filtered)
 	totalPages := 0
 	if total > 0 {
 		totalPages = (total + query.Limit - 1) / query.Limit
 	}
 
-	// Apply pagination
+	// Apply pagination.
 	start := offset
 	if start > len(filtered) {
 		start = len(filtered)
@@ -584,7 +584,7 @@ func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.Device
 	}
 	paged := filtered[start:end]
 
-	// Build response
+	// Build response.
 	devices := make([]dto.DeviceResponse, 0, len(paged))
 	for _, d := range paged {
 		devices = append(devices, dto.DeviceResponse{
@@ -654,7 +654,7 @@ func (s *Service) GetDeviceDetailByOrganization(ctx context.Context, imei, orgID
 
 // DeregisterDeviceByOrganization deregisters a device within an organization.
 func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgID string, hard bool) (*dto.DeregisterResponse, error) {
-	// First verify device exists and belongs to this organization
+	// First verify device exists and belongs to this organization.
 	_, err := s.deviceRepo.FindByIMEIAndOrganization(ctx, imei, orgID)
 	if err != nil {
 		if errors.Is(err, device.ErrNotFound) {
@@ -665,10 +665,10 @@ func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgI
 
 	now := time.Now()
 	deregisteredAt := now.UnixMilli()
-	retentionUntil := now.Add(30 * 24 * time.Hour).UnixMilli() // 30 days retention
+	retentionUntil := now.Add(30 * 24 * time.Hour).UnixMilli() // 30 days retention.
 
 	if hard {
-		// Hard delete - actually remove the device
+		// Hard delete - actually remove the device.
 		if err := s.deviceRepo.Delete(ctx, imei); err != nil {
 			if errors.Is(err, device.ErrNotFound) {
 				return nil, device.ErrNotFound
@@ -682,7 +682,7 @@ func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgI
 		}, nil
 	}
 
-	// Soft delete - mark as deregistered
+	// Soft delete - mark as deregistered.
 	if err := s.deviceRepo.SoftDelete(ctx, imei, deregisteredAt, retentionUntil); err != nil {
 		if errors.Is(err, device.ErrNotFound) {
 			return nil, device.ErrNotFound
@@ -700,13 +700,13 @@ func (s *Service) DeregisterDeviceByOrganization(ctx context.Context, imei, orgI
 
 // deviceDetailResponse creates a DeviceDetailResponse from a Device entity.
 func (s *Service) deviceDetailResponse(d *device.Device) *dto.DeviceDetailResponse {
-	// Check FCM token validity using domain method
+	// Check FCM token validity using domain method.
 	fcmValid := d.IsFCMTokenValid()
 
-	// Check if command secret is set using domain method
+	// Check if command secret is set using domain method.
 	commandSet := d.IsCommandSecretSet()
 
-	// Determine status using domain method
+	// Determine status using domain method.
 	status := d.GetStatus()
 
 	resp := &dto.DeviceDetailResponse{
@@ -732,10 +732,10 @@ func (s *Service) deviceDetailResponse(d *device.Device) *dto.DeviceDetailRespon
 func (s *Service) DeregisterDevice(ctx context.Context, imei string, hard bool) (*dto.DeregisterResponse, error) {
 	now := time.Now()
 	deregisteredAt := now.UnixMilli()
-	deletionScheduledAt := now.Add(30 * 24 * time.Hour).UnixMilli() // 30 days retention
+	deletionScheduledAt := now.Add(30 * 24 * time.Hour).UnixMilli() // 30 days retention.
 
 	if hard {
-		// Hard delete - actually remove the device
+		// Hard delete - actually remove the device.
 		if err := s.deviceRepo.Delete(ctx, imei); err != nil {
 			if errors.Is(err, device.ErrNotFound) {
 				return nil, device.ErrNotFound
@@ -749,7 +749,7 @@ func (s *Service) DeregisterDevice(ctx context.Context, imei string, hard bool) 
 		}, nil
 	}
 
-	// Soft delete - mark as deregistered
+	// Soft delete - mark as deregistered.
 	if err := s.deviceRepo.SoftDeleteByIMEI(ctx, imei, deregisteredAt, deletionScheduledAt); err != nil {
 		if errors.Is(err, device.ErrNotFound) {
 			return nil, device.ErrNotFound
@@ -768,7 +768,7 @@ func (s *Service) DeregisterDevice(ctx context.Context, imei string, hard bool) 
 // DeregisterDeviceByOperator soft-deletes a device with DOA and org verification.
 // Only the operator who owns the device within an organization can deregister it.
 func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operatorID, orgID string, hard bool) (*dto.DeregisterResponse, error) {
-	// First verify device exists and belongs to this operator and organization
+	// First verify device exists and belongs to this operator and organization.
 	d, err := s.deviceRepo.FindByIDAndOrganization(ctx, imei, orgID)
 	if err != nil {
 		if errors.Is(err, device.ErrNotFound) {
@@ -777,17 +777,17 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 		return nil, err
 	}
 
-	// Verify operator owns this device
+	// Verify operator owns this device.
 	if d.OperatorID != operatorID {
 		return nil, device.ErrNotFound
 	}
 
 	now := time.Now()
 	deregisteredAt := now.UnixMilli()
-	deletionScheduledAt := now.Add(30 * 24 * time.Hour).UnixMilli() // 30 days retention
+	deletionScheduledAt := now.Add(30 * 24 * time.Hour).UnixMilli() // 30 days retention.
 
 	if hard {
-		// Hard delete - actually remove the device
+		// Hard delete - actually remove the device.
 		if err := s.deviceRepo.Delete(ctx, imei); err != nil {
 			return nil, err
 		}
@@ -798,12 +798,12 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 		}, nil
 	}
 
-	// Soft delete - mark as deregistered
+	// Soft delete - mark as deregistered.
 	if err := s.deviceRepo.SoftDeleteByIMEI(ctx, imei, deregisteredAt, deletionScheduledAt); err != nil {
 		return nil, err
 	}
 
-	// Log the deregistration for audit
+	// Log the deregistration for audit.
 	s.logDeviceAction(ctx, d.ID, imei, "deregistered", operatorID, fmt.Sprintf("Device deregistered, hard=%v", hard))
 
 	return &dto.DeregisterResponse{
@@ -816,21 +816,21 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 
 // logDeviceAction logs device-related actions for audit trail.
 func (s *Service) logDeviceAction(ctx context.Context, deviceID, imei, action, operatorID, details string) {
-	// This would typically write to an audit log
-	// For now, we rely on the operator repository for ownership verification
+	// This would typically write to an audit log.
+	// For now, we rely on the operator repository for ownership verification.
 }
 
 // CreateFromInbox creates a device from an approved inbox entry.
 // This is called after an operator approves a device registration request.
 
 func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, commandSecret string) (*device.Device, error) {
-	// Hash the command secret for storage
+	// Hash the command secret for storage.
 	h := sha256.Sum256([]byte(commandSecret))
 	commandSecretHash := hex.EncodeToString(h[:])
 
 	now := time.Now()
 	d := &device.Device{
-		ID:                 entry.IMEI, // Use IMEI as device ID
+		ID:                 entry.IMEI, // Use IMEI as device ID.
 		FirebaseInstallID:  entry.FirebaseInstallID,
 		FCMToken:           entry.FCMToken,
 		AppVersion:         entry.AppVersion,
@@ -841,27 +841,27 @@ func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, 
 		OSVersion:          entry.OSVersion,
 		CommandSecretHash:  commandSecretHash,
 		OperatorID:         entry.OperatorID,
-		Online:             false, // Device will come online after confirming
+		Online:             false, // Device will come online after confirming.
 		RegisteredAt:       now.UnixMilli(),
 		LastSeen:           now.UnixMilli(),
 		CreatedAt:          now,
 		UpdatedAt:          now,
 	}
 
-	// If txManager is available, wrap everything in a transaction
+	// If txManager is available, wrap everything in a transaction.
 	if s.txManager != nil {
 		err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-			// Check if device already exists by IMEI
+			// Check if device already exists by IMEI.
 			existing, err := s.deviceRepo.FindByIMEI(txCtx, entry.IMEI)
 			if err != nil && err != device.ErrNotFound {
 				return fmt.Errorf("failed to check existing device: %w", err)
 			}
 			if existing != nil {
-				// Device already exists - this shouldn't happen if flow is correct
+				// Device already exists - this shouldn't happen if flow is correct.
 				
 				if existing.IsDeregistered() {
-					// Device was deregistered - allow re-registration
-					// MUST delete the old device first to avoid primary key constraint
+					// Device was deregistered - allow re-registration.
+					// MUST delete the old device first to avoid primary key constraint.
 					if err := s.deviceRepo.Delete(txCtx, entry.IMEI); err != nil {
 						s.logger.Error("failed to delete old deregistered device for re-registration",
 							"imei", entry.IMEI,
@@ -873,12 +873,12 @@ func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, 
 						"imei", entry.IMEI,
 					)
 				} else {
-					// Device is active - this is a conflict
+					// Device is active - this is a conflict.
 					return ErrDeviceAlreadyApproved
 				}
 			}
 
-			// Create the new device within the transaction
+			// Create the new device within the transaction.
 			if err := s.deviceRepo.Create(txCtx, d); err != nil {
 				return fmt.Errorf("failed to create device from inbox: %w", err)
 			}
@@ -888,8 +888,8 @@ func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, 
 			return nil, err
 		}
 	} else {
-		// Fallback without transaction (not recommended but kept for backward compatibility)
-		// Check if device already exists by IMEI
+		// Fallback without transaction (not recommended but kept for backward compatibility).
+		// Check if device already exists by IMEI.
 		existing, err := s.deviceRepo.FindByIMEI(ctx, entry.IMEI)
 		if err != nil && err != device.ErrNotFound {
 			return nil, fmt.Errorf("failed to check existing device: %w", err)
@@ -923,7 +923,7 @@ func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, 
 // Returns the confirmed device if successful.
 // Rejects if device is already registered (single-use token).
 func (s *Service) ConfirmDevice(ctx context.Context, imei, commandSecret string) (*device.Device, error) {
-	// Find device by IMEI
+	// Find device by IMEI.
 	d, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil {
 		if errors.Is(err, device.ErrNotFound) {
@@ -932,17 +932,17 @@ func (s *Service) ConfirmDevice(ctx context.Context, imei, commandSecret string)
 		return nil, fmt.Errorf("failed to find device: %w", err)
 	}
 
-	// Check if device is already registered (single-use confirmation)
+	// Check if device is already registered (single-use confirmation).
 	if d.Lifecycle.IsRegistered() {
 		return nil, ErrDeviceAlreadyConfirmed
 	}
 
-	// Validate command secret
+	// Validate command secret.
 	if d.CommandSecretHash == "" {
 		return nil, ErrCommandSecretNotSet
 	}
 
-	// Hash the provided secret and compare
+	// Hash the provided secret and compare.
 	h := sha256.Sum256([]byte(commandSecret))
 	providedHash := hex.EncodeToString(h[:])
 
@@ -950,7 +950,7 @@ func (s *Service) ConfirmDevice(ctx context.Context, imei, commandSecret string)
 		return nil, ErrInvalidCommandSecret
 	}
 
-	// Mark device as registered (confirmed) and online
+	// Mark device as registered (confirmed) and online.
 	if err := d.Lifecycle.TransitionTo(device.LifecycleRegistered); err != nil {
 		return nil, fmt.Errorf("failed to transition device to registered: %w", err)
 	}
@@ -962,11 +962,11 @@ func (s *Service) ConfirmDevice(ctx context.Context, imei, commandSecret string)
 	}
 
 	
-	// This prevents race conditions between WS SetOnline and REST ConfirmDevice
+	// This prevents race conditions between WS SetOnline and REST ConfirmDevice.
 	if s.statusUpdater != nil {
 		s.statusUpdater.SetDeviceOnline(d.ID, true)
 	} else {
-		// Fallback: direct DB update if no hub available
+		// Fallback: direct DB update if no hub available.
 		if err := s.deviceRepo.SetOnline(ctx, d.ID, true); err != nil {
 			s.logger.Warn("failed to set device online after confirm", "deviceId", d.ID, "err", err)
 		}
@@ -1008,11 +1008,11 @@ func secureCompare(a, b string) bool {
 }
 
 // TransferDevice transfers a device from one organization to another.
-// Prerequisites:
-// - Device must be OFFLINE
-// - Actor must have permission in source AND target orgs
+// Prerequisites:.
+// - Device must be OFFLINE.
+// - Actor must have permission in source AND target orgs.
 func (s *Service) TransferDevice(ctx context.Context, imei, sourceOrgID, targetOrgID, actorOperatorID string) error {
-	// Get the device
+	// Get the device.
 	d, err := s.deviceRepo.FindByIMEI(ctx, imei)
 	if err != nil {
 		if errors.Is(err, device.ErrNotFound) {
@@ -1021,17 +1021,17 @@ func (s *Service) TransferDevice(ctx context.Context, imei, sourceOrgID, targetO
 		return err
 	}
 
-	// Verify device belongs to source org
+	// Verify device belongs to source org.
 	if d.OrganizationID != sourceOrgID {
 		return ErrDeviceNotFound
 	}
 
-	// Device must be offline for transfer
+	// Device must be offline for transfer.
 	if d.Online {
 		return application.ErrDeviceOnline
 	}
 
-	// Update device organization
+	// Update device organization.
 	d.OrganizationID = targetOrgID
 	d.UpdatedAt = time.Now()
 

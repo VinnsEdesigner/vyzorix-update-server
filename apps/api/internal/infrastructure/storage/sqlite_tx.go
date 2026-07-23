@@ -40,9 +40,9 @@ func SafeRollback(tx *sql.Tx, logger *slog.Logger) {
 // SafeRollbackNoLog handles transaction rollback safely without logging.
 // Use this when you don't have access to a logger but still want to check for errors.
 func SafeRollbackNoLog(tx *sql.Tx) {
-	_ = tx.Rollback() // We intentionally ignore the error here as we can't do much about it
-	// Note: sql.ErrTxDone is returned if the transaction was already committed or rolled back
-	// which is not an error condition in most cases
+	_ = tx.Rollback() // We intentionally ignore the error here as we can't do much about it.
+	// Note: sql.ErrTxDone is returned if the transaction was already committed or rolled back.
+	// which is not an error condition in most cases.
 }
 
 // WithTx executes a function within a transaction.

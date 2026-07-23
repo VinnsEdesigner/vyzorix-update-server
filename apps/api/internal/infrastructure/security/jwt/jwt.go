@@ -40,7 +40,7 @@ type Manager struct {
 // NewManager creates a new JWT manager.
 // Validates JWT secret on creation to fail fast if secret is weak.
 func NewManager(secret string, expiry time.Duration, issuer string) (*Manager, error) {
-	// Validate secret length - minimum 32 characters for proper security
+	// Validate secret length - minimum 32 characters for proper security.
 	if len(secret) < 32 {
 		return nil, ErrInvalidJWTSecret
 	}

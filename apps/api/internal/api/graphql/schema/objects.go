@@ -466,9 +466,9 @@ var PaginationType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-// ============================================================
-// Dashboard Commands & Logs Types
-// ============================================================
+// ============================================================.
+// Dashboard Commands & Logs Types.
+// ============================================================.
 
 // MetricChartPointType represents a single data point in a chart.
 var MetricChartPointType = graphql.NewObject(graphql.ObjectConfig{
@@ -840,9 +840,9 @@ var ActivityStatsType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-// ============================================================
-// Updates API Types
-// ============================================================
+// ============================================================.
+// Updates API Types.
+// ============================================================.
 
 // UpdateVersionType represents an update version in the GraphQL schema.
 var UpdateVersionType = graphql.NewObject(graphql.ObjectConfig{

@@ -15,7 +15,7 @@ const (
 	RoleViewer    OrganizationRole = "viewer"
 )
 
-// Level constants for role hierarchy comparisons
+// Level constants for role hierarchy comparisons.
 const (
 	LevelViewer    = 1
 	LevelOperator  = 2
@@ -71,7 +71,7 @@ func (r OrganizationRole) CanManageDevices() bool {
 
 // CanViewDevices returns true if the role can view devices.
 func (r OrganizationRole) CanViewDevices() bool {
-	return true // All roles can view devices
+	return true // All roles can view devices.
 }
 
 // CanManageAPIKeys returns true if the role can manage API keys.
@@ -81,17 +81,17 @@ func (r OrganizationRole) CanManageAPIKeys() bool {
 
 // Organization represents an organization (tenant) in the system with explicit lifecycle management.
 type Organization struct {
-	// Lifecycle tracks the organization lifecycle state
+	// Lifecycle tracks the organization lifecycle state.
 	Lifecycle OrganizationLifecycle
 
-	// Infrastructure fields
+	// Infrastructure fields.
 	ID          string
 	Name        string
-	Description string // Optional description of the organization
+	Description string // Optional description of the organization.
 	CreatedBy   string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-	DeletedAt   *time.Time // Soft delete - set when archived
+	DeletedAt   *time.Time // Soft delete - set when archived.
 	MaxMembers  int
 	MemberCount int
 }
@@ -160,20 +160,20 @@ func (o *Organization) CanAddMember() bool {
 
 // OrganizationMember represents a membership linking an operator to an organization.
 type OrganizationMember struct {
-	// Lifecycle tracks the membership lifecycle state
+	// Lifecycle tracks the membership lifecycle state.
 	Lifecycle MemberLifecycle
 
-	// Core fields
+	// Core fields.
 	ID             string
 	OrganizationID string
 	OperatorID     string
 	Role           OrganizationRole
 	InvitedBy      *string
 	JoinedAt       time.Time
-	RemovedAt      *time.Time // Soft delete - set when removed
+	RemovedAt      *time.Time // Soft delete - set when removed.
 	SuspendedAt    *time.Time
 
-	// Populated fields (joined from other tables)
+	// Populated fields (joined from other tables).
 	OperatorName  string
 	OperatorEmail string
 }
@@ -259,15 +259,15 @@ func (m *OrganizationMember) UpdateRole(role OrganizationRole) {
 
 // CreateOrganizationRequest represents a request to create an organization.
 type CreateOrganizationRequest struct {
-	Name        string // Optional - defaults to "personal" if empty
-	Description string // Optional - organization description
-	MaxMembers int    // Optional - max members limit (0 = default)
-	Role        string // Required - creator's role: "super_admin" or "admin"
+	Name        string // Optional - defaults to "personal" if empty.
+	Description string // Optional - organization description.
+	MaxMembers int    // Optional - max members limit (0 = default).
+	Role        string // Required - creator's role: "super_admin" or "admin".
 }
 
 // Validate validates the create organization request.
 func (r *CreateOrganizationRequest) Validate() error {
-	// Name is optional - defaults to "personal"
+	// Name is optional - defaults to "personal".
 	if r.Name == "" {
 		r.Name = "personal"
 	}
@@ -277,7 +277,7 @@ func (r *CreateOrganizationRequest) Validate() error {
 	if len(r.Name) > 100 {
 		return errors.New("organization name must be at most 100 characters")
 	}
-	// Role is required - only super_admin or admin allowed
+	// Role is required - only super_admin or admin allowed.
 	if r.Role != "super_admin" && r.Role != "admin" {
 		return errors.New("role must be 'super_admin' or 'admin'")
 	}

@@ -21,7 +21,7 @@ func NewHealthHandler(db *sql.DB) *HealthHandler {
 
 // Health handles GET /health.
 func (h *HealthHandler) Health(c *gin.Context) {
-	// Check database connectivity for a thorough health check
+	// Check database connectivity for a thorough health check.
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 	defer cancel()
 

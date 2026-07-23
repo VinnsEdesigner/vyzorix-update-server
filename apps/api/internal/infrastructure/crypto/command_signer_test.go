@@ -54,7 +54,7 @@ func TestCommandSigner_SignCommand_Deterministic(t *testing.T) {
 	frame := &command.CommandFrame{
 		DispatchID: "tx-fixed",
 		Command:    "REBOOT",
-		Timestamp:  1748260800000, // Fixed timestamp in ms
+		Timestamp:  1748260800000, // Fixed timestamp in ms.
 		Args:       json.RawMessage("{}"),
 	}
 	deviceID := "device-fixed"
@@ -380,7 +380,7 @@ func TestBuildCanonicalString(t *testing.T) {
 	frame := &command.CommandFrame{
 		DispatchID: "tx-abc",
 		Command:    "FORCE_SPEAKER",
-		Timestamp:  1748260800000, // Fixed timestamp in ms
+		Timestamp:  1748260800000, // Fixed timestamp in ms.
 		Args:       json.RawMessage("{}"),
 	}
 	deviceID := "device-xyz"
@@ -486,14 +486,14 @@ func TestCommandSigner_TimestampBoundary(t *testing.T) {
 
 	// Test exactly at boundary.
 	frame := &command.CommandFrame{
-		Timestamp: nowMs + 30_000, // Exactly 30s in future
+		Timestamp: nowMs + 30_000, // Exactly 30s in future.
 	}
 
 	if !signer.ValidateTimestamp(frame, 30_000) {
 		t.Error("Timestamp exactly at boundary should be valid")
 	}
 
-	frame.Timestamp = nowMs + 30_001 // One ms over
+	frame.Timestamp = nowMs + 30_001 // One ms over.
 	if signer.ValidateTimestamp(frame, 30_000) {
 		t.Error("Timestamp one ms over boundary should be invalid")
 	}

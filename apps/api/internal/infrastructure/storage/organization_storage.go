@@ -319,7 +319,7 @@ func (s *OrganizationStorage) ListByOperator(ctx context.Context, operatorID str
 
 // ListByOperatorPaginated lists organizations for an operator with pagination.
 func (s *OrganizationStorage) ListByOperatorPaginated(ctx context.Context, operatorID string, limit, offset int) ([]*organization.Organization, int, error) {
-	// Get total count first
+	// Get total count first.
 	countQuery := `
 		SELECT COUNT(DISTINCT o.id)
 		FROM organizations o
@@ -332,7 +332,7 @@ func (s *OrganizationStorage) ListByOperatorPaginated(ctx context.Context, opera
 		return nil, 0, err
 	}
 
-	// Get paginated results
+	// Get paginated results.
 	query := `
 		SELECT o.id, o.name, o.created_by, o.created_at, o.updated_at, o.deleted_at, o.is_active, o.max_members,
 			   COUNT(DISTINCT om2.id) as member_count

@@ -75,7 +75,7 @@ func NewService(
 
 // SendNotification sends a notification based on operator preferences and event type.
 func (s *Service) SendNotification(ctx context.Context, data EventData) error {
-	// Get operator's notification settings if not provided
+	// Get operator's notification settings if not provided.
 	if data.OperatorEmail == "" || data.OperatorName == "" {
 		op, err := s.operatorRepo.FindByID(ctx, data.OperatorID)
 		if err != nil {
@@ -89,19 +89,19 @@ func (s *Service) SendNotification(ctx context.Context, data EventData) error {
 		}
 	}
 
-	// Get operator's notification settings
+	// Get operator's notification settings.
 	settings, err := s.operatorRepo.GetNotifications(ctx, data.OperatorID)
 	if err != nil {
 		return fmt.Errorf("failed to get notification settings: %w", err)
 	}
 
-	// Check if notifications are enabled
+	// Check if notifications are enabled.
 	if !settings.Enabled {
 		s.logger.Debug("notifications disabled for operator", "operatorID", data.OperatorID)
 		return nil
 	}
 
-	// Build common email data
+	// Build common email data.
 	emailData := email.NotificationData{
 		OperatorName:  data.OperatorName,
 		DeviceID:      data.DeviceID,
@@ -118,18 +118,18 @@ func (s *Service) SendNotification(ctx context.Context, data EventData) error {
 		BaseURL:       "https://app.vyzorix.com",
 	}
 
-	// Send email if enabled for this event type
+	// Send email if enabled for this event type.
 	if s.shouldSendEmail(settings, data.EventType) {
 		if err := s.sendEmail(ctx, data, emailData); err != nil {
 			s.logger.Error("failed to send email notification", "error", err, "operatorID", data.OperatorID)
-			// Don't return error - try webhook even if email fails
+			// Don't return error - try webhook even if email fails.
 		}
 	}
 
-	// Send webhook if configured
+	// Send webhook if configured.
 	if err := s.sendWebhook(ctx, data, settings); err != nil {
 		s.logger.Error("failed to send webhook notification", "error", err, "operatorID", data.OperatorID)
-		// Don't return error for webhook failures
+		// Don't return error for webhook failures.
 	}
 
 	return nil
@@ -151,7 +151,7 @@ func (s *Service) shouldSendEmail(settings *operator.NotificationSettings, event
 	case EventTypeRegistrationRequest:
 		return settings.Email.RegistrationRequest
 	case EventTypeError:
-		// Error events are always sent if notifications are enabled
+		// Error events are always sent if notifications are enabled.
 		return true
 	default:
 		return false
@@ -164,12 +164,12 @@ func (s *Service) shouldSendWebhook(settings *operator.NotificationSettings, eve
 		return false
 	}
 
-	// If no types specified, send all
+	// If no types specified, send all.
 	if len(settings.Webhook.Types) == 0 {
 		return true
 	}
 
-	// Check if this event type is in the allowed types
+	// Check if this event type is in the allowed types.
 	for _, t := range settings.Webhook.Types {
 		if t == string(eventType) {
 			return true

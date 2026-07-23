@@ -11,26 +11,26 @@ import (
 
 // SeparateDBConfig holds configuration for separate audit database.
 type SeparateDBConfig struct {
-	Path string // Path to the separate audit database file
+	Path string // Path to the separate audit database file.
 }
 
 // NewSeparateDBAuditRepository creates a new repository that writes to a separate database.
 
 // If the database file doesn't exist, it will be created with the appropriate schema.
 func NewSeparateDBAuditRepository(cfg SeparateDBConfig) (*SeparateDBRepository, error) {
-	// Ensure directory exists
+	// Ensure directory exists.
 	dir := filepath.Dir(cfg.Path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, err
 	}
 
-	// Open the separate database
+	// Open the separate database.
 	db, err := sql.Open("sqlite3", cfg.Path)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create schema if needed
+	// Create schema if needed.
 	if err := createAuditSchema(db); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -65,7 +65,7 @@ func createAuditSchema(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for querying by operator
+	// Create index for querying by operator.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_audit_operator
 		ON audit_logs(operator_id, created_at DESC)
@@ -74,7 +74,7 @@ func createAuditSchema(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for querying by action type
+	// Create index for querying by action type.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_audit_action
 		ON audit_logs(action, created_at DESC)
@@ -134,7 +134,7 @@ type RepositoryForSeparateDB struct {
 	*SeparateDBRepository
 }
 
-// Compile-time check that RepositoryForSeparateDB implements Repository interface
+// Compile-time check that RepositoryForSeparateDB implements Repository interface.
 var _ interface {
 	Log(ctx context.Context, entry *Entry) error
 } = (*SeparateDBRepository)(nil)

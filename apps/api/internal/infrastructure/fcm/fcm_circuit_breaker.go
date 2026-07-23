@@ -85,14 +85,14 @@ func (cb *CircuitBreaker) Allow() bool {
 	case CircuitStateClosed:
 		return true
 	case CircuitStateOpen:
-		// Check if it's time to transition to half-open
+		// Check if it's time to transition to half-open.
 		if time.Since(cb.lastFailureTime) >= cb.config.OpenDuration {
 			cb.transitionTo(CircuitStateHalfOpen)
 			return true
 		}
 		return false
 	case CircuitStateHalfOpen:
-		// Allow limited calls in half-open state
+		// Allow limited calls in half-open state.
 		if cb.halfOpenCalls < cb.config.HalfOpenMaxCalls {
 			cb.halfOpenCalls++
 			return true
@@ -117,7 +117,7 @@ func (cb *CircuitBreaker) RecordSuccess() {
 			cb.transitionTo(CircuitStateClosed)
 		}
 	case CircuitStateOpen:
-		// Already open, stay open until timer expires
+		// Already open, stay open until timer expires.
 	}
 }
 
@@ -135,10 +135,10 @@ func (cb *CircuitBreaker) RecordFailure() {
 			cb.transitionTo(CircuitStateOpen)
 		}
 	case CircuitStateHalfOpen:
-		// Any failure in half-open state opens the circuit
+		// Any failure in half-open state opens the circuit.
 		cb.transitionTo(CircuitStateOpen)
 	case CircuitStateOpen:
-		// Already open, do nothing
+		// Already open, do nothing.
 	}
 }
 
@@ -159,7 +159,7 @@ func (cb *CircuitBreaker) transitionTo(state CircuitState) {
 		cb.successes = 0
 		cb.halfOpenCalls = 0
 	case CircuitStateOpen:
-		// Already set lastFailureTime
+		// Already set lastFailureTime.
 	case CircuitStateHalfOpen:
 		cb.successes = 0
 		cb.halfOpenCalls = 0
@@ -237,7 +237,7 @@ func (c *CircuitBreakerClient) persistForRetry(ctx context.Context, wake SilentW
 		Command:     wake.Command,
 		Priority:    wake.Priority,
 		RetryCount:  0,
-		NextRetryAt: time.Now().Add(time.Minute).UnixMilli(), // First retry in 1 minute
+		NextRetryAt: time.Now().Add(time.Minute).UnixMilli(), // First retry in 1 minute.
 		LastError:   reason,
 		CreatedAt:   time.Now().UnixMilli(),
 		UpdatedAt:   time.Now().UnixMilli(),
@@ -245,8 +245,8 @@ func (c *CircuitBreakerClient) persistForRetry(ctx context.Context, wake SilentW
 
 	repo := storage.NewPendingFCMRepository(c.db)
 	if err := repo.Create(ctx, notification); err != nil {
-		// Log but don't fail the main operation
-		// This would require a logger - for now just silently fail
+		// Log but don't fail the main operation.
+		// This would require a logger - for now just silently fail.
 		_ = err
 	}
 }

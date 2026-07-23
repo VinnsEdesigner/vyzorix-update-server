@@ -207,7 +207,7 @@ func (sm *Manager) ListActiveSessions(ctx context.Context, operatorID string) ([
 		return nil, err
 	}
 
-	// Filter out expired sessions
+	// Filter out expired sessions.
 	active := make([]*Session, 0, len(sessions))
 	now := time.Now()
 	for _, s := range sessions {

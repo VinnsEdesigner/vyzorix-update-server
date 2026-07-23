@@ -64,10 +64,10 @@ func (s *HistoryService) GetHistory(ctx context.Context, status string, page, li
 
 // getPushVersionString retrieves the version string for a push.
 func (s *HistoryService) getPushVersionString(ctx context.Context, push *updates.UpdatePush) string {
-	// Use GetVersionByID since push.VersionID is the version ID, not the version string
+	// Use GetVersionByID since push.VersionID is the version ID, not the version string.
 	version, err := s.repo.GetVersionByID(ctx, push.VersionID)
 	if err != nil {
-		// Fallback: try by version string in case VersionID contains version
+		// Fallback: try by version string in case VersionID contains version.
 		version, err = s.repo.GetVersionByVersion(ctx, push.VersionID)
 		if err != nil {
 			return push.VersionID
@@ -148,7 +148,7 @@ func (s *HistoryService) CancelPush(ctx context.Context, pushID, cancelledBy str
 
 // pushToHistoryEntry converts an UpdatePush to a PushHistoryEntry.
 func (s *HistoryService) pushToHistoryEntry(ctx context.Context, p *updates.UpdatePush) (PushHistoryEntry, error) {
-	// Get the version string for this push
+	// Get the version string for this push.
 	versionStr := s.getPushVersionString(ctx, p)
 
 	entry := PushHistoryEntry{
@@ -163,7 +163,7 @@ func (s *HistoryService) pushToHistoryEntry(ctx context.Context, p *updates.Upda
 		ScheduledAt: p.ScheduledAt,
 	}
 
-	// Get device counts for the push - fail if any count fails
+	// Get device counts for the push - fail if any count fails.
 	pending, err := s.repo.CountPushDevicesByStatus(ctx, p.ID, updates.DevicePushStatusPending)
 	if err != nil {
 		return entry, fmt.Errorf("failed to count pending devices: %w", err)

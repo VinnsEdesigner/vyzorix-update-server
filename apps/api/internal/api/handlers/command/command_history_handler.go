@@ -32,14 +32,14 @@ func NewHistoryHandler(historySvc *command.HistoryService, devRepo device.Reposi
 func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	// Extract operator for auth check
+	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
 		return
 	}
 
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
@@ -52,7 +52,7 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 		return
 	}
 
-	// Verify device belongs to this organization
+	// Verify device belongs to this organization.
 	_, err := h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)

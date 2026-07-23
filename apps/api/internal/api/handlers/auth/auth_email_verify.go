@@ -65,7 +65,7 @@ func (h *EmailVerifyHandler) ResendVerification(c *gin.Context) {
 		return
 	}
 
-	// Delete old verification tokens and create/send new one
+	// Delete old verification tokens and create/send new one.
 	err := h.authService.ResendVerification(c.Request.Context(), req.Email)
 	if err != nil {
 		h.presenter.InternalError(c, "failed to resend verification email")
@@ -117,7 +117,7 @@ func (h *EmailVerifyHandler) ResendVerificationGet(c *gin.Context) {
 		return
 	}
 
-	// Delete old verification tokens and create/send new one
+	// Delete old verification tokens and create/send new one.
 	err := h.authService.ResendVerification(c.Request.Context(), email)
 	if err != nil {
 		h.presenter.InternalError(c, "failed to resend verification email")
@@ -143,7 +143,7 @@ func (h *EmailVerifyHandler) CancelVerification(c *gin.Context) {
 		return
 	}
 
-	// Cancel verification - return success for security (don't reveal if email exists)
+	// Cancel verification - return success for security (don't reveal if email exists).
 	err := h.authService.CancelVerification(c.Request.Context(), req.Email)
 	if err != nil {
 		h.presenter.InternalError(c, "failed to cancel verification")

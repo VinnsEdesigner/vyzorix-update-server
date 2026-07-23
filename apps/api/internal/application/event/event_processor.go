@@ -39,12 +39,12 @@ type Processor struct {
 
 	
 	dedupMu          sync.RWMutex
-	activeAlerts     map[string]time.Time // key: "deviceID:metric:type", value: last alert time
-	dedupWindow      time.Duration        // cooldown period before new alert
+	activeAlerts     map[string]time.Time // key: "deviceID:metric:type", value: last alert time.
+	dedupWindow      time.Duration        // cooldown period before new alert.
 
 	
-	breachState    map[string]bool // key: "deviceID:metric", value: true if currently in breach
-	hysteresisBand float64         // hysteresis band as percentage of threshold (0.1 = 10%)
+	breachState    map[string]bool // key: "deviceID:metric", value: true if currently in breach.
+	hysteresisBand float64         // hysteresis band as percentage of threshold (0.1 = 10%).
 }
 
 // ThresholdConfig holds event emission thresholds.
@@ -78,7 +78,7 @@ func NewProcessor(repo event.Repository, deviceRepo device.Repository, broadcast
 		log:           log,
 		thresholds:    DefaultThresholdConfig(),
 		activeAlerts:  make(map[string]time.Time),
-		dedupWindow:   5 * time.Minute, // Default 5-minute dedup window
+		dedupWindow:   5 * time.Minute, // Default 5-minute dedup window.
 		breachState:   make(map[string]bool),
 		hysteresisBand: 0.1, 
 	}
@@ -104,13 +104,13 @@ func (p *Processor) SetThresholds(cfg *ThresholdConfig) {
 	p.thresholds = cfg
 }
 
-// resolveThresholds resolves thresholds using hierarchical resolution:
-// device settings → organization settings → defaults
+// resolveThresholds resolves thresholds using hierarchical resolution:.
+// device settings → organization settings → defaults.
 func (p *Processor) resolveThresholds(ctx context.Context, deviceID, orgID string) *ThresholdConfig {
-	// Start with defaults
+	// Start with defaults.
 	result := DefaultThresholdConfig()
 
-	// Get organization thresholds
+	// Get organization thresholds.
 	if orgID != "" && p.orgSettingsRepo != nil {
 		orgSettings, err := p.orgSettingsRepo.FindByOrganizationID(ctx, orgID)
 		if err == nil && orgSettings != nil && orgSettings.DefaultThresholds != nil {
@@ -123,7 +123,7 @@ func (p *Processor) resolveThresholds(ctx context.Context, deviceID, orgID strin
 		}
 	}
 
-	// Override with device-specific thresholds
+	// Override with device-specific thresholds.
 	if deviceID != "" && p.deviceSettingsRepo != nil {
 		deviceSettings, err := p.deviceSettingsRepo.FindByDeviceIMEI(ctx, deviceID)
 		if err == nil && deviceSettings != nil && deviceSettings.HasThresholds() {
@@ -153,7 +153,7 @@ func (p *Processor) resolveThresholds(ctx context.Context, deviceID, orgID strin
 
 // ProcessDeviceConnected handles device connection events.
 func (p *Processor) ProcessDeviceConnected(ctx context.Context, deviceID string, metadata map[string]any) error {
-	// Get device info for operator ID
+	// Get device info for operator ID.
 	device, err := p.deviceRepo.FindByID(ctx, deviceID)
 	if err != nil {
 		p.log.Warn("failed to get device for connected event", "deviceId", deviceID, "err", err)
@@ -179,7 +179,7 @@ func (p *Processor) ProcessDeviceConnected(ctx context.Context, deviceID string,
 		p.log.Error("failed to store device connected event", "deviceId", deviceID, "err", err)
 	}
 
-	// Broadcast to subscribers
+	// Broadcast to subscribers.
 	if p.broadcaster != nil {
 		if err := p.broadcaster.BroadcastDeviceEvent(deviceID, evt); err != nil {
 			p.log.Warn("failed to broadcast device connected event", "deviceId", deviceID, "err", err)
@@ -191,7 +191,7 @@ func (p *Processor) ProcessDeviceConnected(ctx context.Context, deviceID string,
 		}
 	}
 
-	// Send notification for device online event
+	// Send notification for device online event.
 	if p.notificationSvc != nil && operatorID != "" {
 		notifData := notification.EventData{
 			EventType:  notification.EventTypeDeviceOnline,
@@ -250,7 +250,7 @@ func (p *Processor) ProcessDeviceDisconnected(ctx context.Context, deviceID stri
 		}
 	}
 
-	// Send notification for device offline event
+	// Send notification for device offline event.
 	if p.notificationSvc != nil && operatorID != "" {
 		notifData := notification.EventData{
 			EventType:  notification.EventTypeDeviceOffline,
@@ -282,13 +282,13 @@ func (p *Processor) ProcessTelemetry(ctx context.Context, deviceID string, telem
 		orgID = device.OrganizationID
 	}
 
-	// Get thresholds using hierarchical resolution: device → org → default
+	// Get thresholds using hierarchical resolution: device → org → default.
 	thresholds := p.resolveThresholds(ctx, deviceID, orgID)
 
-	// Check for threshold breaches using resolved thresholds
+	// Check for threshold breaches using resolved thresholds.
 	events := p.checkThresholdsWithConfig(deviceID, operatorID, telemetryData, thresholds)
 
-	// Store and broadcast events
+	// Store and broadcast events.
 	for _, evt := range events {
 		if err := p.repo.Store(ctx, evt); err != nil {
 			p.log.Error("failed to store threshold breach event", "deviceId", deviceID, "err", err)
@@ -305,9 +305,9 @@ func (p *Processor) ProcessTelemetry(ctx context.Context, deviceID string, telem
 			}
 		}
 
-		// Send notification for threshold breach (all types: breach, risk, thermal, buffer)
+		// Send notification for threshold breach (all types: breach, risk, thermal, buffer).
 		if p.notificationSvc != nil && operatorID != "" && isThresholdBreachEvent(evt.Type) {
-			// Extract alert details from event data
+			// Extract alert details from event data.
 			alertType := ""
 			currentValue := ""
 			thresholdValue := ""
@@ -384,7 +384,7 @@ func (p *Processor) ProcessCommandEvent(ctx context.Context, deviceID string, co
 		}
 	}
 
-	// Send notification for command failures
+	// Send notification for command failures.
 	if p.notificationSvc != nil && operatorID != "" && commandType == event.EventTypeCommandFailed {
 		commandName := ""
 		failureReason := ""
@@ -457,7 +457,7 @@ func (p *Processor) ProcessError(ctx context.Context, deviceID string, errMsg st
 		}
 	}
 
-	// Send notification for error events
+	// Send notification for error events.
 	if p.notificationSvc != nil && operatorID != "" {
 		notifData := notification.EventData{
 			EventType:    notification.EventTypeError,
@@ -480,20 +480,20 @@ func (p *Processor) ProcessError(ctx context.Context, deviceID string, errMsg st
 func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data map[string]any, thresholds *ThresholdConfig) []*event.Event {
 	var events []*event.Event
 
-	// Calculate server-side risk score from corroborating telemetry fields
+	// Calculate server-side risk score from corroborating telemetry fields.
 	serverRiskScore := calculateServerSideRiskScore(data, thresholds)
 
-	// Check risk score - use server-calculated score for threshold checks
-	// Clamp device-reported riskScore to [0, 100] and emit security event if divergence is significant
+	// Check risk score - use server-calculated score for threshold checks.
+	// Clamp device-reported riskScore to [0, 100] and emit security event if divergence is significant.
 	if deviceRiskScore, ok := data["riskScore"].(float64); ok {
-		// Clamp to valid range
+		// Clamp to valid range.
 		if deviceRiskScore < 0 {
 			deviceRiskScore = 0
 		} else if deviceRiskScore > 100 {
 			deviceRiskScore = 100
 		}
 
-		// Check for significant divergence (> 20 points) between device-reported and server-calculated
+		// Check for significant divergence (> 20 points) between device-reported and server-calculated.
 		divergence := math.Abs(deviceRiskScore - serverRiskScore)
 		if divergence > 20 {
 			events = append(events, &event.Event{
@@ -508,7 +508,7 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 			})
 		}
 
-		// Use the server-calculated risk score for threshold checks
+		// Use the server-calculated risk score for threshold checks.
 		if serverRiskScore >= float64(thresholds.RiskScoreCritical) {
 			
 			if p.shouldSendAlert(deviceID, "riskScore", event.EventTypeRiskScoreAlert) {
@@ -540,7 +540,7 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 		}
 	}
 
-	// Check thermal temp
+	// Check thermal temp.
 	if thermalTemp, ok := data["thermalTemp"].(float64); ok {
 		if thermalTemp >= thresholds.ThermalCritical {
 			
@@ -573,7 +573,7 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 		}
 	}
 
-	// Check buffer level
+	// Check buffer level.
 	if bufferLevel, ok := data["bufferLevel"].(float64); ok {
 		if bufferLevel <= float64(thresholds.BufferCritical) {
 			
@@ -617,7 +617,7 @@ func calculateServerSideRiskScore(data map[string]any, thresholds *ThresholdConf
 	hasThermal := false
 	hasBuffer := false
 
-	// Thermal contribution: 0-40 points (normalized from 0 to ThermalCritical*1.5)
+	// Thermal contribution: 0-40 points (normalized from 0 to ThermalCritical*1.5).
 	if thermalTemp, ok := data["thermalTemp"].(float64); ok {
 		hasThermal = true
 		thermalScore := (thermalTemp / (thresholds.ThermalCritical * 1.5)) * 40
@@ -627,20 +627,20 @@ func calculateServerSideRiskScore(data map[string]any, thresholds *ThresholdConf
 		score += thermalScore
 	}
 
-	// Buffer contribution: 0-40 points (inverse - low buffer is high risk)
+	// Buffer contribution: 0-40 points (inverse - low buffer is high risk).
 	if bufferLevel, ok := data["bufferLevel"].(float64); ok {
 		hasBuffer = true
-		// Buffer 100% = 0 risk, buffer 0% = 40 risk
+		// Buffer 100% = 0 risk, buffer 0% = 40 risk.
 		bufferScore := (100 - bufferLevel) / 100 * 40
 		score += bufferScore
 	}
 
-	// Additional factor: if both thermal and buffer are present, add 20 points for combined risk
+	// Additional factor: if both thermal and buffer are present, add 20 points for combined risk.
 	if hasThermal && hasBuffer {
 		score += 20
 	}
 
-	// Clamp to [0, 100]
+	// Clamp to [0, 100].
 	if score > 100 {
 		score = 100
 	}
@@ -656,7 +656,7 @@ func getDeviceName(d *device.Device) string {
 	if d == nil {
 		return ""
 	}
-	// Try to get name from metadata or use ID as fallback
+	// Try to get name from metadata or use ID as fallback.
 	if d.DeviceName != "" {
 		return d.DeviceName
 	}
@@ -685,16 +685,16 @@ func (p *Processor) shouldSendAlert(deviceID, metric string, evtType event.Event
 
 	now := time.Now()
 	if lastTime, exists := p.activeAlerts[key]; exists {
-		// Check if we're still within the dedup window
+		// Check if we're still within the dedup window.
 		if now.Sub(lastTime) < p.dedupWindow {
-			return false // Duplicate alert, suppress
+			return false // Duplicate alert, suppress.
 		}
 	}
 
-	// Mark this alert as sent
+	// Mark this alert as sent.
 	p.activeAlerts[key] = now
 
-	// Periodic cleanup of old entries to prevent memory leaks
+	// Periodic cleanup of old entries to prevent memory leaks.
 	if len(p.activeAlerts) > 10000 {
 		p.cleanupActiveAlertsLocked(now)
 	}

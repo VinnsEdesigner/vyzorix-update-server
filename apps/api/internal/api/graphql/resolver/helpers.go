@@ -9,9 +9,9 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 )
 
-// ============================================================
-// Helper Methods
-// ============================================================
+// ============================================================.
+// Helper Methods.
+// ============================================================.
 
 // deviceDTOToMap converts a DeviceResponse DTO to a GraphQL map.
 func (r *Resolver) deviceDTOToMap(dev *dto.DeviceResponse) map[string]interface{} {

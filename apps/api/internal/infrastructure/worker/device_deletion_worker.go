@@ -8,7 +8,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 )
 
-// DeviceDeletionWorker runs periodically to delete devices whose
+// DeviceDeletionWorker runs periodically to delete devices whose.
 // deletion_scheduled_at has passed.
 type DeviceDeletionWorker struct {
 	deviceRepo device.Repository

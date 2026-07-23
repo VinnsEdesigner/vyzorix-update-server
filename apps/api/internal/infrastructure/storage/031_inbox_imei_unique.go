@@ -10,8 +10,8 @@ import (
 func migrateInboxIMEIUnique(db *sql.DB) error {
 	ctx := context.Background()
 
-	// Step 1: Find and remove duplicate IMEIs, keeping the oldest entry
-	// This query finds all MIN(id) per device_imei and deletes everything else
+	// Step 1: Find and remove duplicate IMEIs, keeping the oldest entry.
+	// This query finds all MIN(id) per device_imei and deletes everything else.
 	cleanupQuery := `
 		DELETE FROM inbox_requests 
 		WHERE id NOT IN (
@@ -25,12 +25,12 @@ func migrateInboxIMEIUnique(db *sql.DB) error {
 		return err
 	}
 
-	// Step 2: Add unique constraint on device_imei
-	// SQLite doesn't support DROP COLUMN or ADD CONSTRAINT in the same way as PostgreSQL,
-	// so we recreate the table with the unique constraint
-	// However, SQLite does support UNIQUE constraints on columns directly
+	// Step 2: Add unique constraint on device_imei.
+	// SQLite doesn't support DROP COLUMN or ADD CONSTRAINT in the same way as PostgreSQL,.
+	// so we recreate the table with the unique constraint.
+	// However, SQLite does support UNIQUE constraints on columns directly.
 	
-	// First, check if the unique index already exists
+	// First, check if the unique index already exists.
 	var count int
 	err = db.QueryRowContext(ctx, 
 		"SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_inbox_imei_unique'").Scan(&count)
@@ -39,7 +39,7 @@ func migrateInboxIMEIUnique(db *sql.DB) error {
 	}
 	
 	if count == 0 {
-		// Create unique index on device_imei
+		// Create unique index on device_imei.
 		_, err = db.ExecContext(ctx, `
 			CREATE UNIQUE INDEX IF NOT EXISTS idx_inbox_imei_unique 
 			ON inbox_requests(device_imei)

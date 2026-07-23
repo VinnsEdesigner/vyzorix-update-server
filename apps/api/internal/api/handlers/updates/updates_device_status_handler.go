@@ -34,7 +34,7 @@ type DeviceUpdateStatusResponse struct {
 
 // HandleDeviceUpdateStatus handles POST /v1/updates/device-status.
 // This endpoint is called by devices to report update progress.
-// The device_id is included in the request body since the device knows its own ID
+// The device_id is included in the request body since the device knows its own ID.
 // from the FCM payload (device_id field).
 func (h *DeviceStatusHandler) HandleDeviceUpdateStatus(c *gin.Context) {
 	var req DeviceUpdateStatusRequest
@@ -43,7 +43,7 @@ func (h *DeviceStatusHandler) HandleDeviceUpdateStatus(c *gin.Context) {
 		return
 	}
 
-	// Validate status value
+	// Validate status value.
 	validStatuses := map[string]domainupdates.DevicePushStatus{
 		"in_progress": domainupdates.DevicePushStatusInProgress,
 		"completed":   domainupdates.DevicePushStatusCompleted,
@@ -56,7 +56,7 @@ func (h *DeviceStatusHandler) HandleDeviceUpdateStatus(c *gin.Context) {
 		return
 	}
 
-	// Update device status via service
+	// Update device status via service.
 	err := h.service.UpdateDeviceStatusByDispatch(c.Request.Context(), req.DispatchID, req.DeviceID, status, req.Error)
 	if err != nil {
 		if err == domainupdates.ErrPushNotFound {

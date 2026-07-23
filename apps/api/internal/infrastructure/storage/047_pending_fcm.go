@@ -15,10 +15,10 @@ type PendingFCMNotification struct {
 	Command      string `json:"command"`
 	Priority     string `json:"priority"`
 	RetryCount   int    `json:"retryCount"`
-	NextRetryAt  int64  `json:"nextRetryAt"`  // Unix timestamp
+	NextRetryAt  int64  `json:"nextRetryAt"`  // Unix timestamp.
 	LastError    string `json:"lastError"`
-	CreatedAt    int64  `json:"createdAt"`   // Unix timestamp
-	UpdatedAt    int64  `json:"updatedAt"`   // Unix timestamp
+	CreatedAt    int64  `json:"createdAt"`   // Unix timestamp.
+	UpdatedAt    int64  `json:"updatedAt"`   // Unix timestamp.
 }
 
 // PendingFCMRepository handles pending FCM notification persistence.
@@ -134,7 +134,7 @@ func migrateCreatePendingFCM(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for querying pending notifications
+	// Create index for querying pending notifications.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_pending_fcm_next_retry
 		ON pending_fcm(next_retry_at)
@@ -143,7 +143,7 @@ func migrateCreatePendingFCM(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for dispatch lookup
+	// Create index for dispatch lookup.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_pending_fcm_dispatch
 		ON pending_fcm(dispatch_id)

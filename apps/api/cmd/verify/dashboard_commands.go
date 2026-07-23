@@ -341,14 +341,14 @@ func dGetRouteContent(root string) string {
 	for _, rf := range routeFiles {
 		if data, err := os.ReadFile(rf); err == nil {
 			routeData := string(data)
-			// Add pseudo full paths for routes defined under router groups
-			// commandMgmt := r.Group("/command") means routes like "/:dispatchId/status"
-			// become "/command/:dispatchId/status"
+			// Add pseudo full paths for routes defined under router groups.
+			// commandMgmt := r.Group("/command") means routes like "/:dispatchId/status".
+			// become "/command/:dispatchId/status".
 			routeData = strings.ReplaceAll(routeData, "\"/:dispatchId/status\"", "\"/command/:dispatchId/status\"")
 			routeData = strings.ReplaceAll(routeData, "\"/:dispatchId/retry\"", "\"/command/:dispatchId/retry\"")
 			routeData = strings.ReplaceAll(routeData, "\"/:dispatchId\"", "\"/command/:dispatchId\"")
-			// deviceMgmt := r.Group("/device") means routes like "/:id/command"
-			// become "/device/:id/command"
+			// deviceMgmt := r.Group("/device") means routes like "/:id/command".
+			// become "/device/:id/command".
 			routeData = strings.ReplaceAll(routeData, "\"/:id/command\"", "\"/device/:id/command\"")
 			routeData = strings.ReplaceAll(routeData, "\"/:id/commands/pending\"", "\"/device/:id/commands/pending\"")
 			routeData = strings.ReplaceAll(routeData, "\"/:id\"", "\"/device/:id\"")

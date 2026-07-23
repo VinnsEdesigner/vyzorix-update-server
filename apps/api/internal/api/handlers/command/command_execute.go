@@ -87,34 +87,34 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Get operator from context (set by cookie auth middleware)
+	// Get operator from context (set by cookie auth middleware).
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
 		return
 	}
 
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
 		return
 	}
 
-	// Verify the device belongs to this organization
+	// Verify the device belongs to this organization.
 	if err := h.verifyDeviceInOrganization(c.Request.Context(), imei, orgID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
 		return
 	}
 
-	// Marshal args
+	// Marshal args.
 	argsJSON, err := json.Marshal(req.Args)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to marshal args"})
 		return
 	}
 
-	// Build command frame for WebSocket
+	// Build command frame for WebSocket.
 	frame := command.CommandFrame{
 		Type:       req.Command,
 		Command:    req.Command,
@@ -125,7 +125,7 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 		Signature:  req.Signature,
 	}
 
-	// Use command service for proper command creation and idempotency
+	// Use command service for proper command creation and idempotency.
 	cmdReq := &dto.SendCommandRequest{
 		DeviceID:   imei,
 		Command:    req.Command,
@@ -141,23 +141,23 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Update frame dispatch ID with the one from service (for idempotency)
+	// Update frame dispatch ID with the one from service (for idempotency).
 	frame.DispatchID = cmdResp.DispatchID
 
-	// Check if device is online via WebSocket and send
+	// Check if device is online via WebSocket and send.
 	delivery := "queued"
 
 	if h.hub != nil && h.hub.Online(imei) {
 		if sent := h.hub.Send(imei, frame); sent {
 			delivery = "sent"
-			// Mark as delivered
+			// Mark as delivered.
 			if err := h.commandService.MarkDelivered(c.Request.Context(), cmdResp.CommandID); err != nil {
 				h.log.Warn("failed to mark command delivered", "error", err)
 			}
 		}
 	}
 
-	// If not sent via WebSocket, try FCM wake for offline devices
+	// If not sent via WebSocket, try FCM wake for offline devices.
 	if delivery == "queued" && h.fcmNotifier != nil {
 		device, err := h.deviceService.GetDevice(c.Request.Context(), imei)
 		if err == nil && device.FCMToken != "" {
@@ -192,7 +192,7 @@ func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
@@ -207,7 +207,7 @@ func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	// Verify the device belongs to this organization
+	// Verify the device belongs to this organization.
 	if err := h.verifyDeviceInOrganization(c.Request.Context(), cmdStatus.DeviceID, orgID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
 		return
@@ -231,28 +231,28 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 		return
 	}
 
-	// Get operator from context
+	// Get operator from context.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
 		return
 	}
 
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
 		return
 	}
 
-	// Get command by dispatchId to find the device
+	// Get command by dispatchId to find the device.
 	cmd, err := h.commandService.GetCommandByDispatchID(c.Request.Context(), dispatchID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
 		return
 	}
 
-	// Verify the device belongs to this organization
+	// Verify the device belongs to this organization.
 	if err = h.verifyDeviceInOrganization(c.Request.Context(), cmd.DeviceID, orgID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
 		return
@@ -282,21 +282,21 @@ func (h *ExecuteHandler) GetPending(c *gin.Context) {
 		return
 	}
 
-	// Get operator from context
+	// Get operator from context.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
 		return
 	}
 
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
 		return
 	}
 
-	// Verify the device belongs to this organization
+	// Verify the device belongs to this organization.
 	if err := h.verifyDeviceInOrganization(c.Request.Context(), imei, orgID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
 		return
@@ -323,28 +323,28 @@ func (h *ExecuteHandler) Cancel(c *gin.Context) {
 		return
 	}
 
-	// Get operator from context
+	// Get operator from context.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
 		return
 	}
 
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
 		return
 	}
 
-	// Get command by dispatchId to find the device
+	// Get command by dispatchId to find the device.
 	cmd, err := h.commandService.GetCommandByDispatchID(c.Request.Context(), dispatchID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
 		return
 	}
 
-	// Verify the device belongs to this organization
+	// Verify the device belongs to this organization.
 	if err = h.verifyDeviceInOrganization(c.Request.Context(), cmd.DeviceID, orgID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
 		return

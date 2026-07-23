@@ -43,10 +43,10 @@ func ComputeFakePasswordHash() {
 	argon2.IDKey(
 		[]byte("dummy_password_for_timing_uniformity"),
 		dummySalt,
-		3,       // iterations
-		64*1024, // memory (64 MB)
-		4,       // parallelism
-		32,      // key length
+		3,       // iterations.
+		64*1024, // memory (64 MB).
+		4,       // parallelism.
+		32,      // key length.
 	)
 }
 

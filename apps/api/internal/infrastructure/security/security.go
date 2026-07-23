@@ -1,7 +1,7 @@
 // Package security provides security-related utilities for authentication,
 // authorization, password hashing, and input validation.
 //
-// This is the main entry point for the security package. All security-related
+// This is the main entry point for the security package. All security-related.
 // functionality is organized into subpackages for better maintainability.
 package security
 

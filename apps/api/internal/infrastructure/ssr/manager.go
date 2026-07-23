@@ -57,7 +57,7 @@ func NewManager(cfg config.SSRConfig, logger *slog.Logger, webDir, publicDir str
 		SSRBuildTimeout:        cfg.SSRBuildTimeout,
 		SSRHealthCheckInterval: cfg.SSRHealthCheckInterval,
 		SSRRetryAttempts:       cfg.SSRRetryAttempts,
-		SSRRetryBackoff:        2, // Default backoff
+		SSRRetryBackoff:        2, // Default backoff.
 	}
 
 	process := NewProcessManager(internalCfg, logger)
@@ -147,7 +147,7 @@ func (m *Manager) Start() error {
 			m.logger.Error("SSR auto-build failed", "err", err)
 
 			if !m.config.SSRAutoStart {
-				return nil // Not required to start
+				return nil // Not required to start.
 			}
 
 			return err

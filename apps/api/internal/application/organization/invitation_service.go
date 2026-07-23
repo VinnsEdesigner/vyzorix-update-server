@@ -37,7 +37,7 @@ func isUniqueConstraintError(err error) bool {
 	if err == nil {
 		return false
 	}
-	// SQLite unique constraint error message contains "UNIQUE constraint failed"
+	// SQLite unique constraint error message contains "UNIQUE constraint failed".
 	errStr := err.Error()
 	return strings.Contains(errStr, "UNIQUE constraint failed") || strings.Contains(errStr, "unique constraint")
 }
@@ -58,7 +58,7 @@ type InvitationService struct {
 	emailService    EmailService
 	logger          *slog.Logger
 	baseURL         string
-	emailWg         sync.WaitGroup // tracks background email goroutines
+	emailWg         sync.WaitGroup // tracks background email goroutines.
 }
 
 // NewInvitationService creates a new InvitationService.
@@ -111,18 +111,18 @@ func (s *InvitationService) getBaseURL() string {
 
 // CreateInvitation creates a new invitation and sends an email.
 func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviterID, email string, role organization.OrganizationRole, notes string) (*organization.Invitation, error) {
-	// Validate email
+	// Validate email.
 	if email == "" {
 		return nil, errors.New("email is required")
 	}
 
-	// Validate role - must be a valid organization role (admin, operator, or viewer)
-	// Note: super_admin cannot be invited via invitation
+	// Validate role - must be a valid organization role (admin, operator, or viewer).
+	// Note: super_admin cannot be invited via invitation.
 	if role != organization.RoleAdmin && role != organization.RoleOperator && role != organization.RoleViewer {
 		return nil, errors.New("invalid invitation role")
 	}
 
-	// Check if inviter is a member of the org with permission to invite
+	// Check if inviter is a member of the org with permission to invite.
 	member, err := s.memberRepo.FindByOperatorAndOrg(ctx, inviterID, orgID)
 	if err != nil {
 		if errors.Is(err, organization.ErrMemberNotFound) {
@@ -131,17 +131,17 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 		return nil, err
 	}
 
-	// Must be able to manage members to invite
+	// Must be able to manage members to invite.
 	if !member.Role.CanManageMembers() {
 		return nil, organization.ErrForbidden
 	}
 
-	// Cannot invite self
+	// Cannot invite self.
 	if member.OperatorEmail == email {
 		return nil, ErrCannotInviteSelf
 	}
 
-	// Check org exists
+	// Check org exists.
 	org, err := s.orgRepo.FindByID(ctx, orgID)
 	if err != nil {
 		if errors.Is(err, organization.ErrNotFound) {
@@ -150,7 +150,7 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 		return nil, err
 	}
 
-	// Check pending invitation limit
+	// Check pending invitation limit.
 	pending, err := s.invitationRepo.FindPendingByOrganization(ctx, orgID)
 	if err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 		return nil, ErrMaxInvitationsReached
 	}
 
-	// Check for existing pending invitation for this email in this org
+	// Check for existing pending invitation for this email in this org.
 	existing, err := s.invitationRepo.FindPendingByOrganizationAndEmail(ctx, orgID, email)
 	if err != nil && !errors.Is(err, organization.ErrInvitationNotFound) {
 		return nil, err
@@ -168,12 +168,12 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 		return nil, organization.ErrInvitationExists
 	}
 
-	// Check if user is already a member of this org
-	// We need to check if there's an operator with this email who is already a member
-	// Since we don't have operatorRepo here, we'll skip this check and let AcceptInvitation
-	// handle the "already a member" case when the user tries to accept
+	// Check if user is already a member of this org.
+	// We need to check if there's an operator with this email who is already a member.
+	// Since we don't have operatorRepo here, we'll skip this check and let AcceptInvitation.
+	// handle the "already a member" case when the user tries to accept.
 
-	// Create invitation using domain constructor (includes lifecycle initialization)
+	// Create invitation using domain constructor (includes lifecycle initialization).
 	inv, err := organization.NewInvitation(
 		uuid.New().String(),
 		orgID,
@@ -193,9 +193,9 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 		return nil, err
 	}
 
-	// Send email (non-transactional)
+	// Send email (non-transactional).
 	if s.emailService != nil {
-		inv := inv // capture loop var if in loop
+		inv := inv // capture loop var if in loop.
 		email := email
 		memberName := member.OperatorName
 		orgName := org.Name
@@ -244,7 +244,7 @@ func (s *InvitationService) GetInvitationByToken(ctx context.Context, token stri
 		return nil, err
 	}
 
-	// Check if expired using lifecycle method
+	// Check if expired using lifecycle method.
 	if inv.IsExpired() {
 		return nil, organization.ErrInvitationExpired
 	}
@@ -281,7 +281,7 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 			return err
 		}
 
-		// Check if invitation can be accepted using lifecycle method
+		// Check if invitation can be accepted using lifecycle method.
 		if !inv.CanBeAccepted() {
 			if inv.HasResponded() {
 				return organization.ErrAlreadyResponded
@@ -289,18 +289,18 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 			return organization.ErrInvitationExpired
 		}
 
-		// Verify email matches
+		// Verify email matches.
 		if inv.Email != operatorEmail {
 			return organization.ErrEmailMismatch
 		}
 
-		// Check if operator is already a member of this org
+		// Check if operator is already a member of this org.
 		existingMember, err := s.memberRepo.FindByOperatorAndOrg(txCtx, operatorID, inv.OrganizationID)
 		if err == nil && existingMember != nil && existingMember.IsActive() {
 			return ErrAlreadyOrgMember
 		}
 
-		// Check org capacity
+		// Check org capacity.
 		org, err := s.orgRepo.FindByID(txCtx, inv.OrganizationID)
 		if err != nil {
 			return err
@@ -309,7 +309,7 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 			return ErrOrgAtCapacity
 		}
 
-		// Use lifecycle Accept() method to properly transition invitation state
+		// Use lifecycle Accept() method to properly transition invitation state.
 		if err := inv.Accept(operatorID, notes); err != nil {
 			return err
 		}
@@ -318,19 +318,19 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 			return err
 		}
 
-		// Create membership using domain constructor
+		// Create membership using domain constructor.
 		member := organization.NewMember(
 			uuid.New().String(),
 			inv.OrganizationID,
 			operatorID,
-			inv.Role, // Role is already OrganizationRole
+			inv.Role, // Role is already OrganizationRole.
 		)
 		if inv.InvitedBy != "" {
 			member.InvitedBy = &inv.InvitedBy
 		}
 
 		if err := s.memberRepo.Create(txCtx, member); err != nil {
-			// This can happen in a race condition where two concurrent AcceptInvitation
+			// This can happen in a race condition where two concurrent AcceptInvitation.
 			// calls both pass the CanBeAccepted check before either creates the membership.
 			if isUniqueConstraintError(err) {
 				return ErrAlreadyOrgMember
@@ -344,12 +344,12 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 			"org_id", inv.OrganizationID,
 		)
 
-		// Store member reference for return value
+		// Store member reference for return value.
 		resultMember = member
 
-		// Send notification email to inviter (async)
+		// Send notification email to inviter (async).
 		if s.emailService != nil {
-			inv := inv // capture loop var
+			inv := inv // capture loop var.
 			opEmail := operatorEmail
 			invNotes := notes
 			invOrgID := inv.OrganizationID
@@ -398,17 +398,17 @@ func (s *InvitationService) RejectInvitation(ctx context.Context, token, operato
 			return err
 		}
 
-		// Check if invitation can be rejected (must be pending)
+		// Check if invitation can be rejected (must be pending).
 		if !inv.IsPending() {
 			return organization.ErrAlreadyResponded
 		}
 
-		// Verify email matches
+		// Verify email matches.
 		if inv.Email != operatorEmail {
 			return organization.ErrEmailMismatch
 		}
 
-		// Use lifecycle Reject() method to properly transition invitation state
+		// Use lifecycle Reject() method to properly transition invitation state.
 		if err := inv.Reject(operatorID, notes); err != nil {
 			return err
 		}
@@ -422,9 +422,9 @@ func (s *InvitationService) RejectInvitation(ctx context.Context, token, operato
 			"operator_id", operatorID,
 		)
 
-		// Send notification email to inviter (async)
+		// Send notification email to inviter (async).
 		if s.emailService != nil {
-			inv := inv // capture loop var
+			inv := inv // capture loop var.
 			opEmail := operatorEmail
 			invNotes := notes
 			invOrgID := inv.OrganizationID
@@ -466,12 +466,12 @@ func (s *InvitationService) ListInvitationsByOrganization(ctx context.Context, o
 		filter = &organization.InvitationFilter{Status: status}
 	}
 
-	// If no filter, get all invitations
+	// If no filter, get all invitations.
 	if filter == nil {
 		return s.invitationRepo.FindByOrganization(ctx, orgID)
 	}
 
-	// Use paginated method with filter
+	// Use paginated method with filter.
 	invitations, _, err := s.invitationRepo.FindByOrganizationPaginated(ctx, orgID, 1000, 0, filter)
 	if err != nil {
 		return nil, err
@@ -481,7 +481,7 @@ func (s *InvitationService) ListInvitationsByOrganization(ctx context.Context, o
 
 // ListInvitationsByOrganizationPaginated lists invitations with pagination.
 func (s *InvitationService) ListInvitationsByOrganizationPaginated(ctx context.Context, orgID string, page, limit int, status *organization.InvitationStatus) (*InvitationListResponse, error) {
-	// Apply defaults and limits
+	// Apply defaults and limits.
 	if page <= 0 {
 		page = 1
 	}
@@ -499,7 +499,7 @@ func (s *InvitationService) ListInvitationsByOrganizationPaginated(ctx context.C
 		filter = &organization.InvitationFilter{Status: status}
 	}
 
-	// Use repository paginated method - does LIMIT/OFFSET at DB level
+	// Use repository paginated method - does LIMIT/OFFSET at DB level.
 	invitations, total, err := s.invitationRepo.FindByOrganizationPaginated(ctx, orgID, limit, offset, filter)
 	if err != nil {
 		return nil, err
@@ -534,7 +534,7 @@ func (s *InvitationService) ListPendingInvitationsForEmail(ctx context.Context, 
 
 // ExpireInvitation manually expires an invitation.
 func (s *InvitationService) ExpireInvitation(ctx context.Context, invitationID, actorID string) error {
-	// Get invitation to verify actor has permission
+	// Get invitation to verify actor has permission.
 	inv, err := s.invitationRepo.FindByID(ctx, invitationID)
 	if err != nil {
 		if errors.Is(err, organization.ErrInvitationNotFound) {
@@ -543,7 +543,7 @@ func (s *InvitationService) ExpireInvitation(ctx context.Context, invitationID, 
 		return err
 	}
 
-	// Verify actor is inviter or org admin
+	// Verify actor is inviter or org admin.
 	member, err := s.memberRepo.FindByOperatorAndOrg(ctx, actorID, inv.OrganizationID)
 	if err != nil {
 		return organization.ErrForbidden
@@ -553,7 +553,7 @@ func (s *InvitationService) ExpireInvitation(ctx context.Context, invitationID, 
 		return organization.ErrForbidden
 	}
 
-	// Use lifecycle Expire() method to properly transition invitation state
+	// Use lifecycle Expire() method to properly transition invitation state.
 	if err := inv.Expire(); err != nil {
 		return err
 	}
@@ -572,8 +572,8 @@ func (s *InvitationService) ExpireInvitation(ctx context.Context, invitationID, 
 
 // ExpireStaleInvitations expires all stale pending invitations.
 func (s *InvitationService) ExpireStaleInvitations(ctx context.Context) error {
-	// This would typically be called by a background job
-	// For now, we'll rely on the ExpireByOrganization method when org is deleted
+	// This would typically be called by a background job.
+	// For now, we'll rely on the ExpireByOrganization method when org is deleted.
 	s.logger.Info("expiring stale invitations")
 	return nil
 }

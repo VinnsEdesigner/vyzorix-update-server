@@ -6,7 +6,7 @@ import (
 
 // Repository defines the interface for update data access.
 type Repository interface {
-	// Version operations
+	// Version operations.
 	CreateVersion(ctx context.Context, v *UpdateVersion) error
 	GetVersionByID(ctx context.Context, id string) (*UpdateVersion, error)
 	GetVersionByVersion(ctx context.Context, version string) (*UpdateVersion, error)
@@ -16,7 +16,7 @@ type Repository interface {
 	UpdateLatestFlag(ctx context.Context, versionID string) error
 	DeleteVersion(ctx context.Context, id string) error
 
-	// Push operations
+	// Push operations.
 	CreatePush(ctx context.Context, p *UpdatePush) error
 	GetPushByID(ctx context.Context, id string, orgID string) (*UpdatePush, error)
 	GetPushByIDWithVersion(ctx context.Context, id string, orgID string) (*UpdatePush, *UpdateVersion, error)
@@ -25,7 +25,7 @@ type Repository interface {
 	CancelPush(ctx context.Context, id, cancelledBy string) error
 	ListPushes(ctx context.Context, status string, limit, offset int, orgID string) ([]*UpdatePush, int, error)
 
-	// Push device operations
+	// Push device operations.
 	CreatePushDevice(ctx context.Context, d *UpdatePushDevice) error
 	GetPushDevices(ctx context.Context, pushID string, orgID string) ([]*UpdatePushDevice, error)
 	GetPushDevicesByPushID(ctx context.Context, pushID string) ([]*UpdatePushDevice, error)
@@ -34,7 +34,7 @@ type Repository interface {
 	UpdatePushDeviceStatusByDispatch(ctx context.Context, dispatchID, deviceID string, status DevicePushStatus, errorMsg string) error
 	CountPushDevicesByStatus(ctx context.Context, pushID string, status DevicePushStatus) (int, error)
 
-	// Sync state operations
+	// Sync state operations.
 	GetSyncState(ctx context.Context) (*SyncState, error)
 	UpdateSyncState(ctx context.Context, state *SyncState) error
 	TryAcquireSyncLock(ctx context.Context) (bool, *SyncState, error)

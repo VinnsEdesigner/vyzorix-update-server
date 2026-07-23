@@ -8,7 +8,7 @@ import (
 
 // Validation constants for string length bounds.
 const (
-	// General string length limits
+	// General string length limits.
 	MaxEmailLength       = 255
 	MaxNameLength        = 256
 	MaxPasswordLength    = 128
@@ -43,7 +43,7 @@ func ValidateEmail(email string) error {
 	if utf8.RuneCountInString(email) > MaxEmailLength {
 		return ErrStringTooLong
 	}
-	// Basic email format check
+	// Basic email format check.
 	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
 		return errors.New("invalid email format")
 	}
@@ -223,7 +223,7 @@ func ValidateDeviceRegisterRequest(req *RegisterDeviceRequest) error {
 	if err := ValidateDeviceClass(req.DeviceClass); err != nil {
 		return err
 	}
-	// FCMToken and FirebaseInstallID are optional but have length limits if provided
+	// FCMToken and FirebaseInstallID are optional but have length limits if provided.
 	if req.FCMToken != "" {
 		if err := ValidateFCMToken(req.FCMToken); err != nil {
 			return err
@@ -245,7 +245,7 @@ func ValidateSendCommandRequest(req *SendCommandRequest) error {
 
 // ValidateUpdateNameRequest validates an update name request.
 func ValidateUpdateNameRequest(req *UpdateNameRequest) error {
-	// Name is required for update
+	// Name is required for update.
 	return ValidateName(req.Name)
 }
 

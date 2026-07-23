@@ -88,7 +88,7 @@ func (t *Thresholds) Validate() error {
 	if t.BufferWarn <= 0 || t.BufferCrit <= 0 {
 		return ErrInvalidThreshold
 	}
-	// Ensure warn values are less than crit values
+	// Ensure warn values are less than crit values.
 	if t.RiskWarn >= t.RiskCrit {
 		return ErrInvalidThreshold
 	}

@@ -2,7 +2,7 @@
 package password
 
 import (
-	"crypto/sha1" // #nosec G505 - SHA-1 required for HIBP k-anonymity API compatibility
+	"crypto/sha1" // #nosec G505 - SHA-1 required for HIBP k-anonymity API compatibility.
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -22,38 +22,38 @@ func CheckBreached(password string) (bool, error) {
 		return false, fmt.Errorf("password cannot be empty")
 	}
 
-	// #nosec G505 - SHA-1 required for HIBP API k-anonymity model (not for password storage)
+	// #nosec G505 - SHA-1 required for HIBP API k-anonymity model (not for password storage).
 	hash := sha1.Sum([]byte(password))
 	hashHex := strings.ToUpper(hex.EncodeToString(hash[:]))
 
-	// Only send first 5 characters (k-anonymity)
+	// Only send first 5 characters (k-anonymity).
 	prefix := hashHex[:5]
 	suffix := hashHex[5:]
 
-	// Create HTTP client with timeout for security
+	// Create HTTP client with timeout for security.
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
 
-	// Query HIBP API
+	// Query HIBP API.
 	resp, err := client.Get("https://api.pwnedpasswords.com/range/" + prefix)
 	if err != nil {
-		// Fail closed: if we cannot verify, treat as potentially breached for security
+		// Fail closed: if we cannot verify, treat as potentially breached for security.
 		return true, fmt.Errorf("unable to verify password against breach database: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		// Fail closed: any non-200 response means we couldn't verify
+		// Fail closed: any non-200 response means we couldn't verify.
 		return true, fmt.Errorf("HIBP API returned status %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1024*1024)) // Limit response to 1MB
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1024*1024)) // Limit response to 1MB.
 	if err != nil {
 		return false, nil
 	}
 
-	// Check if our hash suffix is in the response
+	// Check if our hash suffix is in the response.
 	lines := strings.Split(string(body), "\n")
 	for _, line := range lines {
 		parts := strings.SplitN(line, ":", 2)
@@ -82,13 +82,13 @@ type Policy struct {
 
 // DefaultPolicy is the standard password policy for operators.
 var DefaultPolicy = Policy{
-	MinLength:      12, // Increased from 8
+	MinLength:      12, // Increased from 8.
 	MaxLength:      128,
 	RequireUpper:   true,
 	RequireLower:   true,
 	RequireDigit:   true,
 	RequireSpecial: true,
-	MaxConsecutive: 3, // Prevent "aaaaaa" type passwords
+	MaxConsecutive: 3, // Prevent "aaaaaa" type passwords.
 	DisallowCommon: true,
 }
 

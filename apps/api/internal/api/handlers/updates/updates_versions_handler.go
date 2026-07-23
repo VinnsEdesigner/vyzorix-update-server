@@ -129,7 +129,7 @@ func (h *UpdatesVersionsHandler) Export(c *gin.Context) {
 	}
 
 	if format == "csv" {
-		// Generate CSV content
+		// Generate CSV content.
 		csv := h.generateCSV(result, includeApkInfo, includeChangelog)
 		c.Header("Content-Type", "text/csv")
 		c.Header("Content-Disposition", "attachment; filename=versions.csv")
@@ -144,14 +144,14 @@ func (h *UpdatesVersionsHandler) Export(c *gin.Context) {
 func (h *UpdatesVersionsHandler) generateCSV(result *updates.ExportResponse, includeApkInfo, includeChangelog bool) string {
 	var csvBuilder strings.Builder
 
-	// Write CSV header
+	// Write CSV header.
 	if includeApkInfo {
 		csvBuilder.WriteString("Version,Filename,Size (bytes),SHA256,Released,Release Type,Release Notes\n")
 	} else {
 		csvBuilder.WriteString("Version,Released,Release Type,Release Notes\n")
 	}
 
-	// Write version rows
+	// Write version rows.
 	for _, v := range result.Versions {
 		if includeApkInfo {
 			fmt.Fprintf(&csvBuilder, "%s,%s,%d,%s,%d,%s,%s\n",
@@ -171,7 +171,7 @@ func (h *UpdatesVersionsHandler) generateCSV(result *updates.ExportResponse, inc
 		}
 	}
 
-	// Write changelog if included
+	// Write changelog if included.
 	if includeChangelog && len(result.Changelog) > 0 {
 		csvBuilder.WriteString("\n--- Changelog ---\n")
 		csvBuilder.WriteString("Version,Date,Type,Notes\n")
@@ -192,7 +192,7 @@ func escapeCSV(s string) string {
 	if s == "" {
 		return ""
 	}
-	// If the string contains comma, quote, or newline, wrap in quotes and escape internal quotes
+	// If the string contains comma, quote, or newline, wrap in quotes and escape internal quotes.
 	if strings.ContainsAny(s, ",\"\n\r") {
 		return "\"" + strings.ReplaceAll(s, "\"", "\"\"") + "\""
 	}

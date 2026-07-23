@@ -22,7 +22,7 @@ func migrateCreateNotificationAuditLog(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for querying by operator
+	// Create index for querying by operator.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_notification_audit_operator 
 		ON notification_audit_log(operator_id, sent_at DESC)
@@ -31,7 +31,7 @@ func migrateCreateNotificationAuditLog(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for querying by event type
+	// Create index for querying by event type.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_notification_audit_type 
 		ON notification_audit_log(event_type, sent_at DESC)
@@ -40,7 +40,7 @@ func migrateCreateNotificationAuditLog(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for querying by channel
+	// Create index for querying by channel.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_notification_audit_channel 
 		ON notification_audit_log(channel, sent_at DESC)

@@ -11,27 +11,27 @@ import (
 
 // DeviceRegistrationRateLimits defines rate limits for device registration endpoints per the spec.
 type DeviceRegistrationRateLimits struct {
-	// GET /v1/device/inbox: 60 requests per minute
+	// GET /v1/device/inbox: 60 requests per minute.
 	InboxListLimit int
 	InboxListRefill time.Duration
 
-	// GET /v1/device/inbox/:imei: 60 requests per minute
+	// GET /v1/device/inbox/:imei: 60 requests per minute.
 	InboxGetLimit int
 	InboxGetRefill time.Duration
 
-	// POST /v1/device/inbox/:imei/ack: 10 requests per minute
+	// POST /v1/device/inbox/:imei/ack: 10 requests per minute.
 	InboxAckLimit int
 	InboxAckRefill time.Duration
 
-	// GET /v1/devices: 60 requests per minute
+	// GET /v1/devices: 60 requests per minute.
 	DevicesListLimit int
 	DevicesListRefill time.Duration
 
-	// GET /v1/devices/:imei: 60 requests per minute
+	// GET /v1/devices/:imei: 60 requests per minute.
 	DevicesGetLimit int
 	DevicesGetRefill time.Duration
 
-	// DELETE /v1/devices/:imei: 10 requests per minute
+	// DELETE /v1/devices/:imei: 10 requests per minute.
 	DevicesDeleteLimit int
 	DevicesDeleteRefill time.Duration
 }
@@ -39,27 +39,27 @@ type DeviceRegistrationRateLimits struct {
 // DefaultDeviceRegistrationRateLimits returns the default rate limits per the spec.
 func DefaultDeviceRegistrationRateLimits() *DeviceRegistrationRateLimits {
 	return &DeviceRegistrationRateLimits{
-		// GET /v1/device/inbox: 60 per minute
+		// GET /v1/device/inbox: 60 per minute.
 		InboxListLimit:  60,
 		InboxListRefill: time.Minute,
 
-		// GET /v1/device/inbox/:imei: 60 per minute
+		// GET /v1/device/inbox/:imei: 60 per minute.
 		InboxGetLimit:  60,
 		InboxGetRefill: time.Minute,
 
-		// POST /v1/device/inbox/:imei/ack: 10 per minute
+		// POST /v1/device/inbox/:imei/ack: 10 per minute.
 		InboxAckLimit:  10,
 		InboxAckRefill: time.Minute,
 
-		// GET /v1/devices: 60 per minute
+		// GET /v1/devices: 60 per minute.
 		DevicesListLimit:  60,
 		DevicesListRefill: time.Minute,
 
-		// GET /v1/devices/:imei: 60 per minute
+		// GET /v1/devices/:imei: 60 per minute.
 		DevicesGetLimit:  60,
 		DevicesGetRefill: time.Minute,
 
-		// DELETE /v1/devices/:imei: 10 per minute
+		// DELETE /v1/devices/:imei: 10 per minute.
 		DevicesDeleteLimit:  10,
 		DevicesDeleteRefill: time.Minute,
 	}
@@ -146,7 +146,7 @@ func (m *DeviceRegistrationRateLimiterMiddleware) Stats() map[string]RateLimiter
 // deviceRegRateLimitMiddleware creates a Gin middleware for rate limiting.
 func deviceRegRateLimitMiddleware(limiter *RateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Use operator ID if available, otherwise use IP
+		// Use operator ID if available, otherwise use IP.
 		key := c.ClientIP()
 		if op, exists := c.Get("operator_id"); exists {
 			if opID, ok := op.(string); ok && opID != "" {
@@ -154,7 +154,7 @@ func deviceRegRateLimitMiddleware(limiter *RateLimiter) gin.HandlerFunc {
 			}
 		}
 
-		// Include IMEI in key for device-specific endpoints
+		// Include IMEI in key for device-specific endpoints.
 		if imei := c.Param("imei"); imei != "" {
 			key = key + ":imei:" + imei
 		}

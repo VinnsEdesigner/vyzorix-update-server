@@ -171,14 +171,14 @@ return s.sessionManager
 }
 
 // ResolveOrganizationForOperator resolves the appropriate organization for an operator.
-// Priority: LastOrganizationID (if valid) > Single org > Multiple orgs (require selection)
+// Priority: LastOrganizationID (if valid) > Single org > Multiple orgs (require selection).
 //
-// Returns:
-// - orgID, orgName, nil: Single org or auto-selected org
-// - "", "", ErrNoOrganization: No memberships
-// - "", "", ErrOrgSelectionRequired: Multiple orgs require selection
+// Returns:.
+// - orgID, orgName, nil: Single org or auto-selected org.
+// - "", "", ErrNoOrganization: No memberships.
+// - "", "", ErrOrgSelectionRequired: Multiple orgs require selection.
 func (s *AuthService) ResolveOrganizationForOperator(ctx context.Context, op *operator.Operator) (string, string, error) {
-// Load memberships if not already loaded
+// Load memberships if not already loaded.
 if len(op.Memberships) == 0 && s.memberRepo != nil {
 members, err := s.memberRepo.ListByOperator(ctx, op.ID)
 if err != nil {
@@ -187,7 +187,7 @@ return "", "", err
 op.Memberships = members
 }
 
-// Filter to active memberships only
+// Filter to active memberships only.
 var activeMemberships []*organization.OrganizationMember
 for _, m := range op.Memberships {
 if m.IsActive() {
@@ -199,7 +199,7 @@ if len(activeMemberships) == 0 {
 return "", "", application.ErrNoOrganization
 }
 
-// Single active org - auto-select
+// Single active org - auto-select.
 if len(activeMemberships) == 1 {
 m := activeMemberships[0]
 orgName := m.OrganizationID
@@ -211,9 +211,9 @@ orgName = org.Name
 return m.OrganizationID, orgName, nil
 }
 
-// Multiple active orgs - check LastOrganizationID first
+// Multiple active orgs - check LastOrganizationID first.
 if op.LastOrganizationID != "" {
-// Check if LastOrganizationID is still a valid active membership
+// Check if LastOrganizationID is still a valid active membership.
 for _, m := range activeMemberships {
 if m.OrganizationID == op.LastOrganizationID {
 orgName := m.OrganizationID
@@ -227,7 +227,7 @@ return m.OrganizationID, orgName, nil
 }
 }
 
-// Multiple orgs, no valid last org - require selection
+// Multiple orgs, no valid last org - require selection.
 return "", "", application.ErrOrgSelectionRequired
 }
 
@@ -235,13 +235,13 @@ return "", "", application.ErrOrgSelectionRequired
 // This allows operators with multiple organization memberships to switch between them.
 // Also updates the operator's LastOrganizationID for auto-selection on next login.
 func (s *AuthService) SelectOrganization(ctx context.Context, operatorID, sessionID, organizationID string) (*SelectOrganizationResult, error) {
-// Validate operator has membership in the target organization
+// Validate operator has membership in the target organization.
 member, err := s.ValidateOrganizationMembership(ctx, operatorID, organizationID)
 if err != nil {
 return nil, err
 }
 
-// Verify the session belongs to this operator
+// Verify the session belongs to this operator.
 sess, err := s.sessionRepo.FindByID(ctx, sessionID)
 if err != nil {
 return nil, application.ErrUnauthorized
@@ -250,12 +250,12 @@ if sess.OperatorID != operatorID {
 return nil, application.ErrUnauthorized
 }
 
-// Update session with new organization
+// Update session with new organization.
 if err := s.sessionRepo.UpdateOrganizationID(ctx, sessionID, organizationID); err != nil {
 return nil, err
 }
 
-// Update operator's LastOrganizationID for auto-selection on next login
+// Update operator's LastOrganizationID for auto-selection on next login.
 
 if s.operatorRepo != nil {
 	op, err := s.operatorRepo.FindByID(ctx, operatorID)
@@ -270,7 +270,7 @@ if s.operatorRepo != nil {
 	}
 }
 
-// Get organization name
+// Get organization name.
 orgName := organizationID
 if s.orgRepo != nil {
 if org, err := s.orgRepo.FindByID(ctx, organizationID); err == nil {
@@ -278,7 +278,7 @@ orgName = org.Name
 }
 }
 
-// Update session object for return
+// Update session object for return.
 sess.SelectedOrganizationID = organizationID
 
 return &SelectOrganizationResult{
@@ -312,7 +312,7 @@ return member, nil
 
 // GetOperatorOrganizations returns all organizations for an operator with their roles.
 func (s *AuthService) GetOperatorOrganizations(ctx context.Context, op *operator.Operator) ([]OrganizationInfo, error) {
-// Load memberships if not already loaded
+// Load memberships if not already loaded.
 if len(op.Memberships) == 0 && s.memberRepo != nil {
 members, err := s.memberRepo.ListByOperator(ctx, op.ID)
 if err != nil {
@@ -332,7 +332,7 @@ ID:   m.OrganizationID,
 Role: string(m.Role),
 }
 
-// Get org name if repo available
+// Get org name if repo available.
 if s.orgRepo != nil {
 if org, err := s.orgRepo.FindByID(ctx, m.OrganizationID); err == nil {
 orgInfo.Name = org.Name

@@ -11,31 +11,31 @@ import (
 
 // UpdatesRateLimits defines rate limits for updates endpoints per the spec.
 type UpdatesRateLimits struct {
-	// Status endpoint: 60 requests per minute
+	// Status endpoint: 60 requests per minute.
 	StatusLimit int
 	StatusRefill time.Duration
 
-	// Versions endpoint: 30 requests per minute
+	// Versions endpoint: 30 requests per minute.
 	VersionsLimit int
 	VersionsRefill time.Duration
 
-	// Changelog endpoint: 30 requests per minute
+	// Changelog endpoint: 30 requests per minute.
 	ChangelogLimit int
 	ChangelogRefill time.Duration
 
-	// Push endpoint: 10 requests per minute
+	// Push endpoint: 10 requests per minute.
 	PushLimit int
 	PushRefill time.Duration
 
-	// History endpoint: 30 requests per minute
+	// History endpoint: 30 requests per minute.
 	HistoryLimit int
 	HistoryRefill time.Duration
 
-	// Cancel endpoint: 10 requests per minute
+	// Cancel endpoint: 10 requests per minute.
 	CancelLimit int
 	CancelRefill time.Duration
 
-	// Sync endpoint: 5 requests per hour
+	// Sync endpoint: 5 requests per hour.
 	SyncLimit int
 	SyncRefill time.Duration
 }
@@ -43,31 +43,31 @@ type UpdatesRateLimits struct {
 // DefaultUpdatesRateLimits returns the default rate limits per the spec.
 func DefaultUpdatesRateLimits() *UpdatesRateLimits {
 	return &UpdatesRateLimits{
-		// GET /v1/updates/status: 60 per minute
+		// GET /v1/updates/status: 60 per minute.
 		StatusLimit:  60,
 		StatusRefill: time.Minute,
 
-		// GET /v1/updates/versions: 30 per minute
+		// GET /v1/updates/versions: 30 per minute.
 		VersionsLimit:  30,
 		VersionsRefill: time.Minute,
 
-		// GET /v1/updates/changelog: 30 per minute
+		// GET /v1/updates/changelog: 30 per minute.
 		ChangelogLimit:  30,
 		ChangelogRefill: time.Minute,
 
-		// POST /v1/updates/push: 10 per minute
+		// POST /v1/updates/push: 10 per minute.
 		PushLimit:  10,
 		PushRefill: time.Minute,
 
-		// GET /v1/updates/history: 30 per minute
+		// GET /v1/updates/history: 30 per minute.
 		HistoryLimit:  30,
 		HistoryRefill: time.Minute,
 
-		// POST /v1/updates/history/:id/cancel: 10 per minute
+		// POST /v1/updates/history/:id/cancel: 10 per minute.
 		CancelLimit:  10,
 		CancelRefill: time.Minute,
 
-		// POST /v1/updates/sync: 5 per hour
+		// POST /v1/updates/sync: 5 per hour.
 		SyncLimit:  5,
 		SyncRefill: time.Hour,
 	}
@@ -163,7 +163,7 @@ func (m *UpdatesRateLimiterMiddleware) Stats() map[string]RateLimiterStats {
 // rateLimitMiddleware creates a Gin middleware for rate limiting.
 func rateLimitMiddleware(limiter *RateLimiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Use operator ID if available, otherwise use IP
+		// Use operator ID if available, otherwise use IP.
 		key := c.ClientIP()
 		if op, exists := c.Get("operator_id"); exists {
 			if opID, ok := op.(string); ok && opID != "" {

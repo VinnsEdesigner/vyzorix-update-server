@@ -35,7 +35,7 @@ func (h *MemberHandler) MembershipChecker() *MemberServiceAdapter {
 	return &MemberServiceAdapter{memberService: h.memberService}
 }
 
-// MemberServiceAdapter implements middleware.OrganizationMembershipChecker
+// MemberServiceAdapter implements middleware.OrganizationMembershipChecker.
 // using the organization's member service.
 type MemberServiceAdapter struct {
 	memberService *appOrganization.MemberService
@@ -63,8 +63,8 @@ func (h *MemberHandler) List(c *gin.Context) {
 		return
 	}
 
-	// Use membership from context (set by OrganizationMembership middleware)
-	// If middleware didn't run, fall back to service call
+	// Use membership from context (set by OrganizationMembership middleware).
+	// If middleware didn't run, fall back to service call.
 	member := middleware.GetMembership(c)
 	if member == nil {
 		var err error
@@ -74,7 +74,7 @@ func (h *MemberHandler) List(c *gin.Context) {
 			return
 		}
 	} else {
-		// Check minimum role: require at least operator role to list members
+		// Check minimum role: require at least operator role to list members.
 		if member.Role.Level() < organization.RoleOperator.Level() {
 			h.presenter.Forbidden(c, "insufficient permissions: operator role required")
 			return
@@ -123,8 +123,8 @@ func (h *MemberHandler) Get(c *gin.Context) {
 		return
 	}
 
-	// Use membership from context (set by OrganizationMembership middleware)
-	// If middleware didn't run, fall back to service call
+	// Use membership from context (set by OrganizationMembership middleware).
+	// If middleware didn't run, fall back to service call.
 	ctxMember := middleware.GetMembership(c)
 	if ctxMember == nil {
 		var err error
@@ -145,7 +145,7 @@ func (h *MemberHandler) Get(c *gin.Context) {
 		return
 	}
 
-	// Verify member belongs to the org
+	// Verify member belongs to the org.
 	if member.OrganizationID != orgID {
 		h.presenter.NotFound(c, "member not found")
 		return
@@ -181,7 +181,7 @@ func (h *MemberHandler) UpdateRole(c *gin.Context) {
 		return
 	}
 
-	// Check if operator can manage members
+	// Check if operator can manage members.
 	if err := h.memberService.CheckCanManageMembers(c.Request.Context(), op.ID, orgID); err != nil {
 		h.presenter.Forbidden(c, "access denied")
 		return
@@ -196,7 +196,7 @@ func (h *MemberHandler) UpdateRole(c *gin.Context) {
 		return
 	}
 
-	// Validate role
+	// Validate role.
 	var newRole organization.OrganizationRole
 	switch req.Role {
 	case "admin":

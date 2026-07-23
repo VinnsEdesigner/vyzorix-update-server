@@ -2,7 +2,7 @@ package operator
 
 // Permission represents a specific action an operator can perform.
 // Note: Permissions are now derived from organization membership roles.
-// This file provides constants for permission checking but the actual
+// This file provides constants for permission checking but the actual.
 // permission resolution is done through membership-based role checks.
 type Permission string
 

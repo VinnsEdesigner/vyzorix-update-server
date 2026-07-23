@@ -66,7 +66,7 @@ func (l *LoginLockout) RecordFailed(email, ip, userAgent string) bool {
 		return true
 	}
 
-	// Reset if lockout expired
+	// Reset if lockout expired.
 	if info.LockedUntil != nil && now.After(*info.LockedUntil) {
 		info.Count = 1
 		info.FirstAt = now
@@ -80,12 +80,12 @@ func (l *LoginLockout) RecordFailed(email, ip, userAgent string) bool {
 	info.LastIP = ip
 	info.UserAgent = userAgent
 
-	// Lock after 5 failed attempts
+	// Lock after 5 failed attempts.
 	if info.Count >= 5 {
 		lockDuration := time.Hour
 		lockedUntil := now.Add(lockDuration)
 		info.LockedUntil = &lockedUntil
-		return false // Now locked
+		return false // Now locked.
 	}
 
 	return true
@@ -157,7 +157,7 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Normalize email (trim whitespace and lowercase)
+	// Normalize email (trim whitespace and lowercase).
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 
 	if req.Email == "" || req.Password == "" {
@@ -165,29 +165,29 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Get device fingerprint
+	// Get device fingerprint.
 	ipAddress := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 	deviceFingerprint := h.generateDeviceFingerprint(c, req.Email)
 
-	// Check lockout BEFORE any expensive operations
+	// Check lockout BEFORE any expensive operations.
 	if h.lockout.IsLocked(req.Email) {
 		retryAfter := h.lockout.RetryAfter(req.Email)
 		h.presenter.OK(c, gin.H{"error": "account_locked", "message": "Too many failed attempts. Account temporarily locked.", "retry_after": retryAfter.Seconds(), "locked_until": time.Now().Add(retryAfter).Unix()})
 		return
 	}
 
-	// Validate email format using enterprise-grade validator
+	// Validate email format using enterprise-grade validator.
 	if _, err := infraauth.ValidateEmail(req.Email); err != nil {
 		h.presenter.Unauthorized(c, "invalid email or password")
 		return
 	}
 
-	// Add request timeout
+	// Add request timeout.
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	// Attempt login with device fingerprint for hardened verification
+	// Attempt login with device fingerprint for hardened verification.
 	result, session, err := h.authService.LoginWithDevice(ctx, &req, &auth.DeviceInfo{
 		IPAddress:         ipAddress,
 		UserAgent:         userAgent,
@@ -195,14 +195,14 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 	})
 
 	if err != nil {
-		// Record failed attempt
+		// Record failed attempt.
 		h.lockout.RecordFailed(req.Email, ipAddress, userAgent)
 
 		switch {
 		case errors.Is(err, application.ErrInvalidCredentials):
 			h.presenter.Unauthorized(c, "invalid email or password")
 		case errors.Is(err, application.ErrMFARequired):
-			// Clear lockout on successful credential verification
+			// Clear lockout on successful credential verification.
 			h.lockout.Clear(req.Email)
 			h.presenter.OK(c, gin.H{
 				"mfa_required": true,
@@ -217,10 +217,10 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Clear failed attempts on successful login
+	// Clear failed attempts on successful login.
 	h.lockout.Clear(req.Email)
 
-	// Send login notification for NEW device/IP (not for remembered devices)
+	// Send login notification for NEW device/IP (not for remembered devices).
 	if h.authService.ShouldNotifyLogin(ctx, result.OperatorID, ipAddress, userAgent, deviceFingerprint) {
 		go func() {
 			if h.emailService != nil && result != nil {
@@ -243,7 +243,7 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		}()
 	}
 
-	// Create session cookie with session ID (not operator ID)
+	// Create session cookie with session ID (not operator ID).
 	if session != nil && h.authService.GetSessionManager() != nil {
 		cookie, err := h.authService.GetSessionManager().CreateCookie(session.ID)
 		if err != nil {
@@ -266,7 +266,7 @@ func (h *LoginHandler) HandleWithTokens(c *gin.Context) {
 		return
 	}
 
-	// Normalize email
+	// Normalize email.
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 
 	if req.Email == "" || req.Password == "" {
@@ -274,30 +274,30 @@ func (h *LoginHandler) HandleWithTokens(c *gin.Context) {
 		return
 	}
 
-	// Check lockout BEFORE any expensive operations
+	// Check lockout BEFORE any expensive operations.
 	if h.lockout.IsLocked(req.Email) {
 		retryAfter := h.lockout.RetryAfter(req.Email)
 		h.presenter.OK(c, gin.H{"error": "account_locked", "message": "Too many failed attempts. Account temporarily locked.", "retry_after": retryAfter.Seconds(), "locked_until": time.Now().Add(retryAfter).Unix()})
 		return
 	}
 
-	// Validate email format
+	// Validate email format.
 	if _, err := infraauth.ValidateEmail(req.Email); err != nil {
 		h.presenter.BadRequest(c, "Invalid email format")
 		return
 	}
 
-	// Add timeout
+	// Add timeout.
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	// Login with tokens
+	// Login with tokens.
 	result, err := h.authService.LoginWithTokens(ctx, &req)
 	if err != nil {
 		switch {
 		case errors.Is(err, application.ErrMFARequired):
-			// MFA is required - return partial response with mfa_required flag
-			// Get role from selected organization if available
+			// MFA is required - return partial response with mfa_required flag.
+			// Get role from selected organization if available.
 			role := ""
 			if result.SelectedOrganization != nil {
 				role = result.SelectedOrganization.Role
@@ -319,22 +319,22 @@ func (h *LoginHandler) HandleWithTokens(c *gin.Context) {
 		return
 	}
 
-	// Clear lockout on successful login
+	// Clear lockout on successful login.
 	h.lockout.Clear(req.Email)
 
-	// Return tokens (no cookie set - this is for API clients)
+	// Return tokens (no cookie set - this is for API clients).
 	h.presenter.OK(c, result)
 }
 
 // generateDeviceFingerprint creates a fingerprint from request headers.
 func (h *LoginHandler) generateDeviceFingerprint(c *gin.Context, email string) string {
-	// Combine available signals for device fingerprint
+	// Combine available signals for device fingerprint.
 	ua := c.GetHeader("User-Agent")
 	acceptLang := c.GetHeader("Accept-Language")
 	acceptEnc := c.GetHeader("Accept-Encoding")
 	ip := c.ClientIP()
 
-	// Use crypto/sha256 for consistent fingerprint
+	// Use crypto/sha256 for consistent fingerprint.
 	combined := ip + "|" + email + "|" + ua + "|" + acceptLang + "|" + acceptEnc
 	fingerprint := auth.HashFingerprint(combined)
 	return fingerprint

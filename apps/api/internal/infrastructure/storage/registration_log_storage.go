@@ -68,14 +68,14 @@ func (r *RegistrationLogRepository) ListByDeviceID(ctx context.Context, deviceID
 		limit = 100
 	}
 
-	// Get total count
+	// Get total count.
 	var total int
 	countQuery := "SELECT COUNT(*) FROM registration_logs WHERE device_id = ?"
 	if err := r.queryRow(ctx, countQuery, deviceID).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// Get logs
+	// Get logs.
 	query := `
 		SELECT id, inbox_request_id, device_id, action, old_status,
 			   new_status, performed_by, reason, created_at
@@ -111,7 +111,7 @@ func (r *RegistrationLogRepository) ListByIMEI(ctx context.Context, imei string,
 		limit = 100
 	}
 
-	// First get all inbox request IDs for this IMEI
+	// First get all inbox request IDs for this IMEI.
 	var inboxIDs []string
 	idQuery := "SELECT id FROM inbox_requests WHERE device_imei = ?"
 	rows, err := r.queryRows(ctx, idQuery, imei)
@@ -126,7 +126,7 @@ func (r *RegistrationLogRepository) ListByIMEI(ctx context.Context, imei string,
 		}
 		inboxIDs = append(inboxIDs, id)
 	}
-	// Check rows.Err() after iteration
+	// Check rows.Err() after iteration.
 	if rowsErr := rows.Err(); rowsErr != nil {
 		return nil, 0, rowsErr
 	}
@@ -135,7 +135,7 @@ func (r *RegistrationLogRepository) ListByIMEI(ctx context.Context, imei string,
 		return []*inbox.RegistrationLog{}, 0, nil
 	}
 
-	// Build query with IN clause
+	// Build query with IN clause.
 	placeholders := ""
 	args := []interface{}{}
 	for i, id := range inboxIDs {
@@ -146,14 +146,14 @@ func (r *RegistrationLogRepository) ListByIMEI(ctx context.Context, imei string,
 		args = append(args, id)
 	}
 
-	// Get total count
+	// Get total count.
 	var total int
 	countQuery := "SELECT COUNT(*) FROM registration_logs WHERE inbox_request_id IN (" + placeholders + ")"
 	if scanErr := r.queryRow(ctx, countQuery, args...).Scan(&total); scanErr != nil {
 		return nil, 0, scanErr
 	}
 
-	// Get logs
+	// Get logs.
 	listQuery := `
 		SELECT id, inbox_request_id, device_id, action, old_status,
 			   new_status, performed_by, reason, created_at
@@ -190,14 +190,14 @@ func (r *RegistrationLogRepository) ListByOperator(ctx context.Context, operator
 		limit = 100
 	}
 
-	// Get total count
+	// Get total count.
 	var total int
 	countQuery := "SELECT COUNT(*) FROM registration_logs WHERE performed_by = ?"
 	if err := r.queryRow(ctx, countQuery, operatorID).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// Get logs
+	// Get logs.
 	query := `
 		SELECT id, inbox_request_id, device_id, action, old_status,
 			   new_status, performed_by, reason, created_at

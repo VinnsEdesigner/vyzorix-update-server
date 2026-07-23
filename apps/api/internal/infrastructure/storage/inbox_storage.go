@@ -121,40 +121,40 @@ func (r *InboxRepository) ListByOperator(ctx context.Context, operatorID, orgID,
 		limit = 100
 	}
 
-	// Build WHERE clause based on status and organization:
-	// - "pending": show ALL pending entries (no operator filter - any operator can see pending)
-	// - "approved"/"rejected": show entries with that status AND reviewed_by = operatorID
-	// - "all"/"": show pending entries + entries reviewed by this operator
-	// Always filter by organization ID for multi-tenant isolation
+	// Build WHERE clause based on status and organization:.
+	// - "pending": show ALL pending entries (no operator filter - any operator can see pending).
+	// - "approved"/"rejected": show entries with that status AND reviewed_by = operatorID.
+	// - "all"/"": show pending entries + entries reviewed by this operator.
+	// Always filter by organization ID for multi-tenant isolation.
 	var whereClause string
 	var args []interface{}
 
 	statusLower := strings.ToLower(status)
 	switch statusLower {
 	case "pending":
-		// Show pending entries that are either unassigned (reviewed_by IS NULL)
-		// or assigned to this specific operator, within the organization
-		// This ensures operators only see pending entries they can work on
+		// Show pending entries that are either unassigned (reviewed_by IS NULL).
+		// or assigned to this specific operator, within the organization.
+		// This ensures operators only see pending entries they can work on.
 		whereClause = "WHERE organization_id = ? AND status = ? AND (reviewed_by IS NULL OR reviewed_by = ?)"
 		args = append(args, orgID, inbox.StatusPending, operatorID)
 	case "approved", "rejected":
-		// Show entries with this status that were reviewed by this operator within the organization
+		// Show entries with this status that were reviewed by this operator within the organization.
 		whereClause = "WHERE organization_id = ? AND status = ? AND reviewed_by = ?"
 		args = append(args, orgID, statusLower, operatorID)
 	default:
-		// "all" or empty: show pending entries (unassigned or mine) + entries reviewed by this operator
+		// "all" or empty: show pending entries (unassigned or mine) + entries reviewed by this operator.
 		whereClause = "WHERE organization_id = ? AND ((status = ? AND (reviewed_by IS NULL OR reviewed_by = ?)) OR reviewed_by = ?)"
 		args = append(args, orgID, inbox.StatusPending, operatorID, operatorID)
 	}
 
-	// Get total count
+	// Get total count.
 	var total int
 	countQuery := "SELECT COUNT(*) FROM inbox_requests " + whereClause
 	if err := r.queryRow(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// Get entries
+	// Get entries.
 	listQuery := `
 		SELECT id, device_imei, firebase_install_id, fcm_token, device_name,
 			   manufacturer, os_version, app_version, device_class, device_model, status,
@@ -197,10 +197,10 @@ func (r *InboxRepository) Update(ctx context.Context, e *inbox.InboxEntry) error
 			rejection_reason = ?, command_secret_hash = ?, organization_id = ?, updated_at = ?
 		WHERE id = ?`
 
-	// Map entity fields to schema columns:
-	// reviewed_at: store ApprovedAt if approved, RejectedAt if rejected
-	// reviewed_reason: store notes when approved
-	// rejection_reason: store notes when rejected
+	// Map entity fields to schema columns:.
+	// reviewed_at: store ApprovedAt if approved, RejectedAt if rejected.
+	// reviewed_reason: store notes when approved.
+	// rejection_reason: store notes when rejected.
 	var reviewedAt *int64
 	var reviewedReason, rejectionReason string
 
@@ -214,7 +214,7 @@ func (r *InboxRepository) Update(ctx context.Context, e *inbox.InboxEntry) error
 		reviewedReason = ""
 		rejectionReason = e.Notes
 	default:
-		// StatusPending - no review yet, leave defaults
+		// StatusPending - no review yet, leave defaults.
 	}
 
 	_, err := r.exec(ctx, query,
@@ -282,11 +282,11 @@ func (r *InboxRepository) scanEntry(row *sql.Row) (*inbox.InboxEntry, error) {
 	var confirmedAt sql.NullInt64
 	var updatedAt int64
 
-	// SELECT order: id, device_imei, firebase_install_id, fcm_token, device_name,
-	//               manufacturer, os_version, app_version, device_class, device_model, status,
-	//               reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
-	//               command_secret_hash, organization_id, created_at, updated_at,
-	//               confirmed_at
+	// SELECT order: id, device_imei, firebase_install_id, fcm_token, device_name,.
+	//               manufacturer, os_version, app_version, device_class, device_model, status,.
+	//               reviewed_by, reviewed_at, reviewed_reason, rejection_reason,.
+	//               command_secret_hash, organization_id, created_at, updated_at,.
+	//               confirmed_at.
 	err := row.Scan(
 		&e.ID, &e.IMEI, &e.FirebaseInstallID, &e.FCMToken, &e.DeviceName,
 		&e.Manufacturer, &e.OSVersion, &e.AppVersion, &e.DeviceClass, &e.Model, &e.Status,
@@ -306,8 +306,8 @@ func (r *InboxRepository) scanEntry(row *sql.Row) (*inbox.InboxEntry, error) {
 	e.OrganizationID = organizationID.String
 	e.ConfirmedAt = nullInt64ToPtr(confirmedAt)
 
-	// DB schema has single reviewed_at column - use ApprovedAt for approved status
-	// RejectedAt remains nil since there's no separate column
+	// DB schema has single reviewed_at column - use ApprovedAt for approved status.
+	// RejectedAt remains nil since there's no separate column.
 	switch e.Status {
 	case inbox.StatusApproved:
 		e.ApprovedAt = nullInt64ToPtr(reviewedAt)
@@ -330,11 +330,11 @@ func (r *InboxRepository) scanEntryRows(rows *sql.Rows) (*inbox.InboxEntry, erro
 	var confirmedAt sql.NullInt64
 	var updatedAt int64
 
-	// SELECT order: id, device_imei, firebase_install_id, fcm_token, device_name,
-	//               manufacturer, os_version, app_version, device_class, device_model, status,
-	//               reviewed_by, reviewed_at, reviewed_reason, rejection_reason,
-	//               command_secret_hash, organization_id, created_at, updated_at,
-	//               confirmed_at
+	// SELECT order: id, device_imei, firebase_install_id, fcm_token, device_name,.
+	//               manufacturer, os_version, app_version, device_class, device_model, status,.
+	//               reviewed_by, reviewed_at, reviewed_reason, rejection_reason,.
+	//               command_secret_hash, organization_id, created_at, updated_at,.
+	//               confirmed_at.
 	err := rows.Scan(
 		&e.ID, &e.IMEI, &e.FirebaseInstallID, &e.FCMToken, &e.DeviceName,
 		&e.Manufacturer, &e.OSVersion, &e.AppVersion, &e.DeviceClass, &e.Model, &e.Status,
@@ -351,8 +351,8 @@ func (r *InboxRepository) scanEntryRows(rows *sql.Rows) (*inbox.InboxEntry, erro
 	e.OrganizationID = organizationID.String
 	e.ConfirmedAt = nullInt64ToPtr(confirmedAt)
 
-	// DB schema has single reviewed_at column - use ApprovedAt for approved status
-	// RejectedAt remains nil since there's no separate column
+	// DB schema has single reviewed_at column - use ApprovedAt for approved status.
+	// RejectedAt remains nil since there's no separate column.
 	switch e.Status {
 	case inbox.StatusApproved:
 		e.ApprovedAt = nullInt64ToPtr(reviewedAt)

@@ -75,7 +75,7 @@ func TestMFAHandler_VerifySetupMFA_NoCookie(t *testing.T) {
 }
 
 func TestMFAHandler_VerifySetupMFA_InvalidCode(t *testing.T) {
-	// Test requires full mock infrastructure - just test JSON marshaling
+	// Test requires full mock infrastructure - just test JSON marshaling.
 	body := map[string]string{"code": "000000"}
 	bodyBytes, _ := json.Marshal(body)
 

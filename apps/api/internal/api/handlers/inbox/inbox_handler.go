@@ -190,7 +190,7 @@ func (h *Handler) CreateInboxRequest(c *gin.Context) {
 	requiresAttestation := h.deviceSecret != "" || h.attestationRequired
 
 	if requiresAttestation {
-		// Priority 1: Firebase App Check (hardware-backed attestation)
+		// Priority 1: Firebase App Check (hardware-backed attestation).
 		if h.appCheckVerifier != nil && h.appCheckVerifier.Enabled() {
 			token := c.GetHeader("X-Firebase-AppCheck")
 			if token == "" {
@@ -210,11 +210,11 @@ func (h *Handler) CreateInboxRequest(c *gin.Context) {
 				return
 			}
 
-			// Log successful attestation for monitoring
+			// Log successful attestation for monitoring.
 			c.Set("app_check_app_id", decoded.AppID)
 
 		} else if h.deviceSecret != "" {
-			// Priority 2: HMAC-SHA256 signature (legacy fallback)
+			// Priority 2: HMAC-SHA256 signature (legacy fallback).
 			signature := c.GetHeader("X-Device-Signature")
 			if signature == "" {
 				c.JSON(http.StatusUnauthorized, inbox.ErrorResponse{
@@ -224,7 +224,7 @@ func (h *Handler) CreateInboxRequest(c *gin.Context) {
 				return
 			}
 
-			// Read body for signature verification
+			// Read body for signature verification.
 			body, err := io.ReadAll(c.Request.Body)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, inbox.ErrorResponse{
@@ -234,7 +234,7 @@ func (h *Handler) CreateInboxRequest(c *gin.Context) {
 				return
 			}
 
-			// Verify HMAC-SHA256 signature
+			// Verify HMAC-SHA256 signature.
 			mac := hmac.New(sha256.New, []byte(h.deviceSecret))
 			mac.Write(body)
 			expectedSig := hex.EncodeToString(mac.Sum(nil))
@@ -246,7 +246,7 @@ func (h *Handler) CreateInboxRequest(c *gin.Context) {
 				return
 			}
 
-			// Restore body for binding
+			// Restore body for binding.
 			c.Request.Body = io.NopCloser(bytes.NewReader(body))
 		}
 	}

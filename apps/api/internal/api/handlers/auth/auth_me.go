@@ -42,19 +42,19 @@ func (h *MeHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Get operator's organizations
+	// Get operator's organizations.
 	orgs, err := h.authService.GetOperatorOrganizations(c.Request.Context(), op)
 	if err != nil {
 		h.presenter.InternalError(c, "failed to get organizations")
 		return
 	}
 
-	// Determine if organization selection is required:
-	// - 0 memberships: needs organization (create/join)
-	// - Multiple memberships without valid selected org: needs selection
+	// Determine if organization selection is required:.
+	// - 0 memberships: needs organization (create/join).
+	// - Multiple memberships without valid selected org: needs selection.
 	needsOrg := len(orgs) == 0
 
-	// Find selected organization from session or last used
+	// Find selected organization from session or last used.
 	var selectedOrg *dto.OrganizationInfo
 	if op.LastOrganizationID != "" && !needsOrg {
 		for _, org := range orgs {
@@ -67,14 +67,14 @@ func (h *MeHandler) Handle(c *gin.Context) {
 				break
 			}
 		}
-		// If LastOrganizationID is set but not found in active orgs,
-		// user has multiple orgs but the last one is invalid - needs selection
+		// If LastOrganizationID is set but not found in active orgs,.
+		// user has multiple orgs but the last one is invalid - needs selection.
 		if selectedOrg == nil && len(orgs) > 1 {
 			needsOrg = true
 		}
 	}
 
-	// If multiple orgs exist but none is selected, needs organization selection
+	// If multiple orgs exist but none is selected, needs organization selection.
 	if !needsOrg && len(orgs) > 1 && selectedOrg == nil {
 		needsOrg = true
 	}

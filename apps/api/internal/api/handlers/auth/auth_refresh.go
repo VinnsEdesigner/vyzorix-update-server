@@ -28,8 +28,8 @@ func NewRefreshHandler(authService *auth.AuthService, presenter *response.Presen
 }
 
 // Handle processes the refresh token request.
-// POST /v1/auth/refresh
-// Request: { "refresh_token": "..." }
+// POST /v1/auth/refresh.
+// Request: { "refresh_token": "..." }.
 // Response: { "access_token": "...", "refresh_token": "...", "expires_at": 1234567890, "session_id": "..." }.
 func (h *RefreshHandler) Handle(c *gin.Context) {
 	var req dto.RefreshTokenRequest
@@ -43,11 +43,11 @@ func (h *RefreshHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Add request timeout
+	// Add request timeout.
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	// Rotate the refresh token and get new tokens
+	// Rotate the refresh token and get new tokens.
 	result, err := h.authService.RotateRefreshToken(ctx, req.RefreshToken)
 	if err != nil {
 		switch {

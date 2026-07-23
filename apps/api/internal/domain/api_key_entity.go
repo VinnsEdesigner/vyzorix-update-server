@@ -82,9 +82,9 @@ type UpdateAPIKeyRequest struct {
 }
 
 // APIKeyWithFullKey represents an API key response with the full key (only returned on create/rotate).
-type APIKeyWithFullKey struct { //nolint:fieldalignment
+type APIKeyWithFullKey struct { //nolint:fieldalignment.
 	APIKey
-	FullKey string `json:"api_key"` // The full key - only shown once!
+	FullKey string `json:"api_key"` // The full key - only shown once!.
 }
 
 // APIKeyResponse represents an API key in responses (without the full key).

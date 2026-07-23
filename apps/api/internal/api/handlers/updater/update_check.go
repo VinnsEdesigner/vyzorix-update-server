@@ -33,7 +33,7 @@ type Handler struct {
 	dataDir   string
 	binDir    string
 	config    config.Config
-	manifest  *VersionManifest // Cached manifest for APK integrity verification
+	manifest  *VersionManifest // Cached manifest for APK integrity verification.
 }
 
 // NewHandler creates a new UpdaterHandler.
@@ -94,7 +94,7 @@ func (h *Handler) APK(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "filename required"})
 		return
 	}
-	// Remove leading slash if present
+	// Remove leading slash if present.
 	filename = strings.TrimPrefix(filename, "/")
 	h.serveAPK(c, filename)
 }
@@ -107,7 +107,7 @@ func (h *Handler) Bin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "filename required"})
 		return
 	}
-	// Remove leading slash if present
+	// Remove leading slash if present.
 	filename = strings.TrimPrefix(filename, "/")
 	h.serveAPK(c, filename)
 }
@@ -180,11 +180,11 @@ func (h *Handler) serveJSON(c *gin.Context, path string) {
 // Security: Verifies APK hash against manifest before serving.
 
 func (h *Handler) serveAPK(c *gin.Context, filename string) {
-	// Use filepath.Base to normalize path and prevent traversal attacks
-	// This handles .., %2F, %5C and other encoded sequences
+	// Use filepath.Base to normalize path and prevent traversal attacks.
+	// This handles .., %2F, %5C and other encoded sequences.
 	baseFilename := filepath.Base(filename)
 
-	// Ensure the result is a valid filename (not empty, no path separators)
+	// Ensure the result is a valid filename (not empty, no path separators).
 	if baseFilename == "" || baseFilename == "." || baseFilename == ".." ||
 		strings.ContainsAny(baseFilename, "/\\") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid filename"})
@@ -194,7 +194,7 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 	fpath := filepath.Join(h.binDir, baseFilename)
 
 	
-	// This ensures the APK hasn't been tampered with since the manifest was created
+	// This ensures the APK hasn't been tampered with since the manifest was created.
 	h.ensureManifestLoaded()
 	if h.manifest != nil && h.manifest.APKFilename == baseFilename && h.manifest.APKSHA256 != "" {
 		actualHash, err := h.computeFileHash(fpath)
@@ -204,7 +204,7 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 			return
 		}
 
-		// Constant-time comparison to prevent timing attacks
+		// Constant-time comparison to prevent timing attacks.
 		if !secureCompare(h.manifest.APKSHA256, actualHash) {
 			h.log.Error("APK integrity check failed - hash mismatch with manifest",
 				"file", baseFilename,
@@ -221,7 +221,7 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 		h.log.Info("APK integrity verified against manifest", "file", baseFilename)
 	}
 
-	// Also verify if client provides expected SHA256 (client-side verification)
+	// Also verify if client provides expected SHA256 (client-side verification).
 	if clientHash := c.GetHeader("X-APK-SHA256"); clientHash != "" {
 		actualHash, err := h.computeFileHash(fpath)
 		if err != nil {
@@ -230,7 +230,7 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 			return
 		}
 
-		// Constant-time comparison to prevent timing attacks
+		// Constant-time comparison to prevent timing attacks.
 		if !secureCompare(clientHash, actualHash) {
 			h.log.Warn("APK hash mismatch", "expected", clientHash, "actual", actualHash)
 			c.JSON(http.StatusForbidden, gin.H{

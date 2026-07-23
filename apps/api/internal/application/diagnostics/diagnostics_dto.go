@@ -44,7 +44,7 @@ type ErrorResponse struct {
 	Code    string `json:"code,omitempty"`
 }
 
-// HTTP-specific response types with int64 timestamps per spec
+// HTTP-specific response types with int64 timestamps per spec.
 
 // HTTPInspectionResponse is the HTTP API response for device inspection.
 type HTTPInspectionResponse struct {

@@ -26,7 +26,7 @@ func NewUpdatesHistoryHandler(service *updates.Service, auditLogger *audit.Logge
 
 // GetHistory handles GET /v1/updates/history.
 func (h *UpdatesHistoryHandler) GetHistory(c *gin.Context) {
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
@@ -67,7 +67,7 @@ func (h *UpdatesHistoryHandler) GetHistory(c *gin.Context) {
 
 // GetPushDetail handles GET /v1/updates/history/:pushId.
 func (h *UpdatesHistoryHandler) GetPushDetail(c *gin.Context) {
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
@@ -103,7 +103,7 @@ func (h *UpdatesHistoryHandler) GetPushDetail(c *gin.Context) {
 
 // CancelPush handles POST /v1/updates/history/:pushId/cancel.
 func (h *UpdatesHistoryHandler) CancelPush(c *gin.Context) {
-	// Get organization ID from context
+	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
@@ -144,7 +144,7 @@ func (h *UpdatesHistoryHandler) CancelPush(c *gin.Context) {
 		return
 	}
 
-	// Audit log the cancellation
+	// Audit log the cancellation.
 	if h.auditLogger != nil {
 		h.auditLogger.UpdateCancelled(
 			c.Request.Context(),

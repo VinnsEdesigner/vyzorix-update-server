@@ -88,13 +88,13 @@ func (r *OperatorRepository) FindByID(ctx context.Context, id string) (*operator
 	op.FCMToken = fcmToken.String
 	op.LastOrganizationID = lastOrgID.String
 
-	// Parse mfa_enabled_at timestamp
+	// Parse mfa_enabled_at timestamp.
 	if mfaEnabledAt.Valid {
 		t := time.UnixMilli(mfaEnabledAt.Int64)
 		op.MFAEnabledAt = &t
 	}
 
-	// Parse backup codes from JSON
+	// Parse backup codes from JSON.
 	if mfaBackupCodes.Valid && mfaBackupCodes.String != "" {
 		if err := json.Unmarshal([]byte(mfaBackupCodes.String), &op.BackupCodes); err != nil {
 			op.BackupCodes = []string{}
@@ -140,7 +140,7 @@ func (r *OperatorRepository) FindByEmail(ctx context.Context, email string) (*op
 	op.FCMToken = fcmToken.String
 	op.LastOrganizationID = lastOrgID.String
 
-	// Parse mfa_enabled_at timestamp
+	// Parse mfa_enabled_at timestamp.
 	if mfaEnabledAt.Valid {
 		t := time.UnixMilli(mfaEnabledAt.Int64)
 		op.MFAEnabledAt = &t
@@ -183,7 +183,7 @@ func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string
 	op.FCMToken = fcmToken.String
 	op.LastOrganizationID = lastOrgID.String
 
-	// Parse mfa_enabled_at timestamp
+	// Parse mfa_enabled_at timestamp.
 	if mfaEnabledAt.Valid {
 		t := time.UnixMilli(mfaEnabledAt.Int64)
 		op.MFAEnabledAt = &t
@@ -230,7 +230,7 @@ func (r *OperatorRepository) FindByGitHubID(ctx context.Context, githubID string
 	op.FCMToken = fcmToken.String
 	op.LastOrganizationID = lastOrgID.String
 
-	// Parse mfa_enabled_at timestamp
+	// Parse mfa_enabled_at timestamp.
 	if mfaEnabledAt.Valid {
 		t := time.UnixMilli(mfaEnabledAt.Int64)
 		op.MFAEnabledAt = &t
@@ -256,7 +256,7 @@ func (r *OperatorRepository) Create(ctx context.Context, op *operator.Operator) 
 		nullString(op.GoogleID), nullString(op.GitHubID), nullString(op.MFASecret), nullString(op.MFASecretMAC),
 		op.MFAEnabled, op.EmailVerified, op.CreatedAt, op.UpdatedAt, nullString(op.FCMToken), nullString(op.LastOrganizationID),
 	)
-	// Handle race condition: if UNIQUE constraint fails, return ErrUserExists
+	// Handle race condition: if UNIQUE constraint fails, return ErrUserExists.
 	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed") {
 		return operator.ErrEmailExists
 	}
@@ -359,7 +359,7 @@ func (r *OperatorRepository) List(ctx context.Context, limit, offset int) ([]*op
 		op.MFASecretMAC = mfaSecretMAC.String
 		op.LastOrganizationID = lastOrgID.String
 
-		// Parse mfa_enabled_at timestamp
+		// Parse mfa_enabled_at timestamp.
 		if mfaEnabledAt.Valid {
 			t := time.UnixMilli(mfaEnabledAt.Int64)
 			op.MFAEnabledAt = &t
@@ -406,20 +406,20 @@ func (r *OperatorRepository) UpdateMFA(ctx context.Context, id, secret, secretMA
 	var err error
 
 	if enabled && mfaEnabledAt != nil {
-		// Setting mfa_enabled_at when enabling MFA
+		// Setting mfa_enabled_at when enabling MFA.
 		result, err = r.exec(ctx,
 			"UPDATE operators SET mfa_secret = ?, mfa_secret_mac = ?, mfa_enabled = ?, mfa_enabled_at = ?, updated_at = ? WHERE id = ?",
 			secret, secretMAC, enabled, mfaEnabledAt.UnixMilli(), time.Now(), id,
 		)
 	} else if enabled {
-		// Enabling but no timestamp provided - use current time
+		// Enabling but no timestamp provided - use current time.
 		now := time.Now()
 		result, err = r.exec(ctx,
 			"UPDATE operators SET mfa_secret = ?, mfa_secret_mac = ?, mfa_enabled = ?, mfa_enabled_at = ?, updated_at = ? WHERE id = ?",
 			secret, secretMAC, enabled, now.UnixMilli(), now, id,
 		)
 	} else {
-		// Disabling MFA - clear mfa_enabled_at
+		// Disabling MFA - clear mfa_enabled_at.
 		result, err = r.exec(ctx,
 			"UPDATE operators SET mfa_secret = ?, mfa_secret_mac = ?, mfa_enabled = ?, mfa_enabled_at = NULL, updated_at = ? WHERE id = ?",
 			secret, secretMAC, enabled, time.Now(), id,
@@ -604,7 +604,7 @@ func (r *OperatorRepository) UpdateThresholds(ctx context.Context, id string, th
 	}
 
 	if rows == 0 {
-		// Settings row doesn't exist - insert with threshold values
+		// Settings row doesn't exist - insert with threshold values.
 		result, err = r.exec(ctx,
 			`INSERT INTO operator_settings (operator_id, risk_warn, risk_crit, thermal_warn, thermal_crit, 
 			 buffer_warn, buffer_crit, updated_at, created_at)
@@ -616,7 +616,7 @@ func (r *OperatorRepository) UpdateThresholds(ctx context.Context, id string, th
 			return err
 		}
 
-		// Verify the INSERT actually created a row
+		// Verify the INSERT actually created a row.
 		inserted, err := result.RowsAffected()
 		if err != nil {
 			return err
@@ -641,7 +641,7 @@ func (r *OperatorRepository) GetThresholds(ctx context.Context, id string) (oper
 	err := row.Scan(&th.RiskWarn, &th.RiskCrit, &th.ThermalWarn, &th.ThermalCrit, &th.BufferWarn, &th.BufferCrit)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			// Return defaults if no settings exist
+			// Return defaults if no settings exist.
 			return operator.Thresholds{
 				RiskWarn:    70,
 				RiskCrit:    85,
@@ -678,7 +678,7 @@ func (r *OperatorRepository) UpdateClientSettings(ctx context.Context, id string
 	}
 
 	if rows == 0 {
-		// Settings row doesn't exist - insert with client settings
+		// Settings row doesn't exist - insert with client settings.
 		result, err = r.exec(ctx,
 			`INSERT INTO operator_settings (operator_id, server_url, device_id, request_timeout_ms, 
 			 auto_reconnect, strict_hmac, log_buffer_limit, signal_history_limit, 
@@ -692,7 +692,7 @@ func (r *OperatorRepository) UpdateClientSettings(ctx context.Context, id string
 			return err
 		}
 
-		// Verify the INSERT actually created a row
+		// Verify the INSERT actually created a row.
 		inserted, err := result.RowsAffected()
 		if err != nil {
 			return err
@@ -727,7 +727,7 @@ func (r *OperatorRepository) ResetSettings(ctx context.Context, id string) error
 	}
 
 	if rows == 0 {
-		// Settings row doesn't exist - insert defaults for this operator
+		// Settings row doesn't exist - insert defaults for this operator.
 		result, err = r.exec(ctx,
 			`INSERT INTO operator_settings (operator_id, risk_warn, risk_crit, thermal_warn, thermal_crit, 
 			 buffer_warn, buffer_crit, strict_hmac, auto_reconnect, notifications_enabled,
@@ -741,7 +741,7 @@ func (r *OperatorRepository) ResetSettings(ctx context.Context, id string) error
 			return err
 		}
 
-		// Verify the INSERT actually created a row
+		// Verify the INSERT actually created a row.
 		inserted, err := result.RowsAffected()
 		if err != nil {
 			return err
@@ -847,7 +847,7 @@ func (r *OperatorRepository) GetHMACWindowSeconds(ctx context.Context) (int, err
 	}
 
 	if val == "" {
-		return 30, nil // default 30 seconds per COMMAND_SECURITY.md
+		return 30, nil // default 30 seconds per COMMAND_SECURITY.md.
 	}
 
 	var seconds int
@@ -868,7 +868,7 @@ func (r *OperatorRepository) SetHMACWindowSeconds(ctx context.Context, seconds i
 // GetOperatorSettings retrieves all settings for an operator from operator_settings table.
 // OPTIMIZATION: Fetches all fields in single query (was making 2 queries before).
 func (r *OperatorRepository) GetOperatorSettings(ctx context.Context, operatorID string) (*operator.OperatorSettings, error) {
-	// Single query fetches ALL settings fields
+	// Single query fetches ALL settings fields.
 	query := `
 		SELECT 
 			-- Client settings
@@ -893,19 +893,19 @@ func (r *OperatorRepository) GetOperatorSettings(ctx context.Context, operatorID
 	var notifyUpdateAvailable, notifyCommandFailed, notifyRegistrationRequest int
 
 	err := r.queryRow(ctx, query, operatorID).Scan(
-		// Client
+		// Client.
 		&serverURL, &deviceID, &requestTimeoutMs, &autoReconnect, &strictHmac,
 		&logBufferLimit, &signalHistoryLimit, &notificationsEnabled,
-		// Thresholds
+		// Thresholds.
 		&riskWarn, &riskCrit, &thermalWarn, &thermalCrit, &bufferWarn, &bufferCrit,
-		// Notifications
+		// Notifications.
 		&notifyEmail, &notifyPush, &notifyWebhook,
 		&webhookURL, &webhookSecret, &webhookTypes,
 		&notifyThresholdBreach, &notifyDeviceOffline, &notifyDeviceOnline,
 		&notifyUpdateAvailable, &notifyCommandFailed, &notifyRegistrationRequest,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		// Return defaults if no settings exist
+		// Return defaults if no settings exist.
 		return &operator.OperatorSettings{
 			Client:        *operator.DefaultClientSettings(),
 			Thresholds:    operator.Thresholds{},
@@ -916,7 +916,7 @@ func (r *OperatorRepository) GetOperatorSettings(ctx context.Context, operatorID
 		return nil, err
 	}
 
-	// Build client settings
+	// Build client settings.
 	settings.Client = operator.ClientSettings{
 		ServerURL:            serverURL.String,
 		DeviceID:             deviceID.String,
@@ -928,7 +928,7 @@ func (r *OperatorRepository) GetOperatorSettings(ctx context.Context, operatorID
 		NotificationsEnabled: notificationsEnabled == 1,
 	}
 
-	// Build thresholds
+	// Build thresholds.
 	settings.Thresholds = operator.Thresholds{
 		RiskWarn:    riskWarn,
 		RiskCrit:    riskCrit,
@@ -938,13 +938,13 @@ func (r *OperatorRepository) GetOperatorSettings(ctx context.Context, operatorID
 		BufferCrit:  bufferCrit,
 	}
 
-	// Build notifications (extracted from same row)
+	// Build notifications (extracted from same row).
 	ns := &operator.NotificationSettings{
 		Enabled:  notificationsEnabled == 1,
 		Channels: []string{},
 	}
 
-	// Parse channels
+	// Parse channels.
 	if notifyEmail.Valid && notifyEmail.String != "" {
 		ns.Channels = append(ns.Channels, "email")
 	}
@@ -955,7 +955,7 @@ func (r *OperatorRepository) GetOperatorSettings(ctx context.Context, operatorID
 		ns.Channels = append(ns.Channels, "webhook")
 	}
 
-	// Email settings
+	// Email settings.
 	ns.Email = operator.EmailNotifications{
 		ThresholdBreach:     notifyThresholdBreach == 1,
 		DeviceOffline:       notifyDeviceOffline == 1,
@@ -965,7 +965,7 @@ func (r *OperatorRepository) GetOperatorSettings(ctx context.Context, operatorID
 		RegistrationRequest: notifyRegistrationRequest == 1,
 	}
 
-	// Push settings (same as email in this implementation)
+	// Push settings (same as email in this implementation).
 	ns.Push = operator.PushNotifications{
 		ThresholdBreach:     notifyThresholdBreach == 1,
 		DeviceOffline:       notifyDeviceOffline == 1,
@@ -975,14 +975,14 @@ func (r *OperatorRepository) GetOperatorSettings(ctx context.Context, operatorID
 		RegistrationRequest: notifyRegistrationRequest == 1,
 	}
 
-	// Webhook settings (SECURITY: masked secret)
+	// Webhook settings (SECURITY: masked secret).
 	ns.Webhook = operator.WebhookNotifications{
 		Enabled: notifyWebhook == 1,
 	}
 	if webhookURL.Valid {
 		ns.Webhook.URL = webhookURL.String
 	}
-	// SECURITY: Return masked placeholder, not actual secret
+	// SECURITY: Return masked placeholder, not actual secret.
 	if webhookSecret.Valid && webhookSecret.String != "" {
 		ns.Webhook.Secret = "••••••••"
 	}
@@ -1021,14 +1021,14 @@ func (r *OperatorRepository) GetNotifications(ctx context.Context, operatorID st
 		&notifyUpdateAvailable, &notifyCommandFailed, &notifyRegistrationRequest,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		// Return defaults if no settings exist
+		// Return defaults if no settings exist.
 		return operator.DefaultNotificationSettings(), nil
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	// Parse channels
+	// Parse channels.
 	ns.Channels = []string{}
 	if notifyEmail.Valid && notifyEmail.String != "" {
 		ns.Channels = append(ns.Channels, "email")
@@ -1040,7 +1040,7 @@ func (r *OperatorRepository) GetNotifications(ctx context.Context, operatorID st
 		ns.Channels = append(ns.Channels, "webhook")
 	}
 
-	// Parse email settings from notify_email JSON or use defaults
+	// Parse email settings from notify_email JSON or use defaults.
 	ns.Email = operator.EmailNotifications{
 		ThresholdBreach:     notifyThresholdBreach == 1,
 		DeviceOffline:       notifyDeviceOffline == 1,
@@ -1050,7 +1050,7 @@ func (r *OperatorRepository) GetNotifications(ctx context.Context, operatorID st
 		RegistrationRequest: notifyRegistrationRequest == 1,
 	}
 
-	// Parse push settings - same as email in this implementation
+	// Parse push settings - same as email in this implementation.
 	ns.Push = operator.PushNotifications{
 		ThresholdBreach:     notifyThresholdBreach == 1,
 		DeviceOffline:       notifyDeviceOffline == 1,
@@ -1060,15 +1060,15 @@ func (r *OperatorRepository) GetNotifications(ctx context.Context, operatorID st
 		RegistrationRequest: notifyRegistrationRequest == 1,
 	}
 
-	// Parse webhook settings
-	// SECURITY: Never return the raw webhook secret - only indicate if it exists
+	// Parse webhook settings.
+	// SECURITY: Never return the raw webhook secret - only indicate if it exists.
 	ns.Webhook = operator.WebhookNotifications{
 		Enabled: notifyWebhook == 1,
 	}
 	if webhookURL.Valid {
 		ns.Webhook.URL = webhookURL.String
 	}
-	// Don't expose secret in GET responses - only return placeholder if set
+	// Don't expose secret in GET responses - only return placeholder if set.
 	if webhookSecret.Valid && webhookSecret.String != "" {
 		ns.Webhook.Secret = "••••••••"
 	} else {
@@ -1132,7 +1132,7 @@ func (r *OperatorRepository) UpdateNotifications(ctx context.Context, operatorID
 	}
 
 	if rows == 0 {
-		// Settings row doesn't exist - insert with the notification settings
+		// Settings row doesn't exist - insert with the notification settings.
 		result, err = r.exec(ctx,
 			`INSERT INTO operator_settings (operator_id, notifications_enabled, notify_email, notify_push, notify_webhook,
 			 webhook_url, webhook_secret, webhook_types,
@@ -1151,7 +1151,7 @@ func (r *OperatorRepository) UpdateNotifications(ctx context.Context, operatorID
 			return err
 		}
 
-		// Verify the INSERT actually created a row
+		// Verify the INSERT actually created a row.
 		inserted, err := result.RowsAffected()
 		if err != nil {
 			return err
@@ -1167,10 +1167,10 @@ func (r *OperatorRepository) UpdateNotifications(ctx context.Context, operatorID
 // RotateWebhookSecret generates a new webhook secret for an operator.
 // SECURITY: Returns plaintext secret only on rotation (one-time view), stores hashed.
 func (r *OperatorRepository) RotateWebhookSecret(ctx context.Context, operatorID string) (string, error) {
-	// Generate a new secret
+	// Generate a new secret.
 	plaintextSecret := generateWebhookSecret()
 
-	// Hash the secret before storing
+	// Hash the secret before storing.
 	hashedSecret, err := password.HashSecret(plaintextSecret)
 	if err != nil {
 		return "", fmt.Errorf("failed to hash webhook secret: %w", err)
@@ -1191,7 +1191,7 @@ func (r *OperatorRepository) RotateWebhookSecret(ctx context.Context, operatorID
 		return "", fmt.Errorf("operator settings not found for operator %s", operatorID)
 	}
 
-	// Return plaintext secret - this is the ONLY time it's exposed to the operator
+	// Return plaintext secret - this is the ONLY time it's exposed to the operator.
 	return plaintextSecret, nil
 }
 
@@ -1280,7 +1280,7 @@ func (r *OperatorRepository) hashWebhookSecret(ctx context.Context, operatorID, 
 		return "", nil
 	}
 
-	// Masked placeholder - keep existing secret
+	// Masked placeholder - keep existing secret.
 	existing, err := r.GetNotifications(ctx, operatorID)
 	if err == nil && existing != nil {
 		if existing.Webhook.Secret != "••••••••" {

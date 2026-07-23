@@ -34,7 +34,7 @@ func (s *OrganizationSettingsService) SettingsRepo() organization.OrganizationSe
 
 // CreateSettings creates organization settings with defaults for a new organization.
 func (s *OrganizationSettingsService) CreateSettings(ctx context.Context, orgID string) (*organization.OrganizationSettings, error) {
-	// Verify organization exists
+	// Verify organization exists.
 	org, err := s.orgRepo.FindByID(ctx, orgID)
 	if err != nil {
 		if errors.Is(err, organization.ErrNotFound) {
@@ -47,16 +47,16 @@ func (s *OrganizationSettingsService) CreateSettings(ctx context.Context, orgID 
 		return nil, organization.ErrNotFound
 	}
 
-	// Check if settings already exist
+	// Check if settings already exist.
 	existing, err := s.settingsRepo.FindByOrganizationID(ctx, orgID)
 	if err != nil && !errors.Is(err, organization.ErrSettingsNotFound) {
 		return nil, err
 	}
 	if existing != nil {
-		return existing, nil // Already exists, return it
+		return existing, nil // Already exists, return it.
 	}
 
-	// Create new settings with defaults
+	// Create new settings with defaults.
 	settings := organization.NewOrganizationSettings(orgID)
 
 	if err := s.settingsRepo.Create(ctx, settings); err != nil {
@@ -90,7 +90,7 @@ func (s *OrganizationSettingsService) GetOrCreateSettings(ctx context.Context, o
 		return settings, nil
 	}
 
-	// Create with defaults
+	// Create with defaults.
 	return s.CreateSettings(ctx, orgID)
 }
 
@@ -104,7 +104,7 @@ func (s *OrganizationSettingsService) UpdateSettings(ctx context.Context, orgID 
 		return nil, err
 	}
 
-	// Apply updates
+	// Apply updates.
 	if req.Timezone != nil {
 		settings.Timezone = *req.Timezone
 	}
@@ -137,13 +137,13 @@ func (s *OrganizationSettingsService) UpdateThresholds(ctx context.Context, orgI
 		return nil, err
 	}
 
-	// Merge with existing thresholds
+	// Merge with existing thresholds.
 	thresholds := settings.DefaultThresholds
 	if thresholds == nil {
 		thresholds = organization.DefaultThresholds()
 	}
 
-	// Apply updates from request
+	// Apply updates from request.
 	if req.RiskWarn != nil {
 		thresholds.RiskWarn = *req.RiskWarn
 	}
@@ -163,7 +163,7 @@ func (s *OrganizationSettingsService) UpdateThresholds(ctx context.Context, orgI
 		thresholds.BufferCrit = *req.BufferCrit
 	}
 
-	// Validate the merged thresholds
+	// Validate the merged thresholds.
 	if err := thresholds.Validate(); err != nil {
 		return nil, err
 	}

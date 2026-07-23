@@ -31,7 +31,7 @@ func (h *UpdatesSyncHandler) Sync(c *gin.Context) {
 		operatorID = operator.ID
 	}
 
-	// Audit log sync start
+	// Audit log sync start.
 	if h.auditLogger != nil {
 		h.auditLogger.UpdateSyncStarted(
 			c.Request.Context(),
@@ -43,7 +43,7 @@ func (h *UpdatesSyncHandler) Sync(c *gin.Context) {
 
 	result, err := h.service.SyncFromGitHub(c.Request.Context())
 	if err != nil {
-		// Audit log sync failure
+		// Audit log sync failure.
 		if h.auditLogger != nil {
 			h.auditLogger.UpdateSyncFailed(
 				c.Request.Context(),

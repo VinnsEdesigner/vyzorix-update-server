@@ -10,13 +10,13 @@ var ErrNotFound = errors.New("device not found")
 
 // Device represents a registered device with explicit lifecycle management.
 type Device struct {
-	// Lifecycle tracks the registration lifecycle state (pending → registered → deregistered)
+	// Lifecycle tracks the registration lifecycle state (pending → registered → deregistered).
 	Lifecycle Lifecycle
 
 	// OrganizationID is the organization this device belongs to (for multi-tenant).
 	OrganizationID string
 
-	// Infrastructure fields (kept as-is for backward compatibility)
+	// Infrastructure fields (kept as-is for backward compatibility).
 	UpdatedAt            time.Time
 	CreatedAt            time.Time
 	Metadata             map[string]string
@@ -159,8 +159,8 @@ func (d *Device) IsFCMTokenValid() bool {
 		return false
 	}
 	if d.FCMTokenRefreshedAt == nil || *d.FCMTokenRefreshedAt == 0 {
-		// If never refreshed, check if token was set recently (within 30 days)
-		// For now, consider empty refresh time as valid
+		// If never refreshed, check if token was set recently (within 30 days).
+		// For now, consider empty refresh time as valid.
 		return true
 	}
 	refreshTime := time.UnixMilli(*d.FCMTokenRefreshedAt)

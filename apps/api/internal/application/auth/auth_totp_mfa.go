@@ -30,8 +30,8 @@ func (s *AuthService) VerifyMFACode(ctx context.Context, operatorID, code string
 		return nil, application.ErrForbidden
 	}
 
-	// Verify the stored MAC binding matches this operatorID
-	// This prevents attackers from using a stolen MFASecret with a different account
+	// Verify the stored MAC binding matches this operatorID.
+	// This prevents attackers from using a stolen MFASecret with a different account.
 	if op.MFASecret != "" {
 		binding := infraauth.MFASecretBinding{
 			Secret: op.MFASecret,
@@ -42,7 +42,7 @@ func (s *AuthService) VerifyMFACode(ctx context.Context, operatorID, code string
 		}
 	}
 
-	// Verify TOTP code
+	// Verify TOTP code.
 	cfg := infraauth.DefaultTOTPConfig()
 	cfg.AccountName = op.Email
 	cfg.Issuer = fmt.Sprintf("Vyzorix-%s", operatorID[:8])
@@ -52,19 +52,19 @@ func (s *AuthService) VerifyMFACode(ctx context.Context, operatorID, code string
 		return nil, application.ErrInvalidCredentials
 	}
 
-	// Create session and mark it as MFA-verified
+	// Create session and mark it as MFA-verified.
 	sess, err := s.CreateSession(ctx, operatorID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set MFAVerifiedAt on the session
+	// Set MFAVerifiedAt on the session.
 	now := time.Now()
 	if err := s.sessionRepo.SetMFAVerifiedAt(ctx, sess.ID, now); err != nil {
 		return nil, err
 	}
 
-	// Update the session object with the MFAVerifiedAt timestamp
+	// Update the session object with the MFAVerifiedAt timestamp.
 	sess.MFAVerifiedAt = &now
 
 	return sess, nil
@@ -78,7 +78,7 @@ func (s *AuthService) EnrollMFA(ctx context.Context, operatorID, email string) (
 	}
 
 	binding := infraauth.CreateMFASecretBinding(operatorID, secret)
-	_ = binding // Store via UpdateMFA call
+	_ = binding // Store via UpdateMFA call.
 
 	cfg := infraauth.DefaultTOTPConfig()
 	cfg.AccountName = email
@@ -106,9 +106,9 @@ func (s *AuthService) EnableMFA(ctx context.Context, operatorID, secret string, 
 		return err
 	}
 
-	// Invalidate all existing sessions - user must re-authenticate with MFA
+	// Invalidate all existing sessions - user must re-authenticate with MFA.
 	if err := s.LogoutAll(ctx, operatorID); err != nil {
-		// Log but don't fail - MFA is enabled, sessions will expire anyway
+		// Log but don't fail - MFA is enabled, sessions will expire anyway.
 		return nil
 	}
 
@@ -122,12 +122,12 @@ func (s *AuthService) DisableMFA(ctx context.Context, operatorID string) error {
 		return err
 	}
 
-	// Revoke all sessions for this operator
+	// Revoke all sessions for this operator.
 	if err := s.LogoutAll(ctx, operatorID); err != nil {
 		slog.Warn("failed to revoke sessions during MFA disable", "operator_id", operatorID, "error", err)
 	}
 
-	// Revoke all refresh tokens for this operator
+	// Revoke all refresh tokens for this operator.
 	if s.refreshTokenRepo != nil {
 		if err := s.refreshTokenRepo.RevokeAllForOperator(ctx, operatorID); err != nil {
 			slog.Warn("failed to revoke refresh tokens during MFA disable", "operator_id", operatorID, "error", err)

@@ -39,7 +39,7 @@ func migrateOrganizationSettings(db *sql.DB) error {
 		return err
 	}
 
-	// Create index for efficient lookups
+	// Create index for efficient lookups.
 	_, err = db.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_org_settings_org ON organization_settings(organization_id)
 	`)

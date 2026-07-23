@@ -57,7 +57,7 @@ func GinPanicRecovery(logger *slog.Logger) func(c *gin.Context) {
 
 				var relevantLines []string
 
-				skipNext := true // Skip the first line (panic line)
+				skipNext := true // Skip the first line (panic line).
 				for _, line := range lines {
 					if skipNext {
 						skipNext = false

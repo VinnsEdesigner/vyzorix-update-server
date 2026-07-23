@@ -8,9 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// =============================================================================
-// Validation Schemas (Zod-style patterns for Go)
-// =============================================================================
+// =============================================================================.
+// Validation Schemas (Zod-style patterns for Go).
+// =============================================================================.
 
 // ValidationError represents a validation error with field context.
 type ValidationError struct {
@@ -46,9 +46,9 @@ func (ve ValidationErrors) Error() string {
 	return strings.Join(msgs, "; ")
 }
 
-// =============================================================================
-// Regex Patterns
-// =============================================================================
+// =============================================================================.
+// Regex Patterns.
+// =============================================================================.
 
 var (
 	// EmailPattern validates email format (RFC 5322 simplified).
@@ -80,9 +80,9 @@ var (
 	CommandPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]{0,63}$`)
 )
 
-// =============================================================================
-// Schema Validators
-// =============================================================================
+// =============================================================================.
+// Schema Validators.
+// =============================================================================.
 
 // LoginSchema validates login requests.
 type LoginSchema struct {
@@ -140,7 +140,7 @@ func (s *RegisterSchema) Validate() ValidationErrors {
 		errs = append(errs, ValidationError{Field: "name", Message: "name must be 2-100 characters (letters, numbers, spaces, hyphens, apostrophes)"})
 	}
 
-	// Role is optional, but if provided must be valid
+	// Role is optional, but if provided must be valid.
 	if s.Role != "" && s.Role != "operator" && s.Role != "super_admin" {
 		errs = append(errs, ValidationError{Field: "role", Message: "role must be 'operator' or 'super_admin'"})
 	}
@@ -218,37 +218,37 @@ func (s *ChangePasswordSchema) Validate() ValidationErrors {
 }
 
 // DEPRECATED: DeviceRegisterSchema - /v1/device/register endpoint removed. Use /v1/device/inbox instead.
-// type DeviceRegisterSchema struct {
-// 	DeviceID          string `json:"deviceId"`
-// 	FirebaseInstallID string `json:"firebaseInstallId"`
-// 	FCMToken          string `json:"fcmToken"`
-// 	AppVersion        string `json:"appVersion"`
-// 	DeviceClass       string `json:"deviceClass"`
-// }
+// type DeviceRegisterSchema struct {.
+// 	DeviceID          string `json:"deviceId"`.
+// 	FirebaseInstallID string `json:"firebaseInstallId"`.
+// 	FCMToken          string `json:"fcmToken"`.
+// 	AppVersion        string `json:"appVersion"`.
+// 	DeviceClass       string `json:"deviceClass"`.
+// }.
 //
-// func (s *DeviceRegisterSchema) Validate() ValidationErrors {
-// 	var errs ValidationErrors
+// func (s *DeviceRegisterSchema) Validate() ValidationErrors {.
+// 	var errs ValidationErrors.
 //
-// 	if s.DeviceID == "" {
-// 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId is required"})
-// 	} else if !DeviceIDPattern.MatchString(s.DeviceID) {
-// 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId must be 1-64 alphanumeric characters with underscores or hyphens"})
-// 	}
+// 	if s.DeviceID == "" {.
+// 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId is required"}).
+// 	} else if !DeviceIDPattern.MatchString(s.DeviceID) {.
+// 		errs = append(errs, ValidationError{Field: "deviceId", Message: "deviceId must be 1-64 alphanumeric characters with underscores or hyphens"}).
+// 	}.
 //
-// 	if s.FirebaseInstallID == "" {
-// 		errs = append(errs, ValidationError{Field: "firebaseInstallId", Message: "firebaseInstallId is required"})
-// 	}
+// 	if s.FirebaseInstallID == "" {.
+// 		errs = append(errs, ValidationError{Field: "firebaseInstallId", Message: "firebaseInstallId is required"}).
+// 	}.
 //
-// 	if s.AppVersion != "" && len(s.AppVersion) > 32 {
-// 		errs = append(errs, ValidationError{Field: "appVersion", Message: "appVersion must be at most 32 characters"})
-// 	}
+// 	if s.AppVersion != "" && len(s.AppVersion) > 32 {.
+// 		errs = append(errs, ValidationError{Field: "appVersion", Message: "appVersion must be at most 32 characters"}).
+// 	}.
 //
-// 	if s.DeviceClass != "" && len(s.DeviceClass) > 64 {
-// 		errs = append(errs, ValidationError{Field: "deviceClass", Message: "deviceClass must be at most 64 characters"})
-// 	}
+// 	if s.DeviceClass != "" && len(s.DeviceClass) > 64 {.
+// 		errs = append(errs, ValidationError{Field: "deviceClass", Message: "deviceClass must be at most 64 characters"}).
+// 	}.
 //
-// 	return errs
-// }
+// 	return errs.
+// }.
 
 // DeviceStatusSchema validates device status update requests.
 type DeviceStatusSchema struct {
@@ -326,7 +326,7 @@ func (s *ClientSchema) Validate() ValidationErrors {
 		errs = append(errs, ValidationError{Field: "description", Message: "description must be at most 500 characters"})
 	}
 
-	// Validate permissions
+	// Validate permissions.
 	validPermissions := map[string]bool{
 		"device:read":    true,
 		"device:write":   true,
@@ -450,9 +450,9 @@ func (s *FCMTokenUpdateSchema) Validate() ValidationErrors {
 	return errs
 }
 
-// =============================================================================
-// Middleware Factory
-// =============================================================================
+// =============================================================================.
+// Middleware Factory.
+// =============================================================================.
 
 // ValidationMiddleware creates a Gin middleware for validating request bodies.
 func ValidationMiddleware(schema Validator) gin.HandlerFunc {

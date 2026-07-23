@@ -25,7 +25,7 @@ func NewSyncService(repo updates.Repository, githubSvc *github.SyncService) *Syn
 
 // SyncFromGitHub triggers a manual sync from GitHub.
 func (s *SyncService) SyncFromGitHub(ctx context.Context) (*SyncResponse, error) {
-	// Atomically try to acquire sync lock to prevent race conditions
+	// Atomically try to acquire sync lock to prevent race conditions.
 	acquired, currentState, err := s.repo.TryAcquireSyncLock(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire sync lock: %w", err)
@@ -39,7 +39,7 @@ func (s *SyncService) SyncFromGitHub(ctx context.Context) (*SyncResponse, error)
 		}, ErrSyncAlreadyInProgress
 	}
 
-	// Perform sync
+	// Perform sync.
 	result, err := s.githubSvc.SyncFromGitHub(ctx)
 	if err != nil {
 		errorState := &updates.SyncState{
@@ -53,7 +53,7 @@ func (s *SyncService) SyncFromGitHub(ctx context.Context) (*SyncResponse, error)
 		return nil, fmt.Errorf("sync failed: %w", err)
 	}
 
-	// Update status to synced
+	// Update status to synced.
 	now := time.Now()
 	nextSync := now.Add(24 * time.Hour)
 	syncedState := &updates.SyncState{

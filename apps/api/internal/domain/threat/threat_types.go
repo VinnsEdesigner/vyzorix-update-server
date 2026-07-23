@@ -111,7 +111,7 @@ func DefaultRules() []*DetectionRule {
 			Severity: SeverityHigh,
 			Action:   ActionBlock,
 			Condition: func(ctx *LoginContext) bool {
-				return ctx.FailedAttempts >= 5 // Lowered threshold for earlier blocking
+				return ctx.FailedAttempts >= 5 // Lowered threshold for earlier blocking.
 			},
 		},
 		{
@@ -123,9 +123,9 @@ func DefaultRules() []*DetectionRule {
 				if ctx.LastLogin == nil {
 					return false
 				}
-				// Check for impossible travel: same operator from different IP within short time
+				// Check for impossible travel: same operator from different IP within short time.
 				timeSinceLastLogin := ctx.Timestamp.Sub(ctx.LastLogin.Timestamp)
-				// If less than 30 minutes between logins from different locations, it's suspicious
+				// If less than 30 minutes between logins from different locations, it's suspicious.
 				if timeSinceLastLogin < 30*time.Minute && ctx.IPAddress != ctx.LastLogin.IPAddress {
 					return true
 				}
@@ -141,14 +141,14 @@ func DefaultRules() []*DetectionRule {
 				if ctx.LastLogin == nil {
 					return false
 				}
-				// Only flag if location is significantly different
+				// Only flag if location is significantly different.
 				return ctx.Location != "" && ctx.Location != ctx.LastLogin.Location
 			},
 		},
 	}
 }
 
-// EvaluateAll checks the login context against all detection rules and returns
+// EvaluateAll checks the login context against all detection rules and returns.
 // all matched threats, sorted by severity (most severe first).
 func (d *Detector) EvaluateAll(ctx *LoginContext) []*ThreatResponse {
 	var threats []*ThreatResponse
@@ -167,7 +167,7 @@ func (d *Detector) EvaluateAll(ctx *LoginContext) []*ThreatResponse {
 		}
 	}
 
-	// Sort by severity descending
+	// Sort by severity descending.
 	sort.Slice(threats, func(i, j int) bool {
 		return severityRank(threats[i].Severity) > severityRank(threats[j].Severity)
 	})

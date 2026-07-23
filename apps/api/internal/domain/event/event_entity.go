@@ -54,7 +54,7 @@ type Event struct {
 	Severity   Severity       `json:"severity"`
 	Timestamp  time.Time      `json:"timestamp"`
 	Data       map[string]any `json:"data,omitempty"`
-	Source     string         `json:"source"` // "device", "server", "dashboard"
+	Source     string         `json:"source"` // "device", "server", "dashboard".
 }
 
 // EventFilter contains filter parameters for querying events.

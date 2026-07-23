@@ -184,8 +184,8 @@ curl -X POST http://localhost:3000/graphql \
 The GraphQL server is integrated via wire dependency injection:
 
 ```go
-// Wire handles dependency injection automatically
-// See internal/api/wire/providers.go for service wiring
+// Wire handles dependency injection automatically.
+// See internal/api/wire/providers.go for service wiring.
 ```
 
 ## Production Considerations

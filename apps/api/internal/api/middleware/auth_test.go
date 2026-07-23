@@ -120,7 +120,7 @@ func TestAuthenticator_NoToken(t *testing.T) {
 
 func TestAuthenticator_DevelopmentBypass(t *testing.T) {
 	auth := Authenticator{
-		ServerAPIToken:       "", // No token secret
+		ServerAPIToken:       "", // No token secret.
 		DevelopmentBypass: true,
 	}
 
@@ -149,7 +149,7 @@ func TestAuthenticator_MissingBearerPrefix(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest("GET", "/test", nil)
-	c.Request.Header.Set("Authorization", "secret-token-123") // Missing "Bearer "
+	c.Request.Header.Set("Authorization", "secret-token-123") // Missing "Bearer ".
 
 	handler(c)
 

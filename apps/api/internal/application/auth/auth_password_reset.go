@@ -132,7 +132,7 @@ func (s *AuthService) ResetPassword(ctx context.Context, token, _email string, n
 		return application.ErrInvalidInput
 	}
 
-	// Check if password was breached (using k-anonymity to avoid sending password to external API)
+	// Check if password was breached (using k-anonymity to avoid sending password to external API).
 	if breached, _ := infraauth.CheckPasswordBreached(newPassword); breached {
 		return application.ErrPasswordBreached
 	}
@@ -207,7 +207,7 @@ func (s *AuthService) CheckResendRateLimit(ctx context.Context, email string) (*
 		return nil, err
 	}
 
-	// Check if currently locked out
+	// Check if currently locked out.
 	if tracker.IsLockedOut() {
 		return &ResendRateLimitResult{
 			Allowed:     false,

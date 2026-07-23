@@ -9,19 +9,19 @@ import (
 // migrateCommandSecretHash adds command_secret_hash column to inbox_requests.
 // Stores only the hash of the command secret for security.
 func migrateCommandSecretHash(db *sql.DB) error {
-	// Check if column already exists
+	// Check if column already exists.
 	var exists int
 	err := db.QueryRowContext(context.Background(),
 		"SELECT 1 FROM pragma_table_info('inbox_requests') WHERE name = 'command_secret_hash'").Scan(&exists)
 	if err == nil {
-		// Column already exists
+		// Column already exists.
 		return nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 
-	// Add command_secret_hash column
+	// Add command_secret_hash column.
 	_, err = db.ExecContext(context.Background(), `
 		ALTER TABLE inbox_requests ADD COLUMN command_secret_hash TEXT
 	`)

@@ -71,13 +71,13 @@ type Server struct {
 
 // NewServer creates a new GraphQL server.
 func NewServer(cfg *Config) (*Server, error) {
-	// Create auth middleware
+	// Create auth middleware.
 	authMw := middleware.NewAuthMiddleware(cfg.SessionManager, cfg.AuthService, cfg.Log)
 
-	// Create GraphQL presenter for audit logging
+	// Create GraphQL presenter for audit logging.
 	presenter := gqladapters.NewPresenter(cfg.AuditLogger)
 
-	// Create resolver
+	// Create resolver.
 	res := resolver.NewResolver(
 		cfg.DeviceService,
 		cfg.DeviceSettingsService,
@@ -105,7 +105,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		cfg.InvitationService,
 	)
 
-	// Create handler
+	// Create handler.
 	h, err := handler.NewHandler(&handler.Config{
 		Resolver:       res,
 		AuthMiddleware: authMw,

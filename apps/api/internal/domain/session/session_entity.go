@@ -45,7 +45,7 @@ func (s *Session) RemainingLifetime() int {
 	total := s.ExpiresAt.Sub(s.CreatedAt).Seconds()
 	remaining := s.TimeUntilExpiry().Seconds()
 
-	// Avoid division by zero
+	// Avoid division by zero.
 	if total == 0 {
 		return 0
 	}

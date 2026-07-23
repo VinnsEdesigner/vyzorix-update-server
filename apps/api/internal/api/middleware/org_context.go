@@ -11,7 +11,7 @@ const ContextKeyOrganizationID = "organization_id"
 
 // OrganizationContext middleware extracts and validates organization ID from request.
 type OrganizationContext struct {
-// SkipIfMissing allows requests without organization context (for optional org scoping)
+// SkipIfMissing allows requests without organization context (for optional org scoping).
 SkipIfMissing bool
 }
 
@@ -27,15 +27,15 @@ return c
 // Middleware returns the gin middleware handler.
 func (c *OrganizationContext) Middleware() gin.HandlerFunc {
 return func(ctx *gin.Context) {
-// Try to get organization ID from query parameter first
+// Try to get organization ID from query parameter first.
 orgID := ctx.Query("organization_id")
 
-// Then check header
+// Then check header.
 if orgID == "" {
 orgID = ctx.GetHeader("X-Organization-ID")
 }
 
-// Then check context (set by auth middleware)
+// Then check context (set by auth middleware).
 if orgID == "" {
 if storedOrgID, exists := ctx.Get(ContextKeyOrganizationID); exists {
 if id, ok := storedOrgID.(string); ok {
@@ -44,7 +44,7 @@ orgID = id
 }
 }
 
-// Fall back to session's SelectedOrganizationID if no explicit org ID
+// Fall back to session's SelectedOrganizationID if no explicit org ID.
 if orgID == "" {
 if sessVal, exists := ctx.Get("session"); exists {
 if sess, ok := sessVal.(*session.Session); ok {

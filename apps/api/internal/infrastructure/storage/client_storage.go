@@ -16,15 +16,15 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/password"
 )
 
-// Helper functions for client repository
+// Helper functions for client repository.
 
 // NewUUIDv7 generates a UUIDv7 string.
 func NewUUIDv7() string {
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
-	// Set version 7 (UUIDv7)
+	// Set version 7 (UUIDv7).
 	b[6] = (b[6] & 0x0f) | 0x70
-	// Set variant 10
+	// Set variant 10.
 	b[8] = (b[8] & 0x3f) | 0x80
 
 	return hex.EncodeToString(b)
@@ -192,7 +192,7 @@ func (r *ClientRepository) FindByOperatorID(ctx context.Context, operatorID stri
 
 // FindAll retrieves all clients with pagination (admin use).
 func (r *ClientRepository) FindAll(ctx context.Context, limit, offset int) ([]*client.Client, int, error) {
-	// Get total count
+	// Get total count.
 	var total int
 
 	countQuery := `SELECT COUNT(*) FROM api_clients`
@@ -249,12 +249,12 @@ func (r *ClientRepository) FindAll(ctx context.Context, limit, offset int) ([]*c
 
 // Create creates a new client.
 func (r *ClientRepository) Create(ctx context.Context, c *client.Client, secret string) (*client.Client, string, error) {
-	// Generate client ID (UUIDv7) if not set
+	// Generate client ID (UUIDv7) if not set.
 	if c.ID == "" {
 		c.ID = NewUUIDv7()
 	}
 
-	// Generate client secret (32 bytes = 64 hex chars) if provided secret is empty
+	// Generate client secret (32 bytes = 64 hex chars) if provided secret is empty.
 	if secret == "" {
 		secretBytes := make([]byte, 32)
 		if _, err := readRandom(secretBytes); err != nil {
@@ -264,13 +264,13 @@ func (r *ClientRepository) Create(ctx context.Context, c *client.Client, secret 
 		secret = hexEncode(secretBytes)
 	}
 
-	// Hash the secret with Argon2id for authentication
+	// Hash the secret with Argon2id for authentication.
 	secretHash, err := password.HashPassword(secret)
 	if err != nil {
 		return nil, "", err
 	}
 
-	// Derive HMAC key for request signing verification
+	// Derive HMAC key for request signing verification.
 	hmacKey := deriveHmacKey(secret)
 
 	c.ClientSecretHash = secretHash
@@ -342,10 +342,10 @@ func (r *ClientRepository) Delete(ctx context.Context, id string) error {
 
 // RotateSigningKey rotates the signing key with a grace period.
 func (r *ClientRepository) RotateSigningKey(ctx context.Context, clientID string, gracePeriod time.Duration) (*client.SigningKey, string, error) {
-	// Generate key ID
+	// Generate key ID.
 	keyID := NewUUIDv7()
 
-	// Generate the actual key
+	// Generate the actual key.
 	keyBytes := make([]byte, 32)
 	if _, err := readRandom(keyBytes); err != nil {
 		return nil, "", err
@@ -353,10 +353,10 @@ func (r *ClientRepository) RotateSigningKey(ctx context.Context, clientID string
 
 	key := hexEncode(keyBytes)
 
-	// Hash the key for storage
+	// Hash the key for storage.
 	keyHash := hashSHA512(key)
 
-	// Get current max version
+	// Get current max version.
 	var maxVersion int
 
 	err := r.queryRow(ctx, `
@@ -384,7 +384,7 @@ func (r *ClientRepository) RotateSigningKey(ctx context.Context, clientID string
 		return nil, "", err
 	}
 
-	// Deactivate old keys
+	// Deactivate old keys.
 	_, _ = r.exec(ctx, `
 		UPDATE signing_keys SET is_active = 0 WHERE client_id = ? AND id != ?
 	`, clientID, keyID)
@@ -424,7 +424,7 @@ func (r *ClientRepository) ValidateSigningKey(ctx context.Context, clientID, sig
 		return err
 	}
 
-	// Verify signature using HMAC-SHA256
+	// Verify signature using HMAC-SHA256.
 	expectedSig := hmacSHA256(key.KeyHash, timestamp+payload)
 	if expectedSig != signature {
 		return errors.New("invalid signature")

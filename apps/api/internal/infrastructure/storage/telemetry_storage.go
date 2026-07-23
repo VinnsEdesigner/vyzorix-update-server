@@ -57,15 +57,15 @@ func (r *TelemetryRepository) Save(ctx context.Context, deviceID string, raw []b
 	}
 	defer SafeRollbackNoLog(tx)
 
-	// Generate UUIDv7 for the telemetry entry
+	// Generate UUIDv7 for the telemetry entry.
 	telemetryID := shared.GenerateID()
 
 	now := time.Now().UnixMilli()
 
-	// Use uptime from frame if available, otherwise 0
+	// Use uptime from frame if available, otherwise 0.
 	uptime := frame.Uptime
 	if uptime == 0 {
-		uptime = 0 // Default to 0 if not provided
+		uptime = 0 // Default to 0 if not provided.
 	}
 
 	_, err = tx.ExecContext(ctx,
@@ -80,12 +80,12 @@ func (r *TelemetryRepository) Save(ctx context.Context, deviceID string, raw []b
 	return tx.Commit()
 }
 
-// PruneDeviceTelemetry removes old telemetry entries for a specific device,
+// PruneDeviceTelemetry removes old telemetry entries for a specific device,.
 // keeping only the latest maxEntries. This is called by a background job.
 
 func (r *TelemetryRepository) PruneDeviceTelemetry(ctx context.Context, deviceID string, maxEntries int) error {
 	if maxEntries <= 0 {
-		maxEntries = 500 // Default per-device limit
+		maxEntries = 500 // Default per-device limit.
 	}
 
 	_, err := r.exec(ctx,
@@ -104,7 +104,7 @@ func (r *TelemetryRepository) PruneAllDevices(ctx context.Context, maxEntriesPer
 		maxEntriesPerDevice = 500
 	}
 
-	// Get all unique device IDs
+	// Get all unique device IDs.
 	rows, err := r.queryRows(ctx, `SELECT DISTINCT device_id FROM telemetry`)
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func (r *TelemetryRepository) PruneAllDevices(ctx context.Context, maxEntriesPer
 		if err := rows.Scan(&deviceID); err != nil {
 			continue
 		}
-		// Prune each device (ignore errors for individual devices)
+		// Prune each device (ignore errors for individual devices).
 		_ = r.PruneDeviceTelemetry(ctx, deviceID, maxEntriesPerDevice)
 	}
 
@@ -228,7 +228,7 @@ func (r *TelemetryRepository) DeleteByDeviceIDs(ctx context.Context, deviceIDs [
 		return 0, nil
 	}
 
-	// Build query with placeholders for each device ID
+	// Build query with placeholders for each device ID.
 	placeholders := make([]string, len(deviceIDs))
 	args := make([]interface{}, len(deviceIDs))
 	for i, id := range deviceIDs {

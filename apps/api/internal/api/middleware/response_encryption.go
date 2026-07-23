@@ -23,7 +23,7 @@ type ResponseEncryptionConfig struct {
 // DefaultResponseEncryptionConfig returns default config with encryption ENABLED.
 func DefaultResponseEncryptionConfig() ResponseEncryptionConfig {
 	return ResponseEncryptionConfig{
-		Enabled: true, // Mandatory for production
+		Enabled: true, // Mandatory for production.
 	}
 }
 
@@ -119,7 +119,7 @@ func (er *EncryptedResponseWriter) WriteHeader(statusCode int) {
 func (er *EncryptedResponseWriter) Write(b []byte) (int, error) {
 	if !er.headerSet {
 		er.headerSet = true
-		// Set encryption header
+		// Set encryption header.
 		er.ResponseWriter.Header().Set("X-Content-Encryption", "AES-256-GCM")
 		er.ResponseWriter.Header().Set("Content-Type", "application/octet-stream")
 	}
@@ -144,22 +144,22 @@ func (er *EncryptedResponseWriter) Flush() {
 		return
 	}
 
-	// Encrypt the entire response body
+	// Encrypt the entire response body.
 	nonce, ciphertext, err := er.encryptor.Encrypt(er.buf.Bytes())
 	if err != nil {
-		// Can't encrypt - write error as plain text
+		// Can't encrypt - write error as plain text.
 		er.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 		_, _ = er.ResponseWriter.Write([]byte("encryption failed"))
 
 		return
 	}
 
-	// Set headers with nonce for client to use during decryption
+	// Set headers with nonce for client to use during decryption.
 	er.ResponseWriter.Header().Set("X-Encryption-Nonce", base64.StdEncoding.EncodeToString(nonce))
 	er.ResponseWriter.Header().Set("Content-Length", fmt.Sprintf("%d", len(ciphertext)))
 
 	er.ResponseWriter.WriteHeader(er.statusCode)
-	// Send only ciphertext - client uses nonce from header
+	// Send only ciphertext - client uses nonce from header.
 	_, _ = er.ResponseWriter.Write(ciphertext)
 }
 
@@ -215,7 +215,7 @@ func (er *EncryptedResponseWriter) CloseNotify() <-chan bool {
 	}); ok {
 		return cn.CloseNotify()
 	}
-	// Return a closed channel as fallback - client disconnected
+	// Return a closed channel as fallback - client disconnected.
 	ch := make(chan bool)
 	close(ch)
 
@@ -226,34 +226,34 @@ func (er *EncryptedResponseWriter) CloseNotify() <-chan bool {
 // This is REQUIRED for all signed endpoints per the PRD.
 func MandatoryEncryptionMiddleware(getKey func(clientID string) ([]byte, bool)) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get client ID from signature verification (set by RequestSigningMiddleware)
+		// Get client ID from signature verification (set by RequestSigningMiddleware).
 		clientID := c.GetHeader("X-Client-ID")
 		if clientID == "" {
 			c.Next()
 			return
 		}
 
-		// Get the encryption key for this client
+		// Get the encryption key for this client.
 		key, ok := getKey(clientID)
 		if !ok || len(key) != 32 {
 			c.Next()
 			return
 		}
 
-		// Create encryptor
+		// Create encryptor.
 		encryptor, err := NewResponseEncryptor(key)
 		if err != nil {
 			c.Next()
 			return
 		}
 
-		// Wrap the response writer
+		// Wrap the response writer.
 		wrapper := NewEncryptedResponseWriter(c.Writer, encryptor)
 		c.Writer = wrapper
 
 		c.Next()
 
-		// Flush encrypted response
+		// Flush encrypted response.
 		wrapper.Flush()
 	}
 }

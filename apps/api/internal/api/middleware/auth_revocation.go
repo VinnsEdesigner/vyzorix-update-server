@@ -17,14 +17,14 @@ type RevocationConfig struct {
 // DefaultRevocationConfig returns the default revocation configuration.
 func DefaultRevocationConfig() RevocationConfig {
 	return RevocationConfig{
-		Enabled: true, // Enabled by default for security
+		Enabled: true, // Enabled by default for security.
 	}
 }
 
 // LoadRevocationConfig loads revocation configuration from environment variables.
 func LoadRevocationConfig() RevocationConfig {
 	return RevocationConfig{
-		Enabled: getEnvBool("SESSION_REVOCATION_ENABLED", true), // Default to enabled
+		Enabled: getEnvBool("SESSION_REVOCATION_ENABLED", true), // Default to enabled.
 	}
 }
 

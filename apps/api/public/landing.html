@@ -317,11 +317,11 @@
   </footer>
 
   <script>
-    //  State 
+    //  State.
     let serverStartMs = null;
     let isOnline = false;
 
-    //  Clock 
+    //  Clock.
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').textContent =
@@ -330,7 +330,7 @@
         now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
-    //  Uptime 
+    //  Uptime.
     function updateUptime() {
       if (!serverStartMs) return;
       const diff = Math.floor((Date.now() - serverStartMs) / 1000);
@@ -340,7 +340,7 @@
       document.getElementById('uptime').textContent = `${h}:${m}:${s}`;
     }
 
-    //  Fetch status 
+    //  Fetch status.
     async function fetchStatus() {
       try {
         const res = await fetch('/health');
@@ -380,14 +380,14 @@
       document.getElementById('offlineAlert').style.display = 'flex';
     }
 
-    //  Boot 
+    //  Boot.
     (function init() {
       updateClock();
       setInterval(updateClock, 1000);
       setInterval(updateUptime, 1000);
 
       fetchStatus();
-      // Refresh status every 30s
+      // Refresh status every 30s.
       setInterval(fetchStatus, 30000);
     })();
   </script>

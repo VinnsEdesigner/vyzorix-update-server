@@ -35,7 +35,7 @@ func (p *ResponsePresenter) Error(err error) Response {
 
 	var gqlErr *gqlerrors.Error
 	if errors.As(err, &gqlErr) {
-		// Use the GraphQL error as-is
+		// Use the GraphQL error as-is.
 	} else {
 		gqlErr = gqlerrors.Internal("%s", err.Error())
 	}

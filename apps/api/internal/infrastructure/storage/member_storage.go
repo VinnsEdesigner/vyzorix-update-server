@@ -150,7 +150,7 @@ func (s *MemberStorage) FindByOperatorAndOrg(ctx context.Context, operatorID, or
 		return nil, err
 	}
 
-	// Map status string to lifecycle
+	// Map status string to lifecycle.
 	member.Lifecycle = memberStatusToLifecycle(status)
 
 	if invitedBy.Valid {
@@ -206,7 +206,7 @@ func (s *MemberStorage) FindByOrganization(ctx context.Context, orgID string) ([
 			return nil, err
 		}
 
-		// Map status string to lifecycle
+		// Map status string to lifecycle.
 		member.Lifecycle = memberStatusToLifecycle(status)
 
 		if invitedBy.Valid {
@@ -227,7 +227,7 @@ func (s *MemberStorage) FindByOrganization(ctx context.Context, orgID string) ([
 
 // FindActiveByOrganizationPaginated lists active members with pagination.
 func (s *MemberStorage) FindActiveByOrganizationPaginated(ctx context.Context, orgID string, limit, offset int) ([]*organization.OrganizationMember, int, error) {
-	// Get total count
+	// Get total count.
 	countQuery := `
 		SELECT COUNT(*) FROM organization_members
 		WHERE organization_id = ? AND status = 'active'`
@@ -238,7 +238,7 @@ func (s *MemberStorage) FindActiveByOrganizationPaginated(ctx context.Context, o
 		return nil, 0, err
 	}
 
-	// Get paginated results
+	// Get paginated results.
 	query := `
 		SELECT om.id, om.organization_id, om.operator_id, om.role, om.invited_by, om.joined_at, om.removed_at, om.status,
 			   COALESCE(op.name, '') as operator_name, COALESCE(op.email, '') as operator_email
@@ -426,7 +426,7 @@ func (s *MemberStorage) ListByOperator(ctx context.Context, operatorID string) (
 			return nil, err
 		}
 
-		// Map status string to lifecycle
+		// Map status string to lifecycle.
 		member.Lifecycle = memberStatusToLifecycle(status)
 
 		if invitedBy.Valid {
@@ -447,7 +447,7 @@ func (s *MemberStorage) ListByOperator(ctx context.Context, operatorID string) (
 
 // ListByOperatorPaginated lists memberships for an operator with pagination.
 func (s *MemberStorage) ListByOperatorPaginated(ctx context.Context, operatorID string, limit, offset int) ([]*organization.OrganizationMember, int, error) {
-	// Get total count
+	// Get total count.
 	countQuery := `
 		SELECT COUNT(*) FROM organization_members
 		WHERE operator_id = ? AND status = 'active'`
@@ -458,7 +458,7 @@ func (s *MemberStorage) ListByOperatorPaginated(ctx context.Context, operatorID 
 		return nil, 0, err
 	}
 
-	// Get paginated results
+	// Get paginated results.
 	query := `
 		SELECT om.id, om.organization_id, om.operator_id, om.role, om.invited_by, om.joined_at, om.removed_at, om.status,
 			   COALESCE(op.name, '') as operator_name, COALESCE(op.email, '') as operator_email

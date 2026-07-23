@@ -46,7 +46,7 @@ func (s *AuthService) FindOrCreateGitHubOperator(ctx context.Context, githubID, 
 		Email:         email,
 		Name:          name,
 		GitHubID:      githubID,
-		EmailVerified: true, // GitHub verifies email
+		EmailVerified: true, // GitHub verifies email.
 		CreatedAt:     now,
 		UpdatedAt:     now,
 	}

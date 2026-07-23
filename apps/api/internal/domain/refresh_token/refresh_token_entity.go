@@ -16,15 +16,15 @@ var ErrRevoked = errors.New("refresh token revoked")
 
 // RefreshToken represents a refresh token for session rotation.
 type RefreshToken struct {
-	ID           string    // Unique identifier (UUIDv7)
-	TokenHash    string    // SHA-256 hash of the actual token
-	OperatorID   string    // The operator this token belongs to
-	SessionID    string    // The session this token is associated with
-	ExpiresAt    time.Time // When this token expires
-	CreatedAt    time.Time // When this token was created
-	RevokedAt    time.Time // When this token was revoked (if applicable)
-	ReplacedByID string    // ID of the token that replaced this one (for rotation)
-	IsRevoked    bool      // Whether this token has been revoked
+	ID           string    // Unique identifier (UUIDv7).
+	TokenHash    string    // SHA-256 hash of the actual token.
+	OperatorID   string    // The operator this token belongs to.
+	SessionID    string    // The session this token is associated with.
+	ExpiresAt    time.Time // When this token expires.
+	CreatedAt    time.Time // When this token was created.
+	RevokedAt    time.Time // When this token was revoked (if applicable).
+	ReplacedByID string    // ID of the token that replaced this one (for rotation).
+	IsRevoked    bool      // Whether this token has been revoked.
 }
 
 // IsExpired returns true if the refresh token has expired.

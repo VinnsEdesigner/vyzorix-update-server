@@ -75,7 +75,7 @@ func NewMiddlewareFactory(
 		authRateLimitPerMin: cfg.AuthRateLimitMin,
 	}
 
-	// Initialize all middleware
+	// Initialize all middleware.
 	f.initSignatureVerifier()
 	f.initIPIntelligence()
 	f.initLockout()
@@ -86,9 +86,9 @@ func NewMiddlewareFactory(
 	return f
 }
 
-// =============================================================================
-// Core Middleware
-// =============================================================================
+// =============================================================================.
+// Core Middleware.
+// =============================================================================.
 
 // Recovery returns the panic recovery middleware.
 func (f *MiddlewareFactory) Recovery() gin.HandlerFunc {
@@ -115,9 +115,9 @@ func (f *MiddlewareFactory) ErrorHandler() gin.HandlerFunc {
 	return ErrorHandler(f.log)
 }
 
-// =============================================================================
-// Security Middleware
-// =============================================================================
+// =============================================================================.
+// Security Middleware.
+// =============================================================================.
 
 // CORS returns the CORS middleware.
 func (f *MiddlewareFactory) CORS() gin.HandlerFunc {
@@ -144,9 +144,9 @@ func (f *MiddlewareFactory) DisableConnect() gin.HandlerFunc {
 	return DisableConnect()
 }
 
-// =============================================================================
-// Rate Limiting
-// =============================================================================
+// =============================================================================.
+// Rate Limiting.
+// =============================================================================.
 
 // RateLimiter returns the general rate limiter middleware.
 func (f *MiddlewareFactory) RateLimiter() gin.HandlerFunc {
@@ -160,9 +160,9 @@ func (f *MiddlewareFactory) AuthRateLimiter() gin.HandlerFunc {
 	return limiter.Middleware()
 }
 
-// =============================================================================
-// Authentication Middleware
-// =============================================================================
+// =============================================================================.
+// Authentication Middleware.
+// =============================================================================.
 
 // CookieAuth returns the cookie-based authentication middleware.
 func (f *MiddlewareFactory) CookieAuth() gin.HandlerFunc {
@@ -178,9 +178,9 @@ func (f *MiddlewareFactory) SignatureVerifier() gin.HandlerFunc {
 	return RequestSigningMiddleware(f.signatureVerifier)
 }
 
-// =============================================================================
-// Protection Middleware
-// =============================================================================
+// =============================================================================.
+// Protection Middleware.
+// =============================================================================.
 
 // Lockout returns the account lockout middleware.
 func (f *MiddlewareFactory) Lockout() gin.HandlerFunc {
@@ -214,18 +214,18 @@ func (f *MiddlewareFactory) PreventUserEnum() gin.HandlerFunc {
 	return PreventUserEnum()
 }
 
-// =============================================================================
-// IP Intelligence
-// =============================================================================
+// =============================================================================.
+// IP Intelligence.
+// =============================================================================.
 
 // IPIntelligence returns the IP intelligence middleware.
 func (f *MiddlewareFactory) IPIntelligence() *IPIntelligence {
 	return f.ipIntelligence
 }
 
-// =============================================================================
-// SSR Proxy
-// =============================================================================
+// =============================================================================.
+// SSR Proxy.
+// =============================================================================.
 
 // SSRProxy returns the SSR proxy middleware if configured.
 func (f *MiddlewareFactory) SSRProxy(ssrConfig infraConfig.SSRConfig) gin.HandlerFunc {
@@ -238,9 +238,9 @@ func (f *MiddlewareFactory) SSRProxy(ssrConfig infraConfig.SSRConfig) gin.Handle
 	return handler
 }
 
-// =============================================================================
-// Initialization Helpers
-// =============================================================================
+// =============================================================================.
+// Initialization Helpers.
+// =============================================================================.
 
 func (f *MiddlewareFactory) initSignatureVerifier() {
 	if f.clientService == nil {
@@ -249,9 +249,9 @@ func (f *MiddlewareFactory) initSignatureVerifier() {
 
 	signingConfig := LoadSigningConfig()
 
-	// If EnforceHMAC is explicitly set in config, it overrides the default
+	// If EnforceHMAC is explicitly set in config, it overrides the default.
 	if !f.enforceHMAC && !signingConfig.Enabled {
-		// Both say disabled - keep disabled
+		// Both say disabled - keep disabled.
 	} else if f.enforceHMAC {
 		signingConfig.Enabled = true
 	}
@@ -294,9 +294,9 @@ func (f *MiddlewareFactory) initRevocationList() {
 	}
 }
 
-// =============================================================================
-// Legacy Support
-// =============================================================================
+// =============================================================================.
+// Legacy Support.
+// =============================================================================.
 
 // GetSignatureVerifier returns the signature verifier for direct use.
 func (f *MiddlewareFactory) GetSignatureVerifier() *SignatureVerifier {

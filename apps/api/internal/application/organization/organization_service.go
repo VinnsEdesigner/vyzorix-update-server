@@ -16,13 +16,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// Pagination constants
+// Pagination constants.
 const (
 	DefaultPageSize = 50
 	MaxPageSize     = 100
 )
 
-// Organization limits
+// Organization limits.
 const (
 	// MaxActiveOrgsPerOperator is the maximum number of active organizations an operator can have.
 	MaxActiveOrgsPerOperator = 2
@@ -113,9 +113,9 @@ func NewOrganizationService(
 
 // CreateOrganization creates a new organization with the creator as a member with the specified role.
 func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID, name, description string, maxMembers int, role string) (*organization.Organization, error) {
-	// Validate input
+	// Validate input.
 	if name == "" {
-		name = "personal" // Default name
+		name = "personal" // Default name.
 	}
 	if len(name) < 2 {
 		return nil, errors.New("organization name must be at least 2 characters")
@@ -124,7 +124,7 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 		return nil, errors.New("organization name exceeds 255 characters")
 	}
 
-	// Validate role
+	// Validate role.
 	var memberRole organization.OrganizationRole
 	switch role {
 	case "super_admin":
@@ -135,16 +135,16 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 		return nil, errors.New("role must be 'super_admin' or 'admin'")
 	}
 
-	// Check max members
+	// Check max members.
 	if maxMembers <= 0 {
 		maxMembers = DefaultOrgMaxMembers
 	}
 
 	var createdOrg *organization.Organization
 
-	// Use transaction to prevent race condition on max orgs
+	// Use transaction to prevent race condition on max orgs.
 	err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		// Count active orgs for this operator
+		// Count active orgs for this operator.
 		orgs, err := s.orgRepo.ListByOperator(txCtx, operatorID)
 		if err != nil {
 			return err
@@ -161,7 +161,7 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 			return ErrMaxOrgsReached
 		}
 
-		// Check if org with same name already exists for this operator
+		// Check if org with same name already exists for this operator.
 		existing, err := s.orgRepo.FindByName(txCtx, operatorID, name)
 		if err != nil && !errors.Is(err, organization.ErrNotFound) {
 			return err
@@ -170,7 +170,7 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 			return organization.ErrOrganizationExists
 		}
 
-		// Create organization using constructor
+		// Create organization using constructor.
 		orgID := uuid.New().String()
 		createdOrg = organization.NewOrganization(orgID, name, operatorID)
 		createdOrg.MaxMembers = maxMembers
@@ -180,7 +180,7 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 			return err
 		}
 
-		// Create membership for creator with the specified role
+		// Create membership for creator with the specified role.
 		member := organization.NewMember(
 			uuid.New().String(),
 			createdOrg.ID,
@@ -199,7 +199,7 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 		return nil, err
 	}
 
-	// Update operator LastOrganizationID for auto-selection on next login
+	// Update operator LastOrganizationID for auto-selection on next login.
 	if s.operatorRepo != nil {
 		op, opErr := s.operatorRepo.FindByID(ctx, operatorID)
 		if opErr == nil && op.LastOrganizationID != createdOrg.ID {
@@ -223,7 +223,7 @@ func (s *OrganizationService) GetOrganization(ctx context.Context, orgID string)
 		return nil, err
 	}
 
-	// Check if deleted
+	// Check if deleted.
 	if org.IsDeleted() {
 		return nil, organization.ErrNotFound
 	}
@@ -281,14 +281,14 @@ func (s *OrganizationService) UpdateOrganization(ctx context.Context, orgID stri
 
 // DeleteOrganization soft-deletes an organization and all its resources.
 func (s *OrganizationService) DeleteOrganization(ctx context.Context, orgID string) error {
-	// Get all members before deleting them so we can revoke their sessions
+	// Get all members before deleting them so we can revoke their sessions.
 	members, err := s.memberRepo.FindByOrganization(ctx, orgID)
 	if err != nil {
 		s.logger.Error("failed to get members for session revocation", "org_id", orgID, "error", err)
-		// Continue anyway - we still want to delete the org
+		// Continue anyway - we still want to delete the org.
 	}
 
-	// Get all devices for this organization before soft-deleting them
+	// Get all devices for this organization before soft-deleting them.
 	var deviceIDs []string
 	if s.deviceRepo != nil {
 		devices, err := s.deviceRepo.ListByOrganization(ctx, orgID)
@@ -301,20 +301,20 @@ func (s *OrganizationService) DeleteOrganization(ctx context.Context, orgID stri
 		}
 	}
 
-	// Use transaction to ensure atomic deletion
+	// Use transaction to ensure atomic deletion.
 	return s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		// Revoke sessions for all members first
+		// Revoke sessions for all members first.
 		for _, member := range members {
 			if err := s.sessionRepo.RevokeAllOperatorSessions(txCtx, member.OperatorID); err != nil {
 				s.logger.Error("failed to revoke sessions for member",
 					"org_id", orgID,
 					"operator_id", member.OperatorID,
 					"error", err)
-				// Continue anyway - best effort cleanup
+				// Continue anyway - best effort cleanup.
 			}
 		}
 
-		// Delete telemetry for all devices in this org
+		// Delete telemetry for all devices in this org.
 		if len(deviceIDs) > 0 && s.telemetryRepo != nil {
 			deleted, err := s.telemetryRepo.DeleteByDeviceIDs(txCtx, deviceIDs)
 			if err != nil {
@@ -322,13 +322,13 @@ func (s *OrganizationService) DeleteOrganization(ctx context.Context, orgID stri
 					"org_id", orgID,
 					"count", deleted,
 					"error", err)
-				// Continue anyway - best effort cleanup
+				// Continue anyway - best effort cleanup.
 			} else {
 				s.logger.Info("deleted telemetry for org", "org_id", orgID, "count", deleted)
 			}
 		}
 
-		// Delete commands for all devices in this org
+		// Delete commands for all devices in this org.
 		if len(deviceIDs) > 0 && s.commandRepo != nil {
 			deleted, err := s.commandRepo.DeleteByDeviceIDs(txCtx, deviceIDs)
 			if err != nil {
@@ -336,13 +336,13 @@ func (s *OrganizationService) DeleteOrganization(ctx context.Context, orgID stri
 					"org_id", orgID,
 					"count", deleted,
 					"error", err)
-				// Continue anyway - best effort cleanup
+				// Continue anyway - best effort cleanup.
 			} else {
 				s.logger.Info("deleted commands for org", "org_id", orgID, "count", deleted)
 			}
 		}
 
-		// Soft-delete all devices in this org
+		// Soft-delete all devices in this org.
 		if len(deviceIDs) > 0 && s.deviceRepo != nil {
 			now := time.Now()
 			deregisteredAt := now.UnixMilli()
@@ -353,25 +353,25 @@ func (s *OrganizationService) DeleteOrganization(ctx context.Context, orgID stri
 					"org_id", orgID,
 					"count", deleted,
 					"error", err)
-				// Continue anyway - best effort cleanup
+				// Continue anyway - best effort cleanup.
 			} else {
 				s.logger.Info("soft-deleted devices for org", "org_id", orgID, "count", deleted)
 			}
 		}
 
-		// Soft-delete all memberships (cascade)
+		// Soft-delete all memberships (cascade).
 		if err := s.memberRepo.SoftDeleteByOrganization(txCtx, orgID); err != nil {
 			s.logger.Error("failed to remove members from org", "org_id", orgID, "error", err)
-			// Continue anyway - this is a best-effort cleanup
+			// Continue anyway - this is a best-effort cleanup.
 		}
 
-		// Expire all pending invitations
+		// Expire all pending invitations.
 		if err := s.invitationRepo.ExpireByOrganization(txCtx, orgID); err != nil {
 			s.logger.Error("failed to expire invitations for org", "org_id", orgID, "error", err)
-			// Continue anyway - this is a best-effort cleanup
+			// Continue anyway - this is a best-effort cleanup.
 		}
 
-		// Soft delete the organization
+		// Soft delete the organization.
 		if err := s.orgRepo.SoftDelete(txCtx, orgID); err != nil {
 			if errors.Is(err, organization.ErrNotFound) {
 				return organization.ErrNotFound
@@ -391,7 +391,7 @@ func (s *OrganizationService) ListOrganizations(ctx context.Context, operatorID 
 		return nil, err
 	}
 
-	// Filter out deleted organizations
+	// Filter out deleted organizations.
 	result := make([]*organization.Organization, 0, len(orgs))
 	for _, org := range orgs {
 		if !org.IsDeleted() {
@@ -404,7 +404,7 @@ func (s *OrganizationService) ListOrganizations(ctx context.Context, operatorID 
 
 // ListOrganizationsPaginated lists organizations with pagination.
 func (s *OrganizationService) ListOrganizationsPaginated(ctx context.Context, operatorID string, page, limit int) (*OrganizationListResponse, error) {
-	// Apply defaults and limits
+	// Apply defaults and limits.
 	if page <= 0 {
 		page = 1
 	}
@@ -417,7 +417,7 @@ func (s *OrganizationService) ListOrganizationsPaginated(ctx context.Context, op
 
 	offset := (page - 1) * limit
 
-	// Use repository paginated method - does LIMIT/OFFSET at DB level
+	// Use repository paginated method - does LIMIT/OFFSET at DB level.
 	orgs, total, err := s.orgRepo.ListByOperatorPaginated(ctx, operatorID, limit, offset)
 	if err != nil {
 		return nil, err
@@ -450,7 +450,7 @@ func (s *OrganizationService) GetOrganizationWithMembers(ctx context.Context, or
 		return nil, err
 	}
 
-	// Get member count
+	// Get member count.
 	count, err := s.orgRepo.CountActiveMembers(ctx, orgID)
 	if err != nil {
 		return nil, err

@@ -68,8 +68,8 @@ func (c *DashboardClient) GetSubscriptions() []string {
 
 // Broadcaster manages dashboard client connections and broadcasts events.
 type Broadcaster struct {
-	clients         map[string]*DashboardClient // clientID -> client
-	operatorClients map[string][]string         // operatorID -> []clientID
+	clients         map[string]*DashboardClient // clientID -> client.
+	operatorClients map[string][]string         // operatorID -> []clientID.
 	log             *slog.Logger
 	mu              sync.RWMutex
 }
@@ -90,7 +90,7 @@ func (b *Broadcaster) Register(client *DashboardClient) {
 
 	b.clients[client.ID] = client
 
-	// Track by operator
+	// Track by operator.
 	b.operatorClients[client.OperatorID] = append(b.operatorClients[client.OperatorID], client.ID)
 
 	b.log.Info("dashboard client registered", "clientId", client.ID, "operatorId", client.OperatorID)
@@ -106,7 +106,7 @@ func (b *Broadcaster) Unregister(clientID string) {
 		return
 	}
 
-	// Remove from operator tracking
+	// Remove from operator tracking.
 	if clientIDs, exists := b.operatorClients[client.OperatorID]; exists {
 		newIDs := make([]string, 0, len(clientIDs))
 		for _, id := range clientIDs {
@@ -130,7 +130,7 @@ func (b *Broadcaster) BroadcastToDashboard(deviceID, operatorID, eventType strin
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
-	// Find all clients subscribed to this device
+	// Find all clients subscribed to this device.
 	sent := 0
 	for _, client := range b.clients {
 		if client.IsSubscribed(deviceID) {

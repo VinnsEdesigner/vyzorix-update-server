@@ -6,19 +6,19 @@ import (
 )
 
 // InboxStatus represents the status of an inbox entry.
-// Implements the 5-state model from SPEC:
-// PENDING -> ACKNOWLEDGED -> APPROVING -> APPROVED
-//               REJECTED                        (device confirms) -> REGISTERED (external)
-// StatusExpired for auto-cleanup after 30 days
+// Implements the 5-state model from SPEC:.
+// PENDING -> ACKNOWLEDGED -> APPROVING -> APPROVED.
+//               REJECTED                        (device confirms) -> REGISTERED (external).
+// StatusExpired for auto-cleanup after 30 days.
 type InboxStatus string
 
 const (
-	StatusPending      InboxStatus = "pending"      // Initial state after device registration
-	StatusAcknowledged InboxStatus = "acknowledged" // Device has acknowledged the request
-	StatusApproving    InboxStatus = "approving"   // Operator is approving, commandSecret being generated
-	StatusApproved     InboxStatus = "approved"    // Fully approved, device can confirm
-	StatusRejected     InboxStatus = "rejected"    // Rejected by operator
-	StatusExpired      InboxStatus = "expired"      // Auto-cleanup after 30 days
+	StatusPending      InboxStatus = "pending"      // Initial state after device registration.
+	StatusAcknowledged InboxStatus = "acknowledged" // Device has acknowledged the request.
+	StatusApproving    InboxStatus = "approving"   // Operator is approving, commandSecret being generated.
+	StatusApproved     InboxStatus = "approved"    // Fully approved, device can confirm.
+	StatusRejected     InboxStatus = "rejected"    // Rejected by operator.
+	StatusExpired      InboxStatus = "expired"      // Auto-cleanup after 30 days.
 )
 
 // ErrInvalidInboxTransition is returned when an invalid inbox status transition is attempted.
@@ -41,9 +41,9 @@ var InboxStatusTransitions = map[InboxStatus]map[InboxStatus]bool{
 		StatusApproved: true,
 		StatusRejected: true,
 	},
-	StatusApproved:  {}, // Terminal state for this flow
-	StatusRejected:  {}, // Terminal state
-	StatusExpired:   {}, // Terminal state
+	StatusApproved:  {}, // Terminal state for this flow.
+	StatusRejected:  {}, // Terminal state.
+	StatusExpired:   {}, // Terminal state.
 }
 
 // CanTransitionTo returns true if the status can transition to the target status.
@@ -129,16 +129,16 @@ func (s InboxStatus) CanBeRejected() bool {
 type DeviceAckAction string
 
 const (
-	DeviceAckActionAcknowledge DeviceAckAction = "acknowledge" // Device acknowledges receipt
+	DeviceAckActionAcknowledge DeviceAckAction = "acknowledge" // Device acknowledges receipt.
 )
 
 // OperatorAction represents actions an operator can take.
 type OperatorAction string
 
 const (
-	OperatorActionApprove OperatorAction = "approve" // Operator approves registration
-	OperatorActionReject OperatorAction = "reject"  // Operator rejects registration
-	OperatorActionDelete OperatorAction = "delete"  // Operator deletes entry
+	OperatorActionApprove OperatorAction = "approve" // Operator approves registration.
+	OperatorActionReject OperatorAction = "reject"  // Operator rejects registration.
+	OperatorActionDelete OperatorAction = "delete"  // Operator deletes entry.
 )
 
 // AckAction represents the action for legacy compatibility.
