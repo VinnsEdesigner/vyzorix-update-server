@@ -441,9 +441,10 @@ func (r *Resolver) InviteMember(p graphql.ResolveParams) (interface{}, error) {
 	if !ok {
 		return nil, r.Presenter.BadRequestError("role must be a string")
 	}
-	, ok := p.Args["notes"].(notes)
-stringif !ok {
-string		 = "" // optional field
+	notes, ok := p.Args["notes"].(string)
+	if !ok {
+		notes = "" // optional field
+	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -707,9 +708,10 @@ func (r *Resolver) AcceptInvitation(p graphql.ResolveParams) (interface{}, error
 	if !ok {
 		return nil, r.Presenter.BadRequestError("token must be a string")
 	}
-	, ok := p.Args["notes"].(notes)
-stringif !ok {
-string		 = "" // optional field
+	notes, ok := p.Args["notes"].(string)
+	if !ok {
+		notes = "" // optional field
+	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
@@ -761,10 +763,10 @@ func (r *Resolver) RejectInvitation(p graphql.ResolveParams) (interface{}, error
 	if !ok {
 		return nil, r.Presenter.BadRequestError("token must be a string")
 	}
-	, ok := p.Args["notes"].(notes)
-stringif !ok {
-string		 = "" // optional field
-
+	notes, ok := p.Args["notes"].(string)
+	if !ok {
+		notes = "" // optional field
+	}
 	op, ok := gqlcontext.GetOperator(ctx)
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()

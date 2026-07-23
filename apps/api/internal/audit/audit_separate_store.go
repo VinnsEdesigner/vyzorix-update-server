@@ -32,7 +32,7 @@ func NewSeparateDBAuditRepository(cfg SeparateDBConfig) (*SeparateDBRepository, 
 
 	// Create schema if needed
 	if err := createAuditSchema(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, err
 	}
 

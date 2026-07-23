@@ -43,7 +43,6 @@ type Processor struct {
 	dedupWindow      time.Duration        // cooldown period before new alert
 
 	
-	breachMu       sync.RWMutex
 	breachState    map[string]bool // key: "deviceID:metric", value: true if currently in breach
 	hysteresisBand float64         // hysteresis band as percentage of threshold (0.1 = 10%)
 }

@@ -101,7 +101,7 @@ func (w *FCMRetryWorker) getPendingNotifications(ctx context.Context, repo *stor
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var notifications []storage.PendingFCMNotification
 	for rows.Next() {
