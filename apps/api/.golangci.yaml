@@ -1,10 +1,57 @@
 version: "2"
 
 run:
-  timeout: 5m
+  go: 1.26
+  modules-download-mode: readonly
   tests: false
+  timeout: 15m
 
 linters:
+  default: none
+  enable:
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - copyloopvar
+    - decorder
+    - dupword
+    - errcheck
+    - errchkjson
+    - errname
+    - exhaustive
+    - funlen
+    - gocyclo
+    - godot
+    - godox
+    - gomoddirectives
+    - gomodguard_v2
+    - goprintffuncname
+    - gosec
+    - govet
+    - iface
+    - ineffassign
+    - loggercheck
+    - mirror
+    - misspell
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - paralleltest
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sloglint
+    - sqlclosecheck
+    - staticcheck
+    - testableexamples
+    - testifylint
+    - testpackage
+    - unparam
+    - unused
+    - wastedassign
   exclusions:
     rules:
       - path: "cmd/verify"
@@ -12,23 +59,75 @@ linters:
           - gosec
           - funlen
           - gocyclo
-      - path: "internal/api/wire|internal/api/api_server"
-        linters:
-          - staticcheck
       - path: "internal/domain/event/event_entity.go"
         linters:
           - exhaustive
       - path: "internal/application/event/event_processor.go"
         linters:
           - exhaustive
-      - path: "internal/application/inbox/inbox_service.go"
-        linters:
-          - unused
       - path: "internal/application/keys/service.go"
         linters:
           - unparam
   settings:
+    errcheck:
+      check-type-assertions: true
+    exhaustive:
+      default-signifies-exhaustive: true
+    funlen:
+      lines: 150
+      statements: 100
+    gocyclo:
+      min-complexity: 20
+    gosec:
+      excludes:
+        - G104
+        - G115
+        - G118
+        - G201
+        - G202
+        - G204
+        - G301
+        - G302
+        - G304
+        - G306
+        - G307
+        - G401
+        - G404
+        - G101
+        - G114
+        - G124
+        - G703
+        - G702
+    govet:
+      enable:
+        - fieldalignment
+        - shadow
+        - unusedwrite
+        - nilness
+        - printf
+    loggercheck:
+      tags:
+        - slog
+    nestif:
+      min-complexity: 20
+    revive:
+      rules:
+        - name: blank-imports
+          disabled: true
+        - name: package-comments
+          disabled: true
+        - name: exported
+          disabled: true
+        - name: var-naming
+          disabled: true
+        - name: unexported-naming
+          disabled: true
     godot:
       scope: all
       exclude:
         - "^// Exported:"
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-use-default: false
