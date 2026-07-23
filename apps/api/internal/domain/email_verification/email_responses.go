@@ -12,6 +12,24 @@ type VerificationPollResponse struct {
 	Verified  bool   `json:"verified"`
 }
 
+// PollVerificationStatus represents the possible statuses for email verification polling.
+type PollVerificationStatus string
+
+const (
+	PollStatusInvalid     PollVerificationStatus = "invalid"
+	PollStatusExpired     PollVerificationStatus = "expired"
+	PollStatusEmailFailed PollVerificationStatus = "email_failed"
+	PollStatusWaiting     PollVerificationStatus = "waiting"
+	PollStatusSuccess     PollVerificationStatus = "success"
+)
+
+// PollVerificationResult contains all information about a verification poll result.
+type PollVerificationResult struct {
+	Status   PollVerificationStatus `json:"status"`
+	Email    string                `json:"email,omitempty"`
+	EmailError string              `json:"emailError,omitempty"`
+}
+
 // ResendVerificationResponse indicates a verification email was sent.
 type ResendVerificationResponse struct {
 	Message string `json:"message"`

@@ -640,7 +640,7 @@ func (r *OperatorRepository) GetThresholds(ctx context.Context, id string) (oper
 	var th operator.Thresholds
 	err := row.Scan(&th.RiskWarn, &th.RiskCrit, &th.ThermalWarn, &th.ThermalCrit, &th.BufferWarn, &th.BufferCrit)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			// Return defaults if no settings exist
 			return operator.Thresholds{
 				RiskWarn:    70,

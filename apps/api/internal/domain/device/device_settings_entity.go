@@ -39,7 +39,33 @@ func (t *Thresholds) HasValues() bool {
 }
 
 // Validate validates the thresholds.
+
 func (t *Thresholds) Validate() error {
+	
+	// Risk scores should be 0-100
+	if t.RiskWarn < 0 || t.RiskWarn > 100 {
+		return ErrInvalidThreshold
+	}
+	if t.RiskCrit < 0 || t.RiskCrit > 100 {
+		return ErrInvalidThreshold
+	}
+	// Thermal thresholds should be reasonable (0-200 degrees Celsius)
+	if t.ThermalWarn < 0 || t.ThermalWarn > 200 {
+		return ErrInvalidThreshold
+	}
+	if t.ThermalCrit < 0 || t.ThermalCrit > 200 {
+		return ErrInvalidThreshold
+	}
+	// Buffer levels should be 0-100 (percentage)
+	if t.BufferWarn < 0 || t.BufferWarn > 100 {
+		return ErrInvalidThreshold
+	}
+	if t.BufferCrit < 0 || t.BufferCrit > 100 {
+		return ErrInvalidThreshold
+	}
+
+	// Relative validation: warning must be less than critical for risk/thermal,
+	// but for buffer, critical (low) must be less than warning (low)
 	if t.RiskWarn >= t.RiskCrit && t.RiskWarn != 0 && t.RiskCrit != 0 {
 		return ErrInvalidThreshold
 	}

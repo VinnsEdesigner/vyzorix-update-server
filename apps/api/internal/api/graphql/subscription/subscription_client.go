@@ -172,12 +172,13 @@ func (c *Client) subscribeDeviceUpdates(id string, sub SubscribePayload) {
 	}
 
 	// Subscribe to hub for device updates
-	unsubscribe := c.handler.hub.SubscribeDeviceUpdates(c.operator.ID, deviceID, func(data interface{}) {
+	unsubscribe := c.handler.hub.SubscribeDeviceUpdates(c.operator.ID, deviceID, func(data interface{}) error {
 		c.sendMessage(wsMessage{
 			Type:    "next",
 			ID:      id,
 			Payload: json.RawMessage(`{"data":{"deviceUpdated":` + mustMarshal(data) + `}}`),
 		})
+		return nil
 	})
 
 	c.mu.Lock()
@@ -200,12 +201,13 @@ func (c *Client) subscribeTelemetry(id string, sub SubscribePayload) {
 		return
 	}
 
-	unsubscribe := c.handler.hub.SubscribeTelemetry(c.operator.ID, deviceID, func(data interface{}) {
+	unsubscribe := c.handler.hub.SubscribeTelemetry(c.operator.ID, deviceID, func(data interface{}) error {
 		c.sendMessage(wsMessage{
 			Type:    "next",
 			ID:      id,
 			Payload: json.RawMessage(`{"data":{"telemetryReceived":` + mustMarshal(data) + `}}`),
 		})
+		return nil
 	})
 
 	c.mu.Lock()
@@ -227,12 +229,13 @@ func (c *Client) subscribeCommandStatus(id string, sub SubscribePayload) {
 		return
 	}
 
-	unsubscribe := c.handler.hub.SubscribeCommandStatus(c.operator.ID, dispatchID, func(data interface{}) {
+	unsubscribe := c.handler.hub.SubscribeCommandStatus(c.operator.ID, dispatchID, func(data interface{}) error {
 		c.sendMessage(wsMessage{
 			Type:    "next",
 			ID:      id,
 			Payload: json.RawMessage(`{"data":{"commandStatusChanged":` + mustMarshal(data) + `}}`),
 		})
+		return nil
 	})
 
 	c.mu.Lock()
@@ -257,12 +260,13 @@ func (c *Client) subscribeOrganizationEvent(id string, sub SubscribePayload) {
 		return
 	}
 
-	unsubscribe := c.handler.hub.SubscribeOrganizationEvents(c.operator.ID, orgID, func(data interface{}) {
+	unsubscribe := c.handler.hub.SubscribeOrganizationEvents(c.operator.ID, orgID, func(data interface{}) error {
 		c.sendMessage(wsMessage{
 			Type:    "next",
 			ID:      id,
 			Payload: json.RawMessage(`{"data":{"organizationEvent":` + mustMarshal(data) + `}}`),
 		})
+		return nil
 	})
 
 	c.mu.Lock()
@@ -287,12 +291,13 @@ func (c *Client) subscribeMemberEvent(id string, sub SubscribePayload) {
 		return
 	}
 
-	unsubscribe := c.handler.hub.SubscribeMemberEvents(c.operator.ID, orgID, func(data interface{}) {
+	unsubscribe := c.handler.hub.SubscribeMemberEvents(c.operator.ID, orgID, func(data interface{}) error {
 		c.sendMessage(wsMessage{
 			Type:    "next",
 			ID:      id,
 			Payload: json.RawMessage(`{"data":{"memberEvent":` + mustMarshal(data) + `}}`),
 		})
+		return nil
 	})
 
 	c.mu.Lock()

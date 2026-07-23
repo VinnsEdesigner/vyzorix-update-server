@@ -8,8 +8,9 @@ import (
 	"time"
 )
 
-// subscriptionCallback is a function that receives subscription data.
-type subscriptionCallback func(interface{})
+// subscriptionCallback is a function that receives subscription data and returns an error.
+
+type subscriptionCallback func(interface{}) error
 
 // callbackWrapper wraps a callback with an ID for tracking.
 type callbackWrapper struct {
@@ -56,21 +57,29 @@ func newSubscriptionWorker(log *slog.Logger) *subscriptionWorker {
 func (w *subscriptionWorker) execute(callback subscriptionCallback, data interface{}) {
 	select {
 	case w.sem <- struct{}{}:
-		
+
 		w.wg.Add(1)
 		go func() {
 			defer w.wg.Done()
 			defer func() { <-w.sem }() // Release semaphore
 
 			// Execute with panic recovery
-			done := make(chan struct{})
+			done := make(chan error, 1)
 			go func() {
-				defer close(done)
-				callback(data)
+				defer func() {
+					if r := recover(); r != nil {
+						w.log.Error("subscription callback panicked", "panic", r)
+					}
+				}()
+				done <- callback(data)
 			}()
 
 			select {
-			case <-done:
+			case err := <-done:
+				
+				if err != nil {
+					w.log.Warn("subscription callback returned error", "error", err)
+				}
 				return
 			case <-time.After(callbackTimeout):
 				w.log.Warn("subscription callback timed out", "timeout", callbackTimeout)

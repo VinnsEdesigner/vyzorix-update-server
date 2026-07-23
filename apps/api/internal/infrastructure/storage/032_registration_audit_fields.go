@@ -7,7 +7,7 @@ import (
 )
 
 // migrateRegistrationAuditFields adds client_ip and user_agent columns to registration_logs table.
-// This enables Bug 48 fix - enhanced audit logging with full context capture.
+
 func migrateRegistrationAuditFields(db *sql.DB) error {
 	ctx := context.Background()
 

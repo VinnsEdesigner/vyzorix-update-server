@@ -22,16 +22,6 @@ func NewDeviceID(value string) (DeviceID, error) {
 	return DeviceID{value: value}, nil
 }
 
-// MustNewDeviceID creates a new DeviceID from a string value.
-// Panics if the value is empty.
-func MustNewDeviceID(value string) DeviceID {
-	id, err := NewDeviceID(value)
-	if err != nil {
-		panic(err)
-	}
-	return id
-}
-
 // String returns the string value of the DeviceID.
 func (id DeviceID) String() string {
 	return id.value

@@ -47,18 +47,22 @@ func Injector(cfg config.Config) (*Server, error) {
 		return nil, err
 	}
 	authService := ProvideAuthService(logger, operatorRepository, sessionRepository, emailVerificationRepository, passwordResetRepository, refreshTokenRepository, argon2idHasher, jwtManager)
-	service := ProvideDeviceService(deviceRepository, operatorRepository, logger)
+	txManager := ProvideTxManager(db)
+	hubResult := ProvideWebSocketHub(logger, deviceRepository, telemetryRepository, db)
+	
+	service := ProvideDeviceService(deviceRepository, operatorRepository, txManager, logger, hubResult.Hub)
 	clientService := ProvideClientService(clientRepository)
 	commandService := ProvideCommandService(commandRepository, deviceRepository)
 	emailService := ProvideEmailService()
 	metrics := ProvideMetrics()
-	hubResult := ProvideWebSocketHub(logger, deviceRepository, telemetryRepository, db)
-	notifier := ProvideFCMNotifier(logger, cfg)
+	notifier := ProvideFCMNotifier(logger, cfg, db)
 	appCheckVerifier, err := ProvideAppCheckVerifier(logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 	deviceDeletionWorker := ProvideDeviceDeletionWorker(deviceRepository, logger, cfg)
+	
+	commandOutbox := ProvideCommandOutbox(commandRepository, deviceRepository, hubResult.Hub, notifier, logger)
 	middlewareFactory := ProvideMiddlewareFactory(logger, manager, authService, clientService, cfg)
 	rateLimiter := ProvideRateLimiter()
 	lockout := ProvideLockout()
@@ -74,7 +78,6 @@ func Injector(cfg config.Config) (*Server, error) {
 	orgStorage := ProvideOrganizationRepository(db)
 	memberStorage := ProvideMemberRepository(db)
 	invitationStorage := ProvideInvitationRepository(db)
-	txManager := ProvideTxManager(db)
 	// Create organization services
 	orgService := ProvideOrganizationService(orgStorage, memberStorage, invitationStorage, operatorRepository, sessionRepository, deviceRepository, telemetryRepository, commandRepository, txManager, logger)
 	memberService := ProvideMemberService(memberStorage, orgStorage, authService, logger)
@@ -89,7 +92,7 @@ func Injector(cfg config.Config) (*Server, error) {
 	WireNotificationServiceToProcessor(eventProcessor, notificationService)
 	apiKeyRepository := ProvideAPIKeyRepository(db)
 	apiKeyService := ProvideAPIKeyService(apiKeyRepository, cfg)
-	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, appCheckVerifier, deviceDeletionWorker, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService, apiKeyService, orgService, memberService, invitationService, orgSettingsService, deviceSettingsService)
+	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, appCheckVerifier, deviceDeletionWorker, commandOutbox, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService, apiKeyService, orgService, memberService, invitationService, orgSettingsService, deviceSettingsService)
 	serverResult := ProvideServerResult(serverDependencies)
 	server := ProvideServer(serverDependencies, serverResult)
 	return server, nil

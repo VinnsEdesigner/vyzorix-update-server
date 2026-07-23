@@ -48,13 +48,14 @@ return r.getQuerier(ctx).ExecContext(ctx, query, args...)
 }
 
 // Save saves a telemetry frame for a device.
-// Implements auto-pruning to keep only the latest 5000 entries.
+
+// to avoid O(N) DELETE on every INSERT and to make retention per-device.
 func (r *TelemetryRepository) Save(ctx context.Context, deviceID string, raw []byte, frame telemetry.TelemetryFrame) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer SafeRollbackNoLog(tx)
 
 	// Generate UUIDv7 for the telemetry entry
 	telemetryID := shared.GenerateID()
@@ -76,15 +77,50 @@ func (r *TelemetryRepository) Save(ctx context.Context, deviceID string, raw []b
 		return err
 	}
 
-	// Prune old telemetry entries (keep latest 5000)
-	_, err = tx.ExecContext(ctx,
-		`DELETE FROM telemetry WHERE id NOT IN (SELECT id FROM telemetry ORDER BY received_at DESC LIMIT 5000)`,
+	return tx.Commit()
+}
+
+// PruneDeviceTelemetry removes old telemetry entries for a specific device,
+// keeping only the latest maxEntries. This is called by a background job.
+
+func (r *TelemetryRepository) PruneDeviceTelemetry(ctx context.Context, deviceID string, maxEntries int) error {
+	if maxEntries <= 0 {
+		maxEntries = 500 // Default per-device limit
+	}
+
+	_, err := r.exec(ctx,
+		`DELETE FROM telemetry WHERE device_id = ? AND id NOT IN (
+			SELECT id FROM telemetry WHERE device_id = ? ORDER BY received_at DESC LIMIT ?
+		)`,
+		deviceID, deviceID, maxEntries,
 	)
+	return err
+}
+
+// PruneAllDevices iterates over all devices and prunes their telemetry.
+// This should be called by a background job to avoid blocking INSERTs.
+func (r *TelemetryRepository) PruneAllDevices(ctx context.Context, maxEntriesPerDevice int) error {
+	if maxEntriesPerDevice <= 0 {
+		maxEntriesPerDevice = 500
+	}
+
+	// Get all unique device IDs
+	rows, err := r.queryRows(ctx, `SELECT DISTINCT device_id FROM telemetry`)
 	if err != nil {
 		return err
 	}
+	defer func() { _ = rows.Close() }()
 
-	return tx.Commit()
+	for rows.Next() {
+		var deviceID string
+		if err := rows.Scan(&deviceID); err != nil {
+			continue
+		}
+		// Prune each device (ignore errors for individual devices)
+		_ = r.PruneDeviceTelemetry(ctx, deviceID, maxEntriesPerDevice)
+	}
+
+	return rows.Err()
 }
 
 // List retrieves telemetry entries for a device with pagination.

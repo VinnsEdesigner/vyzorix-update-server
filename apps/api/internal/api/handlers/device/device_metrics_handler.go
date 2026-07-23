@@ -70,11 +70,36 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 		Resolution:     c.Query("resolution"),
 	}
 
+	
+	// Max allowed range: 90 days in milliseconds.
+	const maxTimeWindowMs = 90 * 24 * 60 * 60 * 1000 // 7,776,000,000 ms
+
 	if st := c.Query("startTime"); st != "" {
-		req.StartTime, _ = strconv.ParseInt(st, 10, 64)
+		val, err := strconv.ParseInt(st, 10, 64)
+		if err != nil || val < 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid or negative startTime"})
+			return
+		}
+		req.StartTime = val
 	}
 	if et := c.Query("endTime"); et != "" {
-		req.EndTime, _ = strconv.ParseInt(et, 10, 64)
+		val, err := strconv.ParseInt(et, 10, 64)
+		if err != nil || val < 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid or negative endTime"})
+			return
+		}
+		req.EndTime = val
+	}
+	// Enforce max query window after both values are parsed.
+	if req.StartTime > 0 && req.EndTime > 0 {
+		if req.EndTime <= req.StartTime {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "endTime must be greater than startTime"})
+			return
+		}
+		if req.EndTime-req.StartTime > maxTimeWindowMs {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "time range exceeds maximum allowed window of 90 days"})
+			return
+		}
 	}
 
 	response, err := h.metricsSvc.GetDeviceMetrics(ctx, req)

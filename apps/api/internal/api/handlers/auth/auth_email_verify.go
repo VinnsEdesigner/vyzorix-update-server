@@ -83,13 +83,13 @@ func (h *EmailVerifyHandler) PollVerification(c *gin.Context) {
 		return
 	}
 
-	status, email, err := h.authService.PollVerification(c.Request.Context(), token)
+	result, err := h.authService.PollVerification(c.Request.Context(), token)
 	if err != nil {
 		h.presenter.InternalError(c, "verification check failed")
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"status": status, "email": email})
+	h.presenter.OK(c, result)
 }
 
 // VerifyEmailGet handles GET /v1/auth/verify-email (alternative to POST).

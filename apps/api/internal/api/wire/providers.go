@@ -78,10 +78,27 @@ func ProvideDB(s *storage.SQLite) *sql.DB {
 }
 
 // ProvideAuditLogger creates the audit logger with a dedicated file-based logger.
+
 func ProvideAuditLogger(db *sql.DB, cfg config.Config) *audit.Logger {
 	auditRepo := audit.NewRepository(db)
 	auditLog := logging.NewAuditFileLogger(cfg.AuditLogPath)
-	return audit.NewLogger(auditRepo, auditLog, audit.DefaultLoggerConfig())
+
+	
+	var separateRepo interface{ Log(context.Context, *audit.Entry) error }
+	if cfg.AuditLogSeparateDB && cfg.AuditLogSeparateDBPath != "" {
+		sepRepo, err := audit.NewSeparateDBAuditRepository(audit.SeparateDBConfig{Path: cfg.AuditLogSeparateDBPath})
+		if err != nil {
+			auditLog.Warn("failed to create separate audit DB, continuing without it", "error", err)
+			separateRepo = &audit.NoOpAuditRepo{}
+		} else {
+			separateRepo = sepRepo
+			auditLog.Info("audit logging to separate database", "path", cfg.AuditLogSeparateDBPath)
+		}
+	} else {
+		separateRepo = &audit.NoOpAuditRepo{}
+	}
+
+	return audit.NewLogger(auditRepo, auditLog, audit.DefaultLoggerConfig(), separateRepo)
 }
 
 // ProvidePasswordHasher creates the password hasher.
@@ -236,8 +253,12 @@ func ProvideAuthService(
 }
 
 // ProvideDeviceService creates the device service.
-func ProvideDeviceService(deviceRepo *storage.DeviceRepository, operatorRepo *storage.OperatorRepository, log *slog.Logger) *device.Service {
-	return device.NewService(deviceRepo, operatorRepo, log)
+
+func ProvideDeviceService(deviceRepo *storage.DeviceRepository, operatorRepo *storage.OperatorRepository, txManager transaction.TxManager, log *slog.Logger, hub *hub.Hub) *device.Service {
+	svc := device.NewService(deviceRepo, operatorRepo, log)
+	svc.WithTxManager(txManager)
+	svc.WithStatusUpdater(hub) 
+	return svc
 }
 
 // ProvideClientService creates the client service.
@@ -383,16 +404,30 @@ func ProvideWebSocketHub(
 	return &HubResult{Hub: h, MessageQueue: mq, RateLimiter: rl}
 }
 
-// ProvideFCMNotifier creates the FCM notifier.
-func ProvideFCMNotifier(log *slog.Logger, cfg config.Config) fcm.Notifier {
+// ProvideFCMNotifier creates the FCM notifier with persistent retry support.
+
+func ProvideFCMNotifier(log *slog.Logger, cfg config.Config, db *sql.DB) fcm.Notifier {
 	if cfg.FirebaseCreds == "" {
 		return nil
 	}
 	fcmClient, err := fcm.Init(log, cfg.FirebaseCreds)
 	if err != nil {
+		log.Error("failed to initialize FCM - malformed Firebase credentials",
+			"error", err)
 		return nil
 	}
-	return fcm.NewEnhancedNotifier(fcmClient, fcm.DefaultFCMConfig())
+
+	notifier := fcm.NewEnhancedNotifier(fcmClient, fcm.DefaultFCMConfig())
+
+	
+	if db != nil {
+		notifier = fcm.NewEnhancedNotifierWithDB(fcmClient, fcm.DefaultFCMConfig(), db)
+		retryWorker := worker.NewFCMRetryWorker(db, notifier, log, 30*time.Second)
+		retryWorker.Start()
+		log.Info("FCM retry worker started", "interval", "30s")
+	}
+
+	return notifier
 }
 
 // ProvideAppCheckVerifier creates the Firebase App Check verifier.
@@ -424,6 +459,26 @@ func ProvideDeviceDeletionWorker(deviceRepo *storage.DeviceRepository, log *slog
 	w.Start()
 	log.Info("device deletion worker started", "interval", interval.String())
 	return w
+}
+
+// ProvideCommandOutbox creates and starts the command outbox background worker.
+// This implements the transactional outbox pattern for command delivery.
+// The outbox polls for pending commands and delivers them via WebSocket or FCM.
+func ProvideCommandOutbox(
+	commandRepo *storage.CommandRepository,
+	deviceRepo *storage.DeviceRepository,
+	hub *hub.Hub,
+	fcmNotifier fcm.Notifier,
+	log *slog.Logger,
+) *cmdapp.Outbox {
+	cfg := cmdapp.DefaultOutboxConfig()
+	outbox := cmdapp.NewOutbox(commandRepo, deviceRepo, hub, fcmNotifier, cfg, log)
+	outbox.Start()
+	log.Info("command outbox worker started",
+		"pollInterval", cfg.PollInterval.String(),
+		"batchSize", cfg.BatchSize,
+		"maxRetries", cfg.MaxRetries)
+	return outbox
 }
 
 // ProvideMiddlewareFactory creates the middleware factory.
@@ -706,6 +761,7 @@ func ProvideServerDependencies(
 	fcmNotifier fcm.Notifier,
 	appCheckVerifier *appcheck.Verifier,
 	deviceDeletionWorker *worker.DeviceDeletionWorker,
+	commandOutbox *cmdapp.Outbox,
 	factory *middleware.MiddlewareFactory,
 	rateLimiter *middleware.RateLimiter,
 	lockout *middleware.Lockout,
@@ -722,6 +778,7 @@ func ProvideServerDependencies(
 		FCMNotifier:         fcmNotifier,
 		AppCheckVerifier:    appCheckVerifier,
 		DeviceDeletionWorker: deviceDeletionWorker,
+		CommandOutbox:       commandOutbox,
 		DeviceRepo:          deviceRepo,
 		OperatorRepo:        operatorRepo,
 		RateLimiter:         rateLimiter,
@@ -733,6 +790,7 @@ func ProvideServerDependencies(
 		SessionManager:      sessionManager,
 		GoogleVerifier:      googleVerifier,
 		EmailService:        emailService,
+		EmailVerificationRepo: emailVerifyRepo,
 		CommandService:      commandService,
 		ClientService:       clientService,
 		DB:                 sqlite,

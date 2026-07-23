@@ -256,12 +256,18 @@ return nil, err
 }
 
 // Update operator's LastOrganizationID for auto-selection on next login
+
 if s.operatorRepo != nil {
-op, err := s.operatorRepo.FindByID(ctx, operatorID)
-if err == nil && op != nil {
-op.LastOrganizationID = organizationID
-_ = s.operatorRepo.Update(ctx, op)
-}
+	op, err := s.operatorRepo.FindByID(ctx, operatorID)
+	if err == nil && op != nil {
+		op.LastOrganizationID = organizationID
+		if err := s.operatorRepo.Update(ctx, op); err != nil {
+			s.logger.Warn("failed to update operator LastOrganizationID",
+				"operatorID", operatorID,
+				"organizationID", organizationID,
+				"error", err)
+		}
+	}
 }
 
 // Get organization name

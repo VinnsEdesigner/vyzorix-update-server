@@ -194,7 +194,14 @@ func (o *Outbox) deliverViaWebSocket(ctx context.Context, cmd *command.Command) 
 	}
 
 	if confirmed {
-		o.markDelivered(cmd)
+		if err := o.markDelivered(cmd); err != nil {
+			o.log.Error("failed to mark command delivered",
+				"dispatchID", cmd.DispatchID,
+				"deviceID", cmd.DeviceID,
+				"err", err)
+			// Don't return true - delivery confirmation failed to persist
+			return false
+		}
 		o.log.Info("command delivered via websocket",
 			"dispatchID", cmd.DispatchID,
 			"deviceID", cmd.DeviceID)
@@ -253,13 +260,13 @@ func (o *Outbox) deliverViaFCM(ctx context.Context, cmd *command.Command) bool {
 }
 
 // markDelivered marks a command as successfully delivered.
-func (o *Outbox) markDelivered(cmd *command.Command) {
+// Returns an error if the database update fails.
+func (o *Outbox) markDelivered(cmd *command.Command) error {
 	ctx := context.Background()
 	if err := o.repo.MarkDelivered(ctx, cmd.DispatchID); err != nil {
-		o.log.Error("failed to mark command delivered",
-			"dispatchID", cmd.DispatchID,
-			"err", err)
+		return err
 	}
+	return nil
 }
 
 // handleFailedDelivery handles a command that couldn't be delivered.

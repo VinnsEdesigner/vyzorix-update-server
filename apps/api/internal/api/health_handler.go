@@ -21,9 +21,30 @@ func NewHealthHandler(db *sql.DB) *HealthHandler {
 
 // Health handles GET /health.
 func (h *HealthHandler) Health(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status":    "healthy",
+	// Check database connectivity for a thorough health check
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+	defer cancel()
+
+	dbHealthy := true
+	dbStatus := "connected"
+	if err := h.db.PingContext(ctx); err != nil {
+		dbHealthy = false
+		dbStatus = "disconnected"
+	}
+
+	status := "healthy"
+	httpStatus := http.StatusOK
+	if !dbHealthy {
+		status = "unhealthy"
+		httpStatus = http.StatusServiceUnavailable
+	}
+
+	c.JSON(httpStatus, gin.H{
+		"status":    status,
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
+		"checks": gin.H{
+			"database": dbStatus,
+		},
 	})
 }
 

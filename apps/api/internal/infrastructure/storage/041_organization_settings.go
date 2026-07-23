@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
@@ -128,7 +129,7 @@ func (r *OrganizationSettingsRepository) scanSettings(row *sql.Row) (*organizati
 
 	err := row.Scan(&id, &orgID, &timezone, &dateFormat, &alertCooldownMinutes, &thresholdsJSON, &createdAt, &updatedAt)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, organization.ErrSettingsNotFound
 		}
 		return nil, err

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 )
 
-// migrateIdempotencyRecords creates the idempotency_records table for Bug 45 fix.
+
 // This table stores idempotency keys and their associated responses for request deduplication.
 func migrateIdempotencyRecords(db *sql.DB) error {
 	ctx := context.Background()

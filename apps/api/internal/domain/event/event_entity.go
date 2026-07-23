@@ -18,6 +18,8 @@ const (
 	EventTypeRiskScoreAlert    EventType = "RISK_SCORE_ALERT"
 	EventTypeThermalAlert      EventType = "THERMAL_ALERT"
 	EventTypeBufferLevelAlert  EventType = "BUFFER_LEVEL_ALERT"
+	
+	EventTypeResolved          EventType = "THRESHOLD_RESOLVED"
 
 	// Command events.
 	EventTypeCommandSent         EventType = "COMMAND_SENT"
@@ -102,7 +104,7 @@ func IsConnectivityEvent(eventType EventType) bool {
 func IsTelemetryEvent(eventType EventType) bool {
 	switch eventType {
 	case EventTypeTelemetryReceived, EventTypeThresholdBreach, EventTypeRiskScoreAlert,
-		EventTypeThermalAlert, EventTypeBufferLevelAlert:
+		EventTypeThermalAlert, EventTypeBufferLevelAlert, EventTypeResolved:
 		return true
 	default:
 		return false

@@ -46,6 +46,8 @@ type Client struct {
 	log      *slog.Logger
 	DeviceID string
 	ClientID string // Dashboard client ID for subscription tracking
+	
+	Done chan struct{}
 
 	// Metrics and state
 	metrics     ClientMetrics
@@ -65,8 +67,21 @@ func closeConn(conn *websocket.Conn, log *slog.Logger, ctx string) {
 }
 
 // GetMetrics returns a copy of the client metrics.
+
 func (c *Client) GetMetrics() ClientMetrics {
-	return c.metrics
+	return ClientMetrics{
+		ConnectAttempts:    atomic.LoadInt32(&c.metrics.ConnectAttempts),
+		ConnectSuccesses:   atomic.LoadInt32(&c.metrics.ConnectSuccesses),
+		ConnectFailures:    atomic.LoadInt32(&c.metrics.ConnectFailures),
+		LastConnectedAt:    atomic.LoadInt64(&c.metrics.LastConnectedAt),
+		LastDisconnectedAt: atomic.LoadInt64(&c.metrics.LastDisconnectedAt),
+		LastMessageAt:      atomic.LoadInt64(&c.metrics.LastMessageAt),
+		MessagesSent:       atomic.LoadInt32(&c.metrics.MessagesSent),
+		MessagesReceived:   atomic.LoadInt32(&c.metrics.MessagesReceived),
+		PongMissedCount:    atomic.LoadInt32(&c.metrics.PongMissedCount),
+		RateLimitedCount:   atomic.LoadInt32(&c.metrics.RateLimitedCount),
+		LastRateLimitedAt:  atomic.LoadInt64(&c.metrics.LastRateLimitedAt),
+	}
 }
 
 // RecordConnectAttempt records a connection attempt.
@@ -194,6 +209,15 @@ func (c *Client) ReadPump() {
 }
 
 func (c *Client) processTelemetry(raw []byte) {
+	
+	defer func() {
+		if r := recover(); r != nil {
+			if c.log != nil {
+				c.log.Error("panic in processTelemetry recovered", "deviceId", c.DeviceID, "panic", r)
+			}
+		}
+	}()
+
 	var t telemetry.TelemetryFrame
 	if err := json.Unmarshal(raw, &t); err != nil {
 		return
@@ -252,11 +276,14 @@ func (c *Client) writeCompressed(frame command.CommandFrame) error {
 // WritePump pumps outgoing messages to the WebSocket connection.
 // Applies rate limiting and compression as configured.
 // Non-telemetry messages are handled by hub registration/onDisconnect.
+
 func (c *Client) WritePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
 		closeConn(c.Conn, c.log, "writePump")
+		
+		close(c.Done)
 	}()
 
 	for {

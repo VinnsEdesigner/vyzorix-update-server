@@ -20,11 +20,23 @@ type AuditLogger interface {
 	APIKeyFailed(ctx context.Context, operatorID, keyPrefix, ipAddress, userAgent, reason string)
 }
 
+const (
+	// auditLogBufferSize is the size of the audit event channel buffer.
+	// Events beyond this buffer will block until the writer processes them.
+	auditLogBufferSize = 10000
+)
+
 // Logger handles logging of security events to the audit repository.
+
+// fire-and-forget goroutines per event, ensuring events are not dropped on shutdown.
+
 type Logger struct {
-	repo *Repository
-	log  *slog.Logger
-	wg   sync.WaitGroup
+	repo        *Repository
+	log         *slog.Logger
+	done        chan struct{}
+	events      chan *Entry
+	wg          sync.WaitGroup
+	separateRepo interface{ Log(context.Context, *Entry) error } 
 }
 
 // Compile-time check that Logger implements AuditLogger.
@@ -39,10 +51,20 @@ func (n *NoOpLogger) APIKeyRevoked(ctx context.Context, operatorID, keyID, keyNa
 func (n *NoOpLogger) APIKeyRotated(ctx context.Context, operatorID, keyID, keyName, ipAddress, userAgent string) {}
 func (n *NoOpLogger) APIKeyFailed(ctx context.Context, operatorID, keyPrefix, ipAddress, userAgent, reason string) {}
 
+// NoOpAuditRepo is a no-operation audit repository for when no separate DB is configured.
+type NoOpAuditRepo struct{}
+
+func (n *NoOpAuditRepo) Log(ctx context.Context, entry *Entry) error { return nil }
+
+// Compile-time check that NoOpAuditRepo implements the interface
+var _ interface{ Log(context.Context, *Entry) error } = (*NoOpAuditRepo)(nil)
+
 // LoggerConfig holds configuration for the audit logger.
 type LoggerConfig struct {
 	Enabled       bool
 	RetentionDays int
+	SeparateDB    bool   
+	SeparateDBPath string // Path for separate audit DB (when SeparateDB is true)
 }
 
 // DefaultLoggerConfig returns the default audit logger configuration.
@@ -50,18 +72,78 @@ func DefaultLoggerConfig() LoggerConfig {
 	return LoggerConfig{
 		Enabled:       true,
 		RetentionDays: 90,
+		SeparateDB:    false, // Default to co-located for backward compatibility
 	}
 }
 
-// NewLogger creates a new audit logger.
-func NewLogger(repo *Repository, log *slog.Logger, cfg LoggerConfig) *Logger {
-	return &Logger{
-		repo: repo,
-		log:  log,
+// NewLogger creates a new audit logger with a single writer goroutine.
+
+func NewLogger(repo *Repository, log *slog.Logger, cfg LoggerConfig, separateRepo interface{ Log(context.Context, *Entry) error }) *Logger {
+	l := &Logger{
+		repo:        repo,
+		log:         log,
+		done:        make(chan struct{}),
+		events:      make(chan *Entry, auditLogBufferSize),
+		separateRepo: separateRepo, 
+	}
+
+	// Start single writer goroutine that drains the channel
+	l.wg.Add(1)
+	go l.writer()
+
+	return l
+}
+
+// writer is the single goroutine that processes audit events from the channel
+// and writes them to the repository.
+func (l *Logger) writer() {
+	defer l.wg.Done()
+
+	for {
+		select {
+		case entry := <-l.events:
+			if entry == nil {
+				// Channel closed, flush remaining events
+				for entry := range l.events {
+					l.writeEntry(entry)
+				}
+				return
+			}
+			l.writeEntry(entry)
+		case <-l.done:
+			// Shutdown requested, flush remaining events
+			close(l.events)
+			for entry := range l.events {
+				l.writeEntry(entry)
+			}
+			return
+		}
 	}
 }
 
-// LogEvent logs a security event to the audit repository asynchronously.
+// writeEntry writes a single audit entry to the repository.
+
+func (l *Logger) writeEntry(entry *Entry) {
+	// Write to primary repository
+	if err := l.repo.Log(context.Background(), entry); err != nil {
+		l.log.Error("failed to write audit log",
+			slog.String("action", string(entry.Action)),
+			slog.String("error", err.Error()))
+	}
+
+	
+	if l.separateRepo != nil {
+		if err := l.separateRepo.Log(context.Background(), entry); err != nil {
+			l.log.Error("failed to write audit log to separate DB",
+				slog.String("action", string(entry.Action)),
+				slog.String("error", err.Error()))
+		}
+	}
+}
+
+// LogEvent logs a security event to the audit repository via buffered channel.
+
+// writer goroutine, ensuring proper shutdown drainage.
 func (l *Logger) LogEvent(ctx context.Context, entry *Entry) {
 	if entry.ID == "" {
 		entry.ID = uuid.New()
@@ -71,25 +153,32 @@ func (l *Logger) LogEvent(ctx context.Context, entry *Entry) {
 		entry.CreatedAt = time.Now()
 	}
 
-	l.wg.Add(1)
-	go func() {
-		defer l.wg.Done()
-		if err := l.repo.Log(context.Background(), entry); err != nil {
-			l.log.Error("failed to write audit log",
-				slog.String("action", string(entry.Action)),
-				slog.String("error", err.Error()))
-		}
-	}()
+	select {
+	case l.events <- entry:
+		// Event queued successfully
+	case <-l.done:
+		// Logger is shutting down, log directly (may block briefly)
+		l.writeEntry(entry)
+	default:
+		// Buffer full - log and warn that buffer is saturated
+		l.log.Warn("audit log buffer full, logging synchronously",
+			slog.String("action", string(entry.Action)))
+		l.writeEntry(entry)
+	}
 }
 
-// Shutdown waits for all pending audit log writes to complete.
-// Call this during graceful shutdown to ensure audit events are not dropped.
+// Shutdown gracefully shuts down the audit logger, ensuring all pending events
+// are written before returning. Call this during application shutdown.
+
 func (l *Logger) Shutdown(ctx context.Context) error {
+	close(l.done)
+
 	done := make(chan struct{})
 	go func() {
 		l.wg.Wait()
 		close(done)
 	}()
+
 	select {
 	case <-done:
 		return nil

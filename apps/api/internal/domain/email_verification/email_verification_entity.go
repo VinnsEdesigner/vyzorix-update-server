@@ -14,16 +14,23 @@ var ErrExpired = errors.New("verification token expired")
 
 // EmailVerification represents a pending email verification token.
 type EmailVerification struct {
-	ExpiresAt  time.Time
-	CreatedAt  time.Time
-	ID         string
-	OperatorID string
-	TokenHash  string
+	ExpiresAt   time.Time
+	CreatedAt   time.Time
+	ID          string
+	OperatorID  string
+	TokenHash   string
+	EmailSentAt *time.Time // Time when verification email was successfully sent
+	EmailError  string     // Error message if email failed to send
 }
 
 // IsExpired returns true if the verification has expired.
 func (e *EmailVerification) IsExpired() bool {
 	return time.Now().UTC().After(e.ExpiresAt)
+}
+
+// HasEmailFailed returns true if email sending failed.
+func (e *EmailVerification) HasEmailFailed() bool {
+	return e.EmailError != ""
 }
 
 // Repository defines the interface for email verification data access.
@@ -39,4 +46,10 @@ type Repository interface {
 
 	// DeleteByOperator removes all verifications for an operator.
 	DeleteByOperator(ctx context.Context, operatorID string) error
+
+	// MarkEmailSent updates the email verification to record successful email delivery.
+	MarkEmailSent(ctx context.Context, id string, sentAt time.Time) error
+
+	// MarkEmailFailed updates the email verification to record email delivery failure.
+	MarkEmailFailed(ctx context.Context, id string, errorMsg string) error
 }

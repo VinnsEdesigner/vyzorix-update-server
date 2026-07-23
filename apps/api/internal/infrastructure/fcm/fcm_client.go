@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -31,6 +30,9 @@ type serviceAccount struct {
 	ClientEmail string `json:"client_email"`
 }
 
+// Init initializes the FCM client with graceful degradation for malformed credentials.
+
+// is returned in a disabled state with a warning logged.
 func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 	c := &Client{log: log}
 
@@ -44,7 +46,8 @@ func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 	// by explicitly specifying the credential type as ServiceAccount.
 	tmpFile, err := os.CreateTemp("", "fcm-credentials-*.json")
 	if err != nil {
-		return nil, fmt.Errorf("failed to create temp credentials file: %w", err)
+		log.Warn("fcm disabled; failed to create temp credentials file", "error", err.Error())
+		return c, nil
 	}
 	tmpPath := tmpFile.Name()
 
@@ -52,11 +55,13 @@ func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 	if _, err := tmpFile.WriteString(rawCredentials); err != nil {
 		_ = tmpFile.Close()
 		_ = os.Remove(tmpPath)
-		return nil, fmt.Errorf("failed to write credentials: %w", err)
+		log.Warn("fcm disabled; failed to write credentials", "error", err.Error())
+		return c, nil
 	}
 	if err := tmpFile.Close(); err != nil {
 		_ = os.Remove(tmpPath)
-		return nil, fmt.Errorf("failed to close temp credentials file: %w", err)
+		log.Warn("fcm disabled; failed to close temp credentials file", "error", err.Error())
+		return c, nil
 	}
 
 	// Use WithAuthCredentialsFile with explicit ServiceAccount type
@@ -66,7 +71,11 @@ func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 	app, err := firebase.NewApp(context.Background(), nil, creds)
 	if err != nil {
 		_ = os.Remove(tmpPath)
-		return nil, fmt.Errorf("firebase init: %w", err)
+		
+		log.Warn("fcm disabled; malformed FIREBASE_CREDENTIALS - Firebase init failed",
+			"error", err.Error(),
+			"hint", "Ensure credentials are valid JSON service account file")
+		return c, nil
 	}
 
 	// Clean up temp file after Firebase app is initialized

@@ -87,6 +87,8 @@ func (u *StreamUpgrader) Upgrade(c *gin.Context, deviceID string) (*websocket.Co
 		Conn:     conn,
 		Send:     make(chan command.CommandFrame, 32),
 		Hub:      nil, // Will be set by caller
+		
+		Done: make(chan struct{}),
 	}
 
 	return conn, client, nil

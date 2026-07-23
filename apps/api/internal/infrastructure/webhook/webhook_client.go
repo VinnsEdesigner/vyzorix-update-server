@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -18,6 +19,12 @@ import (
 
 // ErrPrivateOrInternalIP indicates the URL resolves to a private/internal IP.
 var ErrPrivateOrInternalIP = errors.New("webhook URL cannot resolve to a private or internal IP address")
+
+
+const (
+	maxRetries     = 3
+	baseRetryDelay = 1 * time.Second
+)
 
 // ValidateURL validates a webhook URL to prevent SSRF attacks.
 // Returns nil if valid, or ErrPrivateOrInternalIP if the URL resolves to a private/internal IP.
@@ -179,6 +186,7 @@ func (c *Client) Test(ctx context.Context, url string) (*TestResult, error) {
 }
 
 // Send sends a webhook notification with HMAC signature.
+
 func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload) error {
 	// Reject private/internal IPs to prevent SSRF
 	if err := ValidateURL(url); err != nil {
@@ -190,6 +198,44 @@ func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload)
 		return err
 	}
 
+	
+	var lastErr error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			// Exponential backoff: 1s, 2s, 4s
+			delay := baseRetryDelay * time.Duration(1<<(attempt-1))
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(delay):
+			}
+		}
+
+		err := c.doSend(ctx, url, secret, body, payload)
+		if err == nil {
+			return nil
+		}
+
+		// Check if error is retryable (5xx status code)
+		if !isRetryableError(err) {
+			return err
+		}
+		lastErr = err
+
+		// Log retry attempt
+		if slog.Default().Enabled(ctx, slog.LevelWarn) {
+			slog.Default().Warn("webhook delivery failed, retrying",
+				"attempt", attempt+1,
+				"maxRetries", maxRetries,
+				"error", err)
+		}
+	}
+
+	return fmt.Errorf("webhook delivery failed after %d attempts: %w", maxRetries, lastErr)
+}
+
+// doSend performs a single webhook delivery attempt.
+func (c *Client) doSend(ctx context.Context, url, secret string, body []byte, payload *Payload) error {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
@@ -226,10 +272,38 @@ func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("webhook returned status %d", resp.StatusCode)
+		return &retryableError{statusCode: resp.StatusCode, message: fmt.Sprintf("webhook returned status %d", resp.StatusCode)}
 	}
 
 	return nil
+}
+
+// retryableError represents an error that can be retried.
+type retryableError struct {
+	statusCode int
+	message    string
+}
+
+func (e *retryableError) Error() string {
+	return e.message
+}
+
+// isRetryableError returns true if the error is a transient error that should be retried.
+func isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// Check for retryable error type
+	if re, ok := err.(*retryableError); ok {
+		// Only retry 5xx errors (server errors), not 4xx (client errors)
+		return re.statusCode >= 500 && re.statusCode < 600
+	}
+	// Retry on context deadline exceeded (might succeed on retry)
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	// Retry on temporary network errors
+	return false
 }
 
 // computeHMAC computes HMAC-SHA256 signature of the payload.

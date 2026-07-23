@@ -26,9 +26,19 @@ func validateWebhookURL(rawURL string) error {
 // UpdateFCMToken resolves the updateFCMToken mutation.
 func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	deviceID, _ := p.Args["deviceId"].(string)
-	token, _ := p.Args["token"].(string)
-	orgID, _ := p.Args["organizationId"].(string)
+	
+	deviceID, ok := p.Args["deviceId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("deviceId must be a string")
+	}
+	token, ok := p.Args["token"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("token must be a string")
+	}
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
@@ -74,8 +84,15 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 // DeleteDevice resolves the deleteDevice mutation.
 func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	deviceID, _ := p.Args["id"].(string)
-	orgID, _ := p.Args["organizationId"].(string)
+	
+	deviceID, ok := p.Args["id"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("id must be a string")
+	}
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
@@ -105,10 +122,23 @@ func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 // SendCommand resolves the sendCommand mutation.
 func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	deviceID, _ := p.Args["deviceId"].(string)
-	cmdStr, _ := p.Args["command"].(string)
-	args, _ := p.Args["args"].(map[string]interface{})
-	orgID, _ := p.Args["organizationId"].(string)
+	
+	deviceID, ok := p.Args["deviceId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("deviceId must be a string")
+	}
+	cmdStr, ok := p.Args["command"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("command must be a string")
+	}
+	args, ok := p.Args["args"].(map[string]interface{})
+	if !ok {
+		args = nil // args is optional, default to nil
+	}
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
@@ -173,8 +203,15 @@ return map[string]interface{}{
 // RetryCommand resolves the retryCommand mutation.
 func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	dispatchID, _ := p.Args["dispatchId"].(string)
-	orgID, _ := p.Args["organizationId"].(string)
+	
+	dispatchID, ok := p.Args["dispatchId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("dispatchId must be a string")
+	}
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
 
 	if dispatchID == "" {
 		return nil, r.Presenter.BadRequestError("dispatch ID is required")
@@ -216,8 +253,15 @@ func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 // CancelCommand resolves the cancelCommand mutation.
 func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	dispatchID, _ := p.Args["dispatchId"].(string)
-	orgID, _ := p.Args["organizationId"].(string)
+	
+	dispatchID, ok := p.Args["dispatchId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("dispatchId must be a string")
+	}
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
 
 	if dispatchID == "" {
 		return nil, r.Presenter.BadRequestError("dispatch ID is required")
@@ -262,8 +306,15 @@ func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 // DisconnectDevice resolves the disconnectDevice mutation.
 func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	deviceID, _ := p.Args["deviceId"].(string)
-	orgID, _ := p.Args["organizationId"].(string)
+	
+	deviceID, ok := p.Args["deviceId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("deviceId must be a string")
+	}
+	orgID, ok := p.Args["organizationId"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	}
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
@@ -617,7 +668,11 @@ func (r *Resolver) TestWebhook(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	url, _ := p.Args["url"].(string)
+	
+	url, ok := p.Args["url"].(string)
+	if !ok {
+		return nil, r.Presenter.BadRequestError("url must be a string")
+	}
 	if url == "" {
 		return nil, r.Presenter.BadRequestError("url is required")
 	}

@@ -36,9 +36,15 @@ func (h *SuperAdminHandler) RegisterRoutes(r *gin.RouterGroup) {
 }
 
 // ListAllKeys lists all API keys across all operators (super admin only).
+
 func (h *SuperAdminHandler) ListAllKeys(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
 
 	result, err := h.service.ListAllKeys(c.Request.Context(), page, limit)
 	if err != nil {
@@ -57,11 +63,17 @@ func (h *SuperAdminHandler) ListAllKeys(c *gin.Context) {
 }
 
 // GetOperatorKeys lists all API keys for a specific operator (super admin only).
+
 func (h *SuperAdminHandler) GetOperatorKeys(c *gin.Context) {
 	operatorID := c.Param("operatorId")
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+	
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
 
 	result, err := h.service.ListKeys(c.Request.Context(), operatorID, page, limit)
 	if err != nil {

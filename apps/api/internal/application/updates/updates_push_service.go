@@ -218,7 +218,13 @@ func (s *PushService) dispatchUpdateCommand(ctx context.Context, deviceID, pushI
 	if s.hub != nil && s.hub.Online(deviceID) {
 		if sent := s.hub.Send(deviceID, frame); sent {
 			// Device received via WSS — mark command as delivered.
-			_ = s.commandService.MarkDelivered(ctx, cmdResp.CommandID)
+			
+			if err := s.commandService.MarkDelivered(ctx, cmdResp.CommandID); err != nil {
+				s.logger.Error("failed to mark command as delivered",
+					"commandId", cmdResp.CommandID,
+					"deviceId", deviceID,
+					"error", err)
+			}
 			s.logger.Info("update command sent via WSS",
 				"deviceId", deviceID, "pushId", pushID, "version", version)
 			return nil

@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -208,6 +209,10 @@ var migrations = []Migration{
 	{Apply: migrateCommandSecretHash, Name: "add_command_secret_hash", Version: 44},
 	// Single-use confirmation token tracking
 	{Apply: migrateConfirmedAt, Name: "add_confirmed_at", Version: 45},
+	// Email verification delivery tracking
+	{Apply: migrateEmailVerificationTracking, Name: "add_email_verification_tracking", Version: 46},
+	
+	{Apply: migrateCreatePendingFCM, Name: "create_pending_fcm_table", Version: 47},
 }
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {
@@ -263,7 +268,7 @@ func getCurrentVersion(db *sql.DB) (int, error) {
 	var version int
 
 	err := db.QueryRow(`SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1`).Scan(&version)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
 	}
 

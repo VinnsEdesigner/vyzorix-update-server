@@ -4,6 +4,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/idempotency"
@@ -47,7 +48,7 @@ func (r *IdempotencyRepository) Get(ctx context.Context, key string) (*idempoten
 		&record.ClientIP,
 		&record.UserAgent,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		//
 		return nil, nil
 	}

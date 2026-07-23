@@ -44,6 +44,8 @@ type Compression struct {
 	config  *CompressionConfig
 	metrics CompressionMetrics
 	mu      sync.RWMutex
+	
+	gzipPool sync.Pool
 }
 
 // NewCompression creates a new Compression handler.
@@ -52,41 +54,65 @@ func NewCompression(log *slog.Logger, cfg *CompressionConfig) *Compression {
 		cfg = DefaultCompressionConfig()
 	}
 
-	return &Compression{
+	c := &Compression{
 		log:    log,
 		config: cfg,
 	}
+
+	
+	c.gzipPool = sync.Pool{
+		New: func() interface{} {
+			return new(bytes.Buffer)
+		},
+	}
+
+	return c
 }
 
 // CompressMessage compresses a message if it exceeds the threshold.
 // Returns the compressed message and a boolean indicating if compression was applied.
+
 func (c *Compression) CompressMessage(data []byte) ([]byte, bool, error) {
 	if !c.config.EnableCompression || len(data) < c.config.Threshold {
 		c.incrementBypassed()
 		return data, false, nil
 	}
 
-	var buf bytes.Buffer
+	
+	bufInterface := c.gzipPool.Get()
+	var buf *bytes.Buffer
+	if bufInterface != nil {
+		var ok bool
+		buf, ok = bufInterface.(*bytes.Buffer)
+		if !ok {
+			buf = new(bytes.Buffer)
+		}
+	} else {
+		buf = new(bytes.Buffer)
+	}
+	buf.Reset()
+	defer func() {
+		buf.Reset()
+		c.gzipPool.Put(buf)
+	}()
 
-	writer, err := gzip.NewWriterLevel(&buf, c.config.Level)
+	// Create a new gzip writer - lightweight allocation
+	writer, err := gzip.NewWriterLevel(buf, c.config.Level)
 	if err != nil {
 		c.log.Warn("failed to create gzip writer", "err", err)
 		c.incrementBypassed()
-
 		return data, false, nil
 	}
 
 	if _, err := writer.Write(data); err != nil {
 		c.log.Warn("failed to write data to gzip", "err", err)
 		c.incrementBypassed()
-
 		return data, false, nil
 	}
 
 	if err := writer.Close(); err != nil {
 		c.log.Warn("failed to close gzip writer", "err", err)
 		c.incrementBypassed()
-
 		return data, false, nil
 	}
 

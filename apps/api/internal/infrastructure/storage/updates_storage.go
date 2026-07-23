@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -55,7 +56,7 @@ func (s *UpdatesStorage) GetLatestVersion(ctx context.Context) (*updates.UpdateV
 		FROM update_versions WHERE is_latest = 1 LIMIT 1
 	`)
 	v, err := s.scanVersion(row)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, updates.ErrVersionNotFound
 	}
 	return v, err
@@ -121,7 +122,7 @@ func (s *UpdatesStorage) UpdateLatestFlag(ctx context.Context, versionID string)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer SafeRollbackNoLog(tx)
 
 	// Clear all latest flags
 	if _, err := tx.ExecContext(ctx, "UPDATE update_versions SET is_latest = 0"); err != nil {
@@ -166,7 +167,7 @@ func (s *UpdatesStorage) scanVersion(row *sql.Row) (*updates.UpdateVersion, erro
 		&v.ReleaseDate, &releaseNotes, &v.ReleaseType, &v.IsLatest,
 		&v.CreatedAt, &v.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, updates.ErrVersionNotFound
 	}
 	if err != nil {
@@ -307,7 +308,7 @@ func (s *UpdatesStorage) scanPush(row *sql.Row) (*updates.UpdatePush, error) {
 		&p.ID, &p.VersionID, &p.OrganizationID, &p.InstallType, &scheduledAt, &p.Status,
 		&p.InitiatedBy, &p.InitiatedAt, &completedAt, &cancelledAt, &cancelledBy,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, updates.ErrPushNotFound
 	}
 	if err != nil {
@@ -450,7 +451,7 @@ func (s *UpdatesStorage) GetPushDeviceByPushAndDevice(ctx context.Context, pushI
 	var errMsg sql.NullString
 	err := row.Scan(&d.ID, &d.PushID, &d.DeviceID, &d.Status, &sentAt, &ackAt, &errMsg, &d.RetryCount, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, updates.ErrPushNotFound
 		}
 		return nil, err
@@ -478,7 +479,7 @@ func (s *UpdatesStorage) UpdatePushDeviceStatusByDispatch(ctx context.Context, d
 		WHERE up.id = ? AND upd.device_id = ?
 	`, dispatchID, deviceID).Scan(&devicePushID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return updates.ErrPushNotFound
 		}
 		return err
@@ -522,7 +523,7 @@ func (s *UpdatesStorage) GetSyncState(ctx context.Context) (*updates.SyncState, 
 	err := row.Scan(
 		&state.Status, &lastSyncAt, &nextSyncAt, &lastError, &versionsFound,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return &updates.SyncState{
 			Status: updates.SyncStatusIdle,
 		}, nil
@@ -569,7 +570,7 @@ func (s *UpdatesStorage) TryAcquireSyncLock(ctx context.Context) (bool, *updates
 	if err != nil {
 		return false, nil, err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer SafeRollbackNoLog(tx)
 
 	// Get current state with row lock
 	row := tx.QueryRowContext(ctx, `
@@ -581,7 +582,7 @@ func (s *UpdatesStorage) TryAcquireSyncLock(ctx context.Context) (bool, *updates
 	var lastError sql.NullString
 	var versionsFound int
 	err = row.Scan(&state.Status, &lastSyncAt, &nextSyncAt, &lastError, &versionsFound)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		// No state exists - try to create with syncing status
 		_, insertErr := tx.ExecContext(ctx, `
 			INSERT INTO update_sync_status (id, status, created_at, updated_at)
