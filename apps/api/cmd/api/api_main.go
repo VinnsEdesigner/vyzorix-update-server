@@ -28,19 +28,34 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/ssr"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	env := getEnv()
-	PrintBanner(env)
+	// Load .env file if it exists.
+	_ = godotenv.Load(".env")
 
-	log := logging.NewFromEnv()
+	// Determine environment mode from environment (before config load).
+	envMode := getEnv()
 
+	// Load config first to get the actual environment mode.
 	cfg, err := config.Load()
 	if err != nil {
+		// Print banner with detected environment mode before exiting.
+		PrintBanner(envMode)
+		log := logging.NewFromEnv()
 		log.Error("configuration failed", "err", err)
 		os.Exit(1)
 	}
+
+	// Use config's Env if available, otherwise use detected mode.
+	if cfg.Env != "" {
+		envMode = cfg.Env
+	}
+	PrintBanner(envMode)
+
+	log := logging.NewFromEnv()
 
 	// Wire up all dependencies using google/wire.
 	PrintSection("Dependency Injection")
