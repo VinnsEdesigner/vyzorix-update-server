@@ -1,14 +1,29 @@
 import type { Thresholds, ClientSettings } from "../settings/settings-entity";
+import type { OrganizationRole } from "../organization/organization-entity";
 
 export type OperatorRole = "super_admin" | "admin" | "operator" | "viewer";
+
+// Re-export for backwards compatibility
+export { type OrganizationRole as OperatorRole };
+
+// Membership info for operator
+export interface OperatorMembership {
+  organizationId: string;
+  organizationName: string;
+  role: OrganizationRole;
+  joinedAt: Date;
+}
 
 export interface Operator {
   id: string;
   email: string;
   name: string;
-  role: OperatorRole;
+  // Global role removed - use memberships[].role for org-specific roles
+  // Kept for backwards compatibility during migration
+  role?: OperatorRole;
   mfaEnabled: boolean;
   emailVerified: boolean;
+  memberships?: OperatorMembership[];
 }
 
 export interface AuthTokens {

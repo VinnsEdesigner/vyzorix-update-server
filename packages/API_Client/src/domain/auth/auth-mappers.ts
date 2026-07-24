@@ -7,8 +7,10 @@ import type {
   MeResponse,
   OperatorRole,
   AuthTokens,
+  OperatorMembership,
 } from "./auth-entity";
 import type { Thresholds, ClientSettings } from "../settings/settings-entity";
+import type { OrganizationRole } from "../organization/organization-entity";
 
 interface RawOperator {
   id: string;
@@ -17,6 +19,14 @@ interface RawOperator {
   role: string;
   mfa_enabled: boolean;
   email_verified: boolean;
+  memberships?: RawOperatorMembership[];
+}
+
+interface RawOperatorMembership {
+  organization_id: string;
+  organization_name?: string;
+  role: string;
+  joined_at: string;
 }
 
 interface RawLoginResponse {
@@ -68,6 +78,7 @@ interface RawMeResponse {
   email_verified: boolean;
   thresholds?: Thresholds;
   client?: ClientSettings;
+  memberships?: RawOperatorMembership[];
 }
 
 interface RawRefreshResponse {
@@ -85,6 +96,16 @@ export function operatorFromRaw(raw: RawOperator): Operator {
     role: raw.role as OperatorRole,
     mfaEnabled: raw.mfa_enabled,
     emailVerified: raw.email_verified,
+    memberships: raw.memberships?.map(membershipFromRaw),
+  };
+}
+
+function membershipFromRaw(raw: RawOperatorMembership): OperatorMembership {
+  return {
+    organizationId: raw.organization_id,
+    organizationName: raw.organization_name ?? "Unknown",
+    role: raw.role as OrganizationRole,
+    joinedAt: new Date(raw.joined_at),
   };
 }
 
@@ -142,6 +163,7 @@ export function meResponseFromRaw(raw: RawMeResponse): MeResponse {
     emailVerified: raw.email_verified,
     thresholds: raw.thresholds,
     client: raw.client,
+    memberships: raw.memberships?.map(membershipFromRaw),
   };
 }
 

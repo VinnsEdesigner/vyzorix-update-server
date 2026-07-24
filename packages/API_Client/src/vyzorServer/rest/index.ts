@@ -11,4 +11,6 @@ export * from "./logs";
 export * from "./session";
 export * from "./admin";
 export * from "./oauth";
+export * from "./organization";
+export * from "./me";
 export * from "../websocket";

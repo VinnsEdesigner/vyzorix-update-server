@@ -10,6 +10,7 @@ export interface DeviceConnection {
 export interface Device {
   id: string;
   imei: string;
+  organizationId?: string; // Multi-tenant: organization this device belongs to
   deviceName?: string;
   model?: string;
   manufacturer?: string;
@@ -29,6 +30,7 @@ export interface Device {
 export interface DeviceListItem {
   id: string;
   imei: string;
+  organizationId?: string; // Multi-tenant: organization this device belongs to
   deviceName?: string;
   model?: string;
   manufacturer?: string;

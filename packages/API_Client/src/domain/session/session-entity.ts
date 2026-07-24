@@ -5,6 +5,7 @@ export interface Session {
   createdAt: Date;
   expiresAt: Date;
   isCurrent: boolean;
+  selectedOrganizationId?: string; // Currently selected organization context
 }
 
 export interface SessionListResponse {
