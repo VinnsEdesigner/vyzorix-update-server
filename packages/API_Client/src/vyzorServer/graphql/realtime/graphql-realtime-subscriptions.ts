@@ -1,18 +1,11 @@
-/**
- * Realtime GraphQL Subscriptions
- * 
- * GraphQL subscription definitions for real-time updates.
- * Based on REALTIME_WEBSOCKET_ARCHITECTURE.md.
- */
 
-// ============================================================================
-// Subscription Definitions
-// ============================================================================
 
-/**
- * Subscribe to device update events
- */
-export const DEVICE_UPDATED_SUBSCRIPTION = /* GraphQL */ `
+
+
+
+
+
+export const DEVICE_UPDATED_SUBSCRIPTION =  `
   subscription OnDeviceUpdated($deviceId: ID!) {
     deviceUpdated(deviceId: $deviceId) {
       id
@@ -24,10 +17,8 @@ export const DEVICE_UPDATED_SUBSCRIPTION = /* GraphQL */ `
   }
 `;
 
-/**
- * Subscribe to real-time telemetry
- */
-export const TELEMETRY_RECEIVED_SUBSCRIPTION = /* GraphQL */ `
+
+export const TELEMETRY_RECEIVED_SUBSCRIPTION =  `
   subscription OnTelemetryReceived($deviceId: ID!) {
     telemetryReceived(deviceId: $deviceId) {
       timestamp
@@ -39,10 +30,8 @@ export const TELEMETRY_RECEIVED_SUBSCRIPTION = /* GraphQL */ `
   }
 `;
 
-/**
- * Subscribe to command status changes
- */
-export const COMMAND_STATUS_SUBSCRIPTION = /* GraphQL */ `
+
+export const COMMAND_STATUS_SUBSCRIPTION =  `
   subscription OnCommandStatusChanged($dispatchId: ID!) {
     commandStatusChanged(dispatchId: $dispatchId) {
       id
@@ -60,10 +49,8 @@ export const COMMAND_STATUS_SUBSCRIPTION = /* GraphQL */ `
   }
 `;
 
-/**
- * Subscribe to dashboard events (connection, alerts, etc.)
- */
-export const DASHBOARD_EVENT_SUBSCRIPTION = /* GraphQL */ `
+
+export const DASHBOARD_EVENT_SUBSCRIPTION =  `
   subscription OnDashboardEvent {
     dashboardEvent {
       type

@@ -1,6 +1,6 @@
 import { API_KEY_FRAGMENT } from "./graphql-apikey-fragments";
 
-export const GET_API_KEYS = /* GraphQL */ `
+export const GET_API_KEYS =  `
   query GetApiKeys($page: Int, $limit: Int) {
     apiKeys(page: $page, limit: $limit) {
       keys {
@@ -19,7 +19,7 @@ export const GET_API_KEYS = /* GraphQL */ `
   ${API_KEY_FRAGMENT}
 `;
 
-export const GET_API_KEY = /* GraphQL */ `
+export const GET_API_KEY =  `
   query GetApiKey($id: String!) {
     apiKey(id: $id) {
       ...ApiKey
@@ -28,7 +28,7 @@ export const GET_API_KEY = /* GraphQL */ `
   ${API_KEY_FRAGMENT}
 `;
 
-export const GET_API_KEY_STATS = /* GraphQL */ `
+export const GET_API_KEY_STATS =  `
   query GetApiKeyStats {
     apiKeyStats {
       monthlyLimit

@@ -67,13 +67,7 @@ interface RawDeregisterResponse {
 }
 
 export const registration = {
-  /**
-   * Create a new inbox entry (submit device registration request).
-   * This is the first step in the device registration flow.
-   * 
-   * @param request - Device registration request with IMEI, FCM token, and device info
-   * @returns Result containing the created inbox entry ID and status
-   */
+  
   async createInboxRequest(request: CreateInboxRequest): Promise<CreateInboxResult> {
     const rawRequest = createInboxRequestToRaw(request);
     const response = await restClient.post<RawCreateInboxResponse>(
@@ -83,14 +77,7 @@ export const registration = {
     return createInboxResultFromRaw(response);
   },
 
-  /**
-   * Confirm device registration after receiving commandSecret via FCM.
-   * This is called after operator approves the registration request.
-   * 
-   * @param imei - Device IMEI
-   * @param commandSecret - Secret received via FCM push notification
-   * @returns Result containing confirmation status and device info
-   */
+  
   async confirmDevice(imei: string, commandSecret: string): Promise<ConfirmDeviceResult> {
     const response = await restClient.post<RawConfirmDeviceResponse>(PATHS.confirm, {
       imei,

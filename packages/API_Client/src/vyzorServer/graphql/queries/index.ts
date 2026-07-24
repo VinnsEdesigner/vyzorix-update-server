@@ -1,10 +1,6 @@
-/**
- * GraphQL Queries Index
- * 
- * Barrel export for all GraphQL queries.
- */
 
-// Registration queries
+
+
 export {
   GET_INBOX_ENTRIES,
   GET_INBOX_ENTRY,

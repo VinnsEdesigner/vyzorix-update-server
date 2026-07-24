@@ -7,27 +7,9 @@ import type {
   MeResponse,
   OperatorRole,
   AuthTokens,
-  OperatorMembership,
+  OrganizationInfo,
 } from "./auth-entity";
 import type { Thresholds, ClientSettings } from "../settings/settings-entity";
-import type { OrganizationRole } from "../organization/organization-entity";
-
-interface RawOperator {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  mfa_enabled: boolean;
-  email_verified: boolean;
-  memberships?: RawOperatorMembership[];
-}
-
-interface RawOperatorMembership {
-  organization_id: string;
-  organization_name?: string;
-  role: string;
-  joined_at: string;
-}
 
 interface RawLoginResponse {
   operator_id: string;
@@ -52,6 +34,10 @@ interface RawLoginWithTokensResponse {
   refresh_token: string;
   expires_at: number;
   session_id: string;
+  organizations?: OrganizationInfo[];
+  selected_organization?: OrganizationInfo;
+  last_organization_id?: string;
+  needs_organization?: boolean;
 }
 
 interface RawLoginWithTokensMFARequiredResponse {
@@ -73,12 +59,14 @@ interface RawMeResponse {
   id: string;
   email: string;
   name: string;
-  role: string;
   mfa_enabled: boolean;
   email_verified: boolean;
   thresholds?: Thresholds;
   client?: ClientSettings;
-  memberships?: RawOperatorMembership[];
+  needs_organization: boolean;
+  organizations: OrganizationInfo[];
+  last_organization_id?: string;
+  selected_organization?: OrganizationInfo;
 }
 
 interface RawRefreshResponse {
@@ -86,27 +74,6 @@ interface RawRefreshResponse {
   refresh_token: string;
   expires_at: number;
   session_id: string;
-}
-
-export function operatorFromRaw(raw: RawOperator): Operator {
-  return {
-    id: raw.id,
-    email: raw.email,
-    name: raw.name,
-    role: raw.role as OperatorRole,
-    mfaEnabled: raw.mfa_enabled,
-    emailVerified: raw.email_verified,
-    memberships: raw.memberships?.map(membershipFromRaw),
-  };
-}
-
-function membershipFromRaw(raw: RawOperatorMembership): OperatorMembership {
-  return {
-    organizationId: raw.organization_id,
-    organizationName: raw.organization_name ?? "Unknown",
-    role: raw.role as OrganizationRole,
-    joinedAt: new Date(raw.joined_at),
-  };
 }
 
 export function loginResponseFromRaw(raw: RawLoginResponse): LoginResponse {
@@ -127,15 +94,19 @@ export function isMFAResponse(
 
 export function loginWithTokensResponseFromRaw(raw: RawLoginWithTokensResponse): LoginWithTokensResponse {
   return {
-    operatorId: raw.operator_id,
+    operator_id: raw.operator_id,
     email: raw.email,
     name: raw.name,
-    role: raw.role as OperatorRole,
-    mfaEnabled: raw.mfa_enabled,
-    accessToken: raw.access_token,
-    refreshToken: raw.refresh_token,
-    expiresAt: raw.expires_at,
-    sessionId: raw.session_id,
+    role: raw.role,
+    mfa_enabled: raw.mfa_enabled,
+    access_token: raw.access_token,
+    refresh_token: raw.refresh_token,
+    expires_at: raw.expires_at,
+    session_id: raw.session_id,
+    needs_organization: raw.needs_organization ?? false,
+    organizations: raw.organizations ?? [],
+    last_organization_id: raw.last_organization_id,
+    selected_organization: raw.selected_organization,
   };
 }
 
@@ -158,12 +129,14 @@ export function meResponseFromRaw(raw: RawMeResponse): MeResponse {
     id: raw.id,
     email: raw.email,
     name: raw.name,
-    role: raw.role as OperatorRole,
-    mfaEnabled: raw.mfa_enabled,
-    emailVerified: raw.email_verified,
+    mfa_enabled: raw.mfa_enabled,
+    email_verified: raw.email_verified,
     thresholds: raw.thresholds,
     client: raw.client,
-    memberships: raw.memberships?.map(membershipFromRaw),
+    needs_organization: raw.needs_organization,
+    organizations: raw.organizations,
+    last_organization_id: raw.last_organization_id,
+    selected_organization: raw.selected_organization,
   };
 }
 
@@ -176,21 +149,14 @@ export function authTokensFromRaw(raw: RawRefreshResponse): AuthTokens {
   };
 }
 
-export function loginRequestToRaw(request: {
-  email: string;
-  password: string;
-}): { email: string; password: string } {
+export function loginRequestToRaw(request: { email: string; password: string }): { email: string; password: string } {
   return {
     email: request.email.toLowerCase().trim(),
     password: request.password,
   };
 }
 
-export function registerRequestToRaw(request: {
-  email: string;
-  password: string;
-  name: string;
-}): { email: string; password: string; name: string } {
+export function registerRequestToRaw(request: { email: string; password: string; name: string }): { email: string; password: string; name: string } {
   return {
     email: request.email.toLowerCase().trim(),
     password: request.password,
@@ -210,10 +176,7 @@ export function forgotPasswordRequestToRaw(email: string): { email: string } {
   return { email: email.toLowerCase().trim() };
 }
 
-export function resetPasswordRequestToRaw(token: string, newPassword: string): {
-  token: string;
-  new_password: string;
-} {
+export function resetPasswordRequestToRaw(token: string, newPassword: string): { token: string; new_password: string } {
   return { token, new_password: newPassword };
 }
 
@@ -233,20 +196,14 @@ export function backupCodeVerifyRequestToRaw(code: string): { code: string } {
   return { code };
 }
 
-export function mfaStatusResponseFromRaw(raw: { enabled: boolean; backup_codes?: string[] }): {
-  enabled: boolean;
-  backupCodes?: string[];
-} {
+export function mfaStatusResponseFromRaw(raw: { enabled: boolean; backup_codes?: string[] }): { enabled: boolean; backupCodes?: string[] } {
   return {
     enabled: raw.enabled,
     backupCodes: raw.backup_codes,
   };
 }
 
-export function mfaEnrollResponseFromRaw(raw: { secret: string; qr_code_url: string }): {
-  secret: string;
-  qrCodeUrl: string;
-} {
+export function mfaEnrollResponseFromRaw(raw: { secret: string; qr_code_url: string }): { secret: string; qrCodeUrl: string } {
   return {
     secret: raw.secret,
     qrCodeUrl: raw.qr_code_url,
@@ -257,19 +214,12 @@ export function mfaVerifyRequestToRaw(operatorId: string, code: string): { opera
   return { operator_id: operatorId, code };
 }
 
-export interface RawMFAVerifyResponse {
+interface RawMFAVerifyResponse {
   success: boolean;
   session_id?: string;
   access_token?: string;
   refresh_token?: string;
   expires_at?: number;
-  operator?: {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-    mfa_enabled: boolean;
-  };
 }
 
 export function mfaVerifyResponseFromRaw(raw: RawMFAVerifyResponse): {
@@ -278,7 +228,6 @@ export function mfaVerifyResponseFromRaw(raw: RawMFAVerifyResponse): {
   accessToken?: string;
   refreshToken?: string;
   expiresAt?: number;
-  operator?: Operator;
 } {
   return {
     success: raw.success,
@@ -286,6 +235,5 @@ export function mfaVerifyResponseFromRaw(raw: RawMFAVerifyResponse): {
     accessToken: raw.access_token,
     refreshToken: raw.refresh_token,
     expiresAt: raw.expires_at,
-    operator: raw.operator ? operatorFromRaw(raw.operator as RawOperator) : undefined,
   };
 }

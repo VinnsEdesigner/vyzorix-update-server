@@ -1,18 +1,11 @@
-/**
- * Settings GraphQL Mutations
- * 
- * GraphQL mutation definitions for settings.
- * Based on SERVER_BACKEND_SETTINGS_API.md specification.
- */
 
-// ============================================================================
-// Mutation Definitions
-// ============================================================================
 
-/**
- * Update client settings
- */
-export const UPDATE_SETTINGS = /* GraphQL */ `
+
+
+
+
+
+export const UPDATE_SETTINGS =  `
   mutation UpdateSettings($input: ClientSettingsInput!) {
     updateMySettings(input: $input) {
       client {
@@ -62,10 +55,8 @@ export const UPDATE_SETTINGS = /* GraphQL */ `
   }
 `;
 
-/**
- * Update thresholds
- */
-export const UPDATE_THRESHOLDS = /* GraphQL */ `
+
+export const UPDATE_THRESHOLDS =  `
   mutation UpdateThresholds($input: ThresholdsInput!) {
     updateMyThresholds(input: $input) {
       riskWarn
@@ -78,10 +69,8 @@ export const UPDATE_THRESHOLDS = /* GraphQL */ `
   }
 `;
 
-/**
- * Update notifications
- */
-export const UPDATE_NOTIFICATIONS = /* GraphQL */ `
+
+export const UPDATE_NOTIFICATIONS =  `
   mutation UpdateNotifications($input: NotificationInput!) {
     updateMyNotifications(input: $input) {
       enabled
@@ -112,10 +101,8 @@ export const UPDATE_NOTIFICATIONS = /* GraphQL */ `
   }
 `;
 
-/**
- * Test webhook
- */
-export const TEST_WEBHOOK = /* GraphQL */ `
+
+export const TEST_WEBHOOK =  `
   mutation TestWebhook($url: String!) {
     testWebhook(url: $url) {
       success
@@ -126,19 +113,15 @@ export const TEST_WEBHOOK = /* GraphQL */ `
   }
 `;
 
-/**
- * Rotate webhook secret
- */
-export const ROTATE_WEBHOOK_SECRET = /* GraphQL */ `
+
+export const ROTATE_WEBHOOK_SECRET =  `
   mutation RotateWebhookSecret {
     rotateWebhookSecret
   }
 `;
 
-/**
- * Reset settings to defaults
- */
-export const RESET_SETTINGS = /* GraphQL */ `
+
+export const RESET_SETTINGS =  `
   mutation ResetSettings {
     resetMySettings {
       client {
@@ -188,10 +171,8 @@ export const RESET_SETTINGS = /* GraphQL */ `
   }
 `;
 
-/**
- * Update operator profile
- */
-export const UPDATE_OPERATOR = /* GraphQL */ `
+
+export const UPDATE_OPERATOR =  `
   mutation UpdateOperator($name: String, $email: String) {
     updateMe(name: $name, email: $email) {
       id
@@ -204,57 +185,11 @@ export const UPDATE_OPERATOR = /* GraphQL */ `
   }
 `;
 
-// ============================================================================
-// Input Types (for reference)
-// ============================================================================
 
-/**
- * ClientSettingsInput:
- * {
- *   serverUrl?: string
- *   deviceId?: string
- *   requestTimeoutMs?: number
- *   autoReconnect?: boolean
- *   strictHmac?: boolean
- *   logBufferLimit?: number
- *   signalHistoryLimit?: number
- * }
- * 
- * ThresholdsInput:
- * {
- *   riskWarn?: number
- *   riskCrit?: number
- *   thermalWarn?: number
- *   thermalCrit?: number
- *   bufferWarn?: number
- *   bufferCrit?: number
- * }
- * 
- * NotificationInput:
- * {
- *   enabled?: boolean
- *   email?: EmailNotificationInput
- *   push?: PushNotificationInput
- *   webhook?: WebhookNotificationInput
- * }
- * 
- * EmailNotificationInput / PushNotificationInput:
- * {
- *   thresholdBreach?: boolean
- *   deviceOffline?: boolean
- *   deviceOnline?: boolean
- *   updateAvailable?: boolean
- *   commandFailed?: boolean
- *   registrationRequest?: boolean
- * }
- * 
- * WebhookNotificationInput:
- * {
- *   enabled?: boolean
- *   url?: string
- *   types?: [String!]
- * }
- */
+
+
+
+
 import { graphqlClient } from '../_shared/graphql-client';
 
 export interface ClientSettingsInput {

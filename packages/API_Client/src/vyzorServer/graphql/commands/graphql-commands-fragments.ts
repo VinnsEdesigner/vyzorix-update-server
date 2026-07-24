@@ -1,4 +1,4 @@
-export const COMMAND_LIST_FRAGMENT = /* GraphQL */ `
+export const COMMAND_LIST_FRAGMENT =  `
   fragment CommandList on Command {
     id
     dispatchId
@@ -9,7 +9,7 @@ export const COMMAND_LIST_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const COMMAND_FRAGMENT = /* GraphQL */ `
+export const COMMAND_FRAGMENT =  `
   fragment Command on Command {
     id
     dispatchId

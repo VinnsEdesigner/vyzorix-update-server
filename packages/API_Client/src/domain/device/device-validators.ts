@@ -1,18 +1,12 @@
-/**
- * Device Validators
- * 
- * Validation functions for device-related input.
- */
+
 
 import { ValidationError } from "@/domain/_shared";
 
-// ============================================================================
-// IMEI Validation
-// ============================================================================
 
-/**
- * Validate IMEI format (15 digits)
- */
+
+
+
+
 export function validateIMEI(imei: string): ValidationResult {
   const errors: Record<string, string[]> = {};
   
@@ -28,9 +22,7 @@ export function validateIMEI(imei: string): ValidationResult {
   };
 }
 
-/**
- * Validate IMEI checksum (Luhn algorithm)
- */
+
 export function validateIMEIChecksum(imei: string): boolean {
   if (!/^\d{15}$/.test(imei)) return false;
   
@@ -54,25 +46,21 @@ export function validateIMEIChecksum(imei: string): boolean {
   return sum % 10 === 0;
 }
 
-// ============================================================================
-// Validation Result
-// ============================================================================
 
-/**
- * Validation result
- */
+
+
+
+
 export interface ValidationResult {
   isValid: boolean;
   errors: Record<string, string[]>;
 }
 
-// ============================================================================
-// FCM Token Validation
-// ============================================================================
 
-/**
- * Validate FCM token format
- */
+
+
+
+
 export function validateFCMToken(token: string): ValidationResult {
   const errors: Record<string, string[]> = {};
   

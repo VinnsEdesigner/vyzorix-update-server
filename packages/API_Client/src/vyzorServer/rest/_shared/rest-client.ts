@@ -1,18 +1,18 @@
-// REST Client using Axios
-// Handles all REST API communication with proper error handling
+
+
 
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { getRESTConfig, type RESTConfig } from '../../config';
 
-// ============================================================================
-// Configuration
-// ============================================================================
+
+
+
 
 export { type RESTConfig } from '../../config';
 
-// ============================================================================
-// Axios Instance
-// ============================================================================
+
+
+
 
 function createAxiosInstance(config: RESTConfig): AxiosInstance {
   const instance = axios.create({
@@ -61,9 +61,9 @@ function getAxios(): AxiosInstance {
   return axiosInstance;
 }
 
-// ============================================================================
-// REST Client
-// ============================================================================
+
+
+
 
 export const restClient = {
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {

@@ -1,4 +1,4 @@
-export const SETTINGS_FRAGMENT = /* GraphQL */ `
+export const SETTINGS_FRAGMENT =  `
   fragment Settings on VyzorixSettings {
     operator {
       id
@@ -46,7 +46,7 @@ export const SETTINGS_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const OPERATOR_FRAGMENT = /* GraphQL */ `
+export const OPERATOR_FRAGMENT =  `
   fragment Operator on OperatorInfo {
     id
     email
@@ -57,7 +57,7 @@ export const OPERATOR_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const THRESHOLDS_FRAGMENT = /* GraphQL */ `
+export const THRESHOLDS_FRAGMENT =  `
   fragment Thresholds on ThresholdSettings {
     riskWarn
     riskCrit

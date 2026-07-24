@@ -1,29 +1,28 @@
 import type { Thresholds, ClientSettings } from "../settings/settings-entity";
-import type { OrganizationRole } from "../organization/organization-entity";
 
 export type OperatorRole = "super_admin" | "admin" | "operator" | "viewer";
 
-// Re-export for backwards compatibility
-export { type OrganizationRole as OperatorRole };
-
-// Membership info for operator
-export interface OperatorMembership {
-  organizationId: string;
-  organizationName: string;
-  role: OrganizationRole;
-  joinedAt: Date;
+export interface OrganizationInfo {
+  id: string;
+  name: string;
+  role: string;
 }
 
 export interface Operator {
   id: string;
   email: string;
   name: string;
-  // Global role removed - use memberships[].role for org-specific roles
-  // Kept for backwards compatibility during migration
-  role?: OperatorRole;
-  mfaEnabled: boolean;
-  emailVerified: boolean;
-  memberships?: OperatorMembership[];
+  mfa_enabled: boolean;
+  email_verified: boolean;
+  needs_organization: boolean;
+  organizations: OrganizationInfo[];
+  last_organization_id?: string;
+  selected_organization?: OrganizationInfo;
+}
+
+export interface MeResponse extends Operator {
+  thresholds?: Thresholds;
+  client?: ClientSettings;
 }
 
 export interface AuthTokens {
@@ -47,15 +46,19 @@ export interface LoginMFARequiredResponse {
 }
 
 export interface LoginWithTokensResponse {
-  operatorId: string;
+  operator_id: string;
   email: string;
   name: string;
-  role: OperatorRole;
-  mfaEnabled: boolean;
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: number;
-  sessionId: string;
+  role: string;
+  mfa_enabled: boolean;
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+  session_id: string;
+  needs_organization: boolean;
+  organizations: OrganizationInfo[];
+  last_organization_id?: string;
+  selected_organization?: OrganizationInfo;
 }
 
 export interface LoginWithTokensMFARequiredResponse {

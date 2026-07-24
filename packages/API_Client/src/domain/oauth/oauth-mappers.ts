@@ -3,7 +3,7 @@ import { OAUTH_ERRORS } from "./oauth-entity";
 
 export function parseOAuthCallbackUrl(url: string): OAuthCallbackResult {
     try {
-        const urlObj = new URL(url, "http://localhost");
+        const urlObj = new URL(url, "http:
         const oauth = urlObj.searchParams.get("oauth");
         const isNew = urlObj.searchParams.get("new");
         const provider = urlObj.searchParams.get("provider") as OAuthProvider | null;
@@ -74,10 +74,10 @@ function getHelpUrl(code: OAuthErrorCode, provider?: OAuthProvider): string | un
         case OAUTH_ERRORS.EMAIL_REQUIRED:
         case OAUTH_ERRORS.EMAIL_NOT_VERIFIED:
             if (provider === "google") {
-                return "https://support.google.com/accounts/answer/97060";
+                return "https:
             }
             if (provider === "github") {
-                return "https://github.com/settings/emails";
+                return "https:
             }
             break;
     }
@@ -90,7 +90,7 @@ export function buildOAuthState(): string {
     return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Helper to format OAuth error for display
+
 export function formatOAuthErrorForDisplay(result: OAuthCallbackResult): {
     title: string;
     description: string;
@@ -115,7 +115,7 @@ export function formatOAuthErrorForDisplay(result: OAuthCallbackResult): {
                 title: "Email Required",
                 description: result.errorMessage || "Your account must have a verified email address to sign up.",
                 actionLabel: provider === "github" ? "Update GitHub Email Settings" : "Update Google Account",
-                actionUrl: result.helpUrl || (provider === "github" ? "https://github.com/settings/emails" : "https://myaccount.google.com/email"),
+                actionUrl: result.helpUrl || (provider === "github" ? "https:
                 showRetry: false,
             };
 
@@ -124,7 +124,7 @@ export function formatOAuthErrorForDisplay(result: OAuthCallbackResult): {
                 title: "Email Not Verified",
                 description: result.errorMessage || "Your email must be verified before signing up.",
                 actionLabel: provider === "github" ? "Resend Verification Email" : "Verify Google Email",
-                actionUrl: result.helpUrl || "https://github.com/settings/emails",
+                actionUrl: result.helpUrl || "https:
                 showRetry: false,
             };
 

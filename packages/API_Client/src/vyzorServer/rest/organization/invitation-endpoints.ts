@@ -1,90 +1,37 @@
-/**
- * Organization invitation REST API endpoints.
- */
-
 import { restClient } from "../_shared/rest-client";
-import {
-  mapApiToInvitation,
-  mapApiToInvitationListItem,
-  type InvitationApiResponse,
-  type Invitation,
-  type InvitationListItem,
-  type CreateInvitationRequest,
-  type InvitationResponseRequest,
-} from "@/domain/invitation";
+import type { Invitation, CreateInvitationRequest, InvitationResponseRequest } from "@/domain/invitation";
+import { mapInvitation, type InvitationApiResponse } from "@/domain/invitation";
 
 const PATHS = {
   invitations: "/v1/invitations",
-  invitation: (token: string) => `/v1/invite/${token}`,
-  invitationApprove: (token: string) => `/v1/invite/${token}/approve`,
-  invitationReject: (token: string) => `/v1/invite/${token}/reject`,
-} as const;
+  orgInvitations: (orgId: string) => `/v1/organizations/${orgId}/invitations`,
+  invitationByToken: (token: string) => `/v1/invite/${token}`,
+  accept: (token: string) => `/v1/invite/${token}/accept`,
+  reject: (token: string) => `/v1/invite/${token}/reject`,
+};
 
 export const invitations = {
-  /**
-   * List pending invitations (as inviter).
-   */
-  async list(): Promise<InvitationListItem[]> {
-    const response = await restClient.get<InvitationApiResponse[]>(PATHS.invitations);
-    return response.map(mapApiToInvitationListItem);
-  },
-
-  /**
-   * Create an invitation.
-   */
   async create(request: CreateInvitationRequest): Promise<Invitation> {
-    const response = await restClient.post<InvitationApiResponse>(
-      PATHS.invitations,
-      request
-    );
-    return mapApiToInvitation(response);
+    const response = await restClient.post<InvitationApiResponse>(PATHS.invitations, request);
+    return mapInvitation(response);
   },
 
-  /**
-   * Get invitation by token (public endpoint).
-   */
-  async getByToken(token: string): Promise<Invitation | null> {
-    const response = await restClient.get<InvitationApiResponse | null>(
-      PATHS.invitation(token)
-    );
-    if (!response) return null;
-    return mapApiToInvitation(response);
+  async listByOrganization(orgId: string, status?: string): Promise<Invitation[]> {
+    const url = status ? `${PATHS.orgInvitations(orgId)}?status=${status}` : PATHS.orgInvitations(orgId);
+    const response = await restClient.get<{ invitations: InvitationApiResponse[] }>(url);
+    return response.invitations.map(mapInvitation);
   },
 
-  /**
-   * Accept an invitation.
-   */
-  async accept(
-    token: string,
-    request?: InvitationResponseRequest
-  ): Promise<Invitation> {
-    const response = await restClient.post<InvitationApiResponse>(
-      PATHS.invitationApprove(token),
-      request ?? {}
-    );
-    return mapApiToInvitation(response);
+  async getByToken(token: string): Promise<Invitation> {
+    const response = await restClient.get<InvitationApiResponse>(PATHS.invitationByToken(token));
+    return mapInvitation(response);
   },
 
-  /**
-   * Reject an invitation.
-   */
-  async reject(
-    token: string,
-    request?: InvitationResponseRequest
-  ): Promise<Invitation> {
-    const response = await restClient.post<InvitationApiResponse>(
-      PATHS.invitationReject(token),
-      request ?? {}
-    );
-    return mapApiToInvitation(response);
+  async accept(token: string, request?: InvitationResponseRequest): Promise<{ message: string }> {
+    return restClient.post<{ message: string }>(PATHS.accept(token), request ?? {});
   },
 
-  /**
-   * Cancel an invitation (as inviter).
-   */
-  async cancel(invitationId: string): Promise<{ success: boolean }> {
-    return restClient.delete<{ success: boolean }>(
-      `${PATHS.invitations}/${invitationId}`
-    );
+  async reject(token: string, request?: InvitationResponseRequest): Promise<{ message: string }> {
+    return restClient.post<{ message: string }>(PATHS.reject(token), request ?? {});
   },
 };

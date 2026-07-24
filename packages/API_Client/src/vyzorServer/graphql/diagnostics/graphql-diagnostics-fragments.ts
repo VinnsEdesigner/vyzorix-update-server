@@ -1,4 +1,4 @@
-export const IDENTITY_FRAGMENT = /* GraphQL */ `
+export const IDENTITY_FRAGMENT =  `
   fragment IdentityInfo on IdentityInfo {
     imei
     deviceName
@@ -7,7 +7,7 @@ export const IDENTITY_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const SOFTWARE_FRAGMENT = /* GraphQL */ `
+export const SOFTWARE_FRAGMENT =  `
   fragment SoftwareInfo on SoftwareInfo {
     osVersion
     appVersion
@@ -16,7 +16,7 @@ export const SOFTWARE_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const REGISTRATION_FRAGMENT = /* GraphQL */ `
+export const REGISTRATION_FRAGMENT =  `
   fragment RegistrationInfo on RegistrationInfo {
     status
     registeredAt
@@ -26,7 +26,7 @@ export const REGISTRATION_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const CONNECTION_FRAGMENT = /* GraphQL */ `
+export const CONNECTION_FRAGMENT =  `
   fragment ConnectionInfo on ConnectionInfo {
     webSocketStatus
     connectedAt
@@ -37,7 +37,7 @@ export const CONNECTION_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const TELEMETRY_STATS_FRAGMENT = /* GraphQL */ `
+export const TELEMETRY_STATS_FRAGMENT =  `
   fragment TelemetryInfo on TelemetryInfo {
     lastTimestamp
     framesToday
@@ -47,7 +47,7 @@ export const TELEMETRY_STATS_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const DEVICE_INSPECTION_FRAGMENT = /* GraphQL */ `
+export const DEVICE_INSPECTION_FRAGMENT =  `
   fragment DeviceInspection on DeviceInspection {
     identity {
       ...IdentityInfo
@@ -72,7 +72,7 @@ export const DEVICE_INSPECTION_FRAGMENT = /* GraphQL */ `
   ${TELEMETRY_STATS_FRAGMENT}
 `;
 
-export const TIMELINE_EVENT_FRAGMENT = /* GraphQL */ `
+export const TIMELINE_EVENT_FRAGMENT =  `
   fragment TimelineEvent on TimelineEvent {
     id
     type

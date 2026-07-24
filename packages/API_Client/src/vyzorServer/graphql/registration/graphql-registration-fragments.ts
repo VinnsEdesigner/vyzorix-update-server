@@ -1,10 +1,6 @@
-/**
- * Registration GraphQL Fragments
- * 
- * Reusable GraphQL fragments for registration types.
- */
 
-export const INBOX_ENTRY_FRAGMENT = /* GraphQL */ `
+
+export const INBOX_ENTRY_FRAGMENT =  `
   fragment InboxEntry on InboxEntry {
     id
     imei
@@ -28,7 +24,7 @@ export const INBOX_ENTRY_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const DEVICE_FRAGMENT = /* GraphQL */ `
+export const DEVICE_FRAGMENT =  `
   fragment Device on Device {
     id
     imei
@@ -44,7 +40,7 @@ export const DEVICE_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const TELEMETRY_FRAME_FRAGMENT = /* GraphQL */ `
+export const TELEMETRY_FRAME_FRAGMENT =  `
   fragment TelemetryFrame on TelemetryFrame {
     timestamp
     riskScore

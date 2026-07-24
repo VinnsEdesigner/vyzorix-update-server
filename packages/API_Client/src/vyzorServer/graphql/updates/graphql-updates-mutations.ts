@@ -1,10 +1,10 @@
-// Updates GraphQL Mutations using Apollo Client
+
 import { gql } from '@apollo/client';
 import { graphqlClient } from '../_shared/graphql-client';
 
-// ============================================================================
-// Mutations
-// ============================================================================
+
+
+
 
 export const PUSH_UPDATE = gql`
   mutation PushUpdate($input: PushUpdateInput!) {
@@ -43,9 +43,9 @@ export const SYNC_FROM_GITHUB = gql`
   }
 `;
 
-// ============================================================================
-// Mutation Functions
-// ============================================================================
+
+
+
 
 export interface PushUpdateInput {
   version: string;

@@ -1,18 +1,11 @@
-/**
- * Registration GraphQL Queries
- * 
- * GraphQL query definitions for device registration/inbox.
- * Based on DEVICE_REGISTRATION_SYSTEM.md specification (frontend spec).
- */
 
-// ============================================================================
-// Fragments
-// ============================================================================
 
-/**
- * Inbox entry fragment (matches GraphQL type exactly)
- */
-export const INBOX_ENTRY_FRAGMENT = /* GraphQL */ `
+
+
+
+
+
+export const INBOX_ENTRY_FRAGMENT =  `
   fragment InboxEntry on InboxEntry {
     id
     imei
@@ -36,10 +29,8 @@ export const INBOX_ENTRY_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-/**
- * Device fragment (matches GraphQL type exactly)
- */
-export const DEVICE_FRAGMENT = /* GraphQL */ `
+
+export const DEVICE_FRAGMENT =  `
   fragment Device on Device {
     id
     imei
@@ -55,10 +46,8 @@ export const DEVICE_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-/**
- * Telemetry frame fragment
- */
-export const TELEMETRY_FRAME_FRAGMENT = /* GraphQL */ `
+
+export const TELEMETRY_FRAME_FRAGMENT =  `
   fragment TelemetryFrame on TelemetryFrame {
     timestamp
     riskScore
@@ -68,15 +57,12 @@ export const TELEMETRY_FRAME_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-// ============================================================================
-// Query Definitions
-// ============================================================================
 
-/**
- * Get inbox entries (paginated)
- * Query: inboxEntries
- */
-export const GET_INBOX_ENTRIES = /* GraphQL */ `
+
+
+
+
+export const GET_INBOX_ENTRIES =  `
   query GetInboxEntries($status: InboxStatus, $page: Int, $limit: Int) {
     inboxEntries(status: $status, page: $page, limit: $limit) {
       entries {
@@ -93,11 +79,8 @@ export const GET_INBOX_ENTRIES = /* GraphQL */ `
   ${INBOX_ENTRY_FRAGMENT}
 `;
 
-/**
- * Get single inbox entry by IMEI
- * Query: inboxEntry
- */
-export const GET_INBOX_ENTRY = /* GraphQL */ `
+
+export const GET_INBOX_ENTRY =  `
   query GetInboxEntry($imei: String!) {
     inboxEntry(imei: $imei) {
       ...InboxEntry
@@ -106,11 +89,8 @@ export const GET_INBOX_ENTRY = /* GraphQL */ `
   ${INBOX_ENTRY_FRAGMENT}
 `;
 
-/**
- * Get all registered devices (paginated)
- * Query: devices
- */
-export const GET_DEVICES = /* GraphQL */ `
+
+export const GET_DEVICES =  `
   query GetDevices($status: DeviceStatus, $page: Int, $limit: Int) {
     devices(status: $status, page: $page, limit: $limit) {
       devices {
@@ -127,11 +107,8 @@ export const GET_DEVICES = /* GraphQL */ `
   ${DEVICE_FRAGMENT}
 `;
 
-/**
- * Get single device by IMEI
- * Query: device
- */
-export const GET_DEVICE = /* GraphQL */ `
+
+export const GET_DEVICE =  `
   query GetDevice($imei: String!) {
     device(imei: $imei) {
       ...Device
@@ -140,11 +117,8 @@ export const GET_DEVICE = /* GraphQL */ `
   ${DEVICE_FRAGMENT}
 `;
 
-/**
- * Get device telemetry history
- * Query: deviceTelemetry
- */
-export const GET_DEVICE_TELEMETRY = /* GraphQL */ `
+
+export const GET_DEVICE_TELEMETRY =  `
   query GetDeviceTelemetry(
     $imei: String!
     $startTime: Int

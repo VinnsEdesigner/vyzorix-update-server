@@ -1,57 +1,20 @@
-/**
- * Mappers for converting invitation API responses to domain entities.
- */
-
-import type {
-  Invitation,
-  InvitationListItem,
-  InvitationApiResponse,
-  InvitationLifecycle,
-} from "./invitation-entity";
+import type { Invitation, InvitationApiResponse, InvitationLifecycle } from "./invitation-entity";
 import type { OrganizationRole } from "../organization/organization-entity";
 
-/**
- * Map API invitation response to domain entity.
- */
-export function mapApiToInvitation(api: InvitationApiResponse): Invitation {
+export function mapInvitation(raw: InvitationApiResponse): Invitation {
   return {
-    id: api.id,
-    organizationId: api.organization_id,
-    email: api.email,
-    role: api.role as OrganizationRole,
-    lifecycle: api.lifecycle as InvitationLifecycle,
-    invitedBy: api.invited_by,
-    invitedAt: new Date(api.invited_at),
-    expiresAt: new Date(api.expires_at),
-    inviterNotes: api.inviter_notes,
-    organizationName: api.organization_name,
-    invitedByName: api.invited_by_name,
+    id: raw.id,
+    organization_id: raw.organization_id,
+    organization_name: raw.organization_name,
+    email: raw.email,
+    role: raw.role as OrganizationRole,
+    status: raw.status as InvitationLifecycle,
+    token: raw.token,
+    invited_by: raw.invited_by,
+    inviter_name: raw.inviter_name,
+    invited_at: raw.invited_at,
+    responded_at: raw.responded_at,
+    expires_at: raw.expires_at,
+    notes: raw.notes,
   };
-}
-
-/**
- * Map API response to invitation list item (lightweight).
- */
-export function mapApiToInvitationListItem(
-  api: InvitationApiResponse
-): InvitationListItem {
-  return {
-    id: api.id,
-    organizationId: api.organization_id,
-    organizationName: api.organization_name ?? "Unknown",
-    email: api.email,
-    role: api.role as OrganizationRole,
-    lifecycle: api.lifecycle as InvitationLifecycle,
-    invitedAt: new Date(api.invited_at),
-    expiresAt: new Date(api.expires_at),
-  };
-}
-
-/**
- * Map array of API responses to invitation list.
- */
-export function mapApiToInvitationList(
-  apiList: InvitationApiResponse[]
-): InvitationListItem[] {
-  return apiList.map(mapApiToInvitationListItem);
 }

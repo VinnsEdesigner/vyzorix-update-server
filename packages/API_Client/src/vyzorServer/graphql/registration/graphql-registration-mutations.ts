@@ -1,39 +1,17 @@
-/**
- * Registration GraphQL Mutations
- * 
- * GraphQL mutation definitions for device registration.
- * Based on DEVICE_REGISTRATION_SYSTEM.md specification (frontend spec).
- */
 
-// ============================================================================
-// Input Types
-// ============================================================================
 
-/**
- * RegistrationRequestInput (for device-side submission):
- * {
- *   imei: String!
- *   deviceName: String!
- *   model: String
- *   manufacturer: String
- *   osVersion: String!
- *   appVersion: String!
- *   fcmToken: String!
- *   firmware: String
- *   securityPatch: String
- *   buildId: String
- * }
- */
 
-// ============================================================================
-// Mutation Definitions
-// ============================================================================
 
-/**
- * Submit registration request (device-side)
- * Mutation: submitRegistrationRequest
- */
-export const SUBMIT_REGISTRATION_REQUEST = /* GraphQL */ `
+
+
+
+
+
+
+
+
+
+export const SUBMIT_REGISTRATION_REQUEST =  `
   mutation SubmitRegistrationRequest($input: RegistrationRequestInput!) {
     submitRegistrationRequest(input: $input) {
       success
@@ -44,11 +22,8 @@ export const SUBMIT_REGISTRATION_REQUEST = /* GraphQL */ `
   }
 `;
 
-/**
- * Acknowledge request (device-side)
- * Mutation: acknowledgeRequest
- */
-export const ACKNOWLEDGE_REQUEST = /* GraphQL */ `
+
+export const ACKNOWLEDGE_REQUEST =  `
   mutation AcknowledgeRequest($imei: String!) {
     acknowledgeRequest(imei: $imei) {
       success
@@ -58,11 +33,8 @@ export const ACKNOWLEDGE_REQUEST = /* GraphQL */ `
   }
 `;
 
-/**
- * Register device (operator initiated)
- * Mutation: registerDevice
- */
-export const REGISTER_DEVICE = /* GraphQL */ `
+
+export const REGISTER_DEVICE =  `
   mutation RegisterDevice($imei: String!) {
     registerDevice(imei: $imei) {
       success
@@ -74,11 +46,8 @@ export const REGISTER_DEVICE = /* GraphQL */ `
   }
 `;
 
-/**
- * Dismiss inbox entry (operator)
- * Mutation: dismissInboxEntry
- */
-export const DISMISS_INBOX_ENTRY = /* GraphQL */ `
+
+export const DISMISS_INBOX_ENTRY =  `
   mutation DismissInboxEntry($imei: String!) {
     dismissInboxEntry(imei: $imei) {
       success
@@ -88,11 +57,8 @@ export const DISMISS_INBOX_ENTRY = /* GraphQL */ `
   }
 `;
 
-/**
- * Confirm registration (device-side)
- * Mutation: confirmRegistration
- */
-export const CONFIRM_REGISTRATION = /* GraphQL */ `
+
+export const CONFIRM_REGISTRATION =  `
   mutation ConfirmRegistration($imei: String!, $confirmed: Boolean!) {
     confirmRegistration(imei: $imei, confirmed: $confirmed) {
       success
@@ -104,11 +70,8 @@ export const CONFIRM_REGISTRATION = /* GraphQL */ `
   }
 `;
 
-/**
- * Deregister device
- * Mutation: deregisterDevice
- */
-export const DEREGISTER_DEVICE = /* GraphQL */ `
+
+export const DEREGISTER_DEVICE =  `
   mutation DeregisterDevice($imei: String!) {
     deregisterDevice(imei: $imei) {
       success

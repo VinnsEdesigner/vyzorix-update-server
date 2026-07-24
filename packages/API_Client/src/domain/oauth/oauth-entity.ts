@@ -1,6 +1,6 @@
 export type OAuthProvider = "google" | "github";
 
-// OAuth error codes returned from server
+
 export const OAUTH_ERRORS = {
     EMAIL_REQUIRED: "email_required",
     EMAIL_NOT_VERIFIED: "email_not_verified",
@@ -51,8 +51,8 @@ export const OAUTH_ENDPOINTS: Record<OAuthProvider, OAuthEndpoints> = {
     },
 };
 
-// Provider-specific help URLs for email issues
+
 export const OAUTH_EMAIL_HELP: Record<OAuthProvider, string> = {
-    google: "https://support.google.com/accounts/answer/97060",
-    github: "https://github.com/settings/emails",
+    google: "https:
+    github: "https:
 };

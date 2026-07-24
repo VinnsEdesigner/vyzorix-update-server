@@ -1,18 +1,11 @@
-/**
- * Device GraphQL Queries
- * 
- * GraphQL query definitions for devices.
- * Based on SERVER_BACKEND_DASHBOARD_COMMANDS_API.md and SERVER_BACKEND_DEVICE_REGISTRATION_API.md.
- */
 
-// ============================================================================
-// Fragments
-// ============================================================================
 
-/**
- * Device list item fragment
- */
-export const DEVICE_LIST_FRAGMENT = /* GraphQL */ `
+
+
+
+
+
+export const DEVICE_LIST_FRAGMENT =  `
   fragment DeviceList on Device {
     id
     imei
@@ -24,10 +17,8 @@ export const DEVICE_LIST_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-/**
- * Full device fragment
- */
-export const DEVICE_FRAGMENT = /* GraphQL */ `
+
+export const DEVICE_FRAGMENT =  `
   fragment Device on Device {
     id
     imei
@@ -46,14 +37,12 @@ export const DEVICE_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-// ============================================================================
-// Query Definitions
-// ============================================================================
 
-/**
- * Get all devices (paginated)
- */
-export const GET_DEVICES = /* GraphQL */ `
+
+
+
+
+export const GET_DEVICES =  `
   query GetDevices($page: Int, $limit: Int, $status: String) {
     devices(page: $page, limit: $limit, status: $status) {
       devices {
@@ -71,10 +60,8 @@ export const GET_DEVICES = /* GraphQL */ `
   ${DEVICE_LIST_FRAGMENT}
 `;
 
-/**
- * Get single device by IMEI
- */
-export const GET_DEVICE = /* GraphQL */ `
+
+export const GET_DEVICE =  `
   query GetDevice($imei: String!) {
     device(imei: $imei) {
       ...Device
@@ -83,10 +70,8 @@ export const GET_DEVICE = /* GraphQL */ `
   ${DEVICE_FRAGMENT}
 `;
 
-/**
- * Get device status (online/offline)
- */
-export const GET_DEVICE_STATUS = /* GraphQL */ `
+
+export const GET_DEVICE_STATUS =  `
   query GetDeviceStatus($imei: String!) {
     deviceStatus(imei: $imei) {
       imei
@@ -97,10 +82,8 @@ export const GET_DEVICE_STATUS = /* GraphQL */ `
   }
 `;
 
-/**
- * Get device stats for dashboard
- */
-export const GET_DEVICE_STATS = /* GraphQL */ `
+
+export const GET_DEVICE_STATS =  `
   query GetDeviceStats {
     dashboardStats {
       devices {
@@ -123,9 +106,9 @@ export const GET_DEVICE_STATS = /* GraphQL */ `
     }
   }
 `;
-// ============================================================================
-// Query Functions (using Apollo Client)
-// ============================================================================
+
+
+
 
 import { graphqlClient } from '../_shared/graphql-client';
 

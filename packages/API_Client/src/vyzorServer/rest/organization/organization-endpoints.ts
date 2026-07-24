@@ -1,87 +1,34 @@
-/**
- * Organization REST API endpoints.
- */
-
 import { restClient } from "../_shared/rest-client";
-import {
-  mapApiToOrganization,
-  mapApiToOrganizationListItem,
-  type OrganizationApiResponse,
-  type Organization,
-  type OrganizationListItem,
-  type CreateOrganizationRequest,
-  type UpdateOrganizationRequest,
-} from "@/domain/organization";
+import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest } from "@/domain/organization";
+import { mapOrganization, type OrganizationApiResponse } from "@/domain/organization";
 
 const PATHS = {
   organizations: "/v1/organizations",
   organization: (id: string) => `/v1/organizations/${id}`,
-} as const;
-
-export interface OrganizationListParams {
-  page?: number;
-  limit?: number;
-  includeArchived?: boolean;
-}
+};
 
 export const organizations = {
-  /**
-   * Create a new organization.
-   */
+  async list(): Promise<Organization[]> {
+    const response = await restClient.get<{ organizations: OrganizationApiResponse[] }>(PATHS.organizations);
+    return response.organizations.map(mapOrganization);
+  },
+
   async create(request: CreateOrganizationRequest): Promise<Organization> {
-    const response = await restClient.post<OrganizationApiResponse>(
-      PATHS.organizations,
-      request
-    );
-    return mapApiToOrganization(response);
+    const response = await restClient.post<OrganizationApiResponse>(PATHS.organizations, request);
+    return mapOrganization(response);
   },
 
-  /**
-   * List organizations the current user is a member of.
-   */
-  async list(params?: OrganizationListParams): Promise<OrganizationListItem[]> {
-    const response = await restClient.get<OrganizationApiResponse[]>(
-      PATHS.organizations,
-      {
-        params: {
-          page: params?.page,
-          limit: params?.limit,
-          include_archived: params?.includeArchived,
-        },
-      }
-    );
-    return response.map(mapApiToOrganizationListItem);
+  async get(id: string): Promise<Organization> {
+    const response = await restClient.get<OrganizationApiResponse>(PATHS.organization(id));
+    return mapOrganization(response);
   },
 
-  /**
-   * Get organization details by ID.
-   */
-  async get(id: string): Promise<Organization | null> {
-    const response = await restClient.get<OrganizationApiResponse | null>(
-      PATHS.organization(id)
-    );
-    if (!response) return null;
-    return mapApiToOrganization(response);
+  async update(id: string, request: UpdateOrganizationRequest): Promise<Organization> {
+    const response = await restClient.patch<OrganizationApiResponse>(PATHS.organization(id), request);
+    return mapOrganization(response);
   },
 
-  /**
-   * Update organization details.
-   */
-  async update(
-    id: string,
-    request: UpdateOrganizationRequest
-  ): Promise<Organization> {
-    const response = await restClient.patch<OrganizationApiResponse>(
-      PATHS.organization(id),
-      request
-    );
-    return mapApiToOrganization(response);
-  },
-
-  /**
-   * Delete (archive) an organization.
-   */
-  async delete(id: string): Promise<{ success: boolean }> {
-    return restClient.delete<{ success: boolean }>(PATHS.organization(id));
+  async delete(id: string): Promise<{ message: string }> {
+    return restClient.delete<{ message: string }>(PATHS.organization(id));
   },
 };

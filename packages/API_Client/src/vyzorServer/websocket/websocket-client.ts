@@ -64,7 +64,7 @@ export class WebSocketClientImpl implements WebSocketClient {
   private stateHandlers = new Set<(s: string) => void>();
 
   constructor(config: WSClientConfig = {}) {
-    // Get environment-configured defaults and merge with provided config
+    
     const envConfig = getWebSocketConfig();
     const mergedConfig: Required<WSClientConfig> = {
       url: config.url ?? envConfig.url,

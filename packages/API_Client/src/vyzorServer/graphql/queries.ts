@@ -1,11 +1,6 @@
-/**
- * GraphQL Queries
- * 
- * Barrel export for all GraphQL queries.
- * Re-exports from subdirectory index files.
- */
 
-// Registration queries
+
+
 export {
   GET_INBOX_ENTRIES,
   GET_INBOX_ENTRY,

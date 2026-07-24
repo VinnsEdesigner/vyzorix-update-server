@@ -1,18 +1,11 @@
-/**
- * Commands GraphQL Mutations
- * 
- * GraphQL mutation definitions for commands.
- * Based on SERVER_BACKEND_DASHBOARD_COMMANDS_API.md.
- */
 
-// ============================================================================
-// Mutation Definitions
-// ============================================================================
 
-/**
- * Send a command to a device
- */
-export const SEND_COMMAND = /* GraphQL */ `
+
+
+
+
+
+export const SEND_COMMAND =  `
   mutation SendCommand($imei: String!, $commandType: String!, $params: JSON) {
     sendCommand(imei: $imei, commandType: $commandType, params: $params) {
       id
@@ -25,10 +18,8 @@ export const SEND_COMMAND = /* GraphQL */ `
   }
 `;
 
-/**
- * Cancel a pending command
- */
-export const CANCEL_COMMAND = /* GraphQL */ `
+
+export const CANCEL_COMMAND =  `
   mutation CancelCommand($imei: String!, $dispatchId: String!) {
     cancelCommand(imei: $imei, dispatchId: $dispatchId) {
       success
@@ -36,10 +27,8 @@ export const CANCEL_COMMAND = /* GraphQL */ `
   }
 `;
 
-/**
- * Retry a failed command
- */
-export const RETRY_COMMAND = /* GraphQL */ `
+
+export const RETRY_COMMAND =  `
   mutation RetryCommand($dispatchId: String!) {
     retryCommand(dispatchId: $dispatchId) {
       id

@@ -1,11 +1,11 @@
 export interface Session {
   id: string;
-  ipAddress: string;
-  userAgent: string;
-  createdAt: Date;
-  expiresAt: Date;
-  isCurrent: boolean;
-  selectedOrganizationId?: string; // Currently selected organization context
+  ip_address: string;
+  user_agent: string;
+  created_at: string;
+  expires_at: string;
+  is_current: boolean;
+  selected_organization_id?: string;
 }
 
 export interface SessionListResponse {
@@ -14,9 +14,9 @@ export interface SessionListResponse {
 }
 
 export interface ConcurrentSessionsResponse {
-  hasConcurrent: boolean;
+  has_concurrent: boolean;
   count: number;
-  sessions: Omit<Session, 'isCurrent' | 'expiresAt'>[];
+  sessions: Omit<Session, "is_current" | "expires_at">[];
 }
 
 export interface RevokeSessionResponse {
@@ -26,6 +26,6 @@ export interface RevokeSessionResponse {
 
 export interface RevokeAllSessionsResponse {
   success: boolean;
-  revokedCount: number;
+  revoked_count: number;
   message: string;
 }

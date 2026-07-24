@@ -1,4 +1,4 @@
-export const UPDATE_VERSION_FRAGMENT = /* GraphQL */ `
+export const UPDATE_VERSION_FRAGMENT =  `
   fragment UpdateVersion on UpdateVersion {
     id
     version
@@ -12,7 +12,7 @@ export const UPDATE_VERSION_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const PUSH_DEVICE_FRAGMENT = /* GraphQL */ `
+export const PUSH_DEVICE_FRAGMENT =  `
   fragment PushDevice on PushDevice {
     id
     deviceId
@@ -24,7 +24,7 @@ export const PUSH_DEVICE_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const UPDATE_PUSH_FRAGMENT = /* GraphQL */ `
+export const UPDATE_PUSH_FRAGMENT =  `
   fragment UpdatePush on UpdatePush {
     id
     version
@@ -42,7 +42,7 @@ export const UPDATE_PUSH_FRAGMENT = /* GraphQL */ `
   ${PUSH_DEVICE_FRAGMENT}
 `;
 
-export const SYNC_STATUS_FRAGMENT = /* GraphQL */ `
+export const SYNC_STATUS_FRAGMENT =  `
   fragment SyncStatus on SyncStatus {
     status
     lastSyncAt
@@ -52,7 +52,7 @@ export const SYNC_STATUS_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const CHANGELOG_ENTRY_FRAGMENT = /* GraphQL */ `
+export const CHANGELOG_ENTRY_FRAGMENT =  `
   fragment ChangelogEntry on ChangelogEntry {
     version
     date

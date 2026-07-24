@@ -1,5 +1,5 @@
-// GraphQL Client Index
-// All GraphQL queries, mutations, and subscriptions
+
+
 
 export * from "./_shared";
 export * from "./apikey";

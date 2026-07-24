@@ -1,10 +1,6 @@
-/**
- * Inbox Entry Fragment
- * 
- * Reusable GraphQL fragment for InboxEntry type.
- */
 
-export const INBOX_ENTRY_FRAGMENT = /* GraphQL */ `
+
+export const INBOX_ENTRY_FRAGMENT =  `
   fragment InboxEntry on InboxEntry {
     id
     imei

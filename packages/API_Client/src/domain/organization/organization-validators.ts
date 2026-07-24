@@ -1,12 +1,8 @@
-/**
- * Validation functions for organization domain.
- */
-
 import type {
   OrganizationRole,
   CreateOrganizationRequest,
   UpdateOrganizationRequest,
-  CreateMemberRequest,
+  CreateInvitationRequest,
   UpdateMemberRoleRequest,
 } from "./organization-entity";
 
@@ -17,138 +13,70 @@ const VALID_ROLES: OrganizationRole[] = [
   "viewer",
 ];
 
-const MIN_NAME_LENGTH = 2;
-const MAX_NAME_LENGTH = 100;
-const MIN_PASSWORD_LENGTH = 8;
-const MAX_MEMBERS_LIMIT = 1000;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/**
- * Validate organization role string.
- */
 export function isValidRole(role: string): role is OrganizationRole {
   return VALID_ROLES.includes(role as OrganizationRole);
 }
 
-/**
- * Validate create organization request.
- */
+export function isValidEmail(email: string): boolean {
+  return EMAIL_REGEX.test(email);
+}
+
 export function validateCreateOrganization(
   req: CreateOrganizationRequest
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-
-  // Name validation
   if (!req.name || req.name.trim().length === 0) {
-    errors.push("Organization name is required");
-  } else {
-    if (req.name.length < MIN_NAME_LENGTH) {
-      errors.push(`Organization name must be at least ${MIN_NAME_LENGTH} characters`);
-    }
-    if (req.name.length > MAX_NAME_LENGTH) {
-      errors.push(`Organization name must be at most ${MAX_NAME_LENGTH} characters`);
-    }
+    errors.push("name is required");
   }
-
-  // Max members validation
-  if (req.maxMembers !== undefined) {
-    if (req.maxMembers < 1) {
-      errors.push("Max members must be at least 1");
-    }
-    if (req.maxMembers > MAX_MEMBERS_LIMIT) {
-      errors.push(`Max members cannot exceed ${MAX_MEMBERS_LIMIT}`);
-    }
+  if (req.name && req.name.length > 100) {
+    errors.push("name must be at most 100 characters");
   }
-
+  if (!req.description || req.description.trim().length === 0) {
+    errors.push("description is required");
+  }
+  if (req.role !== "super_admin" && req.role !== "admin") {
+    errors.push("role must be super_admin or admin");
+  }
   return { valid: errors.length === 0, errors };
 }
 
-/**
- * Validate update organization request.
- */
 export function validateUpdateOrganization(
   req: UpdateOrganizationRequest
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-
-  // Name validation (if provided)
-  if (req.name !== undefined) {
-    if (req.name.trim().length === 0) {
-      errors.push("Organization name cannot be empty");
-    } else {
-      if (req.name.length < MIN_NAME_LENGTH) {
-        errors.push(`Organization name must be at least ${MIN_NAME_LENGTH} characters`);
-      }
-      if (req.name.length > MAX_NAME_LENGTH) {
-        errors.push(`Organization name must be at most ${MAX_NAME_LENGTH} characters`);
-      }
-    }
+  if (req.name !== undefined && req.name.trim().length === 0) {
+    errors.push("name cannot be empty");
   }
-
-  // Max members validation
-  if (req.maxMembers !== undefined) {
-    if (req.maxMembers < 1) {
-      errors.push("Max members must be at least 1");
-    }
-    if (req.maxMembers > MAX_MEMBERS_LIMIT) {
-      errors.push(`Max members cannot exceed ${MAX_MEMBERS_LIMIT}`);
-    }
+  if (req.maxMembers !== undefined && req.maxMembers < 1) {
+    errors.push("maxMembers must be at least 1");
   }
-
   return { valid: errors.length === 0, errors };
 }
 
-/**
- * Validate email format.
- */
-export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-/**
- * Validate create member request.
- */
-export function validateCreateMember(
-  req: CreateMemberRequest
+export function validateCreateInvitation(
+  req: CreateInvitationRequest
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-
-  // Email validation
+  if (!req.organizationId) {
+    errors.push("organizationId is required");
+  }
   if (!req.email || !isValidEmail(req.email)) {
-    errors.push("Valid email address is required");
+    errors.push("valid email is required");
   }
-
-  // Role validation
   if (!isValidRole(req.role)) {
-    errors.push(`Invalid role. Must be one of: ${VALID_ROLES.join(", ")}`);
+    errors.push("invalid role");
   }
-
-  // Inviter notes length validation
-  if (req.inviterNotes && req.inviterNotes.length > 500) {
-    errors.push("Inviter notes cannot exceed 500 characters");
-  }
-
   return { valid: errors.length === 0, errors };
 }
 
-/**
- * Validate update member role request.
- */
 export function validateUpdateMemberRole(
   req: UpdateMemberRoleRequest
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-
   if (!isValidRole(req.role)) {
-    errors.push(`Invalid role. Must be one of: ${VALID_ROLES.join(", ")}`);
+    errors.push("invalid role");
   }
-
   return { valid: errors.length === 0, errors };
-}
-
-/**
- * Sanitize organization name for display.
- */
-export function sanitizeOrganizationName(name: string): string {
-  return name.trim().replace(/\s+/g, " ");
 }

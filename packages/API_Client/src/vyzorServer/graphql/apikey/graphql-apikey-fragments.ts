@@ -1,4 +1,4 @@
-export const API_KEY_FRAGMENT = /* GraphQL */ `
+export const API_KEY_FRAGMENT =  `
   fragment ApiKey on ApiKey {
     id
     operatorId
@@ -15,7 +15,7 @@ export const API_KEY_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-export const API_KEY_WITH_SECRET_FRAGMENT = /* GraphQL */ `
+export const API_KEY_WITH_SECRET_FRAGMENT =  `
   fragment ApiKeyWithSecret on ApiKey {
     id
     operatorId

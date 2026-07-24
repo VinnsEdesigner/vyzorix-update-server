@@ -1,12 +1,12 @@
-// GraphQL Client using Apollo Client
-// Handles all GraphQL API communication
+
+
 
 import { ApolloClient, InMemoryCache, createHttpLink, type NormalizedCacheObject } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 
-// ============================================================================
-// Configuration
-// ============================================================================
+
+
+
 
 export interface GraphQLConfig {
   uri: string;
@@ -22,9 +22,9 @@ function getGraphQLConfig(): GraphQLConfig {
   };
 }
 
-// ============================================================================
-// Apollo Client
-// ============================================================================
+
+
+
 
 function createApolloClient(config: GraphQLConfig): ApolloClient<NormalizedCacheObject> {
   const httpLink = createHttpLink({
@@ -67,8 +67,8 @@ export function getApolloClient(): ApolloClient<NormalizedCacheObject> {
   return apolloClient;
 }
 
-// ============================================================================
-// Client Instance (default export)
-// ============================================================================
+
+
+
 
 export const graphqlClient = getApolloClient();

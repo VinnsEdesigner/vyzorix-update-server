@@ -1,6 +1,6 @@
 import { COMMAND_LIST_FRAGMENT, COMMAND_FRAGMENT } from "./graphql-commands-fragments";
 
-export const GET_COMMANDS = /* GraphQL */ `
+export const GET_COMMANDS =  `
   query GetCommands($imei: String!, $status: String, $page: Int, $limit: Int) {
     commands(imei: $imei, status: $status, page: $page, limit: $limit) {
       commands {
@@ -18,7 +18,7 @@ export const GET_COMMANDS = /* GraphQL */ `
   ${COMMAND_LIST_FRAGMENT}
 `;
 
-export const GET_PENDING_COMMANDS = /* GraphQL */ `
+export const GET_PENDING_COMMANDS =  `
   query GetPendingCommands($imei: String!) {
     pendingCommands(imei: $imei) {
       ...CommandList
@@ -27,7 +27,7 @@ export const GET_PENDING_COMMANDS = /* GraphQL */ `
   ${COMMAND_LIST_FRAGMENT}
 `;
 
-export const GET_COMMAND = /* GraphQL */ `
+export const GET_COMMAND =  `
   query GetCommand($dispatchId: String!) {
     command(dispatchId: $dispatchId) {
       ...Command
@@ -36,7 +36,7 @@ export const GET_COMMAND = /* GraphQL */ `
   ${COMMAND_FRAGMENT}
 `;
 
-export const GET_COMMAND_STATUS = /* GraphQL */ `
+export const GET_COMMAND_STATUS =  `
   query GetCommandStatus($dispatchId: String!) {
     commandStatus(dispatchId: $dispatchId) {
       dispatchId

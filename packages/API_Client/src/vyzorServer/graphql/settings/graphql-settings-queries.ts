@@ -1,6 +1,6 @@
 import { SETTINGS_FRAGMENT, OPERATOR_FRAGMENT, THRESHOLDS_FRAGMENT } from "./graphql-settings-fragments";
 
-export const GET_SETTINGS = /* GraphQL */ `
+export const GET_SETTINGS =  `
   query GetSettings {
     mySettings {
       ...Settings
@@ -9,7 +9,7 @@ export const GET_SETTINGS = /* GraphQL */ `
   ${SETTINGS_FRAGMENT}
 `;
 
-export const GET_THRESHOLDS = /* GraphQL */ `
+export const GET_THRESHOLDS =  `
   query GetThresholds {
     myThresholds {
       ...Thresholds
@@ -18,7 +18,7 @@ export const GET_THRESHOLDS = /* GraphQL */ `
   ${THRESHOLDS_FRAGMENT}
 `;
 
-export const GET_NOTIFICATIONS = /* GraphQL */ `
+export const GET_NOTIFICATIONS =  `
   query GetNotifications {
     myNotifications {
       enabled
@@ -49,7 +49,7 @@ export const GET_NOTIFICATIONS = /* GraphQL */ `
   }
 `;
 
-export const GET_OPERATOR = /* GraphQL */ `
+export const GET_OPERATOR =  `
   query GetOperator {
     me {
       ...Operator

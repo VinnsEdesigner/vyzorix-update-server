@@ -1,6 +1,6 @@
 import { DEVICE_INSPECTION_FRAGMENT, TIMELINE_EVENT_FRAGMENT } from "./graphql-diagnostics-fragments";
 
-export const GET_DEVICE_INSPECTION = /* GraphQL */ `
+export const GET_DEVICE_INSPECTION =  `
   query GetDeviceInspection($imei: String!) {
     deviceInspection(imei: $imei) {
       ...DeviceInspection
@@ -9,7 +9,7 @@ export const GET_DEVICE_INSPECTION = /* GraphQL */ `
   ${DEVICE_INSPECTION_FRAGMENT}
 `;
 
-export const GET_DEVICE_TIMELINE = /* GraphQL */ `
+export const GET_DEVICE_TIMELINE =  `
   query GetDeviceTimeline(
     $imei: String!
     $eventType: TimelineEventType
@@ -36,7 +36,7 @@ export const GET_DEVICE_TIMELINE = /* GraphQL */ `
   ${TIMELINE_EVENT_FRAGMENT}
 `;
 
-export const GET_TIMELINE_EVENT = /* GraphQL */ `
+export const GET_TIMELINE_EVENT =  `
   query GetTimelineEvent($id: ID!) {
     timelineEvent(id: $id) {
       ...TimelineEvent

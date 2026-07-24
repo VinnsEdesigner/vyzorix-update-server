@@ -1,10 +1,6 @@
-/**
- * Telemetry Frame Fragment
- * 
- * Reusable GraphQL fragment for TelemetryFrame type.
- */
 
-export const TELEMETRY_FRAME_FRAGMENT = /* GraphQL */ `
+
+export const TELEMETRY_FRAME_FRAGMENT =  `
   fragment TelemetryFrame on TelemetryFrame {
     timestamp
     riskScore

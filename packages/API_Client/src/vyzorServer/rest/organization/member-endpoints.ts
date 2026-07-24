@@ -1,130 +1,44 @@
-/**
- * Organization member REST API endpoints.
- */
-
 import { restClient } from "../_shared/rest-client";
-import {
-  mapApiToMember,
-  mapApiToMemberListItem,
-  type MemberApiResponse,
-  type OrganizationMember,
-  type MemberListItem,
-  type CreateMemberRequest,
-  type UpdateMemberRoleRequest,
-} from "@/domain/organization";
+import type { OrganizationMember, UpdateMemberRoleRequest } from "@/domain/organization";
+import { mapMember, type MemberApiResponse } from "@/domain/organization";
 
 const PATHS = {
   members: (orgId: string) => `/v1/organizations/${orgId}/members`,
-  member: (orgId: string, memberId: string) =>
-    `/v1/organizations/${orgId}/members/${memberId}`,
-} as const;
-
-export interface MemberListParams {
-  page?: number;
-  limit?: number;
-  includeRemoved?: boolean;
-}
+  member: (orgId: string, memberId: string) => `/v1/organizations/${orgId}/members/${memberId}`,
+  suspend: (orgId: string, memberId: string) => `/v1/organizations/${orgId}/members/${memberId}/suspend`,
+  reinstate: (orgId: string, memberId: string) => `/v1/organizations/${orgId}/members/${memberId}/reinstate`,
+  transfer: (orgId: string, memberId: string) => `/v1/organizations/${orgId}/members/${memberId}/transfer`,
+};
 
 export const members = {
-  /**
-   * List members of an organization.
-   */
-  async list(
-    organizationId: string,
-    params?: MemberListParams
-  ): Promise<MemberListItem[]> {
-    const response = await restClient.get<MemberApiResponse[]>(
-      PATHS.members(organizationId),
-      {
-        params: {
-          page: params?.page,
-          limit: params?.limit,
-          include_removed: params?.includeRemoved,
-        },
-      }
-    );
-    return response.map(mapApiToMemberListItem);
+  async list(orgId: string): Promise<OrganizationMember[]> {
+    const response = await restClient.get<{ members: MemberApiResponse[] }>(PATHS.members(orgId));
+    return response.members.map(mapMember);
   },
 
-  /**
-   * Get member details.
-   */
-  async get(
-    organizationId: string,
-    memberId: string
-  ): Promise<OrganizationMember | null> {
-    const response = await restClient.get<MemberApiResponse | null>(
-      PATHS.member(organizationId, memberId)
-    );
-    if (!response) return null;
-    return mapApiToMember(response);
+  async get(orgId: string, memberId: string): Promise<OrganizationMember> {
+    const response = await restClient.get<MemberApiResponse>(PATHS.member(orgId, memberId));
+    return mapMember(response);
   },
 
-  /**
-   * Add a member to an organization (via invitation).
-   */
-  async create(
-    organizationId: string,
-    request: CreateMemberRequest
-  ): Promise<{ invitationId: string }> {
-    return restClient.post<{ invitation_id: string }>(
-      PATHS.members(organizationId),
-      request
-    ).then((r) => ({ invitationId: r.invitation_id }));
+  async updateRole(orgId: string, memberId: string, request: UpdateMemberRoleRequest): Promise<OrganizationMember> {
+    const response = await restClient.patch<MemberApiResponse>(PATHS.member(orgId, memberId), request);
+    return mapMember(response);
   },
 
-  /**
-   * Update member role.
-   */
-  async updateRole(
-    organizationId: string,
-    memberId: string,
-    request: UpdateMemberRoleRequest
-  ): Promise<OrganizationMember> {
-    const response = await restClient.patch<MemberApiResponse>(
-      PATHS.member(organizationId, memberId),
-      request
-    );
-    return mapApiToMember(response);
+  async remove(orgId: string, memberId: string): Promise<{ message: string }> {
+    return restClient.delete<{ message: string }>(PATHS.member(orgId, memberId));
   },
 
-  /**
-   * Remove a member from an organization.
-   */
-  async remove(
-    organizationId: string,
-    memberId: string
-  ): Promise<{ success: boolean }> {
-    return restClient.delete<{ success: boolean }>(
-      PATHS.member(organizationId, memberId)
-    );
+  async suspend(orgId: string, memberId: string): Promise<{ message: string }> {
+    return restClient.post<{ message: string }>(PATHS.suspend(orgId, memberId), {});
   },
 
-  /**
-   * Suspend a member.
-   */
-  async suspend(
-    organizationId: string,
-    memberId: string
-  ): Promise<OrganizationMember> {
-    const response = await restClient.post<MemberApiResponse>(
-      `${PATHS.member(organizationId, memberId)}/suspend`,
-      {}
-    );
-    return mapApiToMember(response);
+  async reinstate(orgId: string, memberId: string): Promise<{ message: string }> {
+    return restClient.post<{ message: string }>(PATHS.reinstate(orgId, memberId), {});
   },
 
-  /**
-   * Reinstate a suspended member.
-   */
-  async reinstate(
-    organizationId: string,
-    memberId: string
-  ): Promise<OrganizationMember> {
-    const response = await restClient.post<MemberApiResponse>(
-      `${PATHS.member(organizationId, memberId)}/reinstate`,
-      {}
-    );
-    return mapApiToMember(response);
+  async transferOwnership(orgId: string, memberId: string): Promise<{ message: string }> {
+    return restClient.post<{ message: string }>(PATHS.transfer(orgId, memberId), {});
   },
 };

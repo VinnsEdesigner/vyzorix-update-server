@@ -1,10 +1,6 @@
-/**
- * GraphQL Mutations Index
- * 
- * Barrel export for all GraphQL mutations.
- */
 
-// Registration mutations
+
+
 export {
   SUBMIT_REGISTRATION_REQUEST,
   ACKNOWLEDGE_REQUEST,

@@ -1,17 +1,13 @@
-/**
- * Registration GraphQL Index
- * 
- * Barrel export for all registration GraphQL files.
- */
 
-// Fragments
+
+
 export {
   INBOX_ENTRY_FRAGMENT,
   DEVICE_FRAGMENT,
   TELEMETRY_FRAME_FRAGMENT,
 } from "./graphql-registration-fragments";
 
-// Types
+
 export type {
   RawInboxEntry,
   RawDevice,
@@ -28,7 +24,7 @@ export type {
   RawDismissResponse,
 } from "./graphql-registration-types";
 
-// Queries
+
 export {
   GET_INBOX_ENTRIES,
   GET_INBOX_ENTRY,
@@ -37,7 +33,7 @@ export {
   GET_DEVICE_TELEMETRY,
 } from "./graphql-registration-queries";
 
-// Mutations
+
 export {
   SUBMIT_REGISTRATION_REQUEST,
   ACKNOWLEDGE_REQUEST,

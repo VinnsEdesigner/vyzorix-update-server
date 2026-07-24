@@ -1,7 +1,7 @@
 import { API_KEY_FRAGMENT, API_KEY_WITH_SECRET_FRAGMENT } from "./graphql-apikey-fragments";
 import type { ApiKeyScope } from "@/domain/apikey";
 
-export const CREATE_API_KEY = /* GraphQL */ `
+export const CREATE_API_KEY =  `
   mutation CreateApiKey($input: CreateApiKeyInput!) {
     createApiKey(input: $input) {
       success
@@ -14,7 +14,7 @@ export const CREATE_API_KEY = /* GraphQL */ `
   ${API_KEY_WITH_SECRET_FRAGMENT}
 `;
 
-export const UPDATE_API_KEY = /* GraphQL */ `
+export const UPDATE_API_KEY =  `
   mutation UpdateApiKey($id: String!, $input: UpdateApiKeyInput!) {
     updateApiKey(id: $id, input: $input) {
       success
@@ -27,7 +27,7 @@ export const UPDATE_API_KEY = /* GraphQL */ `
   ${API_KEY_FRAGMENT}
 `;
 
-export const REVOKE_API_KEY = /* GraphQL */ `
+export const REVOKE_API_KEY =  `
   mutation RevokeApiKey($id: String!) {
     revokeApiKey(id: $id) {
       success
@@ -36,7 +36,7 @@ export const REVOKE_API_KEY = /* GraphQL */ `
   }
 `;
 
-export const ROTATE_API_KEY = /* GraphQL */ `
+export const ROTATE_API_KEY =  `
   mutation RotateApiKey($id: String!) {
     rotateApiKey(id: $id) {
       success

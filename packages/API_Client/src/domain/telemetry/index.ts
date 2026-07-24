@@ -1,10 +1,6 @@
-/**
- * Telemetry Domain Index
- * 
- * Re-exports all telemetry domain types and mappers.
- */
 
-// Types
+
+
 export type {
   TelemetryFrame,
   MetricChartPoint,
@@ -33,7 +29,7 @@ export {
   getRiskStatus,
 } from "./telemetry-entity";
 
-// Mappers
+
 export type {
   RawMetricsTimeRange,
   RawMetricsDevice,

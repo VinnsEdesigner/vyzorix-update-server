@@ -1,49 +1,40 @@
-/**
- * Domain Error Types
- * 
- * Shared error types used across all features.
- * Domain errors are pure TypeScript - no external imports.
- */
 
-// ============================================================================
-// Error Codes
-// ============================================================================
 
-/**
- * Standard error codes
- */
+
+
+
+
+
 export const ERROR_CODES = {
-  // Authentication
+  
   UNAUTHORIZED: "unauthorized",
   FORBIDDEN: "forbidden",
   SESSION_EXPIRED: "session_expired",
   
-  // Resource
+  
   NOT_FOUND: "not_found",
   ALREADY_EXISTS: "already_exists",
   
-  // Validation
+  
   VALIDATION_ERROR: "validation_error",
   INVALID_INPUT: "invalid_input",
   
-  // Request
+  
   BAD_REQUEST: "bad_request",
   TIMEOUT: "timeout",
   
-  // Server
+  
   INTERNAL_ERROR: "internal_error",
   SERVICE_UNAVAILABLE: "service_unavailable",
 } as const;
 
 export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
 
-// ============================================================================
-// Base Error Classes
-// ============================================================================
 
-/**
- * Base domain error
- */
+
+
+
+
 export class DomainError extends Error {
   public readonly code: ErrorCode;
   public readonly details?: Record<string, unknown>;
@@ -73,9 +64,7 @@ export class DomainError extends Error {
   }
 }
 
-/**
- * Validation error with field-specific messages
- */
+
 export class ValidationError extends DomainError {
   public readonly fieldErrors: Record<string, string[]>;
 
@@ -88,16 +77,12 @@ export class ValidationError extends DomainError {
     this.fieldErrors = fieldErrors;
   }
 
-  /**
-   * Create from a single field error
-   */
+  
   static fromField(field: string, message: string): ValidationError {
     return new ValidationError(message, { [field]: [message] });
   }
 
-  /**
-   * Create from multiple field errors
-   */
+  
   static fromFields(errors: Record<string, string>): ValidationError {
     const fieldErrors = Object.entries(errors).reduce(
       (acc, [field, message]) => {
@@ -117,9 +102,7 @@ export class ValidationError extends DomainError {
   }
 }
 
-/**
- * Not found error
- */
+
 export class NotFoundError extends DomainError {
   constructor(resource: string, identifier?: string) {
     const message = identifier
@@ -130,9 +113,7 @@ export class NotFoundError extends DomainError {
   }
 }
 
-/**
- * Unauthorized error
- */
+
 export class UnauthorizedError extends DomainError {
   constructor(message: string = "Authentication required") {
     super(message, ERROR_CODES.UNAUTHORIZED, 401);
@@ -140,9 +121,7 @@ export class UnauthorizedError extends DomainError {
   }
 }
 
-/**
- * Forbidden error
- */
+
 export class ForbiddenError extends DomainError {
   constructor(message: string = "Access denied") {
     super(message, ERROR_CODES.FORBIDDEN, 403);
@@ -150,9 +129,7 @@ export class ForbiddenError extends DomainError {
   }
 }
 
-/**
- * Network/timeout error
- */
+
 export class NetworkError extends DomainError {
   constructor(message: string = "Network request failed") {
     super(message, ERROR_CODES.TIMEOUT, 0);
@@ -160,22 +137,18 @@ export class NetworkError extends DomainError {
   }
 }
 
-// ============================================================================
-// HTTP Error Factory
-// ============================================================================
 
-/**
- * Raw API error response
- */
+
+
+
+
 export interface RawAPIError {
   error?: string;
   message?: string;
   code?: string;
 }
 
-/**
- * Create domain error from HTTP response
- */
+
 export function errorFromHTTP(
   status: number,
   data?: RawAPIError
@@ -204,27 +177,21 @@ export function errorFromHTTP(
   }
 }
 
-// ============================================================================
-// Type Guards
-// ============================================================================
 
-/**
- * Check if error is a domain error
- */
+
+
+
+
 export function isDomainError(error: unknown): error is DomainError {
   return error instanceof DomainError;
 }
 
-/**
- * Check if error is a validation error
- */
+
 export function isValidationError(error: unknown): error is ValidationError {
   return error instanceof ValidationError;
 }
 
-/**
- * Check if error is a network error
- */
+
 export function isNetworkError(error: unknown): error is NetworkError {
   return error instanceof NetworkError;
 }

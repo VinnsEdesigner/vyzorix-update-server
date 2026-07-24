@@ -1,10 +1,6 @@
-/**
- * Device Fragment
- * 
- * Reusable GraphQL fragment for Device type.
- */
 
-export const DEVICE_FRAGMENT = /* GraphQL */ `
+
+export const DEVICE_FRAGMENT =  `
   fragment Device on Device {
     id
     imei

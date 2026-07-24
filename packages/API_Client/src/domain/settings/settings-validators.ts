@@ -1,41 +1,30 @@
-/**
- * Settings Validators
- * 
- * Validation functions for settings input.
- * Returns validation result with errors array.
- */
+
 
 import { ValidationError } from "@/domain/_shared";
 import type { Thresholds, ClientSettings } from "./settings-entity";
 
-// ============================================================================
-// Validation Result
-// ============================================================================
 
-/**
- * Validation result
- */
+
+
+
+
 export interface ValidationResult {
   isValid: boolean;
   errors: Record<string, string[]>;
 }
 
-// ============================================================================
-// Threshold Validators
-// ============================================================================
 
-/**
- * Threshold value limits
- */
+
+
+
+
 export const THRESHOLD_LIMITS = {
   risk: { min: 0, max: 100 },
   thermal: { min: 0, max: 100 },
   buffer: { min: 0, max: 100 },
 } as const;
 
-/**
- * Validate threshold value is within range
- */
+
 export function validateThresholdValue(
   value: number,
   type: keyof typeof THRESHOLD_LIMITS,
@@ -54,28 +43,26 @@ export function validateThresholdValue(
   return null;
 }
 
-/**
- * Validate threshold settings (warning < critical for risk/thermal, warning > critical for buffer)
- */
+
 export function validateThresholds(thresholds: Thresholds): ValidationResult {
   const errors: Record<string, string[]> = {};
   
-  // Risk thresholds: warning should be < critical
+  
   if (thresholds.riskWarn >= thresholds.riskCrit) {
     errors.riskWarn = ["Warning threshold must be less than critical threshold"];
   }
   
-  // Thermal thresholds: warning should be < critical
+  
   if (thresholds.thermalWarn >= thresholds.thermalCrit) {
     errors.thermalWarn = ["Warning threshold must be less than critical threshold"];
   }
   
-  // Buffer thresholds (inverted): warning should be > critical
+  
   if (thresholds.bufferWarn <= thresholds.bufferCrit) {
     errors.bufferWarn = ["Warning threshold must be greater than critical threshold"];
   }
   
-  // Validate individual values
+  
   const riskWarnError = validateThresholdValue(thresholds.riskWarn, "risk", "Risk warning");
   if (riskWarnError) errors.riskWarn = [riskWarnError];
   
@@ -100,15 +87,13 @@ export function validateThresholds(thresholds: Thresholds): ValidationResult {
   };
 }
 
-// ============================================================================
-// Connection Validators
-// ============================================================================
 
-/**
- * Validate URL format
- */
+
+
+
+
 export function isValidUrl(url: string): boolean {
-  if (!url) return true; // Empty is valid (optional)
+  if (!url) return true; 
   try {
     new URL(url);
     return true;
@@ -117,11 +102,9 @@ export function isValidUrl(url: string): boolean {
   }
 }
 
-/**
- * Validate server URL
- */
+
 export function validateServerUrl(url: string): string | null {
-  if (!url) return null; // Optional
+  if (!url) return null; 
   
   if (!isValidUrl(url)) {
     return "Invalid server URL format";
@@ -130,13 +113,11 @@ export function validateServerUrl(url: string): string | null {
   return null;
 }
 
-/**
- * Validate device ID (IMEI format)
- */
+
 export function validateDeviceId(id: string): string | null {
-  if (!id) return null; // Optional
+  if (!id) return null; 
   
-  // IMEI is 15 digits
+  
   if (!/^\d{15}$/.test(id)) {
     return "Device ID must be a valid IMEI (15 digits)";
   }
@@ -144,9 +125,7 @@ export function validateDeviceId(id: string): string | null {
   return null;
 }
 
-/**
- * Validate request timeout (1-60 seconds)
- */
+
 export function validateRequestTimeout(ms: number): string | null {
   if (typeof ms !== "number" || isNaN(ms)) {
     return "Request timeout must be a number";
@@ -159,9 +138,7 @@ export function validateRequestTimeout(ms: number): string | null {
   return null;
 }
 
-/**
- * Validate connection settings
- */
+
 export function validateClientSettings(settings: ClientSettings): ValidationResult {
   const errors: Record<string, string[]> = {};
   
@@ -180,35 +157,31 @@ export function validateClientSettings(settings: ClientSettings): ValidationResu
   };
 }
 
-// ============================================================================
-// Webhook Validators
-// ============================================================================
 
-/**
- * Validate webhook URL
- */
+
+
+
+
 export function validateWebhookUrl(url: string): string | null {
-  if (!url) return null; // Optional
+  if (!url) return null; 
   
   if (!isValidUrl(url)) {
     return "Invalid webhook URL format";
   }
   
-  // Should be HTTPS in production
-  if (url.startsWith("http://")) {
+  
+  if (url.startsWith("http:
     return "Webhook URL should use HTTPS for security";
   }
   
   return null;
 }
 
-// ============================================================================
-// Advanced Settings Validators
-// ============================================================================
 
-/**
- * Validate buffer limit (1-1000)
- */
+
+
+
+
 export function validateBufferLimit(limit: number): string | null {
   if (typeof limit !== "number" || isNaN(limit)) {
     return "Buffer limit must be a number";
@@ -221,9 +194,7 @@ export function validateBufferLimit(limit: number): string | null {
   return null;
 }
 
-/**
- * Validate signal history limit (10-1000)
- */
+
 export function validateSignalHistoryLimit(limit: number): string | null {
   if (typeof limit !== "number" || isNaN(limit)) {
     return "Signal history limit must be a number";

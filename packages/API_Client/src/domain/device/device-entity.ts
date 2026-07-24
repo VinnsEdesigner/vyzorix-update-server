@@ -1,41 +1,41 @@
 export type DeviceStatus = "online" | "offline" | "deregistered";
 
 export interface DeviceConnection {
-  webSocketStatus?: string;
-  connectedAt?: Date;
+  web_socket_status?: string;
+  connected_at?: string;
   protocol?: string;
-  clientIp?: string;
+  client_ip?: string;
 }
 
 export interface Device {
   id: string;
   imei: string;
-  organizationId?: string; // Multi-tenant: organization this device belongs to
-  deviceName?: string;
+  organization_id?: string;
+  device_name?: string;
   model?: string;
   manufacturer?: string;
-  osVersion?: string;
-  appVersion?: string;
-  securityPatch?: string;
+  os_version?: string;
+  app_version?: string;
+  security_patch?: string;
   status: DeviceStatus;
-  registeredAt?: Date;
-  lastSeen?: Date;
-  fcmTokenValid: boolean;
-  commandSecretSet: boolean;
+  registered_at?: string;
+  last_seen?: string;
+  fcm_token_valid: boolean;
+  command_secret_set: boolean;
   connection: DeviceConnection;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DeviceListItem {
   id: string;
   imei: string;
-  organizationId?: string; // Multi-tenant: organization this device belongs to
-  deviceName?: string;
+  organization_id?: string;
+  device_name?: string;
   model?: string;
   manufacturer?: string;
   status: DeviceStatus;
-  lastSeen?: Date;
+  last_seen?: string;
 }
 
 export interface DeviceStats {
@@ -48,7 +48,7 @@ export interface Pagination {
   page: number;
   limit: number;
   total: number;
-  totalPages: number;
+  total_pages: number;
 }
 
 export interface DeviceListResult {
@@ -58,13 +58,13 @@ export interface DeviceListResult {
 
 export interface RegisterDeviceRequest {
   imei: string;
-  deviceName?: string;
+  device_name?: string;
   model?: string;
-  fcmToken: string;
+  fcm_token: string;
 }
 
 export function formatDeviceName(device: Device | DeviceListItem): string {
-  return device.deviceName || device.model || `Device ${device.imei.slice(-4)}`;
+  return device.device_name || device.model || `Device ${device.imei.slice(-4)}`;
 }
 
 export function isDeviceOnline(device: Device | DeviceListItem): boolean {

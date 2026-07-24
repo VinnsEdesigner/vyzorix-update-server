@@ -1,10 +1,10 @@
-// Updates GraphQL Queries using Apollo Client
+
 import { gql } from '@apollo/client';
 import { graphqlClient } from '../_shared/graphql-client';
 
-// ============================================================================
-// Fragments
-// ============================================================================
+
+
+
 
 export const UPDATE_VERSION_FRAGMENT = gql`
   fragment UpdateVersion on UpdateVersion {
@@ -70,9 +70,9 @@ export const CHANGELOG_ENTRY_FRAGMENT = gql`
   }
 `;
 
-// ============================================================================
-// Queries
-// ============================================================================
+
+
+
 
 export const GET_UPDATE_STATUS = gql`
   query GetUpdateStatus {
@@ -156,9 +156,9 @@ export const GET_SYNC_STATUS = gql`
   ${SYNC_STATUS_FRAGMENT}
 `;
 
-// ============================================================================
-// Query Functions (using Apollo Client)
-// ============================================================================
+
+
+
 
 export async function queryUpdateStatus() {
   return graphqlClient.query({

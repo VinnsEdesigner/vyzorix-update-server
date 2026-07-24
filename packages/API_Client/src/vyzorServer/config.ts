@@ -1,13 +1,8 @@
-/**
- * API Client Configuration
- * 
- * Centralized configuration management using environment variables.
- * All hardcoded defaults should be configured via environment variables.
- */
 
-// ============================================================================
-// Type Definitions
-// ============================================================================
+
+
+
+
 
 export interface WebSocketConfig {
   url: string;
@@ -36,9 +31,9 @@ export interface ClientConfig {
   metrics: MetricsConfig;
 }
 
-// ============================================================================
-// Environment Variable Parsers
-// ============================================================================
+
+
+
 
 function parseIntEnv(key: string, defaultValue: number): number {
   const value = import.meta.env[key];
@@ -57,9 +52,9 @@ function parseBoolEnv(key: string, defaultValue: boolean): boolean {
   return value === "true" || value === "1";
 }
 
-// ============================================================================
-// Configuration Factory
-// ============================================================================
+
+
+
 
 export function getClientConfig(): ClientConfig {
   return {
@@ -72,7 +67,7 @@ export function getClientConfig(): ClientConfig {
 export function getWebSocketConfig(): WebSocketConfig {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const host = window.location.host;
-  const wsUrl = parseStringEnv("VITE_WS_URL", `${protocol}//${host}`);
+  const wsUrl = parseStringEnv("VITE_WS_URL", `${protocol}
   
   return {
     url: wsUrl,
@@ -100,9 +95,9 @@ export function getMetricsConfig(): MetricsConfig {
   };
 }
 
-// ============================================================================
-// Individual Config Accessors (for granular usage)
-// ============================================================================
+
+
+
 
 export const config = {
   get ws(): WebSocketConfig {

@@ -1,6 +1,6 @@
 import { LOG_ENTRY_FRAGMENT } from "./graphql-logs-fragments";
 
-export const GET_LOGS = /* GraphQL */ `
+export const GET_LOGS =  `
   query GetLogs($imei: String!, $type: String, $limit: Int, $cursor: String) {
     logs(imei: $imei, type: $type, limit: $limit, cursor: $cursor) {
       logs {
@@ -16,7 +16,7 @@ export const GET_LOGS = /* GraphQL */ `
   ${LOG_ENTRY_FRAGMENT}
 `;
 
-export const GET_LOG_STATS = /* GraphQL */ `
+export const GET_LOG_STATS =  `
   query GetLogStats($imei: String!, $startTime: Int, $endTime: Int) {
     logStats(imei: $imei, startTime: $startTime, endTime: $endTime) {
       total
@@ -31,7 +31,7 @@ export const GET_LOG_STATS = /* GraphQL */ `
   }
 `;
 
-export const GET_LOG = /* GraphQL */ `
+export const GET_LOG =  `
   query GetLog($id: String!) {
     log(id: $id) {
       ...LogEntry

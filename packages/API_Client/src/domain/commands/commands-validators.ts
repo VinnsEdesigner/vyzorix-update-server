@@ -1,31 +1,22 @@
-/**
- * Commands Validators
- * 
- * Validation functions for command-related input.
- * Commands are HMAC-SHA256 signed for security.
- */
+
 
 import type { PresetCommandType, CommandParams } from "./commands-entity";
 
-// ============================================================================
-// Validation Result
-// ============================================================================
 
-/**
- * Validation result
- */
+
+
+
+
 export interface ValidationResult {
   isValid: boolean;
   errors: Record<string, string[]>;
 }
 
-// ============================================================================
-// Preset Command Type Validation
-// ============================================================================
 
-/**
- * Valid preset command types
- */
+
+
+
+
 const VALID_PRESET_TYPES: PresetCommandType[] = [
   "FORCE_SPEAKER",
   "RESET_AUDIO_HAL",
@@ -37,9 +28,7 @@ const VALID_PRESET_TYPES: PresetCommandType[] = [
   "WAKE_UP_UPDATER",
 ];
 
-/**
- * Validate preset command type
- */
+
 export function validatePresetCommandType(type: string): ValidationResult {
   const errors: Record<string, string[]> = {};
   
@@ -55,13 +44,11 @@ export function validatePresetCommandType(type: string): ValidationResult {
   };
 }
 
-// ============================================================================
-// IMEI Validation
-// ============================================================================
 
-/**
- * Validate IMEI format (15 digits)
- */
+
+
+
+
 export function validateIMEI(imei: string): ValidationResult {
   const errors: Record<string, string[]> = {};
   
@@ -77,18 +64,14 @@ export function validateIMEI(imei: string): ValidationResult {
   };
 }
 
-// ============================================================================
-// Log Level Validation
-// ============================================================================
 
-/**
- * Valid log levels
- */
+
+
+
+
 const VALID_LOG_LEVELS = ["debug", "info", "warn", "error", "verbose", "assert"];
 
-/**
- * Validate log level parameter for SET_LOG_LEVEL command
- */
+
 export function validateLogLevel(level: string): ValidationResult {
   const errors: Record<string, string[]> = {};
   
@@ -104,13 +87,11 @@ export function validateLogLevel(level: string): ValidationResult {
   };
 }
 
-// ============================================================================
-// Command Params Validation
-// ============================================================================
 
-/**
- * Validate command params for TOGGLE_CAPTURE
- */
+
+
+
+
 export function validateToggleCaptureParams(params: CommandParams): ValidationResult {
   const errors: Record<string, string[]> = {};
   
@@ -124,9 +105,7 @@ export function validateToggleCaptureParams(params: CommandParams): ValidationRe
   };
 }
 
-/**
- * Validate command params based on preset type
- */
+
 export function validatePresetCommandParams(type: PresetCommandType, params: CommandParams): ValidationResult {
   switch (type) {
     case "TOGGLE_CAPTURE":
@@ -137,30 +116,28 @@ export function validatePresetCommandParams(type: PresetCommandType, params: Com
       }
       return { isValid: false, errors: { level: ["Log level is required for SET_LOG_LEVEL"] } };
     default:
-      // Other preset commands don't require specific params
+      
       return { isValid: true, errors: {} };
   }
 }
 
-// ============================================================================
-// Full Command Validation
-// ============================================================================
 
-/**
- * Validate complete command request
- */
+
+
+
+
 export function validateSendCommand(imei: string, commandType: string, params?: CommandParams): ValidationResult {
   const errors: Record<string, string[]> = {};
   
-  // Validate IMEI
+  
   const imeiResult = validateIMEI(imei);
   Object.assign(errors, imeiResult.errors);
   
-  // Validate preset command type
+  
   const typeResult = validatePresetCommandType(commandType);
   Object.assign(errors, typeResult.errors);
   
-  // Validate params if type is valid
+  
   if (typeResult.isValid) {
     const paramsResult = validatePresetCommandParams(commandType as PresetCommandType, params ?? {});
     Object.assign(errors, paramsResult.errors);

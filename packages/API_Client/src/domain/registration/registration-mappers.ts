@@ -51,7 +51,7 @@ export interface RawPagination {
   totalPages: number;
 }
 
-/** Raw request for POST /v1/device/inbox */
+
 export interface RawCreateInboxRequest {
   imei: string;
   deviceName?: string;
@@ -65,7 +65,7 @@ export interface RawCreateInboxRequest {
   idempotencyKey?: string;
 }
 
-/** Raw response for POST /v1/device/inbox */
+
 export interface RawCreateInboxResponse {
   id: string;
   imei: string;
@@ -73,7 +73,7 @@ export interface RawCreateInboxResponse {
   createdAt: number;
 }
 
-/** Raw response for POST /v1/device/confirm */
+
 export interface RawConfirmDeviceResponse {
   device_id: string;
   imei: string;
@@ -88,7 +88,7 @@ function parseTimestamp(value: number | null | undefined): Date | null {
   return new Date(value > 1e12 ? value : value * 1000);
 }
 
-/** Maps CreateInboxRequest to raw request format for API */
+
 export function createInboxRequestToRaw(request: CreateInboxRequest): RawCreateInboxRequest {
   return {
     imei: request.imei,
@@ -104,7 +104,7 @@ export function createInboxRequestToRaw(request: CreateInboxRequest): RawCreateI
   };
 }
 
-/** Maps raw CreateInboxResponse to domain CreateInboxResult */
+
 export function createInboxResultFromRaw(raw: RawCreateInboxResponse): CreateInboxResult {
   return {
     id: raw.id,
@@ -114,7 +114,7 @@ export function createInboxResultFromRaw(raw: RawCreateInboxResponse): CreateInb
   };
 }
 
-/** Maps raw ConfirmDeviceResponse to domain ConfirmDeviceResult */
+
 export function confirmDeviceResultFromRaw(raw: RawConfirmDeviceResponse): ConfirmDeviceResult {
   return {
     deviceId: raw.device_id,

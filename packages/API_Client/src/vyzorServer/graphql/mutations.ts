@@ -1,11 +1,6 @@
-/**
- * GraphQL Mutations
- * 
- * Barrel export for all GraphQL mutations.
- * Re-exports from subdirectory index files.
- */
 
-// Registration mutations
+
+
 export {
   SUBMIT_REGISTRATION_REQUEST,
   ACKNOWLEDGE_REQUEST,

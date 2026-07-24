@@ -1,5 +1,5 @@
-// VyzoServer - API Client Layer
-// REST, GraphQL, and WebSocket clients
+
+
 
 export * from './config';
 export * from './rest';
