@@ -17,8 +17,10 @@ services:
       - "3000:3000"
     environment:
       # Required secrets - change these in production!
+      - API_KEY_primary=dev-api-key-12345
       - TOKEN_SECRET=dev-token-secret-minimum-32-chars!!
       - JWT_SECRET=dev-jwt-secret-minimum-32-chars!!
+      - SESSION_SECRET=dev-session-secret-minimum-32-chars!!
       # SSR Configuration
       - SSR_ENABLED=true
       - SSR_AUTO_BUILD=false

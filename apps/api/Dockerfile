@@ -40,7 +40,7 @@ WORKDIR /app
 COPY . .
 
 # Install all dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Build config package first (outputs to dist/)
 RUN pnpm --filter @vyzorix/config run build
