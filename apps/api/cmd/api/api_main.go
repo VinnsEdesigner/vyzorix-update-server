@@ -33,8 +33,13 @@ import (
 )
 
 func main() {
-	// Load .env file if it exists.
-	_ = godotenv.Load(".env")
+	// Load .env.example file for default production configuration.
+	// Try multiple paths: Docker (/app), local dev from apps/api (../../), local from root (.)
+	for _, envPath := range []string{".env.example", "../../.env.example", "../.env.example"} {
+		if err := godotenv.Load(envPath); err == nil {
+			break
+		}
+	}
 
 	// Determine environment mode from environment (before config load).
 	envMode := getEnv()

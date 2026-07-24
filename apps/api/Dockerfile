@@ -109,6 +109,9 @@ RUN mkdir -p /data /app/bin /app/public /app/logs && \
 # Copy binary
 COPY --from=go-builder --chown=appuser:appuser /out/vyzorix-update-server /app/vyzorix-update-server
 
+# Copy .env.example for default configuration
+COPY .env.example /app/.env.example
+
 # Copy web assets
 COPY --from=web-builder --chown=appuser:appuser /app/apps/web/dist/client /app/public
 COPY --from=web-builder --chown=appuser:appuser /app/apps/web/dist/server /app/data/server
