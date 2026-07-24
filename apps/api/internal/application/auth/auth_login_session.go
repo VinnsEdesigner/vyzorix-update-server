@@ -82,7 +82,9 @@ email := strings.ToLower(strings.TrimSpace(req.Email))
 op, err := s.operatorRepo.FindByEmail(ctx, email)
 if err != nil {
 if errors.Is(err, operator.ErrNotFound) {
-_ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
+// Perform fake password hash to mitigate timing attacks.
+fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
+_ = s.passwordHasher.Verify(req.Password, fakeHash)
 return nil, nil, application.ErrInvalidCredentials
 }
 return nil, nil, err
@@ -90,7 +92,9 @@ return nil, nil, err
 
 // Prevent nil pointer dereference if FindByEmail returns (nil, nil).
 if op == nil {
-_ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
+// Perform fake password hash to mitigate timing attacks.
+fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
+_ = s.passwordHasher.Verify(req.Password, fakeHash)
 return nil, nil, application.ErrInvalidCredentials
 }
 
@@ -134,8 +138,8 @@ return s.buildLoginResponse(op), sess, nil
 func (s *AuthService) resolveAndSetOrganization(ctx context.Context, op *operator.Operator, sess *session.Session) {
 orgID, _, err := s.ResolveOrganizationForOperator(ctx, op)
 if err != nil {
-    // No organization or selection required - dont set anything on session.
-    return
+	// No organization or selection required - do not set anything on session.
+	return
 }
 
 // Valid org found - set on session and update LastOrganizationID.
@@ -159,14 +163,18 @@ email := strings.ToLower(strings.TrimSpace(req.Email))
 op, err := s.operatorRepo.FindByEmail(ctx, email)
 if err != nil {
 if errors.Is(err, operator.ErrNotFound) {
-_ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
+// Perform fake password hash to mitigate timing attacks.
+fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
+_ = s.passwordHasher.Verify(req.Password, fakeHash)
 return nil, application.ErrInvalidCredentials
 }
 return nil, err
 }
 
 if op == nil {
-_ = s.passwordHasher.Verify(req.Password, "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz")
+// Perform fake password hash to mitigate timing attacks.
+fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
+_ = s.passwordHasher.Verify(req.Password, fakeHash)
 return nil, application.ErrInvalidCredentials
 }
 
@@ -398,49 +406,53 @@ Name:      name,
 }
 
 // CreateSession creates a new session for an operator.
-// If the operator has reached their max concurrent sessions limit,.
-// the oldest session is revoked.
+// If the operator has reached their max concurrent sessions limit,
+// the oldest session is revoked before creating a new one.
 func (s *AuthService) CreateSession(ctx context.Context, operatorID string) (*session.Session, error) {
-// Get operator security settings for session limit.
-op, err := s.operatorRepo.FindByID(ctx, operatorID)
-if err != nil {
-return nil, err
-}
+	// Get operator security settings for session limit.
+	op, err := s.operatorRepo.FindByID(ctx, operatorID)
+	if err != nil {
+		return nil, err
+	}
 
-maxSessions := 5 // default.
-settings := op.SecuritySettings
-if settings.MaxConcurrentSessions > 0 {
-maxSessions = settings.MaxConcurrentSessions
-}
+	maxSessions := 5 // default.
+	settings := op.SecuritySettings
+	if settings.MaxConcurrentSessions > 0 {
+		maxSessions = settings.MaxConcurrentSessions
+	}
 
-// Count active sessions.
-activeSessions, err := s.sessionRepo.ListActiveByOperator(ctx, operatorID)
-if err != nil {
-return nil, err
-}
+	// Count active sessions.
+	activeSessions, err := s.sessionRepo.ListActiveByOperator(ctx, operatorID)
+	if err != nil {
+		return nil, err
+	}
 
-// If at limit, revoke the oldest session.
-if len(activeSessions) >= maxSessions {
-oldest := activeSessions[0]
-_ = s.sessionRepo.AddSessionRevocation(ctx, oldest.ID, "max_sessions_reached")
-_ = s.sessionRepo.Delete(ctx, oldest.ID)
-}
+	// If at limit, revoke the oldest session before creating a new one.
+	if len(activeSessions) >= maxSessions {
+		oldest := activeSessions[0]
+		if err := s.sessionRepo.AddSessionRevocation(ctx, oldest.ID, "max_sessions_reached"); err != nil {
+			return nil, fmt.Errorf("failed to revoke oldest session: %w", err)
+		}
+		if err := s.sessionRepo.Delete(ctx, oldest.ID); err != nil {
+			return nil, fmt.Errorf("failed to delete oldest session: %w", err)
+		}
+	}
 
-now := time.Now()
-id := shared.GenerateID()
+	now := time.Now()
+	id := shared.GenerateID()
 
-sess := &session.Session{
-ID:         id,
-OperatorID: operatorID,
-CreatedAt:  now,
-ExpiresAt:  now.Add(s.sessionTTL),
-}
+	sess := &session.Session{
+		ID:         id,
+		OperatorID: operatorID,
+		CreatedAt:  now,
+		ExpiresAt:  now.Add(s.sessionTTL),
+	}
 
-if err := s.sessionRepo.Create(ctx, sess); err != nil {
-return nil, err
-}
+	if err := s.sessionRepo.Create(ctx, sess); err != nil {
+		return nil, err
+	}
 
-return sess, nil
+	return sess, nil
 }
 
 // Logout destroys a session and revokes associated refresh tokens.
