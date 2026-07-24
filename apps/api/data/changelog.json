@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "release_date": "2026-01-01",
+  "changes": [
+    {
+      "version": "1.0.0",
+      "type": "major",
+      "notes": "Initial release with core features"
+    }
+  ]
+}

@@ -24,10 +24,10 @@ var (
 
 // Verifier provides Firebase App Check token verification.
 type Verifier struct {
-	client *appcheck.Client
-	appID  string
-	enabled bool
+	client  *appcheck.Client
 	log     *slog.Logger
+	appID   string
+	enabled bool
 }
 
 // NewVerifier creates a new App Check verifier using Firebase credentials.
@@ -49,14 +49,14 @@ func NewVerifier(log *slog.Logger, rawCredentials, expectedAppID string) (*Verif
 	tmpPath := tmpFile.Name()
 
 	// Write credentials and close file before using it.
-	if _, err := tmpFile.WriteString(rawCredentials); err != nil {
+	if _, writeErr := tmpFile.WriteString(rawCredentials); writeErr != nil {
 		_ = tmpFile.Close()
 		_ = os.Remove(tmpPath)
-		return nil, fmt.Errorf("failed to write credentials: %w", err)
+		return nil, fmt.Errorf("failed to write credentials: %w", writeErr)
 	}
-	if err := tmpFile.Close(); err != nil {
+	if closeErr := tmpFile.Close(); closeErr != nil {
 		_ = os.Remove(tmpPath)
-		return nil, fmt.Errorf("failed to close temp credentials file: %w", err)
+		return nil, fmt.Errorf("failed to close temp credentials file: %w", closeErr)
 	}
 
 	// Use WithAuthCredentialsFile with explicit ServiceAccount type.

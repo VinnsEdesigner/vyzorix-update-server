@@ -19,9 +19,9 @@ type Thresholds struct {
 
 // OperatorSettings holds all settings for an operator.
 type OperatorSettings struct {
-	Client        ClientSettings       `json:"client"`
-	Thresholds    Thresholds          `json:"thresholds"`
 	Notifications *NotificationSettings `json:"notifications"`
+	Client        ClientSettings        `json:"client"`
+	Thresholds    Thresholds            `json:"thresholds"`
 }
 
 // ClientSettings control dashboard behavior.
@@ -47,36 +47,27 @@ type SecuritySettings struct {
 
 // Operator represents a system operator (user).
 type Operator struct {
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Email            string
-	FCMToken         string `json:"fcmToken,omitempty"`
-	GoogleID         string
-	ID               string
-	MFASecret        string
-	MFASecretMAC     string
-	Name             string
-	GitHubID         string
-	PasswordHash     string
-	BackupCodes      []string
-	ClientSettings   ClientSettings   `json:"client"`
-	Thresholds       Thresholds       `json:"thresholds"`
-	SecuritySettings SecuritySettings `json:"security"`
-	MFAEnabled       bool
-	MFARequired      bool
-	EmailVerified    bool
-
-	// MFAEnabledAt is set when MFA is enabled on the account.
-	// Used to invalidate pre-MFA sessions when MFA is enforced.
-	MFAEnabledAt *time.Time
-
-	// Memberships holds the operator's memberships in organizations.
-	// Role is org-scoped via these memberships.
-	Memberships []*organization.OrganizationMember
-
-	// LastOrganizationID is the most recently accessed organization for this operator.
-	// Used to auto-select the organization when logging in.
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	MFAEnabledAt       *time.Time
+	PasswordHash       string
+	Email              string
+	ID                 string
+	MFASecret          string
+	MFASecretMAC       string
+	Name               string
+	GitHubID           string
+	FCMToken           string `json:"fcmToken,omitempty"`
+	GoogleID           string
 	LastOrganizationID string
+	BackupCodes        []string
+	Memberships        []*organization.OrganizationMember
+	ClientSettings     ClientSettings   `json:"client"`
+	Thresholds         Thresholds       `json:"thresholds"`
+	SecuritySettings   SecuritySettings `json:"security"`
+	MFARequired        bool
+	EmailVerified      bool
+	MFAEnabled         bool
 }
 
 // DefaultSecuritySettings returns default security settings.
@@ -246,6 +237,8 @@ func (o *Operator) HasPermission(perm Permission) bool {
 			if perm == PermissionDeviceRead || perm == PermissionUpdateRead || perm == PermissionSettingsRead {
 				return true
 			}
+		case organization.RoleAdmin, organization.RoleSuperAdmin:
+			// Admins checked above via IsAdmin().
 		}
 	}
 	return false

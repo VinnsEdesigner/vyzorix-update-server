@@ -18,16 +18,16 @@ import (
 
 // Handler handles inbox-related HTTP requests.
 type Handler struct {
-	service              *inbox.Service
-	deviceSecret        string
-	attestationRequired bool 
+	service             *inbox.Service
 	appCheckVerifier    *appcheck.Verifier
+	deviceSecret        string
+	attestationRequired bool
 }
 
 // NewHandler creates a new InboxHandler.
 func NewHandler(service *inbox.Service, deviceSecret string) *Handler {
 	return &Handler{
-		service:              service,
+		service:             service,
 		deviceSecret:        deviceSecret,
 		attestationRequired: false,
 	}
@@ -37,7 +37,7 @@ func NewHandler(service *inbox.Service, deviceSecret string) *Handler {
 // Use this in production where device attestation is mandatory.
 func NewHandlerWithAttestation(service *inbox.Service, deviceSecret string) *Handler {
 	return &Handler{
-		service:              service,
+		service:             service,
 		deviceSecret:        deviceSecret,
 		attestationRequired: true,
 	}
@@ -47,7 +47,7 @@ func NewHandlerWithAttestation(service *inbox.Service, deviceSecret string) *Han
 // This is the recommended configuration for production.
 func NewHandlerWithAppCheck(service *inbox.Service, deviceSecret string, appCheckVerifier *appcheck.Verifier) *Handler {
 	return &Handler{
-		service:              service,
+		service:             service,
 		deviceSecret:        deviceSecret,
 		attestationRequired: true,
 		appCheckVerifier:    appCheckVerifier,

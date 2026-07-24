@@ -15,19 +15,19 @@ import (
 
 // OutboxConfig holds configuration for the command outbox worker.
 type OutboxConfig struct {
-	PollInterval    time.Duration // How often to poll for pending commands.
-	MaxRetries      int           // Maximum retry attempts before marking failed.
-	RetryBaseDelay  time.Duration // Base delay for exponential backoff.
-	BatchSize       int           // Number of commands to process per poll.
+	PollInterval   time.Duration // How often to poll for pending commands.
+	MaxRetries     int           // Maximum retry attempts before marking failed.
+	RetryBaseDelay time.Duration // Base delay for exponential backoff.
+	BatchSize      int           // Number of commands to process per poll.
 }
 
 // DefaultOutboxConfig returns the default outbox configuration.
 func DefaultOutboxConfig() OutboxConfig {
 	return OutboxConfig{
-		PollInterval:    1 * time.Second,
-		MaxRetries:      5,
-		RetryBaseDelay:  5 * time.Second,
-		BatchSize:       50,
+		PollInterval:   1 * time.Second,
+		MaxRetries:     5,
+		RetryBaseDelay: 5 * time.Second,
+		BatchSize:      50,
 	}
 }
 
@@ -37,13 +37,13 @@ func DefaultOutboxConfig() OutboxConfig {
 type Outbox struct {
 	repo        command.Repository
 	deviceRepo  device.Repository
-	hub         *ws.Hub
 	fcmNotifier fcm.Notifier
-	cfg         OutboxConfig
+	hub         *ws.Hub
 	log         *slog.Logger
 	stopCh      chan struct{}
+	cfg         OutboxConfig
 	wg          sync.WaitGroup
-	mu          sync.Mutex // Protects running state.
+	mu          sync.Mutex
 	running     bool
 }
 
@@ -162,7 +162,7 @@ func (o *Outbox) processCommand(cmd *command.Command) bool {
 }
 
 // deliverViaWebSocket attempts to deliver command via WebSocket with confirmation.
-func (o *Outbox) deliverViaWebSocket(ctx context.Context, cmd *command.Command) bool {
+func (o *Outbox) deliverViaWebSocket(_ctx context.Context, cmd *command.Command) bool {
 	if o.hub == nil {
 		return false
 	}

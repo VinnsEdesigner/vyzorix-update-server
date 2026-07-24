@@ -16,6 +16,7 @@ var (
 	ErrUserExists      = errors.New("user already exists")
 	ErrPasswordBreached = errors.New("password found in data breach, please choose another")
 	ErrPasswordPolicy = errors.New("password policy violation")
+	ErrBreachCheckUnavailable = errors.New("password verification temporarily unavailable, please try again")
 	ErrOAuthFailed     = errors.New("oauth authentication failed")
 	ErrOperatorNotFound = errors.New("not_found")
 

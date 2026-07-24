@@ -49,8 +49,7 @@ func (r *IdempotencyRepository) Get(ctx context.Context, key string) (*idempoten
 		&record.UserAgent,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		//
-		return nil, nil
+		return nil, idempotency.ErrNotFound
 	}
 	if err != nil {
 		return nil, err

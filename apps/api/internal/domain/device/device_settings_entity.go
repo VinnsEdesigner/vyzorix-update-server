@@ -39,33 +39,38 @@ func (t *Thresholds) HasValues() bool {
 }
 
 // Validate validates the thresholds.
-
 func (t *Thresholds) Validate() error {
-	
-	// Risk scores should be 0-100.
+	if err := t.validateRanges(); err != nil {
+		return err
+	}
+	return t.validateRelativeValues()
+}
+
+// validateRanges validates that all threshold values are within acceptable ranges.
+func (t *Thresholds) validateRanges() error {
 	if t.RiskWarn < 0 || t.RiskWarn > 100 {
 		return ErrInvalidThreshold
 	}
 	if t.RiskCrit < 0 || t.RiskCrit > 100 {
 		return ErrInvalidThreshold
 	}
-	// Thermal thresholds should be reasonable (0-200 degrees Celsius).
 	if t.ThermalWarn < 0 || t.ThermalWarn > 200 {
 		return ErrInvalidThreshold
 	}
 	if t.ThermalCrit < 0 || t.ThermalCrit > 200 {
 		return ErrInvalidThreshold
 	}
-	// Buffer levels should be 0-100 (percentage).
 	if t.BufferWarn < 0 || t.BufferWarn > 100 {
 		return ErrInvalidThreshold
 	}
 	if t.BufferCrit < 0 || t.BufferCrit > 100 {
 		return ErrInvalidThreshold
 	}
+	return nil
+}
 
-	// Relative validation: warning must be less than critical for risk/thermal,.
-	// but for buffer, critical (low) must be less than warning (low).
+// validateRelativeValues validates that warning thresholds are properly related to critical thresholds.
+func (t *Thresholds) validateRelativeValues() error {
 	if t.RiskWarn >= t.RiskCrit && t.RiskWarn != 0 && t.RiskCrit != 0 {
 		return ErrInvalidThreshold
 	}
@@ -81,14 +86,14 @@ func (t *Thresholds) Validate() error {
 // DeviceSettings represents settings for a specific device.
 // These settings control the Android app behavior and can override organization defaults.
 type DeviceSettings struct {
-	ID         string     `json:"id"`
-	DeviceIMEI string     `json:"deviceImei"`
-	CustomName string     `json:"customName,omitempty"`
-	Location   string     `json:"location,omitempty"`
+	CreatedAt  time.Time         `json:"createdAt"`
+	UpdatedAt  time.Time         `json:"updatedAt"`
 	Metadata   map[string]string `json:"metadata,omitempty"`
-	Thresholds *Thresholds `json:"thresholds,omitempty"`
-	CreatedAt  time.Time  `json:"createdAt"`
-	UpdatedAt  time.Time  `json:"updatedAt"`
+	Thresholds *Thresholds       `json:"thresholds,omitempty"`
+	ID         string            `json:"id"`
+	DeviceIMEI string            `json:"deviceImei"`
+	CustomName string            `json:"customName,omitempty"`
+	Location   string            `json:"location,omitempty"`
 }
 
 // NewDeviceSettings creates a new DeviceSettings.
@@ -124,10 +129,10 @@ func (s *DeviceSettings) UpdateThresholds(t *Thresholds) error {
 
 // UpdateDeviceSettingsRequest represents a request to update device settings.
 type UpdateDeviceSettingsRequest struct {
-	CustomName *string            `json:"customName,omitempty"`
-	Location   *string            `json:"location,omitempty"`
-	Metadata   map[string]string  `json:"metadata,omitempty"`
-	Thresholds *Thresholds        `json:"thresholds,omitempty"`
+	CustomName *string           `json:"customName,omitempty"`
+	Location   *string           `json:"location,omitempty"`
+	Metadata   map[string]string `json:"metadata,omitempty"`
+	Thresholds *Thresholds       `json:"thresholds,omitempty"`
 }
 
 // UpdateThresholdsRequest represents a request to update only thresholds.

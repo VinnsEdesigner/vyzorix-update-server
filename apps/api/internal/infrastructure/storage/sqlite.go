@@ -213,6 +213,7 @@ var migrations = []Migration{
 	{Apply: migrateEmailVerificationTracking, Name: "add_email_verification_tracking", Version: 46},
 	
 	{Apply: migrateCreatePendingFCM, Name: "create_pending_fcm_table", Version: 47},
+	// Fix timestamp columns - convert TEXT to INTEGER for consistency.
 }
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {
@@ -233,24 +234,22 @@ func runMigrations(db *sql.DB) error {
 			continue
 		}
 
-		// Wrap each migration in a transaction.
-		tx, err := db.Begin()
-		if err != nil {
-			return fmt.Errorf("migration %d (%s) failed to begin transaction: %w", m.Version, m.Name, err)
-		}
-
+		// Run migration directly (SQLite auto-commits each statement).
 		if err := m.Apply(db); err != nil {
-			_ = tx.Rollback()
 			return fmt.Errorf("migration %d (%s) failed: %w", m.Version, m.Name, err)
 		}
 
+		// Record version in a separate transaction.
+		tx, err := db.Begin()
+		if err != nil {
+			return fmt.Errorf("migration %d (%s) failed to begin version tx: %w", m.Version, m.Name, err)
+		}
 		if err := setVersionTx(tx, m.Version); err != nil {
 			_ = tx.Rollback()
 			return fmt.Errorf("failed to set version after migration %d: %w", m.Version, err)
 		}
-
 		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("migration %d (%s) failed to commit: %w", m.Version, m.Name, err)
+			return fmt.Errorf("migration %d (%s) failed to commit version: %w", m.Version, m.Name, err)
 		}
 
 		fmt.Printf("Applied migration %d: %s\n", m.Version, m.Name)

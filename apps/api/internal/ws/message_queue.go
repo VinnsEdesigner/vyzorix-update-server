@@ -43,7 +43,7 @@ type QueuedMessage struct {
 type ReplayResult struct {
 	Count     int  // Number of messages successfully replayed.
 	HasMore   bool // True if there are more messages that couldn't be replayed due to full buffer.
-	Remaining int // Estimated count of messages still pending replay.
+	Remaining int  // Estimated count of messages still pending replay.
 }
 
 // QueueMetrics holds queue metrics.
@@ -59,18 +59,16 @@ type QueueMetrics struct {
 // It uses a two-tier storage approach: in-memory channels for low-latency access.
 // and SQLite persistence for durability across restarts.
 type MessageQueue struct {
-	log       *slog.Logger
-	config    *MessageQueueConfig
-	db        *sql.DB
-	queues    map[string]chan *QueuedMessage
-	metrics   QueueMetrics
-	mu        sync.RWMutex
-	metricsMu sync.RWMutex
-
-	
+	log         *slog.Logger
+	config      *MessageQueueConfig
+	db          *sql.DB
+	queues      map[string]chan *QueuedMessage
 	persistChan chan *QueuedMessage
 	deleteChan  chan string
 	closeChan   chan struct{}
+	metrics     QueueMetrics
+	mu          sync.RWMutex
+	metricsMu   sync.RWMutex
 }
 
 // NewMessageQueue creates a new MessageQueue.
@@ -203,7 +201,7 @@ func (q *MessageQueue) Enqueue(deviceID string, frame command.CommandFrame) bool
 	select {
 	case ch <- msg:
 		q.incrementEnqueued()
-		
+
 		select {
 		case q.persistChan <- msg:
 		default:
@@ -220,7 +218,7 @@ func (q *MessageQueue) Enqueue(deviceID string, frame command.CommandFrame) bool
 		select {
 		case ch <- msg:
 			q.incrementEnqueued()
-			
+
 			select {
 			case q.persistChan <- msg:
 			default:
@@ -303,7 +301,6 @@ func (q *MessageQueue) EnqueueWithConfirmation(deviceID string, frame command.Co
 		}
 	}
 }
-
 
 // This ensures messages are persisted before they can be replayed, preventing race conditions.
 func (q *MessageQueue) persistenceWorker() {
@@ -430,7 +427,7 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 	ch := q.GetOrCreateQueue(deviceID)
 
 	count := 0
-	remaining := 0
+	var remaining int
 
 	// First, replay persisted messages in FIFO order.
 	persistedIdx := 0
@@ -442,7 +439,7 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 			count++
 			persistedIdx++
 			q.incrementDelivered()
-			
+
 			select {
 			case q.deleteChan <- msg.ID:
 			default:
@@ -475,7 +472,7 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 			case dest <- msg.Frame:
 				count++
 				q.incrementDelivered()
-				
+
 				select {
 				case q.deleteChan <- msg.ID:
 				default:

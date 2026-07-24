@@ -146,9 +146,9 @@ var ReleaseTypeEnum = graphql.NewEnum(graphql.EnumConfig{
 	},
 })
 
-// UpdateStatusEnum represents the status of an update push.
-var UpdateStatusEnum = graphql.NewEnum(graphql.EnumConfig{
-	Name:        "UpdateStatus",
+// UpdatePushStatusEnum represents the status of an update push.
+var UpdatePushStatusEnum = graphql.NewEnum(graphql.EnumConfig{
+	Name:        "UpdatePushStatus",
 	Description: "Status of an update push",
 	Values: graphql.EnumValueConfigMap{
 		"PENDING": &graphql.EnumValueConfig{

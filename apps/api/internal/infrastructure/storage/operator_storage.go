@@ -58,7 +58,7 @@ func (r *OperatorRepository) exec(ctx context.Context, query string, args ...int
 func (r *OperatorRepository) FindByID(ctx context.Context, id string) (*operator.Operator, error) {
 	query := `
 		SELECT id, email, name, password_hash, google_id, github_id, 
-		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_enabled_at, mfa_backup_codes, email_verified, created_at, updated_at, fcm_token,
+		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_enabled_at, backup_codes, email_verified, created_at, updated_at, fcm_token,
 		       last_organization_id
 		FROM operators WHERE id = ?`
 
@@ -66,11 +66,12 @@ func (r *OperatorRepository) FindByID(ctx context.Context, id string) (*operator
 
 	var googleID, githubID, mfaSecret, mfaSecretMAC, mfaBackupCodes, fcmToken, lastOrgID sql.NullString
 	var mfaEnabledAt sql.NullInt64
+	var createdAt, updatedAt interface{} // Handle both TEXT and INTEGER.
 
 	err := r.queryRow(ctx, query, id).Scan(
 		&op.ID, &op.Email, &op.Name, &op.PasswordHash,
 		&googleID, &githubID, &mfaSecret, &mfaSecretMAC, &op.MFAEnabled, &mfaEnabledAt,
-		&mfaBackupCodes, &op.EmailVerified, &op.CreatedAt, &op.UpdatedAt, &fcmToken, &lastOrgID,
+		&mfaBackupCodes, &op.EmailVerified, &createdAt, &updatedAt, &fcmToken, &lastOrgID,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -88,7 +89,9 @@ func (r *OperatorRepository) FindByID(ctx context.Context, id string) (*operator
 	op.FCMToken = fcmToken.String
 	op.LastOrganizationID = lastOrgID.String
 
-	// Parse mfa_enabled_at timestamp.
+	// Parse timestamps - handle both TEXT and INTEGER formats.
+	op.CreatedAt = parseTimestamp(createdAt)
+	op.UpdatedAt = parseTimestamp(updatedAt)
 	if mfaEnabledAt.Valid {
 		t := time.UnixMilli(mfaEnabledAt.Int64)
 		op.MFAEnabledAt = &t
@@ -118,11 +121,12 @@ func (r *OperatorRepository) FindByEmail(ctx context.Context, email string) (*op
 
 	var googleID, githubID, mfaSecret, mfaSecretMAC, fcmToken, lastOrgID sql.NullString
 	var mfaEnabledAt sql.NullInt64
+	var createdAt, updatedAt interface{} // Handle both TEXT and INTEGER.
 
 	err := r.queryRow(ctx, query, strings.ToLower(email)).Scan(
 		&op.ID, &op.Email, &op.Name, &op.PasswordHash,
 		&googleID, &githubID, &mfaSecret, &mfaSecretMAC, &op.MFAEnabled, &mfaEnabledAt,
-		&op.EmailVerified, &op.CreatedAt, &op.UpdatedAt, &fcmToken, &lastOrgID,
+		&op.EmailVerified, &createdAt, &updatedAt, &fcmToken, &lastOrgID,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -140,7 +144,9 @@ func (r *OperatorRepository) FindByEmail(ctx context.Context, email string) (*op
 	op.FCMToken = fcmToken.String
 	op.LastOrganizationID = lastOrgID.String
 
-	// Parse mfa_enabled_at timestamp.
+	// Parse timestamps - handle both TEXT (ISO8601) and INTEGER (Unix ms).
+	op.CreatedAt = parseTimestamp(createdAt)
+	op.UpdatedAt = parseTimestamp(updatedAt)
 	if mfaEnabledAt.Valid {
 		t := time.UnixMilli(mfaEnabledAt.Int64)
 		op.MFAEnabledAt = &t
@@ -149,11 +155,54 @@ func (r *OperatorRepository) FindByEmail(ctx context.Context, email string) (*op
 	return &op, nil
 }
 
+// parseTimestamp handles both TEXT (ISO8601) and INTEGER (Unix milliseconds) timestamp formats.
+func parseTimestamp(value interface{}) time.Time {
+	if value == nil {
+		return time.Time{}
+	}
+	switch v := value.(type) {
+	case int64:
+		return time.UnixMilli(v)
+	case int:
+		return time.UnixMilli(int64(v))
+	case float64:
+		return time.UnixMilli(int64(v))
+	case string:
+		// Try parsing as Unix timestamp in milliseconds.
+		if ms, err := strconv.ParseInt(v, 10, 64); err == nil {
+			if ms > 1000000000000 { // Likely milliseconds.
+				return time.UnixMilli(ms)
+			}
+			if ms > 1000000000 { // Likely seconds.
+				return time.Unix(ms, 0)
+			}
+		}
+		// Try parsing as ISO8601.
+		if t, err := time.Parse(time.RFC3339Nano, v); err == nil {
+			return t
+		}
+		// Try other common formats.
+		formats := []string{
+			"2006-01-02T15:04:05.999999999Z07:00",
+			"2006-01-02T15:04:05Z07:00",
+			"2006-01-02T15:04:05",
+			"2006-01-02 15:04:05.999999999",
+			"2006-01-02 15:04:05",
+		}
+		for _, format := range formats {
+			if t, err := time.Parse(format, v); err == nil {
+				return t
+			}
+		}
+	}
+	return time.Time{}
+}
+
 // FindByGoogleID retrieves an operator by Google ID.
 func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string) (*operator.Operator, error) {
 	query := `
 		SELECT id, email, name, password_hash, google_id, github_id, 
-		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_enabled_at, mfa_backup_codes, email_verified, created_at, updated_at, fcm_token,
+		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_enabled_at, backup_codes, email_verified, created_at, updated_at, fcm_token,
 		       last_organization_id
 		FROM operators WHERE google_id = ?`
 
@@ -161,11 +210,12 @@ func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string
 
 	var googleIDVal, githubID, mfaSecret, mfaSecretMAC, mfaBackupCodes, fcmToken, lastOrgID sql.NullString
 	var mfaEnabledAt sql.NullInt64
+	var createdAt, updatedAt interface{} // Handle both TEXT and INTEGER.
 
 	err := r.queryRow(ctx, query, googleID).Scan(
 		&op.ID, &op.Email, &op.Name, &op.PasswordHash,
 		&googleIDVal, &githubID, &mfaSecret, &mfaSecretMAC, &op.MFAEnabled, &mfaEnabledAt,
-		&mfaBackupCodes, &op.EmailVerified, &op.CreatedAt, &op.UpdatedAt, &fcmToken, &lastOrgID,
+		&mfaBackupCodes, &op.EmailVerified, &createdAt, &updatedAt, &fcmToken, &lastOrgID,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -183,7 +233,9 @@ func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string
 	op.FCMToken = fcmToken.String
 	op.LastOrganizationID = lastOrgID.String
 
-	// Parse mfa_enabled_at timestamp.
+	// Parse timestamps - handle both TEXT and INTEGER formats.
+	op.CreatedAt = parseTimestamp(createdAt)
+	op.UpdatedAt = parseTimestamp(updatedAt)
 	if mfaEnabledAt.Valid {
 		t := time.UnixMilli(mfaEnabledAt.Int64)
 		op.MFAEnabledAt = &t
@@ -200,7 +252,7 @@ func (r *OperatorRepository) FindByGoogleID(ctx context.Context, googleID string
 func (r *OperatorRepository) FindByGitHubID(ctx context.Context, githubID string) (*operator.Operator, error) {
 	query := `
 		SELECT id, email, name, password_hash, google_id, github_id, 
-		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_enabled_at, mfa_backup_codes, email_verified, created_at, updated_at, fcm_token,
+		       mfa_secret, mfa_secret_mac, mfa_enabled, mfa_enabled_at, backup_codes, email_verified, created_at, updated_at, fcm_token,
 		       last_organization_id
 		FROM operators WHERE github_id = ?`
 
@@ -208,11 +260,12 @@ func (r *OperatorRepository) FindByGitHubID(ctx context.Context, githubID string
 
 	var googleID, githubIDVal, mfaSecret, mfaSecretMAC, mfaBackupCodes, fcmToken, lastOrgID sql.NullString
 	var mfaEnabledAt sql.NullInt64
+	var createdAt, updatedAt interface{} // Handle both TEXT and INTEGER.
 
 	err := r.queryRow(ctx, query, githubID).Scan(
 		&op.ID, &op.Email, &op.Name, &op.PasswordHash,
 		&googleID, &githubIDVal, &mfaSecret, &mfaSecretMAC, &op.MFAEnabled, &mfaEnabledAt,
-		&mfaBackupCodes, &op.EmailVerified, &op.CreatedAt, &op.UpdatedAt, &fcmToken, &lastOrgID,
+		&mfaBackupCodes, &op.EmailVerified, &createdAt, &updatedAt, &fcmToken, &lastOrgID,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -230,7 +283,9 @@ func (r *OperatorRepository) FindByGitHubID(ctx context.Context, githubID string
 	op.FCMToken = fcmToken.String
 	op.LastOrganizationID = lastOrgID.String
 
-	// Parse mfa_enabled_at timestamp.
+	// Parse timestamps - handle both TEXT and INTEGER formats.
+	op.CreatedAt = parseTimestamp(createdAt)
+	op.UpdatedAt = parseTimestamp(updatedAt)
 	if mfaEnabledAt.Valid {
 		t := time.UnixMilli(mfaEnabledAt.Int64)
 		op.MFAEnabledAt = &t
@@ -254,7 +309,7 @@ func (r *OperatorRepository) Create(ctx context.Context, op *operator.Operator) 
 	_, err := r.exec(ctx, query,
 		op.ID, strings.ToLower(op.Email), op.Name, op.PasswordHash,
 		nullString(op.GoogleID), nullString(op.GitHubID), nullString(op.MFASecret), nullString(op.MFASecretMAC),
-		op.MFAEnabled, op.EmailVerified, op.CreatedAt, op.UpdatedAt, nullString(op.FCMToken), nullString(op.LastOrganizationID),
+		op.MFAEnabled, op.EmailVerified, op.CreatedAt.UnixMilli(), op.UpdatedAt.UnixMilli(), nullString(op.FCMToken), nullString(op.LastOrganizationID),
 	)
 	// Handle race condition: if UNIQUE constraint fails, return ErrUserExists.
 	if err != nil && strings.Contains(err.Error(), "UNIQUE constraint failed") {
@@ -277,7 +332,7 @@ func (r *OperatorRepository) Update(ctx context.Context, op *operator.Operator) 
 	result, err := r.exec(ctx, query,
 		strings.ToLower(op.Email), op.Name, op.PasswordHash,
 		nullString(op.GoogleID), nullString(op.GitHubID), nullString(op.MFASecret), nullString(op.MFASecretMAC),
-		op.MFAEnabled, op.EmailVerified, nullString(op.FCMToken), nullString(op.LastOrganizationID), time.Now(), op.ID,
+		op.MFAEnabled, op.EmailVerified, nullString(op.FCMToken), nullString(op.LastOrganizationID), time.Now().UnixMilli(), op.ID,
 	)
 	if err != nil {
 		return err
@@ -344,11 +399,12 @@ func (r *OperatorRepository) List(ctx context.Context, limit, offset int) ([]*op
 
 		var googleID, githubID, mfaSecret, mfaSecretMAC, lastOrgID sql.NullString
 		var mfaEnabledAt sql.NullInt64
+		var createdAt, updatedAt interface{} // Handle both TEXT and INTEGER.
 
 		if err := rows.Scan(
 			&op.ID, &op.Email, &op.Name, &op.PasswordHash,
 			&googleID, &githubID, &mfaSecret, &mfaSecretMAC, &op.MFAEnabled, &mfaEnabledAt,
-			&op.EmailVerified, &op.CreatedAt, &op.UpdatedAt, &lastOrgID,
+			&op.EmailVerified, &createdAt, &updatedAt, &lastOrgID,
 		); err != nil {
 			return nil, 0, err
 		}
@@ -359,7 +415,9 @@ func (r *OperatorRepository) List(ctx context.Context, limit, offset int) ([]*op
 		op.MFASecretMAC = mfaSecretMAC.String
 		op.LastOrganizationID = lastOrgID.String
 
-		// Parse mfa_enabled_at timestamp.
+		// Parse timestamps - handle both TEXT and INTEGER formats.
+		op.CreatedAt = parseTimestamp(createdAt)
+		op.UpdatedAt = parseTimestamp(updatedAt)
 		if mfaEnabledAt.Valid {
 			t := time.UnixMilli(mfaEnabledAt.Int64)
 			op.MFAEnabledAt = &t

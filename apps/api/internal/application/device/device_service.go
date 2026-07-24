@@ -821,16 +821,13 @@ func (s *Service) logDeviceAction(ctx context.Context, deviceID, imei, action, o
 }
 
 // CreateFromInbox creates a device from an approved inbox entry.
-// This is called after an operator approves a device registration request.
-
 func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, commandSecret string) (*device.Device, error) {
-	// Hash the command secret for storage.
 	h := sha256.Sum256([]byte(commandSecret))
 	commandSecretHash := hex.EncodeToString(h[:])
 
 	now := time.Now()
 	d := &device.Device{
-		ID:                 entry.IMEI, // Use IMEI as device ID.
+		ID:                 entry.IMEI,
 		FirebaseInstallID:  entry.FirebaseInstallID,
 		FCMToken:           entry.FCMToken,
 		AppVersion:         entry.AppVersion,
@@ -841,82 +838,47 @@ func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, 
 		OSVersion:          entry.OSVersion,
 		CommandSecretHash:  commandSecretHash,
 		OperatorID:         entry.OperatorID,
-		Online:             false, // Device will come online after confirming.
+		Online:             false,
 		RegisteredAt:       now.UnixMilli(),
 		LastSeen:           now.UnixMilli(),
 		CreatedAt:          now,
 		UpdatedAt:          now,
 	}
 
-	// If txManager is available, wrap everything in a transaction.
-	if s.txManager != nil {
-		err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-			// Check if device already exists by IMEI.
-			existing, err := s.deviceRepo.FindByIMEI(txCtx, entry.IMEI)
-			if err != nil && err != device.ErrNotFound {
-				return fmt.Errorf("failed to check existing device: %w", err)
-			}
-			if existing != nil {
-				// Device already exists - this shouldn't happen if flow is correct.
-				
-				if existing.IsDeregistered() {
-					// Device was deregistered - allow re-registration.
-					// MUST delete the old device first to avoid primary key constraint.
-					if err := s.deviceRepo.Delete(txCtx, entry.IMEI); err != nil {
-						s.logger.Error("failed to delete old deregistered device for re-registration",
-							"imei", entry.IMEI,
-							"error", err,
-						)
-						return fmt.Errorf("failed to cleanup old device: %w", err)
-					}
-					s.logger.Info("deleted old deregistered device for re-registration",
-						"imei", entry.IMEI,
-					)
-				} else {
-					// Device is active - this is a conflict.
-					return ErrDeviceAlreadyApproved
-				}
-			}
-
-			// Create the new device within the transaction.
-			if err := s.deviceRepo.Create(txCtx, d); err != nil {
-				return fmt.Errorf("failed to create device from inbox: %w", err)
-			}
-			return nil
-		})
-		if err != nil {
-			return nil, err
+	createFn := func(ctx context.Context) error {
+		existing, findErr := s.deviceRepo.FindByIMEI(ctx, entry.IMEI)
+		if findErr != nil && findErr != device.ErrNotFound {
+			return fmt.Errorf("failed to check existing device: %w", findErr)
 		}
-	} else {
-		// Fallback without transaction (not recommended but kept for backward compatibility).
-		// Check if device already exists by IMEI.
-		existing, err := s.deviceRepo.FindByIMEI(ctx, entry.IMEI)
-		if err != nil && err != device.ErrNotFound {
-			return nil, fmt.Errorf("failed to check existing device: %w", err)
+		if findErr := s.handleDeregisteredDevice(ctx, existing); findErr != nil {
+			return findErr
 		}
-		if existing != nil {
-			if existing.IsDeregistered() {
-				if err := s.deviceRepo.Delete(ctx, entry.IMEI); err != nil {
-					s.logger.Error("failed to delete old deregistered device for re-registration",
-						"imei", entry.IMEI,
-						"error", err,
-					)
-					return nil, fmt.Errorf("failed to cleanup old device: %w", err)
-				}
-				s.logger.Info("deleted old deregistered device for re-registration",
-					"imei", entry.IMEI,
-				)
-			} else {
-				return nil, ErrDeviceAlreadyApproved
-			}
-		}
-
-		if err := s.deviceRepo.Create(ctx, d); err != nil {
-			return nil, fmt.Errorf("failed to create device from inbox: %w", err)
-		}
+		return s.deviceRepo.Create(ctx, d)
 	}
 
-	return d, nil
+	if s.txManager != nil {
+		return d, s.txManager.WithTx(ctx, func(txCtx context.Context) error {
+			return createFn(txCtx)
+		})
+	}
+	return d, createFn(ctx)
+}
+
+// handleDeregisteredDevice handles cleanup when re-registering a previously deregistered device.
+func (s *Service) handleDeregisteredDevice(ctx context.Context, existing *device.Device) error {
+	if existing == nil {
+		return nil
+	}
+	if existing.IsDeregistered() {
+		if err := s.deviceRepo.Delete(ctx, existing.ID); err != nil {
+			s.logger.Error("failed to delete old deregistered device",
+				"deviceID", existing.ID, "error", err)
+			return fmt.Errorf("failed to cleanup old device: %w", err)
+		}
+		s.logger.Info("deleted old deregistered device", "deviceID", existing.ID)
+		return nil
+	}
+	return ErrDeviceAlreadyApproved
 }
 
 // ConfirmDevice confirms a device registration by validating the command secret.

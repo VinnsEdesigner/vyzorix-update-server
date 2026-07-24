@@ -32,17 +32,17 @@ func nextCallbackID() int {
 }
 
 const (
-	maxConcurrentCallbacks = 100      // Maximum concurrent callback goroutines.
+	maxConcurrentCallbacks = 100              // Maximum concurrent callback goroutines.
 	callbackTimeout        = 30 * time.Second // Timeout for callback execution.
-	droppedCounterMax      = 1000      // Max dropped events before logging.
+	droppedCounterMax      = 1000             // Max dropped events before logging.
 )
 
 // subscriptionWorker handles bounded callback execution.
 type subscriptionWorker struct {
-	sem     chan struct{}   // Semaphore for limiting concurrency.
-	dropped atomic.Int64    // Counter for dropped events.
+	sem     chan struct{}
 	log     *slog.Logger
 	wg      sync.WaitGroup
+	dropped atomic.Int64
 }
 
 // newSubscriptionWorker creates a new subscription worker pool.
@@ -76,7 +76,7 @@ func (w *subscriptionWorker) execute(callback subscriptionCallback, data interfa
 
 			select {
 			case err := <-done:
-				
+
 				if err != nil {
 					w.log.Warn("subscription callback returned error", "error", err)
 				}
@@ -99,18 +99,18 @@ func (w *subscriptionWorker) execute(callback subscriptionCallback, data interfa
 
 // SubscriptionManager manages real-time subscriptions for GraphQL subscriptions.
 type SubscriptionManager struct {
-	hub             *Hub
-	deviceUpdates   map[string][]callbackWrapper
-	telemetry       map[string][]callbackWrapper
-	commandStatus   map[string][]callbackWrapper
-	orgEvents       map[string][]callbackWrapper
-	memberEvents    map[string][]callbackWrapper
-	mu              sync.RWMutex
-	worker          *subscriptionWorker
+	hub           *Hub
+	deviceUpdates map[string][]callbackWrapper
+	telemetry     map[string][]callbackWrapper
+	commandStatus map[string][]callbackWrapper
+	orgEvents     map[string][]callbackWrapper
+	memberEvents  map[string][]callbackWrapper
+	worker        *subscriptionWorker
+	mu            sync.RWMutex
 }
 
 var (
-	subscriptionMgr *SubscriptionManager
+	subscriptionMgr  *SubscriptionManager
 	subscriptionOnce sync.Once
 )
 
@@ -124,7 +124,7 @@ func (h *Hub) InitSubscriptions() {
 			commandStatus: make(map[string][]callbackWrapper),
 			orgEvents:     make(map[string][]callbackWrapper),
 			memberEvents:  make(map[string][]callbackWrapper),
-			
+
 			worker: newSubscriptionWorker(h.log),
 		}
 	})
@@ -299,7 +299,7 @@ func (h *Hub) PublishDeviceUpdate(operatorID, deviceID string, data interface{})
 	for key, wrappers := range subMgr.deviceUpdates {
 		if key == operatorID || key == operatorID+":"+deviceID {
 			for _, w := range wrappers {
-				
+
 				subMgr.worker.execute(w.callback, data)
 			}
 		}
@@ -317,7 +317,7 @@ func (h *Hub) PublishTelemetry(operatorID, deviceID string, data interface{}) {
 	key := operatorID + ":" + deviceID
 	if wrappers, ok := subMgr.telemetry[key]; ok {
 		for _, w := range wrappers {
-			
+
 			subMgr.worker.execute(w.callback, data)
 		}
 	}
@@ -325,7 +325,7 @@ func (h *Hub) PublishTelemetry(operatorID, deviceID string, data interface{}) {
 	// Also notify operator-wide subscriptions.
 	if wrappers, ok := subMgr.telemetry[operatorID]; ok {
 		for _, w := range wrappers {
-			
+
 			subMgr.worker.execute(w.callback, data)
 		}
 	}
@@ -342,7 +342,7 @@ func (h *Hub) PublishCommandStatus(operatorID, dispatchID string, data interface
 	key := operatorID + ":" + dispatchID
 	if wrappers, ok := subMgr.commandStatus[key]; ok {
 		for _, w := range wrappers {
-			
+
 			subMgr.worker.execute(w.callback, data)
 		}
 	}
@@ -358,7 +358,7 @@ func (h *Hub) PublishOrganizationEvent(orgID string, data interface{}) {
 
 	if wrappers, ok := subMgr.orgEvents[orgID]; ok {
 		for _, w := range wrappers {
-			
+
 			subMgr.worker.execute(w.callback, data)
 		}
 	}
@@ -374,7 +374,7 @@ func (h *Hub) PublishMemberEvent(orgID string, data interface{}) {
 
 	if wrappers, ok := subMgr.memberEvents[orgID]; ok {
 		for _, w := range wrappers {
-			
+
 			subMgr.worker.execute(w.callback, data)
 		}
 	}

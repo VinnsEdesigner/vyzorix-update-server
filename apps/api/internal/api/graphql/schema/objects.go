@@ -1086,7 +1086,7 @@ var UpdatePushType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "When the push is scheduled (null for immediate)",
 		},
 		"status": &graphql.Field{
-			Type:        graphql.NewNonNull(UpdateStatusEnum),
+			Type:        graphql.NewNonNull(UpdatePushStatusEnum),
 			Description: "Push status",
 		},
 		"initiatedBy": &graphql.Field{
@@ -1202,7 +1202,7 @@ var UpdateHistoryType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "Install type (immediate or scheduled)",
 		},
 		"status": &graphql.Field{
-			Type:        graphql.NewNonNull(UpdateStatusEnum),
+			Type:        graphql.NewNonNull(UpdatePushStatusEnum),
 			Description: "Push status",
 		},
 		"initiatedBy": &graphql.Field{

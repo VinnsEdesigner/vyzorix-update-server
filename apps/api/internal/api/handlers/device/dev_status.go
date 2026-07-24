@@ -23,18 +23,18 @@ func NewStatusHandler(deviceService *device.Service) *StatusHandler {
 func (h *StatusHandler) Handle(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device ID is required"})
 		return
 	}
 
 	status, err := h.deviceService.GetStatus(c.Request.Context(), imei)
 	if err != nil {
 		if err == application.ErrDeviceNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to retrieve device status"})
 
 		return
 	}

@@ -88,10 +88,8 @@ func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req 
 	}
 
 	// Hash the key.
-	keyHash, err := hashKey(fullKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash key: %w", err)
-	}
+	keyHash := hashKey(fullKey)
+
 
 	// Calculate prefix.
 	prefix := fullKey[:s.config.PrefixLength]
@@ -336,10 +334,8 @@ func (s *APIKeyService) RotateKey(ctx context.Context, operatorID, keyID string)
 		return nil, fmt.Errorf("failed to generate key: %w", err)
 	}
 
-	keyHash, err := hashKey(fullKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to hash key: %w", err)
-	}
+	keyHash := hashKey(fullKey)
+
 
 	prefix := fullKey[:s.config.PrefixLength]
 	now := time.Now()
@@ -387,16 +383,16 @@ func generateRandomKey(prefix string) (string, error) {
 }
 
 // hashKey hashes a key using Argon2id.
-func hashKey(key string) (string, error) { //nolint:unparam.
+func hashKey(key string) string {
 	// Use a fixed salt for deterministic hashing (the key itself is the secret).
 	salt := []byte("vyzorix-api-key-v1")
 	hash := argon2.IDKey([]byte(key), salt, 1, 64*1024, 4, 32)
-	return hex.EncodeToString(hash), nil
+	return hex.EncodeToString(hash)
 }
 
 // hashKeyValue is a convenience function to hash a key value.
 func hashKeyValue(key string) string {
-	hash, _ := hashKey(key)
+	hash := hashKey(key)
 	return hash
 }
 

@@ -31,20 +31,16 @@ type Processor struct {
 	repo               event.Repository
 	deviceRepo         device.Repository
 	deviceSettingsRepo device.DeviceSettingsRepository
-	orgSettingsRepo   organization.OrganizationSettingsRepository
+	orgSettingsRepo    organization.OrganizationSettingsRepository
 	broadcaster        EventBroadcaster
-	notificationSvc    *notification.Service
 	log                *slog.Logger
+	notificationSvc    *notification.Service
 	thresholds         *ThresholdConfig
-
-	
-	dedupMu          sync.RWMutex
-	activeAlerts     map[string]time.Time // key: "deviceID:metric:type", value: last alert time.
-	dedupWindow      time.Duration        // cooldown period before new alert.
-
-	
-	breachState    map[string]bool // key: "deviceID:metric", value: true if currently in breach.
-	hysteresisBand float64         // hysteresis band as percentage of threshold (0.1 = 10%).
+	activeAlerts       map[string]time.Time
+	breachState        map[string]bool
+	dedupWindow        time.Duration
+	hysteresisBand     float64
+	dedupMu            sync.RWMutex
 }
 
 // ThresholdConfig holds event emission thresholds.
@@ -72,15 +68,15 @@ func DefaultThresholdConfig() *ThresholdConfig {
 // NewProcessor creates a new event processor.
 func NewProcessor(repo event.Repository, deviceRepo device.Repository, broadcaster EventBroadcaster, log *slog.Logger) *Processor {
 	return &Processor{
-		repo:          repo,
-		deviceRepo:    deviceRepo,
-		broadcaster:   broadcaster,
-		log:           log,
-		thresholds:    DefaultThresholdConfig(),
-		activeAlerts:  make(map[string]time.Time),
-		dedupWindow:   5 * time.Minute, // Default 5-minute dedup window.
-		breachState:   make(map[string]bool),
-		hysteresisBand: 0.1, 
+		repo:           repo,
+		deviceRepo:     deviceRepo,
+		broadcaster:    broadcaster,
+		log:            log,
+		thresholds:     DefaultThresholdConfig(),
+		activeAlerts:   make(map[string]time.Time),
+		dedupWindow:    5 * time.Minute, // Default 5-minute dedup window.
+		breachState:    make(map[string]bool),
+		hysteresisBand: 0.1,
 	}
 }
 
@@ -398,13 +394,13 @@ func (p *Processor) ProcessCommandEvent(ctx context.Context, deviceID string, co
 		}
 
 		notifData := notification.EventData{
-			EventType:      notification.EventTypeCommandFailed,
-			DeviceID:       deviceID,
-			DeviceName:     getDeviceName(device),
-			OperatorID:     operatorID,
-			CommandName:    commandName,
+			EventType:     notification.EventTypeCommandFailed,
+			DeviceID:      deviceID,
+			DeviceName:    getDeviceName(device),
+			OperatorID:    operatorID,
+			CommandName:   commandName,
 			FailureReason: failureReason,
-			Timestamp:      evt.Timestamp,
+			Timestamp:     evt.Timestamp,
 		}
 		if err := p.notificationSvc.SendNotification(ctx, notifData); err != nil {
 			p.log.Warn("failed to send command failed notification", "deviceId", deviceID, "err", err)
@@ -510,7 +506,7 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 
 		// Use the server-calculated risk score for threshold checks.
 		if serverRiskScore >= float64(thresholds.RiskScoreCritical) {
-			
+
 			if p.shouldSendAlert(deviceID, "riskScore", event.EventTypeRiskScoreAlert) {
 				events = append(events, &event.Event{
 					ID:         generateEventID(),
@@ -524,7 +520,7 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 				})
 			}
 		} else if serverRiskScore >= float64(thresholds.RiskScoreWarning) {
-			
+
 			if p.shouldSendAlert(deviceID, "riskScore", event.EventTypeThresholdBreach) {
 				events = append(events, &event.Event{
 					ID:         generateEventID(),
@@ -543,7 +539,7 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 	// Check thermal temp.
 	if thermalTemp, ok := data["thermalTemp"].(float64); ok {
 		if thermalTemp >= thresholds.ThermalCritical {
-			
+
 			if p.shouldSendAlert(deviceID, "thermal", event.EventTypeThermalAlert) {
 				events = append(events, &event.Event{
 					ID:         generateEventID(),
@@ -557,7 +553,7 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 				})
 			}
 		} else if thermalTemp >= thresholds.ThermalWarning {
-			
+
 			if p.shouldSendAlert(deviceID, "thermal", event.EventTypeThresholdBreach) {
 				events = append(events, &event.Event{
 					ID:         generateEventID(),
@@ -576,7 +572,7 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 	// Check buffer level.
 	if bufferLevel, ok := data["bufferLevel"].(float64); ok {
 		if bufferLevel <= float64(thresholds.BufferCritical) {
-			
+
 			if p.shouldSendAlert(deviceID, "buffer", event.EventTypeBufferLevelAlert) {
 				events = append(events, &event.Event{
 					ID:         generateEventID(),
@@ -590,7 +586,7 @@ func (p *Processor) checkThresholdsWithConfig(deviceID, operatorID string, data 
 				})
 			}
 		} else if bufferLevel <= float64(thresholds.BufferWarning) {
-			
+
 			if p.shouldSendAlert(deviceID, "buffer", event.EventTypeThresholdBreach) {
 				events = append(events, &event.Event{
 					ID:         generateEventID(),
@@ -664,7 +660,6 @@ func getDeviceName(d *device.Device) string {
 }
 
 // isThresholdBreachEvent returns true if the event type is a threshold breach or alert.
-//
 func isThresholdBreachEvent(evtType event.EventType) bool {
 	switch evtType {
 	case event.EventTypeThresholdBreach, event.EventTypeRiskScoreAlert,
@@ -674,6 +669,7 @@ func isThresholdBreachEvent(evtType event.EventType) bool {
 		return false
 	}
 }
+
 // shouldSendAlert checks if an alert should be sent based on deduplication.
 // Returns false if an alert was recently sent for the same device/metric/type combination.
 

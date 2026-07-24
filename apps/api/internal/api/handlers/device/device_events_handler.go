@@ -31,6 +31,7 @@ func NewEventsHandler(eventRepo event.Repository, devRepo device.Repository, log
 // findDevice verifies device belongs to organization.
 func (h *EventsHandler) findDevice(ctx context.Context, deviceID, orgID string) (*device.Device, error) {
 	if h.devRepo == nil {
+		//nolint:nilnil // Intentionally returns nil,nil to skip verification when devRepo is unavailable.
 		return nil, nil
 	}
 	return h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)

@@ -67,6 +67,9 @@ func CheckPasswordBreached(pwd string) (bool, error) {
 // ErrPasswordBreached indicates the password was found in a data breach.
 var ErrPasswordBreached = password.ErrPasswordBreached
 
+// ErrBreachCheckFailed indicates the breach check could not be performed.
+var ErrBreachCheckFailed = password.ErrBreachCheckFailed
+
 // PasswordStrength returns a score from 0-5 based on password complexity.
 func PasswordStrength(pwd string) int {
 	return password.Strength(pwd)

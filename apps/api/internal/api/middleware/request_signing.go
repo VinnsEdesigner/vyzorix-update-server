@@ -29,7 +29,7 @@ var (
 	ErrInvalidEncryptedBody   = errors.New("invalid encrypted body")
 	ErrUnknownClient          = errors.New("unknown or inactive client")
 	ErrDecryptionFailed       = errors.New("decryption failed")
-		ErrClientIDMismatch       = errors.New("client ID does not match device IMEI in request path")
+	ErrClientIDMismatch       = errors.New("client ID does not match device IMEI in request path")
 )
 
 // SigningConfig holds request signing configuration.
@@ -74,11 +74,11 @@ type SignatureVerifier struct {
 // It stores signatures seen within the timestamp window.
 // Uses a map with O(1) lookups and periodic cleanup for O(1) amortized insertions.
 type ReplayCache struct {
-	seen       map[string]time.Time
-	window     time.Duration
-	maxSize    int
-	mu         sync.Mutex
 	lastCleanup time.Time
+	seen        map[string]time.Time
+	window      time.Duration
+	maxSize     int
+	mu          sync.Mutex
 }
 
 // NewReplayCache creates a new replay cache with the given window and max size.
@@ -379,8 +379,8 @@ func IsSigningRequiredPath(path string) bool {
 // signature verification before processing.
 func RequestSigningMiddleware(verifier *SignatureVerifier) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		// Skip if signing is disabled.
-		if !verifier.Config.Enabled {
+		// Skip if verifier is nil or signing is disabled.
+		if verifier == nil || !verifier.Config.Enabled {
 			c.Next()
 			return
 		}

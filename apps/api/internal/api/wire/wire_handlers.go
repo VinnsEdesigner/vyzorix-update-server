@@ -36,66 +36,66 @@ import (
 
 // HandlerDependencies contains all dependencies needed by handlers.
 type HandlerDependencies struct {
-	OperatorRepo                operator.Repository
-	FCMNotifier                fcm.Notifier
-	AppCheckVerifier           *appcheck.Verifier
-	OAuthStateRepo             authhandlers.OAuthStateProvider
-	Presenter                  *response.Presenter
-	Hub                        *hub.Hub
-	EmailService               *emailService.Service
-	EmailVerificationRepo      *storage.EmailVerificationRepository
-	Lockout                    *middleware.Lockout
-	DB                         *storage.SQLite
-	AuditLogger                *audit.Logger
-	GoogleVerifier             *infraauth.GoogleTokenVerifier
-	DeviceService              *device.Service
-	DeviceRepo                 *storage.DeviceRepository
-	IPIntelligence             *middleware.IPIntelligence
-	ClientService              *client.Service
-	CommandService             *command.Service
-	SessionManager             *infraauth.SessionManager
-	Log                        *slog.Logger
-	HmacVerifier               *cryptohmac.Verifier
-	UpdatesStorage              *storage.UpdatesStorage
-	AuthService                *auth.AuthService
-	Config                     config.Config
-	OrgService                 *orgapplication.OrganizationService
-	MemberService              *orgapplication.MemberService
-	InvitationService          *orgapplication.InvitationService
-	OrgSettingsService         *orgapplication.OrganizationSettingsService
-	DeviceSettingsService      *device.DeviceSettingsService
+	OAuthStateRepo        authhandlers.OAuthStateProvider
+	FCMNotifier           fcm.Notifier
+	OperatorRepo          operator.Repository
+	IPIntelligence        *middleware.IPIntelligence
+	CommandService        *command.Service
+	Hub                   *hub.Hub
+	EmailService          *emailService.Service
+	EmailVerificationRepo *storage.EmailVerificationRepository
+	Lockout               *middleware.Lockout
+	DB                    *storage.SQLite
+	AuditLogger           *audit.Logger
+	GoogleVerifier        *infraauth.GoogleTokenVerifier
+	DeviceService         *device.Service
+	DeviceRepo            *storage.DeviceRepository
+	AppCheckVerifier      *appcheck.Verifier
+	ClientService         *client.Service
+	Presenter             *response.Presenter
+	SessionManager        *infraauth.SessionManager
+	Log                   *slog.Logger
+	HmacVerifier          *cryptohmac.Verifier
+	UpdatesStorage        *storage.UpdatesStorage
+	AuthService           *auth.AuthService
+	DeviceSettingsService *device.DeviceSettingsService
+	OrgService            *orgapplication.OrganizationService
+	MemberService         *orgapplication.MemberService
+	InvitationService     *orgapplication.InvitationService
+	OrgSettingsService    *orgapplication.OrganizationSettingsService
+	Config                config.Config
 }
 
 // HandlerSet contains all handler instances.
 type HandlerSet struct {
-	Auth               *authhandlers.AllHandlers
+	Auth *authhandlers.AllHandlers
 	// DEPRECATED: DeviceRegister - /v1/device/register endpoint removed.
 	// DeviceRegister     *devicehandlers.RegisterHandler.
-	DeviceStatus       *devicehandlers.StatusHandler
-	DeviceUpdater      *devicehandlers.UpdaterHandler
-	DeviceList         *devicehandlers.ListHandler
-	Devices            *devicehandlers.DevicesHandler
-	DeviceSettings     *devicehandlers.SettingsHandler
-	DeviceService      *device.Service
-	Command            *cmdhandlers.ExecuteHandler
-	Stream             *websockethandlers.StreamHandler
-	TelemetryHistory   *handlers.TelemetryHistoryHandler
-	ConnectionStatus   *handlers.ConnectionStatusHandler
-	AdminClients       *admin.ClientsHandler
-	Updates            *updateshandlers.UpdatesHandler
-	UpdatesService     *updatesapplication.Service
-	Organization       *organizationhandlers.OrganizationHandler
-	Invitation         *organizationhandlers.InvitationHandler
-	Member             *organizationhandlers.MemberHandler
-	Transfer           *devicehandlers.TransferHandler
-	OrgService         *orgapplication.OrganizationService
-	OrgSettingsService *orgapplication.OrganizationSettingsService
-	MemberService      *orgapplication.MemberService
-	InvitationService  *orgapplication.InvitationService
-	OrgSettings        *organizationhandlers.SettingsHandler
+	DeviceStatus          *devicehandlers.StatusHandler
+	DeviceUpdater         *devicehandlers.UpdaterHandler
+	DeviceList            *devicehandlers.ListHandler
+	Devices               *devicehandlers.DevicesHandler
+	DeviceSettings        *devicehandlers.SettingsHandler
+	DeviceService         *device.Service
+	Command               *cmdhandlers.ExecuteHandler
+	Stream                *websockethandlers.StreamHandler
+	TelemetryHistory      *handlers.TelemetryHistoryHandler
+	ConnectionStatus      *handlers.ConnectionStatusHandler
+	AdminClients          *admin.ClientsHandler
+	Updates               *updateshandlers.UpdatesHandler
+	UpdatesService        *updatesapplication.Service
+	Organization          *organizationhandlers.OrganizationHandler
+	Invitation            *organizationhandlers.InvitationHandler
+	Member                *organizationhandlers.MemberHandler
+	Transfer              *devicehandlers.TransferHandler
+	OrgService            *orgapplication.OrganizationService
+	OrgSettingsService    *orgapplication.OrganizationSettingsService
+	MemberService         *orgapplication.MemberService
+	InvitationService     *orgapplication.InvitationService
+	OrgSettings           *organizationhandlers.SettingsHandler
 	DeviceSettingsService *device.DeviceSettingsService
-	FCMNotifier       fcm.Notifier
-	AppCheckVerifier  *appcheck.Verifier
+	FCMNotifier           fcm.Notifier
+	AppCheckVerifier      *appcheck.Verifier
 }
 
 // WireHandlers creates and wires all handler instances.
@@ -104,19 +104,19 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 
 	// Auth handlers.
 	hs.Auth = authhandlers.NewAllHandlers(&authhandlers.Dependencies{
-		AuthService:        deps.AuthService,
-		SessionManager:     deps.SessionManager,
-		Config:             deps.Config,
-		GoogleVerifier:     deps.GoogleVerifier,
-		ClientService:      deps.ClientService,
-		EmailService:       deps.EmailService,
-		EmailVerifyRepo:    deps.EmailVerificationRepo,
-		Lockout:           deps.Lockout,
-		OperatorRepo:       deps.OperatorRepo,
-		AuditLogger:        deps.AuditLogger,
-		IPIntelligence:     deps.IPIntelligence,
-		Presenter:          deps.Presenter,
-		OAuthStateRepo:     deps.OAuthStateRepo,
+		AuthService:     deps.AuthService,
+		SessionManager:  deps.SessionManager,
+		Config:          deps.Config,
+		GoogleVerifier:  deps.GoogleVerifier,
+		ClientService:   deps.ClientService,
+		EmailService:    deps.EmailService,
+		EmailVerifyRepo: deps.EmailVerificationRepo,
+		Lockout:         deps.Lockout,
+		OperatorRepo:    deps.OperatorRepo,
+		AuditLogger:     deps.AuditLogger,
+		IPIntelligence:  deps.IPIntelligence,
+		Presenter:       deps.Presenter,
+		OAuthStateRepo:  deps.OAuthStateRepo,
 	})
 
 	// Device handlers.
@@ -125,6 +125,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deps.DeviceService)
 	hs.DeviceList = devicehandlers.NewListHandler(deps.DeviceService, deps.Hub)
 	hs.Devices = devicehandlers.NewDevicesHandler(deps.DeviceService)
+	hs.DeviceService = deps.DeviceService
 
 	// Command handler.
 	hs.Command = cmdhandlers.NewExecuteHandler(deps.CommandService, deps.DeviceService, deps.Hub, deps.FCMNotifier)

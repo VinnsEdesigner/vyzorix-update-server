@@ -33,17 +33,17 @@ const (
 // The map key is the current state, and the value is the set of allowed next states.
 var CommandStatusTransitions = map[Status]map[Status]bool{
 	StatusPending: {
-		StatusDelivered:  true,
+		StatusDelivered: true,
 		StatusFailed:    true,
 		StatusCancelled: true,
 	},
 	StatusDelivered: {
 		StatusCompleted: true,
-		StatusFailed:   true,
+		StatusFailed:    true,
 		StatusCancelled: true,
 	},
 	StatusCompleted: {}, // Terminal state.
-	StatusFailed:   {}, // Terminal state.
+	StatusFailed:    {}, // Terminal state.
 	StatusCancelled: {}, // Terminal state.
 }
 
@@ -115,17 +115,17 @@ type Command struct {
 	UpdatedAt     time.Time
 	DeliveredAt   *int64
 	CompletedAt   *int64
-	ID            string
-	DeviceID      string
+	ExpiresAt     *time.Time
+	NextRetryAt   *time.Time
 	DispatchID    string
 	Command       string
 	Status        Status
 	FailureReason string
+	DeviceID      string
+	ID            string
 	Args          []byte
-	RetryCount    int        // Number of delivery attempts made.
-	MaxRetries    int        // Maximum delivery attempts before marking failed.
-	NextRetryAt   *time.Time // When to attempt next delivery (for backoff).
-	ExpiresAt     *time.Time 
+	RetryCount    int
+	MaxRetries    int
 }
 
 // IsExpired returns true if the command has expired based on its TTL.

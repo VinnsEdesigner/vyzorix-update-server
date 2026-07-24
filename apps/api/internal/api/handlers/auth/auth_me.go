@@ -1,10 +1,8 @@
 package auth
 
 import (
-	"errors"
-
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 
@@ -23,22 +21,12 @@ func NewMeHandler(authService *auth.AuthService, presenter *response.Presenter) 
 }
 
 // Handle processes the me request.
+// Note: Authentication is handled by cookieAuth middleware which sets the operator in context.
 func (h *MeHandler) Handle(c *gin.Context) {
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
+	// Get operator from context (set by cookieAuth middleware).
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
 		h.presenter.Unauthorized(c, "not authenticated")
-		return
-	}
-
-	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
-			h.presenter.Unauthorized(c, "session invalid or expired")
-			return
-		}
-
-		h.presenter.InternalError(c, "an error occurred")
-
 		return
 	}
 

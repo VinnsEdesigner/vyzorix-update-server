@@ -29,11 +29,11 @@ type VersionManifest struct {
 
 // Handler handles OTA update distribution endpoints.
 type Handler struct {
-	log       *slog.Logger
-	dataDir   string
-	binDir    string
-	config    config.Config
-	manifest  *VersionManifest // Cached manifest for APK integrity verification.
+	log      *slog.Logger
+	manifest *VersionManifest
+	dataDir  string
+	binDir   string
+	config   config.Config
 }
 
 // NewHandler creates a new UpdaterHandler.
@@ -118,34 +118,36 @@ func (h *Handler) CheckUpdate(c *gin.Context) {
 	versionCode := c.Query("version_code")
 	h.log.Info("update check", "version_code", versionCode)
 
-	var version VersionManifest
-
 	data, err := os.ReadFile(filepath.Join(h.dataDir, "version.json"))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "cannot read version file"})
 		return
 	}
 
-	if err := json.Unmarshal(data, &version); err != nil {
+	var manifest VersionManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "invalid version file"})
 		return
 	}
 
 	clientCode := 0
-
 	if versionCode != "" {
 		var parseErr error
-
 		clientCode, parseErr = strconv.Atoi(versionCode)
 		if parseErr != nil {
 			h.log.Warn("invalid client version code", "versionCode", versionCode, "err", parseErr)
 		}
 	}
 
-	updateAvailable := version.VersionCode > clientCode
+	// Flatten response: update_available at top level, version fields directly accessible.
 	c.JSON(http.StatusOK, gin.H{
-		"update_available": updateAvailable,
-		"version":          version,
+		"update_available": manifest.VersionCode > clientCode,
+		"version":         manifest.Version,
+		"version_code":    manifest.VersionCode,
+		"apk_filename":    manifest.APKFilename,
+		"apk_sha256":      manifest.APKSHA256,
+		"release_notes":   manifest.ReleaseNotes,
+		"apk_size_bytes":  manifest.APKSizeBytes,
 	})
 }
 
@@ -193,7 +195,6 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 
 	fpath := filepath.Join(h.binDir, baseFilename)
 
-	
 	// This ensures the APK hasn't been tampered with since the manifest was created.
 	h.ensureManifestLoaded()
 	if h.manifest != nil && h.manifest.APKFilename == baseFilename && h.manifest.APKSHA256 != "" {
@@ -234,8 +235,8 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 		if !secureCompare(clientHash, actualHash) {
 			h.log.Warn("APK hash mismatch", "expected", clientHash, "actual", actualHash)
 			c.JSON(http.StatusForbidden, gin.H{
-				"error":   "hash_mismatch",
-				"message": "APK integrity check failed",
+				"error":    "hash_mismatch",
+				"message":  "APK integrity check failed",
 				"expected": clientHash,
 			})
 			return

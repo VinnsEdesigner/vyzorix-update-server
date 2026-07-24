@@ -59,6 +59,7 @@ func (s *MemberStorage) Create(ctx context.Context, member *organization.Organiz
 // scanMember scans a member from a row.
 func scanMember(row *sql.Row) (*organization.OrganizationMember, error) {
 	var member organization.OrganizationMember
+	var joinedAtMs int64
 	var invitedBy sql.NullString
 	var removedAt sql.NullInt64
 	var operatorName, operatorEmail sql.NullString
@@ -70,7 +71,7 @@ func scanMember(row *sql.Row) (*organization.OrganizationMember, error) {
 		&member.OperatorID,
 		&member.Role,
 		&invitedBy,
-		&member.JoinedAt,
+		&joinedAtMs,
 		&removedAt,
 		&status,
 		&operatorName,
@@ -84,6 +85,7 @@ func scanMember(row *sql.Row) (*organization.OrganizationMember, error) {
 		return nil, err
 	}
 
+	member.JoinedAt = time.UnixMilli(joinedAtMs)
 	member.Lifecycle = organization.MemberLifecycle(status)
 	if invitedBy.Valid {
 		member.InvitedBy = &invitedBy.String
@@ -125,6 +127,7 @@ func (s *MemberStorage) FindByOperatorAndOrg(ctx context.Context, operatorID, or
 		WHERE om.operator_id = ? AND om.organization_id = ? AND om.status = 'active'`
 
 	var member organization.OrganizationMember
+	var joinedAtMs int64
 	var invitedBy sql.NullString
 	var removedAt sql.NullInt64
 	var status string
@@ -136,7 +139,7 @@ func (s *MemberStorage) FindByOperatorAndOrg(ctx context.Context, operatorID, or
 		&member.OperatorID,
 		&member.Role,
 		&invitedBy,
-		&member.JoinedAt,
+		&joinedAtMs,
 		&removedAt,
 		&status,
 		&operatorName,
@@ -150,6 +153,7 @@ func (s *MemberStorage) FindByOperatorAndOrg(ctx context.Context, operatorID, or
 		return nil, err
 	}
 
+	member.JoinedAt = time.UnixMilli(joinedAtMs)
 	// Map status string to lifecycle.
 	member.Lifecycle = memberStatusToLifecycle(status)
 
@@ -185,6 +189,7 @@ func (s *MemberStorage) FindByOrganization(ctx context.Context, orgID string) ([
 	var members []*organization.OrganizationMember
 	for rows.Next() {
 		var member organization.OrganizationMember
+		var joinedAtMs int64
 		var invitedBy sql.NullString
 		var removedAt sql.NullInt64
 		var status string
@@ -196,7 +201,7 @@ func (s *MemberStorage) FindByOrganization(ctx context.Context, orgID string) ([
 			&member.OperatorID,
 			&member.Role,
 			&invitedBy,
-			&member.JoinedAt,
+			&joinedAtMs,
 			&removedAt,
 			&status,
 			&operatorName,
@@ -206,6 +211,7 @@ func (s *MemberStorage) FindByOrganization(ctx context.Context, orgID string) ([
 			return nil, err
 		}
 
+		member.JoinedAt = time.UnixMilli(joinedAtMs)
 		// Map status string to lifecycle.
 		member.Lifecycle = memberStatusToLifecycle(status)
 
@@ -257,6 +263,7 @@ func (s *MemberStorage) FindActiveByOrganizationPaginated(ctx context.Context, o
 	var members []*organization.OrganizationMember
 	for rows.Next() {
 		var member organization.OrganizationMember
+		var joinedAtMs int64
 		var invitedBy sql.NullString
 		var removedAt sql.NullInt64
 		var status string
@@ -268,7 +275,7 @@ func (s *MemberStorage) FindActiveByOrganizationPaginated(ctx context.Context, o
 			&member.OperatorID,
 			&member.Role,
 			&invitedBy,
-			&member.JoinedAt,
+			&joinedAtMs,
 			&removedAt,
 			&status,
 			&operatorName,
@@ -278,6 +285,7 @@ func (s *MemberStorage) FindActiveByOrganizationPaginated(ctx context.Context, o
 			return nil, 0, err
 		}
 
+		member.JoinedAt = time.UnixMilli(joinedAtMs)
 		member.Lifecycle = memberStatusToLifecycle(status)
 
 		if invitedBy.Valid {
@@ -405,6 +413,7 @@ func (s *MemberStorage) ListByOperator(ctx context.Context, operatorID string) (
 	var members []*organization.OrganizationMember
 	for rows.Next() {
 		var member organization.OrganizationMember
+		var joinedAtMs int64
 		var invitedBy sql.NullString
 		var removedAt sql.NullInt64
 		var status string
@@ -416,7 +425,7 @@ func (s *MemberStorage) ListByOperator(ctx context.Context, operatorID string) (
 			&member.OperatorID,
 			&member.Role,
 			&invitedBy,
-			&member.JoinedAt,
+			&joinedAtMs,
 			&removedAt,
 			&status,
 			&operatorName,
@@ -426,6 +435,7 @@ func (s *MemberStorage) ListByOperator(ctx context.Context, operatorID string) (
 			return nil, err
 		}
 
+		member.JoinedAt = time.UnixMilli(joinedAtMs)
 		// Map status string to lifecycle.
 		member.Lifecycle = memberStatusToLifecycle(status)
 
@@ -477,6 +487,7 @@ func (s *MemberStorage) ListByOperatorPaginated(ctx context.Context, operatorID 
 	var members []*organization.OrganizationMember
 	for rows.Next() {
 		var member organization.OrganizationMember
+		var joinedAtMs int64
 		var invitedBy sql.NullString
 		var removedAt sql.NullInt64
 		var status string
@@ -488,7 +499,7 @@ func (s *MemberStorage) ListByOperatorPaginated(ctx context.Context, operatorID 
 			&member.OperatorID,
 			&member.Role,
 			&invitedBy,
-			&member.JoinedAt,
+			&joinedAtMs,
 			&removedAt,
 			&status,
 			&operatorName,
@@ -498,6 +509,7 @@ func (s *MemberStorage) ListByOperatorPaginated(ctx context.Context, operatorID 
 			return nil, 0, err
 		}
 
+		member.JoinedAt = time.UnixMilli(joinedAtMs)
 		member.Lifecycle = memberStatusToLifecycle(status)
 
 		if invitedBy.Valid {

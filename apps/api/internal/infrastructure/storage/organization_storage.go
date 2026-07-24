@@ -59,6 +59,7 @@ func (s *OrganizationStorage) Create(ctx context.Context, org *organization.Orga
 // scanOrganization scans an organization from a row.
 func scanOrganization(row *sql.Row) (*organization.Organization, error) {
 	var org organization.Organization
+	var createdAtMs, updatedAtMs int64
 	var deletedAt sql.NullInt64
 	var createdBy string
 	var isActive bool
@@ -67,8 +68,8 @@ func scanOrganization(row *sql.Row) (*organization.Organization, error) {
 		&org.ID,
 		&org.Name,
 		&createdBy,
-		&org.CreatedAt,
-		&org.UpdatedAt,
+		&createdAtMs,
+		&updatedAtMs,
 		&deletedAt,
 		&isActive,
 		&org.MaxMembers,
@@ -82,6 +83,8 @@ func scanOrganization(row *sql.Row) (*organization.Organization, error) {
 		return nil, err
 	}
 
+	org.CreatedAt = time.UnixMilli(createdAtMs)
+	org.UpdatedAt = time.UnixMilli(updatedAtMs)
 	org.CreatedBy = createdBy
 	if deletedAt.Valid {
 		org.DeletedAt = ptrTime(time.UnixMilli(deletedAt.Int64))
@@ -101,6 +104,7 @@ func scanOrganizations(rows *sql.Rows) ([]*organization.Organization, error) {
 
 	for rows.Next() {
 		var org organization.Organization
+		var createdAtMs, updatedAtMs int64
 		var deletedAt sql.NullInt64
 		var createdBy string
 		var isActive bool
@@ -109,8 +113,8 @@ func scanOrganizations(rows *sql.Rows) ([]*organization.Organization, error) {
 			&org.ID,
 			&org.Name,
 			&createdBy,
-			&org.CreatedAt,
-			&org.UpdatedAt,
+			&createdAtMs,
+			&updatedAtMs,
 			&deletedAt,
 			&isActive,
 			&org.MaxMembers,
@@ -120,6 +124,8 @@ func scanOrganizations(rows *sql.Rows) ([]*organization.Organization, error) {
 			return nil, err
 		}
 
+		org.CreatedAt = time.UnixMilli(createdAtMs)
+		org.UpdatedAt = time.UnixMilli(updatedAtMs)
 		org.CreatedBy = createdBy
 		if deletedAt.Valid {
 			org.DeletedAt = ptrTime(time.UnixMilli(deletedAt.Int64))
@@ -170,6 +176,7 @@ func (s *OrganizationStorage) FindByName(ctx context.Context, operatorID, name s
 		GROUP BY o.id`
 
 	var org organization.Organization
+	var createdAtMs, updatedAtMs int64
 	var deletedAt sql.NullInt64
 	var createdBy string
 	var isActive bool
@@ -178,8 +185,8 @@ func (s *OrganizationStorage) FindByName(ctx context.Context, operatorID, name s
 		&org.ID,
 		&org.Name,
 		&createdBy,
-		&org.CreatedAt,
-		&org.UpdatedAt,
+		&createdAtMs,
+		&updatedAtMs,
 		&deletedAt,
 		&isActive,
 		&org.MaxMembers,
@@ -193,6 +200,8 @@ func (s *OrganizationStorage) FindByName(ctx context.Context, operatorID, name s
 		return nil, err
 	}
 
+	org.CreatedAt = time.UnixMilli(createdAtMs)
+	org.UpdatedAt = time.UnixMilli(updatedAtMs)
 	org.CreatedBy = createdBy
 	if deletedAt.Valid {
 		t := time.UnixMilli(deletedAt.Int64)
@@ -281,6 +290,7 @@ func (s *OrganizationStorage) ListByOperator(ctx context.Context, operatorID str
 	var orgs []*organization.Organization
 	for rows.Next() {
 		var org organization.Organization
+		var createdAtMs, updatedAtMs int64
 		var deletedAt sql.NullInt64
 		var createdBy string
 		var isActive bool
@@ -289,8 +299,8 @@ func (s *OrganizationStorage) ListByOperator(ctx context.Context, operatorID str
 			&org.ID,
 			&org.Name,
 			&createdBy,
-			&org.CreatedAt,
-			&org.UpdatedAt,
+			&createdAtMs,
+			&updatedAtMs,
 			&deletedAt,
 			&isActive,
 			&org.MaxMembers,
@@ -300,6 +310,8 @@ func (s *OrganizationStorage) ListByOperator(ctx context.Context, operatorID str
 			return nil, err
 		}
 
+		org.CreatedAt = time.UnixMilli(createdAtMs)
+		org.UpdatedAt = time.UnixMilli(updatedAtMs)
 		org.CreatedBy = createdBy
 		if deletedAt.Valid {
 			t := time.UnixMilli(deletedAt.Int64)
@@ -353,6 +365,7 @@ func (s *OrganizationStorage) ListByOperatorPaginated(ctx context.Context, opera
 	var orgs []*organization.Organization
 	for rows.Next() {
 		var org organization.Organization
+		var createdAtMs, updatedAtMs int64
 		var deletedAt sql.NullInt64
 		var createdBy string
 		var isActive bool
@@ -361,8 +374,8 @@ func (s *OrganizationStorage) ListByOperatorPaginated(ctx context.Context, opera
 			&org.ID,
 			&org.Name,
 			&createdBy,
-			&org.CreatedAt,
-			&org.UpdatedAt,
+			&createdAtMs,
+			&updatedAtMs,
 			&deletedAt,
 			&isActive,
 			&org.MaxMembers,
@@ -372,6 +385,8 @@ func (s *OrganizationStorage) ListByOperatorPaginated(ctx context.Context, opera
 			return nil, 0, err
 		}
 
+		org.CreatedAt = time.UnixMilli(createdAtMs)
+		org.UpdatedAt = time.UnixMilli(updatedAtMs)
 		org.CreatedBy = createdBy
 		if deletedAt.Valid {
 			t := time.UnixMilli(deletedAt.Int64)

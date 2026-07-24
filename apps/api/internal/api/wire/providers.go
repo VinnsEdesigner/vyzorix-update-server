@@ -435,6 +435,7 @@ func ProvideFCMNotifier(log *slog.Logger, cfg config.Config, db *sql.DB) fcm.Not
 func ProvideAppCheckVerifier(log *slog.Logger, cfg config.Config) (*appcheck.Verifier, error) {
 	if cfg.FirebaseCreds == "" {
 		log.Warn("Firebase credentials not configured, App Check disabled")
+		//nolint:nilnil // Intentionally returns nil,nil when App Check is disabled (no credentials configured).
 		return nil, nil
 	}
 	verifier, err := appcheck.NewVerifier(log, cfg.FirebaseCreds, cfg.FirebaseAppID)
@@ -500,8 +501,8 @@ func ProvideMiddlewareFactory(
 			HMACWindow:       cfg.HMACWindow,
 			PublicDir:        cfg.PublicDir,
 			JWTSecret:        cfg.JWTSecret,
-			RateLimitPerMin:  100,
-			AuthRateLimitMin: 5,
+			RateLimitPerMin:  cfg.RateLimitPerMin,
+			AuthRateLimitMin: cfg.AuthRateLimitMin,
 		},
 	)
 }

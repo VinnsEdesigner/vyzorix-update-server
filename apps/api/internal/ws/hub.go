@@ -41,7 +41,7 @@ type Hub struct {
 	clients              map[string]*Client
 	register             chan *Client
 	unreg                chan *Client
-	deviceStatus         chan DeviceStatusUpdate 
+	deviceStatus         chan DeviceStatusUpdate
 	log                  *slog.Logger
 	messageQueue         *MessageQueue
 	rateLimiter          *RateLimiter
@@ -57,8 +57,8 @@ type Hub struct {
 
 type DeviceStatusUpdate struct {
 	DeviceID string
+	Source   string
 	Online   bool
-	Source   string // "websocket" or "rest".
 }
 
 // HubMetrics holds metrics for the WebSocket hub.
@@ -97,7 +97,7 @@ func New(log *slog.Logger, deviceRepo device.Repository, telemetryRepo telemetry
 		clients:       make(map[string]*Client),
 		register:      make(chan *Client),
 		unreg:         make(chan *Client),
-		deviceStatus:  make(chan DeviceStatusUpdate, 256), 
+		deviceStatus:  make(chan DeviceStatusUpdate, 256),
 		broadcast:     make(chan []byte, 256),
 	}
 
@@ -188,8 +188,6 @@ func (h *Hub) RateLimiter() *RateLimiter {
 // Run starts the hub's event loop in a background goroutine.
 // It handles client registration, unregistration, and telemetry broadcasting.
 func (h *Hub) Run(ctx context.Context) {
-	dbTimeout := 5 * time.Second
-
 	defer func() {
 		if r := recover(); r != nil {
 			h.log.Error("hub panic recovered, restarting run loop", "panic", r)
@@ -202,98 +200,114 @@ func (h *Hub) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case c := <-h.register:
-			h.mu.Lock()
-			if old := h.clients[c.DeviceID]; old != nil {
-				close(old.Send)
-
-				if err := old.Conn.Close(); err != nil {
-					h.log.Warn("old conn close failed", "deviceId", c.DeviceID, "err", err)
-				}
-			}
-
-			c.log = h.log
-			h.clients[c.DeviceID] = c
-
-			h.mu.Unlock()
-
-			
-			h.deviceStatus <- DeviceStatusUpdate{DeviceID: c.DeviceID, Online: true, Source: "websocket"}
-
-			// Replay queued messages to the newly connected device.
-			if h.messageQueue != nil {
-				result := h.messageQueue.ReplayQueue(c.DeviceID, c.Send)
-				if result.Count > 0 {
-					h.log.Info("replayed queued messages to device",
-						"deviceId", c.DeviceID,
-						"count", result.Count,
-					)
-				}
-				
-				if result.HasMore {
-					h.schedulePartialReplay(c.DeviceID, result.Remaining)
-				}
-			}
-
-			// Emit device connected event.
-			if h.eventProcessor != nil {
-				metadata := map[string]any{
-					"clientIP":  c.Conn.RemoteAddr().String(),
-					"timestamp": time.Now().UnixMilli(),
-				}
-				if err := h.eventProcessor.ProcessDeviceConnected(ctx, c.DeviceID, metadata); err != nil {
-					h.log.Warn("failed to emit device connected event", "deviceId", c.DeviceID, "err", err)
-				}
-			}
-
-			h.log.Info("device websocket online", "deviceId", c.DeviceID)
-
+			h.handleClientRegistration(ctx, c)
 		case c := <-h.unreg:
-			h.mu.Lock()
-			if h.clients[c.DeviceID] == c {
-				delete(h.clients, c.DeviceID)
-				close(c.Send)
-
-				// Emit device disconnected event.
-				if h.eventProcessor != nil {
-					metadata := map[string]any{
-						"timestamp": time.Now().UnixMilli(),
-					}
-					if err := h.eventProcessor.ProcessDeviceDisconnected(ctx, c.DeviceID, "client_disconnect", metadata); err != nil {
-						h.log.Warn("failed to emit device disconnected event", "deviceId", c.DeviceID, "err", err)
-					}
-				}
-			}
-			h.mu.Unlock()
-
-			
-			h.deviceStatus <- DeviceStatusUpdate{DeviceID: c.DeviceID, Online: false, Source: "websocket"}
-			h.log.Info("device websocket offline", "deviceId", c.DeviceID)
-
+			h.handleClientUnregistration(ctx, c)
 		case raw := <-h.broadcast:
-			h.mu.RLock()
-			for _, c := range h.clients {
-				select {
-				case c.Send <- command.CommandFrame{Type: "broadcast", Args: raw}:
-				default:
-				}
-			}
-			h.mu.RUnlock()
-
-			_ = raw // prevent unused variable warning from channel receive.
-
+			h.handleBroadcast(raw)
 		case status := <-h.deviceStatus:
-			
-			opCtx, cancel := context.WithTimeout(ctx, dbTimeout)
-			if err := h.deviceRepo.SetOnline(opCtx, status.DeviceID, status.Online); err != nil {
-				h.log.Warn("device status update failed",
-					"deviceId", status.DeviceID,
-					"online", status.Online,
-					"source", status.Source,
-					"err", err,
-				)
-			}
-			cancel()
+			h.handleDeviceStatus(ctx, status)
 		}
+	}
+}
+
+// handleClientRegistration handles new client registration.
+func (h *Hub) handleClientRegistration(ctx context.Context, c *Client) {
+	h.mu.Lock()
+	if old := h.clients[c.DeviceID]; old != nil {
+		close(old.Send)
+		if err := old.Conn.Close(); err != nil {
+			h.log.Warn("old conn close failed", "deviceId", c.DeviceID, "err", err)
+		}
+	}
+
+	c.log = h.log
+	h.clients[c.DeviceID] = c
+	h.mu.Unlock()
+
+	h.deviceStatus <- DeviceStatusUpdate{DeviceID: c.DeviceID, Online: true, Source: "websocket"}
+	h.replayQueuedMessages(c)
+	h.emitDeviceConnected(ctx, c)
+	h.log.Info("device websocket online", "deviceId", c.DeviceID)
+}
+
+// replayQueuedMessages replays queued messages to a newly connected device.
+func (h *Hub) replayQueuedMessages(c *Client) {
+	if h.messageQueue == nil {
+		return
+	}
+	result := h.messageQueue.ReplayQueue(c.DeviceID, c.Send)
+	if result.Count > 0 {
+		h.log.Info("replayed queued messages to device", "deviceId", c.DeviceID, "count", result.Count)
+	}
+	if result.HasMore {
+		h.schedulePartialReplay(c.DeviceID, result.Remaining)
+	}
+}
+
+// emitDeviceConnected emits the device connected event.
+func (h *Hub) emitDeviceConnected(ctx context.Context, c *Client) {
+	if h.eventProcessor == nil {
+		return
+	}
+	metadata := map[string]any{
+		"clientIP":  c.Conn.RemoteAddr().String(),
+		"timestamp": time.Now().UnixMilli(),
+	}
+	if err := h.eventProcessor.ProcessDeviceConnected(ctx, c.DeviceID, metadata); err != nil {
+		h.log.Warn("failed to emit device connected event", "deviceId", c.DeviceID, "err", err)
+	}
+}
+
+// handleClientUnregistration handles client disconnection.
+func (h *Hub) handleClientUnregistration(ctx context.Context, c *Client) {
+	h.mu.Lock()
+	if h.clients[c.DeviceID] == c {
+		delete(h.clients, c.DeviceID)
+		close(c.Send)
+		h.emitDeviceDisconnected(ctx, c)
+	}
+	h.mu.Unlock()
+
+	h.deviceStatus <- DeviceStatusUpdate{DeviceID: c.DeviceID, Online: false, Source: "websocket"}
+	h.log.Info("device websocket offline", "deviceId", c.DeviceID)
+}
+
+// emitDeviceDisconnected emits the device disconnected event.
+func (h *Hub) emitDeviceDisconnected(ctx context.Context, c *Client) {
+	if h.eventProcessor == nil {
+		return
+	}
+	metadata := map[string]any{
+		"timestamp": time.Now().UnixMilli(),
+	}
+	if err := h.eventProcessor.ProcessDeviceDisconnected(ctx, c.DeviceID, "client_disconnect", metadata); err != nil {
+		h.log.Warn("failed to emit device disconnected event", "deviceId", c.DeviceID, "err", err)
+	}
+}
+
+// handleBroadcast sends a broadcast message to all connected clients.
+func (h *Hub) handleBroadcast(raw []byte) {
+	h.mu.RLock()
+	for _, c := range h.clients {
+		select {
+		case c.Send <- command.CommandFrame{Type: "broadcast", Args: raw}:
+		default:
+		}
+	}
+	h.mu.RUnlock()
+	_ = raw // prevent unused variable warning.
+}
+
+// handleDeviceStatus updates device online status in the database.
+func (h *Hub) handleDeviceStatus(ctx context.Context, status DeviceStatusUpdate) {
+	dbTimeout := 5 * time.Second
+	opCtx, cancel := context.WithTimeout(ctx, dbTimeout)
+	defer cancel()
+
+	if err := h.deviceRepo.SetOnline(opCtx, status.DeviceID, status.Online); err != nil {
+		h.log.Warn("device status update failed",
+			"deviceId", status.DeviceID, "online", status.Online, "source", status.Source, "err", err)
 	}
 }
 

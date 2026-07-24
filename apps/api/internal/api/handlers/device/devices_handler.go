@@ -30,7 +30,7 @@ func (h *DevicesHandler) getOrganizationID(c *gin.Context) string {
 func (h *DevicesHandler) GetDevices(c *gin.Context) {
 	orgID := h.getOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "organization_id required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization_id is required"})
 		return
 	}
 
@@ -56,7 +56,7 @@ func (h *DevicesHandler) GetDevices(c *gin.Context) {
 
 	result, err := h.service.GetDevices(c.Request.Context(), query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get devices"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to get devices"})
 		return
 	}
 
@@ -68,7 +68,7 @@ func (h *DevicesHandler) GetDevices(c *gin.Context) {
 func (h *DevicesHandler) GetDeviceDetail(c *gin.Context) {
 	orgID := h.getOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "organization_id required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization_id is required"})
 		return
 	}
 
@@ -84,7 +84,7 @@ func (h *DevicesHandler) GetDeviceDetail(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found in organization"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get device"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to get device"})
 		return
 	}
 
@@ -96,7 +96,7 @@ func (h *DevicesHandler) GetDeviceDetail(c *gin.Context) {
 func (h *DevicesHandler) DeregisterDevice(c *gin.Context) {
 	orgID := h.getOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "organization_id required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization_id is required"})
 		return
 	}
 
@@ -114,7 +114,7 @@ func (h *DevicesHandler) DeregisterDevice(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found in organization"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to deregister device"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to deregister device"})
 		return
 	}
 

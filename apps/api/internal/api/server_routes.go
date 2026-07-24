@@ -47,9 +47,11 @@ func (s *Server) setupGlobalMiddleware() {
 func (s *Server) setupStaticRoutes() {
 	s.engine.Static("/assets", filepath.Join(s.config.PublicDir, "assets"))
 
-	// /health - public, simple 200 OK with no body.
+	// /health - public, simple health check with JSON response.
 	s.engine.GET("/health", func(c *gin.Context) {
-		c.Status(http.StatusOK)
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
 	})
 
 	// /healthz - server access token protected (INFRASTRUCTURE-protected).
@@ -82,6 +84,25 @@ func (s *Server) setupPublicRoutes() {
 func (s *Server) setupAuthRoutes(public *gin.RouterGroup) {
 	authGroup := public.Group("/v1/auth")
 	authGroup.Use(s.authLimiter.Middleware())
+
+	// Public CSRF token endpoint - must be before CSRF middleware.
+	// This generates a CSRF token for public endpoints (login, register).
+	if s.csrfProtector != nil {
+		authGroup.GET("/csrf-token", func(c *gin.Context) {
+			token, err := s.csrfProtector.GetTokenForPublicEndpoint(c)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error":   "internal_error",
+					"message": "Failed to generate CSRF token",
+				})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"csrf_token": token,
+			})
+		})
+	}
+
 	if s.ipIntelligence != nil {
 		authGroup.Use(s.ipIntelligence.Middleware())
 	}
@@ -268,8 +289,8 @@ func (s *Server) setupDeviceInboxRoutes(r *gin.RouterGroup) {
 		authenticatedInbox.POST("/inbox/:imei/ack", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.AckInbox)
 		authenticatedInbox.POST("/inbox/:imei/resend", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.ResendApproval)
 
-		// Note: POST /v1/device/inbox is public (used by devices for registration).
-		s.inboxHandler.RegisterPublicRoutes(deviceInbox)
+		// Note: POST /v1/device/inbox is already registered as public in setupDevicePublicRoutes.
+		// No need to call RegisterPublicRoutes here as it would cause duplicate registration.
 	}
 }
 
@@ -355,11 +376,11 @@ func (s *Server) setupAPIKeysRoutes(r *gin.RouterGroup) {
 }
 
 // setupSessionsRoutes configures session management routes under /v1/auth/sessions.
-// These routes require both authentication AND organization context for org-scoped session management.
+// These routes require authentication (session cookie) but NOT organization context.
 func (s *Server) setupSessionsRoutes(r *gin.RouterGroup) {
 	sessionsGroup := r.Group("/auth/sessions")
-	sessionsGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
-	sessionsGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+	// Note: Auth middleware is applied at the tenantGroup level, not here.
+	// Sessions are per-operator, not per-organization.
 	sessionsGroup.Use(middleware.NoCache())
 	{
 		sessionsGroup.GET("", s.authHandlers.Sessions.ListSessions)
@@ -432,6 +453,7 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 	invitations := r.Group("/invitations")
 	invitations.Use(s.cookieAuth.Middleware())
 	{
+		invitations.POST("", s.invitationHandler.Create)
 		invitations.GET("", s.invitationHandler.ListByInviter)
 		invitations.DELETE("/:id", s.invitationHandler.Delete)
 	}
@@ -449,6 +471,15 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 	me.Use(s.cookieAuth.Middleware())
 	{
 		me.GET("/invitations", s.invitationHandler.ListPendingForEmail)
+	}
+
+	// Operator settings routes (under /v1/me/settings for simpler UX).
+	meSettings := r.Group("/me/settings")
+	meSettings.Use(s.cookieAuth.Middleware())
+	meSettings.Use(middleware.NoCache())
+	{
+		meSettings.GET("", s.authHandlers.Settings.GetSettings)
+		meSettings.PATCH("", s.authHandlers.Settings.UpdateSettings)
 	}
 }
 

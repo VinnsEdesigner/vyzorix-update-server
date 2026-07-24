@@ -2,8 +2,9 @@ package dto
 
 import (
 	"errors"
-	"strings"
 	"unicode/utf8"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/validate"
 )
 
 // Validation constants for string length bounds.
@@ -35,17 +36,16 @@ var ErrStringTooShort = errors.New("string below minimum length")
 // ErrEmptyString is returned when a required string is empty.
 var ErrEmptyString = errors.New("string is empty")
 
-// ValidateEmail validates email length and format.
+// ValidateEmail validates email using enterprise-grade validation.
+// This provides defense-in-depth by checking disposable domains and format.
 func ValidateEmail(email string) error {
 	if email == "" {
 		return ErrEmptyString
 	}
-	if utf8.RuneCountInString(email) > MaxEmailLength {
-		return ErrStringTooLong
-	}
-	// Basic email format check.
-	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
-		return errors.New("invalid email format")
+	// Use the enterprise-grade email validator from the security/validate package.
+	// This checks disposable domains, format, and more.
+	if _, err := validate.Email(email); err != nil {
+		return err
 	}
 	return nil
 }

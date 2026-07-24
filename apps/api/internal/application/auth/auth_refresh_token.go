@@ -88,14 +88,14 @@ func (s *AuthService) RotateRefreshToken(ctx context.Context, oldRefreshToken st
 	if s.memberRepo != nil {
 		if op.LastOrganizationID != "" {
 			// Try the operator's last accessed org first.
-			member, err := s.memberRepo.FindByOperatorAndOrg(ctx, op.ID, op.LastOrganizationID)
-			if err == nil && member.IsActive() {
+			member, memberErr := s.memberRepo.FindByOperatorAndOrg(ctx, op.ID, op.LastOrganizationID)
+			if memberErr == nil && member.IsActive() {
 				role = string(member.Role)
 			}
 		} else {
 			// No LastOrganizationID — load all memberships to find the highest role.
-			memberships, err := s.memberRepo.ListByOperator(ctx, op.ID)
-			if err == nil {
+			memberships, memberErr := s.memberRepo.ListByOperator(ctx, op.ID)
+			if memberErr == nil {
 				for _, m := range memberships {
 					if m.IsActive() && m.Role.Level() > organization.LevelOperator {
 						role = string(m.Role)

@@ -8,19 +8,18 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
-	organizationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/organization"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	dashboardhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/dashboard"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
 	diagnosticshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/diagnostics"
 	inboxhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/inbox"
+	organizationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/organization"
+	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
-        updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
@@ -28,14 +27,15 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
@@ -51,96 +51,92 @@ import (
 
 // ServerConfig holds the server configuration.
 type ServerConfig struct {
-	FCMNotifier    fcm.Notifier
-	OperatorRepo   operator.Repository
-	OAuthStateRepo authhandlers.OAuthStateProvider
-	EmailService   *emailService.Service
-	ClientService  *client.Service
-	AuthLimiter    *middleware.RateLimiter
-	IPIntelligence *middleware.IPIntelligence
-	Log            *slog.Logger
-	SessionManager *infraauth.SessionManager
-	GoogleVerifier *infraauth.GoogleTokenVerifier
-	Hub            *hub.Hub
-	CommandService *command.Service
-	AuthService    *auth.AuthService
-	DB             *storage.SQLite
-	Lockout        *middleware.Lockout
-	DeviceService  *device.Service
-	Metrics        *infraMetrics.Metrics
-	AuditLogger    *audit.Logger
-	RateLimiter    *middleware.RateLimiter
-	UpdatesService *updatesapp.Service
-	APIKeyService  *keys.APIKeyService
-	Config         config.Config
-	// New settings services for hierarchical threshold resolution.
+	FCMNotifier           fcm.Notifier
+	OperatorRepo          operator.Repository
+	OAuthStateRepo        authhandlers.OAuthStateProvider
+	AuthService           *auth.AuthService
+	Lockout               *middleware.Lockout
+	AuthLimiter           *middleware.RateLimiter
+	IPIntelligence        *middleware.IPIntelligence
+	Log                   *slog.Logger
+	SessionManager        *infraauth.SessionManager
+	GoogleVerifier        *infraauth.GoogleTokenVerifier
+	Hub                   *hub.Hub
+	CommandService        *command.Service
+	EmailService          *emailService.Service
+	DB                    *storage.SQLite
+	ClientService         *client.Service
+	DeviceService         *device.Service
+	Metrics               *infraMetrics.Metrics
+	AuditLogger           *audit.Logger
+	RateLimiter           *middleware.RateLimiter
+	UpdatesService        *updatesapp.Service
+	APIKeyService         *keys.APIKeyService
+	AppCheckVerifier      *appcheck.Verifier
 	DeviceSettingsService *device.DeviceSettingsService
-	OrgSettingsService   *orgapplication.OrganizationSettingsService
-	// AppCheckVerifier provides Firebase App Check verification for device attestation.
-	AppCheckVerifier *appcheck.Verifier
+	OrgSettingsService    *orgapplication.OrganizationSettingsService
+	Config                config.Config
 }
 
 // Server is the main API server.
 type Server struct {
-	encryptKeyFn               func(clientID string) ([]byte, bool)
-	authHandlers               *authhandlers.AllHandlers
-	hub                        *hub.Hub
-	engine                     *gin.Engine
-	log                        *slog.Logger
-	deviceStatusHandler        *devicehandlers.StatusHandler
-	sessionManager             *infraauth.SessionManager
-	rateLimiter                *middleware.RateLimiter
-	authLimiter                *middleware.RateLimiter
-	cookieAuth                 *middleware.CookieAuth
-	signatureVerifier          *middleware.SignatureVerifier
-	lockout                    *middleware.Lockout
-	csrfProtector              *middleware.CSRFProtector
-	turnstileVerifier          *middleware.TurnstileVerifier
-	revocationList             *infraauth.RevocationList
-	ipIntelligence             *middleware.IPIntelligence
-	hmacVerifier               *cryptohmac.Verifier
-	mwFactory                  *middleware.MiddlewareFactory
-	db                         *storage.SQLite
-	dashboardRateLimiter       *middleware.DashboardRateLimiterMiddleware
-	deviceRegRateLimiter       *middleware.DeviceRegistrationRateLimiterMiddleware
-	AuditLogger                *audit.Logger
-	// DEPRECATED: deviceRegisterHandler - /v1/device/register endpoint removed.
-	// deviceRegisterHandler      *devicehandlers.RegisterHandler.
-	deviceUpdaterHandler       *devicehandlers.UpdaterHandler
-	deviceListHandler          *devicehandlers.ListHandler
-	devicesHandler             *devicehandlers.DevicesHandler
-	commandHandler             *cmdhandlers.ExecuteHandler
-	streamHandler              *websockethandlers.StreamHandler
-	telemetryHistoryHandler    *handlers.TelemetryHistoryHandler
-	connectionStatusHandler    *handlers.ConnectionStatusHandler
-	adminClientsHandler        *admin.ClientsHandler
-	metricsHandler             *infraMetrics.MetricsHandler
-	commandHistoryHandler      *cmdhandlers.HistoryHandler
-	deviceLogsHandler          *devicehandlers.LogsHandler
-	deviceEventsHandler       *devicehandlers.EventsHandler
-	deviceMetricsHandler       *devicehandlers.MetricsHandler
-	deviceTelemetryHandler     *devicehandlers.TelemetryHandler
-	dashboardStatsHandler      *dashboardhandlers.StatsHandler
-	updaterHandler            *updaterhandlers.Handler
-	updatesHandler             *updateshandlers.UpdatesHandler
-	inboxHandler               *inboxhandlers.Handler
-	deviceConfirmHandler       *devicehandlers.ConfirmHandler
-	diagnosticsHandler         *diagnosticshandlers.Handler
-	diagnosticsInspectHandler  *diagnosticshandlers.InspectHandler
-	diagnosticsTimelineHandler *diagnosticshandlers.TimelineHandler
-	config                     config.Config
-	apiKeysHandler             *authhandlers.Handler
-	superAdminAPIKeys          *admin.SuperAdminHandler
-	tenantAPIKeyAuth           *middleware.TenantAPIKeyAuth
-	apiKeyRateLimiter          *middleware.InMemoryRateLimiter
+	encryptKeyFn                func(clientID string) ([]byte, bool)
+	authHandlers                *authhandlers.AllHandlers
+	hub                         *hub.Hub
+	engine                      *gin.Engine
+	log                         *slog.Logger
+	deviceStatusHandler         *devicehandlers.StatusHandler
+	sessionManager              *infraauth.SessionManager
+	rateLimiter                 *middleware.RateLimiter
+	authLimiter                 *middleware.RateLimiter
+	cookieAuth                  *middleware.CookieAuth
+	signatureVerifier           *middleware.SignatureVerifier
+	lockout                     *middleware.Lockout
+	csrfProtector               *middleware.CSRFProtector
+	turnstileVerifier           *middleware.TurnstileVerifier
+	revocationList              *infraauth.RevocationList
+	ipIntelligence              *middleware.IPIntelligence
+	hmacVerifier                *cryptohmac.Verifier
+	mwFactory                   *middleware.MiddlewareFactory
+	db                          *storage.SQLite
+	dashboardRateLimiter        *middleware.DashboardRateLimiterMiddleware
+	deviceRegRateLimiter        *middleware.DeviceRegistrationRateLimiterMiddleware
+	AuditLogger                 *audit.Logger
+	deviceUpdaterHandler        *devicehandlers.UpdaterHandler
+	deviceListHandler           *devicehandlers.ListHandler
+	devicesHandler              *devicehandlers.DevicesHandler
+	commandHandler              *cmdhandlers.ExecuteHandler
+	streamHandler               *websockethandlers.StreamHandler
+	telemetryHistoryHandler     *handlers.TelemetryHistoryHandler
+	connectionStatusHandler     *handlers.ConnectionStatusHandler
+	adminClientsHandler         *admin.ClientsHandler
+	metricsHandler              *infraMetrics.MetricsHandler
+	commandHistoryHandler       *cmdhandlers.HistoryHandler
+	deviceLogsHandler           *devicehandlers.LogsHandler
+	deviceEventsHandler         *devicehandlers.EventsHandler
+	deviceMetricsHandler        *devicehandlers.MetricsHandler
+	deviceTelemetryHandler      *devicehandlers.TelemetryHandler
+	dashboardStatsHandler       *dashboardhandlers.StatsHandler
+	updaterHandler              *updaterhandlers.Handler
+	updatesHandler              *updateshandlers.UpdatesHandler
+	inboxHandler                *inboxhandlers.Handler
+	deviceConfirmHandler        *devicehandlers.ConfirmHandler
+	diagnosticsHandler          *diagnosticshandlers.Handler
+	diagnosticsInspectHandler   *diagnosticshandlers.InspectHandler
+	diagnosticsTimelineHandler  *diagnosticshandlers.TimelineHandler
+	apiKeysHandler              *authhandlers.Handler
+	superAdminAPIKeys           *admin.SuperAdminHandler
+	tenantAPIKeyAuth            *middleware.TenantAPIKeyAuth
+	apiKeyRateLimiter           *middleware.InMemoryRateLimiter
 	organizationHandler         *organizationhandlers.OrganizationHandler
 	organizationSettingsHandler *organizationhandlers.SettingsHandler
-	deviceSettingsHandler      *devicehandlers.SettingsHandler
-	invitationHandler         *organizationhandlers.InvitationHandler
-	memberHandler             *organizationhandlers.MemberHandler
-	transferHandler          *devicehandlers.TransferHandler
-	DeviceRepo              *storage.DeviceRepository
-	InvitationService       *orgapplication.InvitationService
+	deviceSettingsHandler       *devicehandlers.SettingsHandler
+	invitationHandler           *organizationhandlers.InvitationHandler
+	memberHandler               *organizationhandlers.MemberHandler
+	transferHandler             *devicehandlers.TransferHandler
+	DeviceRepo                  *storage.DeviceRepository
+	InvitationService           *orgapplication.InvitationService
+	config                      config.Config
 }
 
 // NewServer creates a new API server with wired-up dependencies.
@@ -163,8 +159,8 @@ func NewServer(cfg *ServerConfig) *Server {
 		HMACWindow:       cfg.Config.HMACWindow,
 		PublicDir:        cfg.Config.PublicDir,
 		JWTSecret:        cfg.Config.JWTSecret,
-		RateLimitPerMin:  100,
-		AuthRateLimitMin: 5,
+		RateLimitPerMin:  cfg.Config.RateLimitPerMin,
+		AuthRateLimitMin: cfg.Config.AuthRateLimitMin,
 		APIKeyService:    cfg.APIKeyService,
 		AuditLogger:      cfg.AuditLogger,
 	})
@@ -279,18 +275,27 @@ func (s *Server) Routes() http.Handler {
 
 // wireDashboardHandlers creates and assigns dashboard command handler instances.
 func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
-	// Create repositories.
-	var logsRepo *storage.LogsRepository
-	var metricsRepo *storage.MetricsRepository
-	var eventRepo *storage.EventRepository
+	logsRepo, metricsRepo, eventRepo := s.createStorageRepositories(cfg)
+	historySvc, logsSvc, metricsSvc, dashboardSvc := s.createDashboardServices(cfg, logsRepo, metricsRepo)
+	s.createDashboardHandlers(cfg, historySvc, logsSvc, metricsSvc, eventRepo, dashboardSvc)
+	s.createUpdatesHandler(cfg)
+	s.wireInboxHandler(cfg)
+	s.wireConfirmHandler(cfg)
+	s.wireDiagnosticsHandler(cfg)
+}
 
-	if cfg.DB != nil {
-		logsRepo = storage.NewLogsRepository(cfg.DB.DB())
-		metricsRepo = storage.NewMetricsRepository(cfg.DB.DB())
-		eventRepo = storage.NewEventRepository(cfg.DB.DB())
+// createStorageRepositories creates storage repositories for dashboard.
+func (s *Server) createStorageRepositories(cfg *ServerConfig) (*storage.LogsRepository, *storage.MetricsRepository, *storage.EventRepository) {
+	if cfg.DB == nil {
+		return nil, nil, nil
 	}
+	return storage.NewLogsRepository(cfg.DB.DB()),
+		storage.NewMetricsRepository(cfg.DB.DB()),
+		storage.NewEventRepository(cfg.DB.DB())
+}
 
-	// Create services.
+// createDashboardServices creates dashboard-related services.
+func (s *Server) createDashboardServices(cfg *ServerConfig, logsRepo *storage.LogsRepository, metricsRepo *storage.MetricsRepository) (*command.HistoryService, *logs.Service, *appmetrics.Service, *dashboard.Service) {
 	var historySvc *command.HistoryService
 	var logsSvc *logs.Service
 	var metricsSvc *appmetrics.Service
@@ -305,23 +310,31 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	}
 
 	if metricsRepo != nil {
-		// Get repositories for hierarchical threshold resolution.
-		var deviceSettingsRepo devicedomain.DeviceSettingsRepository
-		var orgSettingsRepo organization.OrganizationSettingsRepository
-		if cfg.DeviceSettingsService != nil {
-			deviceSettingsRepo = cfg.DeviceSettingsService.SettingsRepo()
-		}
-		if cfg.OrgSettingsService != nil {
-			orgSettingsRepo = cfg.OrgSettingsService.SettingsRepo()
-		}
-		metricsSvc = appmetrics.NewService(metricsRepo, deviceSettingsRepo, orgSettingsRepo)
+		metricsSvc = s.createMetricsService(cfg, metricsRepo)
 	}
 
 	if cfg.CommandService != nil && cfg.DeviceService != nil && logsRepo != nil {
 		dashboardSvc = dashboard.NewService(cfg.DeviceService.DeviceRepo(), cfg.CommandService.CommandRepo(), logsRepo)
 	}
 
-	// Create handlers.
+	return historySvc, logsSvc, metricsSvc, dashboardSvc
+}
+
+// createMetricsService creates the metrics service with threshold resolution.
+func (s *Server) createMetricsService(cfg *ServerConfig, metricsRepo *storage.MetricsRepository) *appmetrics.Service {
+	var deviceSettingsRepo devicedomain.DeviceSettingsRepository
+	var orgSettingsRepo organization.OrganizationSettingsRepository
+	if cfg.DeviceSettingsService != nil {
+		deviceSettingsRepo = cfg.DeviceSettingsService.SettingsRepo()
+	}
+	if cfg.OrgSettingsService != nil {
+		orgSettingsRepo = cfg.OrgSettingsService.SettingsRepo()
+	}
+	return appmetrics.NewService(metricsRepo, deviceSettingsRepo, orgSettingsRepo)
+}
+
+// createDashboardHandlers creates dashboard-related handlers.
+func (s *Server) createDashboardHandlers(cfg *ServerConfig, historySvc *command.HistoryService, logsSvc *logs.Service, metricsSvc *appmetrics.Service, eventRepo *storage.EventRepository, dashboardSvc *dashboard.Service) {
 	if historySvc != nil && cfg.DeviceService != nil {
 		s.commandHistoryHandler = cmdhandlers.NewHistoryHandler(historySvc, cfg.DeviceService.DeviceRepo(), cfg.Log)
 	}
@@ -342,23 +355,16 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	if dashboardSvc != nil {
 		s.dashboardStatsHandler = dashboardhandlers.NewStatsHandler(dashboardSvc, cfg.Log)
 	}
+}
 
-	// Updates handler.
-	if cfg.UpdatesService != nil {
-	// Updater handler for OTA updates.
-	s.updaterHandler = updaterhandlers.NewHandler(cfg.Log, cfg.Config)
-		updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(middleware.DefaultUpdatesRateLimits())
-		s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, cfg.UpdatesService.GetPushService(), updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
+// createUpdatesHandler creates the updates handler.
+func (s *Server) createUpdatesHandler(cfg *ServerConfig) {
+	if cfg.UpdatesService == nil {
+		return
 	}
-
-	// Inbox handler.
-	s.wireInboxHandler(cfg)
-
-	// Device confirm handler.
-	s.wireConfirmHandler(cfg)
-
-	// Diagnostics handler.
-	s.wireDiagnosticsHandler(cfg)
+	s.updaterHandler = updaterhandlers.NewHandler(cfg.Log, cfg.Config)
+	updatesRateLimiters := middleware.NewUpdatesRateLimiterMiddleware(middleware.DefaultUpdatesRateLimits())
+	s.updatesHandler = updateshandlers.NewUpdatesHandler(cfg.UpdatesService, cfg.UpdatesService.GetPushService(), updatesRateLimiters, cfg.AuditLogger, cfg.Config.GitHubWebhookSecret)
 }
 
 // wireInboxHandler creates and assigns the inbox handler.
@@ -463,8 +469,8 @@ type ServerConfigWithDeps struct {
 	AuditLogger    *audit.Logger
 	UpdatesService *updatesapp.Service
 	APIKeyService  *keys.APIKeyService
-	Config         config.Config
 	DeviceRepo     *storage.DeviceRepository
+	Config         config.Config
 }
 
 // NewServerWithDeps creates a Server using pre-wired dependencies from wire.
@@ -526,15 +532,18 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	// Wire inbox and confirm handlers using ServerConfig.
 	// Note: FCMNotifier and AppCheckVerifier are passed via HandlerSet.
 	serverCfg := &ServerConfig{
-		DB:                cfg.DB,
-		DeviceService:     cfg.HandlerSet.DeviceService,
-		FCMNotifier:       cfg.HandlerSet.FCMNotifier,
-		Config:            cfg.Config,
-		Log:               cfg.Log,
-		AppCheckVerifier:  cfg.HandlerSet.AppCheckVerifier,
+		DB:               cfg.DB,
+		DeviceService:    cfg.HandlerSet.DeviceService,
+		FCMNotifier:      cfg.HandlerSet.FCMNotifier,
+		Config:           cfg.Config,
+		Log:              cfg.Log,
+		AppCheckVerifier: cfg.HandlerSet.AppCheckVerifier,
 	}
 	s.wireInboxHandler(serverCfg)
 	s.wireConfirmHandler(serverCfg)
+
+	// Create updater handler for OTA update distribution.
+	s.updaterHandler = updaterhandlers.NewHandler(cfg.Log, cfg.Config)
 
 	// Store deviceRepo for the deletion worker in api_main.go.
 	s.DeviceRepo = cfg.DeviceRepo

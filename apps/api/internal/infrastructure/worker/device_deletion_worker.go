@@ -13,9 +13,9 @@ import (
 type DeviceDeletionWorker struct {
 	deviceRepo device.Repository
 	logger     *slog.Logger
+	stopCh     chan struct{}
+	doneCh     chan struct{}
 	interval   time.Duration
-	stopCh    chan struct{}
-	doneCh    chan struct{}
 }
 
 // NewDeviceDeletionWorker creates a new device deletion worker.
@@ -24,8 +24,8 @@ func NewDeviceDeletionWorker(deviceRepo device.Repository, logger *slog.Logger, 
 		deviceRepo: deviceRepo,
 		logger:     logger,
 		interval:   interval,
-		stopCh:    make(chan struct{}),
-		doneCh:    make(chan struct{}),
+		stopCh:     make(chan struct{}),
+		doneCh:     make(chan struct{}),
 	}
 }
 

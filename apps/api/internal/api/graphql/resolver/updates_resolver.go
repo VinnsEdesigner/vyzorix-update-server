@@ -371,7 +371,7 @@ func (r *Resolver) PushUpdate(p graphql.ResolveParams) (interface{}, error) {
 
 	deviceIds := make([]string, 0, len(deviceIdsRaw))
 	for _, id := range deviceIdsRaw {
-		if idStr, ok := id.(string); ok {
+		if idStr, isString := id.(string); isString {
 			deviceIds = append(deviceIds, idStr)
 		}
 	}

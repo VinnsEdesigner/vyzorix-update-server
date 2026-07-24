@@ -30,10 +30,10 @@ func (r *SessionRepository) FindByID(ctx context.Context, id string) (*session.S
 	var s session.Session
 
 	var ipAddress, userAgent, orgID sql.NullString
-	var mfaVerifiedAt sql.NullInt64
+	var expiresAt, createdAt, mfaVerifiedAt sql.NullInt64
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID, &mfaVerifiedAt,
+		&s.ID, &s.OperatorID, &expiresAt, &createdAt, &ipAddress, &userAgent, &orgID, &mfaVerifiedAt,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -48,7 +48,13 @@ func (r *SessionRepository) FindByID(ctx context.Context, id string) (*session.S
 	s.UserAgent = userAgent.String
 	s.SelectedOrganizationID = orgID.String
 
-	// Parse mfa_verified_at timestamp.
+	// Parse timestamps from Unix milliseconds.
+	if expiresAt.Valid {
+		s.ExpiresAt = time.UnixMilli(expiresAt.Int64)
+	}
+	if createdAt.Valid {
+		s.CreatedAt = time.UnixMilli(createdAt.Int64)
+	}
 	if mfaVerifiedAt.Valid {
 		t := time.UnixMilli(mfaVerifiedAt.Int64)
 		s.MFAVerifiedAt = &t
@@ -74,9 +80,9 @@ func (r *SessionRepository) FindByOperatorID(ctx context.Context, operatorID str
 		var s session.Session
 
 		var ipAddress, userAgent, orgID sql.NullString
-		var mfaVerifiedAt sql.NullInt64
+		var expiresAt, createdAt, mfaVerifiedAt sql.NullInt64
 
-		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID, &mfaVerifiedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.OperatorID, &expiresAt, &createdAt, &ipAddress, &userAgent, &orgID, &mfaVerifiedAt); err != nil {
 			return nil, err
 		}
 
@@ -84,7 +90,13 @@ func (r *SessionRepository) FindByOperatorID(ctx context.Context, operatorID str
 		s.UserAgent = userAgent.String
 		s.SelectedOrganizationID = orgID.String
 
-		// Parse mfa_verified_at timestamp.
+		// Parse timestamps from Unix milliseconds.
+		if expiresAt.Valid {
+			s.ExpiresAt = time.UnixMilli(expiresAt.Int64)
+		}
+		if createdAt.Valid {
+			s.CreatedAt = time.UnixMilli(createdAt.Int64)
+		}
 		if mfaVerifiedAt.Valid {
 			t := time.UnixMilli(mfaVerifiedAt.Int64)
 			s.MFAVerifiedAt = &t
@@ -116,9 +128,9 @@ func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID
 		var s session.Session
 
 		var ipAddress, userAgent, orgID sql.NullString
-		var mfaVerifiedAt sql.NullInt64
+		var expiresAt, createdAt, mfaVerifiedAt sql.NullInt64
 
-		if err := rows.Scan(&s.ID, &s.OperatorID, &s.ExpiresAt, &s.CreatedAt, &ipAddress, &userAgent, &orgID, &mfaVerifiedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.OperatorID, &expiresAt, &createdAt, &ipAddress, &userAgent, &orgID, &mfaVerifiedAt); err != nil {
 			return nil, err
 		}
 
@@ -126,7 +138,13 @@ func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID
 		s.UserAgent = userAgent.String
 		s.SelectedOrganizationID = orgID.String
 
-		// Parse mfa_verified_at timestamp.
+		// Parse timestamps from Unix milliseconds.
+		if expiresAt.Valid {
+			s.ExpiresAt = time.UnixMilli(expiresAt.Int64)
+		}
+		if createdAt.Valid {
+			s.CreatedAt = time.UnixMilli(createdAt.Int64)
+		}
 		if mfaVerifiedAt.Valid {
 			t := time.UnixMilli(mfaVerifiedAt.Int64)
 			s.MFAVerifiedAt = &t
@@ -140,7 +158,7 @@ func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID
 
 // Create creates a new session.
 func (r *SessionRepository) Create(ctx context.Context, s *session.Session) error {
-	query := `INSERT INTO auth_sessions (id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id, mfa_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO auth_sessions (id, operator_id, token_hash, expires_at, created_at, ip_address, user_agent, organization_id, mfa_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	var mfaVerifiedAt interface{}
 	if s.MFAVerifiedAt != nil {
@@ -148,7 +166,7 @@ func (r *SessionRepository) Create(ctx context.Context, s *session.Session) erro
 	}
 
 	_, err := r.db.ExecContext(ctx, query,
-		s.ID, s.OperatorID, s.ExpiresAt, s.CreatedAt,
+		s.ID, s.OperatorID, s.ID, s.ExpiresAt.UnixMilli(), s.CreatedAt.UnixMilli(),
 		nullString(s.IPAddress), nullString(s.UserAgent), nullString(s.SelectedOrganizationID), mfaVerifiedAt,
 	)
 

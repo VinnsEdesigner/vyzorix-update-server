@@ -17,19 +17,19 @@ import (
 
 // MiddlewareConfig contains all dependencies needed by middleware factory.
 type MiddlewareConfig struct {
-	Log              *slog.Logger
+	APIKeyService    *keys.APIKeyService
 	SessionManager   *infraauth.SessionManager
 	AuthService      *auth.AuthService
 	ClientService    *client.Service
+	Log              *slog.Logger
+	AuditLogger      *audit.Logger
 	PublicDir        string
 	JWTSecret        string
 	AllowedOrigins   []string
-	HMACWindow       time.Duration
-	RateLimitPerMin  int
 	AuthRateLimitMin int
+	RateLimitPerMin  int
+	HMACWindow       time.Duration
 	EnforceHMAC      bool
-	APIKeyService    *keys.APIKeyService
-	AuditLogger      *audit.Logger
 }
 
 // MiddlewareSet contains all middleware instances.
@@ -81,6 +81,10 @@ func WireMiddleware(cfg MiddlewareConfig) *MiddlewareSet {
 	ms.RevocationList = ms.Factory.GetRevocationList()
 	ms.IPIntelligence = ms.Factory.IPIntelligence()
 	ms.SignatureVerifier = ms.Factory.GetSignatureVerifier()
+
+	// Initialize rate limiters.
+	ms.RateLimiter = middleware.NewRateLimiter(cfg.RateLimitPerMin, time.Minute)
+	ms.AuthLimiter = middleware.NewRateLimiter(cfg.AuthRateLimitMin, time.Minute)
 
 	// Wire API key middleware if service is available.
 	if cfg.APIKeyService != nil && cfg.AuditLogger != nil {

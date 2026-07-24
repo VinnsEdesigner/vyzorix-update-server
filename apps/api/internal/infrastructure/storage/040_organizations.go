@@ -176,7 +176,7 @@ func addOrganizationIDToDevices(db *sql.DB) error {
 // addOrganizationIDToSessions adds organization_id column to sessions table.
 func addOrganizationIDToSessions(db *sql.DB) error {
 	_, err := db.ExecContext(context.Background(), `
-		ALTER TABLE sessions ADD COLUMN organization_id TEXT
+		ALTER TABLE auth_sessions ADD COLUMN organization_id TEXT
 	`)
 	if err != nil {
 		// Column may already exist (SQLite ignores duplicate column additions).

@@ -49,7 +49,6 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	
 	if err := dto.ValidateRegisterRequest(&req); err != nil {
 		h.presenter.BadRequest(c, err.Error())
 		return
@@ -74,6 +73,12 @@ func (h *RegisterHandler) Handle(c *gin.Context) {
 	// Add request timeout - prevents hanging on slow DB queries (matches old behavior).
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
+
+	// Check if email service is configured - registration requires email verification.
+	if h.emailSvc == nil || !h.emailSvc.IsConfigured() {
+		h.presenter.ServiceUnavailable(c, "registration is not available - email service not configured")
+		return
+	}
 
 	result, err := h.authService.Register(ctx, &req, true)
 	if err != nil {

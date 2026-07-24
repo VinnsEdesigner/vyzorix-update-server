@@ -40,16 +40,13 @@ type ClientMetrics struct {
 
 // Client represents a WebSocket client connection to a device.
 type Client struct {
-	Conn     *websocket.Conn
-	Send     chan command.CommandFrame
-	Hub      *Hub
-	log      *slog.Logger
-	DeviceID string
-	ClientID string // Dashboard client ID for subscription tracking.
-	
-	Done chan struct{}
-
-	// Metrics and state.
+	Conn        *websocket.Conn
+	Send        chan command.CommandFrame
+	Hub         *Hub
+	log         *slog.Logger
+	Done        chan struct{}
+	DeviceID    string
+	ClientID    string
 	metrics     ClientMetrics
 	connectedAt int64
 	isConnected atomic.Bool
@@ -209,7 +206,7 @@ func (c *Client) ReadPump() {
 }
 
 func (c *Client) processTelemetry(raw []byte) {
-	
+
 	defer func() {
 		if r := recover(); r != nil {
 			if c.log != nil {
@@ -282,7 +279,7 @@ func (c *Client) WritePump() {
 	defer func() {
 		ticker.Stop()
 		closeConn(c.Conn, c.log, "writePump")
-		
+
 		close(c.Done)
 	}()
 

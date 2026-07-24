@@ -12,14 +12,14 @@ import (
 
 // FCMRetryWorker runs periodically to retry failed FCM notifications.
 type FCMRetryWorker struct {
-	db           *sql.DB
-	fcmNotifier  fcm.Notifier
-	logger       *slog.Logger
-	interval     time.Duration
-	stopCh       chan struct{}
-	doneCh       chan struct{}
-	maxRetries   int
-	baseDelay    time.Duration
+	fcmNotifier fcm.Notifier
+	db          *sql.DB
+	logger      *slog.Logger
+	stopCh      chan struct{}
+	doneCh      chan struct{}
+	interval    time.Duration
+	maxRetries  int
+	baseDelay   time.Duration
 }
 
 // NewFCMRetryWorker creates a new FCM retry worker.
@@ -29,10 +29,10 @@ func NewFCMRetryWorker(db *sql.DB, fcmNotifier fcm.Notifier, logger *slog.Logger
 		fcmNotifier: fcmNotifier,
 		logger:      logger,
 		interval:    interval,
-		stopCh:     make(chan struct{}),
-		doneCh:     make(chan struct{}),
-		maxRetries: 5,
-		baseDelay:  time.Minute,
+		stopCh:      make(chan struct{}),
+		doneCh:      make(chan struct{}),
+		maxRetries:  5,
+		baseDelay:   time.Minute,
 	}
 }
 
@@ -89,7 +89,7 @@ func (w *FCMRetryWorker) processRetries() {
 	}
 }
 
-func (w *FCMRetryWorker) getPendingNotifications(ctx context.Context, repo *storage.PendingFCMRepository, now int64, limit int) ([]storage.PendingFCMNotification, error) {
+func (w *FCMRetryWorker) getPendingNotifications(ctx context.Context, _repo *storage.PendingFCMRepository, now int64, limit int) ([]storage.PendingFCMNotification, error) {
 	query := `
 		SELECT id, dispatch_id, device_id, token, command, priority, retry_count, next_retry_at, last_error, created_at, updated_at
 		FROM pending_fcm
@@ -124,8 +124,8 @@ func (w *FCMRetryWorker) processNotification(ctx context.Context, repo *storage.
 		Token:      n.Token,
 		Command:    n.Command,
 		DispatchID: n.DispatchID,
-		DeviceID:  n.DeviceID,
-		Priority:  n.Priority,
+		DeviceID:   n.DeviceID,
+		Priority:   n.Priority,
 	}
 
 	// Attempt to send.
@@ -193,14 +193,14 @@ func PersistPendingNotification(ctx context.Context, db *sql.DB, wake fcm.Silent
 	repo := storage.NewPendingFCMRepository(db)
 	notification := &storage.PendingFCMNotification{
 		DispatchID:  wake.DispatchID,
-		DeviceID:   wake.DeviceID,
-		Token:      wake.Token,
-		Command:    wake.Command,
-		Priority:   wake.Priority,
-		RetryCount: 0,
+		DeviceID:    wake.DeviceID,
+		Token:       wake.Token,
+		Command:     wake.Command,
+		Priority:    wake.Priority,
+		RetryCount:  0,
 		NextRetryAt: time.Now().Add(time.Minute).UnixMilli(), // First retry in 1 minute.
-		CreatedAt:  time.Now().UnixMilli(),
-		UpdatedAt:  time.Now().UnixMilli(),
+		CreatedAt:   time.Now().UnixMilli(),
+		UpdatedAt:   time.Now().UnixMilli(),
 	}
 	return repo.Create(ctx, notification)
 }

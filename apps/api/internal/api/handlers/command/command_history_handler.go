@@ -65,14 +65,14 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	limit := 20
 
 	if p := c.Query("page"); p != "" {
-		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+		if parsed, intErr := strconv.Atoi(p); intErr == nil && parsed > 0 {
 			page = parsed
 		}
 	}
 
 	if l := c.Query("limit"); l != "" {
-		parsed, err := strconv.Atoi(l)
-		if err != nil || parsed <= 0 {
+		parsed, intErr := strconv.Atoi(l)
+		if intErr != nil || parsed <= 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "limit must be a positive integer"})
 			return
 		}
@@ -85,16 +85,16 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 
 	var startTime, endTime int64
 	if st := c.Query("startTime"); st != "" {
-		parsed, err := strconv.ParseInt(st, 10, 64)
-		if err != nil {
+		parsed, intErr := strconv.ParseInt(st, 10, 64)
+		if intErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid startTime format"})
 			return
 		}
 		startTime = parsed
 	}
 	if et := c.Query("endTime"); et != "" {
-		parsed, err := strconv.ParseInt(et, 10, 64)
-		if err != nil {
+		parsed, intErr := strconv.ParseInt(et, 10, 64)
+		if intErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid endTime format"})
 			return
 		}

@@ -227,6 +227,11 @@ func (s *AuthService) LoginWithDevice(ctx context.Context, req *dto.LoginRequest
 		return nil, nil, application.ErrInvalidCredentials
 	}
 
+	// Check email verification status - users must verify email before logging in.
+	if !op.EmailVerified {
+		return nil, nil, application.ErrEmailNotVerified
+	}
+
 	// MFA check.
 	if op.MFARequired || op.HasMFA() {
 		resp := s.buildLoginResponse(op)

@@ -523,7 +523,7 @@ func (r *Resolver) RemoveMember(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	// Check if operator can manage members.
-	if err := r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID); err != nil {
+	if err = r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID); err != nil {
 		return nil, r.Presenter.ForbiddenError("insufficient permissions to remove members")
 	}
 
@@ -610,76 +610,90 @@ func (r *Resolver) UpdateMemberRole(p graphql.ResolveParams) (interface{}, error
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Prevent self-role change.
 	memberships, err := r.MemberService.ListMembers(ctx, orgID)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to list members")
 	}
 
-	// Find the operator's own membership in this org.
-	var ownMembership *orgdomain.OrganizationMember
-	for _, m := range memberships {
-		if m.OperatorID == op.ID {
-			ownMembership = m
-			break
-		}
-	}
-
-	if ownMembership != nil && ownMembership.ID == memberID {
+	if r.isSelfRoleChange(memberships, memberID, op.ID) {
 		return nil, r.Presenter.BadRequestError("cannot change your own role")
 	}
 
-	// Check if operator can manage members.
-	if err := r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID); err != nil {
+	if err = r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID); err != nil {
 		return nil, r.Presenter.ForbiddenError("insufficient permissions to update member role")
 	}
 
-	// Prevent demoting the last super_admin.
-	if roleStr == string(orgdomain.RoleAdmin) || roleStr == string(orgdomain.RoleOperator) || roleStr == string(orgdomain.RoleViewer) {
-		// Count super_admins before this change.
-		canChange, err := r.canDemoteSuperAdmin(ctx, orgID, memberID)
-		if err != nil {
-			return nil, r.Presenter.InternalError("failed to check permissions")
-		}
-		if !canChange {
-			return nil, r.Presenter.BadRequestError("cannot demote the last super_admin")
-		}
+	if err = r.checkDemotionSafety(ctx, orgID, memberID, roleStr); err != nil {
+		return nil, err
 	}
 
-	// Convert role string to OrganizationRole.
 	role := orgdomain.OrganizationRole(roleStr)
-
-	// Get the old role before updating for the event.
-	var oldRole string
-	for _, m := range memberships {
-		if m.ID == memberID {
-			oldRole = string(m.Role)
-			break
-		}
-	}
+	oldRole := r.findMemberRoleByID(memberships, memberID)
 
 	membership, err := r.MemberService.UpdateMemberRole(ctx, orgID, memberID, op.ID, role)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to update member role")
 	}
 
-	// Publish role changed event.
-	if r.Hub != nil {
-		r.Hub.PublishMemberEvent(orgID, map[string]interface{}{
-			"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
-			"type":           "role_changed",
-			"organizationId": orgID,
-			"memberId":       memberID,
-			"operatorId":     op.ID,
-			"timestamp":      time.Now().UTC(),
-			"data": map[string]interface{}{
-				"oldRole": oldRole,
-				"newRole": role,
-			},
-		})
-	}
+	r.publishRoleChangedEvent(orgID, memberID, op.ID, oldRole, string(role))
 
 	return r.membershipToMap(membership), nil
+}
+
+// isSelfRoleChange checks if the operator is trying to change their own role.
+func (r *Resolver) isSelfRoleChange(memberships []*orgdomain.OrganizationMember, memberID, operatorID string) bool {
+	for _, m := range memberships {
+		if m.OperatorID == operatorID && m.ID == memberID {
+			return true
+		}
+	}
+	return false
+}
+
+// checkDemotionSafety checks if demoting the member is safe.
+func (r *Resolver) checkDemotionSafety(ctx context.Context, orgID, memberID, roleStr string) error {
+	isDemotion := roleStr == string(orgdomain.RoleAdmin) || roleStr == string(orgdomain.RoleOperator) || roleStr == string(orgdomain.RoleViewer)
+	if !isDemotion {
+		return nil
+	}
+
+	canChange, err := r.canDemoteSuperAdmin(ctx, orgID, memberID)
+	if err != nil {
+		return r.Presenter.InternalError("failed to check permissions")
+	}
+	if !canChange {
+		return r.Presenter.BadRequestError("cannot demote the last super_admin")
+	}
+	return nil
+}
+
+// findMemberRoleByID finds the current role of a member by ID.
+func (r *Resolver) findMemberRoleByID(memberships []*orgdomain.OrganizationMember, memberID string) string {
+	for _, m := range memberships {
+		if m.ID == memberID {
+			return string(m.Role)
+		}
+	}
+	return ""
+}
+
+// publishRoleChangedEvent publishes a role changed event to the hub.
+func (r *Resolver) publishRoleChangedEvent(orgID, memberID, operatorID, oldRole, newRole string) {
+	if r.Hub == nil {
+		return
+	}
+	r.Hub.PublishMemberEvent(orgID, map[string]interface{}{
+		"id":             fmt.Sprintf("evt-%d", time.Now().UnixNano()),
+		"type":           "role_changed",
+		"organizationId": orgID,
+		"memberId":       memberID,
+		"operatorId":     operatorID,
+		"timestamp":      time.Now().UTC(),
+		"data": map[string]interface{}{
+			"oldRole": oldRole,
+			"newRole": newRole,
+		},
+	})
 }
 
 // canDemoteSuperAdmin checks if demoting the target member would leave the org without a super_admin.
@@ -816,7 +830,7 @@ func (r *Resolver) CancelInvitation(p graphql.ResolveParams) (interface{}, error
 	}
 
 	// Check if operator can manage members in this org.
-	if err := r.MemberService.CheckCanManageMembers(ctx, op.ID, inv.OrganizationID); err != nil {
+	if err = r.MemberService.CheckCanManageMembers(ctx, op.ID, inv.OrganizationID); err != nil {
 		return nil, r.Presenter.ForbiddenError("insufficient permissions to cancel invitation")
 	}
 

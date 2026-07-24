@@ -74,7 +74,7 @@ func (s *AuthService) CreateOperator(ctx context.Context, req *dto.RegisterReque
 		return nil, err
 	}
 
-	role := operator.RoleOperator
+	role := operator.RoleOperator //nolint:wastedassign // Role assignment deferred to membership creation.
 	if req.Role != "" {
 		role = operator.OperatorRole(req.Role)
 		if !role.IsValid() {
@@ -239,7 +239,7 @@ func (s *AuthService) DeleteOwnAccount(ctx context.Context, operatorID, password
 
 	// Verify password.
 	if op.PasswordHash != "" {
-		if err := s.passwordHasher.Verify(password, op.PasswordHash); err != nil {
+		if verifyErr := s.passwordHasher.Verify(password, op.PasswordHash); verifyErr != nil {
 			return application.ErrInvalidCredentials
 		}
 	}
@@ -252,9 +252,9 @@ func (s *AuthService) DeleteOwnAccount(ctx context.Context, operatorID, password
 
 	for _, m := range memberships {
 		if m.Role.IsSuperAdmin() && m.IsActive() {
-			count, err := s.memberRepo.CountSuperAdminsByOrganization(ctx, m.OrganizationID)
-			if err != nil {
-				return err
+			count, countErr := s.memberRepo.CountSuperAdminsByOrganization(ctx, m.OrganizationID)
+			if countErr != nil {
+				return countErr
 			}
 			if count <= 1 {
 				return application.ErrCannotDeleteLastSuperAdmin

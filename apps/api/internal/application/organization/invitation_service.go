@@ -111,76 +111,8 @@ func (s *InvitationService) getBaseURL() string {
 
 // CreateInvitation creates a new invitation and sends an email.
 func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviterID, email string, role organization.OrganizationRole, notes string) (*organization.Invitation, error) {
-	// Validate email.
-	if email == "" {
-		return nil, errors.New("email is required")
-	}
-
-	// Validate role - must be a valid organization role (admin, operator, or viewer).
-	// Note: super_admin cannot be invited via invitation.
-	if role != organization.RoleAdmin && role != organization.RoleOperator && role != organization.RoleViewer {
-		return nil, errors.New("invalid invitation role")
-	}
-
-	// Check if inviter is a member of the org with permission to invite.
-	member, err := s.memberRepo.FindByOperatorAndOrg(ctx, inviterID, orgID)
-	if err != nil {
-		if errors.Is(err, organization.ErrMemberNotFound) {
-			return nil, organization.ErrForbidden
-		}
-		return nil, err
-	}
-
-	// Must be able to manage members to invite.
-	if !member.Role.CanManageMembers() {
-		return nil, organization.ErrForbidden
-	}
-
-	// Cannot invite self.
-	if member.OperatorEmail == email {
-		return nil, ErrCannotInviteSelf
-	}
-
-	// Check org exists.
-	org, err := s.orgRepo.FindByID(ctx, orgID)
-	if err != nil {
-		if errors.Is(err, organization.ErrNotFound) {
-			return nil, organization.ErrNotFound
-		}
-		return nil, err
-	}
-
-	// Check pending invitation limit.
-	pending, err := s.invitationRepo.FindPendingByOrganization(ctx, orgID)
-	if err != nil {
-		return nil, err
-	}
-	if len(pending) >= MaxPendingInvitationsPerOrg {
-		return nil, ErrMaxInvitationsReached
-	}
-
-	// Check for existing pending invitation for this email in this org.
-	existing, err := s.invitationRepo.FindPendingByOrganizationAndEmail(ctx, orgID, email)
-	if err != nil && !errors.Is(err, organization.ErrInvitationNotFound) {
-		return nil, err
-	}
-	if len(existing) > 0 {
-		return nil, organization.ErrInvitationExists
-	}
-
-	// Check if user is already a member of this org.
-	// We need to check if there's an operator with this email who is already a member.
-	// Since we don't have operatorRepo here, we'll skip this check and let AcceptInvitation.
-	// handle the "already a member" case when the user tries to accept.
-
-	// Create invitation using domain constructor (includes lifecycle initialization).
-	inv, err := organization.NewInvitation(
-		uuid.New().String(),
-		orgID,
-		email,
-		role,
-		inviterID,
-	)
+	// Validate inputs and check permissions.
+	member, org, inv, err := s.validateAndPrepareInvitation(ctx, orgID, inviterID, email, role)
 	if err != nil {
 		return nil, err
 	}
@@ -193,45 +125,110 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 		return nil, err
 	}
 
-	// Send email (non-transactional).
-	if s.emailService != nil {
-		inv := inv // capture loop var if in loop.
-		email := email
-		memberName := member.OperatorName
-		orgName := org.Name
-		s.emailWg.Add(1)
-		go func() {
-			defer s.emailWg.Done()
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cancel()
-			inviteData := emailSvc.InvitationData{
-				InviteeName:       email,
-				InviterName:       memberName,
-				OrganizationName:  orgName,
-				Role:              string(inv.Role),
-				InviterNotes:      inv.InviterNotes,
-				AcceptURL:         fmt.Sprintf("%s/invite/%s/accept", s.getBaseURL(), inv.Token),
-				ExpiryDays:        7,
-				BaseURL:           s.getBaseURL(),
-			}
-			if err := s.emailService.SendInvitationEmail(ctx, email, inviteData); err != nil {
-				s.logger.Error("failed to send invitation email",
-					"invitation_id", inv.ID,
-					"email", email,
-					"error", err,
-				)
-			}
-		}()
-	}
-
-	s.logger.Info("invitation created",
-		"org_id", orgID,
-		"invitee_email", email,
-		"role", role,
-		"invited_by", inviterID,
-	)
+	s.sendInvitationEmailAsync(inv, email, member.OperatorName, org.Name)
+	s.logInvitationCreated(orgID, email, role, inviterID)
 
 	return inv, nil
+}
+
+// validateAndPrepareInvitation performs validation and prepares invitation data.
+func (s *InvitationService) validateAndPrepareInvitation(ctx context.Context, orgID, inviterID, email string, role organization.OrganizationRole) (*organization.OrganizationMember, *organization.Organization, *organization.Invitation, error) {
+	if email == "" {
+		return nil, nil, nil, errors.New("email is required")
+	}
+
+	// Note: super_admin cannot be invited via invitation.
+	if role != organization.RoleAdmin && role != organization.RoleOperator && role != organization.RoleViewer {
+		return nil, nil, nil, errors.New("invalid invitation role")
+	}
+
+	member, memberErr := s.memberRepo.FindByOperatorAndOrg(ctx, inviterID, orgID)
+	if memberErr != nil {
+		if errors.Is(memberErr, organization.ErrMemberNotFound) {
+			return nil, nil, nil, organization.ErrForbidden
+		}
+		return nil, nil, nil, memberErr
+	}
+
+	if !member.Role.CanManageMembers() {
+		return nil, nil, nil, organization.ErrForbidden
+	}
+
+	if member.OperatorEmail == email {
+		return nil, nil, nil, ErrCannotInviteSelf
+	}
+
+	org, orgErr := s.orgRepo.FindByID(ctx, orgID)
+	if orgErr != nil {
+		if errors.Is(orgErr, organization.ErrNotFound) {
+			return nil, nil, nil, organization.ErrNotFound
+		}
+		return nil, nil, nil, orgErr
+	}
+
+	if limitErr := s.checkInvitationLimits(ctx, orgID, email); limitErr != nil {
+		return nil, nil, nil, limitErr
+	}
+
+	inv, invErr := organization.NewInvitation(uuid.New().String(), orgID, email, role, inviterID)
+	if invErr != nil {
+		return nil, nil, nil, invErr
+	}
+
+	return member, org, inv, nil
+}
+
+// checkInvitationLimits checks pending invitation limits.
+func (s *InvitationService) checkInvitationLimits(ctx context.Context, orgID, email string) error {
+	pending, err := s.invitationRepo.FindPendingByOrganization(ctx, orgID)
+	if err != nil {
+		return err
+	}
+	if len(pending) >= MaxPendingInvitationsPerOrg {
+		return ErrMaxInvitationsReached
+	}
+
+	existing, err := s.invitationRepo.FindPendingByOrganizationAndEmail(ctx, orgID, email)
+	if err != nil && !errors.Is(err, organization.ErrInvitationNotFound) {
+		return err
+	}
+	if len(existing) > 0 {
+		return organization.ErrInvitationExists
+	}
+	return nil
+}
+
+// sendInvitationEmailAsync sends the invitation email asynchronously.
+func (s *InvitationService) sendInvitationEmailAsync(invitation *organization.Invitation, inviteeEmail, memberName, orgName string) {
+	if s.emailService == nil {
+		return
+	}
+	s.emailWg.Add(1)
+	go func() {
+		defer s.emailWg.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		inviteData := emailSvc.InvitationData{
+			InviteeName:      inviteeEmail,
+			InviterName:      memberName,
+			OrganizationName: orgName,
+			Role:             string(invitation.Role),
+			InviterNotes:     invitation.InviterNotes,
+			AcceptURL:        fmt.Sprintf("%s/invite/%s/accept", s.getBaseURL(), invitation.Token),
+			ExpiryDays:       7,
+			BaseURL:          s.getBaseURL(),
+		}
+		if err := s.emailService.SendInvitationEmail(ctx, inviteeEmail, inviteData); err != nil {
+			s.logger.Error("failed to send invitation email",
+				"invitation_id", invitation.ID, "email", inviteeEmail, "error", err)
+		}
+	}()
+}
+
+// logInvitationCreated logs the invitation creation.
+func (s *InvitationService) logInvitationCreated(orgID, email string, role organization.OrganizationRole, inviterID string) {
+	s.logger.Info("invitation created",
+		"org_id", orgID, "invitee_email", email, "role", role, "invited_by", inviterID)
 }
 
 // GetInvitationByToken retrieves an invitation by its token (public endpoint).

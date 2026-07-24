@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "apk_filename": "vyzorix-app-v1.0.0.apk",
+  "apk_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "release_notes": "Initial release with core features",
+  "version_code": 1,
+  "apk_size_bytes": 15728640
+}

@@ -4,9 +4,11 @@ import (
 	"errors"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,26 +27,27 @@ func NewOrganizationHandler(authService *auth.AuthService, presenter *response.P
 // SelectOrganization handles POST /v1/auth/organizations/select.
 // This endpoint allows operators with multiple organization memberships to switch between them.
 func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
-		h.presenter.Unauthorized(c, "not authenticated")
+	// Get operator and session from context (set by cookieAuth middleware).
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		h.presenter.Unauthorized(c, "authentication required")
 		return
 	}
 
-	// Validate session and get operator.
-	sess, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
-			h.presenter.Unauthorized(c, "session invalid or expired")
-			return
-		}
-		h.presenter.InternalError(c, "an error occurred")
+	sessVal, exists := c.Get("session")
+	if !exists {
+		h.presenter.Unauthorized(c, "session invalid or expired")
+		return
+	}
+	sess, ok := sessVal.(*session.Session)
+	if !ok || sess == nil {
+		h.presenter.Unauthorized(c, "session invalid or expired")
 		return
 	}
 
 	// Parse request.
 	var req dto.SelectOrganizationRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
 		h.presenter.BadRequest(c, "organization_id is required")
 		return
 	}
@@ -79,19 +82,10 @@ func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
 // GetOrganizations handles GET /v1/auth/organizations.
 // This endpoint returns all organizations the operator is a member of.
 func (h *OrganizationHandler) GetOrganizations(c *gin.Context) {
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
-		h.presenter.Unauthorized(c, "not authenticated")
-		return
-	}
-
-	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		if errors.Is(err, application.ErrUnauthorized) || errors.Is(err, application.ErrTokenExpired) {
-			h.presenter.Unauthorized(c, "session invalid or expired")
-			return
-		}
-		h.presenter.InternalError(c, "an error occurred")
+	// Get operator from context (set by cookieAuth middleware).
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		h.presenter.Unauthorized(c, "authentication required")
 		return
 	}
 

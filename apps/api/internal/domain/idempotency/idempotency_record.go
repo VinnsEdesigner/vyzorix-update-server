@@ -4,8 +4,12 @@ package idempotency
 
 import (
 	"context"
+	"errors"
 	"time"
 )
+
+// ErrNotFound indicates an idempotency record was not found.
+var ErrNotFound = errors.New("idempotency record not found")
 
 // IdempotencyRecord represents a recorded idempotency key with its response.
 type IdempotencyRecord struct {

@@ -23,8 +23,8 @@ func (e *ValidationError) Error() string {
 // ConfigValidator validates configuration values including format and ranges.
 type ConfigValidator struct {
 	errs   []ValidationError
-	config Config
 	ssrCfg SSRConfig
+	config Config
 }
 
 // NewValidator creates a new config validator with the given configuration.

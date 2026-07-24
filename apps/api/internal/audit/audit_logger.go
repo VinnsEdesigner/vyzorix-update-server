@@ -31,12 +31,14 @@ const (
 // fire-and-forget goroutines per event, ensuring events are not dropped on shutdown.
 
 type Logger struct {
-	repo        *Repository
-	log         *slog.Logger
-	done        chan struct{}
-	events      chan *Entry
-	wg          sync.WaitGroup
-	separateRepo interface{ Log(context.Context, *Entry) error } 
+	separateRepo interface {
+		Log(context.Context, *Entry) error
+	}
+	repo   *Repository
+	log    *slog.Logger
+	done   chan struct{}
+	events chan *Entry
+	wg     sync.WaitGroup
 }
 
 // Compile-time check that Logger implements AuditLogger.
@@ -45,11 +47,16 @@ var _ AuditLogger = (*Logger)(nil)
 // NoOpLogger is a no-operation audit logger for testing.
 type NoOpLogger struct{}
 
-func (n *NoOpLogger) APIKeyCreated(ctx context.Context, operatorID, keyID, keyName, keyPrefix, scope, ipAddress, userAgent string) {}
-func (n *NoOpLogger) APIKeyUpdated(ctx context.Context, operatorID, keyID, keyName, changes, ipAddress, userAgent string) {}
-func (n *NoOpLogger) APIKeyRevoked(ctx context.Context, operatorID, keyID, keyName, ipAddress, userAgent string) {}
-func (n *NoOpLogger) APIKeyRotated(ctx context.Context, operatorID, keyID, keyName, ipAddress, userAgent string) {}
-func (n *NoOpLogger) APIKeyFailed(ctx context.Context, operatorID, keyPrefix, ipAddress, userAgent, reason string) {}
+func (n *NoOpLogger) APIKeyCreated(ctx context.Context, operatorID, keyID, keyName, keyPrefix, scope, ipAddress, userAgent string) {
+}
+func (n *NoOpLogger) APIKeyUpdated(ctx context.Context, operatorID, keyID, keyName, changes, ipAddress, userAgent string) {
+}
+func (n *NoOpLogger) APIKeyRevoked(ctx context.Context, operatorID, keyID, keyName, ipAddress, userAgent string) {
+}
+func (n *NoOpLogger) APIKeyRotated(ctx context.Context, operatorID, keyID, keyName, ipAddress, userAgent string) {
+}
+func (n *NoOpLogger) APIKeyFailed(ctx context.Context, operatorID, keyPrefix, ipAddress, userAgent, reason string) {
+}
 
 // NoOpAuditRepo is a no-operation audit repository for when no separate DB is configured.
 type NoOpAuditRepo struct{}
@@ -57,14 +64,16 @@ type NoOpAuditRepo struct{}
 func (n *NoOpAuditRepo) Log(ctx context.Context, entry *Entry) error { return nil }
 
 // Compile-time check that NoOpAuditRepo implements the interface.
-var _ interface{ Log(context.Context, *Entry) error } = (*NoOpAuditRepo)(nil)
+var _ interface {
+	Log(context.Context, *Entry) error
+} = (*NoOpAuditRepo)(nil)
 
 // LoggerConfig holds configuration for the audit logger.
 type LoggerConfig struct {
-	Enabled       bool
-	RetentionDays int
-	SeparateDB    bool   
-	SeparateDBPath string // Path for separate audit DB (when SeparateDB is true).
+	SeparateDBPath string
+	RetentionDays  int
+	Enabled        bool
+	SeparateDB     bool
 }
 
 // DefaultLoggerConfig returns the default audit logger configuration.
@@ -78,13 +87,15 @@ func DefaultLoggerConfig() LoggerConfig {
 
 // NewLogger creates a new audit logger with a single writer goroutine.
 
-func NewLogger(repo *Repository, log *slog.Logger, cfg LoggerConfig, separateRepo interface{ Log(context.Context, *Entry) error }) *Logger {
+func NewLogger(repo *Repository, log *slog.Logger, cfg LoggerConfig, separateRepo interface {
+	Log(context.Context, *Entry) error
+}) *Logger {
 	l := &Logger{
-		repo:        repo,
-		log:         log,
-		done:        make(chan struct{}),
-		events:      make(chan *Entry, auditLogBufferSize),
-		separateRepo: separateRepo, 
+		repo:         repo,
+		log:          log,
+		done:         make(chan struct{}),
+		events:       make(chan *Entry, auditLogBufferSize),
+		separateRepo: separateRepo,
 	}
 
 	// Start single writer goroutine that drains the channel.
@@ -131,7 +142,6 @@ func (l *Logger) writeEntry(entry *Entry) {
 			slog.String("error", err.Error()))
 	}
 
-	
 	if l.separateRepo != nil {
 		if err := l.separateRepo.Log(context.Background(), entry); err != nil {
 			l.log.Error("failed to write audit log to separate DB",

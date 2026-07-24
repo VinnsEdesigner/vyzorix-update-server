@@ -108,8 +108,7 @@ func (s *AuthService) EnableMFA(ctx context.Context, operatorID, secret string, 
 
 	// Invalidate all existing sessions - user must re-authenticate with MFA.
 	if err := s.LogoutAll(ctx, operatorID); err != nil {
-		// Log but don't fail - MFA is enabled, sessions will expire anyway.
-		return nil
+		slog.Warn("failed to revoke sessions during MFA enable", "operator_id", operatorID, "error", err)
 	}
 
 	return nil

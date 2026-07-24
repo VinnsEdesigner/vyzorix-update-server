@@ -2,6 +2,7 @@ package organization
 
 import (
 	"errors"
+	"log/slog"
 	"strings"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
@@ -16,7 +17,7 @@ import (
 type OrganizationHandler struct {
 	orgService    *appOrganization.OrganizationService
 	memberService *appOrganization.MemberService
-	presenter    *response.Presenter
+	presenter     *response.Presenter
 }
 
 // NewOrganizationHandler creates a new OrganizationHandler.
@@ -43,8 +44,8 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 	var req struct {
 		Name        string `json:"name"`
 		Description string `json:"description" binding:"required"`
+		Role        string `json:"role" binding:"required"`
 		MaxMembers  int    `json:"maxMembers"`
-		Role        string `json:"role" binding:"required"` // Required: "super_admin" or "admin".
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -71,6 +72,7 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 
 	org, err := h.orgService.CreateOrganization(c.Request.Context(), op.ID, req.Name, req.Description, req.MaxMembers, req.Role)
 	if err != nil {
+		slog.Error("CreateOrganization failed", "operatorID", op.ID, "name", req.Name, "error", err)
 		if errors.Is(err, appOrganization.ErrMaxOrgsReached) {
 			h.presenter.Forbidden(c, "maximum 2 active organizations allowed")
 			return
@@ -79,18 +81,18 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 			h.presenter.Conflict(c, "organization with this name already exists")
 			return
 		}
-		h.presenter.InternalError(c, "failed to create organization")
+		h.presenter.InternalError(c, "failed to create organization: "+err.Error())
 		return
 	}
 
 	h.presenter.Created(c, gin.H{
-		"id":           org.ID,
-		"name":         org.Name,
-		"description":  org.Description,
-		"created_by":   org.CreatedBy,
-		"created_at":   org.CreatedAt,
-		"max_members":  org.MaxMembers,
-		"is_active":    org.IsActive,
+		"id":          org.ID,
+		"name":        org.Name,
+		"description": org.Description,
+		"created_by":  org.CreatedBy,
+		"created_at":  org.CreatedAt,
+		"max_members": org.MaxMembers,
+		"is_active":   org.IsActive(),
 	})
 }
 
@@ -117,7 +119,7 @@ func (h *OrganizationHandler) List(c *gin.Context) {
 			"created_at":   org.CreatedAt,
 			"updated_at":   org.UpdatedAt,
 			"max_members":  org.MaxMembers,
-			"is_active":    org.IsActive,
+			"is_active":    org.IsActive(),
 			"member_count": org.MemberCount,
 		}
 	}
@@ -176,7 +178,7 @@ func (h *OrganizationHandler) Get(c *gin.Context) {
 		"created_at":   org.CreatedAt,
 		"updated_at":   org.UpdatedAt,
 		"max_members":  org.MaxMembers,
-		"is_active":    org.IsActive,
+		"is_active":    org.IsActive(),
 		"member_count": org.MemberCount,
 	})
 }
@@ -241,7 +243,7 @@ func (h *OrganizationHandler) Update(c *gin.Context) {
 		"created_at":   org.CreatedAt,
 		"updated_at":   org.UpdatedAt,
 		"max_members":  org.MaxMembers,
-		"is_active":    org.IsActive,
+		"is_active":    org.IsActive(),
 		"member_count": org.MemberCount,
 	})
 }

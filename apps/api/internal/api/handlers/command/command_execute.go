@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -66,55 +67,72 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	
-	if err := dto.ValidateCommand(req.Command); err != nil {
+	if err := h.validateCommandRequest(imei, req.Command, req.Nonce); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": err.Error()})
 		return
 	}
-	if err := dto.ValidateDeviceID(imei); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": err.Error()})
-		return
-	}
-	if req.Nonce != "" {
-		if err := dto.ValidateNonce(req.Nonce); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": err.Error()})
-			return
-		}
-	}
 
-	if req.Command == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "command is required"})
-		return
-	}
-
-	// Get operator from context (set by cookie auth middleware).
-	op := middleware.GetOperatorFromContext(c)
-	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
-		return
-	}
-
-	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
 		return
 	}
 
-	// Verify the device belongs to this organization.
 	if err := h.verifyDeviceInOrganization(c.Request.Context(), imei, orgID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
 		return
 	}
 
-	// Marshal args.
-	argsJSON, err := json.Marshal(req.Args)
+	cmdResp, frame, err := h.sendCommandAndBuildFrame(c, imei, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to marshal args"})
 		return
 	}
 
-	// Build command frame for WebSocket.
+	delivery := h.deliverCommand(c, imei, frame, cmdResp)
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"status":        delivery,
+		"device_online": delivery == "sent",
+		"dispatchId":    cmdResp.DispatchID,
+		"command_id":    cmdResp.CommandID,
+		"serverTime":    time.Now().Unix(),
+	})
+}
+
+// validateCommandRequest validates the command request parameters.
+func (h *ExecuteHandler) validateCommandRequest(imei, command, nonce string) error {
+	if err := dto.ValidateCommand(command); err != nil {
+		return err
+	}
+	if err := dto.ValidateDeviceID(imei); err != nil {
+		return err
+	}
+	if nonce != "" {
+		if err := dto.ValidateNonce(nonce); err != nil {
+			return err
+		}
+	}
+	if command == "" {
+		return errors.New("command is required")
+	}
+	return nil
+}
+
+// sendCommandAndBuildFrame sends the command via service and builds the command frame.
+func (h *ExecuteHandler) sendCommandAndBuildFrame(c *gin.Context, imei string, req struct {
+	Args       map[string]interface{} `json:"args,omitempty"`
+	Command    string                 `json:"command"`
+	Nonce      string                 `json:"nonce"`
+	Signature  string                 `json:"signature,omitempty"`
+	DispatchID string                 `json:"dispatch_id,omitempty"`
+	Timestamp  int64                  `json:"timestamp"`
+}) (*dto.SendCommandResponse, command.CommandFrame, error) {
+	argsJSON, err := json.Marshal(req.Args)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to marshal args"})
+		return nil, command.CommandFrame{}, err
+	}
+
 	frame := command.CommandFrame{
 		Type:       req.Command,
 		Command:    req.Command,
@@ -125,7 +143,6 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 		Signature:  req.Signature,
 	}
 
-	// Use command service for proper command creation and idempotency.
 	cmdReq := &dto.SendCommandRequest{
 		DeviceID:   imei,
 		Command:    req.Command,
@@ -137,51 +154,49 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 	if err != nil {
 		h.log.Error("failed to send command", "error", err, "deviceId", imei)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to send command"})
-
-		return
+		return nil, command.CommandFrame{}, err
 	}
 
-	// Update frame dispatch ID with the one from service (for idempotency).
 	frame.DispatchID = cmdResp.DispatchID
+	return cmdResp, frame, nil
+}
 
-	// Check if device is online via WebSocket and send.
+// deliverCommand delivers the command via WebSocket or FCM.
+func (h *ExecuteHandler) deliverCommand(c *gin.Context, imei string, frame command.CommandFrame, cmdResp *dto.SendCommandResponse) string {
 	delivery := "queued"
 
 	if h.hub != nil && h.hub.Online(imei) {
 		if sent := h.hub.Send(imei, frame); sent {
 			delivery = "sent"
-			// Mark as delivered.
 			if err := h.commandService.MarkDelivered(c.Request.Context(), cmdResp.CommandID); err != nil {
 				h.log.Warn("failed to mark command delivered", "error", err)
 			}
 		}
 	}
 
-	// If not sent via WebSocket, try FCM wake for offline devices.
 	if delivery == "queued" && h.fcmNotifier != nil {
-		device, err := h.deviceService.GetDevice(c.Request.Context(), imei)
-		if err == nil && device.FCMToken != "" {
-			wake := fcm.SilentWake{
-				Token:      device.FCMToken,
-				Command:    req.Command,
-				DispatchID: cmdResp.DispatchID,
-				DeviceID:   imei,
-			}
-			if err := h.fcmNotifier.SendSilentWake(c.Request.Context(), wake); err != nil {
-				h.log.Warn("fcm wake failed", "deviceId", imei, "err", err)
-			} else {
-				delivery = "queued_fcm"
-			}
-		}
+		h.tryFCMWake(c, imei, cmdResp, frame.Command, &delivery)
 	}
 
-	c.JSON(http.StatusAccepted, gin.H{
-		"status":        delivery,
-		"device_online": delivery == "sent",
-		"dispatchId":    cmdResp.DispatchID,
-		"command_id":    cmdResp.CommandID,
-		"serverTime":    time.Now().Unix(),
-	})
+	return delivery
+}
+
+// tryFCMWake attempts to wake the device via FCM.
+func (h *ExecuteHandler) tryFCMWake(c *gin.Context, imei string, cmdResp *dto.SendCommandResponse, command string, delivery *string) {
+	device, err := h.deviceService.GetDevice(c.Request.Context(), imei)
+	if err == nil && device.FCMToken != "" {
+		wake := fcm.SilentWake{
+			Token:      device.FCMToken,
+			Command:    command,
+			DispatchID: cmdResp.DispatchID,
+			DeviceID:   imei,
+		}
+		if err := h.fcmNotifier.SendSilentWake(c.Request.Context(), wake); err != nil {
+			h.log.Warn("fcm wake failed", "deviceId", imei, "err", err)
+		} else {
+			*delivery = "queued_fcm"
+		}
+	}
 }
 
 // GetStatus handles GET /v1/command/:dispatchId/status.

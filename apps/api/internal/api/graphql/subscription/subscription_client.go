@@ -16,11 +16,11 @@ type Client struct {
 	ctx       context.Context
 	conn      *websocket.Conn
 	operator  *operator.Operator
-	orgID     string
 	subs      map[string]func()
 	done      chan struct{}
 	handler   *Handler
 	presenter *Presenter
+	orgID     string
 	mu        sync.Mutex
 }
 

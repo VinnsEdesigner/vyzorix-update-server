@@ -201,6 +201,8 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		switch {
 		case errors.Is(err, application.ErrInvalidCredentials):
 			h.presenter.Unauthorized(c, "invalid email or password")
+		case errors.Is(err, application.ErrEmailNotVerified):
+			h.presenter.Unauthorized(c, "please verify your email address before logging in")
 		case errors.Is(err, application.ErrMFARequired):
 			// Clear lockout on successful credential verification.
 			h.lockout.Clear(req.Email)
@@ -211,6 +213,7 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		case errors.Is(err, application.ErrAccountLocked):
 			h.presenter.OK(c, gin.H{"error": "account_locked", "message": "Account temporarily locked due to suspicious activity"})
 		default:
+			slog.Info("Login error", "error", err.Error(), "email", req.Email)
 			h.presenter.InternalError(c, "an error occurred")
 		}
 

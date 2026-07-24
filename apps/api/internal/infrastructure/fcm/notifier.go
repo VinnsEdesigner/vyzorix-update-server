@@ -109,7 +109,7 @@ func (s *SafeNotifier) SendSilentWake(ctx context.Context, wake SilentWake) erro
 			// Not an error - FCM is intentionally disabled.
 			return nil
 		}
-		
+
 		slog.Warn("fcm: failed to send silent wake",
 			"deviceToken", wake.Token,
 			"deviceID", wake.DeviceID,
@@ -141,9 +141,9 @@ func (s *SafeNotifier) CircuitBreakerState() string {
 type EnhancedNotifier struct {
 	*Client
 	config    *FCMConfig
+	db        *sql.DB
 	metrics   FCMMetrics
 	metricsMu sync.RWMutex
-	db        *sql.DB
 }
 
 // NewEnhancedNotifier creates a new enhanced FCM notifier with retry and metrics.
@@ -274,7 +274,6 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 		"lastErr", lastErr,
 	)
 
-	
 	if e.db != nil {
 		if persistErr := e.persistForRetry(ctx, wake, lastErr); persistErr != nil {
 			e.log.Warn("fcm: failed to persist for retry",

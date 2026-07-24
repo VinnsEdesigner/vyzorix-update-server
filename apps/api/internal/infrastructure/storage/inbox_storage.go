@@ -315,6 +315,8 @@ func (r *InboxRepository) scanEntry(row *sql.Row) (*inbox.InboxEntry, error) {
 	case inbox.StatusRejected:
 		e.RejectedAt = nullInt64ToPtr(reviewedAt)
 		e.Notes = rejectionReason.String
+	case inbox.StatusPending, inbox.StatusAcknowledged, inbox.StatusApproving, inbox.StatusExpired:
+		// No action needed for non-reviewed statuses.
 	}
 
 	return &e, nil
@@ -360,6 +362,8 @@ func (r *InboxRepository) scanEntryRows(rows *sql.Rows) (*inbox.InboxEntry, erro
 	case inbox.StatusRejected:
 		e.RejectedAt = nullInt64ToPtr(reviewedAt)
 		e.Notes = rejectionReason.String
+	case inbox.StatusPending, inbox.StatusAcknowledged, inbox.StatusApproving, inbox.StatusExpired:
+		// No action needed for non-reviewed statuses.
 	}
 
 	return &e, nil

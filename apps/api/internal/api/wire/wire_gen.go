@@ -47,6 +47,8 @@ func Injector(cfg config.Config) (*Server, error) {
 		return nil, err
 	}
 	authService := ProvideAuthService(logger, operatorRepository, sessionRepository, emailVerificationRepository, passwordResetRepository, refreshTokenRepository, argon2idHasher, jwtManager)
+	// Set session manager on auth service to enable session cookie creation during login
+	authService.SetSessionManager(manager)
 	txManager := ProvideTxManager(db)
 	hubResult := ProvideWebSocketHub(logger, deviceRepository, telemetryRepository, db)
 	

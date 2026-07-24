@@ -20,7 +20,6 @@ import (
 // ErrPrivateOrInternalIP indicates the URL resolves to a private/internal IP.
 var ErrPrivateOrInternalIP = errors.New("webhook URL cannot resolve to a private or internal IP address")
 
-
 const (
 	maxRetries     = 3
 	baseRetryDelay = 1 * time.Second
@@ -54,7 +53,9 @@ func ValidateURL(rawURL string) error {
 	// Resolve hostname and check all IPs.
 	ips, err := net.LookupIP(hostname)
 	if err != nil {
-		return nil // DNS failure will fail at connection time anyway.
+		// DNS failure will fail at connection time anyway, so we skip the IP check.
+		//nolint:nilerr // Intentional: connection will fail anyway if DNS is broken.
+		return nil
 	}
 
 	for _, ip := range ips {
@@ -198,7 +199,6 @@ func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload)
 		return err
 	}
 
-	
 	var lastErr error
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if attempt > 0 {
@@ -280,8 +280,8 @@ func (c *Client) doSend(ctx context.Context, url, secret string, body []byte, pa
 
 // retryableError represents an error that can be retried.
 type retryableError struct {
-	statusCode int
 	message    string
+	statusCode int
 }
 
 func (e *retryableError) Error() string {

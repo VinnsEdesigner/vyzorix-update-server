@@ -17,30 +17,30 @@ type OrganizationInfo struct {
 
 // LoginResponse represents a login response.
 type LoginResponse struct {
-	OperatorID            string             `json:"operator_id"`
-	Email                 string             `json:"email"`
-	Name                  string             `json:"name"`
-	MFAEnabled            bool               `json:"mfa_enabled"`
-	NeedsOrganization     bool               `json:"needs_organization"`
-	Organizations         []OrganizationInfo `json:"organizations,omitempty"`
-	LastOrganizationID    string            `json:"last_organization_id,omitempty"`
-	SelectedOrganization  *OrganizationInfo `json:"selected_organization,omitempty"`
+	SelectedOrganization *OrganizationInfo  `json:"selected_organization,omitempty"`
+	OperatorID           string             `json:"operator_id"`
+	Email                string             `json:"email"`
+	Name                 string             `json:"name"`
+	LastOrganizationID   string             `json:"last_organization_id,omitempty"`
+	Organizations        []OrganizationInfo `json:"organizations,omitempty"`
+	MFAEnabled           bool               `json:"mfa_enabled"`
+	NeedsOrganization    bool               `json:"needs_organization"`
 }
 
 // LoginWithTokensResponse represents a login response with API tokens.
 type LoginWithTokensResponse struct {
-	OperatorID            string             `json:"operator_id"`
-	Email                 string             `json:"email"`
-	Name                  string             `json:"name"`
-	MFAEnabled            bool               `json:"mfa_enabled"`
-	NeedsOrganization     bool               `json:"needs_organization"`
-	Organizations         []OrganizationInfo `json:"organizations,omitempty"`
-	LastOrganizationID    string            `json:"last_organization_id,omitempty"`
-	SelectedOrganization  *OrganizationInfo `json:"selected_organization,omitempty"`
+	SelectedOrganization *OrganizationInfo  `json:"selected_organization,omitempty"`
+	OperatorID           string             `json:"operator_id"`
+	Email                string             `json:"email"`
+	Name                 string             `json:"name"`
+	LastOrganizationID   string             `json:"last_organization_id,omitempty"`
 	AccessToken          string             `json:"access_token"`
 	RefreshToken         string             `json:"refresh_token"`
-	ExpiresAt            int64              `json:"expires_at"`
 	SessionID            string             `json:"session_id"`
+	Organizations        []OrganizationInfo `json:"organizations,omitempty"`
+	ExpiresAt            int64              `json:"expires_at"`
+	MFAEnabled           bool               `json:"mfa_enabled"`
+	NeedsOrganization    bool               `json:"needs_organization"`
 }
 
 // RegisterRequest represents a registration request.
@@ -95,18 +95,18 @@ type LogoutRequest struct {
 
 // OperatorResponse represents an operator in responses.
 type OperatorResponse struct {
-	Thresholds    *Thresholds     `json:"thresholds,omitempty"`
-	Client        *ClientSettings `json:"client,omitempty"`
-	ID            string          `json:"id"`
-	Email         string          `json:"email"`
-	Name          string          `json:"name"`
-	NeedsOrganization     bool             `json:"needs_organization"`
-	Organizations         []OrganizationInfo `json:"organizations,omitempty"`
-	LastOrganizationID    string           `json:"last_organization_id,omitempty"`
-	SelectedOrganization  *OrganizationInfo `json:"selected_organization,omitempty"`
-	CreatedAt     string          `json:"created_at"`
-	MFAEnabled    bool            `json:"mfa_enabled"`
-	EmailVerified bool            `json:"email_verified"`
+	Thresholds           *Thresholds        `json:"thresholds,omitempty"`
+	Client               *ClientSettings    `json:"client,omitempty"`
+	SelectedOrganization *OrganizationInfo  `json:"selected_organization,omitempty"`
+	ID                   string             `json:"id"`
+	Email                string             `json:"email"`
+	Name                 string             `json:"name"`
+	LastOrganizationID   string             `json:"last_organization_id,omitempty"`
+	CreatedAt            string             `json:"created_at"`
+	Organizations        []OrganizationInfo `json:"organizations,omitempty"`
+	NeedsOrganization    bool               `json:"needs_organization"`
+	MFAEnabled           bool               `json:"mfa_enabled"`
+	EmailVerified        bool               `json:"email_verified"`
 }
 
 // GoogleOAuthCallbackRequest represents a Google OAuth callback request.
@@ -197,7 +197,7 @@ type SelectOrganizationRequest struct {
 
 // SelectOrganizationResponse represents the response after selecting an organization.
 type SelectOrganizationResponse struct {
-	OrganizationID   string           `json:"organization_id"`
-	OrganizationName string           `json:"organization_name"`
-	Role            string           `json:"role"`
+	OrganizationID   string `json:"organization_id"`
+	OrganizationName string `json:"organization_name"`
+	Role             string `json:"role"`
 }

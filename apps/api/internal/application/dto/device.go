@@ -20,8 +20,8 @@ type RegisterDeviceRequest struct {
 type RegisterDeviceResponse struct {
 	DeviceID      string `json:"deviceId"`
 	CommandSecret string `json:"commandSecret"`
-	RegisteredAt  int64  `json:"registeredAt"`
 	Lifecycle     string `json:"lifecycle"`
+	RegisteredAt  int64  `json:"registeredAt"`
 }
 
 // DeviceStatusResponse represents device status.

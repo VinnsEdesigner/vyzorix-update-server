@@ -33,7 +33,7 @@ func (h *ListHandler) Handle(c *gin.Context) {
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "organization context required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context is required"})
 		return
 	}
 
@@ -136,13 +136,13 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 
 	operatorID := c.Query("operatorId")
 	if operatorID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "operatorId is required"})
 		return
 	}
 
 	devices, err := h.deviceService.ListByOperatorEntity(ctx, operatorID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to list devices by operator"})
 		return
 	}
 
@@ -181,18 +181,18 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 func (h *ListHandler) GetDevice(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "IMEI is required"})
 		return
 	}
 
 	d, err := h.deviceService.GetDevice(c.Request.Context(), imei)
 	if err != nil {
 		if err == devicedomain.ErrNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to retrieve device"})
 
 		return
 	}
@@ -215,13 +215,13 @@ func (h *ListHandler) GetDevice(c *gin.Context) {
 func (h *ListHandler) Count(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "organization context required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context is required"})
 		return
 	}
 
 	count, err := h.deviceService.CountByOrganization(c.Request.Context(), orgID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to count devices"})
 		return
 	}
 
@@ -236,13 +236,13 @@ func (h *ListHandler) Count(c *gin.Context) {
 func (h *ListHandler) CountByOrganization(c *gin.Context) {
 	orgID := c.Query("organizationId")
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "organizationId is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organizationId is required"})
 		return
 	}
 
 	count, err := h.deviceService.CountByOrganization(c.Request.Context(), orgID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to count devices"})
 		return
 	}
 

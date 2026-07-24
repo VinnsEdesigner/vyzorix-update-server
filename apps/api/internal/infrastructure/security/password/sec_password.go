@@ -4,6 +4,7 @@ package password
 import (
 	"crypto/sha1" // #nosec G505 - SHA-1 required for HIBP k-anonymity API compatibility.
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,7 +14,10 @@ import (
 )
 
 // ErrPasswordBreached indicates the password was found in a data breach.
-var ErrPasswordBreached = fmt.Errorf("password found in known data breach")
+var ErrPasswordBreached = errors.New("password found in known data breach")
+
+// ErrBreachCheckFailed indicates the breach check could not be performed.
+var ErrBreachCheckFailed = errors.New("breach check unavailable")
 
 // CheckBreached checks if a password appears in known data breaches using HIBP API.
 // Uses k-anonymity: only sends first 5 chars of SHA-1 hash to protect the password.
@@ -39,13 +43,13 @@ func CheckBreached(password string) (bool, error) {
 	resp, err := client.Get("https://api.pwnedpasswords.com/range/" + prefix)
 	if err != nil {
 		// Fail closed: if we cannot verify, treat as potentially breached for security.
-		return true, fmt.Errorf("unable to verify password against breach database: %w", err)
+		return true, fmt.Errorf("%w: %v", ErrBreachCheckFailed, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		// Fail closed: any non-200 response means we couldn't verify.
-		return true, fmt.Errorf("HIBP API returned status %d", resp.StatusCode)
+		return true, fmt.Errorf("%w: HIBP API returned status %d", ErrBreachCheckFailed, resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1024*1024)) // Limit response to 1MB.

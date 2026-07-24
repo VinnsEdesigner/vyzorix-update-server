@@ -186,6 +186,11 @@ func (p *Presenter) NotImplemented(c *gin.Context, message string) {
 	c.JSON(http.StatusNotImplemented, gin.H{"error": "not_implemented", "message": message})
 }
 
+// ServiceUnavailable sends a 503 response.
+func (p *Presenter) ServiceUnavailable(c *gin.Context, message string) {
+	c.JSON(http.StatusServiceUnavailable, gin.H{"error": "service_unavailable", "message": message})
+}
+
 // OK sends a 200 response with data.
 func (p *Presenter) OK(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, data)

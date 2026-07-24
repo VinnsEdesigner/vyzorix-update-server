@@ -8,17 +8,17 @@ import (
 
 // PendingFCMNotification represents a pending FCM notification for retry.
 type PendingFCMNotification struct {
-	ID           int64  `json:"id"`
-	DispatchID   string `json:"dispatchId"`
-	DeviceID     string `json:"deviceId"`
-	Token        string `json:"token"`
-	Command      string `json:"command"`
-	Priority     string `json:"priority"`
-	RetryCount   int    `json:"retryCount"`
-	NextRetryAt  int64  `json:"nextRetryAt"`  // Unix timestamp.
-	LastError    string `json:"lastError"`
-	CreatedAt    int64  `json:"createdAt"`   // Unix timestamp.
-	UpdatedAt    int64  `json:"updatedAt"`   // Unix timestamp.
+	DispatchID  string `json:"dispatchId"`
+	DeviceID    string `json:"deviceId"`
+	Token       string `json:"token"`
+	Command     string `json:"command"`
+	Priority    string `json:"priority"`
+	LastError   string `json:"lastError"`
+	ID          int64  `json:"id"`
+	RetryCount  int    `json:"retryCount"`
+	NextRetryAt int64  `json:"nextRetryAt"`
+	CreatedAt   int64  `json:"createdAt"`
+	UpdatedAt   int64  `json:"updatedAt"`
 }
 
 // PendingFCMRepository handles pending FCM notification persistence.

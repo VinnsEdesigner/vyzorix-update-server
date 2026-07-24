@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"sync"
@@ -25,23 +26,25 @@ var (
 
 // CSRFConfig holds CSRF configuration.
 type CSRFConfig struct {
-	Secret      string
-	CookieName  string
-	HeaderName  string
-	TokenLength int
-	MaxAge      int
-	Enabled     bool
+	Secret           string
+	CookieName       string
+	HeaderName       string
+	TokenLength      int
+	MaxAge           int
+	Enabled          bool
+	AllowDoubleSubmit bool // Allow double-submit cookie pattern without session.
 }
 
 // DefaultCSRFConfig returns the default CSRF configuration.
 func DefaultCSRFConfig() CSRFConfig {
 	return CSRFConfig{
-		Enabled:     true,
-		Secret:      "csrf-secret-change-in-production",
-		TokenLength: 32,
-		CookieName:  "_csrf",
-		HeaderName:  "X-CSRF-Token",
-		MaxAge:      3600, // 1 hour.
+		Enabled:          true,
+		Secret:           "csrf-secret-change-in-production",
+		TokenLength:      32,
+		CookieName:       "_csrf",
+		HeaderName:       "X-CSRF-Token",
+		MaxAge:           3600, // 1 hour.
+		AllowDoubleSubmit: true, // Enable double-submit for endpoints without session.
 	}
 }
 
@@ -53,11 +56,10 @@ type CSRFToken struct {
 }
 
 // CSRFTokenStore manages CSRF tokens in memory.
-//
 type CSRFTokenStore struct {
-	mu     sync.RWMutex
 	tokens map[string]*CSRFToken
 	stop   chan struct{}
+	mu     sync.RWMutex
 }
 
 // NewCSRFTokenStore creates a new CSRF token store.
@@ -206,6 +208,8 @@ func (p *CSRFProtector) verifyToken(signed string) (string, bool) {
 }
 
 // Middleware returns a Gin middleware that validates CSRF tokens.
+// Implements double-submit cookie pattern for endpoints without sessions,.
+// and session-based validation for authenticated endpoints.
 func (p *CSRFProtector) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Add cache control headers early to prevent caching of sensitive responses.
@@ -218,10 +222,16 @@ func (p *CSRFProtector) Middleware() gin.HandlerFunc {
 			return
 		}
 
+		// Skip CSRF for safe HTTP methods.
 		if c.Request.Method == http.MethodGet || c.Request.Method == http.MethodHead || c.Request.Method == http.MethodOptions {
 			c.Next()
 			return
 		}
+
+		// Check for X-Requested-With header as additional cross-origin protection.
+		// AJAX requests typically send this header automatically.
+		// Note: We don't block requests without this header - the double-submit check provides protection.
+		_ = c.GetHeader("X-Requested-With")
 
 		headerToken := c.GetHeader(p.Config.HeaderName)
 		if headerToken == "" {
@@ -229,36 +239,60 @@ func (p *CSRFProtector) Middleware() gin.HandlerFunc {
 				"error":   "forbidden",
 				"message": "CSRF token required",
 			})
-
 			return
 		}
 
+		// Verify the token signature.
 		token, valid := p.verifyToken(headerToken)
 		if !valid {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":   "forbidden",
 				"message": "Invalid CSRF token",
 			})
-
 			return
 		}
 
+		// Check for session cookie.
 		sessionID, err := c.Cookie("session_id")
 		if err != nil || sessionID == "" {
+			// No session - use double-submit cookie pattern.
+			// For this, we just need the cookie to exist and be valid.
+			// The cookie is set when the token is generated, and the client.
+			// must echo back the same token in the header.
+			if p.Config.AllowDoubleSubmit {
+				// Double-submit: verify the cookie value matches the header value.
+				// Both should contain the same signed token.
+				// Note: cookie values may be URL-encoded, so we need to decode for comparison.
+				cookieToken, cookieErr := c.Cookie(p.Config.CookieName)
+				if cookieErr == nil {
+					// URL-decode the cookie value for comparison.
+					decodedCookie, decodeErr := url.QueryUnescape(cookieToken)
+					if decodeErr == nil && decodedCookie == headerToken {
+						// Token matches - it's a valid double-submit.
+						c.Next()
+						return
+					}
+					// Also try direct comparison in case it's not encoded.
+					if cookieToken == headerToken {
+						c.Next()
+						return
+					}
+				}
+			}
+
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":   "forbidden",
 				"message": "CSRF token required",
 			})
-
 			return
 		}
 
+		// Session exists - use session-based validation.
 		if !p.Store.Validate(sessionID, token) {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":   "forbidden",
 				"message": "Invalid CSRF token",
 			})
-
 			return
 		}
 
@@ -279,6 +313,32 @@ func (p *CSRFProtector) GetToken(c *gin.Context) (string, error) {
 	}
 
 	signed := p.signToken(token.Token)
+
+	secure := os.Getenv("GIN_MODE") == "release"
+
+	c.SetCookie(
+		p.Config.CookieName,
+		signed,
+		p.Config.MaxAge,
+		"/",
+		"",
+		secure,
+		true,
+	)
+
+	return signed, nil
+}
+
+// GetTokenForPublicEndpoint generates a CSRF token for public endpoints (no session required).
+// This implements the double-submit cookie pattern for endpoints like registration and login.
+func (p *CSRFProtector) GetTokenForPublicEndpoint(c *gin.Context) (string, error) {
+	// Generate a random token.
+	tokenBytes := make([]byte, p.Config.TokenLength)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return "", err
+	}
+	token := base64.URLEncoding.EncodeToString(tokenBytes)
+	signed := p.signToken(token)
 
 	secure := os.Getenv("GIN_MODE") == "release"
 

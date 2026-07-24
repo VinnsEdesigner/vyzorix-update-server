@@ -15,14 +15,14 @@ func generateID(prefix string) string {
 
 // OrganizationSettings represents settings for an organization.
 type OrganizationSettings struct {
-	ID                     string         `json:"id"`
-	OrganizationID         string         `json:"organizationId"`
-	Timezone              string         `json:"timezone"`
-	DateFormat            string         `json:"dateFormat"`
-	AlertCooldownMinutes  int            `json:"alertCooldownMinutes"`
-	DefaultThresholds     *Thresholds    `json:"defaultThresholds,omitempty"`
-	CreatedAt             time.Time      `json:"createdAt"`
-	UpdatedAt             time.Time      `json:"updatedAt"`
+	CreatedAt            time.Time   `json:"createdAt"`
+	UpdatedAt            time.Time   `json:"updatedAt"`
+	DefaultThresholds    *Thresholds `json:"defaultThresholds,omitempty"`
+	ID                   string      `json:"id"`
+	OrganizationID       string      `json:"organizationId"`
+	Timezone             string      `json:"timezone"`
+	DateFormat           string      `json:"dateFormat"`
+	AlertCooldownMinutes int         `json:"alertCooldownMinutes"`
 }
 
 // Thresholds represents threshold values for alerts.
@@ -51,12 +51,12 @@ func DefaultThresholds() *Thresholds {
 func NewOrganizationSettings(organizationID string) *OrganizationSettings {
 	now := time.Now()
 	return &OrganizationSettings{
-		ID:                    generateID("org_set_"),
-		OrganizationID:        organizationID,
+		ID:                   generateID("org_set_"),
+		OrganizationID:       organizationID,
 		Timezone:             "UTC",
 		DateFormat:           "YYYY-MM-DD",
 		AlertCooldownMinutes: 15,
-		DefaultThresholds:     DefaultThresholds(),
+		DefaultThresholds:    DefaultThresholds(),
 		CreatedAt:            now,
 		UpdatedAt:            now,
 	}
@@ -103,9 +103,9 @@ func (t *Thresholds) Validate() error {
 
 // UpdateOrganizationSettingsRequest represents a request to update organization settings.
 type UpdateOrganizationSettingsRequest struct {
-	Timezone             *string    `json:"timezone,omitempty"`
-	DateFormat           *string    `json:"dateFormat,omitempty"`
-	AlertCooldownMinutes *int       `json:"alertCooldownMinutes,omitempty"`
+	Timezone             *string     `json:"timezone,omitempty"`
+	DateFormat           *string     `json:"dateFormat,omitempty"`
+	AlertCooldownMinutes *int        `json:"alertCooldownMinutes,omitempty"`
 	DefaultThresholds    *Thresholds `json:"defaultThresholds,omitempty"`
 }
 

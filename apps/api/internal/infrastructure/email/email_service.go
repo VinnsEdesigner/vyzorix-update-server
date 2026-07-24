@@ -42,9 +42,9 @@ type InvitationData struct {
 	InviterNotes     string
 	InviteeNotes     string
 	AcceptURL        string
-	ExpiryDays       int
 	AcceptedAt       string
 	BaseURL          string
+	ExpiryDays       int
 }
 
 // Service handles sending emails via Resend API.
@@ -54,16 +54,22 @@ type Service struct {
 	fromEmail string
 	fromName  string
 	baseURL   string
+	apiURL    string
 }
 
 // NewService creates a new email service instance.
 func NewService() *Service {
+	apiURL := os.Getenv("RESEND_API_URL")
+	if apiURL == "" {
+		apiURL = "https://api.resend.com"
+	}
 	return &Service{
 		apiKey:    os.Getenv("RESEND_API_KEY"),
 		fromEmail: os.Getenv("EMAIL_FROM"),
 		fromName:  os.Getenv("EMAIL_FROM_NAME"),
 		baseURL:   os.Getenv("BASE_URL"),
 		client:    &http.Client{Timeout: 10 * time.Second},
+		apiURL:    apiURL,
 	}
 }
 
@@ -87,6 +93,7 @@ type LoginNotificationData struct {
 	Location     string
 	Device       string
 	Timestamp    string
+	BaseURL      string
 }
 
 // SendVerificationEmail sends a welcome email with email verification link.
@@ -260,6 +267,11 @@ func (s *Service) SendNewLoginNotificationEmail(ctx context.Context, to string, 
 		return errors.New("RESEND_API_KEY not configured")
 	}
 
+	// Ensure BaseURL is set for the template.
+	if data.BaseURL == "" {
+		data.BaseURL = s.baseURL
+	}
+
 	html, err := s.parseTemplate(templates.NewLoginEmail, data)
 	if err != nil {
 		return fmt.Errorf("failed to parse new login template: %w", err)
@@ -336,7 +348,7 @@ func (s *Service) send(ctx context.Context, to, subject, html string) error {
 		return fmt.Errorf("failed to marshal email payload: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.resend.com/emails", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.apiURL+"/emails", bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}

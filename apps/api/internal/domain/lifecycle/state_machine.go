@@ -14,14 +14,14 @@ type TransitionMap map[string]map[string]bool
 
 // StateMachine provides a generic state machine implementation for lifecycle management.
 type StateMachine struct {
-	current  string
 	transitions TransitionMap
+	current     string
 }
 
 // NewStateMachine creates a new state machine with the given initial state and transition map.
 func NewStateMachine(initial string, transitions TransitionMap) *StateMachine {
 	return &StateMachine{
-		current:  initial,
+		current:     initial,
 		transitions: transitions,
 	}
 }

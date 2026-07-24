@@ -2,6 +2,8 @@
 package middleware
 
 import (
+	"encoding/json"
+	"io"
 	"regexp"
 	"strings"
 
@@ -54,6 +56,26 @@ var (
 	// EmailPattern validates email format (RFC 5322 simplified).
 	EmailPattern = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 
+	// BlockedEmailDomains contains email domains that are not allowed for registration.
+	// These are typically fake, disposable, or test domains.
+	BlockedEmailDomains = map[string]bool{
+		"test.com":      true,
+		"example.com":    true,
+		"example.org":    true,
+		"example.net":    true,
+		"mailinator.com": true,
+		"guerrillamail.com": true,
+		"temp-mail.org":  true,
+		"10minutemail.com": true,
+		"throwaway.email": true,
+		"fakeinbox.com":  true,
+		"trashmail.com":  true,
+		"yopmail.com":    true,
+		"getnada.com":    true,
+		"maildrop.cc":    true,
+		"dispostable.com": true,
+	}
+
 	// UUIDv7Pattern validates UUID format.
 	UUIDv7Pattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
 
@@ -80,6 +102,16 @@ var (
 	CommandPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]{0,63}$`)
 )
 
+// isEmailDomainBlocked checks if the email domain is in the blocklist.
+func isEmailDomainBlocked(email string) bool {
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return false
+	}
+	domain := strings.ToLower(parts[1])
+	return BlockedEmailDomains[domain]
+}
+
 // =============================================================================.
 // Schema Validators.
 // =============================================================================.
@@ -98,6 +130,8 @@ func (s *LoginSchema) Validate() ValidationErrors {
 		errs = append(errs, ValidationError{Field: "email", Message: "email is required"})
 	} else if !EmailPattern.MatchString(email) {
 		errs = append(errs, ValidationError{Field: "email", Message: "invalid email format"})
+	} else if isEmailDomainBlocked(email) {
+		errs = append(errs, ValidationError{Field: "email", Message: "this email domain is not allowed"})
 	}
 
 	if s.Password == "" {
@@ -123,6 +157,8 @@ func (s *RegisterSchema) Validate() ValidationErrors {
 		errs = append(errs, ValidationError{Field: "email", Message: "email is required"})
 	} else if !EmailPattern.MatchString(email) {
 		errs = append(errs, ValidationError{Field: "email", Message: "invalid email format"})
+	} else if isEmailDomainBlocked(email) {
+		errs = append(errs, ValidationError{Field: "email", Message: "this email domain is not allowed"})
 	}
 
 	if s.Password == "" {
@@ -161,6 +197,8 @@ func (s *ForgotPasswordSchema) Validate() ValidationErrors {
 		errs = append(errs, ValidationError{Field: "email", Message: "email is required"})
 	} else if !EmailPattern.MatchString(email) {
 		errs = append(errs, ValidationError{Field: "email", Message: "invalid email format"})
+	} else if isEmailDomainBlocked(email) {
+		errs = append(errs, ValidationError{Field: "email", Message: "this email domain is not allowed"})
 	}
 
 	return errs
@@ -462,14 +500,27 @@ func ValidationMiddleware(schema Validator) gin.HandlerFunc {
 			return
 		}
 
-		if err := c.ShouldBindJSON(schema); err != nil {
+		// Read body into buffer so we can restore it for the handler.
+		bodyBytes, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			c.AbortWithStatusJSON(400, gin.H{
+				"error":   "bad_request",
+				"message": "failed to read request body",
+			})
+			return
+		}
+
+		// Bind from the captured bytes using a new reader.
+		if err := json.NewDecoder(strings.NewReader(string(bodyBytes))).Decode(schema); err != nil {
 			c.AbortWithStatusJSON(400, gin.H{
 				"error":   "bad_request",
 				"message": "invalid request body format",
 			})
-
 			return
 		}
+
+		// Restore body for handler.
+		c.Request.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
 
 		if errs := schema.Validate(); errs.HasErrors() {
 			c.AbortWithStatusJSON(400, gin.H{
@@ -477,7 +528,6 @@ func ValidationMiddleware(schema Validator) gin.HandlerFunc {
 				"message": errs.Error(),
 				"errors":  errs,
 			})
-
 			return
 		}
 

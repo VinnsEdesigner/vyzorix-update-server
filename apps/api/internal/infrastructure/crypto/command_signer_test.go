@@ -325,7 +325,10 @@ func TestCommandSigner_HashSecret(t *testing.T) {
 
 	secret := "testsecret123456789012345678901234567890123456789012345678"
 
-	hash := signer.HashSecret(secret)
+	hash, err := signer.HashSecret(secret)
+	if err != nil {
+		t.Fatalf("HashSecret() error = %v", err)
+	}
 
 	// Hash should be Argon2id format (starts with $argon2id$).
 	if !strings.HasPrefix(hash, "$argon2id$") {
@@ -344,8 +347,14 @@ func TestCommandSigner_HashSecret_DifferentSecrets(t *testing.T) {
 	secret1 := "secret1_1234567890123456789012345678901234567890123456789"
 	secret2 := "secret2_1234567890123456789012345678901234567890123456789"
 
-	hash1 := signer.HashSecret(secret1)
-	hash2 := signer.HashSecret(secret2)
+	hash1, err1 := signer.HashSecret(secret1)
+	if err1 != nil {
+		t.Fatalf("HashSecret(secret1) error = %v", err1)
+	}
+	hash2, err2 := signer.HashSecret(secret2)
+	if err2 != nil {
+		t.Fatalf("HashSecret(secret2) error = %v", err2)
+	}
 
 	// Hashes should be different.
 	if hash1 == hash2 {
@@ -505,7 +514,10 @@ func TestCommandSigner_HashVerification(t *testing.T) {
 	// Test that we can generate, hash, verify cycle.
 	originalSecret := "my-super-secret-key-12345678901234567890123456789012"
 
-	hash := signer.HashSecret(originalSecret)
+	hash, err := signer.HashSecret(originalSecret)
+	if err != nil {
+		t.Fatalf("HashSecret() error = %v", err)
+	}
 
 	if !signer.VerifySecretHash(originalSecret, hash) {
 		t.Error("Hash should verify correctly")

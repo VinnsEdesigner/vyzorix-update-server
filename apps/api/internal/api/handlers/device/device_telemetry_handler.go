@@ -69,8 +69,8 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 	const maxTimeWindowMs = 90 * 24 * 60 * 60 * 1000 // 7,776,000,000 ms.
 
 	if st := c.Query("startTime"); st != "" {
-		val, err := strconv.ParseInt(st, 10, 64)
-		if err != nil {
+		val, intErr := strconv.ParseInt(st, 10, 64)
+		if intErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid startTime format"})
 			return
 		}
@@ -81,8 +81,8 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 		req.StartTime = val
 	}
 	if et := c.Query("endTime"); et != "" {
-		val, err := strconv.ParseInt(et, 10, 64)
-		if err != nil {
+		val, intErr := strconv.ParseInt(et, 10, 64)
+		if intErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid endTime format"})
 			return
 		}
@@ -100,8 +100,8 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 		}
 	}
 	if l := c.Query("limit"); l != "" {
-		val, err := strconv.Atoi(l)
-		if err != nil {
+		val, intErr := strconv.Atoi(l)
+		if intErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid limit format"})
 			return
 		}

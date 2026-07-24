@@ -113,18 +113,33 @@ func NewOrganizationService(
 
 // CreateOrganization creates a new organization with the creator as a member with the specified role.
 func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID, name, description string, maxMembers int, role string) (*organization.Organization, error) {
-	// Validate input.
-	if name == "" {
-		name = "personal" // Default name.
-	}
-	if len(name) < 2 {
-		return nil, errors.New("organization name must be at least 2 characters")
-	}
-	if len(name) > 255 {
-		return nil, errors.New("organization name exceeds 255 characters")
+	name, maxMembers, memberRole, err := s.validateAndPrepareOrg(name, maxMembers, role)
+	if err != nil {
+		return nil, err
 	}
 
-	// Validate role.
+	createdOrg, err := s.createOrgWithTx(ctx, operatorID, name, description, maxMembers, memberRole)
+	if err != nil {
+		return nil, err
+	}
+
+	s.updateOperatorLastOrg(ctx, operatorID, createdOrg.ID)
+
+	return createdOrg, nil
+}
+
+// validateAndPrepareOrg validates inputs and prepares organization creation parameters.
+func (s *OrganizationService) validateAndPrepareOrg(name string, maxMembers int, role string) (string, int, organization.OrganizationRole, error) {
+	if name == "" {
+		name = "personal"
+	}
+	if len(name) < 2 {
+		return name, maxMembers, organization.RoleAdmin, errors.New("organization name must be at least 2 characters")
+	}
+	if len(name) > 255 {
+		return name, maxMembers, organization.RoleAdmin, errors.New("organization name exceeds 255 characters")
+	}
+
 	var memberRole organization.OrganizationRole
 	switch role {
 	case "super_admin":
@@ -132,85 +147,101 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, operatorID
 	case "admin":
 		memberRole = organization.RoleAdmin
 	default:
-		return nil, errors.New("role must be 'super_admin' or 'admin'")
+		return name, maxMembers, memberRole, errors.New("role must be 'super_admin' or 'admin'")
 	}
 
-	// Check max members.
 	if maxMembers <= 0 {
 		maxMembers = DefaultOrgMaxMembers
 	}
 
+	return name, maxMembers, memberRole, nil
+}
+
+// createOrgWithTx creates the organization within a transaction.
+func (s *OrganizationService) createOrgWithTx(ctx context.Context, operatorID, name, description string, maxMembers int, memberRole organization.OrganizationRole) (*organization.Organization, error) {
 	var createdOrg *organization.Organization
 
-	// Use transaction to prevent race condition on max orgs.
-	err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
-		// Count active orgs for this operator.
-		orgs, err := s.orgRepo.ListByOperator(txCtx, operatorID)
-		if err != nil {
-			return err
+	txErr := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
+		activeCount, countErr := s.countActiveOrgs(txCtx, operatorID)
+		if countErr != nil {
+			return countErr
 		}
-
-		activeCount := 0
-		for _, org := range orgs {
-			if !org.IsDeleted() {
-				activeCount++
-			}
-		}
-
 		if activeCount >= MaxActiveOrgsPerOperator {
 			return ErrMaxOrgsReached
 		}
 
-		// Check if org with same name already exists for this operator.
-		existing, err := s.orgRepo.FindByName(txCtx, operatorID, name)
-		if err != nil && !errors.Is(err, organization.ErrNotFound) {
-			return err
-		}
-		if existing != nil {
-			return organization.ErrOrganizationExists
-		}
-
-		// Create organization using constructor.
-		orgID := uuid.New().String()
-		createdOrg = organization.NewOrganization(orgID, name, operatorID)
-		createdOrg.MaxMembers = maxMembers
-		createdOrg.Description = description
-
-		if err := s.orgRepo.Create(txCtx, createdOrg); err != nil {
+		if err := s.checkOrgNameUnique(txCtx, operatorID, name); err != nil {
 			return err
 		}
 
-		// Create membership for creator with the specified role.
-		member := organization.NewMember(
-			uuid.New().String(),
-			createdOrg.ID,
-			operatorID,
-			memberRole,
-		)
-
-		if err := s.memberRepo.Create(txCtx, member); err != nil {
-			return err
-		}
-
-		return nil
+		var buildErr error
+		createdOrg, buildErr = s.buildAndCreateOrg(txCtx, operatorID, name, description, maxMembers, memberRole)
+		return buildErr
 	})
 
+	return createdOrg, txErr
+}
+
+// countActiveOrgs counts active organizations for an operator.
+func (s *OrganizationService) countActiveOrgs(ctx context.Context, operatorID string) (int, error) {
+	orgs, err := s.orgRepo.ListByOperator(ctx, operatorID)
 	if err != nil {
+		return 0, err
+	}
+
+	count := 0
+	for _, org := range orgs {
+		if !org.IsDeleted() {
+			count++
+		}
+	}
+	return count, nil
+}
+
+// checkOrgNameUnique checks if an organization name is unique for the operator.
+func (s *OrganizationService) checkOrgNameUnique(ctx context.Context, operatorID, name string) error {
+	existing, err := s.orgRepo.FindByName(ctx, operatorID, name)
+	if err != nil && !errors.Is(err, organization.ErrNotFound) {
+		return err
+	}
+	if existing != nil {
+		return organization.ErrOrganizationExists
+	}
+	return nil
+}
+
+// buildAndCreateOrg builds and creates the organization with its initial member.
+func (s *OrganizationService) buildAndCreateOrg(ctx context.Context, operatorID, name, description string, maxMembers int, memberRole organization.OrganizationRole) (*organization.Organization, error) {
+	orgID := uuid.New().String()
+	org := organization.NewOrganization(orgID, name, operatorID)
+	org.MaxMembers = maxMembers
+	org.Description = description
+
+	if err := s.orgRepo.Create(ctx, org); err != nil {
 		return nil, err
 	}
 
-	// Update operator LastOrganizationID for auto-selection on next login.
-	if s.operatorRepo != nil {
-		op, opErr := s.operatorRepo.FindByID(ctx, operatorID)
-		if opErr == nil && op.LastOrganizationID != createdOrg.ID {
-			op.LastOrganizationID = createdOrg.ID
-			if err := s.operatorRepo.Update(ctx, op); err != nil {
-				s.logger.Warn("failed to update operator LastOrganizationID", "operatorID", operatorID, "error", err)
-			}
-		}
+	member := organization.NewMember(uuid.New().String(), org.ID, operatorID, memberRole)
+	if err := s.memberRepo.Create(ctx, member); err != nil {
+		return nil, err
 	}
 
-	return createdOrg, nil
+	return org, nil
+}
+
+// updateOperatorLastOrg updates the operator's LastOrganizationID.
+func (s *OrganizationService) updateOperatorLastOrg(ctx context.Context, operatorID, orgID string) {
+	if s.operatorRepo == nil {
+		return
+	}
+	op, opErr := s.operatorRepo.FindByID(ctx, operatorID)
+	if opErr != nil || op.LastOrganizationID == orgID {
+		return
+	}
+	op.LastOrganizationID = orgID
+	if err := s.operatorRepo.Update(ctx, op); err != nil {
+		s.logger.Warn("failed to update operator LastOrganizationID", "operatorID", operatorID, "error", err)
+	}
 }
 
 // GetOrganization retrieves an organization by ID.

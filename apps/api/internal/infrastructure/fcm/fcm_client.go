@@ -52,15 +52,15 @@ func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 	tmpPath := tmpFile.Name()
 
 	// Write credentials and close file before using it.
-	if _, err := tmpFile.WriteString(rawCredentials); err != nil {
+	if _, writeErr := tmpFile.WriteString(rawCredentials); writeErr != nil {
 		_ = tmpFile.Close()
 		_ = os.Remove(tmpPath)
-		log.Warn("fcm disabled; failed to write credentials", "error", err.Error())
+		log.Warn("fcm disabled; failed to write credentials", "error", writeErr.Error())
 		return c, nil
 	}
-	if err := tmpFile.Close(); err != nil {
+	if closeErr := tmpFile.Close(); closeErr != nil {
 		_ = os.Remove(tmpPath)
-		log.Warn("fcm disabled; failed to close temp credentials file", "error", err.Error())
+		log.Warn("fcm disabled; failed to close temp credentials file", "error", closeErr.Error())
 		return c, nil
 	}
 

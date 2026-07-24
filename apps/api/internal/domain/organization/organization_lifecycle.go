@@ -28,7 +28,7 @@ var OrganizationLifecycleTransitions = map[OrganizationLifecycle]map[Organizatio
 		OrganizationLifecycleArchived: true,
 	},
 	OrganizationLifecycleInactive: {
-		OrganizationLifecycleActive:  true,
+		OrganizationLifecycleActive:   true,
 		OrganizationLifecycleArchived: true,
 	},
 	OrganizationLifecycleArchived: {}, // No transitions allowed from archived.
@@ -107,8 +107,8 @@ var ErrInvalidMemberTransition = errors.New("invalid member lifecycle transition
 // MemberLifecycleTransitions defines valid state transitions for member lifecycle.
 var MemberLifecycleTransitions = map[MemberLifecycle]map[MemberLifecycle]bool{
 	MemberLifecycleInvited: {
-		MemberLifecycleActive:    true,
-		MemberLifecycleRemoved:   true,
+		MemberLifecycleActive:  true,
+		MemberLifecycleRemoved: true,
 	},
 	MemberLifecycleActive: {
 		MemberLifecycleSuspended: true,
@@ -181,9 +181,9 @@ func (l MemberLifecycle) Format(s fmt.State, verb rune) {
 
 // MemberTransitionHelper provides methods for member lifecycle state changes.
 type MemberTransitionHelper struct {
-	Lifecycle       MemberLifecycle
-	RemovedAt       *time.Time
-	SuspendedAt     *time.Time
+	RemovedAt   *time.Time
+	SuspendedAt *time.Time
+	Lifecycle   MemberLifecycle
 }
 
 // Invite creates an invited member from scratch.

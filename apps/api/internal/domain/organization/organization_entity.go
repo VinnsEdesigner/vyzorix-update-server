@@ -10,16 +10,16 @@ type OrganizationRole string
 
 const (
 	RoleSuperAdmin OrganizationRole = "super_admin"
-	RoleAdmin     OrganizationRole = "admin"
-	RoleOperator  OrganizationRole = "operator"
-	RoleViewer    OrganizationRole = "viewer"
+	RoleAdmin      OrganizationRole = "admin"
+	RoleOperator   OrganizationRole = "operator"
+	RoleViewer     OrganizationRole = "viewer"
 )
 
 // Level constants for role hierarchy comparisons.
 const (
-	LevelViewer    = 1
-	LevelOperator  = 2
-	LevelAdmin     = 3
+	LevelViewer     = 1
+	LevelOperator   = 2
+	LevelAdmin      = 3
 	LevelSuperAdmin = 4
 )
 
@@ -81,17 +81,14 @@ func (r OrganizationRole) CanManageAPIKeys() bool {
 
 // Organization represents an organization (tenant) in the system with explicit lifecycle management.
 type Organization struct {
-	// Lifecycle tracks the organization lifecycle state.
-	Lifecycle OrganizationLifecycle
-
-	// Infrastructure fields.
-	ID          string
-	Name        string
-	Description string // Optional description of the organization.
-	CreatedBy   string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-	DeletedAt   *time.Time // Soft delete - set when archived.
+	DeletedAt   *time.Time
+	Lifecycle   OrganizationLifecycle
+	ID          string
+	Name        string
+	Description string
+	CreatedBy   string
 	MaxMembers  int
 	MemberCount int
 }
@@ -99,12 +96,12 @@ type Organization struct {
 // NewOrganization creates a new Organization with active lifecycle.
 func NewOrganization(id, name, createdBy string) *Organization {
 	return &Organization{
-		ID:         id,
-		Name:       name,
-		CreatedBy:  createdBy,
-		Lifecycle:  OrganizationLifecycleActive,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		ID:        id,
+		Name:      name,
+		CreatedBy: createdBy,
+		Lifecycle: OrganizationLifecycleActive,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }
 
@@ -178,14 +175,15 @@ type OrganizationMember struct {
 	OperatorEmail string
 }
 
-// NewMember creates a new OrganizationMember with invited lifecycle.
+// NewMember creates a new OrganizationMember as an active member.
+// Use this when creating an organization (founder) or when a member is auto-created.
 func NewMember(id, organizationID, operatorID string, role OrganizationRole) *OrganizationMember {
 	return &OrganizationMember{
 		ID:             id,
 		OrganizationID: organizationID,
 		OperatorID:     operatorID,
 		Role:           role,
-		Lifecycle:      MemberLifecycleInvited,
+		Lifecycle:      MemberLifecycleActive,
 		JoinedAt:       time.Now(),
 	}
 }
@@ -259,10 +257,10 @@ func (m *OrganizationMember) UpdateRole(role OrganizationRole) {
 
 // CreateOrganizationRequest represents a request to create an organization.
 type CreateOrganizationRequest struct {
-	Name        string // Optional - defaults to "personal" if empty.
-	Description string // Optional - organization description.
-	MaxMembers int    // Optional - max members limit (0 = default).
-	Role        string // Required - creator's role: "super_admin" or "admin".
+	Name        string
+	Description string
+	Role        string
+	MaxMembers  int
 }
 
 // Validate validates the create organization request.

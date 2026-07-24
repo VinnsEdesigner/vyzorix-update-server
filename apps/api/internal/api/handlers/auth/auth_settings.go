@@ -380,8 +380,8 @@ func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 	}
 
 	// Validate URL format and block SSRF (private/internal IPs).
-	if err := webhook.ValidateURL(req.URL); err != nil {
-		h.presenter.BadRequest(c, "invalid webhook URL: "+err.Error())
+	if validateErr := webhook.ValidateURL(req.URL); validateErr != nil {
+		h.presenter.BadRequest(c, "invalid webhook URL: "+validateErr.Error())
 		return
 	}
 

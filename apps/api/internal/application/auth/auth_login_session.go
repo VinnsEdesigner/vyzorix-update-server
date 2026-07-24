@@ -295,12 +295,16 @@ name := strings.TrimSpace(req.Name)
 
 if validatePassword {
 if err := ValidatePassword(req.Password, DefaultPasswordPolicy); err != nil {
-return nil, err
+	return nil, fmt.Errorf("%w: %v", application.ErrInvalidInput, err)
 }
-// Check if password was found in known data breaches.
-if breached, _ := infraauth.CheckPasswordBreached(req.Password); breached {
-return nil, application.ErrPasswordBreached
-}
+	// Check if password was found in known data breaches.
+	breached, breachErr := infraauth.CheckPasswordBreached(req.Password)
+	if breached {
+		if breachErr != nil && errors.Is(breachErr, infraauth.ErrBreachCheckFailed) {
+			return nil, application.ErrBreachCheckUnavailable
+		}
+		return nil, application.ErrPasswordBreached
+	}
 }
 
 existing, err := s.operatorRepo.FindByEmail(ctx, email)
@@ -349,7 +353,7 @@ if err := s.operatorRepo.Create(ctx, op); err != nil {
 // RegisterAsSuperAdmin registers the first operator as super admin.
 func (s *AuthService) RegisterAsSuperAdmin(ctx context.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error) {
 if err := ValidatePassword(req.Password, DefaultPasswordPolicy); err != nil {
-return nil, err
+return nil, fmt.Errorf("%w: %v", application.ErrInvalidInput, err)
 }
 
 email := strings.ToLower(strings.TrimSpace(req.Email))
@@ -581,7 +585,7 @@ return application.ErrInvalidCredentials
 }
 
 if validateErr := ValidatePassword(newPassword, DefaultPasswordPolicy); validateErr != nil {
-return validateErr
+return fmt.Errorf("%w: %v", application.ErrInvalidInput, validateErr)
 }
 
 hash, err := s.passwordHasher.Hash(newPassword)

@@ -77,52 +77,54 @@ func LoadSigningConfig() SigningConfig {
 
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
-	APIKeys                  map[string]string
-	ResendAPIKey             string
-	ServerAPIToken              string
-	GitHubOAuthClientSecret  string
-	FirebaseCreds            string
-	SessionSecret            string
-	FrontendURL              string
-	BinDir                   string
-	Port                     string
-	BaseURL                  string
-	EmailFrom                string
-	DataDir                  string
-	GoogleOAuthClientSecret  string
-	GoogleOAuthClientID      string
-	PublicDir                string
-	GitHubReleaseToken       string
-	GitHubReleaseRepo        string
-	GitHubWebhookSecret      string
-	JWTSecret                string
-	GitHubOAuthClientID      string
-	Env                      string
-	DatabaseURL              string
-	APIKeyPrefix             string
-	EmailFromName            string
-	AllowedOrigins           []string
-	DiagnosticsConfig        DiagnosticsConfig
-	NonceCacheTTL            time.Duration
-	MonthlyKeyLimit          int
-	MaxKeyNameLength         int
-	SessionMaxAge            int
-	HMACWindow               time.Duration
-	PasswordResetTokenExpiry time.Duration
-	EmailVerifyTokenExpiry   time.Duration
-	JWTDuration              time.Duration
-	EnableUsageTracking      bool
-	AllowKeyRenaming         bool
-	EnforceHMAC              bool
-	EnableGraphQL            bool
-	RequireKeyName           bool
-	AuditLogPath             string
-	AuditLogSeparateDB       bool   
-	AuditLogSeparateDBPath   string 
-	DeviceSecret             string
-	FirebaseAppID            string // Firebase App ID for App Check validation.
-	DeviceDeletionEnabled     bool   // Enable background worker for device deletion.
-	DeviceDeletionIntervalMinutes int // Interval in minutes for device deletion worker.
+	APIKeys                       map[string]string
+	APIKeyPrefix                  string
+	GitHubReleaseRepo             string
+	GitHubOAuthClientSecret       string
+	FirebaseCreds                 string
+	SessionSecret                 string
+	FrontendURL                   string
+	BinDir                        string
+	Port                          string
+	BaseURL                       string
+	EmailFrom                     string
+	DataDir                       string
+	GoogleOAuthClientSecret       string
+	GoogleOAuthClientID           string
+	FirebaseAppID                 string
+	GitHubReleaseToken            string
+	DeviceSecret                  string
+	GitHubWebhookSecret           string
+	JWTSecret                     string
+	GitHubOAuthClientID           string
+	Env                           string
+	DatabaseURL                   string
+	ResendAPIKey                  string
+	ServerAPIToken                string
+	EmailFromName                 string
+	PublicDir                     string
+	AuditLogSeparateDBPath        string
+	AuditLogPath                  string
+	AllowedOrigins                []string
+	DiagnosticsConfig             DiagnosticsConfig
+	MonthlyKeyLimit               int
+	SessionMaxAge                 int
+	DeviceDeletionIntervalMinutes int
+	PasswordResetTokenExpiry      time.Duration
+	EmailVerifyTokenExpiry        time.Duration
+	JWTDuration                   time.Duration
+	MaxKeyNameLength              int
+	HMACWindow                    time.Duration
+	NonceCacheTTL                 time.Duration
+	EnableGraphQL                 bool
+	AuditLogSeparateDB            bool
+	RequireKeyName                bool
+	AllowKeyRenaming              bool
+	EnableUsageTracking           bool
+	DeviceDeletionEnabled         bool
+	EnforceHMAC                   bool
+	RateLimitPerMin               int
+	AuthRateLimitMin              int
 }
 
 // DiagnosticsConfig holds configuration for the diagnostics API.
@@ -178,68 +180,24 @@ func LoadDiagnosticsConfig() DiagnosticsConfig {
 
 // rather than failing on first request.
 func Load() (Config, error) {
-	jwtDuration := 7 * 24 * time.Hour
-
-	if v := os.Getenv("JWT_DURATION_HOURS"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			return Config{}, fmt.Errorf("JWT_DURATION_HOURS must be a valid integer: %w", err)
-		}
-		if n <= 0 {
-			return Config{}, errors.New("JWT_DURATION_HOURS must be positive")
-		}
-		if n > 8760 { // 1 year.
-			return Config{}, errors.New("JWT_DURATION_HOURS exceeds maximum of 8760 (1 year)")
-		}
-		jwtDuration = time.Duration(n) * time.Hour
+	jwtDuration, err := parseJWTDuration()
+	if err != nil {
+		return Config{}, err
 	}
 
-	sessionMaxAge := 86400
-
-	if v := os.Getenv("SESSION_MAX_AGE_SECONDS"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			return Config{}, fmt.Errorf("SESSION_MAX_AGE_SECONDS must be a valid integer: %w", err)
-		}
-		if n <= 0 {
-			return Config{}, errors.New("SESSION_MAX_AGE_SECONDS must be positive")
-		}
-		if n > 604800 { // 7 days.
-			return Config{}, errors.New("SESSION_MAX_AGE_SECONDS exceeds maximum of 604800 (7 days)")
-		}
-		sessionMaxAge = n
+	sessionMaxAge, err := parseSessionMaxAge()
+	if err != nil {
+		return Config{}, err
 	}
 
-	emailVerifyExpiry := 24 * time.Hour
-
-	if v := os.Getenv("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			return Config{}, fmt.Errorf("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS must be a valid integer: %w", err)
-		}
-		if n <= 0 {
-			return Config{}, errors.New("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS must be positive")
-		}
-		if n > 168 { // 7 days.
-			return Config{}, errors.New("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS exceeds maximum of 168 (7 days)")
-		}
-		emailVerifyExpiry = time.Duration(n) * time.Hour
+	emailVerifyExpiry, err := parseEmailVerifyExpiry()
+	if err != nil {
+		return Config{}, err
 	}
 
-	passwordResetExpiry := time.Hour
-
-	if v := os.Getenv("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			return Config{}, fmt.Errorf("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES must be a valid integer: %w", err)
-		}
-		if n <= 0 {
-			return Config{}, errors.New("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES must be positive")
-		}
-		if n > 1440 { // 24 hours.
-			return Config{}, errors.New("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES exceeds maximum of 1440 (24 hours)")
-		}
-		passwordResetExpiry = time.Duration(n) * time.Minute
+	passwordResetExpiry, err := parsePasswordResetExpiry()
+	if err != nil {
+		return Config{}, err
 	}
 
 	c := Config{
@@ -250,7 +208,7 @@ func Load() (Config, error) {
 		BinDir:                   get("VYZORIX_BIN_DIR", "./bin"),
 		PublicDir:                get("VYZORIX_PUBLIC_DIR", "./public"),
 		FirebaseCreds:            os.Getenv("FIREBASE_CREDENTIALS"),
-		ServerAPIToken:              os.Getenv("SERVER_API_TOKEN"),
+		ServerAPIToken:           os.Getenv("SERVER_API_TOKEN"),
 		APIKeyPrefix:             get("API_KEY_PREFIX", "vxyz"),
 		MonthlyKeyLimit:          20,
 		MaxKeyNameLength:         64,
@@ -278,99 +236,201 @@ func Load() (Config, error) {
 		JWTDuration:              jwtDuration,
 		EmailVerifyTokenExpiry:   emailVerifyExpiry,
 		PasswordResetTokenExpiry: passwordResetExpiry,
-		EnableGraphQL:            getBool("ENABLE_GRAPHQL", true), // Enabled by default.
+		EnableGraphQL:            getBool("ENABLE_GRAPHQL", true),
 		AuditLogPath:             get("AUDIT_LOG_PATH", "./data/audit.log"),
-		
-		AuditLogSeparateDB:       getBool("AUDIT_LOG_SEPARATE_DB", false),
-		AuditLogSeparateDBPath:   get("AUDIT_LOG_SEPARATE_DB_PATH", "./data/audit/audit.db"),
-		DiagnosticsConfig:        LoadDiagnosticsConfig(),
+		AuditLogSeparateDB:     getBool("AUDIT_LOG_SEPARATE_DB", false),
+		AuditLogSeparateDBPath: get("AUDIT_LOG_SEPARATE_DB_PATH", "./data/audit/audit.db"),
+		DiagnosticsConfig:      LoadDiagnosticsConfig(),
+		RateLimitPerMin:        getenvInt("RATE_LIMIT_REQUESTS", 100),
+		AuthRateLimitMin:       getenvInt("AUTH_RATE_LIMIT_REQUESTS", 60),
 	}
 
-	// Load API keys (supports multiple for rotation).
-	// Format: API_KEY_<id>=<key_value> (e.g., API_KEY_primary=abc123, API_KEY_backup=def456).
 	c.APIKeys = loadAPIKeys()
 
 	enforceDefault := strings.EqualFold(c.Env, "production")
 	c.EnforceHMAC = getBool("ENFORCE_HMAC", enforceDefault)
 
-	if v := os.Getenv("HMAC_WINDOW_SECONDS"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n <= 0 {
-			return c, fmt.Errorf("invalid HMAC_WINDOW_SECONDS: %q", v)
-		}
-		if n > 300 { // 5 minutes max.
-			return c, fmt.Errorf("HMAC_WINDOW_SECONDS exceeds maximum of 300 (5 minutes)")
-		}
+	hmacWindow, err := parseHMACWindow()
+	if err != nil {
+		return c, err
+	}
+	c.HMACWindow = hmacWindow
 
-		c.HMACWindow = time.Duration(n) * time.Second
+	if err := validateRequiredSecrets(&c); err != nil {
+		return c, err
 	}
 
-	
-	// Collect all missing or invalid required values.
+	if err := validateProductionConfig(&c); err != nil {
+		return c, err
+	}
+
+	if err := validatePort(&c); err != nil {
+		return c, err
+	}
+
+	if err := parseDeviceDeletionConfig(&c); err != nil {
+		return c, err
+	}
+
+	c.DeviceSecret = os.Getenv("DEVICE_SECRET")
+	c.FirebaseAppID = os.Getenv("FIREBASE_APP_ID")
+
+	return c, nil
+}
+
+// parseJWTDuration parses JWT_DURATION_HOURS environment variable.
+func parseJWTDuration() (time.Duration, error) {
+	v := os.Getenv("JWT_DURATION_HOURS")
+	if v == "" {
+		return 7 * 24 * time.Hour, nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, fmt.Errorf("JWT_DURATION_HOURS must be a valid integer: %w", err)
+	}
+	if n <= 0 {
+		return 0, errors.New("JWT_DURATION_HOURS must be positive")
+	}
+	if n > 8760 {
+		return 0, errors.New("JWT_DURATION_HOURS exceeds maximum of 8760 (1 year)")
+	}
+	return time.Duration(n) * time.Hour, nil
+}
+
+// parseSessionMaxAge parses SESSION_MAX_AGE_SECONDS environment variable.
+func parseSessionMaxAge() (int, error) {
+	v := os.Getenv("SESSION_MAX_AGE_SECONDS")
+	if v == "" {
+		return 86400, nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, fmt.Errorf("SESSION_MAX_AGE_SECONDS must be a valid integer: %w", err)
+	}
+	if n <= 0 {
+		return 0, errors.New("SESSION_MAX_AGE_SECONDS must be positive")
+	}
+	if n > 604800 {
+		return 0, errors.New("SESSION_MAX_AGE_SECONDS exceeds maximum of 604800 (7 days)")
+	}
+	return n, nil
+}
+
+// parseEmailVerifyExpiry parses EMAIL_VERIFY_TOKEN_EXPIRY_HOURS environment variable.
+func parseEmailVerifyExpiry() (time.Duration, error) {
+	v := os.Getenv("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS")
+	if v == "" {
+		return 24 * time.Hour, nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, fmt.Errorf("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS must be a valid integer: %w", err)
+	}
+	if n <= 0 {
+		return 0, errors.New("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS must be positive")
+	}
+	if n > 168 {
+		return 0, errors.New("EMAIL_VERIFY_TOKEN_EXPIRY_HOURS exceeds maximum of 168 (7 days)")
+	}
+	return time.Duration(n) * time.Hour, nil
+}
+
+// parsePasswordResetExpiry parses PASSWORD_RESET_TOKEN_EXPIRY_MINUTES environment variable.
+func parsePasswordResetExpiry() (time.Duration, error) {
+	v := os.Getenv("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES")
+	if v == "" {
+		return time.Hour, nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, fmt.Errorf("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES must be a valid integer: %w", err)
+	}
+	if n <= 0 {
+		return 0, errors.New("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES must be positive")
+	}
+	if n > 1440 {
+		return 0, errors.New("PASSWORD_RESET_TOKEN_EXPIRY_MINUTES exceeds maximum of 1440 (24 hours)")
+	}
+	return time.Duration(n) * time.Minute, nil
+}
+
+// parseHMACWindow parses HMAC_WINDOW_SECONDS environment variable.
+func parseHMACWindow() (time.Duration, error) {
+	v := os.Getenv("HMAC_WINDOW_SECONDS")
+	if v == "" {
+		return 30 * time.Second, nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n <= 0 {
+		return 0, fmt.Errorf("invalid HMAC_WINDOW_SECONDS: %q", v)
+	}
+	if n > 300 {
+		return 0, fmt.Errorf("HMAC_WINDOW_SECONDS exceeds maximum of 300 (5 minutes)")
+	}
+	return time.Duration(n) * time.Second, nil
+}
+
+// validateRequiredSecrets checks for required secrets.
+func validateRequiredSecrets(c *Config) error {
 	var missingVars []string
 
 	if strings.TrimSpace(c.DatabaseURL) == "" {
 		missingVars = append(missingVars, "DATABASE_URL")
 	}
-
 	if len(c.APIKeys) == 0 {
 		missingVars = append(missingVars, "at least one API_KEY_* (e.g., API_KEY_primary=<key>)")
 	}
-
-	// JWT_SECRET is required regardless of environment.
-	// It is used for signing tokens and cannot have a safe default.
 	if c.JWTSecret == "" {
 		missingVars = append(missingVars, "JWT_SECRET")
 	}
-
-	// SESSION_SECRET is required regardless of environment.
-	// It is used for session encryption and cannot have a safe default.
 	if c.SessionSecret == "" {
 		missingVars = append(missingVars, "SESSION_SECRET")
 	}
 
-	// Return all missing variables at once for clear diagnosis.
 	if len(missingVars) > 0 {
-		return c, fmt.Errorf("missing required environment variables: %v", missingVars)
+		return fmt.Errorf("missing required environment variables: %v", missingVars)
 	}
+	return nil
+}
 
-	// Production-specific validations.
-	if c.Env == "production" {
-		if c.ServerAPIToken == "" {
-			return c, errors.New("SERVER_API_TOKEN is required in production")
-		}
-		if len(c.JWTSecret) < 32 {
-			return c, errors.New("JWT_SECRET must be at least 32 characters in production")
-		}
-		if len(c.SessionSecret) < 32 {
-			return c, errors.New("SESSION_SECRET must be at least 32 characters in production")
-		}
+// validateProductionConfig validates production-specific configuration.
+func validateProductionConfig(c *Config) error {
+	if c.Env != "production" {
+		return nil
 	}
-
-	// Validate port is a valid number.
-	if port, err := strconv.Atoi(c.Port); err != nil || port < 1 || port > 65535 {
-		return c, fmt.Errorf("invalid PORT: %q (must be between 1 and 65535)", c.Port)
+	if c.ServerAPIToken == "" {
+		return errors.New("SERVER_API_TOKEN is required in production")
 	}
+	if len(c.JWTSecret) < 32 {
+		return errors.New("JWT_SECRET must be at least 32 characters in production")
+	}
+	if len(c.SessionSecret) < 32 {
+		return errors.New("SESSION_SECRET must be at least 32 characters in production")
+	}
+	return nil
+}
 
-	// Device deletion worker configuration.
+// validatePort validates the port configuration.
+func validatePort(c *Config) error {
+	port, err := strconv.Atoi(c.Port)
+	if err != nil || port < 1 || port > 65535 {
+		return fmt.Errorf("invalid PORT: %q (must be between 1 and 65535)", c.Port)
+	}
+	return nil
+}
+
+// parseDeviceDeletionConfig parses device deletion configuration.
+func parseDeviceDeletionConfig(c *Config) error {
 	c.DeviceDeletionEnabled = getBool("DEVICE_DELETION_ENABLED", false)
 	c.DeviceDeletionIntervalMinutes = getenvInt("DEVICE_DELETION_INTERVAL_MINUTES", 5)
 
-	// Validate DeviceDeletionIntervalMinutes.
 	if c.DeviceDeletionIntervalMinutes < 1 {
-		return c, errors.New("DEVICE_DELETION_INTERVAL_MINUTES must be at least 1")
+		return errors.New("DEVICE_DELETION_INTERVAL_MINUTES must be at least 1")
 	}
 	if c.DeviceDeletionIntervalMinutes > 60 {
-		return c, errors.New("DEVICE_DELETION_INTERVAL_MINUTES exceeds maximum of 60 (1 hour)")
+		return errors.New("DEVICE_DELETION_INTERVAL_MINUTES exceeds maximum of 60 (1 hour)")
 	}
-
-	// Device secret for device attestation (HMAC-SHA256).
-	c.DeviceSecret = os.Getenv("DEVICE_SECRET")
-
-	// Firebase App ID for App Check validation.
-	c.FirebaseAppID = os.Getenv("FIREBASE_APP_ID")
-
-	return c, nil
+	return nil
 }
 
 func get(k, fallback string) string {

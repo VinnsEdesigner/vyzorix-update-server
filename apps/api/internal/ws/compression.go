@@ -40,12 +40,11 @@ type CompressionMetrics struct {
 
 // Compression provides GZIP compression for WebSocket messages.
 type Compression struct {
-	log     *slog.Logger
-	config  *CompressionConfig
-	metrics CompressionMetrics
-	mu      sync.RWMutex
-	
 	gzipPool sync.Pool
+	log      *slog.Logger
+	config   *CompressionConfig
+	metrics  CompressionMetrics
+	mu       sync.RWMutex
 }
 
 // NewCompression creates a new Compression handler.
@@ -59,7 +58,6 @@ func NewCompression(log *slog.Logger, cfg *CompressionConfig) *Compression {
 		config: cfg,
 	}
 
-	
 	c.gzipPool = sync.Pool{
 		New: func() interface{} {
 			return new(bytes.Buffer)
@@ -78,7 +76,6 @@ func (c *Compression) CompressMessage(data []byte) ([]byte, bool, error) {
 		return data, false, nil
 	}
 
-	
 	bufInterface := c.gzipPool.Get()
 	var buf *bytes.Buffer
 	if bufInterface != nil {

@@ -11,20 +11,20 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	infraConfig "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
 	"github.com/gin-gonic/gin"
@@ -33,39 +33,39 @@ import (
 
 // ServerDependencies contains all dependencies needed to create a Server.
 type ServerDependencies struct {
-	FCMNotifier          fcm.Notifier
-	AppCheckVerifier     *appcheck.Verifier
-	DeviceDeletionWorker *worker.DeviceDeletionWorker
-	CommandOutbox       *command.Outbox
-	DeviceRepo           *storage.DeviceRepository
-	OperatorRepo        operator.Repository
-	EmailService        *emailService.Service
+	OperatorRepo          operator.Repository
+	FCMNotifier           fcm.Notifier
+	Hub                   *hub.Hub
+	DB                    *storage.SQLite
+	DeviceRepo            *storage.DeviceRepository
+	DeviceDeletionWorker  *worker.DeviceDeletionWorker
+	EmailService          *emailService.Service
 	EmailVerificationRepo *storage.EmailVerificationRepository
-	CommandService      *command.Service
-	AuthService        *auth.AuthService
-	AuthLimiter        *middleware.RateLimiter
-	IPIntelligence      *middleware.IPIntelligence
-	Log                *slog.Logger
-	SessionManager      *infraauth.SessionManager
-	GoogleVerifier      *infraauth.GoogleTokenVerifier
-	RateLimiter        *middleware.RateLimiter
-	Hub                *hub.Hub
-	ClientService      *client.Service
-	DB                *storage.SQLite
-	Lockout            *middleware.Lockout
-	DeviceService      *device.Service
-	Metrics            *metrics.Metrics
-	AuditLogger        *audit.Logger
-	TelemetryRepo      *storage.TelemetryRepository
-	UpdatesStorage     *storage.UpdatesStorage
-	UpdatesService     *updatesapp.Service
-	APIKeyService      *keys.APIKeyService
-	Config             infraConfig.Config
-	OrgService         *orgapplication.OrganizationService
-	MemberService      *orgapplication.MemberService
-	InvitationService   *orgapplication.InvitationService
-	OrgSettingsService  *orgapplication.OrganizationSettingsService
+	CommandService        *command.Service
+	AuthService           *auth.AuthService
+	AuthLimiter           *middleware.RateLimiter
+	IPIntelligence        *middleware.IPIntelligence
+	Log                   *slog.Logger
+	SessionManager        *infraauth.SessionManager
+	GoogleVerifier        *infraauth.GoogleTokenVerifier
+	RateLimiter           *middleware.RateLimiter
+	CommandOutbox         *command.Outbox
+	AppCheckVerifier      *appcheck.Verifier
+	DeviceService         *device.Service
+	Lockout               *middleware.Lockout
+	ClientService         *client.Service
+	Metrics               *metrics.Metrics
+	AuditLogger           *audit.Logger
+	TelemetryRepo         *storage.TelemetryRepository
+	UpdatesStorage        *storage.UpdatesStorage
+	UpdatesService        *updatesapp.Service
+	APIKeyService         *keys.APIKeyService
 	DeviceSettingsService *device.DeviceSettingsService
+	OrgService            *orgapplication.OrganizationService
+	MemberService         *orgapplication.MemberService
+	InvitationService     *orgapplication.InvitationService
+	OrgSettingsService    *orgapplication.OrganizationSettingsService
+	Config                infraConfig.Config
 }
 
 // ServerResult contains the fully wired server components.
@@ -107,8 +107,8 @@ func WireServer(deps ServerDependencies) *ServerResult {
 		HMACWindow:       deps.Config.HMACWindow,
 		PublicDir:        deps.Config.PublicDir,
 		JWTSecret:        deps.Config.JWTSecret,
-		RateLimitPerMin:  100,
-		AuthRateLimitMin: 5,
+		RateLimitPerMin:  deps.Config.RateLimitPerMin,
+		AuthRateLimitMin: deps.Config.AuthRateLimitMin,
 	}
 	result.MiddlewareSet = WireMiddleware(mwCfg)
 
@@ -129,32 +129,32 @@ func WireServer(deps ServerDependencies) *ServerResult {
 
 	// Wire handlers.
 	handlerDeps := HandlerDependencies{
-		AuthService:            deps.AuthService,
+		AuthService:           deps.AuthService,
 		SessionManager:        deps.SessionManager,
 		Config:                deps.Config,
-		GoogleVerifier:         deps.GoogleVerifier,
-		ClientService:          deps.ClientService,
-		EmailService:           deps.EmailService,
-		EmailVerificationRepo:  deps.EmailVerificationRepo,
-		Lockout:                deps.Lockout,
-		OperatorRepo:           deps.OperatorRepo,
-		AuditLogger:            deps.AuditLogger,
-		IPIntelligence:         deps.IPIntelligence,
-		Presenter:              result.Presenter,
-		DeviceService:          deps.DeviceService,
-		Hub:                    deps.Hub,
-		CommandService:         deps.CommandService,
-		FCMNotifier:            deps.FCMNotifier,
-		AppCheckVerifier:       deps.AppCheckVerifier,
-		Log:                    deps.Log,
-		HmacVerifier:           result.HmacVerifier,
-		DB:                     deps.DB,
-		UpdatesStorage:         deps.UpdatesStorage,
-		OrgService:             deps.OrgService,
-		MemberService:          deps.MemberService,
-		InvitationService:      deps.InvitationService,
-		OrgSettingsService:     deps.OrgSettingsService,
-		DeviceSettingsService:  deps.DeviceSettingsService,
+		GoogleVerifier:        deps.GoogleVerifier,
+		ClientService:         deps.ClientService,
+		EmailService:          deps.EmailService,
+		EmailVerificationRepo: deps.EmailVerificationRepo,
+		Lockout:               deps.Lockout,
+		OperatorRepo:          deps.OperatorRepo,
+		AuditLogger:           deps.AuditLogger,
+		IPIntelligence:        deps.IPIntelligence,
+		Presenter:             result.Presenter,
+		DeviceService:         deps.DeviceService,
+		Hub:                   deps.Hub,
+		CommandService:        deps.CommandService,
+		FCMNotifier:           deps.FCMNotifier,
+		AppCheckVerifier:      deps.AppCheckVerifier,
+		Log:                   deps.Log,
+		HmacVerifier:          result.HmacVerifier,
+		DB:                    deps.DB,
+		UpdatesStorage:        deps.UpdatesStorage,
+		OrgService:            deps.OrgService,
+		MemberService:         deps.MemberService,
+		InvitationService:     deps.InvitationService,
+		OrgSettingsService:    deps.OrgSettingsService,
+		DeviceSettingsService: deps.DeviceSettingsService,
 	}
 	result.HandlerSet = WireHandlers(handlerDeps)
 
