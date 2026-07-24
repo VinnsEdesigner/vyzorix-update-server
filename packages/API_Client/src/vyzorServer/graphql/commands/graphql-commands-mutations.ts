@@ -1,64 +1,36 @@
+import { graphqlClient } from '../_shared/graphql-client';
 
-
-
-
-
-
-
-export const SEND_COMMAND =  `
-  mutation SendCommand($imei: String!, $commandType: String!, $params: JSON) {
-    sendCommand(imei: $imei, commandType: $commandType, params: $params) {
+export const SEND_COMMAND = `
+  mutation SendCommand($organizationId: ID!, $deviceId: ID!, $commandType: String!, $params: JSON) {
+    sendCommand(organizationId: $organizationId, deviceId: $deviceId, commandType: $commandType, params: $params) {
       id
-      dispatchId
-      type
-      deviceImei
+      device_id
+      command_type
+      payload
       status
-      createdAt
+      created_at
     }
   }
 `;
 
-
-export const CANCEL_COMMAND =  `
-  mutation CancelCommand($imei: String!, $dispatchId: String!) {
-    cancelCommand(imei: $imei, dispatchId: $dispatchId) {
+export const DISMISS_COMMAND = `
+  mutation DismissCommand($organizationId: ID!, $dispatchId: ID!) {
+    dismissCommand(organizationId: $organizationId, dispatchId: $dispatchId) {
       success
     }
   }
 `;
 
-
-export const RETRY_COMMAND =  `
-  mutation RetryCommand($dispatchId: String!) {
-    retryCommand(dispatchId: $dispatchId) {
-      id
-      dispatchId
-      type
-      deviceImei
-      status
-      createdAt
-    }
-  }
-`;
-import { graphqlClient } from '../_shared/graphql-client';
-
-export async function mutateSendCommand(imei: string, commandType: string, params?: Record<string, unknown>) {
-  return graphqlClient.mutate({
+export async function mutateSendCommand(params: { organizationId: string; deviceId: string; commandType: string; params?: Record<string, unknown> }) {
+  return graphqlClient.getClient().mutate({
     mutation: SEND_COMMAND,
-    variables: { imei, commandType, params },
+    variables: params,
   });
 }
 
-export async function mutateCancelCommand(imei: string, dispatchId: string) {
-  return graphqlClient.mutate({
-    mutation: CANCEL_COMMAND,
-    variables: { imei, dispatchId },
-  });
-}
-
-export async function mutateRetryCommand(dispatchId: string) {
-  return graphqlClient.mutate({
-    mutation: RETRY_COMMAND,
-    variables: { dispatchId },
+export async function mutateDismissCommand(params: { organizationId: string; dispatchId: string }) {
+  return graphqlClient.getClient().mutate({
+    mutation: DISMISS_COMMAND,
+    variables: params,
   });
 }

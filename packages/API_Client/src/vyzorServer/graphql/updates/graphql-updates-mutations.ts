@@ -1,75 +1,34 @@
-
 import { gql } from '@apollo/client';
 import { graphqlClient } from '../_shared/graphql-client';
 
-
-
-
-
-export const PUSH_UPDATE = gql`
-  mutation PushUpdate($input: PushUpdateInput!) {
-    pushUpdate(input: $input) {
-      id
-      version
-      installType
-      status
-      initiatedBy
-      initiatedAt
-      deviceCount
-    }
-  }
-`;
-
-export const CANCEL_UPDATE = gql`
-  mutation CancelUpdate($pushId: String!) {
-    cancelUpdate(pushId: $pushId) {
-      id
-      version
-      status
-      completedAt
-      cancelledAt
-    }
-  }
-`;
-
-export const SYNC_FROM_GITHUB = gql`
-  mutation SyncFromGitHub {
-    syncFromGitHub {
-      status
-      startedAt
-      versionsFound
+export const REQUEST_UPDATE = gql`
+  mutation RequestUpdate($organizationId: ID!, $deviceId: ID!, $version: String!) {
+    requestUpdate(organizationId: $organizationId, deviceId: $deviceId, version: $version) {
+      success
       message
     }
   }
 `;
 
+export const APPLY_UPDATE = gql`
+  mutation ApplyUpdate($organizationId: ID!, $deviceId: ID!, $version: String!) {
+    applyUpdate(organizationId: $organizationId, deviceId: $deviceId, version: $version) {
+      success
+      message
+    }
+  }
+`;
 
-
-
-
-export interface PushUpdateInput {
-  version: string;
-  deviceIds: string[];
-  installType: 'IMMEDIATE' | 'SCHEDULED';
-  scheduledAt?: string;
-}
-
-export async function mutatePushUpdate(input: PushUpdateInput) {
-  return graphqlClient.mutate({
-    mutation: PUSH_UPDATE,
-    variables: { input },
+export async function mutateRequestUpdate(params: { organizationId: string; deviceId: string; version: string }) {
+  return graphqlClient.getClient().mutate({
+    mutation: REQUEST_UPDATE,
+    variables: params,
   });
 }
 
-export async function mutateCancelUpdate(pushId: string) {
-  return graphqlClient.mutate({
-    mutation: CANCEL_UPDATE,
-    variables: { pushId },
-  });
-}
-
-export async function mutateSyncFromGitHub() {
-  return graphqlClient.mutate({
-    mutation: SYNC_FROM_GITHUB,
+export async function mutateApplyUpdate(params: { organizationId: string; deviceId: string; version: string }) {
+  return graphqlClient.getClient().mutate({
+    mutation: APPLY_UPDATE,
+    variables: params,
   });
 }

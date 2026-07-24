@@ -1,17 +1,16 @@
-
-
-export const DEVICE_FRAGMENT =  `
+export const DEVICE_FRAGMENT = `
   fragment Device on Device {
     id
     imei
-    deviceName
+    device_name
     model
     manufacturer
-    osVersion
-    appVersion
-    fcmToken
+    os_version
+    app_version
     status
-    registeredAt
-    lastSeen
+    registered_at
+    last_seen
+    fcm_token_valid
+    command_secret_set
   }
 `;

@@ -1,88 +1,75 @@
-import { SETTINGS_FRAGMENT, OPERATOR_FRAGMENT, THRESHOLDS_FRAGMENT } from "./graphql-settings-fragments";
+import { graphqlClient } from '../_shared/graphql-client';
+import { OPERATOR_SETTINGS_FRAGMENT, DEVICE_SETTINGS_FRAGMENT, ORGANIZATION_SETTINGS_FRAGMENT, THRESHOLDS_FRAGMENT } from "./graphql-settings-fragments";
 
-export const GET_SETTINGS =  `
+export const GET_SETTINGS = `
+  ${OPERATOR_SETTINGS_FRAGMENT}
   query GetSettings {
     mySettings {
-      ...Settings
-    }
-  }
-  ${SETTINGS_FRAGMENT}
-`;
-
-export const GET_THRESHOLDS =  `
-  query GetThresholds {
-    myThresholds {
-      ...Thresholds
-    }
-  }
-  ${THRESHOLDS_FRAGMENT}
-`;
-
-export const GET_NOTIFICATIONS =  `
-  query GetNotifications {
-    myNotifications {
-      enabled
-      channels
-      email {
-        thresholdBreach
-        deviceOffline
-        deviceOnline
-        updateAvailable
-        commandFailed
-        registrationRequest
-      }
-      push {
-        thresholdBreach
-        deviceOffline
-        deviceOnline
-        updateAvailable
-        commandFailed
-        registrationRequest
-      }
-      webhook {
-        enabled
-        url
-        secret
-        types
-      }
+      ...OperatorSettings
     }
   }
 `;
 
-export const GET_OPERATOR =  `
-  query GetOperator {
-    me {
-      ...Operator
+export const GET_DEVICE_SETTINGS = `
+  ${DEVICE_SETTINGS_FRAGMENT}
+  query GetDeviceSettings($organizationId: ID!, $deviceImei: String!) {
+    deviceSettings(organizationId: $organizationId, deviceImei: $deviceImei) {
+      ...DeviceSettings
     }
   }
-  ${OPERATOR_FRAGMENT}
 `;
-import { graphqlClient } from '../_shared/graphql-client';
+
+export const GET_ORGANIZATION_SETTINGS = `
+  ${ORGANIZATION_SETTINGS_FRAGMENT}
+  query GetOrganizationSettings($organizationId: ID!) {
+    organizationSettings(organizationId: $organizationId) {
+      ...OrganizationSettings
+    }
+  }
+`;
+
+export const GET_THRESHOLDS = `
+  query GetThresholds($organizationId: ID!) {
+    thresholds(organizationId: $organizationId) {
+      thresholds {
+        temp_min
+        temp_max
+        battery_min
+        battery_max
+        speed_max
+        distance_max
+      }
+    }
+  }
+`;
 
 export async function querySettings() {
-  return graphqlClient.query({
+  return graphqlClient.getClient().query({
     query: GET_SETTINGS,
     fetchPolicy: 'network-only',
   });
 }
 
-export async function queryThresholds() {
-  return graphqlClient.query({
+export async function queryDeviceSettings(params: { organizationId: string; deviceImei: string }) {
+  return graphqlClient.getClient().query({
+    query: GET_DEVICE_SETTINGS,
+    variables: params,
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryOrganizationSettings(organizationId: string) {
+  return graphqlClient.getClient().query({
+    query: GET_ORGANIZATION_SETTINGS,
+    variables: { organizationId },
+    fetchPolicy: 'network-only',
+  });
+}
+
+export async function queryThresholds(organizationId: string) {
+  return graphqlClient.getClient().query({
     query: GET_THRESHOLDS,
-    fetchPolicy: 'network-only',
-  });
-}
-
-export async function queryNotifications() {
-  return graphqlClient.query({
-    query: GET_NOTIFICATIONS,
-    fetchPolicy: 'network-only',
-  });
-}
-
-export async function queryOperator() {
-  return graphqlClient.query({
-    query: GET_OPERATOR,
+    variables: { organizationId },
     fetchPolicy: 'network-only',
   });
 }

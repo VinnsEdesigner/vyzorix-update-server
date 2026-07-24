@@ -1,25 +1,23 @@
-
-
-export const INBOX_ENTRY_FRAGMENT =  `
+export const INBOX_ENTRY_FRAGMENT = `
   fragment InboxEntry on InboxEntry {
     id
     imei
-    deviceName
+    device_name
     model
     manufacturer
-    osVersion
-    appVersion
+    os_version
+    app_version
     firmware
-    securityPatch
-    buildId
-    fcmToken
-    firebaseInstallId
+    security_patch
+    build_id
+    fcm_token
+    firebase_install_id
     status
-    receivedAt
-    updatedAt
-    acknowledgedAt
-    approvedAt
-    rejectedAt
+    received_at
+    updated_at
+    acknowledged_at
+    approved_at
+    rejected_at
     notes
   }
 `;

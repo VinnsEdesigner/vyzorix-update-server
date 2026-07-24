@@ -1,290 +1,118 @@
-
-
-
-
-
-
-
-export const UPDATE_SETTINGS =  `
-  mutation UpdateSettings($input: ClientSettingsInput!) {
-    updateMySettings(input: $input) {
-      client {
-        serverUrl
-        deviceId
-        requestTimeoutMs
-        autoReconnect
-        strictHmac
-        logBufferLimit
-        signalHistoryLimit
-      }
-      thresholds {
-        riskWarn
-        riskCrit
-        thermalWarn
-        thermalCrit
-        bufferWarn
-        bufferCrit
-      }
-      notifications {
-        enabled
-        channels
-        email {
-          thresholdBreach
-          deviceOffline
-          deviceOnline
-          updateAvailable
-          commandFailed
-          registrationRequest
-        }
-        push {
-          thresholdBreach
-          deviceOffline
-          deviceOnline
-          updateAvailable
-          commandFailed
-          registrationRequest
-        }
-        webhook {
-          enabled
-          url
-          secret
-          types
-        }
-      }
-    }
-  }
-`;
-
-
-export const UPDATE_THRESHOLDS =  `
-  mutation UpdateThresholds($input: ThresholdsInput!) {
-    updateMyThresholds(input: $input) {
-      riskWarn
-      riskCrit
-      thermalWarn
-      thermalCrit
-      bufferWarn
-      bufferCrit
-    }
-  }
-`;
-
-
-export const UPDATE_NOTIFICATIONS =  `
-  mutation UpdateNotifications($input: NotificationInput!) {
-    updateMyNotifications(input: $input) {
-      enabled
-      channels
-      email {
-        thresholdBreach
-        deviceOffline
-        deviceOnline
-        updateAvailable
-        commandFailed
-        registrationRequest
-      }
-      push {
-        thresholdBreach
-        deviceOffline
-        deviceOnline
-        updateAvailable
-        commandFailed
-        registrationRequest
-      }
-      webhook {
-        enabled
-        url
-        secret
-        types
-      }
-    }
-  }
-`;
-
-
-export const TEST_WEBHOOK =  `
-  mutation TestWebhook($url: String!) {
-    testWebhook(url: $url) {
-      success
-      statusCode
-      responseTime
-      error
-    }
-  }
-`;
-
-
-export const ROTATE_WEBHOOK_SECRET =  `
-  mutation RotateWebhookSecret {
-    rotateWebhookSecret
-  }
-`;
-
-
-export const RESET_SETTINGS =  `
-  mutation ResetSettings {
-    resetMySettings {
-      client {
-        serverUrl
-        deviceId
-        requestTimeoutMs
-        autoReconnect
-        strictHmac
-        logBufferLimit
-        signalHistoryLimit
-      }
-      thresholds {
-        riskWarn
-        riskCrit
-        thermalWarn
-        thermalCrit
-        bufferWarn
-        bufferCrit
-      }
-      notifications {
-        enabled
-        channels
-        email {
-          thresholdBreach
-          deviceOffline
-          deviceOnline
-          updateAvailable
-          commandFailed
-          registrationRequest
-        }
-        push {
-          thresholdBreach
-          deviceOffline
-          deviceOnline
-          updateAvailable
-          commandFailed
-          registrationRequest
-        }
-        webhook {
-          enabled
-          url
-          secret
-          types
-        }
-      }
-    }
-  }
-`;
-
-
-export const UPDATE_OPERATOR =  `
-  mutation UpdateOperator($name: String, $email: String) {
-    updateMe(name: $name, email: $email) {
-      id
-      email
-      name
-      role
-      permissions
-      createdAt
-    }
-  }
-`;
-
-
-
-
-
-
 import { graphqlClient } from '../_shared/graphql-client';
 
 export interface ClientSettingsInput {
-  serverUrl?: string;
-  deviceId?: string;
-  requestTimeoutMs?: number;
-  autoReconnect?: boolean;
-  strictHmac?: boolean;
-  logBufferLimit?: number;
-  signalHistoryLimit?: number;
+  theme?: string;
+  language?: string;
+  timezone?: string;
 }
 
-export interface ThresholdsInput {
-  riskWarn?: number;
-  riskCrit?: number;
-  thermalWarn?: number;
-  thermalCrit?: number;
-  bufferWarn?: number;
-  bufferCrit?: number;
+export interface ThresholdInput {
+  temp_min?: number;
+  temp_max?: number;
+  battery_min?: number;
+  battery_max?: number;
+  speed_max?: number;
+  distance_max?: number;
 }
 
 export interface NotificationInput {
   enabled?: boolean;
-  email?: EmailNotificationInput;
-  push?: PushNotificationInput;
-  webhook?: WebhookNotificationInput;
+  email_enabled?: boolean;
+  push_enabled?: boolean;
+  webhook_enabled?: boolean;
+  webhook_url?: string;
 }
 
-export interface EmailNotificationInput {
-  thresholdBreach?: boolean;
-  deviceOffline?: boolean;
-  deviceOnline?: boolean;
-  updateAvailable?: boolean;
-  commandFailed?: boolean;
-  registrationRequest?: boolean;
-}
+export const UPDATE_SETTINGS = `
+  mutation UpdateSettings($input: ClientSettingsInput) {
+    updateMySettings(input: $input) {
+      operator {
+        id
+        email
+        name
+      }
+      client {
+        theme
+        language
+        timezone
+      }
+    }
+  }
+`;
 
-export interface PushNotificationInput {
-  thresholdBreach?: boolean;
-  deviceOffline?: boolean;
-  deviceOnline?: boolean;
-  updateAvailable?: boolean;
-  commandFailed?: boolean;
-  registrationRequest?: boolean;
-}
+export const UPDATE_THRESHOLDS = `
+  mutation UpdateThresholds($organizationId: ID!, $input: ThresholdInput) {
+    updateOrganizationThresholds(organizationId: $organizationId, input: $input) {
+      thresholds {
+        temp_min
+        temp_max
+        battery_min
+        battery_max
+        speed_max
+        distance_max
+      }
+    }
+  }
+`;
 
-export interface WebhookNotificationInput {
-  enabled?: boolean;
-  url?: string;
-  types?: string[];
-}
+export const UPDATE_NOTIFICATIONS = `
+  mutation UpdateNotifications($input: NotificationInput) {
+    updateMyNotifications(input: $input) {
+      enabled
+      email {
+        enabled
+      }
+      push {
+        enabled
+      }
+      webhook {
+        enabled
+        url
+      }
+    }
+  }
+`;
+
+export const UPDATE_DEVICE_SETTINGS = `
+  mutation UpdateDeviceSettings($organizationId: ID!, $deviceImei: String!, $input: ThresholdInput) {
+    updateDeviceSettings(organizationId: $organizationId, deviceImei: $deviceImei, input: $input) {
+      device_id
+      effective_thresholds {
+        temp_min
+        temp_max
+        battery_min
+        battery_max
+        speed_max
+        distance_max
+      }
+    }
+  }
+`;
 
 export async function mutateUpdateSettings(input: ClientSettingsInput) {
-  return graphqlClient.mutate({
+  return graphqlClient.getClient().mutate({
     mutation: UPDATE_SETTINGS,
     variables: { input },
   });
 }
 
-export async function mutateUpdateThresholds(input: ThresholdsInput) {
-  return graphqlClient.mutate({
+export async function mutateUpdateThresholds(organizationId: string, input: ThresholdInput) {
+  return graphqlClient.getClient().mutate({
     mutation: UPDATE_THRESHOLDS,
-    variables: { input },
+    variables: { organizationId, input },
   });
 }
 
 export async function mutateUpdateNotifications(input: NotificationInput) {
-  return graphqlClient.mutate({
+  return graphqlClient.getClient().mutate({
     mutation: UPDATE_NOTIFICATIONS,
     variables: { input },
   });
 }
 
-export async function mutateTestWebhook(url: string) {
-  return graphqlClient.mutate({
-    mutation: TEST_WEBHOOK,
-    variables: { url },
-  });
-}
-
-export async function mutateRotateWebhookSecret() {
-  return graphqlClient.mutate({
-    mutation: ROTATE_WEBHOOK_SECRET,
-  });
-}
-
-export async function mutateResetSettings() {
-  return graphqlClient.mutate({
-    mutation: RESET_SETTINGS,
-  });
-}
-
-export async function mutateUpdateOperator(name?: string, email?: string) {
-  return graphqlClient.mutate({
-    mutation: UPDATE_OPERATOR,
-    variables: { name, email },
+export async function mutateUpdateDeviceSettings(params: { organizationId: string; deviceImei: string; input: ThresholdInput }) {
+  return graphqlClient.getClient().mutate({
+    mutation: UPDATE_DEVICE_SETTINGS,
+    variables: params,
   });
 }

@@ -1,66 +1,46 @@
-import { LOG_ENTRY_FRAGMENT } from "./graphql-logs-fragments";
-
-export const GET_LOGS =  `
-  query GetLogs($imei: String!, $type: String, $limit: Int, $cursor: String) {
-    logs(imei: $imei, type: $type, limit: $limit, cursor: $cursor) {
-      logs {
-        ...LogEntry
-      }
-      pagination {
-        limit
-        hasMore
-        nextCursor
-      }
-    }
-  }
-  ${LOG_ENTRY_FRAGMENT}
-`;
-
-export const GET_LOG_STATS =  `
-  query GetLogStats($imei: String!, $startTime: Int, $endTime: Int) {
-    logStats(imei: $imei, startTime: $startTime, endTime: $endTime) {
-      total
-      byType {
-        connection
-        command
-        telemetry
-        error
-        warning
-      }
-    }
-  }
-`;
-
-export const GET_LOG =  `
-  query GetLog($id: String!) {
-    log(id: $id) {
-      ...LogEntry
-    }
-  }
-  ${LOG_ENTRY_FRAGMENT}
-`;
 import { graphqlClient } from '../_shared/graphql-client';
 
-export async function queryLogs(params: { imei: string; type?: string; limit?: number; cursor?: string }) {
-  return graphqlClient.query({
+export const GET_LOGS = `
+  query GetLogs($organizationId: ID!, $deviceId: ID!, $limit: Int, $offset: Int) {
+    logs(organizationId: $organizationId, deviceId: $deviceId, limit: $limit, offset: $offset) {
+      entries {
+        id
+        device_id
+        level
+        message
+        metadata
+        timestamp
+      }
+      total
+    }
+  }
+`;
+
+export const GET_LOG_ENTRY = `
+  query GetLogEntry($organizationId: ID!, $deviceId: ID!, $logId: ID!) {
+    logEntry(organizationId: $organizationId, deviceId: $deviceId, logId: $logId) {
+      id
+      device_id
+      level
+      message
+      metadata
+      timestamp
+    }
+  }
+`;
+
+export async function queryLogs(params: { organizationId: string; deviceId: string; limit?: number; offset?: number }) {
+  return graphqlClient.getClient().query({
     query: GET_LOGS,
     variables: params,
     fetchPolicy: 'network-only',
   });
 }
 
-export async function queryLogStats(params: { imei: string; startTime?: number; endTime?: number }) {
-  return graphqlClient.query({
-    query: GET_LOG_STATS,
+export async function queryLogEntry(params: { organizationId: string; deviceId: string; logId: string }) {
+  return graphqlClient.getClient().query({
+    query: GET_LOG_ENTRY,
     variables: params,
-    fetchPolicy: 'network-only',
-  });
-}
-
-export async function queryLog(id: string) {
-  return graphqlClient.query({
-    query: GET_LOG,
-    variables: { id },
     fetchPolicy: 'network-only',
   });
 }

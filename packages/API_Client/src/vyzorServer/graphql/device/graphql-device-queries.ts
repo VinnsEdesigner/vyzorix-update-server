@@ -1,144 +1,108 @@
+import { graphqlClient } from '../_shared/graphql-client';
 
-
-
-
-
-
-
-export const DEVICE_LIST_FRAGMENT =  `
+export const DEVICE_LIST_FRAGMENT = `
   fragment DeviceList on Device {
     id
     imei
-    deviceName
+    device_name
     model
     manufacturer
-    online
-    lastSeen
+    status
+    last_seen
   }
 `;
 
-
-export const DEVICE_FRAGMENT =  `
+export const DEVICE_FRAGMENT = `
   fragment Device on Device {
     id
     imei
-    deviceName
+    device_name
     model
     manufacturer
-    appVersion
-    osVersion
-    securityPatch
-    buildId
-    online
-    registeredAt
-    lastSeen
-    fcmTokenValid
-    commandSecretSet
-  }
-`;
-
-
-
-
-
-
-export const GET_DEVICES =  `
-  query GetDevices($page: Int, $limit: Int, $status: String) {
-    devices(page: $page, limit: $limit, status: $status) {
-      devices {
-        ...DeviceList
-      }
-      pagination {
-        page
-        limit
-        total
-        totalPages
-        hasMore
-      }
+    app_version
+    os_version
+    security_patch
+    build_id
+    status
+    registered_at
+    last_seen
+    fcm_token_valid
+    command_secret_set
+    connection {
+      web_socket_status
+      connected_at
+      protocol
+      client_ip
     }
   }
-  ${DEVICE_LIST_FRAGMENT}
 `;
 
-
-export const GET_DEVICE =  `
-  query GetDevice($imei: String!) {
-    device(imei: $imei) {
-      ...Device
-    }
-  }
-  ${DEVICE_FRAGMENT}
-`;
-
-
-export const GET_DEVICE_STATUS =  `
-  query GetDeviceStatus($imei: String!) {
-    deviceStatus(imei: $imei) {
+export const GET_DEVICES = `
+  query GetDevices($organizationId: ID!, $limit: Int, $offset: Int, $online: Boolean) {
+    devices(organizationId: $organizationId, limit: $limit, offset: $offset, online: $online) {
+      id
       imei
+      app_version
+      device_class
+      last_seen
       online
-      lastSeen
-      connectionStatus
     }
   }
 `;
 
-
-export const GET_DEVICE_STATS =  `
-  query GetDeviceStats {
-    dashboardStats {
-      devices {
-        total
-        online
-        offline
-      }
-      commands {
-        totalToday
-        pending
-        failed
-      }
-      activity {
-        last24h {
-          commands
-          registrations
-          deregistrations
-        }
+export const GET_DEVICE = `
+  query GetDevice($organizationId: ID!, $id: ID!) {
+    device(organizationId: $organizationId, id: $id) {
+      id
+      imei
+      device_name
+      model
+      manufacturer
+      app_version
+      os_version
+      security_patch
+      build_id
+      status
+      registered_at
+      last_seen
+      fcm_token_valid
+      command_secret_set
+      connection {
+        web_socket_status
+        connected_at
+        protocol
+        client_ip
       }
     }
   }
 `;
 
+export const GET_DEVICE_COUNT = `
+  query GetDeviceCount($organizationId: ID!) {
+    deviceCount(organizationId: $organizationId)
+  }
+`;
 
-
-
-import { graphqlClient } from '../_shared/graphql-client';
-
-export async function queryDevices(params?: { page?: number; limit?: number; status?: string }) {
-  return graphqlClient.query({
+export async function queryDevices(params: { organizationId: string; limit?: number; offset?: number; online?: boolean }) {
+  return graphqlClient.getClient().query({
     query: GET_DEVICES,
     variables: params,
     fetchPolicy: 'network-only',
   });
 }
 
-export async function queryDevice(imei: string) {
-  return graphqlClient.query({
+export async function queryDevice(params: { organizationId: string; id: string }) {
+  return graphqlClient.getClient().query({
     query: GET_DEVICE,
-    variables: { imei },
+    variables: params,
     fetchPolicy: 'network-only',
   });
 }
 
-export async function queryDeviceStatus(imei: string) {
-  return graphqlClient.query({
-    query: GET_DEVICE_STATUS,
-    variables: { imei },
-    fetchPolicy: 'network-only',
-  });
-}
-
-export async function queryDeviceStats() {
-  return graphqlClient.query({
-    query: GET_DEVICE_STATS,
+export async function queryDeviceCount(organizationId: string) {
+  return graphqlClient.getClient().query({
+    query: GET_DEVICE_COUNT,
+    variables: { organizationId },
     fetchPolicy: 'network-only',
   });
 }

@@ -1,34 +1,23 @@
-
-
-
 import { ApolloClient, InMemoryCache, createHttpLink, type NormalizedCacheObject } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 
-
-
-
-
 export interface GraphQLConfig {
-  uri: string;
+  organizationId: string;
   credentials?: RequestCredentials;
 }
 
 function getGraphQLConfig(): GraphQLConfig {
+  const baseUrl = import.meta.env.VITE_API_URL || '/api';
   return {
-    uri: import.meta.env.VITE_API_URL 
-      ? `${import.meta.env.VITE_API_URL}/graphql` 
-      : '/api/graphql',
+    organizationId: '',
     credentials: 'include',
+    getUri: () => `${baseUrl}/v1/orgs/${getGraphQLConfig().organizationId}/graphql`,
   };
 }
 
-
-
-
-
 function createApolloClient(config: GraphQLConfig): ApolloClient<NormalizedCacheObject> {
   const httpLink = createHttpLink({
-    uri: config.uri,
+    uri: config.getUri(),
     credentials: config.credentials,
   });
 
@@ -59,16 +48,36 @@ function createApolloClient(config: GraphQLConfig): ApolloClient<NormalizedCache
 }
 
 let apolloClient: ApolloClient<NormalizedCacheObject> | null = null;
+let currentOrgId: string = '';
 
 export function getApolloClient(): ApolloClient<NormalizedCacheObject> {
-  if (!apolloClient) {
-    apolloClient = createApolloClient(getGraphQLConfig());
-  }
-  return apolloClient;
+  return apolloClient || createApolloClient({
+    organizationId: '',
+    credentials: 'include',
+    getUri: () => {
+      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      return `${baseUrl}/v1/orgs/${currentOrgId}/graphql`;
+    },
+  });
 }
 
+export function setOrganizationContext(organizationId: string): void {
+  currentOrgId = organizationId;
+  if (apolloClient) {
+    apolloClient.stop();
+    apolloClient = null;
+  }
+  apolloClient = createApolloClient({
+    organizationId,
+    credentials: 'include',
+    getUri: () => {
+      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      return `${baseUrl}/v1/orgs/${organizationId}/graphql`;
+    },
+  });
+}
 
-
-
-
-export const graphqlClient = getApolloClient();
+export const graphqlClient = {
+  getClient: getApolloClient,
+  setOrganization: setOrganizationContext,
+};

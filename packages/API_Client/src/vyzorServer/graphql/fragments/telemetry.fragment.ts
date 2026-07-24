@@ -1,11 +1,13 @@
-
-
-export const TELEMETRY_FRAME_FRAGMENT =  `
-  fragment TelemetryFrame on TelemetryFrame {
+export const TELEMETRY_FRAME_FRAGMENT = `
+  fragment TelemetryFrame on TelemetryEntry {
     timestamp
-    riskScore
-    thermalTemp
-    bufferLevel
+    risk_score
+    thermal_temp
+    buffer_level
     uptime
+    battery_voltage
+    signal_strength
+    speed
+    distance
   }
 `;

@@ -1,47 +1,30 @@
-import { COMMAND_LIST_FRAGMENT, COMMAND_FRAGMENT } from "./graphql-commands-fragments";
+import { graphqlClient } from '../_shared/graphql-client';
 
-export const GET_COMMANDS =  `
-  query GetCommands($imei: String!, $status: String, $page: Int, $limit: Int) {
-    commands(imei: $imei, status: $status, page: $page, limit: $limit) {
-      commands {
-        ...CommandList
-      }
-      pagination {
-        page
-        limit
-        total
-        totalPages
-        hasMore
-      }
-    }
-  }
-  ${COMMAND_LIST_FRAGMENT}
-`;
-
-export const GET_PENDING_COMMANDS =  `
-  query GetPendingCommands($imei: String!) {
-    pendingCommands(imei: $imei) {
-      ...CommandList
-    }
-  }
-  ${COMMAND_LIST_FRAGMENT}
-`;
-
-export const GET_COMMAND =  `
-  query GetCommand($dispatchId: String!) {
-    command(dispatchId: $dispatchId) {
-      ...Command
-    }
-  }
-  ${COMMAND_FRAGMENT}
-`;
-
-export const GET_COMMAND_STATUS =  `
-  query GetCommandStatus($dispatchId: String!) {
-    commandStatus(dispatchId: $dispatchId) {
-      dispatchId
+export const GET_PENDING_COMMANDS = `
+  query GetPendingCommands($organizationId: ID!, $deviceId: ID!) {
+    pendingCommands(organizationId: $organizationId, deviceId: $deviceId) {
+      id
+      device_id
+      command_type
+      payload
       status
-      updatedAt
+      created_at
+      dispatched_at
+    }
+  }
+`;
+
+export const GET_COMMAND = `
+  query GetCommand($organizationId: ID!, $dispatchId: ID!) {
+    command(organizationId: $organizationId, dispatchId: $dispatchId) {
+      id
+      device_id
+      command_type
+      payload
+      status
+      created_at
+      dispatched_at
+      completed_at
       result {
         success
         message
@@ -50,36 +33,19 @@ export const GET_COMMAND_STATUS =  `
     }
   }
 `;
-import { graphqlClient } from '../_shared/graphql-client';
 
-export async function queryCommands(params: { imei: string; status?: string; page?: number; limit?: number }) {
-  return graphqlClient.query({
-    query: GET_COMMANDS,
+export async function queryPendingCommands(params: { organizationId: string; deviceId: string }) {
+  return graphqlClient.getClient().query({
+    query: GET_PENDING_COMMANDS,
     variables: params,
     fetchPolicy: 'network-only',
   });
 }
 
-export async function queryPendingCommands(imei: string) {
-  return graphqlClient.query({
-    query: GET_PENDING_COMMANDS,
-    variables: { imei },
-    fetchPolicy: 'network-only',
-  });
-}
-
-export async function queryCommand(dispatchId: string) {
-  return graphqlClient.query({
+export async function queryCommand(params: { organizationId: string; dispatchId: string }) {
+  return graphqlClient.getClient().query({
     query: GET_COMMAND,
-    variables: { dispatchId },
-    fetchPolicy: 'network-only',
-  });
-}
-
-export async function queryCommandStatus(dispatchId: string) {
-  return graphqlClient.query({
-    query: GET_COMMAND_STATUS,
-    variables: { dispatchId },
+    variables: params,
     fetchPolicy: 'network-only',
   });
 }

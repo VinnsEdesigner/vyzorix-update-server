@@ -1,69 +1,77 @@
-export const SETTINGS_FRAGMENT =  `
-  fragment Settings on VyzorixSettings {
+export const OPERATOR_SETTINGS_FRAGMENT = `
+  fragment OperatorSettings on OperatorSettingsType {
     operator {
       id
       email
       name
-      role
-      emailVerified
-      createdAt
+      email_verified
+      mfa_enabled
     }
-    connection {
-      serverUrl
-      deviceId
-      dashboardToken
-      requestTimeoutMs
-      autoReconnect
-      strictHmac
-    }
-    thresholds {
-      riskWarn
-      riskCrit
-      thermalWarn
-      thermalCrit
-      bufferWarn
-      bufferCrit
+    client {
+      theme
+      language
+      timezone
     }
     notifications {
       enabled
       email {
         enabled
-        email
       }
       push {
         enabled
       }
       webhook {
         enabled
-        webhookUrl
+        url
       }
-      events
-    }
-    advanced {
-      logBufferLimit
-      signalHistoryLimit
     }
   }
 `;
 
-export const OPERATOR_FRAGMENT =  `
-  fragment Operator on OperatorInfo {
-    id
-    email
-    name
-    role
-    emailVerified
-    createdAt
+export const DEVICE_SETTINGS_FRAGMENT = `
+  fragment DeviceSettings on DeviceSettingsType {
+    device_id
+    effective_thresholds {
+      temp_min
+      temp_max
+      battery_min
+      battery_max
+      speed_max
+      distance_max
+    }
+    organization_thresholds {
+      temp_min
+      temp_max
+      battery_min
+      battery_max
+      speed_max
+      distance_max
+    }
   }
 `;
 
-export const THRESHOLDS_FRAGMENT =  `
-  fragment Thresholds on ThresholdSettings {
-    riskWarn
-    riskCrit
-    thermalWarn
-    thermalCrit
-    bufferWarn
-    bufferCrit
+export const ORGANIZATION_SETTINGS_FRAGMENT = `
+  fragment OrganizationSettings on OrganizationSettingsType {
+    organization_id
+    default_thresholds {
+      temp_min
+      temp_max
+      battery_min
+      battery_max
+      speed_max
+      distance_max
+    }
+    updated_at
+  }
+`;
+
+export const THRESHOLDS_FRAGMENT = `
+  fragment Thresholds on ThresholdSettingsType {
+    temp_min
+    temp_max
+    battery_min
+    battery_max
+    speed_max
+    distance_max
   }
 `;

@@ -1,62 +1,40 @@
-
-
-
-
-
-
-
-export const DEVICE_UPDATED_SUBSCRIPTION =  `
-  subscription OnDeviceUpdated($deviceId: ID!) {
-    deviceUpdated(deviceId: $deviceId) {
+export const DEVICE_UPDATED_SUBSCRIPTION = `
+  subscription OnDeviceUpdated($organizationId: ID!, $deviceId: ID!) {
+    deviceUpdated(organizationId: $organizationId, deviceId: $deviceId) {
       id
       imei
-      deviceName
-      online
-      lastSeen
+      device_name
+      status
+      last_seen
     }
   }
 `;
 
-
-export const TELEMETRY_RECEIVED_SUBSCRIPTION =  `
-  subscription OnTelemetryReceived($deviceId: ID!) {
-    telemetryReceived(deviceId: $deviceId) {
+export const TELEMETRY_RECEIVED_SUBSCRIPTION = `
+  subscription OnTelemetryReceived($organizationId: ID!, $deviceId: ID!) {
+    telemetryReceived(organizationId: $organizationId, deviceId: $deviceId) {
       timestamp
-      riskScore
-      thermalTemp
-      bufferLevel
-      latencyMs
+      risk_score
+      thermal_temp
+      buffer_level
+      latency_ms
     }
   }
 `;
 
-
-export const COMMAND_STATUS_SUBSCRIPTION =  `
-  subscription OnCommandStatusChanged($dispatchId: ID!) {
-    commandStatusChanged(dispatchId: $dispatchId) {
+export const COMMAND_STATUS_SUBSCRIPTION = `
+  subscription OnCommandStatusChanged($organizationId: ID!, $dispatchId: ID!) {
+    commandStatusChanged(organizationId: $organizationId, dispatchId: $dispatchId) {
       id
-      dispatchId
-      type
-      deviceImei
+      device_id
+      command_type
       status
       result {
         success
         message
         error
       }
-      updatedAt
-    }
-  }
-`;
-
-
-export const DASHBOARD_EVENT_SUBSCRIPTION =  `
-  subscription OnDashboardEvent {
-    dashboardEvent {
-      type
-      deviceId
-      timestamp
-      data
+      updated_at
     }
   }
 `;
