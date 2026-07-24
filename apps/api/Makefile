@@ -1,4 +1,4 @@
-.PHONY: all build run test test-quick test-race clean docker-build docker-run docker-stop lint lint-go lint-js fmt vet deps tidy check lint-fix lint-go-fix lint-js-fix wire migrate seed dev profile race
+.PHONY: all build run test test-quick test-race clean docker-build docker-run docker-stop lint lint-go lint-js fmt vet deps tidy check lint-fix lint-go-fix lint-js-fix wire migrate seed dev profile race build-prod build-production
 
 # Go parameters
 GOCMD=go
@@ -20,12 +20,15 @@ BINARY_UNIX=$(BINARY_NAME)-unix
 # Go build flags
 LDFLAGS=-ldflags="-s -w"
 
+# Production build flags (optimized, stripped)
+PROD_LDFLAGS=-ldflags="-s -w -extldflags '-static'"
+
 # Directory paths
 DATA_DIR=./data
 BIN_DIR=./bin
 PUBLIC_DIR=./public
 
-all: deps tidy build frontend
+all: deps tidy build
 
 deps:
 	$(GOMOD) download
@@ -36,6 +39,13 @@ tidy:
 build:
 	CGO_ENABLED=1 $(GOBUILD) $(LDFLAGS) -o $(BINARY_NAME) ./cmd/api
 
+# Production build - optimized binary to bin/ directory
+build-prod build-production:
+	@echo "Building production binary..."
+	@mkdir -p $(BIN_DIR)
+	CGO_ENABLED=1 $(GOBUILD) $(PROD_LDFLAGS) -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/api
+	@echo "Production binary built: $(BIN_DIR)/$(BINARY_NAME)"
+
 build-go:
 	CGO_ENABLED=1 $(GOBUILD) $(LDFLAGS) -o $(BINARY_NAME) ./cmd/api
 
@@ -44,6 +54,14 @@ frontend:
 
 build-linux:
 	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BINARY_UNIX) ./cmd/api
+
+build-linux-arm64:
+	CGO_ENABLED=1 GOOS=linux GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(BINARY_NAME)-linux-arm64 ./cmd/api
+
+# Run production binary from bin/
+run-prod:
+	@echo "Starting production server..."
+	@./$(BIN_DIR)/$(BINARY_NAME)
 
 run:
 	$(GOCMD) run ./cmd/api
