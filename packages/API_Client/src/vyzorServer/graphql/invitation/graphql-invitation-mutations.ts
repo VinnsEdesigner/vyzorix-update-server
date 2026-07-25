@@ -1,11 +1,26 @@
 import { graphqlClient } from '../_shared/graphql-client';
-import { INVITATION_FRAGMENT } from './graphql-invitation-types';
 
 export const INVITE_MEMBER = `
-  ${INVITATION_FRAGMENT}
   mutation InviteMember($organizationId: ID!, $email: String!, $role: OrgRole!, $notes: String) {
     inviteMember(organizationId: $organizationId, email: $email, role: $role, notes: $notes) {
-      ...InvitationFields
+      id
+      organizationId
+      email
+      role
+      status
+      token
+      notes
+      invitedAt
+      respondedAt
+      expiresAt
+      inviter {
+        id
+        name
+      }
+      organization {
+        id
+        name
+      }
     }
   }
 `;
@@ -17,10 +32,24 @@ export const CANCEL_INVITATION = `
 `;
 
 export const ACCEPT_INVITATION = `
-  ${INVITATION_FRAGMENT}
   mutation AcceptInvitation($token: String!, $notes: String) {
     acceptInvitation(token: $token, notes: $notes) {
-      ...InvitationFields
+      id
+      organizationId
+      operatorId
+      role
+      lifecycle
+      invitedAt
+      joinedAt
+      operator {
+        id
+        email
+        name
+      }
+      organization {
+        id
+        name
+      }
     }
   }
 `;
