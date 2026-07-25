@@ -1,40 +1,59 @@
 export const DEVICE_UPDATED_SUBSCRIPTION = `
-  subscription OnDeviceUpdated($organizationId: ID!, $deviceId: ID!) {
-    deviceUpdated(organizationId: $organizationId, deviceId: $deviceId) {
+  subscription OnDeviceUpdated($deviceId: ID) {
+    deviceUpdated(deviceId: $deviceId) {
       id
       imei
-      device_name
+      deviceName
       status
-      last_seen
+      lastSeen
     }
   }
 `;
 
 export const TELEMETRY_RECEIVED_SUBSCRIPTION = `
-  subscription OnTelemetryReceived($organizationId: ID!, $deviceId: ID!) {
-    telemetryReceived(organizationId: $organizationId, deviceId: $deviceId) {
-      timestamp
-      risk_score
-      thermal_temp
-      buffer_level
-      latency_ms
+  subscription OnTelemetryReceived($deviceId: ID) {
+    telemetryReceived(deviceId: $deviceId) {
+      id
+      deviceId
+      receivedAt
+      riskScore
+      bufferLevel
+      thermalTemp
+      payload
     }
   }
 `;
 
 export const COMMAND_STATUS_SUBSCRIPTION = `
-  subscription OnCommandStatusChanged($organizationId: ID!, $dispatchId: ID!) {
-    commandStatusChanged(organizationId: $organizationId, dispatchId: $dispatchId) {
-      id
-      device_id
-      command_type
+  subscription OnCommandStatusChanged($dispatchId: ID) {
+    commandStatusChanged(dispatchId: $dispatchId) {
+      dispatchId
+      commandId
+      deviceId
+      command
       status
-      result {
-        success
-        message
-        error
-      }
-      updated_at
+      createdAt
+    }
+  }
+`;
+
+export const ORGANIZATION_EVENT_SUBSCRIPTION = `
+  subscription OnOrganizationEvent($orgId: ID!) {
+    organizationEvent(orgId: $orgId) {
+      type
+      timestamp
+      data
+    }
+  }
+`;
+
+export const MEMBER_EVENT_SUBSCRIPTION = `
+  subscription OnMemberEvent($orgId: ID!) {
+    memberEvent(orgId: $orgId) {
+      type
+      timestamp
+      memberId
+      data
     }
   }
 `;
