@@ -3,9 +3,14 @@ import { graphqlClient } from '../_shared/graphql-client';
 export const PUSH_UPDATE = `
   mutation PushUpdate($organizationId: ID!, $version: String!, $deviceIds: [ID!]!, $installType: String!, $scheduledAt: Int) {
     pushUpdate(organizationId: $organizationId, version: $version, deviceIds: $deviceIds, installType: $installType, scheduledAt: $scheduledAt) {
-      success
-      message
-      updateId
+      pushId
+      version
+      installType
+      scheduledAt
+      status
+      initiatedBy
+      initiatedAt
+      deviceCount
     }
   }
 `;
@@ -24,7 +29,7 @@ export const SYNC_UPDATES = `
     syncUpdates {
       success
       message
-      syncedCount
+      versionsFound
     }
   }
 `;
