@@ -1,8 +1,8 @@
 import { LOG_ENTRY_FRAGMENT } from "./graphql-logs-fragments";
 
 export const SUBSCRIBE_TO_LOGS =  `
-  subscription SubscribeToLogs($imei: String!, $types: [String!]) {
-    logsAdded(imei: $imei, types: $types) {
+  subscription SubscribeToLogs($deviceId: String!, $types: [String!]) {
+    logsAdded(deviceId: $deviceId, types: $types) {
       ...LogEntry
     }
   }
@@ -10,8 +10,8 @@ export const SUBSCRIBE_TO_LOGS =  `
 `;
 
 export const SUBSCRIBE_TO_DEVICE_LOGS =  `
-  subscription SubscribeToDeviceLogs($imei: String!) {
-    logsAdded(imei: $imei) {
+  subscription SubscribeToDeviceLogs($deviceId: String!) {
+    logsAdded(deviceId: $deviceId) {
       ...LogEntry
     }
   }

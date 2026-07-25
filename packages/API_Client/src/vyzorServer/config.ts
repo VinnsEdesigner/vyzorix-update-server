@@ -67,7 +67,9 @@ export function getClientConfig(): ClientConfig {
 export function getWebSocketConfig(): WebSocketConfig {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const host = window.location.host;
-  const wsUrl = parseStringEnv("VITE_WS_URL", `${protocol}//${host}/ws`);
+  // Default WebSocket URL points to the device streaming endpoint
+  // For dashboard clients: wss://host/v1/device/{clientId}/stream
+  const wsUrl = parseStringEnv("VITE_WS_URL", `${protocol}//${host}/v1/device`);
   
   return {
     url: wsUrl,
@@ -78,6 +80,20 @@ export function getWebSocketConfig(): WebSocketConfig {
     reconnectMaxDelay: parseIntEnv("VITE_WS_RECONNECT_MAX_DELAY", 30000),
     reconnectMultiplier: parseIntEnv("VITE_WS_RECONNECT_MULTIPLIER", 2),
   };
+}
+
+/**
+ * Build the WebSocket URL for device streaming.
+ * @param baseUrl - The base WebSocket URL (e.g., from VITE_WS_URL or getWebSocketConfig().url)
+ * @param deviceId - The device ID (IMEI) or client ID for dashboard connections
+ * @returns The full WebSocket URL with the device path
+ */
+export function buildDeviceStreamUrl(baseUrl: string, deviceId: string): string {
+  const protocol = baseUrl.startsWith("wss") ? "wss:" : "ws:";
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  // Remove protocol prefix if present to reconstruct properly
+  const urlWithoutProtocol = baseUrl.replace(/^(wss?|https?):\/\//, '');
+  return `${protocol}//${urlWithoutProtocol}/${encodeURIComponent(deviceId)}/stream`;
 }
 
 export function getRESTConfig(): RESTConfig {

@@ -10,6 +10,16 @@ import (
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 )
 
+// WSSubscribePayload represents the payload for SUBSCRIBE messages.
+type WSSubscribePayload struct {
+	DeviceID string `json:"deviceId"`
+}
+
+// WSUnsubscribePayload represents the payload for UNSUBSCRIBE messages.
+type WSUnsubscribePayload struct {
+	DeviceID string `json:"deviceId"`
+}
+
 // MessageRouter handles routing of incoming WebSocket messages.
 type MessageRouter struct {
 	log *slog.Logger
@@ -38,6 +48,10 @@ func (r *MessageRouter) HandleIncomingMessage(client *hub.Client, raw []byte) er
 	switch env.Type {
 	case "telemetry":
 		return r.handleTelemetry(client, raw)
+	case "SUBSCRIBE":
+		return r.handleSubscribe(client, raw)
+	case "UNSUBSCRIBE":
+		return r.handleUnsubscribe(client, raw)
 	case "pong":
 		return r.handlePong(client)
 	case "status":
@@ -61,12 +75,172 @@ func (r *MessageRouter) handleTelemetry(client *hub.Client, raw []byte) error {
 		t.DeviceID = client.DeviceID
 	}
 
-	// Broadcast to dashboard.
-	r.hub.BroadcastTelemetry(raw)
+	// Broadcast to dashboard with filtering based on subscriptions.
+	// BroadcastTelemetryToFiltered sends only to clients subscribed to this device.
+	r.hub.BroadcastTelemetryToFiltered(t.DeviceID, raw)
 
 	r.logTelemetryReceived(client.DeviceID, t.RiskScore)
 
 	return nil
+}
+
+// handleSubscribe processes SUBSCRIBE messages from dashboard clients.
+// Subscribes the client to receive telemetry from specific devices.
+func (r *MessageRouter) handleSubscribe(client *hub.Client, raw []byte) error {
+	var msg struct {
+		Type    string           `json:"type"`
+		Payload WSSubscribePayload `json:"payload"`
+	}
+
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		r.logBadFrame(client.ClientID, err)
+		return err
+	}
+
+	deviceID := msg.Payload.DeviceID
+	if deviceID == "" {
+		r.sendSubscribeAck(client, "", false, "missing deviceId")
+		return nil
+	}
+
+	var success bool
+	var errorMsg string
+
+	// Wildcard subscription - client wants all telemetry (dashboard mode).
+	// No subscriptions = receives all (TelemetryFilter.ShouldForward returns true when no subscriptions).
+	if deviceID == "*" {
+		if tf := r.hub.TelemetryFilter(); tf != nil {
+			tf.UnsubscribeAll(client.ClientID)
+		}
+		r.log.Info("client subscribed to all devices (dashboard mode)", "clientId", client.ClientID)
+		success = true
+	} else {
+		// Subscribe client to specific device
+		success = r.hub.Subscribe(client.ClientID, deviceID)
+		if success {
+			r.log.Info("client subscribed to device",
+				"clientId", client.ClientID,
+				"deviceId", deviceID,
+			)
+		} else {
+			errorMsg = "failed to subscribe - check max subscriptions limit"
+			r.log.Warn("failed to subscribe client to device",
+				"clientId", client.ClientID,
+				"deviceId", deviceID,
+			)
+		}
+	}
+
+	// Send acknowledgment
+	r.sendSubscribeAck(client, deviceID, success, errorMsg)
+
+	return nil
+}
+
+// handleUnsubscribe processes UNSUBSCRIBE messages from dashboard clients.
+// Unsubscribes the client from receiving telemetry from specific devices.
+func (r *MessageRouter) handleUnsubscribe(client *hub.Client, raw []byte) error {
+	var msg struct {
+		Type    string             `json:"type"`
+		Payload WSUnsubscribePayload `json:"payload"`
+	}
+
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		r.logBadFrame(client.ClientID, err)
+		return err
+	}
+
+	deviceID := msg.Payload.DeviceID
+	if deviceID == "" {
+		r.sendUnsubscribeAck(client, "", false, "missing deviceId")
+		return nil
+	}
+
+	var success bool
+	var errorMsg string
+
+	// Wildcard unsubscribe - unsubscribe from all devices
+	if deviceID == "*" {
+		if tf := r.hub.TelemetryFilter(); tf != nil {
+			tf.UnsubscribeAll(client.ClientID)
+		}
+		r.log.Info("client unsubscribed from all devices", "clientId", client.ClientID)
+		success = true
+	} else {
+		// Unsubscribe client from specific device
+		success = r.hub.Unsubscribe(client.ClientID, deviceID)
+		if success {
+			r.log.Info("client unsubscribed from device",
+				"clientId", client.ClientID,
+				"deviceId", deviceID,
+			)
+		} else {
+			errorMsg = "client was not subscribed to this device"
+			r.log.Warn("client was not subscribed to device",
+				"clientId", client.ClientID,
+				"deviceId", deviceID,
+			)
+		}
+	}
+
+	// Send acknowledgment
+	r.sendUnsubscribeAck(client, deviceID, success, errorMsg)
+
+	return nil
+}
+
+// sendSubscribeAck sends a SUBSCRIBE_ACK message to the client.
+func (r *MessageRouter) sendSubscribeAck(client *hub.Client, deviceID string, success bool, errorMsg string) {
+	ack := struct {
+		Type    string `json:"type"`
+		Payload struct {
+			Success  bool   `json:"success"`
+			DeviceID string `json:"deviceId"`
+			Error    string `json:"error,omitempty"`
+		} `json:"payload"`
+	}{
+		Type: "SUBSCRIBE_ACK",
+		Payload: struct {
+			Success  bool   `json:"success"`
+			DeviceID string `json:"deviceId"`
+			Error    string `json:"error,omitempty"`
+		}{
+			Success:  success,
+			DeviceID: deviceID,
+			Error:    errorMsg,
+		},
+	}
+
+	if err := client.Conn.WriteJSON(ack); err != nil {
+		r.log.Warn("failed to send SUBSCRIBE_ACK", "clientId", client.ClientID, "err", err)
+	}
+}
+
+// sendUnsubscribeAck sends a UNSUBSCRIBE_ACK message to the client.
+func (r *MessageRouter) sendUnsubscribeAck(client *hub.Client, deviceID string, success bool, errorMsg string) {
+	ack := struct {
+		Type    string `json:"type"`
+		Payload struct {
+			Success  bool   `json:"success"`
+			DeviceID string `json:"deviceId"`
+			Error    string `json:"error,omitempty"`
+		} `json:"payload"`
+	}{
+		Type: "UNSUBSCRIBE_ACK",
+		Payload: struct {
+			Success  bool   `json:"success"`
+			DeviceID string `json:"deviceId"`
+			Error    string `json:"error,omitempty"`
+		}{
+			Success:  success,
+			DeviceID: deviceID,
+			Error:    errorMsg,
+		},
+	}
+
+	if err := client.Conn.WriteJSON(ack); err != nil {
+		r.log.Warn("failed to send UNSUBSCRIBE_ACK", "clientId", client.ClientID, "err", err)
+	}
 }
 
 // handlePong handles ping/pong heartbeat responses.

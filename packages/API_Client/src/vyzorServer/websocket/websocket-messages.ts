@@ -8,7 +8,9 @@ export type WSMessageType =
   | "PING"
   | "PONG"
   | "SUBSCRIBE"
+  | "SUBSCRIBE_ACK"
   | "UNSUBSCRIBE"
+  | "UNSUBSCRIBE_ACK"
   | "ERROR";
 
 export interface WSMessage<T = unknown> {
@@ -28,6 +30,22 @@ export interface WSAuthAckPayload {
 
 export interface WSSubscribePayload {
   deviceId: string;
+}
+
+export interface WSSubscribeAckPayload {
+  success: boolean;
+  deviceId: string;
+  error?: string;
+}
+
+export interface WSUnsubscribePayload {
+  deviceId: string;
+}
+
+export interface WSUnsubscribeAckPayload {
+  success: boolean;
+  deviceId: string;
+  error?: string;
 }
 
 export interface WSCommandPayload {

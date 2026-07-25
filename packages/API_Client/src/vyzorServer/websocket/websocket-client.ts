@@ -40,20 +40,29 @@ const DEFAULT_CONFIG: Required<Omit<WSClientConfig, 'deviceCredentials'>> = {
   heartbeatTimeout: 10000,
 };
 
+export interface SubscriptionResult {
+  success: boolean;
+  deviceId: string;
+  error?: string;
+}
+
 export interface WebSocketClient {
   connect(): Promise<void>;
   disconnect(): void;
-  subscribe(deviceId: string): Promise<void>;
-  unsubscribe(deviceId: string): Promise<void>;
-  subscribeAll(): Promise<void>;
+  subscribe(deviceId: string): Promise<SubscriptionResult>;
+  unsubscribe(deviceId: string): Promise<SubscriptionResult>;
+  subscribeAll(): Promise<SubscriptionResult>;
   sendCommand(command: { dispatchId: string; command: string; parameters?: Record<string, unknown> }): Promise<void>;
   onTelemetry(handler: (telemetry: WSTelemetry) => void): () => void;
   onEvent(handler: (event: WSEvent) => void): () => void;
   onCommandAck(handler: (ack: WSCommandAck) => void): () => void;
   onAuthAck(handler: (response: { success: boolean; error?: string }) => void): () => void;
+  onSubscribeAck(handler: (result: SubscriptionResult) => void): () => void;
+  onUnsubscribeAck(handler: (result: SubscriptionResult) => void): () => void;
   onStateChange(handler: (state: string) => void): () => void;
   getState(): string;
   isConnected(): boolean;
+  getSubscriptions(): string[];
   setCredentials(credentials: WSDeviceCredentials): void;
   clearCredentials(): void;
 }
@@ -67,11 +76,18 @@ export class WebSocketClientImpl implements WebSocketClient {
   private reconnect: ReconnectManagerImpl;
 
   private subscriptions = new Set<string>();
+  private pendingSubscriptions = new Map<string, { resolve: (result: SubscriptionResult) => void; timeout: ReturnType<typeof setTimeout> }>();
+  private pendingUnsubscriptions = new Map<string, { resolve: (result: SubscriptionResult) => void; timeout: ReturnType<typeof setTimeout> }>();
+
   private telemetryHandlers = new Set<(t: WSTelemetry) => void>();
   private eventHandlers = new Set<(e: WSEvent) => void>();
   private commandAckHandlers = new Set<(a: WSCommandAck) => void>();
   private authAckHandlers = new Set<(r: { success: boolean; error?: string }) => void>();
+  private subscribeAckHandlers = new Set<(r: SubscriptionResult) => void>();
+  private unsubscribeAckHandlers = new Set<(r: SubscriptionResult) => void>();
   private stateHandlers = new Set<(s: string) => void>();
+
+  private static readonly SUBSCRIBE_TIMEOUT_MS = 5000;
 
   constructor(config: WSClientConfig = {}) {
     
@@ -129,22 +145,55 @@ export class WebSocketClientImpl implements WebSocketClient {
     }
   }
 
-  async subscribe(deviceId: string): Promise<void> {
-    this.subscriptions.add(deviceId);
-    if (this.stateMachine.state === "OPEN") {
-      await this.send({ type: "SUBSCRIBE", payload: { deviceId } });
+  async subscribe(deviceId: string): Promise<SubscriptionResult> {
+    const result = await this.sendSubscription(deviceId, "SUBSCRIBE");
+    if (result.success) {
+      this.subscriptions.add(deviceId);
     }
+    return result;
   }
 
-  async unsubscribe(deviceId: string): Promise<void> {
-    this.subscriptions.delete(deviceId);
-    if (this.stateMachine.state === "OPEN") {
-      await this.send({ type: "UNSUBSCRIBE", payload: { deviceId } });
+  async unsubscribe(deviceId: string): Promise<SubscriptionResult> {
+    const result = await this.sendSubscription(deviceId, "UNSUBSCRIBE");
+    if (result.success) {
+      this.subscriptions.delete(deviceId);
     }
+    return result;
   }
 
-  async subscribeAll(): Promise<void> {
-    await this.subscribe("*");
+  async subscribeAll(): Promise<SubscriptionResult> {
+    return this.subscribe("*");
+  }
+
+  getSubscriptions(): string[] {
+    return Array.from(this.subscriptions);
+  }
+
+  private async sendSubscription(deviceId: string, type: "SUBSCRIBE" | "UNSUBSCRIBE"): Promise<SubscriptionResult> {
+    return new Promise<SubscriptionResult>((resolve) => {
+      if (this.stateMachine.state !== "OPEN") {
+        const result = { success: false, deviceId, error: "WebSocket not connected" };
+        resolve(result);
+        return;
+      }
+
+      const pendingMap = type === "SUBSCRIBE" ? this.pendingSubscriptions : this.pendingUnsubscriptions;
+      
+      const timeout = setTimeout(() => {
+        pendingMap.delete(deviceId);
+        resolve({ success: false, deviceId, error: `Subscription timeout after ${WebSocketClientImpl.SUBSCRIBE_TIMEOUT_MS}ms` });
+      }, WebSocketClientImpl.SUBSCRIBE_TIMEOUT_MS);
+
+      pendingMap.set(deviceId, { resolve, timeout });
+
+      try {
+        this.ws?.send(JSON.stringify({ type, payload: { deviceId }, timestamp: Date.now() }));
+      } catch (error) {
+        clearTimeout(timeout);
+        pendingMap.delete(deviceId);
+        resolve({ success: false, deviceId, error: String(error) });
+      }
+    });
   }
 
   async sendCommand(command: { dispatchId: string; command: string; parameters?: Record<string, unknown> }): Promise<void> {
@@ -169,6 +218,16 @@ export class WebSocketClientImpl implements WebSocketClient {
   onAuthAck(handler: (response: { success: boolean; error?: string }) => void): () => void {
     this.authAckHandlers.add(handler);
     return () => this.authAckHandlers.delete(handler);
+  }
+
+  onSubscribeAck(handler: (result: SubscriptionResult) => void): () => void {
+    this.subscribeAckHandlers.add(handler);
+    return () => this.subscribeAckHandlers.delete(handler);
+  }
+
+  onUnsubscribeAck(handler: (result: SubscriptionResult) => void): () => void {
+    this.unsubscribeAckHandlers.add(handler);
+    return () => this.unsubscribeAckHandlers.delete(handler);
   }
 
   onStateChange(handler: (state: string) => void): () => void {
@@ -265,7 +324,43 @@ export class WebSocketClientImpl implements WebSocketClient {
       case "AUTH_ACK":
         this.authAckHandlers.forEach((h) => h(authResponseFromRaw(message.payload as RawWSAuthResponse)));
         break;
+      case "SUBSCRIBE_ACK":
+        this.handleSubscribeAck(message.payload as { success: boolean; deviceId: string; error?: string });
+        break;
+      case "UNSUBSCRIBE_ACK":
+        this.handleUnsubscribeAck(message.payload as { success: boolean; deviceId: string; error?: string });
+        break;
     }
+  }
+
+  private handleSubscribeAck(payload: { success: boolean; deviceId: string; error?: string }): void {
+    const pending = this.pendingSubscriptions.get(payload.deviceId);
+    if (pending) {
+      clearTimeout(pending.timeout);
+      this.pendingSubscriptions.delete(payload.deviceId);
+      pending.resolve(payload);
+    }
+
+    if (payload.success) {
+      this.subscriptions.add(payload.deviceId);
+    }
+
+    this.subscribeAckHandlers.forEach((h) => h(payload));
+  }
+
+  private handleUnsubscribeAck(payload: { success: boolean; deviceId: string; error?: string }): void {
+    const pending = this.pendingUnsubscriptions.get(payload.deviceId);
+    if (pending) {
+      clearTimeout(pending.timeout);
+      this.pendingUnsubscriptions.delete(payload.deviceId);
+      pending.resolve(payload);
+    }
+
+    if (payload.success) {
+      this.subscriptions.delete(payload.deviceId);
+    }
+
+    this.unsubscribeAckHandlers.forEach((h) => h(payload));
   }
 
   private send<T>(message: WSMessage<T>): Promise<void> {
@@ -287,7 +382,11 @@ export class WebSocketClientImpl implements WebSocketClient {
 
   private async resubscribeAll(): Promise<void> {
     for (const deviceId of this.subscriptions) {
-      await this.send({ type: "SUBSCRIBE", payload: { deviceId } }).catch(() => {});
+      try {
+        await this.send({ type: "SUBSCRIBE", payload: { deviceId } });
+      } catch {
+        // Ignore errors during resubscription - will retry on next connect
+      }
     }
   }
 }
