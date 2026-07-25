@@ -60,12 +60,13 @@ func (h *SessionsHandler) ListSessions(c *gin.Context) {
 
 	for _, sess := range sessions {
 		sessionList = append(sessionList, gin.H{
-			"id":          sess.ID,
-			"ip_address":  sess.IPAddress,
-			"user_agent":  sess.UserAgent,
-			"created_at":   sess.CreatedAt,
-			"expires_at":   sess.ExpiresAt,
-			"is_current":  sess.ID == currentSessionID,
+			"id":                       sess.ID,
+			"ip_address":               sess.IPAddress,
+			"user_agent":               sess.UserAgent,
+			"created_at":                sess.CreatedAt,
+			"expires_at":                sess.ExpiresAt,
+			"is_current":               sess.ID == currentSessionID,
+			"selected_organization_id":  sess.SelectedOrganizationID,
 		})
 	}
 
@@ -254,12 +255,13 @@ func (h *SessionsHandler) GetSession(c *gin.Context) {
 	for _, sess := range sessions {
 		if sess.ID == sessionID {
 			h.presenter.OK(c, gin.H{
-				"id":          sess.ID,
-				"ip_address":  sess.IPAddress,
-				"user_agent":  sess.UserAgent,
-				"created_at":   sess.CreatedAt,
-				"expires_at":   sess.ExpiresAt,
-				"is_current":  sess.ID == currentSessionID,
+				"id":                        sess.ID,
+				"ip_address":                sess.IPAddress,
+				"user_agent":                sess.UserAgent,
+				"created_at":                 sess.CreatedAt,
+				"expires_at":                 sess.ExpiresAt,
+				"is_current":                sess.ID == currentSessionID,
+				"selected_organization_id":   sess.SelectedOrganizationID,
 			})
 			return
 		}

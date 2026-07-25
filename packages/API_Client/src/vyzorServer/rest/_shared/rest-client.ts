@@ -5,10 +5,11 @@
 
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { getRESTConfig, type RESTConfig } from '../../config';
-import { parseApiError, ApiError, type RateLimitInfo } from '../../auth/api-error';
+import { parseApiError, type RateLimitInfo } from '../../auth/api-error';
 
 export { type RESTConfig } from '../../config';
-export { ApiError, parseApiError } from '../../auth/api-error';
+export { parseApiError } from '../../auth/api-error';
+export type { ApiError } from '../../auth/api-error';
 export type { RateLimitInfo } from '../../auth/api-error';
 
 let organizationId: string | null = null;
@@ -20,7 +21,7 @@ type RateLimitCallback = (info: RateLimitInfo) => void;
 const rateLimitListeners = new Set<RateLimitCallback>();
 
 let isRefreshing = false;
-let refreshSubscribers: Array<(token: string | null) => void> = [];
+let refreshSubscribers: ((token: string | null) => void)[] = [];
 
 export function setOrganizationContext(orgId: string | null): void {
   organizationId = orgId;
@@ -96,13 +97,16 @@ async function handleTokenRefresh(): Promise<boolean> {
 
   try {
     const response = await axios.post(`${getRESTConfig().baseURL}/v1/auth/refresh`, {
-      refreshToken,
+      refresh_token: refreshToken,
     });
 
-    const { token: newToken } = response.data;
-    if (newToken) {
-      setAuthToken(newToken);
-      refreshSubscribers.forEach((cb) => cb(newToken));
+    const { access_token: newAccessToken, refresh_token: newRefreshToken } = response.data;
+    if (newAccessToken) {
+      setAuthToken(newAccessToken);
+      if (newRefreshToken) {
+        setRefreshToken(newRefreshToken);
+      }
+      refreshSubscribers.forEach((cb) => cb(newAccessToken));
       refreshSubscribers = [];
       return true;
     }

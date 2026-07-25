@@ -22,6 +22,7 @@ export interface Operator {
   id: string;
   email: string;
   name: string;
+  role?: string;
   mfa_enabled: boolean;
   email_verified: boolean;
   needs_organization: boolean;
@@ -77,7 +78,6 @@ export interface LoginWithTokensMFARequiredResponse {
   operatorId: string;
   email: string;
   name: string;
-  role: OperatorRole;
   mfaEnabled: boolean;
 }
 
@@ -104,10 +104,6 @@ export interface ResetPasswordResponse {
   success: boolean;
 }
 
-export interface VerifyEmailResponse {
-  success: boolean;
-}
-
 export interface MFAStatusResponse {
   enabled: boolean;
   backupCodes?: string[];
@@ -128,7 +124,6 @@ export interface MFAVerifyResponse {
     id: string;
     email: string;
     name: string;
-    role: string;
     mfaEnabled: boolean;
   };
 }
@@ -136,4 +131,20 @@ export interface MFAVerifyResponse {
 export interface MFAEnableResponse {
   success: boolean;
   backupCodes?: string[];
+}
+
+export interface MFAVerifySetupResponse {
+  verified: boolean;
+}
+
+export interface MFADisableResponse {
+  success: boolean;
+}
+
+export interface MFAVerifyBackupResponse {
+  valid: boolean;
+}
+
+export interface MFARegenerateCodesResponse {
+  backupCodes: string[];
 }

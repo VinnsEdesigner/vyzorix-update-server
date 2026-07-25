@@ -11,6 +11,7 @@ export interface RawSession {
   created_at: string;
   expires_at: string;
   is_current: boolean;
+  selected_organization_id?: string;
 }
 
 export interface RawSessionListResponse {
@@ -37,6 +38,7 @@ export function sessionFromRaw(raw: RawSession): Session {
     createdAt: new Date(raw.created_at),
     expiresAt: new Date(raw.expires_at),
     isCurrent: raw.is_current,
+    selectedOrganizationId: raw.selected_organization_id,
   };
 }
 

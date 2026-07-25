@@ -25,24 +25,24 @@ import {
 import type {
   LoginResponse,
   LoginWithTokensResponse,
-  LoginWithTokensMFARequiredResponse,
   RegisterResponse,
   MeResponse,
-  Operator,
+  OperatorRole,
   ForgotPasswordResponse,
   ResetPasswordResponse,
-  VerifyEmailResponse,
   MFAStatusResponse,
   MFAEnrollResponse,
   MFAVerifyResponse,
   MFAEnableResponse,
   AuthTokens,
 } from "@/domain/auth";
-import type {
-  RawLoginResponse,
-  RawLoginMFARequiredResponse,
-  RawLoginWithTokensResponse,
-  RawLoginWithTokensMFARequiredResponse,
+import type { VerifyEmailResponse } from "@/domain/email";
+import {
+  type RawLoginResponse,
+  type RawLoginMFARequiredResponse,
+  type RawLoginWithTokensResponse,
+  type RawLoginWithTokensMFARequiredResponse,
+  type RawMeResponse,
   loginWithTokensResponseFromRaw,
   isLoginWithTokensMFARequired,
 } from "@/domain/auth/auth-mappers";
@@ -103,7 +103,6 @@ interface LoginWithTokensMFARequired {
   operatorId: string;
   email: string;
   name: string;
-  role: string;
   mfaEnabled: boolean;
 }
 
@@ -147,7 +146,6 @@ export async function loginWithTokens(credentials: {
       operatorId: raw.operator_id,
       email: raw.email,
       name: raw.name,
-      role: raw.role,
       mfaEnabled: raw.mfa_enabled,
     };
   }
@@ -241,29 +239,28 @@ export async function logout(): Promise<{ success: boolean }> {
 
 export async function getMe(): Promise<MeResponse | null> {
   try {
-    const raw = await restClient.get<{
-      id: string;
-      email: string;
-      name: string;
-      role: string;
-      mfa_enabled: boolean;
-      email_verified: boolean;
-      thresholds?: unknown;
-      client?: unknown;
-    }>(AUTH_PATHS.me);
-    return meResponseFromRaw(raw as any);
+    const raw = await restClient.get<RawMeResponse>(AUTH_PATHS.me);
+    return meResponseFromRaw(raw);
   } catch {
     return null;
   }
 }
 
+export interface UpdateNameResponse {
+  id: string;
+  email: string;
+  name: string;
+  role?: string;
+  mfa_enabled: boolean;
+  email_verified: boolean;
+}
 
-export async function updateName(name: string): Promise<Operator> {
+export async function updateName(name: string): Promise<UpdateNameResponse> {
   const raw = await restClient.patch<{
     id: string;
     email: string;
     name: string;
-    role: string;
+    role: OperatorRole;
     mfa_enabled: boolean;
     email_verified: boolean;
   }>(AUTH_PATHS.updateName, updateNameRequestToRaw(name));
@@ -271,9 +268,8 @@ export async function updateName(name: string): Promise<Operator> {
     id: raw.id,
     email: raw.email,
     name: raw.name,
-    role: raw.role as any,
-    mfaEnabled: raw.mfa_enabled,
-    emailVerified: raw.email_verified,
+    mfa_enabled: raw.mfa_enabled,
+    email_verified: raw.email_verified,
   };
 }
 
@@ -327,14 +323,7 @@ export async function disableMFA(code: string): Promise<{ success: boolean }> {
 export async function verifyMFA(
   operatorId: string,
   code: string
-): Promise<{
-  success: boolean;
-  sessionId?: string;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresAt?: number;
-  operator?: Operator;
-}> {
+): Promise<MFAVerifyResponse> {
   const raw = await restClient.post<RawMFAVerifyResponse>(
     AUTH_PATHS.mfa.verify,
     mfaVerifyRequestToRaw(operatorId, code)
@@ -359,9 +348,12 @@ export async function verifyBackupCode(
 
 
 export async function regenerateBackupCodes(): Promise<{ backupCodes: string[] }> {
-  return restClient.post<{ backup_codes: string[] }>(
+  const raw = await restClient.post<{ backup_codes: string[] }>(
     AUTH_PATHS.mfa.regenerateBackupCodes
   );
+  return {
+    backupCodes: raw.backup_codes,
+  };
 }
 
 

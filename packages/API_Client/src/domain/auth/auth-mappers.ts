@@ -2,10 +2,8 @@
 
 
 import type {
-  Operator,
   LoginResponse,
   LoginWithTokensResponse,
-  LoginWithTokensMFARequiredResponse,
   RegisterResponse,
   MeResponse,
   OperatorRole,
@@ -15,7 +13,7 @@ import type {
 } from "./auth-entity";
 import type { Thresholds, ClientSettings } from "../settings/settings-entity";
 
-interface RawLoginResponse {
+export interface RawLoginResponse {
   operator_id: string;
   email: string;
   name: string;
@@ -27,12 +25,12 @@ interface RawLoginResponse {
   needs_organization?: boolean;
 }
 
-interface RawLoginMFARequiredResponse {
+export interface RawLoginMFARequiredResponse {
   mfa_required: true;
   operator_id: string;
 }
 
-interface RawLoginWithTokensResponse {
+export interface RawLoginWithTokensResponse {
   operator_id: string;
   email: string;
   name: string;
@@ -49,22 +47,21 @@ interface RawLoginWithTokensResponse {
   needs_organization?: boolean;
 }
 
-interface RawLoginWithTokensMFARequiredResponse {
+export interface RawLoginWithTokensMFARequiredResponse {
   mfa_required: true;
   operator_id: string;
   email: string;
   name: string;
-  role: string;
   mfa_enabled: boolean;
 }
 
-interface RawRegisterResponse {
+export interface RawRegisterResponse {
   operator_id: string;
   email: string;
   name: string;
 }
 
-interface RawMeResponse {
+export interface RawMeResponse {
   id: string;
   email: string;
   name: string;
@@ -79,7 +76,7 @@ interface RawMeResponse {
   selected_organization?: OrganizationInfo;
 }
 
-interface RawRefreshResponse {
+export interface RawRefreshResponse {
   access_token: string;
   refresh_token: string;
   expires_at: number;
@@ -240,7 +237,6 @@ export interface RawMFAVerifyResponse {
     id: string;
     email: string;
     name: string;
-    role: string;
     mfa_enabled: boolean;
   };
 }
@@ -255,7 +251,6 @@ export function mfaVerifyResponseFromRaw(raw: RawMFAVerifyResponse): {
     id: string;
     email: string;
     name: string;
-    role: string;
     mfaEnabled: boolean;
   };
 } {
@@ -269,7 +264,6 @@ export function mfaVerifyResponseFromRaw(raw: RawMFAVerifyResponse): {
       id: raw.operator.id,
       email: raw.operator.email,
       name: raw.operator.name,
-      role: raw.operator.role,
       mfaEnabled: raw.operator.mfa_enabled,
     } : undefined,
   };
@@ -329,7 +323,6 @@ export function mfaVerifyFromRaw(raw: RawMFAVerifyResponse): {
     id: string;
     email: string;
     name: string;
-    role: string;
     mfaEnabled: boolean;
   };
 } {
@@ -343,7 +336,6 @@ export function mfaVerifyFromRaw(raw: RawMFAVerifyResponse): {
       id: raw.operator.id,
       email: raw.operator.email,
       name: raw.operator.name,
-      role: raw.operator.role,
       mfaEnabled: raw.operator.mfa_enabled,
     } : undefined,
   };
