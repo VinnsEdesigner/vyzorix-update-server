@@ -1,26 +1,27 @@
 import { graphqlClient } from '../_shared/graphql-client';
 
 export const GET_LOGS = `
-  query GetLogs($organizationId: ID!, $deviceId: ID!, $limit: Int, $offset: Int) {
-    logs(organizationId: $organizationId, deviceId: $deviceId, limit: $limit, offset: $offset) {
+  query GetLogs($organizationId: ID!, $imei: ID!, $type: String, $startTime: Int, $endTime: Int, $limit: Int, $cursor: String) {
+    deviceLogs(organizationId: $organizationId, imei: $imei, type: $type, startTime: $startTime, endTime: $endTime, limit: $limit, cursor: $cursor) {
       entries {
         id
-        device_id
+        deviceImei
         level
         message
         metadata
         timestamp
       }
-      total
+      hasMore
+      nextCursor
     }
   }
 `;
 
 export const GET_LOG_ENTRY = `
-  query GetLogEntry($organizationId: ID!, $deviceId: ID!, $logId: ID!) {
-    logEntry(organizationId: $organizationId, deviceId: $deviceId, logId: $logId) {
+  query GetLogEntry($organizationId: ID!, $imei: ID!, $logId: ID!) {
+    deviceLog(organizationId: $organizationId, imei: $imei, logId: $logId) {
       id
-      device_id
+      deviceImei
       level
       message
       metadata
@@ -29,7 +30,7 @@ export const GET_LOG_ENTRY = `
   }
 `;
 
-export async function queryLogs(params: { organizationId: string; deviceId: string; limit?: number; offset?: number }) {
+export async function queryLogs(params: { organizationId: string; imei: string; type?: string; startTime?: number; endTime?: number; limit?: number; cursor?: string }) {
   return graphqlClient.getClient().query({
     query: GET_LOGS,
     variables: params,
@@ -37,7 +38,7 @@ export async function queryLogs(params: { organizationId: string; deviceId: stri
   });
 }
 
-export async function queryLogEntry(params: { organizationId: string; deviceId: string; logId: string }) {
+export async function queryLogEntry(params: { organizationId: string; imei: string; logId: string }) {
   return graphqlClient.getClient().query({
     query: GET_LOG_ENTRY,
     variables: params,

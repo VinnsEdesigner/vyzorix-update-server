@@ -1,5 +1,5 @@
 import { graphqlClient } from '../_shared/graphql-client';
-import { OPERATOR_SETTINGS_FRAGMENT, DEVICE_SETTINGS_FRAGMENT, ORGANIZATION_SETTINGS_FRAGMENT, THRESHOLDS_FRAGMENT } from "./graphql-settings-fragments";
+import { OPERATOR_SETTINGS_FRAGMENT, DEVICE_SETTINGS_FRAGMENT, ORGANIZATION_SETTINGS_FRAGMENT } from "./graphql-settings-fragments";
 
 export const GET_SETTINGS = `
   ${OPERATOR_SETTINGS_FRAGMENT}
@@ -28,21 +28,6 @@ export const GET_ORGANIZATION_SETTINGS = `
   }
 `;
 
-export const GET_THRESHOLDS = `
-  query GetThresholds($organizationId: ID!) {
-    thresholds(organizationId: $organizationId) {
-      thresholds {
-        temp_min
-        temp_max
-        battery_min
-        battery_max
-        speed_max
-        distance_max
-      }
-    }
-  }
-`;
-
 export async function querySettings() {
   return graphqlClient.getClient().query({
     query: GET_SETTINGS,
@@ -61,14 +46,6 @@ export async function queryDeviceSettings(params: { organizationId: string; devi
 export async function queryOrganizationSettings(organizationId: string) {
   return graphqlClient.getClient().query({
     query: GET_ORGANIZATION_SETTINGS,
-    variables: { organizationId },
-    fetchPolicy: 'network-only',
-  });
-}
-
-export async function queryThresholds(organizationId: string) {
-  return graphqlClient.getClient().query({
-    query: GET_THRESHOLDS,
     variables: { organizationId },
     fetchPolicy: 'network-only',
   });

@@ -4,8 +4,8 @@ export const OPERATOR_SETTINGS_FRAGMENT = `
       id
       email
       name
-      email_verified
-      mfa_enabled
+      emailVerified
+      mfaEnabled
     }
     client {
       theme
@@ -30,48 +30,42 @@ export const OPERATOR_SETTINGS_FRAGMENT = `
 
 export const DEVICE_SETTINGS_FRAGMENT = `
   fragment DeviceSettings on DeviceSettingsType {
-    device_id
-    effective_thresholds {
-      temp_min
-      temp_max
-      battery_min
-      battery_max
-      speed_max
-      distance_max
+    deviceImei
+    customName
+    location
+    thresholds {
+      riskWarn
+      riskCrit
+      thermalWarn
+      thermalCrit
+      bufferWarn
+      bufferCrit
     }
-    organization_thresholds {
-      temp_min
-      temp_max
-      battery_min
-      battery_max
-      speed_max
-      distance_max
+    effectiveThresholds {
+      riskWarn
+      riskCrit
+      thermalWarn
+      thermalCrit
+      bufferWarn
+      bufferCrit
     }
   }
 `;
 
 export const ORGANIZATION_SETTINGS_FRAGMENT = `
   fragment OrganizationSettings on OrganizationSettingsType {
-    organization_id
-    default_thresholds {
-      temp_min
-      temp_max
-      battery_min
-      battery_max
-      speed_max
-      distance_max
+    organizationId
+    timezone
+    dateFormat
+    alertCooldownMinutes
+    defaultThresholds {
+      riskWarn
+      riskCrit
+      thermalWarn
+      thermalCrit
+      bufferWarn
+      bufferCrit
     }
-    updated_at
-  }
-`;
-
-export const THRESHOLDS_FRAGMENT = `
-  fragment Thresholds on ThresholdSettingsType {
-    temp_min
-    temp_max
-    battery_min
-    battery_max
-    speed_max
-    distance_max
+    updatedAt
   }
 `;
