@@ -1,138 +1,35 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-export const SUBMIT_REGISTRATION_REQUEST =  `
-  mutation SubmitRegistrationRequest($input: RegistrationRequestInput!) {
-    submitRegistrationRequest(input: $input) {
-      success
-      status
-      messageId
-      error
-    }
-  }
-`;
-
-
-export const ACKNOWLEDGE_REQUEST =  `
-  mutation AcknowledgeRequest($imei: String!) {
-    acknowledgeRequest(imei: $imei) {
-      success
-      status
-      error
-    }
-  }
-`;
-
-
-export const REGISTER_DEVICE =  `
-  mutation RegisterDevice($imei: String!) {
-    registerDevice(imei: $imei) {
-      success
-      status
-      deviceId
-      message
-      error
-    }
-  }
-`;
-
-
-export const DISMISS_INBOX_ENTRY =  `
-  mutation DismissInboxEntry($imei: String!) {
-    dismissInboxEntry(imei: $imei) {
-      success
-      status
-      error
-    }
-  }
-`;
-
-
-export const CONFIRM_REGISTRATION =  `
-  mutation ConfirmRegistration($imei: String!, $confirmed: Boolean!) {
-    confirmRegistration(imei: $imei, confirmed: $confirmed) {
-      success
-      status
-      deviceId
-      commandSecret
-      error
-    }
-  }
-`;
-
-
-export const DEREGISTER_DEVICE =  `
-  mutation DeregisterDevice($imei: String!) {
-    deregisterDevice(imei: $imei) {
-      success
-      status
-      error
-    }
-  }
-`;
 import { graphqlClient } from '../_shared/graphql-client';
 
-export interface RegistrationRequestInput {
-  imei: string;
-  deviceName: string;
-  model?: string;
-  manufacturer?: string;
-  osVersion: string;
-  appVersion: string;
-  fcmToken: string;
-  firmware?: string;
-  securityPatch?: string;
-  buildId?: string;
-}
+export const ACK_INBOX = `
+  mutation AckInbox($imei: String!, $action: AckAction!, $notes: String) {
+    ackInbox(imei: $imei, action: $action, notes: $notes) {
+      success
+      status
+      error
+    }
+  }
+`;
 
-export async function mutateSubmitRegistrationRequest(input: RegistrationRequestInput) {
-  return graphqlClient.mutate({
-    mutation: SUBMIT_REGISTRATION_REQUEST,
-    variables: { input },
+export const DEREGISTER_DEVICE = `
+  mutation DeregisterDevice($imei: String!, $hard: Boolean) {
+    deregisterDevice(imei: $imei, hard: $hard) {
+      success
+      status
+      error
+    }
+  }
+`;
+
+export async function mutateAckInbox(params: { imei: string; action: 'APPROVE' | 'REJECT'; notes?: string }) {
+  return graphqlClient.getClient().mutate({
+    mutation: ACK_INBOX,
+    variables: params,
   });
 }
 
-export async function mutateAcknowledgeRequest(imei: string) {
-  return graphqlClient.mutate({
-    mutation: ACKNOWLEDGE_REQUEST,
-    variables: { imei },
-  });
-}
-
-export async function mutateRegisterDevice(imei: string) {
-  return graphqlClient.mutate({
-    mutation: REGISTER_DEVICE,
-    variables: { imei },
-  });
-}
-
-export async function mutateDismissInboxEntry(imei: string) {
-  return graphqlClient.mutate({
-    mutation: DISMISS_INBOX_ENTRY,
-    variables: { imei },
-  });
-}
-
-export async function mutateConfirmRegistration(imei: string, confirmed: boolean) {
-  return graphqlClient.mutate({
-    mutation: CONFIRM_REGISTRATION,
-    variables: { imei, confirmed },
-  });
-}
-
-export async function mutateDeregisterDevice(imei: string) {
-  return graphqlClient.mutate({
+export async function mutateDeregisterDevice(params: { imei: string; hard?: boolean }) {
+  return graphqlClient.getClient().mutate({
     mutation: DEREGISTER_DEVICE,
-    variables: { imei },
+    variables: params,
   });
 }
