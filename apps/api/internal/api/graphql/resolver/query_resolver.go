@@ -1041,6 +1041,7 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 			"framesToday":     inspection.Telemetry.FramesToday,
 			"avgLatencyMs":    inspection.Telemetry.AvgLatencyMs,
 			"totalBytesToday": inspection.Telemetry.TotalBytesToday,
+			"sessionsToday":   inspection.Telemetry.SessionsToday,
 		},
 	}, nil
 }
