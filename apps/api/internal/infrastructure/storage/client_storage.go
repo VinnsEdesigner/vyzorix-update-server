@@ -478,8 +478,8 @@ func (r *ClientRepository) RotateClientSecret(ctx context.Context, clientID stri
 
 	// Generate new secret (32 bytes = 64 hex chars).
 	secretBytes := make([]byte, 32)
-	if _, err := readRandom(secretBytes); err != nil {
-		return nil, "", err
+	if _, randErr := readRandom(secretBytes); randErr != nil {
+		return nil, "", randErr
 	}
 
 	newSecret := hexEncode(secretBytes)

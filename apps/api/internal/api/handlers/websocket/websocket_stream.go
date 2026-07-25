@@ -64,7 +64,7 @@ func (u *StreamUpgrader) Upgrade(c *gin.Context, deviceID string) (*websocket.Co
 
 	// In development, only skip if allowDevAuth is true (meaning EnforceHMAC=false was set).
 	if u.config.Env == "production" || u.config.EnforceHMAC {
-		// Use query param based verification for WebSocket since headers can't be set during upgrade
+		// Use query param based verification for WebSocket since headers can't be set during upgrade.
 		if err := u.verifyWebSocketHMAC(c.Request, deviceID); err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "WebSocket HMAC verification failed"})
 			return nil, nil, err

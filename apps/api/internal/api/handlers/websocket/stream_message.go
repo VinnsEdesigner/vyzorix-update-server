@@ -115,7 +115,7 @@ func (r *MessageRouter) handleSubscribe(client *hub.Client, raw []byte) error {
 		r.log.Info("client subscribed to all devices (dashboard mode)", "clientId", client.ClientID)
 		success = true
 	} else {
-		// Subscribe client to specific device
+		// Subscribe client to specific device.
 		success = r.hub.Subscribe(client.ClientID, deviceID)
 		if success {
 			r.log.Info("client subscribed to device",
@@ -131,7 +131,7 @@ func (r *MessageRouter) handleSubscribe(client *hub.Client, raw []byte) error {
 		}
 	}
 
-	// Send acknowledgment
+	// Send acknowledgment.
 	r.sendSubscribeAck(client, deviceID, success, errorMsg)
 
 	return nil
@@ -159,7 +159,7 @@ func (r *MessageRouter) handleUnsubscribe(client *hub.Client, raw []byte) error 
 	var success bool
 	var errorMsg string
 
-	// Wildcard unsubscribe - unsubscribe from all devices
+	// Wildcard unsubscribe - unsubscribe from all devices.
 	if deviceID == "*" {
 		if tf := r.hub.TelemetryFilter(); tf != nil {
 			tf.UnsubscribeAll(client.ClientID)
@@ -167,7 +167,7 @@ func (r *MessageRouter) handleUnsubscribe(client *hub.Client, raw []byte) error 
 		r.log.Info("client unsubscribed from all devices", "clientId", client.ClientID)
 		success = true
 	} else {
-		// Unsubscribe client from specific device
+		// Unsubscribe client from specific device.
 		success = r.hub.Unsubscribe(client.ClientID, deviceID)
 		if success {
 			r.log.Info("client unsubscribed from device",
@@ -183,32 +183,27 @@ func (r *MessageRouter) handleUnsubscribe(client *hub.Client, raw []byte) error 
 		}
 	}
 
-	// Send acknowledgment
+	// Send acknowledgment.
 	r.sendUnsubscribeAck(client, deviceID, success, errorMsg)
 
 	return nil
 }
 
+// WSAckPayload represents the acknowledgment payload for subscription responses.
+type WSAckPayload struct {
+	DeviceID string `json:"deviceId"`
+	Error    string `json:"error,omitempty"`
+	Success  bool   `json:"success"`
+}
+
 // sendSubscribeAck sends a SUBSCRIBE_ACK message to the client.
 func (r *MessageRouter) sendSubscribeAck(client *hub.Client, deviceID string, success bool, errorMsg string) {
 	ack := struct {
-		Type    string `json:"type"`
-		Payload struct {
-			Success  bool   `json:"success"`
-			DeviceID string `json:"deviceId"`
-			Error    string `json:"error,omitempty"`
-		} `json:"payload"`
+		Type    string      `json:"type"`
+		Payload WSAckPayload `json:"payload"`
 	}{
-		Type: "SUBSCRIBE_ACK",
-		Payload: struct {
-			Success  bool   `json:"success"`
-			DeviceID string `json:"deviceId"`
-			Error    string `json:"error,omitempty"`
-		}{
-			Success:  success,
-			DeviceID: deviceID,
-			Error:    errorMsg,
-		},
+		Type:    "SUBSCRIBE_ACK",
+		Payload: WSAckPayload{Success: success, DeviceID: deviceID, Error: errorMsg},
 	}
 
 	if err := client.Conn.WriteJSON(ack); err != nil {
@@ -219,23 +214,11 @@ func (r *MessageRouter) sendSubscribeAck(client *hub.Client, deviceID string, su
 // sendUnsubscribeAck sends a UNSUBSCRIBE_ACK message to the client.
 func (r *MessageRouter) sendUnsubscribeAck(client *hub.Client, deviceID string, success bool, errorMsg string) {
 	ack := struct {
-		Type    string `json:"type"`
-		Payload struct {
-			Success  bool   `json:"success"`
-			DeviceID string `json:"deviceId"`
-			Error    string `json:"error,omitempty"`
-		} `json:"payload"`
+		Type    string      `json:"type"`
+		Payload WSAckPayload `json:"payload"`
 	}{
-		Type: "UNSUBSCRIBE_ACK",
-		Payload: struct {
-			Success  bool   `json:"success"`
-			DeviceID string `json:"deviceId"`
-			Error    string `json:"error,omitempty"`
-		}{
-			Success:  success,
-			DeviceID: deviceID,
-			Error:    errorMsg,
-		},
+		Type:    "UNSUBSCRIBE_ACK",
+		Payload: WSAckPayload{Success: success, DeviceID: deviceID, Error: errorMsg},
 	}
 
 	if err := client.Conn.WriteJSON(ack); err != nil {
