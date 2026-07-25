@@ -1,18 +1,18 @@
 import { restClient, getOrganizationContext } from "../_shared/rest-client";
-import {
-  apiKeyFromRaw,
-  apiKeyWithSecretFromRaw,
-  paginationFromRaw,
-  apiKeyStatsFromRaw,
-  type RawApiKey,
-  type RawApiKeyWithSecret,
-  type RawApiKeyListResult,
-} from "@/domain/apikey";
 import type {
   ApiKey,
   ApiKeyWithSecret,
   ApiKeyListResult,
   ApiKeyScope,
+  RawApiKey,
+  RawApiKeyWithSecret,
+  RawApiKeyListResult,
+} from "@/domain/apikey";
+import {
+  apiKeyFromRaw,
+  apiKeyWithSecretFromRaw,
+  paginationFromRaw,
+  apiKeyStatsFromRaw,
 } from "@/domain/apikey";
 
 const PATHS = {

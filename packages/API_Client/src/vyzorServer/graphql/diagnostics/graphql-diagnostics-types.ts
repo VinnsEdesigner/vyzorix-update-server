@@ -1,29 +1,29 @@
-export type RawIdentityInfo = {
+export interface RawIdentityInfo {
   __typename?: "IdentityInfo";
   imei: string;
   deviceName?: string;
   model?: string;
   manufacturer?: string;
-};
+}
 
-export type RawSoftwareInfo = {
+export interface RawSoftwareInfo {
   __typename?: "SoftwareInfo";
   osVersion?: string;
   appVersion?: string;
   securityPatch?: string;
   buildId?: string;
-};
+}
 
-export type RawRegistrationInfo = {
+export interface RawRegistrationInfo {
   __typename?: "RegistrationInfo";
   status: string;
   registeredAt?: string | null;
   fcmTokenValid: boolean;
   fcmTokenRefreshedAt?: string | null;
   commandSecretSet: boolean;
-};
+}
 
-export type RawConnectionInfo = {
+export interface RawConnectionInfo {
   __typename?: "ConnectionInfo";
   webSocketStatus?: string;
   connectedAt?: string | null;
@@ -31,33 +31,33 @@ export type RawConnectionInfo = {
   lastSeen?: string | null;
   clientIp?: string;
   protocol?: string;
-};
+}
 
-export type RawTelemetryInfo = {
+export interface RawTelemetryInfo {
   __typename?: "TelemetryInfo";
   lastTimestamp?: string | null;
   framesToday: number;
   avgLatencyMs?: number;
   totalBytesToday?: number;
   sessionsToday: number;
-};
+}
 
-export type RawDeviceInspection = {
+export interface RawDeviceInspection {
   __typename?: "DeviceInspection";
   identity: RawIdentityInfo;
   software: RawSoftwareInfo;
   registration: RawRegistrationInfo;
   connection: RawConnectionInfo;
   telemetry: RawTelemetryInfo;
-};
+}
 
-export type RawTimelineEvent = {
+export interface RawTimelineEvent {
   __typename?: "TimelineEvent";
   id: string;
   type: string;
   timestamp: string;
   data?: Record<string, unknown>;
-};
+}
 
 export interface RawTimelineConnection {
   events: RawTimelineEvent[];

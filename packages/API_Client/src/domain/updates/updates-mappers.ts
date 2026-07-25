@@ -10,7 +10,6 @@ import type {
   ReleaseType,
   UpdateStatus,
   InstallType,
-  DevicePushStatus,
   SyncStatus,
 } from "./updates-entity";
 

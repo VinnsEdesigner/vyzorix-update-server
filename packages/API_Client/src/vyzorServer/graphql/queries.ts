@@ -3,22 +3,13 @@ export {
   GET_INBOX_ENTRY,
   queryInboxEntries,
   queryInboxEntry,
-} from "./queries/registration-queries";
+} from "./registration";
 
 export {
   GET_DEVICES,
   GET_DEVICE,
-  GET_DEVICE_TELEMETRY,
-  queryDevices,
-  queryDevice,
-  queryDeviceTelemetry,
-} from "./queries/registration-queries";
-
-export {
-  GET_DEVICES as GET_DEVICE_LIST,
-  GET_DEVICE as GET_DEVICE_BY_ID,
   GET_DEVICE_COUNT,
-  queryDevices as queryDeviceList,
+  queryDevices,
   queryDevice,
   queryDeviceCount,
 } from "./device";
@@ -27,11 +18,9 @@ export {
   GET_SETTINGS,
   GET_DEVICE_SETTINGS,
   GET_ORGANIZATION_SETTINGS,
-  GET_THRESHOLDS,
   querySettings,
   queryDeviceSettings,
   queryOrganizationSettings,
-  queryThresholds,
 } from "./settings";
 
 export {
@@ -48,9 +37,7 @@ export {
 
 export {
   GET_LOGS,
-  GET_LOG_ENTRY,
   queryLogs,
-  queryLogEntry,
 } from "./logs";
 
 export {

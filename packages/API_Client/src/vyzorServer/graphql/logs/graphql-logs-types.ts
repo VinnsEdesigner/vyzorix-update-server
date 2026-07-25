@@ -1,18 +1,18 @@
-export type RawLogEntry = {
+export interface RawLogEntry {
   __typename?: "LogEntry";
   id: string;
   type: string;
   timestamp: number;
   data?: Record<string, unknown>;
-};
+}
 
-export type RawLogListItem = {
+export interface RawLogListItem {
   __typename?: "LogEntry";
   id: string;
   type: string;
   timestamp: number;
   data?: Record<string, unknown>;
-};
+}
 
 export interface RawLogConnection {
   events: RawLogListItem[];

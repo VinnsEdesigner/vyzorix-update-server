@@ -1,4 +1,6 @@
-export const OPERATOR_SETTINGS_FRAGMENT = `
+import { gql } from '@apollo/client';
+
+export const OPERATOR_SETTINGS_FRAGMENT = gql`
   fragment OperatorSettings on OperatorSettings {
     client {
       theme
@@ -30,7 +32,7 @@ export const OPERATOR_SETTINGS_FRAGMENT = `
   }
 `;
 
-export const DEVICE_SETTINGS_FRAGMENT = `
+export const DEVICE_SETTINGS_FRAGMENT = gql`
   fragment DeviceSettings on DeviceSettings {
     id
     deviceImei
@@ -57,7 +59,7 @@ export const DEVICE_SETTINGS_FRAGMENT = `
   }
 `;
 
-export const ORGANIZATION_SETTINGS_FRAGMENT = `
+export const ORGANIZATION_SETTINGS_FRAGMENT = gql`
   fragment OrganizationSettings on OrganizationSettings {
     id
     organizationId

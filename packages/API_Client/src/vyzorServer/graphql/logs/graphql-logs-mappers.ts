@@ -11,28 +11,34 @@ import type {
   RawLogStats,
 } from "./graphql-logs-types";
 
-function parseTimestamp(value?: string | null): Date {
+function parseTimestamp(value?: number | null): Date {
   if (!value) return new Date();
-  return new Date(value);
+  return new Date(value * 1000);
 }
 
 export function logEntryFromRaw(raw: RawLogEntry): LogEntry {
   return {
     id: raw.id,
-    deviceId: raw.deviceImei,
-    eventType: (raw.eventType as LogEventType) ?? "info",
+    deviceId: raw.id,
+    eventType: (raw.type as LogEventType) ?? "info",
     timestamp: parseTimestamp(raw.timestamp),
-    data: raw.data ? JSON.parse(raw.data) : undefined,
+    data: raw.data,
   };
 }
 
 export function logListItemFromRaw(raw: RawLogListItem): LogEntry {
-  return logEntryFromRaw(raw as RawLogEntry);
+  return {
+    id: raw.id,
+    deviceId: raw.id,
+    eventType: (raw.type as LogEventType) ?? "info",
+    timestamp: parseTimestamp(raw.timestamp),
+    data: raw.data,
+  };
 }
 
 export function logListResultFromRaw(raw: RawLogConnection): LogListResult {
   return {
-    logs: raw.logs.map(logListItemFromRaw),
+    logs: raw.events.map(logListItemFromRaw),
     hasMore: raw.pagination.hasMore,
     nextCursor: raw.pagination.nextCursor,
   };
@@ -42,11 +48,11 @@ export function logStatsFromRaw(raw: RawLogStats): LogStats {
   return {
     total: raw.total ?? 0,
     byType: {
-      connection: raw.byType?.connection ?? 0,
-      command: raw.byType?.command ?? 0,
-      telemetry: raw.byType?.telemetry ?? 0,
+      connection: 0,
+      command: 0,
+      telemetry: 0,
       error: raw.byType?.error ?? 0,
-      warning: raw.byType?.warning ?? 0,
+      warning: raw.byType?.warn ?? 0,
     },
   };
 }

@@ -1,6 +1,7 @@
 import { graphqlClient } from '../_shared/graphql-client';
+import { gql } from '@apollo/client';
 
-export const GET_PENDING_COMMANDS = `
+export const GET_PENDING_COMMANDS = gql`
   query GetPendingCommands($organizationId: ID!, $deviceId: ID!) {
     pendingCommands(organizationId: $organizationId, deviceId: $deviceId) {
       dispatchId
@@ -15,7 +16,7 @@ export const GET_PENDING_COMMANDS = `
   }
 `;
 
-export const GET_COMMAND = `
+export const GET_COMMAND = gql`
   query GetCommand($organizationId: ID!, $dispatchId: ID!) {
     command(organizationId: $organizationId, dispatchId: $dispatchId) {
       dispatchId
@@ -30,7 +31,7 @@ export const GET_COMMAND = `
   }
 `;
 
-export async function queryPendingCommands(params: { organizationId: string; deviceId: string }) {
+export async function queryPendingCommands(params: { organizationId: string; deviceId: string }): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_PENDING_COMMANDS,
     variables: params,
@@ -38,7 +39,7 @@ export async function queryPendingCommands(params: { organizationId: string; dev
   });
 }
 
-export async function queryCommand(params: { organizationId: string; dispatchId: string }) {
+export async function queryCommand(params: { organizationId: string; dispatchId: string }): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_COMMAND,
     variables: params,

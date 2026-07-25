@@ -1,6 +1,9 @@
 
 
-import { signRequest, signCommand, signWebSocketConnect, generateNonce, generateTimestamp, generateTimestampMs, type CommandFrame } from '../crypto';
+
+
+
+import { signHttpRequest, signCommand, generateTimestampMs, type CommandFrame } from '../crypto';
 import { restClient } from '../rest/_shared/rest-client';
 
 export interface DeviceCredentials {
@@ -37,7 +40,9 @@ export class DeviceClient {
     }
 
     const bodyStr = body ? JSON.stringify(body) : '';
-    const headers = signRequest(method, path, bodyStr, this.credentials.deviceId, this.credentials.secret);
+    const headers: Record<string, string> = {
+      ...signHttpRequest(method, path, bodyStr, this.credentials.deviceId, this.credentials.secret),
+    };
 
     if (this.organizationId) {
       headers['X-Organization-ID'] = this.organizationId;
@@ -102,7 +107,6 @@ export class DeviceClient {
     }
 
     const path = `/v1/device/${this.credentials.deviceId}/telemetry`;
-    const body = JSON.stringify({ metrics });
 
     return restClient.post<{ received: boolean }>(
       path,
@@ -130,14 +134,14 @@ export class DeviceClient {
     );
   }
 
-    async getPendingCommands(): Promise<Array<{ dispatchId: string; command: string; args?: string }>> {
+    async getPendingCommands(): Promise<{ dispatchId: string; command: string; args?: string }[]> {
     if (!this.credentials) {
       throw new Error('Device credentials not set');
     }
 
     const path = `/v1/device/${this.credentials.deviceId}/commands/pending`;
 
-    return restClient.get<Array<{ dispatchId: string; command: string; args?: string }>>(
+    return restClient.get<{ dispatchId: string; command: string; args?: string }[]>(
       path,
       {
         headers: this.getHeaders('GET', path),

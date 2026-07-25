@@ -1,4 +1,4 @@
-export type RawUpdateVersion = {
+export interface RawUpdateVersion {
   __typename?: "UpdateVersion";
   id: string;
   version: string;
@@ -9,9 +9,11 @@ export type RawUpdateVersion = {
   releaseNotes: string;
   releaseType: string;
   isLatest: boolean;
-};
+  createdAt?: string;
+  updatedAt?: string;
+}
 
-export type RawPushDevice = {
+export interface RawPushDevice {
   __typename?: "PushDevice";
   id: string;
   deviceId: string;
@@ -20,9 +22,9 @@ export type RawPushDevice = {
   sentAt?: string | null;
   acknowledgedAt?: string | null;
   error?: string;
-};
+}
 
-export type RawUpdatePush = {
+export interface RawUpdatePush {
   __typename?: "UpdatePush";
   id: string;
   version: string;
@@ -34,30 +36,30 @@ export type RawUpdatePush = {
   cancelledAt?: string | null;
   deviceCount: number;
   devices: RawPushDevice[];
-};
+}
 
-export type RawSyncStatus = {
+export interface RawSyncStatus {
   __typename?: "SyncStatus";
   status: string;
   lastSyncAt?: string | null;
   nextSyncAt?: string | null;
   versionsFound?: number;
   error?: string;
-};
+}
 
-export type RawChangelogEntry = {
+export interface RawChangelogEntry {
   __typename?: "ChangelogEntry";
   version: string;
   date: string;
   type: string;
   notes: string;
-};
+}
 
-export type RawDeviceUpdateStatus = {
+export interface RawDeviceUpdateStatus {
   __typename?: "DeviceUpdateStatus";
   currentVersion: string;
   needsUpdate: boolean;
-};
+}
 
 export interface RawVersionConnection {
   versions: RawUpdateVersion[];

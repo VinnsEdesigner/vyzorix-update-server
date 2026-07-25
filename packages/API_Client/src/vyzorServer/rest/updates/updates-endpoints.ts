@@ -3,7 +3,6 @@ import {
   versionFromRaw,
   syncStateFromRaw,
   updatePushFromRaw,
-  paginationFromRaw,
   versionListResultFromRaw,
   updateHistoryResultFromRaw,
   changelogEntryFromRaw,
@@ -22,7 +21,6 @@ import type {
   ChangelogEntry,
   PushUpdateRequest,
   UpdateStatus,
-  InstallType,
 } from "@/domain/updates";
 
 const PATHS = {

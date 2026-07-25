@@ -171,33 +171,34 @@ export function clientSettingsToRaw(client: Partial<ClientSettings>): Partial<Ra
   };
 }
 
-export function emailNotificationsToRaw(email: Partial<EmailNotifications>): Partial<RawEmailNotifications> {
+export function emailNotificationsToRaw(email: EmailNotifications): RawEmailNotifications {
   return {
-    thresholdBreach: email.thresholdBreach,
-    deviceOffline: email.deviceOffline,
-    deviceOnline: email.deviceOnline,
-    updateAvailable: email.updateAvailable,
-    commandFailed: email.commandFailed,
-    registrationRequest: email.registrationRequest,
+    thresholdBreach: email.thresholdBreach ?? false,
+    deviceOffline: email.deviceOffline ?? false,
+    deviceOnline: email.deviceOnline ?? false,
+    updateAvailable: email.updateAvailable ?? false,
+    commandFailed: email.commandFailed ?? false,
+    registrationRequest: email.registrationRequest ?? false,
   };
 }
 
-export function pushNotificationsToRaw(push: Partial<PushNotifications>): Partial<RawPushNotifications> {
+export function pushNotificationsToRaw(push: PushNotifications): RawPushNotifications {
   return {
-    thresholdBreach: push.thresholdBreach,
-    deviceOffline: push.deviceOffline,
-    deviceOnline: push.deviceOnline,
-    updateAvailable: push.updateAvailable,
-    commandFailed: push.commandFailed,
-    registrationRequest: push.registrationRequest,
+    thresholdBreach: push.thresholdBreach ?? false,
+    deviceOffline: push.deviceOffline ?? false,
+    deviceOnline: push.deviceOnline ?? false,
+    updateAvailable: push.updateAvailable ?? false,
+    commandFailed: push.commandFailed ?? false,
+    registrationRequest: push.registrationRequest ?? false,
   };
 }
 
-export function webhookNotificationsToRaw(webhook: Partial<WebhookNotifications>): Partial<RawWebhookNotifications> {
+export function webhookNotificationsToRaw(webhook: WebhookNotifications): RawWebhookNotifications {
   return {
-    enabled: webhook.enabled,
-    url: webhook.url,
-    types: webhook.types,
+    enabled: webhook.enabled ?? false,
+    url: webhook.url ?? "",
+    secret: webhook.secret ?? "",
+    types: webhook.types ?? [],
   };
 }
 

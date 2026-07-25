@@ -11,11 +11,11 @@ import {
   type RawWSCommandAck,
   type RawWSAuthResponse,
 } from "@/domain/realtime";
-import { ConnectionStateMachineImpl, stateFromReadyState } from "./websocket-connection";
+import { ConnectionStateMachineImpl } from "./websocket-connection";
 import { HeartbeatManagerImpl } from "./websocket-heartbeat";
 import { ReconnectManagerImpl } from "./websocket-reconnect";
-import { createWSMessage, parseWSMessage, type WSMessage } from "./websocket-messages";
-import { getWebSocketConfig, type WebSocketConfig } from "../config";
+import { parseWSMessage, type WSMessage } from "./websocket-messages";
+import { getWebSocketConfig } from "../config";
 import { signWebSocketConnect, generateNonce, generateTimestamp } from "../crypto";
 
 export interface WSDeviceCredentials {
@@ -31,14 +31,6 @@ export interface WSClientConfig {
   heartbeatTimeout?: number;
   deviceCredentials?: WSDeviceCredentials;
 }
-
-const DEFAULT_CONFIG: Required<Omit<WSClientConfig, 'deviceCredentials'>> = {
-  url: "",
-  reconnectInterval: 3000,
-  maxReconnectAttempts: 5,
-  heartbeatInterval: 30000,
-  heartbeatTimeout: 10000,
-};
 
 export interface SubscriptionResult {
   success: boolean;
@@ -251,7 +243,7 @@ export class WebSocketClientImpl implements WebSocketClient {
       const nonce = generateNonce();
       const signature = signWebSocketConnect(
         this.credentials.deviceId,
-        timestamp,
+        timestamp.toString(),
         nonce,
         this.credentials.secret
       );
@@ -329,6 +321,9 @@ export class WebSocketClientImpl implements WebSocketClient {
         break;
       case "UNSUBSCRIBE_ACK":
         this.handleUnsubscribeAck(message.payload as { success: boolean; deviceId: string; error?: string });
+        break;
+      default:
+        // Unknown message type - ignore for forward compatibility
         break;
     }
   }

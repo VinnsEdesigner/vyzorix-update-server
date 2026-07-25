@@ -30,7 +30,7 @@ cd ../..
 
 # Check for outdated npm packages
 echo "Checking npm dependencies..."
-cd apps/web
+cd apps/VyzoriX_web
 if command -v pnpm &> /dev/null; then
     # Check for outdated packages
     pnpm outdated 2>/dev/null || true
@@ -52,17 +52,17 @@ DEPRECATED=(
 )
 
 for pkg in "${DEPRECATED[@]}"; do
-    if grep -q "\"$pkg\"" apps/web/package.json 2>/dev/null; then
+    if grep -q "\"$pkg\"" apps/VyzoriX_web/package.json 2>/dev/null; then
         echo "   [WARNING] Found deprecated package: $pkg"
     fi
 done
 
 # Check package.json scripts are valid
 echo "Checking package.json scripts..."
-if grep -q '"dev":' apps/web/package.json && \
-   grep -q '"build":' apps/web/package.json && \
-   grep -q '"lint":' apps/web/package.json && \
-   grep -q '"typecheck":' apps/web/package.json; then
+if grep -q '"dev":' apps/VyzoriX_web/package.json && \
+   grep -q '"build":' apps/VyzoriX_web/package.json && \
+   grep -q '"lint":' apps/VyzoriX_web/package.json && \
+   grep -q '"typecheck":' apps/VyzoriX_web/package.json; then
     echo "   [OK] All required scripts are defined"
 else
     echo "   [ERROR] Missing required scripts in package.json"

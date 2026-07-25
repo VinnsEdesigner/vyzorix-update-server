@@ -33,7 +33,7 @@ services:
   # Vyzorix Web (React frontend)
   web:
     build:
-      context: ../apps/web
+      context: ../apps/VyzoriX_web
       dockerfile: Dockerfile
     ports:
       - "5173:5173"
@@ -42,7 +42,7 @@ services:
       - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - VITE_AUTH_REDIRECT_URI=http://localhost:5173/auth/callback
     volumes:
-      - ../apps/web:/app
+      - ../apps/VyzoriX_web:/app
       - /app/node_modules  # Preserve node_modules
       - /app/dist          # Exclude build output
     command: pnpm dev --host

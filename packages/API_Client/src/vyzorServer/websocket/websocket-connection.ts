@@ -1,5 +1,3 @@
-import type { WebSocketState } from "@/domain/realtime";
-
 export type ConnectionState = "CLOSED" | "CONNECTING" | "OPEN" | "CLOSING" | "RECONNECTING";
 
 export interface ConnectionStateMachine {

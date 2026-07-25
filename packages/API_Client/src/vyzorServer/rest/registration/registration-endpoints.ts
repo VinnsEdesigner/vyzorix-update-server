@@ -9,7 +9,6 @@ import {
   type RawInboxEntry,
   type RawDevice,
   type RawPagination,
-  type RawCreateInboxRequest,
   type RawCreateInboxResponse,
   type RawConfirmDeviceResponse,
 } from "@/domain/registration";

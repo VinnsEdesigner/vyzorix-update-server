@@ -1,4 +1,4 @@
-export type RawCommand = {
+export interface RawCommand {
   __typename?: "Command";
   dispatchId: string;
   commandId: string;
@@ -8,9 +8,9 @@ export type RawCommand = {
   status: string;
   createdAt?: string;
   deliveredAt?: string;
-};
+}
 
-export type RawCommandListItem = {
+export interface RawCommandListItem {
   __typename?: "Command";
   dispatchId: string;
   commandId: string;
@@ -18,7 +18,7 @@ export type RawCommandListItem = {
   command: string;
   status: string;
   createdAt?: string;
-};
+}
 
 export interface RawCommandConnection {
   commands: RawCommandListItem[];

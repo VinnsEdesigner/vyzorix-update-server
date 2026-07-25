@@ -1,6 +1,6 @@
 
 import { restClient } from "../_shared/rest-client";
-import { meResponseFromRaw, type MeResponse, type OrganizationInfo, type OrganizationMembership } from "@/domain/auth";
+import { meResponseFromRaw, type MeResponse, type OrganizationInfo, type RawMeResponse } from "@/domain/auth";
 import type { Invitation, InvitationApiResponse } from "@/domain/invitation";
 import { mapInvitation } from "@/domain/invitation";
 
@@ -17,21 +17,8 @@ export interface SelectOrganizationRequest {
 
 export const me = {
   async getMe(): Promise<MeResponse> {
-    const raw = await restClient.get<{
-      id: string;
-      email: string;
-      name: string;
-      mfa_enabled: boolean;
-      email_verified: boolean;
-      thresholds?: unknown;
-      client?: unknown;
-      needs_organization: boolean;
-      organizations: OrganizationInfo[];
-      memberships?: OrganizationMembership[];
-      last_organization_id?: string;
-      selected_organization?: OrganizationInfo;
-    }>(PATHS.me);
-    return meResponseFromRaw(raw as any);
+    const raw = await restClient.get<RawMeResponse>(PATHS.me);
+    return meResponseFromRaw(raw);
   },
 
   async getOrganizations(): Promise<{ organizations: OrganizationInfo[] }> {

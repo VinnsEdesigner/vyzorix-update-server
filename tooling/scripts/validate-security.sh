@@ -35,21 +35,21 @@ fi
 
 # Check for eval usage
 echo "Checking for eval() usage..."
-if grep -rE "eval\s*\(" apps/web/src --include="*.ts" --include="*.tsx" 2>/dev/null > /dev/null; then
+if grep -rE "eval\s*\(" apps/VyzoriX_web/src --include="*.ts" --include="*.tsx" 2>/dev/null > /dev/null; then
     echo "   [ERROR] eval() found in frontend code!"
     ISSUES_FOUND=$((ISSUES_FOUND + 1))
 fi
 
 # Check for dangerous innerHTML usage
 echo "Checking for dangerous DOM manipulation..."
-if grep -rE "innerHTML\s*=" apps/web/src --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "dangerouslySetInnerHTML" > /dev/null; then
+if grep -rE "innerHTML\s*=" apps/VyzoriX_web/src --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "dangerouslySetInnerHTML" > /dev/null; then
     echo "   [WARNING] Found innerHTML assignment (XSS risk)"
     ISSUES_FOUND=$((ISSUES_FOUND + 1))
 fi
 
 # Check for TODO security comments
 echo "Checking for security TODO comments..."
-if grep -rE "TODO.*security|FIXME.*auth|XXX.*vuln" apps/api apps/web 2>/dev/null > /dev/null; then
+if grep -rE "TODO.*security|FIXME.*auth|XXX.*vuln" apps/api apps/VyzoriX_web 2>/dev/null > /dev/null; then
     echo "   [WARNING] Found security-related TODO/FIXME comments"
 fi
 
@@ -72,8 +72,8 @@ fi
 
 # Check for console.log in production code (excluding tests)
 echo "Checking for console.log in production..."
-if grep -rE "console\.log\s*\(" apps/web/src --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "test" | grep -v "console\.warn\|console\.error" > /dev/null; then
-    LOG_COUNT=$(grep -rE "console\.log\s*\(" apps/web/src --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "test" | wc -l)
+if grep -rE "console\.log\s*\(" apps/VyzoriX_web/src --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "test" | grep -v "console\.warn\|console\.error" > /dev/null; then
+    LOG_COUNT=$(grep -rE "console\.log\s*\(" apps/VyzoriX_web/src --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "test" | wc -l)
     echo "   [WARNING] Found $LOG_COUNT console.log statements in production code"
 fi
 

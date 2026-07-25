@@ -36,8 +36,8 @@ jobs:
         with:
           sparse-checkout: |
             tooling/scripts/validate-eslint-config.sh
-            apps/web/eslint.config.js
-            apps/web/package.json
+            apps/VyzoriX_web/eslint.config.js
+            apps/VyzoriX_web/package.json
           sparse-checkout-cone-mode: false
 
       - name: Validate ESLint config

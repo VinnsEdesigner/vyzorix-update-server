@@ -1,6 +1,7 @@
 import { graphqlClient } from '../_shared/graphql-client';
+import { gql } from '@apollo/client';
 
-export const INBOX_ENTRY_FRAGMENT = `
+export const INBOX_ENTRY_FRAGMENT = gql`
   fragment InboxEntry on InboxEntry {
     id
     imei
@@ -18,7 +19,7 @@ export const INBOX_ENTRY_FRAGMENT = `
   }
 `;
 
-export const GET_INBOX_ENTRIES = `
+export const GET_INBOX_ENTRIES = gql`
   query GetInboxEntries($organizationId: ID!, $status: String, $page: Int, $limit: Int) {
     inbox(organizationId: $organizationId, status: $status, page: $page, limit: $limit) {
       requests {
@@ -32,19 +33,17 @@ export const GET_INBOX_ENTRIES = `
       }
     }
   }
-  ${INBOX_ENTRY_FRAGMENT}
 `;
 
-export const GET_INBOX_ENTRY = `
+export const GET_INBOX_ENTRY = gql`
   query GetInboxEntry($organizationId: ID!, $imei: String!) {
     inboxEntry(organizationId: $organizationId, imei: $imei) {
       ...InboxEntry
     }
   }
-  ${INBOX_ENTRY_FRAGMENT}
 `;
 
-export async function queryInboxEntries(params: { organizationId: string; status?: string; page?: number; limit?: number }) {
+export async function queryInboxEntries(params: { organizationId: string; status?: string; page?: number; limit?: number }): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_INBOX_ENTRIES,
     variables: params,
@@ -52,7 +51,7 @@ export async function queryInboxEntries(params: { organizationId: string; status
   });
 }
 
-export async function queryInboxEntry(params: { organizationId: string; imei: string }) {
+export async function queryInboxEntry(params: { organizationId: string; imei: string }): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_INBOX_ENTRY,
     variables: params,

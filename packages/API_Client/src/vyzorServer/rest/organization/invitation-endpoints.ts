@@ -1,6 +1,12 @@
 import { restClient } from "../_shared/rest-client";
-import type { Invitation, CreateInvitationRequest, InvitationResponseRequest } from "@/domain/invitation";
+import type { Invitation, InvitationResponseRequest } from "@/domain/invitation";
 import { mapInvitation, type InvitationApiResponse } from "@/domain/invitation";
+import type { OrganizationRole } from "@/domain/organization";
+
+interface CreateInvitationRequest {
+  email: string;
+  role: OrganizationRole;
+}
 
 const PATHS = {
   invitations: "/v1/invitations",

@@ -1,4 +1,6 @@
-export const LOG_ENTRY_FRAGMENT = `
+import { gql } from '@apollo/client';
+
+export const LOG_ENTRY_FRAGMENT = gql`
   fragment LogEntry on LogEntry {
     id
     type
@@ -7,7 +9,7 @@ export const LOG_ENTRY_FRAGMENT = `
   }
 `;
 
-export const REGISTRATION_LOG_FRAGMENT = `
+export const REGISTRATION_LOG_FRAGMENT = gql`
   fragment RegistrationLog on RegistrationLog {
     id
     deviceId
@@ -21,7 +23,7 @@ export const REGISTRATION_LOG_FRAGMENT = `
   }
 `;
 
-export const DIAGNOSTIC_LOG_FRAGMENT = `
+export const DIAGNOSTIC_LOG_FRAGMENT = gql`
   fragment DiagnosticLog on DiagnosticLog {
     id
     deviceId

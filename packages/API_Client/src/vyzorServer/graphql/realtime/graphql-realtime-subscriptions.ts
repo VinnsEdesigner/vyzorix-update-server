@@ -1,4 +1,6 @@
-export const DEVICE_UPDATED_SUBSCRIPTION = `
+import { gql } from '@apollo/client';
+
+export const DEVICE_UPDATED_SUBSCRIPTION = gql`
   subscription OnDeviceUpdated($deviceId: ID) {
     deviceUpdated(deviceId: $deviceId) {
       id
@@ -10,7 +12,7 @@ export const DEVICE_UPDATED_SUBSCRIPTION = `
   }
 `;
 
-export const TELEMETRY_RECEIVED_SUBSCRIPTION = `
+export const TELEMETRY_RECEIVED_SUBSCRIPTION = gql`
   subscription OnTelemetryReceived($deviceId: ID) {
     telemetryReceived(deviceId: $deviceId) {
       id
@@ -24,7 +26,7 @@ export const TELEMETRY_RECEIVED_SUBSCRIPTION = `
   }
 `;
 
-export const COMMAND_STATUS_SUBSCRIPTION = `
+export const COMMAND_STATUS_SUBSCRIPTION = gql`
   subscription OnCommandStatusChanged($dispatchId: ID) {
     commandStatusChanged(dispatchId: $dispatchId) {
       dispatchId
@@ -37,7 +39,7 @@ export const COMMAND_STATUS_SUBSCRIPTION = `
   }
 `;
 
-export const ORGANIZATION_EVENT_SUBSCRIPTION = `
+export const ORGANIZATION_EVENT_SUBSCRIPTION = gql`
   subscription OnOrganizationEvent($orgId: ID!) {
     organizationEvent(orgId: $orgId) {
       type
@@ -47,7 +49,7 @@ export const ORGANIZATION_EVENT_SUBSCRIPTION = `
   }
 `;
 
-export const MEMBER_EVENT_SUBSCRIPTION = `
+export const MEMBER_EVENT_SUBSCRIPTION = gql`
   subscription OnMemberEvent($orgId: ID!) {
     memberEvent(orgId: $orgId) {
       type

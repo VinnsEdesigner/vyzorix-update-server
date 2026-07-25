@@ -1,7 +1,33 @@
+// Re-export shared utilities
 export * from "./_shared";
-export * from "./auth";
+
+// Auth exports - but NOT MFA functions (those come from ./mfa)
+export {
+  fetchCSRFToken,
+  login,
+  loginWithTokens,
+  register,
+  forgotPassword,
+  resetPassword,
+  resendPasswordReset,
+  verifyEmail,
+  resendVerification,
+  logout,
+  getMe,
+  updateName,
+} from "./auth/rest-auth-endpoints";
+
+export type {
+  LoginResult,
+  LoginWithTokensResult,
+} from "./auth/rest-auth-endpoints";
+
 export * from "./registration";
-export * from "./settings";
+
+// Settings module
+export { settings } from "./settings";
+
+// Diagnostics exports
 export * from "./diagnostics";
 export * from "./apikey";
 export * from "./commands";
@@ -12,7 +38,13 @@ export * from "./session";
 export * from "./admin";
 export * from "./admin-clients";
 export * from "./oauth";
-export * from "./organization";
+
+// Organization - export all except settings (which conflicts with ./settings)
+export { organizations } from "./organization";
+export { members } from "./organization";
+export { invitations } from "./organization";
+export { settings as orgSettings, type OrganizationSettings, type ThresholdUpdateRequest, type SettingsUpdateRequest } from "./organization";
+
 export * from "./invitation";
 export * from "./me";
 export * from "./clientcredentials";

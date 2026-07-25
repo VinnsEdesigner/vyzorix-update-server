@@ -19,7 +19,7 @@ export interface MetricData {
   max: number;
   unit: string;
   chart: MetricChartPoint[];
-  threshold?: MetricThreshold;
+  threshold: MetricThreshold;
 }
 
 export interface UptimeData {

@@ -1,5 +1,5 @@
 import type {
-  UpdateVersion,
+  Version as UpdateVersion,
   UpdatePush,
   SyncStatus,
   ChangelogEntry,
@@ -10,6 +10,7 @@ import type {
   RawUpdatePush,
   RawSyncStatus,
   RawChangelogEntry,
+  RawPushDevice,
   RawVersionConnection,
   RawUpdateHistoryConnection,
   RawChangelogConnection,
@@ -31,10 +32,22 @@ export function updateVersionFromRaw(raw: RawUpdateVersion): UpdateVersion {
     releaseNotes: raw.releaseNotes,
     releaseType: raw.releaseType as UpdateVersion["releaseType"],
     isLatest: raw.isLatest,
+    createdAt: parseTimestamp(raw.createdAt) ?? new Date(),
+    updatedAt: parseTimestamp(raw.updatedAt) ?? new Date(),
   };
 }
 
-export function pushDeviceFromRaw(raw: RawPushDevice): UpdatePush["devices"][number] {
+export interface PushDeviceResult {
+  id: string;
+  deviceId: string;
+  deviceName: string;
+  status: "pending" | "sent" | "acknowledged" | "failed";
+  sentAt?: Date;
+  acknowledgedAt?: Date;
+  error?: string;
+}
+
+export function pushDeviceFromRaw(raw: RawPushDevice): PushDeviceResult {
   return {
     id: raw.id,
     deviceId: raw.deviceId,
@@ -47,9 +60,10 @@ export function pushDeviceFromRaw(raw: RawPushDevice): UpdatePush["devices"][num
 }
 
 export function updatePushFromRaw(raw: RawUpdatePush): UpdatePush {
+  const deviceArray = raw.devices.map(pushDeviceFromRaw);
   return {
     id: raw.id,
-    version: raw.version,
+    versionId: raw.version,
     installType: raw.installType as UpdatePush["installType"],
     scheduledAt: undefined,
     status: raw.status as UpdatePush["status"],
@@ -57,19 +71,18 @@ export function updatePushFromRaw(raw: RawUpdatePush): UpdatePush {
     initiatedAt: parseTimestamp(raw.initiatedAt) ?? new Date(),
     completedAt: parseTimestamp(raw.completedAt),
     cancelledAt: parseTimestamp(raw.cancelledAt),
-    deviceCount: raw.deviceCount,
-    devices: raw.devices.map(pushDeviceFromRaw),
+    devices: {
+      total: deviceArray.length,
+      pending: deviceArray.filter(d => d.status === "pending").length,
+      sent: deviceArray.filter(d => d.status === "sent").length,
+      acknowledged: deviceArray.filter(d => d.status === "acknowledged").length,
+      failed: deviceArray.filter(d => d.status === "failed").length,
+    },
   };
 }
 
 export function syncStatusFromRaw(raw: RawSyncStatus): SyncStatus {
-  return {
-    status: raw.status as SyncStatus["status"],
-    lastSyncAt: parseTimestamp(raw.lastSyncAt),
-    nextSyncAt: parseTimestamp(raw.nextSyncAt),
-    versionsFound: raw.versionsFound ?? 0,
-    error: raw.error,
-  };
+  return raw.status as SyncStatus;
 }
 
 export function changelogEntryFromRaw(raw: RawChangelogEntry): ChangelogEntry {
@@ -81,12 +94,12 @@ export function changelogEntryFromRaw(raw: RawChangelogEntry): ChangelogEntry {
   };
 }
 
-export function paginationFromRaw(raw: { page: number; limit: number; total: number; totalPages: number; hasMore: boolean }): Pagination {
+export function paginationFromRaw(raw: { page?: number; limit: number; total: number; totalPages?: number; hasMore: boolean; offset?: number }): Pagination {
   return {
-    page: raw.page,
+    page: raw.page ?? Math.floor((raw.offset ?? 0) / raw.limit) + 1,
     limit: raw.limit,
     total: raw.total,
-    totalPages: raw.totalPages,
+    totalPages: raw.totalPages ?? Math.ceil(raw.total / raw.limit),
   };
 }
 

@@ -43,13 +43,13 @@ export function pollCommandStatus(
   let isActive = true;
   let lastStatus: CommandStatus | null = null;
 
-  function stop() {
+  function stop(): void {
     isActive = false;
     if (intervalId) clearInterval(intervalId);
     if (timeoutId) clearTimeout(timeoutId);
   }
 
-  function fetchAndProcess() {
+  function fetchAndProcess(): void {
     if (!isActive) return;
 
     commands.getByDispatchId(dispatchId)
@@ -95,6 +95,9 @@ export function pollCommandStatus(
           case "cancelled":
             callbacks.onCancelled?.(command);
             stop();
+            break;
+          default:
+            // All CommandStatus cases handled above
             break;
         }
 

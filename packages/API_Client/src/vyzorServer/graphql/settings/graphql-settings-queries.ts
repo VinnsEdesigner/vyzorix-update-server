@@ -1,8 +1,7 @@
 import { graphqlClient } from '../_shared/graphql-client';
-import { OPERATOR_SETTINGS_FRAGMENT, DEVICE_SETTINGS_FRAGMENT, ORGANIZATION_SETTINGS_FRAGMENT } from "./graphql-settings-fragments";
+import { gql } from '@apollo/client';
 
-export const GET_SETTINGS = `
-  ${OPERATOR_SETTINGS_FRAGMENT}
+export const GET_SETTINGS = gql`
   query GetSettings {
     mySettings {
       ...OperatorSettings
@@ -10,8 +9,7 @@ export const GET_SETTINGS = `
   }
 `;
 
-export const GET_DEVICE_SETTINGS = `
-  ${DEVICE_SETTINGS_FRAGMENT}
+export const GET_DEVICE_SETTINGS = gql`
   query GetDeviceSettings($organizationId: ID!, $deviceImei: String!) {
     deviceSettings(organizationId: $organizationId, deviceImei: $deviceImei) {
       ...DeviceSettings
@@ -19,8 +17,7 @@ export const GET_DEVICE_SETTINGS = `
   }
 `;
 
-export const GET_ORGANIZATION_SETTINGS = `
-  ${ORGANIZATION_SETTINGS_FRAGMENT}
+export const GET_ORGANIZATION_SETTINGS = gql`
   query GetOrganizationSettings($organizationId: ID!) {
     organizationSettings(organizationId: $organizationId) {
       ...OrganizationSettings
@@ -28,14 +25,14 @@ export const GET_ORGANIZATION_SETTINGS = `
   }
 `;
 
-export async function querySettings() {
+export async function querySettings(): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_SETTINGS,
     fetchPolicy: 'network-only',
   });
 }
 
-export async function queryDeviceSettings(params: { organizationId: string; deviceImei: string }) {
+export async function queryDeviceSettings(params: { organizationId: string; deviceImei: string }): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_DEVICE_SETTINGS,
     variables: params,
@@ -43,7 +40,7 @@ export async function queryDeviceSettings(params: { organizationId: string; devi
   });
 }
 
-export async function queryOrganizationSettings(organizationId: string) {
+export async function queryOrganizationSettings(organizationId: string): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_ORGANIZATION_SETTINGS,
     variables: { organizationId },

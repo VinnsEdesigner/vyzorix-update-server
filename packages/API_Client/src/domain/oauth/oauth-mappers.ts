@@ -1,5 +1,4 @@
-import type { OAuthProvider, OAuthCallbackResult, OAuthErrorCode } from "./oauth-entity";
-import { OAUTH_ERRORS } from "./oauth-entity";
+import { OAUTH_ERRORS, type OAuthProvider, type OAuthCallbackResult, type OAuthErrorCode } from "./oauth-entity";
 
 export function parseOAuthCallbackUrl(url: string): OAuthCallbackResult {
     try {
@@ -80,6 +79,8 @@ function getHelpUrl(code: OAuthErrorCode, provider?: OAuthProvider): string | un
                 return "https://docs.github.com/get-started/signing-up-for-github/signing-up-with-a-new-email-address";
             }
             break;
+        default:
+            return undefined;
     }
     return undefined;
 }

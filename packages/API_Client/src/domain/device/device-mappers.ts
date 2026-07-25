@@ -4,6 +4,7 @@ import type {
   DeviceStats,
   DeviceStatus,
   DeviceConnection,
+  Pagination,
 } from "./device-entity";
 
 export interface RawDevice {
@@ -52,11 +53,6 @@ export interface RawDeviceListResult {
   pagination: RawPagination;
 }
 
-function parseTimestamp(value?: number | null): Date | undefined {
-  if (!value) return undefined;
-  return new Date(value > 1e12 ? value : value * 1000);
-}
-
 function statusFromOnline(online: boolean, deregisteredAt?: number): DeviceStatus {
   if (deregisteredAt) return "deregistered";
   return online ? "online" : "offline";
@@ -66,20 +62,20 @@ export function deviceFromRaw(raw: RawDevice): Device {
   return {
     id: raw.id,
     imei: raw.imei,
-    deviceName: raw.deviceName,
+    device_name: raw.deviceName,
     model: raw.model,
     manufacturer: raw.manufacturer,
-    osVersion: raw.osVersion,
-    appVersion: raw.appVersion,
-    securityPatch: raw.securityPatch,
+    os_version: raw.osVersion,
+    app_version: raw.appVersion,
+    security_patch: raw.securityPatch,
     status: statusFromOnline(raw.online),
-    registeredAt: parseTimestamp(raw.registeredAt),
-    lastSeen: parseTimestamp(raw.lastSeen),
-    fcmTokenValid: raw.fcmTokenValid,
-    commandSecretSet: raw.commandSecretSet,
+    registered_at: raw.registeredAt ? new Date(raw.registeredAt).toISOString() : undefined,
+    last_seen: raw.lastSeen ? new Date(raw.lastSeen).toISOString() : undefined,
+    fcm_token_valid: raw.fcmTokenValid,
+    command_secret_set: raw.commandSecretSet,
     connection: {} as DeviceConnection,
-    createdAt: parseTimestamp(raw.createdAt) ?? new Date(),
-    updatedAt: parseTimestamp(raw.updatedAt) ?? new Date(),
+    created_at: new Date(raw.createdAt).toISOString(),
+    updated_at: new Date(raw.updatedAt).toISOString(),
   };
 }
 
@@ -87,11 +83,11 @@ export function deviceListItemFromRaw(raw: RawDeviceListItem): DeviceListItem {
   return {
     id: raw.id,
     imei: raw.imei,
-    deviceName: raw.deviceName,
+    device_name: raw.deviceName,
     model: raw.model,
     manufacturer: raw.manufacturer,
     status: (raw.status as DeviceStatus) ?? "offline",
-    lastSeen: parseTimestamp(raw.lastSeen),
+    last_seen: raw.lastSeen ? new Date(raw.lastSeen).toISOString() : undefined,
   };
 }
 
@@ -108,6 +104,6 @@ export function paginationFromRaw(raw: RawPagination): Pagination {
     page: raw.page,
     limit: raw.limit,
     total: raw.total,
-    totalPages: raw.totalPages,
+    total_pages: raw.totalPages,
   };
 }

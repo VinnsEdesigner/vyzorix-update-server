@@ -1,6 +1,8 @@
 
 
-export const INVITATION_FRAGMENT = `
+import { gql } from '@apollo/client';
+
+export const INVITATION_FRAGMENT = gql`
   fragment InvitationFields on Invitation {
     id
     email

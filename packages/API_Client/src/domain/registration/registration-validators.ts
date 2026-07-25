@@ -1,7 +1,13 @@
 
 
-import type { RegistrationRequest, AcknowledgeAction } from "./registration-entity";
-import { INBOX_STATUSES } from "./registration-entity";
+
+
+
+import type { CreateInboxRequest, AcknowledgeAction, InboxStatus } from "./registration-entity";
+
+
+
+
 
 
 
@@ -78,7 +84,7 @@ export function validateVersion(version: string, fieldName: string = "version"):
 
 
 
-export function validateRegistrationRequest(request: Partial<RegistrationRequest>): ValidationResult {
+export function validateRegistrationRequest(request: Partial<CreateInboxRequest>): ValidationResult {
   const errors: Record<string, string[]> = {};
   
   

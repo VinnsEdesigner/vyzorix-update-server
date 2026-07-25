@@ -23,34 +23,39 @@
  */
 import type { TSESLint, TSESTree } from "@typescript-eslint/utils";
 
-const LAYERS = {
+type LayerKey = "ui" | "hooks" | "domain" | "vyzorServer";
+
+const LAYERS: Record<LayerKey, { 
+  name: string; 
+  path: string; 
+  canImportFrom: LayerKey[]; 
+  canNotImportFrom: LayerKey[];
+}> = {
   ui: { 
     name: "UI Layer", 
     path: "src/ui", 
-    canImportFrom: ["hooks", "ui", "react"],
-    canNotImportFrom: ["domain", "vyzorServer"]
+    canImportFrom: ["hooks", "ui", "react"] as LayerKey[],
+    canNotImportFrom: ["domain", "vyzorServer"] as LayerKey[]
   },
   hooks: { 
     name: "Hooks Layer", 
     path: "src/hooks", 
-    canImportFrom: ["domain", "vyzorServer", "hooks", "react"],
-    canNotImportFrom: ["ui"]
+    canImportFrom: ["domain", "vyzorServer", "hooks", "react"] as LayerKey[],
+    canNotImportFrom: ["ui"] as LayerKey[]
   },
   domain: { 
     name: "Domain Layer (API_Client)", 
     path: "packages/API_Client/src/domain", 
-    canImportFrom: ["domain"],
-    canNotImportFrom: ["hooks", "ui", "vyzorServer", "react"]
+    canImportFrom: ["domain"] as LayerKey[],
+    canNotImportFrom: ["hooks", "ui", "vyzorServer", "react"] as LayerKey[]
   },
   vyzorServer: { 
     name: "VyzoServer Layer (API_Client)", 
     path: "packages/API_Client/src/vyzorServer", 
-    canImportFrom: ["domain", "vyzorServer", "react"],
-    canNotImportFrom: ["hooks", "ui"]
+    canImportFrom: ["domain", "vyzorServer", "react"] as LayerKey[],
+    canNotImportFrom: ["hooks", "ui"] as LayerKey[]
   },
-} as const;
-
-type LayerKey = keyof typeof LAYERS;
+};
 
 function getFileLayer(filePath: string): LayerKey | null {
   const normalizedPath = filePath.replace(/\\/g, "/");
@@ -78,16 +83,16 @@ function isSameLayer(filePath: string, importPath: string): boolean {
   return getFileLayer(filePath) === getImportLayer(importPath);
 }
 
-export const layerImportsRule: TSESLint.RuleModule<"forbidden" | "message"> = {
+export const layerImportsRule: TSESLint.RuleModule<"forbidden", []> = {
   defaultOptions: [],
   meta: {
     type: "problem",
-    docs: { description: "Enforce layered architecture - dependencies must flow inward only", recommended: "error" },
+    docs: { description: "Enforce layered architecture - dependencies must flow inward only" },
     schema: [],
     messages: { forbidden: "{{ fromLayer }} cannot import from {{ toLayer }}. {{ rule }}" },
   },
-  create(context) {
-    const filename = context.filename ?? context.getFilename();
+  create(context: TSESLint.RuleContext<"forbidden", []>) {
+    const filename = (context as unknown as { filename?: string }).filename ?? (context.getFilename as () => string)();
 
     return {
       ImportDeclaration(node: TSESTree.ImportDeclaration) {
@@ -124,16 +129,16 @@ export const layerImportsRule: TSESLint.RuleModule<"forbidden" | "message"> = {
   },
 };
 
-export const noReactInApiClientRule: TSESLint.RuleModule<"forbidden"> = {
+export const noReactInApiClientRule: TSESLint.RuleModule<"forbidden", []> = {
   defaultOptions: [],
   meta: {
     type: "problem",
-    docs: { description: "API_Client package cannot import React or UI-related code", recommended: "error" },
+    docs: { description: "API_Client package cannot import React or UI-related code" },
     schema: [],
     messages: { forbidden: "API_Client cannot import {{ package }}. Must be pure TypeScript." },
   },
-  create(context) {
-    const filename = context.filename ?? context.getFilename();
+  create(context: TSESLint.RuleContext<"forbidden", []>) {
+    const filename = (context as unknown as { filename?: string }).filename ?? (context.getFilename as () => string)();
     const fileLayer = getFileLayer(filename);
     
     if (fileLayer !== "domain" && fileLayer !== "vyzorServer") return {};

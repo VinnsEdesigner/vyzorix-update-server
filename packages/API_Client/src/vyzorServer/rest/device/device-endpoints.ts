@@ -5,19 +5,14 @@ import {
   deviceStatsFromRaw,
   paginationFromRaw,
   type RawDevice,
-  type RawDeviceListItem,
   type RawDeviceStats,
-  type RawPagination,
   type RawDeviceListResult,
 } from "@/domain/device";
 import type {
   Device,
-  DeviceListItem,
   DeviceStats,
   DeviceListResult,
-  RegisterDeviceRequest,
 } from "@/domain/device";
-import type { AxiosRequestConfig } from "axios";
 
 const PATHS = {
   devices: "/v1/devices",
@@ -66,12 +61,6 @@ export interface ConnectionStatus {
   lastActivityAt?: number;
   ipAddress?: string;
   userAgent?: string;
-}
-
-function getOrgConfig(orgId?: string): AxiosRequestConfig {
-  const effectiveOrgId = orgId || getOrganizationContext();
-  if (!effectiveOrgId) return {};
-  return { params: { organization_id: effectiveOrgId } };
 }
 
 export const devices = {

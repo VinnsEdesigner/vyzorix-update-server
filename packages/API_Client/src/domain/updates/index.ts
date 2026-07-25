@@ -4,7 +4,6 @@ export {
   syncStateFromRaw,
   pushDevicesFromRaw,
   updatePushFromRaw,
-  paginationFromRaw,
   versionListResultFromRaw,
   updateHistoryResultFromRaw,
   changelogEntryFromRaw,

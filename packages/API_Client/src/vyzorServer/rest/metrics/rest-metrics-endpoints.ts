@@ -52,7 +52,7 @@ export async function exportMetrics(
   if (params?.range) searchParams.set("range", params.range);
   if (params?.metrics) searchParams.set("metrics", params.metrics.join(","));
 
-  const response = await restClient.get(
+  const response = await restClient.get<Blob>(
     `${METRICS_PATHS.metricsExport(imei)}?${searchParams}`,
     { responseType: 'blob' }
   );
@@ -68,19 +68,19 @@ export async function fetchTelemetryHistory(
     limit?: number;
     organizationId?: string;
   }
-) {
+): Promise<unknown> {
   const metricsConfig = getMetricsConfig();
   const defaultLimit = params?.limit ?? metricsConfig.defaultLimit;
   const orgId = params?.organizationId || getOrganizationContext();
   
   const data = await restClient.get<{
-    frames: Array<{
+    frames: {
       timestamp: number;
       risk_score: number;
       thermal_temp: number;
       buffer_level: number;
       uptime: number;
-    }>;
+    }[];
     stats: {
       risk_score: { current: number; avg: number; min: number; max: number };
       thermal_temp: { current: number; avg: number; min: number; max: number };

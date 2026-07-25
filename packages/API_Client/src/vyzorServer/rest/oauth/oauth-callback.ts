@@ -32,13 +32,13 @@ export interface OAuthCallbackResult {
 export function parseOAuthCallback(url: string): OAuthCallbackResult {
   const parsed = parseOAuthCallbackUrl(url);
 
-  if (parsed.isError) {
+  if (!parsed.success && parsed.error) {
     return {
       success: false,
       isNew: false,
-      provider: parsed.provider || "unknown",
+      provider: parsed.provider ?? "google",
       error: {
-        code: (parsed.errorCode as OAuthErrorCode) || OAuthErrorCode.LOGIN_FAILED,
+        code: (parsed.error as OAuthErrorCode) || OAuthErrorCode.LOGIN_FAILED,
         message: parsed.errorMessage || "OAuth authentication failed",
         provider: parsed.provider,
         retryable: parsed.retryable,
@@ -48,8 +48,8 @@ export function parseOAuthCallback(url: string): OAuthCallbackResult {
 
   return {
     success: true,
-    isNew: parsed.isNew || false,
-    provider: parsed.provider || "unknown",
+    isNew: parsed.isNewUser || false,
+    provider: parsed.provider ?? "google",
   };
 }
 

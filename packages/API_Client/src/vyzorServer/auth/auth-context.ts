@@ -1,6 +1,5 @@
-import { setOrganizationContext, setAuthToken, setCSRFToken, getAuthToken } from "../rest/_shared/rest-client";
-import type { MeResponse, LoginWithTokensResponse, AuthTokens } from "@/domain/auth";
-import { restClient } from "../rest/_shared/rest-client";
+import { setOrganizationContext, setAuthToken, setCSRFToken, restClient } from "../rest/_shared/rest-client";
+import type { MeResponse, LoginWithTokensResponse } from "@/domain/auth";
 
 export interface AuthState {
   isAuthenticated: boolean;
@@ -94,7 +93,7 @@ async function refreshTokens(): Promise<void> {
     console.debug('[Auth] Tokens refreshed successfully');
   } catch (error) {
     console.error('[Auth] Token refresh failed:', error);
-        clear();
+    authContext.clear();
     throw error;
   }
 }
@@ -135,6 +134,7 @@ export const authContext = {
         email_verified: false,
         needs_organization: response.needs_organization,
         organizations: response.organizations || [],
+        memberships: [],
         last_organization_id: response.last_organization_id,
         selected_organization: response.selected_organization,
       },

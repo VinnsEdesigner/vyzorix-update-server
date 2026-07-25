@@ -1,7 +1,9 @@
 
 
+
+
+
 import { restClient, getOrganizationContext } from "../_shared/rest-client";
-import type { TelemetryFrame } from "@/domain/telemetry";
 
 const TELEMETRY_PATHS = {
   history: "/v1/telemetry/history",
@@ -26,6 +28,7 @@ export interface RawTelemetryEntry {
   riskScore: number;
   bufferLevel: number;
   thermalTemp: number;
+  uptime?: number; // Server sends uptime in TelemetryFrameDTO
 }
 
 export interface RawTelemetryHistoryResponse {
@@ -67,6 +70,7 @@ export interface TelemetryEntry {
   riskScore: number;
   bufferLevel: number;
   thermalTemp: number;
+  uptime?: number; // Server sends uptime in TelemetryFrameDTO
 }
 
 export interface TelemetryHistoryResponse {
@@ -115,6 +119,7 @@ function telemetryEntryFromRaw(raw: RawTelemetryEntry): TelemetryEntry {
     riskScore: raw.riskScore,
     bufferLevel: raw.bufferLevel,
     thermalTemp: raw.thermalTemp,
+    uptime: raw.uptime,
   };
 }
 

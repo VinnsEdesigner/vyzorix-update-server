@@ -10,17 +10,17 @@ import type {
   MetricResolution,
 } from "./metrics-entity";
 
-export type RawMetricChartPoint = {
+export interface RawMetricChartPoint {
   timestamp: number;
   value: number;
-};
+}
 
-export type RawMetricThreshold = {
+export interface RawMetricThreshold {
   warning: number;
   critical: number;
-};
+}
 
-export type RawMetricData = {
+export interface RawMetricData {
   current: number;
   avg: number;
   min: number;
@@ -28,34 +28,34 @@ export type RawMetricData = {
   unit: string;
   chart: RawMetricChartPoint[];
   threshold?: RawMetricThreshold;
-};
+}
 
-export type RawUptimeData = {
+export interface RawUptimeData {
   current: number;
   unit: string;
-};
+}
 
-export type RawMetricEvents = {
+export interface RawMetricEvents {
   timestamp: number;
   type: string;
   metric: string;
   value: number;
   threshold: number;
-};
+}
 
-export type RawTimeRangeInfo = {
+export interface RawTimeRangeInfo {
   start: number;
   end: number;
   range: string;
   resolution: string;
-};
+}
 
-export type RawDeviceBasic = {
+export interface RawDeviceBasic {
   imei: string;
   device_name?: string;
-};
+}
 
-export type RawDeviceMetrics = {
+export interface RawDeviceMetrics {
   device: RawDeviceBasic;
   time_range: RawTimeRangeInfo;
   metrics: {
@@ -65,9 +65,9 @@ export type RawDeviceMetrics = {
     uptime: RawUptimeData;
   };
   events: RawMetricEvents[];
-};
+}
 
-export type RawDashboardStats = {
+export interface RawDashboardStats {
   devices: {
     total: number;
     online: number;
@@ -85,7 +85,7 @@ export type RawDashboardStats = {
       deregistrations: number;
     };
   };
-};
+}
 
 function chartPointFromRaw(raw: RawMetricChartPoint): MetricChartPoint {
   return {
@@ -102,7 +102,7 @@ function metricDataFromRaw(raw: RawMetricData): MetricData {
     max: raw.max,
     unit: raw.unit,
     chart: raw.chart.map(chartPointFromRaw),
-    threshold: raw.threshold,
+    threshold: raw.threshold ?? { warning: 0, critical: 0 },
   };
 }
 

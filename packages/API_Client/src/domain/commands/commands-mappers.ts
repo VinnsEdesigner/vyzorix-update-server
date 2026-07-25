@@ -1,10 +1,7 @@
 import type {
   Command,
   CommandListItem,
-  PresetCommandType,
   CommandStatus,
-  CommandParams,
-  CommandResult,
   SendCommandRequest,
 } from "./commands-entity";
 
@@ -63,7 +60,12 @@ export function commandFromRaw(raw: RawCommand): Command {
     status: (raw.status as CommandStatus) ?? "pending",
     failureReason: raw.failureReason,
     args: raw.args ?? {},
-    result: raw.result,
+    result: raw.result ? {
+      success: raw.result.success ?? false,
+      message: raw.result.message,
+      output: raw.result.output,
+      error: raw.result.error,
+    } : undefined,
     createdAt: parseTimestamp(raw.createdAt) ?? new Date(),
     updatedAt: parseTimestamp(raw.updatedAt) ?? new Date(),
     deliveredAt: parseTimestamp(raw.deliveredAt),
@@ -82,7 +84,7 @@ export function commandListItemFromRaw(raw: RawCommandListItem): CommandListItem
   };
 }
 
-export function paginationFromRaw(raw: RawPagination) {
+export function paginationFromRaw(raw: RawPagination): { page: number; limit: number; total: number; totalPages: number } {
   return {
     page: raw.page,
     limit: raw.limit,
@@ -91,9 +93,9 @@ export function paginationFromRaw(raw: RawPagination) {
   };
 }
 
-export function sendCommandRequestToRaw(request: SendCommandRequest) {
+export function sendCommandRequestToRaw(request: SendCommandRequest): { command: string; params: Record<string, unknown> } {
   return {
     command: request.commandType,
-    params: request.params,
+    params: request.params ?? {},
   };
 }

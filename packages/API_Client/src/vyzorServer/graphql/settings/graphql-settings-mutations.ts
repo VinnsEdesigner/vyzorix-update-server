@@ -1,4 +1,22 @@
 import { graphqlClient } from '../_shared/graphql-client';
+import { gql } from '@apollo/client';
+
+export interface NotificationSettingsInput {
+  email?: {
+    alerts?: boolean;
+    reports?: boolean;
+    marketing?: boolean;
+  };
+  push?: {
+    alerts?: boolean;
+    reports?: boolean;
+  };
+  webhook?: {
+    enabled?: boolean;
+    url?: string;
+    types?: string[];
+  };
+}
 
 export interface ThresholdInput {
   riskWarn?: number;
@@ -22,7 +40,7 @@ export interface OrganizationSettingsInput {
   defaultThresholds?: ThresholdInput;
 }
 
-export const UPDATE_NOTIFICATIONS = `
+export const UPDATE_NOTIFICATIONS = gql`
   mutation UpdateNotifications($input: UpdateNotificationsInput!) {
     updateMyNotifications(input: $input) {
       enabled
@@ -52,7 +70,7 @@ export const UPDATE_NOTIFICATIONS = `
   }
 `;
 
-export const UPDATE_DEVICE_SETTINGS = `
+export const UPDATE_DEVICE_SETTINGS = gql`
   mutation UpdateDeviceSettings($organizationId: ID!, $deviceImei: String!, $input: UpdateDeviceSettingsInput!) {
     updateDeviceSettings(organizationId: $organizationId, deviceImei: $deviceImei, input: $input) {
       id
@@ -81,7 +99,7 @@ export const UPDATE_DEVICE_SETTINGS = `
   }
 `;
 
-export const UPDATE_ORGANIZATION_SETTINGS = `
+export const UPDATE_ORGANIZATION_SETTINGS = gql`
   mutation UpdateOrganizationSettings($organizationId: ID!, $input: UpdateOrganizationSettingsInput!) {
     updateOrganizationSettings(organizationId: $organizationId, input: $input) {
       id
@@ -103,21 +121,21 @@ export const UPDATE_ORGANIZATION_SETTINGS = `
   }
 `;
 
-export async function mutateUpdateNotifications(input: any) {
+export async function mutateUpdateNotifications(input: NotificationSettingsInput): Promise<unknown> {
   return graphqlClient.getClient().mutate({
     mutation: UPDATE_NOTIFICATIONS,
     variables: { input },
   });
 }
 
-export async function mutateUpdateDeviceSettings(params: { organizationId: string; deviceImei: string; input: DeviceSettingsInput }) {
+export async function mutateUpdateDeviceSettings(params: { organizationId: string; deviceImei: string; input: DeviceSettingsInput }): Promise<unknown> {
   return graphqlClient.getClient().mutate({
     mutation: UPDATE_DEVICE_SETTINGS,
     variables: params,
   });
 }
 
-export async function mutateUpdateOrganizationSettings(params: { organizationId: string; input: OrganizationSettingsInput }) {
+export async function mutateUpdateOrganizationSettings(params: { organizationId: string; input: OrganizationSettingsInput }): Promise<unknown> {
   return graphqlClient.getClient().mutate({
     mutation: UPDATE_ORGANIZATION_SETTINGS,
     variables: params,

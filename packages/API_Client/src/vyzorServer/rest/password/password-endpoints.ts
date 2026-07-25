@@ -1,22 +1,13 @@
 
 
 import { restClient, getCSRFToken, fetchAndSetCSRFToken } from "../_shared/rest-client";
+import type { ForgotPasswordResponse, ResetPasswordResponse } from "@/domain/auth";
 
 const PASSWORD_PATHS = {
   forgotPassword: "/v1/auth/forgot-password",
   resetPassword: "/v1/auth/reset-password",
   resendReset: "/v1/auth/resend-password-reset",
 } as const;
-
-export interface ForgotPasswordResponse {
-  success: boolean;
-  message?: string;
-}
-
-export interface ResetPasswordResponse {
-  success: boolean;
-  message?: string;
-}
 
 export interface ResendResetResponse {
   success: boolean;

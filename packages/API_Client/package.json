@@ -2,6 +2,7 @@
   "name": "@vyzorix/api-client",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
@@ -10,8 +11,11 @@
     "./vyzorServer": "./src/vyzorServer/index.ts"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts",
-    "typecheck": "tsc --noEmit"
+    "build": "tsup src/index.ts --format cjs,esm",
+    "build:dts": "tsc --emitDeclarationOnly -p tsconfig.dts.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "dependencies": {
     "@apollo/client": "^3.11.0",
@@ -21,7 +25,12 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "eslint": "^10.7.0",
     "tsup": "^8.0.2",
     "typescript": "^5.4.5"
   },

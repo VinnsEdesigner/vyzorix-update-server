@@ -1,6 +1,8 @@
 
 
-export const MEMBERSHIP_FRAGMENT = `
+import { gql } from '@apollo/client';
+
+export const MEMBERSHIP_FRAGMENT = gql`
   fragment MembershipFields on OrganizationMembership {
     id
     role

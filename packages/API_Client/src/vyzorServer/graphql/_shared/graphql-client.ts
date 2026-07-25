@@ -1,18 +1,12 @@
 import { ApolloClient, InMemoryCache, createHttpLink, type NormalizedCacheObject } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 
+type CredentialsType = 'omit' | 'same-origin' | 'include';
+
 export interface GraphQLConfig {
   organizationId: string;
-  credentials?: RequestCredentials;
-}
-
-function getGraphQLConfig(): GraphQLConfig {
-  const baseUrl = import.meta.env.VITE_API_URL || '/api';
-  return {
-    organizationId: '',
-    credentials: 'include',
-    getUri: () => `${baseUrl}/v1/orgs/${getGraphQLConfig().organizationId}/graphql`,
-  };
+  credentials?: CredentialsType | undefined;
+  getUri: () => string;
 }
 
 function createApolloClient(config: GraphQLConfig): ApolloClient<NormalizedCacheObject> {
@@ -50,14 +44,16 @@ function createApolloClient(config: GraphQLConfig): ApolloClient<NormalizedCache
 let apolloClient: ApolloClient<NormalizedCacheObject> | null = null;
 let currentOrgId: string = '';
 
+function getGraphQLUri(orgId: string): string {
+  const baseUrl = (import.meta.env as Record<string, string | undefined>).VITE_API_URL || '/api';
+  return `${baseUrl}/v1/orgs/${orgId}/graphql`;
+}
+
 export function getApolloClient(): ApolloClient<NormalizedCacheObject> {
   return apolloClient || createApolloClient({
     organizationId: '',
     credentials: 'include',
-    getUri: () => {
-      const baseUrl = import.meta.env.VITE_API_URL || '/api';
-      return `${baseUrl}/v1/orgs/${currentOrgId}/graphql`;
-    },
+    getUri: () => getGraphQLUri(currentOrgId),
   });
 }
 
@@ -70,10 +66,7 @@ export function setOrganizationContext(organizationId: string): void {
   apolloClient = createApolloClient({
     organizationId,
     credentials: 'include',
-    getUri: () => {
-      const baseUrl = import.meta.env.VITE_API_URL || '/api';
-      return `${baseUrl}/v1/orgs/${organizationId}/graphql`;
-    },
+    getUri: () => getGraphQLUri(organizationId),
   });
 }
 

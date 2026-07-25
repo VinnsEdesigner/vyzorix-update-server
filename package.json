@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "cd apps/web && vite dev",
+    "dev": "cd apps/VyzoriX_web && vite dev",
     "dev:mobile": "cd apps/VyzoriX_mobile && expo start",
     "build": "turbo run build",
     "build:web": "turbo run build --filter=VyzoriX_web",

@@ -1,4 +1,6 @@
-export const DEVICE_FRAGMENT = `
+import { gql } from '@apollo/client';
+
+export const DEVICE_FRAGMENT = gql`
   fragment Device on Device {
     id
     imei

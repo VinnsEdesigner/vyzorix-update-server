@@ -1,10 +1,7 @@
-import { INBOX_ENTRY_FRAGMENT } from "../fragments/inbox-entry.fragment";
-import { DEVICE_FRAGMENT } from "../fragments/device.fragment";
-import { TELEMETRY_FRAME_FRAGMENT } from "../fragments/telemetry.fragment";
 import { graphqlClient } from '../_shared/graphql-client';
+import { gql } from '@apollo/client';
 
-export const GET_INBOX_ENTRIES = `
-  ${INBOX_ENTRY_FRAGMENT}
+export const GET_INBOX_ENTRIES = gql`
   query GetInboxEntries($organizationId: ID!, $status: String, $page: Int, $limit: Int) {
     inbox(organizationId: $organizationId, status: $status, page: $page, limit: $limit) {
       requests {
@@ -19,8 +16,7 @@ export const GET_INBOX_ENTRIES = `
   }
 `;
 
-export const GET_INBOX_ENTRY = `
-  ${INBOX_ENTRY_FRAGMENT}
+export const GET_INBOX_ENTRY = gql`
   query GetInboxEntry($organizationId: ID!, $imei: String!) {
     inboxEntry(organizationId: $organizationId, imei: $imei) {
       ...InboxEntry
@@ -28,8 +24,7 @@ export const GET_INBOX_ENTRY = `
   }
 `;
 
-export const GET_DEVICES = `
-  ${DEVICE_FRAGMENT}
+export const GET_DEVICES = gql`
   query GetDevices($organizationId: ID!, $limit: Int, $offset: Int) {
     devices(organizationId: $organizationId, limit: $limit, offset: $offset) {
       id
@@ -44,8 +39,7 @@ export const GET_DEVICES = `
   }
 `;
 
-export const GET_DEVICE = `
-  ${DEVICE_FRAGMENT}
+export const GET_DEVICE = gql`
   query GetDevice($organizationId: ID!, $id: ID!) {
     device(organizationId: $organizationId, id: $id) {
       ...Device
@@ -53,8 +47,7 @@ export const GET_DEVICE = `
   }
 `;
 
-export const GET_DEVICE_TELEMETRY = `
-  ${TELEMETRY_FRAME_FRAGMENT}
+export const GET_DEVICE_TELEMETRY = gql`
   query GetDeviceTelemetry($organizationId: ID!, $deviceId: ID!, $limit: Int) {
     telemetryHistory(organizationId: $organizationId, deviceId: $deviceId, limit: $limit) {
       ...TelemetryFrame
@@ -62,7 +55,7 @@ export const GET_DEVICE_TELEMETRY = `
   }
 `;
 
-export async function queryInboxEntries(params: { organizationId: string; status?: string; page?: number; limit?: number }) {
+export async function queryInboxEntries(params: { organizationId: string; status?: string; page?: number; limit?: number }): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_INBOX_ENTRIES,
     variables: params,
@@ -70,7 +63,7 @@ export async function queryInboxEntries(params: { organizationId: string; status
   });
 }
 
-export async function queryInboxEntry(params: { organizationId: string; imei: string }) {
+export async function queryInboxEntry(params: { organizationId: string; imei: string }): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_INBOX_ENTRY,
     variables: params,
@@ -78,7 +71,7 @@ export async function queryInboxEntry(params: { organizationId: string; imei: st
   });
 }
 
-export async function queryDevices(params: { organizationId: string; limit?: number; offset?: number }) {
+export async function queryDevices(params: { organizationId: string; limit?: number; offset?: number }): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_DEVICES,
     variables: params,
@@ -86,7 +79,7 @@ export async function queryDevices(params: { organizationId: string; limit?: num
   });
 }
 
-export async function queryDevice(params: { organizationId: string; id: string }) {
+export async function queryDevice(params: { organizationId: string; id: string }): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_DEVICE,
     variables: params,
@@ -94,7 +87,7 @@ export async function queryDevice(params: { organizationId: string; id: string }
   });
 }
 
-export async function queryDeviceTelemetry(params: { organizationId: string; deviceId: string; limit?: number }) {
+export async function queryDeviceTelemetry(params: { organizationId: string; deviceId: string; limit?: number }): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_DEVICE_TELEMETRY,
     variables: params,

@@ -1,4 +1,4 @@
-export type RawInboxEntry = {
+export interface RawInboxEntry {
   __typename?: "InboxEntry";
   id: string;
   imei: string;
@@ -13,7 +13,7 @@ export type RawInboxEntry = {
   createdAt: number;
   approvedAt?: number;
   rejectedAt?: number;
-};
+}
 
 export interface RawInboxConnection {
   requests: RawInboxEntry[];

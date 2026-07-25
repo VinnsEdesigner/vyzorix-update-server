@@ -1,51 +1,17 @@
 import { graphqlClient } from '../_shared/graphql-client';
-import { MEMBERSHIP_FRAGMENT } from './graphql-membership-types';
+import { gql } from '@apollo/client';
 
-export const GET_MY_MEMBERSHIPS = `
-  query GetMyMemberships($page: Int, $limit: Int) {
-    myMemberships(page: $page, limit: $limit) {
-      items {
-        ...MembershipFields
-      }
-      pagination {
-        page
-        limit
-        total
-        totalPages
-      }
+export const GET_MEMBERSHIP_DETAILS = gql`
+  query GetMembershipDetails($membershipId: ID!) {
+    membership(membershipId: $membershipId) {
+      ...MembershipFields
     }
   }
-  ${MEMBERSHIP_FRAGMENT}
 `;
 
-export const GET_ORGANIZATION_MEMBERS = `
-  query GetOrganizationMembers($organizationId: ID!, $page: Int, $limit: Int) {
-    organizationMembers(organizationId: $organizationId, page: $page, limit: $limit) {
-      items {
-        ...MembershipFields
-      }
-      pagination {
-        page
-        limit
-        total
-        totalPages
-      }
-    }
-  }
-  ${MEMBERSHIP_FRAGMENT}
-`;
-
-export async function queryMyMemberships(params?: { page?: number; limit?: number }) {
+export async function queryMembershipDetails(params: { membershipId: string }): Promise<unknown> {
   return graphqlClient.getClient().query({
-    query: GET_MY_MEMBERSHIPS,
-    variables: params,
-    fetchPolicy: 'network-only',
-  });
-}
-
-export async function queryOrganizationMembers(params: { organizationId: string; page?: number; limit?: number }) {
-  return graphqlClient.getClient().query({
-    query: GET_ORGANIZATION_MEMBERS,
+    query: GET_MEMBERSHIP_DETAILS,
     variables: params,
     fetchPolicy: 'network-only',
   });

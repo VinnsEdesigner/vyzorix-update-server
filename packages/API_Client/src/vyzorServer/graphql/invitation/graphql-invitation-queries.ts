@@ -1,16 +1,15 @@
 import { graphqlClient } from '../_shared/graphql-client';
-import { INVITATION_FRAGMENT } from './graphql-invitation-types';
+import { gql } from '@apollo/client';
 
-export const GET_MY_INVITATIONS = `
+export const GET_MY_INVITATIONS = gql`
   query GetMyInvitations {
     myInvitations {
       ...InvitationFields
     }
   }
-  ${INVITATION_FRAGMENT}
 `;
 
-export const GET_ORGANIZATION_INVITATIONS = `
+export const GET_ORGANIZATION_INVITATIONS = gql`
   query GetOrganizationInvitations($organizationId: ID!, $page: Int, $limit: Int) {
     organizationInvitations(organizationId: $organizationId, page: $page, limit: $limit) {
       items {
@@ -24,37 +23,19 @@ export const GET_ORGANIZATION_INVITATIONS = `
       }
     }
   }
-  ${INVITATION_FRAGMENT}
 `;
 
-export const GET_INVITATION_BY_TOKEN = gql`
-  query GetInvitationByToken($token: String!) {
-    invitationByToken(token: $token) {
-      ...InvitationFields
-    }
-  }
-  ${INVITATION_FRAGMENT}
-`;
-
-export async function queryMyInvitations() {
+export async function queryMyInvitations(): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_MY_INVITATIONS,
     fetchPolicy: 'network-only',
   });
 }
 
-export async function queryOrganizationInvitations(params: { organizationId: string; page?: number; limit?: number }) {
+export async function queryOrganizationInvitations(params: { organizationId: string; page?: number; limit?: number }): Promise<unknown> {
   return graphqlClient.getClient().query({
     query: GET_ORGANIZATION_INVITATIONS,
     variables: params,
-    fetchPolicy: 'network-only',
-  });
-}
-
-export async function queryInvitationByToken(token: string) {
-  return graphqlClient.getClient().query({
-    query: GET_INVITATION_BY_TOKEN,
-    variables: { token },
     fetchPolicy: 'network-only',
   });
 }

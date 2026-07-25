@@ -36,18 +36,18 @@ export interface ClientConfig {
 
 
 function parseIntEnv(key: string, defaultValue: number): number {
-  const value = import.meta.env[key];
+  const value = (import.meta.env as Record<string, string | undefined>)[key];
   if (value === undefined) return defaultValue;
   const parsed = parseInt(value, 10);
   return isNaN(parsed) ? defaultValue : parsed;
 }
 
 function parseStringEnv(key: string, defaultValue: string): string {
-  return import.meta.env[key] ?? defaultValue;
+  return (import.meta.env as Record<string, string | undefined>)[key] ?? defaultValue;
 }
 
 function parseBoolEnv(key: string, defaultValue: boolean): boolean {
-  const value = import.meta.env[key];
+  const value = (import.meta.env as Record<string, string | undefined>)[key];
   if (value === undefined) return defaultValue;
   return value === "true" || value === "1";
 }
@@ -90,7 +90,6 @@ export function getWebSocketConfig(): WebSocketConfig {
  */
 export function buildDeviceStreamUrl(baseUrl: string, deviceId: string): string {
   const protocol = baseUrl.startsWith("wss") ? "wss:" : "ws:";
-  const separator = baseUrl.includes('?') ? '&' : '?';
   // Remove protocol prefix if present to reconstruct properly
   const urlWithoutProtocol = baseUrl.replace(/^(wss?|https?):\/\//, '');
   return `${protocol}//${urlWithoutProtocol}/${encodeURIComponent(deviceId)}/stream`;

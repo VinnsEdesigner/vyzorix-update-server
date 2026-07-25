@@ -7,8 +7,8 @@
 
 set -euo pipefail
 
-CONFIG_FILE="apps/web/eslint.config.js"
-PACKAGE_FILE="apps/web/package.json"
+CONFIG_FILE="apps/VyzoriX_web/eslint.config.js"
+PACKAGE_FILE="apps/VyzoriX_web/package.json"
 
 echo "[ESLINT GUARDIAN] Validating ESLint configuration..."
 
@@ -82,7 +82,7 @@ if [[ -f "$PACKAGE_FILE" ]]; then
 fi
 
 # Check for .eslintignore or similar exclude patterns
-if [[ -f "apps/web/.eslintignore" ]]; then
+if [[ -f "apps/VyzoriX_web/.eslintignore" ]]; then
     echo ""
     echo "[WARNING] Found .eslintignore - ensure critical paths are not excluded:"
     echo "   Checking for suspicious exclusions..."

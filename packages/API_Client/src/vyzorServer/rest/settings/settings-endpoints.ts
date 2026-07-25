@@ -9,10 +9,7 @@ import {
   type RawThresholds,
   type RawClientSettings,
   type RawNotificationSettings,
-  type RawNotificationSettingsResponse,
 } from "@/domain/settings";
-import { meResponseFromRaw } from "@/domain/auth";
-import type { Operator } from "@/domain/auth";
 import type {
   Thresholds,
   ClientSettings,

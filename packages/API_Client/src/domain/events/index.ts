@@ -16,13 +16,4 @@ export {
   getDefaultSeverity,
 } from "./events-entity";
 
-export type {
-  RawEvent,
-  RawEventResult,
-} from "./events-mappers";
-
-export {
-  eventFromRaw,
-  eventResultFromRaw,
-  eventsFromRaw,
-} from "./events-mappers";
+export * from "./events-mappers";

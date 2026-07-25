@@ -9,17 +9,14 @@ import {
   type RawManagedOperator,
   type RawCreateOperatorResponse,
   type RawUpdateOperatorResponse,
+  type ManagedOperatorListResponse,
+  type ManagedOperator,
+  type CreateOperatorRequest,
+  type CreateOperatorResponse,
+  type UpdateOperatorRequest,
+  type UpdateOperatorResponse,
+  type DeleteOperatorResponse,
 } from "@/domain/admin";
-import type {
-  ManagedOperatorListResponse,
-  ManagedOperator,
-  CreateOperatorRequest,
-  CreateOperatorResponse,
-  UpdateOperatorRequest,
-  UpdateOperatorResponse,
-  DeleteOperatorResponse,
-} from "@/domain/admin";
-import type { OperatorRole } from "@/domain/auth";
 
 const PATHS = {
   operators: "/v1/admin/operators",

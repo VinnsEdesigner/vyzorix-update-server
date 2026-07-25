@@ -2,10 +2,10 @@ export * from "./registration-entity";
 export {
   inboxEntryFromRaw,
   deviceFromRaw,
-  paginationFromRaw,
   createInboxRequestToRaw,
   createInboxResultFromRaw,
   confirmDeviceResultFromRaw,
+  paginationFromRaw,
   type RawInboxEntry,
   type RawDevice,
   type RawPagination,

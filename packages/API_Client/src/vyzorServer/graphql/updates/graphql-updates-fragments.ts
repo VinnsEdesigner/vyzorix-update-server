@@ -1,4 +1,6 @@
-export const UPDATE_VERSION_FRAGMENT = `
+import { gql } from '@apollo/client';
+
+export const UPDATE_VERSION_FRAGMENT = gql`
   fragment UpdateVersion on UpdateVersion {
     id
     version
@@ -13,7 +15,7 @@ export const UPDATE_VERSION_FRAGMENT = `
   }
 `;
 
-export const PUSH_DEVICE_FRAGMENT = `
+export const PUSH_DEVICE_FRAGMENT = gql`
   fragment PushDevice on PushDevice {
     id
     deviceId
@@ -25,8 +27,7 @@ export const PUSH_DEVICE_FRAGMENT = `
   }
 `;
 
-export const UPDATE_PUSH_FRAGMENT = `
-  ${PUSH_DEVICE_FRAGMENT}
+export const UPDATE_PUSH_FRAGMENT = gql`
   fragment UpdatePush on UpdatePush {
     id
     version
@@ -43,7 +44,7 @@ export const UPDATE_PUSH_FRAGMENT = `
   }
 `;
 
-export const SYNC_STATUS_FRAGMENT = `
+export const SYNC_STATUS_FRAGMENT = gql`
   fragment SyncStatus on SyncStatus {
     status
     lastSyncAt
@@ -53,7 +54,7 @@ export const SYNC_STATUS_FRAGMENT = `
   }
 `;
 
-export const CHANGELOG_ENTRY_FRAGMENT = `
+export const CHANGELOG_ENTRY_FRAGMENT = gql`
   fragment ChangelogEntry on ChangelogEntry {
     version
     date
@@ -62,7 +63,7 @@ export const CHANGELOG_ENTRY_FRAGMENT = `
   }
 `;
 
-export const PUSH_HISTORY_ENTRY_FRAGMENT = `
+export const PUSH_HISTORY_ENTRY_FRAGMENT = gql`
   fragment PushHistoryEntry on PushHistoryEntry {
     id
     version
