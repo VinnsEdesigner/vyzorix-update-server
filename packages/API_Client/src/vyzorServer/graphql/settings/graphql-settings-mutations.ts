@@ -55,6 +55,7 @@ export const UPDATE_NOTIFICATIONS = `
 export const UPDATE_DEVICE_SETTINGS = `
   mutation UpdateDeviceSettings($organizationId: ID!, $deviceImei: String!, $input: UpdateDeviceSettingsInput!) {
     updateDeviceSettings(organizationId: $organizationId, deviceImei: $deviceImei, input: $input) {
+      id
       deviceImei
       customName
       location
@@ -74,6 +75,8 @@ export const UPDATE_DEVICE_SETTINGS = `
         bufferWarn
         bufferCrit
       }
+      createdAt
+      updatedAt
     }
   }
 `;
@@ -81,6 +84,7 @@ export const UPDATE_DEVICE_SETTINGS = `
 export const UPDATE_ORGANIZATION_SETTINGS = `
   mutation UpdateOrganizationSettings($organizationId: ID!, $input: UpdateOrganizationSettingsInput!) {
     updateOrganizationSettings(organizationId: $organizationId, input: $input) {
+      id
       organizationId
       timezone
       dateFormat
@@ -93,6 +97,8 @@ export const UPDATE_ORGANIZATION_SETTINGS = `
         bufferWarn
         bufferCrit
       }
+      createdAt
+      updatedAt
     }
   }
 `;

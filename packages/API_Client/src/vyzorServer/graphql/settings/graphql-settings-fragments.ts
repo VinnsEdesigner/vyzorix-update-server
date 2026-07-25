@@ -1,12 +1,5 @@
 export const OPERATOR_SETTINGS_FRAGMENT = `
-  fragment OperatorSettings on OperatorSettingsType {
-    operator {
-      id
-      email
-      name
-      emailVerified
-      mfaEnabled
-    }
+  fragment OperatorSettings on OperatorSettings {
     client {
       theme
       language
@@ -14,11 +7,20 @@ export const OPERATOR_SETTINGS_FRAGMENT = `
     }
     notifications {
       enabled
+      channels
       email {
-        enabled
+        thresholdBreach
+        deviceOffline
+        deviceOnline
+        updateAvailable
+        commandFailed
       }
       push {
-        enabled
+        thresholdBreach
+        deviceOffline
+        deviceOnline
+        updateAvailable
+        commandFailed
       }
       webhook {
         enabled
@@ -29,7 +31,8 @@ export const OPERATOR_SETTINGS_FRAGMENT = `
 `;
 
 export const DEVICE_SETTINGS_FRAGMENT = `
-  fragment DeviceSettings on DeviceSettingsType {
+  fragment DeviceSettings on DeviceSettings {
+    id
     deviceImei
     customName
     location
@@ -49,11 +52,14 @@ export const DEVICE_SETTINGS_FRAGMENT = `
       bufferWarn
       bufferCrit
     }
+    createdAt
+    updatedAt
   }
 `;
 
 export const ORGANIZATION_SETTINGS_FRAGMENT = `
-  fragment OrganizationSettings on OrganizationSettingsType {
+  fragment OrganizationSettings on OrganizationSettings {
+    id
     organizationId
     timezone
     dateFormat
@@ -66,6 +72,7 @@ export const ORGANIZATION_SETTINGS_FRAGMENT = `
       bufferWarn
       bufferCrit
     }
+    createdAt
     updatedAt
   }
 `;
