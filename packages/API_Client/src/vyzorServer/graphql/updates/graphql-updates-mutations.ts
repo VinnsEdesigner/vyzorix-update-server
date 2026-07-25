@@ -18,8 +18,8 @@ export const PUSH_UPDATE = `
 export const CANCEL_UPDATE = `
   mutation CancelUpdate($organizationId: ID!, $id: ID!) {
     cancelUpdate(organizationId: $organizationId, id: $id) {
-      success
-      message
+      id
+      status
     }
   }
 `;
@@ -27,7 +27,8 @@ export const CANCEL_UPDATE = `
 export const SYNC_UPDATES = `
   mutation SyncUpdates {
     syncUpdates {
-      success
+      status
+      startedAt
       message
       versionsFound
     }
