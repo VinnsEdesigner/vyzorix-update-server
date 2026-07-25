@@ -13,6 +13,7 @@ export const GET_ORGANIZATIONS = gql`
         limit
         total
         totalPages
+        hasMore
       }
     }
   }
@@ -39,6 +40,7 @@ export const GET_MY_MEMBERSHIPS = gql`
         limit
         total
         totalPages
+        hasMore
       }
     }
   }
@@ -56,6 +58,7 @@ export const GET_ORGANIZATION_MEMBERS = gql`
         limit
         total
         totalPages
+        hasMore
       }
     }
   }
@@ -73,6 +76,7 @@ export const GET_ORGANIZATION_INVITATIONS = gql`
         limit
         total
         totalPages
+        hasMore
       }
     }
   }

@@ -115,37 +115,34 @@ export interface Invitation {
 }
 
 export interface OrganizationListResponse {
-  organizations: {
-    items: Organization[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+  items: Organization[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
   };
 }
 
 export interface MemberListResponse {
-  organizationMembers: {
-    items: Membership[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+  items: Membership[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
   };
 }
 
 export interface InvitationListResponse {
-  organizationInvitations: {
-    items: Invitation[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+  items: Invitation[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
   };
 }
