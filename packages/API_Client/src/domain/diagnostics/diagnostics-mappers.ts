@@ -150,3 +150,110 @@ export function timelineResultFromRaw(raw: RawTimelineResult): TimelineResult {
     nextCursor: raw.nextCursor,
   };
 }
+
+// GraphQL-specific raw types (with string timestamps)
+export interface RawGraphQLRegistrationInfo {
+  status: string;
+  registeredAt?: string | null;
+  fcmTokenValid: boolean;
+  fcmTokenRefreshedAt?: string | null;
+  commandSecretSet: boolean;
+}
+
+export interface RawGraphQLConnectionInfo {
+  webSocketStatus?: string;
+  connectedAt?: string | null;
+  fcmStatus?: string;
+  lastSeen?: string | null;
+  clientIp?: string;
+  protocol?: string;
+}
+
+export interface RawGraphQLTelemetryInfo {
+  lastTimestamp?: string | null;
+  framesToday: number;
+  avgLatencyMs?: number;
+  totalBytesToday?: number;
+  sessionsToday: number;
+}
+
+export interface RawGraphQLDeviceInspection {
+  identity: RawIdentityInfo;
+  software: RawSoftwareInfo;
+  registration: RawGraphQLRegistrationInfo;
+  connection: RawGraphQLConnectionInfo;
+  telemetry: RawGraphQLTelemetryInfo;
+}
+
+export interface RawGraphQLTimelineEvent {
+  id: string;
+  type: string;
+  timestamp: string;
+  data?: Record<string, unknown>;
+}
+
+export interface RawGraphQLTimelineConnection {
+  events: RawGraphQLTimelineEvent[];
+  hasMore: boolean;
+  nextCursor?: string;
+}
+
+// GraphQL mappers that parse string timestamps
+export function graphqlRegistrationFromRaw(raw: RawGraphQLRegistrationInfo): RegistrationInfo {
+  return {
+    status: (raw.status as DeviceStatus) ?? "offline",
+    registeredAt: raw.registeredAt ? new Date(raw.registeredAt) : undefined,
+    fcmTokenValid: raw.fcmTokenValid,
+    fcmTokenRefreshedAt: raw.fcmTokenRefreshedAt ? new Date(raw.fcmTokenRefreshedAt) : undefined,
+    commandSecretSet: raw.commandSecretSet,
+  };
+}
+
+export function graphqlConnectionFromRaw(raw: RawGraphQLConnectionInfo): ConnectionInfo {
+  return {
+    webSocketStatus: (raw.webSocketStatus as WebSocketStatus) ?? "disconnected",
+    connectedAt: raw.connectedAt ? new Date(raw.connectedAt) : undefined,
+    fcmStatus: (raw.fcmStatus as FCMStatus) ?? "not_set",
+    lastSeen: raw.lastSeen ? new Date(raw.lastSeen) : undefined,
+    clientIp: raw.clientIp,
+    protocol: raw.protocol,
+  };
+}
+
+export function graphqlTelemetryFromRaw(raw: RawGraphQLTelemetryInfo): TelemetryInfo {
+  return {
+    lastTimestamp: raw.lastTimestamp ? new Date(raw.lastTimestamp) : undefined,
+    framesToday: raw.framesToday ?? 0,
+    avgLatencyMs: raw.avgLatencyMs,
+    totalBytesToday: raw.totalBytesToday,
+    sessionsToday: raw.sessionsToday ?? 0,
+  };
+}
+
+export function graphqlTimelineEventFromRaw(raw: RawGraphQLTimelineEvent): TimelineEvent {
+  return {
+    id: raw.id,
+    deviceId: "", // GraphQL response doesn't include deviceId in TimelineEvent
+    type: raw.type as TimelineEventType,
+    timestamp: new Date(raw.timestamp),
+    data: raw.data ?? {},
+  };
+}
+
+export function graphqlDeviceInspectionFromRaw(raw: RawGraphQLDeviceInspection): DeviceInspection {
+  return {
+    identity: identityFromRaw(raw.identity),
+    software: softwareFromRaw(raw.software),
+    registration: graphqlRegistrationFromRaw(raw.registration),
+    connection: graphqlConnectionFromRaw(raw.connection),
+    telemetry: graphqlTelemetryFromRaw(raw.telemetry),
+  };
+}
+
+export function graphqlTimelineResultFromRaw(raw: RawGraphQLTimelineConnection): TimelineResult {
+  return {
+    events: raw.events.map(graphqlTimelineEventFromRaw),
+    hasMore: raw.hasMore,
+    nextCursor: raw.nextCursor,
+  };
+}

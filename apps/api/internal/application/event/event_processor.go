@@ -14,6 +14,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/event"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 )
@@ -26,6 +27,12 @@ type EventBroadcaster interface {
 	BroadcastOperatorEvent(deviceID string, operatorID string, evt *event.Event) error
 }
 
+// DiagnosticsRecorder records device events to the diagnostics timeline.
+type DiagnosticsRecorder interface {
+	// RecordEvent records a device event to the diagnostics timeline.
+	RecordEvent(ctx context.Context, event *diagnostics.TimelineEvent) error
+}
+
 // Processor processes and emits real-time events.
 type Processor struct {
 	repo               event.Repository
@@ -33,6 +40,7 @@ type Processor struct {
 	deviceSettingsRepo device.DeviceSettingsRepository
 	orgSettingsRepo    organization.OrganizationSettingsRepository
 	broadcaster        EventBroadcaster
+	diagnosticsRecorder DiagnosticsRecorder
 	log                *slog.Logger
 	notificationSvc    *notification.Service
 	thresholds         *ThresholdConfig
@@ -93,6 +101,11 @@ func (p *Processor) SetOrgSettingsRepo(repo organization.OrganizationSettingsRep
 // SetNotificationService sets the notification service for sending alerts.
 func (p *Processor) SetNotificationService(svc *notification.Service) {
 	p.notificationSvc = svc
+}
+
+// SetDiagnosticsRecorder sets the diagnostics recorder for timeline events.
+func (p *Processor) SetDiagnosticsRecorder(recorder DiagnosticsRecorder) {
+	p.diagnosticsRecorder = recorder
 }
 
 // SetThresholds updates the threshold configuration.
@@ -175,6 +188,20 @@ func (p *Processor) ProcessDeviceConnected(ctx context.Context, deviceID string,
 		p.log.Error("failed to store device connected event", "deviceId", deviceID, "err", err)
 	}
 
+	// Record to diagnostics timeline for graph queries.
+	if p.diagnosticsRecorder != nil {
+		diagEvent := &diagnostics.TimelineEvent{
+			ID:        generateEventID(),
+			DeviceID:  deviceID,
+			Type:      diagnostics.EventTypeConnectionOpen,
+			Timestamp: time.Now(),
+			Data:      metadata,
+		}
+		if err := p.diagnosticsRecorder.RecordEvent(ctx, diagEvent); err != nil {
+			p.log.Warn("failed to record connection open to diagnostics", "deviceId", deviceID, "err", err)
+		}
+	}
+
 	// Broadcast to subscribers.
 	if p.broadcaster != nil {
 		if err := p.broadcaster.BroadcastDeviceEvent(deviceID, evt); err != nil {
@@ -233,6 +260,25 @@ func (p *Processor) ProcessDeviceDisconnected(ctx context.Context, deviceID stri
 
 	if err := p.repo.Store(ctx, evt); err != nil {
 		p.log.Error("failed to store device disconnected event", "deviceId", deviceID, "err", err)
+	}
+
+	// Record to diagnostics timeline for graph queries.
+	if p.diagnosticsRecorder != nil {
+		diagData := metadata
+		if diagData == nil {
+			diagData = make(map[string]any)
+		}
+		diagData["reason"] = reason
+		diagEvent := &diagnostics.TimelineEvent{
+			ID:        generateEventID(),
+			DeviceID:  deviceID,
+			Type:      diagnostics.EventTypeConnectionLost,
+			Timestamp: time.Now(),
+			Data:      diagData,
+		}
+		if err := p.diagnosticsRecorder.RecordEvent(ctx, diagEvent); err != nil {
+			p.log.Warn("failed to record connection lost to diagnostics", "deviceId", deviceID, "err", err)
+		}
 	}
 
 	if p.broadcaster != nil {

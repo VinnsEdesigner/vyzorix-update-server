@@ -40,8 +40,10 @@ export {
 } from "./updates";
 
 export {
-  GET_DIAGNOSTICS,
-  queryDiagnostics,
+  GET_DEVICE_INSPECTION,
+  GET_DEVICE_TIMELINE,
+  queryDeviceInspection,
+  queryDeviceTimeline,
 } from "./diagnostics";
 
 export {

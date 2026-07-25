@@ -151,6 +151,11 @@ func ProvideEventRepository(db *sql.DB) *storage.EventRepository {
 	return storage.NewEventRepository(db)
 }
 
+// ProvideDiagnosticsRepository creates the diagnostics repository.
+func ProvideDiagnosticsRepository(db *sql.DB) *storage.DiagnosticsRepository {
+	return storage.NewDiagnosticsRepository(db)
+}
+
 // ProvideUpdatesStorage creates the updates storage.
 func ProvideUpdatesStorage(db *sql.DB) *storage.UpdatesStorage {
 	return storage.NewUpdatesStorage(db)
@@ -159,6 +164,7 @@ func ProvideUpdatesStorage(db *sql.DB) *storage.UpdatesStorage {
 // ProvideEventProcessor creates the event processor and wires it to the hub.
 func ProvideEventProcessor(
 	eventRepo *storage.EventRepository,
+	diagnosticsRepo *storage.DiagnosticsRepository,
 	deviceRepo *storage.DeviceRepository,
 	deviceSettingsRepo *storage.DeviceSettingsRepository,
 	orgSettingsRepo *storage.OrganizationSettingsRepository,
@@ -175,6 +181,9 @@ func ProvideEventProcessor(
 	// Wire repositories for hierarchical threshold resolution.
 	processor.SetDeviceSettingsRepo(deviceSettingsRepo)
 	processor.SetOrgSettingsRepo(orgSettingsRepo)
+
+	// Wire diagnostics recorder for timeline events.
+	processor.SetDiagnosticsRecorder(diagnosticsRepo)
 
 	hubResult.Hub.SetEventProcessor(processor)
 

@@ -90,7 +90,8 @@ func Injector(cfg config.Config) (*Server, error) {
 	deviceSettingsRepository := ProvideDeviceSettingsRepository(db)
 	deviceSettingsService := ProvideDeviceSettingsService(deviceSettingsRepository, deviceRepository, orgSettingsRepository)
 	// Create event processor and wire notification service.
-	eventProcessor := ProvideEventProcessor(eventRepository, deviceRepository, deviceSettingsRepository, orgSettingsRepository, hubResult, logger)
+	diagnosticsRepository := ProvideDiagnosticsRepository(db)
+	eventProcessor := ProvideEventProcessor(eventRepository, diagnosticsRepository, deviceRepository, deviceSettingsRepository, orgSettingsRepository, hubResult, logger)
 	WireNotificationServiceToProcessor(eventProcessor, notificationService)
 	apiKeyRepository := ProvideAPIKeyRepository(db)
 	apiKeyService := ProvideAPIKeyService(apiKeyRepository, cfg)
