@@ -3,13 +3,14 @@ import { graphqlClient } from '../_shared/graphql-client';
 export const GET_PENDING_COMMANDS = `
   query GetPendingCommands($organizationId: ID!, $deviceId: ID!) {
     pendingCommands(organizationId: $organizationId, deviceId: $deviceId) {
-      id
-      device_id
-      command_type
-      payload
+      dispatchId
+      commandId
+      deviceId
+      command
+      args
       status
-      created_at
-      dispatched_at
+      createdAt
+      deliveredAt
     }
   }
 `;
@@ -17,19 +18,14 @@ export const GET_PENDING_COMMANDS = `
 export const GET_COMMAND = `
   query GetCommand($organizationId: ID!, $dispatchId: ID!) {
     command(organizationId: $organizationId, dispatchId: $dispatchId) {
-      id
-      device_id
-      command_type
-      payload
+      dispatchId
+      commandId
+      deviceId
+      command
+      args
       status
-      created_at
-      dispatched_at
-      completed_at
-      result {
-        success
-        message
-        error
-      }
+      createdAt
+      deliveredAt
     }
   }
 `;
