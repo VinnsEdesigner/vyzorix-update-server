@@ -9,5 +9,4 @@ export * from "./settings";
 export * from "./updates";
 export * from "./diagnostics";
 export * from "./logs";
-export * from "./apikey";
 export * from "./realtime";
