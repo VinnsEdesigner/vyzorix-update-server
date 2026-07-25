@@ -7,13 +7,13 @@ export const GET_INBOX_ENTRIES = `
   ${INBOX_ENTRY_FRAGMENT}
   query GetInboxEntries($organizationId: ID!, $status: String, $page: Int, $limit: Int) {
     inbox(organizationId: $organizationId, status: $status, page: $page, limit: $limit) {
-      entries {
+      requests {
         ...InboxEntry
       }
-      total
-      page_info {
-        has_next_page
-        has_previous_page
+      pagination {
+        page
+        limit
+        hasMore
       }
     }
   }
@@ -32,9 +32,14 @@ export const GET_DEVICES = `
   ${DEVICE_FRAGMENT}
   query GetDevices($organizationId: ID!, $limit: Int, $offset: Int) {
     devices(organizationId: $organizationId, limit: $limit, offset: $offset) {
-      devices {
-        ...Device
-      }
+      id
+      imei
+      deviceName
+      model
+      manufacturer
+      status
+      lastSeen
+      online
     }
   }
 `;
