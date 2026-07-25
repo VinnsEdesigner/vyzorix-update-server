@@ -324,6 +324,20 @@ func (p *Processor) ProcessTelemetry(ctx context.Context, deviceID string, telem
 		orgID = device.OrganizationID
 	}
 
+	// Record telemetry event to diagnostics timeline.
+	if p.diagnosticsRecorder != nil {
+		telemetryEvt := &diagnostics.TimelineEvent{
+			ID:        generateEventID(),
+			DeviceID:  deviceID,
+			Type:      diagnostics.EventTypeTelemetry,
+			Timestamp: time.Now(),
+			Data:      telemetryData,
+		}
+		if err := p.diagnosticsRecorder.RecordEvent(ctx, telemetryEvt); err != nil {
+			p.log.Warn("failed to record telemetry to diagnostics", "deviceId", deviceID, "err", err)
+		}
+	}
+
 	// Get thresholds using hierarchical resolution: device → org → default.
 	thresholds := p.resolveThresholds(ctx, deviceID, orgID)
 
@@ -334,6 +348,11 @@ func (p *Processor) ProcessTelemetry(ctx context.Context, deviceID string, telem
 	for _, evt := range events {
 		if err := p.repo.Store(ctx, evt); err != nil {
 			p.log.Error("failed to store threshold breach event", "deviceId", deviceID, "err", err)
+		}
+
+		// Record threshold breach events to diagnostics.
+		if isThresholdBreachEvent(evt.Type) {
+			p.recordToDiagnostics(ctx, deviceID, evt)
 		}
 
 		if p.broadcaster != nil {
@@ -415,6 +434,9 @@ func (p *Processor) ProcessCommandEvent(ctx context.Context, deviceID string, co
 		p.log.Error("failed to store command event", "deviceId", deviceID, "err", err)
 	}
 
+	// Record command events to diagnostics timeline.
+	p.recordToDiagnostics(ctx, deviceID, evt)
+
 	if p.broadcaster != nil {
 		if err := p.broadcaster.BroadcastDeviceEvent(deviceID, evt); err != nil {
 			p.log.Warn("failed to broadcast command event", "deviceId", deviceID, "err", err)
@@ -487,6 +509,9 @@ func (p *Processor) ProcessError(ctx context.Context, deviceID string, errMsg st
 	if err := p.repo.Store(ctx, evt); err != nil {
 		p.log.Error("failed to store error event", "deviceId", deviceID, "err", err)
 	}
+
+	// Record error events to diagnostics timeline.
+	p.recordToDiagnostics(ctx, deviceID, evt)
 
 	if p.broadcaster != nil {
 		if err := p.broadcaster.BroadcastDeviceEvent(deviceID, evt); err != nil {
@@ -713,6 +738,56 @@ func isThresholdBreachEvent(evtType event.EventType) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+// eventToDiagnosticsType maps event types to diagnostics timeline event types.
+func eventToDiagnosticsType(evtType event.EventType) diagnostics.TimelineEventType {
+	switch evtType {
+	case event.EventTypeDeviceConnected, event.EventTypeDeviceOnline:
+		return diagnostics.EventTypeConnectionOpen
+	case event.EventTypeDeviceDisconnected, event.EventTypeDeviceOffline:
+		return diagnostics.EventTypeConnectionLost
+	case event.EventTypeDeviceReconnected:
+		return diagnostics.EventTypeReconnected
+	case event.EventTypeTelemetryReceived:
+		return diagnostics.EventTypeTelemetry
+	case event.EventTypeThresholdBreach, event.EventTypeRiskScoreAlert,
+		event.EventTypeThermalAlert, event.EventTypeBufferLevelAlert:
+		return diagnostics.EventTypeThresholdBreach
+	case event.EventTypeCommandSent:
+		return diagnostics.EventTypeCommandSent
+	case event.EventTypeCommandDelivered, event.EventTypeCommandAcknowledged:
+		return diagnostics.EventTypeCommandAck
+	case event.EventTypeCommandFailed:
+		return diagnostics.EventTypeCommandFailed
+	case event.EventTypeFCMFallback:
+		return diagnostics.EventTypeFCMFallback
+	case event.EventTypeError:
+		return diagnostics.EventTypeError
+	case event.EventTypeRegistration:
+		return diagnostics.EventTypeRegistered
+	case event.EventTypeDeregistration:
+		return diagnostics.EventTypeDeregistered
+	default:
+		return diagnostics.EventTypeError
+	}
+}
+
+// recordToDiagnostics records an event to the diagnostics timeline if the recorder is set.
+func (p *Processor) recordToDiagnostics(ctx context.Context, deviceID string, evt *event.Event) {
+	if p.diagnosticsRecorder == nil {
+		return
+	}
+	diagEvent := &diagnostics.TimelineEvent{
+		ID:        evt.ID,
+		DeviceID:  deviceID,
+		Type:      eventToDiagnosticsType(evt.Type),
+		Timestamp: evt.Timestamp,
+		Data:      evt.Data,
+	}
+	if err := p.diagnosticsRecorder.RecordEvent(ctx, diagEvent); err != nil {
+		p.log.Warn("failed to record event to diagnostics", "deviceId", deviceID, "eventType", evt.Type, "err", err)
 	}
 }
 
