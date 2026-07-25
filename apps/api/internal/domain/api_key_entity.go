@@ -90,6 +90,7 @@ type APIKeyWithFullKey struct {
 // APIKeyResponse represents an API key in responses (without the full key).
 type APIKeyResponse struct {
 	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 	ExpiresAt    *time.Time `json:"expires_at"`
 	LastRequest  *time.Time `json:"last_request_at"`
 	RevokedAt    *time.Time `json:"revoked_at"`
@@ -113,6 +114,7 @@ func (k *APIKey) ToResponse() APIKeyResponse {
 		RequestCount: k.RequestCount,
 		LastRequest:  k.LastRequest,
 		CreatedAt:    k.CreatedAt,
+		UpdatedAt:    k.UpdatedAt,
 		RevokedAt:    k.RevokedAt,
 	}
 }
