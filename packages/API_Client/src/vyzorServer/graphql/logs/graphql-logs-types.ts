@@ -1,19 +1,21 @@
-import type { LogEntry, LogListItem, LogLevel, LogLevelCounts } from "@/domain/logs";
-
 export type RawLogEntry = {
   __typename?: "LogEntry";
-} & Omit<LogEntry, "timestamp"> & {
-  timestamp: string;
+  id: string;
+  type: string;
+  timestamp: number;
+  data?: Record<string, unknown>;
 };
 
 export type RawLogListItem = {
   __typename?: "LogEntry";
-} & Omit<LogListItem, "timestamp"> & {
-  timestamp: string;
+  id: string;
+  type: string;
+  timestamp: number;
+  data?: Record<string, unknown>;
 };
 
 export interface RawLogConnection {
-  logs: RawLogListItem[];
+  events: RawLogListItem[];
   pagination: {
     limit: number;
     hasMore: boolean;
@@ -36,9 +38,9 @@ export interface RawLogStats {
 export interface RawSubscribeToLogsResponse {
   logs: {
     id: string;
-    timestamp: string;
-    type: LogLevel;
-    data: string;
+    timestamp: number;
+    type: string;
+    data?: Record<string, unknown>;
     deviceImei: string;
   }[];
 }

@@ -9,6 +9,7 @@ export const GET_UPDATES = `
         ...UpdateVersion
       }
       pagination {
+        total
         limit
         offset
         hasMore
@@ -20,8 +21,26 @@ export const GET_UPDATES = `
 export const GET_UPDATES_STATUS = `
   query GetUpdatesStatus($organizationId: ID!, $deviceId: ID) {
     updatesStatus(organizationId: $organizationId, deviceId: $deviceId) {
-      currentVersion
-      needsUpdate
+      version
+      sync {
+        status
+        lastSyncAt
+        nextSyncAt
+        versionsFound
+        error
+      }
+      latest {
+        id
+        version
+        apkFilename
+        sha256
+      }
+      device {
+        currentVersion
+        needsUpdate
+      }
+      apkFilename
+      sha256
     }
   }
 `;
@@ -43,8 +62,9 @@ export const GET_UPDATES_HISTORY = `
         ...PushHistoryEntry
       }
       pagination {
-        page
+        total
         limit
+        offset
         hasMore
       }
     }

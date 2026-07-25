@@ -1,65 +1,29 @@
-
-
-import type { InboxEntry, Device } from "@/domain/registration";
-import type { TelemetryFrame } from "@/domain/telemetry";
-
-
 export type RawInboxEntry = {
   __typename?: "InboxEntry";
-} & Omit<InboxEntry, "receivedAt" | "updatedAt" | "acknowledgedAt" | "approvedAt" | "rejectedAt"> & {
-  receivedAt: string;
-  updatedAt: string;
-  acknowledgedAt?: string | null;
-  approvedAt?: string | null;
-  rejectedAt?: string | null;
+  id: string;
+  imei: string;
+  model?: string;
+  manufacturer?: string;
+  osVersion?: string;
+  appVersion?: string;
+  firebaseInstallId?: string;
+  status: string;
+  notes?: string;
+  operatorId?: string;
+  createdAt: number;
+  approvedAt?: number;
+  rejectedAt?: number;
 };
-
-
-export type RawDevice = {
-  __typename?: "Device";
-} & Omit<Device, "registeredAt" | "lastSeen"> & {
-  registeredAt?: string | null;
-  lastSeen?: string | null;
-};
-
-
-export type RawTelemetryFrame = {
-  __typename?: "TelemetryFrame";
-} & Omit<TelemetryFrame, "timestamp"> & {
-  timestamp: string;
-};
-
 
 export interface RawInboxConnection {
-  entries: RawInboxEntry[];
+  requests: RawInboxEntry[];
   pagination: {
-    page: number;
-    limit: number;
     total: number;
-    totalPages: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
   };
 }
-
-
-export interface RawDeviceConnection {
-  devices: RawDevice[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-
-export interface RawTelemetryConnection {
-  frames: RawTelemetryFrame[];
-  pagination: {
-    limit: number;
-    total: number;
-  };
-}
-
 
 export interface RegistrationRequestInput {
   imei: string;
@@ -74,7 +38,6 @@ export interface RegistrationRequestInput {
   buildId?: string;
 }
 
-
 export interface RawRegistrationRequestResponse {
   success: boolean;
   status: string;
@@ -82,13 +45,11 @@ export interface RawRegistrationRequestResponse {
   error?: string;
 }
 
-
 export interface RawAcknowledgeResponse {
   success: boolean;
   status: string;
   error?: string;
 }
-
 
 export interface RawRegisterDeviceResponse {
   success: boolean;
@@ -98,7 +59,6 @@ export interface RawRegisterDeviceResponse {
   error?: string;
 }
 
-
 export interface RawConfirmResponse {
   success: boolean;
   status: string;
@@ -107,13 +67,11 @@ export interface RawConfirmResponse {
   error?: string;
 }
 
-
 export interface RawDeregisterResponse {
   success: boolean;
   status: string;
   error?: string;
 }
-
 
 export interface RawDismissResponse {
   success: boolean;

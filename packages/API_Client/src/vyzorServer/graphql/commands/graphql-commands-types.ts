@@ -1,18 +1,23 @@
-import type { Command, CommandListItem, CommandStatus, PresetCommandType } from "@/domain/commands";
-
 export type RawCommand = {
   __typename?: "Command";
-} & Omit<Command, "createdAt" | "sentAt" | "acknowledgedAt" | "completedAt"> & {
-  createdAt: string;
-  sentAt?: string | null;
-  acknowledgedAt?: string | null;
-  completedAt?: string | null;
+  dispatchId: string;
+  commandId: string;
+  deviceId: string;
+  command: string;
+  args?: Record<string, unknown>;
+  status: string;
+  createdAt?: string;
+  deliveredAt?: string;
 };
 
 export type RawCommandListItem = {
   __typename?: "Command";
-} & Omit<CommandListItem, "createdAt"> & {
-  createdAt: string;
+  dispatchId: string;
+  commandId: string;
+  deviceId: string;
+  command: string;
+  status: string;
+  createdAt?: string;
 };
 
 export interface RawCommandConnection {
@@ -27,28 +32,33 @@ export interface RawCommandConnection {
 }
 
 export interface RawCommandResult {
-  success: boolean;
-  message?: string;
-  output?: string;
-  error?: string;
+  dispatchId: string;
+  commandId: string;
+  status: string;
+  deviceOnline: boolean;
 }
 
 export interface RawCommandStatus {
   dispatchId: string;
-  status: CommandStatus;
-  updatedAt: string;
-  result?: RawCommandResult;
+  status: string;
+  updatedAt?: string;
+  result?: {
+    dispatchId: string;
+    commandId: string;
+    status: string;
+    deviceOnline: boolean;
+  };
 }
 
 export interface RawSendCommandResponse {
-  success: boolean;
-  dispatchId?: string;
-  status?: CommandStatus;
-  error?: string;
+  dispatchId: string;
+  commandId: string;
+  status: string;
+  deviceOnline: boolean;
 }
 
 export interface RawCancelCommandResponse {
-  success: boolean;
-  dispatchId?: string;
-  error?: string;
+  dispatchId: string;
+  cancelledAt: number;
+  status: string;
 }

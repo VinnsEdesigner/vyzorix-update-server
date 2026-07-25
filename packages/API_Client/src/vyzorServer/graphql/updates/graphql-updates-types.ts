@@ -53,13 +53,18 @@ export type RawChangelogEntry = {
   notes: string;
 };
 
+export type RawDeviceUpdateStatus = {
+  __typename?: "DeviceUpdateStatus";
+  currentVersion: string;
+  needsUpdate: boolean;
+};
+
 export interface RawVersionConnection {
   versions: RawUpdateVersion[];
   pagination: {
-    page: number;
-    limit: number;
     total: number;
-    totalPages: number;
+    limit: number;
+    offset: number;
     hasMore: boolean;
   };
 }
@@ -67,10 +72,9 @@ export interface RawVersionConnection {
 export interface RawUpdateHistoryConnection {
   pushes: RawUpdatePush[];
   pagination: {
-    page: number;
-    limit: number;
     total: number;
-    totalPages: number;
+    limit: number;
+    offset: number;
     hasMore: boolean;
   };
 }
@@ -80,20 +84,26 @@ export interface RawChangelogConnection {
 }
 
 export interface RawPushUpdateResponse {
-  success: boolean;
-  pushId?: string;
-  status?: string;
-  error?: string;
+  pushId: string;
+  version: string;
+  installType: string;
+  scheduledAt?: number;
+  status: string;
+  initiatedBy: string;
+  initiatedAt: number;
+  deviceCount: number;
 }
 
 export interface RawCancelUpdateResponse {
-  success: boolean;
-  error?: string;
+  id: string;
+  status: string;
+  cancelledAt: number;
+  cancelledBy: string;
 }
 
 export interface RawSyncResponse {
-  success: boolean;
-  status?: string;
+  status: string;
+  startedAt: number;
+  message?: string;
   versionsFound?: number;
-  error?: string;
 }

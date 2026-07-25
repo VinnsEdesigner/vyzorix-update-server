@@ -20,6 +20,8 @@ export const CANCEL_UPDATE = `
     cancelUpdate(organizationId: $organizationId, id: $id) {
       id
       status
+      cancelledAt
+      cancelledBy
     }
   }
 `;
