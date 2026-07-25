@@ -5,11 +5,8 @@ export const SEND_COMMAND = `
     sendCommand(deviceId: $deviceId, command: $command, args: $args) {
       dispatchId
       commandId
-      deviceId
-      command
-      args
       status
-      createdAt
+      deviceOnline
     }
   }
 `;
@@ -23,6 +20,7 @@ export const RETRY_COMMAND = `
       command
       status
       createdAt
+      deliveredAt
     }
   }
 `;
@@ -30,8 +28,9 @@ export const RETRY_COMMAND = `
 export const CANCEL_COMMAND = `
   mutation CancelCommand($dispatchId: ID!) {
     cancelCommand(dispatchId: $dispatchId) {
-      success
-      error
+      dispatchId
+      cancelledAt
+      status
     }
   }
 `;
