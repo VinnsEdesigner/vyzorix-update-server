@@ -48,7 +48,7 @@ type CommandEntry struct {
 	Command       string `json:"command"`
 	Status        string `json:"status"`
 	FailureReason string `json:"failureReason,omitempty"`
-	SentAt        int64  `json:"sentAt"`
+	CreatedAt     int64  `json:"createdAt"`
 	DeliveredAt   int64  `json:"deliveredAt,omitempty"`
 	CompletedAt   int64  `json:"completedAt,omitempty"`
 	LatencyMs     int64  `json:"latencyMs,omitempty"`
@@ -108,21 +108,21 @@ func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest)
 	// Build response.
 	entries := make([]CommandEntry, 0, len(commands))
 	for _, cmd := range commands {
-		sentAt := cmd.CreatedAt.UnixMilli()
+		createdAt := cmd.CreatedAt.UnixMilli()
 		entry := CommandEntry{
 			ID:            cmd.ID,
 			DispatchID:    cmd.DispatchID,
 			DeviceID:      req.DeviceID,
 			Command:       string(cmd.Command),
 			Status:        string(cmd.Status),
-			SentAt:        sentAt,
+			CreatedAt:     createdAt,
 			FailureReason: cmd.FailureReason,
 		}
 
 		if cmd.DeliveredAt != nil {
 			entry.DeliveredAt = *cmd.DeliveredAt
-			// Calculate latency: time from sent to delivered.
-			entry.LatencyMs = *cmd.DeliveredAt - sentAt
+			// Calculate latency: time from created to delivered.
+			entry.LatencyMs = *cmd.DeliveredAt - createdAt
 		}
 		if cmd.CompletedAt != nil {
 			entry.CompletedAt = *cmd.CompletedAt
