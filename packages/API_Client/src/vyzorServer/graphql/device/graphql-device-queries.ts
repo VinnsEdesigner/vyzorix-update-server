@@ -49,7 +49,6 @@ export const GET_DEVICES = `
       deviceName
       model
       manufacturer
-      appVersion
       status
       lastSeen
       online
