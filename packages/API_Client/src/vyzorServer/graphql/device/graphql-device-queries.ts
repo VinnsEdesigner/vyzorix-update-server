@@ -4,11 +4,13 @@ export const DEVICE_LIST_FRAGMENT = `
   fragment DeviceList on Device {
     id
     imei
-    device_name
+    name
+    deviceName
     model
     manufacturer
     status
-    last_seen
+    lastSeen
+    online
   }
 `;
 
@@ -16,35 +18,40 @@ export const DEVICE_FRAGMENT = `
   fragment Device on Device {
     id
     imei
-    device_name
+    name
+    deviceName
     model
     manufacturer
-    app_version
-    os_version
-    security_patch
-    build_id
+    appVersion
+    osVersion
+    securityPatch
+    buildId
     status
-    registered_at
-    last_seen
-    fcm_token_valid
-    command_secret_set
+    registeredAt
+    lastSeen
+    fcmTokenValid
+    commandSecretSet
     connection {
-      web_socket_status
-      connected_at
+      webSocketStatus
+      connectedAt
       protocol
-      client_ip
+      clientIp
     }
   }
 `;
 
 export const GET_DEVICES = `
-  query GetDevices($organizationId: ID!, $limit: Int, $offset: Int, $online: Boolean) {
-    devices(organizationId: $organizationId, limit: $limit, offset: $offset, online: $online) {
+  query GetDevices($organizationId: ID!, $limit: Int, $offset: Int) {
+    devices(organizationId: $organizationId, limit: $limit, offset: $offset) {
       id
       imei
-      app_version
-      device_class
-      last_seen
+      name
+      deviceName
+      model
+      manufacturer
+      appVersion
+      status
+      lastSeen
       online
     }
   }
@@ -55,23 +62,24 @@ export const GET_DEVICE = `
     device(organizationId: $organizationId, id: $id) {
       id
       imei
-      device_name
+      name
+      deviceName
       model
       manufacturer
-      app_version
-      os_version
-      security_patch
-      build_id
+      appVersion
+      osVersion
+      securityPatch
+      buildId
       status
-      registered_at
-      last_seen
-      fcm_token_valid
-      command_secret_set
+      registeredAt
+      lastSeen
+      fcmTokenValid
+      commandSecretSet
       connection {
-        web_socket_status
-        connected_at
+        webSocketStatus
+        connectedAt
         protocol
-        client_ip
+        clientIp
       }
     }
   }
@@ -83,7 +91,7 @@ export const GET_DEVICE_COUNT = `
   }
 `;
 
-export async function queryDevices(params: { organizationId: string; limit?: number; offset?: number; online?: boolean }) {
+export async function queryDevices(params: { organizationId: string; limit?: number; offset?: number }) {
   return graphqlClient.getClient().query({
     query: GET_DEVICES,
     variables: params,

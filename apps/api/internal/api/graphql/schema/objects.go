@@ -14,9 +14,29 @@ var DeviceType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.NewNonNull(graphql.ID),
 			Description: "Unique device identifier",
 		},
+		"imei": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Device IMEI",
+		},
 		"name": &graphql.Field{
 			Type:        graphql.String,
 			Description: "Device display name",
+		},
+		"deviceName": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device display name (alias for name)",
+		},
+		"model": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device model",
+		},
+		"manufacturer": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device manufacturer",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device status",
 		},
 		"online": &graphql.Field{
 			Type:        graphql.NewNonNull(graphql.Boolean),
@@ -26,17 +46,49 @@ var DeviceType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        DateTimeScalar,
 			Description: "Last time device sent telemetry",
 		},
+		"registeredAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "Device registration timestamp",
+		},
+		"createdAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "Device registration timestamp",
+		},
 		"fcmToken": &graphql.Field{
 			Type:        graphql.String,
 			Description: "Firebase Cloud Messaging token",
+		},
+		"fcmTokenValid": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Whether FCM token is valid",
+		},
+		"commandSecretSet": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Whether command secret is set",
 		},
 		"version": &graphql.Field{
 			Type:        graphql.String,
 			Description: "Device app version",
 		},
-		"createdAt": &graphql.Field{
-			Type:        DateTimeScalar,
-			Description: "Device registration timestamp",
+		"appVersion": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device app version",
+		},
+		"osVersion": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device OS version",
+		},
+		"securityPatch": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device security patch",
+		},
+		"buildId": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device build ID",
+		},
+		"connection": &graphql.Field{
+			Type:        ConnectionInfoType,
+			Description: "Device connection information",
 		},
 	},
 })
