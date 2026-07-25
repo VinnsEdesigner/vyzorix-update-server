@@ -1,12 +1,12 @@
-import { restClient } from "../_shared/rest-client";
+import { restClient, getOrganizationContext } from "../_shared/rest-client";
 import type { DeviceMetrics, DashboardStats, TimeRange, MetricResolution } from "@/domain/metrics";
 import { deviceMetricsFromRaw, dashboardStatsFromRaw } from "@/domain/metrics";
 import { getMetricsConfig } from "../../config";
 
 export const METRICS_PATHS = {
-  metrics: (imei: string) => `/v1/device/${imei}/metrics`,
-  metricsExport: (imei: string) => `/v1/device/${imei}/metrics/export`,
-  telemetry: (imei: string) => `/v1/device/${imei}/telemetry`,
+  metrics: (imei: string) => `/v1/dashboard/device/${imei}/metrics`,
+  metricsExport: (imei: string) => `/v1/dashboard/device/${imei}/metrics/export`,
+  telemetry: (imei: string) => `/v1/dashboard/device/${imei}/telemetry`,
   dashboardStats: "/v1/dashboard/stats",
 } as const;
 
@@ -17,15 +17,19 @@ export async function fetchDeviceMetrics(
     startTime?: number;
     endTime?: number;
     resolution?: MetricResolution;
+    organizationId?: string;
   }
 ): Promise<DeviceMetrics> {
   const data = await restClient.get<Parameters<typeof deviceMetricsFromRaw>[0]>(
     METRICS_PATHS.metrics(imei),
     {
-      range: params?.range,
-      start_time: params?.startTime,
-      end_time: params?.endTime,
-      resolution: params?.resolution,
+      params: {
+        range: params?.range,
+        start_time: params?.startTime,
+        end_time: params?.endTime,
+        resolution: params?.resolution,
+        organization_id: params?.organizationId || getOrganizationContext(),
+      },
     }
   );
 
@@ -38,9 +42,12 @@ export async function exportMetrics(
     format?: "json" | "csv";
     range?: TimeRange;
     metrics?: string[];
+    organizationId?: string;
   }
 ): Promise<Blob> {
   const searchParams = new URLSearchParams();
+  const orgId = params?.organizationId || getOrganizationContext();
+  if (orgId) searchParams.set("organization_id", orgId);
   if (params?.format) searchParams.set("format", params.format);
   if (params?.range) searchParams.set("range", params.range);
   if (params?.metrics) searchParams.set("metrics", params.metrics.join(","));
@@ -59,10 +66,12 @@ export async function fetchTelemetryHistory(
     startTime?: number;
     endTime?: number;
     limit?: number;
+    organizationId?: string;
   }
 ) {
   const metricsConfig = getMetricsConfig();
   const defaultLimit = params?.limit ?? metricsConfig.defaultLimit;
+  const orgId = params?.organizationId || getOrganizationContext();
   
   const data = await restClient.get<{
     frames: Array<{
@@ -78,9 +87,12 @@ export async function fetchTelemetryHistory(
       buffer_level: { current: number; avg: number; min: number; max: number };
     };
   }>(METRICS_PATHS.telemetry(imei), {
-    start_time: params?.startTime,
-    end_time: params?.endTime,
-    limit: defaultLimit,
+    params: {
+      start_time: params?.startTime,
+      end_time: params?.endTime,
+      limit: defaultLimit,
+      organization_id: orgId,
+    },
   });
 
   return {
@@ -99,9 +111,11 @@ export async function fetchTelemetryHistory(
   };
 }
 
-export async function fetchDashboardStats(): Promise<DashboardStats> {
+export async function fetchDashboardStats(organizationId?: string): Promise<DashboardStats> {
+  const orgId = organizationId || getOrganizationContext();
   const data = await restClient.get<Parameters<typeof dashboardStatsFromRaw>[0]>(
-    METRICS_PATHS.dashboardStats
+    METRICS_PATHS.dashboardStats,
+    { params: { organization_id: orgId } }
   );
   return dashboardStatsFromRaw(data);
 }

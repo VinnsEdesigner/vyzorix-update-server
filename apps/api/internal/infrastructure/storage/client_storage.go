@@ -467,3 +467,44 @@ func (r *ClientRepository) VerifyAPIClientSecret(ctx context.Context, clientID, 
 
 	return c, nil
 }
+
+// RotateClientSecret rotates the client secret and returns the new secret.
+// The old secret is invalidated immediately.
+func (r *ClientRepository) RotateClientSecret(ctx context.Context, clientID string) (*client.Client, string, error) {
+	c, err := r.FindByID(ctx, clientID)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Generate new secret (32 bytes = 64 hex chars).
+	secretBytes := make([]byte, 32)
+	if _, err := readRandom(secretBytes); err != nil {
+		return nil, "", err
+	}
+
+	newSecret := hexEncode(secretBytes)
+
+	// Hash the new secret with Argon2id.
+	secretHash, err := password.HashPassword(newSecret)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Derive new HMAC key.
+	hmacKey := deriveHmacKey(newSecret)
+
+	now := time.Now().UnixMilli()
+
+	// Update the client with new secret hash and HMAC key.
+	query := `UPDATE api_clients SET client_secret_hash = ?, hmac_key = ?, updated_at = ? WHERE id = ?`
+	_, err = r.exec(ctx, query, secretHash, hmacKey, now, clientID)
+	if err != nil {
+		return nil, "", err
+	}
+
+	c.ClientSecretHash = secretHash
+	c.HmacKey = hmacKey
+	c.UpdatedAt = time.UnixMilli(now)
+
+	return c, newSecret, nil
+}

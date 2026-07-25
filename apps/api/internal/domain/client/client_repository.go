@@ -38,4 +38,8 @@ type Repository interface {
 	// VerifyAPIClientSecret verifies a client secret against the stored hash.
 	// Returns the client if valid, nil if invalid.
 	VerifyAPIClientSecret(ctx context.Context, clientID, secret string) (*Client, error)
+
+	// RotateClientSecret rotates the client secret and returns the new secret.
+	// The old secret is invalidated immediately.
+	RotateClientSecret(ctx context.Context, clientID string) (*Client, string, error)
 }

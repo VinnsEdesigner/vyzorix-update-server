@@ -1,4 +1,4 @@
-import { restClient } from "../_shared/rest-client";
+import { restClient, getOrganizationContext } from "../_shared/rest-client";
 import {
   apiKeyFromRaw,
   apiKeyWithSecretFromRaw,
@@ -33,11 +33,12 @@ export interface UpdateApiKeyInput {
 }
 
 export const apiKeys = {
-  async list(params?: { page?: number; limit?: number }): Promise<ApiKeyListResult> {
+  async list(params?: { page?: number; limit?: number; organizationId?: string }): Promise<ApiKeyListResult> {
     const response = await restClient.get<RawApiKeyListResult>(PATHS.list, {
       params: {
         page: params?.page,
         limit: params?.limit,
+        organization_id: params?.organizationId || getOrganizationContext(),
       },
     });
     return {
@@ -47,34 +48,44 @@ export const apiKeys = {
     };
   },
 
-  async get(keyId: string): Promise<ApiKey> {
-    const response = await restClient.get<RawApiKey>(PATHS.key(keyId));
+  async get(keyId: string, organizationId?: string): Promise<ApiKey> {
+    const response = await restClient.get<RawApiKey>(PATHS.key(keyId), {
+      params: { organization_id: organizationId || getOrganizationContext() },
+    });
     return apiKeyFromRaw(response);
   },
 
-  async create(input: CreateApiKeyInput): Promise<ApiKeyWithSecret> {
+  async create(input: CreateApiKeyInput, organizationId?: string): Promise<ApiKeyWithSecret> {
     const response = await restClient.post<RawApiKeyWithSecret>(PATHS.list, {
       name: input.name,
       scope: input.scope,
       expires_in_days: input.expiresInDays,
+    }, {
+      params: { organization_id: organizationId || getOrganizationContext() },
     });
     return apiKeyWithSecretFromRaw(response);
   },
 
-  async update(keyId: string, input: UpdateApiKeyInput): Promise<ApiKey> {
+  async update(keyId: string, input: UpdateApiKeyInput, organizationId?: string): Promise<ApiKey> {
     const response = await restClient.patch<RawApiKey>(PATHS.key(keyId), {
       name: input.name,
       scope: input.scope,
+    }, {
+      params: { organization_id: organizationId || getOrganizationContext() },
     });
     return apiKeyFromRaw(response);
   },
 
-  async revoke(keyId: string): Promise<{ success: boolean }> {
-    return restClient.delete<{ success: boolean }>(PATHS.key(keyId));
+  async revoke(keyId: string, organizationId?: string): Promise<{ success: boolean }> {
+    return restClient.delete<{ success: boolean }>(PATHS.key(keyId), {
+      params: { organization_id: organizationId || getOrganizationContext() },
+    });
   },
 
-  async rotate(keyId: string): Promise<ApiKeyWithSecret> {
-    const response = await restClient.post<RawApiKeyWithSecret>(PATHS.rotate(keyId), {});
+  async rotate(keyId: string, organizationId?: string): Promise<ApiKeyWithSecret> {
+    const response = await restClient.post<RawApiKeyWithSecret>(PATHS.rotate(keyId), {}, {
+      params: { organization_id: organizationId || getOrganizationContext() },
+    });
     return apiKeyWithSecretFromRaw(response);
   },
 };

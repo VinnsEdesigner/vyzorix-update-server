@@ -5,7 +5,13 @@ import { mapOrganization, type OrganizationApiResponse } from "@/domain/organiza
 const PATHS = {
   organizations: "/v1/organizations",
   organization: (id: string) => `/v1/organizations/${id}`,
+  transferDevice: (orgId: string, imei: string) => `/v1/organizations/${orgId}/devices/${imei}/transfer`,
 };
+
+export interface TransferDeviceRequest {
+  targetOrganizationId: string;
+  reason?: string;
+}
 
 export const organizations = {
   async list(): Promise<Organization[]> {
@@ -30,5 +36,9 @@ export const organizations = {
 
   async delete(id: string): Promise<{ message: string }> {
     return restClient.delete<{ message: string }>(PATHS.organization(id));
+  },
+
+  async transferDevice(orgId: string, imei: string, request: TransferDeviceRequest): Promise<{ success: boolean; message: string }> {
+    return restClient.post<{ success: boolean; message: string }>(PATHS.transferDevice(orgId, imei), request);
   },
 };

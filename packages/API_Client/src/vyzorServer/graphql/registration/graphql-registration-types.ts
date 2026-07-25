@@ -1,6 +1,7 @@
 
 
-import type { InboxEntry, Device, TelemetryFrame } from "@/domain/registration";
+import type { InboxEntry, Device } from "@/domain/registration";
+import type { TelemetryFrame } from "@/domain/telemetry";
 
 
 export type RawInboxEntry = {

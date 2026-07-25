@@ -1,4 +1,4 @@
-import { restClient } from "../_shared/rest-client";
+import { restClient, getOrganizationContext } from "../_shared/rest-client";
 import {
   logEntryFromRaw,
   logListResultFromRaw,
@@ -15,20 +15,22 @@ import type {
 } from "@/domain/logs";
 
 const PATHS = {
-  logs: (imei: string) => `/v1/logs/${imei}`,
-  detail: (id: string) => `/v1/logs/detail/${id}`,
-  stats: (imei: string) => `/v1/logs/${imei}/stats`,
+  logs: (imei: string) => `/v1/dashboard/device/${imei}/logs`,
+  detail: (id: string) => `/v1/dashboard/logs/detail/${id}`,
+  stats: (imei: string) => `/v1/dashboard/device/${imei}/logs/stats`,
 } as const;
 
 export interface LogParams {
   eventType?: LogEventType;
   limit?: number;
   cursor?: string;
+  organizationId?: string;
 }
 
 export interface StatsParams {
   startTime?: number;
   endTime?: number;
+  organizationId?: string;
 }
 
 export const logs = {
@@ -38,13 +40,16 @@ export const logs = {
         event_type: params?.eventType,
         limit: params?.limit,
         cursor: params?.cursor,
+        organization_id: params?.organizationId || getOrganizationContext(),
       },
     });
     return logListResultFromRaw(response);
   },
 
-  async get(id: string): Promise<LogEntry> {
-    const response = await restClient.get<RawLogEntry>(PATHS.detail(id));
+  async get(id: string, organizationId?: string): Promise<LogEntry> {
+    const response = await restClient.get<RawLogEntry>(PATHS.detail(id), {
+      params: { organization_id: organizationId || getOrganizationContext() },
+    });
     return logEntryFromRaw(response);
   },
 
@@ -53,6 +58,7 @@ export const logs = {
       params: {
         start_time: params?.startTime,
         end_time: params?.endTime,
+        organization_id: params?.organizationId || getOrganizationContext(),
       },
     });
     return logStatsFromRaw(response);

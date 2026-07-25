@@ -16,6 +16,12 @@ import { HeartbeatManagerImpl } from "./websocket-heartbeat";
 import { ReconnectManagerImpl } from "./websocket-reconnect";
 import { createWSMessage, parseWSMessage, type WSMessage } from "./websocket-messages";
 import { getWebSocketConfig, type WebSocketConfig } from "../config";
+import { signWebSocketConnect, generateNonce, generateTimestamp } from "../crypto";
+
+export interface WSDeviceCredentials {
+  deviceId: string;
+  secret: string;
+}
 
 export interface WSClientConfig {
   url?: string;
@@ -23,9 +29,10 @@ export interface WSClientConfig {
   maxReconnectAttempts?: number;
   heartbeatInterval?: number;
   heartbeatTimeout?: number;
+  deviceCredentials?: WSDeviceCredentials;
 }
 
-const DEFAULT_CONFIG: Required<WSClientConfig> = {
+const DEFAULT_CONFIG: Required<Omit<WSClientConfig, 'deviceCredentials'>> = {
   url: "",
   reconnectInterval: 3000,
   maxReconnectAttempts: 5,
@@ -47,11 +54,14 @@ export interface WebSocketClient {
   onStateChange(handler: (state: string) => void): () => void;
   getState(): string;
   isConnected(): boolean;
+  setCredentials(credentials: WSDeviceCredentials): void;
+  clearCredentials(): void;
 }
 
 export class WebSocketClientImpl implements WebSocketClient {
   private ws: WebSocket | null = null;
-  private config: Required<WSClientConfig>;
+  private config: Required<Omit<WSClientConfig, 'deviceCredentials'>>;
+  private credentials: WSDeviceCredentials | null = null;
   private stateMachine: ConnectionStateMachineImpl;
   private heartbeat: HeartbeatManagerImpl;
   private reconnect: ReconnectManagerImpl;
@@ -66,14 +76,14 @@ export class WebSocketClientImpl implements WebSocketClient {
   constructor(config: WSClientConfig = {}) {
     
     const envConfig = getWebSocketConfig();
-    const mergedConfig: Required<WSClientConfig> = {
+    this.config = {
       url: config.url ?? envConfig.url,
       reconnectInterval: config.reconnectInterval ?? envConfig.reconnectInterval,
       maxReconnectAttempts: config.maxReconnectAttempts ?? envConfig.maxReconnectAttempts,
       heartbeatInterval: config.heartbeatInterval ?? envConfig.heartbeatInterval,
       heartbeatTimeout: config.heartbeatTimeout ?? envConfig.heartbeatTimeout,
     };
-    this.config = mergedConfig;
+    this.credentials = config.deviceCredentials ?? null;
     this.stateMachine = new ConnectionStateMachineImpl();
 
     this.heartbeat = new HeartbeatManagerImpl(
@@ -94,6 +104,14 @@ export class WebSocketClientImpl implements WebSocketClient {
     this.stateMachine.onStateChange((state) => {
       this.stateHandlers.forEach((h) => h(state));
     });
+  }
+
+  setCredentials(credentials: WSDeviceCredentials): void {
+    this.credentials = credentials;
+  }
+
+  clearCredentials(): void {
+    this.credentials = null;
   }
 
   async connect(): Promise<void> {
@@ -166,6 +184,26 @@ export class WebSocketClientImpl implements WebSocketClient {
     return this.stateMachine.state === "OPEN";
   }
 
+  private buildAuthenticatedUrl(): string {
+    let url = this.config.url;
+    
+    if (this.credentials) {
+      const timestamp = generateTimestamp();
+      const nonce = generateNonce();
+      const signature = signWebSocketConnect(
+        this.credentials.deviceId,
+        timestamp,
+        nonce,
+        this.credentials.secret
+      );
+      
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}hmac_timestamp=${encodeURIComponent(timestamp)}&hmac_nonce=${encodeURIComponent(nonce)}&hmac_signature=${encodeURIComponent(signature)}&device_id=${encodeURIComponent(this.credentials.deviceId)}`;
+    }
+    
+    return url;
+  }
+
   private async connectInternal(): Promise<void> {
     if (this.ws?.readyState === WebSocket.OPEN) {
       return;
@@ -176,7 +214,8 @@ export class WebSocketClientImpl implements WebSocketClient {
 
     return new Promise((resolve, reject) => {
       try {
-        this.ws = new WebSocket(this.config.url);
+        const authenticatedUrl = this.buildAuthenticatedUrl();
+        this.ws = new WebSocket(authenticatedUrl);
 
         this.ws.onopen = () => {
           this.stateMachine.transition("OPEN");

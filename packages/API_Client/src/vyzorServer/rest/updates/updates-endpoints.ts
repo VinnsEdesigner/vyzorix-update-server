@@ -1,4 +1,4 @@
-import { restClient } from "../_shared/rest-client";
+import { restClient, getOrganizationContext } from "../_shared/rest-client";
 import {
   versionFromRaw,
   syncStateFromRaw,
@@ -46,20 +46,24 @@ export interface VersionParams {
   status?: "all" | "latest" | "previous";
   page?: number;
   limit?: number;
+  organizationId?: string;
 }
 
 export interface HistoryParams {
   status?: UpdateStatus;
   page?: number;
   limit?: number;
+  organizationId?: string;
 }
 
 export const updates = {
-  async getStatus(): Promise<UpdateStatusResponse> {
+  async getStatus(organizationId?: string): Promise<UpdateStatusResponse> {
     const response = await restClient.get<{
       sync: RawSyncState;
       latest?: RawVersion;
-    }>(PATHS.status);
+    }>(PATHS.status, {
+      params: { organization_id: organizationId || getOrganizationContext() },
+    });
     return {
       sync: syncStateFromRaw(response.sync),
       latest: response.latest ? versionFromRaw(response.latest) : undefined,
@@ -67,50 +71,72 @@ export const updates = {
   },
 
   async getVersions(params?: VersionParams): Promise<VersionListResult> {
-    const response = await restClient.get<RawVersionListResult>(PATHS.versions, { params });
+    const response = await restClient.get<RawVersionListResult>(PATHS.versions, {
+      params: {
+        status: params?.status,
+        page: params?.page,
+        limit: params?.limit,
+        organization_id: params?.organizationId || getOrganizationContext(),
+      },
+    });
     return versionListResultFromRaw(response);
   },
 
-  async getChangelog(version?: string): Promise<ChangelogEntry[]> {
+  async getChangelog(version?: string, organizationId?: string): Promise<ChangelogEntry[]> {
     const response = await restClient.get<{ changelog: { version: string; date: string; type: string; notes: string }[] }>(
       PATHS.changelog,
-      { params: { version } }
+      { params: { version, organization_id: organizationId || getOrganizationContext() } }
     );
     return response.changelog.map(changelogEntryFromRaw);
   },
 
   async getHistory(params?: HistoryParams): Promise<UpdateHistoryResult> {
-    const response = await restClient.get<RawUpdateHistoryResult>(PATHS.history, { params });
+    const response = await restClient.get<RawUpdateHistoryResult>(PATHS.history, {
+      params: {
+        status: params?.status,
+        page: params?.page,
+        limit: params?.limit,
+        organization_id: params?.organizationId || getOrganizationContext(),
+      },
+    });
     return updateHistoryResultFromRaw(response);
   },
 
-  async getPushDetail(pushId: string): Promise<UpdatePush | null> {
-    const response = await restClient.get<RawUpdatePush | null>(PATHS.historyDetail(pushId));
+  async getPushDetail(pushId: string, organizationId?: string): Promise<UpdatePush | null> {
+    const response = await restClient.get<RawUpdatePush | null>(PATHS.historyDetail(pushId), {
+      params: { organization_id: organizationId || getOrganizationContext() },
+    });
     if (!response) return null;
     return updatePushFromRaw(response);
   },
 
-  async pushUpdate(request: PushUpdateRequest): Promise<UpdatePush> {
+  async pushUpdate(request: PushUpdateRequest, organizationId?: string): Promise<UpdatePush> {
     const response = await restClient.post<RawUpdatePush>(PATHS.push, {
       version_id: request.versionId,
       device_ids: request.deviceIds,
       install_type: request.installType,
       scheduled_at: request.scheduledAt?.getTime(),
+    }, {
+      params: { organization_id: organizationId || getOrganizationContext() },
     });
     return updatePushFromRaw(response);
   },
 
-  async cancelPush(pushId: string): Promise<UpdatePush> {
-    const response = await restClient.post<RawUpdatePush>(PATHS.historyCancel(pushId));
+  async cancelPush(pushId: string, organizationId?: string): Promise<UpdatePush> {
+    const response = await restClient.post<RawUpdatePush>(PATHS.historyCancel(pushId), {}, {
+      params: { organization_id: organizationId || getOrganizationContext() },
+    });
     return updatePushFromRaw(response);
   },
 
-  async sync(): Promise<{ status: string; startedAt: Date; versionsFound?: number }> {
+  async sync(organizationId?: string): Promise<{ status: string; startedAt: Date; versionsFound?: number }> {
     const response = await restClient.post<{
       status: string;
       started_at: number;
       versions_found?: number;
-    }>(PATHS.sync);
+    }>(PATHS.sync, {}, {
+      params: { organization_id: organizationId || getOrganizationContext() },
+    });
     return {
       status: response.status,
       startedAt: new Date(response.started_at),
@@ -118,7 +144,9 @@ export const updates = {
     };
   },
 
-  async exportVersions(format: "json" | "csv" = "json"): Promise<Blob> {
-    return restClient.get(`${PATHS.export}?format=${format}`, { responseType: "blob" });
+  async exportVersions(format: "json" | "csv" = "json", organizationId?: string): Promise<Blob> {
+    const orgId = organizationId || getOrganizationContext();
+    const params = orgId ? `?format=${format}&organization_id=${orgId}` : `?format=${format}`;
+    return restClient.get(`${PATHS.export}${params}`, { responseType: "blob" });
   },
 };

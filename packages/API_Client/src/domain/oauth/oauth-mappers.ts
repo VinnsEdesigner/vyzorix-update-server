@@ -3,7 +3,7 @@ import { OAUTH_ERRORS } from "./oauth-entity";
 
 export function parseOAuthCallbackUrl(url: string): OAuthCallbackResult {
     try {
-        const urlObj = new URL(url, "http:
+        const urlObj = new URL(url, "http://localhost");
         const oauth = urlObj.searchParams.get("oauth");
         const isNew = urlObj.searchParams.get("new");
         const provider = urlObj.searchParams.get("provider") as OAuthProvider | null;
@@ -74,10 +74,10 @@ function getHelpUrl(code: OAuthErrorCode, provider?: OAuthProvider): string | un
         case OAUTH_ERRORS.EMAIL_REQUIRED:
         case OAUTH_ERRORS.EMAIL_NOT_VERIFIED:
             if (provider === "google") {
-                return "https:
+                return "https://support.google.com/accounts/answer/162744";
             }
             if (provider === "github") {
-                return "https:
+                return "https://docs.github.com/get-started/signing-up-for-github/signing-up-with-a-new-email-address";
             }
             break;
     }
@@ -115,7 +115,7 @@ export function formatOAuthErrorForDisplay(result: OAuthCallbackResult): {
                 title: "Email Required",
                 description: result.errorMessage || "Your account must have a verified email address to sign up.",
                 actionLabel: provider === "github" ? "Update GitHub Email Settings" : "Update Google Account",
-                actionUrl: result.helpUrl || (provider === "github" ? "https:
+                actionUrl: result.helpUrl || (provider === "github" ? "https://github.com/settings/emails" : "https://myaccount.google.com/email"),
                 showRetry: false,
             };
 
@@ -124,7 +124,7 @@ export function formatOAuthErrorForDisplay(result: OAuthCallbackResult): {
                 title: "Email Not Verified",
                 description: result.errorMessage || "Your email must be verified before signing up.",
                 actionLabel: provider === "github" ? "Resend Verification Email" : "Verify Google Email",
-                actionUrl: result.helpUrl || "https:
+                actionUrl: result.helpUrl || "https://support.google.com/accounts/answer/162744",
                 showRetry: false,
             };
 

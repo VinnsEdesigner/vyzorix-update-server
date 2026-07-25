@@ -53,6 +53,6 @@ export const OAUTH_ENDPOINTS: Record<OAuthProvider, OAuthEndpoints> = {
 
 
 export const OAUTH_EMAIL_HELP: Record<OAuthProvider, string> = {
-    google: "https:
-    github: "https:
+    google: "https://support.google.com/accounts/answer/162744",
+    github: "https://docs.github.com/get-started/signing-up-for-github/signing-up-with-a-new-email-address",
 };

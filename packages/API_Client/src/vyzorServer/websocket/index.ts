@@ -1,4 +1,4 @@
-export { createWebSocketClient, type WSClientConfig, type WebSocketClient } from "./websocket-client";
+export { createWebSocketClient, type WSClientConfig, type WebSocketClient, type WSDeviceCredentials } from "./websocket-client";
 export { ConnectionStateMachineImpl, type ConnectionStateMachine, type ConnectionState } from "./websocket-connection";
 export { HeartbeatManagerImpl, type HeartbeatManager, type HeartbeatConfig } from "./websocket-heartbeat";
 export { ReconnectManagerImpl, type ReconnectManager, type ReconnectConfig } from "./websocket-reconnect";

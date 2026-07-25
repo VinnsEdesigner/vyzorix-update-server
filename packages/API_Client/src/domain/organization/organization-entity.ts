@@ -6,25 +6,25 @@ export interface Organization {
   id: string;
   name: string;
   description: string;
-  created_by: string;
-  max_members: number;
-  member_count: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  createdBy: string;
+  maxMembers: number;
+  memberCount: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface OrganizationMember {
   id: string;
-  organization_id: string;
-  operator_id: string;
+  organizationId: string;
+  operatorId: string;
   role: OrganizationRole;
   status: MemberLifecycle;
-  invited_by?: string;
-  joined_at: string;
-  removed_at?: string;
-  operator_name?: string;
-  operator_email?: string;
+  invitedBy?: string;
+  joinedAt: Date;
+  removedAt?: Date;
+  operatorName?: string;
+  operatorEmail?: string;
 }
 
 export interface CreateOrganizationRequest {

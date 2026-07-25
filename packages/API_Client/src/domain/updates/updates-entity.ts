@@ -1,7 +1,7 @@
 export type ReleaseType = "major" | "minor" | "patch";
 export type UpdateStatus = "pending" | "in_progress" | "completed" | "failed" | "cancelled";
 export type InstallType = "immediate" | "scheduled";
-export type DevicePushStatus = "pending" | "sent" | "acknowledged" | "completed" | "failed";
+export type DevicePushStatus = "pending" | "sent" | "in_progress" | "acknowledged" | "completed" | "failed";
 export type SyncStatus = "idle" | "syncing" | "synced" | "error";
 
 export interface Version {

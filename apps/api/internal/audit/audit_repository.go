@@ -28,9 +28,10 @@ const (
 	ActionCSRFFailure       Action = "csrf_failure"
 	ActionSigningFailure    Action = "signing_failure"
 	ActionRateLimitExceeded Action = "rate_limit_exceeded"
-	ActionAPIClientCreated  Action = "api_client_created"
-	ActionAPIClientRevoked  Action = "api_client_revoked"
-	ActionSigningKeyRotated Action = "signing_key_rotated"
+	ActionAPIClientCreated       Action = "api_client_created"
+	ActionAPIClientRevoked       Action = "api_client_revoked"
+	ActionAPIClientSecretRotated Action = "api_client_secret_rotated"
+	ActionSigningKeyRotated     Action = "signing_key_rotated"
 	ActionAdminAction       Action = "admin_action"
 	// Updates-specific audit actions.
 	ActionUpdatePushed      Action = "update_pushed"

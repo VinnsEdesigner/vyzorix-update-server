@@ -135,6 +135,17 @@ func (p *Presenter) APIClientRevoked(c *gin.Context, operatorID, clientID string
 	}
 }
 
+// APIClientSecretRotated logs API client secret rotation.
+func (p *Presenter) APIClientSecretRotated(c *gin.Context, operatorID, clientID string) {
+	if p.auditLogger != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			p.auditLogger.APIClientSecretRotated(ctx, operatorID, clientID, c.ClientIP())
+		}()
+	}
+}
+
 // AdminAction logs an admin action.
 func (p *Presenter) AdminAction(c *gin.Context, operatorID, action, resourceType, resourceID string, metadata map[string]string) {
 	if p.auditLogger != nil {

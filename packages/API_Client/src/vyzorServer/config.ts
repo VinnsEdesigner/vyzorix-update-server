@@ -67,7 +67,7 @@ export function getClientConfig(): ClientConfig {
 export function getWebSocketConfig(): WebSocketConfig {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const host = window.location.host;
-  const wsUrl = parseStringEnv("VITE_WS_URL", `${protocol}
+  const wsUrl = parseStringEnv("VITE_WS_URL", `${protocol}//${host}/ws`);
   
   return {
     url: wsUrl,

@@ -267,17 +267,19 @@ func (h *ClientCredentialsHandler) RotateSecret(c *gin.Context) {
 		return
 	}
 
-	// Verify ownership.
-	_, err = h.clientService.GetByOperatorID(c.Request.Context(), clientID, operatorID)
+	// Rotate the client secret.
+	newSecret, err := h.clientService.RotateSecret(c.Request.Context(), clientID, operatorID)
 	if err != nil {
 		h.presenter.NotFound(c, "Client not found")
 		return
 	}
 
-	// In a real implementation, this would call a service to regenerate the secret.
-	// For now, we'll just return a success response.
+	// Audit log the secret rotation.
+	h.presenter.APIClientSecretRotated(c, operatorID, clientID)
+
 	h.presenter.OK(c, gin.H{
-		"success": true,
-		"message": "Client secret rotated. The new secret will be provided via secure channel.",
+		"clientId":     clientID,
+		"clientSecret": newSecret,
+		"message":      "Client secret rotated successfully. Store this secret securely - it will not be shown again.",
 	})
 }

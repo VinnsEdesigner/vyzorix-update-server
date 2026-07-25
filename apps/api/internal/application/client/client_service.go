@@ -171,6 +171,32 @@ func (s *Service) RotateKey(ctx context.Context, clientID string) (int, error) {
 	return signingKey.Version, nil
 }
 
+// RotateSecret rotates the client secret and returns the new secret.
+// The old secret is invalidated immediately.
+func (s *Service) RotateSecret(ctx context.Context, clientID, operatorID string) (string, error) {
+	// Verify ownership first.
+	c, err := s.clientRepo.FindByID(ctx, clientID)
+	if err != nil {
+		if err == client.ErrNotFound {
+			return "", application.ErrClientNotFound
+		}
+		return "", err
+	}
+
+	// Verify the client belongs to the operator.
+	if c.OperatorID != operatorID {
+		return "", application.ErrClientNotFound
+	}
+
+	// Rotate the secret.
+	_, newSecret, err := s.clientRepo.RotateClientSecret(ctx, clientID)
+	if err != nil {
+		return "", err
+	}
+
+	return newSecret, nil
+}
+
 // Deactivate deactivates a client (revokes credentials).
 func (s *Service) Deactivate(ctx context.Context, clientID string) error {
 	c, err := s.clientRepo.FindByID(ctx, clientID)

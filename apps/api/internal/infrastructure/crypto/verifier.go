@@ -218,3 +218,53 @@ func (v *Verifier) Verify(method, path, deviceID string, body []byte, h http.Hea
 
 	return nil
 }
+
+// VerifyWebSocketConnect verifies a WebSocket connection HMAC from query parameters.
+// This is used because WebSocket upgrade requests cannot set custom headers.
+// Query params expected: hmac_timestamp, hmac_nonce, hmac_signature
+func (v *Verifier) VerifyWebSocketConnect(r *http.Request, deviceID string) error {
+	ts := r.URL.Query().Get("hmac_timestamp")
+	nonce := r.URL.Query().Get("hmac_nonce")
+	sig := r.URL.Query().Get("hmac_signature")
+
+	if ts == "" || nonce == "" || sig == "" {
+		return ErrMissingHeaders
+	}
+
+	// Timestamp validation (in seconds for WebSocket)
+	tsSec, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil {
+		return ErrBadTimestamp
+	}
+
+	now := time.Now()
+	t := time.Unix(tsSec, 0)
+
+	// Use 5 minute window for WebSocket connections (larger than HTTP due to clock drift)
+	webSocketWindow := 5 * time.Minute
+	if t.Before(now.Add(-webSocketWindow)) || t.After(now.Add(webSocketWindow)) {
+		return &TimestampExpiredError{Window: webSocketWindow}
+	}
+
+	// Nonce check for replay protection
+	if v.Nonces != nil {
+		nonceKey := deviceID + ":" + nonce
+		if !v.Nonces.Use(nonceKey, now) {
+			return ErrReplayedNonce
+		}
+	}
+
+	// Get device secret
+	secret, ok := v.Secret(deviceID)
+	if !ok || secret == "" {
+		return ErrUnknownDevice
+	}
+
+	// Validate HMAC using CommandSigner.ValidateConnectHMAC
+	signer := &CommandSigner{}
+	if !signer.ValidateConnectHMAC(deviceID, ts, nonce, sig, secret) {
+		return ErrBadSignature
+	}
+
+	return nil
+}

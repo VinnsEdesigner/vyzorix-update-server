@@ -35,26 +35,35 @@ export function mapOrganization(raw: OrganizationApiResponse): Organization {
     id: raw.id,
     name: raw.name,
     description: raw.description,
-    created_by: raw.created_by,
-    max_members: raw.max_members,
-    member_count: raw.member_count,
-    is_active: raw.is_active,
-    created_at: raw.created_at,
-    updated_at: raw.updated_at,
+    createdBy: raw.created_by,
+    maxMembers: raw.max_members,
+    memberCount: raw.member_count,
+    isActive: raw.is_active,
+    createdAt: new Date(raw.created_at),
+    updatedAt: new Date(raw.updated_at),
   };
 }
 
 export function mapMember(raw: MemberApiResponse): OrganizationMember {
   return {
     id: raw.id,
-    organization_id: raw.organization_id,
-    operator_id: raw.operator_id,
+    organizationId: raw.organization_id,
+    operatorId: raw.operator_id,
     role: raw.role as OrganizationRole,
     status: raw.status as MemberLifecycle,
-    invited_by: raw.invited_by,
-    joined_at: raw.joined_at,
-    removed_at: raw.removed_at,
-    operator_name: raw.operator_name,
-    operator_email: raw.operator_email,
+    invitedBy: raw.invited_by,
+    joinedAt: new Date(raw.joined_at),
+    removedAt: raw.removed_at ? new Date(raw.removed_at) : undefined,
+    operatorName: raw.operator_name,
+    operatorEmail: raw.operator_email,
+  };
+}
+
+export function organizationToRaw(org: Partial<Organization>): Partial<OrganizationApiResponse> {
+  return {
+    name: org.name,
+    description: org.description,
+    max_members: org.maxMembers,
+    is_active: org.isActive,
   };
 }

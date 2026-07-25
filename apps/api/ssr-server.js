@@ -1,5 +1,3 @@
-// @vyzorix/ssr-server - Node.js SSR Server for TanStack Start
-// Hardened for production: health checks, error recovery, graceful shutdown.
 import { createServer } from "node:http";
 import { createServer as createViteServer } from "vite";
 import path from "node:path";
@@ -12,7 +10,6 @@ const isProduction = process.env.NODE_ENV === "production";
 const mode = process.env.SSR_MODE || (isProduction ? "production" : "development");
 const WEB_APP_DIR = path.join(__dirname, "../web");
 
-// Health check state.
 let isReady = false;
 let startupTime = 0;
 let serverInstance = null;
@@ -48,7 +45,6 @@ const log = {
   },
 };
 
-// Pure ASCII VYZORIX banner.
 function printWelcomeBanner(serverMode) {
   const lines = [
     pc.magenta(pc.bold("+-------------------------------------------------------------+")),
@@ -68,7 +64,6 @@ function printWelcomeBanner(serverMode) {
   log.divider();
 }
 
-// Health check handler - responds quickly for load balancer checks.
 function healthHandler(req, res) {
   if (req.url === "/health" || req.url === "/healthz") {
     const status = isReady ? 200 : 503;
@@ -81,21 +76,17 @@ function healthHandler(req, res) {
         timestamp: new Date().toISOString(),
       }));
     } catch (err) {
-      // Ignore health check errors during shutdown.
-    }
+          }
     return true;
   }
   return false;
 }
 
-// Create a handler that wraps the fetch handler with error recovery.
 function createProxiedHandler(fetchHandler) {
   return (req, res) => {
-    // Handle health checks immediately.
-    if (healthHandler(req, res)) return;
+        if (healthHandler(req, res)) return;
 
-    const url = "http://localhost:" + PORT + req.url;
-    const headers = new Headers();
+    const url = "http:    const headers = new Headers();
     for (const [key, value] of Object.entries(req.headers)) {
       if (typeof value === "string") headers.set(key, value);
       else if (Array.isArray(value)) headers.set(key, value.join(", "));
@@ -117,8 +108,7 @@ function createProxiedHandler(fetchHandler) {
         res.setHeader("Content-Type", "text/html");
         res.end("<html><body><h1>SSR Error</h1><p>Please try refreshing the page.</p></body></html>");
       } catch (e) {
-        // Ignore errors during shutdown.
-      }
+              }
     };
 
     fetchHandler(request, process.env, {})
@@ -130,15 +120,13 @@ function createProxiedHandler(fetchHandler) {
           try {
             res.setHeader(key, value);
           } catch (e) {
-            // Ignore header setting errors.
-          }
+                      }
         });
         response.text().then((body) => {
           try {
             res.end(body);
           } catch (e) {
-            // Ignore errors during shutdown.
-          }
+                      }
         }).catch(handleError);
       })
       .catch(handleError);
@@ -148,21 +136,14 @@ function createProxiedHandler(fetchHandler) {
 async function startDevServer() {
   printWelcomeBanner("development");
   log.info("Initializing", "Vite Dev Server with SSR");
-  log.url("Server URL", "http://localhost:" + PORT);
-  log.kv("Health Check", "http://localhost:" + PORT + "/health");
-  log.divider();
+  log.url("Server URL", "http:  log.kv("Health Check", "http:  log.divider();
 
   const vite = await createViteServer({
     root: WEB_APP_DIR,
     server: {
       port: PORT,
       proxy: {
-        "/v1": "http://localhost:3000",
-        "/api": "http://localhost:3000",
-        "/health": "http://localhost:3000",
-        "/healthz": "http://localhost:3000",
-        "/bin": "http://localhost:3000",
-      },
+        "/v1": "http:        "/api": "http:        "/health": "http:        "/healthz": "http:        "/bin": "http:      },
     },
     ssr: { resolve: { conditions: ["workerd", "worker", "browser"] } },
     logLevel: "info",
@@ -170,13 +151,11 @@ async function startDevServer() {
 
   const server = createServer(vite.middlewares);
 
-  // Mark ready only after server is actually listening.
-  serverInstance = server.listen(PORT, () => {
+    serverInstance = server.listen(PORT, () => {
     startupTime = Date.now();
     isReady = true;
     log.divider();
-    log.success("SSR Dev Server ready on http://localhost:" + PORT);
-    log.kv("Mode", "Development (Vite SSR + HMR)");
+    log.success("SSR Dev Server ready on http:    log.kv("Mode", "Development (Vite SSR + HMR)");
     log.kv("Status", "Healthy");
     console.log("");
     console.log("  " + pc.dim("Press") + " " + pc.bold("Ctrl+C") + " " + pc.dim("to stop"));
@@ -198,8 +177,7 @@ async function startProdServer() {
   try {
     log.kv("SSR Entry", distServerPath);
 
-    // Dynamically import the SSR server entry.
-    const module = await import(distServerPath);
+        const module = await import(distServerPath);
     fetchHandler = module.default?.fetch || module.fetch;
 
     if (!fetchHandler) {
@@ -215,24 +193,20 @@ async function startProdServer() {
     throw err;
   }
 
-  // Create HTTP server with health check support.
-  const server = createServer(createProxiedHandler(fetchHandler));
+    const server = createServer(createProxiedHandler(fetchHandler));
 
-  // Mark ready only after server is actually listening.
-  serverInstance = server.listen(PORT, () => {
+    serverInstance = server.listen(PORT, () => {
     startupTime = Date.now();
     isReady = true;
     log.divider();
-    log.success("SSR Server ready on http://localhost:" + PORT);
-    log.kv("Mode", "Production (H3/Nitro)");
+    log.success("SSR Server ready on http:    log.kv("Mode", "Production (H3/Nitro)");
     log.kv("Status", "Healthy");
     console.log("");
     console.log("  " + pc.dim("Press") + " " + pc.bold("Ctrl+C") + " " + pc.dim("to stop"));
     console.log("");
   });
 
-  // Handle server errors gracefully.
-  serverInstance.on("error", (err) => {
+    serverInstance.on("error", (err) => {
     log.error("Server error: " + err.message);
   });
 
@@ -259,8 +233,7 @@ async function main() {
         process.exit(0);
       }
 
-      // Force exit after 5 seconds.
-      setTimeout(() => {
+            setTimeout(() => {
         log.warn("Forced exit after timeout");
         process.exit(1);
       }, 5000);
@@ -269,14 +242,12 @@ async function main() {
     process.on("SIGINT", () => shutdown("SIGINT"));
     process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-    // Handle uncaught errors - don't exit, try to keep running.
-    process.on("uncaughtException", (err) => {
+        process.on("uncaughtException", (err) => {
       log.error("Uncaught exception: " + err.message);
       console.error(err.stack);
     });
 
-    // Handle unhandled rejections - don't exit, try to keep running.
-    process.on("unhandledRejection", (reason, promise) => {
+        process.on("unhandledRejection", (reason, promise) => {
       log.error("Unhandled rejection at: " + promise + ", reason: " + reason);
     });
 

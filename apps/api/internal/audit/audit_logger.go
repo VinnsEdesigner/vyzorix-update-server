@@ -333,6 +333,18 @@ func (l *Logger) APIClientRevoked(ctx context.Context, operatorID, clientID, ipA
 	})
 }
 
+// APIClientSecretRotated logs an API client secret rotation event.
+func (l *Logger) APIClientSecretRotated(ctx context.Context, operatorID, clientID, ipAddress string) {
+	l.LogEvent(ctx, &Entry{
+		OperatorID:   operatorID,
+		Action:       ActionAPIClientSecretRotated,
+		ResourceType: "api_client",
+		ResourceID:   clientID,
+		IPAddress:    ipAddress,
+		Result:       ResultSuccess,
+	})
+}
+
 // SigningKeyRotated logs a signing key rotation event.
 func (l *Logger) SigningKeyRotated(ctx context.Context, operatorID, clientID, ipAddress string) {
 	l.LogEvent(ctx, &Entry{

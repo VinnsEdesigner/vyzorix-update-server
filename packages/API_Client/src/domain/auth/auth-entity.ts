@@ -1,11 +1,21 @@
+
 import type { Thresholds, ClientSettings } from "../settings/settings-entity";
+import type { OrganizationRole } from "../organization/organization-entity";
 
 export type OperatorRole = "super_admin" | "admin" | "operator" | "viewer";
 
 export interface OrganizationInfo {
   id: string;
   name: string;
-  role: string;
+  role: OrganizationRole;
+}
+
+export interface OrganizationMembership {
+  id: string;
+  organization_id: string;
+  organization_name: string;
+  role: OrganizationRole;
+  joined_at: string;
 }
 
 export interface Operator {
@@ -16,13 +26,9 @@ export interface Operator {
   email_verified: boolean;
   needs_organization: boolean;
   organizations: OrganizationInfo[];
+  memberships: OrganizationMembership[];
   last_organization_id?: string;
   selected_organization?: OrganizationInfo;
-}
-
-export interface MeResponse extends Operator {
-  thresholds?: Thresholds;
-  client?: ClientSettings;
 }
 
 export interface AuthTokens {
@@ -38,6 +44,10 @@ export interface LoginResponse {
   name: string;
   role: OperatorRole;
   mfaEnabled: boolean;
+  selectedOrganization?: OrganizationInfo;
+  lastOrganizationId?: string;
+  organizations: OrganizationInfo[];
+  needsOrganization: boolean;
 }
 
 export interface LoginMFARequiredResponse {
@@ -57,6 +67,7 @@ export interface LoginWithTokensResponse {
   session_id: string;
   needs_organization: boolean;
   organizations: OrganizationInfo[];
+  memberships: OrganizationMembership[];
   last_organization_id?: string;
   selected_organization?: OrganizationInfo;
 }
@@ -104,11 +115,22 @@ export interface MFAStatusResponse {
 
 export interface MFAEnrollResponse {
   secret: string;
-  qrCodeUrl: string;
+  uri: string;
 }
 
 export interface MFAVerifyResponse {
   success: boolean;
+  sessionId?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
+  operator?: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    mfaEnabled: boolean;
+  };
 }
 
 export interface MFAEnableResponse {

@@ -1,5 +1,7 @@
 export * from "./_shared";
 export * from "./organization";
+export * from "./membership";
+export * from "./invitation";
 export * from "./registration";
 export * from "./device";
 export * from "./commands";

@@ -1,4 +1,4 @@
-import { restClient } from "../_shared/rest-client";
+import { restClient, getOrganizationContext } from "../_shared/rest-client";
 import {
   deviceInspectionFromRaw,
   timelineResultFromRaw,
@@ -17,8 +17,10 @@ const PATHS = {
 } as const;
 
 export const diagnostics = {
-  async inspectDevice(imei: string): Promise<DeviceInspection> {
-    const response = await restClient.get<RawDeviceInspection>(PATHS.inspect(imei));
+  async inspectDevice(imei: string, organizationId?: string): Promise<DeviceInspection> {
+    const response = await restClient.get<RawDeviceInspection>(PATHS.inspect(imei), {
+      params: { organization_id: organizationId || getOrganizationContext() },
+    });
     return deviceInspectionFromRaw(response);
   },
 
@@ -28,6 +30,7 @@ export const diagnostics = {
     endTime?: number;
     cursor?: string;
     limit?: number;
+    organizationId?: string;
   }): Promise<TimelineResult> {
     const response = await restClient.get<RawTimelineResult>(PATHS.timeline(imei), {
       params: {
@@ -36,6 +39,7 @@ export const diagnostics = {
         end_time: params?.endTime,
         cursor: params?.cursor,
         limit: params?.limit,
+        organization_id: params?.organizationId || getOrganizationContext(),
       },
     });
     return timelineResultFromRaw(response);

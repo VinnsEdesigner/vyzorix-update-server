@@ -170,7 +170,7 @@ export function validateWebhookUrl(url: string): string | null {
   }
   
   
-  if (url.startsWith("http:
+  if (url.startsWith("http://")) {
     return "Webhook URL should use HTTPS for security";
   }
   

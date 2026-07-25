@@ -1,6 +1,6 @@
 
 
-import { restClient } from "../_shared/rest-client";
+import { restClient, getCSRFToken, fetchAndSetCSRFToken, clearAuthContext, setAuthToken, setRefreshToken } from "../_shared/rest-client";
 import {
   loginRequestToRaw,
   registerRequestToRaw,
@@ -75,9 +75,11 @@ const AUTH_PATHS = {
   sessionsRevokeAll: "/v1/auth/sessions/revoke-all",
 } as const;
 
-
-
-
+async function ensureCSRFToken(): Promise<void> {
+  if (!getCSRFToken()) {
+    await fetchAndSetCSRFToken();
+  }
+}
 
 interface LoginSuccess {
   success: true;
@@ -107,11 +109,15 @@ interface LoginWithTokensMFARequired {
 
 export type LoginWithTokensResult = LoginWithTokensSuccess | LoginWithTokensMFARequired;
 
+export async function fetchCSRFToken(): Promise<string> {
+  return fetchAndSetCSRFToken();
+}
 
 export async function login(credentials: {
   email: string;
   password: string;
 }): Promise<LoginResult> {
+  await ensureCSRFToken();
   const raw = await restClient.post<RawLoginResponse | RawLoginMFARequiredResponse>(
     AUTH_PATHS.login,
     loginRequestToRaw(credentials)
@@ -129,6 +135,7 @@ export async function loginWithTokens(credentials: {
   email: string;
   password: string;
 }): Promise<LoginWithTokensResult> {
+  await ensureCSRFToken();
   const raw = await restClient.post<RawLoginWithTokensResponse | RawLoginWithTokensMFARequiredResponse>(
     AUTH_PATHS.loginTokens,
     loginRequestToRaw(credentials)
@@ -145,7 +152,10 @@ export async function loginWithTokens(credentials: {
     };
   }
 
-  return { success: true, data: loginWithTokensResponseFromRaw(raw) };
+  const result = loginWithTokensResponseFromRaw(raw);
+  setAuthToken(result.access_token);
+  setRefreshToken(result.refresh_token);
+  return { success: true, data: result };
 }
 
 
@@ -154,6 +164,7 @@ export async function register(credentials: {
   password: string;
   name: string;
 }): Promise<RegisterResponse> {
+  await ensureCSRFToken();
   const raw = await restClient.post<{
     operator_id: string;
     email: string;
@@ -166,6 +177,7 @@ export async function register(credentials: {
 export async function forgotPassword(
   email: string
 ): Promise<ForgotPasswordResponse> {
+  await ensureCSRFToken();
   return restClient.post<ForgotPasswordResponse>(
     AUTH_PATHS.forgotPassword,
     forgotPasswordRequestToRaw(email)
@@ -177,6 +189,7 @@ export async function resetPassword(
   token: string,
   newPassword: string
 ): Promise<ResetPasswordResponse> {
+  await ensureCSRFToken();
   return restClient.post<ResetPasswordResponse>(
     AUTH_PATHS.resetPassword,
     resetPasswordRequestToRaw(token, newPassword)
@@ -187,6 +200,7 @@ export async function resetPassword(
 export async function resendPasswordReset(
   email: string
 ): Promise<{ success: boolean; error?: string; retryAfter?: number; lockedUntil?: number }> {
+  await ensureCSRFToken();
   return restClient.post<{ success: boolean; error?: string; retryAfter?: number; lockedUntil?: number }>(
     AUTH_PATHS.resendPasswordReset,
     forgotPasswordRequestToRaw(email)
@@ -195,6 +209,7 @@ export async function resendPasswordReset(
 
 
 export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
+  await ensureCSRFToken();
   return restClient.post<VerifyEmailResponse>(
     AUTH_PATHS.verifyEmail,
     verifyEmailRequestToRaw(token)
@@ -205,6 +220,7 @@ export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
 export async function resendVerification(
   email: string
 ): Promise<{ success: boolean }> {
+  await ensureCSRFToken();
   return restClient.post<{ success: boolean }>(
     AUTH_PATHS.resendVerification,
     forgotPasswordRequestToRaw(email)
@@ -217,7 +233,9 @@ export async function resendVerification(
 
 
 export async function logout(): Promise<{ success: boolean }> {
-  return restClient.post<{ success: boolean }>(AUTH_PATHS.logout);
+  const result = await restClient.post<{ success: boolean }>(AUTH_PATHS.logout);
+  clearAuthContext();
+  return result;
 }
 
 
@@ -321,7 +339,12 @@ export async function verifyMFA(
     AUTH_PATHS.mfa.verify,
     mfaVerifyRequestToRaw(operatorId, code)
   );
-  return mfaVerifyResponseFromRaw(raw);
+  const result = mfaVerifyResponseFromRaw(raw);
+  if (result.success && result.accessToken && result.refreshToken) {
+    setAuthToken(result.accessToken);
+    setRefreshToken(result.refreshToken);
+  }
+  return result;
 }
 
 
