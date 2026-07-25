@@ -116,33 +116,36 @@ export interface Invitation {
 
 export interface OrganizationListResponse {
   organizations: {
-    nodes: Organization[];
-    totalCount: number;
-    pageInfo: {
-      hasNextPage: boolean;
-      hasPreviousPage: boolean;
+    items: Organization[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
     };
   };
 }
 
 export interface MemberListResponse {
   organizationMembers: {
-    nodes: Membership[];
-    totalCount: number;
-    pageInfo: {
-      hasNextPage: boolean;
-      hasPreviousPage: boolean;
+    items: Membership[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
     };
   };
 }
 
 export interface InvitationListResponse {
   organizationInvitations: {
-    nodes: Invitation[];
-    totalCount: number;
-    pageInfo: {
-      hasNextPage: boolean;
-      hasPreviousPage: boolean;
+    items: Invitation[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
     };
   };
 }
