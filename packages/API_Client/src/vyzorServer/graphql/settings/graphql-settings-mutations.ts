@@ -1,118 +1,119 @@
 import { graphqlClient } from '../_shared/graphql-client';
 
-export interface ClientSettingsInput {
-  theme?: string;
-  language?: string;
-  timezone?: string;
-}
-
 export interface ThresholdInput {
-  temp_min?: number;
-  temp_max?: number;
-  battery_min?: number;
-  battery_max?: number;
-  speed_max?: number;
-  distance_max?: number;
+  riskWarn?: number;
+  riskCrit?: number;
+  thermalWarn?: number;
+  thermalCrit?: number;
+  bufferWarn?: number;
+  bufferCrit?: number;
 }
 
-export interface NotificationInput {
-  enabled?: boolean;
-  email_enabled?: boolean;
-  push_enabled?: boolean;
-  webhook_enabled?: boolean;
-  webhook_url?: string;
+export interface DeviceSettingsInput {
+  customName?: string;
+  location?: string;
+  thresholds?: ThresholdInput;
 }
 
-export const UPDATE_SETTINGS = `
-  mutation UpdateSettings($input: ClientSettingsInput) {
-    updateMySettings(input: $input) {
-      operator {
-        id
-        email
-        name
-      }
-      client {
-        theme
-        language
-        timezone
-      }
-    }
-  }
-`;
-
-export const UPDATE_THRESHOLDS = `
-  mutation UpdateThresholds($organizationId: ID!, $input: ThresholdInput) {
-    updateOrganizationThresholds(organizationId: $organizationId, input: $input) {
-      thresholds {
-        temp_min
-        temp_max
-        battery_min
-        battery_max
-        speed_max
-        distance_max
-      }
-    }
-  }
-`;
+export interface OrganizationSettingsInput {
+  timezone?: string;
+  dateFormat?: string;
+  alertCooldownMinutes?: number;
+  defaultThresholds?: ThresholdInput;
+}
 
 export const UPDATE_NOTIFICATIONS = `
-  mutation UpdateNotifications($input: NotificationInput) {
+  mutation UpdateNotifications($input: UpdateNotificationsInput!) {
     updateMyNotifications(input: $input) {
       enabled
+      channels
       email {
-        enabled
+        thresholdBreach
+        deviceOffline
+        deviceOnline
+        updateAvailable
+        commandFailed
+        registrationRequest
       }
       push {
-        enabled
+        thresholdBreach
+        deviceOffline
+        deviceOnline
+        updateAvailable
+        commandFailed
+        registrationRequest
       }
       webhook {
         enabled
         url
+        types
       }
     }
   }
 `;
 
 export const UPDATE_DEVICE_SETTINGS = `
-  mutation UpdateDeviceSettings($organizationId: ID!, $deviceImei: String!, $input: ThresholdInput) {
+  mutation UpdateDeviceSettings($organizationId: ID!, $deviceImei: String!, $input: UpdateDeviceSettingsInput!) {
     updateDeviceSettings(organizationId: $organizationId, deviceImei: $deviceImei, input: $input) {
-      device_id
-      effective_thresholds {
-        temp_min
-        temp_max
-        battery_min
-        battery_max
-        speed_max
-        distance_max
+      deviceImei
+      customName
+      location
+      thresholds {
+        riskWarn
+        riskCrit
+        thermalWarn
+        thermalCrit
+        bufferWarn
+        bufferCrit
+      }
+      effectiveThresholds {
+        riskWarn
+        riskCrit
+        thermalWarn
+        thermalCrit
+        bufferWarn
+        bufferCrit
       }
     }
   }
 `;
 
-export async function mutateUpdateSettings(input: ClientSettingsInput) {
-  return graphqlClient.getClient().mutate({
-    mutation: UPDATE_SETTINGS,
-    variables: { input },
-  });
-}
+export const UPDATE_ORGANIZATION_SETTINGS = `
+  mutation UpdateOrganizationSettings($organizationId: ID!, $input: UpdateOrganizationSettingsInput!) {
+    updateOrganizationSettings(organizationId: $organizationId, input: $input) {
+      organizationId
+      timezone
+      dateFormat
+      alertCooldownMinutes
+      defaultThresholds {
+        riskWarn
+        riskCrit
+        thermalWarn
+        thermalCrit
+        bufferWarn
+        bufferCrit
+      }
+    }
+  }
+`;
 
-export async function mutateUpdateThresholds(organizationId: string, input: ThresholdInput) {
-  return graphqlClient.getClient().mutate({
-    mutation: UPDATE_THRESHOLDS,
-    variables: { organizationId, input },
-  });
-}
-
-export async function mutateUpdateNotifications(input: NotificationInput) {
+export async function mutateUpdateNotifications(input: any) {
   return graphqlClient.getClient().mutate({
     mutation: UPDATE_NOTIFICATIONS,
     variables: { input },
   });
 }
 
-export async function mutateUpdateDeviceSettings(params: { organizationId: string; deviceImei: string; input: ThresholdInput }) {
+export async function mutateUpdateDeviceSettings(params: { organizationId: string; deviceImei: string; input: DeviceSettingsInput }) {
   return graphqlClient.getClient().mutate({
     mutation: UPDATE_DEVICE_SETTINGS,
+    variables: params,
+  });
+}
+
+export async function mutateUpdateOrganizationSettings(params: { organizationId: string; input: OrganizationSettingsInput }) {
+  return graphqlClient.getClient().mutate({
+    mutation: UPDATE_ORGANIZATION_SETTINGS,
     variables: params,
   });
 }

@@ -1,34 +1,50 @@
-import { gql } from '@apollo/client';
 import { graphqlClient } from '../_shared/graphql-client';
 
-export const REQUEST_UPDATE = gql`
-  mutation RequestUpdate($organizationId: ID!, $deviceId: ID!, $version: String!) {
-    requestUpdate(organizationId: $organizationId, deviceId: $deviceId, version: $version) {
+export const PUSH_UPDATE = `
+  mutation PushUpdate($organizationId: ID!, $version: String!, $deviceIds: [ID!]!, $installType: String!, $scheduledAt: Int) {
+    pushUpdate(organizationId: $organizationId, version: $version, deviceIds: $deviceIds, installType: $installType, scheduledAt: $scheduledAt) {
+      success
+      message
+      updateId
+    }
+  }
+`;
+
+export const CANCEL_UPDATE = `
+  mutation CancelUpdate($organizationId: ID!, $id: ID!) {
+    cancelUpdate(organizationId: $organizationId, id: $id) {
       success
       message
     }
   }
 `;
 
-export const APPLY_UPDATE = gql`
-  mutation ApplyUpdate($organizationId: ID!, $deviceId: ID!, $version: String!) {
-    applyUpdate(organizationId: $organizationId, deviceId: $deviceId, version: $version) {
+export const SYNC_UPDATES = `
+  mutation SyncUpdates {
+    syncUpdates {
       success
       message
+      syncedCount
     }
   }
 `;
 
-export async function mutateRequestUpdate(params: { organizationId: string; deviceId: string; version: string }) {
+export async function mutatePushUpdate(params: { organizationId: string; version: string; deviceIds: string[]; installType: string; scheduledAt?: number }) {
   return graphqlClient.getClient().mutate({
-    mutation: REQUEST_UPDATE,
+    mutation: PUSH_UPDATE,
     variables: params,
   });
 }
 
-export async function mutateApplyUpdate(params: { organizationId: string; deviceId: string; version: string }) {
+export async function mutateCancelUpdate(params: { organizationId: string; id: string }) {
   return graphqlClient.getClient().mutate({
-    mutation: APPLY_UPDATE,
+    mutation: CANCEL_UPDATE,
     variables: params,
+  });
+}
+
+export async function mutateSyncUpdates() {
+  return graphqlClient.getClient().mutate({
+    mutation: SYNC_UPDATES,
   });
 }
