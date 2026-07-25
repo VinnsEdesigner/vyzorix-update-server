@@ -28,11 +28,13 @@ export interface RawDevice {
 export interface RawDeviceListItem {
   id: string;
   imei: string;
-  deviceName?: string;
+  organization_id?: string;
+  device_name?: string;
   model?: string;
   manufacturer?: string;
   status: string;
-  lastSeen?: number;
+  last_seen?: number;
+  registered_at?: number;
 }
 
 export interface RawDeviceStats {
@@ -83,11 +85,12 @@ export function deviceListItemFromRaw(raw: RawDeviceListItem): DeviceListItem {
   return {
     id: raw.id,
     imei: raw.imei,
-    device_name: raw.deviceName,
+    organization_id: raw.organization_id,
+    device_name: raw.device_name,
     model: raw.model,
     manufacturer: raw.manufacturer,
     status: (raw.status as DeviceStatus) ?? "offline",
-    last_seen: raw.lastSeen ? new Date(raw.lastSeen).toISOString() : undefined,
+    last_seen: raw.last_seen ? new Date(raw.last_seen).toISOString() : undefined,
   };
 }
 

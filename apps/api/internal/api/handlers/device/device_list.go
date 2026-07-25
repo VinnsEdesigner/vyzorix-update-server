@@ -78,11 +78,16 @@ func (h *ListHandler) Handle(c *gin.Context) {
 
 	// Build response with online status from hub.
 	type DeviceRow struct {
-		DeviceID    string `json:"deviceId"`
-		AppVersion  string `json:"appVersion"`
-		DeviceClass string `json:"deviceClass"`
-		LastSeen    int64  `json:"lastSeen"`
-		Online      bool   `json:"online"`
+		ID             string `json:"id"`
+		Imei           string `json:"imei"`
+		OrganizationID string `json:"organization_id"`
+		DeviceName     string `json:"device_name"`
+		Model          string `json:"model"`
+		Manufacturer   string `json:"manufacturer"`
+		AppVersion     string `json:"app_version"`
+		Status         string `json:"status"`
+		LastSeen       int64  `json:"last_seen"`
+		RegisteredAt   int64  `json:"registered_at"`
 	}
 
 	devices := make([]DeviceRow, 0, len(response.Devices))
@@ -96,12 +101,25 @@ func (h *ListHandler) Handle(c *gin.Context) {
 			continue
 		}
 
+		// Determine status string based on online state and lifecycle.
+		status := "offline"
+		if d.DeregisteredAt != nil {
+			status = "deregistered"
+		} else if isOnline {
+			status = "online"
+		}
+
 		devices = append(devices, DeviceRow{
-			DeviceID:    d.ID,
-			Online:      isOnline,
-			LastSeen:    d.LastSeen,
-			AppVersion:  d.AppVersion,
-			DeviceClass: d.Model, // Use Model as DeviceClass.
+			ID:             d.ID,
+			Imei:           d.ID, // ID field is the device IMEI
+			OrganizationID: d.OrganizationID,
+			DeviceName:     d.DeviceName,
+			Model:          d.Model,
+			Manufacturer:   d.Manufacturer,
+			AppVersion:     d.AppVersion,
+			Status:         status,
+			LastSeen:       d.LastSeen,
+			RegisteredAt:   d.RegisteredAt,
 		})
 
 		// Stop if we have enough results.
@@ -147,27 +165,42 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 	}
 
 	type DeviceRow struct {
-		ID           string `json:"id"`
-		DeviceID     string `json:"deviceId"`
-		AppVersion   string `json:"appVersion"`
-		DeviceClass  string `json:"deviceClass"`
-		Online       bool   `json:"online"`
-		LastSeen     int64  `json:"lastSeen"`
-		RegisteredAt int64  `json:"registeredAt"`
+		ID             string `json:"id"`
+		Imei           string `json:"imei"`
+		OrganizationID string `json:"organization_id"`
+		DeviceName     string `json:"device_name"`
+		Model          string `json:"model"`
+		Manufacturer   string `json:"manufacturer"`
+		AppVersion     string `json:"app_version"`
+		Status         string `json:"status"`
+		LastSeen       int64  `json:"last_seen"`
+		RegisteredAt   int64  `json:"registered_at"`
 	}
 
 	result := make([]DeviceRow, len(devices))
 
 	for i, d := range devices {
 		isOnline := h.isDeviceOnline(d.ID) || d.Online
+
+		// Determine status string based on online state and lifecycle.
+		status := "offline"
+		if d.DeregisteredAt != nil {
+			status = "deregistered"
+		} else if isOnline {
+			status = "online"
+		}
+
 		result[i] = DeviceRow{
-			ID:           d.ID,
-			DeviceID:     d.ID,
-			AppVersion:   d.AppVersion,
-			DeviceClass:  d.DeviceClass,
-			Online:       isOnline,
-			LastSeen:     d.LastSeen,
-			RegisteredAt: d.RegisteredAt,
+			ID:             d.ID,
+			Imei:           d.ID,
+			OrganizationID: d.OrganizationID,
+			DeviceName:     d.DeviceName,
+			Model:          d.Model,
+			Manufacturer:   d.Manufacturer,
+			AppVersion:     d.AppVersion,
+			Status:         status,
+			LastSeen:       d.LastSeen,
+			RegisteredAt:   d.RegisteredAt,
 		}
 	}
 
@@ -199,15 +232,24 @@ func (h *ListHandler) GetDevice(c *gin.Context) {
 
 	isOnline := h.isDeviceOnline(d.ID) || d.Online
 
+	// Determine status string based on online state and lifecycle.
+	status := "offline"
+	if d.DeregisteredAt != nil {
+		status = "deregistered"
+	} else if isOnline {
+		status = "online"
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"id":                  d.ID,
-		"device_id":           d.ID,
-		"firebase_install_id": d.FirebaseInstallID,
-		"app_version":         d.AppVersion,
-		"device_class":        d.DeviceClass,
-		"online":              isOnline,
-		"last_seen":           d.LastSeen,
-		"registered_at":       d.RegisteredAt,
+		"id":             d.ID,
+		"imei":           d.ID,
+		"device_name":    d.DeviceName,
+		"model":          d.Model,
+		"manufacturer":   d.Manufacturer,
+		"app_version":    d.AppVersion,
+		"status":         status,
+		"last_seen":      d.LastSeen,
+		"registered_at":  d.RegisteredAt,
 	})
 }
 
