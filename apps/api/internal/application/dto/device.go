@@ -40,17 +40,19 @@ type UpdateFCMTokenRequest struct {
 
 // DeviceResponse represents a device in responses per spec.
 type DeviceResponse struct {
-	ID           string `json:"id"`
-	IMEI         string `json:"imei"`
-	DeviceName   string `json:"deviceName,omitempty"`
-	Model        string `json:"model,omitempty"`
-	Manufacturer string `json:"manufacturer,omitempty"`
-	OSVersion    string `json:"osVersion,omitempty"`
-	AppVersion   string `json:"appVersion,omitempty"`
-	Status       string `json:"status"`
-	Online       bool   `json:"online"`
-	RegisteredAt int64  `json:"registeredAt,omitempty"`
-	LastSeen     int64  `json:"lastSeen,omitempty"`
+	DeregisteredAt *int64 `json:"deregisteredAt,omitempty"`
+	Model          string `json:"model,omitempty"`
+	ID             string `json:"id"`
+	IMEI           string `json:"imei"`
+	DeviceName     string `json:"deviceName,omitempty"`
+	Manufacturer   string `json:"manufacturer,omitempty"`
+	OSVersion      string `json:"osVersion,omitempty"`
+	AppVersion     string `json:"appVersion,omitempty"`
+	OrganizationID string `json:"organizationId,omitempty"`
+	Status         string `json:"status"`
+	RegisteredAt   int64  `json:"registeredAt,omitempty"`
+	LastSeen       int64  `json:"lastSeen,omitempty"`
+	Online         bool   `json:"online"`
 }
 
 // DeregisterResponse represents the response for DELETE /v1/devices/:imei.

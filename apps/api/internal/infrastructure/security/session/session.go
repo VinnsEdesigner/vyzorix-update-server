@@ -42,12 +42,13 @@ type Repository interface {
 
 // Session represents an authentication session.
 type Session struct {
-	ID         string
-	OperatorID string
-	ExpiresAt  time.Time
-	CreatedAt  time.Time
-	IPAddress  string
-	UserAgent  string
+	ID                     string
+	OperatorID             string
+	SelectedOrganizationID  string
+	ExpiresAt              time.Time
+	CreatedAt              time.Time
+	IPAddress              string
+	UserAgent              string
 }
 
 // Manager handles encrypted session cookies for HttpOnly cookie auth.

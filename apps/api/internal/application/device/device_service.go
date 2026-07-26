@@ -383,17 +383,19 @@ func (s *Service) ListByOrganization(ctx context.Context, orgID string, limit, o
 
 	for i, d := range devices {
 		response.Devices[i] = dto.DeviceResponse{
-			ID:           d.ID,
-			IMEI:         d.ID,
-			DeviceName:   d.DeviceName,
-			Model:        d.Model,
-			Manufacturer: d.Manufacturer,
-			OSVersion:    d.OSVersion,
-			AppVersion:  d.AppVersion,
-			Status:       d.GetStatus(),
-			Online:       d.Online,
-			RegisteredAt: d.RegisteredAt,
-			LastSeen:     d.LastSeen,
+			ID:             d.ID,
+			IMEI:           d.ID,
+			DeviceName:     d.DeviceName,
+			Model:          d.Model,
+			Manufacturer:   d.Manufacturer,
+			OSVersion:      d.OSVersion,
+			AppVersion:     d.AppVersion,
+			Status:         d.GetStatus(),
+			Online:         d.Online,
+			RegisteredAt:   d.RegisteredAt,
+			LastSeen:       d.LastSeen,
+			DeregisteredAt: d.DeregisteredAt,
+			OrganizationID: d.OrganizationID,
 		}
 	}
 
@@ -418,17 +420,19 @@ func (s *Service) ListByOperator(ctx context.Context, operatorID string) ([]dto.
 	response := make([]dto.DeviceResponse, len(devices))
 	for i, d := range devices {
 		response[i] = dto.DeviceResponse{
-			ID:           d.ID,
-			IMEI:         d.ID,
-			DeviceName:   d.DeviceName,
-			Model:        d.Model,
-			Manufacturer: d.Manufacturer,
-			OSVersion:    d.OSVersion,
-			AppVersion:  d.AppVersion,
-			Status:       d.GetStatus(),
-			Online:       d.Online,
-			RegisteredAt: d.RegisteredAt,
-			LastSeen:     d.LastSeen,
+			ID:             d.ID,
+			IMEI:           d.ID,
+			DeviceName:     d.DeviceName,
+			Model:          d.Model,
+			Manufacturer:   d.Manufacturer,
+			OSVersion:      d.OSVersion,
+			AppVersion:     d.AppVersion,
+			Status:         d.GetStatus(),
+			Online:         d.Online,
+			RegisteredAt:   d.RegisteredAt,
+			LastSeen:       d.LastSeen,
+			DeregisteredAt: d.DeregisteredAt,
+			OrganizationID: d.OrganizationID,
 		}
 	}
 

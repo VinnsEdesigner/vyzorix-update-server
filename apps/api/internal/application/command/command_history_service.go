@@ -49,6 +49,7 @@ type CommandEntry struct {
 	Status        string `json:"status"`
 	FailureReason string `json:"failureReason,omitempty"`
 	CreatedAt     int64  `json:"createdAt"`
+	SentAt        int64  `json:"sentAt"`
 	DeliveredAt   int64  `json:"deliveredAt,omitempty"`
 	CompletedAt   int64  `json:"completedAt,omitempty"`
 	LatencyMs     int64  `json:"latencyMs,omitempty"`
@@ -116,6 +117,7 @@ func (s *HistoryService) GetHistory(ctx context.Context, req *GetHistoryRequest)
 			Command:       string(cmd.Command),
 			Status:        string(cmd.Status),
 			CreatedAt:     createdAt,
+			SentAt:        createdAt,
 			FailureReason: cmd.FailureReason,
 		}
 
