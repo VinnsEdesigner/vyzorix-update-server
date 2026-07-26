@@ -136,6 +136,7 @@ type Server struct {
 	transferHandler             *devicehandlers.TransferHandler
 	DeviceRepo                  *storage.DeviceRepository
 	InvitationService           *orgapplication.InvitationService
+	idempotencyRepo             *storage.IdempotencyRepository
 	config                      config.Config
 }
 
@@ -470,6 +471,7 @@ type ServerConfigWithDeps struct {
 	UpdatesService *updatesapp.Service
 	APIKeyService  *keys.APIKeyService
 	DeviceRepo     *storage.DeviceRepository
+	IdempotencyRepo *storage.IdempotencyRepository
 	Config         config.Config
 }
 
@@ -499,6 +501,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		AuditLogger:       cfg.AuditLogger,
 		tenantAPIKeyAuth:  cfg.Middleware.TenantAPIKeyAuth,
 		apiKeyRateLimiter: cfg.Middleware.APIKeyRateLimiter,
+		idempotencyRepo:   cfg.IdempotencyRepo,
 	}
 
 	// Wire handlers from HandlerSet.

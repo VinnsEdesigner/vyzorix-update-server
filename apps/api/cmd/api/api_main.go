@@ -97,6 +97,7 @@ func main() {
 		UpdatesService: deps.UpdatesService,
 		APIKeyService:  deps.APIKeyService,
 		DeviceRepo:     deps.DeviceRepo,
+		IdempotencyRepo: deps.IdempotencyRepo,
 	})
 
 	// Register GraphQL if enabled.

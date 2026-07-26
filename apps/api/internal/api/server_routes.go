@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
@@ -21,6 +22,29 @@ func (s *Server) setupRoutes() {
 	s.setupAuthenticatedRoutes()
 	// Note: setupDashboardRoutes is called within setupAuthenticatedRoutes.
 	s.setupMethodHandlers()
+}
+
+// idempotencyMiddleware returns the idempotency middleware if repository is configured.
+func (s *Server) idempotencyMiddleware() gin.HandlerFunc {
+	if s.idempotencyRepo == nil {
+		return func(c *gin.Context) { c.Next() }
+	}
+
+	config := middleware.IdempotencyConfig{
+		Repository: s.idempotencyRepo,
+		HeaderName: "X-Idempotency-Key",
+		Paths: []string{
+			"/v1/device/inbox",
+			"/v1/device/confirm",
+			"/v1/device/:imei/command",
+			"/v1/command/:dispatchId/retry",
+			"/v1/invitations",
+			"/v1/invite/:token/accept",
+			"/v1/invite/:token/reject",
+		},
+		TTL: 24 * time.Hour,
+	}
+	return middleware.GinIdempotency(config)
 }
 
 func (s *Server) setupGlobalMiddleware() {
@@ -123,12 +147,14 @@ func (s *Server) setupDevicePublicRoutes(public *gin.RouterGroup) {
 	// DEPRECATED: /v1/device/register removed. Use /v1/device/inbox for new registration flow.
 	public.GET("/v1/device/:imei/status", s.deviceStatusHandler.Handle)
 	// Public inbox endpoint - device submits registration request.
+	// Idempotency: prevents duplicate registrations on retry.
 	if s.inboxHandler != nil {
-		public.POST("/v1/device/inbox", s.inboxHandler.CreateInboxRequest)
+		public.POST("/v1/device/inbox", s.idempotencyMiddleware(), s.inboxHandler.CreateInboxRequest)
 	}
 	// Public confirm endpoint - device confirms registration after receiving commandSecret.
+	// Idempotency: prevents duplicate confirmations on retry.
 	if s.deviceConfirmHandler != nil {
-		public.POST("/v1/device/confirm", s.deviceConfirmHandler.Handle)
+		public.POST("/v1/device/confirm", s.idempotencyMiddleware(), s.deviceConfirmHandler.Handle)
 	}
 }
 
@@ -265,6 +291,7 @@ func (s *Server) setupDeviceManagementRoutes(r *gin.RouterGroup) {
 	deviceMgmt.POST("/:imei/command",
 		s.requireStrictHMAC(),
 		middleware.ValidationMiddleware(&middleware.CommandExecuteSchema{}),
+		s.idempotencyMiddleware(),
 		s.commandHandler.Handle,
 	)
 	deviceMgmt.GET("/:imei/commands/pending", s.commandHandler.GetPending)
@@ -323,7 +350,8 @@ func (s *Server) setupCommandManagementRoutes(r *gin.RouterGroup) {
 	commandMgmt.Use(middleware.RequestSigningMiddleware(s.signatureVerifier))
 	commandMgmt.Use(middleware.MandatoryEncryptionMiddleware(s.encryptKeyFn))
 	commandMgmt.GET("/:dispatchId/status", s.commandHandler.GetStatus)
-	commandMgmt.POST("/:dispatchId/retry", s.commandHandler.Retry)
+	// Idempotency: prevents duplicate retries on retry.
+	commandMgmt.POST("/:dispatchId/retry", s.idempotencyMiddleware(), s.commandHandler.Retry)
 	commandMgmt.DELETE("/:dispatchId", s.commandHandler.Cancel)
 }
 
@@ -453,7 +481,8 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 	invitations := r.Group("/invitations")
 	invitations.Use(s.cookieAuth.Middleware())
 	{
-		invitations.POST("", s.invitationHandler.Create)
+		// Idempotency: prevents duplicate invitation creation on retry.
+		invitations.POST("", s.idempotencyMiddleware(), s.invitationHandler.Create)
 		invitations.GET("", s.invitationHandler.ListByInviter)
 		invitations.DELETE("/:id", s.invitationHandler.Delete)
 	}
@@ -462,8 +491,10 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 	invite := r.Group("/invite")
 	{
 		invite.GET("/:token", s.invitationHandler.GetByToken)
-		invite.POST("/:token/accept", s.invitationHandler.Accept)
-		invite.POST("/:token/reject", s.invitationHandler.Reject)
+		// Idempotency: prevents duplicate invitation acceptance on retry.
+		invite.POST("/:token/accept", s.idempotencyMiddleware(), s.invitationHandler.Accept)
+		// Idempotency: prevents duplicate invitation rejection on retry.
+		invite.POST("/:token/reject", s.idempotencyMiddleware(), s.invitationHandler.Reject)
 	}
 
 	// My invitations (pending for current user).

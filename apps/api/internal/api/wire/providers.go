@@ -77,6 +77,11 @@ func ProvideDB(s *storage.SQLite) *sql.DB {
 	return s.DB()
 }
 
+// ProvideIdempotencyRepository creates the idempotency key repository.
+func ProvideIdempotencyRepository(db *sql.DB) *storage.IdempotencyRepository {
+	return storage.NewIdempotencyRepository(db)
+}
+
 // ProvideAuditLogger creates the audit logger with a dedicated file-based logger.
 
 func ProvideAuditLogger(db *sql.DB, cfg config.Config) *audit.Logger {
@@ -701,6 +706,7 @@ var WireInjector = wire.NewSet(
 	ProvideClientRepository,
 	ProvideTelemetryRepository,
 	ProvideEventRepository,
+	ProvideIdempotencyRepository,
 	ProvideUpdatesStorage,
 	ProvideEventProcessor,
 	ProvideEmailVerificationRepository,
@@ -783,6 +789,7 @@ func ProvideServerDependencies(
 	invitationService *orgapplication.InvitationService,
 	orgSettingsService *orgapplication.OrganizationSettingsService,
 	deviceSettingsService *device.DeviceSettingsService,
+	idempotencyRepo *storage.IdempotencyRepository,
 ) *ServerDependencies {
 	return &ServerDependencies{
 		FCMNotifier:         fcmNotifier,
@@ -818,6 +825,7 @@ func ProvideServerDependencies(
 		InvitationService:  invitationService,
 		OrgSettingsService: orgSettingsService,
 		DeviceSettingsService: deviceSettingsService,
+		IdempotencyRepo: idempotencyRepo,
 	}
 }
 

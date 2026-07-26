@@ -40,6 +40,9 @@ export default [
         Request: "readonly",
         Response: "readonly",
         fetch: "readonly",
+        localStorage: "readonly",
+        navigator: "readonly",
+        AbortController: "readonly",
       },
     },
     plugins: {
