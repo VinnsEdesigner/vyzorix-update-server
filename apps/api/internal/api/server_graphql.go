@@ -110,6 +110,13 @@ func (s *Server) RegisterGraphQL(
 	s.engine.POST("/:org/graphql", h.Handle)
 	s.engine.GET("/:org/graphql", h.Handle)
 
+	// Register batch endpoint for GraphQL batching.
+	batchHandler := &gqlBatchHandler{
+		schema:         gqlSchema,
+		authMiddleware: authMw,
+	}
+	s.engine.POST("/:org/graphql/batch", batchHandler.Handle)
+
 	// Playground is only enabled in non-production environments.
 	if s.config.Env != "production" {
 		s.engine.GET("/:org/playground", h.Playground)
@@ -278,4 +285,100 @@ func (s *Server) getAuthService() *appsvc.AuthService {
 // getSessionManager returns the SessionManager from the server.
 func (s *Server) getSessionManager() *infraauth.SessionManager {
 	return s.sessionManager
+}
+
+// gqlBatchHandler handles GraphQL batch requests.
+type gqlBatchHandler struct {
+	authMiddleware *gqlmiddleware.AuthMiddleware
+	schema         gql.Schema
+}
+
+// gqlBatchRequest represents a batch of GraphQL requests.
+type gqlBatchRequest struct {
+	Variables     map[string]interface{} `json:"variables"`
+	Query         string                 `json:"query"`
+	OperationName string                 `json:"operationName"`
+}
+
+// Handle processes GraphQL batch requests.
+func (h *gqlBatchHandler) Handle(c *gin.Context) {
+	var requests []gqlBatchRequest
+	if err := c.ShouldBindJSON(&requests); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"errors": []gin.H{{"message": "invalid request body"}},
+		})
+		return
+	}
+
+	if len(requests) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"errors": []gin.H{{"message": "empty batch"}},
+		})
+		return
+	}
+
+	// Extract org from URL parameter.
+	orgID := c.Param("org")
+	if orgID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"errors": []gin.H{{"message": "organization ID required"}},
+		})
+		return
+	}
+
+	// Authenticate.
+	headers := map[string]string{
+		"Cookie":        c.GetHeader("Cookie"),
+		"Authorization": c.GetHeader("Authorization"),
+	}
+
+	op, err := h.authMiddleware.Authenticate(c.Request.Context(), headers)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"errors": []gin.H{{"message": "authentication required"}},
+		})
+		return
+	}
+
+	// Add operator and organization to context.
+	ctx := gqlcontext.WithOperator(c.Request.Context(), op)
+	ctx = gqlcontext.WithOrganizationID(ctx, orgID)
+
+	// Execute all queries.
+	results := make([]map[string]interface{}, len(requests))
+	for i, req := range requests {
+		result := gql.Do(gql.Params{
+			Schema:         h.schema,
+			RequestString:  req.Query,
+			VariableValues: req.Variables,
+			OperationName:  req.OperationName,
+			Context:        ctx,
+		})
+
+		if len(result.Errors) > 0 {
+			gqlErrs := make([]map[string]interface{}, 0, len(result.Errors))
+			for _, err := range result.Errors {
+				ext := make(map[string]interface{})
+				if err.Extensions != nil {
+					if code, ok := err.Extensions["code"].(string); ok {
+						ext["code"] = code
+					}
+				}
+				gqlErrs = append(gqlErrs, map[string]interface{}{
+					"message":    err.Message,
+					"extensions": ext,
+				})
+			}
+			results[i] = map[string]interface{}{
+				"data":   result.Data,
+				"errors": gqlErrs,
+			}
+		} else {
+			results[i] = map[string]interface{}{
+				"data": result.Data,
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, results)
 }

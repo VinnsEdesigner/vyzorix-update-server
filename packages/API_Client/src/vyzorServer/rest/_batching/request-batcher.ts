@@ -257,47 +257,41 @@ interface BatchedGraphQLOperation {
 /**
  * GraphQL Request Batcher
  * 
- * Combines multiple GraphQL operations into a single HTTP request.
+ * Combines multiple GraphQL operations into a single HTTP request using the /batch endpoint.
  */
 export class GraphQLBatcher {
   private pendingOperations: Map<string, BatchedGraphQLOperation> = new Map();
   private config: BatchConfig;
-  private executor: ((operations: GraphQLBatchedOperation[]) => Promise<unknown[]>) | null = null;
+  private batchUrl: string = '';
+  private authToken: string = '';
+  private orgId: string = '';
 
   constructor(config: Partial<BatchConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
   }
 
-  /**
-   * Set the executor function for GraphQL batch operations
-   */
-  setExecutor(executor: (operations: GraphQLBatchedOperation[]) => Promise<unknown[]>): void {
-    this.executor = executor;
+  configure(baseUrl: string, orgId: string, authToken: string): void {
+    this.batchUrl = `${baseUrl}/v1/orgs/${orgId}/graphql/batch`;
+    this.orgId = orgId;
+    this.authToken = authToken;
   }
 
-  /**
-   * Generate a batch key for GraphQL operations
-   */
   private getBatchKey(query: string, variables?: Record<string, unknown>): string {
-    return `${simpleHashPayload({ query, variables })}`;
+    return simpleHashPayload({ query, variables });
   }
 
-  /**
-   * Execute or queue a GraphQL operation
-   */
   async execute<T>(
     query: string,
     variables: Record<string, unknown> | undefined,
     operationName: string | undefined,
-    executor: () => Promise<T>
+    _executor: () => Promise<T>
   ): Promise<T> {
-    if (!this.config.enableGraphQL || !this.executor) {
-      return executor();
+    if (!this.config.enableGraphQL || !this.batchUrl) {
+      return _executor();
     }
 
     const batchKey = this.getBatchKey(query, variables);
 
-    // Check if same operation is already pending
     const existing = this.pendingOperations.get(batchKey);
     if (existing && existing.query === query && JSON.stringify(existing.variables) === JSON.stringify(variables)) {
       return new Promise<T>((resolve, reject) => {
@@ -306,11 +300,9 @@ export class GraphQLBatcher {
           reject,
           operationName,
         });
-        console.debug(`[GraphQL Batcher] Operation collapsed: ${operationName || 'unnamed'}`);
       });
     }
 
-    // Create new batched operation
     return new Promise<T>((resolve, reject) => {
       const batchedOp: BatchedGraphQLOperation = {
         query,
@@ -318,34 +310,26 @@ export class GraphQLBatcher {
         operationName,
         callers: [{ resolve: resolve as (value: unknown) => void, reject, operationName }],
         timer: setTimeout(() => {
-          this.flushBatch(batchedOp);
+          this.flushBatch();
         }, this.config.windowMs),
         executed: false,
       };
 
       this.pendingOperations.set(batchKey, batchedOp);
-
-      console.debug(`[GraphQL Batcher] Operation queued: ${operationName || 'unnamed'}`);
     });
   }
 
   /**
-   * Flush a GraphQL batch
+   * Flush a GraphQL batch - sends all pending operations to the /batch endpoint
    */
-  private async flushBatch(operation: BatchedGraphQLOperation): Promise<void> {
-    if (operation.executed || !this.executor) return;
-    operation.executed = true;
-
-    if (operation.timer) {
-      clearTimeout(operation.timer);
-    }
-
-    // Build batch payload
+  private async flushBatch(): Promise<void> {
     const operations: GraphQLBatchedOperation[] = [];
     const keyedOperations: { key: string; op: BatchedGraphQLOperation }[] = [];
 
     for (const [key, op] of this.pendingOperations.entries()) {
       if (op.executed) continue;
+      op.executed = true;
+      if (op.timer) clearTimeout(op.timer);
 
       operations.push({
         query: op.query,
@@ -359,29 +343,36 @@ export class GraphQLBatcher {
 
     if (operations.length === 0) return;
 
-    // Clear all pending from map
-    for (const { op } of keyedOperations) {
-      if (op.timer) clearTimeout(op.timer);
-      op.executed = true;
-    }
     this.pendingOperations.clear();
 
     try {
-      // Execute batch
-      const results = await this.executor(operations);
+      const response = await fetch(this.batchUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.authToken}`,
+        },
+        body: JSON.stringify(operations),
+      });
 
-      // Distribute results back to callers
+      if (!response.ok) {
+        throw new Error(`Batch request failed: ${response.status}`);
+      }
+
+      const results = await response.json() as { data?: unknown; errors?: { message: string }[] }[];
+
       for (let i = 0; i < keyedOperations.length; i++) {
         const { op } = keyedOperations[i];
         const result = results[i];
 
-        if (result instanceof Error) {
+        if (result.errors && result.errors.length > 0) {
+          const err = new Error(result.errors[0].message);
           for (const caller of op.callers) {
-            caller.reject(result);
+            caller.reject(err);
           }
         } else {
           for (const caller of op.callers) {
-            caller.resolve(result);
+            caller.resolve(result.data);
           }
         }
       }
