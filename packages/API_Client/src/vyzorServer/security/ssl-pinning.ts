@@ -1,8 +1,21 @@
 /**
  * SSL/TLS Certificate Pinning
  * 
- * Protects against man-in-the-middle attacks by validating server certificates
- * against pre-configured public key hashes.
+ * NOTE: This implementation is a placeholder/layout for future use.
+ * 
+ * PURPOSE:
+ * - Protects APK daemon server-to-server connections against MITM attacks
+ * - APK daemon communicates directly with this API server (not browser-based)
+ * - Will be activated once server-side SSL pin configuration is implemented
+ * 
+ * TO ACTIVATE: Set SSLPIN_ENABLED=true or call initSSLPinning({ enabled: true })
+ * 
+ * TODO (Server-side requirements before activation):
+ * - Create SSL pin configuration endpoint: GET /.well-known/ssl-pins
+ * - Add ssl_pin_configs table to database
+ * - Implement SSLPinConfigService
+ * - Add SSL pin fields to DeviceSettings for per-device pinning
+ * - Server provides SHA-256 hashes of valid public keys
  */
 
 import { createHash } from 'crypto';
@@ -22,12 +35,14 @@ export interface SSLPinConfig {
   allowSubdomains?: boolean;
   enforced?: boolean;
   reportUri?: string;
+  enabled?: boolean;
 }
 
 const DEFAULT_CONFIG: SSLPinConfig = {
   pins: [],
   allowSubdomains: false,
   enforced: true,
+  enabled: false,
 };
 
 export class SSLPinning {
@@ -60,11 +75,30 @@ export class SSLPinning {
     return this.config.pins.length > 0;
   }
 
+  isEnabled(): boolean {
+    return this.config.enabled ?? false;
+  }
+
+  enable(): void {
+    this.config.enabled = true;
+  }
+
+  disable(): void {
+    this.config.enabled = false;
+  }
+
   validateCertificate(certificate: {
     publicKeySha256?: string;
     fingerprint256?: string;
     pemCertificate?: string;
   }): PinValidationResult {
+    if (!this.config.enabled) {
+      return {
+        valid: true,
+        action: 'bypassed',
+      };
+    }
+
     if (!this.isConfigured()) {
       return {
         valid: false,
@@ -188,7 +222,7 @@ export interface PinValidationResult {
   error?: string;
   expectedPins?: string[];
   actualPin?: string;
-  action?: 'reject' | 'warn' | 'fail-open';
+  action?: 'reject' | 'warn' | 'fail-open' | 'bypassed';
 }
 
 export interface ConnectionRecord {
@@ -213,17 +247,39 @@ function constantTimeCompare(a: string, b: string): boolean {
 
 let sslPinningInstance: SSLPinning | null = null;
 
+function isSSLEnabledFromEnv(): boolean {
+  if (typeof import.meta !== 'undefined') {
+    const meta = import.meta as { env?: Record<string, string | undefined> };
+    const val = meta.env?.['SSLPIN_ENABLED'] || meta.env?.['VITE_SSLPIN_ENABLED'];
+    if (val === 'true' || val === '1') return true;
+  }
+  
+  if (typeof globalThis !== 'undefined') {
+    const g = globalThis as Record<string, unknown>;
+    if (g.process && typeof g.process === 'object') {
+      const proc = g.process as Record<string, unknown>;
+      const env = proc.env as Record<string, string | undefined> | undefined;
+      const val = env?.['SSLPIN_ENABLED'] || env?.['VITE_SSLPIN_ENABLED'];
+      if (val === 'true' || val === '1') return true;
+    }
+  }
+  
+  return false;
+}
+
 export function getSSLPinning(config?: Partial<SSLPinConfig>): SSLPinning {
   if (!sslPinningInstance) {
-    sslPinningInstance = new SSLPinning(config);
+    const envEnabled = isSSLEnabledFromEnv();
+    sslPinningInstance = new SSLPinning({ ...config, enabled: config?.enabled ?? envEnabled });
   } else if (config) {
     sslPinningInstance.configure(config);
   }
   return sslPinningInstance;
 }
 
-export function initSSLPinning(config: Partial<SSLPinConfig>): SSLPinning {
-  sslPinningInstance = new SSLPinning(config);
+export function initSSLPinning(config: Partial<SSLPinConfig> = {}): SSLPinning {
+  const envEnabled = isSSLEnabledFromEnv();
+  sslPinningInstance = new SSLPinning({ ...config, enabled: config.enabled ?? envEnabled });
   return sslPinningInstance;
 }
 
