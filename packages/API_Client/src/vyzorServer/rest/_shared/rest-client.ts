@@ -470,7 +470,8 @@ export const restClient = {
     }
 
     const requestPromise = getAxios().post<T>(url, data, config);
-    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey: '' });
+    const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
+    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
       const result = await requestPromise;
@@ -507,7 +508,8 @@ export const restClient = {
     }
 
     const requestPromise = getAxios().put<T>(url, data, config);
-    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey: '' });
+    const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
+    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
       const result = await requestPromise;
@@ -544,7 +546,8 @@ export const restClient = {
     }
 
     const requestPromise = getAxios().patch<T>(url, data, config);
-    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey: '' });
+    const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
+    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
       const result = await requestPromise;
@@ -580,7 +583,8 @@ export const restClient = {
     }
 
     const requestPromise = getAxios().delete<T>(url, config);
-    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey: '' });
+    const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
+    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
       const result = await requestPromise;
