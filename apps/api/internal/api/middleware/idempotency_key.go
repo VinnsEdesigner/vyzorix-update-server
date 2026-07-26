@@ -122,7 +122,7 @@ func compilePatterns(patterns []string) []compiledPattern {
 
 // isIdempotentMethod returns true if the method should be idempotent.
 func isIdempotentMethod(method string) bool {
-	return method == http.MethodPost || method == http.MethodPatch || method == http.MethodPut
+	return method == http.MethodPost || method == http.MethodPatch || method == http.MethodPut || method == http.MethodDelete
 }
 
 // isPathExcluded returns true if the path should be excluded from idempotency.
@@ -222,7 +222,13 @@ func captureRequestBody(c *gin.Context) []byte {
 
 // storeIdempotencyRecord stores the response for future replay.
 func storeIdempotencyRecord(c *gin.Context, config IdempotencyConfig, path, key string, recorder *responseRecorder) {
-	if config.Repository == nil || recorder.statusCode < 200 || recorder.statusCode >= 300 {
+	if config.Repository == nil {
+		return
+	}
+
+	// Store records for successful responses (2xx) and also for 4xx client errors
+	// to prevent duplicate processing of invalid requests.
+	if recorder.statusCode < 200 || recorder.statusCode >= 500 {
 		return
 	}
 
@@ -230,17 +236,17 @@ func storeIdempotencyRecord(c *gin.Context, config IdempotencyConfig, path, key 
 	hash := sha256.Sum256(body)
 
 	record := &idempotency.IdempotencyRecord{
-		ID:           key,
-		Method:       c.Request.Method,
-		Path:         path,
-		Hash:         hex.EncodeToString(hash[:]),
-		StatusCode:   recorder.statusCode,
-		ResponseBody: body,
-		CreatedAt:    time.Now(),
-		ExpiresAt:    time.Now().Add(config.TTL),
-		ContentType:  recorder.contentType,
-		ClientIP:     c.ClientIP(),
-		UserAgent:    c.Request.UserAgent(),
+		ID:             key,
+		Method:         c.Request.Method,
+		Path:           path,
+		Hash:           hex.EncodeToString(hash[:]),
+		StatusCode:     recorder.statusCode,
+		ResponseBody:   body,
+		CreatedAt:      time.Now(),
+		ExpiresAt:      time.Now().Add(config.TTL),
+		ContentType:    recorder.contentType,
+		ClientIP:       c.ClientIP(),
+		UserAgent:      c.Request.UserAgent(),
 		OrganizationID: GetOrganizationID(c),
 	}
 
