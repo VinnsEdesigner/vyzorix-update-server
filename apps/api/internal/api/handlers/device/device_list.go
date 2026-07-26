@@ -78,16 +78,15 @@ func (h *ListHandler) Handle(c *gin.Context) {
 
 	// Build response with online status from hub.
 	type DeviceRow struct {
-		ID             string `json:"id"`
-		Imei           string `json:"imei"`
-		OrganizationID string `json:"organization_id"`
-		DeviceName     string `json:"device_name"`
-		Model          string `json:"model"`
-		Manufacturer   string `json:"manufacturer"`
-		AppVersion     string `json:"app_version"`
-		Status         string `json:"status"`
-		LastSeen       int64  `json:"last_seen"`
-		RegisteredAt   int64  `json:"registered_at"`
+		ID           string `json:"id"`
+		Imei         string `json:"imei"`
+		DeviceName   string `json:"device_name"`
+		Model        string `json:"model"`
+		Manufacturer string `json:"manufacturer"`
+		AppVersion   string `json:"app_version"`
+		Status       string `json:"status"`
+		LastSeen     int64  `json:"last_seen"`
+		RegisteredAt int64  `json:"registered_at"`
 	}
 
 	devices := make([]DeviceRow, 0, len(response.Devices))
@@ -103,23 +102,22 @@ func (h *ListHandler) Handle(c *gin.Context) {
 
 		// Determine status string based on online state and lifecycle.
 		status := "offline"
-		if d.DeregisteredAt != nil {
+		if d.Status == "deregistered" {
 			status = "deregistered"
 		} else if isOnline {
 			status = "online"
 		}
 
 		devices = append(devices, DeviceRow{
-			ID:             d.ID,
-			Imei:           d.ID, // ID field is the device IMEI
-			OrganizationID: d.OrganizationID,
-			DeviceName:     d.DeviceName,
-			Model:          d.Model,
-			Manufacturer:   d.Manufacturer,
-			AppVersion:     d.AppVersion,
-			Status:         status,
-			LastSeen:       d.LastSeen,
-			RegisteredAt:   d.RegisteredAt,
+			ID:           d.ID,
+			Imei:         d.ID, // ID field is the device IMEI.
+			DeviceName:   d.DeviceName,
+			Model:        d.Model,
+			Manufacturer: d.Manufacturer,
+			AppVersion:   d.AppVersion,
+			Status:       status,
+			LastSeen:     d.LastSeen,
+			RegisteredAt: d.RegisteredAt,
 		})
 
 		// Stop if we have enough results.

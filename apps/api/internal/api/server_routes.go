@@ -25,7 +25,37 @@ func (s *Server) setupRoutes() {
 }
 
 // idempotencyMiddleware returns the idempotency middleware if repository is configured.
+// This middleware is applied globally to all /v1 tenant routes.
 func (s *Server) idempotencyMiddleware() gin.HandlerFunc {
+	if s.idempotencyRepo == nil {
+		return func(c *gin.Context) { c.Next() }
+	}
+
+	config := middleware.IdempotencyConfig{
+		Repository: s.idempotencyRepo,
+		HeaderName: "X-Idempotency-Key",
+		PathPrefixes: []string{"/v1/", "/api/v1/"},
+		ExcludedPaths: []string{
+			// Auth endpoints - should not be idempotent.
+			"/v1/auth/login",
+			"/v1/auth/register",
+			"/v1/auth/csrf-token",
+			"/v1/auth/refresh",
+			"/v1/auth/logout",
+			// Health/metrics endpoints.
+			"/health",
+			"/healthz",
+			"/metrics",
+		},
+		TTL: 24 * time.Hour,
+		Enabled: true,
+	}
+	return middleware.GinIdempotency(config)
+}
+
+// deviceIdempotencyMiddleware returns the idempotency middleware for device routes.
+// These are separate from tenant routes and have their own auth mechanism (HMAC).
+func (s *Server) deviceIdempotencyMiddleware() gin.HandlerFunc {
 	if s.idempotencyRepo == nil {
 		return func(c *gin.Context) { c.Next() }
 	}
@@ -36,13 +66,14 @@ func (s *Server) idempotencyMiddleware() gin.HandlerFunc {
 		Paths: []string{
 			"/v1/device/inbox",
 			"/v1/device/confirm",
-			"/v1/device/:imei/command",
-			"/v1/command/:dispatchId/retry",
-			"/v1/invitations",
-			"/v1/invite/:token/accept",
-			"/v1/invite/:token/reject",
+		},
+		PathPrefixes: []string{"/v1/device/", "/v1/command/"},
+		ExcludedPaths: []string{
+			"/v1/device/status",
+			"/v1/device/count",
 		},
 		TTL: 24 * time.Hour,
+		Enabled: true,
 	}
 	return middleware.GinIdempotency(config)
 }
@@ -146,15 +177,18 @@ func (s *Server) setupAuthRoutes(public *gin.RouterGroup) {
 func (s *Server) setupDevicePublicRoutes(public *gin.RouterGroup) {
 	// DEPRECATED: /v1/device/register removed. Use /v1/device/inbox for new registration flow.
 	public.GET("/v1/device/:imei/status", s.deviceStatusHandler.Handle)
+
+	// Apply idempotency middleware to device routes.
+	devicePublicGroup := public.Group("/v1/device")
+	devicePublicGroup.Use(s.deviceIdempotencyMiddleware())
+
 	// Public inbox endpoint - device submits registration request.
-	// Idempotency: prevents duplicate registrations on retry.
 	if s.inboxHandler != nil {
-		public.POST("/v1/device/inbox", s.idempotencyMiddleware(), s.inboxHandler.CreateInboxRequest)
+		devicePublicGroup.POST("/inbox", s.inboxHandler.CreateInboxRequest)
 	}
 	// Public confirm endpoint - device confirms registration after receiving commandSecret.
-	// Idempotency: prevents duplicate confirmations on retry.
 	if s.deviceConfirmHandler != nil {
-		public.POST("/v1/device/confirm", s.idempotencyMiddleware(), s.deviceConfirmHandler.Handle)
+		devicePublicGroup.POST("/confirm", s.deviceConfirmHandler.Handle)
 	}
 }
 
@@ -181,6 +215,10 @@ func (s *Server) setupAuthenticatedRoutes() {
 			tenantGroup.Use(middleware.APIKeyRateLimitMiddleware(s.apiKeyRateLimiter))
 		}
 	}
+
+	// Apply idempotency middleware globally to all /v1 routes.
+	// This provides automatic idempotency for all POST/PUT/PATCH requests.
+	tenantGroup.Use(s.idempotencyMiddleware())
 
 	s.setupDashboardRoutes(tenantGroup)
 	s.setupDeviceInboxRoutes(tenantGroup)
@@ -282,6 +320,8 @@ func (s *Server) setupDeviceManagementRoutes(r *gin.RouterGroup) {
 	deviceMgmt.Use(middleware.RequestSigningMiddleware(s.signatureVerifier))
 	deviceMgmt.Use(middleware.MandatoryEncryptionMiddleware(s.encryptKeyFn))
 	deviceMgmt.Use(s.requireHMAC())
+	// Apply idempotency middleware to all device management routes.
+	deviceMgmt.Use(s.deviceIdempotencyMiddleware())
 	deviceMgmt.GET("/count", s.deviceListHandler.Count)
 	deviceMgmt.GET("/:imei", s.deviceListHandler.GetDevice)
 	deviceMgmt.PATCH("/:imei/fcm-token",
@@ -291,7 +331,6 @@ func (s *Server) setupDeviceManagementRoutes(r *gin.RouterGroup) {
 	deviceMgmt.POST("/:imei/command",
 		s.requireStrictHMAC(),
 		middleware.ValidationMiddleware(&middleware.CommandExecuteSchema{}),
-		s.idempotencyMiddleware(),
 		s.commandHandler.Handle,
 	)
 	deviceMgmt.GET("/:imei/commands/pending", s.commandHandler.GetPending)
@@ -350,8 +389,8 @@ func (s *Server) setupCommandManagementRoutes(r *gin.RouterGroup) {
 	commandMgmt.Use(middleware.RequestSigningMiddleware(s.signatureVerifier))
 	commandMgmt.Use(middleware.MandatoryEncryptionMiddleware(s.encryptKeyFn))
 	commandMgmt.GET("/:dispatchId/status", s.commandHandler.GetStatus)
-	// Idempotency: prevents duplicate retries on retry.
-	commandMgmt.POST("/:dispatchId/retry", s.idempotencyMiddleware(), s.commandHandler.Retry)
+	// Note: Idempotency is handled globally by tenantGroup middleware.
+	commandMgmt.POST("/:dispatchId/retry", s.commandHandler.Retry)
 	commandMgmt.DELETE("/:dispatchId", s.commandHandler.Cancel)
 }
 
@@ -481,8 +520,8 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 	invitations := r.Group("/invitations")
 	invitations.Use(s.cookieAuth.Middleware())
 	{
-		// Idempotency: prevents duplicate invitation creation on retry.
-		invitations.POST("", s.idempotencyMiddleware(), s.invitationHandler.Create)
+		// Note: Idempotency is handled globally by tenantGroup middleware.
+		invitations.POST("", s.invitationHandler.Create)
 		invitations.GET("", s.invitationHandler.ListByInviter)
 		invitations.DELETE("/:id", s.invitationHandler.Delete)
 	}
@@ -491,10 +530,9 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 	invite := r.Group("/invite")
 	{
 		invite.GET("/:token", s.invitationHandler.GetByToken)
-		// Idempotency: prevents duplicate invitation acceptance on retry.
-		invite.POST("/:token/accept", s.idempotencyMiddleware(), s.invitationHandler.Accept)
-		// Idempotency: prevents duplicate invitation rejection on retry.
-		invite.POST("/:token/reject", s.idempotencyMiddleware(), s.invitationHandler.Reject)
+		// Note: Idempotency is handled globally by tenantGroup middleware.
+		invite.POST("/:token/accept", s.invitationHandler.Accept)
+		invite.POST("/:token/reject", s.invitationHandler.Reject)
 	}
 
 	// My invitations (pending for current user).

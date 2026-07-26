@@ -935,7 +935,7 @@ func (r *Resolver) convertCommandHistory(commands []cmdapp.CommandEntry) []map[s
 			"deviceId":   c.DeviceID,
 			"command":    c.Command,
 			"status":     c.Status,
-			"sentAt":     time.UnixMilli(c.SentAt).Format(time.RFC3339),
+			"sentAt":     time.UnixMilli(c.CreatedAt).Format(time.RFC3339),
 		}
 		if c.DeliveredAt > 0 {
 			entry["deliveredAt"] = time.UnixMilli(c.DeliveredAt).Format(time.RFC3339)
