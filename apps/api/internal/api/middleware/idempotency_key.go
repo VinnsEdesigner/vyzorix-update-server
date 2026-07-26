@@ -241,6 +241,7 @@ func storeIdempotencyRecord(c *gin.Context, config IdempotencyConfig, path, key 
 		ContentType:  recorder.contentType,
 		ClientIP:     c.ClientIP(),
 		UserAgent:    c.Request.UserAgent(),
+		OrganizationID: GetOrganizationID(c),
 	}
 
 	go func() {
