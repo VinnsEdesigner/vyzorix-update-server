@@ -2,6 +2,7 @@ import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse,
 import { getRESTConfig, type RESTConfig } from '../../config';
 import { parseApiError, type RateLimitInfo } from '../../auth/api-error';
 import { getConnectivityMonitor } from '../_connectivity';
+import { getRESTBatcher } from '../_batching';
 
 export { type RESTConfig } from '../../config';
 export { parseApiError } from '../../auth/api-error';
@@ -9,6 +10,7 @@ export type { ApiError } from '../../auth/api-error';
 export type { RateLimitInfo } from '../../auth/api-error';
 
 export { initConnectivityMonitor, getConnectivityMonitor } from '../_connectivity';
+export { getRESTBatcher, resetBatchers } from '../_batching';
 
 let organizationId: string | null = null;
 let authToken: string | null = null;
@@ -440,8 +442,20 @@ export const restClient = {
     if (!monitor.isOnline()) {
       console.warn(`[REST] Offline GET: ${url}`);
     }
-    const response = await getAxios().get<T>(url, config);
-    return response.data;
+
+    // Use request batching for GET requests (collapses duplicate GETs within 50ms window)
+    const batcher = getRESTBatcher();
+    const params = config?.params;
+    return batcher.execute(
+      'GET',
+      url,
+      params,
+      config as Record<string, unknown>,
+      async () => {
+        const response = await getAxios().get<T>(url, config);
+        return response.data;
+      }
+    );
   },
 
   async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {

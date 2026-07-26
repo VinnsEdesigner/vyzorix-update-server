@@ -1,5 +1,8 @@
-import { ApolloClient, InMemoryCache, createHttpLink, type NormalizedCacheObject } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, type NormalizedCacheObject, ApolloLink, Observable } from '@apollo/client';
+import { getMainDefinition } from '@apollo/client/utilities';
+import { print } from 'graphql';
 import { setContext } from '@apollo/client/link/context';
+import { getGraphQLBatcher } from '../../rest/_batching';
 
 type CredentialsType = 'omit' | 'same-origin' | 'include';
 
@@ -7,6 +10,54 @@ export interface GraphQLConfig {
   organizationId: string;
   credentials?: CredentialsType | undefined;
   getUri: () => string;
+}
+
+function createBatchingLink(httpLink: ApolloLink): ApolloLink {
+  return new ApolloLink((operation) => {
+    const batcher = getGraphQLBatcher();
+    
+    if (!batcher) {
+      return forward(operation, httpLink);
+    }
+
+    const definition = getMainDefinition(operation.query);
+    const queryString = definition.kind === 'OperationDefinition' 
+      ? print(operation.query)
+      : '';
+    const { variables, operationName } = operation;
+
+    return new Observable((observer) => {
+      batcher
+        .execute(
+          queryString,
+          variables,
+          operationName,
+          async () => {
+            return new Promise<Record<string, unknown>>((resolve, reject) => {
+              forward(operation, httpLink).subscribe({
+                next: resolve,
+                error: reject,
+                complete: () => {},
+              });
+            });
+          }
+        )
+        .then(result => {
+          observer.next(result);
+          observer.complete();
+        })
+        .catch(error => {
+          observer.error(error);
+        });
+    });
+  });
+}
+
+function forward(operation: Record<string, unknown>, link: ApolloLink): Observable<unknown> {
+  return new Observable(observer => {
+    const subscription = link.request(operation as never)?.subscribe(observer as never);
+    return () => subscription?.unsubscribe();
+  });
 }
 
 function createApolloClient(config: GraphQLConfig): ApolloClient<NormalizedCacheObject> {
@@ -23,8 +74,10 @@ function createApolloClient(config: GraphQLConfig): ApolloClient<NormalizedCache
     };
   });
 
+  const batchingLink = createBatchingLink(httpLink);
+
   return new ApolloClient({
-    link: authLink.concat(httpLink),
+    link: authLink.concat(batchingLink),
     cache: new InMemoryCache(),
     defaultOptions: {
       watchQuery: {
