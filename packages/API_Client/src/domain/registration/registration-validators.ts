@@ -1,43 +1,12 @@
+import { validateIMEI, type ValidationResult } from "../_shared";
 
-
-
-
+export { validateIMEI, type ValidationResult } from "../_shared";
 
 import type { CreateInboxRequest, AcknowledgeAction, InboxStatus } from "./registration-entity";
 
 
 
 
-
-
-
-
-
-
-export interface ValidationResult {
-  isValid: boolean;
-  errors: Record<string, string[]>;
-}
-
-
-
-
-
-
-export function validateIMEI(imei: string): ValidationResult {
-  const errors: Record<string, string[]> = {};
-  
-  if (!imei) {
-    errors.imei = ["IMEI is required"];
-  } else if (!/^\d{15}$/.test(imei)) {
-    errors.imei = ["IMEI must be 15 digits"];
-  }
-  
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors,
-  };
-}
 
 
 

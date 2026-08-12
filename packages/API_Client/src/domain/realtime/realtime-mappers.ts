@@ -63,7 +63,7 @@ export function telemetryFromRaw(raw: RawWSTelemetry): WSTelemetry {
   };
 }
 
-export function eventFromRaw(raw: RawWSEvent): WSEvent {
+export function wsEventFromRaw(raw: RawWSEvent): WSEvent {
   return {
     id: raw.id ?? "",
     type: (raw.type as WSEventType) ?? "ERROR",

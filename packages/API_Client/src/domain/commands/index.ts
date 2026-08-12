@@ -4,9 +4,8 @@ export {
   commandFromRaw,
   commandListItemFromRaw,
   sendCommandRequestToRaw,
-  paginationFromRaw,
   type RawCommand,
   type RawCommandListItem,
-  type RawPagination,
   type RawCommandHistoryResult,
 } from "./commands-mappers";
+export { paginationFromRaw, type RawPagination, type Pagination } from "../_shared";

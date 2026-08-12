@@ -126,3 +126,31 @@ export function clampLimit(limit: number, max: number = PAGINATION_LIMITS.defaul
 export function calculateOffset(page: number, limit: number): number {
   return (Math.max(1, page) - 1) * limit;
 }
+
+// Simple offset pagination (without hasMore) shared by device/registration/
+// apikey/commands/updates contexts. Kept distinct from OffsetPagination
+// (which adds hasMore) for contexts whose API does not return that flag.
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface RawPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  /** Some endpoints return snake_case; accepted as an alias. */
+  total_pages?: number;
+}
+
+export function paginationFromRaw(raw: RawPagination): Pagination {
+  return {
+    page: raw.page,
+    limit: raw.limit,
+    total: raw.total,
+    totalPages: raw.totalPages ?? raw.total_pages ?? 0,
+  };
+}

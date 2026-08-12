@@ -12,8 +12,13 @@ export interface GraphQLConfig {
   getUri: () => string;
 }
 
-let currentOrgId: string = '';
-let currentAuthToken: string = '';
+// Single encapsulated holder for all graphql-client mutable state (previously
+// three module-level `let` bindings — the singleton-globals smell).
+const graphqlState = {
+  currentOrgId: '' as string,
+  currentAuthToken: '' as string,
+  apolloClient: null as ApolloClient<NormalizedCacheObject> | null,
+};
 
 function getGraphQLUri(orgId: string): string {
   const baseUrl = (import.meta.env as Record<string, string | undefined>).VITE_API_URL || '/api';
@@ -107,32 +112,30 @@ function createApolloClient(config: GraphQLConfig): ApolloClient<NormalizedCache
   });
 }
 
-let apolloClient: ApolloClient<NormalizedCacheObject> | null = null;
-
 export function getApolloClient(): ApolloClient<NormalizedCacheObject> {
-  return apolloClient || createApolloClient({
+  return graphqlState.apolloClient || createApolloClient({
     organizationId: '',
     credentials: 'include',
-    getUri: () => getGraphQLUri(currentOrgId),
+    getUri: () => getGraphQLUri(graphqlState.currentOrgId),
   });
 }
 
 export function setOrganizationContext(organizationId: string, authToken?: string): void {
-  currentOrgId = organizationId;
+  graphqlState.currentOrgId = organizationId;
   if (authToken) {
-    currentAuthToken = authToken;
+    graphqlState.currentAuthToken = authToken;
   }
   
   const batcher = getGraphQLBatcher();
   if (batcher) {
-    batcher.configure(getGraphQLBaseUrl(), organizationId, currentAuthToken);
+    batcher.configure(getGraphQLBaseUrl(), organizationId, graphqlState.currentAuthToken);
   }
 
-  if (apolloClient) {
-    apolloClient.stop();
-    apolloClient = null;
+  if (graphqlState.apolloClient) {
+    graphqlState.apolloClient.stop();
+    graphqlState.apolloClient = null;
   }
-  apolloClient = createApolloClient({
+  graphqlState.apolloClient = createApolloClient({
     organizationId,
     credentials: 'include',
     getUri: () => getGraphQLUri(organizationId),
@@ -140,10 +143,10 @@ export function setOrganizationContext(organizationId: string, authToken?: strin
 }
 
 export function setAuthToken(token: string): void {
-  currentAuthToken = token;
+  graphqlState.currentAuthToken = token;
   const batcher = getGraphQLBatcher();
-  if (batcher && currentOrgId) {
-    batcher.configure(getGraphQLBaseUrl(), currentOrgId, token);
+  if (batcher && graphqlState.currentOrgId) {
+    batcher.configure(getGraphQLBaseUrl(), graphqlState.currentOrgId, token);
   }
 }
 

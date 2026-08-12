@@ -11,8 +11,8 @@ export {
   type RawSyncState,
   type RawPushDevices,
   type RawUpdatePush,
-  type RawPagination,
   type RawVersionListResult,
   type RawUpdateHistoryResult,
   type RawChangelogEntry,
 } from "./updates-mappers";
+export { paginationFromRaw, type RawPagination, type Pagination } from "../_shared";

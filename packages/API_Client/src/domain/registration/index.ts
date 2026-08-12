@@ -1,15 +1,14 @@
 export * from "./registration-entity";
 export {
   inboxEntryFromRaw,
-  deviceFromRaw,
+  registrationDeviceFromRaw,
   createInboxRequestToRaw,
   createInboxResultFromRaw,
   confirmDeviceResultFromRaw,
-  paginationFromRaw,
   type RawInboxEntry,
-  type RawDevice,
-  type RawPagination,
+  type RawRegisteredDevice,
   type RawCreateInboxRequest,
   type RawCreateInboxResponse,
   type RawConfirmDeviceResponse,
 } from "./registration-mappers";
+export { paginationFromRaw, type RawPagination, type Pagination } from "../_shared";

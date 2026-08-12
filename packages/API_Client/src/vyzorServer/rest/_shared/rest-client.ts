@@ -12,113 +12,7 @@ export type { RateLimitInfo } from '../../auth/api-error';
 export { initConnectivityMonitor, getConnectivityMonitor } from '../_connectivity';
 export { getRESTBatcher, resetBatchers } from '../_batching';
 
-let organizationId: string | null = null;
-let authToken: string | null = null;
-let csrfToken: string | null = null;
-let refreshToken: string | null = null;
-
 type RateLimitCallback = (info: RateLimitInfo) => void;
-const rateLimitListeners = new Set<RateLimitCallback>();
-
-let isRefreshing = false;
-let refreshSubscribers: ((token: string | null) => void)[] = [];
-
-export function setOrganizationContext(orgId: string | null): void {
-  organizationId = orgId;
-}
-
-export function getOrganizationContext(): string | null {
-  return organizationId;
-}
-
-export function setAuthToken(token: string | null): void {
-  authToken = token;
-}
-
-export function getAuthToken(): string | null {
-  return authToken;
-}
-
-export function setCSRFToken(token: string | null): void {
-  csrfToken = token;
-}
-
-export function getCSRFToken(): string | null {
-  return csrfToken;
-}
-
-export function setRefreshToken(token: string | null): void {
-  refreshToken = token;
-}
-
-export function getRefreshToken(): string | null {
-  return refreshToken;
-}
-
-export function clearAuthContext(): void {
-  authToken = null;
-  refreshToken = null;
-  csrfToken = null;
-}
-
-export async function fetchAndSetCSRFToken(): Promise<string> {
-  const response = await axios.get<{ csrf_token: string }>(
-    `${getRESTConfig().baseURL}/v1/auth/csrf-token`,
-    { withCredentials: true }
-  );
-  const token = response.data.csrf_token;
-  setCSRFToken(token);
-  return token;
-}
-
-export function onRateLimitChange(callback: RateLimitCallback): () => void {
-  rateLimitListeners.add(callback);
-  return () => rateLimitListeners.delete(callback);
-}
-
-function notifyRateLimit(info: RateLimitInfo): void {
-  rateLimitListeners.forEach((cb) => cb(info));
-}
-
-async function handleTokenRefresh(): Promise<boolean> {
-  if (!refreshToken) {
-    return false;
-  }
-
-  if (isRefreshing) {
-    return new Promise((resolve) => {
-      refreshSubscribers.push((token) => {
-        resolve(token !== null);
-      });
-    });
-  }
-
-  isRefreshing = true;
-
-  try {
-    const response = await axios.post(`${getRESTConfig().baseURL}/v1/auth/refresh`, {
-      refresh_token: refreshToken,
-    });
-
-    const { access_token: newAccessToken, refresh_token: newRefreshToken } = response.data;
-    if (newAccessToken) {
-      setAuthToken(newAccessToken);
-      if (newRefreshToken) {
-        setRefreshToken(newRefreshToken);
-      }
-      refreshSubscribers.forEach((cb) => cb(newAccessToken));
-      refreshSubscribers = [];
-      return true;
-    }
-    return false;
-  } catch {
-    refreshSubscribers.forEach((cb) => cb(null));
-    refreshSubscribers = [];
-    return false;
-  } finally {
-    isRefreshing = false;
-  }
-}
 
 const CIRCUIT_BREAKER_CONFIG = {
   failureThreshold: 5,
@@ -148,15 +42,145 @@ interface CircuitBreaker {
   cachedException: Error | null;
 }
 
-const circuitBreaker: CircuitBreaker = {
-  state: CircuitState.CLOSED,
-  failures: [],
-  successes: 0,
-  halfOpenAttempts: 0,
-  lastFailureTime: 0,
-  nextAttempt: 0,
-  cachedException: null,
+interface InFlightRequest {
+  promise: Promise<unknown>;
+  idempotencyKey: string;
+}
+
+interface ClientState {
+  organizationId: string | null;
+  authToken: string | null;
+  csrfToken: string | null;
+  refreshToken: string | null;
+  rateLimitListeners: Set<RateLimitCallback>;
+  isRefreshing: boolean;
+  refreshSubscribers: ((token: string | null) => void)[];
+  inFlightRequests: Map<string, InFlightRequest>;
+  circuitBreaker: CircuitBreaker;
+  axiosInstance: AxiosInstance | null;
+}
+
+// Single encapsulated holder for all per-session mutable state. Previously this
+// state was spread across ~9 module-level `let`/`const` bindings (the singleton-
+// globals smell); consolidating it into one object gives a single resettable
+// surface and makes the mutable boundary explicit.
+const clientState: ClientState = {
+  organizationId: null,
+  authToken: null,
+  csrfToken: null,
+  refreshToken: null,
+  rateLimitListeners: new Set<RateLimitCallback>(),
+  isRefreshing: false,
+  refreshSubscribers: [],
+  inFlightRequests: new Map<string, InFlightRequest>(),
+  circuitBreaker: {
+    state: CircuitState.CLOSED,
+    failures: [],
+    successes: 0,
+    halfOpenAttempts: 0,
+    lastFailureTime: 0,
+    nextAttempt: 0,
+    cachedException: null,
+  },
+  axiosInstance: null,
 };
+
+export function setOrganizationContext(orgId: string | null): void {
+  clientState.organizationId = orgId;
+}
+
+export function getOrganizationContext(): string | null {
+  return clientState.organizationId;
+}
+
+export function setAuthToken(token: string | null): void {
+  clientState.authToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return clientState.authToken;
+}
+
+export function setCSRFToken(token: string | null): void {
+  clientState.csrfToken = token;
+}
+
+export function getCSRFToken(): string | null {
+  return clientState.csrfToken;
+}
+
+export function setRefreshToken(token: string | null): void {
+  clientState.refreshToken = token;
+}
+
+export function getRefreshToken(): string | null {
+  return clientState.refreshToken;
+}
+
+export function clearAuthContext(): void {
+  clientState.authToken = null;
+  clientState.refreshToken = null;
+  clientState.csrfToken = null;
+}
+
+export async function fetchAndSetCSRFToken(): Promise<string> {
+  const response = await axios.get<{ csrf_token: string }>(
+    `${getRESTConfig().baseURL}/v1/auth/csrf-token`,
+    { withCredentials: true }
+  );
+  const token = response.data.csrf_token;
+  setCSRFToken(token);
+  return token;
+}
+
+export function onRateLimitChange(callback: RateLimitCallback): () => void {
+  clientState.rateLimitListeners.add(callback);
+  return () => clientState.rateLimitListeners.delete(callback);
+}
+
+function notifyRateLimit(info: RateLimitInfo): void {
+  clientState.rateLimitListeners.forEach((cb) => cb(info));
+}
+
+async function handleTokenRefresh(): Promise<boolean> {
+  if (!clientState.refreshToken) {
+    return false;
+  }
+
+  if (clientState.isRefreshing) {
+    return new Promise((resolve) => {
+      clientState.refreshSubscribers.push((token) => {
+        resolve(token !== null);
+      });
+    });
+  }
+
+  clientState.isRefreshing = true;
+
+  try {
+    const response = await axios.post(`${getRESTConfig().baseURL}/v1/auth/refresh`, {
+      refresh_token: clientState.refreshToken,
+    });
+
+    const { access_token: newAccessToken, refresh_token: newRefreshToken } = response.data;
+    if (newAccessToken) {
+      setAuthToken(newAccessToken);
+      if (newRefreshToken) {
+        setRefreshToken(newRefreshToken);
+      }
+      clientState.refreshSubscribers.forEach((cb) => cb(newAccessToken));
+      clientState.refreshSubscribers = [];
+      return true;
+    }
+    return false;
+  } catch {
+    clientState.refreshSubscribers.forEach((cb) => cb(null));
+    clientState.refreshSubscribers = [];
+    return false;
+  } finally {
+    clientState.isRefreshing = false;
+  }
+}
 
 const RETRY_CONFIG = {
   maxRetries: 3,
@@ -168,8 +192,8 @@ const RETRY_CONFIG = {
 function getRecentFailures(): FailureEvent[] {
   const now = Date.now();
   const cutoff = now - CIRCUIT_BREAKER_CONFIG.windowMs;
-  circuitBreaker.failures = circuitBreaker.failures.filter((f) => f.timestamp > cutoff);
-  return circuitBreaker.failures;
+  clientState.circuitBreaker.failures = clientState.circuitBreaker.failures.filter((f) => f.timestamp > cutoff);
+  return clientState.circuitBreaker.failures;
 }
 
 function shouldRetry(error: unknown): boolean {
@@ -205,66 +229,66 @@ function generateUUIDv4(): string {
 }
 
 function recordSuccess(): void {
-  circuitBreaker.lastFailureTime = 0;
-  circuitBreaker.cachedException = null;
+  clientState.circuitBreaker.lastFailureTime = 0;
+  clientState.circuitBreaker.cachedException = null;
 
-  if (circuitBreaker.state === CircuitState.HALF_OPEN) {
-    circuitBreaker.successes++;
+  if (clientState.circuitBreaker.state === CircuitState.HALF_OPEN) {
+    clientState.circuitBreaker.successes++;
 
-    if (circuitBreaker.successes >= CIRCUIT_BREAKER_CONFIG.successThreshold) {
+    if (clientState.circuitBreaker.successes >= CIRCUIT_BREAKER_CONFIG.successThreshold) {
       console.log('[CircuitBreaker] Recovery successful, closing circuit');
-      circuitBreaker.state = CircuitState.CLOSED;
-      circuitBreaker.failures = [];
-      circuitBreaker.successes = 0;
-      circuitBreaker.halfOpenAttempts = 0;
-      circuitBreaker.cachedException = null;
+      clientState.circuitBreaker.state = CircuitState.CLOSED;
+      clientState.circuitBreaker.failures = [];
+      clientState.circuitBreaker.successes = 0;
+      clientState.circuitBreaker.halfOpenAttempts = 0;
+      clientState.circuitBreaker.cachedException = null;
     }
-  } else if (circuitBreaker.state === CircuitState.CLOSED) {
-    circuitBreaker.failures = [];
+  } else if (clientState.circuitBreaker.state === CircuitState.CLOSED) {
+    clientState.circuitBreaker.failures = [];
   }
 }
 
 function recordFailure(error: Error): void {
-  circuitBreaker.lastFailureTime = Date.now();
-  circuitBreaker.failures.push({ timestamp: Date.now() });
-  circuitBreaker.cachedException = error;
+  clientState.circuitBreaker.lastFailureTime = Date.now();
+  clientState.circuitBreaker.failures.push({ timestamp: Date.now() });
+  clientState.circuitBreaker.cachedException = error;
 
   const recentFailures = getRecentFailures();
 
-  if (circuitBreaker.state === CircuitState.HALF_OPEN) {
-    circuitBreaker.halfOpenAttempts++;
+  if (clientState.circuitBreaker.state === CircuitState.HALF_OPEN) {
+    clientState.circuitBreaker.halfOpenAttempts++;
 
-    if (circuitBreaker.halfOpenAttempts >= CIRCUIT_BREAKER_CONFIG.halfOpenMaxAttempts) {
+    if (clientState.circuitBreaker.halfOpenAttempts >= CIRCUIT_BREAKER_CONFIG.halfOpenMaxAttempts) {
       console.log('[CircuitBreaker] Half-open test failed, reopening circuit');
-      circuitBreaker.state = CircuitState.OPEN;
-      circuitBreaker.nextAttempt = Date.now() + CIRCUIT_BREAKER_CONFIG.timeout;
-      circuitBreaker.halfOpenAttempts = 0;
-      circuitBreaker.successes = 0;
+      clientState.circuitBreaker.state = CircuitState.OPEN;
+      clientState.circuitBreaker.nextAttempt = Date.now() + CIRCUIT_BREAKER_CONFIG.timeout;
+      clientState.circuitBreaker.halfOpenAttempts = 0;
+      clientState.circuitBreaker.successes = 0;
     }
-  } else if (circuitBreaker.state === CircuitState.CLOSED) {
+  } else if (clientState.circuitBreaker.state === CircuitState.CLOSED) {
     if (recentFailures.length >= CIRCUIT_BREAKER_CONFIG.failureThreshold) {
       console.log(`[CircuitBreaker] ${recentFailures.length} failures in ${CIRCUIT_BREAKER_CONFIG.windowMs}ms window, opening circuit`);
-      circuitBreaker.state = CircuitState.OPEN;
-      circuitBreaker.nextAttempt = Date.now() + CIRCUIT_BREAKER_CONFIG.timeout;
+      clientState.circuitBreaker.state = CircuitState.OPEN;
+      clientState.circuitBreaker.nextAttempt = Date.now() + CIRCUIT_BREAKER_CONFIG.timeout;
     }
   }
 }
 
 function canAttempt(): boolean {
-  if (circuitBreaker.state === CircuitState.CLOSED) {
+  if (clientState.circuitBreaker.state === CircuitState.CLOSED) {
     return true;
   }
 
-  if (circuitBreaker.state === CircuitState.HALF_OPEN) {
-    return circuitBreaker.halfOpenAttempts < CIRCUIT_BREAKER_CONFIG.halfOpenMaxAttempts;
+  if (clientState.circuitBreaker.state === CircuitState.HALF_OPEN) {
+    return clientState.circuitBreaker.halfOpenAttempts < CIRCUIT_BREAKER_CONFIG.halfOpenMaxAttempts;
   }
 
-  if (circuitBreaker.state === CircuitState.OPEN) {
-    if (Date.now() >= circuitBreaker.nextAttempt) {
+  if (clientState.circuitBreaker.state === CircuitState.OPEN) {
+    if (Date.now() >= clientState.circuitBreaker.nextAttempt) {
       console.log('[CircuitBreaker] Timeout elapsed, entering half-open state');
-      circuitBreaker.state = CircuitState.HALF_OPEN;
-      circuitBreaker.halfOpenAttempts = 0;
-      circuitBreaker.successes = 0;
+      clientState.circuitBreaker.state = CircuitState.HALF_OPEN;
+      clientState.circuitBreaker.halfOpenAttempts = 0;
+      clientState.circuitBreaker.successes = 0;
       return true;
     }
     return false;
@@ -274,10 +298,10 @@ function canAttempt(): boolean {
 }
 
 function getCircuitBreakerError(): Error {
-  if (circuitBreaker.cachedException) {
-    const err = new Error(`Circuit OPEN: ${circuitBreaker.cachedException.message}`) as Error & { code: string; originalError?: Error };
+  if (clientState.circuitBreaker.cachedException) {
+    const err = new Error(`Circuit OPEN: ${clientState.circuitBreaker.cachedException.message}`) as Error & { code: string; originalError?: Error };
     err.code = 'CIRCUIT_OPEN';
-    err.originalError = circuitBreaker.cachedException;
+    err.originalError = clientState.circuitBreaker.cachedException;
     return err;
   }
   const err = new Error('Circuit breaker is OPEN - request blocked') as Error & { code: string };
@@ -295,13 +319,6 @@ function hashPayload(data: unknown): string {
   }
   return Math.abs(hash).toString(36);
 }
-
-interface InFlightRequest {
-  promise: Promise<unknown>;
-  idempotencyKey: string;
-}
-
-const inFlightRequests = new Map<string, InFlightRequest>();
 
 function getInFlightKey(method: string, url: string, data: unknown): string {
   return `${method}:${url}:${hashPayload(data)}`;
@@ -323,16 +340,16 @@ function createAxiosInstance(config: RESTConfig): AxiosInstance {
         throw getCircuitBreakerError();
       }
 
-      if (organizationId) {
-        config.headers.set('X-Organization-ID', organizationId);
+      if (clientState.organizationId) {
+        config.headers.set('X-Organization-ID', clientState.organizationId);
       }
 
-      if (authToken) {
-        config.headers.set('Authorization', `Bearer ${authToken}`);
+      if (clientState.authToken) {
+        config.headers.set('Authorization', `Bearer ${clientState.authToken}`);
       }
 
-      if (csrfToken) {
-        config.headers.set('X-CSRF-Token', csrfToken);
+      if (clientState.csrfToken) {
+        config.headers.set('X-CSRF-Token', clientState.csrfToken);
       }
 
       // Generate idempotency key for mutations (reuse existing if retry)
@@ -424,13 +441,11 @@ function createAxiosInstance(config: RESTConfig): AxiosInstance {
   return instance;
 }
 
-let axiosInstance: AxiosInstance | null = null;
-
 function getAxios(): AxiosInstance {
-  if (!axiosInstance) {
-    axiosInstance = createAxiosInstance(getRESTConfig());
+  if (!clientState.axiosInstance) {
+    clientState.axiosInstance = createAxiosInstance(getRESTConfig());
   }
-  return axiosInstance;
+  return clientState.axiosInstance;
 }
 
 export const restClient = {
@@ -465,7 +480,7 @@ export const restClient = {
 
     // In-flight deduplication
     const inFlightKey = getInFlightKey('POST', url, data);
-    const existing = inFlightRequests.get(inFlightKey);
+    const existing = clientState.inFlightRequests.get(inFlightKey);
     if (existing) {
       console.warn(`[REST] Duplicate POST detected for ${url}, returning existing promise`);
       return existing.promise as Promise<T>;
@@ -485,14 +500,14 @@ export const restClient = {
 
     const requestPromise = getAxios().post<T>(url, data, config);
     const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
-    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
+    clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
       const result = await requestPromise;
-      inFlightRequests.delete(inFlightKey);
+      clientState.inFlightRequests.delete(inFlightKey);
       return result.data as T;
     } catch (error) {
-      inFlightRequests.delete(inFlightKey);
+      clientState.inFlightRequests.delete(inFlightKey);
       throw error;
     }
   },
@@ -503,7 +518,7 @@ export const restClient = {
     }
 
     const inFlightKey = getInFlightKey('PUT', url, data);
-    const existing = inFlightRequests.get(inFlightKey);
+    const existing = clientState.inFlightRequests.get(inFlightKey);
     if (existing) {
       console.warn(`[REST] Duplicate PUT detected for ${url}, returning existing promise`);
       return existing.promise as Promise<T>;
@@ -523,14 +538,14 @@ export const restClient = {
 
     const requestPromise = getAxios().put<T>(url, data, config);
     const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
-    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
+    clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
       const result = await requestPromise;
-      inFlightRequests.delete(inFlightKey);
+      clientState.inFlightRequests.delete(inFlightKey);
       return result.data as T;
     } catch (error) {
-      inFlightRequests.delete(inFlightKey);
+      clientState.inFlightRequests.delete(inFlightKey);
       throw error;
     }
   },
@@ -541,7 +556,7 @@ export const restClient = {
     }
 
     const inFlightKey = getInFlightKey('PATCH', url, data);
-    const existing = inFlightRequests.get(inFlightKey);
+    const existing = clientState.inFlightRequests.get(inFlightKey);
     if (existing) {
       console.warn(`[REST] Duplicate PATCH detected for ${url}, returning existing promise`);
       return existing.promise as Promise<T>;
@@ -561,14 +576,14 @@ export const restClient = {
 
     const requestPromise = getAxios().patch<T>(url, data, config);
     const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
-    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
+    clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
       const result = await requestPromise;
-      inFlightRequests.delete(inFlightKey);
+      clientState.inFlightRequests.delete(inFlightKey);
       return result.data as T;
     } catch (error) {
-      inFlightRequests.delete(inFlightKey);
+      clientState.inFlightRequests.delete(inFlightKey);
       throw error;
     }
   },
@@ -579,7 +594,7 @@ export const restClient = {
     }
 
     const inFlightKey = getInFlightKey('DELETE', url, config?.data);
-    const existing = inFlightRequests.get(inFlightKey);
+    const existing = clientState.inFlightRequests.get(inFlightKey);
     if (existing) {
       console.warn(`[REST] Duplicate DELETE detected for ${url}, returning existing promise`);
       return existing.promise as Promise<T>;
@@ -598,14 +613,14 @@ export const restClient = {
 
     const requestPromise = getAxios().delete<T>(url, config);
     const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
-    inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
+    clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
       const result = await requestPromise;
-      inFlightRequests.delete(inFlightKey);
+      clientState.inFlightRequests.delete(inFlightKey);
       return result.data as T;
     } catch (error) {
-      inFlightRequests.delete(inFlightKey);
+      clientState.inFlightRequests.delete(inFlightKey);
       throw error;
     }
   },
@@ -615,28 +630,48 @@ export { axios };
 
 export function getCircuitBreakerState(): { state: CircuitState; recentFailures: number; cachedException?: string } {
   return {
-    state: circuitBreaker.state,
+    state: clientState.circuitBreaker.state,
     recentFailures: getRecentFailures().length,
-    cachedException: circuitBreaker.cachedException?.message,
+    cachedException: clientState.circuitBreaker.cachedException?.message,
   };
 }
 
 export function resetCircuitBreaker(): void {
-  circuitBreaker.state = CircuitState.CLOSED;
-  circuitBreaker.failures = [];
-  circuitBreaker.successes = 0;
-  circuitBreaker.halfOpenAttempts = 0;
-  circuitBreaker.lastFailureTime = 0;
-  circuitBreaker.nextAttempt = 0;
-  circuitBreaker.cachedException = null;
+  clientState.circuitBreaker.state = CircuitState.CLOSED;
+  clientState.circuitBreaker.failures = [];
+  clientState.circuitBreaker.successes = 0;
+  clientState.circuitBreaker.halfOpenAttempts = 0;
+  clientState.circuitBreaker.lastFailureTime = 0;
+  clientState.circuitBreaker.nextAttempt = 0;
+  clientState.circuitBreaker.cachedException = null;
   console.log('[CircuitBreaker] Manually reset');
 }
 
 export function getInFlightRequestCount(): number {
-  return inFlightRequests.size;
+  return clientState.inFlightRequests.size;
 }
 
 export function clearInFlightRequests(): void {
-  inFlightRequests.clear();
+  clientState.inFlightRequests.clear();
   console.log('[REST] Cleared all in-flight requests');
+}
+
+/** Reset all per-session mutable state to defaults (primarily for tests). */
+export function resetClientState(): void {
+  clientState.organizationId = null;
+  clientState.authToken = null;
+  clientState.csrfToken = null;
+  clientState.refreshToken = null;
+  clientState.rateLimitListeners.clear();
+  clientState.isRefreshing = false;
+  clientState.refreshSubscribers = [];
+  clientState.inFlightRequests.clear();
+  clientState.circuitBreaker.state = CircuitState.CLOSED;
+  clientState.circuitBreaker.failures = [];
+  clientState.circuitBreaker.successes = 0;
+  clientState.circuitBreaker.halfOpenAttempts = 0;
+  clientState.circuitBreaker.lastFailureTime = 0;
+  clientState.circuitBreaker.nextAttempt = 0;
+  clientState.circuitBreaker.cachedException = null;
+  clientState.axiosInstance = null;
 }

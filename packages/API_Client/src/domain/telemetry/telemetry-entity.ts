@@ -1,3 +1,4 @@
+import type { MetricThreshold } from "../_shared";
 
 
 // Raw telemetry frame from device - real-time sensor data
@@ -47,10 +48,7 @@ export interface RawMetricEvent {
 }
 
 // Threshold helpers for risk assessment
-export interface MetricThreshold {
-  warning: number;
-  critical: number;
-}
+export type { MetricThreshold } from "../_shared";
 
 export function isRiskWarning(value: number, threshold: MetricThreshold): boolean {
   return value >= threshold.warning && value < threshold.critical;

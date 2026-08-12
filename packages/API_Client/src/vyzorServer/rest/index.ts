@@ -32,7 +32,6 @@ export * from "./diagnostics";
 export * from "./apikey";
 export * from "./commands";
 export * from "./updates";
-export * from "./device";
 export * from "./logs";
 export * from "./session";
 export * from "./admin";
@@ -56,4 +55,8 @@ export * from "./email";
 export * from "./events";
 export * from "./health";
 export * from "./metrics";
-export * from "../websocket";
+
+// WebSocket, device-signing, and crypto subsystems depend on Node-only
+// (`node:crypto`) or environment-specific globals. They are exported from the
+// `@vyzorix/api-client/node` entry to keep the universal REST surface
+// bundle-safe for browsers.

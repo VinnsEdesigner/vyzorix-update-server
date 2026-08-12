@@ -2,7 +2,7 @@ export * from "./realtime-entity";
 export * from "./realtime-validators";
 export {
   telemetryFromRaw,
-  eventFromRaw,
+  wsEventFromRaw,
   commandAckFromRaw,
   authResponseFromRaw,
   type RawWSTelemetry,

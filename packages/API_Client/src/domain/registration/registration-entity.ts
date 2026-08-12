@@ -1,6 +1,8 @@
+import type { DeviceStatus, Pagination } from "../_shared";
 export type InboxStatus = "pending" | "acknowledged" | "approving" | "approved" | "rejected" | "expired";
 export type AcknowledgeAction = "acknowledge" | "approve" | "reject";
-export type DeviceStatus = "online" | "offline" | "deregistered";
+export type { DeviceStatus } from "../_shared";
+export type { Pagination } from "../_shared";
 
 
 export interface CreateInboxRequest {
@@ -55,7 +57,7 @@ export interface InboxEntry {
   createdAt: Date;
 }
 
-export interface Device {
+export interface RegisteredDevice {
   id: string;
   imei: string;
   deviceName: string;
@@ -69,20 +71,13 @@ export interface Device {
   online: boolean;
 }
 
-export interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 export interface InboxListResult {
   requests: InboxEntry[];
   pagination: Pagination;
 }
 
-export interface DeviceListResult {
-  devices: Device[];
+export interface RegisteredDeviceListResult {
+  devices: RegisteredDevice[];
   pagination: Pagination;
 }
 

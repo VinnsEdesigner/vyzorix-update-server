@@ -1,10 +1,11 @@
+import type { Pagination } from "../_shared";
 export type ReleaseType = "major" | "minor" | "patch";
 export type UpdateStatus = "pending" | "in_progress" | "completed" | "failed" | "cancelled";
 export type InstallType = "immediate" | "scheduled";
 export type DevicePushStatus = "pending" | "sent" | "in_progress" | "acknowledged" | "completed" | "failed";
 export type SyncStatus = "idle" | "syncing" | "synced" | "error";
 
-export interface Version {
+export interface UpdateVersion {
   id: string;
   version: string;
   apkFilename: string;
@@ -48,15 +49,10 @@ export interface UpdatePush {
   devices: PushDevices;
 }
 
-export interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+export type { Pagination } from "../_shared";
 
 export interface VersionListResult {
-  versions: Version[];
+  versions: UpdateVersion[];
   pagination: Pagination;
 }
 

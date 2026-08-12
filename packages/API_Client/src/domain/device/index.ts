@@ -4,10 +4,9 @@ export {
   deviceFromRaw,
   deviceListItemFromRaw,
   deviceStatsFromRaw,
-  paginationFromRaw,
   type RawDevice,
   type RawDeviceListItem,
   type RawDeviceStats,
-  type RawPagination,
   type RawDeviceListResult,
 } from "./device-mappers";
+export { paginationFromRaw, type RawPagination, type Pagination } from "../_shared";

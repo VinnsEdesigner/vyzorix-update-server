@@ -4,19 +4,9 @@
 
 
 import type { Thresholds, ClientSettings } from "./settings-entity";
+import type { ValidationResult } from "../_shared";
 
-
-
-
-
-
-
-
-
-export interface ValidationResult {
-  isValid: boolean;
-  errors: Record<string, string[]>;
-}
+export { type ValidationResult } from "../_shared";
 
 
 

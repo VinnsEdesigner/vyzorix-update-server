@@ -113,7 +113,7 @@ export function connectionFromRaw(raw: RawConnectionInfo): ConnectionInfo {
   };
 }
 
-export function telemetryFromRaw(raw: RawTelemetryInfo): TelemetryInfo {
+export function diagnosticTelemetryFromRaw(raw: RawTelemetryInfo): TelemetryInfo {
   return {
     lastTimestamp: raw.lastTimestamp ? new Date(raw.lastTimestamp) : undefined,
     framesToday: raw.framesToday ?? 0,
@@ -139,7 +139,7 @@ export function deviceInspectionFromRaw(raw: RawDeviceInspection): DeviceInspect
     software: softwareFromRaw(raw.software),
     registration: registrationFromRaw(raw.registration),
     connection: connectionFromRaw(raw.connection),
-    telemetry: telemetryFromRaw(raw.telemetry),
+    telemetry: diagnosticTelemetryFromRaw(raw.telemetry),
   };
 }
 

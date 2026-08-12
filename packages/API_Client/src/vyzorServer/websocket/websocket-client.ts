@@ -1,6 +1,6 @@
 import {
   telemetryFromRaw,
-  eventFromRaw,
+  wsEventFromRaw,
   commandAckFromRaw,
   authResponseFromRaw,
   type WSTelemetry,
@@ -308,7 +308,7 @@ export class WebSocketClientImpl implements WebSocketClient {
         this.telemetryHandlers.forEach((h) => h(telemetryFromRaw(message.payload as RawWSTelemetry)));
         break;
       case "EVENT":
-        this.eventHandlers.forEach((h) => h(eventFromRaw(message.payload as RawWSEvent)));
+        this.eventHandlers.forEach((h) => h(wsEventFromRaw(message.payload as RawWSEvent)));
         break;
       case "COMMAND_ACK":
         this.commandAckHandlers.forEach((h) => h(commandAckFromRaw(message.payload as RawWSCommandAck)));

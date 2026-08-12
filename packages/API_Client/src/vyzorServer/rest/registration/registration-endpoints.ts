@@ -1,22 +1,22 @@
 import { restClient, getCSRFToken, fetchAndSetCSRFToken, getOrganizationContext } from "../_shared/rest-client";
 import {
   inboxEntryFromRaw,
-  deviceFromRaw,
+  registrationDeviceFromRaw,
   paginationFromRaw,
   createInboxRequestToRaw,
   createInboxResultFromRaw,
   confirmDeviceResultFromRaw,
   type RawInboxEntry,
-  type RawDevice,
+  type RawRegisteredDevice,
   type RawPagination,
   type RawCreateInboxResponse,
   type RawConfirmDeviceResponse,
 } from "@/domain/registration";
 import type {
   InboxEntry,
-  Device,
+  RegisteredDevice,
   InboxListResult,
-  DeviceListResult,
+  RegisteredDeviceListResult,
   AckResult,
   DeregisterResult,
   AcknowledgeAction,
@@ -48,7 +48,7 @@ interface RawInboxListResponse {
 }
 
 interface RawDeviceListResponse {
-  devices: RawDevice[];
+  devices: RawRegisteredDevice[];
   pagination: RawPagination;
 }
 
@@ -165,7 +165,7 @@ export const registration = {
     page?: number;
     limit?: number;
     organizationId?: string;
-  }): Promise<DeviceListResult> {
+  }): Promise<RegisteredDeviceListResult> {
     const response = await restClient.get<RawDeviceListResponse>(PATHS.devices, {
       params: {
         status: params?.status,
@@ -175,17 +175,17 @@ export const registration = {
       },
     });
     return {
-      devices: response.devices.map(deviceFromRaw),
+      devices: response.devices.map(registrationDeviceFromRaw),
       pagination: paginationFromRaw(response.pagination),
     };
   },
 
-  async getDevice(imei: string, organizationId?: string): Promise<Device | null> {
-    const response = await restClient.get<RawDevice | null>(PATHS.device(imei), {
+  async getDevice(imei: string, organizationId?: string): Promise<RegisteredDevice | null> {
+    const response = await restClient.get<RawRegisteredDevice | null>(PATHS.device(imei), {
       params: { organization_id: organizationId || getOrganizationContext() },
     });
     if (!response?.imei) return null;
-    return deviceFromRaw(response);
+    return registrationDeviceFromRaw(response);
   },
 
   async deregisterDevice(imei: string, organizationId?: string): Promise<DeregisterResult> {

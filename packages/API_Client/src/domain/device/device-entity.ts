@@ -1,4 +1,6 @@
-export type DeviceStatus = "online" | "offline" | "deregistered";
+import type { DeviceStatus, Pagination } from "../_shared";
+export type { DeviceStatus } from "../_shared";
+export type { Pagination } from "../_shared";
 
 export interface DeviceConnection {
   web_socket_status?: string;
@@ -42,13 +44,6 @@ export interface DeviceStats {
   total: number;
   online: number;
   offline: number;
-}
-
-export interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  total_pages: number;
 }
 
 export interface DeviceListResult {

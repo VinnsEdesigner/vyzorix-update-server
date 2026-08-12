@@ -1,16 +1,8 @@
+import { validateIMEI, type ValidationResult } from "../_shared";
 
+export { validateIMEI, type ValidationResult } from "../_shared";
 
 import type { PresetCommandType, CommandParams } from "./commands-entity";
-
-
-
-
-
-
-export interface ValidationResult {
-  isValid: boolean;
-  errors: Record<string, string[]>;
-}
 
 
 
@@ -36,26 +28,6 @@ export function validatePresetCommandType(type: string): ValidationResult {
     errors.type = ["Command type is required"];
   } else if (!VALID_PRESET_TYPES.includes(type as PresetCommandType)) {
     errors.type = [`Invalid preset command type: ${type}`];
-  }
-  
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors,
-  };
-}
-
-
-
-
-
-
-export function validateIMEI(imei: string): ValidationResult {
-  const errors: Record<string, string[]> = {};
-  
-  if (!imei) {
-    errors.imei = ["Device IMEI is required"];
-  } else if (!/^\d{15}$/.test(imei)) {
-    errors.imei = ["Device IMEI must be 15 digits"];
   }
   
   return {
