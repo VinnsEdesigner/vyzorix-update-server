@@ -113,11 +113,14 @@ function createApolloClient(config: GraphQLConfig): ApolloClient<NormalizedCache
 }
 
 export function getApolloClient(): ApolloClient<NormalizedCacheObject> {
-  return graphqlState.apolloClient || createApolloClient({
-    organizationId: '',
-    credentials: 'include',
-    getUri: () => getGraphQLUri(graphqlState.currentOrgId),
-  });
+  if (!graphqlState.apolloClient) {
+    graphqlState.apolloClient = createApolloClient({
+      organizationId: '',
+      credentials: 'include',
+      getUri: () => getGraphQLUri(graphqlState.currentOrgId),
+    });
+  }
+  return graphqlState.apolloClient;
 }
 
 export function setOrganizationContext(organizationId: string, authToken?: string): void {
