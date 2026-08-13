@@ -20,19 +20,18 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
-	eventapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/event"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	eventapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/event"
+	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
 	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
-	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/github"
@@ -43,6 +42,7 @@ import (
 	passwordpkg "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/password"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
 	"github.com/gin-gonic/gin"
@@ -67,9 +67,37 @@ func ProvideLogger() *slog.Logger {
 }
 
 // ProvideSQLite opens the database connection.
-func ProvideSQLite(cfg config.Config) (*storage.SQLite, error) {
-	sqliteCfg := storage.DefaultConfig(cfg.DatabaseURL)
-	return storage.Open(sqliteCfg)
+//
+// The backend is selected from config: when TURSO_DB_URL is set (or
+// DATABASE_BACKEND=turso) the server connects to Turso libSQL over HTTP for
+// production; otherwise it opens a local SQLite file for development. Both
+// paths run through the same migration registry and return the same
+// *storage.SQLite handle, so every repository works unchanged either way.
+func ProvideSQLite(cfg config.Config, log *slog.Logger) (*storage.SQLite, error) {
+	storageCfg := buildStorageConfig(cfg)
+	return storage.OpenWithLogger(storageCfg, log)
+}
+
+// buildStorageConfig translates the app config into a storage.Config bound to
+// the resolved backend.
+func buildStorageConfig(cfg config.Config) *storage.Config {
+	switch cfg.ResolvedDatabaseBackend() {
+	case "turso":
+		return &storage.Config{
+			Backend:           storage.BackendTurso,
+			TursoURL:          cfg.TursoDatabaseURL,
+			TursoAuthToken:    cfg.TursoAuthToken,
+			MaxOpenConns:      cfg.DatabaseMaxOpenConns,
+			MaxIdleConns:      cfg.DatabaseMaxIdleConns,
+			ConnMaxLifetime:   cfg.DatabaseConnMaxLifetime,
+			ConnMaxIdleTime:   cfg.DatabaseConnMaxIdleTime,
+			RequestTimeout:    cfg.DatabaseRequestTimeout,
+			HealthCheckPeriod: cfg.DatabaseHealthCheckPeriod,
+		}
+	default:
+		sqliteCfg := storage.DefaultConfig(cfg.DatabaseURL)
+		return sqliteCfg
+	}
 }
 
 // ProvideDB returns the underlying *sql.DB from SQLite.
@@ -88,8 +116,9 @@ func ProvideAuditLogger(db *sql.DB, cfg config.Config) *audit.Logger {
 	auditRepo := audit.NewRepository(db)
 	auditLog := logging.NewAuditFileLogger(cfg.AuditLogPath)
 
-	
-	var separateRepo interface{ Log(context.Context, *audit.Entry) error }
+	var separateRepo interface {
+		Log(context.Context, *audit.Entry) error
+	}
 	if cfg.AuditLogSeparateDB && cfg.AuditLogSeparateDBPath != "" {
 		sepRepo, err := audit.NewSeparateDBAuditRepository(audit.SeparateDBConfig{Path: cfg.AuditLogSeparateDBPath})
 		if err != nil {
@@ -271,7 +300,7 @@ func ProvideAuthService(
 func ProvideDeviceService(deviceRepo *storage.DeviceRepository, operatorRepo *storage.OperatorRepository, txManager transaction.TxManager, log *slog.Logger, hub *hub.Hub) *device.Service {
 	svc := device.NewService(deviceRepo, operatorRepo, log)
 	svc.WithTxManager(txManager)
-	svc.WithStatusUpdater(hub) 
+	svc.WithStatusUpdater(hub)
 	return svc
 }
 
@@ -388,9 +417,9 @@ func ProvideDeviceSettingsService(
 
 // HubResult holds the WebSocket hub components.
 type HubResult struct {
-	Hub        *hub.Hub
+	Hub          *hub.Hub
 	MessageQueue *hub.MessageQueue
-	RateLimiter *hub.RateLimiter
+	RateLimiter  *hub.RateLimiter
 }
 
 // ProvideWebSocketHub creates the WebSocket hub with message queue and rate limiter.
@@ -433,7 +462,6 @@ func ProvideFCMNotifier(log *slog.Logger, cfg config.Config, db *sql.DB) fcm.Not
 
 	notifier := fcm.NewEnhancedNotifier(fcmClient, fcm.DefaultFCMConfig())
 
-	
 	if db != nil {
 		notifier = fcm.NewEnhancedNotifierWithDB(fcmClient, fcm.DefaultFCMConfig(), db)
 		retryWorker := worker.NewFCMRetryWorker(db, notifier, log, 30*time.Second)
@@ -679,13 +707,13 @@ func ProvideMiddlewareSet(
 	// Create a separate rate limiter for auth with different limits.
 	authLimiter := middleware.NewRateLimiter(5, time.Minute)
 	return &MiddlewareSet{
-		Factory:          factory,
-		CookieAuth:       cookieAuth,
-		Lockout:          lockout,
-		IPIntelligence:   ipIntelligence,
-		HmacVerifier:     hmacVerifier,
-		RateLimiter:      rateLimiter,
-		AuthLimiter:      authLimiter,
+		Factory:        factory,
+		CookieAuth:     cookieAuth,
+		Lockout:        lockout,
+		IPIntelligence: ipIntelligence,
+		HmacVerifier:   hmacVerifier,
+		RateLimiter:    rateLimiter,
+		AuthLimiter:    authLimiter,
 	}
 }
 
@@ -792,40 +820,40 @@ func ProvideServerDependencies(
 	idempotencyRepo *storage.IdempotencyRepository,
 ) *ServerDependencies {
 	return &ServerDependencies{
-		FCMNotifier:         fcmNotifier,
-		AppCheckVerifier:    appCheckVerifier,
-		DeviceDeletionWorker: deviceDeletionWorker,
-		CommandOutbox:       commandOutbox,
-		DeviceRepo:          deviceRepo,
-		OperatorRepo:        operatorRepo,
-		RateLimiter:         rateLimiter,
-		Hub:                 hubResult.Hub,
-		AuthService:         authService,
-		AuthLimiter:         middleware.NewRateLimiter(5, time.Minute),
-		IPIntelligence:      ipIntelligence,
-		Log:                 log,
-		SessionManager:      sessionManager,
-		GoogleVerifier:      googleVerifier,
-		EmailService:        emailService,
+		FCMNotifier:           fcmNotifier,
+		AppCheckVerifier:      appCheckVerifier,
+		DeviceDeletionWorker:  deviceDeletionWorker,
+		CommandOutbox:         commandOutbox,
+		DeviceRepo:            deviceRepo,
+		OperatorRepo:          operatorRepo,
+		RateLimiter:           rateLimiter,
+		Hub:                   hubResult.Hub,
+		AuthService:           authService,
+		AuthLimiter:           middleware.NewRateLimiter(5, time.Minute),
+		IPIntelligence:        ipIntelligence,
+		Log:                   log,
+		SessionManager:        sessionManager,
+		GoogleVerifier:        googleVerifier,
+		EmailService:          emailService,
 		EmailVerificationRepo: emailVerifyRepo,
-		CommandService:      commandService,
-		ClientService:       clientService,
-		DB:                 sqlite,
-		Lockout:            lockout,
-		DeviceService:       deviceService,
-		Metrics:            metrics,
-		AuditLogger:        auditLogger,
-		Config:             cfg,
-		UpdatesStorage:     updatesStorage,
-		UpdatesService:     updatesService,
-		TelemetryRepo:      telemetryRepo,
-		APIKeyService:      apiKeyService,
-		OrgService:         orgService,
-		MemberService:      memberService,
-		InvitationService:  invitationService,
-		OrgSettingsService: orgSettingsService,
+		CommandService:        commandService,
+		ClientService:         clientService,
+		DB:                    sqlite,
+		Lockout:               lockout,
+		DeviceService:         deviceService,
+		Metrics:               metrics,
+		AuditLogger:           auditLogger,
+		Config:                cfg,
+		UpdatesStorage:        updatesStorage,
+		UpdatesService:        updatesService,
+		TelemetryRepo:         telemetryRepo,
+		APIKeyService:         apiKeyService,
+		OrgService:            orgService,
+		MemberService:         memberService,
+		InvitationService:     invitationService,
+		OrgSettingsService:    orgSettingsService,
 		DeviceSettingsService: deviceSettingsService,
-		IdempotencyRepo: idempotencyRepo,
+		IdempotencyRepo:       idempotencyRepo,
 	}
 }
 

@@ -22,7 +22,7 @@ import (
 // Injector creates all dependencies.
 func Injector(cfg config.Config) (*Server, error) {
 	logger := ProvideLogger()
-	sqLite, err := ProvideSQLite(cfg)
+	sqLite, err := ProvideSQLite(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func Injector(cfg config.Config) (*Server, error) {
 	authService.SetSessionManager(manager)
 	txManager := ProvideTxManager(db)
 	hubResult := ProvideWebSocketHub(logger, deviceRepository, telemetryRepository, db)
-	
+
 	service := ProvideDeviceService(deviceRepository, operatorRepository, txManager, logger, hubResult.Hub)
 	clientService := ProvideClientService(clientRepository)
 	commandService := ProvideCommandService(commandRepository, deviceRepository)
@@ -63,7 +63,7 @@ func Injector(cfg config.Config) (*Server, error) {
 		return nil, err
 	}
 	deviceDeletionWorker := ProvideDeviceDeletionWorker(deviceRepository, logger, cfg)
-	
+
 	commandOutbox := ProvideCommandOutbox(commandRepository, deviceRepository, hubResult.Hub, notifier, logger)
 	middlewareFactory := ProvideMiddlewareFactory(logger, manager, authService, clientService, cfg)
 	rateLimiter := ProvideRateLimiter()

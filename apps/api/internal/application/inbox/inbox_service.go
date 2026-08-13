@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 	"time"
 
+	deviceapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
@@ -448,7 +450,12 @@ func (s *Service) checkDeviceAndInboxStatus(ctx context.Context, imei string) (*
 
 func (s *Service) checkDeviceStatus(ctx context.Context, imei string) error {
 	existingDevice, err := s.deviceLookup.GetDeviceByIMEI(ctx, imei)
-	if err != nil && err != device.ErrNotFound {
+	// A "not found" device is the expected, happy path for new registrations.
+	// The device lookup is backed by the device application service, which returns
+	// application.ErrDeviceNotFound; the domain repository may surface
+	// device.ErrNotFound. Accept either sentinel so the contract is robust to the
+	// concrete implementation behind the DeviceLookup interface.
+	if err != nil && !errors.Is(err, device.ErrNotFound) && !errors.Is(err, deviceapp.ErrDeviceNotFound) {
 		return fmt.Errorf("failed to check existing device: %w", err)
 	}
 	if existingDevice != nil && !existingDevice.IsDeregistered() {

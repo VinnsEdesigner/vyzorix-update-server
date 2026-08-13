@@ -99,6 +99,15 @@ type Config struct {
 	GitHubOAuthClientID           string
 	Env                           string
 	DatabaseURL                   string
+	DatabaseBackend               string // auto | sqlite | turso
+	TursoDatabaseURL              string
+	TursoAuthToken                string
+	DatabaseMaxOpenConns          int
+	DatabaseMaxIdleConns          int
+	DatabaseConnMaxLifetime       time.Duration
+	DatabaseConnMaxIdleTime       time.Duration
+	DatabaseRequestTimeout        time.Duration
+	DatabaseHealthCheckPeriod     time.Duration
 	ResendAPIKey                  string
 	ServerAPIToken                string
 	EmailFromName                 string
@@ -201,48 +210,57 @@ func Load() (Config, error) {
 	}
 
 	c := Config{
-		Port:                     get("PORT", "3000"),
-		Env:                      get("NODE_ENV", get("GO_ENV", "development")),
-		DatabaseURL:              get("DATABASE_URL", "./data/vyzorix.db"),
-		DataDir:                  get("VYZORIX_API_DIR", "./data"),
-		BinDir:                   get("VYZORIX_BIN_DIR", "./bin"),
-		PublicDir:                get("VYZORIX_PUBLIC_DIR", "./public"),
-		FirebaseCreds:            os.Getenv("FIREBASE_CREDENTIALS"),
-		ServerAPIToken:           os.Getenv("SERVER_API_TOKEN"),
-		APIKeyPrefix:             get("API_KEY_PREFIX", "vxyz"),
-		MonthlyKeyLimit:          20,
-		MaxKeyNameLength:         64,
-		RequireKeyName:           true,
-		AllowKeyRenaming:         true,
-		EnableUsageTracking:      true,
-		JWTSecret:                os.Getenv("JWT_SECRET"),
-		SessionSecret:            os.Getenv("SESSION_SECRET"),
-		SessionMaxAge:            sessionMaxAge,
-		AllowedOrigins:           splitCSV(get("ALLOWED_ORIGINS", "*")),
-		HMACWindow:               30 * time.Second,
-		NonceCacheTTL:            1 * time.Hour,
-		GoogleOAuthClientID:      os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
-		GoogleOAuthClientSecret:  os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
-		GitHubOAuthClientID:      os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
-		GitHubOAuthClientSecret:  os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
-		GitHubReleaseRepo:        os.Getenv("GITHUB_RELEASE_REPO"),
-		GitHubReleaseToken:       os.Getenv("GITHUB_RELEASE_TOKEN"),
-		GitHubWebhookSecret:      os.Getenv("GITHUB_WEBHOOK_SECRET"),
-		BaseURL:                  get("BASE_URL", "http://localhost:3000"),
-		FrontendURL:              get("FRONTEND_URL", "http://localhost:5173"),
-		ResendAPIKey:             os.Getenv("RESEND_API_KEY"),
-		EmailFrom:                get("EMAIL_FROM", "noreply@vyzorix.app"),
-		EmailFromName:            get("EMAIL_FROM_NAME", "Vyzorix"),
-		JWTDuration:              jwtDuration,
-		EmailVerifyTokenExpiry:   emailVerifyExpiry,
-		PasswordResetTokenExpiry: passwordResetExpiry,
-		EnableGraphQL:            getBool("ENABLE_GRAPHQL", true),
-		AuditLogPath:             get("AUDIT_LOG_PATH", "./data/audit.log"),
-		AuditLogSeparateDB:     getBool("AUDIT_LOG_SEPARATE_DB", false),
-		AuditLogSeparateDBPath: get("AUDIT_LOG_SEPARATE_DB_PATH", "./data/audit/audit.db"),
-		DiagnosticsConfig:      LoadDiagnosticsConfig(),
-		RateLimitPerMin:        getenvInt("RATE_LIMIT_REQUESTS", 100),
-		AuthRateLimitMin:       getenvInt("AUTH_RATE_LIMIT_REQUESTS", 60),
+		Port:                      get("PORT", "3000"),
+		Env:                       get("NODE_ENV", get("GO_ENV", "development")),
+		DatabaseURL:               get("DATABASE_URL", "./data/vyzorix.db"),
+		DatabaseBackend:           get("DATABASE_BACKEND", "auto"),
+		TursoDatabaseURL:          os.Getenv("TURSO_DB_URL"),
+		TursoAuthToken:            os.Getenv("TURSO_AUTH_TOKEN"),
+		DatabaseMaxOpenConns:      getenvInt("DATABASE_MAX_OPEN_CONNS", 16),
+		DatabaseMaxIdleConns:      getenvInt("DATABASE_MAX_IDLE_CONNS", 8),
+		DatabaseConnMaxLifetime:   parseDurationEnv("DATABASE_CONN_MAX_LIFETIME", 30*time.Minute),
+		DatabaseConnMaxIdleTime:   parseDurationEnv("DATABASE_CONN_MAX_IDLE_TIME", 5*time.Minute),
+		DatabaseRequestTimeout:    parseDurationEnv("DATABASE_REQUEST_TIMEOUT", 15*time.Second),
+		DatabaseHealthCheckPeriod: parseDurationEnv("DATABASE_HEALTH_CHECK_PERIOD", 30*time.Second),
+		DataDir:                   get("VYZORIX_API_DIR", "./data"),
+		BinDir:                    get("VYZORIX_BIN_DIR", "./bin"),
+		PublicDir:                 get("VYZORIX_PUBLIC_DIR", "./public"),
+		FirebaseCreds:             os.Getenv("FIREBASE_CREDENTIALS"),
+		ServerAPIToken:            os.Getenv("SERVER_API_TOKEN"),
+		APIKeyPrefix:              get("API_KEY_PREFIX", "vxyz"),
+		MonthlyKeyLimit:           20,
+		MaxKeyNameLength:          64,
+		RequireKeyName:            true,
+		AllowKeyRenaming:          true,
+		EnableUsageTracking:       true,
+		JWTSecret:                 os.Getenv("JWT_SECRET"),
+		SessionSecret:             os.Getenv("SESSION_SECRET"),
+		SessionMaxAge:             sessionMaxAge,
+		AllowedOrigins:            splitCSV(get("ALLOWED_ORIGINS", "*")),
+		HMACWindow:                30 * time.Second,
+		NonceCacheTTL:             1 * time.Hour,
+		GoogleOAuthClientID:       os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
+		GoogleOAuthClientSecret:   os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+		GitHubOAuthClientID:       os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
+		GitHubOAuthClientSecret:   os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
+		GitHubReleaseRepo:         os.Getenv("GITHUB_RELEASE_REPO"),
+		GitHubReleaseToken:        os.Getenv("GITHUB_RELEASE_TOKEN"),
+		GitHubWebhookSecret:       os.Getenv("GITHUB_WEBHOOK_SECRET"),
+		BaseURL:                   get("BASE_URL", "http://localhost:3000"),
+		FrontendURL:               get("FRONTEND_URL", "http://localhost:5173"),
+		ResendAPIKey:              os.Getenv("RESEND_API_KEY"),
+		EmailFrom:                 get("EMAIL_FROM", "noreply@vyzorix.app"),
+		EmailFromName:             get("EMAIL_FROM_NAME", "Vyzorix"),
+		JWTDuration:               jwtDuration,
+		EmailVerifyTokenExpiry:    emailVerifyExpiry,
+		PasswordResetTokenExpiry:  passwordResetExpiry,
+		EnableGraphQL:             getBool("ENABLE_GRAPHQL", true),
+		AuditLogPath:              get("AUDIT_LOG_PATH", "./data/audit.log"),
+		AuditLogSeparateDB:        getBool("AUDIT_LOG_SEPARATE_DB", false),
+		AuditLogSeparateDBPath:    get("AUDIT_LOG_SEPARATE_DB_PATH", "./data/audit/audit.db"),
+		DiagnosticsConfig:         LoadDiagnosticsConfig(),
+		RateLimitPerMin:           getenvInt("RATE_LIMIT_REQUESTS", 100),
+		AuthRateLimitMin:          getenvInt("AUTH_RATE_LIMIT_REQUESTS", 60),
 	}
 
 	c.APIKeys = loadAPIKeys()
@@ -261,6 +279,10 @@ func Load() (Config, error) {
 	}
 
 	if err := validateProductionConfig(&c); err != nil {
+		return c, err
+	}
+
+	if err := validateDatabaseConfig(&c); err != nil {
 		return c, err
 	}
 
@@ -410,6 +432,64 @@ func validateProductionConfig(c *Config) error {
 	return nil
 }
 
+// ResolvedDatabaseBackend determines which storage backend will be used given
+// the configured DATABASE_BACKEND and the presence of Turso credentials.
+// "auto" selects turso when TURSO_DB_URL is set, otherwise sqlite.
+func (c *Config) ResolvedDatabaseBackend() string {
+	switch strings.ToLower(strings.TrimSpace(c.DatabaseBackend)) {
+	case "sqlite":
+		return "sqlite"
+	case "turso":
+		return "turso"
+	default: // "auto" or unset
+		if c.TursoDatabaseURL != "" {
+			return "turso"
+		}
+		return "sqlite"
+	}
+}
+
+// validateDatabaseConfig validates the database backend selection and the
+// credentials required by the chosen backend.
+func validateDatabaseConfig(c *Config) error {
+	backend := c.ResolvedDatabaseBackend()
+
+	switch backend {
+	case "turso":
+		if c.TursoDatabaseURL == "" {
+			return errors.New("DATABASE_BACKEND=turso requires TURSO_DB_URL to be set")
+		}
+		if c.TursoAuthToken == "" {
+			return errors.New("DATABASE_BACKEND=turso requires TURSO_AUTH_TOKEN to be set")
+		}
+		if !strings.HasPrefix(c.TursoDatabaseURL, "libsql://") &&
+			!strings.HasPrefix(c.TursoDatabaseURL, "https://") &&
+			!strings.HasPrefix(c.TursoDatabaseURL, "http://") {
+			return errors.New("TURSO_DB_URL must use the libsql://, https://, or http:// scheme")
+		}
+		if c.Env == "production" && strings.HasPrefix(c.TursoDatabaseURL, "http://") {
+			return errors.New("TURSO_DB_URL must use libsql:// or https:// in production (http:// is plaintext)")
+		}
+	case "sqlite":
+		if strings.TrimSpace(c.DatabaseURL) == "" {
+			return errors.New("DATABASE_BACKEND=sqlite requires DATABASE_URL to be set")
+		}
+	default:
+		return fmt.Errorf("invalid DATABASE_BACKEND %q (want auto, sqlite, or turso)", c.DatabaseBackend)
+	}
+
+	if c.DatabaseMaxOpenConns < 0 {
+		return errors.New("DATABASE_MAX_OPEN_CONNS must be >= 0")
+	}
+	if c.DatabaseMaxIdleConns < 0 {
+		return errors.New("DATABASE_MAX_IDLE_CONNS must be >= 0")
+	}
+	if c.DatabaseRequestTimeout <= 0 {
+		return errors.New("DATABASE_REQUEST_TIMEOUT must be positive")
+	}
+	return nil
+}
+
 // validatePort validates the port configuration.
 func validatePort(c *Config) error {
 	port, err := strconv.Atoi(c.Port)
@@ -440,6 +520,20 @@ func get(k, fallback string) string {
 	}
 
 	return fallback
+}
+
+// parseDurationEnv parses a Go duration string (e.g. "30s", "5m", "1h") with a
+// fallback default. Falls back when unset or unparseable.
+func parseDurationEnv(k string, fallback time.Duration) time.Duration {
+	v := strings.TrimSpace(os.Getenv(k))
+	if v == "" {
+		return fallback
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		return fallback
+	}
+	return d
 }
 
 func getBool(k string, fallback bool) bool {

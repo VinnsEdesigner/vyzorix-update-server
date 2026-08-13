@@ -3,6 +3,7 @@ package middleware
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -251,7 +252,17 @@ func storeIdempotencyRecord(c *gin.Context, config IdempotencyConfig, path, key 
 	}
 
 	go func() {
-		_ = config.Repository.Create(c.Request.Context(), record)
+		// The request context (c.Request.Context()) is cancelled the moment the
+		// response is written and the handler returns. Storage backends that honor
+		// context cancellation — notably Turso libSQL over HTTP — would abort the
+		// INSERT, silently dropping the idempotency record and defeating replay on
+		// the next request. Use a detached context with a bounded timeout so the
+		// record is durably persisted independent of the request lifecycle.
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := config.Repository.Create(ctx, record); err != nil {
+			fmt.Printf("idempotency: failed to store record key=%s: %v\n", key, err)
+		}
 	}()
 }
 
