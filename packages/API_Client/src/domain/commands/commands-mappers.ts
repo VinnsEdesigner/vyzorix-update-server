@@ -1,3 +1,4 @@
+import type { RawPagination } from "../_shared";
 import type {
   Command,
   CommandListItem,
@@ -32,13 +33,6 @@ export interface RawCommandListItem {
   command: string;
   status: string;
   createdAt: number;
-}
-
-export interface RawPagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
 }
 
 export interface RawCommandHistoryResult {
@@ -81,15 +75,6 @@ export function commandListItemFromRaw(raw: RawCommandListItem): CommandListItem
     command: raw.command,
     status: (raw.status as CommandStatus) ?? "pending",
     createdAt: parseTimestamp(raw.createdAt) ?? new Date(),
-  };
-}
-
-export function paginationFromRaw(raw: RawPagination): { page: number; limit: number; total: number; totalPages: number } {
-  return {
-    page: raw.page,
-    limit: raw.limit,
-    total: raw.total,
-    totalPages: raw.totalPages,
   };
 }
 

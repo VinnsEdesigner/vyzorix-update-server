@@ -2,9 +2,9 @@ import type {
   ApiKey,
   ApiKeyWithSecret,
   ApiKeyStats,
-  Pagination,
   ApiKeyScope,
 } from "./apikey-entity";
+import type { RawPagination } from "../_shared";
 
 export interface RawApiKey {
   id: string;
@@ -23,13 +23,6 @@ export interface RawApiKey {
 
 export interface RawApiKeyWithSecret extends RawApiKey {
   api_key: string;
-}
-
-export interface RawPagination {
-  page: number;
-  limit: number;
-  total: number;
-  total_pages: number;
 }
 
 export interface RawApiKeyListResult {
@@ -60,15 +53,6 @@ export function apiKeyWithSecretFromRaw(raw: RawApiKeyWithSecret): ApiKeyWithSec
   return {
     ...apiKeyFromRaw(raw),
     apiKey: raw.api_key,
-  };
-}
-
-export function paginationFromRaw(raw: RawPagination): Pagination {
-  return {
-    page: raw.page,
-    limit: raw.limit,
-    total: raw.total,
-    totalPages: raw.total_pages,
   };
 }
 

@@ -20,27 +20,36 @@ export interface LockoutState {
 
 type AuthChangeCallback = (state: AuthState) => void;
 
-let authState: AuthState = {
-  isAuthenticated: false,
-  operator: null,
-  organizationId: null,
-  accessToken: null,
-  refreshToken: null,
-  tokenExpiresAt: null,
+interface AuthContextState {
+  auth: AuthState;
+  refreshTimer: ReturnType<typeof setTimeout> | null;
+  lockout: LockoutState;
+}
+
+// Single encapsulated holder for all auth mutable state (previously three
+// separate module-level `let` bindings — the singleton-globals smell).
+const authContextState: AuthContextState = {
+  auth: {
+    isAuthenticated: false,
+    operator: null,
+    organizationId: null,
+    accessToken: null,
+    refreshToken: null,
+    tokenExpiresAt: null,
+  },
+  refreshTimer: null,
+  lockout: {
+    isLocked: false,
+    retryAfter: 0,
+    lockedUntil: 0,
+  },
 };
 
 const listeners = new Set<AuthChangeCallback>();
 const refreshListeners = new Set<TokenRefreshCallback>();
-let tokenRefreshTimer: ReturnType<typeof setTimeout> | null = null;
-
-let lockoutState: LockoutState = {
-  isLocked: false,
-  retryAfter: 0,
-  lockedUntil: 0,
-};
 
 function notifyListeners(): void {
-  listeners.forEach((cb) => cb({ ...authState }));
+  listeners.forEach((cb) => cb({ ...authContextState.auth }));
 }
 
 function notifyRefreshListeners(tokens: { accessToken: string; refreshToken: string; expiresAt: number }): void {
@@ -48,21 +57,21 @@ function notifyRefreshListeners(tokens: { accessToken: string; refreshToken: str
 }
 
 function scheduleTokenRefresh(expiresAt: number): void {
-    if (tokenRefreshTimer) {
-    clearTimeout(tokenRefreshTimer);
+    if (authContextState.refreshTimer) {
+    clearTimeout(authContextState.refreshTimer);
   }
   
     const now = Date.now();
   const refreshTime = (expiresAt * 1000) - 60000;   
   if (refreshTime > now) {
-    tokenRefreshTimer = setTimeout(() => {
+    authContextState.refreshTimer = setTimeout(() => {
       refreshTokens().catch(console.error);
     }, refreshTime - now);
   }
 }
 
 async function refreshTokens(): Promise<void> {
-  const refreshToken = authState.refreshToken;
+  const refreshToken = authContextState.auth.refreshToken;
   if (!refreshToken) {
     console.warn('[Auth] No refresh token available');
     return;
@@ -76,9 +85,9 @@ async function refreshTokens(): Promise<void> {
       session_id: string;
     }>('/v1/auth/refresh', { refresh_token: refreshToken });
 
-        authState.accessToken = response.access_token;
-    authState.refreshToken = response.refresh_token;
-    authState.tokenExpiresAt = response.expires_at;
+        authContextState.auth.accessToken = response.access_token;
+    authContextState.auth.refreshToken = response.refresh_token;
+    authContextState.auth.tokenExpiresAt = response.expires_at;
     
     setAuthToken(response.access_token);
     
@@ -99,18 +108,18 @@ async function refreshTokens(): Promise<void> {
 }
 
 export function isTokenExpired(): boolean {
-  if (!authState.tokenExpiresAt) return false;
-  return Date.now() >= (authState.tokenExpiresAt * 1000);
+  if (!authContextState.auth.tokenExpiresAt) return false;
+  return Date.now() >= (authContextState.auth.tokenExpiresAt * 1000);
 }
 
 export function getTimeUntilExpiry(): number {
-  if (!authState.tokenExpiresAt) return 0;
-  return (authState.tokenExpiresAt * 1000) - Date.now();
+  if (!authContextState.auth.tokenExpiresAt) return 0;
+  return (authContextState.auth.tokenExpiresAt * 1000) - Date.now();
 }
 
 export const authContext = {
     getState(): AuthState {
-    return { ...authState };
+    return { ...authContextState.auth };
   },
 
     onChange(callback: AuthChangeCallback): () => void {
@@ -124,7 +133,7 @@ export const authContext = {
   },
 
     setFromLoginWithTokens(response: LoginWithTokensResponse): void {
-    authState = {
+    authContextState.auth = {
       isAuthenticated: true,
       operator: {
         id: "",
@@ -144,11 +153,11 @@ export const authContext = {
       tokenExpiresAt: response.expires_at || null,
     };
 
-    if (authState.accessToken) {
-      setAuthToken(authState.accessToken);
+    if (authContextState.auth.accessToken) {
+      setAuthToken(authContextState.auth.accessToken);
     }
-    if (authState.organizationId) {
-      setOrganizationContext(authState.organizationId);
+    if (authContextState.auth.organizationId) {
+      setOrganizationContext(authContextState.auth.organizationId);
     }
         if (response.expires_at) {
       scheduleTokenRefresh(response.expires_at);
@@ -158,25 +167,25 @@ export const authContext = {
   },
 
     setFromMeResponse(me: MeResponse): void {
-    authState.operator = me;
-    authState.organizationId = me.selected_organization?.id || me.last_organization_id || null;
-    authState.isAuthenticated = true;
+    authContextState.auth.operator = me;
+    authContextState.auth.organizationId = me.selected_organization?.id || me.last_organization_id || null;
+    authContextState.auth.isAuthenticated = true;
 
-    if (authState.organizationId) {
-      setOrganizationContext(authState.organizationId);
+    if (authContextState.auth.organizationId) {
+      setOrganizationContext(authContextState.auth.organizationId);
     }
 
     notifyListeners();
   },
 
     setAccessToken(token: string | null): void {
-    authState.accessToken = token;
+    authContextState.auth.accessToken = token;
     setAuthToken(token);
     notifyListeners();
   },
 
     setOrganization(orgId: string | null): void {
-    authState.organizationId = orgId;
+    authContextState.auth.organizationId = orgId;
     setOrganizationContext(orgId);
     notifyListeners();
   },
@@ -186,15 +195,15 @@ export const authContext = {
   },
 
     setLockout(state: LockoutState): void {
-    lockoutState = state;
+    authContextState.lockout = state;
   },
 
     getLockoutState(): LockoutState {
-    return { ...lockoutState };
+    return { ...authContextState.lockout };
   },
 
     clear(): void {
-    authState = {
+    authContextState.auth = {
       isAuthenticated: false,
       operator: null,
       organizationId: null,
@@ -202,11 +211,11 @@ export const authContext = {
       refreshToken: null,
       tokenExpiresAt: null,
     };
-    lockoutState = { isLocked: false, retryAfter: 0, lockedUntil: 0 };
+    authContextState.lockout = { isLocked: false, retryAfter: 0, lockedUntil: 0 };
     
-    if (tokenRefreshTimer) {
-      clearTimeout(tokenRefreshTimer);
-      tokenRefreshTimer = null;
+    if (authContextState.refreshTimer) {
+      clearTimeout(authContextState.refreshTimer);
+      authContextState.refreshTimer = null;
     }
     
     setAuthToken(null);
@@ -217,17 +226,17 @@ export const authContext = {
 };
 
 export function getCurrentOrganizationId(): string | null {
-  return authState.organizationId;
+  return authContextState.auth.organizationId;
 }
 
 export function isAuthenticated(): boolean {
-  return authState.isAuthenticated;
+  return authContextState.auth.isAuthenticated;
 }
 
 export function isAccountLocked(): boolean {
-  if (!lockoutState.isLocked) return false;
-    if (Date.now() >= lockoutState.lockedUntil) {
-    lockoutState.isLocked = false;
+  if (!authContextState.lockout.isLocked) return false;
+    if (Date.now() >= authContextState.lockout.lockedUntil) {
+    authContextState.lockout.isLocked = false;
     return false;
   }
   return true;

@@ -30,12 +30,9 @@ export interface ApiKeyStats {
   monthlyLimit: number;
   keysCreatedThisMonth: number;
 }
-export interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+import type { Pagination } from "../_shared";
+export type { Pagination } from "../_shared";
+
 export interface ApiKeyListResult {
   keys: ApiKey[];
   pagination: Pagination;

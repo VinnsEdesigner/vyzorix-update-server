@@ -1,4 +1,5 @@
-export type DeviceStatus = "online" | "offline" | "deregistered";
+import type { DeviceStatus } from "../_shared";
+export type { DeviceStatus } from "../_shared";
 
 export type FCMStatus = "valid" | "invalid" | "not_set";
 
@@ -104,7 +105,7 @@ export function getEventCategory(type: TimelineEventType): TimelineEventCategory
   }
 }
 
-export function getEventTypeLabel(type: TimelineEventType): string {
+export function timelineEventTypeLabel(type: TimelineEventType): string {
   const labels: Record<TimelineEventType, string> = {
     TELEMETRY: "Telemetry",
     COMMAND_SENT: "Command Sent",

@@ -1,3 +1,4 @@
+import type { MetricThreshold } from "../_shared";
 export type TimeRange = "1h" | "6h" | "24h" | "7d";
 
 export type MetricResolution = "1m" | "5m" | "15m" | "1h";
@@ -7,10 +8,7 @@ export interface MetricChartPoint {
   value: number;
 }
 
-export interface MetricThreshold {
-  warning: number;
-  critical: number;
-}
+export type { MetricThreshold } from "../_shared";
 
 export interface MetricData {
   current: number;

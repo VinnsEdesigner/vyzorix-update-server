@@ -412,40 +412,43 @@ export class GraphQLBatcher {
 // COMBINED BATCHER INSTANCE
 // ==========================================
 
-// Singleton instances
-let restBatcherInstance: RESTRequestBatcher | null = null;
-let graphqlBatcherInstance: GraphQLBatcher | null = null;
+// Single encapsulated holder for batcher singleton instances (previously two
+// module-level `let` bindings — the singleton-globals smell).
+const batcherState = {
+  rest: null as RESTRequestBatcher | null,
+  graphql: null as GraphQLBatcher | null,
+};
 
 /**
  * Get REST request batcher instance
  */
 export function getRESTBatcher(config?: Partial<BatchConfig>): RESTRequestBatcher {
-  if (!restBatcherInstance) {
-    restBatcherInstance = new RESTRequestBatcher(config);
+  if (!batcherState.rest) {
+    batcherState.rest = new RESTRequestBatcher(config);
   }
-  return restBatcherInstance;
+  return batcherState.rest;
 }
 
 /**
  * Get GraphQL request batcher instance
  */
 export function getGraphQLBatcher(config?: Partial<BatchConfig>): GraphQLBatcher {
-  if (!graphqlBatcherInstance) {
-    graphqlBatcherInstance = new GraphQLBatcher(config);
+  if (!batcherState.graphql) {
+    batcherState.graphql = new GraphQLBatcher(config);
   }
-  return graphqlBatcherInstance;
+  return batcherState.graphql;
 }
 
 /**
  * Reset all batcher instances
  */
 export function resetBatchers(): void {
-  if (restBatcherInstance) {
-    restBatcherInstance.clear();
+  if (batcherState.rest) {
+    batcherState.rest.clear();
   }
-  if (graphqlBatcherInstance) {
-    graphqlBatcherInstance.clear();
+  if (batcherState.graphql) {
+    batcherState.graphql.clear();
   }
-  restBatcherInstance = null;
-  graphqlBatcherInstance = null;
+  batcherState.rest = null;
+  batcherState.graphql = null;
 }

@@ -1,9 +1,8 @@
 import type {
-  Version,
+  UpdateVersion,
   SyncState,
   PushDevices,
   UpdatePush,
-  Pagination,
   VersionListResult,
   UpdateHistoryResult,
   ChangelogEntry,
@@ -12,6 +11,8 @@ import type {
   InstallType,
   SyncStatus,
 } from "./updates-entity";
+import type { RawPagination } from "../_shared";
+import { paginationFromRaw } from "../_shared";
 
 export interface RawVersion {
   id: string;
@@ -57,13 +58,6 @@ export interface RawUpdatePush {
   devices: RawPushDevices;
 }
 
-export interface RawPagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 export interface RawVersionListResult {
   versions: RawVersion[];
   pagination: RawPagination;
@@ -86,7 +80,7 @@ function parseTimestamp(value?: number | null): Date | undefined {
   return new Date(value > 1e12 ? value : value * 1000);
 }
 
-export function versionFromRaw(raw: RawVersion): Version {
+export function versionFromRaw(raw: RawVersion): UpdateVersion {
   return {
     id: raw.id,
     version: raw.version,
@@ -135,15 +129,6 @@ export function updatePushFromRaw(raw: RawUpdatePush): UpdatePush {
     cancelledAt: parseTimestamp(raw.cancelledAt),
     cancelledBy: raw.cancelledBy,
     devices: pushDevicesFromRaw(raw.devices),
-  };
-}
-
-export function paginationFromRaw(raw: RawPagination): Pagination {
-  return {
-    page: raw.page,
-    limit: raw.limit,
-    total: raw.total,
-    totalPages: raw.totalPages,
   };
 }
 

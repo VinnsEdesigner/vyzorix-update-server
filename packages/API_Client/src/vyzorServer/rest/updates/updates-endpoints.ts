@@ -13,7 +13,7 @@ import {
   type RawUpdateHistoryResult,
 } from "@/domain/updates";
 import type {
-  Version,
+  UpdateVersion,
   SyncState,
   UpdatePush,
   VersionListResult,
@@ -37,7 +37,7 @@ const PATHS = {
 
 export interface UpdateStatusResponse {
   sync: SyncState;
-  latest?: Version;
+  latest?: UpdateVersion;
 }
 
 export interface VersionParams {

@@ -5,34 +5,91 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
+	// CGO SQLite driver for local-file backend. Registered as "sqlite3".
 	_ "github.com/mattn/go-sqlite3"
+
+	// Pure-Go libSQL driver for the Turso (remote) backend. Registered as "libsql".
+	// Implements database/sql over the Turso HTTP/v2 pipeline, so every existing
+	// repository method works unchanged against either backend.
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 )
 
-// Config holds SQLite configuration.
+// Backend identifies which storage backend a SQLite handle is bound to.
+type Backend string
+
+const (
+	BackendSQLite Backend = "sqlite" // local file via mattn/go-sqlite3
+	BackendTurso  Backend = "turso"  // remote Turso libSQL over HTTP
+)
+
+// Config holds storage configuration for either backend.
 type Config struct {
+	// Backend selects sqlite vs turso. When empty, auto-detected from TursoURL.
+	Backend Backend
+
+	// --- SQLite (local file) settings ---
 	Path        string
 	JournalMode string // WAL, DELETE, etc.
 	CacheSize   int    // KB, negative means MB.
 	BusyTimeout int    // milliseconds.
 	ForeignKeys bool
+
+	// --- Turso (remote libSQL) settings ---
+	TursoURL          string        // e.g. libsql://<db>.turso.io
+	TursoAuthToken    string        // database access token (never logged)
+	MaxOpenConns      int           // concurrent connections (Turso tolerates many)
+	MaxIdleConns      int           // idle connections kept in the pool
+	ConnMaxLifetime   time.Duration // recycle a connection after this duration
+	ConnMaxIdleTime   time.Duration // close idle connections after this duration
+	RequestTimeout    time.Duration // per-request dial+response cap
+	HealthCheckPeriod time.Duration // background ping interval; 0 disables
 }
 
-// DefaultConfig returns the default SQLite configuration.
+// DefaultConfig returns the default SQLite configuration for a local file path.
 func DefaultConfig(dbPath string) *Config {
 	return &Config{
+		Backend:     BackendSQLite,
 		Path:        dbPath,
 		JournalMode: "WAL",
 		CacheSize:   -2000, // 2GB cache.
 		BusyTimeout: 5000,  // 5 seconds.
 		ForeignKeys: true,
 	}
+}
+
+// DefaultTursoConfig returns the default Turso (remote libSQL) configuration.
+func DefaultTursoConfig(url, authToken string) *Config {
+	return &Config{
+		Backend:           BackendTurso,
+		TursoURL:          url,
+		TursoAuthToken:    authToken,
+		MaxOpenConns:      16,
+		MaxIdleConns:      8,
+		ConnMaxLifetime:   30 * time.Minute,
+		ConnMaxIdleTime:   5 * time.Minute,
+		RequestTimeout:    15 * time.Second,
+		HealthCheckPeriod: 30 * time.Second,
+	}
+}
+
+// resolvedBackend auto-detects the backend when Backend is empty.
+func (c *Config) resolvedBackend() Backend {
+	if c.Backend != "" {
+		return c.Backend
+	}
+	if c.TursoURL != "" {
+		return BackendTurso
+	}
+	return BackendSQLite
 }
 
 // buildDSN builds the SQLite DSN from config.
@@ -60,34 +117,136 @@ func (c *Config) buildDSN() string {
 	return dsn + params
 }
 
-// SQLite provides the base SQLite database connection.
-type SQLite struct {
-	db *sql.DB
+// buildTursoDSN builds the libSQL connection string with the auth token appended
+// as a query parameter (the pure-Go driver reads it from the URL).
+func (c *Config) buildTursoDSN() string {
+	url := c.TursoURL
+	sep := "?"
+	if strings.Contains(url, "?") {
+		sep = "&"
+	}
+	return url + sep + "authToken=" + c.TursoAuthToken
 }
 
-// Open opens a SQLite database connection.
+// SQLite provides the base database connection. Despite the legacy name, it is
+// backend-agnostic: the underlying *sql.DB may be a local sqlite3 file or a
+// remote Turso libSQL endpoint. The public surface (DB/Close/Ping/WithTx/
+// TxManager/Backend/Info) is identical for both backends.
+type SQLite struct {
+	db         *sql.DB
+	backend    Backend
+	cfg        *Config
+	logger     *slog.Logger
+	stopHealth chan struct{}
+	stopped    atomic.Bool
+}
+
+// Open opens a database connection using the backend selected in cfg.
 func Open(cfg *Config) (*SQLite, error) {
-	db, err := sql.Open("sqlite3", cfg.buildDSN())
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+	return openWithLogger(cfg, nil)
+}
+
+// OpenWithLogger is like Open but wires a structured logger for health checks.
+func OpenWithLogger(cfg *Config, log *slog.Logger) (*SQLite, error) {
+	return openWithLogger(cfg, log)
+}
+
+func openWithLogger(cfg *Config, log *slog.Logger) (*SQLite, error) {
+	if cfg == nil {
+		return nil, errors.New("storage: nil config")
+	}
+	backend := cfg.resolvedBackend()
+
+	var (
+		db      *sql.DB
+		dsn     string
+		drvName string
+		err     error
+	)
+	switch backend {
+	case BackendTurso:
+		if cfg.TursoURL == "" {
+			return nil, errors.New("storage: turso backend requires TursoURL")
+		}
+		if cfg.TursoAuthToken == "" {
+			return nil, errors.New("storage: turso backend requires TursoAuthToken")
+		}
+		drvName = "libsql"
+		dsn = cfg.buildTursoDSN()
+		db, err = sql.Open(drvName, dsn)
+		if err != nil {
+			return nil, fmt.Errorf("storage: failed to open turso connection: %w", err)
+		}
+		// Turso tolerates concurrent connections; pool is configured below.
+	case BackendSQLite:
+		drvName = "sqlite3"
+		dsn = cfg.buildDSN()
+		db, err = sql.Open(drvName, dsn)
+		if err != nil {
+			return nil, fmt.Errorf("storage: failed to open sqlite: %w", err)
+		}
+		// SQLite serializes writes; keep the single-writer invariant.
+		cfg.MaxOpenConns = 1
+		cfg.MaxIdleConns = 1
+		cfg.ConnMaxLifetime = time.Hour
+	default:
+		return nil, fmt.Errorf("storage: unknown backend %q", backend)
 	}
 
-	// Configure connection pool.
-	db.SetMaxOpenConns(1) // SQLite doesn't handle concurrent writes well.
-	db.SetMaxIdleConns(1)
-	db.SetConnMaxLifetime(time.Hour)
+	applyPool(db, cfg, backend)
 
-	// Verify connection.
+	// Verify connectivity before running migrations so a misconfigured Turso
+	// endpoint fails fast at boot with a clear cause.
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		_ = db.Close()
+		return nil, fmt.Errorf("storage: %s ping failed: %w", backend, err)
 	}
 
-	// Run migrations.
+	// Run migrations. The DDL is SQLite-compatible and applies to libSQL too,
+	// so one migration registry serves both backends (no divergent Turso path).
 	if err := runMigrations(db); err != nil {
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
+		_ = db.Close()
+		return nil, fmt.Errorf("storage: %s migrations failed: %w", backend, err)
 	}
 
-	return &SQLite{db: db}, nil
+	s := &SQLite{
+		db:         db,
+		backend:    backend,
+		cfg:        cfg,
+		logger:     log,
+		stopHealth: make(chan struct{}),
+	}
+
+	// A background health check keeps the Turso pool warm and surfaces
+	// connectivity loss to /health without per-request pings.
+	if backend == BackendTurso && cfg.HealthCheckPeriod > 0 {
+		s.startHealthCheck()
+	}
+
+	return s, nil
+}
+
+// applyPool configures connection-pool limits appropriate to the backend.
+func applyPool(db *sql.DB, cfg *Config, backend Backend) {
+	if backend == BackendTurso {
+		if cfg.MaxOpenConns > 0 {
+			db.SetMaxOpenConns(cfg.MaxOpenConns)
+		}
+		if cfg.MaxIdleConns > 0 {
+			db.SetMaxIdleConns(cfg.MaxIdleConns)
+		}
+		if cfg.ConnMaxLifetime > 0 {
+			db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
+		}
+		if cfg.ConnMaxIdleTime > 0 {
+			db.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
+		}
+		return
+	}
+	// SQLite: single-writer serial pool.
+	db.SetMaxOpenConns(cfg.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.MaxIdleConns)
+	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 }
 
 // DB returns the underlying sql.DB.
@@ -95,14 +254,85 @@ func (s *SQLite) DB() *sql.DB {
 	return s.db
 }
 
-// Close closes the database connection.
+// Backend reports which storage backend this handle is bound to.
+func (s *SQLite) Backend() Backend {
+	return s.backend
+}
+
+// Info returns human-readable backend metadata for /health and diagnostics.
+// It deliberately omits the auth token.
+func (s *SQLite) Info() map[string]any {
+	info := map[string]any{
+		"backend":  string(s.backend),
+		"driver":   s.driverName(),
+		"max_open": s.cfg.MaxOpenConns,
+		"max_idle": s.cfg.MaxIdleConns,
+	}
+	if s.backend == BackendTurso {
+		info["url"] = redactTursoURL(s.cfg.TursoURL)
+		info["health_check"] = s.cfg.HealthCheckPeriod.String()
+	} else {
+		info["path"] = s.cfg.Path
+	}
+	return info
+}
+
+func (s *SQLite) driverName() string {
+	if s.backend == BackendTurso {
+		return "libsql"
+	}
+	return "sqlite3"
+}
+
+// redactTursoURL strips any authToken query param so the URL is safe to log.
+func redactTursoURL(raw string) string {
+	if i := strings.Index(raw, "?"); i >= 0 {
+		return raw[:i] + "?(redacted)"
+	}
+	return raw
+}
+
+// startHealthCheck runs a periodic ping against the remote backend.
+func (s *SQLite) startHealthCheck() {
+	if s.logger == nil {
+		s.logger = slog.Default()
+	}
+	go func() {
+		t := time.NewTicker(s.cfg.HealthCheckPeriod)
+		defer t.Stop()
+		for {
+			select {
+			case <-s.stopHealth:
+				return
+			case <-t.C:
+				ctx, cancel := context.WithTimeout(context.Background(), s.cfg.RequestTimeout)
+				if err := s.db.PingContext(ctx); err != nil {
+					s.logger.Warn("turso health check failed",
+						"backend", string(s.backend),
+						"error", err)
+				}
+				cancel()
+			}
+		}
+	}()
+}
+
+// Close closes the database connection and stops the health checker.
 func (s *SQLite) Close() error {
+	if s.stopHealth != nil && !s.stopped.Swap(true) {
+		close(s.stopHealth)
+	}
 	return s.db.Close()
 }
 
 // Ping checks if the database is reachable.
 func (s *SQLite) Ping() error {
 	return s.db.Ping()
+}
+
+// PingContext checks reachability with a deadline.
+func (s *SQLite) PingContext(ctx context.Context) error {
+	return s.db.PingContext(ctx)
 }
 
 // BeginTx starts a new transaction.
@@ -114,7 +344,7 @@ func (s *SQLite) BeginTx() (*sql.Tx, error) {
 // If the function returns an error, the transaction is rolled back.
 // If the function succeeds, the transaction is committed.
 func (s *SQLite) WithTx(ctx context.Context, fn func(ctx context.Context) error) error {
-	tx, err := s.db.Begin()
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -211,10 +441,25 @@ var migrations = []Migration{
 	{Apply: migrateConfirmedAt, Name: "add_confirmed_at", Version: 45},
 	// Email verification delivery tracking.
 	{Apply: migrateEmailVerificationTracking, Name: "add_email_verification_tracking", Version: 46},
-	
+
 	{Apply: migrateCreatePendingFCM, Name: "create_pending_fcm_table", Version: 47},
+	// Add the model column to devices. The code referenced it (deviceColumns,
+	// INSERT/UPDATE) but no prior migration created it; fresh databases failed
+	// with "no such column: model". Idempotent (skips if column exists).
+	{Apply: migrateAddDeviceModelColumn, Name: "add_devices_model_column", Version: 48},
+	// Relax devices.command_secret NOT NULL. The column is legacy (plaintext
+	// secret) and superseded by command_secret_hash; DeviceRepository.Create
+	// never sets it, so the NOT NULL constraint broke every device creation.
+	// Rebuilds the table to make the column nullable. Idempotent.
+	{Apply: migrateRelaxDeviceCommandSecretNull, Name: "relax_devices_command_secret_null", Version: 49},
+	// Repair the device_settings foreign key: migration 042 referenced
+	// devices(imei) but the IMEI lives in devices.id, making the FK
+	// unresolvable and blocking device deletion. Rebuilds the table with
+	// REFERENCES devices(id). Idempotent.
+	{Apply: migrateFixDeviceSettingsFK, Name: "fix_device_settings_fk", Version: 50},
 	// Fix timestamp columns - convert TEXT to INTEGER for consistency.
 }
+
 // runMigrations applies all pending migrations.
 func runMigrations(db *sql.DB) error {
 	// Ensure migrations table exists.

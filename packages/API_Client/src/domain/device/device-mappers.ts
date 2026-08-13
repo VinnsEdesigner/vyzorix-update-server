@@ -4,8 +4,8 @@ import type {
   DeviceStats,
   DeviceStatus,
   DeviceConnection,
-  Pagination,
 } from "./device-entity";
+import type { RawPagination } from "../_shared";
 
 export interface RawDevice {
   id: string;
@@ -41,13 +41,6 @@ export interface RawDeviceStats {
   total: number;
   online: number;
   offline: number;
-}
-
-export interface RawPagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
 }
 
 export interface RawDeviceListResult {
@@ -99,14 +92,5 @@ export function deviceStatsFromRaw(raw: RawDeviceStats): DeviceStats {
     total: raw.total ?? 0,
     online: raw.online ?? 0,
     offline: raw.offline ?? 0,
-  };
-}
-
-export function paginationFromRaw(raw: RawPagination): Pagination {
-  return {
-    page: raw.page,
-    limit: raw.limit,
-    total: raw.total,
-    total_pages: raw.totalPages,
   };
 }

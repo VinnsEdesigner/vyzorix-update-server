@@ -1,5 +1,5 @@
 import type {
-  Version as UpdateVersion,
+  UpdateVersion,
   UpdatePush,
   SyncStatus,
   ChangelogEntry,

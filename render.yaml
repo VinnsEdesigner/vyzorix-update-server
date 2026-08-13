@@ -43,9 +43,31 @@ services:
       - key: SSR_AUTO_BUILD
         value: "false"
 
-      # Database — on the mounted /data volume (persists across redeploys)
+      # Database — production uses Turso (libSQL over HTTP). Set DATABASE_BACKEND
+      # to "turso" and provide TURSO_DB_URL + TURSO_AUTH_TOKEN below.
+      # For local SQLite on the mounted disk, set DATABASE_BACKEND=sqlite and
+      # keep DATABASE_URL=/data/vyzorix.db (the disk below still persists).
+      - key: DATABASE_BACKEND
+        value: turso
       - key: DATABASE_URL
         value: /data/vyzorix.db
+      - key: DATABASE_MAX_OPEN_CONNS
+        value: "16"
+      - key: DATABASE_MAX_IDLE_CONNS
+        value: "8"
+      - key: DATABASE_CONN_MAX_LIFETIME
+        value: "30m"
+      - key: DATABASE_CONN_MAX_IDLE_TIME
+        value: "5m"
+      - key: DATABASE_REQUEST_TIMEOUT
+        value: "15s"
+      - key: DATABASE_HEALTH_CHECK_PERIOD
+        value: "30s"
+      # Turso credentials — generate at https://turso.io → database → Access Tokens.
+      - key: TURSO_DB_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
 
       # Paths — /data matches the mounted disk, /app/bin and /app/public are in the image
       - key: VYZORIX_API_DIR

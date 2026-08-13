@@ -1,7 +1,6 @@
 import type {
   InboxEntry,
-  Device,
-  Pagination,
+  RegisteredDevice,
   InboxStatus,
   DeviceStatus,
   CreateInboxRequest,
@@ -30,7 +29,7 @@ export interface RawInboxEntry {
   createdAt: number;
 }
 
-export interface RawDevice {
+export interface RawRegisteredDevice {
   id: string;
   imei: string;
   deviceName: string;
@@ -43,14 +42,6 @@ export interface RawDevice {
   lastSeen: number | null;
   online: boolean;
 }
-
-export interface RawPagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 
 export interface RawCreateInboxRequest {
   imei: string;
@@ -149,7 +140,7 @@ export function inboxEntryFromRaw(raw: RawInboxEntry): InboxEntry {
   };
 }
 
-export function deviceFromRaw(raw: RawDevice): Device {
+export function registrationDeviceFromRaw(raw: RawRegisteredDevice): RegisteredDevice {
   return {
     id: raw.id,
     imei: raw.imei,
@@ -162,14 +153,5 @@ export function deviceFromRaw(raw: RawDevice): Device {
     registeredAt: parseTimestamp(raw.registeredAt),
     lastSeen: parseTimestamp(raw.lastSeen),
     online: raw.online,
-  };
-}
-
-export function paginationFromRaw(raw: RawPagination): Pagination {
-  return {
-    page: raw.page,
-    limit: raw.limit,
-    total: raw.total,
-    totalPages: raw.totalPages,
   };
 }
