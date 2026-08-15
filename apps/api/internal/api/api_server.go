@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
@@ -120,6 +121,7 @@ type Server struct {
 	updaterHandler              *updaterhandlers.Handler
 	updatesHandler              *updateshandlers.UpdatesHandler
 	inboxHandler                *inboxhandlers.Handler
+	inboxService                *inbox.Service
 	deviceConfirmHandler        *devicehandlers.ConfirmHandler
 	diagnosticsHandler          *diagnosticshandlers.Handler
 	diagnosticsInspectHandler   *diagnosticshandlers.InspectHandler
@@ -386,6 +388,9 @@ func (s *Server) wireInboxHandler(cfg *ServerConfig) {
 	}
 	inboxService := inbox.NewService(inboxRepo, regLogRepo, cfg.DeviceService, cfg.DeviceService, fcmNotifier, s.log)
 
+	// Store service for GraphQL resolver wiring.
+	s.inboxService = inboxService
+
 	// Enable ACID transactions for enterprise production.
 	inboxService.WithTxManager(cfg.DB)
 
@@ -479,6 +484,17 @@ type ServerConfigWithDeps struct {
 func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	if cfg.Config.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// ProvideMiddlewareSet does not wire the API key middleware (it is normally
+	// produced by WireMiddleware, which is only called from the legacy NewServer
+	// constructor). Backfill TenantAPIKeyAuth here so the dependency-injected
+	// server (used by api_main.go) also enforces API key auth on tenant routes.
+	if cfg.Middleware != nil && cfg.Middleware.TenantAPIKeyAuth == nil && cfg.APIKeyService != nil && cfg.AuditLogger != nil {
+		cfg.Middleware.TenantAPIKeyAuth = middleware.NewTenantAPIKeyAuth(cfg.APIKeyService, cfg.AuditLogger)
+		if cfg.Middleware.APIKeyRateLimiter == nil {
+			cfg.Middleware.APIKeyRateLimiter = middleware.NewInMemoryRateLimiter(100, time.Minute)
+		}
 	}
 
 	s := &Server{

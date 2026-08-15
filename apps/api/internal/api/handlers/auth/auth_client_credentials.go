@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
@@ -27,16 +28,14 @@ func NewClientCredentialsHandler(authService *auth.AuthService, clientService *c
 	}
 }
 
-// getOperatorFromSession extracts operator from session.
+// getOperatorFromSession extracts operator from the authenticated session.
+// See SettingsHandler.getOperatorFromSession: the cookieAuth middleware already
+// validated the (encrypted) session cookie and stored the operator in context,
+// so we reuse that instead of passing the raw cookie ciphertext to ValidateSession.
 func (h *ClientCredentialsHandler) getOperatorFromSession(c *gin.Context) (string, error) {
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
-		return "", err
-	}
-
-	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		return "", err
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		return "", application.ErrUnauthorized
 	}
 
 	return op.ID, nil

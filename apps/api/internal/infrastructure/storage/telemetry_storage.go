@@ -134,7 +134,7 @@ func (r *TelemetryRepository) List(ctx context.Context, deviceID string, limit i
 	}
 
 	rows, err := r.queryRows(ctx,
-		`SELECT id, device_id, received_at, payload, risk_score, buffer_level, thermal_temp, COALESCE(uptime, 0) 
+		`SELECT id, device_id, received_at, frame_data, risk_score, buffer_level, thermal_temp, COALESCE(uptime, 0) 
 		 FROM telemetry WHERE device_id = ? ORDER BY received_at DESC LIMIT ?`,
 		deviceID, limit,
 	)
@@ -171,7 +171,7 @@ func (r *TelemetryRepository) ListSince(ctx context.Context, deviceID string, si
 	}
 
 	rows, err := r.queryRows(ctx,
-		`SELECT id, device_id, received_at, payload, risk_score, buffer_level, thermal_temp, COALESCE(uptime, 0) 
+		`SELECT id, device_id, received_at, frame_data, risk_score, buffer_level, thermal_temp, COALESCE(uptime, 0) 
 		 FROM telemetry WHERE device_id = ? AND received_at > ? ORDER BY received_at DESC LIMIT ?`,
 		deviceID, sinceTimestamp, limit,
 	)

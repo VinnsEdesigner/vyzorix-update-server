@@ -18,9 +18,9 @@ import (
 func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -29,7 +29,8 @@ func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error
 	}
 
 	if r.MemberService != nil {
-		if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
 		}
 	}
@@ -190,13 +191,14 @@ func (r *Resolver) GetUpdatesHistory(p graphql.ResolveParams) (interface{}, erro
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	if r.MemberService != nil {
-		if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
 		}
 	}
@@ -268,13 +270,14 @@ func (r *Resolver) GetUpdatesHistoryDetail(p graphql.ResolveParams) (interface{}
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	if r.MemberService != nil {
-		if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
 		}
 	}
@@ -351,9 +354,9 @@ func (r *Resolver) GetUpdatesSyncStatus(p graphql.ResolveParams) (interface{}, e
 func (r *Resolver) PushUpdate(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	version, _ := p.Args["version"].(string)
@@ -382,7 +385,8 @@ func (r *Resolver) PushUpdate(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	if r.MemberService != nil {
-		if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
 		}
 	}
@@ -440,13 +444,14 @@ func (r *Resolver) CancelUpdate(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	if r.MemberService != nil {
-		if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+		err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
 		}
 	}

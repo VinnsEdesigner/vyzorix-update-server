@@ -23,9 +23,9 @@ func (r *Resolver) GetInbox(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	if r.InboxService == nil {
@@ -94,9 +94,9 @@ func (r *Resolver) GetInboxEntry(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.BadRequestError("IMEI is required")
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -146,9 +146,9 @@ func (r *Resolver) AckInbox(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.BadRequestError("IMEI is required")
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	action, _ := p.Args["action"].(string)
@@ -185,7 +185,7 @@ func (r *Resolver) AckInbox(p graphql.ResolveParams) (interface{}, error) {
 	response := map[string]interface{}{
 		"id":          result.ID,
 		"imei":        result.IMEI,
-		"status":      result.Status,
+		"status":      string(result.Status),
 		"fcmPushSent": result.FCMPushSent,
 		"notes":       result.Notes,
 	}
@@ -204,9 +204,9 @@ func (r *Resolver) AckInbox(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) DeregisterDeviceGraphQL(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	imei, ok := p.Args["imei"].(string)

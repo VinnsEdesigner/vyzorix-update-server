@@ -35,9 +35,9 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 	if !ok {
 		return nil, r.Presenter.BadRequestError("token must be a string")
 	}
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	if deviceID == "" {
@@ -58,7 +58,7 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 	}
 
 	// Verify device exists in organization using org-scoped method.
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -89,9 +89,9 @@ func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 	if !ok {
 		return nil, r.Presenter.BadRequestError("id must be a string")
 	}
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	if deviceID == "" {
@@ -108,7 +108,7 @@ func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	// Use organization-scoped deregistration method.
-	_, err := r.DeviceService.DeregisterDeviceByOrganization(ctx, deviceID, orgID, true)
+	_, err = r.DeviceService.DeregisterDeviceByOrganization(ctx, deviceID, orgID, true)
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to delete device")
 	}
@@ -135,9 +135,9 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 	if !ok {
 		args = nil // args is optional, default to nil.
 	}
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	if deviceID == "" {
@@ -158,7 +158,7 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	// Verify device exists in organization using org-scoped method.
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -208,9 +208,9 @@ func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 	if !ok {
 		return nil, r.Presenter.BadRequestError("dispatchId must be a string")
 	}
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	if dispatchID == "" {
@@ -258,9 +258,9 @@ func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 	if !ok {
 		return nil, r.Presenter.BadRequestError("dispatchId must be a string")
 	}
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	if dispatchID == "" {
@@ -311,9 +311,9 @@ func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error
 	if !ok {
 		return nil, r.Presenter.BadRequestError("deviceId must be a string")
 	}
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	if deviceID == "" {
@@ -330,7 +330,7 @@ func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error
 	}
 
 	// Verify device exists in organization.
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -487,9 +487,9 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organization ID is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	deviceImei, ok := p.Args["deviceImei"].(string)
@@ -498,7 +498,8 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 	}
 
 	// Check if operator is a member of the organization.
-	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+	err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 		return nil, r.Presenter.ForbiddenError("not a member of this organization")
 	}
 
@@ -536,7 +537,7 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 	}
 
 	// First, ensure device settings exist (create with defaults if not).
-	if _, err := r.DeviceSettingsService.GetOrCreateSettings(ctx, deviceImei); err != nil {
+	if _, err = r.DeviceSettingsService.GetOrCreateSettings(ctx, deviceImei); err != nil {
 		return nil, r.Presenter.InternalError("failed to create device settings")
 	}
 
@@ -584,13 +585,14 @@ func (r *Resolver) UpdateOrganizationSettings(p graphql.ResolveParams) (interfac
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organization ID is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	// Check if operator is a member of the organization.
-	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+	err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 		return nil, r.Presenter.ForbiddenError("not a member of this organization")
 	}
 

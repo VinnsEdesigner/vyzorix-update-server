@@ -303,6 +303,10 @@ var InvitationStatusEnum = graphql.NewEnum(graphql.EnumConfig{
 			Value:       "accepted",
 			Description: "Invitation was accepted",
 		},
+		"APPROVED": &graphql.EnumValueConfig{
+			Value:       "approved",
+			Description: "Invitation was approved (accepted)",
+		},
 		"REJECTED": &graphql.EnumValueConfig{
 			Value:       "rejected",
 			Description: "Invitation was rejected",

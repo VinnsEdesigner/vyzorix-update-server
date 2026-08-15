@@ -111,16 +111,16 @@ func (h *SettingsHandler) logSettingsAudit(c *gin.Context, operatorID string, ev
 	h.auditLogger.SettingsChanged(ctx, operatorID, event.Section, event.Action, ipAddress, userAgent, metadata)
 }
 
-// getOperatorFromSession extracts operator ID from session.
+// getOperatorFromSession extracts operator ID from the authenticated session.
+// The cookieAuth middleware already validated the session and decrypted the
+// cookie, populating the operator in the gin context. Re-reading the raw
+// (encrypted) vyz_session cookie and passing it to ValidateSession is wrong —
+// ValidateSession expects the decrypted session ID, not the cookie ciphertext.
+// We reuse the context value the middleware set instead of re-validating.
 func (h *SettingsHandler) getOperatorFromSession(c *gin.Context) (string, error) {
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
-		return "", err
-	}
-
-	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		return "", err
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		return "", application.ErrUnauthorized
 	}
 
 	return op.ID, nil

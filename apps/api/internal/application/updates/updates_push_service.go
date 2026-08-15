@@ -13,6 +13,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
+	"github.com/google/uuid"
 	ws "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 )
 
@@ -76,6 +77,7 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 
 	now := time.Now()
 	push := &updates.UpdatePush{
+		ID:             uuid.NewString(),
 		VersionID:      version.ID,
 		OrganizationID: req.OrganizationID,
 		InstallType:   updates.InstallType(req.InstallType),
@@ -118,6 +120,7 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 
 		// Create per-device push record.
 		devicePush := &updates.UpdatePushDevice{
+			ID:         uuid.NewString(),
 			PushID:     push.ID,
 			DeviceID:   deviceID,
 			Status:     updates.DevicePushStatusPending,

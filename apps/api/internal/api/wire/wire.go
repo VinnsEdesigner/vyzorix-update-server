@@ -156,6 +156,7 @@ func WireServer(deps ServerDependencies) *ServerResult {
 		InvitationService:     deps.InvitationService,
 		OrgSettingsService:    deps.OrgSettingsService,
 		DeviceSettingsService: deps.DeviceSettingsService,
+		DeviceRepo:            deps.DeviceRepo,
 	}
 	result.HandlerSet = WireHandlers(handlerDeps)
 

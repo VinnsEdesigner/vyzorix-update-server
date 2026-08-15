@@ -73,9 +73,9 @@ func (r *Resolver) GetDeviceSettings(p graphql.ResolveParams) (interface{}, erro
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organization ID is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	deviceImei, ok := p.Args["deviceImei"].(string)
@@ -84,7 +84,8 @@ func (r *Resolver) GetDeviceSettings(p graphql.ResolveParams) (interface{}, erro
 	}
 
 	// Check if operator is a member of the organization.
-	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+	err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 		return nil, r.Presenter.ForbiddenError("not a member of this organization")
 	}
 
@@ -141,13 +142,14 @@ func (r *Resolver) GetOrganizationSettings(p graphql.ResolveParams) (interface{}
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organization ID is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	// Check if operator is a member of the organization.
-	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+	err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 		return nil, r.Presenter.ForbiddenError("not a member of this organization")
 	}
 
@@ -184,9 +186,9 @@ func (r *Resolver) GetDevice(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.BadRequestError("device ID is required")
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -210,9 +212,9 @@ func (r *Resolver) GetDevice(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) GetDevices(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	limit, _ := p.Args["limit"].(int)
@@ -261,9 +263,9 @@ func (r *Resolver) GetDevices(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) GetDeviceCount(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -292,9 +294,9 @@ func (r *Resolver) GetCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.BadRequestError("dispatch ID is required")
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -328,9 +330,9 @@ func (r *Resolver) GetPendingCommands(p graphql.ResolveParams) (interface{}, err
 		return nil, r.Presenter.BadRequestError("device ID is required")
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -339,7 +341,7 @@ func (r *Resolver) GetPendingCommands(p graphql.ResolveParams) (interface{}, err
 	}
 
 	// Verify device exists in organization.
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -361,7 +363,13 @@ func (r *Resolver) GetPendingCommands(p graphql.ResolveParams) (interface{}, err
 func (r *Resolver) GetTelemetryHistory(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
-	orgID, _ := p.Args["organizationId"].(string)
+	orgID, err := r.resolveOrgID(p)
+
+	if err != nil {
+
+		return nil, err
+
+	}
 	startTime, _ := p.Args["startTime"].(int64)
 	endTime, _ := p.Args["endTime"].(int64)
 	limit, _ := p.Args["limit"].(int)
@@ -384,7 +392,7 @@ func (r *Resolver) GetTelemetryHistory(p graphql.ResolveParams) (interface{}, er
 	}
 
 	// Verify device exists in organization.
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -431,7 +439,13 @@ func (r *Resolver) GetTelemetryHistory(p graphql.ResolveParams) (interface{}, er
 func (r *Resolver) GetLatestTelemetry(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
-	orgID, _ := p.Args["organizationId"].(string)
+	orgID, err := r.resolveOrgID(p)
+
+	if err != nil {
+
+		return nil, err
+
+	}
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
@@ -447,7 +461,7 @@ func (r *Resolver) GetLatestTelemetry(p graphql.ResolveParams) (interface{}, err
 	}
 
 	// Verify device exists in organization.
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -477,7 +491,13 @@ func (r *Resolver) GetLatestTelemetry(p graphql.ResolveParams) (interface{}, err
 func (r *Resolver) GetTelemetryStats(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
-	orgID, _ := p.Args["organizationId"].(string)
+	orgID, err := r.resolveOrgID(p)
+
+	if err != nil {
+
+		return nil, err
+
+	}
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
@@ -493,7 +513,7 @@ func (r *Resolver) GetTelemetryStats(p graphql.ResolveParams) (interface{}, erro
 	}
 
 	// Verify device exists in organization.
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -557,7 +577,13 @@ func (r *Resolver) GetTelemetryStats(p graphql.ResolveParams) (interface{}, erro
 func (r *Resolver) GetConnectionStatus(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 	deviceID, _ := p.Args["deviceId"].(string)
-	orgID, _ := p.Args["organizationId"].(string)
+	orgID, err := r.resolveOrgID(p)
+
+	if err != nil {
+
+		return nil, err
+
+	}
 
 	if deviceID == "" {
 		return nil, r.Presenter.BadRequestError("device ID is required")
@@ -573,7 +599,7 @@ func (r *Resolver) GetConnectionStatus(p graphql.ResolveParams) (interface{}, er
 	}
 
 	// Verify device exists in organization.
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -613,9 +639,9 @@ func (r *Resolver) GetConnectionStatus(p graphql.ResolveParams) (interface{}, er
 func (r *Resolver) GetAllConnections(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -693,9 +719,9 @@ func (r *Resolver) GetDeviceMetrics(p graphql.ResolveParams) (interface{}, error
 		return nil, r.Presenter.BadRequestError("device IMEI is required")
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -804,9 +830,9 @@ func (r *Resolver) GetDeviceCommandHistory(p graphql.ResolveParams) (interface{}
 		return nil, r.Presenter.BadRequestError("device IMEI is required")
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -815,7 +841,7 @@ func (r *Resolver) GetDeviceCommandHistory(p graphql.ResolveParams) (interface{}
 	}
 
 	// Verify device exists in organization.
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, imei, orgID)
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, imei, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -960,9 +986,9 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 		return nil, r.Presenter.BadRequestError("IMEI is required")
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -970,7 +996,7 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, imei, orgID)
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, imei, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -1055,9 +1081,9 @@ func (r *Resolver) GetDeviceTimeline(p graphql.ResolveParams) (interface{}, erro
 		return nil, r.Presenter.BadRequestError("IMEI is required")
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -1065,7 +1091,7 @@ func (r *Resolver) GetDeviceTimeline(p graphql.ResolveParams) (interface{}, erro
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	_, err := r.DeviceService.GetDeviceDetailByOrganization(ctx, imei, orgID)
+	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, imei, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
 	}
@@ -1120,9 +1146,9 @@ func (r *Resolver) GetDeviceLogs(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.BadRequestError("IMEI is required")
 	}
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -1131,7 +1157,8 @@ func (r *Resolver) GetDeviceLogs(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	// Check if operator is a member of the organization.
-	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+	err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 		return nil, r.Presenter.ForbiddenError("not a member of this organization")
 	}
 

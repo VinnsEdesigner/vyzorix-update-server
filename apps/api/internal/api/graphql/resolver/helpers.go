@@ -5,13 +5,31 @@ import (
 	"encoding/json"
 	"time"
 
+	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	"github.com/graphql-go/graphql"
 )
 
 // ============================================================.
 // Helper Methods.
 // ============================================================.
+
+// resolveOrgID returns the authoritative organization ID from the GraphQL
+// context (set by the system middleware chain from the URL :org parameter).
+// If the caller provides an organizationId argument that differs from the
+// context org ID, a Forbidden error is returned to prevent cross-org access.
+func (r *Resolver) resolveOrgID(p graphql.ResolveParams) (string, error) {
+	ctxOrgID := gqlcontext.GetOrganizationID(p.Context)
+	if ctxOrgID == "" {
+		return "", r.Presenter.ForbiddenError("organization context required")
+	}
+	argOrgID, _ := p.Args["organizationId"].(string)
+	if argOrgID != "" && argOrgID != ctxOrgID {
+		return "", r.Presenter.ForbiddenError("organization ID does not match authenticated scope")
+	}
+	return ctxOrgID, nil
+}
 
 // deviceDTOToMap converts a DeviceResponse DTO to a GraphQL map.
 func (r *Resolver) deviceDTOToMap(dev *dto.DeviceResponse) map[string]interface{} {

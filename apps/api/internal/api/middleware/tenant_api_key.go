@@ -8,6 +8,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	domain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,15 +42,11 @@ var PathBoundaries = map[string]PathType{
 
 	// SESSION ONLY - Session Cookie required (no API key).
 	"/bin/":          PathTypeSessionOnly,
-	"/v1/dashboard/": PathTypeSessionOnly,
 	"/v1/api-keys/":  PathTypeSessionOnly,
 	"/api/v1/apk/":   PathTypeSessionOnly,
 
-	// DEVICE AUTH - HMAC Signature - handled by device middleware.
-	// /device/:imei/command, /device/:imei/fcm-token.
-	// These use HMAC, not session/API key.
-
 	// TENANT - Session OR API Key + Scope.
+	"/v1/dashboard/":         PathTypeTenant,
 	"/v1/devices/":            PathTypeTenant,
 	"/v1/command/":            PathTypeTenant,
 	"/v1/telemetry/":          PathTypeTenant,
@@ -220,6 +217,13 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 		c.Set("api_key_scope", string(key.Scope))
 		c.Set("api_key_name", key.Name)
 		c.Set("auth_type", "tenant_api_key")
+
+		// Set a minimal operator in the gin context so that downstream
+		// middleware (OrganizationMembership, RBAC, SuperAdmin) that call
+		// GetOperatorFromContext work with API key auth, not just sessions.
+		// The membership check only needs operator.ID; we avoid an extra DB
+		// fetch by constructing a minimal operator from the key's OperatorID.
+		c.Set(ContextKeyOperator, &operator.Operator{ID: key.OperatorID})
 
 		// Increment usage asynchronously.
 		go func() {

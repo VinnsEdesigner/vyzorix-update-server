@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
@@ -40,6 +42,13 @@ func (c *CookieAuth) Middleware() gin.HandlerFunc {
 		// Read the session cookie.
 		cookieValue, err := ctx.Cookie(CookieName)
 		if err != nil {
+			// No session cookie. If an API key is present, defer to the
+			// tenant API key middleware (registered after this one) instead
+			// of aborting, so tenant endpoints accept either credential.
+			if apiKey := ctx.GetHeader("X-API-Key"); apiKey != "" {
+				ctx.Next()
+				return
+			}
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "session cookie required"})
 			ctx.Abort()
 
@@ -69,7 +78,12 @@ func (c *CookieAuth) Middleware() gin.HandlerFunc {
 
 		// Set operator and session in context for downstream handlers.
 		ctx.Set(ContextKeyOperator, op)
+		ctx.Set("operator_id", op.ID)
 		ctx.Set("session", sess)
+		// Also populate the GraphQL request context so REST middleware (e.g.
+		// UpdatesAdminAuth.RequireAdmin) can read the operator via
+		// gqlcontext.GetOperator(c.Request.Context()).
+		ctx.Request = ctx.Request.WithContext(gqlcontext.WithOperator(ctx.Request.Context(), op))
 		ctx.Next()
 	}
 }
@@ -77,14 +91,51 @@ func (c *CookieAuth) Middleware() gin.HandlerFunc {
 // GetOperatorFromContext retrieves the operator from the gin context.
 func GetOperatorFromContext(c *gin.Context) *operator.Operator {
 	val, exists := c.Get(ContextKeyOperator)
+	if exists {
+		if op, ok := val.(*operator.Operator); ok {
+			return op
+		}
+	}
+
+	// Fall back to operator_id (set by the tenant API key middleware for
+	// API-key-authenticated requests that never load the full operator).
+	if opID, ok := c.Get("operator_id"); ok {
+		if id, ok := opID.(string); ok && id != "" {
+			return &operator.Operator{ID: id}
+		}
+	}
+
+	return nil
+}
+
+// ContextKeySession is the key under which Middleware stores the validated
+// *session.Session (already decrypted from the vyz_session cookie).
+const ContextKeySession = "session"
+
+// GetSession retrieves the validated session the Middleware placed in context.
+// Downstream handlers must use this (and GetCurrentSessionID) instead of
+// re-reading the raw vyz_session cookie: the cookie value is AES-GCM encrypted
+// and is NOT the plaintext session ID that the database stores under session.ID.
+func GetSession(c *gin.Context) *session.Session {
+	val, exists := c.Get(ContextKeySession)
 	if !exists {
 		return nil
 	}
 
-	op, ok := val.(*operator.Operator)
+	sess, ok := val.(*session.Session)
 	if !ok {
 		return nil
 	}
 
-	return op
+	return sess
+}
+
+// GetCurrentSessionID returns the decrypted ID of the session in context, or
+// "" when no authenticated session is present.
+func GetCurrentSessionID(c *gin.Context) string {
+	if sess := GetSession(c); sess != nil {
+		return sess.ID
+	}
+
+	return ""
 }

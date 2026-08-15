@@ -78,8 +78,8 @@ func LoadSigningConfig() SigningConfig {
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
 	APIKeys                       map[string]string
-	APIKeyPrefix                  string
-	GitHubReleaseRepo             string
+	PublicDir                     string
+	DeviceSecret                  string
 	GitHubOAuthClientSecret       string
 	FirebaseCreds                 string
 	SessionSecret                 string
@@ -93,47 +93,47 @@ type Config struct {
 	GoogleOAuthClientID           string
 	FirebaseAppID                 string
 	GitHubReleaseToken            string
-	DeviceSecret                  string
+	AuditLogPath                  string
 	GitHubWebhookSecret           string
 	JWTSecret                     string
 	GitHubOAuthClientID           string
 	Env                           string
 	DatabaseURL                   string
-	DatabaseBackend               string // auto | sqlite | turso
+	DatabaseBackend               string
 	TursoDatabaseURL              string
 	TursoAuthToken                string
-	DatabaseMaxOpenConns          int
-	DatabaseMaxIdleConns          int
+	ResendAPIKey                  string
+	ServerAPIToken                string
+	GitHubReleaseRepo             string
+	EmailFromName                 string
+	AuditLogSeparateDBPath        string
+	APIKeyPrefix                  string
+	AllowedOrigins                []string
+	DiagnosticsConfig             DiagnosticsConfig
+	HMACWindow                    time.Duration
+	JWTDuration                   time.Duration
 	DatabaseConnMaxLifetime       time.Duration
 	DatabaseConnMaxIdleTime       time.Duration
 	DatabaseRequestTimeout        time.Duration
 	DatabaseHealthCheckPeriod     time.Duration
-	ResendAPIKey                  string
-	ServerAPIToken                string
-	EmailFromName                 string
-	PublicDir                     string
-	AuditLogSeparateDBPath        string
-	AuditLogPath                  string
-	AllowedOrigins                []string
-	DiagnosticsConfig             DiagnosticsConfig
 	MonthlyKeyLimit               int
 	SessionMaxAge                 int
 	DeviceDeletionIntervalMinutes int
 	PasswordResetTokenExpiry      time.Duration
 	EmailVerifyTokenExpiry        time.Duration
-	JWTDuration                   time.Duration
+	DatabaseMaxIdleConns          int
 	MaxKeyNameLength              int
-	HMACWindow                    time.Duration
+	DatabaseMaxOpenConns          int
 	NonceCacheTTL                 time.Duration
-	EnableGraphQL                 bool
-	AuditLogSeparateDB            bool
+	AuthRateLimitMin              int
+	RateLimitPerMin               int
 	RequireKeyName                bool
 	AllowKeyRenaming              bool
 	EnableUsageTracking           bool
 	DeviceDeletionEnabled         bool
 	EnforceHMAC                   bool
-	RateLimitPerMin               int
-	AuthRateLimitMin              int
+	AuditLogSeparateDB            bool
+	EnableGraphQL                 bool
 }
 
 // DiagnosticsConfig holds configuration for the diagnostics API.
@@ -441,7 +441,7 @@ func (c *Config) ResolvedDatabaseBackend() string {
 		return "sqlite"
 	case "turso":
 		return "turso"
-	default: // "auto" or unset
+	default: // "auto" or unset.
 		if c.TursoDatabaseURL != "" {
 			return "turso"
 		}

@@ -27,31 +27,26 @@ import (
 type Backend string
 
 const (
-	BackendSQLite Backend = "sqlite" // local file via mattn/go-sqlite3
-	BackendTurso  Backend = "turso"  // remote Turso libSQL over HTTP
+	BackendSQLite Backend = "sqlite" // local file via mattn/go-sqlite3.
+	BackendTurso  Backend = "turso"  // remote Turso libSQL over HTTP.
 )
 
 // Config holds storage configuration for either backend.
 type Config struct {
-	// Backend selects sqlite vs turso. When empty, auto-detected from TursoURL.
-	Backend Backend
-
-	// --- SQLite (local file) settings ---
-	Path        string
-	JournalMode string // WAL, DELETE, etc.
-	CacheSize   int    // KB, negative means MB.
-	BusyTimeout int    // milliseconds.
-	ForeignKeys bool
-
-	// --- Turso (remote libSQL) settings ---
-	TursoURL          string        // e.g. libsql://<db>.turso.io
-	TursoAuthToken    string        // database access token (never logged)
-	MaxOpenConns      int           // concurrent connections (Turso tolerates many)
-	MaxIdleConns      int           // idle connections kept in the pool
-	ConnMaxLifetime   time.Duration // recycle a connection after this duration
-	ConnMaxIdleTime   time.Duration // close idle connections after this duration
-	RequestTimeout    time.Duration // per-request dial+response cap
-	HealthCheckPeriod time.Duration // background ping interval; 0 disables
+	Path              string
+	TursoURL          string
+	TursoAuthToken    string
+	Backend           Backend
+	JournalMode       string
+	ConnMaxLifetime   time.Duration
+	HealthCheckPeriod time.Duration
+	MaxOpenConns      int
+	MaxIdleConns      int
+	RequestTimeout    time.Duration
+	ConnMaxIdleTime   time.Duration
+	CacheSize         int
+	BusyTimeout       int
+	ForeignKeys       bool
 }
 
 // DefaultConfig returns the default SQLite configuration for a local file path.
@@ -134,10 +129,10 @@ func (c *Config) buildTursoDSN() string {
 // TxManager/Backend/Info) is identical for both backends.
 type SQLite struct {
 	db         *sql.DB
-	backend    Backend
 	cfg        *Config
 	logger     *slog.Logger
 	stopHealth chan struct{}
+	backend    Backend
 	stopped    atomic.Bool
 }
 
@@ -457,7 +452,23 @@ var migrations = []Migration{
 	// unresolvable and blocking device deletion. Rebuilds the table with
 	// REFERENCES devices(id). Idempotent.
 	{Apply: migrateFixDeviceSettingsFK, Name: "fix_device_settings_fk", Version: 50},
+	// Add organization_id to update_pushes. The org-scoped push queries
+	// (ListPushes/GetPushByID/ListPushDevices) and CreatePush reference it,
+	// but the create_update_tables migration (023) never created the column
+	// and no prior migration added it. Idempotent.
+	{Apply: migrateAddUpdatePushOrgColumn, Name: "add_update_pushes_organization_id", Version: 51},
+	// Rebuild api_keys and api_clients to the rich schema the repository
+	// code expects (operator_id, key_prefix, scope, is_active, ...). The
+	// live tables were created by a deleted migration (038) / migration 013
+	// with an incompatible minimal schema; SetupAPIKeysTable is never wired
+	// and CREATE TABLE IF NOT EXISTS can't add columns, so the rich schema
+	// was never applied and every API-key/client endpoint 500'd. Idempotent.
+	{Apply: migrateRebuildAPIKeyTables, Name: "rebuild_api_key_tables", Version: 52},
 	// Fix timestamp columns - convert TEXT to INTEGER for consistency.
+	// Add resource_type/resource_id/metadata/result columns to audit_logs.
+	// The original migration 018 created the table without these columns, so
+	// audit log writes failed with "no column named resource_type". Idempotent.
+	{Apply: migrateAuditLogsResourceColumns, Name: "add_audit_logs_resource_columns", Version: 53},
 }
 
 // runMigrations applies all pending migrations.
@@ -847,6 +858,27 @@ func migrateCreateAuditLogs(db *sql.DB) error {
 	`)
 
 	return err
+}
+
+// migrateAuditLogsResourceColumns adds the resource_type, resource_id, metadata,
+// and result columns that the audit repository writes but migration 018 never
+// created. Idempotent: silently skips columns that already exist.
+func migrateAuditLogsResourceColumns(db *sql.DB) error {
+	for _, col := range []string{"resource_type", "resource_id", "metadata", "result"} {
+		if _, err := db.ExecContext(context.Background(),
+			`ALTER TABLE audit_logs ADD COLUMN `+col+` TEXT`); err != nil {
+			if !isDuplicateColumnErr(err) {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// isDuplicateColumnErr returns true for SQLite's "duplicate column name" error,
+// which is raised when ALTER TABLE ADD COLUMN targets an existing column.
+func isDuplicateColumnErr(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "duplicate column")
 }
 
 func migrateCreateMessageQueue(db *sql.DB) error {

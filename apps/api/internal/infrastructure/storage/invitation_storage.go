@@ -446,7 +446,7 @@ func statusToLifecycle(status organization.InvitationStatus) organization.Invita
 func (s *InvitationStorage) scanInvitation(row *sql.Row) (*organization.Invitation, error) {
 	var invite organization.Invitation
 	var inviterNotes, inviteeNotes, responderID sql.NullString
-	var respondedAt sql.NullInt64
+	var invitedAt, respondedAt, expiresAt sql.NullInt64
 	var organizationName, inviterName, inviterEmail sql.NullString
 
 	err := row.Scan(
@@ -459,10 +459,10 @@ func (s *InvitationStorage) scanInvitation(row *sql.Row) (*organization.Invitati
 		&inviterNotes,
 		&inviteeNotes,
 		&invite.InvitedBy,
-		&invite.InvitedAt,
+		&invitedAt,
 		&respondedAt,
 		&responderID,
-		&invite.ExpiresAt,
+		&expiresAt,
 		&organizationName,
 		&inviterName,
 		&inviterEmail,
@@ -475,6 +475,12 @@ func (s *InvitationStorage) scanInvitation(row *sql.Row) (*organization.Invitati
 		return nil, err
 	}
 
+	if invitedAt.Valid {
+		invite.InvitedAt = time.UnixMilli(invitedAt.Int64)
+	}
+	if expiresAt.Valid {
+		invite.ExpiresAt = time.UnixMilli(expiresAt.Int64)
+	}
 	if inviterNotes.Valid && inviterNotes.String != "" {
 		invite.InviterNotes = inviterNotes.String
 	}
@@ -505,7 +511,7 @@ func (s *InvitationStorage) scanInvitations(rows *sql.Rows) ([]*organization.Inv
 	for rows.Next() {
 		var invite organization.Invitation
 		var inviterNotes, inviteeNotes, responderID sql.NullString
-		var respondedAt sql.NullInt64
+		var invitedAt, respondedAt, expiresAt sql.NullInt64
 		var organizationName, inviterName, inviterEmail sql.NullString
 
 		err := rows.Scan(
@@ -518,10 +524,10 @@ func (s *InvitationStorage) scanInvitations(rows *sql.Rows) ([]*organization.Inv
 			&inviterNotes,
 			&inviteeNotes,
 			&invite.InvitedBy,
-			&invite.InvitedAt,
+			&invitedAt,
 			&respondedAt,
 			&responderID,
-			&invite.ExpiresAt,
+			&expiresAt,
 			&organizationName,
 			&inviterName,
 			&inviterEmail,
@@ -530,6 +536,12 @@ func (s *InvitationStorage) scanInvitations(rows *sql.Rows) ([]*organization.Inv
 			return nil, err
 		}
 
+		if invitedAt.Valid {
+			invite.InvitedAt = time.UnixMilli(invitedAt.Int64)
+		}
+		if expiresAt.Valid {
+			invite.ExpiresAt = time.UnixMilli(expiresAt.Int64)
+		}
 		if inviterNotes.Valid && inviterNotes.String != "" {
 			invite.InviterNotes = inviterNotes.String
 		}

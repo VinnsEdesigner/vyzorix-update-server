@@ -32,19 +32,7 @@ func (h *LockoutHandler) Middleware() gin.HandlerFunc {
 
 // GetLockoutStatus handles GET /v1/auth/lockout/status.
 func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
-	sessionID, err := h.getSessionFromCookie(c)
-	if err != nil {
-		h.presenter.Unauthorized(c, "")
-		return
-	}
-
-	// Get operator email to check lockout status.
-	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		h.presenter.Unauthorized(c, "")
-		return
-	}
-
+	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
 		h.presenter.Unauthorized(c, "")
 		return
@@ -66,15 +54,8 @@ func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
 // UnlockAccount handles POST /v1/admin/lockout/unlock/:operator_id.
 // Requires org-scoped super_admin access.
 func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
-	sessionID, err := h.getSessionFromCookie(c)
-	if err != nil {
-		h.presenter.Unauthorized(c, "")
-		return
-	}
-
-	// Check if admin.
-	_, op, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
 		h.presenter.Unauthorized(c, "")
 		return
 	}
@@ -110,12 +91,3 @@ func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 	})
 }
 
-// getSessionFromCookie extracts session ID from cookie.
-func (h *LockoutHandler) getSessionFromCookie(c *gin.Context) (string, error) {
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
-		return "", err
-	}
-
-	return sessionID, nil
-}

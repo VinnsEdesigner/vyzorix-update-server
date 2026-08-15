@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	cmdSvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
@@ -216,6 +217,10 @@ func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 
 	cmdStatus, err := h.commandService.GetCommandByDispatchID(c.Request.Context(), dispatchID)
 	if err != nil {
+		if errors.Is(err, application.ErrCommandNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
+			return
+		}
 		h.log.Error("failed to get command status", "error", err, "dispatchId", dispatchID)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to get command status"})
 

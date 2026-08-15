@@ -3,6 +3,7 @@ package resolver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
@@ -121,9 +122,9 @@ func (r *Resolver) GetMyMemberships(p graphql.ResolveParams) (interface{}, error
 func (r *Resolver) GetOrganizationMembers(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -132,7 +133,8 @@ func (r *Resolver) GetOrganizationMembers(p graphql.ResolveParams) (interface{},
 	}
 
 	// Check if operator is a member.
-	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+	err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 		return nil, r.Presenter.ForbiddenError("not a member of this organization")
 	}
 
@@ -168,9 +170,9 @@ func (r *Resolver) GetOrganizationMembers(p graphql.ResolveParams) (interface{},
 func (r *Resolver) GetOrganizationInvitations(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok || orgID == "" {
-		return nil, r.Presenter.BadRequestError("organizationId is required")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 
 	op, ok := gqlcontext.GetOperator(ctx)
@@ -179,7 +181,8 @@ func (r *Resolver) GetOrganizationInvitations(p graphql.ResolveParams) (interfac
 	}
 
 	// Check if operator is a member.
-	if err := r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID); err != nil {
+	err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
+	if err != nil {
 		return nil, r.Presenter.ForbiddenError("not a member of this organization")
 	}
 
@@ -283,6 +286,12 @@ func (r *Resolver) CreateOrganization(p graphql.ResolveParams) (interface{}, err
 	// The membership is created inside the transaction, so we get it from there.
 	org, err := r.OrgService.CreateOrganization(ctx, op.ID, name, "", maxMembers, "super_admin")
 	if err != nil {
+		if errors.Is(err, orgapp.ErrMaxOrgsReached) {
+			return nil, r.Presenter.BadRequestError("maximum 2 active organizations allowed")
+		}
+		if errors.Is(err, orgdomain.ErrOrganizationExists) {
+			return nil, r.Presenter.BadRequestError("organization with this name already exists")
+		}
 		return nil, r.Presenter.InternalError("failed to create organization")
 	}
 
@@ -429,9 +438,9 @@ func (r *Resolver) DeleteOrganization(p graphql.ResolveParams) (interface{}, err
 func (r *Resolver) InviteMember(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 	email, ok := p.Args["email"].(string)
 	if !ok {
@@ -452,7 +461,8 @@ func (r *Resolver) InviteMember(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	// Check if operator can manage members.
-	if err := r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID); err != nil {
+	err = r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID)
+	if err != nil {
 		return nil, r.Presenter.ForbiddenError("insufficient permissions to invite members")
 	}
 
@@ -487,9 +497,9 @@ func (r *Resolver) InviteMember(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) RemoveMember(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 	memberID, ok := p.Args["memberId"].(string)
 	if !ok {
@@ -592,9 +602,9 @@ func (r *Resolver) canRemoveMember(ctx context.Context, orgID, memberID string) 
 func (r *Resolver) UpdateMemberRole(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 	memberID, ok := p.Args["memberId"].(string)
 	if !ok {
@@ -874,8 +884,7 @@ func (r *Resolver) TransferDevice(p graphql.ResolveParams) (interface{}, error) 
 		return nil, r.Presenter.ForbiddenError("not a member of target organization")
 	}
 
-	err := r.DeviceService.TransferDevice(ctx, imei, sourceOrgID, targetOrgID, op.ID)
-	if err != nil {
+	if err := r.DeviceService.TransferDevice(ctx, imei, sourceOrgID, targetOrgID, op.ID); err != nil {
 		return nil, r.Presenter.InternalError("failed to transfer device")
 	}
 
@@ -891,9 +900,9 @@ func (r *Resolver) TransferDevice(p graphql.ResolveParams) (interface{}, error) 
 func (r *Resolver) TransferOwnership(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 	memberID, ok := p.Args["memberId"].(string)
 	if !ok {
@@ -943,9 +952,9 @@ func (r *Resolver) TransferOwnership(p graphql.ResolveParams) (interface{}, erro
 func (r *Resolver) SuspendMember(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 	memberID, ok := p.Args["memberId"].(string)
 	if !ok {
@@ -958,11 +967,12 @@ func (r *Resolver) SuspendMember(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	// Check if operator can manage members.
-	if err := r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID); err != nil {
+	err = r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID)
+	if err != nil {
 		return nil, r.Presenter.ForbiddenError("insufficient permissions to suspend member")
 	}
 
-	err := r.MemberService.SuspendMember(ctx, orgID, memberID, op.ID)
+	err = r.MemberService.SuspendMember(ctx, orgID, memberID, op.ID)
 	if err != nil {
 		if err == orgdomain.ErrMemberNotFound {
 			return nil, r.Presenter.NotFoundError("member not found")
@@ -998,9 +1008,9 @@ func (r *Resolver) SuspendMember(p graphql.ResolveParams) (interface{}, error) {
 func (r *Resolver) ReinstateMember(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	orgID, ok := p.Args["organizationId"].(string)
-	if !ok {
-		return nil, r.Presenter.BadRequestError("organizationId must be a string")
+	orgID, err := r.resolveOrgID(p)
+	if err != nil {
+		return nil, err
 	}
 	memberID, ok := p.Args["memberId"].(string)
 	if !ok {
@@ -1013,11 +1023,12 @@ func (r *Resolver) ReinstateMember(p graphql.ResolveParams) (interface{}, error)
 	}
 
 	// Check if operator can manage members.
-	if err := r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID); err != nil {
+	err = r.MemberService.CheckCanManageMembers(ctx, op.ID, orgID)
+	if err != nil {
 		return nil, r.Presenter.ForbiddenError("insufficient permissions to reinstate member")
 	}
 
-	err := r.MemberService.ReinstateMember(ctx, orgID, memberID, op.ID)
+	err = r.MemberService.ReinstateMember(ctx, orgID, memberID, op.ID)
 	if err != nil {
 		if err == orgdomain.ErrMemberNotFound {
 			return nil, r.Presenter.NotFoundError("member not found")
@@ -1057,7 +1068,7 @@ func (r *Resolver) orgToMap(org *orgdomain.Organization) map[string]interface{} 
 	result := map[string]interface{}{
 		"id":          org.ID,
 		"name":        org.Name,
-		"lifecycle":   org.Lifecycle,
+		"lifecycle":   string(org.Lifecycle),
 		"maxMembers":  org.MaxMembers,
 		"memberCount": org.MemberCount,
 		"createdBy":   org.CreatedBy,
@@ -1077,8 +1088,8 @@ func (r *Resolver) membershipToMap(m *orgdomain.OrganizationMember) map[string]i
 		"id":             m.ID,
 		"organizationId": m.OrganizationID,
 		"operatorId":     m.OperatorID,
-		"role":           m.Role,
-		"lifecycle":      m.Lifecycle,
+		"role":            string(m.Role),
+		"lifecycle":       string(m.Lifecycle),
 	}
 
 	if !m.JoinedAt.IsZero() {
@@ -1102,8 +1113,8 @@ func (r *Resolver) invitationToMap(inv *orgdomain.Invitation) map[string]interfa
 		"organizationId":    inv.OrganizationID,
 		"organizationName": inv.OrganizationName,
 		"email":            inv.Email,
-		"role":             inv.Role,
-		"status":           inv.Status,
+		"role":             string(inv.Role),
+		"status":           string(inv.Status),
 		"token":            inv.Token,
 		"inviterId":        inv.InvitedBy,
 		"inviterName":      inv.InviterName,

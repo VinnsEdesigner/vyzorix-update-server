@@ -5,10 +5,11 @@ import (
 
 	gqladapters "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/adapters"
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
-	gqlmiddleware "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/resolver"
+	gqlmw "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
+	gqlresolver "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/resolver"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/subscription"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
@@ -30,6 +31,10 @@ import (
 )
 
 // RegisterGraphQL initializes and registers the GraphQL server with the API server.
+// GraphQL routes use the same system middleware chain as REST tenant routes:
+// rate limiting, cookie/session auth, token revocation, API key auth + scope
+// enforcement, organization context (from URL :org param), and organization
+// membership validation.
 func (s *Server) RegisterGraphQL(
 	deviceService *device.Service,
 	deviceSettingsService *device.DeviceSettingsService,
@@ -60,14 +65,15 @@ func (s *Server) RegisterGraphQL(
 	authService := s.getAuthService()
 	sessionManager := s.getSessionManager()
 
-	// Create auth middleware for GraphQL.
-	authMw := gqlmiddleware.NewAuthMiddleware(sessionManager, authService, s.log)
-
 	// Create GraphQL presenter for audit logging.
 	gqlPresenter := gqladapters.NewPresenter(s.AuditLogger)
 
-	// Create resolver with presenter.
-	res := resolver.NewResolver(
+	// The auth middleware is retained for the subscription handler's internal
+	// use. HTTP authentication is handled by the system middleware chain.
+	authMw := gqlmw.NewAuthMiddleware(sessionManager, authService, s.log)
+
+	// Create resolver.
+	res := gqlresolver.NewResolver(
 		deviceService,
 		deviceSettingsService,
 		commandService,
@@ -92,6 +98,7 @@ func (s *Server) RegisterGraphQL(
 		orgSettingsService,
 		memberService,
 		invitationService,
+		s.inboxService,
 	)
 
 	// Build schema.
@@ -102,27 +109,47 @@ func (s *Server) RegisterGraphQL(
 
 	// Create handler.
 	h := &gqlHandler{
-		schema:         gqlSchema,
-		authMiddleware: authMw,
+		schema: gqlSchema,
 	}
 
-	// Register routes with org-scoped paths.
-	s.engine.POST("/:org/graphql", h.Handle)
-	s.engine.GET("/:org/graphql", h.Handle)
-
-	// Register batch endpoint for GraphQL batching.
-	batchHandler := &gqlBatchHandler{
-		schema:         gqlSchema,
-		authMiddleware: authMw,
+	// Create the GraphQL middleware group with the same chain as tenant routes.
+	gqlGroup := s.engine.Group("/:org")
+	gqlGroup.Use(s.authLimiter.Middleware())
+	gqlGroup.Use(s.cookieAuth.Middleware())
+	if s.revocationList != nil {
+		gqlGroup.Use(middleware.AuthRevocationMiddleware(s.revocationList))
 	}
-	s.engine.POST("/:org/graphql/batch", batchHandler.Handle)
+	if s.tenantAPIKeyAuth != nil {
+		gqlGroup.Use(s.tenantAPIKeyAuth.Middleware())
+		gqlGroup.Use(s.tenantAPIKeyAuth.ScopeEnforcement(middleware.MethodToScope))
+		if s.apiKeyRateLimiter != nil {
+			gqlGroup.Use(middleware.APIKeyRateLimitMiddleware(s.apiKeyRateLimiter))
+		}
+	}
+	// Set organization ID from the URL :org param into gin context so that
+	// the OrganizationMembership middleware can validate it.
+	gqlGroup.Use(orgFromURLParamMiddleware)
+	// Validate that the authenticated operator is a member of the organization.
+	gqlGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+
+	// Register GraphQL routes through the protected group.
+	gqlGroup.POST("/graphql", h.Handle)
+	gqlGroup.GET("/graphql", h.Handle)
+
+	// Register batch endpoint.
+	batchHandler := &gqlBatchHandler{schema: gqlSchema}
+	gqlGroup.POST("/graphql/batch", batchHandler.Handle)
 
 	// Playground is only enabled in non-production environments.
+	// It is served without middleware (it's just a static HTML page; actual
+	// query auth happens when requests are sent to /:org/graphql).
 	if s.config.Env != "production" {
 		s.engine.GET("/:org/playground", h.Playground)
 	}
 
-	// Create subscription handler.
+	// Create subscription handler. The WS endpoint goes through the same
+	// middleware group, so the operator is already authenticated by the time
+	// HandleWebSocket runs.
 	subsHandler := subscription.NewHandler(&subscription.Config{
 		Hub:         wsHub,
 		Resolver:    res,
@@ -131,17 +158,33 @@ func (s *Server) RegisterGraphQL(
 		AuditLogger: subscription.NewAuditLoggerAdapter(s.AuditLogger),
 		Config:      s.config,
 	})
-	s.engine.GET("/:org/graphql/ws", subsHandler.HandleWebSocket)
+	gqlGroup.GET("/graphql/ws", subsHandler.HandleWebSocket)
 
-	s.log.Info("GraphQL server registered", "path", "/:org/graphql", "playground", "/:org/playground", "subscriptions", "/:org/graphql/ws")
+	s.log.Info("GraphQL server registered", "path", "/:org/graphql", "playground", "/:org/playground", "subscriptions", "/:org/graphql/ws", "middleware", "system-chain")
 
 	return nil
 }
 
+// orgFromURLParamMiddleware extracts the organization ID from the URL :org
+// parameter and stores it in the gin context under ContextKeyOrganizationID.
+// This allows the OrganizationMembership middleware to validate the operator's
+// membership in the organization specified in the URL.
+func orgFromURLParamMiddleware(c *gin.Context) {
+	orgID := c.Param("org")
+	if orgID == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "bad_request",
+			"message": "organization ID required in URL path",
+		})
+		return
+	}
+	c.Set(middleware.ContextKeyOrganizationID, orgID)
+	c.Next()
+}
+
 // gqlHandler is the GraphQL HTTP handler.
 type gqlHandler struct {
-	authMiddleware *gqlmiddleware.AuthMiddleware
-	schema         gql.Schema
+	schema gql.Schema
 }
 
 // gqlRequest represents a GraphQL request.
@@ -151,7 +194,8 @@ type gqlRequest struct {
 	OperationName string                 `json:"operationName"`
 }
 
-// Handle processes GraphQL requests.
+// Handle processes GraphQL requests. Authentication and organization membership
+// are enforced by the system middleware chain before this handler runs.
 func (h *gqlHandler) Handle(c *gin.Context) {
 	var req gqlRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -162,24 +206,9 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Extract org from URL parameter.
-	orgID := c.Param("org")
-	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"errors": []gin.H{{"message": "organization ID required"}},
-		})
-
-		return
-	}
-
-	// Authenticate.
-	headers := map[string]string{
-		"Cookie":        c.GetHeader("Cookie"),
-		"Authorization": c.GetHeader("Authorization"),
-	}
-
-	op, err := h.authMiddleware.Authenticate(c.Request.Context(), headers)
-	if err != nil {
+	// Extract operator from gin context (set by cookieAuth or tenantAPIKeyAuth).
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"errors": []gin.H{{"message": "authentication required"}},
 		})
@@ -187,7 +216,10 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Add operator and organization to context.
+	// Extract org from gin context (set by orgFromURLParamMiddleware).
+	orgID := middleware.GetOrganizationID(c)
+
+	// Add operator and organization to GraphQL context.
 	ctx := gqlcontext.WithOperator(c.Request.Context(), op)
 	ctx = gqlcontext.WithOrganizationID(ctx, orgID)
 
@@ -289,8 +321,7 @@ func (s *Server) getSessionManager() *infraauth.SessionManager {
 
 // gqlBatchHandler handles GraphQL batch requests.
 type gqlBatchHandler struct {
-	authMiddleware *gqlmiddleware.AuthMiddleware
-	schema         gql.Schema
+	schema gql.Schema
 }
 
 // gqlBatchRequest represents a batch of GraphQL requests.
@@ -300,7 +331,8 @@ type gqlBatchRequest struct {
 	OperationName string                 `json:"operationName"`
 }
 
-// Handle processes GraphQL batch requests.
+// Handle processes GraphQL batch requests. Authentication and organization
+// membership are enforced by the system middleware chain before this handler runs.
 func (h *gqlBatchHandler) Handle(c *gin.Context) {
 	var requests []gqlBatchRequest
 	if err := c.ShouldBindJSON(&requests); err != nil {
@@ -317,30 +349,19 @@ func (h *gqlBatchHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	// Extract org from URL parameter.
-	orgID := c.Param("org")
-	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"errors": []gin.H{{"message": "organization ID required"}},
-		})
-		return
-	}
-
-	// Authenticate.
-	headers := map[string]string{
-		"Cookie":        c.GetHeader("Cookie"),
-		"Authorization": c.GetHeader("Authorization"),
-	}
-
-	op, err := h.authMiddleware.Authenticate(c.Request.Context(), headers)
-	if err != nil {
+	// Extract operator from gin context (set by cookieAuth or tenantAPIKeyAuth).
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"errors": []gin.H{{"message": "authentication required"}},
 		})
 		return
 	}
 
-	// Add operator and organization to context.
+	// Extract org from gin context (set by orgFromURLParamMiddleware).
+	orgID := middleware.GetOrganizationID(c)
+
+	// Add operator and organization to GraphQL context.
 	ctx := gqlcontext.WithOperator(c.Request.Context(), op)
 	ctx = gqlcontext.WithOrganizationID(ctx, orgID)
 

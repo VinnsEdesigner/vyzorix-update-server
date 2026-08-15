@@ -21,6 +21,7 @@ import (
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	orgapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	inboxapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -61,6 +62,7 @@ type Config struct {
 	OrgSettingsService     *orgapp.OrganizationSettingsService
 	MemberService          *orgapp.MemberService
 	InvitationService      *orgapp.InvitationService
+	InboxService           *inboxapp.Service
 	Env                    string
 }
 
@@ -103,6 +105,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		cfg.OrgSettingsService,
 		cfg.MemberService,
 		cfg.InvitationService,
+		cfg.InboxService,
 	)
 
 	// Create handler.

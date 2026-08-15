@@ -12,6 +12,8 @@ import (
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+
+	"github.com/gin-gonic/gin"
 )
 
 // AuthMiddleware provides authentication for GraphQL resolvers.
@@ -28,6 +30,22 @@ func NewAuthMiddleware(sessionManager *infraauth.SessionManager, authService *ap
 		AuthService:    authService,
 		Log:            log,
 	}
+}
+
+// GetOperatorFromGinContext extracts the operator from the gin context, where
+// it was set by the system middleware chain (cookieAuth or tenantAPIKeyAuth).
+// This allows the subscription handler to reuse the authenticated operator
+// without re-authenticating.
+func (m *AuthMiddleware) GetOperatorFromGinContext(c *gin.Context) *operator.Operator {
+	val, exists := c.Get("operator")
+	if !exists {
+		return nil
+	}
+	op, ok := val.(*operator.Operator)
+	if !ok || op == nil {
+		return nil
+	}
+	return op
 }
 
 // Authenticate extracts and validates the operator from request headers/cookies.

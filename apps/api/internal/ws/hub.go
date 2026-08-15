@@ -216,8 +216,10 @@ func (h *Hub) handleClientRegistration(ctx context.Context, c *Client) {
 	h.mu.Lock()
 	if old := h.clients[c.DeviceID]; old != nil {
 		close(old.Send)
-		if err := old.Conn.Close(); err != nil {
-			h.log.Warn("old conn close failed", "deviceId", c.DeviceID, "err", err)
+		if old.Conn != nil {
+			if err := old.Conn.Close(); err != nil {
+				h.log.Warn("old conn close failed", "deviceId", c.DeviceID, "err", err)
+			}
 		}
 	}
 

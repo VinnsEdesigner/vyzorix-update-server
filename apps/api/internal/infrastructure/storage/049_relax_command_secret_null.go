@@ -28,37 +28,10 @@ import (
 // live database (which may carry columns added by later migrations).
 func migrateRelaxDeviceCommandSecretNull(db *sql.DB) error {
 	// Inspect the current devices schema.
-	rows, err := db.QueryContext(context.Background(), "PRAGMA table_info(devices)")
+	cols, commandSecretNotNull, err := inspectDeviceColumns(db)
 	if err != nil {
 		return err
 	}
-
-	type colInfo struct {
-		name    string
-		typ     string
-		notnull int
-		dflt    sql.NullString
-		pk      int
-	}
-	var cols []colInfo
-	commandSecretNotNull := false
-	for rows.Next() {
-		var ci colInfo
-		var cid int
-		if err := rows.Scan(&cid, &ci.name, &ci.typ, &ci.notnull, &ci.dflt, &ci.pk); err != nil {
-			_ = rows.Close()
-			return err
-		}
-		cols = append(cols, ci)
-		if strings.EqualFold(ci.name, "command_secret") && ci.notnull == 1 {
-			commandSecretNotNull = true
-		}
-	}
-	if err := rows.Err(); err != nil {
-		_ = rows.Close()
-		return err
-	}
-	_ = rows.Close()
 
 	// Nothing to do if the column is already nullable (or absent).
 	if !commandSecretNotNull {
@@ -91,7 +64,7 @@ func migrateRelaxDeviceCommandSecretNull(db *sql.DB) error {
 	}
 	def.WriteString(")")
 
-	if _, err := db.ExecContext(context.Background(), def.String()); err != nil {
+	if _, err = db.ExecContext(context.Background(), def.String()); err != nil {
 		return err
 	}
 
@@ -101,25 +74,19 @@ func migrateRelaxDeviceCommandSecretNull(db *sql.DB) error {
 		names = append(names, quoteIdent(ci.name))
 	}
 	colList := strings.Join(names, ", ")
-	placeholders := strings.Repeat("?, ", len(names))
-	placeholders = strings.TrimSuffix(placeholders, ", ")
 
 	copyQuery := "INSERT INTO _devices_new (" + colList + ") SELECT " + colList + " FROM devices"
-	if _, err := db.ExecContext(context.Background(), copyQuery); err != nil {
+	if _, err = db.ExecContext(context.Background(), copyQuery); err != nil {
 		_, _ = db.ExecContext(context.Background(), "DROP TABLE _devices_new")
 		return err
 	}
 
-	// Swap tables. Re-create indexes that referenced the old table afterward is
-	// the caller's responsibility via the standard migration ledger; the devices
-	// indexes are created idempotently by earlier migrations with IF NOT EXISTS,
-	// so we drop and let them remain absent only if they were table-bound. To be
-	// safe, drop the old table and rename.
-	if _, err := db.ExecContext(context.Background(), "DROP TABLE devices"); err != nil {
+	// Swap tables. Drop the old table and rename the shadow table into place.
+	if _, err = db.ExecContext(context.Background(), "DROP TABLE devices"); err != nil {
 		_, _ = db.ExecContext(context.Background(), "DROP TABLE _devices_new")
 		return err
 	}
-	if _, err := db.ExecContext(context.Background(), "ALTER TABLE _devices_new RENAME TO devices"); err != nil {
+	if _, err = db.ExecContext(context.Background(), "ALTER TABLE _devices_new RENAME TO devices"); err != nil {
 		return err
 	}
 
@@ -131,13 +98,54 @@ func migrateRelaxDeviceCommandSecretNull(db *sql.DB) error {
 		"CREATE INDEX IF NOT EXISTS idx_devices_firebase_install_id ON devices(firebase_install_id)",
 	}
 	for _, s := range indexStmts {
-		if _, err := db.ExecContext(context.Background(), s); err != nil {
+		if _, execErr := db.ExecContext(context.Background(), s); execErr != nil {
 			// Non-fatal: indexes are not required for correctness.
 			continue
 		}
 	}
 
 	return nil
+}
+
+type deviceColInfo struct {
+	name    string
+	typ     string
+	dflt    sql.NullString
+	notnull int
+	pk      int
+}
+
+// inspectDeviceColumns reads the devices schema via PRAGMA table_info and reports
+// whether the command_secret column is currently NOT NULL.
+func inspectDeviceColumns(db *sql.DB) ([]deviceColInfo, bool, error) {
+	rows, err := db.QueryContext(context.Background(), "PRAGMA table_info(devices)")
+	if err != nil {
+		return nil, false, err
+	}
+	var cols []deviceColInfo
+	commandSecretNotNull := false
+	func() {
+		defer func() { _ = rows.Close() }()
+		for rows.Next() {
+			var ci deviceColInfo
+			var cid int
+			if scanErr := rows.Scan(&cid, &ci.name, &ci.typ, &ci.notnull, &ci.dflt, &ci.pk); scanErr != nil {
+				err = scanErr
+				return
+			}
+			cols = append(cols, ci)
+			if strings.EqualFold(ci.name, "command_secret") && ci.notnull == 1 {
+				commandSecretNotNull = true
+			}
+		}
+		if err = rows.Err(); err != nil {
+			return
+		}
+	}()
+	if err != nil {
+		return nil, false, err
+	}
+	return cols, commandSecretNotNull, nil
 }
 
 // quoteIdent wraps an SQLite identifier in double quotes for safe use in DDL.

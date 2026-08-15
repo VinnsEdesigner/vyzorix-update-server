@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 
@@ -81,7 +83,15 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 
 	newOp, err := h.authService.CreateOperator(c.Request.Context(), &req)
 	if err != nil {
-		h.presenter.BadRequest(c, "Invalid request")
+		if errors.Is(err, application.ErrEmailExists) {
+			h.presenter.Conflict(c, "email already in use")
+			return
+		}
+		if errors.Is(err, application.ErrInvalidInput) {
+			h.presenter.BadRequest(c, "invalid input")
+			return
+		}
+		h.presenter.InternalError(c, "Invalid request")
 		return
 	}
 
@@ -161,7 +171,19 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 
 	updatedOp, err := h.authService.UpdateOperator(c.Request.Context(), operatorID, &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "internal_error", "message": "Invalid request"})
+		if errors.Is(err, application.ErrOperatorNotFound) {
+			h.presenter.NotFound(c, "operator not found")
+			return
+		}
+		if errors.Is(err, application.ErrEmailExists) {
+			h.presenter.Conflict(c, "email already in use")
+			return
+		}
+		if errors.Is(err, application.ErrInvalidInput) {
+			h.presenter.BadRequest(c, "invalid request body")
+			return
+		}
+		h.presenter.InternalError(c, "Invalid request")
 		return
 	}
 
@@ -200,6 +222,14 @@ func (h *AdminHandler) DeleteOperator(c *gin.Context) {
 	}
 
 	if err := h.authService.DeleteOperator(c.Request.Context(), operatorID); err != nil {
+		if errors.Is(err, application.ErrOperatorNotFound) {
+			h.presenter.NotFound(c, "operator not found")
+			return
+		}
+		if errors.Is(err, application.ErrCannotDeleteLastSuperAdmin) {
+			h.presenter.Conflict(c, "cannot delete the last super admin of an organization")
+			return
+		}
 		h.presenter.InternalError(c, "Invalid request")
 		return
 	}

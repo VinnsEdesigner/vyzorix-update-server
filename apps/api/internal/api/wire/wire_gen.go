@@ -28,13 +28,13 @@ func Injector(cfg config.Config) (*Server, error) {
 	}
 	db := ProvideDB(sqLite)
 	auditLogger := ProvideAuditLogger(db, cfg)
-	manager := ProvideSessionManager(cfg)
+	sessionRepository := ProvideSessionRepository(db)
+	manager := ProvideSessionManager(cfg, sessionRepository)
 	verifier := ProvideGoogleVerifier(cfg)
 	operatorRepository := ProvideOperatorRepository(db)
 	deviceRepository := ProvideDeviceRepository(db)
 	eventRepository := ProvideEventRepository(db)
 	commandRepository := ProvideCommandRepository(db)
-	sessionRepository := ProvideSessionRepository(db)
 	clientRepository := ProvideClientRepository(db)
 	telemetryRepository := ProvideTelemetryRepository(db)
 	updatesStorage := ProvideUpdatesStorage(db)
@@ -46,7 +46,9 @@ func Injector(cfg config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	authService := ProvideAuthService(logger, operatorRepository, sessionRepository, emailVerificationRepository, passwordResetRepository, refreshTokenRepository, argon2idHasher, jwtManager)
+	memberStorage := ProvideMemberRepository(db)
+	invitationStorage := ProvideInvitationRepository(db)
+	authService := ProvideAuthService(logger, operatorRepository, sessionRepository, emailVerificationRepository, passwordResetRepository, refreshTokenRepository, argon2idHasher, jwtManager, memberStorage, invitationStorage)
 	// Set session manager on auth service to enable session cookie creation during login
 	authService.SetSessionManager(manager)
 	txManager := ProvideTxManager(db)
@@ -78,8 +80,6 @@ func Injector(cfg config.Config) (*Server, error) {
 	notificationService := ProvideNotificationService(operatorRepository, emailService, webhookClient, notificationRepository, logger)
 	// Create organization repositories.
 	orgStorage := ProvideOrganizationRepository(db)
-	memberStorage := ProvideMemberRepository(db)
-	invitationStorage := ProvideInvitationRepository(db)
 	// Create organization services.
 	orgService := ProvideOrganizationService(orgStorage, memberStorage, invitationStorage, operatorRepository, sessionRepository, deviceRepository, telemetryRepository, commandRepository, txManager, logger)
 	memberService := ProvideMemberService(memberStorage, orgStorage, authService, logger)

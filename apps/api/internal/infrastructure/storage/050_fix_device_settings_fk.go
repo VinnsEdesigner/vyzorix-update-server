@@ -31,25 +31,25 @@ func migrateFixDeviceSettingsFK(db *sql.DB) error {
 	fkRows, err := db.QueryContext(context.Background(), "PRAGMA foreign_key_list(device_settings)")
 	if err != nil {
 		// Table may not exist yet on a partially-migrated DB; nothing to fix.
-		return nil
+		return nil //nolint:nilerr // intentional: missing table is not an error here
 	}
+	defer func() { _ = fkRows.Close() }()
+
 	needsFix := false
 	for fkRows.Next() {
 		var id, seq int
 		var table, from, to, onUpdate, onDelete, match string
-		if err := fkRows.Scan(&id, &seq, &table, &from, &to, &onUpdate, &onDelete, &match); err != nil {
-			_ = fkRows.Close()
-			return err
+		if scanErr := fkRows.Scan(&id, &seq, &table, &from, &to, &onUpdate, &onDelete, &match); scanErr != nil {
+			return scanErr
 		}
 		if strings.EqualFold(table, "devices") && (to == "" || strings.EqualFold(to, "imei")) {
 			needsFix = true
 		}
 	}
-	if err := fkRows.Err(); err != nil {
-		_ = fkRows.Close()
+	if err = fkRows.Err(); err != nil {
 		return err
 	}
-	_ = fkRows.Close()
+
 	if !needsFix {
 		return nil
 	}

@@ -101,13 +101,12 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 		return
 	}
 
-	headers := map[string]string{
-		"Cookie": c.GetHeader("Cookie"),
-	}
-
-	op, err := h.authMw.Authenticate(c.Request.Context(), headers)
-	if err != nil {
-		h.presenter.LogAuthFail(c.Request.Context(), err)
+	// The system middleware chain (cookieAuth/tenantAPIKeyAuth) has already
+	// authenticated the operator and set it in the gin context. Extract it
+	// from there instead of re-authenticating.
+	op := h.authMw.GetOperatorFromGinContext(c)
+	if op == nil {
+		h.presenter.LogAuthFail(c.Request.Context(), nil)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 
 		return

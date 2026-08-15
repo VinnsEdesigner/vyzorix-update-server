@@ -24,6 +24,7 @@ func migrateAddDeviceModelColumn(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
+	defer func() { _ = rows.Close() }()
 
 	hasModel := false
 	for rows.Next() {
@@ -31,19 +32,16 @@ func migrateAddDeviceModelColumn(db *sql.DB) error {
 		var name, typ string
 		var notnull, pk int
 		var dflt sql.NullString
-		if err := rows.Scan(&cid, &name, &typ, &notnull, &dflt, &pk); err != nil {
-			_ = rows.Close()
-			return err
+		if scanErr := rows.Scan(&cid, &name, &typ, &notnull, &dflt, &pk); scanErr != nil {
+			return scanErr
 		}
 		if strings.EqualFold(name, "model") {
 			hasModel = true
 		}
 	}
-	if err := rows.Err(); err != nil {
-		_ = rows.Close()
+	if err = rows.Err(); err != nil {
 		return err
 	}
-	_ = rows.Close()
 
 	if hasModel {
 		return nil

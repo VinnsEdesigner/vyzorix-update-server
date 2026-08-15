@@ -1,9 +1,11 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 
@@ -100,6 +102,10 @@ func (h *ClientsHandler) Update(c *gin.Context) {
 
 	clientResp, err := h.clientService.Update(c.Request.Context(), clientID, &req)
 	if err != nil {
+		if errors.Is(err, application.ErrClientNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Client not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to update client"})
 		return
 	}
@@ -116,6 +122,12 @@ func (h *ClientsHandler) Delete(c *gin.Context) {
 	clientID := c.Param("clientId")
 	if clientID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "clientId is required"})
+		return
+	}
+
+	// Verify existence so deleting a nonexistent client returns 404, not 200.
+	if _, err := h.clientService.Get(c.Request.Context(), clientID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Client not found"})
 		return
 	}
 
@@ -137,6 +149,12 @@ func (h *ClientsHandler) RotateKey(c *gin.Context) {
 	clientID := c.Param("clientId")
 	if clientID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "clientId is required"})
+		return
+	}
+
+	// Verify existence so rotating a nonexistent client returns 404, not 500.
+	if _, err := h.clientService.Get(c.Request.Context(), clientID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Client not found"})
 		return
 	}
 

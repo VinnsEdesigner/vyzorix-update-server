@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"errors"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
@@ -25,19 +27,17 @@ func NewSessionsHandler(authService *appauth.AuthService, sessionManager *infraa
 	}
 }
 
-// getOperatorID extracts operator ID from session.
+// getOperatorID extracts operator ID from the authenticated session.
+// The cookieAuth middleware already validated the (encrypted) session cookie
+// and stored the operator in context, so reuse it rather than re-reading the
+// raw cookie ciphertext (which is not the plaintext session ID).
 func (h *SessionsHandler) getOperatorID(c *gin.Context) (string, error) {
-	sessionID, err := c.Cookie("vyz_session")
-	if err != nil {
-		return "", err
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		return "", errors.New("unauthorized")
 	}
 
-	sess, _, err := h.authService.ValidateSession(c.Request.Context(), sessionID)
-	if err != nil {
-		return "", err
-	}
-
-	return sess.OperatorID, nil
+	return op.ID, nil
 }
 
 // ListSessions handles GET /v1/auth/sessions - List all active sessions for the operator.
@@ -56,7 +56,7 @@ func (h *SessionsHandler) ListSessions(c *gin.Context) {
 
 	// Build response with session metadata (excluding sensitive data).
 	sessionList := make([]gin.H, 0, len(sessions))
-	currentSessionID, _ := c.Cookie("vyz_session")
+	currentSessionID := middleware.GetCurrentSessionID(c)
 
 	for _, sess := range sessions {
 		sessionList = append(sessionList, gin.H{
@@ -92,7 +92,7 @@ func (h *SessionsHandler) CheckConcurrent(c *gin.Context) {
 
 	// Check for different IPs or user agents.
 	var concurrentLogins []gin.H
-	currentSessionID, _ := c.Cookie("vyz_session")
+	currentSessionID := middleware.GetCurrentSessionID(c)
 
 	for _, sess := range sessions {
 		if sess.ID != currentSessionID {
@@ -127,7 +127,7 @@ func (h *SessionsHandler) RevokeSession(c *gin.Context) {
 	}
 
 	// Prevent revoking current session via this endpoint.
-	currentSessionID, _ := c.Cookie("vyz_session")
+	currentSessionID := middleware.GetCurrentSessionID(c)
 	if sessionID == currentSessionID {
 		h.presenter.BadRequest(c, "Cannot revoke current session. Use logout instead.")
 		return
@@ -170,7 +170,7 @@ func (h *SessionsHandler) RevokeAllExceptCurrent(c *gin.Context) {
 		return
 	}
 
-	currentSessionID, _ := c.Cookie("vyz_session")
+	currentSessionID := middleware.GetCurrentSessionID(c)
 
 	// Get all sessions.
 	sessions, err := h.sessionManager.ListActiveSessions(c.Request.Context(), operatorID)
@@ -250,7 +250,7 @@ func (h *SessionsHandler) GetSession(c *gin.Context) {
 		return
 	}
 
-	currentSessionID, _ := c.Cookie("vyz_session")
+	currentSessionID := middleware.GetCurrentSessionID(c)
 
 	for _, sess := range sessions {
 		if sess.ID == sessionID {

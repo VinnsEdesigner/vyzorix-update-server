@@ -141,8 +141,15 @@ func ProvidePasswordHasher() *passwordpkg.Argon2idHasher {
 }
 
 // ProvideSessionManager creates the session manager.
-func ProvideSessionManager(cfg config.Config) *infraauth.SessionManager {
-	return infraauth.NewSessionManager(cfg.SessionSecret)
+// The manager needs its session repository wired so that session-management
+// endpoints (list/revoke/concurrent) can query persisted sessions. Without
+// this, ListActiveSessions returns "session repository not configured".
+// The storage repository speaks the domain/session types; the manager's
+// Repository interface speaks security/session types, so we adapt here.
+func ProvideSessionManager(cfg config.Config, sessionRepo *storage.SessionRepository) *infraauth.SessionManager {
+	m := infraauth.NewSessionManager(cfg.SessionSecret)
+	m.SetRepository(newSessionRepoAdapter(sessionRepo))
+	return m
 }
 
 // ProvideGoogleVerifier creates the Google token verifier.
@@ -277,6 +284,8 @@ func ProvideAuthService(
 	refreshTokenRepo *storage.RefreshTokenRepository,
 	hasher *passwordpkg.Argon2idHasher,
 	jwtManager *infraauth.JWTManager,
+	memberRepo *storage.MemberStorage,
+	invitationRepo *storage.InvitationStorage,
 ) *auth.AuthService {
 	sessionTTL := 7 * 24 * time.Hour
 	svc := auth.NewAuthServiceWithRefresh(
@@ -292,6 +301,16 @@ func ProvideAuthService(
 		nil, // ldapConfig - not used currently.
 	)
 	svc.SetLogger(log)
+	// Wire the member repository so membership-dependent flows work: listing the
+	// operator's organizations (GET /v1/auth/organizations, /v1/auth/me) and
+	// organization selection (POST /v1/auth/organizations/select). Without this,
+	// these endpoints silently return empty / "not a member" even when the
+	// operator owns an organization.
+	svc.SetMemberRepository(memberRepo)
+	// Wire the invitation repository so the operator deletion flow
+	// (DELETE /v1/auth/admin/operators/:id) can cancel pending invitations.
+	// Without this, s.invitationRepo is nil and DeleteOperator panics.
+	svc.SetInvitationRepository(invitationRepo)
 	return svc
 }
 
@@ -829,7 +848,7 @@ func ProvideServerDependencies(
 		RateLimiter:           rateLimiter,
 		Hub:                   hubResult.Hub,
 		AuthService:           authService,
-		AuthLimiter:           middleware.NewRateLimiter(5, time.Minute),
+		AuthLimiter:           middleware.NewRateLimiter(cfg.AuthRateLimitMin, time.Minute),
 		IPIntelligence:        ipIntelligence,
 		Log:                   log,
 		SessionManager:        sessionManager,

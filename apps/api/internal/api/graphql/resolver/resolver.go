@@ -82,6 +82,7 @@ func NewResolver(
 	orgSettingsService *orgapp.OrganizationSettingsService,
 	memberService *orgapp.MemberService,
 	invitationService *orgapp.InvitationService,
+	inboxService *inboxapp.Service,
 ) *Resolver {
 	return &Resolver{
 		DeviceService:          deviceService,
@@ -109,6 +110,7 @@ func NewResolver(
 		OrgSettingsService:    orgSettingsService,
 		MemberService:        memberService,
 		InvitationService:    invitationService,
+		InboxService:         inboxService,
 	}
 }
 
