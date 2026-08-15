@@ -11,14 +11,14 @@ import (
 
 // SyncService handles GitHub sync operations.
 type SyncService struct {
-	repo     updates.Repository
+	repo      updates.Repository
 	githubSvc *github.SyncService
 }
 
 // NewSyncService creates a new sync service.
 func NewSyncService(repo updates.Repository, githubSvc *github.SyncService) *SyncService {
 	return &SyncService{
-		repo:     repo,
+		repo:      repo,
 		githubSvc: githubSvc,
 	}
 }

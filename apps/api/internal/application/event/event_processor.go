@@ -35,20 +35,20 @@ type DiagnosticsRecorder interface {
 
 // Processor processes and emits real-time events.
 type Processor struct {
-	repo               event.Repository
-	deviceRepo         device.Repository
-	deviceSettingsRepo device.DeviceSettingsRepository
-	orgSettingsRepo    organization.OrganizationSettingsRepository
-	broadcaster        EventBroadcaster
+	repo                event.Repository
+	deviceRepo          device.Repository
+	deviceSettingsRepo  device.DeviceSettingsRepository
+	orgSettingsRepo     organization.OrganizationSettingsRepository
+	broadcaster         EventBroadcaster
 	diagnosticsRecorder DiagnosticsRecorder
-	log                *slog.Logger
-	notificationSvc    *notification.Service
-	thresholds         *ThresholdConfig
-	activeAlerts       map[string]time.Time
-	breachState        map[string]bool
-	dedupWindow        time.Duration
-	hysteresisBand     float64
-	dedupMu            sync.RWMutex
+	log                 *slog.Logger
+	notificationSvc     *notification.Service
+	thresholds          *ThresholdConfig
+	activeAlerts        map[string]time.Time
+	breachState         map[string]bool
+	dedupWindow         time.Duration
+	hysteresisBand      float64
+	dedupMu             sync.RWMutex
 }
 
 // ThresholdConfig holds event emission thresholds.

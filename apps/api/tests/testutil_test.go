@@ -2,8 +2,8 @@ package tests
 
 import (
 	"bytes"
-	crypto_rand "crypto/rand"
 	"context"
+	crypto_rand "crypto/rand"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -512,11 +512,15 @@ func (r *noopDeviceRepoForTests) SetOnline(_ context.Context, id string, online 
 	r.online[id] = online
 	return nil
 }
-func (r *noopDeviceRepoForTests) FindByID(context.Context, string) (*device.Device, error) { return nil, nil }
+func (r *noopDeviceRepoForTests) FindByID(context.Context, string) (*device.Device, error) {
+	return nil, nil
+}
 func (r *noopDeviceRepoForTests) FindByDeviceID(context.Context, device.DeviceID) (*device.Device, error) {
 	return nil, nil
 }
-func (r *noopDeviceRepoForTests) FindByIMEI(context.Context, string) (*device.Device, error) { return nil, nil }
+func (r *noopDeviceRepoForTests) FindByIMEI(context.Context, string) (*device.Device, error) {
+	return nil, nil
+}
 func (r *noopDeviceRepoForTests) FindByFirebaseInstallID(context.Context, string) (*device.Device, error) {
 	return nil, nil
 }
@@ -535,16 +539,16 @@ func (r *noopDeviceRepoForTests) FindByIMEIAndOrganization(context.Context, stri
 func (r *noopDeviceRepoForTests) FindByIDAndOrganization(context.Context, string, string) (*device.Device, error) {
 	return nil, nil
 }
-func (r *noopDeviceRepoForTests) Create(context.Context, *device.Device) error { return nil }
-func (r *noopDeviceRepoForTests) Update(context.Context, *device.Device) error { return nil }
-func (r *noopDeviceRepoForTests) Delete(context.Context, string) error         { return nil }
+func (r *noopDeviceRepoForTests) Create(context.Context, *device.Device) error            { return nil }
+func (r *noopDeviceRepoForTests) Update(context.Context, *device.Device) error            { return nil }
+func (r *noopDeviceRepoForTests) Delete(context.Context, string) error                    { return nil }
 func (r *noopDeviceRepoForTests) DeleteByDeviceID(context.Context, device.DeviceID) error { return nil }
-func (r *noopDeviceRepoForTests) UpdateFCMToken(context.Context, string, string) error  { return nil }
+func (r *noopDeviceRepoForTests) UpdateFCMToken(context.Context, string, string) error    { return nil }
 func (r *noopDeviceRepoForTests) SetOnlineByDeviceID(context.Context, device.DeviceID, bool) error {
 	return nil
 }
-func (r *noopDeviceRepoForTests) UpdateLastSeen(context.Context, string) error { return nil }
-func (r *noopDeviceRepoForTests) Touch(context.Context, string) error          { return nil }
+func (r *noopDeviceRepoForTests) UpdateLastSeen(context.Context, string) error        { return nil }
+func (r *noopDeviceRepoForTests) Touch(context.Context, string) error                 { return nil }
 func (r *noopDeviceRepoForTests) SetSecretHash(context.Context, string, string) error { return nil }
 func (r *noopDeviceRepoForTests) GetSecretHash(context.Context, string) (string, error) {
 	return "", nil
@@ -582,7 +586,9 @@ func (r *noopDeviceRepoForTests) ListActive(context.Context, int, int) ([]*devic
 func (r *noopDeviceRepoForTests) ListActiveByOperator(context.Context, string) ([]*device.Device, error) {
 	return nil, nil
 }
-func (r *noopDeviceRepoForTests) ListPending(context.Context) ([]*device.Device, error) { return nil, nil }
+func (r *noopDeviceRepoForTests) ListPending(context.Context) ([]*device.Device, error) {
+	return nil, nil
+}
 func (r *noopDeviceRepoForTests) ListPendingByOperator(context.Context, device.OperatorID) ([]*device.Device, error) {
 	return nil, nil
 }

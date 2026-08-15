@@ -12,35 +12,35 @@ import (
 // SettingsRateLimits defines rate limits for settings endpoints per the spec.
 type SettingsRateLimits struct {
 	// GET /v1/auth/me/settings: 120 requests per minute.
-	SettingsGetLimit int
+	SettingsGetLimit  int
 	SettingsGetRefill time.Duration
 
 	// PATCH /v1/auth/me/settings: 30 requests per minute.
-	SettingsUpdateLimit int
+	SettingsUpdateLimit  int
 	SettingsUpdateRefill time.Duration
 
 	// GET /v1/auth/me/thresholds: 60 requests per minute.
-	ThresholdsGetLimit int
+	ThresholdsGetLimit  int
 	ThresholdsGetRefill time.Duration
 
 	// PATCH /v1/auth/me/thresholds: 30 requests per minute.
-	ThresholdsUpdateLimit int
+	ThresholdsUpdateLimit  int
 	ThresholdsUpdateRefill time.Duration
 
 	// GET /v1/auth/me/notifications: 60 requests per minute.
-	NotificationsGetLimit int
+	NotificationsGetLimit  int
 	NotificationsGetRefill time.Duration
 
 	// PATCH /v1/auth/me/notifications: 30 requests per minute.
-	NotificationsUpdateLimit int
+	NotificationsUpdateLimit  int
 	NotificationsUpdateRefill time.Duration
 
 	// POST /v1/auth/me/notifications/webhook/test: 10 requests per minute.
-	WebhookTestLimit int
+	WebhookTestLimit  int
 	WebhookTestRefill time.Duration
 
 	// POST /v1/auth/me/notifications/webhook/rotate: 5 requests per minute.
-	WebhookRotateLimit int
+	WebhookRotateLimit  int
 	WebhookRotateRefill time.Duration
 }
 
@@ -83,14 +83,14 @@ func DefaultSettingsRateLimits() *SettingsRateLimits {
 
 // SettingsRateLimiterMiddleware creates rate limiters for settings endpoints.
 type SettingsRateLimiterMiddleware struct {
-	settingsGetLimiter      *RateLimiter
-	settingsUpdateLimiter  *RateLimiter
-	thresholdsGetLimiter   *RateLimiter
-	thresholdsUpdateLimiter *RateLimiter
-	notificationsGetLimiter *RateLimiter
+	settingsGetLimiter         *RateLimiter
+	settingsUpdateLimiter      *RateLimiter
+	thresholdsGetLimiter       *RateLimiter
+	thresholdsUpdateLimiter    *RateLimiter
+	notificationsGetLimiter    *RateLimiter
 	notificationsUpdateLimiter *RateLimiter
-	webhookTestLimiter     *RateLimiter
-	webhookRotateLimiter   *RateLimiter
+	webhookTestLimiter         *RateLimiter
+	webhookRotateLimiter       *RateLimiter
 }
 
 // NewSettingsRateLimiterMiddleware creates a new settings rate limiter middleware.
@@ -100,14 +100,14 @@ func NewSettingsRateLimiterMiddleware(limits *SettingsRateLimits) *SettingsRateL
 	}
 
 	return &SettingsRateLimiterMiddleware{
-		settingsGetLimiter:       NewRateLimiter(limits.SettingsGetLimit, limits.SettingsGetRefill),
-		settingsUpdateLimiter:   NewRateLimiter(limits.SettingsUpdateLimit, limits.SettingsUpdateRefill),
-		thresholdsGetLimiter:    NewRateLimiter(limits.ThresholdsGetLimit, limits.ThresholdsGetRefill),
-		thresholdsUpdateLimiter: NewRateLimiter(limits.ThresholdsUpdateLimit, limits.ThresholdsUpdateRefill),
-		notificationsGetLimiter:  NewRateLimiter(limits.NotificationsGetLimit, limits.NotificationsGetRefill),
+		settingsGetLimiter:         NewRateLimiter(limits.SettingsGetLimit, limits.SettingsGetRefill),
+		settingsUpdateLimiter:      NewRateLimiter(limits.SettingsUpdateLimit, limits.SettingsUpdateRefill),
+		thresholdsGetLimiter:       NewRateLimiter(limits.ThresholdsGetLimit, limits.ThresholdsGetRefill),
+		thresholdsUpdateLimiter:    NewRateLimiter(limits.ThresholdsUpdateLimit, limits.ThresholdsUpdateRefill),
+		notificationsGetLimiter:    NewRateLimiter(limits.NotificationsGetLimit, limits.NotificationsGetRefill),
 		notificationsUpdateLimiter: NewRateLimiter(limits.NotificationsUpdateLimit, limits.NotificationsUpdateRefill),
-		webhookTestLimiter:      NewRateLimiter(limits.WebhookTestLimit, limits.WebhookTestRefill),
-		webhookRotateLimiter:    NewRateLimiter(limits.WebhookRotateLimit, limits.WebhookRotateRefill),
+		webhookTestLimiter:         NewRateLimiter(limits.WebhookTestLimit, limits.WebhookTestRefill),
+		webhookRotateLimiter:       NewRateLimiter(limits.WebhookRotateLimit, limits.WebhookRotateRefill),
 	}
 }
 
@@ -166,14 +166,14 @@ func (m *SettingsRateLimiterMiddleware) Stop() {
 // Stats returns statistics for all rate limiters.
 func (m *SettingsRateLimiterMiddleware) Stats() map[string]RateLimiterStats {
 	return map[string]RateLimiterStats{
-		"settings_get":        m.settingsGetLimiter.Stats(),
+		"settings_get":         m.settingsGetLimiter.Stats(),
 		"settings_update":      m.settingsUpdateLimiter.Stats(),
-		"thresholds_get":      m.thresholdsGetLimiter.Stats(),
-		"thresholds_update":   m.thresholdsUpdateLimiter.Stats(),
-		"notifications_get":   m.notificationsGetLimiter.Stats(),
+		"thresholds_get":       m.thresholdsGetLimiter.Stats(),
+		"thresholds_update":    m.thresholdsUpdateLimiter.Stats(),
+		"notifications_get":    m.notificationsGetLimiter.Stats(),
 		"notifications_update": m.notificationsUpdateLimiter.Stats(),
-		"webhook_test":        m.webhookTestLimiter.Stats(),
-		"webhook_rotate":      m.webhookRotateLimiter.Stats(),
+		"webhook_test":         m.webhookTestLimiter.Stats(),
+		"webhook_rotate":       m.webhookRotateLimiter.Stats(),
 	}
 }
 

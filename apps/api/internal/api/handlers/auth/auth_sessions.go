@@ -23,7 +23,7 @@ func NewSessionsHandler(authService *appauth.AuthService, sessionManager *infraa
 	return &SessionsHandler{
 		authService:    authService,
 		sessionManager: sessionManager,
-		presenter:     presenter,
+		presenter:      presenter,
 	}
 }
 
@@ -60,13 +60,13 @@ func (h *SessionsHandler) ListSessions(c *gin.Context) {
 
 	for _, sess := range sessions {
 		sessionList = append(sessionList, gin.H{
-			"id":                        sess.ID,
-			"ip_address":                sess.IPAddress,
-			"user_agent":                sess.UserAgent,
-			"created_at":                 sess.CreatedAt,
-			"expires_at":                 sess.ExpiresAt,
-			"is_current":                sess.ID == currentSessionID,
-			"selected_organization_id":   sess.SelectedOrganizationID,
+			"id":                       sess.ID,
+			"ip_address":               sess.IPAddress,
+			"user_agent":               sess.UserAgent,
+			"created_at":               sess.CreatedAt,
+			"expires_at":               sess.ExpiresAt,
+			"is_current":               sess.ID == currentSessionID,
+			"selected_organization_id": sess.SelectedOrganizationID,
 		})
 	}
 
@@ -98,9 +98,9 @@ func (h *SessionsHandler) CheckConcurrent(c *gin.Context) {
 		if sess.ID != currentSessionID {
 			concurrentLogins = append(concurrentLogins, gin.H{
 				"session_id": sess.ID,
-				"ip_address":  sess.IPAddress,
-				"user_agent":  sess.UserAgent,
-				"created_at":  sess.CreatedAt,
+				"ip_address": sess.IPAddress,
+				"user_agent": sess.UserAgent,
+				"created_at": sess.CreatedAt,
 			})
 		}
 	}
@@ -190,9 +190,9 @@ func (h *SessionsHandler) RevokeAllExceptCurrent(c *gin.Context) {
 	}
 
 	h.presenter.OK(c, gin.H{
-		"success":        true,
-		"revoked_count":  count,
-		"message":         "All other sessions revoked",
+		"success":       true,
+		"revoked_count": count,
+		"message":       "All other sessions revoked",
 	})
 }
 
@@ -225,7 +225,7 @@ func (h *SessionsHandler) RevokeAllDevices(c *gin.Context) {
 	h.presenter.OK(c, gin.H{
 		"success":       true,
 		"revoked_count": count,
-		"message":        "All sessions revoked. Please login again.",
+		"message":       "All sessions revoked. Please login again.",
 	})
 }
 
@@ -255,13 +255,13 @@ func (h *SessionsHandler) GetSession(c *gin.Context) {
 	for _, sess := range sessions {
 		if sess.ID == sessionID {
 			h.presenter.OK(c, gin.H{
-				"id":                        sess.ID,
-				"ip_address":                sess.IPAddress,
-				"user_agent":                sess.UserAgent,
-				"created_at":                 sess.CreatedAt,
-				"expires_at":                 sess.ExpiresAt,
-				"is_current":                sess.ID == currentSessionID,
-				"selected_organization_id":   sess.SelectedOrganizationID,
+				"id":                       sess.ID,
+				"ip_address":               sess.IPAddress,
+				"user_agent":               sess.UserAgent,
+				"created_at":               sess.CreatedAt,
+				"expires_at":               sess.ExpiresAt,
+				"is_current":               sess.ID == currentSessionID,
+				"selected_organization_id": sess.SelectedOrganizationID,
 			})
 			return
 		}

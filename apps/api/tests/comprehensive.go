@@ -460,7 +460,7 @@ func testMalformedData() []EndpointResult {
 		{"/v1/auth/login", `{}`, "Empty body"},
 		{"/v1/auth/login", `{"email":"a@b.com","password":"x"}`, "Short password"},
 		{"/v1/auth/register", `{"email":"a@b.com","password":"Valid123!"}`, "Missing name"},
-// DEPRECATED: 		{"/v1/device/register", `{"device_id":"","name":""}`, "Empty fields"},.
+		// DEPRECATED: 		{"/v1/device/register", `{"device_id":"","name":""}`, "Empty fields"},.
 		{"/v1/device/test/command", `{"command":"","args":{}}`, "Empty command"},
 	}
 

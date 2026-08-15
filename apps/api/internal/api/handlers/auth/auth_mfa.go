@@ -253,7 +253,7 @@ func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	var req struct {
 		OperatorID string `json:"operator_id" binding:"required"`
-		Code      string `json:"code" binding:"required"`
+		Code       string `json:"code" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -17,27 +17,27 @@ type Device struct {
 	OrganizationID string
 
 	// Infrastructure fields (kept as-is for backward compatibility).
-	UpdatedAt            time.Time
-	CreatedAt            time.Time
-	Metadata             map[string]string
-	FCMTokenRefreshedAt  *int64
-	DeletionScheduledAt  *int64
-	DeregisteredAt       *int64
-	Model                string
-	OSVersion            string
-	FCMToken             string
-	FirebaseInstallID    string
-	OperatorID           string
-	DeviceClass          string
-	CommandSecretHash    string
-	DeviceName           string
-	Manufacturer         string
-	ID                   string
-	AppVersion           string
-	SecurityPatch        string
-	LastSeen             int64
-	RegisteredAt         int64
-	Online               bool
+	UpdatedAt           time.Time
+	CreatedAt           time.Time
+	Metadata            map[string]string
+	FCMTokenRefreshedAt *int64
+	DeletionScheduledAt *int64
+	DeregisteredAt      *int64
+	Model               string
+	OSVersion           string
+	FCMToken            string
+	FirebaseInstallID   string
+	OperatorID          string
+	DeviceClass         string
+	CommandSecretHash   string
+	DeviceName          string
+	Manufacturer        string
+	ID                  string
+	AppVersion          string
+	SecurityPatch       string
+	LastSeen            int64
+	RegisteredAt        int64
+	Online              bool
 }
 
 // NewDevice creates a new Device with pending lifecycle.

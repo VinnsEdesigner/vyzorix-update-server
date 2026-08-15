@@ -53,9 +53,9 @@ type ConnectionStatusResponse struct {
 // AllConnectionsResponse represents the status of all connected devices.
 type AllConnectionsResponse struct {
 	Devices        []DeviceConnectionStatus `json:"devices"`
-	QueueMetrics   hub.QueueMetrics       `json:"queueMetrics"`
-	TotalConnected int                    `json:"totalConnected"`
-	TotalQueued    int                    `json:"totalQueued"`
+	QueueMetrics   hub.QueueMetrics         `json:"queueMetrics"`
+	TotalConnected int                      `json:"totalConnected"`
+	TotalQueued    int                      `json:"totalQueued"`
 }
 
 // GetStatus handles GET /v1/device/:id/connection-status.
@@ -151,7 +151,7 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 			UptimeSeconds:    client.Uptime(),
 			MessagesSent:     metrics.MessagesSent,
 			MessagesReceived: metrics.MessagesReceived,
-			LastMessageAt:   metrics.LastMessageAt,
+			LastMessageAt:    metrics.LastMessageAt,
 		}
 
 		status.QueueSize = h.hub.QueueSize(deviceID)

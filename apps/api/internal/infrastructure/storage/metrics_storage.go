@@ -22,24 +22,24 @@ type MetricsRepository struct {
 func NewMetricsRepository(db *sql.DB) *MetricsRepository {
 	return &MetricsRepository{db: db}
 }
+
 // getQuerier returns the transaction from context if available, otherwise the db.
 func (r *MetricsRepository) getQuerier(ctx context.Context) Querier {
-if tx, ok := transaction.TxFromContext(ctx); ok {
-return tx
-}
-return r.db
+	if tx, ok := transaction.TxFromContext(ctx); ok {
+		return tx
+	}
+	return r.db
 }
 
 // queryRow is a helper that uses transaction-aware querier.
 func (r *MetricsRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
-return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+	return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
 }
 
 // queryRows is a helper that uses transaction-aware querier.
 func (r *MetricsRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+	return r.getQuerier(ctx).QueryContext(ctx, query, args...)
 }
-
 
 // GetTelemetryFrames retrieves raw telemetry frames for a device within a time range.
 func (r *MetricsRepository) GetTelemetryFrames(ctx context.Context, deviceID string, startTime, endTime time.Time, limit int) ([]*metrics.TelemetryFrame, error) {
@@ -119,7 +119,6 @@ func (r *MetricsRepository) GetAggregatedMetrics(ctx context.Context, deviceID s
 	// SQLite uses strftime for time bucketing - group by minute buckets.
 	format := resolutionToStrftime(resolution)
 
-	
 	maxTimeWindow := 30 * 24 * time.Hour
 	if endTime.Sub(startTime) > maxTimeWindow {
 		startTime = endTime.Add(-maxTimeWindow)

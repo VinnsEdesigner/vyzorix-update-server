@@ -4,22 +4,22 @@ package diagnostics
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	appdiagnostics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	domaindiagnostics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/diagnostics"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/gin-gonic/gin"
 )
 
 // TimelineHandler handles device timeline HTTP requests.
 type TimelineHandler struct {
-	service      *appdiagnostics.Service
+	service     *appdiagnostics.Service
 	rateLimiter func(c *gin.Context)
 }
 
 // NewTimelineHandler creates a new timeline handler.
 func NewTimelineHandler(service *appdiagnostics.Service, rateLimiter func(c *gin.Context)) *TimelineHandler {
 	return &TimelineHandler{
-		service:      service,
+		service:     service,
 		rateLimiter: rateLimiter,
 	}
 }

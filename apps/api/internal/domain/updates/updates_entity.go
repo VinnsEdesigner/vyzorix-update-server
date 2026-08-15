@@ -38,9 +38,9 @@ type DevicePushStatus string
 const (
 	DevicePushStatusPending      DevicePushStatus = "pending"
 	DevicePushStatusSent         DevicePushStatus = "sent"
-	DevicePushStatusInProgress  DevicePushStatus = "in_progress"
+	DevicePushStatusInProgress   DevicePushStatus = "in_progress"
 	DevicePushStatusAcknowledged DevicePushStatus = "acknowledged"
-	DevicePushStatusCompleted   DevicePushStatus = "completed"
+	DevicePushStatusCompleted    DevicePushStatus = "completed"
 	DevicePushStatusFailed       DevicePushStatus = "failed"
 )
 

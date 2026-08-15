@@ -5,7 +5,7 @@ import "time"
 // InboxEntry represents a device registration request in the inbox.
 type InboxEntry struct {
 	AcknowledgedAt    *int64      `json:"acknowledgedAt,omitempty"`
-	ApprovingAt      *int64      `json:"approvingAt,omitempty"`
+	ApprovingAt       *int64      `json:"approvingAt,omitempty"`
 	ApprovedAt        *int64      `json:"approvedAt,omitempty"`
 	RejectedAt        *int64      `json:"rejectedAt,omitempty"`
 	ConfirmedAt       *int64      `json:"confirmedAt,omitempty"`

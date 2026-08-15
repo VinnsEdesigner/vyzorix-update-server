@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/refresh_token"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
 )
 
 // Ensure SessionRepository implements session.Repository.
@@ -408,9 +408,8 @@ var _ refresh_token.Repository = (*RefreshTokenRepository)(nil)
 
 // RefreshTokenRepository implements refresh_token.Repository using SQLite.
 type RefreshTokenRepository struct {
-db *sql.DB
+	db *sql.DB
 }
-
 
 // NewRefreshTokenRepository creates a new RefreshTokenRepository.
 func NewRefreshTokenRepository(db *sql.DB) *RefreshTokenRepository {

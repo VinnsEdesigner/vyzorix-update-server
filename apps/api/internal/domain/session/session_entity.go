@@ -10,11 +10,11 @@ var ErrNotFound = errors.New("session not found")
 
 // Session represents an authentication session.
 type Session struct {
-	ID                       string
-	OperatorID               string
-	ExpiresAt                time.Time
-	CreatedAt                time.Time
-	SelectedOrganizationID    string
+	ID                     string
+	OperatorID             string
+	ExpiresAt              time.Time
+	CreatedAt              time.Time
+	SelectedOrganizationID string
 
 	// MFA verification - if set, this session was created after MFA was verified.
 	// Required when operator has MFA enabled.

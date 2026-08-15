@@ -5,11 +5,11 @@ import (
 	"time"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
-	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
+	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/graphql-go/graphql"
@@ -35,13 +35,13 @@ func (r *Resolver) GetMySettings(p graphql.ResolveParams) (interface{}, error) {
 
 	return map[string]interface{}{
 		"client": map[string]interface{}{
-			"serverUrl":           settings.Client.ServerURL,
-			"deviceId":            settings.Client.DeviceID,
-			"requestTimeoutMs":    settings.Client.RequestTimeoutMs,
+			"serverUrl":          settings.Client.ServerURL,
+			"deviceId":           settings.Client.DeviceID,
+			"requestTimeoutMs":   settings.Client.RequestTimeoutMs,
 			"autoReconnect":      settings.Client.AutoReconnect,
 			"strictHmac":         settings.Client.StrictHmac,
 			"logBufferLimit":     settings.Client.LogBufferLimit,
-			"signalHistoryLimit":  settings.Client.SignalHistoryLimit,
+			"signalHistoryLimit": settings.Client.SignalHistoryLimit,
 		},
 		"notifications": settings.Notifications,
 	}, nil
@@ -109,15 +109,15 @@ func (r *Resolver) GetDeviceSettings(p graphql.ResolveParams) (interface{}, erro
 	effectiveThresholds := devicedomain.ResolveThresholds(settings, orgThresholds)
 
 	return map[string]interface{}{
-		"id":                   settings.ID,
-		"deviceImei":           settings.DeviceIMEI,
-		"customName":           settings.CustomName,
-		"location":             settings.Location,
-		"metadata":             convertMetadataToList(settings.Metadata),
-		"thresholds":            settings.Thresholds,
-		"effectiveThresholds":  effectiveThresholds,
-		"createdAt":            settings.CreatedAt,
-		"updatedAt":            settings.UpdatedAt,
+		"id":                  settings.ID,
+		"deviceImei":          settings.DeviceIMEI,
+		"customName":          settings.CustomName,
+		"location":            settings.Location,
+		"metadata":            convertMetadataToList(settings.Metadata),
+		"thresholds":          settings.Thresholds,
+		"effectiveThresholds": effectiveThresholds,
+		"createdAt":           settings.CreatedAt,
+		"updatedAt":           settings.UpdatedAt,
 	}, nil
 }
 
@@ -162,14 +162,14 @@ func (r *Resolver) GetOrganizationSettings(p graphql.ResolveParams) (interface{}
 	}
 
 	return map[string]interface{}{
-		"id":                    settings.ID,
-		"organizationId":        settings.OrganizationID,
-		"timezone":              settings.Timezone,
-		"dateFormat":            settings.DateFormat,
-		"alertCooldownMinutes":  settings.AlertCooldownMinutes,
-		"defaultThresholds":     settings.DefaultThresholds,
-		"createdAt":             settings.CreatedAt,
-		"updatedAt":             settings.UpdatedAt,
+		"id":                   settings.ID,
+		"organizationId":       settings.OrganizationID,
+		"timezone":             settings.Timezone,
+		"dateFormat":           settings.DateFormat,
+		"alertCooldownMinutes": settings.AlertCooldownMinutes,
+		"defaultThresholds":    settings.DefaultThresholds,
+		"createdAt":            settings.CreatedAt,
+		"updatedAt":            settings.UpdatedAt,
 	}, nil
 }
 
@@ -241,8 +241,8 @@ func (r *Resolver) GetDevices(p graphql.ResolveParams) (interface{}, error) {
 	page := (offset / limit) + 1
 	result, err := r.DeviceService.GetDevices(ctx, &device.ListQuery{
 		OrganizationID: orgID,
-		Page:          page,
-		Limit:         limit,
+		Page:           page,
+		Limit:          limit,
 	})
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to list devices")
@@ -656,14 +656,13 @@ func (r *Resolver) GetAllConnections(p graphql.ResolveParams) (interface{}, erro
 	// Get all devices for this organization.
 	devices, err := r.DeviceService.GetDevices(ctx, &device.ListQuery{
 		OrganizationID: orgID,
-		Page:          1,
-		Limit:         1000,
+		Page:           1,
+		Limit:          1000,
 	})
 	if err != nil {
 		return nil, r.Presenter.InternalError("failed to get organization devices")
 	}
 
-	
 	// Iterate over org devices and directly look up each client by device ID.
 	result := make([]map[string]interface{}, 0, len(devices.Devices))
 
@@ -746,8 +745,8 @@ func (r *Resolver) GetDeviceMetrics(p graphql.ResolveParams) (interface{}, error
 	}
 
 	req := &appmetrics.GetMetricsRequest{
-		DeviceID:   imei,
-		Range:      rangeVal,
+		DeviceID: imei,
+		Range:    rangeVal,
 	}
 
 	if startTime, ok := p.Args["startTime"].(int64); ok && startTime > 0 {
@@ -856,9 +855,9 @@ func (r *Resolver) GetDeviceCommandHistory(p graphql.ResolveParams) (interface{}
 
 	req := &cmdapp.GetHistoryRequest{
 		DeviceID: imei,
-		Status:  status,
-		Page:    page,
-		Limit:   limit,
+		Status:   status,
+		Page:     page,
+		Limit:    limit,
 	}
 
 	if startTime, ok := p.Args["startTime"].(int64); ok && startTime > 0 {
@@ -906,14 +905,14 @@ func (r *Resolver) GetDashboardStats(p graphql.ResolveParams) (interface{}, erro
 
 	return map[string]interface{}{
 		"devices": map[string]interface{}{
-			"total":  stats.Devices.Total,
-			"online": stats.Devices.Online,
+			"total":   stats.Devices.Total,
+			"online":  stats.Devices.Online,
 			"offline": stats.Devices.Offline,
 		},
 		"commands": map[string]interface{}{
 			"totalToday": stats.Commands.TotalToday,
-			"pending":   stats.Commands.Pending,
-			"failed":    stats.Commands.Failed,
+			"pending":    stats.Commands.Pending,
+			"failed":     stats.Commands.Failed,
 		},
 		"activity": map[string]interface{}{
 			"last24h": map[string]interface{}{
@@ -1048,11 +1047,11 @@ func (r *Resolver) GetDeviceInspection(p graphql.ResolveParams) (interface{}, er
 			"buildId":       inspection.Software.BuildID,
 		},
 		"registration": map[string]interface{}{
-			"status":                inspection.Registration.Status,
-			"registeredAt":          registeredAt,
-			"fcmTokenValid":        inspection.Registration.FCMTokenValid,
-			"fcmTokenRefreshedAt":   fcmTokenRefreshedAt,
-			"commandSecretSet":      inspection.Registration.CommandSecretSet,
+			"status":              inspection.Registration.Status,
+			"registeredAt":        registeredAt,
+			"fcmTokenValid":       inspection.Registration.FCMTokenValid,
+			"fcmTokenRefreshedAt": fcmTokenRefreshedAt,
+			"commandSecretSet":    inspection.Registration.CommandSecretSet,
 		},
 		"connection": map[string]interface{}{
 			"webSocketStatus": inspection.Connection.WebSocketStatus,

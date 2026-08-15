@@ -3,8 +3,8 @@ package operator
 import (
 	"net/http"
 
-	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 
@@ -91,9 +91,9 @@ func (h *NotificationHandler) TestWebhook(c *gin.Context) {
 	result, err := h.webhookClient.Test(c.Request.Context(), req.URL)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
-			"success":      false,
-			"error":       "webhook_error",
-			"message":     err.Error(),
+			"success": false,
+			"error":   "webhook_error",
+			"message": err.Error(),
 		})
 		return
 	}

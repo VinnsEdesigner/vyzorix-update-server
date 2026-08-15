@@ -30,7 +30,7 @@ func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error
 
 	if r.MemberService != nil {
 		err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
-	if err != nil {
+		if err != nil {
 			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
 		}
 	}
@@ -72,7 +72,7 @@ func (r *Resolver) GetUpdatesStatus(p graphql.ResolveParams) (interface{}, error
 		},
 		"device": map[string]interface{}{
 			"currentVersion": currentVersion,
-			"needsUpdate":   needsUpdate,
+			"needsUpdate":    needsUpdate,
 		},
 		"version":     currentVersion,
 		"apkFilename": nil,
@@ -198,7 +198,7 @@ func (r *Resolver) GetUpdatesHistory(p graphql.ResolveParams) (interface{}, erro
 
 	if r.MemberService != nil {
 		err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
-	if err != nil {
+		if err != nil {
 			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
 		}
 	}
@@ -277,7 +277,7 @@ func (r *Resolver) GetUpdatesHistoryDetail(p graphql.ResolveParams) (interface{}
 
 	if r.MemberService != nil {
 		err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
-	if err != nil {
+		if err != nil {
 			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
 		}
 	}
@@ -305,17 +305,17 @@ func (r *Resolver) GetUpdatesHistoryDetail(p graphql.ResolveParams) (interface{}
 	}
 
 	return map[string]interface{}{
-		"id":           push.ID,
-		"version":      push.Version,
-		"installType":  push.InstallType,
-		"scheduledAt":  formatDateTimeInt64Ptr(push.ScheduledAt),
-		"status":       push.Status,
-		"initiatedBy":  push.InitiatedBy,
-		"initiatedAt":  formatDateTimeInt64(push.InitiatedAt),
-		"completedAt":  formatDateTimeInt64Ptr(push.CompletedAt),
-		"cancelledAt":  formatDateTimeInt64Ptr(push.CancelledAt),
-		"deviceCount":  len(push.Devices),
-		"devices":      devices,
+		"id":          push.ID,
+		"version":     push.Version,
+		"installType": push.InstallType,
+		"scheduledAt": formatDateTimeInt64Ptr(push.ScheduledAt),
+		"status":      push.Status,
+		"initiatedBy": push.InitiatedBy,
+		"initiatedAt": formatDateTimeInt64(push.InitiatedAt),
+		"completedAt": formatDateTimeInt64Ptr(push.CompletedAt),
+		"cancelledAt": formatDateTimeInt64Ptr(push.CancelledAt),
+		"deviceCount": len(push.Devices),
+		"devices":     devices,
 	}, nil
 }
 
@@ -386,7 +386,7 @@ func (r *Resolver) PushUpdate(p graphql.ResolveParams) (interface{}, error) {
 
 	if r.MemberService != nil {
 		err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
-	if err != nil {
+		if err != nil {
 			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
 		}
 	}
@@ -419,14 +419,14 @@ func (r *Resolver) PushUpdate(p graphql.ResolveParams) (interface{}, error) {
 	}
 
 	return map[string]interface{}{
-		"pushId":       resp.PushID,
-		"version":      resp.Version,
-		"installType":  resp.InstallType,
-		"scheduledAt":  schedAt,
-		"status":       resp.Status,
-		"initiatedBy":  resp.InitiatedBy,
-		"initiatedAt":  resp.InitiatedAt,
-		"deviceCount":  len(resp.DeviceIDs),
+		"pushId":      resp.PushID,
+		"version":     resp.Version,
+		"installType": resp.InstallType,
+		"scheduledAt": schedAt,
+		"status":      resp.Status,
+		"initiatedBy": resp.InitiatedBy,
+		"initiatedAt": resp.InitiatedAt,
+		"deviceCount": len(resp.DeviceIDs),
 	}, nil
 }
 
@@ -451,7 +451,7 @@ func (r *Resolver) CancelUpdate(p graphql.ResolveParams) (interface{}, error) {
 
 	if r.MemberService != nil {
 		err = r.MemberService.CheckCanManageOrganization(ctx, op.ID, orgID)
-	if err != nil {
+		if err != nil {
 			return nil, r.Presenter.ForbiddenError("not authorized to access this organization")
 		}
 	}

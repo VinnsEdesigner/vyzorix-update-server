@@ -12,27 +12,27 @@ import (
 // DeviceRegistrationRateLimits defines rate limits for device registration endpoints per the spec.
 type DeviceRegistrationRateLimits struct {
 	// GET /v1/device/inbox: 60 requests per minute.
-	InboxListLimit int
+	InboxListLimit  int
 	InboxListRefill time.Duration
 
 	// GET /v1/device/inbox/:imei: 60 requests per minute.
-	InboxGetLimit int
+	InboxGetLimit  int
 	InboxGetRefill time.Duration
 
 	// POST /v1/device/inbox/:imei/ack: 10 requests per minute.
-	InboxAckLimit int
+	InboxAckLimit  int
 	InboxAckRefill time.Duration
 
 	// GET /v1/devices: 60 requests per minute.
-	DevicesListLimit int
+	DevicesListLimit  int
 	DevicesListRefill time.Duration
 
 	// GET /v1/devices/:imei: 60 requests per minute.
-	DevicesGetLimit int
+	DevicesGetLimit  int
 	DevicesGetRefill time.Duration
 
 	// DELETE /v1/devices/:imei: 10 requests per minute.
-	DevicesDeleteLimit int
+	DevicesDeleteLimit  int
 	DevicesDeleteRefill time.Duration
 }
 
@@ -67,11 +67,11 @@ func DefaultDeviceRegistrationRateLimits() *DeviceRegistrationRateLimits {
 
 // DeviceRegistrationRateLimiterMiddleware creates rate limiters for device registration endpoints.
 type DeviceRegistrationRateLimiterMiddleware struct {
-	inboxListLimiter    *RateLimiter
-	inboxGetLimiter     *RateLimiter
-	inboxAckLimiter     *RateLimiter
-	devicesListLimiter  *RateLimiter
-	devicesGetLimiter   *RateLimiter
+	inboxListLimiter     *RateLimiter
+	inboxGetLimiter      *RateLimiter
+	inboxAckLimiter      *RateLimiter
+	devicesListLimiter   *RateLimiter
+	devicesGetLimiter    *RateLimiter
 	devicesDeleteLimiter *RateLimiter
 }
 
@@ -82,11 +82,11 @@ func NewDeviceRegistrationRateLimiterMiddleware(limits *DeviceRegistrationRateLi
 	}
 
 	return &DeviceRegistrationRateLimiterMiddleware{
-		inboxListLimiter:    NewRateLimiter(limits.InboxListLimit, limits.InboxListRefill),
-		inboxGetLimiter:     NewRateLimiter(limits.InboxGetLimit, limits.InboxGetRefill),
-		inboxAckLimiter:     NewRateLimiter(limits.InboxAckLimit, limits.InboxAckRefill),
-		devicesListLimiter:  NewRateLimiter(limits.DevicesListLimit, limits.DevicesListRefill),
-		devicesGetLimiter:   NewRateLimiter(limits.DevicesGetLimit, limits.DevicesGetRefill),
+		inboxListLimiter:     NewRateLimiter(limits.InboxListLimit, limits.InboxListRefill),
+		inboxGetLimiter:      NewRateLimiter(limits.InboxGetLimit, limits.InboxGetRefill),
+		inboxAckLimiter:      NewRateLimiter(limits.InboxAckLimit, limits.InboxAckRefill),
+		devicesListLimiter:   NewRateLimiter(limits.DevicesListLimit, limits.DevicesListRefill),
+		devicesGetLimiter:    NewRateLimiter(limits.DevicesGetLimit, limits.DevicesGetRefill),
 		devicesDeleteLimiter: NewRateLimiter(limits.DevicesDeleteLimit, limits.DevicesDeleteRefill),
 	}
 }
@@ -134,11 +134,11 @@ func (m *DeviceRegistrationRateLimiterMiddleware) Stop() {
 // Stats returns statistics for all rate limiters.
 func (m *DeviceRegistrationRateLimiterMiddleware) Stats() map[string]RateLimiterStats {
 	return map[string]RateLimiterStats{
-		"inbox_list":    m.inboxListLimiter.Stats(),
-		"inbox_get":     m.inboxGetLimiter.Stats(),
-		"inbox_ack":     m.inboxAckLimiter.Stats(),
-		"devices_list":  m.devicesListLimiter.Stats(),
-		"devices_get":   m.devicesGetLimiter.Stats(),
+		"inbox_list":     m.inboxListLimiter.Stats(),
+		"inbox_get":      m.inboxGetLimiter.Stats(),
+		"inbox_ack":      m.inboxAckLimiter.Stats(),
+		"devices_list":   m.devicesListLimiter.Stats(),
+		"devices_get":    m.devicesGetLimiter.Stats(),
 		"devices_delete": m.devicesDeleteLimiter.Stats(),
 	}
 }

@@ -465,19 +465,19 @@ func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
 
 // ServerConfigWithDeps is the config for NewServerWithDeps using pre-wired dependencies.
 type ServerConfigWithDeps struct {
-	Log            *slog.Logger
-	DB             *storage.SQLite
-	Engine         *gin.Engine
-	Middleware     *wire.MiddlewareSet
-	HandlerSet     *wire.HandlerSet
-	SessionManager *infraauth.SessionManager
-	Hub            *hub.Hub
-	AuditLogger    *audit.Logger
-	UpdatesService *updatesapp.Service
-	APIKeyService  *keys.APIKeyService
-	DeviceRepo     *storage.DeviceRepository
+	Log             *slog.Logger
+	DB              *storage.SQLite
+	Engine          *gin.Engine
+	Middleware      *wire.MiddlewareSet
+	HandlerSet      *wire.HandlerSet
+	SessionManager  *infraauth.SessionManager
+	Hub             *hub.Hub
+	AuditLogger     *audit.Logger
+	UpdatesService  *updatesapp.Service
+	APIKeyService   *keys.APIKeyService
+	DeviceRepo      *storage.DeviceRepository
 	IdempotencyRepo *storage.IdempotencyRepository
-	Config         config.Config
+	Config          config.Config
 }
 
 // NewServerWithDeps creates a Server using pre-wired dependencies from wire.

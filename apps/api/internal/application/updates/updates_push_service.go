@@ -13,8 +13,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
-	"github.com/google/uuid"
 	ws "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	"github.com/google/uuid"
 )
 
 // UpdateCommandType is the command sent to devices to trigger update check.
@@ -22,8 +22,10 @@ const UpdateCommandType = "CHECK_UPDATE"
 
 // PushService handles push-related operations.
 type PushService struct {
-	repo           updates.Repository
-	deviceSvc      interface{ GetDevice(ctx context.Context, deviceID string) (*device.Device, error) }
+	repo      updates.Repository
+	deviceSvc interface {
+		GetDevice(ctx context.Context, deviceID string) (*device.Device, error)
+	}
 	hub            *ws.Hub
 	fcmNotifier    fcm.Notifier
 	commandService interface {
@@ -36,7 +38,9 @@ type PushService struct {
 // NewPushService creates a new push service.
 func NewPushService(
 	repo updates.Repository,
-	deviceSvc interface{ GetDevice(ctx context.Context, deviceID string) (*device.Device, error) },
+	deviceSvc interface {
+		GetDevice(ctx context.Context, deviceID string) (*device.Device, error)
+	},
 	hub *ws.Hub,
 	fcmNotifier fcm.Notifier,
 	commandService interface {
@@ -80,7 +84,7 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 		ID:             uuid.NewString(),
 		VersionID:      version.ID,
 		OrganizationID: req.OrganizationID,
-		InstallType:   updates.InstallType(req.InstallType),
+		InstallType:    updates.InstallType(req.InstallType),
 		ScheduledAt:    req.ScheduledAt,
 		Status:         updates.UpdateStatusPending,
 		InitiatedBy:    initiatedBy,
@@ -106,12 +110,12 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 
 	var (
 		// DeviceIDs contains ALL requested device IDs (per spec).
-		deviceIDs      = make([]string, 0, len(req.DeviceIDs))
-		failedDevices  = make([]FailedDevice, 0)
-		pendingCount   = 0
-		sentCount      = 0
-		acknowledged   = 0 // Acknowledged count is updated asynchronously by device responses.
-		failedCount    = 0
+		deviceIDs     = make([]string, 0, len(req.DeviceIDs))
+		failedDevices = make([]FailedDevice, 0)
+		pendingCount  = 0
+		sentCount     = 0
+		acknowledged  = 0 // Acknowledged count is updated asynchronously by device responses.
+		failedCount   = 0
 	)
 
 	for _, deviceID := range req.DeviceIDs {
@@ -147,7 +151,7 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 				DeviceID: deviceID,
 				Reason:   notifyErr.Error(),
 			})
-			failedCount++ // Count as failed.
+			failedCount++  // Count as failed.
 			pendingCount-- // No longer pending.
 			// Mark device push as failed but keep it in the push so operators can see it.
 			_ = s.repo.UpdatePushDeviceStatus(ctx, devicePush.ID, updates.DevicePushStatusFailed, notifyErr.Error())
@@ -221,7 +225,7 @@ func (s *PushService) dispatchUpdateCommand(ctx context.Context, deviceID, pushI
 	if s.hub != nil && s.hub.Online(deviceID) {
 		if sent := s.hub.Send(deviceID, frame); sent {
 			// Device received via WSS — mark command as delivered.
-			
+
 			if err := s.commandService.MarkDelivered(ctx, cmdResp.CommandID); err != nil {
 				s.logger.Error("failed to mark command as delivered",
 					"commandId", cmdResp.CommandID,
@@ -248,8 +252,8 @@ func (s *PushService) dispatchUpdateCommand(ctx context.Context, deviceID, pushI
 				DeviceID:    deviceID,
 				Priority:    "high",
 				APKFilename: apkFilename,
-				SHA256:     sha256,
-				APKSize:    apkSize,
+				SHA256:      sha256,
+				APKSize:     apkSize,
 				// Device should prepend its server base URL to construct full download URL.
 				DownloadURL: "/api/v1/apk/" + apkFilename,
 			}

@@ -10,8 +10,8 @@ import (
 
 // DeviceSettingsService handles device settings operations.
 type DeviceSettingsService struct {
-	settingsRepo  device.DeviceSettingsRepository
-	deviceRepo    Repository
+	settingsRepo    device.DeviceSettingsRepository
+	deviceRepo      Repository
 	orgSettingsRepo organization.OrganizationSettingsRepository
 }
 
@@ -27,8 +27,8 @@ func NewDeviceSettingsService(
 	orgSettingsRepo organization.OrganizationSettingsRepository,
 ) *DeviceSettingsService {
 	return &DeviceSettingsService{
-		settingsRepo:  settingsRepo,
-		deviceRepo:    deviceRepo,
+		settingsRepo:    settingsRepo,
+		deviceRepo:      deviceRepo,
 		orgSettingsRepo: orgSettingsRepo,
 	}
 }

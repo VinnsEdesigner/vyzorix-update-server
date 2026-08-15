@@ -15,7 +15,7 @@ import (
 // MemberHandler handles organization member-related HTTP requests.
 type MemberHandler struct {
 	memberService *appOrganization.MemberService
-	presenter    *response.Presenter
+	presenter     *response.Presenter
 }
 
 // NewMemberHandler creates a new MemberHandler.

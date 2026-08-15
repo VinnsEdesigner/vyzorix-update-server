@@ -15,11 +15,11 @@ import (
 // and reject replay attacks within the configured time window.
 // Uses O(1) eviction by maintaining insertion order in a slice.
 type ReplayProtection struct {
-	cache     map[string]time.Time
-	order     []string
-	window    time.Duration
-	max       int
-	mu        sync.RWMutex
+	cache  map[string]time.Time
+	order  []string
+	window time.Duration
+	max    int
+	mu     sync.RWMutex
 }
 
 // NewReplayProtection creates a new replay protection cache.

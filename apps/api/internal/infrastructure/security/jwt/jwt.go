@@ -15,10 +15,10 @@ import (
 )
 
 var (
-	ErrInvalidToken        = errors.New("invalid token")
-	ErrExpiredToken        = errors.New("token has expired")
-	ErrTokenIDGeneration   = errors.New("failed to generate token ID")
-	ErrInvalidJWTSecret    = errors.New("JWT secret must be at least 32 characters for proper security")
+	ErrInvalidToken      = errors.New("invalid token")
+	ErrExpiredToken      = errors.New("token has expired")
+	ErrTokenIDGeneration = errors.New("failed to generate token ID")
+	ErrInvalidJWTSecret  = errors.New("JWT secret must be at least 32 characters for proper security")
 )
 
 // OperatorClaims are the JWT claims for an authenticated operator.

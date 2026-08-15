@@ -12,31 +12,31 @@ import (
 // UpdatesRateLimits defines rate limits for updates endpoints per the spec.
 type UpdatesRateLimits struct {
 	// Status endpoint: 60 requests per minute.
-	StatusLimit int
+	StatusLimit  int
 	StatusRefill time.Duration
 
 	// Versions endpoint: 30 requests per minute.
-	VersionsLimit int
+	VersionsLimit  int
 	VersionsRefill time.Duration
 
 	// Changelog endpoint: 30 requests per minute.
-	ChangelogLimit int
+	ChangelogLimit  int
 	ChangelogRefill time.Duration
 
 	// Push endpoint: 10 requests per minute.
-	PushLimit int
+	PushLimit  int
 	PushRefill time.Duration
 
 	// History endpoint: 30 requests per minute.
-	HistoryLimit int
+	HistoryLimit  int
 	HistoryRefill time.Duration
 
 	// Cancel endpoint: 10 requests per minute.
-	CancelLimit int
+	CancelLimit  int
 	CancelRefill time.Duration
 
 	// Sync endpoint: 5 requests per hour.
-	SyncLimit int
+	SyncLimit  int
 	SyncRefill time.Duration
 }
 

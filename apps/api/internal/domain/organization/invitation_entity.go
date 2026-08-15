@@ -40,14 +40,14 @@ type Invitation struct {
 	RespondedBy string // OperatorID of responder (when responded).
 
 	// Timestamps.
-	InvitedAt  time.Time
+	InvitedAt   time.Time
 	RespondedAt *time.Time // When invitation was responded to.
-	ExpiresAt  time.Time  // When invitation expires.
+	ExpiresAt   time.Time  // When invitation expires.
 
 	// Populated fields.
 	OrganizationName string
-	InviterName     string
-	InviterEmail    string
+	InviterName      string
+	InviterEmail     string
 }
 
 // InvitationLifecycle represents the lifecycle state of an invitation.
@@ -72,11 +72,11 @@ var InvitationLifecycleTransitions = map[InvitationLifecycle]map[InvitationLifec
 	InvitationLifecyclePending: {
 		InvitationLifecycleAccepted: true,
 		InvitationLifecycleRejected: true,
-		InvitationLifecycleExpired: true,
+		InvitationLifecycleExpired:  true,
 	},
 	InvitationLifecycleAccepted: {}, // No transitions allowed from accepted.
 	InvitationLifecycleRejected: {}, // No transitions allowed from rejected.
-	InvitationLifecycleExpired: {}, // No transitions allowed from expired.
+	InvitationLifecycleExpired:  {}, // No transitions allowed from expired.
 }
 
 // CanTransitionTo returns true if the lifecycle can transition to the target state.
@@ -284,4 +284,3 @@ type InvitationFilter struct {
 func InvitationStatusPtr(s InvitationStatus) *InvitationStatus {
 	return &s
 }
-

@@ -204,11 +204,11 @@ func (h *ClientCredentialsHandler) Update(c *gin.Context) {
 	}
 
 	var req struct {
-		Name           *string  `json:"name"`
+		Name           *string   `json:"name"`
 		AllowedOrigins *[]string `json:"allowedOrigins"`
 		AllowedPaths   *[]string `json:"allowedPaths"`
-		RateLimit      *int     `json:"rateLimit"`
-		Active        *bool    `json:"active"`
+		RateLimit      *int      `json:"rateLimit"`
+		Active         *bool     `json:"active"`
 	}
 
 	if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
@@ -242,7 +242,7 @@ func (h *ClientCredentialsHandler) Update(c *gin.Context) {
 
 	// Note: In a real implementation, you'd call a service method to update.
 	h.presenter.OK(c, gin.H{
-		"client": clientResp,
+		"client":  clientResp,
 		"message": "Client updated successfully",
 	})
 }

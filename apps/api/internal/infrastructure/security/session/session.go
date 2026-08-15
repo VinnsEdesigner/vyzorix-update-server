@@ -44,7 +44,7 @@ type Repository interface {
 type Session struct {
 	ID                     string
 	OperatorID             string
-	SelectedOrganizationID  string
+	SelectedOrganizationID string
 	ExpiresAt              time.Time
 	CreatedAt              time.Time
 	IPAddress              string

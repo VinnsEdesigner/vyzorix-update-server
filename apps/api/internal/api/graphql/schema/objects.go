@@ -672,8 +672,8 @@ var DeviceMetricsType = graphql.NewObject(graphql.ObjectConfig{
 	Description: "Complete metrics data for a device",
 	Fields: graphql.Fields{
 		"device": &graphql.Field{
-			Type:        graphql.NewNonNull(graphql.NewObject(graphql.ObjectConfig{
-				Name:   "DeviceInfo",
+			Type: graphql.NewNonNull(graphql.NewObject(graphql.ObjectConfig{
+				Name: "DeviceInfo",
 				Fields: graphql.Fields{
 					"imei":       &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 					"deviceName": &graphql.Field{Type: graphql.String},
@@ -966,7 +966,7 @@ var UpdateVersionListType = graphql.NewObject(graphql.ObjectConfig{
 	Description: "Paginated list of update versions",
 	Fields: graphql.Fields{
 		"versions": &graphql.Field{
-			Type: graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(UpdateVersionType))),
+			Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(UpdateVersionType))),
 			Description: "List of versions",
 		},
 		"pagination": &graphql.Field{
@@ -1374,122 +1374,122 @@ var CancelPushResponseType = graphql.NewObject(graphql.ObjectConfig{
 
 // InboxEntryType represents a device registration request in the inbox.
 var InboxEntryType = graphql.NewObject(graphql.ObjectConfig{
-Name:        "InboxEntry",
-Description: "A device registration request",
-Fields: graphql.Fields{
-"id": &graphql.Field{
-Type:        graphql.NewNonNull(graphql.ID),
-Description: "Unique inbox entry ID",
-},
-"imei": &graphql.Field{
-Type:        graphql.NewNonNull(graphql.String),
-Description: "Device IMEI",
-},
-"model": &graphql.Field{
-Type:        graphql.String,
-Description: "Device model",
-},
-"manufacturer": &graphql.Field{
-Type:        graphql.String,
-Description: "Device manufacturer",
-},
-"osVersion": &graphql.Field{
-Type:        graphql.String,
-Description: "Device OS version",
-},
-"appVersion": &graphql.Field{
-Type:        graphql.String,
-Description: "App version",
-},
-"firebaseInstallId": &graphql.Field{
-Type:        graphql.String,
-Description: "Firebase Install ID",
-},
-"status": &graphql.Field{
-Type:        graphql.NewNonNull(graphql.String),
-Description: "Status: pending, approved, rejected",
-},
-"notes": &graphql.Field{
-Type:        graphql.String,
-Description: "Operator notes",
-},
-"operatorId": &graphql.Field{
-Type:        graphql.String,
-Description: "Handling operator ID",
-},
-"createdAt": &graphql.Field{
-Type:        graphql.NewNonNull(graphql.Int),
-Description: "When created (Unix ms)",
-},
-"approvedAt": &graphql.Field{
-Type:        graphql.Int,
-Description: "When approved (Unix ms)",
-},
-"rejectedAt": &graphql.Field{
-Type:        graphql.Int,
-Description: "When rejected (Unix ms)",
-},
-},
+	Name:        "InboxEntry",
+	Description: "A device registration request",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique inbox entry ID",
+		},
+		"imei": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Device IMEI",
+		},
+		"model": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device model",
+		},
+		"manufacturer": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device manufacturer",
+		},
+		"osVersion": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device OS version",
+		},
+		"appVersion": &graphql.Field{
+			Type:        graphql.String,
+			Description: "App version",
+		},
+		"firebaseInstallId": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Firebase Install ID",
+		},
+		"status": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Status: pending, approved, rejected",
+		},
+		"notes": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Operator notes",
+		},
+		"operatorId": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Handling operator ID",
+		},
+		"createdAt": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "When created (Unix ms)",
+		},
+		"approvedAt": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "When approved (Unix ms)",
+		},
+		"rejectedAt": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "When rejected (Unix ms)",
+		},
+	},
 })
 
 // InboxListResponseType represents a paginated inbox list response.
 var InboxListResponseType = graphql.NewObject(graphql.ObjectConfig{
-Name:        "InboxListResponse",
-Description: "Paginated inbox list response",
-Fields: graphql.Fields{
-"requests": &graphql.Field{
-Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(InboxEntryType))),
-Description: "Inbox entries",
-},
-"pagination": &graphql.Field{
-Type:        graphql.NewNonNull(PaginationType),
-Description: "Pagination info",
-},
-},
+	Name:        "InboxListResponse",
+	Description: "Paginated inbox list response",
+	Fields: graphql.Fields{
+		"requests": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.NewList(graphql.NewNonNull(InboxEntryType))),
+			Description: "Inbox entries",
+		},
+		"pagination": &graphql.Field{
+			Type:        graphql.NewNonNull(PaginationType),
+			Description: "Pagination info",
+		},
+	},
 })
 
 // RegistrationLogType represents an audit log entry for registration actions.
 var RegistrationLogType = graphql.NewObject(graphql.ObjectConfig{
-Name:        "RegistrationLog",
-Description: "Audit log entry for registration actions",
-Fields: graphql.Fields{
-"id": &graphql.Field{
-Type:        graphql.NewNonNull(graphql.ID),
-Description: "Log entry ID",
-},
-"deviceId": &graphql.Field{
-Type:        graphql.String,
-Description: "Device ID",
-},
-"imei": &graphql.Field{
-Type:        graphql.String,
-Description: "Device IMEI",
-},
-"action": &graphql.Field{
-Type:        graphql.NewNonNull(graphql.String),
-Description: "Action type",
-},
-"operatorId": &graphql.Field{
-Type:        graphql.String,
-Description: "Operator ID",
-},
-"clientIp": &graphql.Field{
-Type:        graphql.String,
-Description: "Client IP address",
-},
-"userAgent": &graphql.Field{
-Type:        graphql.String,
-Description: "User agent string",
-},
-"details": &graphql.Field{
-Type:        graphql.String,
-Description: "Additional details",
-},
-"timestamp": &graphql.Field{
-Type:        graphql.NewNonNull(graphql.Int),
-Description: "When the action occurred (Unix ms)",
-},
-},
+	Name:        "RegistrationLog",
+	Description: "Audit log entry for registration actions",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Log entry ID",
+		},
+		"deviceId": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device ID",
+		},
+		"imei": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Device IMEI",
+		},
+		"action": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Action type",
+		},
+		"operatorId": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Operator ID",
+		},
+		"clientIp": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Client IP address",
+		},
+		"userAgent": &graphql.Field{
+			Type:        graphql.String,
+			Description: "User agent string",
+		},
+		"details": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Additional details",
+		},
+		"timestamp": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Int),
+			Description: "When the action occurred (Unix ms)",
+		},
+	},
 })
 
 // DeviceConnectionType represents WebSocket connection info for a device.
@@ -1745,43 +1745,43 @@ var NotificationSettingsType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.NewNonNull(WebhookSettingsType),
 			Description: "Webhook notification settings",
 		},
-	        },
+	},
 })
 
 // OperatorType represents an operator/user in the system.
 var OperatorType = graphql.NewObject(graphql.ObjectConfig{
-        Name:        "Operator",
-        Description: "An operator/user in the system",
-        Fields: graphql.Fields{
-                "id": &graphql.Field{
-                        Type:        graphql.NewNonNull(graphql.ID),
-                        Description: "Unique operator identifier",
-                },
-                "name": &graphql.Field{
-                        Type:        graphql.NewNonNull(graphql.String),
-                        Description: "Operator's display name",
-                },
-                "email": &graphql.Field{
-                        Type:        graphql.NewNonNull(graphql.String),
-                        Description: "Operator's email address",
-                },
-                "emailVerified": &graphql.Field{
-                        Type:        graphql.NewNonNull(graphql.Boolean),
-                        Description: "Whether the email has been verified",
-                },
-                "mfaEnabled": &graphql.Field{
-                        Type:        graphql.NewNonNull(graphql.Boolean),
-                        Description: "Whether MFA is enabled",
-                },
-                "createdAt": &graphql.Field{
-                        Type:        DateTimeScalar,
-                        Description: "When the operator was created",
-                },
-                "updatedAt": &graphql.Field{
-                        Type:        DateTimeScalar,
-                        Description: "When the operator was last updated",
-                },
-        },
+	Name:        "Operator",
+	Description: "An operator/user in the system",
+	Fields: graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.ID),
+			Description: "Unique operator identifier",
+		},
+		"name": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Operator's display name",
+		},
+		"email": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Operator's email address",
+		},
+		"emailVerified": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Whether the email has been verified",
+		},
+		"mfaEnabled": &graphql.Field{
+			Type:        graphql.NewNonNull(graphql.Boolean),
+			Description: "Whether MFA is enabled",
+		},
+		"createdAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the operator was created",
+		},
+		"updatedAt": &graphql.Field{
+			Type:        DateTimeScalar,
+			Description: "When the operator was last updated",
+		},
+	},
 })
 
 // OperatorSettingsType represents all operator settings.

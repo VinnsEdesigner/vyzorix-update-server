@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	apikeydomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	"github.com/gin-gonic/gin"
 )
@@ -89,19 +89,19 @@ func (h *Handler) CreateKey(c *gin.Context) {
 
 	// Return the full key only on creation.
 	c.JSON(http.StatusCreated, gin.H{
-		"id":               result.ID,
-		"operator_id":      result.OperatorID,
-		"name":             result.Name,
-		"api_key":          result.FullKey, // Full key - only time it's shown!.
-		"key_prefix":       result.KeyPrefix,
-		"scope":            result.Scope,
-		"expires_at":       result.ExpiresAt,
-		"is_active":        result.IsActive,
-		"request_count":    result.RequestCount,
-		"created_at":       result.CreatedAt,
-		"updated_at":       result.UpdatedAt,
-		"last_request_at":  result.LastRequest,
-		"revoked_at":       result.RevokedAt,
+		"id":              result.ID,
+		"operator_id":     result.OperatorID,
+		"name":            result.Name,
+		"api_key":         result.FullKey, // Full key - only time it's shown!.
+		"key_prefix":      result.KeyPrefix,
+		"scope":           result.Scope,
+		"expires_at":      result.ExpiresAt,
+		"is_active":       result.IsActive,
+		"request_count":   result.RequestCount,
+		"created_at":      result.CreatedAt,
+		"updated_at":      result.UpdatedAt,
+		"last_request_at": result.LastRequest,
+		"revoked_at":      result.RevokedAt,
 	})
 }
 
@@ -138,9 +138,9 @@ func (h *Handler) ListKeys(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"keys":                   result.Keys,
-		"pagination":             result.Pagination,
-		"monthly_limit":         result.MonthlyLimit,
+		"keys":                    result.Keys,
+		"pagination":              result.Pagination,
+		"monthly_limit":           result.MonthlyLimit,
 		"keys_created_this_month": result.KeysCreatedThisMonth,
 	})
 }
@@ -342,20 +342,18 @@ func (h *Handler) RotateKey(c *gin.Context) {
 
 	// Return the new full key.
 	c.JSON(http.StatusOK, gin.H{
-		"id":               result.ID,
-		"operator_id":      result.OperatorID,
-		"name":             result.Name,
-		"api_key":          result.FullKey, // New full key - only time it's shown!.
-		"key_prefix":       result.KeyPrefix,
-		"scope":            result.Scope,
-		"expires_at":       result.ExpiresAt,
-		"is_active":        result.IsActive,
-		"request_count":    result.RequestCount,
-		"created_at":       result.CreatedAt,
-		"updated_at":       result.UpdatedAt,
-		"last_request_at":  result.LastRequest,
-		"revoked_at":       result.RevokedAt,
+		"id":              result.ID,
+		"operator_id":     result.OperatorID,
+		"name":            result.Name,
+		"api_key":         result.FullKey, // New full key - only time it's shown!.
+		"key_prefix":      result.KeyPrefix,
+		"scope":           result.Scope,
+		"expires_at":      result.ExpiresAt,
+		"is_active":       result.IsActive,
+		"request_count":   result.RequestCount,
+		"created_at":      result.CreatedAt,
+		"updated_at":      result.UpdatedAt,
+		"last_request_at": result.LastRequest,
+		"revoked_at":      result.RevokedAt,
 	})
 }
-
-

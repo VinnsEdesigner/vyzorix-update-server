@@ -12,14 +12,14 @@ import (
 // StatsHandler handles dashboard stats endpoints.
 type StatsHandler struct {
 	dashboardSvc *dashboard.Service
-	logger      *slog.Logger
+	logger       *slog.Logger
 }
 
 // NewStatsHandler creates a new dashboard stats handler.
 func NewStatsHandler(dashboardSvc *dashboard.Service, logger *slog.Logger) *StatsHandler {
 	return &StatsHandler{
 		dashboardSvc: dashboardSvc,
-		logger:      logger,
+		logger:       logger,
 	}
 }
 

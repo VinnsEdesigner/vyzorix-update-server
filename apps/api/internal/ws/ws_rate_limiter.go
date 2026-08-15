@@ -44,11 +44,11 @@ type tokenBucket struct {
 
 // RateLimiter implements per-client WebSocket rate limiting using token bucket algorithm.
 type RateLimiter struct {
-	log       *slog.Logger
-	config    *RateLimiterConfig
-	buckets   map[string]*tokenBucket
-	mu        sync.RWMutex
-	metrics   RateLimiterMetrics
+	log     *slog.Logger
+	config  *RateLimiterConfig
+	buckets map[string]*tokenBucket
+	mu      sync.RWMutex
+	metrics RateLimiterMetrics
 }
 
 // NewRateLimiter creates a new RateLimiter.
@@ -152,14 +152,14 @@ func (rl *RateLimiter) AllowN(clientID string, n int) bool {
 }
 
 func (rl *RateLimiter) incrementAllowed() {
-	
+
 	// Only update the counter atomically without grabbing mu.
 	rl.metrics.TotalRequests++
 	rl.metrics.TotalAllowed++
 }
 
 func (rl *RateLimiter) incrementLimited() {
-	
+
 	// Only update the counter atomically without grabbing mu.
 	rl.metrics.TotalRequests++
 	rl.metrics.TotalLimited++
@@ -178,7 +178,6 @@ func (rl *RateLimiter) GetMetrics() RateLimiterMetrics {
 	rl.mu.RLock()
 	defer rl.mu.RUnlock()
 
-	
 	// int64 values are read atomically in Go for aligned access.
 	return RateLimiterMetrics{
 		TotalRequests: rl.metrics.TotalRequests,

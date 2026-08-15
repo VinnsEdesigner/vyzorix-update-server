@@ -11,10 +11,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
 type InvitationHandler struct {
 	invitationService *appOrganization.InvitationService
-	memberService    *appOrganization.MemberService
-	presenter        *response.Presenter
+	memberService     *appOrganization.MemberService
+	presenter         *response.Presenter
 }
 
 // NewInvitationHandler creates a new InvitationHandler.
@@ -25,8 +26,8 @@ func NewInvitationHandler(
 ) *InvitationHandler {
 	return &InvitationHandler{
 		invitationService: invitationService,
-		memberService:    memberService,
-		presenter:        presenter,
+		memberService:     memberService,
+		presenter:         presenter,
 	}
 }
 
@@ -40,9 +41,9 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 
 	var req struct {
 		OrganizationID string `json:"organizationId" binding:"required"`
-		Email         string `json:"email" binding:"required"`
-		Role          string `json:"role" binding:"required"`
-		Notes         string `json:"notes"`
+		Email          string `json:"email" binding:"required"`
+		Role           string `json:"role" binding:"required"`
+		Notes          string `json:"notes"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -154,18 +155,18 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 	result := make([]gin.H, len(invitations))
 	for i, inv := range invitations {
 		result[i] = gin.H{
-			"id":               inv.ID,
-			"organization_id":  inv.OrganizationID,
-			"email":            inv.Email,
-			"role":             inv.Role,
-			"status":           inv.Status,
-			"invited_by":       inv.InvitedBy,
-			"invited_at":       inv.InvitedAt,
-			"responded_at":     inv.RespondedAt,
-			"responder_id":     inv.RespondedBy,
-			"expires_at":       inv.ExpiresAt,
+			"id":                inv.ID,
+			"organization_id":   inv.OrganizationID,
+			"email":             inv.Email,
+			"role":              inv.Role,
+			"status":            inv.Status,
+			"invited_by":        inv.InvitedBy,
+			"invited_at":        inv.InvitedAt,
+			"responded_at":      inv.RespondedAt,
+			"responder_id":      inv.RespondedBy,
+			"expires_at":        inv.ExpiresAt,
 			"organization_name": inv.OrganizationName,
-			"inviter_name":     inv.InviterName,
+			"inviter_name":      inv.InviterName,
 		}
 	}
 
@@ -191,14 +192,14 @@ func (h *InvitationHandler) ListByInviter(c *gin.Context) {
 	result := make([]gin.H, len(invitations))
 	for i, inv := range invitations {
 		result[i] = gin.H{
-			"id":               inv.ID,
-			"organization_id":  inv.OrganizationID,
-			"email":            inv.Email,
-			"role":             inv.Role,
-			"status":           inv.Status,
-			"invited_at":       inv.InvitedAt,
-			"responded_at":     inv.RespondedAt,
-			"expires_at":       inv.ExpiresAt,
+			"id":                inv.ID,
+			"organization_id":   inv.OrganizationID,
+			"email":             inv.Email,
+			"role":              inv.Role,
+			"status":            inv.Status,
+			"invited_at":        inv.InvitedAt,
+			"responded_at":      inv.RespondedAt,
+			"expires_at":        inv.ExpiresAt,
 			"organization_name": inv.OrganizationName,
 		}
 	}
@@ -231,15 +232,15 @@ func (h *InvitationHandler) GetByToken(c *gin.Context) {
 	}
 
 	h.presenter.OK(c, gin.H{
-		"id":               inv.ID,
-		"organization_id":  inv.OrganizationID,
+		"id":                inv.ID,
+		"organization_id":   inv.OrganizationID,
 		"organization_name": inv.OrganizationName,
-		"email":            inv.Email,
-		"role":             inv.Role,
-		"status":           inv.Status,
-		"invited_at":       inv.InvitedAt,
-		"inviter_name":     inv.InviterName,
-		"expires_at":       inv.ExpiresAt,
+		"email":             inv.Email,
+		"role":              inv.Role,
+		"status":            inv.Status,
+		"invited_at":        inv.InvitedAt,
+		"inviter_name":      inv.InviterName,
+		"expires_at":        inv.ExpiresAt,
 	})
 }
 

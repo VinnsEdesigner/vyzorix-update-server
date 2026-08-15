@@ -62,7 +62,7 @@ func (r *Resolver) deviceDTOToMap(dev *dto.DeviceResponse) map[string]interface{
 		"buildId":          "",
 		"fcmToken":         "",
 		"fcmTokenValid":    false,
-		"commandSecretSet":  false,
+		"commandSecretSet": false,
 		"connection":       nil,
 	}
 }
@@ -86,7 +86,7 @@ func (r *Resolver) deviceDetailToMap(dev *dto.DeviceDetailResponse) map[string]i
 		connection = map[string]interface{}{
 			"webSocketStatus": dev.Connection.WebSocketStatus,
 			"connectedAt":     connectedAt,
-			"fcmStatus":      "valid",
+			"fcmStatus":       "valid",
 			"lastSeen":        lastSeen,
 			"clientIp":        dev.Connection.ClientIP,
 			"protocol":        dev.Connection.Protocol,
@@ -112,7 +112,7 @@ func (r *Resolver) deviceDetailToMap(dev *dto.DeviceDetailResponse) map[string]i
 		"buildId":          "",
 		"fcmToken":         "",
 		"fcmTokenValid":    dev.FCMTokenValid,
-		"commandSecretSet":  dev.CommandSecretSet,
+		"commandSecretSet": dev.CommandSecretSet,
 		"connection":       connection,
 	}
 }
@@ -155,9 +155,9 @@ func (r *Resolver) commandToMap(cmd dto.CommandResponse) map[string]interface{} 
 // paginationToMap converts updates.Pagination to a GraphQL map.
 func (r *Resolver) paginationToMap(p updates.Pagination) map[string]interface{} {
 	return map[string]interface{}{
-		"total":    p.Total,
-		"limit":    p.Limit,
-		"offset":   (p.Page - 1) * p.Limit,
-		"hasMore":  p.Page < p.TotalPages,
+		"total":   p.Total,
+		"limit":   p.Limit,
+		"offset":  (p.Page - 1) * p.Limit,
+		"hasMore": p.Page < p.TotalPages,
 	}
 }

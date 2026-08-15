@@ -17,9 +17,9 @@ import (
 
 // GitHubWebhookHandler handles GitHub webhook events for auto-syncing.
 type GitHubWebhookHandler struct {
-	log          *slog.Logger
-	service      *updates.Service
-	auditLogger  *audit.Logger
+	log           *slog.Logger
+	service       *updates.Service
+	auditLogger   *audit.Logger
 	webhookSecret string
 }
 
@@ -27,9 +27,9 @@ type GitHubWebhookHandler struct {
 func NewGitHubWebhookHandler(service *updates.Service, webhookSecret string, auditLogger *audit.Logger, log *slog.Logger) *GitHubWebhookHandler {
 	return &GitHubWebhookHandler{
 		webhookSecret: webhookSecret,
-		service:      service,
-		auditLogger:  auditLogger,
-		log:          log,
+		service:       service,
+		auditLogger:   auditLogger,
+		log:           log,
 	}
 }
 
@@ -161,7 +161,7 @@ func (h *GitHubWebhookHandler) verifySignature(c *gin.Context, body []byte) bool
 // GetWebhookInfo returns webhook endpoint information (non-sensitive).
 func (h *GitHubWebhookHandler) GetWebhookInfo(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"webhook_enabled":   h.webhookSecret != "",
-		"supported_events":   []string{"release", "push"},
+		"webhook_enabled":  h.webhookSecret != "",
+		"supported_events": []string{"release", "push"},
 	})
 }

@@ -59,21 +59,21 @@ var (
 	// BlockedEmailDomains contains email domains that are not allowed for registration.
 	// These are typically fake, disposable, or test domains.
 	BlockedEmailDomains = map[string]bool{
-		"test.com":      true,
-		"example.com":    true,
-		"example.org":    true,
-		"example.net":    true,
-		"mailinator.com": true,
+		"test.com":          true,
+		"example.com":       true,
+		"example.org":       true,
+		"example.net":       true,
+		"mailinator.com":    true,
 		"guerrillamail.com": true,
-		"temp-mail.org":  true,
-		"10minutemail.com": true,
-		"throwaway.email": true,
-		"fakeinbox.com":  true,
-		"trashmail.com":  true,
-		"yopmail.com":    true,
-		"getnada.com":    true,
-		"maildrop.cc":    true,
-		"dispostable.com": true,
+		"temp-mail.org":     true,
+		"10minutemail.com":  true,
+		"throwaway.email":   true,
+		"fakeinbox.com":     true,
+		"trashmail.com":     true,
+		"yopmail.com":       true,
+		"getnada.com":       true,
+		"maildrop.cc":       true,
+		"dispostable.com":   true,
 	}
 
 	// UUIDv7Pattern validates UUID format.

@@ -86,10 +86,10 @@ func (h *TransferHandler) Transfer(c *gin.Context) {
 	}
 
 	h.presenter.OK(c, gin.H{
-		"message":       "device transferred successfully",
-		"device_imei":   imei,
-		"source_org":    sourceOrgID,
-		"target_org":    req.TargetOrgID,
+		"message":     "device transferred successfully",
+		"device_imei": imei,
+		"source_org":  sourceOrgID,
+		"target_org":  req.TargetOrgID,
 	})
 }
 

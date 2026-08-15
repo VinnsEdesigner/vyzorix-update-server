@@ -61,16 +61,16 @@ func (r *Resolver) GetInbox(p graphql.ResolveParams) (interface{}, error) {
 			"id":                req.ID,
 			"imei":              req.IMEI,
 			"model":             req.Model,
-			"manufacturer":       req.Manufacturer,
+			"manufacturer":      req.Manufacturer,
 			"osVersion":         req.OSVersion,
 			"appVersion":        req.AppVersion,
 			"firebaseInstallId": req.FirebaseInstallID,
-			"status":           req.Status,
+			"status":            req.Status,
 			"createdAt":         req.CreatedAt,
 			"approvedAt":        req.ApprovedAt,
 			"rejectedAt":        req.RejectedAt,
-			"notes":            req.Notes,
-			"operatorId":       req.OperatorID,
+			"notes":             req.Notes,
+			"operatorId":        req.OperatorID,
 		})
 	}
 
@@ -120,10 +120,10 @@ func (r *Resolver) GetInboxEntry(p graphql.ResolveParams) (interface{}, error) {
 		"id":                entry.ID,
 		"imei":              entry.IMEI,
 		"model":             entry.Model,
-		"manufacturer":       entry.Manufacturer,
+		"manufacturer":      entry.Manufacturer,
 		"osVersion":         entry.OSVersion,
 		"appVersion":        entry.AppVersion,
-		"firebaseInstallId":   entry.FirebaseInstallID,
+		"firebaseInstallId": entry.FirebaseInstallID,
 		"status":            entry.Status,
 		"createdAt":         entry.CreatedAt,
 		"approvedAt":        entry.ApprovedAt,
@@ -235,6 +235,6 @@ func (r *Resolver) DeregisterDeviceGraphQL(p graphql.ResolveParams) (interface{}
 		"imei":           result.IMEI,
 		"status":         result.Status,
 		"deregisteredAt": result.DeregisteredAt,
-		"retentionUntil":  result.RetentionUntil,
+		"retentionUntil": result.RetentionUntil,
 	}, nil
 }

@@ -16,18 +16,18 @@ var ErrConflict = errors.New("idempotency record already exists")
 
 // IdempotencyRecord represents a recorded idempotency key with its response.
 type IdempotencyRecord struct {
-	ID              string
-	Method          string
-	Path            string
-	Hash            string
-	ContentType     string
-	ClientIP        string
-	UserAgent       string
-	OrganizationID  string
-	CreatedAt       time.Time
-	ExpiresAt       time.Time
-	ResponseBody    []byte
-	StatusCode      int
+	ID             string
+	Method         string
+	Path           string
+	Hash           string
+	ContentType    string
+	ClientIP       string
+	UserAgent      string
+	OrganizationID string
+	CreatedAt      time.Time
+	ExpiresAt      time.Time
+	ResponseBody   []byte
+	StatusCode     int
 }
 
 // IsExpired returns true if the record has expired.

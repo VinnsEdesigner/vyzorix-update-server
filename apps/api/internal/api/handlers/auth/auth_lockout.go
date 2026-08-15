@@ -90,4 +90,3 @@ func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 		"operator_id": targetOperatorID,
 	})
 }
-

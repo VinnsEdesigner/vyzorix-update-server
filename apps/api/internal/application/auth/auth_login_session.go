@@ -1,18 +1,18 @@
 package auth
 
 import (
-"context"
-"errors"
-"fmt"
-"strings"
-"time"
+	"context"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
 
-"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
-"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
-"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
-"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
-"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
-infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
+	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 )
 
 // buildLoginResponse builds a LoginResponse with organization info.
@@ -23,9 +23,9 @@ func (s *AuthService) buildLoginResponse(op *operator.Operator) *dto.LoginRespon
 		// If we can't get organizations, indicate org selection is needed.
 		return &dto.LoginResponse{
 			OperatorID:           op.ID,
-			Email:               op.Email,
-			Name:                op.Name,
-			MFAEnabled:          op.MFAEnabled,
+			Email:                op.Email,
+			Name:                 op.Name,
+			MFAEnabled:           op.MFAEnabled,
 			NeedsOrganization:    true,
 			Organizations:        nil,
 			LastOrganizationID:   op.LastOrganizationID,
@@ -65,9 +65,9 @@ func (s *AuthService) buildLoginResponse(op *operator.Operator) *dto.LoginRespon
 
 	return &dto.LoginResponse{
 		OperatorID:           op.ID,
-		Email:               op.Email,
-		Name:                op.Name,
-		MFAEnabled:          op.MFAEnabled,
+		Email:                op.Email,
+		Name:                 op.Name,
+		MFAEnabled:           op.MFAEnabled,
 		NeedsOrganization:    needsOrg,
 		Organizations:        dtoOrgs,
 		LastOrganizationID:   op.LastOrganizationID,
@@ -77,163 +77,163 @@ func (s *AuthService) buildLoginResponse(op *operator.Operator) *dto.LoginRespon
 
 // Login authenticates an operator and creates a session.
 func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, *session.Session, error) {
-email := strings.ToLower(strings.TrimSpace(req.Email))
+	email := strings.ToLower(strings.TrimSpace(req.Email))
 
-op, err := s.operatorRepo.FindByEmail(ctx, email)
-if err != nil {
-if errors.Is(err, operator.ErrNotFound) {
-// Perform fake password hash to mitigate timing attacks.
-fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
-_ = s.passwordHasher.Verify(req.Password, fakeHash)
-return nil, nil, application.ErrInvalidCredentials
-}
-return nil, nil, err
-}
+	op, err := s.operatorRepo.FindByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, operator.ErrNotFound) {
+			// Perform fake password hash to mitigate timing attacks.
+			fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
+			_ = s.passwordHasher.Verify(req.Password, fakeHash)
+			return nil, nil, application.ErrInvalidCredentials
+		}
+		return nil, nil, err
+	}
 
-// Prevent nil pointer dereference if FindByEmail returns (nil, nil).
-if op == nil {
-// Perform fake password hash to mitigate timing attacks.
-fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
-_ = s.passwordHasher.Verify(req.Password, fakeHash)
-return nil, nil, application.ErrInvalidCredentials
-}
+	// Prevent nil pointer dereference if FindByEmail returns (nil, nil).
+	if op == nil {
+		// Perform fake password hash to mitigate timing attacks.
+		fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
+		_ = s.passwordHasher.Verify(req.Password, fakeHash)
+		return nil, nil, application.ErrInvalidCredentials
+	}
 
-if op.PasswordHash == "" {
-return nil, nil, application.ErrInvalidCredentials
-}
+	if op.PasswordHash == "" {
+		return nil, nil, application.ErrInvalidCredentials
+	}
 
-// Verify password with proper error handling.
-if err = s.passwordHasher.Verify(req.Password, op.PasswordHash); err != nil {
-// Only return ErrInvalidCredentials for wrong password.
-// For other crypto errors, still return generic error to prevent info leak.
-if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" ||
-   err.Error() == "crypto/scrypt: password hash does not match" ||
-   err.Error() == "crypto/argon2: invalid hash" {
-return nil, nil, application.ErrInvalidCredentials
-}
- return nil, nil, application.ErrInvalidCredentials
-}
+	// Verify password with proper error handling.
+	if err = s.passwordHasher.Verify(req.Password, op.PasswordHash); err != nil {
+		// Only return ErrInvalidCredentials for wrong password.
+		// For other crypto errors, still return generic error to prevent info leak.
+		if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" ||
+			err.Error() == "crypto/scrypt: password hash does not match" ||
+			err.Error() == "crypto/argon2: invalid hash" {
+			return nil, nil, application.ErrInvalidCredentials
+		}
+		return nil, nil, application.ErrInvalidCredentials
+	}
 
-// If MFA is required for this operator, enforce it.
-if op.MFARequired || op.HasMFA() {
-resp := s.buildLoginResponse(op)
-resp.MFAEnabled = true
-return resp, nil, application.ErrMFARequired
-}
+	// If MFA is required for this operator, enforce it.
+	if op.MFARequired || op.HasMFA() {
+		resp := s.buildLoginResponse(op)
+		resp.MFAEnabled = true
+		return resp, nil, application.ErrMFARequired
+	}
 
-sess, err := s.CreateSession(ctx, op.ID)
-if err != nil {
-return nil, nil, err
-}
+	sess, err := s.CreateSession(ctx, op.ID)
+	if err != nil {
+		return nil, nil, err
+	}
 
-// Auto-resolve and set organization for the session.
-// This enables single-org and last-used-org auto-selection.
-s.resolveAndSetOrganization(ctx, op, sess)
+	// Auto-resolve and set organization for the session.
+	// This enables single-org and last-used-org auto-selection.
+	s.resolveAndSetOrganization(ctx, op, sess)
 
-return s.buildLoginResponse(op), sess, nil
+	return s.buildLoginResponse(op), sess, nil
 }
 
 // resolveAndSetOrganization resolves the organization for an operator and sets it on the session.
 // It uses LastOrganizationID if valid, otherwise auto-selects single org.
 func (s *AuthService) resolveAndSetOrganization(ctx context.Context, op *operator.Operator, sess *session.Session) {
-orgID, _, err := s.ResolveOrganizationForOperator(ctx, op)
-if err != nil {
-	// No organization or selection required - do not set anything on session.
-	return
-}
+	orgID, _, err := s.ResolveOrganizationForOperator(ctx, op)
+	if err != nil {
+		// No organization or selection required - do not set anything on session.
+		return
+	}
 
-// Valid org found - set on session and update LastOrganizationID.
-sess.SelectedOrganizationID = orgID
-_ = s.sessionRepo.UpdateOrganizationID(ctx, sess.ID, orgID)
+	// Valid org found - set on session and update LastOrganizationID.
+	sess.SelectedOrganizationID = orgID
+	_ = s.sessionRepo.UpdateOrganizationID(ctx, sess.ID, orgID)
 
-// Also update operators LastOrganizationID for persistence.
-if s.operatorRepo != nil && op.LastOrganizationID != orgID {
-    op.LastOrganizationID = orgID
-    if err := s.operatorRepo.Update(ctx, op); err != nil {
-        s.logger.Warn("failed to update operator LastOrganizationID", "operatorID", op.ID, "error", err)
-    }
-}
+	// Also update operators LastOrganizationID for persistence.
+	if s.operatorRepo != nil && op.LastOrganizationID != orgID {
+		op.LastOrganizationID = orgID
+		if err := s.operatorRepo.Update(ctx, op); err != nil {
+			s.logger.Warn("failed to update operator LastOrganizationID", "operatorID", op.ID, "error", err)
+		}
+	}
 }
 
 // LoginWithTokens authenticates an operator and returns tokens for API clients.
 // This method is used for non-browser clients that need JWT access tokens and refresh tokens.
 func (s *AuthService) LoginWithTokens(ctx context.Context, req *dto.LoginRequest) (*dto.LoginWithTokensResponse, error) {
-email := strings.ToLower(strings.TrimSpace(req.Email))
+	email := strings.ToLower(strings.TrimSpace(req.Email))
 
-op, err := s.operatorRepo.FindByEmail(ctx, email)
-if err != nil {
-if errors.Is(err, operator.ErrNotFound) {
-// Perform fake password hash to mitigate timing attacks.
-fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
-_ = s.passwordHasher.Verify(req.Password, fakeHash)
-return nil, application.ErrInvalidCredentials
-}
-return nil, err
-}
+	op, err := s.operatorRepo.FindByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, operator.ErrNotFound) {
+			// Perform fake password hash to mitigate timing attacks.
+			fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
+			_ = s.passwordHasher.Verify(req.Password, fakeHash)
+			return nil, application.ErrInvalidCredentials
+		}
+		return nil, err
+	}
 
-if op == nil {
-// Perform fake password hash to mitigate timing attacks.
-fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
-_ = s.passwordHasher.Verify(req.Password, fakeHash)
-return nil, application.ErrInvalidCredentials
-}
+	if op == nil {
+		// Perform fake password hash to mitigate timing attacks.
+		fakeHash := "$argon2id$v=19$m=65536,t=3,p=4$YWRkcmVzc2FsdA$ZmFrZWhhc2hmb3J0aW1pbmdhdHRhY2tz"
+		_ = s.passwordHasher.Verify(req.Password, fakeHash)
+		return nil, application.ErrInvalidCredentials
+	}
 
-if op.PasswordHash == "" {
-return nil, application.ErrInvalidCredentials
-}
+	if op.PasswordHash == "" {
+		return nil, application.ErrInvalidCredentials
+	}
 
-if err = s.passwordHasher.Verify(req.Password, op.PasswordHash); err != nil {
-if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" ||
-err.Error() == "crypto/scrypt: password hash does not match" ||
-err.Error() == "crypto/argon2: invalid hash" {
-return nil, application.ErrInvalidCredentials
-}
-return nil, application.ErrInvalidCredentials
-}
+	if err = s.passwordHasher.Verify(req.Password, op.PasswordHash); err != nil {
+		if err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password" ||
+			err.Error() == "crypto/scrypt: password hash does not match" ||
+			err.Error() == "crypto/argon2: invalid hash" {
+			return nil, application.ErrInvalidCredentials
+		}
+		return nil, application.ErrInvalidCredentials
+	}
 
-// If MFA is required, return partial response indicating MFA is needed.
-if op.MFARequired || op.HasMFA() {
-resp := s.buildLoginWithTokensResponse(op)
-resp.MFAEnabled = true
-return resp, application.ErrMFARequired
-}
+	// If MFA is required, return partial response indicating MFA is needed.
+	if op.MFARequired || op.HasMFA() {
+		resp := s.buildLoginWithTokensResponse(op)
+		resp.MFAEnabled = true
+		return resp, application.ErrMFARequired
+	}
 
-// Create session.
-sess, err := s.CreateSession(ctx, op.ID)
-if err != nil {
-return nil, err
-}
+	// Create session.
+	sess, err := s.CreateSession(ctx, op.ID)
+	if err != nil {
+		return nil, err
+	}
 
-// Generate JWT access token.
-var accessToken string
-var expiresAt int64
-if s.jwtManager != nil {
-accessToken, _, err = s.jwtManager.Generate(op.ID, op.Email, op.Name, "")
-if err != nil {
-return nil, err
-}
-expiresAt = time.Now().Add(15 * time.Minute).Unix()
-}
+	// Generate JWT access token.
+	var accessToken string
+	var expiresAt int64
+	if s.jwtManager != nil {
+		accessToken, _, err = s.jwtManager.Generate(op.ID, op.Email, op.Name, "")
+		if err != nil {
+			return nil, err
+		}
+		expiresAt = time.Now().Add(15 * time.Minute).Unix()
+	}
 
-// Issue refresh token.
-var refreshTokenVal string
-if s.refreshTokenRepo != nil {
-refreshTokenVal, err = s.IssueRefreshToken(ctx, op.ID, sess.ID)
-if err != nil {
-return nil, err
-}
-}
+	// Issue refresh token.
+	var refreshTokenVal string
+	if s.refreshTokenRepo != nil {
+		refreshTokenVal, err = s.IssueRefreshToken(ctx, op.ID, sess.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
 
-// Auto-resolve and set organization for the session.
-// This enables single-org and last-used-org auto-selection.
-s.resolveAndSetOrganization(ctx, op, sess)
+	// Auto-resolve and set organization for the session.
+	// This enables single-org and last-used-org auto-selection.
+	s.resolveAndSetOrganization(ctx, op, sess)
 
-resp := s.buildLoginWithTokensResponse(op)
-resp.AccessToken = accessToken
-resp.RefreshToken = refreshTokenVal
-resp.ExpiresAt = expiresAt
-resp.SessionID = sess.ID
-return resp, nil
+	resp := s.buildLoginWithTokensResponse(op)
+	resp.AccessToken = accessToken
+	resp.RefreshToken = refreshTokenVal
+	resp.ExpiresAt = expiresAt
+	resp.SessionID = sess.ID
+	return resp, nil
 }
 
 // buildLoginWithTokensResponse builds a LoginWithTokensResponse with organization info.
@@ -244,9 +244,9 @@ func (s *AuthService) buildLoginWithTokensResponse(op *operator.Operator) *dto.L
 		// If we can't get organizations, indicate org selection is needed.
 		return &dto.LoginWithTokensResponse{
 			OperatorID:           op.ID,
-			Email:               op.Email,
-			Name:                op.Name,
-			MFAEnabled:          op.MFAEnabled,
+			Email:                op.Email,
+			Name:                 op.Name,
+			MFAEnabled:           op.MFAEnabled,
 			NeedsOrganization:    true,
 			Organizations:        nil,
 			LastOrganizationID:   op.LastOrganizationID,
@@ -286,9 +286,9 @@ func (s *AuthService) buildLoginWithTokensResponse(op *operator.Operator) *dto.L
 
 	return &dto.LoginWithTokensResponse{
 		OperatorID:           op.ID,
-		Email:               op.Email,
-		Name:                op.Name,
-		MFAEnabled:          op.MFAEnabled,
+		Email:                op.Email,
+		Name:                 op.Name,
+		MFAEnabled:           op.MFAEnabled,
 		NeedsOrganization:    needsOrg,
 		Organizations:        dtoOrgs,
 		LastOrganizationID:   op.LastOrganizationID,
@@ -298,51 +298,51 @@ func (s *AuthService) buildLoginWithTokensResponse(op *operator.Operator) *dto.L
 
 // Register creates a new operator.
 func (s *AuthService) Register(ctx context.Context, req *dto.RegisterRequest, validatePassword bool) (*dto.RegisterResponse, error) {
-email := strings.ToLower(strings.TrimSpace(req.Email))
-name := strings.TrimSpace(req.Name)
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	name := strings.TrimSpace(req.Name)
 
-if validatePassword {
-if err := ValidatePassword(req.Password, DefaultPasswordPolicy); err != nil {
-	return nil, fmt.Errorf("%w: %v", application.ErrInvalidInput, err)
-}
-	// Check if password was found in known data breaches.
-	breached, breachErr := infraauth.CheckPasswordBreached(req.Password)
-	if breached {
-		if breachErr != nil && errors.Is(breachErr, infraauth.ErrBreachCheckFailed) {
-			return nil, application.ErrBreachCheckUnavailable
+	if validatePassword {
+		if err := ValidatePassword(req.Password, DefaultPasswordPolicy); err != nil {
+			return nil, fmt.Errorf("%w: %v", application.ErrInvalidInput, err)
 		}
-		return nil, application.ErrPasswordBreached
+		// Check if password was found in known data breaches.
+		breached, breachErr := infraauth.CheckPasswordBreached(req.Password)
+		if breached {
+			if breachErr != nil && errors.Is(breachErr, infraauth.ErrBreachCheckFailed) {
+				return nil, application.ErrBreachCheckUnavailable
+			}
+			return nil, application.ErrPasswordBreached
+		}
 	}
-}
 
-existing, err := s.operatorRepo.FindByEmail(ctx, email)
-if err != nil && err != operator.ErrNotFound {
-return nil, err
-}
+	existing, err := s.operatorRepo.FindByEmail(ctx, email)
+	if err != nil && err != operator.ErrNotFound {
+		return nil, err
+	}
 
-if existing != nil {
-return nil, application.ErrUserExists
-}
+	if existing != nil {
+		return nil, application.ErrUserExists
+	}
 
-hash, err := s.passwordHasher.Hash(req.Password)
-if err != nil {
-return nil, err
-}
+	hash, err := s.passwordHasher.Hash(req.Password)
+	if err != nil {
+		return nil, err
+	}
 
-now := time.Now()
-id := shared.GenerateID()
+	now := time.Now()
+	id := shared.GenerateID()
 
-op := &operator.Operator{
-ID:            id,
-Email:         email,
-Name:          name,
-PasswordHash:  hash,
-CreatedAt:     now,
-UpdatedAt:     now,
-EmailVerified: false,
-}
+	op := &operator.Operator{
+		ID:            id,
+		Email:         email,
+		Name:          name,
+		PasswordHash:  hash,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+		EmailVerified: false,
+	}
 
-if err := s.operatorRepo.Create(ctx, op); err != nil {
+	if err := s.operatorRepo.Create(ctx, op); err != nil {
 		// Handle race condition: if UNIQUE constraint fails due to concurrent registration,.
 		// return ErrUserExists instead of opaque database error.
 		if errors.Is(err, operator.ErrEmailExists) {
@@ -360,49 +360,49 @@ if err := s.operatorRepo.Create(ctx, op); err != nil {
 
 // RegisterAsSuperAdmin registers the first operator as super admin.
 func (s *AuthService) RegisterAsSuperAdmin(ctx context.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error) {
-if err := ValidatePassword(req.Password, DefaultPasswordPolicy); err != nil {
-return nil, fmt.Errorf("%w: %v", application.ErrInvalidInput, err)
-}
+	if err := ValidatePassword(req.Password, DefaultPasswordPolicy); err != nil {
+		return nil, fmt.Errorf("%w: %v", application.ErrInvalidInput, err)
+	}
 
-email := strings.ToLower(strings.TrimSpace(req.Email))
-name := strings.TrimSpace(req.Name)
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	name := strings.TrimSpace(req.Name)
 
-count, err := s.operatorRepo.Count(ctx)
-if err != nil {
-return nil, err
-}
+	count, err := s.operatorRepo.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-if count > 0 {
-return nil, application.ErrForbidden
-}
+	if count > 0 {
+		return nil, application.ErrForbidden
+	}
 
-hash, err := s.passwordHasher.Hash(req.Password)
-if err != nil {
-return nil, err
-}
+	hash, err := s.passwordHasher.Hash(req.Password)
+	if err != nil {
+		return nil, err
+	}
 
-now := time.Now()
-id := shared.GenerateID()
+	now := time.Now()
+	id := shared.GenerateID()
 
-op := &operator.Operator{
-ID:            id,
-Email:         email,
-Name:          name,
-PasswordHash:  hash,
-CreatedAt:     now,
-UpdatedAt:     now,
-EmailVerified: true,
-}
+	op := &operator.Operator{
+		ID:            id,
+		Email:         email,
+		Name:          name,
+		PasswordHash:  hash,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+		EmailVerified: true,
+	}
 
-if err := s.operatorRepo.Create(ctx, op); err != nil {
-return nil, err
-}
+	if err := s.operatorRepo.Create(ctx, op); err != nil {
+		return nil, err
+	}
 
-return &dto.RegisterResponse{
-OperatorID: id,
-Email:     email,
-Name:      name,
-}, nil
+	return &dto.RegisterResponse{
+		OperatorID: id,
+		Email:      email,
+		Name:       name,
+	}, nil
 }
 
 // CreateSession creates a new session for an operator.
@@ -478,7 +478,6 @@ func (s *AuthService) Logout(ctx context.Context, sessionID string) error {
 		return err
 	}
 
-	
 	// Return error if revocation fails to ensure session is fully invalidated.
 	if operatorID != "" {
 		if err := s.RevokeAllRefreshTokens(ctx, operatorID); err != nil {
@@ -500,7 +499,7 @@ func (s *AuthService) LogoutAll(ctx context.Context, operatorID string) error {
 	if err := s.sessionRepo.RevokeAllOperatorSessions(ctx, operatorID); err != nil {
 		return err
 	}
-	
+
 	if err := s.RevokeAllRefreshTokens(ctx, operatorID); err != nil {
 		if s.logger != nil {
 			s.logger.Error("failed to revoke refresh tokens during logout all - sessions may persist",
@@ -514,17 +513,17 @@ func (s *AuthService) LogoutAll(ctx context.Context, operatorID string) error {
 
 // GetOperator retrieves an operator by ID.
 func (s *AuthService) GetOperator(ctx context.Context, id string) (*operator.Operator, error) {
-return s.operatorRepo.FindByID(ctx, id)
+	return s.operatorRepo.FindByID(ctx, id)
 }
 
 // GetOperatorByEmail retrieves an operator by email.
 func (s *AuthService) GetOperatorByEmail(ctx context.Context, email string) (*operator.Operator, error) {
-return s.operatorRepo.FindByEmail(ctx, email)
+	return s.operatorRepo.FindByEmail(ctx, email)
 }
 
 // GetSession retrieves a session by ID.
 func (s *AuthService) GetSession(ctx context.Context, id string) (*session.Session, error) {
-return s.sessionRepo.FindByID(ctx, id)
+	return s.sessionRepo.FindByID(ctx, id)
 }
 
 // ValidateSession validates a session and returns the operator.
@@ -587,34 +586,34 @@ func (s *AuthService) ValidateSession(ctx context.Context, sessionID string) (*s
 
 // ChangePassword changes an operator's password.
 func (s *AuthService) ChangePassword(ctx context.Context, operatorID, oldPassword, newPassword string) error {
-op, err := s.operatorRepo.FindByID(ctx, operatorID)
-if err != nil {
-return err
-}
+	op, err := s.operatorRepo.FindByID(ctx, operatorID)
+	if err != nil {
+		return err
+	}
 
-if verifyErr := s.passwordHasher.Verify(oldPassword, op.PasswordHash); verifyErr != nil {
-return application.ErrInvalidCredentials
-}
+	if verifyErr := s.passwordHasher.Verify(oldPassword, op.PasswordHash); verifyErr != nil {
+		return application.ErrInvalidCredentials
+	}
 
-if validateErr := ValidatePassword(newPassword, DefaultPasswordPolicy); validateErr != nil {
-return fmt.Errorf("%w: %v", application.ErrInvalidInput, validateErr)
-}
+	if validateErr := ValidatePassword(newPassword, DefaultPasswordPolicy); validateErr != nil {
+		return fmt.Errorf("%w: %v", application.ErrInvalidInput, validateErr)
+	}
 
-hash, err := s.passwordHasher.Hash(newPassword)
-if err != nil {
-return err
-}
+	hash, err := s.passwordHasher.Hash(newPassword)
+	if err != nil {
+		return err
+	}
 
-op.PasswordHash = hash
-op.UpdatedAt = time.Now()
+	op.PasswordHash = hash
+	op.UpdatedAt = time.Now()
 
-if err := s.operatorRepo.Update(ctx, op); err != nil {
-return err
-}
+	if err := s.operatorRepo.Update(ctx, op); err != nil {
+		return err
+	}
 
-// Invalidate all sessions and refresh tokens for security.
-_ = s.LogoutAll(ctx, operatorID)
-_ = s.RevokeAllRefreshTokens(ctx, operatorID)
+	// Invalidate all sessions and refresh tokens for security.
+	_ = s.LogoutAll(ctx, operatorID)
+	_ = s.RevokeAllRefreshTokens(ctx, operatorID)
 
-return nil
+	return nil
 }

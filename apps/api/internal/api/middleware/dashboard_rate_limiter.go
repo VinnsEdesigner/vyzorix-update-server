@@ -12,29 +12,29 @@ import (
 // DashboardRateLimits defines rate limits for dashboard command endpoints per the spec.
 type DashboardRateLimits struct {
 	// GET /v1/device/:imei/commands: 60 requests per minute.
-	CommandHistoryLimit int
+	CommandHistoryLimit  int
 	CommandHistoryRefill time.Duration
 
 	// GET /v1/device/:imei/logs: 60 requests per minute.
-	DeviceLogsLimit int
+	DeviceLogsLimit  int
 	DeviceLogsRefill time.Duration
 
 	// GET /v1/device/:imei/metrics: 30 requests per minute.
-	DeviceMetricsLimit int
+	DeviceMetricsLimit  int
 	DeviceMetricsRefill time.Duration
 
 	// GET /v1/device/:imei/metrics/export: 10 requests per minute.
-	MetricsExportLimit int
+	MetricsExportLimit  int
 	MetricsExportRefill time.Duration
 
 	// POST /v1/device/:imei/command: 10 requests per minute.
-	SendCommandLimit int
+	SendCommandLimit  int
 	SendCommandRefill time.Duration
 
 	// Diagnostics endpoints: 30 requests per minute.
-	DeviceInspectLimit int
-	DeviceInspectRefill time.Duration
-	DeviceTimelineLimit int
+	DeviceInspectLimit   int
+	DeviceInspectRefill  time.Duration
+	DeviceTimelineLimit  int
 	DeviceTimelineRefill time.Duration
 }
 
@@ -76,7 +76,7 @@ type DashboardRateLimiterMiddleware struct {
 	deviceMetricsLimiter  *RateLimiter
 	metricsExportLimiter  *RateLimiter
 	sendCommandLimiter    *RateLimiter
-	deviceInspectLimiter   *RateLimiter
+	deviceInspectLimiter  *RateLimiter
 	deviceTimelineLimiter *RateLimiter
 }
 
@@ -146,13 +146,13 @@ func (m *DashboardRateLimiterMiddleware) Stop() {
 // Stats returns statistics for all rate limiters.
 func (m *DashboardRateLimiterMiddleware) Stats() map[string]RateLimiterStats {
 	return map[string]RateLimiterStats{
-		"command_history":  m.commandHistoryLimiter.Stats(),
-		"device_logs":      m.deviceLogsLimiter.Stats(),
-		"device_metrics":   m.deviceMetricsLimiter.Stats(),
-		"metrics_export":   m.metricsExportLimiter.Stats(),
-		"send_command":     m.sendCommandLimiter.Stats(),
-		"device_inspect":    m.deviceInspectLimiter.Stats(),
-		"device_timeline":   m.deviceTimelineLimiter.Stats(),
+		"command_history": m.commandHistoryLimiter.Stats(),
+		"device_logs":     m.deviceLogsLimiter.Stats(),
+		"device_metrics":  m.deviceMetricsLimiter.Stats(),
+		"metrics_export":  m.metricsExportLimiter.Stats(),
+		"send_command":    m.sendCommandLimiter.Stats(),
+		"device_inspect":  m.deviceInspectLimiter.Stats(),
+		"device_timeline": m.deviceTimelineLimiter.Stats(),
 	}
 }
 

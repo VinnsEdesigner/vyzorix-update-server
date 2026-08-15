@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	ErrDisabled          = errors.New("fcm notifier disabled: FIREBASE_CREDENTIALS is empty")
-	ErrFCMCircuitOpen   = errors.New("fcm circuit breaker is open")
+	ErrDisabled       = errors.New("fcm notifier disabled: FIREBASE_CREDENTIALS is empty")
+	ErrFCMCircuitOpen = errors.New("fcm circuit breaker is open")
 )
 
 type Client struct {
@@ -71,7 +71,7 @@ func Init(log *slog.Logger, rawCredentials string) (*Client, error) {
 	app, err := firebase.NewApp(context.Background(), nil, creds)
 	if err != nil {
 		_ = os.Remove(tmpPath)
-		
+
 		log.Warn("fcm disabled; malformed FIREBASE_CREDENTIALS - Firebase init failed",
 			"error", err.Error(),
 			"hint", "Ensure credentials are valid JSON service account file")

@@ -3,8 +3,8 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/gin-gonic/gin"
 )
 

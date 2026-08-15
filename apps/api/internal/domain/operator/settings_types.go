@@ -44,35 +44,35 @@ func (t *ThresholdsInput) Validate() error {
 // EmailNotificationInput represents email notification settings input.
 type EmailNotificationInput struct {
 	ThresholdBreach     *bool `json:"thresholdBreach,omitempty"`
-	DeviceOffline      *bool `json:"deviceOffline,omitempty"`
-	DeviceOnline       *bool `json:"deviceOnline,omitempty"`
-	UpdateAvailable    *bool `json:"updateAvailable,omitempty"`
-	CommandFailed      *bool `json:"commandFailed,omitempty"`
+	DeviceOffline       *bool `json:"deviceOffline,omitempty"`
+	DeviceOnline        *bool `json:"deviceOnline,omitempty"`
+	UpdateAvailable     *bool `json:"updateAvailable,omitempty"`
+	CommandFailed       *bool `json:"commandFailed,omitempty"`
 	RegistrationRequest *bool `json:"registrationRequest,omitempty"`
 }
 
 // PushNotificationInput represents push notification settings input.
 type PushNotificationInput struct {
 	ThresholdBreach     *bool `json:"thresholdBreach,omitempty"`
-	DeviceOffline      *bool `json:"deviceOffline,omitempty"`
-	DeviceOnline       *bool `json:"deviceOnline,omitempty"`
-	UpdateAvailable    *bool `json:"updateAvailable,omitempty"`
-	CommandFailed      *bool `json:"commandFailed,omitempty"`
+	DeviceOffline       *bool `json:"deviceOffline,omitempty"`
+	DeviceOnline        *bool `json:"deviceOnline,omitempty"`
+	UpdateAvailable     *bool `json:"updateAvailable,omitempty"`
+	CommandFailed       *bool `json:"commandFailed,omitempty"`
 	RegistrationRequest *bool `json:"registrationRequest,omitempty"`
 }
 
 // WebhookNotificationInput represents webhook notification settings input.
 type WebhookNotificationInput struct {
-	Enabled *bool   `json:"enabled,omitempty"`
-	URL     *string `json:"url,omitempty"`
+	Enabled *bool    `json:"enabled,omitempty"`
+	URL     *string  `json:"url,omitempty"`
 	Types   []string `json:"types,omitempty"`
 }
 
 // NotificationInput represents notification settings update input from the API.
 type NotificationInput struct {
-	Enabled  *bool                    `json:"enabled,omitempty"`
-	Channels *[]string                `json:"channels,omitempty"`
-	Email    *EmailNotificationInput  `json:"email,omitempty"`
-	Push     *PushNotificationInput   `json:"push,omitempty"`
+	Enabled  *bool                     `json:"enabled,omitempty"`
+	Channels *[]string                 `json:"channels,omitempty"`
+	Email    *EmailNotificationInput   `json:"email,omitempty"`
+	Push     *PushNotificationInput    `json:"push,omitempty"`
 	Webhook  *WebhookNotificationInput `json:"webhook,omitempty"`
 }

@@ -12,12 +12,12 @@ type TelemetryFrame struct {
 	DeviceID     string          `json:"deviceId,omitempty"`
 	ActiveDevice string          `json:"activeDevice,omitempty"`
 	Raw          json.RawMessage `json:"-"`
-	Uptime       int64          `json:"uptime,omitempty"`
-	RiskScore    int            `json:"riskScore,omitempty"`
-	AudioMode    int            `json:"audioMode,omitempty"`
-	BufferLevel  int            `json:"bufferLevel,omitempty"`
-	ThermalTemp  float64        `json:"thermalTemp,omitempty"`
-	SpeakerOn    bool           `json:"speakerOn,omitempty"`
+	Uptime       int64           `json:"uptime,omitempty"`
+	RiskScore    int             `json:"riskScore,omitempty"`
+	AudioMode    int             `json:"audioMode,omitempty"`
+	BufferLevel  int             `json:"bufferLevel,omitempty"`
+	ThermalTemp  float64         `json:"thermalTemp,omitempty"`
+	SpeakerOn    bool            `json:"speakerOn,omitempty"`
 }
 
 // TelemetryEntry represents a stored telemetry record.

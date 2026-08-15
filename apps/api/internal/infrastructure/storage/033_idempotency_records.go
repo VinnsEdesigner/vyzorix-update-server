@@ -5,7 +5,6 @@ import (
 	"database/sql"
 )
 
-
 // This table stores idempotency keys and their associated responses for request deduplication.
 func migrateIdempotencyRecords(db *sql.DB) error {
 	ctx := context.Background()

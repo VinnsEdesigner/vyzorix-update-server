@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	apikeydomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	"github.com/gin-gonic/gin"
 )
@@ -41,7 +41,6 @@ func (h *SuperAdminHandler) ListAllKeys(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 
-	
 	if limit <= 0 || limit > 100 {
 		limit = 20
 	}
@@ -70,7 +69,6 @@ func (h *SuperAdminHandler) GetOperatorKeys(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 
-	
 	if limit <= 0 || limit > 100 {
 		limit = 20
 	}
@@ -88,7 +86,7 @@ func (h *SuperAdminHandler) GetOperatorKeys(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"keys":                    result.Keys,
 		"pagination":              result.Pagination,
-		"monthly_limit":          result.MonthlyLimit,
+		"monthly_limit":           result.MonthlyLimit,
 		"keys_created_this_month": result.KeysCreatedThisMonth,
 	})
 }
@@ -147,7 +145,7 @@ func (h *SuperAdminHandler) GetGlobalStats(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"total_active_keys": stats.TotalActiveKeys,
-		"max_per_month":    stats.MaxPerMonth,
+		"max_per_month":     stats.MaxPerMonth,
 	})
 }
 
@@ -181,7 +179,7 @@ func (h *SuperAdminHandler) GetOperatorStats(c *gin.Context) {
 		"total_keys":              totalKeys,
 		"active_keys":             activeKeys,
 		"revoked_keys":            totalKeys - activeKeys,
-		"keys_created_this_month":  result.KeysCreatedThisMonth,
+		"keys_created_this_month": result.KeysCreatedThisMonth,
 		"monthly_limit":           result.MonthlyLimit,
 	})
 }

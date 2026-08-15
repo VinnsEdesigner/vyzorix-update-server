@@ -8,8 +8,8 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/telemetry"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
@@ -36,10 +36,10 @@ var (
 
 // Pagination represents pagination metadata.
 type Pagination struct {
-	Page       int `json:"page"`
-	Limit      int `json:"limit"`
-	Total      int `json:"total"`
-	TotalPages int `json:"totalPages"`
+	Page       int  `json:"page"`
+	Limit      int  `json:"limit"`
+	Total      int  `json:"total"`
+	TotalPages int  `json:"totalPages"`
 	HasMore    bool `json:"hasMore"`
 }
 
@@ -52,19 +52,19 @@ type OrganizationListResponse struct {
 // MemberListResponse represents a paginated list of members.
 type MemberListResponse struct {
 	Items      []*organization.OrganizationMember `json:"items"`
-	Pagination Pagination                          `json:"pagination"`
+	Pagination Pagination                         `json:"pagination"`
 }
 
 // InvitationListResponse represents a paginated list of invitations.
 type InvitationListResponse struct {
 	Items      []*organization.Invitation `json:"items"`
-	Pagination Pagination                `json:"pagination"`
+	Pagination Pagination                 `json:"pagination"`
 }
 
 // MembershipListResponse represents a paginated list of memberships.
 type MembershipListResponse struct {
 	Items      []*organization.OrganizationMember `json:"items"`
-	Pagination Pagination                          `json:"pagination"`
+	Pagination Pagination                         `json:"pagination"`
 }
 
 // OrganizationService handles organization operations.
@@ -103,9 +103,9 @@ func NewOrganizationService(
 		invitationRepo: invitationRepo,
 		operatorRepo:   operatorRepo,
 		sessionRepo:    sessionRepo,
-		deviceRepo:    deviceRepo,
-		telemetryRepo: telemetryRepo,
-		commandRepo:   commandRepo,
+		deviceRepo:     deviceRepo,
+		telemetryRepo:  telemetryRepo,
+		commandRepo:    commandRepo,
 		txManager:      txManager,
 		logger:         logger,
 	}

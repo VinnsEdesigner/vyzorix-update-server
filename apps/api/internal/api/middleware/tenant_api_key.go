@@ -5,14 +5,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	domain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/gin-gonic/gin"
 )
-
-
 
 // PathType defines the authentication boundary for a path.
 type PathType int
@@ -29,24 +27,24 @@ const (
 // PathBoundary maps path patterns to their authentication requirements.
 var PathBoundaries = map[string]PathType{
 	// PUBLIC - No auth required.
-	"/health":              PathTypePublic,
-	"/v1/auth/":           PathTypePublic,
+	"/health":   PathTypePublic,
+	"/v1/auth/": PathTypePublic,
 	// DEPRECATED: "/v1/device/register":  PathTypePublic // Use /v1/device/inbox,.
-	"/v1/device/inbox":     PathTypePublic,
-	"/v1/device/confirm":   PathTypePublic,
-	"/v1/device/":          PathTypePublic, // /v1/device/:imei/status - device status check.
-	"/metrics":             PathTypePublic, // Prometheus scraping.
+	"/v1/device/inbox":   PathTypePublic,
+	"/v1/device/confirm": PathTypePublic,
+	"/v1/device/":        PathTypePublic, // /v1/device/:imei/status - device status check.
+	"/metrics":           PathTypePublic, // Prometheus scraping.
 
 	// INFRASTRUCTURE - ServerAPIToken (env var) - handled at route level.
 	// /admin/*, /internal/*, /healthz.
 
 	// SESSION ONLY - Session Cookie required (no API key).
-	"/bin/":          PathTypeSessionOnly,
-	"/v1/api-keys/":  PathTypeSessionOnly,
-	"/api/v1/apk/":   PathTypeSessionOnly,
+	"/bin/":         PathTypeSessionOnly,
+	"/v1/api-keys/": PathTypeSessionOnly,
+	"/api/v1/apk/":  PathTypeSessionOnly,
 
 	// TENANT - Session OR API Key + Scope.
-	"/v1/dashboard/":         PathTypeTenant,
+	"/v1/dashboard/":          PathTypeTenant,
 	"/v1/devices/":            PathTypeTenant,
 	"/v1/command/":            PathTypeTenant,
 	"/v1/telemetry/":          PathTypeTenant,

@@ -10,7 +10,7 @@ import (
 func migrateTelemetryUptime(db *sql.DB) error {
 	// Check if uptime column already exists.
 	var count int
-	err := db.QueryRowContext(context.Background(), 
+	err := db.QueryRowContext(context.Background(),
 		"SELECT COUNT(*) FROM pragma_table_info('telemetry') WHERE name = 'uptime'",
 	).Scan(&count)
 	if err != nil {

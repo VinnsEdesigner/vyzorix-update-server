@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
 type SuperAdminAuth struct{}
 
 // NewSuperAdminAuth creates a new SuperAdminAuth middleware.

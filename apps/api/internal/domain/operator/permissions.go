@@ -9,17 +9,17 @@ type Permission string
 const (
 	// Device permissions.
 	PermissionDeviceRead   Permission = "device:read"
-	PermissionDeviceWrite Permission = "device:write"
+	PermissionDeviceWrite  Permission = "device:write"
 	PermissionDeviceDelete Permission = "device:delete"
 
 	// Operator management permissions.
 	PermissionOperatorRead   Permission = "operator:read"
-	PermissionOperatorWrite Permission = "operator:write"
+	PermissionOperatorWrite  Permission = "operator:write"
 	PermissionOperatorDelete Permission = "operator:delete"
 
 	// Update management permissions.
 	PermissionUpdateRead   Permission = "update:read"
-	PermissionUpdateWrite Permission = "update:write"
+	PermissionUpdateWrite  Permission = "update:write"
 	PermissionUpdateDelete Permission = "update:delete"
 
 	// Audit log permissions.

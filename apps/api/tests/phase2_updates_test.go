@@ -151,7 +151,7 @@ func TestPhase2Updates(t *testing.T) {
 		v := v
 		t.Run(fmt.Sprintf("insert_version_%s", v["version"]), func(t *testing.T) {
 			tursoExec(t, []map[string]any{{
-				"q": "INSERT INTO update_versions (id, version, apk_filename, apk_size, sha256, release_date, release_notes, release_type, is_latest, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+				"q":      "INSERT INTO update_versions (id, version, apk_filename, apk_size, sha256, release_date, release_notes, release_type, is_latest, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 				"params": []any{v["id"], v["version"], v["apk_filename"], fmt.Sprintf("%d", v["apk_size"]), v["sha256"], fmt.Sprintf("%d", v["release_date"]), v["release_notes"], v["release_type"], fmt.Sprintf("%d", v["is_latest"]), fmt.Sprintf("%d", v["created_at"]), fmt.Sprintf("%d", v["updated_at"])},
 			}})
 			t.Logf("inserted version %s (is_latest=%v)", v["version"], v["is_latest"])
@@ -266,7 +266,7 @@ func TestPhase2Updates(t *testing.T) {
 
 	t.Run("insert_test_device", func(t *testing.T) {
 		tursoExec(t, []map[string]any{{
-			"q": "INSERT INTO devices (id, imei, organization_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+			"q":      "INSERT INTO devices (id, imei, organization_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
 			"params": []any{deviceID, imei, orgID, "active", fmt.Sprintf("%d", nowMs), fmt.Sprintf("%d", nowMs)},
 		}})
 		t.Logf("inserted test device imei=%s", imei)

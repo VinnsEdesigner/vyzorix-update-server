@@ -20,7 +20,7 @@ func BuildSchema(res *resolver.Resolver) (graphql.Schema, error) {
 // buildQueryType creates the Query type with all query fields.
 func buildQueryType(res *resolver.Resolver) *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
-		Name:   "Query",
+		Name: "Query",
 		Fields: mergeFields(settingsQueries(res), inboxQueries(res), deviceQueries(res), commandQueries(res), telemetryQueries(res),
 			connectionQueries(res), dashboardQueries(res), updatesQueries(res), diagnosticsQueries(res),
 			organizationQueries(res)),
@@ -33,14 +33,14 @@ func settingsQueries(res *resolver.Resolver) graphql.Fields {
 		"mySettings": &graphql.Field{
 			Type:        OperatorSettingsType,
 			Description: "Get current operator's settings (client and notifications)",
-			Resolve:    res.GetMySettings,
+			Resolve:     res.GetMySettings,
 		},
 		"deviceSettings": &graphql.Field{
 			Type:        DeviceSettingsType,
 			Description: "Get settings for a specific device including effective thresholds",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"deviceImei":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Device IMEI"},
+				"deviceImei":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Device IMEI"},
 			},
 			Resolve: res.GetDeviceSettings,
 		},
@@ -55,7 +55,7 @@ func settingsQueries(res *resolver.Resolver) graphql.Fields {
 		"myNotifications": &graphql.Field{
 			Type:        NotificationSettingsType,
 			Description: "Get current operator's notification settings",
-			Resolve:    res.GetMyNotifications,
+			Resolve:     res.GetMyNotifications,
 		},
 	}
 }
@@ -67,9 +67,9 @@ func inboxQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get paginated inbox entries for an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"status":        &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: "pending"},
-				"page":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
-				"limit":         &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
+				"status":         &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: "pending"},
+				"page":           &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
+				"limit":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
 			},
 			Resolve: res.GetInbox,
 		},
@@ -92,7 +92,7 @@ func deviceQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get a single device by ID within an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"id":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"id":             &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			},
 			Resolve: res.GetDevice,
 		},
@@ -101,8 +101,8 @@ func deviceQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "List all devices for the authenticated operator in an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"limit":         &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 50},
-				"offset":        &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
+				"limit":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 50},
+				"offset":         &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
 			},
 			Resolve: res.GetDevices,
 		},
@@ -124,7 +124,7 @@ func commandQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get command status by dispatch ID within an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"dispatchId":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"dispatchId":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			},
 			Resolve: res.GetCommand,
 		},
@@ -133,7 +133,7 @@ func commandQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get pending commands for a device within an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"deviceId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"deviceId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			},
 			Resolve: res.GetPendingCommands,
 		},
@@ -147,10 +147,10 @@ func telemetryQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Query telemetry history for a device within an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"deviceId":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-				"startTime":    &graphql.ArgumentConfig{Type: graphql.Int},
-				"endTime":      &graphql.ArgumentConfig{Type: graphql.Int},
-				"limit":        &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 100},
+				"deviceId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"startTime":      &graphql.ArgumentConfig{Type: graphql.Int},
+				"endTime":        &graphql.ArgumentConfig{Type: graphql.Int},
+				"limit":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 100},
 			},
 			Resolve: res.GetTelemetryHistory,
 		},
@@ -159,7 +159,7 @@ func telemetryQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get the latest telemetry entry for a device within an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"deviceId":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"deviceId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			},
 			Resolve: res.GetLatestTelemetry,
 		},
@@ -168,7 +168,7 @@ func telemetryQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get telemetry statistics for a device within an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"deviceId":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"deviceId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			},
 			Resolve: res.GetTelemetryStats,
 		},
@@ -182,7 +182,7 @@ func connectionQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get connection status for a device within an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"deviceId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"deviceId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			},
 			Resolve: res.GetConnectionStatus,
 		},
@@ -204,11 +204,11 @@ func dashboardQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get aggregated metrics for chart visualization within an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"imei":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-				"range":        &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: "6h"},
-				"startTime":    &graphql.ArgumentConfig{Type: graphql.Int},
-				"endTime":      &graphql.ArgumentConfig{Type: graphql.Int},
-				"resolution":   &graphql.ArgumentConfig{Type: graphql.String},
+				"imei":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"range":          &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: "6h"},
+				"startTime":      &graphql.ArgumentConfig{Type: graphql.Int},
+				"endTime":        &graphql.ArgumentConfig{Type: graphql.Int},
+				"resolution":     &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: res.GetDeviceMetrics,
 		},
@@ -217,12 +217,12 @@ func dashboardQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get paginated device logs with cursor-based pagination for an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"imei":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-				"type":         &graphql.ArgumentConfig{Type: graphql.String},
-				"startTime":    &graphql.ArgumentConfig{Type: graphql.Int},
-				"endTime":      &graphql.ArgumentConfig{Type: graphql.Int},
-				"limit":        &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 100},
-				"cursor":       &graphql.ArgumentConfig{Type: graphql.String},
+				"imei":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"type":           &graphql.ArgumentConfig{Type: graphql.String},
+				"startTime":      &graphql.ArgumentConfig{Type: graphql.Int},
+				"endTime":        &graphql.ArgumentConfig{Type: graphql.Int},
+				"limit":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 100},
+				"cursor":         &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: res.GetDeviceLogs,
 		},
@@ -231,12 +231,12 @@ func dashboardQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get paginated command history for a device within an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"imei":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-				"status":       &graphql.ArgumentConfig{Type: graphql.String},
-				"page":         &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
-				"limit":        &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
-				"startTime":    &graphql.ArgumentConfig{Type: graphql.Int},
-				"endTime":      &graphql.ArgumentConfig{Type: graphql.Int},
+				"imei":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"status":         &graphql.ArgumentConfig{Type: graphql.String},
+				"page":           &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
+				"limit":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
+				"startTime":      &graphql.ArgumentConfig{Type: graphql.Int},
+				"endTime":        &graphql.ArgumentConfig{Type: graphql.Int},
 			},
 			Resolve: res.GetDeviceCommandHistory,
 		},
@@ -258,7 +258,7 @@ func updatesQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get overall update system status for an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"deviceId":      &graphql.ArgumentConfig{Type: graphql.ID},
+				"deviceId":       &graphql.ArgumentConfig{Type: graphql.ID},
 			},
 			Resolve: res.GetUpdatesStatus,
 		},
@@ -267,9 +267,9 @@ func updatesQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "List all available update versions for an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"status":       &graphql.ArgumentConfig{Type: graphql.String},
-				"limit":        &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
-				"offset":       &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
+				"status":         &graphql.ArgumentConfig{Type: graphql.String},
+				"limit":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
+				"offset":         &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
 			},
 			Resolve: res.GetUpdatesVersions,
 		},
@@ -278,8 +278,8 @@ func updatesQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get changelog entries for an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"version":      &graphql.ArgumentConfig{Type: graphql.String},
-				"limit":        &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 50},
+				"version":        &graphql.ArgumentConfig{Type: graphql.String},
+				"limit":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 50},
 			},
 			Resolve: res.GetUpdatesChangelog,
 		},
@@ -288,9 +288,9 @@ func updatesQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get push history with pagination for an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"status":       &graphql.ArgumentConfig{Type: graphql.String},
-				"page":         &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
-				"limit":        &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
+				"status":         &graphql.ArgumentConfig{Type: graphql.String},
+				"page":           &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 1},
+				"limit":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 20},
 			},
 			Resolve: res.GetUpdatesHistory,
 		},
@@ -299,7 +299,7 @@ func updatesQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get detailed push information for an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"id":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"id":             &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			},
 			Resolve: res.GetUpdatesHistoryDetail,
 		},
@@ -317,7 +317,7 @@ func updatesQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get a single update history record by ID (spec-compliant name)",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"id":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"id":             &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			},
 			Resolve: res.GetUpdatesHistoryDetail,
 		},
@@ -371,10 +371,10 @@ func settingsMutations(res *resolver.Resolver) graphql.Fields {
 									Name: "EmailNotificationInput",
 									Fields: graphql.InputObjectConfigFieldMap{
 										"thresholdBreach":     &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
-										"deviceOffline":      &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
-										"deviceOnline":       &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
-										"updateAvailable":    &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
-										"commandFailed":      &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"deviceOffline":       &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"deviceOnline":        &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"updateAvailable":     &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"commandFailed":       &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
 										"registrationRequest": &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
 									},
 								}),
@@ -384,10 +384,10 @@ func settingsMutations(res *resolver.Resolver) graphql.Fields {
 									Name: "PushNotificationInput",
 									Fields: graphql.InputObjectConfigFieldMap{
 										"thresholdBreach":     &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
-										"deviceOffline":      &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
-										"deviceOnline":       &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
-										"updateAvailable":    &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
-										"commandFailed":      &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"deviceOffline":       &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"deviceOnline":        &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"updateAvailable":     &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
+										"commandFailed":       &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
 										"registrationRequest": &graphql.InputObjectFieldConfig{Type: graphql.Boolean},
 									},
 								}),
@@ -413,14 +413,14 @@ func settingsMutations(res *resolver.Resolver) graphql.Fields {
 			Description: "Update settings for a specific device",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"deviceImei":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Device IMEI"},
+				"deviceImei":     &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Device IMEI"},
 				"input": &graphql.ArgumentConfig{
 					Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
 						Name: "UpdateDeviceSettingsInput",
 						Fields: graphql.InputObjectConfigFieldMap{
 							"customName": &graphql.InputObjectFieldConfig{Type: graphql.String},
 							"location":   &graphql.InputObjectFieldConfig{Type: graphql.String},
-							"metadata":   &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
+							"metadata": &graphql.InputObjectFieldConfig{Type: graphql.NewList(graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
 								Name: "MetadataInput",
 								Fields: graphql.InputObjectConfigFieldMap{
 									"key":   &graphql.InputObjectFieldConfig{Type: graphql.NewNonNull(graphql.String)},
@@ -455,8 +455,8 @@ func settingsMutations(res *resolver.Resolver) graphql.Fields {
 					Type: graphql.NewNonNull(graphql.NewInputObject(graphql.InputObjectConfig{
 						Name: "UpdateOrganizationSettingsInput",
 						Fields: graphql.InputObjectConfigFieldMap{
-							"timezone":              &graphql.InputObjectFieldConfig{Type: graphql.String},
-							"dateFormat":            &graphql.InputObjectFieldConfig{Type: graphql.String},
+							"timezone":             &graphql.InputObjectFieldConfig{Type: graphql.String},
+							"dateFormat":           &graphql.InputObjectFieldConfig{Type: graphql.String},
 							"alertCooldownMinutes": &graphql.InputObjectFieldConfig{Type: graphql.Int},
 							"defaultThresholds": &graphql.InputObjectFieldConfig{
 								Type: graphql.NewInputObject(graphql.InputObjectConfig{
@@ -656,7 +656,7 @@ func diagnosticsQueries(res *resolver.Resolver) graphql.Fields {
 			Type:        DeviceInspectionType,
 			Description: "Get full device inspection data for diagnostics",
 			Args: graphql.FieldConfigArgument{
-				"imei":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"imei":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 			},
 			Resolve: res.GetDeviceInspection,
@@ -685,7 +685,7 @@ func organizationQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "Get an organization by ID",
 			Args: graphql.FieldConfigArgument{
 				"id": &graphql.ArgumentConfig{
-					Type: graphql.NewNonNull(graphql.ID),
+					Type:        graphql.NewNonNull(graphql.ID),
 					Description: "Organization ID",
 				},
 			},
@@ -730,7 +730,7 @@ func organizationQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "List all active members of an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{
-					Type: graphql.NewNonNull(graphql.ID),
+					Type:        graphql.NewNonNull(graphql.ID),
 					Description: "Organization ID",
 				},
 				"page": &graphql.ArgumentConfig{
@@ -751,7 +751,7 @@ func organizationQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "List all pending invitations for an organization",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{
-					Type: graphql.NewNonNull(graphql.ID),
+					Type:        graphql.NewNonNull(graphql.ID),
 					Description: "Organization ID",
 				},
 				"page": &graphql.ArgumentConfig{
@@ -770,14 +770,14 @@ func organizationQueries(res *resolver.Resolver) graphql.Fields {
 		"myInvitations": &graphql.Field{
 			Type:        graphql.NewList(InvitationType),
 			Description: "Get all pending invitations for the authenticated operator",
-			Resolve: res.GetMyInvitations,
+			Resolve:     res.GetMyInvitations,
 		},
 		"invitation": &graphql.Field{
 			Type:        InvitationType,
 			Description: "Get an invitation by token",
 			Args: graphql.FieldConfigArgument{
 				"token": &graphql.ArgumentConfig{
-					Type: graphql.NewNonNull(graphql.String),
+					Type:        graphql.NewNonNull(graphql.String),
 					Description: "Invitation token",
 				},
 			},
@@ -788,7 +788,7 @@ func organizationQueries(res *resolver.Resolver) graphql.Fields {
 
 func organizationMutations(res *resolver.Resolver) graphql.Fields {
 	return graphql.Fields{
-		"createOrganization":  createOrganizationMutation(res),
+		"createOrganization": createOrganizationMutation(res),
 		"updateOrganization": updateOrganizationMutation(res),
 		"deleteOrganization": deleteOrganizationMutation(res),
 		"inviteMember":       inviteMemberMutation(res),
@@ -798,7 +798,7 @@ func organizationMutations(res *resolver.Resolver) graphql.Fields {
 		"rejectInvitation":   rejectInvitationMutation(res),
 		"cancelInvitation":   cancelInvitationMutation(res),
 		"transferDevice":     transferDeviceMutation(res),
-		"transferOwnership":   transferOwnershipMutation(res),
+		"transferOwnership":  transferOwnershipMutation(res),
 		"suspendMember":      suspendMemberMutation(res),
 		"reinstateMember":    reinstateMemberMutation(res),
 	}
@@ -861,7 +861,7 @@ func removeMemberMutation(res *resolver.Resolver) *graphql.Field {
 		Description: "Remove a member from an organization",
 		Args: graphql.FieldConfigArgument{
 			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
-			"memberId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to remove"},
+			"memberId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to remove"},
 		},
 		Resolve: res.RemoveMember,
 	}
@@ -873,8 +873,8 @@ func updateMemberRoleMutation(res *resolver.Resolver) *graphql.Field {
 		Description: "Update a member's role",
 		Args: graphql.FieldConfigArgument{
 			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
-			"memberId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to update"},
-			"role":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(OrgRoleEnum), Description: "New role"},
+			"memberId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to update"},
+			"role":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(OrgRoleEnum), Description: "New role"},
 		},
 		Resolve: res.UpdateMemberRole,
 	}
@@ -934,7 +934,7 @@ func transferOwnershipMutation(res *resolver.Resolver) *graphql.Field {
 		Description: "Transfer super_admin ownership to another member",
 		Args: graphql.FieldConfigArgument{
 			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
-			"memberId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID of the new super_admin"},
+			"memberId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID of the new super_admin"},
 		},
 		Resolve: res.TransferOwnership,
 	}
@@ -946,7 +946,7 @@ func suspendMemberMutation(res *resolver.Resolver) *graphql.Field {
 		Description: "Suspend an active member",
 		Args: graphql.FieldConfigArgument{
 			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
-			"memberId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to suspend"},
+			"memberId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to suspend"},
 		},
 		Resolve: res.SuspendMember,
 	}
@@ -958,7 +958,7 @@ func reinstateMemberMutation(res *resolver.Resolver) *graphql.Field {
 		Description: "Reinstate a suspended member",
 		Args: graphql.FieldConfigArgument{
 			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
-			"memberId":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to reinstate"},
+			"memberId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to reinstate"},
 		},
 		Resolve: res.ReinstateMember,
 	}

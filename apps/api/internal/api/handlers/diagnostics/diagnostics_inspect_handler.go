@@ -4,28 +4,28 @@ package diagnostics
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	appdiagnostics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	domaindiagnostics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/diagnostics"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/gin-gonic/gin"
 )
 
 // Handler combines all diagnostics handlers for backwards compatibility.
 type Handler struct {
-	InspectHandler   *InspectHandler
+	InspectHandler  *InspectHandler
 	TimelineHandler *TimelineHandler
 }
 
 // InspectHandler handles device inspection HTTP requests.
 type InspectHandler struct {
-	service       *appdiagnostics.Service
-	rateLimiter  func(c *gin.Context)
+	service     *appdiagnostics.Service
+	rateLimiter func(c *gin.Context)
 }
 
 // NewInspectHandler creates a new inspect handler.
 func NewInspectHandler(service *appdiagnostics.Service, rateLimiter func(c *gin.Context)) *InspectHandler {
 	return &InspectHandler{
-		service:      service,
+		service:     service,
 		rateLimiter: rateLimiter,
 	}
 }

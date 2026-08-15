@@ -8,16 +8,18 @@ import (
 // InboxStatus represents the status of an inbox entry.
 // Implements the 5-state model from SPEC:.
 // PENDING -> ACKNOWLEDGED -> APPROVING -> APPROVED.
-//               REJECTED                        (device confirms) -> REGISTERED (external).
+//
+//	REJECTED                        (device confirms) -> REGISTERED (external).
+//
 // StatusExpired for auto-cleanup after 30 days.
 type InboxStatus string
 
 const (
 	StatusPending      InboxStatus = "pending"      // Initial state after device registration.
 	StatusAcknowledged InboxStatus = "acknowledged" // Device has acknowledged the request.
-	StatusApproving    InboxStatus = "approving"   // Operator is approving, commandSecret being generated.
-	StatusApproved     InboxStatus = "approved"    // Fully approved, device can confirm.
-	StatusRejected     InboxStatus = "rejected"    // Rejected by operator.
+	StatusApproving    InboxStatus = "approving"    // Operator is approving, commandSecret being generated.
+	StatusApproved     InboxStatus = "approved"     // Fully approved, device can confirm.
+	StatusRejected     InboxStatus = "rejected"     // Rejected by operator.
 	StatusExpired      InboxStatus = "expired"      // Auto-cleanup after 30 days.
 )
 
@@ -29,8 +31,8 @@ var ErrInvalidInboxTransition = errors.New("invalid inbox status transition")
 var InboxStatusTransitions = map[InboxStatus]map[InboxStatus]bool{
 	StatusPending: {
 		StatusAcknowledged: true,
-		StatusRejected:    true,
-		StatusExpired:     true,
+		StatusRejected:     true,
+		StatusExpired:      true,
 	},
 	StatusAcknowledged: {
 		StatusApproving: true,
@@ -41,9 +43,9 @@ var InboxStatusTransitions = map[InboxStatus]map[InboxStatus]bool{
 		StatusApproved: true,
 		StatusRejected: true,
 	},
-	StatusApproved:  {}, // Terminal state for this flow.
-	StatusRejected:  {}, // Terminal state.
-	StatusExpired:   {}, // Terminal state.
+	StatusApproved: {}, // Terminal state for this flow.
+	StatusRejected: {}, // Terminal state.
+	StatusExpired:  {}, // Terminal state.
 }
 
 // CanTransitionTo returns true if the status can transition to the target status.
@@ -137,8 +139,8 @@ type OperatorAction string
 
 const (
 	OperatorActionApprove OperatorAction = "approve" // Operator approves registration.
-	OperatorActionReject OperatorAction = "reject"  // Operator rejects registration.
-	OperatorActionDelete OperatorAction = "delete"  // Operator deletes entry.
+	OperatorActionReject  OperatorAction = "reject"  // Operator rejects registration.
+	OperatorActionDelete  OperatorAction = "delete"  // Operator deletes entry.
 )
 
 // AckAction represents the action for legacy compatibility.
@@ -147,5 +149,5 @@ type AckAction string
 
 const (
 	AckActionApprove AckAction = "approve"
-	AckActionReject AckAction = "reject"
+	AckActionReject  AckAction = "reject"
 )

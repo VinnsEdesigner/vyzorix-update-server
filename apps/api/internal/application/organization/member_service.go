@@ -20,7 +20,7 @@ var (
 type MemberService struct {
 	memberRepo organization.MemberRepository
 	orgRepo    organization.OrganizationRepository
-	authSvc   *auth.AuthService
+	authSvc    *auth.AuthService
 	logger     *slog.Logger
 }
 
@@ -37,7 +37,7 @@ func NewMemberService(
 	return &MemberService{
 		memberRepo: memberRepo,
 		orgRepo:    orgRepo,
-		authSvc:   authSvc,
+		authSvc:    authSvc,
 		logger:     logger,
 	}
 }

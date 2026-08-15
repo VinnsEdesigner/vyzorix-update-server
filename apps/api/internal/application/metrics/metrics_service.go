@@ -146,7 +146,7 @@ func (s *Service) GetDeviceMetrics(ctx context.Context, req *GetMetricsRequest) 
 				Current: float64(currentUptime),
 				Avg:     0,
 				Min:     0,
-				Max:    0,
+				Max:     0,
 				Unit:    "s",
 				Chart:   []MetricPointDTO{},
 				Threshold: ThresholdDTO{

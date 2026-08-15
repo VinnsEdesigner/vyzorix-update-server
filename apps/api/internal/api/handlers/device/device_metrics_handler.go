@@ -70,7 +70,6 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 		Resolution:     c.Query("resolution"),
 	}
 
-	
 	// Max allowed range: 90 days in milliseconds.
 	const maxTimeWindowMs = 90 * 24 * 60 * 60 * 1000 // 7,776,000,000 ms.
 
@@ -152,7 +151,7 @@ func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 	// Calculate time range from range parameter (default: 24h).
 	now := time.Now()
 	var startTime, endTime time.Time
-	
+
 	if st := c.Query("startTime"); st != "" {
 		startTime = time.UnixMilli(parseInt64(st))
 		endTime = now

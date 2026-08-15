@@ -26,7 +26,7 @@ func validateWebhookURL(rawURL string) error {
 // UpdateFCMToken resolves the updateFCMToken mutation.
 func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	
+
 	deviceID, ok := p.Args["deviceId"].(string)
 	if !ok {
 		return nil, r.Presenter.BadRequestError("deviceId must be a string")
@@ -84,7 +84,7 @@ func (r *Resolver) UpdateFCMToken(p graphql.ResolveParams) (interface{}, error) 
 // DeleteDevice resolves the deleteDevice mutation.
 func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	
+
 	deviceID, ok := p.Args["id"].(string)
 	if !ok {
 		return nil, r.Presenter.BadRequestError("id must be a string")
@@ -122,7 +122,7 @@ func (r *Resolver) DeleteDevice(p graphql.ResolveParams) (interface{}, error) {
 // SendCommand resolves the sendCommand mutation.
 func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	
+
 	deviceID, ok := p.Args["deviceId"].(string)
 	if !ok {
 		return nil, r.Presenter.BadRequestError("deviceId must be a string")
@@ -170,40 +170,39 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 		Args:     args,
 	}
 
+	cmdResp, err := r.CommandService.SendCommand(ctx, cmdReq)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to send command")
+	}
 
-cmdResp, err := r.CommandService.SendCommand(ctx, cmdReq)
-if err != nil {
-return nil, r.Presenter.InternalError("failed to send command")
-}
+	// Command is now persisted in DB with status="pending".
+	// The CommandOutbox background worker will:.
+	// 1. Poll for pending commands.
+	// 2. Attempt delivery via WebSocket (with confirmation) or FCM.
+	// 3. Mark as delivered only on confirmed receipt.
+	// 4. Retry with exponential backoff on failure.
+	// 5. Mark as failed after MaxRetries exceeded.
+	//
+	// This implements the transactional outbox pattern:.
+	// - Command write is atomic with DB transaction.
+	// - Delivery is asynchronous, isolated from the HTTP request.
+	// - No command loss on delivery failure (automatic retry).
 
-// Command is now persisted in DB with status="pending".
-// The CommandOutbox background worker will:.
-// 1. Poll for pending commands.
-// 2. Attempt delivery via WebSocket (with confirmation) or FCM.
-// 3. Mark as delivered only on confirmed receipt.
-// 4. Retry with exponential backoff on failure.
-// 5. Mark as failed after MaxRetries exceeded.
-//
-// This implements the transactional outbox pattern:.
-// - Command write is atomic with DB transaction.
-// - Delivery is asynchronous, isolated from the HTTP request.
-// - No command loss on delivery failure (automatic retry).
+	// Log via presenter.
+	r.Presenter.CommandSend(ctx, op.ID, deviceID, cmdResp.CommandID)
 
-// Log via presenter.
-r.Presenter.CommandSend(ctx, op.ID, deviceID, cmdResp.CommandID)
-
-return map[string]interface{}{
-"dispatchId":   cmdResp.DispatchID,
-"commandId":    cmdResp.CommandID,
-"status":       "pending",
-"deviceOnline": r.Hub != nil && r.Hub.Online(deviceID),
-}, nil
+	return map[string]interface{}{
+		"dispatchId":   cmdResp.DispatchID,
+		"commandId":    cmdResp.CommandID,
+		"status":       "pending",
+		"deviceOnline": r.Hub != nil && r.Hub.Online(deviceID),
+	}, nil
 }
 
 // RetryCommand resolves the retryCommand mutation.
 func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	
+
 	dispatchID, ok := p.Args["dispatchId"].(string)
 	if !ok {
 		return nil, r.Presenter.BadRequestError("dispatchId must be a string")
@@ -253,7 +252,7 @@ func (r *Resolver) RetryCommand(p graphql.ResolveParams) (interface{}, error) {
 // CancelCommand resolves the cancelCommand mutation.
 func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	
+
 	dispatchID, ok := p.Args["dispatchId"].(string)
 	if !ok {
 		return nil, r.Presenter.BadRequestError("dispatchId must be a string")
@@ -306,7 +305,7 @@ func (r *Resolver) CancelCommand(p graphql.ResolveParams) (interface{}, error) {
 // DisconnectDevice resolves the disconnectDevice mutation.
 func (r *Resolver) DisconnectDevice(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
-	
+
 	deviceID, ok := p.Args["deviceId"].(string)
 	if !ok {
 		return nil, r.Presenter.BadRequestError("deviceId must be a string")
@@ -564,15 +563,15 @@ func (r *Resolver) UpdateDeviceSettings(p graphql.ResolveParams) (interface{}, e
 	effectiveThresholds := devicedomain.ResolveThresholds(settings, orgThresholds)
 
 	return map[string]interface{}{
-		"id":                   settings.ID,
-		"deviceImei":           settings.DeviceIMEI,
-		"customName":           settings.CustomName,
-		"location":             settings.Location,
-		"metadata":             convertMetadataToList(settings.Metadata),
-		"thresholds":           settings.Thresholds,
-		"effectiveThresholds":   effectiveThresholds,
-		"createdAt":            settings.CreatedAt,
-		"updatedAt":            settings.UpdatedAt,
+		"id":                  settings.ID,
+		"deviceImei":          settings.DeviceIMEI,
+		"customName":          settings.CustomName,
+		"location":            settings.Location,
+		"metadata":            convertMetadataToList(settings.Metadata),
+		"thresholds":          settings.Thresholds,
+		"effectiveThresholds": effectiveThresholds,
+		"createdAt":           settings.CreatedAt,
+		"updatedAt":           settings.UpdatedAt,
 	}, nil
 }
 
@@ -632,14 +631,14 @@ func (r *Resolver) UpdateOrganizationSettings(p graphql.ResolveParams) (interfac
 	}
 
 	return map[string]interface{}{
-		"id":                    settings.ID,
-		"organizationId":        settings.OrganizationID,
-		"timezone":              settings.Timezone,
+		"id":                   settings.ID,
+		"organizationId":       settings.OrganizationID,
+		"timezone":             settings.Timezone,
 		"dateFormat":           settings.DateFormat,
-		"alertCooldownMinutes":  settings.AlertCooldownMinutes,
-		"defaultThresholds":     settings.DefaultThresholds,
-		"createdAt":             settings.CreatedAt,
-		"updatedAt":             settings.UpdatedAt,
+		"alertCooldownMinutes": settings.AlertCooldownMinutes,
+		"defaultThresholds":    settings.DefaultThresholds,
+		"createdAt":            settings.CreatedAt,
+		"updatedAt":            settings.UpdatedAt,
 	}, nil
 }
 
@@ -704,7 +703,6 @@ func (r *Resolver) TestWebhook(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	
 	url, ok := p.Args["url"].(string)
 	if !ok {
 		return nil, r.Presenter.BadRequestError("url must be a string")

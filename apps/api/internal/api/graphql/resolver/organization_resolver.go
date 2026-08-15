@@ -322,7 +322,6 @@ func (r *Resolver) CreateOrganization(p graphql.ResolveParams) (interface{}, err
 func (r *Resolver) UpdateOrganization(p graphql.ResolveParams) (interface{}, error) {
 	ctx := p.Context
 
-	
 	id, ok := p.Args["id"].(string)
 	if !ok {
 		return nil, r.Presenter.BadRequestError("id must be a string")
@@ -1088,8 +1087,8 @@ func (r *Resolver) membershipToMap(m *orgdomain.OrganizationMember) map[string]i
 		"id":             m.ID,
 		"organizationId": m.OrganizationID,
 		"operatorId":     m.OperatorID,
-		"role":            string(m.Role),
-		"lifecycle":       string(m.Lifecycle),
+		"role":           string(m.Role),
+		"lifecycle":      string(m.Lifecycle),
 	}
 
 	if !m.JoinedAt.IsZero() {
@@ -1110,7 +1109,7 @@ func (r *Resolver) membershipToMap(m *orgdomain.OrganizationMember) map[string]i
 func (r *Resolver) invitationToMap(inv *orgdomain.Invitation) map[string]interface{} {
 	result := map[string]interface{}{
 		"id":               inv.ID,
-		"organizationId":    inv.OrganizationID,
+		"organizationId":   inv.OrganizationID,
 		"organizationName": inv.OrganizationName,
 		"email":            inv.Email,
 		"role":             string(inv.Role),

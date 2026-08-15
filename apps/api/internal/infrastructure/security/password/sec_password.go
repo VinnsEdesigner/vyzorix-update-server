@@ -75,7 +75,7 @@ func CheckBreached(password string) (bool, error) {
 // Policy defines the requirements for a valid password.
 type Policy struct {
 	MinLength      int
-	MaxLength     int
+	MaxLength      int
 	MaxConsecutive int
 	RequireUpper   bool
 	RequireLower   bool
@@ -111,24 +111,24 @@ var UserPolicy = Policy{
 // CommonPasswords is a small set of commonly used passwords to reject.
 // In production, use a larger list or external service.
 var CommonPasswords = map[string]bool{
-	"password":     true,
-	"password123":  true,
-	"password1":    true,
-	"12345678":     true,
-	"123456789":    true,
-	"qwerty":       true,
-	"qwerty123":    true,
-	"admin":        true,
-	"admin123":     true,
-	"letmein":      true,
-	"welcome":      true,
-	"welcome123":   true,
-	"monkey":       true,
-	"dragon":       true,
-	"master":       true,
-	"login":        true,
-	"abc123":       true,
-	"starwars":     true,
+	"password":    true,
+	"password123": true,
+	"password1":   true,
+	"12345678":    true,
+	"123456789":   true,
+	"qwerty":      true,
+	"qwerty123":   true,
+	"admin":       true,
+	"admin123":    true,
+	"letmein":     true,
+	"welcome":     true,
+	"welcome123":  true,
+	"monkey":      true,
+	"dragon":      true,
+	"master":      true,
+	"login":       true,
+	"abc123":      true,
+	"starwars":    true,
 }
 
 // Error represents validation failures for a password.

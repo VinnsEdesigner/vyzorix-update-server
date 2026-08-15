@@ -33,11 +33,11 @@ const (
 
 // OAuthErrorDetails holds structured error information for the frontend.
 type OAuthErrorDetails struct {
-	Code       string `json:"code"`
-	Message    string `json:"message"`
-	Provider   string `json:"provider,omitempty"`
-	HelpURL    string `json:"helpUrl,omitempty"`
-	Retryable  bool   `json:"retryable"`
+	Code      string `json:"code"`
+	Message   string `json:"message"`
+	Provider  string `json:"provider,omitempty"`
+	HelpURL   string `json:"helpUrl,omitempty"`
+	Retryable bool   `json:"retryable"`
 }
 
 // OAuthHandler handles OAuth endpoints.
@@ -218,7 +218,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 
 	var tokenResp struct {
 		AccessToken  string `json:"access_token"`
-		IDToken     string `json:"id_token"`
+		IDToken      string `json:"id_token"`
 		RefreshToken string `json:"refresh_token"`
 		ExpiresIn    int    `json:"expires_in"`
 	}

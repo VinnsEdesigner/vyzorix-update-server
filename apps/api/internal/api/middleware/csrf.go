@@ -26,24 +26,24 @@ var (
 
 // CSRFConfig holds CSRF configuration.
 type CSRFConfig struct {
-	Secret           string
-	CookieName       string
-	HeaderName       string
-	TokenLength      int
-	MaxAge           int
-	Enabled          bool
+	Secret            string
+	CookieName        string
+	HeaderName        string
+	TokenLength       int
+	MaxAge            int
+	Enabled           bool
 	AllowDoubleSubmit bool // Allow double-submit cookie pattern without session.
 }
 
 // DefaultCSRFConfig returns the default CSRF configuration.
 func DefaultCSRFConfig() CSRFConfig {
 	return CSRFConfig{
-		Enabled:          true,
-		Secret:           "csrf-secret-change-in-production",
-		TokenLength:      32,
-		CookieName:       "_csrf",
-		HeaderName:       "X-CSRF-Token",
-		MaxAge:           3600, // 1 hour.
+		Enabled:           true,
+		Secret:            "csrf-secret-change-in-production",
+		TokenLength:       32,
+		CookieName:        "_csrf",
+		HeaderName:        "X-CSRF-Token",
+		MaxAge:            3600, // 1 hour.
 		AllowDoubleSubmit: true, // Enable double-submit for endpoints without session.
 	}
 }

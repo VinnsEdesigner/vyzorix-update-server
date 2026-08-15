@@ -25,9 +25,9 @@ const (
 
 // PollVerificationResult contains all information about a verification poll result.
 type PollVerificationResult struct {
-	Status   PollVerificationStatus `json:"status"`
-	Email    string                `json:"email,omitempty"`
-	EmailError string              `json:"emailError,omitempty"`
+	Status     PollVerificationStatus `json:"status"`
+	Email      string                 `json:"email,omitempty"`
+	EmailError string                 `json:"emailError,omitempty"`
 }
 
 // ResendVerificationResponse indicates a verification email was sent.

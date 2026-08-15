@@ -316,7 +316,6 @@ func (r *OperatorRepository) Create(ctx context.Context, op *operator.Operator) 
 		return operator.ErrEmailExists
 	}
 
-
 	return err
 }
 

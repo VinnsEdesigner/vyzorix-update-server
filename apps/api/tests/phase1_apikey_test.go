@@ -85,7 +85,7 @@ func TestPhase1APIKey(t *testing.T) {
 		if _, ok := data["error"]; ok {
 			t.Fatalf("login returned error: %s", string(body))
 		}
-	 loggedInEmail, _ := data["email"].(string)
+		loggedInEmail, _ := data["email"].(string)
 		t.Logf("logged in as %s", loggedInEmail)
 	})
 
@@ -371,12 +371,12 @@ func TestPhase1APIKey(t *testing.T) {
 // duplicating logic.
 func writeStaticFiles(t *testing.T, ts int64) {
 	versionData := map[string]any{
-		"version":         fmt.Sprintf("2.1.%d", ts%1000),
-		"apk_filename":    fmt.Sprintf("vyzorix-2.1.%d.apk", ts%1000),
-		"apk_sha256":      "a1b2c3d4e5f6" + strings.Repeat("0", 52),
-		"release_notes":   "Test release with new features and bug fixes",
-		"version_code":    ts % 10000,
-		"apk_size_bytes":  15728640,
+		"version":        fmt.Sprintf("2.1.%d", ts%1000),
+		"apk_filename":   fmt.Sprintf("vyzorix-2.1.%d.apk", ts%1000),
+		"apk_sha256":     "a1b2c3d4e5f6" + strings.Repeat("0", 52),
+		"release_notes":  "Test release with new features and bug fixes",
+		"version_code":   ts % 10000,
+		"apk_size_bytes": 15728640,
 	}
 	versionPath := filepath.Join(dataDir, "version.json")
 	vdata, _ := json.MarshalIndent(versionData, "", "  ")

@@ -6,7 +6,7 @@ import (
 )
 
 type Authenticator struct {
-	ServerAPIToken       string
+	ServerAPIToken    string
 	DevelopmentBypass bool
 }
 

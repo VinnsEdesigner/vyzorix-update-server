@@ -141,7 +141,8 @@ func (r *EventRepository) GetByDevice(ctx context.Context, deviceID string, filt
 		SELECT id, device_id, event_type, timestamp, data, severity, source, operator_id
 		FROM device_events
 		WHERE device_id = ?`
-	args := make([]interface{}, 0, 1); args = append(args, deviceID)
+	args := make([]interface{}, 0, 1)
+	args = append(args, deviceID)
 
 	r.appendFilterConditions(&query, filter, &args)
 
@@ -230,7 +231,8 @@ func (r *EventRepository) GetByType(ctx context.Context, eventType event.EventTy
 		SELECT id, device_id, event_type, timestamp, data, severity, source, operator_id
 		FROM device_events
 		WHERE event_type = ?`
-	args := make([]interface{}, 0, 1); args = append(args, string(eventType))
+	args := make([]interface{}, 0, 1)
+	args = append(args, string(eventType))
 
 	r.appendFilterConditions(&query, filter, &args)
 

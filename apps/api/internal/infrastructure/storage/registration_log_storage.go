@@ -20,27 +20,28 @@ type RegistrationLogRepository struct {
 func NewRegistrationLogRepository(db *sql.DB) *RegistrationLogRepository {
 	return &RegistrationLogRepository{db: db}
 }
+
 // getQuerier returns the transaction from context if available, otherwise the db.
 func (r *RegistrationLogRepository) getQuerier(ctx context.Context) Querier {
-if tx, ok := transaction.TxFromContext(ctx); ok {
-return tx
-}
-return r.db
+	if tx, ok := transaction.TxFromContext(ctx); ok {
+		return tx
+	}
+	return r.db
 }
 
 // queryRow is a helper that uses transaction-aware querier.
 func (r *RegistrationLogRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
-return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+	return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
 }
 
 // queryRows is a helper that uses transaction-aware querier.
 func (r *RegistrationLogRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+	return r.getQuerier(ctx).QueryContext(ctx, query, args...)
 }
 
 // exec is a helper that uses transaction-aware querier.
 func (r *RegistrationLogRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-return r.getQuerier(ctx).ExecContext(ctx, query, args...)
+	return r.getQuerier(ctx).ExecContext(ctx, query, args...)
 }
 
 // Create creates a new registration log entry.

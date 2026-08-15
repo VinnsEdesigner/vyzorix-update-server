@@ -14,8 +14,8 @@ import (
 // SettingsHandler handles organization settings HTTP requests.
 type SettingsHandler struct {
 	settingsService *appOrganization.OrganizationSettingsService
-	memberService  *appOrganization.MemberService
-	presenter     *response.Presenter
+	memberService   *appOrganization.MemberService
+	presenter       *response.Presenter
 }
 
 // NewSettingsHandler creates a new SettingsHandler.
@@ -26,8 +26,8 @@ func NewSettingsHandler(
 ) *SettingsHandler {
 	return &SettingsHandler{
 		settingsService: settingsService,
-		memberService:  memberService,
-		presenter:     presenter,
+		memberService:   memberService,
+		presenter:       presenter,
 	}
 }
 

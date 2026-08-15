@@ -89,13 +89,13 @@ func (s *Service) GetDashboardStats(ctx context.Context, operatorID string) (*Da
 		},
 		Commands: CommandsStats{
 			TotalToday: commandsLast24hCount,
-			Pending:   pendingCount,
-			Failed:    failedCount,
+			Pending:    pendingCount,
+			Failed:     failedCount,
 		},
 		Activity: ActivityStats{
 			Last24h: ActivityDetail{
 				Commands:        commandsLast24hCount,
-				Registrations:  registrations,
+				Registrations:   registrations,
 				Deregistrations: deregistrations,
 			},
 		},
@@ -176,13 +176,13 @@ func (s *Service) GetDashboardStatsByOrganization(ctx context.Context, orgID str
 		},
 		Commands: CommandsStats{
 			TotalToday: commandsLast24hCount,
-			Pending:   pendingCount,
-			Failed:    failedCount,
+			Pending:    pendingCount,
+			Failed:     failedCount,
 		},
 		Activity: ActivityStats{
 			Last24h: ActivityDetail{
 				Commands:        commandsLast24hCount,
-				Registrations:  registrations,
+				Registrations:   registrations,
 				Deregistrations: deregistrations,
 			},
 		},

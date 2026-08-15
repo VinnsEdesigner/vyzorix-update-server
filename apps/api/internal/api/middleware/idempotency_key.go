@@ -20,21 +20,21 @@ import (
 // IdempotencyConfig holds configuration for idempotency middleware.
 type IdempotencyConfig struct {
 	Repository    idempotency.Repository
-	HeaderName   string
-	Paths        []string       // Explicit paths to apply idempotency (exact match).
-	PathPrefixes []string       // Path prefixes to apply idempotency (prefix match).
-	PathPatterns []string       // Regex patterns to apply idempotency.
-	ExcludedPaths []string       // Paths to exclude from idempotency.
-	TTL          time.Duration
-	Enabled      bool
+	HeaderName    string
+	Paths         []string // Explicit paths to apply idempotency (exact match).
+	PathPrefixes  []string // Path prefixes to apply idempotency (prefix match).
+	PathPatterns  []string // Regex patterns to apply idempotency.
+	ExcludedPaths []string // Paths to exclude from idempotency.
+	TTL           time.Duration
+	Enabled       bool
 }
 
 // DefaultIdempotencyConfig returns the default idempotency configuration.
 func DefaultIdempotencyConfig() IdempotencyConfig {
 	return IdempotencyConfig{
-		TTL:    24 * time.Hour,
-		HeaderName: "X-Idempotency-Key",
-		Enabled:     true,
+		TTL:          24 * time.Hour,
+		HeaderName:   "X-Idempotency-Key",
+		Enabled:      true,
 		PathPrefixes: []string{"/v1/", "/api/v1/"},
 		ExcludedPaths: []string{
 			"/v1/auth/login",

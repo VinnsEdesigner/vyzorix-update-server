@@ -28,13 +28,13 @@ func toSecuritySession(s *domainsession.Session) *session.Session {
 	}
 
 	return &session.Session{
-		ID:                      s.ID,
-		OperatorID:              s.OperatorID,
-		SelectedOrganizationID:  s.SelectedOrganizationID,
-		ExpiresAt:               s.ExpiresAt,
-		CreatedAt:               s.CreatedAt,
-		IPAddress:               s.IPAddress,
-		UserAgent:               s.UserAgent,
+		ID:                     s.ID,
+		OperatorID:             s.OperatorID,
+		SelectedOrganizationID: s.SelectedOrganizationID,
+		ExpiresAt:              s.ExpiresAt,
+		CreatedAt:              s.CreatedAt,
+		IPAddress:              s.IPAddress,
+		UserAgent:              s.UserAgent,
 	}
 }
 
@@ -53,13 +53,13 @@ func toDomainSession(s *session.Session) *domainsession.Session {
 	}
 
 	return &domainsession.Session{
-		ID:                      s.ID,
-		OperatorID:              s.OperatorID,
-		ExpiresAt:               s.ExpiresAt,
-		CreatedAt:               s.CreatedAt,
-		SelectedOrganizationID:  s.SelectedOrganizationID,
-		IPAddress:               s.IPAddress,
-		UserAgent:               s.UserAgent,
+		ID:                     s.ID,
+		OperatorID:             s.OperatorID,
+		ExpiresAt:              s.ExpiresAt,
+		CreatedAt:              s.CreatedAt,
+		SelectedOrganizationID: s.SelectedOrganizationID,
+		IPAddress:              s.IPAddress,
+		UserAgent:              s.UserAgent,
 	}
 }
 

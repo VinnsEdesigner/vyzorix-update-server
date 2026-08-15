@@ -29,15 +29,15 @@ func migrateInboxIMEIUnique(db *sql.DB) error {
 	// SQLite doesn't support DROP COLUMN or ADD CONSTRAINT in the same way as PostgreSQL,.
 	// so we recreate the table with the unique constraint.
 	// However, SQLite does support UNIQUE constraints on columns directly.
-	
+
 	// First, check if the unique index already exists.
 	var count int
-	err = db.QueryRowContext(ctx, 
+	err = db.QueryRowContext(ctx,
 		"SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_inbox_imei_unique'").Scan(&count)
 	if err != nil {
 		return err
 	}
-	
+
 	if count == 0 {
 		// Create unique index on device_imei.
 		_, err = db.ExecContext(ctx, `

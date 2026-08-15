@@ -27,23 +27,23 @@ type InboxListResponse struct {
 // InboxEntryResponse represents an inbox entry in API responses.
 type InboxEntryResponse struct {
 	AcknowledgedAt    *int64 `json:"acknowledgedAt,omitempty"`
-	ApprovingAt      *int64 `json:"approvingAt,omitempty"`
-	ApprovedAt       *int64 `json:"approvedAt,omitempty"`
-	RejectedAt       *int64 `json:"rejectedAt,omitempty"`
-	Model            string `json:"model"`
+	ApprovingAt       *int64 `json:"approvingAt,omitempty"`
+	ApprovedAt        *int64 `json:"approvedAt,omitempty"`
+	RejectedAt        *int64 `json:"rejectedAt,omitempty"`
+	Model             string `json:"model"`
 	FirebaseInstallID string `json:"firebaseInstallId"`
-	ID               string `json:"id"`
-	Manufacturer     string `json:"manufacturer"`
-	OSVersion        string `json:"osVersion"`
-	AppVersion       string `json:"appVersion"`
-	FCMToken         string `json:"fcmToken"`
-	DeviceClass      string `json:"deviceClass,omitempty"`
-	Status           string `json:"status"`
-	OperatorID       string `json:"operatorId,omitempty"`
-	DeviceName       string `json:"deviceName,omitempty"`
-	IMEI             string `json:"imei"`
-	Notes            string `json:"notes,omitempty"`
-	CreatedAt        int64  `json:"createdAt"`
+	ID                string `json:"id"`
+	Manufacturer      string `json:"manufacturer"`
+	OSVersion         string `json:"osVersion"`
+	AppVersion        string `json:"appVersion"`
+	FCMToken          string `json:"fcmToken"`
+	DeviceClass       string `json:"deviceClass,omitempty"`
+	Status            string `json:"status"`
+	OperatorID        string `json:"operatorId,omitempty"`
+	DeviceName        string `json:"deviceName,omitempty"`
+	IMEI              string `json:"imei"`
+	Notes             string `json:"notes,omitempty"`
+	CreatedAt         int64  `json:"createdAt"`
 }
 
 // AckRequest represents the request for POST /v1/device/inbox/:imei/ack.
@@ -55,15 +55,15 @@ type AckRequest struct {
 // AckResponse represents the response for POST /v1/device/inbox/:imei/ack.
 type AckResponse struct {
 	AcknowledgedAt *int64 `json:"acknowledgedAt,omitempty"`
-	ApprovingAt   *int64 `json:"approvingAt,omitempty"`
-	ApprovedAt    *int64 `json:"approvedAt,omitempty"`
-	RejectedAt    *int64 `json:"rejectedAt,omitempty"`
-	ID            string `json:"id"`
-	IMEI          string `json:"imei"`
-	Status        string `json:"status"`
-	CommandSecret string `json:"commandSecret,omitempty"`
-	Notes         string `json:"notes,omitempty"`
-	FCMPushSent   bool   `json:"fcmPushSent"`
+	ApprovingAt    *int64 `json:"approvingAt,omitempty"`
+	ApprovedAt     *int64 `json:"approvedAt,omitempty"`
+	RejectedAt     *int64 `json:"rejectedAt,omitempty"`
+	ID             string `json:"id"`
+	IMEI           string `json:"imei"`
+	Status         string `json:"status"`
+	CommandSecret  string `json:"commandSecret,omitempty"`
+	Notes          string `json:"notes,omitempty"`
+	FCMPushSent    bool   `json:"fcmPushSent"`
 }
 
 // PaginationResponse represents pagination info in responses.

@@ -26,12 +26,12 @@ import (
 
 // gqlSubState holds shared state for GraphQL subscription WS tests.
 type gqlSubState struct {
-	hub       *wshub.Hub
-	server    *httptest.Server
-	ctx       context.Context
-	cancel    context.CancelFunc
-	operator  *operator.Operator
-	orgID     string
+	hub      *wshub.Hub
+	server   *httptest.Server
+	ctx      context.Context
+	cancel   context.CancelFunc
+	operator *operator.Operator
+	orgID    string
 }
 
 func newGQLSubState(t *testing.T) *gqlSubState {

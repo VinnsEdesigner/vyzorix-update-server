@@ -12,9 +12,9 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/schema"
 	"github.com/gin-gonic/gin"
 	gql "github.com/graphql-go/graphql"
+	gqlerrors "github.com/graphql-go/graphql/gqlerrors"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
-	gqlerrors "github.com/graphql-go/graphql/gqlerrors"
 )
 
 // Config holds handler configuration.
@@ -90,7 +90,6 @@ type Response struct {
 	Data   interface{} `json:"data,omitempty"`
 	Errors interface{} `json:"errors,omitempty"`
 }
-
 
 func (h *Handler) validateQuery(query string) (int, int, error) {
 	// Parse the query to get the AST.

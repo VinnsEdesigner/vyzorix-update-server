@@ -46,5 +46,5 @@ type APIKeyRepository interface {
 // MonthlyUsage represents monthly API key usage statistics.
 type MonthlyUsage struct {
 	KeysCreated int   `json:"keys_created"`
-	TotalReqs  int64 `json:"total_requests"`
+	TotalReqs   int64 `json:"total_requests"`
 }

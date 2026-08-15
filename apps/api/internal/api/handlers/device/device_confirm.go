@@ -131,11 +131,11 @@ func (h *ConfirmHandler) Handle(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"device_id":      d.ID,
-		"imei":           d.ID,
-		"confirmed":       true,
-		"online":         d.Online,
-		"registered_at":   d.RegisteredAt,
-		"server_time":     time.Now().UnixMilli(),
+		"device_id":     d.ID,
+		"imei":          d.ID,
+		"confirmed":     true,
+		"online":        d.Online,
+		"registered_at": d.RegisteredAt,
+		"server_time":   time.Now().UnixMilli(),
 	})
 }

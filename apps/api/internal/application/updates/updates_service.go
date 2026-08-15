@@ -11,11 +11,11 @@ type Service struct {
 	repo              updates.Repository
 	versionsStatusSvc *VersionsStatusService
 	versionsListSvc   *VersionsListService
-	changelogSvc     *ChangelogService
-	exportSvc        *ExportService
-	pushSvc          *PushService
-	historySvc       *HistoryService
-	syncSvc          *SyncService
+	changelogSvc      *ChangelogService
+	exportSvc         *ExportService
+	pushSvc           *PushService
+	historySvc        *HistoryService
+	syncSvc           *SyncService
 }
 
 // NewService creates a new updates service.
@@ -33,11 +33,11 @@ func NewService(
 		repo:              repo,
 		versionsStatusSvc: versionsStatusSvc,
 		versionsListSvc:   versionsListSvc,
-		changelogSvc:     changelogSvc,
-		exportSvc:        exportSvc,
-		pushSvc:          pushSvc,
-		historySvc:       historySvc,
-		syncSvc:          syncSvc,
+		changelogSvc:      changelogSvc,
+		exportSvc:         exportSvc,
+		pushSvc:           pushSvc,
+		historySvc:        historySvc,
+		syncSvc:           syncSvc,
 	}
 }
 
@@ -46,11 +46,11 @@ func (s *Service) GetRepo() updates.Repository {
 	return s.repo
 }
 
-
 // GetPushService returns the push service for handler initialization.
 func (s *Service) GetPushService() *PushService {
-        return s.pushSvc
+	return s.pushSvc
 }
+
 // GetStatus returns the current update system status.
 func (s *Service) GetStatus(ctx context.Context) (*GetStatusResponse, error) {
 	return s.versionsStatusSvc.GetStatus(ctx)

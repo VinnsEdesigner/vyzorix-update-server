@@ -9,51 +9,51 @@ import (
 	gqlmiddleware "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/validator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
-	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	inboxapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	orgapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
-	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
+	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 )
 
 // Resolver is the root GraphQL resolver.
 type Resolver struct {
-	DeviceService          *device.Service
-	DeviceSettingsService  *device.DeviceSettingsService
-	CommandService         *cmdapp.Service
-	HistoryService         *cmdapp.HistoryService
-	DashboardSvc           *dashboard.Service
-	LogsSvc                *logs.Service
-	MetricsSvc             *appmetrics.Service
-	UpdatesSvc             *updates.Service
-	InboxService           *inboxapp.Service
-	DiagnosticsSvc         *diagnostics.Service
-	Hub                    *hub.Hub
-	TelemetryRepo          *storage.TelemetryRepository
-	LogsRepo               *storage.LogsRepository
-	MetricsRepo            *storage.MetricsRepository
-	FCMNotifier            fcm.Notifier
-	AuthMiddleware         *gqlmiddleware.AuthMiddleware
-	Presenter              *gqladapters.Presenter
-	Validator              *validator.Validator
-	OperatorRepo           operator.Repository
-	SettingsService        *auth.ClientSettingsService
-	NotificationSvc        *appoperator.NotificationService
-	WebhookClient          *infrawebhook.Client
-	OrgService             *orgapp.OrganizationService
-	OrgSettingsService     *orgapp.OrganizationSettingsService
-	MemberService          *orgapp.MemberService
-	InvitationService      *orgapp.InvitationService
+	DeviceService         *device.Service
+	DeviceSettingsService *device.DeviceSettingsService
+	CommandService        *cmdapp.Service
+	HistoryService        *cmdapp.HistoryService
+	DashboardSvc          *dashboard.Service
+	LogsSvc               *logs.Service
+	MetricsSvc            *appmetrics.Service
+	UpdatesSvc            *updates.Service
+	InboxService          *inboxapp.Service
+	DiagnosticsSvc        *diagnostics.Service
+	Hub                   *hub.Hub
+	TelemetryRepo         *storage.TelemetryRepository
+	LogsRepo              *storage.LogsRepository
+	MetricsRepo           *storage.MetricsRepository
+	FCMNotifier           fcm.Notifier
+	AuthMiddleware        *gqlmiddleware.AuthMiddleware
+	Presenter             *gqladapters.Presenter
+	Validator             *validator.Validator
+	OperatorRepo          operator.Repository
+	SettingsService       *auth.ClientSettingsService
+	NotificationSvc       *appoperator.NotificationService
+	WebhookClient         *infrawebhook.Client
+	OrgService            *orgapp.OrganizationService
+	OrgSettingsService    *orgapp.OrganizationSettingsService
+	MemberService         *orgapp.MemberService
+	InvitationService     *orgapp.InvitationService
 }
 
 // NewResolver creates a new GraphQL resolver.
@@ -85,8 +85,8 @@ func NewResolver(
 	inboxService *inboxapp.Service,
 ) *Resolver {
 	return &Resolver{
-		DeviceService:          deviceService,
-		DeviceSettingsService:  deviceSettingsService,
+		DeviceService:         deviceService,
+		DeviceSettingsService: deviceSettingsService,
 		CommandService:        commandService,
 		HistoryService:        historyService,
 		DashboardSvc:          dashboardSvc,
@@ -96,21 +96,21 @@ func NewResolver(
 		DiagnosticsSvc:        diagnosticsSvc,
 		Hub:                   hub,
 		TelemetryRepo:         telemetryRepo,
-		LogsRepo:             logsRepo,
-		MetricsRepo:          metricsRepo,
-		FCMNotifier:          fcmNotifier,
-		AuthMiddleware:       authMiddleware,
-		Presenter:            presenter,
-		Validator:            validator.New(),
-		OperatorRepo:         operatorRepo,
-		SettingsService:      settingsService,
-		NotificationSvc:      notificationSvc,
-		WebhookClient:        webhookClient,
-		OrgService:           orgService,
+		LogsRepo:              logsRepo,
+		MetricsRepo:           metricsRepo,
+		FCMNotifier:           fcmNotifier,
+		AuthMiddleware:        authMiddleware,
+		Presenter:             presenter,
+		Validator:             validator.New(),
+		OperatorRepo:          operatorRepo,
+		SettingsService:       settingsService,
+		NotificationSvc:       notificationSvc,
+		WebhookClient:         webhookClient,
+		OrgService:            orgService,
 		OrgSettingsService:    orgSettingsService,
-		MemberService:        memberService,
-		InvitationService:    invitationService,
-		InboxService:         inboxService,
+		MemberService:         memberService,
+		InvitationService:     invitationService,
+		InboxService:          inboxService,
 	}
 }
 

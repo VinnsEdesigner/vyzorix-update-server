@@ -12,6 +12,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 )
+
 const DefaultCommandTTL = 5 * time.Minute
 const MaxPendingCommandsPerDevice = 50
 

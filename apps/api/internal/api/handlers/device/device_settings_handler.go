@@ -14,9 +14,9 @@ import (
 
 // SettingsHandler handles device settings HTTP requests.
 type SettingsHandler struct {
-	settingsService *appdevice.DeviceSettingsService
+	settingsService   *appdevice.DeviceSettingsService
 	membershipChecker func(ctx context.Context, operatorID, orgID string) error
-	presenter *response.Presenter
+	presenter         *response.Presenter
 }
 
 // NewDeviceSettingsHandler creates a new SettingsHandler.
@@ -26,9 +26,9 @@ func NewDeviceSettingsHandler(
 	presenter *response.Presenter,
 ) *SettingsHandler {
 	return &SettingsHandler{
-		settingsService:  settingsService,
+		settingsService:   settingsService,
 		membershipChecker: membershipChecker,
-		presenter:       presenter,
+		presenter:         presenter,
 	}
 }
 

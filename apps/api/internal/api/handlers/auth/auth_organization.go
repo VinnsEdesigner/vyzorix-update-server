@@ -75,7 +75,7 @@ func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
 	h.presenter.OK(c, dto.SelectOrganizationResponse{
 		OrganizationID:   result.OrganizationID,
 		OrganizationName: result.OrganizationName,
-		Role:            string(result.Role),
+		Role:             string(result.Role),
 	})
 }
 

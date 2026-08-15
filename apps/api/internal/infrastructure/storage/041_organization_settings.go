@@ -136,8 +136,8 @@ func (r *OrganizationSettingsRepository) scanSettings(row *sql.Row) (*organizati
 	}
 
 	settings := &organization.OrganizationSettings{
-		ID:                    id,
-		OrganizationID:        orgID,
+		ID:                   id,
+		OrganizationID:       orgID,
 		Timezone:             timezone,
 		DateFormat:           dateFormat,
 		AlertCooldownMinutes: alertCooldownMinutes,

@@ -12,23 +12,23 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/subscription"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/validator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
-	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
-	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
+	inboxapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	orgapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
-	inboxapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
-	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
+	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/graphql"
@@ -36,34 +36,34 @@ import (
 
 // Config holds the GraphQL server configuration.
 type Config struct {
-	AuthService            *auth.AuthService
-	SessionManager         *infraauth.SessionManager
-	DeviceService          *device.Service
-	DeviceSettingsService  *device.DeviceSettingsService
-	CommandService         *command.Service
-	HistoryService         *command.HistoryService
-	DashboardSvc           *dashboard.Service
-	LogsSvc                *logs.Service
-	MetricsSvc             *appmetrics.Service
-	UpdatesSvc             *updates.Service
-	DiagnosticsSvc         *diagnosticsapp.Service
-	TelemetryRepo          *storage.TelemetryRepository
-	LogsRepo               *storage.LogsRepository
-	MetricsRepo            *storage.MetricsRepository
-	Hub                    *hub.Hub
-	FCMNotifier            fcm.Notifier
-	Log                    *slog.Logger
-	AuditLogger            *audit.Logger
-	OperatorRepo           operator.Repository
-	SettingsService        *auth.ClientSettingsService
-	NotificationSvc        *appoperator.NotificationService
-	WebhookClient          *infrawebhook.Client
-	OrgService             *orgapp.OrganizationService
-	OrgSettingsService     *orgapp.OrganizationSettingsService
-	MemberService          *orgapp.MemberService
-	InvitationService      *orgapp.InvitationService
-	InboxService           *inboxapp.Service
-	Env                    string
+	AuthService           *auth.AuthService
+	SessionManager        *infraauth.SessionManager
+	DeviceService         *device.Service
+	DeviceSettingsService *device.DeviceSettingsService
+	CommandService        *command.Service
+	HistoryService        *command.HistoryService
+	DashboardSvc          *dashboard.Service
+	LogsSvc               *logs.Service
+	MetricsSvc            *appmetrics.Service
+	UpdatesSvc            *updates.Service
+	DiagnosticsSvc        *diagnosticsapp.Service
+	TelemetryRepo         *storage.TelemetryRepository
+	LogsRepo              *storage.LogsRepository
+	MetricsRepo           *storage.MetricsRepository
+	Hub                   *hub.Hub
+	FCMNotifier           fcm.Notifier
+	Log                   *slog.Logger
+	AuditLogger           *audit.Logger
+	OperatorRepo          operator.Repository
+	SettingsService       *auth.ClientSettingsService
+	NotificationSvc       *appoperator.NotificationService
+	WebhookClient         *infrawebhook.Client
+	OrgService            *orgapp.OrganizationService
+	OrgSettingsService    *orgapp.OrganizationSettingsService
+	MemberService         *orgapp.MemberService
+	InvitationService     *orgapp.InvitationService
+	InboxService          *inboxapp.Service
+	Env                   string
 }
 
 // Server provides GraphQL HTTP handling.

@@ -24,9 +24,9 @@ type dEndpoint struct {
 }
 
 type dHandler struct {
-	subdir  string
-	file    string
-	method  string
+	subdir string
+	file   string
+	method string
 }
 
 type dDomain struct {
@@ -58,7 +58,7 @@ type dImpl struct {
 	domain      map[string]bool
 	infra       map[string]bool
 	application map[string]bool
-	routes     map[string]bool
+	routes      map[string]bool
 }
 
 func verifyDashboard() bool {
@@ -168,7 +168,9 @@ func dScanImpl(root string) *dImpl {
 
 	scanFiles := func(dir string, ext string, collect map[string]bool) error {
 		return filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() { return err }
+			if err != nil || info.IsDir() {
+				return err
+			}
 			rel, _ := filepath.Rel(root, p)
 			collect[rel] = true
 			if strings.HasSuffix(p, ext) {
@@ -180,9 +182,15 @@ func dScanImpl(root string) *dImpl {
 		})
 	}
 
-	if err := scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain); err != nil { return impl }
-	if err := scanFiles(filepath.Join(root, "apps/api/internal/infrastructure/storage"), ".go", impl.infra); err != nil { return impl }
-	if err := scanFiles(filepath.Join(root, "apps/api/internal/application"), ".go", impl.application); err != nil { return impl }
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/domain"), ".go", impl.domain); err != nil {
+		return impl
+	}
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/infrastructure/storage"), ".go", impl.infra); err != nil {
+		return impl
+	}
+	if err := scanFiles(filepath.Join(root, "apps/api/internal/application"), ".go", impl.application); err != nil {
+		return impl
+	}
 
 	handlerDirs := []string{
 		filepath.Join(root, "apps/api/internal/api/handlers/command"),
@@ -192,7 +200,9 @@ func dScanImpl(root string) *dImpl {
 
 	for _, dir := range handlerDirs {
 		if err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") { return err }
+			if err != nil || info.IsDir() || !strings.HasSuffix(p, ".go") {
+				return err
+			}
 			data, _ := os.ReadFile(p)
 			impl.paths[p] = true
 			fset := token.NewFileSet()
@@ -205,7 +215,9 @@ func dScanImpl(root string) *dImpl {
 				}
 			}
 			return nil
-		}); err != nil { return impl }
+		}); err != nil {
+			return impl
+		}
 	}
 
 	routeFiles := []string{
@@ -278,7 +290,7 @@ func dCheckEndpoint(ep dEndpoint, routeContent string, _ *dImpl, root string) bo
 		strings.TrimPrefix(ep.path, "/v1"),
 		"/device" + strings.TrimPrefix(ep.path, "/v1"),
 		"/command" + strings.TrimPrefix(ep.path, "/v1"),
-                strings.Replace(ep.path, "/:id/", "/:imei/", 1),
+		strings.Replace(ep.path, "/:id/", "/:imei/", 1),
 	}
 
 	for _, p := range paths {
@@ -310,8 +322,12 @@ func dFindHandler(hType, root string) string {
 	var found string
 	for _, dir := range handlerDirs {
 		walkErr := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
-			if err != nil { return err }
-			if info.IsDir() || !strings.HasSuffix(p, ".go") { return nil }
+			if err != nil {
+				return err
+			}
+			if info.IsDir() || !strings.HasSuffix(p, ".go") {
+				return nil
+			}
 			data, _ := os.ReadFile(p)
 			if typePattern.Match(data) {
 				found = p
@@ -492,11 +508,11 @@ func dVerifyRoutes(_ *dSpec, _ *dImpl, root string) {
 	fmt.Printf("\n  \n")
 
 	routeFiles := map[string]string{
-		"command/command_history_routes.go":    "command",
-		"device/device_logs_routes.go":         "device",
-		"device/device_metrics_routes.go":      "device",
-		"device/device_telemetry_routes.go":     "device",
-		"dashboard/dashboard_stats_routes.go":   "dashboard",
+		"command/command_history_routes.go":   "command",
+		"device/device_logs_routes.go":        "device",
+		"device/device_metrics_routes.go":     "device",
+		"device/device_telemetry_routes.go":   "device",
+		"dashboard/dashboard_stats_routes.go": "dashboard",
 	}
 
 	handlerBase := filepath.Join(root, "apps/api/internal/api/handlers")

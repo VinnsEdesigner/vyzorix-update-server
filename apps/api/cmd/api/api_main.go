@@ -14,19 +14,19 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
-	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/logging"
-	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/ssr"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
+	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 
 	"github.com/joho/godotenv"
@@ -85,18 +85,18 @@ func main() {
 
 	// Create API server using wire outputs.
 	apiServer := api.NewServerWithDeps(&api.ServerConfigWithDeps{
-		Config:         cfg,
-		Log:            deps.Log,
-		DB:             deps.DB,
-		Engine:         result.Engine,
-		Middleware:     result.MiddlewareSet,
-		HandlerSet:     result.HandlerSet,
-		SessionManager: deps.SessionManager,
-		Hub:            deps.Hub,
-		AuditLogger:    deps.AuditLogger,
-		UpdatesService: deps.UpdatesService,
-		APIKeyService:  deps.APIKeyService,
-		DeviceRepo:     deps.DeviceRepo,
+		Config:          cfg,
+		Log:             deps.Log,
+		DB:              deps.DB,
+		Engine:          result.Engine,
+		Middleware:      result.MiddlewareSet,
+		HandlerSet:      result.HandlerSet,
+		SessionManager:  deps.SessionManager,
+		Hub:             deps.Hub,
+		AuditLogger:     deps.AuditLogger,
+		UpdatesService:  deps.UpdatesService,
+		APIKeyService:   deps.APIKeyService,
+		DeviceRepo:      deps.DeviceRepo,
 		IdempotencyRepo: deps.IdempotencyRepo,
 	})
 

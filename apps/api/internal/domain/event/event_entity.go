@@ -18,8 +18,8 @@ const (
 	EventTypeRiskScoreAlert    EventType = "RISK_SCORE_ALERT"
 	EventTypeThermalAlert      EventType = "THERMAL_ALERT"
 	EventTypeBufferLevelAlert  EventType = "BUFFER_LEVEL_ALERT"
-	
-	EventTypeResolved          EventType = "THRESHOLD_RESOLVED"
+
+	EventTypeResolved EventType = "THRESHOLD_RESOLVED"
 
 	// Command events.
 	EventTypeCommandSent         EventType = "COMMAND_SENT"

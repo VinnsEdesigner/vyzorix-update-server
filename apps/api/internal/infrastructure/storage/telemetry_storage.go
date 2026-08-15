@@ -24,27 +24,28 @@ type TelemetryRepository struct {
 func NewTelemetryRepository(db *sql.DB) *TelemetryRepository {
 	return &TelemetryRepository{db: db}
 }
+
 // getQuerier returns the transaction from context if available, otherwise the db.
 func (r *TelemetryRepository) getQuerier(ctx context.Context) Querier {
-if tx, ok := transaction.TxFromContext(ctx); ok {
-return tx
-}
-return r.db
+	if tx, ok := transaction.TxFromContext(ctx); ok {
+		return tx
+	}
+	return r.db
 }
 
 // queryRow is a helper that uses transaction-aware querier.
 func (r *TelemetryRepository) queryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
-return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
+	return r.getQuerier(ctx).QueryRowContext(ctx, query, args...)
 }
 
 // queryRows is a helper that uses transaction-aware querier.
 func (r *TelemetryRepository) queryRows(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-return r.getQuerier(ctx).QueryContext(ctx, query, args...)
+	return r.getQuerier(ctx).QueryContext(ctx, query, args...)
 }
 
 // exec is a helper that uses transaction-aware querier.
 func (r *TelemetryRepository) exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-return r.getQuerier(ctx).ExecContext(ctx, query, args...)
+	return r.getQuerier(ctx).ExecContext(ctx, query, args...)
 }
 
 // Save saves a telemetry frame for a device.

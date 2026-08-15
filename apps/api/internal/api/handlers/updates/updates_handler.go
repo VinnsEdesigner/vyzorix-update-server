@@ -9,29 +9,29 @@ import (
 
 // UpdatesHandler coordinates all updates handlers.
 type UpdatesHandler struct {
-	service           *updates.Service
-	versionsHandler   *UpdatesVersionsHandler
-	pushHandler       *UpdatesPushHandler
-	historyHandler    *UpdatesHistoryHandler
-	syncHandler       *UpdatesSyncHandler
-	webhookHandler    *GitHubWebhookHandler
+	service             *updates.Service
+	versionsHandler     *UpdatesVersionsHandler
+	pushHandler         *UpdatesPushHandler
+	historyHandler      *UpdatesHistoryHandler
+	syncHandler         *UpdatesSyncHandler
+	webhookHandler      *GitHubWebhookHandler
 	deviceStatusHandler *DeviceStatusHandler
-	rateLimiters      *middleware.UpdatesRateLimiterMiddleware
-	adminAuth         *middleware.UpdatesAdminAuth
-	auditLogger       *audit.Logger
-	webhookSecret     string
+	rateLimiters        *middleware.UpdatesRateLimiterMiddleware
+	adminAuth           *middleware.UpdatesAdminAuth
+	auditLogger         *audit.Logger
+	webhookSecret       string
 }
 
 // NewUpdatesHandler creates a new UpdatesHandler with all sub-handlers.
 func NewUpdatesHandler(service *updates.Service, pushService *updates.PushService, rateLimiters *middleware.UpdatesRateLimiterMiddleware, auditLogger *audit.Logger, webhookSecret string) *UpdatesHandler {
 	return &UpdatesHandler{
-		service:          service,
-		versionsHandler:  NewUpdatesVersionsHandler(service),
-		pushHandler:      NewUpdatesPushHandler(service, auditLogger),
-		historyHandler:   NewUpdatesHistoryHandler(service, auditLogger),
-		syncHandler:      NewUpdatesSyncHandler(service, auditLogger),
-		auditLogger:      auditLogger,
-		webhookSecret:    webhookSecret,
+		service:         service,
+		versionsHandler: NewUpdatesVersionsHandler(service),
+		pushHandler:     NewUpdatesPushHandler(service, auditLogger),
+		historyHandler:  NewUpdatesHistoryHandler(service, auditLogger),
+		syncHandler:     NewUpdatesSyncHandler(service, auditLogger),
+		auditLogger:     auditLogger,
+		webhookSecret:   webhookSecret,
 	}
 }
 

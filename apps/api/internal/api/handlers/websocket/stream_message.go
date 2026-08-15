@@ -88,7 +88,7 @@ func (r *MessageRouter) handleTelemetry(client *hub.Client, raw []byte) error {
 // Subscribes the client to receive telemetry from specific devices.
 func (r *MessageRouter) handleSubscribe(client *hub.Client, raw []byte) error {
 	var msg struct {
-		Type    string           `json:"type"`
+		Type    string             `json:"type"`
 		Payload WSSubscribePayload `json:"payload"`
 	}
 
@@ -141,7 +141,7 @@ func (r *MessageRouter) handleSubscribe(client *hub.Client, raw []byte) error {
 // Unsubscribes the client from receiving telemetry from specific devices.
 func (r *MessageRouter) handleUnsubscribe(client *hub.Client, raw []byte) error {
 	var msg struct {
-		Type    string             `json:"type"`
+		Type    string               `json:"type"`
 		Payload WSUnsubscribePayload `json:"payload"`
 	}
 
@@ -199,7 +199,7 @@ type WSAckPayload struct {
 // sendSubscribeAck sends a SUBSCRIBE_ACK message to the client.
 func (r *MessageRouter) sendSubscribeAck(client *hub.Client, deviceID string, success bool, errorMsg string) {
 	ack := struct {
-		Type    string      `json:"type"`
+		Type    string       `json:"type"`
 		Payload WSAckPayload `json:"payload"`
 	}{
 		Type:    "SUBSCRIBE_ACK",
@@ -214,7 +214,7 @@ func (r *MessageRouter) sendSubscribeAck(client *hub.Client, deviceID string, su
 // sendUnsubscribeAck sends a UNSUBSCRIBE_ACK message to the client.
 func (r *MessageRouter) sendUnsubscribeAck(client *hub.Client, deviceID string, success bool, errorMsg string) {
 	ack := struct {
-		Type    string      `json:"type"`
+		Type    string       `json:"type"`
 		Payload WSAckPayload `json:"payload"`
 	}{
 		Type:    "UNSUBSCRIBE_ACK",

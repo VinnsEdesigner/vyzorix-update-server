@@ -20,13 +20,13 @@ import (
 )
 
 var (
-	ErrDeviceHijack          = errors.New("device registration hijack detected")
-	ErrDeviceNotFound        = errors.New("device not found")
-	ErrCommandSecretNotSet   = errors.New("command secret not set for device")
-	ErrInvalidCommandSecret  = errors.New("invalid command secret")
-	ErrDeviceAlreadyApproved = errors.New("device already approved and registered")
-	ErrDeviceAlreadyConfirmed = errors.New("device already confirmed (command secret is single-use)")
-	ErrDeviceNotPending      = errors.New("device is not in pending state")
+	ErrDeviceHijack               = errors.New("device registration hijack detected")
+	ErrDeviceNotFound             = errors.New("device not found")
+	ErrCommandSecretNotSet        = errors.New("command secret not set for device")
+	ErrInvalidCommandSecret       = errors.New("invalid command secret")
+	ErrDeviceAlreadyApproved      = errors.New("device already approved and registered")
+	ErrDeviceAlreadyConfirmed     = errors.New("device already confirmed (command secret is single-use)")
+	ErrDeviceNotPending           = errors.New("device is not in pending state")
 	ErrInvalidLifecycleTransition = errors.New("invalid lifecycle state transition")
 )
 
@@ -36,7 +36,7 @@ type Service struct {
 	operatorRepo  operator.Repository
 	txManager     transaction.TxManager
 	logger        *slog.Logger
-	statusUpdater DeviceStatusUpdater 
+	statusUpdater DeviceStatusUpdater
 }
 
 // DeviceStatusUpdater defines the interface for updating device online status.
@@ -281,7 +281,7 @@ func (s *Service) GetDeviceByOperator(ctx context.Context, deviceID, operatorID 
 		Model:        d.Model,
 		Manufacturer: d.Manufacturer,
 		OSVersion:    d.OSVersion,
-		AppVersion:  d.AppVersion,
+		AppVersion:   d.AppVersion,
 		Status:       d.GetStatus(),
 		Online:       d.Online,
 		RegisteredAt: d.RegisteredAt,
@@ -339,7 +339,7 @@ func (s *Service) List(ctx context.Context, orgID string, limit, offset int) (*d
 			Model:        d.Model,
 			Manufacturer: d.Manufacturer,
 			OSVersion:    d.OSVersion,
-			AppVersion:  d.AppVersion,
+			AppVersion:   d.AppVersion,
 			Status:       d.GetStatus(),
 			Online:       d.Online,
 			RegisteredAt: d.RegisteredAt,
@@ -519,10 +519,10 @@ func (s *Service) DeviceRepo() device.Repository {
 // ListQuery represents query parameters for listing devices.
 type ListQuery struct {
 	OrganizationID string
-	Status        string
-	Search        string
-	Page          int
-	Limit         int
+	Status         string
+	Search         string
+	Page           int
+	Limit          int
 }
 
 // GetDevices returns a paginated list of devices filtered by organization.
@@ -598,7 +598,7 @@ func (s *Service) GetDevices(ctx context.Context, query *ListQuery) (*dto.Device
 			Model:        d.Model,
 			Manufacturer: d.Manufacturer,
 			OSVersion:    d.OSVersion,
-			AppVersion:  d.AppVersion,
+			AppVersion:   d.AppVersion,
 			Status:       d.GetStatus(),
 			Online:       d.Online,
 			RegisteredAt: d.RegisteredAt,
@@ -714,19 +714,19 @@ func (s *Service) deviceDetailResponse(d *device.Device) *dto.DeviceDetailRespon
 	status := d.GetStatus()
 
 	resp := &dto.DeviceDetailResponse{
-		ID:                d.ID,
-		IMEI:              d.ID,
-		DeviceName:        d.DeviceName,
-		Model:             d.Model,
-		Manufacturer:      d.Manufacturer,
-		OSVersion:         d.OSVersion,
-		AppVersion:        d.AppVersion,
-		SecurityPatch:     d.SecurityPatch,
-		Status:            status,
-		RegisteredAt:      d.RegisteredAt,
-		LastSeen:          d.LastSeen,
-		FCMTokenValid:     fcmValid,
-		CommandSecretSet:   commandSet,
+		ID:               d.ID,
+		IMEI:             d.ID,
+		DeviceName:       d.DeviceName,
+		Model:            d.Model,
+		Manufacturer:     d.Manufacturer,
+		OSVersion:        d.OSVersion,
+		AppVersion:       d.AppVersion,
+		SecurityPatch:    d.SecurityPatch,
+		Status:           status,
+		RegisteredAt:     d.RegisteredAt,
+		LastSeen:         d.LastSeen,
+		FCMTokenValid:    fcmValid,
+		CommandSecretSet: commandSet,
 	}
 
 	return resp
@@ -764,7 +764,7 @@ func (s *Service) DeregisterDevice(ctx context.Context, imei string, hard bool) 
 	return &dto.DeregisterResponse{
 		IMEI:           imei,
 		Status:         "deregistered",
-		DeregisteredAt:  deregisteredAt,
+		DeregisteredAt: deregisteredAt,
 		RetentionUntil: deletionScheduledAt,
 	}, nil
 }
@@ -813,7 +813,7 @@ func (s *Service) DeregisterDeviceByOperator(ctx context.Context, imei, operator
 	return &dto.DeregisterResponse{
 		IMEI:           imei,
 		Status:         "deregistered",
-		DeregisteredAt:  deregisteredAt,
+		DeregisteredAt: deregisteredAt,
 		RetentionUntil: deletionScheduledAt,
 	}, nil
 }
@@ -831,22 +831,22 @@ func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, 
 
 	now := time.Now()
 	d := &device.Device{
-		ID:                 entry.IMEI,
-		FirebaseInstallID:  entry.FirebaseInstallID,
-		FCMToken:           entry.FCMToken,
-		AppVersion:         entry.AppVersion,
-		DeviceClass:        entry.DeviceClass,
-		DeviceName:         entry.DeviceName,
-		Model:              entry.Model,
-		Manufacturer:       entry.Manufacturer,
-		OSVersion:          entry.OSVersion,
-		CommandSecretHash:  commandSecretHash,
-		OperatorID:         entry.OperatorID,
-		Online:             false,
-		RegisteredAt:       now.UnixMilli(),
-		LastSeen:           now.UnixMilli(),
-		CreatedAt:          now,
-		UpdatedAt:          now,
+		ID:                entry.IMEI,
+		FirebaseInstallID: entry.FirebaseInstallID,
+		FCMToken:          entry.FCMToken,
+		AppVersion:        entry.AppVersion,
+		DeviceClass:       entry.DeviceClass,
+		DeviceName:        entry.DeviceName,
+		Model:             entry.Model,
+		Manufacturer:      entry.Manufacturer,
+		OSVersion:         entry.OSVersion,
+		CommandSecretHash: commandSecretHash,
+		OperatorID:        entry.OperatorID,
+		Online:            false,
+		RegisteredAt:      now.UnixMilli(),
+		LastSeen:          now.UnixMilli(),
+		CreatedAt:         now,
+		UpdatedAt:         now,
 	}
 
 	createFn := func(ctx context.Context) error {
@@ -927,7 +927,6 @@ func (s *Service) ConfirmDevice(ctx context.Context, imei, commandSecret string)
 		return nil, fmt.Errorf("failed to update device on confirm: %w", err)
 	}
 
-	
 	// This prevents race conditions between WS SetOnline and REST ConfirmDevice.
 	if s.statusUpdater != nil {
 		s.statusUpdater.SetDeviceOnline(d.ID, true)

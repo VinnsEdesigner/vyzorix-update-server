@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	ws "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 )
@@ -27,10 +27,10 @@ type Service struct {
 	diagnosticsRepo diagnostics.Repository
 	deviceRepo      device.Repository
 	hub             *ws.Hub
-	inspectCache   map[string]*InspectCacheEntry
-	cacheMu        sync.RWMutex
-	cacheTTL       time.Duration
-	cfg            config.DiagnosticsConfig
+	inspectCache    map[string]*InspectCacheEntry
+	cacheMu         sync.RWMutex
+	cacheTTL        time.Duration
+	cfg             config.DiagnosticsConfig
 }
 
 // NewService creates a new diagnostics service.
@@ -39,9 +39,9 @@ func NewService(diagnosticsRepo diagnostics.Repository, deviceRepo device.Reposi
 		diagnosticsRepo: diagnosticsRepo,
 		deviceRepo:      deviceRepo,
 		hub:             hub,
-		inspectCache:   make(map[string]*InspectCacheEntry),
-		cacheTTL:       time.Duration(cfg.InspectionCacheTTLSeconds) * time.Second,
-		cfg:            cfg,
+		inspectCache:    make(map[string]*InspectCacheEntry),
+		cacheTTL:        time.Duration(cfg.InspectionCacheTTLSeconds) * time.Second,
+		cfg:             cfg,
 	}
 	// Start cache cleanup goroutine.
 	go s.cleanupCache()
@@ -198,7 +198,7 @@ func (s *Service) GetDeviceInspectionHTTP(ctx context.Context, imei, orgID strin
 		},
 		Software: HTTPSoftwareInfo{
 			OSVersion:     inspection.Software.OSVersion,
-			AppVersion:   inspection.Software.AppVersion,
+			AppVersion:    inspection.Software.AppVersion,
 			SecurityPatch: inspection.Software.SecurityPatch,
 			BuildID:       inspection.Software.BuildID,
 		},
@@ -266,8 +266,8 @@ func (s *Service) GetDeviceTimeline(ctx context.Context, imei string, req *Timel
 
 	// Build filter.
 	filter := &diagnostics.TimelineFilter{
-		Limit:    req.Limit,
-		Cursor:   req.Cursor,
+		Limit:  req.Limit,
+		Cursor: req.Cursor,
 	}
 
 	// Apply time range.

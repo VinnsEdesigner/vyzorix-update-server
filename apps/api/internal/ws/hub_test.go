@@ -30,7 +30,7 @@ func (r *noopDeviceRepo) SetOnline(_ context.Context, id string, online bool) er
 	r.online[id] = online
 	return nil
 }
-func (r *noopDeviceRepo) FindByID(context.Context, string) (*device.Device, error)     { return nil, nil }
+func (r *noopDeviceRepo) FindByID(context.Context, string) (*device.Device, error) { return nil, nil }
 func (r *noopDeviceRepo) FindByDeviceID(context.Context, device.DeviceID) (*device.Device, error) {
 	return nil, nil
 }
@@ -53,16 +53,16 @@ func (r *noopDeviceRepo) FindByIMEIAndOrganization(context.Context, string, stri
 func (r *noopDeviceRepo) FindByIDAndOrganization(context.Context, string, string) (*device.Device, error) {
 	return nil, nil
 }
-func (r *noopDeviceRepo) Create(context.Context, *device.Device) error          { return nil }
-func (r *noopDeviceRepo) Update(context.Context, *device.Device) error          { return nil }
-func (r *noopDeviceRepo) Delete(context.Context, string) error                  { return nil }
+func (r *noopDeviceRepo) Create(context.Context, *device.Device) error            { return nil }
+func (r *noopDeviceRepo) Update(context.Context, *device.Device) error            { return nil }
+func (r *noopDeviceRepo) Delete(context.Context, string) error                    { return nil }
 func (r *noopDeviceRepo) DeleteByDeviceID(context.Context, device.DeviceID) error { return nil }
-func (r *noopDeviceRepo) UpdateFCMToken(context.Context, string, string) error  { return nil }
+func (r *noopDeviceRepo) UpdateFCMToken(context.Context, string, string) error    { return nil }
 func (r *noopDeviceRepo) SetOnlineByDeviceID(context.Context, device.DeviceID, bool) error {
 	return nil
 }
-func (r *noopDeviceRepo) UpdateLastSeen(context.Context, string) error { return nil }
-func (r *noopDeviceRepo) Touch(context.Context, string) error          { return nil }
+func (r *noopDeviceRepo) UpdateLastSeen(context.Context, string) error        { return nil }
+func (r *noopDeviceRepo) Touch(context.Context, string) error                 { return nil }
 func (r *noopDeviceRepo) SetSecretHash(context.Context, string, string) error { return nil }
 func (r *noopDeviceRepo) GetSecretHash(context.Context, string) (string, error) {
 	return "", nil

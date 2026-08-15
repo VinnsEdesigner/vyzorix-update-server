@@ -12,9 +12,9 @@ import (
 
 // SyncService handles syncing versions from GitHub.
 type SyncService struct {
-	client *Client
-	repo   updates.Repository
-	logger *slog.Logger
+	client     *Client
+	repo       updates.Repository
+	logger     *slog.Logger
 	skipSHA256 bool // For testing or when checksums not available.
 }
 

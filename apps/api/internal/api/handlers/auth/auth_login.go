@@ -235,7 +235,7 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 					Device:       userAgent,
 					Timestamp:    time.Now().Format(time.RFC1123),
 				}
-				
+
 				if err := h.emailService.SendNewLoginNotificationEmail(context.Background(), result.Email, loginData); err != nil {
 					slog.Warn("failed to send login notification email",
 						"operatorId", result.OperatorID,
@@ -306,7 +306,7 @@ func (h *LoginHandler) HandleWithTokens(c *gin.Context) {
 				"operator_id":  result.OperatorID,
 				"email":        result.Email,
 				"name":         result.Name,
-				"mfa_enabled": true,
+				"mfa_enabled":  true,
 			})
 		case errors.Is(err, application.ErrInvalidCredentials):
 			h.lockout.RecordFailed(req.Email, c.ClientIP(), c.GetHeader("User-Agent"))

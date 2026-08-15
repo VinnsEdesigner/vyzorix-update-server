@@ -61,8 +61,6 @@ func NewTelemetryHistoryHandler(
 	}
 }
 
-
-
 // verifyDeviceInOrganization verifies that a device belongs to the given organization.
 func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, deviceID, orgID string) bool {
 	if h.deviceRepo == nil {

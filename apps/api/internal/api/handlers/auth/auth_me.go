@@ -68,14 +68,14 @@ func (h *MeHandler) Handle(c *gin.Context) {
 	}
 
 	h.presenter.OK(c, gin.H{
-		"id":              op.ID,
-		"email":           op.Email,
-		"name":            op.Name,
-		"mfa_enabled":     op.MFAEnabled,
-		"email_verified":  op.EmailVerified,
-		"needs_organization": needsOrg,
-		"organizations":   orgs,
-		"last_organization_id": op.LastOrganizationID,
+		"id":                    op.ID,
+		"email":                 op.Email,
+		"name":                  op.Name,
+		"mfa_enabled":           op.MFAEnabled,
+		"email_verified":        op.EmailVerified,
+		"needs_organization":    needsOrg,
+		"organizations":         orgs,
+		"last_organization_id":  op.LastOrganizationID,
 		"selected_organization": selectedOrg,
 	})
 }

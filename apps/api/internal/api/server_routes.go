@@ -32,8 +32,8 @@ func (s *Server) idempotencyMiddleware() gin.HandlerFunc {
 	}
 
 	config := middleware.IdempotencyConfig{
-		Repository: s.idempotencyRepo,
-		HeaderName: "X-Idempotency-Key",
+		Repository:   s.idempotencyRepo,
+		HeaderName:   "X-Idempotency-Key",
 		PathPrefixes: []string{"/v1/", "/api/v1/"},
 		ExcludedPaths: []string{
 			// Auth endpoints - should not be idempotent.
@@ -47,7 +47,7 @@ func (s *Server) idempotencyMiddleware() gin.HandlerFunc {
 			"/healthz",
 			"/metrics",
 		},
-		TTL: 24 * time.Hour,
+		TTL:     24 * time.Hour,
 		Enabled: true,
 	}
 	return middleware.GinIdempotency(config)
@@ -72,7 +72,7 @@ func (s *Server) deviceIdempotencyMiddleware() gin.HandlerFunc {
 			"/v1/device/status",
 			"/v1/device/count",
 		},
-		TTL: 24 * time.Hour,
+		TTL:     24 * time.Hour,
 		Enabled: true,
 	}
 	return middleware.GinIdempotency(config)

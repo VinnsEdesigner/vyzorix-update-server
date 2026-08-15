@@ -17,23 +17,23 @@ import (
 
 // Config holds the API key service configuration.
 type Config struct {
-	Prefix           string // e.g., "vxyz".
-	MaxPerMonth      int    // Max keys per operator per month.
-	MaxNameLength    int    // Max key name length.
-	DefaultExpiryDays int   // Default expiry (0 = never).
-	MaxExpiryDays    int    // Max expiry days.
-	PrefixLength     int    // Prefix length for display.
+	Prefix            string // e.g., "vxyz".
+	MaxPerMonth       int    // Max keys per operator per month.
+	MaxNameLength     int    // Max key name length.
+	DefaultExpiryDays int    // Default expiry (0 = never).
+	MaxExpiryDays     int    // Max expiry days.
+	PrefixLength      int    // Prefix length for display.
 }
 
 // DefaultConfig returns the default configuration.
 func DefaultConfig() Config {
 	return Config{
-		Prefix:           "vxyz",
-		MaxPerMonth:      20,
-		MaxNameLength:    64,
+		Prefix:            "vxyz",
+		MaxPerMonth:       20,
+		MaxNameLength:     64,
 		DefaultExpiryDays: 0,
-		MaxExpiryDays:    365,
-		PrefixLength:     8,
+		MaxExpiryDays:     365,
+		PrefixLength:      8,
 	}
 }
 
@@ -89,7 +89,6 @@ func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req 
 
 	// Hash the key.
 	keyHash := hashKey(fullKey)
-
 
 	// Calculate prefix.
 	prefix := fullKey[:s.config.PrefixLength]
@@ -210,7 +209,7 @@ func (s *APIKeyService) ListKeys(ctx context.Context, operatorID string, page, l
 			Total:      total,
 			TotalPages: totalPages,
 		},
-		MonthlyLimit:        s.config.MaxPerMonth,
+		MonthlyLimit:         s.config.MaxPerMonth,
 		KeysCreatedThisMonth: monthlyCount,
 	}, nil
 }
@@ -335,7 +334,6 @@ func (s *APIKeyService) RotateKey(ctx context.Context, operatorID, keyID string)
 	}
 
 	keyHash := hashKey(fullKey)
-
 
 	prefix := fullKey[:s.config.PrefixLength]
 	now := time.Now()
@@ -499,6 +497,6 @@ func (s *APIKeyService) GetGlobalStats(ctx context.Context) (*domain.GlobalAPIKe
 
 	return &domain.GlobalAPIKeyStats{
 		TotalActiveKeys: totalActive,
-		MaxPerMonth:    s.config.MaxPerMonth,
+		MaxPerMonth:     s.config.MaxPerMonth,
 	}, nil
 }

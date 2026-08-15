@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	infraStorage "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/gin-gonic/gin"
 )
@@ -269,8 +269,8 @@ func TestCreateKey_WithExpiry(t *testing.T) {
 
 	days := 30
 	body := map[string]interface{}{
-		"name":           "Expiring Key",
-		"scope":          "write",
+		"name":            "Expiring Key",
+		"scope":           "write",
 		"expires_in_days": days,
 	}
 	bodyBytes, _ := json.Marshal(body)

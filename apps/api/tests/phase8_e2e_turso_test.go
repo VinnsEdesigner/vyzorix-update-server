@@ -16,17 +16,17 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
-	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/password"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/password"
 
 	gorillaws "github.com/gorilla/websocket"
 )
@@ -53,11 +53,13 @@ const phase8TestName = "Phase8 E2E Operator"
 
 // phase8State holds the live server and shared state.
 type phase8State struct {
-	server        *httptest.Server
-	apiServer     *api.Server
-	db            *sql.DB
-	storage       *storage.SQLite
-	hub           interface{ PublishTelemetry(string, string, interface{}) }
+	server    *httptest.Server
+	apiServer *api.Server
+	db        *sql.DB
+	storage   *storage.SQLite
+	hub       interface {
+		PublishTelemetry(string, string, interface{})
+	}
 	operatorID    string
 	orgID         string
 	sessionCookie *http.Cookie
@@ -462,9 +464,9 @@ func TestPhase8_E2E_TursoLiveServer(t *testing.T) {
 	//    The hub is the same instance the server uses, so the publish goes
 	//    through the real subscription routing.
 	state.hub.PublishTelemetry(operatorID, "IMEI_PHASE8_LIVE", map[string]any{
-		"deviceId":   "IMEI_PHASE8_LIVE",
-		"riskScore":  42,
-		"timestamp":  time.Now().Unix(),
+		"deviceId":  "IMEI_PHASE8_LIVE",
+		"riskScore": 42,
+		"timestamp": time.Now().Unix(),
 	})
 
 	// 8. Receive the published telemetry event.

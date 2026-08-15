@@ -170,7 +170,7 @@ func (cb *CircuitBreaker) transitionTo(state CircuitState) {
 type CircuitBreakerClient struct {
 	client         *Client
 	circuitBreaker *CircuitBreaker
-	db             *sql.DB 
+	db             *sql.DB
 }
 
 // NewCircuitBreakerClient creates a new CircuitBreakerClient.
@@ -194,15 +194,13 @@ func NewCircuitBreakerClientWithDB(client *Client, db *sql.DB) *CircuitBreakerCl
 // SendSilentWake sends a silent wake notification with circuit breaker protection.
 // Returns ErrFCMCircuitOpen if the circuit is open.
 
-
 func (c *CircuitBreakerClient) SendSilentWake(ctx context.Context, wake SilentWake) error {
 	if !c.circuitBreaker.Allow() {
-		
+
 		c.persistForRetry(ctx, wake, "circuit_open")
 		return ErrFCMCircuitOpen
 	}
 
-	
 	// unless RecordSuccess is called. This handles panics and early returns.
 	didSuccess := false
 	defer func() {
@@ -213,7 +211,7 @@ func (c *CircuitBreakerClient) SendSilentWake(ctx context.Context, wake SilentWa
 
 	err := c.client.SendSilentWake(ctx, wake)
 	if err != nil {
-		
+
 		c.persistForRetry(ctx, wake, err.Error())
 		return err
 	}

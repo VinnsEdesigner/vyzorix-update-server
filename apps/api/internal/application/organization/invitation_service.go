@@ -29,7 +29,7 @@ var (
 	ErrCannotInviteSelf      = errors.New("cannot invite yourself")
 	ErrInvitationNotFound    = errors.New("invitation not found")
 	ErrAlreadyOrgMember      = errors.New("operator is already a member of this organization")
-	ErrOrgAtCapacity        = errors.New("organization has reached its member limit")
+	ErrOrgAtCapacity         = errors.New("organization has reached its member limit")
 )
 
 // isUniqueConstraintError checks if the error is a unique constraint violation.
@@ -51,14 +51,14 @@ type EmailService interface {
 
 // InvitationService handles invitation operations.
 type InvitationService struct {
-	invitationRepo  organization.InvitationRepository
-	orgRepo         organization.OrganizationRepository
-	memberRepo      organization.MemberRepository
-	txManager       transaction.TxManager
-	emailService    EmailService
-	logger          *slog.Logger
-	baseURL         string
-	emailWg         sync.WaitGroup // tracks background email goroutines.
+	invitationRepo organization.InvitationRepository
+	orgRepo        organization.OrganizationRepository
+	memberRepo     organization.MemberRepository
+	txManager      transaction.TxManager
+	emailService   EmailService
+	logger         *slog.Logger
+	baseURL        string
+	emailWg        sync.WaitGroup // tracks background email goroutines.
 }
 
 // NewInvitationService creates a new InvitationService.

@@ -184,7 +184,6 @@ func (r *mockAPIKeyRepository) ExistsByOperatorAndNameExcluding(ctx context.Cont
 	return false, nil
 }
 
-
 // =============================================================================.
 // Test Fixtures.
 // =============================================================================.
@@ -199,6 +198,7 @@ func setupTestService(t *testing.T) (*APIKeyService, *mockAPIKeyRepository) {
 	svc := NewAPIKeyService(repo, config)
 	return svc, repo
 }
+
 // =============================================================================.
 
 func TestAPIKeyService_CreateKey(t *testing.T) {

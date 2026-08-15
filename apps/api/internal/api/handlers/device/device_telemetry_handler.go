@@ -64,7 +64,6 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 		DeviceID: deviceID,
 	}
 
-	
 	// Max allowed range: 90 days in milliseconds.
 	const maxTimeWindowMs = 90 * 24 * 60 * 60 * 1000 // 7,776,000,000 ms.
 

@@ -528,7 +528,6 @@ func (s *MemberStorage) ListByOperatorPaginated(ctx context.Context, operatorID 
 	return members, total, rows.Err()
 }
 
-
 // SoftDeleteByOperator soft-deletes all memberships for an operator (used during operator deletion).
 func (s *MemberStorage) SoftDeleteByOperator(ctx context.Context, operatorID string) error {
 	query := `

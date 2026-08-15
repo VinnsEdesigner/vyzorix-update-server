@@ -142,12 +142,12 @@ func (h *Handler) CheckUpdate(c *gin.Context) {
 	// Flatten response: update_available at top level, version fields directly accessible.
 	c.JSON(http.StatusOK, gin.H{
 		"update_available": manifest.VersionCode > clientCode,
-		"version":         manifest.Version,
-		"version_code":    manifest.VersionCode,
-		"apk_filename":    manifest.APKFilename,
-		"apk_sha256":      manifest.APKSHA256,
-		"release_notes":   manifest.ReleaseNotes,
-		"apk_size_bytes":  manifest.APKSizeBytes,
+		"version":          manifest.Version,
+		"version_code":     manifest.VersionCode,
+		"apk_filename":     manifest.APKFilename,
+		"apk_sha256":       manifest.APKSHA256,
+		"release_notes":    manifest.ReleaseNotes,
+		"apk_size_bytes":   manifest.APKSizeBytes,
 	})
 }
 

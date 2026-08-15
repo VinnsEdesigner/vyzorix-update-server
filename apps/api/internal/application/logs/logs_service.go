@@ -13,7 +13,7 @@ import (
 // Service handles device logs operations.
 type Service struct {
 	logsRepo logs.Repository
-	logger  *slog.Logger
+	logger   *slog.Logger
 }
 
 // NewService creates a new logs service.
@@ -98,7 +98,7 @@ func (s *Service) CreateLog(ctx context.Context, deviceID, eventType string, dat
 		DeviceID:  deviceID,
 		EventType: eventType,
 		Timestamp: time.Now(),
-		Data:     dataJSON,
+		Data:      dataJSON,
 	}
 
 	return s.logsRepo.CreateLog(ctx, log)

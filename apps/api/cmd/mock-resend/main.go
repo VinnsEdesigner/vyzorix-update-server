@@ -18,35 +18,35 @@ var (
 )
 
 type EmailLog struct { //nolint:govet // fieldalignment issue is acceptable for mock server
-	ID           string    `json:"id"`
-	To           []string  `json:"to"`
-	From         string    `json:"from"`
-	Subject      string    `json:"subject"`
-	HTML         string    `json:"html"`
-	Timestamp    time.Time `json:"timestamp"`
-	VerifyToken  string    `json:"verify_token,omitempty"`
-	VerifyURL    string    `json:"verify_url,omitempty"`
+	ID          string    `json:"id"`
+	To          []string  `json:"to"`
+	From        string    `json:"from"`
+	Subject     string    `json:"subject"`
+	HTML        string    `json:"html"`
+	Timestamp   time.Time `json:"timestamp"`
+	VerifyToken string    `json:"verify_token,omitempty"`
+	VerifyURL   string    `json:"verify_url,omitempty"`
 }
 
 func main() {
 	if p := os.Getenv("PORT"); p != "" {
 		port = p
 	}
-	
+
 	dir, _ := os.Getwd()
 	logFile, err := os.OpenFile(dir+"/emails.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.SetOutput(logFile)
-	
+
 	log.Printf("Mock Resend server starting on :%s\n", port)
-	
+
 	http.HandleFunc("/emails", handleSendEmail)
 	http.HandleFunc("/emails/", handleGetEmail)
 	http.HandleFunc("/health", handleHealth)
 	http.HandleFunc("/latest", handleGetLatestEmail)
-	
+
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
@@ -62,24 +62,24 @@ func handleSendEmail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	
+
 	var payload map[string]interface{}
 	if err := json.Unmarshal(body, &payload); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	
+
 	html := toString(payload["html"])
-	
+
 	// Extract verification token from HTML.
 	token, verifyURL := extractVerificationToken(html)
-	
+
 	email := EmailLog{
 		ID:          fmt.Sprintf("mock_%d", time.Now().UnixNano()),
 		To:          toStringArray(payload["to"]),
@@ -90,12 +90,12 @@ func handleSendEmail(w http.ResponseWriter, r *http.Request) {
 		VerifyToken: token,
 		VerifyURL:   verifyURL,
 	}
-	
+
 	sentEmails = append(sentEmails, email)
-	
+
 	// Save to JSON file for easy parsing.
 	saveEmailsToFile()
-	
+
 	// Log to file.
 	log.Printf("=== EMAIL SENT ===")
 	log.Printf("ID: %s", email.ID)
@@ -111,7 +111,7 @@ func handleSendEmail(w http.ResponseWriter, r *http.Request) {
 		log.Printf("HTML (preview): %s...", html[:200])
 	}
 	log.Printf("=================")
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(map[string]interface{}{

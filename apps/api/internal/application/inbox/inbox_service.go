@@ -317,7 +317,7 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 		Status:        string(entry.Status),
 		ApprovedAt:    entry.ApprovedAt,
 		CommandSecret: secret,
-		FCMPushSent:  fcmPushSent,
+		FCMPushSent:   fcmPushSent,
 		Notes:         notes,
 	}, nil
 }
@@ -490,19 +490,19 @@ func (s *Service) cleanupStaleInboxEntry(ctx context.Context, imei string) (*inb
 func (s *Service) createInboxEntry(ctx context.Context, req *InboxRequest) (*inbox.InboxEntry, error) {
 	now := time.Now()
 	entry := &inbox.InboxEntry{
-		ID:                 generateID(),
-		IMEI:               req.IMEI,
-		DeviceName:         req.DeviceName,
-		DeviceClass:        req.DeviceClass,
-		Model:              req.Model,
-		Manufacturer:       req.Manufacturer,
-		OSVersion:          req.OSVersion,
-		AppVersion:         req.AppVersion,
-		FCMToken:           req.FCMToken,
-		FirebaseInstallID:   req.FirebaseInstallID,
-		Status:             inbox.StatusPending,
-		CreatedAt:          now.UnixMilli(),
-		UpdatedAt:          now.UnixMilli(),
+		ID:                generateID(),
+		IMEI:              req.IMEI,
+		DeviceName:        req.DeviceName,
+		DeviceClass:       req.DeviceClass,
+		Model:             req.Model,
+		Manufacturer:      req.Manufacturer,
+		OSVersion:         req.OSVersion,
+		AppVersion:        req.AppVersion,
+		FCMToken:          req.FCMToken,
+		FirebaseInstallID: req.FirebaseInstallID,
+		Status:            inbox.StatusPending,
+		CreatedAt:         now.UnixMilli(),
+		UpdatedAt:         now.UnixMilli(),
 	}
 
 	// Use CreateOrReplace to atomically handle the case where a stale entry exists.
@@ -527,23 +527,23 @@ func (s *Service) logAndRecordMetrics(ctx context.Context, imei string, entry *i
 
 func (s *Service) buildInboxEntryResponse(entry *inbox.InboxEntry) *InboxEntryResponse {
 	return &InboxEntryResponse{
-		ID:                 entry.ID,
-		IMEI:               entry.IMEI,
-		DeviceName:         entry.DeviceName,
-		DeviceClass:        entry.DeviceClass,
-		Model:              entry.Model,
-		Manufacturer:       entry.Manufacturer,
-		OSVersion:          entry.OSVersion,
-		AppVersion:         entry.AppVersion,
-		FCMToken:           entry.FCMToken,
-		FirebaseInstallID:   entry.FirebaseInstallID,
-		Status:             string(entry.Status),
-		AcknowledgedAt:     entry.AcknowledgedAt,
+		ID:                entry.ID,
+		IMEI:              entry.IMEI,
+		DeviceName:        entry.DeviceName,
+		DeviceClass:       entry.DeviceClass,
+		Model:             entry.Model,
+		Manufacturer:      entry.Manufacturer,
+		OSVersion:         entry.OSVersion,
+		AppVersion:        entry.AppVersion,
+		FCMToken:          entry.FCMToken,
+		FirebaseInstallID: entry.FirebaseInstallID,
+		Status:            string(entry.Status),
+		AcknowledgedAt:    entry.AcknowledgedAt,
 		ApprovingAt:       entry.ApprovingAt,
 		ApprovedAt:        entry.ApprovedAt,
 		RejectedAt:        entry.RejectedAt,
-		Notes:              entry.Notes,
-		OperatorID:         entry.OperatorID,
+		Notes:             entry.Notes,
+		OperatorID:        entry.OperatorID,
 		CreatedAt:         entry.CreatedAt,
 	}
 }
@@ -566,7 +566,6 @@ func (s *Service) logRegistrationAction(ctx context.Context, entry *inbox.InboxE
 		UserAgent:  extractUserAgent(ctx),
 	}
 
-	
 	if err := s.logRepo.Create(ctx, log); err != nil {
 		s.logger.Error("failed to create audit log entry",
 			"action", action,
@@ -690,22 +689,22 @@ func (s *Service) UpdateInboxEntry(ctx context.Context, imei, operatorID, orgID,
 	s.logRegistrationAction(ctx, entry, "updated", operatorID, notes)
 
 	return &InboxEntryResponse{
-		ID:                 entry.ID,
-		IMEI:               entry.IMEI,
-		DeviceName:         entry.DeviceName,
-		DeviceClass:        entry.DeviceClass,
-		Model:              entry.Model,
-		Manufacturer:       entry.Manufacturer,
-		OSVersion:          entry.OSVersion,
-		AppVersion:         entry.AppVersion,
-		FCMToken:           entry.FCMToken,
-		FirebaseInstallID:   entry.FirebaseInstallID,
-		Status:             string(entry.Status),
-		CreatedAt:          entry.CreatedAt,
-		ApprovedAt:         entry.ApprovedAt,
-		RejectedAt:         entry.RejectedAt,
-		Notes:              entry.Notes,
-		OperatorID:         entry.OperatorID,
+		ID:                entry.ID,
+		IMEI:              entry.IMEI,
+		DeviceName:        entry.DeviceName,
+		DeviceClass:       entry.DeviceClass,
+		Model:             entry.Model,
+		Manufacturer:      entry.Manufacturer,
+		OSVersion:         entry.OSVersion,
+		AppVersion:        entry.AppVersion,
+		FCMToken:          entry.FCMToken,
+		FirebaseInstallID: entry.FirebaseInstallID,
+		Status:            string(entry.Status),
+		CreatedAt:         entry.CreatedAt,
+		ApprovedAt:        entry.ApprovedAt,
+		RejectedAt:        entry.RejectedAt,
+		Notes:             entry.Notes,
+		OperatorID:        entry.OperatorID,
 	}, nil
 }
 
