@@ -739,6 +739,34 @@ func TestHubGetAverageLatency_NoData(t *testing.T) {
 	}
 }
 
+func TestHubGetAverageLatency_PerDevice(t *testing.T) {
+	h := newTestHub()
+
+	// Seed per-device metrics for dev1 only.
+	h.metricsMu.Lock()
+	h.deviceLatency["dev1"] = &LatencyMetrics{
+		TotalMessages:    2,
+		TotalLatencyMS:   100,
+		AverageLatencyMS: 50,
+	}
+	// Seed global metrics so we can prove the per-device value wins.
+	h.metrics.LatencyMetrics = LatencyMetrics{
+		TotalMessages:    10,
+		TotalLatencyMS:   1000,
+		AverageLatencyMS: 100,
+	}
+	h.metricsMu.Unlock()
+
+	if got := h.GetAverageLatency("dev1"); got != 50 {
+		t.Errorf("dev1 average latency = %d, want 50 (per-device)", got)
+	}
+
+	// dev2 has no per-device samples -> falls back to global average.
+	if got := h.GetAverageLatency("dev2"); got != 100 {
+		t.Errorf("dev2 average latency = %d, want 100 (global fallback)", got)
+	}
+}
+
 // ─── Hub broadcast to filtered ───
 
 func TestHubBroadcastTelemetryToFiltered(t *testing.T) {

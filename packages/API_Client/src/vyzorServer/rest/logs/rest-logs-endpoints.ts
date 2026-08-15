@@ -6,13 +6,13 @@ import {
   type RawLogEntry,
   type RawLogListResult,
   type RawLogStats,
-} from "@/domain/logs";
+} from "../../../domain/logs";
 import type {
   LogEntry,
   LogListResult,
   LogStats,
   LogEventType,
-} from "@/domain/logs";
+} from "../../../domain/logs";
 
 const PATHS = {
   logs: (imei: string) => `/v1/dashboard/device/${imei}/logs`,

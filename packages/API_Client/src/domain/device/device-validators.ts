@@ -9,7 +9,9 @@ export function validateIMEIChecksum(imei: string): boolean {
   let isEven = false;
 
   for (let i = imei.length - 1; i >= 0; i--) {
-    let digit = parseInt(imei[i], 10);
+    const ch = imei[i];
+    if (ch === undefined) return false;
+    let digit = parseInt(ch, 10);
 
     if (isEven) {
       digit *= 2;

@@ -9,7 +9,7 @@ import { useState, useCallback, useMemo } from "react";
 import type {
   OffsetPaginationParams,
   OffsetPagination,
-} from "@/domain/_shared";
+} from "@vyzorix/api-client";
 
 // ============================================================================
 // Types

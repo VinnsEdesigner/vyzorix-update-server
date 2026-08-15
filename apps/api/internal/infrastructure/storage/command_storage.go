@@ -469,6 +469,28 @@ func (r *CommandRepository) CountPendingByDevice(ctx context.Context, deviceID s
 	return count, err
 }
 
+// CountPendingByDeviceIDs returns the number of pending commands for the given device IDs.
+// Used for organization-scoped dashboard stats (org scoping is device-anchored).
+func (r *CommandRepository) CountPendingByDeviceIDs(ctx context.Context, deviceIDs []string) (int, error) {
+	if len(deviceIDs) == 0 {
+		return 0, nil
+	}
+
+	placeholders := make([]string, len(deviceIDs))
+	args := make([]interface{}, len(deviceIDs))
+	for i, id := range deviceIDs {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM commands WHERE device_id IN (%s) AND status = 'pending'`, strings.Join(placeholders, ","))
+
+	var count int
+	err := r.queryRow(ctx, query, args...).Scan(&count)
+
+	return count, err
+}
+
 // MarkWake marks whether a wake command was sent successfully for a command dispatch.
 func (r *CommandRepository) MarkWake(ctx context.Context, dispatchID string, errText string) error {
 	wakeSent := 1

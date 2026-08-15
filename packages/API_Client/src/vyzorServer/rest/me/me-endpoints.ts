@@ -1,8 +1,8 @@
 
 import { restClient } from "../_shared/rest-client";
-import { meResponseFromRaw, type MeResponse, type OrganizationInfo, type RawMeResponse } from "@/domain/auth";
-import type { Invitation, InvitationApiResponse } from "@/domain/invitation";
-import { mapInvitation } from "@/domain/invitation";
+import { meResponseFromRaw, type MeResponse, type OrganizationInfo, type RawMeResponse } from "../../../domain/auth";
+import type { Invitation, InvitationApiResponse } from "../../../domain/invitation";
+import { mapInvitation } from "../../../domain/invitation";
 
 const PATHS = {
   me: "/v1/auth/me",

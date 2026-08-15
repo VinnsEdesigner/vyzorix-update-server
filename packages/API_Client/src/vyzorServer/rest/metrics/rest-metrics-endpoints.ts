@@ -1,6 +1,6 @@
 import { restClient, getOrganizationContext } from "../_shared/rest-client";
-import type { DeviceMetrics, DashboardStats, TimeRange, MetricResolution } from "@/domain/metrics";
-import { deviceMetricsFromRaw, dashboardStatsFromRaw } from "@/domain/metrics";
+import type { DeviceMetrics, DashboardStats, TimeRange, MetricResolution } from "../../../domain/metrics";
+import { deviceMetricsFromRaw, dashboardStatsFromRaw } from "../../../domain/metrics";
 import { getMetricsConfig } from "../../config";
 
 export const METRICS_PATHS = {

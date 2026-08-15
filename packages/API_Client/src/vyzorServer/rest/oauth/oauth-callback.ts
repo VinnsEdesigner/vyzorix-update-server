@@ -1,6 +1,6 @@
 
 
-import { buildOAuthState, parseOAuthCallbackUrl, OAUTH_ENDPOINTS, type OAuthProvider } from "@/domain/oauth";
+import { buildOAuthState, parseOAuthCallbackUrl, OAUTH_ENDPOINTS, type OAuthProvider } from "../../../domain/oauth";
 
 export const OAuthErrorCode = {
   EMAIL_REQUIRED: "email_required",

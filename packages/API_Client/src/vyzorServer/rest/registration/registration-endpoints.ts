@@ -11,7 +11,7 @@ import {
   type RawPagination,
   type RawCreateInboxResponse,
   type RawConfirmDeviceResponse,
-} from "@/domain/registration";
+} from "../../../domain/registration";
 import type {
   InboxEntry,
   RegisteredDevice,
@@ -24,7 +24,7 @@ import type {
   CreateInboxRequest,
   CreateInboxResult,
   ConfirmDeviceResult,
-} from "@/domain/registration";
+} from "../../../domain/registration";
 
 const PATHS = {
   inbox: "/v1/device/inbox",

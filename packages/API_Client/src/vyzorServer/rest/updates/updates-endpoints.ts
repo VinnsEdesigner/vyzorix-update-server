@@ -11,7 +11,7 @@ import {
   type RawUpdatePush,
   type RawVersionListResult,
   type RawUpdateHistoryResult,
-} from "@/domain/updates";
+} from "../../../domain/updates";
 import type {
   UpdateVersion,
   SyncState,
@@ -21,7 +21,7 @@ import type {
   ChangelogEntry,
   PushUpdateRequest,
   UpdateStatus,
-} from "@/domain/updates";
+} from "../../../domain/updates";
 
 const PATHS = {
   status: "/v1/updates/status",

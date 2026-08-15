@@ -1,5 +1,6 @@
 import { graphqlClient } from '../_shared/graphql-client';
 import { gql } from '@apollo/client';
+import { DEVICE_INSPECTION_FRAGMENT, TIMELINE_EVENT_FRAGMENT } from './graphql-diagnostics-fragments';
 
 export const GET_DEVICE_INSPECTION = gql`
   query GetDeviceInspection($imei: String!, $organizationId: ID!) {
@@ -7,6 +8,7 @@ export const GET_DEVICE_INSPECTION = gql`
       ...DeviceInspection
     }
   }
+  ${DEVICE_INSPECTION_FRAGMENT}
 `;
 
 export const GET_DEVICE_TIMELINE = gql`
@@ -19,6 +21,7 @@ export const GET_DEVICE_TIMELINE = gql`
       nextCursor
     }
   }
+  ${TIMELINE_EVENT_FRAGMENT}
 `;
 
 export async function queryDeviceInspection(params: { imei: string; organizationId: string }): Promise<unknown> {

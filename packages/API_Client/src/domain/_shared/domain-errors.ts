@@ -94,7 +94,7 @@ export class ValidationError extends DomainError {
     return new ValidationError("Validation failed", fieldErrors);
   }
 
-  toJSON(): Record<string, unknown> {
+  override toJSON(): Record<string, unknown> {
     return {
       ...super.toJSON(),
       fieldErrors: this.fieldErrors,

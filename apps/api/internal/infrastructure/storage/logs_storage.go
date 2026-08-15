@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/logs"
@@ -205,6 +207,37 @@ func (r *LogsRepository) CountLogs(ctx context.Context, deviceID string, eventTy
 		query = `SELECT COUNT(*) FROM device_logs WHERE device_id = ? AND timestamp >= ? AND timestamp <= ?`
 		args = []interface{}{deviceID, startMs, endMs}
 	}
+
+	if eventType != "" {
+		query += ` AND event_type = ?`
+		args = append(args, eventType)
+	}
+
+	var count int
+	err := r.queryRow(ctx, query, args...).Scan(&count)
+
+	return count, err
+}
+
+// CountLogsByDeviceIDs counts logs matching the criteria for the given device IDs.
+// Used for organization-scoped dashboard stats (org scoping is device-anchored).
+func (r *LogsRepository) CountLogsByDeviceIDs(ctx context.Context, deviceIDs []string, eventType string, startTime, endTime time.Time) (int, error) {
+	if len(deviceIDs) == 0 {
+		return 0, nil
+	}
+
+	startMs := startTime.UnixMilli()
+	endMs := endTime.UnixMilli()
+
+	placeholders := make([]string, len(deviceIDs))
+	args := make([]interface{}, 0, len(deviceIDs)+2)
+	for i, id := range deviceIDs {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+	args = append(args, startMs, endMs)
+
+	query := fmt.Sprintf(`SELECT COUNT(*) FROM device_logs WHERE device_id IN (%s) AND timestamp >= ? AND timestamp <= ?`, strings.Join(placeholders, ","))
 
 	if eventType != "" {
 		query += ` AND event_type = ?`

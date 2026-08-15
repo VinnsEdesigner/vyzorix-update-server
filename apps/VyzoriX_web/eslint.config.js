@@ -2,7 +2,7 @@ import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
-import vyzo from "../../packages/config/src/eslint/architecture-index";
+import { vyzo } from "../../packages/config/dist/eslint/architecture-index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,7 +25,8 @@ export default tseslint.config(
       vyzo,
     },
     rules: {
-      ...vyzo.rules,
+      "vyzo/layer-imports": "error",
+      "vyzo/no-react-in-api-client": "error",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/no-explicit-any": "warn",

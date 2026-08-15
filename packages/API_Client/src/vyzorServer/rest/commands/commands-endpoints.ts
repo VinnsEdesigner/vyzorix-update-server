@@ -7,8 +7,8 @@ import {
   type RawCommand,
   type RawCommandListItem,
   type RawCommandHistoryResult,
-} from "@/domain/commands";
-import type { Command, CommandListItem, SendCommandRequest, CommandStatus } from "@/domain/commands";
+} from "../../../domain/commands";
+import type { Command, CommandListItem, SendCommandRequest, CommandStatus } from "../../../domain/commands";
 
 const PATHS = {
   history: (imei: string) => `/v1/dashboard/device/${imei}/commands`,

@@ -8,3 +8,13 @@
 export * from './config';
 export * from './rest';
 export * from './graphql';
+export {
+  authContext,
+  getCurrentOrganizationId,
+  isAuthenticated,
+  isAccountLocked,
+  isTokenExpired,
+  getTimeUntilExpiry,
+  type AuthState,
+  type LockoutState,
+} from './auth';

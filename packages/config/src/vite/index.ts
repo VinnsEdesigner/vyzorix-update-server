@@ -25,7 +25,7 @@ export interface VyzorixViteConfig {
   vite?: Omit<ViteUserConfig, "plugins">;
 
   /**
-   * Plugins array - should be provided by the consuming app
+   * Plugins array - should be provided by the consuming app.
    * tanstackStart() must come first, then react(), then tsconfigPaths()
    */
   plugins?: ViteUserConfig["plugins"];
@@ -34,22 +34,20 @@ export interface VyzorixViteConfig {
 /**
  * Define Vyzorix Vite configuration with TanStack Start SSR support
  *
- * 
  * @example
  * import { defineViteConfig } from "@vyzorix/config/vite";
  * import { tanstackStart } from "@tanstack/react-start/plugin/vite";
  * import react from "@vitejs/plugin-react";
  * import tsconfigPaths from "vite-tsconfig-paths";
  * import tailwindcss from "@tailwindcss/vite";
- * 
+ *
  * export default defineViteConfig({
  *   plugins: [
- *     tanstackStart(),
+ *     tanstackStart({ server: { entry: "src/server.ts" } }),
  *     tailwindcss(),
  *     react(),
  *     tsconfigPaths(),
  *   ],
- *   tanstackStart: { server: { entry: "src/server.ts" } },
  *   proxy: { "/api": "http://localhost:3000" },
  * });
  */

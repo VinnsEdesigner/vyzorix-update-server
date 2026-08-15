@@ -7,12 +7,12 @@ import {
   type RawDevice,
   type RawDeviceStats,
   type RawDeviceListResult,
-} from "@/domain/device";
+} from "../../../domain/device";
 import type {
   Device,
   DeviceStats,
   DeviceListResult,
-} from "@/domain/device";
+} from "../../../domain/device";
 
 const PATHS = {
   devices: "/v1/devices",

@@ -21,7 +21,7 @@ import {
   authTokensFromRaw,
   mfaVerifyResponseFromRaw,
   type RawMFAVerifyResponse,
-} from "@/domain/auth";
+} from "../../../domain/auth";
 import type {
   LoginResponse,
   LoginWithTokensResponse,
@@ -35,8 +35,8 @@ import type {
   MFAVerifyResponse,
   MFAEnableResponse,
   AuthTokens,
-} from "@/domain/auth";
-import type { VerifyEmailResponse } from "@/domain/email";
+} from "../../../domain/auth";
+import type { VerifyEmailResponse } from "../../../domain/email";
 import {
   type RawLoginResponse,
   type RawLoginMFARequiredResponse,
@@ -45,7 +45,7 @@ import {
   type RawMeResponse,
   loginWithTokensResponseFromRaw,
   isLoginWithTokensMFARequired,
-} from "@/domain/auth/auth-mappers";
+} from "../../../domain/auth/auth-mappers";
 
 const AUTH_PATHS = {
   login: "/v1/auth/login",

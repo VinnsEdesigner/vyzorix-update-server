@@ -2,7 +2,7 @@ import type {
   Command,
   CommandListItem,
   CommandResult,
-} from "@/domain/commands";
+} from "../../../domain/commands";
 import type {
   RawCommand,
   RawCommandListItem,

@@ -51,7 +51,7 @@ export function useDebouncedCallback<T extends (...args: Parameters<T>) => void>
   callback: T,
   delay: number = 300
 ): T {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const callbackRef = useRef(callback);
 
   // Update callback ref on each render
@@ -98,7 +98,7 @@ export function useDebounceAsync<T>(
   const { delay = 300, immediate = false } = options;
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   const [isPending, setIsPending] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     setIsPending(true);

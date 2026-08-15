@@ -264,7 +264,6 @@ export class GraphQLBatcher {
   private config: BatchConfig;
   private batchUrl: string = '';
   private authToken: string = '';
-  private orgId: string = '';
 
   constructor(config: Partial<BatchConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -272,7 +271,6 @@ export class GraphQLBatcher {
 
   configure(baseUrl: string, orgId: string, authToken: string): void {
     this.batchUrl = `${baseUrl}/v1/orgs/${orgId}/graphql/batch`;
-    this.orgId = orgId;
     this.authToken = authToken;
   }
 
@@ -362,11 +360,21 @@ export class GraphQLBatcher {
       const results = await response.json() as { data?: unknown; errors?: { message: string }[] }[];
 
       for (let i = 0; i < keyedOperations.length; i++) {
-        const { op } = keyedOperations[i];
+        const entry = keyedOperations[i];
+        if (!entry) continue;
+        const { op } = entry;
         const result = results[i];
 
+        if (!result) {
+          for (const caller of op.callers) {
+            caller.reject(new Error('Batch response missing result'));
+          }
+          continue;
+        }
+
         if (result.errors && result.errors.length > 0) {
-          const err = new Error(result.errors[0].message);
+          const firstError = result.errors[0];
+          const err = new Error(firstError?.message ?? 'GraphQL batch error');
           for (const caller of op.callers) {
             caller.reject(err);
           }

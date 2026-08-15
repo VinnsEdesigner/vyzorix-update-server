@@ -1,4 +1,4 @@
-import type { Thresholds, NotificationEvent } from "@/domain/settings";
+import type { Thresholds, NotificationEvent } from "../../../domain/settings";
 
 export interface RawOperatorInfo {
   __typename?: "OperatorInfo";

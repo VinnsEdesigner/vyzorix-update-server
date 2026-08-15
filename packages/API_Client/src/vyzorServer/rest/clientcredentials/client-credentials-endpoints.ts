@@ -5,13 +5,13 @@ import {
   clientCredentialListFromRaw,
   type RawClientCredentialResponse,
   type RawClientCredentialListResponse,
-} from "@/domain/clientcredentials";
+} from "../../../domain/clientcredentials";
 import type {
   ClientCredential,
   ClientCredentialWithSecret,
   CreateClientCredentialRequest,
   UpdateClientCredentialRequest,
-} from "@/domain/clientcredentials";
+} from "../../../domain/clientcredentials";
 
 const PATHS = {
   list: "/v1/auth/client-credentials",

@@ -4,13 +4,13 @@ import {
   concurrentSessionsFromRaw,
   type RawSessionListResponse,
   type RawConcurrentSessionsResponse,
-} from "@/domain/session";
+} from "../../../domain/session";
 import type {
   SessionListResponse,
   ConcurrentSessionsResponse,
   RevokeSessionResponse,
   RevokeAllSessionsResponse,
-} from "@/domain/session";
+} from "../../../domain/session";
 
 const PATHS = {
   sessions: "/v1/auth/sessions",

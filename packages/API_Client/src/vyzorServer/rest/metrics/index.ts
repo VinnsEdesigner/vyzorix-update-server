@@ -6,4 +6,4 @@ export {
   fetchDashboardStats,
 } from "./rest-metrics-endpoints";
 
-export type { TimeRange, MetricResolution } from "@/domain/metrics";
+export type { TimeRange, MetricResolution } from "../../../domain/metrics";

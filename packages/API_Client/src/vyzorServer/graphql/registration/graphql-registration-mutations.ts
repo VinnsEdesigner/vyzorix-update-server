@@ -1,5 +1,6 @@
 import { graphqlClient } from '../_shared/graphql-client';
 import { gql } from '@apollo/client';
+import type { AcknowledgeAction } from '../../../domain/registration';
 
 export const ACK_INBOX = gql`
   mutation AckInbox($imei: String!, $action: AckAction!, $notes: String) {
@@ -21,10 +22,10 @@ export const DEREGISTER_DEVICE = gql`
   }
 `;
 
-export async function mutateAckInbox(params: { imei: string; action: 'APPROVE' | 'REJECT'; notes?: string }): Promise<unknown> {
+export async function mutateAckInbox(params: { imei: string; action: AcknowledgeAction; notes?: string }): Promise<unknown> {
   return graphqlClient.getClient().mutate({
     mutation: ACK_INBOX,
-    variables: params,
+    variables: { ...params, action: params.action.toUpperCase() as 'APPROVE' | 'REJECT' | 'ACKNOWLEDGE' },
   });
 }
 

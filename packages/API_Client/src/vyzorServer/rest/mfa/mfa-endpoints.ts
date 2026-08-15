@@ -10,7 +10,7 @@ import {
   mfaVerifyBackupFromRaw,
   mfaRegenerateCodesFromRaw,
   mfaVerifyFromRaw,
-} from "@/domain/auth";
+} from "../../../domain/auth";
 import type {
   MFAStatusResponse,
   MFAEnrollResponse,
@@ -20,7 +20,7 @@ import type {
   MFAVerifyBackupResponse,
   MFARegenerateCodesResponse,
   MFAVerifyResponse,
-} from "@/domain/auth";
+} from "../../../domain/auth";
 
 const MFA_PATHS = {
   status: "/v1/auth/mfa/status",

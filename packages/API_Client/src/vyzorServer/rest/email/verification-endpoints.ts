@@ -10,13 +10,13 @@ import {
   type RawResendVerificationResponse,
   type RawCancelVerificationResponse,
   type RawPollVerificationResponse,
-} from "@/domain/email";
+} from "../../../domain/email";
 import type {
   VerifyEmailResponse,
   ResendVerificationResponse,
   CancelVerificationResponse,
   PollVerificationResponse,
-} from "@/domain/email";
+} from "../../../domain/email";
 
 const EMAIL_PATHS = {
   verifyEmail: "/v1/auth/verify-email",

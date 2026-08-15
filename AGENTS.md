@@ -1,5 +1,39 @@
 # AGENTS.md — vyzorix-update-server
 
+## Spec realignment (documents/)
+- The `documents/*.md` front-end specs predate the **organization model**. When updating one,
+  pull correct context from BOTH the server spec (`documents/SERVER_BACKEND_*_API.md`) AND the
+  implemented API Client (`packages/API_Client/`) — the API client is the source of truth for the
+  API contract. Key org model facts: every call is org-scoped via `X-Organization-ID` header
+  (REST) / `organizationId` GraphQL variable, sourced from `useCurrentOrganizationId()`
+  (`apps/VyzoriX_web/src/hooks/_shared/use-current-context.ts`).
+- `DEVICE_REGISTRATION_SYSTEM.md` was realigned to v2.0 on 2026-08-15. Notable deltas from v1.x:
+  inbox entry paths are `/v1/inbox/:imei` (not `/v1/device/inbox/:imei`); confirm takes
+  `commandSecret` (not `confirmed:true`); `resendInboxApproval` endpoint added; domain types
+  gained `deviceClass`/`firebaseInstallId`/`operatorId` and dropped `firmware`/`securityPatch`/
+  `buildId`/`receivedAt`/`updatedAt`; REST is primary, GraphQL partial; 6-state inbox model
+  (pending/acknowledged/approving/approved/rejected/expired) vs the server spec's 3-state model.
+- **What is DONE vs TODO for device registration:** the **API Client** package
+  (`packages/API_Client/src/domain/registration/` + `vyzorServer/rest/registration/` +
+  `vyzorServer/graphql/registration/`) is done & committed. The **web hooks**
+  (`apps/VyzoriX_web/src/hooks/registration/use-*.ts`) are DONE (12 files, one per hook) with a
+  `_graphql-fallback.ts` helper; data layer is REST-primary with GraphQL fallback for
+  inbox/entry/ack/deregister. Tests in `src/test/hooks/use-registration.test.ts` (23 tests). The
+  device page UI (`ui/pages/device/`) is the only remaining TODO.
+- The server spec (`SERVER_BACKEND_DEVICE_REGISTRATION_API.md`) still uses a simpler 3-state
+  model and lacks org scoping in places — treat the API Client domain as authoritative for state.
+- `DASHBOARD_COMMANDS_LOGS.md` was realigned to v2.0 on 2026-08-15 (org model). Notable deltas:
+  every request is org-scoped via `X-Organization-ID` (REST primary; GraphQL partial fallback for
+  commands/logs queries only — command mutations currently OMIT `organizationId`, a gap to fix);
+  org scoping is **device-anchored** (only `devices` has `organization_id`; `commands`/`device_logs`
+  inherit via `FindByIDAndOrganization`); no GraphQL modules for metrics/telemetry/dashboard
+  (REST-only); web UI pages/routes are empty scaffolds (TODO) — the API Client domain + REST data
+  layers are DONE. A known server bug: `dashboard_stats` pending-command count + log registration
+  counts are global, not org-filtered. New §23 maps 4 new Zustand stores needed
+  (`command-queue-store`, `log-stream-store`, `metrics-realtime-store`, `dashboard-store`) plus the
+  query-key org-isolation fix (`dashboardStats`/`deviceMetrics`/`latestTelemetry`/`telemetryStats`
+  keys currently omit `organizationId`).
+
 ## Repository layout
 - `apps/api/` — Go server (go.mod). Does NOT consume the TS SDK.
 - `apps/VyzoriX_web/` — Vite + TanStack Start web app. Consumes `@vyzorix/api-client` (workspace symlink) for connectivity only.
@@ -23,6 +57,41 @@
 ## Working in this repo
 - pnpm workspace (`pnpm-workspace.yaml`); root `package.json` workspaces `apps/*` + `packages/*`.
 - When typechecking the web app, pre-existing `@/domain/...` resolution errors from API_Client source are expected (web tsconfig `@/*` → its own `./src/*`, not API_Client's). These are NOT caused by SDK changes.
+- Corepack prompts block `pnpm`: always prefix `COREPACK_ENABLE_DOWNLOAD_PROMPT=0` when invoking pnpm.
+- Web app typecheck: `./node_modules/.bin/tsc --noEmit` from `apps/VyzoriX_web` (strict mode, `noUnusedLocals`/`noUnusedParameters` on). The webapp's `eslint.config.js` imports `@vyzorix/config/src/eslint/*` (source `.ts`), which Node can't load — eslint currently fails to start regardless of changes; rely on `tsc` as the authoritative check.
+
+## Frontend stores layer (`apps/VyzoriX_web/src/stores/`)
+- **Architecture decision (3 conflicts resolved)**:
+  1. **Auth single source**: `authContext` (API client singleton) owns tokens/refresh/lockout. `useAuthStore` is a bridge-only — subscribes to `authContext.onChange`, mirrors `AuthState`+`LockoutState`, derives `status` (unauthenticated|mfa_required|needs_organization|authenticated|locked), and holds only the transient `mfaChallenge` (MFA challenge is per-login UI state, not persisted). `authContext` was exported from the browser entry by adding a scoped `export { authContext, ... } from './auth'` to `packages/API_Client/src/vyzorServer/index.ts` (scoped, NOT `export *`, to avoid an `ApiError`/`parseApiError` collision already re-exported via `rest/_shared`).
+  2. **Connection = three separate things**: `useWebSocketStore` (socket state), `useConnectivityStore` (network online/offline + offline queue), and `useDeviceStatus(deviceId)` hook (per-device server-side online status, TanStack Query, invalidated by WS events). Never merged.
+  3. **Server vs client state**: server data (profiles, devices, command status, logs) lives in TanStack Query hooks; client UI state (selected device, theme, pending-command spinners) lives in stores. `useCommandDispatchStore` holds only the optimistic pending list; command STATUS (pending/delivered/completed/failed/cancelled) is server data via `useCommandStatus` query cache.
+- **Dashboard WebSocket is GraphQL subscriptions, NOT device HMAC.** Verified in `apps/api/internal/api/server_graphql.go`: the dashboard WS endpoint `GET /:org/graphql/ws` is in the `cookieAuth` middleware group (HttpOnly `vyz_session` cookie, browser sends automatically on upgrade) + org membership check. The `WebSocketClientImpl` (device HMAC via `signWebSocketConnect`/`node:crypto`, `@vyzorix/api-client/node`) is **device-side only** — do NOT use it in the web app. `useWebSocketStore` owns a `graphql-ws` `createClient` instance (lazy=false hot connection, `retryAttempts: Infinity`, `keepAlive: 10s`) at `wss://host/v1/orgs/{org}/graphql/ws`, reading org from `getCurrentOrganizationId()`. `graphql-ws` is a direct dep of the web app (not just the API client). NOTE: the API client's `graphqlClient` (Apollo) is HTTP-only — it has no `WebSocketLink`/subscription transport yet, so subscription GQL documents (`DEVICE_UPDATED_SUBSCRIPTION` etc. in `graphql/realtime/`) can only run via this store's `graphql-ws` client.
+- **`ConnectivityMonitor` is a singleton** (`getConnectivityMonitor()`/`initConnectivityMonitor()` from `@vyzorix/api-client`): `getState()`, `subscribe(cb)` (returns unsubscribe, fires immediately), `getQueueSize()`, `getQueuedRequests()`, `flushQueue()`, `clearQueue()`, `checkConnectivity()`. `useConnectivityStore` bridges it once (replaces the per-component `useState`+`useEffect` re-subscribe pattern in the old `hooks/connectivity/use-connectivity.ts`).
+
+## Frontend hooks layer (`apps/VyzoriX_web/src/hooks/`)
+- **Server data = TanStack Query v5 (`@tanstack/react-query` ^5.83.0 / installed 5.101.0)**; client/transient state = Zustand stores. Hooks NEVER re-fetch the API client singletons directly for server data — they go through `useQuery`/`useMutation`, which call the API client endpoint objects. The Zustand stores are consumed for: org context (`useCurrentOrganizationId` from `useAuthStore`), selected device (`useSelectedImei` from `useDeviceSelectorStore`), optimistic pending commands (`useCommandDispatchStore`), and the WS socket (`useWebSocketStore`).
+- **QueryClient infra**: `src/lib/query-client.ts` (`createQueryClient` factory + `getQueryClient` browser-singleton; `isServer` from `@tanstack/react-query` is a boolean const, NOT a function), `src/lib/query-keys.ts` (key-factory convention: `['devices', imei]`, `['devices', {params}]`, etc.), `src/providers/query-provider.tsx` (`QueryProvider` wrapping `QueryClientProvider`). No app shell exists yet — `QueryProvider` is the seam that will mount under the root.
+- **Context helpers** (`src/hooks/_shared/use-current-context.ts`): `useCurrentOrganizationId()` (returns `string|null`), `useRequiredOrganizationId()` (throws if null), `useSelectedImei()` / `useRequiredImei()` (reads `useDeviceSelectorStore.selectedDevice?.imei`). The `null→undefined` coercion (`orgId ?? undefined`) is required because the API client params type org as `string | undefined` while the store holds `string | null`.
+- **Server-data hooks by feature** (each file compiles clean under strict `noUnusedLocals`):
+  - `auth/use-me.ts`: `useMe`, `useMyOrganizations`, `useMyInvitations`, `useSelectOrganization` (mutation invalidates `me` + removes all org-scoped caches on org switch).
+  - `device/use-devices.ts`: `useDevices(params?)`, `useDevice(imei?)`, `useDeviceConnectionStatus`, `useDeviceSettings`, `useUpdateDeviceSettings`, `useDeviceCount`, `useDeviceStats`, `useDeregisterDevice`, `useDisconnectDevice`.
+  - `logs/use-logs.ts`: `useDeviceLogs`, `useLog`, `useLogStats` (cursor pagination).
+  - `diagnostics/use-diagnostics.ts`: `useDeviceInspection`, `useDeviceTimeline` (inline `TimelineParams`; the API methods are `diagnostics.inspectDevice`/`getTimeline`, NOT `getDeviceInspection`/`getDeviceTimeline`).
+  - `events/use-events.ts`: `useDeviceEvents`, `useRecentEvents`, `useEventsByType`, `useEvent` (offset pagination).
+  - `metrics/use-metrics.ts`: `useDeviceMetrics`, `useDashboardStats`, `useExportMetrics` (`fetchDeviceMetrics`/`fetchDashboardStats`/`exportMetrics` are named function exports, NOT an object).
+  - `telemetry/use-telemetry.ts`: `useTelemetryHistory`, `useLatestTelemetry`, `useTelemetryStats`, `useExportTelemetry` (`queryTelemetryHistory` etc. named fns; `LatestTelemetry`/`TelemetryStats`/`TelemetryHistoryParams`/`TelemetryHistoryResponse` types are defined in the telemetry REST endpoint file, NOT in `domain/telemetry`).
+  - `commands/use-commands.ts`: `useCommandHistory`, `useCommand`, `usePendingCommands`, `useSendCommand` (mutation → `commands.send` + optimistic `addPending` to `useCommandDispatchStore`), `usePollCommandStatus` (wraps `pollCommandStatus` from the API client; on terminal status removes pending + invalidates command/pending caches), `useCancelCommand`, `useRetryCommand`.
+  - `apikey/use-api-keys.ts`, `session/use-sessions.ts`, `settings/use-settings.ts` (user-level `settings`, NOT org-level — the org-level `settings` in `rest/organization/` is a different object with the same identifier), `registration/use-registration.ts`, `organization/use-organizations.ts`.
+- **Realtime hooks** (`realtime/use-realtime.ts`): `useWebSocketConnection` (lifecycle: connect on org select, disconnect on unmount/org change), `useDeviceUpdates`, `useTelemetryStream`, `useCommandStatusStream`, `useOrganizationEvents`, `useMemberEvents`. All subscribe via `useWebSocketStore.subscribe` with a `graphql-ws` `SubscribePayload` whose `query` field is a **string** (the API client subscription exports are `@apollo/client` `gql` DocumentNodes; their raw body is read via `doc.loc.source.body`). Each `next` handler invalidates the matching TanStack query cache. `$deviceId`/`$dispatchId` are nullable `ID`; `$orgId` is `ID!`.
+- **Connectivity hooks refactored** (`connectivity/use-connectivity.ts`): now consume `useConnectivityStore` (Zustand) instead of re-subscribing to the `@vyzorix/api-client` connectivity singleton per component. Exports `useConnectivity`, `useConnectivityState`, `useIsOnline`, `useOfflineQueueSize`, `useOfflineQueue`, `useCheckConnectivity`, `useFlushOfflineQueue`, `useClearOfflineQueue`, `useInitConnectivity`. Return shape changed `checkingConnectivity`/`flushingQueue` → `isChecking`/`isFlushing` to match the store.
+- **API client barrel re-exports added** (endpoint-local types that were only reachable via the object-literal methods): `rest/device/index.ts` (`DeviceParams`/`DeviceSettings`/`ConnectionStatus`), `rest/logs/index.ts` (`LogParams`/`StatsParams`), `rest/commands/index.ts` (`CommandHistoryParams`), `rest/apikey/index.ts` (`CreateApiKeyInput`/`UpdateApiKeyInput`), `graphql/index.ts` (`export * from "./realtime"` for the subscription document constants). `rest/index.ts` uses `export * from "./<feature>"` for most features (so type re-exports flow through automatically); for `device` it uses explicit `export type { ... }` alongside the value export.
+- **Typecheck**: webapp `tsc --noEmit` from `apps/VyzoriX_web`. The hooks+lib+providers layer is 0 errors. Pre-existing errors in `_shared/use-debounce.ts` (2), `_shared/use-pagination.ts` (1 — wrong `@/domain/_shared` import), and API_Client source files (batching/domain) are untouched and unrelated.
+
+## TanStack Start dev server / SSR (`apps/VyzoriX_web`)
+- **Dev server boots and SSR works**: `pnpm dev` (or `npx vite dev`) serves `/` with HTTP 200 and server-rendered HTML. `vite.config.ts` registers `tanstackStart({ server: { entry: "src/server.ts" } })`; `src/server.ts` = `createStartHandler(defaultStreamHandler)`, `src/client.tsx` = `hydrateRoot(<StartClient/>)`, `src/router.tsx` exports `getRouter()` (NOT a static `router` instance — the generated `routeTree.gen.ts` footer imports `getRouter` and the server entry calls `entries.routerEntry.getRouter()` per request). `src/start.ts` = `createStart(() => ({}))`.
+- **KNOWN UPSTREAM BUG — node_modules patch required (lost on `pnpm install`!)**: `@tanstack/start-plugin-core@1.171.36` dev-server-plugin has two `isRunnableDevEnvironment(serverEnv)` instanceof guards that return `false` under Vite 7/8 because Vite loads the `RunnableDevEnvironment` class in two module-graph entries (main process vs module runner) — `instanceof` fails even though the env has a working `runner`. Result: SSR middleware silently skipped → 404 "Cannot GET /". This is TanStack/router issue #7614. **Workaround applied**: patched `node_modules/.pnpm/@tanstack+start-plugin-core@1.171.36*/dist/esm/vite/dev-server-plugin/plugin.js` to use a duck-type check (`serverEnv.runner && typeof serverEnv.runner.import === 'function'`) instead of `isRunnableDevEnvironment`. A `.bak` of the original sits next to it. **This patch is in node_modules and WILL be lost on reinstall** — re-apply after `pnpm install`, or wait for the upstream fix (#7614) to land in a new `start-plugin-core` release.
+- **`@apollo/client` SSR CJS interop fix** (`apps/VyzoriX_web/fix-apollo-ssr-plugin.ts`): `@apollo/client@3.14.1` ships CJS-first (`main: main.cjs`, `exports: null`), so Vite's SSR module runner (Node-native ESM resolution) loads the CJS build and named imports like `{ gql }` / `{ Observable }` throw "Named export not found". The TanStack Start plugin OWNS `environments.ssr.resolve.noExternal` (user `environments.ssr` config is overwritten, not merged), so top-level `ssr.noExternal` / `environments.ssr` config does NOT work. The fix is a `configResolved` (enforce: post) plugin that appends `["@apollo/client", "@apollo/client/*", "graphql", "graphql-tag", "zen-observable-ts"]` to the FINAL resolved `config.environments.ssr.resolve.noExternal`, forcing Vite to transform these deps for SSR (CJS→ESM). This is a permanent, legitimate vite plugin — keep it.
+- **Vite version**: root `package.json` `vite: ^7.3.5` (aligned with webapp `^7.3.1`). The instanceof bug reproduces on BOTH Vite 7 and 8; version is NOT the cause. Do NOT chase Vite 8 — the plugin patch is the real fix.
 
 ## Go API (`apps/api`) storage layer
 - **Dual backend via a single `*storage.SQLite` handle.** `internal/infrastructure/storage/sqlite.go` is backend-agnostic: `Open(cfg)` picks SQLite (local file, `mattn/go-sqlite3` CGO driver) or Turso (remote libSQL over HTTP, pure-Go `tursodatabase/libsql-client-go` driver) from `cfg.Backend` (auto-detected: turso when `TURSO_DB_URL` set). Both drivers are imported side-by-side (`sqlite3` + `libsql`); both register with `database/sql`.
@@ -49,3 +118,13 @@ Bugs surfaced by running the full request flow against Turso cloud and fixed. Al
 - Valid test IMEI: must be 15-digit Luhn. Helper `/tmp/imei.py` generates valid ones (TAC `490154` + serial + Luhn check digit). FCM token validation requires ≥100 printable ASCII chars.
 - Probe the live Turso DB directly: small Go programs under `database/sql` + `github.com/tursodatabase/libsql-client-go/libsql`, DSN = `TURSO_DB_URL?authToken=TURSO_VYZOR_SCOPE_DB_TOKEN` (fall back to `TURSO_AUTH_TOKEN`). `PRAGMA table_info`/`foreign_key_list` work over libSQL.
 - Build: `cd apps/api && CGO_ENABLED=1 go build -o /tmp/vyzorix-server ./cmd/api`. Tests: `CGO_ENABLED=1 go test ./...` (all green). Vet: `CGO_ENABLED=1 go vet ./...` clean.
+
+## Webapp test suite (vitest)
+- **All green: 167 tests / 16 files.** Run: `cd apps/VyzoriX_web && npx vitest run` (or `pnpm test`). Config in `vitest.config.ts` (react + tsconfigPaths plugins, jsdom env, `src/test/setup.ts`).
+- **Mocking @vyzorix/api-client**: stores import authContext/initConnectivityMonitor at MODULE LOAD time (module-level createStore calls authContext.getState() in buildSnapshot). Mocks MUST be hoisted via vi.hoisted() and provide ALL transitively-needed exports (authContext with getState/getLockoutState/onChange/setFromLoginWithTokens/etc, initConnectivityMonitor returning a monitor, getConnectivityMonitor, getCurrentOrganizationId). Missing any -> [vitest] No "X" export is defined on the mock at store init.
+- **Throwing hooks**: with testing-library/react v16 + React 19, result.error is NOT populated when a hook throws during render. Wrap hook call in try/catch inside renderHook and return the caught error as the result value.
+- **use-connectivity.ts**: uses useShallow from zustand/react/shallow to prevent infinite re-renders when selecting multiple fields from useConnectivityStore.
+- **vite.config.ts**: cast plugins array `as never` to bypass duplicate-vite-instance type mismatch (two vite@7.3.5 instances exist due to lightningcss 1.32 vs 1.33 peer deps).
+- **VyzorixViteConfig** (packages/config/src/vite/index.ts): MUST keep the tanstackStart? property — packages/config/src/presets/ssr.ts uses it.
+- **Type fixtures**: PresetCommandType values are uppercase ("FORCE_SPEAKER", "RESET_AUDIO_HAL", etc). OffsetPagination requires a hasMore: boolean field. DeviceSettings has no `name` property (use fcmEnabled, thresholds, etc).
+- **Test script**: "test": "vitest run" in webapp package.json.

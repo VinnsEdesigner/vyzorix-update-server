@@ -832,6 +832,7 @@ func (s *Service) CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, 
 	now := time.Now()
 	d := &device.Device{
 		ID:                entry.IMEI,
+		OrganizationID:    entry.OrganizationID,
 		FirebaseInstallID: entry.FirebaseInstallID,
 		FCMToken:          entry.FCMToken,
 		AppVersion:        entry.AppVersion,

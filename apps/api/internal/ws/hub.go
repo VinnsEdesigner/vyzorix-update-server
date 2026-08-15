@@ -49,6 +49,7 @@ type Hub struct {
 	compression          *Compression
 	latencyConfig        *LatencyConfig
 	metrics              HubMetrics
+	deviceLatency        map[string]*LatencyMetrics
 	mu                   sync.RWMutex
 	metricsMu            sync.RWMutex
 }
@@ -99,6 +100,7 @@ func New(log *slog.Logger, deviceRepo device.Repository, telemetryRepo telemetry
 		unreg:         make(chan *Client),
 		deviceStatus:  make(chan DeviceStatusUpdate, 256),
 		broadcast:     make(chan []byte, 256),
+		deviceLatency: make(map[string]*LatencyMetrics),
 	}
 
 	// Initialize with defaults if no config.
@@ -497,27 +499,41 @@ func (h *Hub) trackLatency(deviceID, dispatchID string, startTime time.Time, suc
 	h.metricsMu.Lock()
 	defer h.metricsMu.Unlock()
 
-	h.metrics.LatencyMetrics.TotalMessages++
-	if success {
-		h.metrics.LatencyMetrics.SuccessfulMessages++
-	} else {
-		h.metrics.LatencyMetrics.FailedMessages++
+	// Update global metrics.
+	h.updateLatencyMetrics(&h.metrics.LatencyMetrics, deviceID, dispatchID, latencyMS, success)
+
+	// Update per-device metrics.
+	dm, ok := h.deviceLatency[deviceID]
+	if !ok {
+		dm = &LatencyMetrics{}
+		h.deviceLatency[deviceID] = dm
 	}
-	h.metrics.LatencyMetrics.TotalLatencyMS += latencyMS
+	h.updateLatencyMetrics(dm, deviceID, dispatchID, latencyMS, success)
+}
+
+// updateLatencyMetrics updates a LatencyMetrics struct with a new sample.
+func (h *Hub) updateLatencyMetrics(m *LatencyMetrics, deviceID, dispatchID string, latencyMS int64, success bool) {
+	m.TotalMessages++
+	if success {
+		m.SuccessfulMessages++
+	} else {
+		m.FailedMessages++
+	}
+	m.TotalLatencyMS += latencyMS
 	// Update min/max.
-	if h.metrics.LatencyMetrics.MinLatencyMS == 0 || latencyMS < h.metrics.LatencyMetrics.MinLatencyMS {
-		h.metrics.LatencyMetrics.MinLatencyMS = latencyMS
+	if m.MinLatencyMS == 0 || latencyMS < m.MinLatencyMS {
+		m.MinLatencyMS = latencyMS
 	}
 
-	if latencyMS > h.metrics.LatencyMetrics.MaxLatencyMS {
-		h.metrics.LatencyMetrics.MaxLatencyMS = latencyMS
+	if latencyMS > m.MaxLatencyMS {
+		m.MaxLatencyMS = latencyMS
 	}
 
 	// Check if exceeds target (threshold is informational only).
 	if latencyMS > int64(h.latencyConfig.MaxLatencyMS) {
-		h.metrics.LatencyMetrics.ExceededCount++
-		h.metrics.LatencyMetrics.LastExceededAt = time.Now().Unix()
-		h.metrics.LatencyMetrics.LastExceededID = dispatchID
+		m.ExceededCount++
+		m.LastExceededAt = time.Now().Unix()
+		m.LastExceededID = dispatchID
 		h.log.Warn("latency exceeded target",
 			"deviceId", deviceID,
 			"dispatchId", dispatchID,
@@ -527,7 +543,7 @@ func (h *Hub) trackLatency(deviceID, dispatchID string, startTime time.Time, suc
 	}
 
 	// Update average.
-	h.metrics.LatencyMetrics.AverageLatencyMS = float64(h.metrics.LatencyMetrics.TotalLatencyMS) / float64(h.metrics.LatencyMetrics.TotalMessages)
+	m.AverageLatencyMS = float64(m.TotalLatencyMS) / float64(m.TotalMessages)
 }
 
 // SendWithDeliveryConfirmation sends a message and waits for delivery confirmation.
@@ -741,9 +757,14 @@ func (h *Hub) GetConnectionInfo(deviceID string) *ConnectionInfo {
 }
 
 // GetAverageLatency returns the average latency in milliseconds for a device.
+// Falls back to the global average only when no per-device samples exist.
 func (h *Hub) GetAverageLatency(deviceID string) int {
 	h.metricsMu.RLock()
 	defer h.metricsMu.RUnlock()
+
+	if dm, ok := h.deviceLatency[deviceID]; ok && dm.TotalMessages > 0 {
+		return int(dm.AverageLatencyMS)
+	}
 
 	if h.metrics.LatencyMetrics.TotalMessages == 0 {
 		return 0

@@ -7,11 +7,11 @@
  * Usage in eslint.config.js:
  *   import { vyzoRules } from '@vyzorix/config/eslint/architecture-index';
  */
-import { layerImportsRule, noReactInApiClientRule } from "./architecture-rules";
+import { layerImportsRule, noReactInApiClientRule } from "./architecture-rules.js";
 
 export const vyzoRules = {
-  "vyzo/layer-imports": layerImportsRule,
-  "vyzo/no-react-in-api-client": noReactInApiClientRule,
+  "layer-imports": layerImportsRule,
+  "no-react-in-api-client": noReactInApiClientRule,
 };
 
 export const vyzo = {

@@ -30,4 +30,6 @@ export {
 export {
   ACK_INBOX,
   DEREGISTER_DEVICE,
+  mutateAckInbox,
+  mutateDeregisterDevice,
 } from "./graphql-registration-mutations";

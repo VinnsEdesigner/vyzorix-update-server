@@ -1,5 +1,5 @@
 import { setOrganizationContext, setAuthToken, setCSRFToken, restClient } from "../rest/_shared/rest-client";
-import type { MeResponse, LoginWithTokensResponse } from "@/domain/auth";
+import type { MeResponse, LoginWithTokensResponse } from "../../domain/auth";
 
 export interface AuthState {
   isAuthenticated: boolean;

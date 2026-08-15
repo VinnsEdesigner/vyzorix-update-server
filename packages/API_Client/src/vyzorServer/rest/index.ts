@@ -24,7 +24,9 @@ export type {
 
 export * from "./registration";
 
-// Settings module
+export { devices } from "./device";
+export type { DeviceParams, DeviceSettings, ConnectionStatus } from "./device";
+
 export { settings } from "./settings";
 
 // Diagnostics exports

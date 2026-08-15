@@ -4,12 +4,12 @@ import {
   timelineResultFromRaw,
   type RawDeviceInspection,
   type RawTimelineResult,
-} from "@/domain/diagnostics";
+} from "../../../domain/diagnostics";
 import type {
   DeviceInspection,
   TimelineResult,
   TimelineEventType,
-} from "@/domain/diagnostics";
+} from "../../../domain/diagnostics";
 
 const PATHS = {
   inspect: (imei: string) => `/v1/device/${imei}/inspect`,

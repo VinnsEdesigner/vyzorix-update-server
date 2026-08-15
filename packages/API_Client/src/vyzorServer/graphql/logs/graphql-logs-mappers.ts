@@ -3,7 +3,7 @@ import type {
   LogEventType,
   LogListResult,
   LogStats,
-} from "@/domain/logs";
+} from "../../../domain/logs";
 import type {
   RawLogEntry,
   RawLogListItem,

@@ -1,6 +1,6 @@
 import { restClient } from "../_shared/rest-client";
-import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest } from "@/domain/organization";
-import { mapOrganization, type OrganizationApiResponse } from "@/domain/organization";
+import type { Organization, CreateOrganizationRequest, UpdateOrganizationRequest } from "../../../domain/organization";
+import { mapOrganization, type OrganizationApiResponse } from "../../../domain/organization";
 
 const PATHS = {
   organizations: "/v1/organizations",

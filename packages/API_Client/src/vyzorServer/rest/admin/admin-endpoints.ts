@@ -16,7 +16,7 @@ import {
   type UpdateOperatorRequest,
   type UpdateOperatorResponse,
   type DeleteOperatorResponse,
-} from "@/domain/admin";
+} from "../../../domain/admin";
 
 const PATHS = {
   operators: "/v1/admin/operators",

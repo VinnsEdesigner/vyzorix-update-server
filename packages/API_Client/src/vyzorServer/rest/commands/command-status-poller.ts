@@ -1,8 +1,8 @@
 
 
 import { commands } from "./commands-endpoints";
-import type { Command, CommandStatus } from "@/domain/commands";
-import { isCommandTerminal } from "@/domain/commands";
+import type { Command, CommandStatus } from "../../../domain/commands";
+import { isCommandTerminal } from "../../../domain/commands";
 
 export interface CommandPollingOptions {
   pollInterval?: number;
@@ -133,7 +133,7 @@ export async function waitForCommandCompletion(
   return new Promise((resolve, reject) => {
     pollCommandStatus(dispatchId, options, {
       onCompleted: (cmd) => resolve(cmd),
-      onFailed: (cmd, error) => reject(new Error(error ?? "Command failed")),
+      onFailed: (cmd, error) => reject(new Error(error ?? `Command ${cmd.dispatchId} failed`)),
       onCancelled: () => reject(new Error("Command was cancelled")),
       onTimeout: (_, stage) => reject(new Error(`Command ${stage} timed out`)),
       onError: (err) => reject(err),

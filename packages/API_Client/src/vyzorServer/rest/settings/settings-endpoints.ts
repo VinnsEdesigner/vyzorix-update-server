@@ -9,12 +9,12 @@ import {
   type RawThresholds,
   type RawClientSettings,
   type RawNotificationSettings,
-} from "@/domain/settings";
+} from "../../../domain/settings";
 import type {
   Thresholds,
   ClientSettings,
   NotificationSettings,
-} from "@/domain/settings";
+} from "../../../domain/settings";
 
 const PATHS = {
   settings: "/v1/auth/me/settings",

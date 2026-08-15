@@ -6,8 +6,8 @@ import {
   type RawEvent,
   type RawEventResult,
   type EventParams,
-} from "@/domain/events";
-import type { Event, EventResult } from "@/domain/events";
+} from "../../../domain/events";
+import type { Event, EventResult } from "../../../domain/events";
 
 const PATHS = {
   deviceEvents: (imei: string) => `/v1/dashboard/device/${imei}/events`,

@@ -94,11 +94,11 @@ export function getEventCategory(type: TimelineEventType): TimelineEventCategory
     case "CONNECTION_LOST":
     case "FCM_FALLBACK":
     case "RECONNECTED":
+    case "REGISTERED":
+    case "DEREGISTERED":
       return "connection";
     case "THRESHOLD_BREACH":
     case "ERROR":
-    case "REGISTERED":
-    case "DEREGISTERED":
       return "error";
     default:
       return "error";

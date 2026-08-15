@@ -4,7 +4,7 @@ import type {
   SyncStatus,
   ChangelogEntry,
   Pagination,
-} from "@/domain/updates";
+} from "../../../domain/updates";
 import type {
   RawUpdateVersion,
   RawUpdatePush,

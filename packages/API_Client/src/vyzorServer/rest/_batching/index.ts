@@ -4,6 +4,8 @@ export {
   getRESTBatcher,
   getGraphQLBatcher,
   resetBatchers,
+} from './request-batcher';
+export type {
   BatchConfig,
   BatchedRequest,
   BatchedCaller,

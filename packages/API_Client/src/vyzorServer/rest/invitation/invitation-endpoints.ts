@@ -1,8 +1,8 @@
 
 
 import { restClient } from '../_shared/rest-client';
-import type { Invitation, InvitationLifecycle, InvitationApiResponse } from '@/domain/invitation';
-import { mapInvitation } from '@/domain/invitation';
+import type { Invitation, InvitationLifecycle, InvitationApiResponse } from '../../../domain/invitation';
+import { mapInvitation } from '../../../domain/invitation';
 
 export interface PublicInvitationResponse {
   organizationId: string;

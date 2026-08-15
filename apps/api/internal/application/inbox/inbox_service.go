@@ -140,7 +140,7 @@ func (s *Service) GetInboxEntry(ctx context.Context, imei, orgID string) (*Inbox
 		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
 	}
 
-	if orgID != "" && entry.OrganizationID != orgID {
+	if orgID != "" && entry.OrganizationID != "" && entry.OrganizationID != orgID {
 		return nil, ErrInboxNotFound
 	}
 
@@ -226,7 +226,7 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
 	}
 
-	if orgID != "" && entry.OrganizationID != orgID {
+	if orgID != "" && entry.OrganizationID != "" && entry.OrganizationID != orgID {
 		return nil, ErrInboxNotFound
 	}
 
@@ -236,6 +236,12 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 
 	now := time.Now()
 	entry.OperatorID = operatorID
+
+	// Claim the entry for the operator's org on first action (public inbox
+	// entries have no org until an operator approves/rejects them).
+	if entry.OrganizationID == "" && orgID != "" {
+		entry.OrganizationID = orgID
+	}
 
 	// Transition to APPROVING (intermediate state).
 	entry.Status = inbox.StatusApproving
@@ -333,7 +339,7 @@ func (s *Service) RejectDevice(ctx context.Context, imei string, operatorID, org
 		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
 	}
 
-	if orgID != "" && entry.OrganizationID != orgID {
+	if orgID != "" && entry.OrganizationID != "" && entry.OrganizationID != orgID {
 		return nil, ErrInboxNotFound
 	}
 
@@ -347,6 +353,12 @@ func (s *Service) RejectDevice(ctx context.Context, imei string, operatorID, org
 	entry.UpdatedAt = now.UnixMilli()
 	entry.OperatorID = operatorID
 	entry.Notes = notes
+
+	// Claim the entry for the operator's org on first action (public inbox
+	// entries have no org until an operator approves/rejects them).
+	if entry.OrganizationID == "" && orgID != "" {
+		entry.OrganizationID = orgID
+	}
 
 	if err := s.repo.Update(ctx, entry); err != nil {
 		return nil, fmt.Errorf("failed to update inbox entry: %w", err)
@@ -671,7 +683,7 @@ func (s *Service) UpdateInboxEntry(ctx context.Context, imei, operatorID, orgID,
 		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
 	}
 
-	if orgID != "" && entry.OrganizationID != orgID {
+	if orgID != "" && entry.OrganizationID != "" && entry.OrganizationID != orgID {
 		return nil, ErrInboxNotFound
 	}
 
@@ -718,7 +730,7 @@ func (s *Service) ResendApproval(ctx context.Context, imei, operatorID, orgID st
 		return nil, fmt.Errorf("failed to get inbox entry: %w", err)
 	}
 
-	if orgID != "" && entry.OrganizationID != orgID {
+	if orgID != "" && entry.OrganizationID != "" && entry.OrganizationID != orgID {
 		return nil, ErrInboxNotFound
 	}
 

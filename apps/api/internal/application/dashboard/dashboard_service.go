@@ -117,8 +117,15 @@ func (s *Service) GetDashboardStatsByOrganization(ctx context.Context, orgID str
 		}
 	}
 
-	// Get command stats (filtered by organization in the future).
-	pendingCount, err := s.commandRepo.CountPending(ctx)
+	// Get command stats (filtered by organization via device-anchored scoping).
+	orgDeviceIDs := make([]string, 0, len(allDevices))
+	orgDeviceSet := make(map[string]bool, len(allDevices))
+	for _, d := range allDevices {
+		orgDeviceIDs = append(orgDeviceIDs, d.ID)
+		orgDeviceSet[d.ID] = true
+	}
+
+	pendingCount, err := s.commandRepo.CountPendingByDeviceIDs(ctx, orgDeviceIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count pending commands: %w", err)
 	}
@@ -135,12 +142,8 @@ func (s *Service) GetDashboardStatsByOrganization(ctx context.Context, orgID str
 
 	// Filter commands by organization.
 	var orgCommands []*command.Command
-	orgDeviceIDs := make(map[string]bool)
-	for _, d := range allDevices {
-		orgDeviceIDs[d.ID] = true
-	}
 	for _, cmd := range commandsLast24h {
-		if orgDeviceIDs[cmd.DeviceID] {
+		if orgDeviceSet[cmd.DeviceID] {
 			orgCommands = append(orgCommands, cmd)
 		}
 	}
@@ -154,15 +157,15 @@ func (s *Service) GetDashboardStatsByOrganization(ctx context.Context, orgID str
 		}
 	}
 
-	// Count registrations and deregistrations from device logs in last 24h.
+	// Count registrations and deregistrations from device logs in last 24h (org-scoped).
 	var registrations, deregistrations int
 	if s.logsRepo != nil {
-		registrations, err = s.logsRepo.CountLogs(ctx, "", logs.EventTypeRegistration, last24h, now)
+		registrations, err = s.logsRepo.CountLogsByDeviceIDs(ctx, orgDeviceIDs, logs.EventTypeRegistration, last24h, now)
 		if err != nil {
 			registrations = 0
 		}
 
-		deregistrations, err = s.logsRepo.CountLogs(ctx, "", logs.EventTypeDeregistration, last24h, now)
+		deregistrations, err = s.logsRepo.CountLogsByDeviceIDs(ctx, orgDeviceIDs, logs.EventTypeDeregistration, last24h, now)
 		if err != nil {
 			deregistrations = 0
 		}

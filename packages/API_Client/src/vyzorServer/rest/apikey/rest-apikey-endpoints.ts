@@ -7,13 +7,13 @@ import type {
   RawApiKey,
   RawApiKeyWithSecret,
   RawApiKeyListResult,
-} from "@/domain/apikey";
+} from "../../../domain/apikey";
 import {
   apiKeyFromRaw,
   apiKeyWithSecretFromRaw,
   paginationFromRaw,
   apiKeyStatsFromRaw,
-} from "@/domain/apikey";
+} from "../../../domain/apikey";
 
 const PATHS = {
   list: "/v1/auth/api-keys",

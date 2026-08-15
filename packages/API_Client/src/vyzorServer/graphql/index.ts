@@ -10,8 +10,30 @@ export {
   GET_INVITATION_BY_TOKEN,
 } from "./organization";
 
+export {
+  GET_INBOX_ENTRIES,
+  GET_INBOX_ENTRY,
+  queryInboxEntries,
+  queryInboxEntry,
+} from "./registration";
+
+export {
+  ACK_INBOX,
+  DEREGISTER_DEVICE,
+  mutateAckInbox,
+  mutateDeregisterDevice,
+} from "./registration";
+
 export { GET_DEVICES } from "./device";
-export { GET_LOGS } from "./logs";
+export { GET_LOGS, queryLogs } from "./logs";
 export { GET_UPDATES } from "./updates";
-export { GET_DEVICE_INSPECTION, GET_DEVICE_TIMELINE } from "./diagnostics";
-export { SEND_COMMAND } from "./commands";
+export { GET_DEVICE_INSPECTION, GET_DEVICE_TIMELINE, queryDeviceInspection, queryDeviceTimeline } from "./diagnostics";
+export {
+  SEND_COMMAND,
+  GET_PENDING_COMMANDS,
+  GET_COMMAND,
+  queryPendingCommands,
+  queryCommand,
+} from "./commands";
+export { SUBSCRIBE_TO_LOGS, SUBSCRIBE_TO_DEVICE_LOGS } from "./logs";
+export * from "./realtime";

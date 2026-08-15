@@ -46,6 +46,10 @@ type Repository interface {
 	// CountPending returns the number of pending commands.
 	CountPending(ctx context.Context) (int, error)
 	CountPendingByDevice(ctx context.Context, deviceID string) (int, error)
+	// CountPendingByDeviceIDs returns the number of pending commands for the given device IDs.
+	// Used for organization-scoped dashboard stats (org scoping is device-anchored).
+	// Returns 0 immediately when deviceIDs is empty.
+	CountPendingByDeviceIDs(ctx context.Context, deviceIDs []string) (int, error)
 
 	// MarkWake marks whether a wake command was sent successfully for a command dispatch.
 	MarkWake(ctx context.Context, dispatchID string, errText string) error

@@ -70,7 +70,9 @@ export interface RawTimelineEvent {
 
 export interface RawTimelineResult {
   events: RawTimelineEvent[];
-  hasMore: boolean;
+  // Server REST nests pagination under `pagination`; GraphQL is flat. Accept both.
+  pagination?: { limit?: number; hasMore?: boolean; nextCursor?: string };
+  hasMore?: boolean;
   nextCursor?: string;
 }
 
@@ -144,10 +146,12 @@ export function deviceInspectionFromRaw(raw: RawDeviceInspection): DeviceInspect
 }
 
 export function timelineResultFromRaw(raw: RawTimelineResult): TimelineResult {
+  // Server REST nests pagination under `pagination`; GraphQL returns flat. Prefer nested.
+  const pagination = raw.pagination;
   return {
     events: raw.events.map(timelineEventFromRaw),
-    hasMore: raw.hasMore,
-    nextCursor: raw.nextCursor,
+    hasMore: pagination?.hasMore ?? raw.hasMore ?? false,
+    nextCursor: pagination?.nextCursor ?? raw.nextCursor,
   };
 }
 

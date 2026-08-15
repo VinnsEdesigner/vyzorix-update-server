@@ -123,7 +123,7 @@ func (s *Service) GetDeviceInspection(ctx context.Context, imei, orgID string) (
 	registration := diagnostics.RegistrationInfo{
 		Status:              s.determineDeviceStatus(dev),
 		RegisteredAt:        registeredAt,
-		FCMTokenValid:       dev.FCMToken != "" && dev.IsFCMTokenValid(),
+		FCMTokenValid:       dev.FCMToken != "" && s.isFCMTokenValid(dev),
 		FCMTokenRefreshedAt: dev.FCMTokenRefreshedAtTime(),
 		CommandSecretSet:    dev.CommandSecretHash != "",
 	}
@@ -437,6 +437,23 @@ func (s *Service) determineWebSocketStatus(dev *device.Device, wsConnected bool)
 		return "connected" // Might be using FCM.
 	}
 	return "disconnected"
+}
+
+// isFCMTokenValid reports FCM token validity using the configured expiry window
+// (cfg.FCMTokenExpiryDays), rather than the Device.IsFCMTokenValid() hardcoded 30 days.
+func (s *Service) isFCMTokenValid(dev *device.Device) bool {
+	if dev.FCMToken == "" {
+		return false
+	}
+	if dev.FCMTokenRefreshedAt == nil || *dev.FCMTokenRefreshedAt == 0 {
+		// If never refreshed, consider the token valid (mirrors Device.IsFCMTokenValid).
+		return true
+	}
+	expiry := time.Duration(s.cfg.FCMTokenExpiryDays) * 24 * time.Hour
+	if expiry <= 0 {
+		expiry = 30 * 24 * time.Hour
+	}
+	return time.Since(time.UnixMilli(*dev.FCMTokenRefreshedAt)) < expiry
 }
 
 // determineFCMStatus determines the FCM token validity status.

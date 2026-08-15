@@ -1,4 +1,4 @@
-import { buildOAuthState, parseOAuthCallbackUrl } from "@/domain/oauth";
+import { buildOAuthState, parseOAuthCallbackUrl } from "../../../domain/oauth";
 
 const PATHS = {
   google: {

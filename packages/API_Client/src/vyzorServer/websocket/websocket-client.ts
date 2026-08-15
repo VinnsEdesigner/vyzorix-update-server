@@ -10,7 +10,7 @@ import {
   type RawWSEvent,
   type RawWSCommandAck,
   type RawWSAuthResponse,
-} from "@/domain/realtime";
+} from "../../domain/realtime";
 import { ConnectionStateMachineImpl } from "./websocket-connection";
 import { HeartbeatManagerImpl } from "./websocket-heartbeat";
 import { ReconnectManagerImpl } from "./websocket-reconnect";

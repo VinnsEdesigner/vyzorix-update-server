@@ -1,7 +1,7 @@
 import { restClient } from "../_shared/rest-client";
-import type { Invitation, InvitationResponseRequest } from "@/domain/invitation";
-import { mapInvitation, type InvitationApiResponse } from "@/domain/invitation";
-import type { OrganizationRole } from "@/domain/organization";
+import type { Invitation, InvitationResponseRequest } from "../../../domain/invitation";
+import { mapInvitation, type InvitationApiResponse } from "../../../domain/invitation";
+import type { OrganizationRole } from "../../../domain/organization";
 
 interface CreateInvitationRequest {
   email: string;

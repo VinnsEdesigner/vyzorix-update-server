@@ -1,6 +1,6 @@
 import { restClient } from "../_shared/rest-client";
-import type { OrganizationMember, UpdateMemberRoleRequest } from "@/domain/organization";
-import { mapMember, type MemberApiResponse } from "@/domain/organization";
+import type { OrganizationMember, UpdateMemberRoleRequest } from "../../../domain/organization";
+import { mapMember, type MemberApiResponse } from "../../../domain/organization";
 
 const PATHS = {
   members: (orgId: string) => `/v1/organizations/${orgId}/members`,
