@@ -6,9 +6,7 @@
  *   - The /api prefix is stripped correctly for GraphQL routes
  *   - Queries return expected shapes (data/errors)
  *   - Mutations are handled (and signed if required)
- *
- * Query mismatch detection: if the API Client uses a different GraphQL path
- * than the Go API registers, these tests fail.
+
  */
 
 const { test, expect } = require('@playwright/test');
@@ -18,7 +16,7 @@ const TEST_ORG_ID = '38912763-0f82-42b8-a2a7-96f73ce79ac5';
 
 // GraphQL endpoints require a session cookie (cookieAuth middleware).
 // Without auth, the endpoint returns 401 — which proves the route EXISTS
-// (a 404 would mean the route is not registered = query mismatch bug).
+// (a 404 would mean the route is not registered = query
 // 429 = rate limited (also proves the route exists, just throttled).
 const AUTH_REQUIRED_STATUSES = [200, 401, 403, 429];
 
@@ -108,7 +106,7 @@ test.describe('GraphQL through proxy', () => {
       { orgId: TEST_ORG_ID },
     );
 
-    // 404 would mean the batch route isn't registered — that's a bug.
+    // 404 would mean the batch route isn't registered
     expect(result.status).not.toBe(404);
   });
 
