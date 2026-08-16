@@ -1,15 +1,9 @@
-/**
- * playwright.config.cjs
- *
- * Root Playwright configuration for Vyzorix E2E tests.
- *
- * Architecture:
- *   Headless Browser → Proxy (:3099) → Go API (:3000)
+
+ /*Headless Browser → Proxy (:3099) → Go API (:3000)
  *
  * The proxy serves the test harness at /__e2e__/ which loads the API Client
  * browser bundle. Tests navigate to the harness and exercise the real API
  * Client (REST, GraphQL, WebSocket, developer-client) through the full proxy
- * stack — catching query mismatches, routing bugs, and signing errors.
  *
  * No Vite. No separate dev server. The proxy serves everything.
  */
