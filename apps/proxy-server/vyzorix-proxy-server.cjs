@@ -5,10 +5,7 @@
  *
  * Sits between the browser and the Go API:
  *
- *   Browser ──(httpOnly cookie)──> Proxy (:3001) ──(signed)──> Go API (:3000)
- *
- * Responsibilities:
- *   1. Serves the web app static files (no vite — pure Node http + fs)
+ *  1.   Browser ──(httpOnly cookie)──> Proxy (:3001) ──(signed)──> Go API (:3000
  *   2. Manages server-side auth sessions (signing key, tokens, CSRF)
  *   3. Signs all API requests with X-Vyzorix-* HMAC headers
  *   4. Auto-fetches and injects CSRF tokens
@@ -56,8 +53,8 @@ var activeSessionCount = sessionStore.activeSessionCount;
 function printBanner() {
   banner([
     pc.magenta(pc.bold('╔══════════════════════════════════════════════════════════════╗')),
-    pc.magenta(pc.bold('║  Vyzorix Proxy Server (BFF)                          v1.0.0   ║')),
-    pc.magenta(pc.bold('║  Serves Web · Signs Requests · Manages Sessions              ║')),
+    pc.magenta(pc.bold('║  Vyzorix Proxy Server (BFF)                                    v0.1.0   ║')),
+    pc.magenta(pc.bold('║  Serves Web · Signs Requests · Manages Sessions                         ║')),
     pc.magenta(pc.bold('╚══════════════════════════════════════════════════════════════╝')),
   ]);
   var modeColor = config.mode === 'production' ? pc.red : pc.yellow;
