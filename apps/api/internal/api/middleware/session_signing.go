@@ -1,0 +1,144 @@
+package middleware
+
+import (
+	"net/http"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
+	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
+	"github.com/gin-gonic/gin"
+)
+
+// sessionContextKey must match the key used by CookieAuth when storing the
+// validated session in the gin context.
+const sessionContextKey = "session"
+
+// SessionSignatureMiddleware verifies the X-Vyzorix-* HMAC headers on
+// tenant API requests using the per-session signing key.
+//
+// Unlike RequestSigningMiddleware (which resolves the secret by client ID
+// for device APIs), this middleware reads the session that CookieAuth /
+// API-key auth already placed in the gin context and uses session.SigningKey
+// as the HMAC secret. This binds every tenant request to the authenticated
+// session, so a stolen JWT without the session signing key cannot call the
+// API.
+//
+// For API-key-authenticated requests (no session), the middleware reads the
+// api_key_signing_secret that TenantAPIKeyAuth placed in the context and uses
+// it as the HMAC secret instead. This extends request signing to API keys
+// (Domain A) using the same X-Vyzorix-* header scheme.
+//
+// The middleware must run AFTER cookie/API-key auth so the session or API key
+// is present.
+func SessionSignatureMiddleware(verifier *cryptohmac.Verifier) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if verifier == nil {
+			c.Next()
+			return
+		}
+
+		// Reject requests with no signature header. Every authenticated request
+		// must carry X-Vyzorix-* signing headers — there is no unsigned fallback.
+		if c.GetHeader("X-Vyzorix-Signature") == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error":   "SIGN_001",
+				"message": "Missing required signature headers",
+			})
+			return
+		}
+
+		// Resolve the HMAC secret: session key for cookie auth, API key signing
+		// secret for API-key auth. The nonce namespace ID is the session ID or
+		// API key ID respectively.
+		var hmacSecret string
+		var nonceNamespace string
+
+		if sessVal, exists := c.Get(sessionContextKey); exists {
+			sess, ok := sessVal.(*session.Session)
+			if !ok || sess == nil || sess.SigningKey == "" {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "SIGN_003",
+					"message": "Signature verification failed",
+				})
+				return
+			}
+			hmacSecret = sess.SigningKey
+			nonceNamespace = sess.ID
+		} else if secretVal, exists := c.Get("api_key_signing_secret"); exists {
+			secret, ok := secretVal.(string)
+			if !ok || secret == "" {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "SIGN_003",
+					"message": "Signature verification failed",
+				})
+				return
+			}
+			hmacSecret = secret
+			if keyID, idExists := c.Get("api_key_id"); idExists {
+				if id, idOk := keyID.(string); idOk {
+					nonceNamespace = id
+				}
+			}
+		} else {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error":   "SIGN_003",
+				"message": "Signature verification failed",
+			})
+			return
+		}
+
+		// Build a one-shot verifier scoped to this request so the Secret
+		// function can return the resolved secret.
+		reqVerifier := &cryptohmac.Verifier{
+			Secret: func(_ string) (string, bool) {
+				return hmacSecret, true
+			},
+			Nonces: verifier.Nonces,
+			Window: verifier.Window,
+		}
+
+		if _, err := reqVerifier.ReadAndVerify(c.Request, nonceNamespace); err != nil {
+			switch err.(type) {
+			case cryptohmac.MissingError:
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "SIGN_001",
+					"message": "Missing required signature headers",
+				})
+			case cryptohmac.BadFormatError:
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "SIGN_002",
+					"message": "Invalid timestamp format",
+				})
+			case *cryptohmac.TimestampExpiredError:
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "SIGN_003",
+					"message": "Request timestamp outside allowed window",
+				})
+			case cryptohmac.ReplayedError:
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "SIGN_006",
+					"message": "Replay detected",
+				})
+			case cryptohmac.DeviceNotFoundError:
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "SIGN_003",
+					"message": "Signature verification failed",
+				})
+			case cryptohmac.SignatureInvalidError:
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "SIGN_003",
+					"message": "Signature verification failed",
+				})
+			default:
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "SIGN_003",
+					"message": "Signature verification failed",
+				})
+			}
+			return
+		}
+
+		// Tag the request so downstream handlers know it was signature-verified.
+		c.Set("session_signature_verified", true)
+		c.Next()
+	}
+}

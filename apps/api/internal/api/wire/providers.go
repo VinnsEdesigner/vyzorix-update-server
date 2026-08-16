@@ -588,6 +588,11 @@ func ProvideHmacVerifier(factory *middleware.MiddlewareFactory) *cryptohmac.Veri
 	return factory.GetHmacVerifier()
 }
 
+// ProvideSessionSignVerifier creates the session signature verifier for tenant routes.
+func ProvideSessionSignVerifier(factory *middleware.MiddlewareFactory) *cryptohmac.Verifier {
+	return factory.GetSessionSignatureVerifier()
+}
+
 // ProvideCookieAuth creates the cookie auth middleware.
 func ProvideCookieAuth(sessionManager *infraauth.SessionManager, authService *auth.AuthService) *middleware.CookieAuth {
 	return middleware.NewCookieAuth(sessionManager, authService)

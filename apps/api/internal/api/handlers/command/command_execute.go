@@ -14,6 +14,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
+	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
@@ -26,6 +27,7 @@ type ExecuteHandler struct {
 	deviceService  *device.Service
 	hub            *hub.Hub
 	fcmNotifier    fcm.Notifier
+	commandSigner  *cryptohmac.CommandSigner
 	log            *slog.Logger
 }
 
@@ -36,6 +38,7 @@ func NewExecuteHandler(commandService *cmdSvc.Service, deviceService *device.Ser
 		deviceService:  deviceService,
 		hub:            hub,
 		fcmNotifier:    fcmNotifier,
+		commandSigner:  cryptohmac.NewCommandSigner(),
 		log:            slog.Default(),
 	}
 }
@@ -119,7 +122,11 @@ func (h *ExecuteHandler) validateCommandRequest(imei, command, nonce string) err
 	return nil
 }
 
-// sendCommandAndBuildFrame sends the command via service and builds the command frame.
+// sendCommandAndBuildFrame sends the command via service and builds a signed
+// command frame. The frame is HMAC-signed with the device's command secret
+// (Domain B: server→device command signing) so the Android device can verify
+// authenticity. Client-provided nonce/signature/timestamp are intentionally
+// discarded — the server is the signing authority, never the web client.
 func (h *ExecuteHandler) sendCommandAndBuildFrame(c *gin.Context, imei string, req struct {
 	Args       map[string]interface{} `json:"args,omitempty"`
 	Command    string                 `json:"command"`
@@ -132,16 +139,6 @@ func (h *ExecuteHandler) sendCommandAndBuildFrame(c *gin.Context, imei string, r
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to marshal args"})
 		return nil, command.CommandFrame{}, err
-	}
-
-	frame := command.CommandFrame{
-		Type:       req.Command,
-		Command:    req.Command,
-		DispatchID: req.DispatchID,
-		Args:       argsJSON,
-		Timestamp:  req.Timestamp,
-		Nonce:      req.Nonce,
-		Signature:  req.Signature,
 	}
 
 	cmdReq := &dto.SendCommandRequest{
@@ -158,8 +155,47 @@ func (h *ExecuteHandler) sendCommandAndBuildFrame(c *gin.Context, imei string, r
 		return nil, command.CommandFrame{}, err
 	}
 
-	frame.DispatchID = cmdResp.DispatchID
+	// Build the frame with the server-generated dispatch ID.
+	frame := command.CommandFrame{
+		Type:       req.Command,
+		Command:    req.Command,
+		DispatchID: cmdResp.DispatchID,
+		Args:       argsJSON,
+		Timestamp:  h.commandSigner.GenerateTimestampMs(),
+	}
+
+	// Sign the frame with the device's command secret so the device can
+	// verify the command originated from the server (Domain B).
+	if err := h.signCommandFrame(c.Request.Context(), imei, &frame); err != nil {
+		h.log.Warn("failed to sign command frame; aborting dispatch", "error", err, "deviceId", imei)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to sign command"})
+		return nil, command.CommandFrame{}, err
+	}
+
 	return cmdResp, frame, nil
+}
+
+// signCommandFrame retrieves the device's command secret and signs the frame
+// in place (sets Nonce + Signature). The device's CommandSecretHash is a
+// deterministic derivation of the plaintext secret (SHA-256), so both the
+// server and the device can compute the same HMAC key without the server
+// storing the plaintext.
+func (h *ExecuteHandler) signCommandFrame(ctx context.Context, imei string, frame *command.CommandFrame) error {
+	dev, err := h.deviceService.GetDevice(ctx, imei)
+	if err != nil {
+		return err
+	}
+	if dev.CommandSecretHash == "" {
+		return errors.New("device has no command secret — re-registration required")
+	}
+
+	nonce, sig, err := h.commandSigner.SignCommand(frame, imei, dev.CommandSecretHash)
+	if err != nil {
+		return err
+	}
+	frame.Nonce = nonce
+	frame.Signature = sig
+	return nil
 }
 
 // deliverCommand delivers the command via WebSocket or FCM.

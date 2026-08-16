@@ -43,6 +43,7 @@ type MiddlewareSet struct {
 	RevocationList    *infraauth.RevocationList
 	IPIntelligence    *middleware.IPIntelligence
 	HmacVerifier      *cryptohmac.Verifier
+	SessionSignVerifier *cryptohmac.Verifier
 	EncryptKeyFn      func(clientID string) ([]byte, bool)
 	RateLimiter       *middleware.RateLimiter
 	AuthLimiter       *middleware.RateLimiter
@@ -73,6 +74,7 @@ func WireMiddleware(cfg MiddlewareConfig) *MiddlewareSet {
 
 	// Get middleware instances for server use.
 	ms.HmacVerifier = ms.Factory.GetHmacVerifier()
+	ms.SessionSignVerifier = ms.Factory.GetSessionSignatureVerifier()
 	ms.EncryptKeyFn = ms.Factory.GetEncryptionKeyFn()
 	ms.CookieAuth = middleware.NewCookieAuth(cfg.SessionManager, cfg.AuthService)
 	ms.Lockout = ms.Factory.GetLockout()

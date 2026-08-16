@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createVyzorStore } from '@/lib/state';
 import type { CommandParams, PresetCommandType } from '@vyzorix/api-client';
 
 export interface PendingCommand {
@@ -18,7 +18,7 @@ export interface CommandDispatchState {
   getPending: (dispatchId: string) => PendingCommand | undefined;
 }
 
-export const useCommandDispatchStore = create<CommandDispatchState>((set, get) => ({
+export const useCommandDispatchStore = createVyzorStore<CommandDispatchState>('CommandDispatchStore', (set, get) => ({
   pendingCommands: {},
   pendingCount: 0,
   addPending: (command) =>

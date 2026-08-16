@@ -50,6 +50,7 @@ type APIKey struct {
 	OperatorID   string     `json:"operator_id"`
 	Name         string     `json:"name"`
 	KeyPrefix    string     `json:"key_prefix"`
+	SigningSecret string    `json:"-"`
 	Scope        Scope      `json:"scope"`
 	RequestCount int64      `json:"request_count"`
 	IsActive     bool       `json:"is_active"`
@@ -83,7 +84,8 @@ type UpdateAPIKeyRequest struct {
 
 // APIKeyWithFullKey represents an API key response with the full key (only returned on create/rotate).
 type APIKeyWithFullKey struct {
-	FullKey string `json:"api_key"`
+	FullKey    string `json:"api_key"`
+	SigningKey string `json:"signing_key,omitempty"`
 	APIKey
 }
 
@@ -137,14 +139,41 @@ type Pagination struct {
 
 // ListAllAPIKeysResponse represents a paginated list of all API keys (super admin).
 type ListAllAPIKeysResponse struct {
-	Keys       []APIKeyResponse `json:"keys"`
-	Pagination Pagination       `json:"pagination"`
+	Keys       []AdminAPIKeyResponse `json:"keys"`
+	Pagination Pagination            `json:"pagination"`
+}
+
+// AdminAPIKeyResponse extends APIKeyResponse with operator identity, which the
+// super-admin "list all keys" view requires. APIKeyResponse omits operator_id
+// because operator-scoped responses imply the operator; the admin view does not.
+type AdminAPIKeyResponse struct {
+	OperatorID   string `json:"operator_id"`
+	OperatorName string `json:"operator_name"`
+	APIKeyResponse
 }
 
 // GlobalAPIKeyStats represents global API key statistics (super admin).
+// request_count is cumulative (lifetime) per key — the schema does not store a
+// per-request log, so time-windowed "today"/"this month" totals are not tracked;
+// total_requests is the sum of every key's lifetime request_count.
 type GlobalAPIKeyStats struct {
-	TotalActiveKeys int `json:"total_active_keys"`
-	MaxPerMonth     int `json:"max_per_month"`
+	RequestsByScope   map[string]int64  `json:"requests_by_scope"`
+	TopOperators      []TopOperatorStat `json:"top_operators"`
+	TotalKeys         int               `json:"total_keys"`
+	ActiveKeys        int               `json:"active_keys"`
+	RevokedKeys       int               `json:"revoked_keys"`
+	TotalOperators    int               `json:"total_operators"`
+	MaxPerMonth       int               `json:"max_per_month"`
+	TotalRequests     int64             `json:"total_requests"`
+}
+
+// TopOperatorStat is a per-operator cumulative request aggregate returned in
+// GlobalAPIKeyStats.TopOperators.
+type TopOperatorStat struct {
+	OperatorID      string `json:"operator_id"`
+	OperatorName    string `json:"operator_name"`
+	TotalRequests   int64  `json:"total_requests"`
+	ActiveKeyCount  int    `json:"active_key_count"`
 }
 
 // API key errors.

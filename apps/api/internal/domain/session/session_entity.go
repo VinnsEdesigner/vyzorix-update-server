@@ -20,6 +20,11 @@ type Session struct {
 	// Required when operator has MFA enabled.
 	MFAVerifiedAt *time.Time
 
+	// SigningKey is the per-session HMAC secret used to sign client requests.
+	// The browser client receives this on login and signs every subsequent
+	// request; the server verifies the signature against this key.
+	SigningKey string
+
 	// Optional metadata.
 	IPAddress string
 	UserAgent string

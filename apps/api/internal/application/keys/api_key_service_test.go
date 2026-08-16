@@ -2,7 +2,11 @@ package keys
 
 import (
 	"context"
+	"crypto/sha512"
 	"database/sql"
+	"encoding/hex"
+	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -96,6 +100,34 @@ func (r *mockAPIKeyRepository) ListAll(ctx context.Context, limit, offset int) (
 	return result[offset:end], total, nil
 }
 
+func (r *mockAPIKeyRepository) ListAllWithOperator(ctx context.Context, limit, offset int, operatorID, search string) ([]infraStorage.APIKeyWithOperator, int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var result []infraStorage.APIKeyWithOperator
+	for _, k := range r.keys {
+		if k.IsActive {
+			if operatorID != "" && k.OperatorID != operatorID {
+				continue
+			}
+			if search != "" {
+				if !strings.Contains(strings.ToLower(k.Name), strings.ToLower(search)) {
+					continue
+				}
+			}
+			result = append(result, infraStorage.APIKeyWithOperator{APIKey: *k})
+		}
+	}
+	total := len(result)
+	if offset >= len(result) {
+		return []infraStorage.APIKeyWithOperator{}, total, nil
+	}
+	end := offset + limit
+	if end > len(result) {
+		end = len(result)
+	}
+	return result[offset:end], total, nil
+}
+
 func (r *mockAPIKeyRepository) Update(ctx context.Context, key *infraStorage.APIKey) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -148,6 +180,52 @@ func (r *mockAPIKeyRepository) CountAll(ctx context.Context) (int, error) {
 		}
 	}
 	return count, nil
+}
+
+func (r *mockAPIKeyRepository) CountAllIncludingRevoked(ctx context.Context) (int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return len(r.keys), nil
+}
+
+func (r *mockAPIKeyRepository) CountRevoked(ctx context.Context) (int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	count := 0
+	for _, k := range r.keys {
+		if !k.IsActive {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (r *mockAPIKeyRepository) SumRequestsByScope(ctx context.Context) (map[string]int64, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	result := make(map[string]int64)
+	for _, k := range r.keys {
+		result[k.Scope] += k.RequestCount
+	}
+	return result, nil
+}
+
+func (r *mockAPIKeyRepository) TopOperatorsByRequests(ctx context.Context, limit int) ([]infraStorage.OperatorRequestTotal, int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	byOp := make(map[string]int64)
+	for _, k := range r.keys {
+		byOp[k.OperatorID] += k.RequestCount
+	}
+	totalOperators := len(byOp)
+	var results []infraStorage.OperatorRequestTotal
+	for opID, total := range byOp {
+		results = append(results, infraStorage.OperatorRequestTotal{OperatorID: opID, TotalRequests: total})
+		if len(results) >= limit {
+			break
+		}
+	}
+	return results, totalOperators, nil
 }
 
 func (r *mockAPIKeyRepository) IncrementRequestCount(ctx context.Context, id string) error {
@@ -968,5 +1046,201 @@ func TestAPIKeyService_Validation_ExpiryZero(t *testing.T) {
 
 	if result.ExpiresAt != nil {
 		t.Error("ExpiresAt should be nil for zero days")
+	}
+}
+
+func TestAPIKeyService_ListAllKeys(t *testing.T) {
+	svc, _ := setupTestService(t)
+	ctx := context.Background()
+
+	for i := 0; i < 3; i++ {
+		_, err := svc.GenerateKey(ctx, "operator-1", &domain.CreateAPIKeyRequest{
+			Name: fmt.Sprintf("Op1 Key %d", i), Scope: domain.ScopeRead,
+		})
+		if err != nil {
+			t.Fatalf("GenerateKey op1-%d failed: %v", i, err)
+		}
+	}
+	for i := 0; i < 2; i++ {
+		_, err := svc.GenerateKey(ctx, "operator-2", &domain.CreateAPIKeyRequest{
+			Name: fmt.Sprintf("Op2 Key %d", i), Scope: domain.ScopeWrite,
+		})
+		if err != nil {
+			t.Fatalf("GenerateKey op2-%d failed: %v", i, err)
+		}
+	}
+
+	result, err := svc.ListAllKeys(ctx, 1, 50, "", "")
+	if err != nil {
+		t.Fatalf("ListAllKeys failed: %v", err)
+	}
+	if len(result.Keys) != 5 {
+		t.Errorf("total keys = %d, want 5", len(result.Keys))
+	}
+
+	result, err = svc.ListAllKeys(ctx, 1, 50, "operator-1", "")
+	if err != nil {
+		t.Fatalf("ListAllKeys operator filter failed: %v", err)
+	}
+	if len(result.Keys) != 3 {
+		t.Errorf("operator-1 keys = %d, want 3", len(result.Keys))
+	}
+	for _, k := range result.Keys {
+		if k.OperatorID != "operator-1" {
+			t.Errorf("expected operator-1, got %s", k.OperatorID)
+		}
+	}
+
+	result, err = svc.ListAllKeys(ctx, 1, 50, "", "Op2")
+	if err != nil {
+		t.Fatalf("ListAllKeys search failed: %v", err)
+	}
+	if len(result.Keys) != 2 {
+		t.Errorf("search Op2 keys = %d, want 2", len(result.Keys))
+	}
+}
+
+func TestAPIKeyService_GetGlobalStats(t *testing.T) {
+	svc, repo := setupTestService(t)
+	ctx := context.Background()
+
+	for _, tc := range []struct {
+		op, name string
+		scope    domain.Scope
+	}{
+		{"operator-1", "Read Key 1", domain.ScopeRead},
+		{"operator-1", "Write Key 1", domain.ScopeWrite},
+		{"operator-2", "Read Key 2", domain.ScopeRead},
+		{"operator-2", "Admin Key 1", domain.ScopeAdmin},
+	} {
+		_, err := svc.GenerateKey(ctx, tc.op, &domain.CreateAPIKeyRequest{
+			Name: tc.name, Scope: tc.scope,
+		})
+		if err != nil {
+			t.Fatalf("GenerateKey %s failed: %v", tc.name, err)
+		}
+	}
+
+	for _, k := range repo.keys {
+		switch k.Name {
+		case "Read Key 1":
+			k.RequestCount = 10
+		case "Write Key 1":
+			k.RequestCount = 5
+		case "Read Key 2":
+			k.RequestCount = 20
+		case "Admin Key 1":
+			k.IsActive = false
+		}
+	}
+
+	stats, err := svc.GetGlobalStats(ctx)
+	if err != nil {
+		t.Fatalf("GetGlobalStats failed: %v", err)
+	}
+
+	if stats.TotalKeys != 4 {
+		t.Errorf("TotalKeys = %d, want 4", stats.TotalKeys)
+	}
+	if stats.ActiveKeys != 3 {
+		t.Errorf("ActiveKeys = %d, want 3", stats.ActiveKeys)
+	}
+	if stats.RevokedKeys != 1 {
+		t.Errorf("RevokedKeys = %d, want 1", stats.RevokedKeys)
+	}
+	if stats.TotalRequests != 35 {
+		t.Errorf("TotalRequests = %d, want 35", stats.TotalRequests)
+	}
+	if stats.RequestsByScope["read"] != 30 {
+		t.Errorf("RequestsByScope read = %d, want 30", stats.RequestsByScope["read"])
+	}
+	if stats.RequestsByScope["write"] != 5 {
+		t.Errorf("RequestsByScope write = %d, want 5", stats.RequestsByScope["write"])
+	}
+	if len(stats.TopOperators) == 0 {
+		t.Error("TopOperators should not be empty")
+	}
+	if stats.TotalOperators != 2 {
+		t.Errorf("TotalOperators = %d, want 2", stats.TotalOperators)
+	}
+}
+
+// =============================================================================
+// Signing Secret (Domain A: API-key-authenticated request signing)
+// =============================================================================
+
+func TestAPIKeyService_GenerateKey_SigningSecretDerivedFromFullKey(t *testing.T) {
+	svc, _ := setupTestService(t)
+	ctx := context.Background()
+
+	result, err := svc.GenerateKey(ctx, "operator-1", &domain.CreateAPIKeyRequest{
+		Name:  "Signing Key",
+		Scope: domain.ScopeRead,
+	})
+	if err != nil {
+		t.Fatalf("GenerateKey failed: %v", err)
+	}
+
+	if result.SigningKey == "" {
+		t.Fatal("SigningKey should not be empty on key creation")
+	}
+
+	sum := sha512.Sum512([]byte(result.FullKey))
+	expected := hex.EncodeToString(sum[:])
+	if result.SigningKey != expected {
+		t.Errorf("SigningKey = %s, want %s", result.SigningKey, expected)
+	}
+}
+
+func TestAPIKeyService_ValidateKey_ReturnsSigningSecret(t *testing.T) {
+	svc, _ := setupTestService(t)
+	ctx := context.Background()
+
+	result, err := svc.GenerateKey(ctx, "operator-1", &domain.CreateAPIKeyRequest{
+		Name:  "Validate Signing",
+		Scope: domain.ScopeRead,
+	})
+	if err != nil {
+		t.Fatalf("GenerateKey failed: %v", err)
+	}
+
+	validated, err := svc.ValidateKey(ctx, result.FullKey)
+	if err != nil {
+		t.Fatalf("ValidateKey failed: %v", err)
+	}
+
+	if validated.SigningSecret != result.SigningKey {
+		t.Errorf("ValidateKey SigningSecret = %s, want %s", validated.SigningSecret, result.SigningKey)
+	}
+}
+
+func TestAPIKeyService_RotateKey_RegeneratesSigningSecret(t *testing.T) {
+	svc, _ := setupTestService(t)
+	ctx := context.Background()
+
+	original, err := svc.GenerateKey(ctx, "operator-1", &domain.CreateAPIKeyRequest{
+		Name:  "Rotate Signing",
+		Scope: domain.ScopeRead,
+	})
+	if err != nil {
+		t.Fatalf("GenerateKey failed: %v", err)
+	}
+
+	rotated, err := svc.RotateKey(ctx, "operator-1", original.ID)
+	if err != nil {
+		t.Fatalf("RotateKey failed: %v", err)
+	}
+
+	if rotated.SigningKey == "" {
+		t.Fatal("Rotated SigningKey should not be empty")
+	}
+	if rotated.SigningKey == original.SigningKey {
+		t.Error("Rotated SigningKey should differ from original")
+	}
+
+	sum := sha512.Sum512([]byte(rotated.FullKey))
+	expected := hex.EncodeToString(sum[:])
+	if rotated.SigningKey != expected {
+		t.Errorf("Rotated SigningKey = %s, want %s", rotated.SigningKey, expected)
 	}
 }

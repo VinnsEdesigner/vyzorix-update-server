@@ -1,6 +1,22 @@
 export { restClient, axios } from './rest-client';
 
 export {
+  setAuthToken,
+  setCSRFToken,
+  setRefreshToken,
+  setSigningKey,
+  getSigningKey,
+  setOrganizationContext,
+  clearAuthContext,
+  fetchAndSetCSRFToken,
+  getCSRFToken,
+  resetClientState,
+  resetCircuitBreaker,
+  clearInFlightRequests,
+  resetBatchers,
+} from './rest-client';
+
+export {
   initConnectivityMonitor,
   getConnectivityMonitor,
   createConnectivityMonitor,

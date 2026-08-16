@@ -11,8 +11,11 @@
  * - Cache Integration: Combine with response caching for maximum efficiency
  */
 
+import { getSigningKey } from '../_shared/rest-client';
+import { signHttpRequestBrowser } from '../../crypto/browser-sign';
+
 function simpleHashPayload(data: unknown): string {
-  const str = typeof data === 'string' ? data : JSON.stringify(data);
+  const str = typeof data === 'string' ? data : (data === undefined ? '' : JSON.stringify(data)) ?? '';
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
@@ -270,7 +273,7 @@ export class GraphQLBatcher {
   }
 
   configure(baseUrl: string, orgId: string, authToken: string): void {
-    this.batchUrl = `${baseUrl}/v1/orgs/${orgId}/graphql/batch`;
+    this.batchUrl = `${baseUrl}/${orgId}/graphql/batch`;
     this.authToken = authToken;
   }
 
@@ -344,13 +347,26 @@ export class GraphQLBatcher {
     this.pendingOperations.clear();
 
     try {
+      const body = JSON.stringify(operations);
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (this.authToken) {
+        headers['Authorization'] = `Bearer ${this.authToken}`;
+      }
+
+      const signingKey = getSigningKey();
+      if (signingKey) {
+        const signHeaders = await signHttpRequestBrowser('POST', this.batchUrl, body, signingKey);
+        headers['X-Vyzorix-Timestamp'] = signHeaders['X-Vyzorix-Timestamp'];
+        headers['X-Vyzorix-Nonce'] = signHeaders['X-Vyzorix-Nonce'];
+        headers['X-Vyzorix-Signature'] = signHeaders['X-Vyzorix-Signature'];
+      }
+
       const response = await fetch(this.batchUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.authToken}`,
-        },
-        body: JSON.stringify(operations),
+        headers,
+        body,
       });
 
       if (!response.ok) {
@@ -380,7 +396,7 @@ export class GraphQLBatcher {
           }
         } else {
           for (const caller of op.callers) {
-            caller.resolve(result.data);
+            caller.resolve(result);
           }
         }
       }

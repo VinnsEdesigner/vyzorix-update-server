@@ -8,6 +8,7 @@ import {
   type RawDeviceStats,
   type RawDeviceListResult,
 } from "../../../domain/device";
+import type { Thresholds } from "../../../domain/settings";
 import type {
   Device,
   DeviceStats,
@@ -37,20 +38,22 @@ export interface DeviceParams {
 
 export interface DeviceSettings {
   id: string;
-  imei: string;
-  orgId: string;
-  fcmEnabled: boolean;
-  fcmToken?: string;
-  thresholds?: {
-    tempMin?: number;
-    tempMax?: number;
-    batteryMin?: number;
-    batteryMax?: number;
-    speedMax?: number;
-    distanceMax?: number;
-  };
+  deviceImei: string;
+  customName?: string;
+  location?: string;
+  metadata?: Record<string, string>;
+  thresholds?: Thresholds;
   createdAt: string;
   updatedAt: string;
+}
+
+export type DeviceThresholdUpdateRequest = Partial<Thresholds>;
+
+export interface DeviceSettingsUpdateRequest {
+  customName?: string;
+  location?: string;
+  metadata?: Record<string, string>;
+  thresholds?: Thresholds;
 }
 
 export interface ConnectionStatus {
@@ -137,20 +140,20 @@ export const devices = {
     });
   },
 
-  async updateSettings(imei: string, settings: Partial<DeviceSettings>, organizationId?: string): Promise<DeviceSettings> {
+  async updateSettings(imei: string, settings: DeviceSettingsUpdateRequest, organizationId?: string): Promise<DeviceSettings> {
     return restClient.patch<DeviceSettings>(PATHS.settings(imei), settings, {
       params: { organization_id: organizationId || getOrganizationContext() },
     });
   },
 
-  async getSettingsThresholds(imei: string, organizationId?: string): Promise<{ thresholds: DeviceSettings['thresholds'] }> {
-    return restClient.get<{ thresholds: DeviceSettings['thresholds'] }>(PATHS.settingsThresholds(imei), {
+  async getSettingsThresholds(imei: string, organizationId?: string): Promise<{ thresholds: Thresholds }> {
+    return restClient.get<{ thresholds: Thresholds }>(PATHS.settingsThresholds(imei), {
       params: { organization_id: organizationId || getOrganizationContext() },
     });
   },
 
-  async updateSettingsThresholds(imei: string, thresholds: DeviceSettings['thresholds'], organizationId?: string): Promise<{ thresholds: DeviceSettings['thresholds'] }> {
-    return restClient.patch<{ thresholds: DeviceSettings['thresholds'] }>(PATHS.settingsThresholds(imei), thresholds, {
+  async updateSettingsThresholds(imei: string, thresholds: DeviceThresholdUpdateRequest, organizationId?: string): Promise<{ thresholds: Thresholds }> {
+    return restClient.patch<{ thresholds: Thresholds }>(PATHS.settingsThresholds(imei), thresholds, {
       params: { organization_id: organizationId || getOrganizationContext() },
     });
   },

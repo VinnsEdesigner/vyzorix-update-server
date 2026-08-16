@@ -5,22 +5,11 @@ import {
   loginRequestToRaw,
   registerRequestToRaw,
   updateNameRequestToRaw,
-  forgotPasswordRequestToRaw,
-  resetPasswordRequestToRaw,
-  verifyEmailRequestToRaw,
-  mfaVerifyRequestToRaw,
-  mfaCodeRequestToRaw,
-  mfaEnrollRequestToRaw,
-  backupCodeVerifyRequestToRaw,
-  mfaStatusResponseFromRaw,
-  mfaEnrollResponseFromRaw,
   loginResponseFromRaw,
   isMFAResponse,
   registerResponseFromRaw,
   meResponseFromRaw,
   authTokensFromRaw,
-  mfaVerifyResponseFromRaw,
-  type RawMFAVerifyResponse,
 } from "../../../domain/auth";
 import type {
   LoginResponse,
@@ -28,15 +17,8 @@ import type {
   RegisterResponse,
   MeResponse,
   OperatorRole,
-  ForgotPasswordResponse,
-  ResetPasswordResponse,
-  MFAStatusResponse,
-  MFAEnrollResponse,
-  MFAVerifyResponse,
-  MFAEnableResponse,
   AuthTokens,
 } from "../../../domain/auth";
-import type { VerifyEmailResponse } from "../../../domain/email";
 import {
   type RawLoginResponse,
   type RawLoginMFARequiredResponse,
@@ -55,21 +37,6 @@ const AUTH_PATHS = {
   refresh: "/v1/auth/refresh",
   me: "/v1/auth/me",
   updateName: "/v1/auth/me",
-  forgotPassword: "/v1/auth/forgot-password",
-  resetPassword: "/v1/auth/reset-password",
-  resendPasswordReset: "/v1/auth/resend-password-reset",
-  verifyEmail: "/v1/auth/verify-email",
-  resendVerification: "/v1/auth/resend-verification",
-  mfa: {
-    status: "/v1/auth/mfa/status",
-    enroll: "/v1/auth/mfa/enroll",
-    verifySetup: "/v1/auth/mfa/verify-setup",
-    enable: "/v1/auth/mfa/enable",
-    disable: "/v1/auth/mfa/disable",
-    verify: "/v1/auth/mfa/verify",
-    verifyBackup: "/v1/auth/mfa/verify-backup",
-    regenerateBackupCodes: "/v1/auth/mfa/regenerate-backup-codes",
-  },
   sessions: "/v1/auth/sessions",
   sessionsConcurrent: "/v1/auth/sessions/concurrent",
   sessionsRevokeAll: "/v1/auth/sessions/revoke-all",
@@ -172,64 +139,6 @@ export async function register(credentials: {
 }
 
 
-export async function forgotPassword(
-  email: string
-): Promise<ForgotPasswordResponse> {
-  await ensureCSRFToken();
-  return restClient.post<ForgotPasswordResponse>(
-    AUTH_PATHS.forgotPassword,
-    forgotPasswordRequestToRaw(email)
-  );
-}
-
-
-export async function resetPassword(
-  token: string,
-  newPassword: string
-): Promise<ResetPasswordResponse> {
-  await ensureCSRFToken();
-  return restClient.post<ResetPasswordResponse>(
-    AUTH_PATHS.resetPassword,
-    resetPasswordRequestToRaw(token, newPassword)
-  );
-}
-
-
-export async function resendPasswordReset(
-  email: string
-): Promise<{ success: boolean; error?: string; retryAfter?: number; lockedUntil?: number }> {
-  await ensureCSRFToken();
-  return restClient.post<{ success: boolean; error?: string; retryAfter?: number; lockedUntil?: number }>(
-    AUTH_PATHS.resendPasswordReset,
-    forgotPasswordRequestToRaw(email)
-  );
-}
-
-
-export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
-  await ensureCSRFToken();
-  return restClient.post<VerifyEmailResponse>(
-    AUTH_PATHS.verifyEmail,
-    verifyEmailRequestToRaw(token)
-  );
-}
-
-
-export async function resendVerification(
-  email: string
-): Promise<{ success: boolean }> {
-  await ensureCSRFToken();
-  return restClient.post<{ success: boolean }>(
-    AUTH_PATHS.resendVerification,
-    forgotPasswordRequestToRaw(email)
-  );
-}
-
-
-
-
-
-
 export async function logout(): Promise<{ success: boolean }> {
   const result = await restClient.post<{ success: boolean }>(AUTH_PATHS.logout);
   clearAuthContext();
@@ -270,89 +179,6 @@ export async function updateName(name: string): Promise<UpdateNameResponse> {
     name: raw.name,
     mfa_enabled: raw.mfa_enabled,
     email_verified: raw.email_verified,
-  };
-}
-
-
-
-
-
-
-export async function getMFAStatus(): Promise<MFAStatusResponse> {
-  const raw = await restClient.get<{ enabled: boolean; backup_codes?: string[] }>(
-    AUTH_PATHS.mfa.status
-  );
-  return mfaStatusResponseFromRaw(raw);
-}
-
-
-export async function enrollMFA(): Promise<MFAEnrollResponse> {
-  const raw = await restClient.post<{ secret: string; qr_code_url: string }>(
-    AUTH_PATHS.mfa.enroll
-  );
-  return mfaEnrollResponseFromRaw(raw);
-}
-
-
-export async function verifyMFASetup(
-  code: string
-): Promise<MFAVerifyResponse> {
-  return restClient.post<MFAVerifyResponse>(
-    AUTH_PATHS.mfa.verifySetup,
-    mfaEnrollRequestToRaw(code)
-  );
-}
-
-
-export async function enableMFA(code: string): Promise<MFAEnableResponse> {
-  return restClient.post<MFAEnableResponse>(
-    AUTH_PATHS.mfa.enable,
-    { code, token: code }
-  );
-}
-
-
-export async function disableMFA(code: string): Promise<{ success: boolean }> {
-  return restClient.post<{ success: boolean }>(
-    AUTH_PATHS.mfa.disable,
-    mfaCodeRequestToRaw(code)
-  );
-}
-
-
-export async function verifyMFA(
-  operatorId: string,
-  code: string
-): Promise<MFAVerifyResponse> {
-  const raw = await restClient.post<RawMFAVerifyResponse>(
-    AUTH_PATHS.mfa.verify,
-    mfaVerifyRequestToRaw(operatorId, code)
-  );
-  const result = mfaVerifyResponseFromRaw(raw);
-  if (result.success && result.accessToken && result.refreshToken) {
-    setAuthToken(result.accessToken);
-    setRefreshToken(result.refreshToken);
-  }
-  return result;
-}
-
-
-export async function verifyBackupCode(
-  code: string
-): Promise<{ success: boolean }> {
-  return restClient.post<{ success: boolean }>(
-    AUTH_PATHS.mfa.verifyBackup,
-    backupCodeVerifyRequestToRaw(code)
-  );
-}
-
-
-export async function regenerateBackupCodes(): Promise<{ backupCodes: string[] }> {
-  const raw = await restClient.post<{ backup_codes: string[] }>(
-    AUTH_PATHS.mfa.regenerateBackupCodes
-  );
-  return {
-    backupCodes: raw.backup_codes,
   };
 }
 

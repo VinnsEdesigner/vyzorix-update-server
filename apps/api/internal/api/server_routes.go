@@ -126,6 +126,13 @@ func (s *Server) setupStaticRoutes() {
 	s.engine.GET("/bin/*name", s.binHandler)
 	s.engine.GET("/api/v1/check-update", s.updaterHandler.CheckUpdate)
 	s.engine.POST("/api/v1/download-progress", s.updaterHandler.DownloadProgress)
+	// Also register at /v1/ without the /api prefix so requests forwarded
+	// by the proxy (which strips /api) resolve to the correct handler.
+	s.engine.GET("/v1/version", s.versionHandler)
+	s.engine.GET("/v1/changelog", s.changelogHandler)
+	s.engine.GET("/v1/apk/*name", s.apkHandler)
+	s.engine.GET("/v1/check-update", s.updaterHandler.CheckUpdate)
+	s.engine.POST("/v1/download-progress", s.updaterHandler.DownloadProgress)
 }
 
 func (s *Server) setupPublicRoutes() {
@@ -219,6 +226,10 @@ func (s *Server) setupAuthenticatedRoutes() {
 	// Apply idempotency middleware globally to all /v1 routes.
 	// This provides automatic idempotency for all POST/PUT/PATCH requests.
 	tenantGroup.Use(s.idempotencyMiddleware())
+
+	// Verify per-session HMAC request signatures on tenant routes.
+	// This runs after cookie/API-key auth so the session is available.
+	tenantGroup.Use(middleware.SessionSignatureMiddleware(s.sessionSignatureVerifier))
 
 	s.setupDashboardRoutes(tenantGroup)
 	s.setupDeviceInboxRoutes(tenantGroup)

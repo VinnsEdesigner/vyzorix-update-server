@@ -469,6 +469,20 @@ var migrations = []Migration{
 	// The original migration 018 created the table without these columns, so
 	// audit log writes failed with "no column named resource_type". Idempotent.
 	{Apply: migrateAuditLogsResourceColumns, Name: "add_audit_logs_resource_columns", Version: 53},
+	// Add signing_key column to auth_sessions for per-session HMAC request signing.
+	// The browser client receives this key on login and signs every request;
+	// the server verifies the signature to confirm the request is from a
+	// verified client. Idempotent.
+	{Apply: migrateAddSessionSigningKey, Name: "add_auth_sessions_signing_key", Version: 54},
+	// Add signing_secret column to api_keys so API-key-authenticated requests
+	// can be HMAC-signed without a session (Domain A extends to API keys).
+	// Idempotent.
+	{Apply: migrateAddAPIKeySigningSecret, Name: "add_api_keys_signing_secret", Version: 55},
+	// Fix refresh_tokens schema: migration 025 created the revoked flag as
+	// `revoked` and omitted `revoked_at`, but the repository queries
+	// `is_revoked`/`revoked_at`. Rebuilds the table with the correct column
+	// names so logout and token revocation stop 500'ing. Idempotent.
+	{Apply: migrateFixRefreshTokensSchema, Name: "fix_refresh_tokens_schema", Version: 56},
 }
 
 // runMigrations applies all pending migrations.
@@ -879,6 +893,19 @@ func migrateAuditLogsResourceColumns(db *sql.DB) error {
 // which is raised when ALTER TABLE ADD COLUMN targets an existing column.
 func isDuplicateColumnErr(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "duplicate column")
+}
+
+// migrateAddSessionSigningKey adds the signing_key column to auth_sessions.
+// This column stores the per-session HMAC secret used by the browser client
+// to sign every request. Idempotent — safe to run on databases that already
+// have the column.
+func migrateAddSessionSigningKey(db *sql.DB) error {
+	_, err := db.ExecContext(context.Background(),
+		`ALTER TABLE auth_sessions ADD COLUMN signing_key TEXT`)
+	if err != nil && !isDuplicateColumnErr(err) {
+		return err
+	}
+	return nil
 }
 
 func migrateCreateMessageQueue(db *sql.DB) error {

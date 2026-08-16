@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createVyzorStore } from '@/lib/state';
 import { createClient, type Client, type Sink, type SubscribePayload } from 'graphql-ws';
 import { getCurrentOrganizationId } from '@vyzorix/api-client';
 
@@ -41,7 +41,7 @@ function buildWebSocketUrl(): string {
   const wsBase = baseUrl
     .replace(/^http:\/\//, 'ws://')
     .replace(/^https:\/\//, 'wss://');
-  return `${wsBase}/v1/orgs/${orgId}/graphql/ws`;
+  return `${wsBase}/${orgId}/graphql/ws`;
 }
 
 function toConnectionError(value: unknown): ConnectionError {
@@ -63,7 +63,7 @@ function toErrorMessage(value: unknown): string {
 
 let wsClient: Client | null = null;
 
-export const useWebSocketStore = create<WebSocketStoreState>((set, get) => ({
+export const useWebSocketStore = createVyzorStore<WebSocketStoreState>('WebSocketStore', (set, get) => ({
   connectionState: 'CLOSED',
   isConnected: false,
   isReconnecting: false,

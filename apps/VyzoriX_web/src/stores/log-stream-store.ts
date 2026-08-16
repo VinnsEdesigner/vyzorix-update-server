@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createVyzorStore } from '@/lib/state';
 import type { LogEntry, LogEventType } from '@vyzorix/api-client';
 
 const DEFAULT_MAX_ENTRIES = 500;
@@ -34,7 +34,7 @@ function applyFilters(entries: LogEntry[], filters: LogStreamFilters): LogEntry[
   });
 }
 
-export const useLogStreamStore = create<LogStreamState>((set, get) => ({
+export const useLogStreamStore = createVyzorStore<LogStreamState>('LogStreamStore', (set, get) => ({
   byDevice: {},
   filters: {},
   autoScroll: true,

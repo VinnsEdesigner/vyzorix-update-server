@@ -110,10 +110,10 @@ export const updates = {
 
   async pushUpdate(request: PushUpdateRequest, organizationId?: string): Promise<UpdatePush> {
     const response = await restClient.post<RawUpdatePush>(PATHS.push, {
-      version_id: request.versionId,
-      device_ids: request.deviceIds,
-      install_type: request.installType,
-      scheduled_at: request.scheduledAt?.getTime(),
+      version: request.version,
+      deviceIds: request.deviceIds,
+      installType: request.installType,
+      scheduledAt: request.scheduledAt?.getTime(),
     }, {
       params: { organization_id: organizationId || getOrganizationContext() },
     });

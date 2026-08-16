@@ -19,10 +19,31 @@ function toQueryString(doc: unknown): string {
   return (doc as SubscriptionDocument)?.loc?.source.body ?? '';
 }
 
-export function useWebSocketConnection() {
+interface UseWebSocketConnectionResult {
+  isConnected: boolean;
+  isReconnecting: boolean;
+  connect: () => void;
+  disconnect: () => void;
+  lastConnectedAt: Date | null;
+  connectionError: { code: number; reason: string } | null;
+}
+
+/**
+ * Manage the realtime WebSocket connection lifecycle (spec §8.1).
+ *
+ * Auto-connects when an organization is selected and disconnects on cleanup.
+ * Returns the live connection status from the underlying graphql-ws store so
+ * the UI can render connection indicators without subscribing to the store
+ * directly.
+ */
+export function useWebSocketConnection(): UseWebSocketConnectionResult {
   const organizationId = useCurrentOrganizationId();
   const connect = useWebSocketStore((s) => s.connect);
   const disconnect = useWebSocketStore((s) => s.disconnect);
+  const isConnected = useWebSocketStore((s) => s.isConnected);
+  const isReconnecting = useWebSocketStore((s) => s.isReconnecting);
+  const lastConnectedAt = useWebSocketStore((s) => s.lastConnectedAt);
+  const lastError = useWebSocketStore((s) => s.lastError);
 
   useEffect(() => {
     if (!organizationId) return;
@@ -31,6 +52,15 @@ export function useWebSocketConnection() {
       disconnect();
     };
   }, [organizationId, connect, disconnect]);
+
+  return {
+    isConnected,
+    isReconnecting,
+    connect,
+    disconnect,
+    lastConnectedAt,
+    connectionError: lastError,
+  };
 }
 
 export interface DeviceUpdatedPayload {

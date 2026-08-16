@@ -7,11 +7,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "cd apps/VyzoriX_web && vite dev",
+    "dev": "node apps/proxy-server/vyzorix-proxy-server.cjs",
     "dev:mobile": "cd apps/VyzoriX_mobile && expo start",
     "build": "turbo run build",
     "build:web": "turbo run build --filter=VyzoriX_web",
     "build:mobile": "turbo run build --filter=VyzoriX_mobile",
+    "build:e2e": "node e2e/vyzorix-e2e-harness-build.cjs",
+    "e2e": "node e2e/vyzorix-e2e-harness-build.cjs && playwright test --config playwright.config.cjs",
+    "e2e:ui": "node e2e/vyzorix-e2e-harness-build.cjs && playwright test --config playwright.config.cjs --ui",
     "test": "turbo run test",
     "prelint": "pnpm --filter @vyzorix/config exec tsc --build --force",
     "lint": "turbo run lint",
@@ -20,6 +23,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
     "@tanstack/react-start": "^1.168.25",
     "@typescript-eslint/eslint-plugin": "^8.61.1",
     "@typescript-eslint/parser": "^8.61.1",

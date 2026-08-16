@@ -4,6 +4,8 @@ import type { ValidationResult } from "../_shared";
 
 export { type ValidationResult } from "../_shared";
 
+const NAME_PATTERN = /^[a-zA-Z0-9\s\-_]+$/;
+
 export function validateApiKeyName(name: string): ValidationResult {
   const errors: Record<string, string[]> = {};
 
@@ -19,6 +21,10 @@ export function validateApiKeyName(name: string): ValidationResult {
     errors.name = [...(errors.name ?? []), `Name must be at least ${MIN_NAME_LENGTH} character`];
   }
 
+  if (name && !NAME_PATTERN.test(name)) {
+    errors.name = [...(errors.name ?? []), "Name may only contain letters, numbers, spaces, hyphens, and underscores"];
+  }
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors,
@@ -32,8 +38,8 @@ export function validateExpiryDays(days: number | null): ValidationResult {
     return { isValid: true, errors: {} };
   }
 
-  if (typeof days !== "number" || days < 1) {
-    errors.expiryDays = ["Expiry days must be a positive number"];
+  if (typeof days !== "number" || !Number.isInteger(days) || days < 1) {
+    errors.expiryDays = ["Expiry days must be a positive whole number"];
   }
 
   if (days > MAX_EXPIRY_DAYS) {
@@ -76,6 +82,28 @@ export function validateCreateApiKeyRequest(
   if (expiresInDays !== undefined && expiresInDays !== null) {
     const expiryResult = validateExpiryDays(expiresInDays);
     Object.assign(errors, expiryResult.errors);
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+}
+
+export function validateUpdateApiKeyRequest(request: {
+  name?: string;
+  scope?: ApiKeyScope;
+}): ValidationResult {
+  const errors: Record<string, string[]> = {};
+
+  if (request.name !== undefined) {
+    const nameResult = validateApiKeyName(request.name);
+    Object.assign(errors, nameResult.errors);
+  }
+
+  if (request.scope !== undefined) {
+    const scopeResult = validateScope(request.scope);
+    Object.assign(errors, scopeResult.errors);
   }
 
   return {

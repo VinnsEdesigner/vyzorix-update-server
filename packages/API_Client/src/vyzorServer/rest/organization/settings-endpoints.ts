@@ -1,33 +1,29 @@
 import { restClient } from "../_shared/rest-client";
+import type { Thresholds } from "../../../domain/settings";
 
 const PATHS = {
   settings: (orgId: string) => `/v1/organizations/${orgId}/settings`,
   thresholds: (orgId: string) => `/v1/organizations/${orgId}/settings/thresholds`,
-};
+} as const;
 
 export interface OrganizationSettings {
-  default_thresholds?: {
-    temp_min?: number;
-    temp_max?: number;
-    battery_min?: number;
-    battery_max?: number;
-    speed_max?: number;
-    distance_max?: number;
-  };
-  updated_at?: string;
+  id: string;
+  organizationId: string;
+  timezone: string;
+  dateFormat: string;
+  alertCooldownMinutes: number;
+  defaultThresholds?: Thresholds;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface ThresholdUpdateRequest {
-  temp_min?: number;
-  temp_max?: number;
-  battery_min?: number;
-  battery_max?: number;
-  speed_max?: number;
-  distance_max?: number;
-}
+export type ThresholdUpdateRequest = Partial<Thresholds>;
 
 export interface SettingsUpdateRequest {
-  default_thresholds?: ThresholdUpdateRequest;
+  timezone?: string;
+  dateFormat?: string;
+  alertCooldownMinutes?: number;
+  defaultThresholds?: Thresholds;
 }
 
 export const settings = {
@@ -39,11 +35,11 @@ export const settings = {
     return restClient.patch<OrganizationSettings>(PATHS.settings(orgId), request);
   },
 
-  async getThresholds(orgId: string): Promise<{ thresholds: ThresholdUpdateRequest }> {
-    return restClient.get<{ thresholds: ThresholdUpdateRequest }>(PATHS.thresholds(orgId));
+  async getThresholds(orgId: string): Promise<{ thresholds: Thresholds }> {
+    return restClient.get<{ thresholds: Thresholds }>(PATHS.thresholds(orgId));
   },
 
-  async updateThresholds(orgId: string, request: ThresholdUpdateRequest): Promise<{ thresholds: ThresholdUpdateRequest }> {
-    return restClient.patch<{ thresholds: ThresholdUpdateRequest }>(PATHS.thresholds(orgId), request);
+  async updateThresholds(orgId: string, request: ThresholdUpdateRequest): Promise<{ thresholds: Thresholds }> {
+    return restClient.patch<{ thresholds: Thresholds }>(PATHS.thresholds(orgId), request);
   },
 };

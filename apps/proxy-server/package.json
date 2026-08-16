@@ -1,0 +1,12 @@
+{
+  "name": "@vyzorix/proxy-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BFF proxy server: serves web app, manages auth sessions server-side, signs all API requests. Pure Node.js CommonJS, zero external runtime dependencies.",
+  "scripts": {
+    "start": "node vyzorix-proxy-server.cjs",
+    "dev": "node vyzorix-proxy-server.cjs",
+    "prod": "NODE_ENV=production node vyzorix-proxy-server.cjs",
+    "test": "node vyzorix-proxy-test.cjs"
+  }
+}

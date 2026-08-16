@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createVyzorStore } from '@/lib/state';
 import type { DashboardStats } from '@vyzorix/api-client';
 
 const DEFAULT_REFRESH_INTERVAL_MS = 30_000;
@@ -29,7 +29,7 @@ export interface DashboardStoreState {
   clear: () => void;
 }
 
-export const useDashboardStore = create<DashboardStoreState>((set) => ({
+export const useDashboardStore = createVyzorStore<DashboardStoreState>('DashboardStore', (set) => ({
   stats: null,
   lastRefreshedAt: null,
   isRefreshing: false,

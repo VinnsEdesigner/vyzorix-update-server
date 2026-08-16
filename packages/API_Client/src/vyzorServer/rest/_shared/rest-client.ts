@@ -2,7 +2,8 @@ import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse,
 import { getRESTConfig, type RESTConfig } from '../../config';
 import { parseApiError, type RateLimitInfo } from '../../auth/api-error';
 import { getConnectivityMonitor } from '../_connectivity';
-import { getRESTBatcher } from '../_batching';
+import { getRESTBatcher, resetBatchers } from '../_batching';
+import { signHttpRequestBrowser } from '../../crypto/browser-sign';
 
 export { type RESTConfig } from '../../config';
 export { parseApiError } from '../../auth/api-error';
@@ -52,6 +53,7 @@ interface ClientState {
   authToken: string | null;
   csrfToken: string | null;
   refreshToken: string | null;
+  signingKey: string | null;
   rateLimitListeners: Set<RateLimitCallback>;
   isRefreshing: boolean;
   refreshSubscribers: ((token: string | null) => void)[];
@@ -69,6 +71,7 @@ const clientState: ClientState = {
   authToken: null,
   csrfToken: null,
   refreshToken: null,
+  signingKey: null,
   rateLimitListeners: new Set<RateLimitCallback>(),
   isRefreshing: false,
   refreshSubscribers: [],
@@ -117,10 +120,19 @@ export function getRefreshToken(): string | null {
   return clientState.refreshToken;
 }
 
+export function setSigningKey(key: string | null): void {
+  clientState.signingKey = key;
+}
+
+export function getSigningKey(): string | null {
+  return clientState.signingKey;
+}
+
 export function clearAuthContext(): void {
   clientState.authToken = null;
   clientState.refreshToken = null;
   clientState.csrfToken = null;
+  clientState.signingKey = null;
 }
 
 export async function fetchAndSetCSRFToken(): Promise<string> {
@@ -226,6 +238,77 @@ function generateUUIDv4(): string {
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
+}
+
+/**
+ * Auth endpoints that must NOT be HMAC-signed — at these points the client
+ * has no signing key yet (login/refresh) or the endpoint is pre-auth (csrf).
+ */
+const AUTH_ENDPOINT_PATTERNS = [
+  '/v1/auth/login',
+  '/v1/auth/refresh',
+  '/v1/auth/csrf-token',
+  '/v1/auth/register',
+  '/v1/auth/mfa',
+];
+
+function isAuthEndpoint(url: string | undefined): boolean {
+  if (!url) return false;
+  return AUTH_ENDPOINT_PATTERNS.some((p) => url.includes(p));
+}
+
+/**
+ * Extract the request path (pathname + search) from a possibly-relative URL.
+ * The server verifies the signature against `r.URL.RequestURI()` which is the
+ * path + query string, so we must sign exactly that.
+ */
+function extractRequestPath(url: string | undefined, baseURL: string | undefined): string {
+  if (!url) return '/';
+  // If the URL is absolute (starts with http), parse it.
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    try {
+      const parsed = new URL(url);
+      return parsed.pathname + parsed.search;
+    } catch {
+      return url;
+    }
+  }
+  // If baseURL is set and url is relative, resolve against baseURL to strip origin.
+  if (baseURL) {
+    try {
+      const resolved = new URL(url, baseURL);
+      return resolved.pathname + resolved.search;
+    } catch {
+      // baseURL might be a relative path itself — just use url as-is.
+    }
+  }
+  // Relative URL — use as-is (should already be just path + query).
+  return url;
+}
+
+/**
+ * Serialize the request body to a string for signing. The server reads the raw
+ * body bytes, so the signed string must match what's on the wire. Axios
+ * serializes objects to JSON with `JSON.stringify`, so we do the same here.
+ */
+function serializeBody(data: unknown): string {
+  if (data === undefined || data === null) {
+    return '';
+  }
+  if (typeof data === 'string') {
+    return data;
+  }
+  if (data instanceof ArrayBuffer) {
+    return new TextDecoder().decode(data);
+  }
+  if (typeof ArrayBuffer !== 'undefined' && data instanceof ArrayBuffer) {
+    return new TextDecoder().decode(data);
+  }
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return String(data);
+  }
 }
 
 function recordSuccess(): void {
@@ -360,6 +443,25 @@ function createAxiosInstance(config: RESTConfig): AxiosInstance {
           retryConfig.__idempotencyKey = generateUUIDv4();
         }
         config.headers.set('X-Idempotency-Key', retryConfig.__idempotencyKey);
+      }
+
+      // HMAC request signing: sign every outgoing request with the session
+      // signing key so the server can verify the request came from an
+      // authenticated client. Skipped for auth endpoints (login/refresh/csrf)
+      // because no signing key exists yet at that point.
+      if (clientState.signingKey && !isAuthEndpoint(config.url)) {
+        const signMethod = (config.method || 'GET').toUpperCase();
+        const signPath = extractRequestPath(config.url, config.baseURL);
+        const bodyStr = serializeBody(config.data);
+        const signHeaders = await signHttpRequestBrowser(
+          signMethod,
+          signPath,
+          bodyStr,
+          clientState.signingKey,
+        );
+        config.headers.set('X-Vyzorix-Timestamp', signHeaders['X-Vyzorix-Timestamp']);
+        config.headers.set('X-Vyzorix-Nonce', signHeaders['X-Vyzorix-Nonce']);
+        config.headers.set('X-Vyzorix-Signature', signHeaders['X-Vyzorix-Signature']);
       }
 
       console.debug(`[REST] ${method} ${config.url}`);
@@ -499,7 +601,7 @@ export const restClient = {
     }
 
     const requestPromise = getAxios().post<T>(url, data, config);
-    const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
+    const idempotencyKey = (config as (InternalAxiosRequestConfig & { __idempotencyKey?: string }) | undefined)?.__idempotencyKey || '';
     clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
@@ -537,7 +639,7 @@ export const restClient = {
     }
 
     const requestPromise = getAxios().put<T>(url, data, config);
-    const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
+    const idempotencyKey = (config as (InternalAxiosRequestConfig & { __idempotencyKey?: string }) | undefined)?.__idempotencyKey || '';
     clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
@@ -575,7 +677,7 @@ export const restClient = {
     }
 
     const requestPromise = getAxios().patch<T>(url, data, config);
-    const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
+    const idempotencyKey = (config as (InternalAxiosRequestConfig & { __idempotencyKey?: string }) | undefined)?.__idempotencyKey || '';
     clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
@@ -612,7 +714,7 @@ export const restClient = {
     }
 
     const requestPromise = getAxios().delete<T>(url, config);
-    const idempotencyKey = (config as InternalAxiosRequestConfig & { __idempotencyKey?: string }).__idempotencyKey || '';
+    const idempotencyKey = (config as (InternalAxiosRequestConfig & { __idempotencyKey?: string }) | undefined)?.__idempotencyKey || '';
     clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
 
     try {
@@ -662,6 +764,7 @@ export function resetClientState(): void {
   clientState.authToken = null;
   clientState.csrfToken = null;
   clientState.refreshToken = null;
+  clientState.signingKey = null;
   clientState.rateLimitListeners.clear();
   clientState.isRefreshing = false;
   clientState.refreshSubscribers = [];
@@ -674,4 +777,5 @@ export function resetClientState(): void {
   clientState.circuitBreaker.nextAttempt = 0;
   clientState.circuitBreaker.cachedException = null;
   clientState.axiosInstance = null;
+  resetBatchers();
 }

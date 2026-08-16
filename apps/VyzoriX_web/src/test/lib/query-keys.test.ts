@@ -86,6 +86,38 @@ describe('queryKeys factory', () => {
     expect(queryKeys.organization('org-1')).toEqual(['organizations', 'org-1']);
   });
 
+  it('updatesStatus returns org-scoped key', () => {
+    expect(queryKeys.updatesStatus('org-1')).toEqual(['updates', 'status', 'org-1']);
+  });
+
+  it('updateVersions returns a key with params object', () => {
+    expect(queryKeys.updateVersions({ status: 'latest' })).toEqual([
+      'updates',
+      'versions',
+      { status: 'latest' },
+    ]);
+  });
+
+  it('updateVersions with no params defaults to empty object', () => {
+    expect(queryKeys.updateVersions()).toEqual(['updates', 'versions', {}]);
+  });
+
+  it('updateChangelog returns version-scoped key', () => {
+    expect(queryKeys.updateChangelog('v1.2.0')).toEqual(['updates', 'changelog', 'v1.2.0']);
+  });
+
+  it('updateChangelog with no version defaults to all', () => {
+    expect(queryKeys.updateChangelog()).toEqual(['updates', 'changelog', 'all']);
+  });
+
+  it('updateHistory returns a key with params object', () => {
+    expect(queryKeys.updateHistory({ page: 1 })).toEqual(['updates', 'history', { page: 1 }]);
+  });
+
+  it('updatePushDetail returns push-scoped key', () => {
+    expect(queryKeys.updatePushDetail('push-1')).toEqual(['updates', 'push', 'push-1']);
+  });
+
   it('keys are readonly tuples (as const)', () => {
     expect(queryKeys.me).toEqual(['me']);
     expect(Array.isArray(queryKeys.me)).toBe(true);

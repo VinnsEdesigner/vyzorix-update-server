@@ -1,0 +1,27 @@
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import {
+  updates,
+  type UpdateStatusResponse,
+} from '@vyzorix/api-client';
+import { queryKeys } from '@/lib/query-keys';
+import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
+import { fetchUpdateStatusViaGraphQL } from './_graphql-fallback';
+
+export function useUpdateStatus(
+  options?: Omit<UseQueryOptions<UpdateStatusResponse>, 'queryKey' | 'queryFn'>,
+) {
+  const organizationId = useCurrentOrganizationId();
+  return useQuery({
+    queryKey: queryKeys.updatesStatus(organizationId ?? ''),
+    queryFn: async () => {
+      try {
+        return await updates.getStatus(organizationId ?? undefined);
+      } catch {
+        if (!organizationId) throw new Error('No organization selected');
+        return fetchUpdateStatusViaGraphQL(organizationId);
+      }
+    },
+    enabled: organizationId !== null,
+    ...options,
+  });
+}

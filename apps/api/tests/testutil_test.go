@@ -4,7 +4,11 @@ import (
 	"bytes"
 	"context"
 	crypto_rand "crypto/rand"
+	"crypto/hmac"
+	"crypto/sha512"
 	"database/sql"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +17,7 @@ import (
 	"net/http/cookiejar"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -34,6 +39,14 @@ const (
 
 // testPassword is the shared password for all test operators.
 const testPassword = "TestPass#2026!"
+
+// signingKeys maps a session HTTP client to the per-session HMAC signing key
+// returned by the login response. doJSON / doRaw / graphql / graphqlBatch look
+// up the key from this map and sign requests automatically, matching the
+// server's SessionSignatureMiddleware. API-key-authenticated requests are
+// signed with a secret derived from the full API key value (see
+// deriveAPIKeySigningSecret in the keys service).
+var signingKeys sync.Map // map[*http.Client]string
 
 // TestState holds cross-phase shared state, persisted to stateDir.
 type TestState struct {
@@ -121,17 +134,53 @@ func getCSRF(t *testing.T, c *http.Client) string {
 	return ""
 }
 
+// signRequest sets the X-Vyzorix-Timestamp, X-Vyzorix-Nonce, and
+// X-Vyzorix-Signature headers on req using the same HMAC-SHA512 scheme as the
+// server's Verifier.Verify: canonical = METHOD\nPATH\nNONCE\nTIMESTAMP_MS\nBODY.
+func signRequest(req *http.Request, signingKey string, body []byte) {
+	nonce := newUUID()
+	ts := strconv.FormatInt(time.Now().UnixMilli(), 10)
+
+	mac := hmac.New(sha512.New, []byte(signingKey))
+	_, _ = mac.Write([]byte(req.Method + "\n" + req.URL.RequestURI() + "\n" + nonce + "\n" + ts + "\n"))
+	_, _ = mac.Write(body)
+	sig := base64.StdEncoding.EncodeToString(mac.Sum(nil))
+
+	req.Header.Set("X-Vyzorix-Timestamp", ts)
+	req.Header.Set("X-Vyzorix-Nonce", nonce)
+	req.Header.Set("X-Vyzorix-Signature", sig)
+}
+
+// resolveSigningKey determines the HMAC signing key for an outgoing request.
+// For API-key-authenticated requests (X-API-Key header present), the secret is
+// derived from the full API key value via SHA-512 hex — matching the server's
+// deriveAPIKeySigningSecret. For session-authenticated requests, the key is
+// looked up from the signingKeys registry (populated by login). Returns "" if
+// no signing key is available, which means the request is sent unsigned.
+func resolveSigningKey(req *http.Request, c *http.Client) string {
+	if apiKey := req.Header.Get("X-API-Key"); apiKey != "" {
+		h := sha512.Sum512([]byte(apiKey))
+		return hex.EncodeToString(h[:])
+	}
+	if key, ok := signingKeys.Load(c); ok {
+		return key.(string)
+	}
+	return ""
+}
+
 // doJSON sends a request with the given method, path, headers, and JSON body.
 // Returns the status code and the raw response body. Retries on 429.
 func doJSON(t *testing.T, c *http.Client, method, path string, headers map[string]string, body any) (int, []byte) {
 	t.Helper()
+	var bodyBytes []byte
 	var reqBody io.Reader
 	if body != nil {
-		data, err := json.Marshal(body)
+		var err error
+		bodyBytes, err = json.Marshal(body)
 		if err != nil {
 			t.Fatalf("marshal body: %v", err)
 		}
-		reqBody = bytes.NewReader(data)
+		reqBody = bytes.NewReader(bodyBytes)
 	}
 	for attempt := 0; attempt < 5; attempt++ {
 		req, err := http.NewRequest(method, baseURL+path, reqBody)
@@ -141,6 +190,9 @@ func doJSON(t *testing.T, c *http.Client, method, path string, headers map[strin
 		req.Header.Set("Content-Type", "application/json")
 		for k, v := range headers {
 			req.Header.Set(k, v)
+		}
+		if key := resolveSigningKey(req, c); key != "" {
+			signRequest(req, key, bodyBytes)
 		}
 		resp, err := c.Do(req)
 		if err != nil {
@@ -170,6 +222,9 @@ func doRaw(t *testing.T, c *http.Client, method, path string, headers map[string
 		}
 		for k, v := range headers {
 			req.Header.Set(k, v)
+		}
+		if key := resolveSigningKey(req, c); key != "" {
+			signRequest(req, key, nil)
 		}
 		resp, err := c.Do(req)
 		if err != nil {
@@ -347,6 +402,12 @@ func login(t *testing.T, email, orgID string) (*http.Client, string) {
 	if status != 200 {
 		t.Fatalf("login %s -> %d: %s", email, status, string(body))
 	}
+	// Capture the per-session signing key returned by the login response so
+	// subsequent requests can be signed with X-Vyzorix-* headers.
+	loginData := parseJSON(t, body)
+	if signingKey, _ := loginData["signing_key"].(string); signingKey != "" {
+		signingKeys.Store(c, signingKey)
+	}
 	if orgID != "" {
 		status, body = doJSON(t, c, "POST", "/v1/auth/organizations/select",
 			map[string]string{"X-CSRF-Token": csrf},
@@ -382,6 +443,9 @@ func graphql(t *testing.T, c *http.Client, orgID, query string) (int, map[string
 		t.Fatalf("new graphql request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if key := resolveSigningKey(req, c); key != "" {
+		signRequest(req, key, data)
+	}
 	resp, err := c.Do(req)
 	if err != nil {
 		t.Fatalf("graphql request: %v", err)
@@ -426,6 +490,9 @@ func graphqlBatch(t *testing.T, c *http.Client, orgID string, queries []map[stri
 		t.Fatalf("new batch request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if key := resolveSigningKey(req, c); key != "" {
+		signRequest(req, key, data)
+	}
 	resp, err := c.Do(req)
 	if err != nil {
 		t.Fatalf("batch request: %v", err)

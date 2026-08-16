@@ -143,12 +143,25 @@ apps/api/internal/
 
 | Method | Endpoint | Auth | Description | Status |
 |--------|----------|------|-------------|--------|
-| POST | `/v1/auth/login` | None | Credential login | **EXISTS** |
+| POST | `/v1/auth/login` | None | Credential login (browser — sets session cookie) | **EXISTS** |
+| POST | `/v1/auth/login/tokens` | None | Credential login (API clients — returns JWT + refresh token) | **EXISTS** |
 | POST | `/v1/auth/register` | None | Register new operator | **EXISTS** |
 | POST | `/v1/auth/logout` | Cookie | Logout current session | **EXISTS** |
+| GET | `/v1/auth/csrf-token` | None | Get CSRF token for mutating requests | **EXISTS** |
 | GET | `/v1/auth/me` | Cookie | Get current operator | **EXISTS** |
 | PATCH | `/v1/auth/me` | Cookie | Update operator name | **EXISTS** |
-| POST | `/v1/auth/refresh` | None | Refresh access token | **EXISTS** |
+| GET | `/v1/auth/me/settings` | Cookie | Get operator settings (thresholds + client) | **EXISTS** |
+| PATCH | `/v1/auth/me/settings` | Cookie | Update operator settings | **EXISTS** |
+| GET | `/v1/auth/me/thresholds` | Cookie | Get operator thresholds | **EXISTS** |
+| PATCH | `/v1/auth/me/thresholds` | Cookie | Update operator thresholds | **EXISTS** |
+| GET | `/v1/auth/me/notifications` | Cookie | Get notification settings | **EXISTS** |
+| PATCH | `/v1/auth/me/notifications` | Cookie | Update notification settings | **EXISTS** |
+| POST | `/v1/auth/me/notifications/webhook/test` | Cookie | Test webhook delivery | **EXISTS** |
+| POST | `/v1/auth/me/notifications/webhook/rotate` | Cookie | Rotate webhook secret | **EXISTS** |
+| POST | `/v1/auth/refresh` | None | Refresh access token (requires `refresh_token` in body) | **EXISTS** |
+| GET | `/v1/auth/lockout/status` | Cookie | Get current operator's lockout status | **EXISTS** |
+| GET | `/v1/auth/organizations` | Cookie | List operator's organizations | **EXISTS** |
+| POST | `/v1/auth/organizations/select` | Cookie | Select active organization | **EXISTS** |
 
 ### 3.2 MFA Endpoints
 
@@ -156,27 +169,29 @@ apps/api/internal/
 |--------|----------|------|-------------|--------|
 | GET | `/v1/auth/mfa/status` | Cookie | Get MFA enrollment status | **EXISTS** |
 | POST | `/v1/auth/mfa/enroll` | Cookie | Start MFA enrollment | **EXISTS** |
-| POST | `/v1/auth/mfa/verify-setup` | Cookie | Verify MFA setup | **EXISTS** |
-| POST | `/v1/auth/mfa/enable` | Cookie | Enable MFA | **EXISTS** |
-| POST | `/v1/auth/mfa/disable` | Cookie | Disable MFA | **EXISTS** |
+| POST | `/v1/auth/mfa/verify-setup` | Cookie | Verify MFA setup (expects `{ code, token }`) | **EXISTS** |
+| POST | `/v1/auth/mfa/enable` | Cookie | Enable MFA (expects `{ code, token }`, returns backup codes) | **EXISTS** |
+| POST | `/v1/auth/mfa/disable` | Cookie | Disable MFA (expects `{ code }`) | **EXISTS** |
 | POST | `/v1/auth/mfa/verify-backup` | Cookie | Verify backup code | **EXISTS** |
 | POST | `/v1/auth/mfa/regenerate-backup-codes` | Cookie | Regenerate backup codes | **EXISTS** |
-| POST | `/v1/auth/mfa/verify` | None | Verify MFA code (post-login) | **MISSING** |
+| POST | `/v1/auth/mfa/verify` | None | Verify MFA code during login (expects `{ operator_id, code }`) | **EXISTS** |
 
 ### 3.3 Password Reset Endpoints
 
 | Method | Endpoint | Auth | Description | Status |
 |--------|----------|------|-------------|--------|
 | POST | `/v1/auth/forgot-password` | None | Request password reset | **EXISTS** |
-| POST | `/v1/auth/reset-password` | None | Reset with token | **EXISTS** |
-| POST | `/v1/auth/resend-password-reset` | None | Resend reset email | **EXISTS** |
+| POST | `/v1/auth/reset-password` | None | Reset with token (expects `{ token, newPassword }`) | **EXISTS** |
+| POST | `/v1/auth/resend-password-reset` | None | Resend reset email (rate-limited) | **EXISTS** |
 
 ### 3.4 Email Verification Endpoints
 
 | Method | Endpoint | Auth | Description | Status |
 |--------|----------|------|-------------|--------|
 | POST | `/v1/auth/verify-email` | None | Verify email token | **EXISTS** |
+| GET | `/v1/auth/verify-email` | None | Verify email token (GET variant) | **EXISTS** |
 | POST | `/v1/auth/resend-verification` | None | Resend verification | **EXISTS** |
+| GET | `/v1/auth/resend-verification` | None | Resend verification (GET variant) | **EXISTS** |
 | POST | `/v1/auth/cancel-verification` | None | Cancel verification | **EXISTS** |
 | GET | `/v1/auth/poll-verification` | None | Poll verification status | **EXISTS** |
 
@@ -189,7 +204,29 @@ apps/api/internal/
 | GET | `/v1/auth/github` | None | Initiate GitHub OAuth | **EXISTS** |
 | GET | `/v1/auth/github/callback` | None | GitHub OAuth callback | **EXISTS** |
 
-### 3.6 Admin Endpoints
+### 3.6 Session Management Endpoints
+
+| Method | Endpoint | Auth | Description | Status |
+|--------|----------|------|-------------|--------|
+| GET | `/v1/auth/sessions` | Cookie | List all active sessions for the operator | **EXISTS** |
+| GET | `/v1/auth/sessions/:id` | Cookie | Get a specific session by ID | **EXISTS** |
+| GET | `/v1/auth/sessions/concurrent` | Cookie | Check concurrent login count and limit | **EXISTS** |
+| DELETE | `/v1/auth/sessions/:id` | Cookie | Revoke a specific session | **EXISTS** |
+| DELETE | `/v1/auth/sessions` | Cookie | Revoke all sessions except current | **EXISTS** |
+| POST | `/v1/auth/sessions/revoke-all` | Cookie | Logout from all devices | **EXISTS** |
+
+### 3.7 Client Credentials Endpoints
+
+| Method | Endpoint | Auth | Description | Status |
+|--------|----------|------|-------------|--------|
+| POST | `/v1/auth/client-credentials` | Cookie + Org | Create client credentials (API key) | **EXISTS** |
+| GET | `/v1/auth/client-credentials` | Cookie + Org | List client credentials | **EXISTS** |
+| GET | `/v1/auth/client-credentials/:clientId` | Cookie + Org | Get a specific client credential | **EXISTS** |
+| PATCH | `/v1/auth/client-credentials/:clientId` | Cookie + Org | Update client credentials | **EXISTS** |
+| DELETE | `/v1/auth/client-credentials/:clientId` | Cookie + Org | Delete client credentials | **EXISTS** |
+| POST | `/v1/auth/client-credentials/:clientId/rotate-secret` | Cookie + Org | Rotate client secret | **EXISTS** |
+
+### 3.8 Admin Endpoints
 
 | Method | Endpoint | Auth | Description | Status |
 |--------|----------|------|-------------|--------|
@@ -198,7 +235,6 @@ apps/api/internal/
 | GET | `/v1/auth/admin/operators/:id` | Admin | Get operator | **EXISTS** |
 | PATCH | `/v1/auth/admin/operators/:id` | Admin | Update operator | **EXISTS** |
 | DELETE | `/v1/auth/admin/operators/:id` | Admin | Delete operator | **EXISTS** |
-| POST | `/v1/auth/admin/lockout/unlock/:operator_id` | Admin | Unlock account | **EXISTS** |
 
 ---
 
@@ -333,25 +369,42 @@ func (s *AuthService) IssueRefreshToken(ctx, operatorID, sessionID string) (stri
 func (s *AuthService) RevokeAllRefreshTokens(ctx, operatorID string) error
 ```
 
-### 5.2 Required Application DTOs
+### 5.2 Application DTOs
 
 ```go
-// application/dto/auth.go (EXISTING + NEW)
+// application/dto/auth.go (EXISTS)
 
 package dto
 
-// EXISTING
 type LoginRequest struct {
     Email    string `json:"email"`
     Password string `json:"password"`
 }
 
 type LoginResponse struct {
-    OperatorID string `json:"operator_id"`
-    Email      string `json:"email"`
-    Name       string `json:"name"`
-    Role       string `json:"role"`
-    MFAEnabled bool   `json:"mfa_enabled"`
+    SelectedOrganization *OrganizationInfo  `json:"selected_organization,omitempty"`
+    OperatorID           string             `json:"operator_id"`
+    Email                string             `json:"email"`
+    Name                 string             `json:"name"`
+    LastOrganizationID   string             `json:"last_organization_id,omitempty"`
+    Organizations        []OrganizationInfo `json:"organizations,omitempty"`
+    MFAEnabled           bool               `json:"mfa_enabled"`
+    NeedsOrganization    bool               `json:"needs_organization"`
+}
+
+type LoginWithTokensResponse struct {
+    SelectedOrganization *OrganizationInfo  `json:"selected_organization,omitempty"`
+    OperatorID           string             `json:"operator_id"`
+    Email                string             `json:"email"`
+    Name                 string             `json:"name"`
+    LastOrganizationID   string             `json:"last_organization_id,omitempty"`
+    AccessToken          string             `json:"access_token"`
+    RefreshToken         string             `json:"refresh_token"`
+    SessionID            string             `json:"session_id"`
+    Organizations        []OrganizationInfo `json:"organizations,omitempty"`
+    ExpiresAt            int64              `json:"expires_at"`
+    MFAEnabled           bool               `json:"mfa_enabled"`
+    NeedsOrganization    bool               `json:"needs_organization"`
 }
 
 type RegisterRequest struct {
@@ -381,19 +434,31 @@ type ChangePasswordRequest struct {
     NewPassword string `json:"new_password"`
 }
 
-// NEW - MFA Verification (post-login)
+// MFA Verification (post-login) — EXISTS
 type MFAVerifyRequest struct {
     OperatorID string `json:"operator_id"`
     Code       string `json:"code"`
 }
 
+// MFAVerifyResponse is returned by POST /v1/auth/mfa/verify during login.
+// The handler returns a flat gin.H with success, session_id, access_token,
+// refresh_token, expires_at, and a nested operator object.
 type MFAVerifyResponse struct {
-    Success bool   `json:"success"`
-    Token   string `json:"token,omitempty"`
-    Session string `json:"session,omitempty"`
+    Success      bool   `json:"success"`
+    SessionID    string `json:"session_id"`
+    AccessToken  string `json:"access_token"`
+    RefreshToken string `json:"refresh_token"`
+    ExpiresAt    int64  `json:"expires_at"`
+    Operator     struct {
+        ID         string `json:"id"`
+        Email      string `json:"email"`
+        Name       string `json:"name"`
+        Role       string `json:"role"`
+        MFAEnabled bool   `json:"mfa_enabled"`
+    } `json:"operator"`
 }
 
-// NEW - Token Refresh
+// Token Refresh — EXISTS
 type RefreshTokenRequest struct {
     RefreshToken string `json:"refresh_token"`
 }
@@ -401,8 +466,30 @@ type RefreshTokenRequest struct {
 type RefreshTokenResponse struct {
     AccessToken  string `json:"access_token"`
     RefreshToken string `json:"refresh_token"`
-    ExpiresAt    int64  `json:"expires_at"`
     SessionID    string `json:"session_id"`
+    ExpiresAt    int64  `json:"expires_at"`
+}
+
+// MFAStatusResponse — EXISTS (handler returns { "mfa_enabled": bool })
+type MFAStatusResponse struct {
+    BackupCodes []string `json:"backup_codes,omitempty"`
+    Enabled     bool     `json:"enabled"`
+}
+
+// OperatorResponse — returned by GET /v1/auth/me
+type OperatorResponse struct {
+    Thresholds           *Thresholds        `json:"thresholds,omitempty"`
+    Client               *ClientSettings    `json:"client,omitempty"`
+    SelectedOrganization *OrganizationInfo  `json:"selected_organization,omitempty"`
+    ID                   string             `json:"id"`
+    Email                string             `json:"email"`
+    Name                 string             `json:"name"`
+    LastOrganizationID   string             `json:"last_organization_id,omitempty"`
+    CreatedAt            string             `json:"created_at"`
+    Organizations        []OrganizationInfo `json:"organizations,omitempty"`
+    NeedsOrganization    bool               `json:"needs_organization"`
+    MFAEnabled           bool               `json:"mfa_enabled"`
+    EmailVerified        bool               `json:"email_verified"`
 }
 ```
 
@@ -410,63 +497,69 @@ type RefreshTokenResponse struct {
 
 ## 6. Handler Specifications
 
-### 6.1 Login Handler (EXISTING)
+### 6.1 Login Handler (EXISTS)
 
 ```go
-// handlers/auth/login.go
+// handlers/auth/auth_login.go
 
 type LoginHandler struct {
     authService *auth.AuthService
     presenter  *response.Presenter
 }
 
+// POST /v1/auth/login — browser login (sets session cookie)
 func (h *LoginHandler) Handle(c *gin.Context) {
     // 1. Parse LoginRequest
     // 2. Call authService.Login()
-    // 3. If ErrMFARequired, return with mfa_required=true
-    // 4. Set session cookie
-    // 5. Return LoginResponse
+    // 3. If ErrMFARequired, return { mfa_required: true, operator_id }
+    // 4. Set session cookie (AES-GCM encrypted vyz_session)
+    // 5. Return LoginResponse (no tokens — cookie-based)
+}
+
+// POST /v1/auth/login/tokens — API client login (returns JWT + refresh token)
+func (h *LoginHandler) HandleWithTokens(c *gin.Context) {
+    // 1. Parse LoginRequest
+    // 2. Call authService.LoginWithTokens()
+    // 3. If ErrMFARequired, return { mfa_required: true, operator_id, email, name, mfa_enabled }
+    // 4. Return LoginWithTokensResponse (access_token, refresh_token, expires_at, session_id, operator fields)
 }
 ```
 
-### 6.2 MFA Verification Handler (NEW)
+### 6.2 MFA Verification Handler (EXISTS)
 
 ```go
-// handlers/auth/mfa_verify.go (NEW)
-
-type MFAVerifyHandler struct {
-    authService *auth.AuthService
-    presenter  *response.Presenter
-}
+// handlers/auth/auth_mfa.go — MFAHandler.VerifyMFA
 
 // POST /v1/auth/mfa/verify
-func (h *MFAVerifyHandler) Handle(c *gin.Context) {
-    // 1. Parse MFAVerifyRequest { operator_id, code }
-    // 2. Validate code format (6 digits)
-    // 3. Call authService.VerifyMFACode()
-    // 4. If valid, create session
-    // 5. Set session cookie
-    // 6. Return MFAVerifyResponse with tokens
+// Rate-limited by operator_id (or IP fallback), protected by Lockout middleware.
+func (h *MFAHandler) VerifyMFA(c *gin.Context) {
+    // 1. Parse { operator_id, code } (both required)
+    // 2. Audit-log MFA verify attempt
+    // 3. Call authService.VerifyMFACode(operatorID, code) → returns session
+    // 4. On failure: audit-log, return 401 "Invalid MFA code"
+    // 5. Re-validate operator (not deleted, MFA still enabled, role unchanged)
+    // 6. Create session cookie via SessionManager.CreateCookie(session.ID)
+    // 7. Issue refresh token + generate JWT access token
+    // 8. Audit-log success
+    // 9. Return { success, session_id, access_token, refresh_token, expires_at, operator: { id, email, name, role, mfa_enabled } }
 }
 ```
 
-### 6.3 Refresh Token Handler (NEW)
+### 6.3 Refresh Token Handler (EXISTS)
 
 ```go
-// handlers/auth/refresh.go (NEW)
-
-type RefreshHandler struct {
-    authService *auth.AuthService
-    presenter  *response.Presenter
-}
+// handlers/auth/auth_refresh.go — RefreshHandler
 
 // POST /v1/auth/refresh
+// Expects { refresh_token } in the request body (not cookie-only).
 func (h *RefreshHandler) Handle(c *gin.Context) {
-    // 1. Parse RefreshTokenRequest
-    // 2. Validate refresh token
-    // 3. Call authService.RotateRefreshToken()
-    // 4. Implement refresh token rotation (revoke old, issue new)
-    // 5. Return new tokens
+    // 1. Parse RefreshTokenRequest { refresh_token }
+    // 2. Call authService.RotateRefreshToken(oldRefreshToken)
+    //    - Validates the old token
+    //    - Revokes old token (sets replaced_by_id for theft detection)
+    //    - Issues new refresh token + access token
+    // 3. Return RefreshTokenResponse { access_token, refresh_token, session_id, expires_at }
+    // 4. On failure (invalid/reused token): clear auth, return 401
 }
 ```
 
@@ -619,33 +712,37 @@ CREATE INDEX idx_password_resets_token_hash ON password_resets(token_hash);
 apps/api/internal/
  api/
     handlers/auth/
-       login.go            # EXISTS
-       register.go         # EXISTS
-       logout.go           # EXISTS
-       me.go               # EXISTS
-       mfa.go              # EXISTS
-       oauth.go             # EXISTS
-       password_reset.go    # EXISTS
-       email_verify.go      # EXISTS
-       settings.go          # EXISTS
-       admin.go             # EXISTS
-       lockout.go           # EXISTS
-       routes.go            # EXISTS
-       client_credentials.go # EXISTS
-   
+       auth_login.go            # EXISTS — login + login/tokens
+       auth_register.go         # EXISTS
+       auth_logout.go           # EXISTS
+       auth_me.go               # EXISTS
+       auth_mfa.go              # EXISTS — all MFA endpoints incl. verify
+       auth_refresh.go          # EXISTS — token refresh
+       auth_oauth.go            # EXISTS — Google + GitHub
+       auth_password_reset.go   # EXISTS — forgot/reset/resend
+       auth_email_verify.go     # EXISTS — verify/resend/cancel/poll
+       auth_settings.go         # EXISTS — name/settings/thresholds/notifications
+       auth_admin.go            # EXISTS — operator CRUD
+       auth_lockout.go          # EXISTS — lockout status + admin unlock
+       auth_sessions.go         # EXISTS — session list/revoke/concurrent
+       auth_client_credentials.go # EXISTS — API key CRUD + rotate
+       auth_organization.go     # EXISTS — org list + select
+       auth_routes.go           # EXISTS — route registration
+
     middleware/
-       auth.go              # EXISTS
-       cookie_auth.go       # EXISTS
+       cookie_auth.go       # EXISTS — AES-GCM session cookie middleware
        lockout.go           # EXISTS
-       rate_limit.go       # EXISTS
-       validation.go        # EXISTS
-   
-    responses/
-        presenter.go         # EXISTS
+       rate_limit.go        # EXISTS
+       validation.go        # EXISTS — request schema validation
+
+    adapters/response/
+        presenter.go        # EXISTS
 
  application/auth/
     auth_service.go              # EXISTS
-    auth_password.go              # EXISTS
+    auth_password.go             # EXISTS
+    auth_login_session.go        # EXISTS
+    auth_device_recognition.go   # EXISTS
 
  domain/
     operator/
@@ -653,49 +750,41 @@ apps/api/internal/
        operator_repository.go       # EXISTS
        operator_errors.go           # EXISTS
        operator_password.go         # EXISTS
-       operator_role.go            # EXISTS
-       operator_requests.go       # EXISTS
-       operator_responses.go      # EXISTS
-       operator_email.go          # EXISTS
-   
+       operator_role.go             # EXISTS
+
     session/
        session_entity.go          # EXISTS
        session_repository.go      # EXISTS
-   
+
     refresh_token/
        refresh_token_entity.go          # EXISTS
        refresh_token_repository.go      # EXISTS
-   
+
     email_verification/
        email_verification_entity.go          # EXISTS
        email_verification_repository.go      # EXISTS
-       email_verification_requests.go        # EXISTS
-       email_verification_responses.go     # EXISTS
-   
+
     password_reset/
        password_reset_entity.go          # EXISTS
        password_reset_repository.go      # EXISTS
-       password_reset_requests.go        # EXISTS
-       password_reset_responses.go      # EXISTS
-   
+
     oauth/
         oauth_entity.go          # EXISTS
-        oauth_errors.go         # EXISTS
 
  infrastructure/
      security/
         jwt.go             # EXISTS
-        password.go        # EXISTS
+        password.go        # EXISTS — Argon2id
         google.go          # EXISTS
-        session/           # EXISTS
-    
+        session/           # EXISTS — AES-256-GCM encrypted cookies
+
      email/
         email_service.go   # EXISTS
-    
+
      storage/
          auth_storage.go           # EXISTS
-         session_storage.go       # EXISTS
-         operator_storage.go      # EXISTS
+         session_storage.go        # EXISTS
+         operator_storage.go       # EXISTS
 ```
 
 ### 9.2 Files (Actual Implementation)
@@ -709,58 +798,151 @@ apps/api/internal/
 
 ---
 
-## 10. Implementation Order
+## 10. Implementation Status
 
-### Phase 1: Verify Existing Implementation (Day 1)
-1. Audit existing auth handlers for completeness
-2. Verify MFA enrollment flow
-3. Verify OAuth flows (Google, GitHub)
-4. Verify password reset flow
-5. Identify gaps
+All auth endpoints are fully implemented. The phases below describe the completed work.
 
-### Phase 2: Fill Gaps (Day 1-2)
-1. Create `handlers/auth/mfa_verify.go` if needed
-2. Create `handlers/auth/refresh.go` if needed
-3. Update routes.go with new endpoints
-4. Add missing DTOs
+### Phase 1: Core Auth (COMPLETE)
+- Login (browser + tokens), register, logout, refresh, /me
+- Session cookies (AES-256-GCM encrypted `vyz_session`)
+- JWT access tokens (HS256, 15-minute expiry)
+- Refresh token rotation with theft detection (`replaced_by_id` chain)
 
-### Phase 3: Service Layer (Day 2)
-1. Verify `RotateRefreshToken` implementation
-2. Add any missing service methods
-3. Add token validation helpers
+### Phase 2: MFA (COMPLETE)
+- TOTP enrollment, verify-setup, enable, disable
+- Backup codes (generate, verify, regenerate)
+- MFA verification during login (`POST /v1/auth/mfa/verify`)
+- Rate-limited by operator_id, protected by lockout middleware
 
-### Phase 4: Testing (Day 2-3)
-1. Unit tests for handlers
-2. Integration tests for auth flows
-3. E2E tests for complete flows:
-   - Login → MFA → Session
-   - OAuth → Callback → Session
-   - Password Reset → New Password → Login
-   - Token Refresh → New Tokens
+### Phase 3: Password Reset + Email Verification (COMPLETE)
+- Forgot/reset/resend password flows
+- Email verification (POST + GET variants, cancel, poll)
+- Argon2id password hashing
+- Token lifecycles: password-reset 15min, email-verify 24h
 
-### Phase 5: Documentation (Day 3)
-1. Update API documentation
-2. Document auth flows
-3. Add security considerations
+### Phase 4: OAuth (COMPLETE)
+- Google OAuth 2.0 (login + callback)
+- GitHub OAuth (login + callback)
+- State-parameter CSRF protection
+
+### Phase 5: Session Management (COMPLETE)
+- Session list, get, revoke (single + all-except-current + all-devices)
+- Concurrent session limit (default 5, configurable, oldest revoked)
+
+### Phase 6: Admin + Client Credentials (COMPLETE)
+- Operator CRUD (SuperAdmin only)
+- Account unlock (SuperAdmin)
+- Client credentials (API key) CRUD + secret rotation
+
+### Phase 7: Security Hardening (COMPLETE)
+- Account lockout (configurable thresholds)
+- Rate limiting (login, MFA verify, password reset, settings)
+- IP intelligence middleware
+- User enumeration prevention
+- CSRF token middleware for mutating requests
+- Audit logging for auth events
 
 ---
 
 ## Appendix: API Contract Reference
 
-### Login
+### Login (Browser)
 ```
 POST /v1/auth/login
 Request: { "email": "...", "password": "..." }
-Response: { "operator_id": "...", "email": "...", "name": "...", "role": "...", "mfa_enabled": true/false }
+Response: {
+  "operator_id": "...",
+  "email": "...",
+  "name": "...",
+  "mfa_enabled": true/false,
+  "needs_organization": true/false,
+  "organizations": [...],
+  "selected_organization": { "id": "...", "name": "...", "role": "..." },
+  "last_organization_id": "..."
+}
+MFA Response: { "mfa_required": true, "operator_id": "..." }
 Errors: 400, 401, 429
 ```
 
-### MFA Verification
+### Login (API Clients — Tokens)
+```
+POST /v1/auth/login/tokens
+Request: { "email": "...", "password": "..." }
+Response: {
+  "operator_id": "...",
+  "email": "...",
+  "name": "...",
+  "mfa_enabled": true/false,
+  "needs_organization": true/false,
+  "organizations": [...],
+  "access_token": "...",
+  "refresh_token": "...",
+  "expires_at": 1234567890,
+  "session_id": "..."
+}
+MFA Response: { "mfa_required": true, "operator_id": "...", "email": "...", "name": "...", "mfa_enabled": true }
+Errors: 400, 401, 429
+```
+
+### MFA Verification (Login)
 ```
 POST /v1/auth/mfa/verify
 Request: { "operator_id": "...", "code": "123456" }
-Response: { "success": true, "token": "...", "session": "..." }
+Response: {
+  "success": true,
+  "session_id": "...",
+  "access_token": "...",
+  "refresh_token": "...",
+  "expires_at": 1234567890,
+  "operator": { "id": "...", "email": "...", "name": "...", "role": "...", "mfa_enabled": true }
+}
 Errors: 400, 401, 429
+```
+
+### MFA Status
+```
+GET /v1/auth/mfa/status
+Response: { "mfa_enabled": true/false }
+```
+
+### MFA Enroll
+```
+POST /v1/auth/mfa/enroll
+Response: { "secret": "...", "uri": "otpauth://..." }
+```
+
+### MFA Verify Setup
+```
+POST /v1/auth/mfa/verify-setup
+Request: { "code": "123456", "token": "123456" }
+Response: { "verified": true }
+```
+
+### MFA Enable
+```
+POST /v1/auth/mfa/enable
+Request: { "code": "123456", "token": "123456" }
+Response: { "success": true, "backup_codes": ["...", "...", ...] }
+```
+
+### MFA Disable
+```
+POST /v1/auth/mfa/disable
+Request: { "code": "123456" }
+Response: { "success": true }
+```
+
+### MFA Verify Backup Code
+```
+POST /v1/auth/mfa/verify-backup
+Request: { "code": "..." }
+Response: { "valid": true/false }
+```
+
+### MFA Regenerate Backup Codes
+```
+POST /v1/auth/mfa/regenerate-backup-codes
+Response: { "backup_codes": ["...", "...", ...] }
 ```
 
 ### Refresh Token
@@ -768,13 +950,26 @@ Errors: 400, 401, 429
 POST /v1/auth/refresh
 Request: { "refresh_token": "..." }
 Response: { "access_token": "...", "refresh_token": "...", "expires_at": 1234567890, "session_id": "..." }
-Errors: 400, 401, 429
+Errors: 400, 401
 ```
 
 ### Get Current User
 ```
 GET /v1/auth/me
-Response: { "id": "...", "email": "...", "name": "...", "role": "...", "mfa_enabled": true, "email_verified": true }
+Response: {
+  "id": "...",
+  "email": "...",
+  "name": "...",
+  "mfa_enabled": true,
+  "email_verified": true,
+  "needs_organization": false,
+  "organizations": [...],
+  "selected_organization": { "id": "...", "name": "...", "role": "..." },
+  "last_organization_id": "...",
+  "created_at": "2026-01-01T00:00:00Z",
+  "thresholds": { ... },
+  "client": { ... }
+}
 Errors: 401
 ```
 
@@ -789,16 +984,25 @@ Errors: 401
 ```
 POST /v1/auth/forgot-password
 Request: { "email": "..." }
-Response: { "success": true }
+Response: { "message": "If that email exists, a password reset link has been sent." }
 Errors: 400, 429
 ```
 
 ### Reset Password
 ```
 POST /v1/auth/reset-password
-Request: { "token": "...", "new_password": "..." }
-Response: { "success": true }
-Errors: 400, 410 (expired)
+Request: { "token": "...", "newPassword": "..." }
+Response: { "success": true, "message": "Password has been reset successfully." }
+Errors: 400, 401
+```
+
+### Resend Password Reset
+```
+POST /v1/auth/resend-password-reset
+Request: { "email": "..." }
+Response (success): { "success": true, "message": "Password reset link sent." }
+Response (rate-limited): { "error": "rate_limited", "message": "...", "retryAfter": N, "lockedUntil": N }
+Errors: 400
 ```
 
 ---
@@ -808,16 +1012,16 @@ Errors: 400, 410 (expired)
 | Code | HTTP Status | Description |
 |------|-------------|-------------|
 | `invalid_credentials` | 401 | Email or password incorrect |
-| `mfa_required` | 403 | MFA verification needed |
+| `mfa_required` | 401 | MFA verification needed (returned in login response body, not as an error) |
 | `mfa_invalid` | 401 | Invalid MFA code |
-| `token_expired` | 410 | Reset/token expired |
-| `token_invalid` | 400 | Invalid token format |
+| `token_expired` | 401 | Reset/refresh token expired |
+| `token_invalid` | 400/401 | Invalid token format |
 | `email_exists` | 409 | Email already registered |
-| `rate_limited` | 429 | Too many attempts |
+| `rate_limited` | 200 | Too many attempts (returned in body with retryAfter/lockedUntil) |
 | `account_locked` | 423 | Account temporarily locked |
 
 ---
 
-*Document Version: 1.0*  
-*Status: Aligned with existing server structure*  
+*Document Version: 2.0*  
+*Status: Aligned with Go server implementation (apps/api/internal/*  
 *Architecture: Domain-Driven (apps/api/internal/)*

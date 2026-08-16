@@ -1,6 +1,7 @@
 
 
 import { restClient, getCSRFToken, fetchAndSetCSRFToken } from "../_shared/rest-client";
+import { forgotPasswordRequestToRaw } from "../../../domain/auth";
 import type { ForgotPasswordResponse, ResetPasswordResponse } from "../../../domain/auth";
 
 const PASSWORD_PATHS = {
@@ -12,6 +13,9 @@ const PASSWORD_PATHS = {
 export interface ResendResetResponse {
   success: boolean;
   message?: string;
+  error?: string;
+  retryAfter?: number;
+  lockedUntil?: number;
 }
 
 async function ensureCSRFToken(): Promise<void> {
@@ -23,7 +27,7 @@ async function ensureCSRFToken(): Promise<void> {
 
 export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
   await ensureCSRFToken();
-  return restClient.post<ForgotPasswordResponse>(PASSWORD_PATHS.forgotPassword, { email });
+  return restClient.post<ForgotPasswordResponse>(PASSWORD_PATHS.forgotPassword, forgotPasswordRequestToRaw(email));
 }
 
 
@@ -31,12 +35,12 @@ export async function resetPassword(token: string, newPassword: string): Promise
   await ensureCSRFToken();
   return restClient.post<ResetPasswordResponse>(PASSWORD_PATHS.resetPassword, {
     token,
-    password: newPassword,
+    newPassword,
   });
 }
 
 
 export async function resendPasswordReset(email: string): Promise<ResendResetResponse> {
   await ensureCSRFToken();
-  return restClient.post<ResendResetResponse>(PASSWORD_PATHS.resendReset, { email });
+  return restClient.post<ResendResetResponse>(PASSWORD_PATHS.resendReset, forgotPasswordRequestToRaw(email));
 }

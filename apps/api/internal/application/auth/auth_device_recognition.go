@@ -250,7 +250,9 @@ func (s *AuthService) LoginWithDevice(ctx context.Context, req *dto.LoginRequest
 		s.deviceStore.RegisterDevice(op.ID, device.DeviceFingerprint, device.IPAddress, device.UserAgent)
 	}
 
-	return s.buildLoginResponse(op), sess, nil
+	resp := s.buildLoginResponse(op)
+	resp.SigningKey = sess.SigningKey
+	return resp, sess, nil
 }
 
 // SetDeviceStore sets the device store for login tracking.

@@ -16,7 +16,8 @@ func migrateCreateRefreshTokens(db *sql.DB) error {
 			expires_at      INTEGER NOT NULL,
 			created_at      INTEGER NOT NULL,
 			replaced_by_id  TEXT,
-			revoked         INTEGER NOT NULL DEFAULT 0,
+			is_revoked      INTEGER NOT NULL DEFAULT 0,
+			revoked_at      INTEGER,
 			FOREIGN KEY(operator_id) REFERENCES operators(id) ON DELETE CASCADE,
 			FOREIGN KEY(session_id) REFERENCES auth_sessions(id) ON DELETE CASCADE,
 			FOREIGN KEY(replaced_by_id) REFERENCES refresh_tokens(id)

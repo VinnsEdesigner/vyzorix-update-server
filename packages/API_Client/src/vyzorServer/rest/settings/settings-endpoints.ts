@@ -25,12 +25,7 @@ const PATHS = {
 } as const;
 
 interface RawSettingsResponse {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  mfa_enabled: boolean;
-  email_verified: boolean;
+  notifications?: RawNotificationSettings;
   client: RawClientSettings;
   thresholds: RawThresholds;
 }

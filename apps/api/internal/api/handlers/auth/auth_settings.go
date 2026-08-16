@@ -224,28 +224,138 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	var op *operator.Operator
-
 	if req.Reset {
-		op, err = h.authService.ResetSettings(c.Request.Context(), operatorID)
+		if _, err = h.authService.ResetSettings(c.Request.Context(), operatorID); err != nil {
+			h.presenter.InternalError(c, "update failed")
+			return
+		}
 	} else {
-		op, err = h.authService.UpdateSettings(c.Request.Context(), operatorID, &req)
+		if _, err = h.authService.UpdateSettings(c.Request.Context(), operatorID, &req); err != nil {
+			h.presenter.InternalError(c, "update failed")
+			return
+		}
 	}
 
+	// Return the full OperatorSettings (same shape as GET /me/settings) so the
+	// client receives thresholds + notifications alongside client settings.
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	settings, err := h.operatorRepo.GetOperatorSettings(ctx, operatorID)
 	if err != nil {
-		h.presenter.InternalError(c, "update failed")
+		h.presenter.InternalError(c, "failed to get settings")
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"id":             op.ID,
-		"email":          op.Email,
-		"name":           op.Name,
-		"role":           h.getOperatorRole(c, op),
-		"mfa_enabled":    op.MFAEnabled,
-		"email_verified": op.EmailVerified,
-		"client":         op.ClientSettings,
+	h.presenter.OK(c, settings)
+}
+
+// GetThresholds handles GET /v1/auth/me/thresholds.
+func (h *SettingsHandler) GetThresholds(c *gin.Context) {
+	operatorID, err := h.getOperatorFromSession(c)
+	if err != nil {
+		h.presenter.Unauthorized(c, "not authenticated")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	thresholds, err := h.operatorRepo.GetThresholds(ctx, operatorID)
+	if err != nil {
+		h.presenter.InternalError(c, "failed to get thresholds")
+		return
+	}
+
+	h.presenter.OK(c, thresholds)
+}
+
+// ThresholdUpdateRequest represents thresholds update request.
+type ThresholdUpdateRequest struct {
+	RiskWarn    *int `json:"riskWarn,omitempty"`
+	RiskCrit    *int `json:"riskCrit,omitempty"`
+	ThermalWarn *int `json:"thermalWarn,omitempty"`
+	ThermalCrit *int `json:"thermalCrit,omitempty"`
+	BufferWarn  *int `json:"bufferWarn,omitempty"`
+	BufferCrit  *int `json:"bufferCrit,omitempty"`
+}
+
+// UpdateThresholds handles PATCH /v1/auth/me/thresholds.
+func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
+	operatorID, err := h.getOperatorFromSession(c)
+	if err != nil {
+		h.presenter.Unauthorized(c, "not authenticated")
+		return
+	}
+
+	var req ThresholdUpdateRequest
+	if err = c.ShouldBindJSON(&req); err != nil {
+		h.presenter.BadRequest(c, "invalid JSON body")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	thresholds, err := h.operatorRepo.GetThresholds(ctx, operatorID)
+	if err != nil {
+		h.presenter.InternalError(c, "failed to get current thresholds")
+		return
+	}
+
+	if req.RiskWarn != nil {
+		thresholds.RiskWarn = *req.RiskWarn
+	}
+	if req.RiskCrit != nil {
+		thresholds.RiskCrit = *req.RiskCrit
+	}
+	if req.ThermalWarn != nil {
+		thresholds.ThermalWarn = *req.ThermalWarn
+	}
+	if req.ThermalCrit != nil {
+		thresholds.ThermalCrit = *req.ThermalCrit
+	}
+	if req.BufferWarn != nil {
+		thresholds.BufferWarn = *req.BufferWarn
+	}
+	if req.BufferCrit != nil {
+		thresholds.BufferCrit = *req.BufferCrit
+	}
+
+	if err = h.operatorRepo.UpdateThresholds(ctx, operatorID, thresholds); err != nil {
+		h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
+			Action:  "update",
+			Section: "thresholds",
+			Changes: map[string]interface{}{
+				"riskWarn":    thresholds.RiskWarn,
+				"riskCrit":    thresholds.RiskCrit,
+				"thermalWarn": thresholds.ThermalWarn,
+				"thermalCrit": thresholds.ThermalCrit,
+				"bufferWarn":  thresholds.BufferWarn,
+				"bufferCrit":  thresholds.BufferCrit,
+			},
+			Success: false,
+			Error:   err.Error(),
+		})
+		h.presenter.InternalError(c, "failed to update thresholds")
+		return
+	}
+
+	h.logSettingsAudit(c, operatorID, &SettingsAuditEvent{
+		Action:  "update",
+		Section: "thresholds",
+		Changes: map[string]interface{}{
+			"riskWarn":    thresholds.RiskWarn,
+			"riskCrit":    thresholds.RiskCrit,
+			"thermalWarn": thresholds.ThermalWarn,
+			"thermalCrit": thresholds.ThermalCrit,
+			"bufferWarn":  thresholds.BufferWarn,
+			"bufferCrit":  thresholds.BufferCrit,
+		},
+		Success: true,
 	})
+
+	h.presenter.OK(c, thresholds)
 }
 
 // GetNotifications handles GET /v1/auth/me/notifications.

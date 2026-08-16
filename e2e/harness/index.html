@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vyzorix E2E Test Harness</title>
+</head>
+<body>
+  <h1>Vyzorix E2E Test Harness</h1>
+  <p id="status">Loading API Client bundle…</p>
+
+  <!--
+    Polyfill import.meta.env before the API Client bundle loads.
+    The bundle (built by e2e/vyzorix-e2e-harness-build.cjs) replaces every
+    import.meta.env reference with window.__VYZORIX_ENV, so setting this
+    global makes VITE_API_URL="/api", VITE_WS_URL, etc. available at runtime
+    without Vite.
+  -->
+  <script>
+    window.__VYZORIX_ENV = {
+      VITE_API_URL: '/api',
+      VITE_WS_URL: (location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.host + '/v1/device',
+      VITE_REST_TIMEOUT: '30000',
+      VITE_REST_WITH_CREDENTIALS: 'true',
+      VITE_WS_RECONNECT_INTERVAL: '3000',
+      VITE_WS_MAX_RECONNECT_ATTEMPTS: '5',
+      VITE_WS_HEARTBEAT_INTERVAL: '30000',
+      VITE_WS_HEARTBEAT_TIMEOUT: '10000',
+      VITE_WS_RECONNECT_MAX_DELAY: '30000',
+      VITE_WS_RECONNECT_MULTIPLIER: '2',
+      VITE_METRICS_DEFAULT_LIMIT: '500',
+      VITE_METRICS_RETENTION_DAYS: '30',
+    };
+  </script>
+
+  <!--
+    The self-contained API Client browser bundle.
+    Built by: node e2e/vyzorix-e2e-harness-build.cjs
+    Source:   packages/API_Client/src/index.ts
+  -->
+  <script type="module">
+    import * as apiClient from './assets/vyzorix-api-client.browser.js';
+
+    // Expose the full API Client namespace to Playwright's page.evaluate().
+    window.__vyzorix = apiClient;
+
+    // Convenience: expose the most commonly used factories directly.
+    window.createDeveloperClient = apiClient.createDeveloperClient;
+    window.restClient = apiClient.restClient;
+    window.graphqlClient = apiClient.graphqlClient;
+    window.devices = apiClient.devices;
+    window.deriveAPIKeySigningSecret = apiClient.deriveAPIKeySigningSecret;
+    window.signHttpRequestBrowser = apiClient.signHttpRequestBrowser;
+    window.setOrganizationContext = apiClient.setOrganizationContext;
+    window.setAuthToken = apiClient.setAuthToken;
+    window.setCSRFToken = apiClient.setCSRFToken;
+    window.setSigningKey = apiClient.setSigningKey;
+    window.clearAuthContext = apiClient.clearAuthContext;
+
+    document.getElementById('status').textContent = 'API Client ready ✓';
+  </script>
+</body>
+</html>

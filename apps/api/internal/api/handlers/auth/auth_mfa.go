@@ -344,6 +344,7 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		"access_token":  accessToken, // Proper JWT access token.
 		"refresh_token": refreshToken,
 		"expires_at":    expiresAt,
+		"signing_key":   session.SigningKey,
 		"operator": gin.H{
 			"id":          op.ID,
 			"email":       op.Email,

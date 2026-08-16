@@ -75,3 +75,7 @@ vyzorix-server-clean
 vyzorix-server-new
 vyzorix-server-old
 vyzorix-update-server
+
+# Playwright E2E test output
+test-results/
+playwright-report/

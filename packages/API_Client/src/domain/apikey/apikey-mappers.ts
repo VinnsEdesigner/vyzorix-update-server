@@ -8,17 +8,19 @@ import type { RawPagination } from "../_shared";
 
 export interface RawApiKey {
   id: string;
-  operator_id: string;
+  // Only present in create/rotate responses; list/get/patch omit it.
+  operator_id?: string;
   name: string;
   key_prefix: string;
   scope: ApiKeyScope;
-  expires_at: number | null;
-  last_request_at: number | null;
+  // Server serializes time.Time/*time.Time as RFC3339 ISO strings.
+  expires_at: string | null;
+  last_request_at: string | null;
   is_active: boolean;
   request_count: number;
-  created_at: number;
-  updated_at: number;
-  revoked_at: number | null;
+  created_at: string;
+  updated_at: string;
+  revoked_at: string | null;
 }
 
 export interface RawApiKeyWithSecret extends RawApiKey {
@@ -61,4 +63,17 @@ export function apiKeyStatsFromRaw(raw: { monthly_limit: number; keys_created_th
     monthlyLimit: raw.monthly_limit,
     keysCreatedThisMonth: raw.keys_created_this_month,
   };
+}
+
+const VALID_SCOPES: readonly ApiKeyScope[] = ["read", "write", "admin"];
+
+/**
+ * Normalizes a raw scope string to a valid ApiKeyScope. Case-insensitive;
+ * unknown/empty values default to "read" so a malformed server response can
+ * never produce an invalid scope downstream.
+ */
+export function parseScope(raw: string | undefined | null): ApiKeyScope {
+  if (!raw) return "read";
+  const lower = raw.toLowerCase();
+  return (VALID_SCOPES as readonly string[]).includes(lower) ? (lower as ApiKeyScope) : "read";
 }

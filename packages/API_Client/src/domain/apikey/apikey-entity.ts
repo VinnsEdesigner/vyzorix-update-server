@@ -2,7 +2,8 @@ export type ApiKeyScope = "read" | "write" | "admin";
 export type ApiKeyStatus = "active" | "expired" | "revoked";
 export interface ApiKey {
   id: string;
-  operatorId: string;
+  // Only present in create/rotate responses; list/get/patch omit it.
+  operatorId?: string;
   name: string;
   keyPrefix: string;
   scope: ApiKeyScope;

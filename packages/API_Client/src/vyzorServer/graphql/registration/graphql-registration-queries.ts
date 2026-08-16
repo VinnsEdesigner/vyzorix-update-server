@@ -20,6 +20,7 @@ export const INBOX_ENTRY_FRAGMENT = gql`
 `;
 
 export const GET_INBOX_ENTRIES = gql`
+  ${INBOX_ENTRY_FRAGMENT}
   query GetInboxEntries($organizationId: ID!, $status: String, $page: Int, $limit: Int) {
     inbox(organizationId: $organizationId, status: $status, page: $page, limit: $limit) {
       requests {
@@ -36,6 +37,7 @@ export const GET_INBOX_ENTRIES = gql`
 `;
 
 export const GET_INBOX_ENTRY = gql`
+  ${INBOX_ENTRY_FRAGMENT}
   query GetInboxEntry($organizationId: ID!, $imei: String!) {
     inboxEntry(organizationId: $organizationId, imei: $imei) {
       ...InboxEntry

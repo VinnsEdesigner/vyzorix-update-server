@@ -85,6 +85,13 @@ function extractData<T>(response: unknown, primary: string, fallback?: string): 
   if (!r) return null;
   const primaryData = r[primary] as T | undefined;
   if (primaryData !== undefined) return primaryData;
+  // The registration GraphQL wrappers return the raw Apollo QueryResult, which
+  // nests the operation payload under `.data` (e.g. `{ data: { inbox: {...} } }`).
+  const nested = r.data as Record<string, unknown> | undefined;
+  if (nested) {
+    const nestedPrimary = nested[primary] as T | undefined;
+    if (nestedPrimary !== undefined) return nestedPrimary;
+  }
   if (fallback) return (r[fallback] as T | undefined) ?? null;
   return null;
 }

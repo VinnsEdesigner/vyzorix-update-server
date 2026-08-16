@@ -3,6 +3,8 @@ import { getMainDefinition } from '@apollo/client/utilities';
 import { print } from 'graphql';
 import { setContext } from '@apollo/client/link/context';
 import { getGraphQLBatcher } from '../../rest/_batching';
+import { getSigningKey } from '../../rest/_shared/rest-client';
+import { signHttpRequestBrowser } from '../../crypto/browser-sign';
 
 type CredentialsType = 'omit' | 'same-origin' | 'include';
 
@@ -20,14 +22,63 @@ const graphqlState = {
   apolloClient: null as ApolloClient<NormalizedCacheObject> | null,
 };
 
+// The server registers GraphQL at /:org/graphql (server_graphql.go). The REST
+// client's baseURL (VITE_API_URL, default "/api") is prepended so the vite
+// proxy forwards the request to the API server.
 function getGraphQLUri(orgId: string): string {
-  const baseUrl = (import.meta.env as Record<string, string | undefined>).VITE_API_URL || '/api';
-  return `${baseUrl}/v1/orgs/${orgId}/graphql`;
+  const baseUrl = (import.meta.env as Record<string, string | undefined>).VITE_API_URL ?? '/api';
+  return `${baseUrl}/${orgId}/graphql`;
 }
 
 function getGraphQLBaseUrl(): string {
-  const baseUrl = (import.meta.env as Record<string, string | undefined>).VITE_API_URL || '/api';
+  const baseUrl = (import.meta.env as Record<string, string | undefined>).VITE_API_URL ?? '/api';
   return baseUrl.replace(/\/$/, '');
+}
+
+/**
+ * Extract the request path (pathname + search) from a URL. The server verifies
+ * the HMAC against r.URL.RequestURI() (path + query string), so we sign
+ * exactly that — mirroring the REST client's extractRequestPath.
+ */
+function extractRequestPath(uri: string): string {
+  if (uri.startsWith('http://') || uri.startsWith('https://')) {
+    try {
+      const parsed = new URL(uri);
+      return parsed.pathname + parsed.search;
+    } catch {
+      return uri;
+    }
+  }
+  return uri;
+}
+
+/**
+ * Create a fetch wrapper that signs each outgoing GraphQL request with the
+ * per-session HMAC signing key (same X-Vyzorix-* scheme as the REST client).
+ * If no signing key is available yet (pre-auth), the request is sent unsigned.
+ */
+function createSignedFetch(): typeof fetch {
+  const signedFetch = async (input: Parameters<typeof fetch>[0], init?: RequestInit): Promise<Response> => {
+    const signingKey = getSigningKey();
+
+    if (signingKey && init?.body) {
+      const method = (init.method || 'POST').toUpperCase();
+      const bodyStr = typeof init.body === 'string' ? init.body : '';
+      const uri = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      const path = extractRequestPath(uri);
+
+      const signHeaders = await signHttpRequestBrowser(method, path, bodyStr, signingKey);
+
+      const headers = new Headers(init.headers);
+      headers.set('X-Vyzorix-Timestamp', signHeaders['X-Vyzorix-Timestamp']);
+      headers.set('X-Vyzorix-Nonce', signHeaders['X-Vyzorix-Nonce']);
+      headers.set('X-Vyzorix-Signature', signHeaders['X-Vyzorix-Signature']);
+      init.headers = headers;
+    }
+
+    return fetch(input, init);
+  };
+  return signedFetch as unknown as typeof fetch;
 }
 
 function createBatchingLink(httpLink: ApolloLink): ApolloLink {
@@ -82,14 +133,15 @@ function createApolloClient(config: GraphQLConfig): ApolloClient<NormalizedCache
   const httpLink = createHttpLink({
     uri: config.getUri(),
     credentials: config.credentials,
+    fetch: createSignedFetch(),
   });
 
   const authLink = setContext((_, { headers }) => {
-    return {
-      headers: {
-        ...headers,
-      },
-    };
+    const derivedHeaders: Record<string, string> = { ...headers };
+    if (graphqlState.currentAuthToken) {
+      derivedHeaders['Authorization'] = `Bearer ${graphqlState.currentAuthToken}`;
+    }
+    return { headers: derivedHeaders };
   });
 
   const batchingLink = createBatchingLink(httpLink);

@@ -11,7 +11,10 @@ import {
   type DeviceParams,
   type DeviceStats,
   type DeviceSettings,
+  type DeviceSettingsUpdateRequest,
+  type DeviceThresholdUpdateRequest,
   type ConnectionStatus,
+  type Thresholds,
 } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
@@ -61,10 +64,32 @@ export function useUpdateDeviceSettings(imei: string) {
   const queryClient = useQueryClient();
   const organizationId = useCurrentOrganizationId();
   return useMutation({
-    mutationFn: (settings: Partial<DeviceSettings>) =>
+    mutationFn: (settings: DeviceSettingsUpdateRequest) =>
       devices.updateSettings(imei, settings, organizationId ?? undefined),
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.deviceSettings(imei), updated);
+    },
+  });
+}
+
+export function useDeviceThresholds(imei: string | undefined) {
+  const organizationId = useCurrentOrganizationId();
+  return useQuery({
+    queryKey: queryKeys.deviceThresholds(imei ?? ''),
+    queryFn: () => devices.getSettingsThresholds(imei!, organizationId ?? undefined),
+    enabled: imei !== undefined && imei !== '',
+  });
+}
+
+export function useUpdateDeviceThresholds(imei: string) {
+  const queryClient = useQueryClient();
+  const organizationId = useCurrentOrganizationId();
+  return useMutation({
+    mutationFn: (thresholds: DeviceThresholdUpdateRequest) =>
+      devices.updateSettingsThresholds(imei, thresholds, organizationId ?? undefined),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(queryKeys.deviceThresholds(imei), updated);
+      queryClient.invalidateQueries({ queryKey: queryKeys.deviceSettings(imei) });
     },
   });
 }
@@ -111,4 +136,4 @@ export function useDisconnectDevice() {
   });
 }
 
-export type { DeviceListResult, Device, DeviceStats, DeviceSettings, ConnectionStatus };
+export type { DeviceListResult, Device, DeviceStats, DeviceSettings, DeviceSettingsUpdateRequest, DeviceThresholdUpdateRequest, ConnectionStatus, Thresholds };

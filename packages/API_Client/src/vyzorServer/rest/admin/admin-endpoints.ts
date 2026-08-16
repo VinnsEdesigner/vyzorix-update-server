@@ -17,37 +17,33 @@ import {
   type UpdateOperatorResponse,
   type DeleteOperatorResponse,
 } from "../../../domain/admin";
+import {
+  adminApiKeyListFromRaw,
+  globalApiKeyStatsFromRaw,
+  operatorApiKeyStatsFromRaw,
+  type AdminApiKeyListResult,
+  type GlobalApiKeyStats,
+  type OperatorApiKeyStats,
+  type RawAdminApiKeyListResult,
+  type RawGlobalApiKeyStats,
+  type RawOperatorApiKeyStats,
+} from "../../../domain/apikey";
 
 const PATHS = {
   operators: "/v1/admin/operators",
   operator: (id: string) => `/v1/admin/operators/${id}`,
   unlock: (operatorId: string) => `/v1/admin/lockout/unlock/${operatorId}`,
-  keys: "/v1/admin/keys",
-  operatorKeys: (operatorId: string) => `/v1/admin/keys/operator/${operatorId}`,
-  key: (keyId: string) => `/v1/admin/keys/${keyId}`,
-  keyStats: "/v1/admin/keys/stats",
-  operatorKeyStats: (operatorId: string) => `/v1/admin/keys/stats/operator/${operatorId}`,
+  // Server registers these under /v1/admin/api-keys (see server_routes.go setupAdminRoutes).
+  keys: "/v1/admin/api-keys",
+  operatorKeys: (operatorId: string) => `/v1/admin/api-keys/operator/${operatorId}`,
+  key: (keyId: string) => `/v1/admin/api-keys/${keyId}`,
+  keyStats: "/v1/admin/api-keys/stats",
+  operatorKeyStats: (operatorId: string) => `/v1/admin/api-keys/stats/operator/${operatorId}`,
 } as const;
 
-export interface AdminKeyInfo {
-  id: string;
-  name: string;
-  keyId: string;
-  operatorId: string;
-  operatorEmail: string;
-  scope: string;
-  createdAt: number;
-  expiresAt?: number;
-  lastUsedAt?: number;
-  revokedAt?: number;
-}
-
-export interface AdminKeyStats {
-  totalKeys: number;
-  activeKeys: number;
-  revokedKeys: number;
-  keysByScope: Record<string, number>;
-}
+// API key admin types (AdminApiKey, GlobalApiKeyStats, OperatorApiKeyStats,
+// AdminApiKeyListResult + raw/mapper functions) live in domain/apikey and are
+// re-exported via the domain barrel. See rest/admin/index.ts for re-exports.
 
 export const admin = {
   async listOperators(): Promise<ManagedOperatorListResponse> {
@@ -87,23 +83,42 @@ export const admin = {
     return restClient.post<{ success: boolean; message: string }>(PATHS.unlock(operatorId), {});
   },
 
-  async listAllKeys(): Promise<{ keys: AdminKeyInfo[]; total: number }> {
-    return restClient.get<{ keys: AdminKeyInfo[]; total: number }>(PATHS.keys);
+  async listAllKeys(params?: {
+    page?: number;
+    limit?: number;
+    operatorId?: string;
+    search?: string;
+  }): Promise<AdminApiKeyListResult> {
+    const raw = await restClient.get<RawAdminApiKeyListResult>(PATHS.keys, {
+      params: {
+        page: params?.page,
+        limit: params?.limit,
+        operator_id: params?.operatorId,
+        search: params?.search,
+      },
+    });
+    return adminApiKeyListFromRaw(raw);
   },
 
-  async getOperatorKeys(operatorId: string): Promise<{ keys: AdminKeyInfo[]; total: number }> {
-    return restClient.get<{ keys: AdminKeyInfo[]; total: number }>(PATHS.operatorKeys(operatorId));
+  async getOperatorKeys(operatorId: string, page?: number, limit?: number): Promise<AdminApiKeyListResult> {
+    const raw = await restClient.get<RawAdminApiKeyListResult>(PATHS.operatorKeys(operatorId), {
+      params: { page, limit },
+    });
+    return adminApiKeyListFromRaw(raw);
   },
 
-  async forceRevokeKey(keyId: string): Promise<{ success: boolean; message: string }> {
-    return restClient.delete<{ success: boolean; message: string }>(PATHS.key(keyId));
+  // Server returns 204 No Content on successful force revocation.
+  async forceRevokeKey(keyId: string): Promise<void> {
+    await restClient.delete<void>(PATHS.key(keyId));
   },
 
-  async getGlobalKeyStats(): Promise<AdminKeyStats> {
-    return restClient.get<AdminKeyStats>(PATHS.keyStats);
+  async getGlobalKeyStats(): Promise<GlobalApiKeyStats> {
+    const raw = await restClient.get<RawGlobalApiKeyStats>(PATHS.keyStats);
+    return globalApiKeyStatsFromRaw(raw);
   },
 
-  async getOperatorKeyStats(operatorId: string): Promise<AdminKeyStats> {
-    return restClient.get<AdminKeyStats>(PATHS.operatorKeyStats(operatorId));
+  async getOperatorKeyStats(operatorId: string): Promise<OperatorApiKeyStats> {
+    const raw = await restClient.get<RawOperatorApiKeyStats>(PATHS.operatorKeyStats(operatorId));
+    return operatorApiKeyStatsFromRaw(raw);
   },
 };

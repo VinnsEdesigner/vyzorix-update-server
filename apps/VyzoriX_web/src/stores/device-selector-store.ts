@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createVyzorStore } from '@/lib/state';
 
 export interface DeviceFilters {
   status?: 'online' | 'offline' | 'all';
@@ -21,7 +21,7 @@ export interface DeviceSelectorState {
   resetFilters: () => void;
 }
 
-export const useDeviceSelectorStore = create<DeviceSelectorState>((set) => ({
+export const useDeviceSelectorStore = createVyzorStore<DeviceSelectorState>('DeviceSelectorStore', (set) => ({
   selectedDevice: null,
   filters: { status: 'all', search: '' },
   selectDevice: (device) => set({ selectedDevice: device }),

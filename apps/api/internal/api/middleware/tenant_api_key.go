@@ -215,6 +215,9 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 		c.Set("api_key_scope", string(key.Scope))
 		c.Set("api_key_name", key.Name)
 		c.Set("auth_type", "tenant_api_key")
+		// Expose the API key's signing secret so SessionSignatureMiddleware can
+		// verify HMAC request signatures for API-key-authenticated requests.
+		c.Set("api_key_signing_secret", key.SigningSecret)
 
 		// Set a minimal operator in the gin context so that downstream
 		// middleware (OrganizationMembership, RBAC, SuperAdmin) that call

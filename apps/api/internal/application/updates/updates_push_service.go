@@ -12,6 +12,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/updates"
+	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	ws "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/google/uuid"
@@ -22,12 +23,13 @@ const UpdateCommandType = "CHECK_UPDATE"
 
 // PushService handles push-related operations.
 type PushService struct {
-	repo      updates.Repository
-	deviceSvc interface {
+	repo          updates.Repository
+	deviceSvc     interface {
 		GetDevice(ctx context.Context, deviceID string) (*device.Device, error)
 	}
 	hub            *ws.Hub
 	fcmNotifier    fcm.Notifier
+	commandSigner  *cryptohmac.CommandSigner
 	commandService interface {
 		SendCommand(ctx context.Context, req *dto.SendCommandRequest) (*dto.SendCommandResponse, error)
 		MarkDelivered(ctx context.Context, commandID string) error
@@ -57,6 +59,7 @@ func NewPushService(
 		deviceSvc:      deviceSvc,
 		hub:            hub,
 		fcmNotifier:    fcmNotifier,
+		commandSigner:  cryptohmac.NewCommandSigner(),
 		commandService: commandService,
 		logger:         logger,
 	}
@@ -221,6 +224,18 @@ func (s *PushService) dispatchUpdateCommand(ctx context.Context, deviceID, pushI
 	// Use the actual command dispatch ID from the persisted command.
 	frame.DispatchID = cmdResp.DispatchID
 
+	// Sign the frame with the device's command secret (Domain B: server→device).
+	dev, devErr := s.deviceSvc.GetDevice(ctx, deviceID)
+	if devErr != nil {
+		return fmt.Errorf("device not found: %w", devErr)
+	}
+	if dev.CommandSecretHash == "" {
+		return fmt.Errorf("device %s has no command secret — re-registration required", deviceID)
+	}
+	if err := cryptohmac.SignCommandFrame(s.commandSigner, &frame, deviceID, dev.CommandSecretHash); err != nil {
+		return fmt.Errorf("failed to sign update command frame: %w", err)
+	}
+
 	// Try WebSocket first if hub is available and device is online.
 	if s.hub != nil && s.hub.Online(deviceID) {
 		if sent := s.hub.Send(deviceID, frame); sent {
@@ -240,10 +255,6 @@ func (s *PushService) dispatchUpdateCommand(ctx context.Context, deviceID, pushI
 
 	// Fall back to FCM for offline devices.
 	if s.fcmNotifier != nil {
-		dev, devErr := s.deviceSvc.GetDevice(ctx, deviceID)
-		if devErr != nil {
-			return fmt.Errorf("device not found: %w", devErr)
-		}
 		if dev.FCMToken != "" {
 			wake := fcm.SilentWake{
 				Token:       dev.FCMToken,

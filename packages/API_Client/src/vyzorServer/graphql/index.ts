@@ -26,7 +26,7 @@ export {
 
 export { GET_DEVICES } from "./device";
 export { GET_LOGS, queryLogs } from "./logs";
-export { GET_UPDATES } from "./updates";
+export * from "./updates";
 export { GET_DEVICE_INSPECTION, GET_DEVICE_TIMELINE, queryDeviceInspection, queryDeviceTimeline } from "./diagnostics";
 export {
   SEND_COMMAND,

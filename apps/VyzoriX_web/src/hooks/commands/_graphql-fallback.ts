@@ -47,15 +47,22 @@ function normalizeCommandListItem(raw: RawCommandFields): CommandListItem {
   };
 }
 
+// queryPendingCommands / queryCommand return the raw Apollo QueryResult. The
+// GraphQL payload lives under its `data` field; unwrap it before extracting.
+function unwrapApolloData(response: unknown): Record<string, unknown> | null {
+  const r = response as { data?: Record<string, unknown> } | null;
+  return r?.data ?? null;
+}
+
 function extractArray<T>(response: unknown, key: string): T[] {
-  const r = response as Record<string, unknown> | null;
+  const r = unwrapApolloData(response);
   if (!r) return [];
   const value = r[key];
   return Array.isArray(value) ? (value as T[]) : [];
 }
 
 function extractObject<T>(response: unknown, key: string): T | null {
-  const r = response as Record<string, unknown> | null;
+  const r = unwrapApolloData(response);
   if (!r) return null;
   const value = r[key];
   return (value as T | undefined) ?? null;

@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createVyzorStore } from '@/lib/state';
 import type {
   DeviceInspection,
   ConnectionInfo,
@@ -39,7 +39,7 @@ function key(organizationId: string, imei: string): string {
   return `${organizationId}:${imei}`;
 }
 
-export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
+export const useDiagnosticsStore = createVyzorStore<DiagnosticsState>('DiagnosticsStore', (set, get) => ({
   snapshots: {},
   lastRefreshedAt: {},
   isRefreshing: {},

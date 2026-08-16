@@ -7,6 +7,7 @@ export const queryKeys = {
   device: (imei: string) => ['devices', imei] as const,
   deviceStatus: (imei: string) => ['devices', imei, 'status'] as const,
   deviceSettings: (imei: string) => ['devices', imei, 'settings'] as const,
+  deviceThresholds: (imei: string) => ['devices', imei, 'thresholds'] as const,
   deviceConnectionStatus: (imei: string) => ['devices', imei, 'connection'] as const,
   deviceCount: ['devices', 'count'] as const,
   deviceStats: ['devices', 'stats'] as const,
@@ -35,6 +36,33 @@ export const queryKeys = {
   apiKeys: (params?: Record<string, unknown>) => ['api-keys', params ?? {}] as const,
   apiKey: (id: string) => ['api-keys', id] as const,
 
+  // Hierarchical API-key query keys (spec §5.1). Use these for invalidation
+  // so partial keys (e.g. ['api-keys', 'list']) don't accidentally match detail
+  // queries and vice-versa. The flat apiKeys()/apiKey() above are retained for
+  // backward compatibility with existing call sites.
+  apiKeysQueryKeys: {
+    all: ['api-keys'] as const,
+    lists: () => [...queryKeys.apiKeysQueryKeys.all, 'list'] as const,
+    list: (params?: Record<string, unknown>) =>
+      [...queryKeys.apiKeysQueryKeys.lists(), params ?? {}] as const,
+    details: () => [...queryKeys.apiKeysQueryKeys.all, 'detail'] as const,
+    detail: (keyId: string) => [...queryKeys.apiKeysQueryKeys.details(), keyId] as const,
+  },
+
+  // Admin API-key query keys (spec §12.5). Separate hierarchy so super-admin
+  // invalidation never touches operator-scoped queries.
+  adminApiKeysQueryKeys: {
+    all: ['admin', 'api-keys'] as const,
+    lists: () => [...queryKeys.adminApiKeysQueryKeys.all, 'list'] as const,
+    list: (filters?: Record<string, unknown>) =>
+      [...queryKeys.adminApiKeysQueryKeys.lists(), filters ?? {}] as const,
+    operatorKeys: (operatorId: string, page?: number, limit?: number) =>
+      [...queryKeys.adminApiKeysQueryKeys.all, 'operator', operatorId, { page, limit }] as const,
+    stats: () => [...queryKeys.adminApiKeysQueryKeys.all, 'stats'] as const,
+    operatorStats: (operatorId: string) =>
+      [...queryKeys.adminApiKeysQueryKeys.all, 'stats', 'operator', operatorId] as const,
+  },
+
   sessions: ['sessions'] as const,
   concurrentSessions: ['sessions', 'concurrent'] as const,
 
@@ -57,8 +85,16 @@ export const queryKeys = {
   telemetryStats: (organizationId: string, deviceId: string) =>
     ['telemetry', 'stats', organizationId, deviceId] as const,
 
+  updatesStatus: (organizationId: string) => ['updates', 'status', organizationId] as const,
+  updateVersions: (params?: Record<string, unknown>) => ['updates', 'versions', params ?? {}] as const,
+  updateChangelog: (version?: string) => ['updates', 'changelog', version ?? 'all'] as const,
+  updateHistory: (params?: Record<string, unknown>) => ['updates', 'history', params ?? {}] as const,
+  updatePushDetail: (pushId: string) => ['updates', 'push', pushId] as const,
+
   organizations: ['organizations'] as const,
   organization: (id: string) => ['organizations', id] as const,
+  orgSettings: (orgId: string) => ['organizations', orgId, 'settings'] as const,
+  orgThresholds: (orgId: string) => ['organizations', orgId, 'thresholds'] as const,
   organizationMembers: (orgId: string) => ['organizations', orgId, 'members'] as const,
   organizationInvitations: (orgId: string, status?: string) =>
     ['organizations', orgId, 'invitations', status ?? 'all'] as const,

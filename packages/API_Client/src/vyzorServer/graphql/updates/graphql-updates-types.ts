@@ -5,8 +5,8 @@ export interface RawUpdateVersion {
   apkFilename: string;
   apkSize: number;
   sha256: string;
-  releaseDate: string;
-  releaseNotes: string;
+  releasedAt: string;
+  releaseNotes?: string;
   releaseType: string;
   isLatest: boolean;
   createdAt?: string;
@@ -32,10 +32,26 @@ export interface RawUpdatePush {
   status: string;
   initiatedBy: string;
   initiatedAt: string;
+  scheduledAt?: string | null;
   completedAt?: string | null;
   cancelledAt?: string | null;
   deviceCount: number;
-  devices: RawPushDevice[];
+  devices?: RawPushDevice[] | null;
+}
+
+export interface RawPushHistoryEntry {
+  __typename?: "PushHistoryEntry";
+  id: string;
+  version: string;
+  installType: string;
+  status: string;
+  initiatedBy: string;
+  initiatedAt: number;
+  completedAt?: number | null;
+  deviceCount: number;
+  pending: number;
+  acknowledged: number;
+  failed: number;
 }
 
 export interface RawSyncStatus {
@@ -72,13 +88,22 @@ export interface RawVersionConnection {
 }
 
 export interface RawUpdateHistoryConnection {
-  pushes: RawUpdatePush[];
+  pushes: RawPushHistoryEntry[];
   pagination: {
     total: number;
     limit: number;
     offset: number;
     hasMore: boolean;
   };
+}
+
+export interface RawUpdateStatusResponse {
+  version: string;
+  sync: RawSyncStatus;
+  latest?: RawUpdateVersion | null;
+  device: RawDeviceUpdateStatus;
+  apkFilename?: string | null;
+  sha256?: string | null;
 }
 
 export interface RawChangelogConnection {

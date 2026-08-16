@@ -66,6 +66,7 @@ export interface LoginWithTokensResponse {
   refresh_token: string;
   expires_at: number;
   session_id: string;
+  signing_key: string;
   needs_organization: boolean;
   organizations: OrganizationInfo[];
   memberships: OrganizationMembership[];
@@ -120,10 +121,12 @@ export interface MFAVerifyResponse {
   accessToken?: string;
   refreshToken?: string;
   expiresAt?: number;
+  signingKey?: string;
   operator?: {
     id: string;
     email: string;
     name: string;
+    role: string;
     mfaEnabled: boolean;
   };
 }

@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createVyzorStore } from '@/lib/state';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -37,7 +37,7 @@ export interface ThemeState {
   applyToDocument: () => void;
 }
 
-export const useThemeStore = create<ThemeState>((set, get) => ({
+export const useThemeStore = createVyzorStore<ThemeState>('ThemeStore', (set, get) => ({
   mode: readStoredMode(),
   resolvedTheme: resolveTheme(readStoredMode()),
   setMode: (mode) => {

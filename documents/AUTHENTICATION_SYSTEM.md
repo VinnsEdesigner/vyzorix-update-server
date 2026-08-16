@@ -377,21 +377,36 @@ apps/web/src/
 
 ### 5.1 Types (`domain/auth/auth-types.ts`)
 
+> **Note:** These types match the actual Go server DTOs in `apps/api/internal/application/dto/auth.go`.
+> The server returns flat responses (no nested `user`/`tokens` objects) using snake_case JSON keys,
+> which the domain mappers convert to camelCase TypeScript types.
+
 ```typescript
-// User types
+// Operator types (maps from GET /v1/auth/me → OperatorResponse)
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
   mfaEnabled: boolean;
+  emailVerified: boolean;
+  needsOrganization: boolean;
+  organizations: OrganizationInfo[];
+  selectedOrganization?: OrganizationInfo;
+  lastOrganizationId?: string;
   createdAt: Date;
-  updatedAt: Date;
+}
+
+export interface OrganizationInfo {
+  id: string;
+  name: string;
+  role: string;
 }
 
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  expiresAt: Date;
+  expiresAt: number; // unix timestamp (seconds)
+  sessionId: string;
 }
 
 // Login types
@@ -400,11 +415,33 @@ export interface LoginCredentials {
   password: string;
 }
 
+// POST /v1/auth/login response (browser — sets session cookie, no tokens)
 export interface LoginResponse {
-  user: AuthUser;
-  tokens: AuthTokens;
-  mfaRequired: boolean;
-  mfaToken?: string;
+  operatorId: string;
+  email: string;
+  name: string;
+  mfaEnabled: boolean;
+  needsOrganization: boolean;
+  organizations: OrganizationInfo[];
+  selectedOrganization?: OrganizationInfo;
+  lastOrganizationId?: string;
+}
+
+// POST /v1/auth/login/tokens response (API clients — returns JWT + refresh token)
+export interface LoginWithTokensResponse extends LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+  sessionId: string;
+}
+
+// Returned when MFA verification is required during login
+export interface MFALoginRequired {
+  mfaRequired: true;
+  operatorId: string;
+  email?: string;
+  name?: string;
+  mfaEnabled?: boolean;
 }
 
 // Registration types
@@ -415,15 +452,34 @@ export interface RegisterData {
 }
 
 // MFA types
-export interface MfaVerification {
+export interface MFAVerifyRequest {
+  operatorId: string;
   code: string;
-  mfaToken: string;
 }
 
-export interface MfaSetup {
+export interface MFAVerifyResponse {
+  success: boolean;
+  sessionId?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
+  operator?: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    mfaEnabled: boolean;
+  };
+}
+
+export interface MFASetup {
   secret: string;
-  qrCodeUrl: string;
-  backupCodes: string[];
+  uri: string;
+}
+
+export interface MFAStatusResponse {
+  mfaEnabled: boolean;
+  backupCodes?: string[];
 }
 
 // Password reset types
@@ -433,8 +489,7 @@ export interface ForgotPasswordData {
 
 export interface ResetPasswordData {
   token: string;
-  password: string;
-  passwordConfirm: string;
+  newPassword: string;
 }
 
 // Auth state

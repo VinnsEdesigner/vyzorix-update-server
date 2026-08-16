@@ -69,11 +69,11 @@ export interface SecuritySettings {
 
 export const DEFAULT_THRESHOLDS: Thresholds = {
   riskWarn: 70,
-  riskCrit: 85,
-  thermalWarn: 45,
-  thermalCrit: 50,
-  bufferWarn: 30,
-  bufferCrit: 15,
+  riskCrit: 90,
+  thermalWarn: 75,
+  thermalCrit: 85,
+  bufferWarn: 80,
+  bufferCrit: 95,
 };
 
 export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
@@ -81,7 +81,7 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
   deviceId: "",
   requestTimeoutMs: 8000,
   logBufferLimit: 500,
-  signalHistoryLimit: 240,
+  signalHistoryLimit: 100,
   autoReconnect: true,
   strictHmac: false,
   notificationsEnabled: true,

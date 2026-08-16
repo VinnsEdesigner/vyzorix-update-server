@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createVyzorStore } from '@/lib/state';
 import {
   initConnectivityMonitor,
   getConnectivityMonitor,
@@ -18,7 +18,7 @@ export interface ConnectivityStoreState extends NetworkState {
 
 const monitor = initConnectivityMonitor();
 
-export const useConnectivityStore = create<ConnectivityStoreState>((set) => {
+export const useConnectivityStore = createVyzorStore<ConnectivityStoreState>('ConnectivityStore', (set) => {
   const sync = (state: NetworkState) => {
     const m = getConnectivityMonitor();
     set({

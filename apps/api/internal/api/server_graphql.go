@@ -132,13 +132,20 @@ func (s *Server) RegisterGraphQL(
 	// Validate that the authenticated operator is a member of the organization.
 	gqlGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
 
+	// HTTP endpoints carry per-session HMAC request signatures (same scheme as
+	// REST tenant routes). WebSocket upgrades cannot set custom headers in the
+	// browser, so the WS route is registered separately on the parent group
+	// without signing.
+	gqlHTTPGroup := gqlGroup.Group("")
+	gqlHTTPGroup.Use(middleware.SessionSignatureMiddleware(s.sessionSignatureVerifier))
+
 	// Register GraphQL routes through the protected group.
-	gqlGroup.POST("/graphql", h.Handle)
-	gqlGroup.GET("/graphql", h.Handle)
+	gqlHTTPGroup.POST("/graphql", h.Handle)
+	gqlHTTPGroup.GET("/graphql", h.Handle)
 
 	// Register batch endpoint.
 	batchHandler := &gqlBatchHandler{schema: gqlSchema}
-	gqlGroup.POST("/graphql/batch", batchHandler.Handle)
+	gqlHTTPGroup.POST("/graphql/batch", batchHandler.Handle)
 
 	// Playground is only enabled in non-production environments.
 	// It is served without middleware (it's just a static HTML page; actual
@@ -160,7 +167,7 @@ func (s *Server) RegisterGraphQL(
 	})
 	gqlGroup.GET("/graphql/ws", subsHandler.HandleWebSocket)
 
-	s.log.Info("GraphQL server registered", "path", "/:org/graphql", "playground", "/:org/playground", "subscriptions", "/:org/graphql/ws", "middleware", "system-chain")
+	s.log.Info("GraphQL server registered", "path", "/:org/graphql", "playground", "/:org/playground", "subscriptions", "/:org/graphql/ws", "middleware", "system-chain+signature")
 
 	return nil
 }

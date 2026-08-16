@@ -76,8 +76,9 @@ export const apiKeys = {
     return apiKeyFromRaw(response);
   },
 
-  async revoke(keyId: string, organizationId?: string): Promise<{ success: boolean }> {
-    return restClient.delete<{ success: boolean }>(PATHS.key(keyId), {
+  // Server returns 204 No Content on successful revocation.
+  async revoke(keyId: string, organizationId?: string): Promise<void> {
+    await restClient.delete<void>(PATHS.key(keyId), {
       params: { organization_id: organizationId || getOrganizationContext() },
     });
   },

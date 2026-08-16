@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createVyzorStore } from '@/lib/state';
 import type {
   TimelineEvent,
   TimelineEventCategory,
@@ -49,7 +49,7 @@ function categoryOf(type: TimelineEventType): TimelineEventCategory {
   return getEventCategory(type);
 }
 
-export const useTimelineStreamStore = create<TimelineStreamState>((set, get) => ({
+export const useTimelineStreamStore = createVyzorStore<TimelineStreamState>('TimelineStreamStore', (set, get) => ({
   byDevice: {},
   filters: {},
   autoScroll: true,

@@ -1,9 +1,9 @@
 # Updates Page - Enterprise Requirements Specification
 
-> **Version:** 1.1
-> **Status:** Draft
+> **Version:** 2.0
+> **Status:** In Implementation
 > **Created:** 2026-06-22
-> **Updated:** 2026-06-24
+> **Updated:** 2026-08-15
 > **Target:** Production MVP
 > **Architecture:** Layered (Following `FRONTEND_ARCHITECTURE.md`)
 
@@ -12,35 +12,42 @@
 ## Table of Contents
 
 1. [Overview](#1-overview)
-2. [Page Structure](#2-page-structure)
+2. [Implementation Status](#2-implementation-status)
 3. [Architecture](#3-architecture)
-4. [Target File Structure](#4-target-file-structure)
+4. [Actual File Structure](#4-actual-file-structure)
 5. [Tab 1: Status](#5-tab-1-status)
 6. [Tab 2: Versions](#6-tab-2-versions)
 7. [Tab 3: Push](#7-tab-3-push)
 8. [Tab 4: Changelog](#8-tab-4-changelog)
 9. [Tab 5: Export](#9-tab-5-export)
 10. [Tab 6: History](#10-tab-6-history)
-11. [Domain Layer](#11-domain-layer)
-12. [Data Layer](#12-data-layer)
-13. [Presentation Layer - Hooks](#13-presentation-layer---hooks)
-14. [UI Layer - Components](#14-ui-layer---components)
-15. [File Changes Summary](#15-file-changes-summary)
+11. [Domain Layer (DONE)](#11-domain-layer-done)
+12. [Data Layer (DONE)](#12-data-layer-done)
+13. [Presentation Layer - Hooks (TODO)](#13-presentation-layer---hooks-todo)
+14. [UI Layer - Components (TODO)](#14-ui-layer---components-todo)
+15. [Remaining Work Summary](#15-remaining-work-summary)
 16. [Implementation Order](#16-implementation-order)
 17. [Testing Strategy](#17-testing-strategy)
 18. [Rollout Checklist](#18-rollout-checklist)
 
 ---
 
----
-
-> **Architecture Alignment Note (v1.1)**
+> **v2.0 Re-alignment Note**
 >
-> This document has been updated to align with the **Layered Architecture** defined in `FRONTEND_ARCHITECTURE.md`. The file structure below follows the **4-layer architecture**:
-> - **UI Layer** (`src/components/`) - Pure UI rendering, imports only from hooks
-> - **Presentation Layer** (`src/hooks/`) - UI logic, state management, imports from domain & data
-> - **Domain Layer** (`packages/API_Client/src/domain/` - NEW) - Types, transforms, validation (NO external imports)
-> - **Data Layer** (`packages/API_Client/src/vyzorServer/`) - API clients (GraphQL/REST), imports only domain types
+> This document was rewritten to match the **actual** state of the codebase. The
+> prior v1.1 draft described a speculative flat layout (`apps/web/src/domain/`,
+> `lib/api/`) that does not exist. The real layered architecture lives in:
+> - **Domain Layer** — `packages/API_Client/src/domain/updates/` (types + REST mappers)
+> - **Data Layer** — `packages/API_Client/src/vyzorServer/graphql/updates/` (GraphQL)
+>   and `packages/API_Client/src/vyzorServer/rest/updates/` (REST)
+> - **Presentation Layer** — `apps/VyzoriX_web/src/hooks/updates/` (currently empty)
+> - **UI Layer** — `apps/VyzoriX_web/src/ui/pages/updates/` (currently empty)
+>
+> **Organization model:** organization scoping is driven by
+> `useAuthStore.organizationId` (see `hooks/_shared/use-current-context.ts`),
+> not by a global function call. REST endpoints read it via
+> `getOrganizationContext()`; GraphQL is scoped via the org-scoped endpoint URL
+> `/v1/orgs/:orgId/graphql` set by `graphqlClient.setOrganization`.
 >
 > **Dependency Rule:** UI -> Hooks -> Domain -> API (flow inward only)
 
@@ -60,8 +67,12 @@ The Updates page allows operators to:
 ### 1.2 Data Flow
 
 ```
-GitHub Repository -> Update Server -> Frontend (Updates Page)
+GitHub Repository -> Update Server (apps/api) -> API Client (@vyzorix/api-client) -> Frontend (Updates Page)
 ```
+
+The Update Server exposes both a REST API (`/v1/updates/*`) and an org-scoped
+GraphQL endpoint (`/v1/orgs/:orgId/graphql`). The `@vyzorix/api-client` package
+is the single source of truth for typed access to both.
 
 ### 1.3 Page Structure
 
@@ -77,21 +88,35 @@ GitHub Repository -> Update Server -> Frontend (Updates Page)
 
 ---
 
-## 2. Page Structure
+## 2. Implementation Status
 
-### 2.1 Routes (TanStack Start File-Based Routing)
+| Layer | Location | Status |
+|-------|----------|--------|
+| **Domain** | `packages/API_Client/src/domain/updates/` | ✅ DONE |
+| **Data — GraphQL** | `packages/API_Client/src/vyzorServer/graphql/updates/` | ✅ DONE |
+| **Data — REST** | `packages/API_Client/src/vyzorServer/rest/updates/` | ✅ DONE |
+| **Presentation — Hooks** | `apps/VyzoriX_web/src/hooks/updates/` | ⬜ TODO (only `.gitkeep`) |
+| **State — Stores** | `apps/VyzoriX_web/src/stores/` | ⬜ TODO (no updates store) |
+| **UI — Components** | `apps/VyzoriX_web/src/ui/pages/updates/` | ⬜ TODO (only `.gitkeep`) |
+| **UI — Routes** | `apps/VyzoriX_web/src/routes/` | ⬜ TODO (no updates routes) |
+
+The API client layer (domain + data) is complete and type-checked. The
+remaining work is in the web app: hooks, an optional updates store, UI
+components, and route files.
+
+### 2.1 Routes (TanStack Router File-Based Routing)
 
 | Route | File | Purpose |
 |-------|------|---------|
-| `/updates` | `updates-page.tsx` | Main layout |
-| `/updates/status` | `updates.status.tsx` | Status tab |
-| `/updates/versions` | `updates.versions.tsx` | Versions tab |
-| `/updates/push` | `updates.push.tsx` | Push tab |
-| `/updates/changelog` | `updates.changelog.tsx` | Changelog tab |
-| `/updates/export` | `updates.export.tsx` | Export tab |
-| `/updates/history` | `updates.history.tsx` | History tab |
+| `/updates` | `routes/updates.tsx` (or `updates-page.tsx`) | Main layout / tab shell |
+| `/updates/status` | `routes/updates.status.tsx` | Status tab |
+| `/updates/versions` | `routes/updates.versions.tsx` | Versions tab |
+| `/updates/push` | `routes/updates.push.tsx` | Push tab |
+| `/updates/changelog` | `routes/updates.changelog.tsx` | Changelog tab |
+| `/updates/export` | `routes/updates.export.tsx` | Export tab |
+| `/updates/history` | `routes/updates.history.tsx` | History tab |
 
-**Total: 6 NEW routes, 1 MODIFIED route**
+**Total: 7 NEW routes** (the `__root.tsx` already wires providers; no modification needed).
 
 ---
 
@@ -100,81 +125,101 @@ GitHub Repository -> Update Server -> Frontend (Updates Page)
 ### 3.1 Layered Architecture Overview
 
 ```
-UI Layer (components/) -> Presentation Layer (hooks/) -> Domain Layer (domain/) -> Data Layer (lib/api/)
+UI Layer (apps/VyzoriX_web/src/ui/)
+  -> Presentation Layer (apps/VyzoriX_web/src/hooks/)
+  -> Domain Layer (packages/API_Client/src/domain/)
+  -> Data Layer (packages/API_Client/src/vyzorServer/)
 ```
 
 ### 3.2 Dependency Rule
 
 - UI Layer can ONLY import from Presentation Layer (hooks)
-- Presentation Layer can import from Domain Layer and Data Layer
-- Domain Layer can NOT import from any other layer
+- Presentation Layer can import from Domain Layer and Data Layer (`@vyzorix/api-client`)
+- Domain Layer can NOT import from any other layer (pure types + transforms)
 - Data Layer can import from Domain Layer only
+
+### 3.3 Organization Scoping
+
+All updates queries/mutations are organization-scoped. The current organization
+ID is read from the auth store:
+
+```ts
+// apps/VyzoriX_web/src/hooks/_shared/use-current-context.ts
+export function useCurrentOrganizationId(): string | null {
+  return useAuthStore((s) => s.organizationId);
+}
+export function useRequiredOrganizationId(): string { ... }
+```
+
+- **REST** — `getOrganizationContext()` reads the current org and sends it as the
+  `organization_id` query param (see `updates-endpoints.ts`).
+- **GraphQL** — the org is encoded in the endpoint URL
+  (`/v1/orgs/:orgId/graphql`); `graphqlClient.setOrganization(orgId)` selects it.
+  Most operations also take an explicit `$organizationId` variable. The
+  `syncUpdates` mutation is the one exception: the server defines it with no
+  arguments, so it is scoped solely via the endpoint URL.
 
 ---
 
-## 4. Target File Structure
+## 4. Actual File Structure
 
 ```
-apps/web/src/
-|
- domain/                          # DOMAIN LAYER (follows FRONTEND_ARCHITECTURE.md)
-|    _shared/                   # SHARED domain types
-|   |    domain-pagination.ts  # Pagination types
-|   |    domain-errors.ts      # Domain error types
-|   |
-|    updates/
-|        updates-entity.ts      # Version, Changelog, UpdatePush types
-|        updates-mappers.ts     # versionFromAPI() transformations
-|        updates-validators.ts # validateVersion()
-|
- lib/api/
-|    graphql/
-|        updates/
-|       |    graphql-updates-queries.ts     # GET_VERSIONS, GET_CHANGELOG, etc.
-|       |    graphql-updates-mutations.ts  # PUSH_UPDATE, CANCEL_UPDATE
-|       |    graphql-updates-fragments.ts  # Reusable fragments
-|       |    graphql-updates-types.ts      # Raw GraphQL response types
-|        _shared/
-|            graphql-client.ts   # GraphQL client setup
-|
- hooks/                           # PRESENTATION LAYER
-|    updates/
-|   |    use-versions.ts
-|   |    use-changelog.ts
-|   |    use-push-update.ts
-|   |    use-update-history.ts
-|   |    use-sync-status.ts
-|    _shared/
-|        use-pagination.ts
-|
- components/                      # UI LAYER
-|    shared/                    # Shared UI components
-|   |    section.tsx
-|   |    section-header.tsx
-|   |    empty-state.tsx
-|   |    loading-skeleton.tsx
-|   |    data-table.tsx
-|   |    pagination.tsx
-|   |    status-badge.tsx
-|   |    tab-nav.tsx
-|   |
-|    updates/                   # Updates feature components
-|        version-card.tsx
-|        version-badge.tsx
-|        push-form.tsx
-|        device-select.tsx
-|        changelog-entry.tsx
-|        update-history-card.tsx
-|
- routes/                         # PAGE LAYER (Routes)
-     updates.tsx                # Main layout
-     updates.status.tsx
-     updates.versions.tsx
-     updates.push.tsx
-     updates.changelog.tsx
-     updates.export.tsx
-     updates.history.tsx
+packages/API_Client/src/                     # @vyzorix/api-client (DONE)
+├── domain/updates/
+│   ├── updates-entity.ts        # UpdateVersion, UpdatePush, PushUpdateRequest, ChangelogEntry, ...
+│   ├── updates-mappers.ts       # versionFromRaw, updatePushFromRaw, ... (REST raw -> domain)
+│   └── index.ts                 # barrel
+└── vyzorServer/
+    ├── graphql/updates/
+    │   ├── graphql-updates-fragments.ts   # UPDATE_VERSION_FRAGMENT, PUSH_HISTORY_ENTRY_FRAGMENT, ...
+    │   ├── graphql-updates-queries.ts     # GET_UPDATES, GET_UPDATES_STATUS, GET_UPDATES_CHANGELOG, GET_UPDATES_HISTORY + typed wrappers
+    │   ├── graphql-updates-mutations.ts   # PUSH_UPDATE, CANCEL_UPDATE, SYNC_UPDATES + typed wrappers
+    │   ├── graphql-updates-mappers.ts     # updateVersionFromRaw, pushHistoryEntryFromRaw, pushUpdateResponseFromRaw, ...
+    │   ├── graphql-updates-types.ts       # RawUpdateVersion, RawPushHistoryEntry, RawPushUpdateResponse, ...
+    │   └── index.ts                       # barrel (re-exported via graphql/index.ts)
+    └── rest/updates/
+        └── updates-endpoints.ts           # updates.getStatus / getVersions / pushUpdate / sync / ...
+
+apps/VyzoriX_web/src/                        # web app (TODO)
+├── hooks/updates/                           # PRESENTATION LAYER  (only .gitkeep today)
+│   ├── use-versions.ts                      # TODO
+│   ├── use-update-status.ts                 # TODO
+│   ├── use-changelog.ts                     # TODO
+│   ├── use-push-update.ts                   # TODO
+│   ├── use-update-history.ts                # TODO
+│   ├── use-sync-status.ts                   # TODO
+│   └── index.ts                             # TODO (barrel)
+├── stores/                                  # no updates store yet (TODO if needed)
+├── ui/pages/updates/                        # UI LAYER (only .gitkeep today)
+│   ├── version-card.tsx                     # TODO
+│   ├── push-form.tsx                        # TODO
+│   ├── changelog-entry.tsx                  # TODO
+│   ├── update-history-card.tsx              # TODO
+│   └── ...                                  # TODO
+└── routes/                                  # PAGE LAYER (no updates routes yet)
+    ├── updates.tsx                          # TODO — main layout / tab shell
+    ├── updates.status.tsx                   # TODO
+    ├── updates.versions.tsx                 # TODO
+    ├── updates.push.tsx                     # TODO
+    ├── updates.changelog.tsx                # TODO
+    ├── updates.export.tsx                   # TODO
+    └── updates.history.tsx                  # TODO
 ```
+
+### 4.1 Field Naming Contract (server ↔ client)
+
+These names are pinned to the Go server contract in
+`apps/api/internal/api/graphql/schema/objects.go` and
+`apps/api/internal/application/updates/updates_command_responses.go`. They must
+not drift:
+
+| Server field | Domain entity field | Notes |
+|--------------|---------------------|-------|
+| `releasedAt` | `releaseDate: Date` | GraphQL/REST return `releasedAt`; mappers translate to the domain `releaseDate`. The `UpdateVersion` GraphQL type does **not** expose `updatedAt`, so the mapper falls back to `new Date()`. |
+| `version` (string, e.g. `v1.2.0`) | `version: string` | Used by `pushUpdate`, `UpdatePush`, `PushUpdateRequest`. NOT a UUID. The old `versionId`/`version_id` naming was removed. |
+| `organizationId` | `organizationId` | Explicit variable on every operation except `syncUpdates` (server takes no args; scoped via endpoint URL). |
+| `deviceCount` / `pending` / `acknowledged` / `failed` | `PushDevices` | History entries return aggregate counts, not a `devices[]` array. `pushHistoryEntryFromRaw` reads them directly. |
+| `devices[]` (PushDevice) | derived `PushDevices` counts | Only the push **detail** endpoint (`updatesHistoryDetail`) returns a `devices[]` array. |
 
 ---
 
@@ -213,316 +258,280 @@ apps/web/src/
 
 ---
 
-## 11. Domain Layer
+## 11. Domain Layer (DONE)
 
-### 11.1 Files to CREATE
+The domain layer is implemented in `packages/API_Client/src/domain/updates/`.
+
+### 11.1 Files (existing)
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `domain/shared/pagination.ts` | NEW | Pagination types |
-| `domain/common/error.ts` | NEW | Domain errors |
-| `domain/shared/types.ts` | NEW | Shared types |
-| `domain/updates/update-types.ts` | NEW | Version, Changelog, UpdatePush types |
-| `domain/updates/update-transforms.ts` | NEW | API transforms |
-| `domain/updates/update-validation.ts` | NEW | Validation functions |
+| `domain/updates/updates-entity.ts` | ✅ DONE | `UpdateVersion`, `UpdatePush`, `PushDevices`, `PushUpdateRequest`, `ChangelogEntry`, `VersionListResult`, `UpdateHistoryResult`, enums, helpers (`formatApkSize`, `getReleaseTypeLabel`, ...) |
+| `domain/updates/updates-mappers.ts` | ✅ DONE | `versionFromRaw`, `syncStateFromRaw`, `updatePushFromRaw`, `versionListResultFromRaw`, `updateHistoryResultFromRaw`, `changelogEntryFromRaw` + `Raw*` REST shapes |
+| `domain/updates/index.ts` | ✅ DONE | Barrel export |
+| `domain/_shared/domain-pagination.ts` | ✅ DONE | `Pagination`, `RawPagination`, `paginationFromRaw` (shared) |
 
-### 11.2 Types
+### 11.2 Canonical Types
 
 ```typescript
-// domain/updates/update-types.ts
-export interface Version {
+// packages/API_Client/src/domain/updates/updates-entity.ts
+export type ReleaseType = "major" | "minor" | "patch";
+export type UpdateStatus = "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+export type InstallType = "immediate" | "scheduled";
+export type SyncStatus = "idle" | "syncing" | "synced" | "error";
+
+export interface UpdateVersion {
+  id: string;
   version: string;
   apkFilename: string;
   apkSize: number;
   sha256: string;
-  releasedAt: string;
+  releaseType: ReleaseType;
   releaseNotes?: string;
+  releaseDate: Date;          // mapped from server `releasedAt`
+  isLatest: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export enum UpdateStatus {
-  PENDING = "pending",
-  IN_PROGRESS = "in_progress",
-  COMPLETED = "completed",
-  FAILED = "failed",
-  CANCELLED = "cancelled",
-}
-
-export enum InstallType {
-  IMMEDIATE = "immediate",
-  SCHEDULED = "scheduled",
+export interface PushDevices {
+  total: number;
+  pending: number;
+  sent: number;
+  acknowledged: number;
+  failed: number;
 }
 
 export interface UpdatePush {
   id: string;
-  version: string;
-  deviceIds: string[];
+  version: string;            // version STRING (e.g. v1.2.0), not a UUID
   installType: InstallType;
-  scheduledAt?: string;
   status: UpdateStatus;
   initiatedBy: string;
-  initiatedAt: string;
+  initiatedAt: Date;
+  scheduledAt?: Date;
+  completedAt?: Date;
+  cancelledAt?: Date;
+  cancelledBy?: string;
+  devices: PushDevices;
+}
+
+export interface PushUpdateRequest {
+  version: string;            // version STRING
+  deviceIds: string[];
+  installType: InstallType;
+  scheduledAt?: Date;
 }
 ```
 
 ---
 
-## 12. Data Layer
+## 12. Data Layer (DONE)
 
-### 12.1 Files to CREATE
+The data layer is implemented in `packages/API_Client/src/vyzorServer/`. It
+exposes both a GraphQL and a REST surface; hooks may prefer REST (typed,
+eagerly mapped) and fall back to GraphQL (see the pattern in
+`hooks/commands/_graphql-fallback.ts`).
+
+### 12.1 GraphQL (existing)
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `lib/api/graphql/queries/update-queries.ts` | NEW | GET_VERSIONS, GET_CHANGELOG, etc. |
-| `lib/api/graphql/mutations/update-mutations.ts` | NEW | PUSH_UPDATE, CANCEL_UPDATE |
-| `lib/api/graphql/fragments/version.fragment.ts` | NEW | Version fragment |
-| `lib/api/graphql/api-response-types.ts` | MODIFIED | Add update types |
-| `lib/api/rest/updates.ts` | NEW | REST fallback endpoints |
+| `vyzorServer/graphql/updates/graphql-updates-fragments.ts` | ✅ DONE | `UPDATE_VERSION_FRAGMENT`, `PUSH_DEVICE_FRAGMENT`, `UPDATE_PUSH_FRAGMENT`, `SYNC_STATUS_FRAGMENT`, `CHANGELOG_ENTRY_FRAGMENT`, `PUSH_HISTORY_ENTRY_FRAGMENT` |
+| `vyzorServer/graphql/updates/graphql-updates-queries.ts` | ✅ DONE | `GET_UPDATES`, `GET_UPDATES_STATUS`, `GET_UPDATES_CHANGELOG`, `GET_UPDATES_HISTORY` + typed wrappers `queryUpdates`, `queryUpdatesStatus`, `queryUpdatesChangelog`, `queryUpdatesHistory` |
+| `vyzorServer/graphql/updates/graphql-updates-mutations.ts` | ✅ DONE | `PUSH_UPDATE`, `CANCEL_UPDATE`, `SYNC_UPDATES` + typed wrappers `mutatePushUpdate`, `mutateCancelUpdate`, `mutateSyncUpdates` |
+| `vyzorServer/graphql/updates/graphql-updates-mappers.ts` | ✅ DONE | `updateVersionFromRaw`, `updatePushFromRaw`, `pushHistoryEntryFromRaw`, `updateStatusFromRaw`, `pushUpdateResponseFromRaw`, `cancelUpdateResponseFromRaw`, `syncResponseFromRaw`, ... |
+| `vyzorServer/graphql/updates/graphql-updates-types.ts` | ✅ DONE | `RawUpdateVersion`, `RawUpdatePush`, `RawPushHistoryEntry`, `RawPushUpdateResponse`, `RawCancelUpdateResponse`, `RawSyncResponse`, `RawUpdateStatusResponse`, ... |
+| `vyzorServer/graphql/updates/index.ts` | ✅ DONE | Barrel; re-exported from `graphql/index.ts` via `export * from "./updates"` |
 
-### 12.2 REST API Endpoints
+GraphQL fragments are inlined into queries/mutations via `${FRAGMENT}` so
+Apollo can resolve `...Fragment` spreads. All wrappers return typed domain
+objects (mappers applied), not `unknown`.
+
+### 12.2 REST (existing)
+
+| File | Status | Purpose |
+|------|--------|---------|
+| `vyzorServer/rest/updates/updates-endpoints.ts` | ✅ DONE | `updates.getStatus`, `getVersions`, `getChangelog`, `getHistory`, `getPushDetail`, `pushUpdate`, `cancelPush`, `sync`, `exportVersions` |
+
+REST API endpoints (server contract):
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/v1/updates/status` | GET | Get update system status |
 | `/v1/updates/versions` | GET | Get all available versions |
 | `/v1/updates/changelog` | GET | Get release changelog |
-| `/v1/updates/push` | POST | Push update to devices |
+| `/v1/updates/push` | POST | Push update to devices (body: `version`, `deviceIds`, `installType`, `scheduledAt`) |
 | `/v1/updates/history` | GET | Get update push history |
 | `/v1/updates/history/:pushId` | GET | Get push detail |
 | `/v1/updates/history/:pushId/cancel` | POST | Cancel pending update |
-| `/v1/updates/export` | GET | Export version data |
+| `/v1/updates/export` | GET | Export version data (`format=json\|csv`) |
 | `/v1/updates/sync` | POST | Sync versions from GitHub |
 
-### 12.3 REST Implementation
+### 12.3 Usage Example (for hook authors)
 
 ```typescript
-// lib/api/rest/updates.ts
+import { updates, type UpdatePush, type PushUpdateRequest } from '@vyzorix/api-client';
 
-const BASE = "/v1/updates";
+// fetch
+const { versions, pagination } = await updates.getVersions({ status: 'latest', page: 1, limit: 20 }, organizationId);
 
-export async function fetchUpdateHistory(
-  serverUrl: string,
-  page = 1,
-  limit = 20
-): Promise<{ pushes: UpdatePush[]; pagination: Pagination }> {
-  const res = await fetch(
-    join(serverUrl, `${BASE}/history?page=${page}&limit=${limit}`),
-    { credentials: "include" }
-  );
-  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
-  return res.json();
-}
-
-export async function cancelUpdate(
-  serverUrl: string,
-  pushId: string
-): Promise<UpdatePush> {
-  const res = await fetch(join(serverUrl, `${BASE}/history/${pushId}/cancel`), {
-    method: "POST",
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error(`Cancel update failed: ${res.status}`);
-  return res.json();
-}
+// mutate
+const request: PushUpdateRequest = { version: 'v1.2.0', deviceIds: ['dev-1'], installType: 'immediate' };
+const pushed: UpdatePush = await updates.pushUpdate(request, organizationId);
 ```
 
 ---
 
-## 13. Presentation Layer - Hooks
+## 13. Presentation Layer - Hooks (TODO)
+
+No hooks exist yet (`hooks/updates/` contains only `.gitkeep`). They should
+follow the established pattern in `hooks/commands/use-commands.ts`: use
+TanStack Query, read the org via `useCurrentOrganizationId()`, prefer the REST
+surface from `@vyzorix/api-client`, and optionally fall back to GraphQL.
 
 ### 13.1 Hooks to CREATE
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `hooks/updates/use-versions.ts` | NEW | Fetch versions |
-| `hooks/updates/use-changelog.ts` | NEW | Fetch changelog |
-| `hooks/updates/use-push-update.ts` | NEW | Push update mutation |
-| `hooks/updates/use-update-history.ts` | NEW | Fetch history |
-| `hooks/updates/use-sync-status.ts` | NEW | Sync status |
-| `hooks/updates/index.ts` | NEW | Barrel export |
+| `hooks/updates/use-versions.ts` | TODO | Fetch versions (`updates.getVersions`) |
+| `hooks/updates/use-update-status.ts` | TODO | Fetch status (`updates.getStatus`) |
+| `hooks/updates/use-changelog.ts` | TODO | Fetch changelog (`updates.getChangelog`) |
+| `hooks/updates/use-push-update.ts` | TODO | Push update mutation (`updates.pushUpdate`) |
+| `hooks/updates/use-update-history.ts` | TODO | Fetch history (`updates.getHistory`) + detail |
+| `hooks/updates/use-sync-status.ts` | TODO | Sync status + `mutateSyncUpdates`/`updates.sync` trigger |
+| `hooks/updates/use-cancel-update.ts` | TODO | Cancel pending push (`updates.cancelPush`) |
+| `hooks/updates/_graphql-fallback.ts` | TODO (optional) | GraphQL fallback wrappers |
+| `hooks/updates/index.ts` | TODO | Barrel export |
+
+Query keys should be added to `lib/query-keys.ts` (e.g. `updatesStatus`, `updateVersions`, `updateHistory`, `updateChangelog`). Register the barrel in `hooks/index.ts`.
+
+### 13.2 Example Hook Skeleton
+
+```typescript
+// hooks/updates/use-versions.ts
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import { updates, type VersionListResult } from '@vyzorix/api-client';
+import { queryKeys } from '@/lib/query-keys';
+import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
+
+export function useVersions(
+  params?: { status?: 'all' | 'latest' | 'previous'; page?: number; limit?: number },
+  options?: Omit<UseQueryOptions<VersionListResult>, 'queryKey' | 'queryFn'>,
+) {
+  const organizationId = useCurrentOrganizationId();
+  return useQuery({
+    queryKey: queryKeys.updateVersions(params ?? {}),
+    queryFn: () => updates.getVersions(params ?? undefined, organizationId ?? undefined),
+    enabled: organizationId !== null,
+    ...options,
+  });
+}
+```
 
 ---
 
-## 14. UI Layer - Components
+## 14. UI Layer - Components (TODO)
 
-### 14.1 Routes (6 NEW, 1 MODIFIED)
+No components or routes exist yet (`ui/pages/updates/` contains only `.gitkeep`).
+Reuse the existing shared component library under `ui/components/shared/`
+(`section`, `export-menu`, `device-selector`, etc.) rather than recreating
+generic primitives.
 
-| File | Status | Purpose |
-|------|--------|---------|
-| `routes/updates-page.tsx` | MODIFIED | Main layout |
-| `routes/updates.status.tsx` | NEW | Status tab |
-| `routes/updates.versions.tsx` | NEW | Versions tab |
-| `routes/updates.push.tsx` | NEW | Push tab |
-| `routes/updates.changelog.tsx` | NEW | Changelog tab |
-| `routes/updates.export.tsx` | NEW | Export tab |
-| `routes/updates.history.tsx` | NEW | History tab |
-
-### 14.2 Components to CREATE
+### 14.1 Routes to CREATE (7 NEW)
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `components/shared/section.tsx` | NEW | Bordered section |
-| `components/shared/section-header.tsx` | NEW | Section header |
-| `components/shared/empty-state.tsx` | NEW | Empty state |
-| `components/shared/loading-skeleton.tsx` | NEW | Loading skeleton |
-| `components/shared/data-table.tsx` | NEW | Table wrapper |
-| `components/shared/pagination.tsx` | NEW | Pagination |
-| `components/shared/status-badge.tsx` | NEW | Status badge |
-| `components/shared/tab-nav.tsx` | NEW | Tab navigation |
-| `components/shared/index.ts` | NEW | Barrel export |
-| `components/updates/version-card.tsx` | NEW | Version card |
-| `components/updates/version-badge.tsx` | NEW | Version badge |
-| `components/updates/push-form.tsx` | NEW | Push form |
-| `components/updates/device-select.tsx` | NEW | Device selector |
-| `components/updates/changelog-entry.tsx` | NEW | Changelog entry |
-| `components/updates/update-history-card.tsx` | NEW | History card |
-| `components/updates/index.ts` | NEW | Barrel export |
+| `routes/updates.tsx` | TODO | Main layout / tab shell |
+| `routes/updates.status.tsx` | TODO | Status tab |
+| `routes/updates.versions.tsx` | TODO | Versions tab |
+| `routes/updates.push.tsx` | TODO | Push tab |
+| `routes/updates.changelog.tsx` | TODO | Changelog tab |
+| `routes/updates.export.tsx` | TODO | Export tab |
+| `routes/updates.history.tsx` | TODO | History tab |
+
+### 14.2 Components to CREATE (in `ui/pages/updates/`)
+
+| File | Status | Purpose |
+|------|--------|---------|
+| `version-card.tsx` | TODO | Version card with badge |
+| `push-form.tsx` | TODO | Push update form (version + device multi-select + install type) |
+| `changelog-entry.tsx` | TODO | Changelog entry (expandable) |
+| `update-history-card.tsx` | TODO | History card with per-device counts + cancel |
+| `index.ts` | TODO | Barrel export |
 
 ---
 
-## 15. File Changes Summary
+## 15. Remaining Work Summary
 
-### 15.1 Total File Count
+| Category | Done | Remaining |
+|----------|------|-----------|
+| Domain Layer | 3 files | 0 |
+| Data Layer — GraphQL | 6 files | 0 |
+| Data Layer — REST | 1 file | 0 |
+| Presentation — Hooks | 0 | ~7 files + query keys |
+| State — Stores | 0 | optional `updates-store.ts` (sync status, push draft) |
+| UI — Components | 0 | ~5 feature components |
+| UI — Routes | 0 | 7 route files |
 
-| Category | New Files | Modified Files |
-|----------|-----------|----------------|
-| Domain Layer | 6 | 0 |
-| Data Layer (GraphQL) | 3 | 1 |
-| Data Layer (REST) | 1 | 0 |
-| Presentation Layer | 6 | 0 |
-| UI Layer (Shared) | 9 | 0 |
-| UI Layer (Updates) | 7 | 0 |
-| Routes | 6 | 1 |
-| **TOTAL** | **38** | **2** |
-
-### 15.2 All Files Listed
-
-#### Domain Layer (6 NEW)
-
-| File | Status | Purpose |
-|------|--------|---------|
-| `domain/shared/pagination.ts` | NEW | Pagination types |
-| `domain/common/error.ts` | NEW | Domain error types |
-| `domain/shared/types.ts` | NEW | Shared domain types |
-| `domain/updates/update-types.ts` | NEW | Version, Changelog, UpdatePush types |
-| `domain/updates/update-transforms.ts` | NEW | versionFromAPI(), changelogFromAPI() |
-| `domain/updates/update-validation.ts` | NEW | validateVersion(), validateUpdatePush() |
-
-#### Data Layer - GraphQL (3 NEW, 1 MODIFIED)
-
-| File | Status | Purpose |
-|------|--------|---------|
-| `lib/api/graphql/queries/update-queries.ts` | NEW | GET_VERSIONS, GET_CHANGELOG, etc. |
-| `lib/api/graphql/mutations/update-mutations.ts` | NEW | PUSH_UPDATE, CANCEL_UPDATE |
-| `lib/api/graphql/fragments/version.fragment.ts` | NEW | Version fragment |
-| `lib/api/graphql/api-response-types.ts` | MODIFIED | Add update types |
-
-#### Data Layer - REST (1 NEW)
-
-| File | Status | Purpose |
-|------|--------|---------|
-| `lib/api/rest/updates.ts` | NEW | REST endpoints for updates |
-
-#### Presentation Layer - Hooks (6 NEW)
-
-| File | Status | Purpose |
-|------|--------|---------|
-| `hooks/updates/use-versions.ts` | NEW | Fetch all versions |
-| `hooks/updates/use-changelog.ts` | NEW | Fetch changelog |
-| `hooks/updates/use-push-update.ts` | NEW | Push update mutation |
-| `hooks/updates/use-update-history.ts` | NEW | Fetch update history |
-| `hooks/updates/use-sync-status.ts` | NEW | GitHub sync status |
-| `hooks/updates/index.ts` | NEW | Barrel export |
-
-#### UI Layer - Shared (9 NEW)
-
-| File | Status | Purpose |
-|------|--------|---------|
-| `components/shared/section.tsx` | NEW | Bordered section |
-| `components/shared/section-header.tsx` | NEW | Section header |
-| `components/shared/empty-state.tsx` | NEW | Empty state |
-| `components/shared/loading-skeleton.tsx` | NEW | Loading skeleton |
-| `components/shared/data-table.tsx` | NEW | Table wrapper |
-| `components/shared/pagination.tsx` | NEW | Pagination controls |
-| `components/shared/status-badge.tsx` | NEW | Status badge |
-| `components/shared/tab-nav.tsx` | NEW | Tab navigation |
-| `components/shared/index.ts` | NEW | Barrel export |
-
-#### UI Layer - Updates (7 NEW)
-
-| File | Status | Purpose |
-|------|--------|---------|
-| `components/updates/version-card.tsx` | NEW | Version card |
-| `components/updates/version-badge.tsx` | NEW | Version badge |
-| `components/updates/push-form.tsx` | NEW | Push update form |
-| `components/updates/device-select.tsx` | NEW | Device selector |
-| `components/updates/changelog-entry.tsx` | NEW | Changelog entry |
-| `components/updates/update-history-card.tsx` | NEW | Update history card |
-| `components/updates/index.ts` | NEW | Barrel export |
-
-#### Routes (6 NEW, 1 MODIFIED)
-
-| File | Status | Purpose |
-|------|--------|---------|
-| `routes/updates-page.tsx` | MODIFIED | Main layout |
-| `routes/updates.status.tsx` | NEW | Status tab |
-| `routes/updates.versions.tsx` | NEW | Versions tab |
-| `routes/updates.push.tsx` | NEW | Push tab |
-| `routes/updates.changelog.tsx` | NEW | Changelog tab |
-| `routes/updates.export.tsx` | NEW | Export tab |
-| `routes/updates.history.tsx` | NEW | History tab |
+**Net remaining:** ~19 web-app files (hooks, optional store, components, routes).
+The API client contract is frozen and type-checked; hook authors can consume
+`@vyzorix/api-client` directly.
 
 ---
 
 ## 16. Implementation Order
 
-### Phase 1: Domain Layer (Day 1)
-1. Create domain/shared types
-2. Create domain/updates types
-3. Create transforms and validation
+Phases 1–2 (Domain + Data) are **complete**. Remaining work starts at Phase 3.
 
-### Phase 2: Data Layer (Day 1-2)
-1. Create GraphQL queries and mutations
-2. Add types to existing files
-3. Create REST fallback
+### Phase 1: Domain Layer ✅ DONE
+- `packages/API_Client/src/domain/updates/` (entity, mappers, barrel)
 
-### Phase 3: Presentation Layer (Day 2)
-1. Create hooks for each feature
+### Phase 2: Data Layer ✅ DONE
+- `packages/API_Client/src/vyzorServer/graphql/updates/` (fragments, queries, mutations, mappers, types)
+- `packages/API_Client/src/vyzorServer/rest/updates/updates-endpoints.ts`
 
-### Phase 4: UI Layer - Shared (Day 2)
-1. Create shared components
+### Phase 3: Presentation Layer (next)
+1. Add update query keys to `lib/query-keys.ts`
+2. Create `hooks/updates/*` hooks (follow `hooks/commands/use-commands.ts` pattern)
+3. Create `hooks/updates/index.ts` barrel and register in `hooks/index.ts`
 
-### Phase 5: UI Layer - Updates (Day 2-3)
-1. Create updates feature components
+### Phase 4: State Layer (optional)
+1. If realtime sync status is needed, add `stores/updates-store.ts` (zustand) and register in `stores/index.ts`
 
-### Phase 6: Routes (Day 3)
-1. Create route files for each tab
+### Phase 5: UI Layer - Updates
+1. Create `ui/pages/updates/*` feature components (reuse `ui/components/shared/*`)
 
-### Phase 7: Polish (Day 3)
-1. Test tab navigation
-2. Add loading states
-3. Add error handling
+### Phase 6: Routes
+1. Create `routes/updates.tsx` tab shell + per-tab route files
+
+### Phase 7: Polish
+1. Tab navigation, loading/error states, mobile responsive, dark mode
 
 ---
 
 ## 17. Testing Strategy
 
-- Unit tests for domain transforms
-- Integration tests for hooks
+- Unit tests for GraphQL/REST mappers (`pushHistoryEntryFromRaw`, `updateVersionFromRaw`, ...) — verify `releasedAt` → `releaseDate`, aggregate counts, and missing-`devices` safety
+- Integration tests for hooks (TanStack Query)
 - E2E tests for each tab
 - Visual regression for components
+- Run `pnpm --filter @vyzorix/api-client typecheck` to guard the data-layer contract
 
 ---
 
 ## 18. Rollout Checklist
 
 - All tabs navigate correctly
-- Forms submit properly
+- Push form submits `version` (string) + `deviceIds` + `installType`
+- History renders aggregate device counts (no crash on missing `devices[]`)
+- Sync Now triggers `syncUpdates` (org-scoped via endpoint URL)
 - Loading/error states work
 - Mobile responsive
 - Dark mode support
 
 ---
 
-*Document Version: 1.1*
-*Status: Ready for Implementation*
+*Document Version: 2.0*
+*Status: API client DONE; hooks/stores/UI TODO*
 *Architecture: Layered (Following FRONTEND_ARCHITECTURE.md)*

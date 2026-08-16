@@ -76,6 +76,7 @@ type ServerResult struct {
 	HandlerSet        *HandlerSet
 	Presenter         *response.Presenter
 	HmacVerifier      *cryptohmac.Verifier
+	SessionSignVerifier *cryptohmac.Verifier
 	EncryptKeyFn      func(clientID string) ([]byte, bool)
 	CookieAuth        *middleware.CookieAuth
 	SignatureVerifier *middleware.SignatureVerifier
@@ -115,6 +116,7 @@ func WireServer(deps ServerDependencies) *ServerResult {
 
 	// Get middleware instances.
 	result.HmacVerifier = result.MiddlewareSet.HmacVerifier
+	result.SessionSignVerifier = result.MiddlewareSet.SessionSignVerifier
 	result.EncryptKeyFn = result.MiddlewareSet.EncryptKeyFn
 	result.CookieAuth = result.MiddlewareSet.CookieAuth
 	result.SignatureVerifier = result.MiddlewareSet.SignatureVerifier

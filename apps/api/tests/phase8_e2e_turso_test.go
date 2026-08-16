@@ -64,6 +64,7 @@ type phase8State struct {
 	orgID         string
 	sessionCookie *http.Cookie
 	csrfToken     string
+	signingKey    string // per-session HMAC key returned by login
 	client        *http.Client // cookie jar tracks _csrf + vyz_session across requests
 }
 
@@ -305,6 +306,11 @@ func (s *phase8State) login(t *testing.T) *http.Cookie {
 		t.Fatalf("failed to parse login response: %v", err)
 	}
 
+	// Capture the per-session signing key for signing subsequent tenant requests.
+	if key, _ := loginResp["signing_key"].(string); key != "" {
+		s.signingKey = key
+	}
+
 	// The login endpoint sets a session cookie. The cookie jar retains it; also
 	// extract it explicitly for the WebSocket dial (which needs a raw header).
 	var sessionCookie *http.Cookie
@@ -343,6 +349,9 @@ func (s *phase8State) createOrganization(t *testing.T) string {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-CSRF-Token", s.csrfToken)
+	if s.signingKey != "" {
+		signRequest(req, s.signingKey, body)
+	}
 
 	resp, err := s.client.Do(req)
 	if err != nil {

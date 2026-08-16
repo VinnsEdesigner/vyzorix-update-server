@@ -1,5 +1,6 @@
 import { graphqlClient } from '../_shared/graphql-client';
 import { gql } from '@apollo/client';
+import { LOG_ENTRY_FRAGMENT } from './graphql-logs-fragments';
 
 export const GET_LOGS = gql`
   query GetLogs($organizationId: ID!, $imei: ID!, $type: String, $startTime: Int, $endTime: Int, $limit: Int, $cursor: String) {
@@ -14,6 +15,7 @@ export const GET_LOGS = gql`
       }
     }
   }
+  ${LOG_ENTRY_FRAGMENT}
 `;
 
 export async function queryLogs(params: { organizationId: string; imei: string; type?: string; startTime?: number; endTime?: number; limit?: number; cursor?: string }): Promise<unknown> {

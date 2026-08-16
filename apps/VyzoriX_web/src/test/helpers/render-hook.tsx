@@ -11,13 +11,16 @@ export function createTestQueryClient(): QueryClient {
   });
 }
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const [client] = useState(() => createTestQueryClient());
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-}
-
-export function renderHookWithQueryClient<T, P>(hook: (props: P) => T, options?: RenderHookOptions<P>) {
-  return renderHook(hook, { wrapper: Wrapper, ...options });
+export function renderHookWithQueryClient<T, P>(
+  hook: (props: P) => T,
+  options?: RenderHookOptions<P> & { queryClient?: QueryClient },
+) {
+  const { queryClient: sharedClient, ...rest } = options ?? {};
+  function WrapperWithClient({ children }: { children: ReactNode }) {
+    const [client] = useState(() => sharedClient ?? createTestQueryClient());
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  }
+  return renderHook(hook, { wrapper: WrapperWithClient, ...rest });
 }
 
 export { renderHook };

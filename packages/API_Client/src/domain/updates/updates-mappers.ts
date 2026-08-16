@@ -22,10 +22,10 @@ export interface RawVersion {
   sha256: string;
   releaseType: string;
   releaseNotes?: string;
-  releaseDate: number;
+  releasedAt: number;
   isLatest: boolean;
-  createdAt: number;
-  updatedAt: number;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface RawSyncState {
@@ -46,7 +46,7 @@ export interface RawPushDevices {
 
 export interface RawUpdatePush {
   id: string;
-  versionId: string;
+  version: string;
   installType: string;
   status: string;
   initiatedBy: string;
@@ -89,7 +89,7 @@ export function versionFromRaw(raw: RawVersion): UpdateVersion {
     sha256: raw.sha256,
     releaseType: (raw.releaseType as ReleaseType) ?? "patch",
     releaseNotes: raw.releaseNotes,
-    releaseDate: parseTimestamp(raw.releaseDate) ?? new Date(),
+    releaseDate: parseTimestamp(raw.releasedAt) ?? new Date(),
     isLatest: raw.isLatest,
     createdAt: parseTimestamp(raw.createdAt) ?? new Date(),
     updatedAt: parseTimestamp(raw.updatedAt) ?? new Date(),
@@ -119,7 +119,7 @@ export function pushDevicesFromRaw(raw: RawPushDevices): PushDevices {
 export function updatePushFromRaw(raw: RawUpdatePush): UpdatePush {
   return {
     id: raw.id,
-    versionId: raw.versionId,
+    version: raw.version,
     installType: (raw.installType as InstallType) ?? "immediate",
     status: (raw.status as UpdateStatus) ?? "pending",
     initiatedBy: raw.initiatedBy,

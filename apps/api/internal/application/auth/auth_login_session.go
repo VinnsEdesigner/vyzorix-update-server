@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -233,6 +235,7 @@ func (s *AuthService) LoginWithTokens(ctx context.Context, req *dto.LoginRequest
 	resp.RefreshToken = refreshTokenVal
 	resp.ExpiresAt = expiresAt
 	resp.SessionID = sess.ID
+	resp.SigningKey = sess.SigningKey
 	return resp, nil
 }
 
@@ -441,11 +444,22 @@ func (s *AuthService) CreateSession(ctx context.Context, operatorID string) (*se
 	now := time.Now()
 	id := shared.GenerateID()
 
+	// Generate a per-session HMAC signing key (32 random bytes, hex-encoded).
+	// The browser client receives this key on login and uses it to sign every
+	// subsequent request. The server verifies the signature to confirm the
+	// request originated from the authenticated client.
+	signingKeyBytes := make([]byte, 32)
+	if _, err := rand.Read(signingKeyBytes); err != nil {
+		return nil, fmt.Errorf("failed to generate signing key: %w", err)
+	}
+	signingKey := hex.EncodeToString(signingKeyBytes)
+
 	sess := &session.Session{
 		ID:         id,
 		OperatorID: operatorID,
 		CreatedAt:  now,
 		ExpiresAt:  now.Add(s.sessionTTL),
+		SigningKey: signingKey,
 	}
 
 	if err := s.sessionRepo.Create(ctx, sess); err != nil {

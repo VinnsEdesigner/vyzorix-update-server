@@ -8,7 +8,6 @@ import {
 } from '@/hooks/_shared/use-pagination';
 import type { OffsetPagination } from '@vyzorix/api-client';
 
-vi.mock('@vyzorix/api-client', () => ({}));
 
 describe('usePagination', () => {
   it('starts with defaults (page 1, limit 20)', () => {

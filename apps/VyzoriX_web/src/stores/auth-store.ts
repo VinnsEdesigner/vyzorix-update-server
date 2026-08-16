@@ -1,10 +1,12 @@
-import { create } from 'zustand';
+import { createVyzorStore } from '@/lib/state';
 import {
   authContext,
+  getMe,
   type AuthState,
   type LockoutState,
   type LoginWithTokensResponse,
   type MeResponse,
+  type MFAVerifyResponse,
 } from '@vyzorix/api-client';
 
 export interface MfaChallenge {
@@ -26,6 +28,7 @@ export interface AuthStoreState extends AuthState, LockoutState {
   status: AuthStatus;
   setFromLoginWithTokens: (response: LoginWithTokensResponse) => void;
   setFromMeResponse: (me: MeResponse) => void;
+  setFromMfaVerify: (response: MFAVerifyResponse) => Promise<MeResponse | null>;
   setMfaChallenge: (challenge: MfaChallenge | null) => void;
   setOrganization: (orgId: string | null) => void;
   setAccessToken: (token: string | null) => void;
@@ -64,7 +67,7 @@ function buildSnapshot(overrides?: Partial<AuthStoreState>): Partial<AuthStoreSt
   return { ...merged, status: deriveStatus(auth, lockout, merged.mfaChallenge ?? null) };
 }
 
-export const useAuthStore = create<AuthStoreState>((set) => {
+export const useAuthStore = createVyzorStore<AuthStoreState>('AuthStore', (set) => {
   const initial = buildSnapshot() as AuthStoreState;
 
   authContext.onChange(() => {
@@ -82,24 +85,45 @@ export const useAuthStore = create<AuthStoreState>((set) => {
       authContext.setFromMeResponse(me);
       set(buildSnapshot({ mfaChallenge: null }));
     },
+    setFromMfaVerify: async (response) => {
+      authContext.setFromMfaVerify(response);
+      set(buildSnapshot({ mfaChallenge: null }));
+      // The MFA verify response carries only a partial operator. Fetch /me
+      // to populate organizations/memberships/needs_organization so the
+      // derived status (needs_organization vs authenticated) is correct.
+      if (response.success && response.accessToken) {
+        try {
+          const me = await getMe();
+          if (me) {
+            authContext.setFromMeResponse(me);
+            set(buildSnapshot({ mfaChallenge: null }));
+            return me;
+          }
+        } catch {
+          // Tokens are already set; the operator may be incomplete but the
+          // session is valid. A later /me query will reconcile.
+        }
+      }
+      return null;
+    },
     setMfaChallenge: (challenge) => {
       set(buildSnapshot({ mfaChallenge: challenge }));
     },
     setOrganization: (orgId) => {
       authContext.setOrganization(orgId);
-      set(buildSnapshot());
+      set((state) => buildSnapshot({ mfaChallenge: state.mfaChallenge }));
     },
     setAccessToken: (token) => {
       authContext.setAccessToken(token);
-      set(buildSnapshot());
+      set((state) => buildSnapshot({ mfaChallenge: state.mfaChallenge }));
     },
     refreshTokens: async () => {
       await authContext.refreshTokens();
-      set(buildSnapshot());
+      set((state) => buildSnapshot({ mfaChallenge: state.mfaChallenge }));
     },
     setLockout: (lockout) => {
       authContext.setLockout(lockout);
-      set(buildSnapshot());
+      set((state) => buildSnapshot({ mfaChallenge: state.mfaChallenge }));
     },
     clear: () => {
       authContext.clear();

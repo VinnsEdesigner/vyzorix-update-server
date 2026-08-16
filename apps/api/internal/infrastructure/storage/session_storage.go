@@ -25,15 +25,15 @@ func NewSessionRepository(db *sql.DB) *SessionRepository {
 
 // FindByID retrieves a session by ID.
 func (r *SessionRepository) FindByID(ctx context.Context, id string) (*session.Session, error) {
-	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id, mfa_verified_at FROM auth_sessions WHERE id = ?`
+	query := `SELECT id, operator_id, expires_at, created_at, ip_address, user_agent, organization_id, mfa_verified_at, signing_key FROM auth_sessions WHERE id = ?`
 
 	var s session.Session
 
-	var ipAddress, userAgent, orgID sql.NullString
+	var ipAddress, userAgent, orgID, signingKey sql.NullString
 	var expiresAt, createdAt, mfaVerifiedAt sql.NullInt64
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&s.ID, &s.OperatorID, &expiresAt, &createdAt, &ipAddress, &userAgent, &orgID, &mfaVerifiedAt,
+		&s.ID, &s.OperatorID, &expiresAt, &createdAt, &ipAddress, &userAgent, &orgID, &mfaVerifiedAt, &signingKey,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -47,6 +47,7 @@ func (r *SessionRepository) FindByID(ctx context.Context, id string) (*session.S
 	s.IPAddress = ipAddress.String
 	s.UserAgent = userAgent.String
 	s.SelectedOrganizationID = orgID.String
+	s.SigningKey = signingKey.String
 
 	// Parse timestamps from Unix milliseconds.
 	if expiresAt.Valid {
@@ -158,7 +159,7 @@ func (r *SessionRepository) ListActiveByOperator(ctx context.Context, operatorID
 
 // Create creates a new session.
 func (r *SessionRepository) Create(ctx context.Context, s *session.Session) error {
-	query := `INSERT INTO auth_sessions (id, operator_id, token_hash, expires_at, created_at, ip_address, user_agent, organization_id, mfa_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO auth_sessions (id, operator_id, token_hash, expires_at, created_at, ip_address, user_agent, organization_id, mfa_verified_at, signing_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	var mfaVerifiedAt interface{}
 	if s.MFAVerifiedAt != nil {
@@ -167,7 +168,7 @@ func (r *SessionRepository) Create(ctx context.Context, s *session.Session) erro
 
 	_, err := r.db.ExecContext(ctx, query,
 		s.ID, s.OperatorID, s.ID, s.ExpiresAt.UnixMilli(), s.CreatedAt.UnixMilli(),
-		nullString(s.IPAddress), nullString(s.UserAgent), nullString(s.SelectedOrganizationID), mfaVerifiedAt,
+		nullString(s.IPAddress), nullString(s.UserAgent), nullString(s.SelectedOrganizationID), mfaVerifiedAt, nullString(s.SigningKey),
 	)
 
 	return err

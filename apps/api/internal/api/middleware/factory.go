@@ -302,6 +302,18 @@ func (f *MiddlewareFactory) GetSignatureVerifier() *SignatureVerifier {
 	return f.signatureVerifier
 }
 
+// GetSessionSignatureVerifier returns the cryptohmac.Verifier used for
+// per-session request signing on tenant routes. The Secret provider is a
+// placeholder — SessionSignatureMiddleware overrides it per-request by
+// reading the session from the gin context. Only Nonces and Window are used.
+func (f *MiddlewareFactory) GetSessionSignatureVerifier() *cryptohmac.Verifier {
+	return &cryptohmac.Verifier{
+		Secret: func(_ string) (string, bool) { return "", false },
+		Nonces: cryptohmac.NewNonceCache(f.hmacWindow),
+		Window: f.hmacWindow,
+	}
+}
+
 // GetIPIntelligence returns the IP intelligence instance.
 func (f *MiddlewareFactory) GetIPIntelligence() *IPIntelligence {
 	return f.ipIntelligence

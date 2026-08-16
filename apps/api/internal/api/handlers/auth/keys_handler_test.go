@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -102,6 +103,34 @@ func (r *mockAPIKeyRepository) ListAll(ctx context.Context, limit, offset int) (
 	return result[offset:end], total, nil
 }
 
+func (r *mockAPIKeyRepository) ListAllWithOperator(ctx context.Context, limit, offset int, operatorID, search string) ([]infraStorage.APIKeyWithOperator, int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var result []infraStorage.APIKeyWithOperator
+	for _, k := range r.keys {
+		if k.IsActive {
+			if operatorID != "" && k.OperatorID != operatorID {
+				continue
+			}
+			if search != "" {
+				if !strings.Contains(strings.ToLower(k.Name), strings.ToLower(search)) {
+					continue
+				}
+			}
+			result = append(result, infraStorage.APIKeyWithOperator{APIKey: *k})
+		}
+	}
+	total := len(result)
+	if offset >= len(result) {
+		return []infraStorage.APIKeyWithOperator{}, total, nil
+	}
+	end := offset + limit
+	if end > len(result) {
+		end = len(result)
+	}
+	return result[offset:end], total, nil
+}
+
 func (r *mockAPIKeyRepository) Update(ctx context.Context, key *infraStorage.APIKey) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -154,6 +183,52 @@ func (r *mockAPIKeyRepository) CountAll(ctx context.Context) (int, error) {
 		}
 	}
 	return count, nil
+}
+
+func (r *mockAPIKeyRepository) CountAllIncludingRevoked(ctx context.Context) (int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return len(r.keys), nil
+}
+
+func (r *mockAPIKeyRepository) CountRevoked(ctx context.Context) (int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	count := 0
+	for _, k := range r.keys {
+		if !k.IsActive {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (r *mockAPIKeyRepository) SumRequestsByScope(ctx context.Context) (map[string]int64, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	result := make(map[string]int64)
+	for _, k := range r.keys {
+		result[k.Scope] += k.RequestCount
+	}
+	return result, nil
+}
+
+func (r *mockAPIKeyRepository) TopOperatorsByRequests(ctx context.Context, limit int) ([]infraStorage.OperatorRequestTotal, int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	byOp := make(map[string]int64)
+	for _, k := range r.keys {
+		byOp[k.OperatorID] += k.RequestCount
+	}
+	totalOperators := len(byOp)
+	var results []infraStorage.OperatorRequestTotal
+	for opID, total := range byOp {
+		results = append(results, infraStorage.OperatorRequestTotal{OperatorID: opID, TotalRequests: total})
+		if len(results) >= limit {
+			break
+		}
+	}
+	return results, totalOperators, nil
 }
 
 func (r *mockAPIKeyRepository) IncrementRequestCount(ctx context.Context, id string) error {

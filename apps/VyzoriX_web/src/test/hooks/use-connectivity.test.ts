@@ -12,28 +12,6 @@ import {
 } from '@/hooks/connectivity/use-connectivity';
 import { useConnectivityStore } from '@/stores/connectivity-store';
 
-vi.mock('@vyzorix/api-client', () => ({
-  initConnectivityMonitor: vi.fn(() => ({
-    subscribe: vi.fn(() => () => {}),
-    getState: vi.fn(() => ({
-      isOnline: true,
-      wasOnline: true,
-      lastChecked: 0,
-      effectiveType: '4g',
-      downlink: 10,
-      rtt: 50,
-    })),
-    getQueueSize: vi.fn(() => 0),
-    getQueuedRequests: vi.fn(() => []),
-    checkConnectivity: vi.fn(async () => true),
-    flushQueue: vi.fn(async () => {}),
-    clearQueue: vi.fn(),
-  })),
-  getConnectivityMonitor: vi.fn(() => ({
-    getQueueSize: vi.fn(() => 0),
-    getQueuedRequests: vi.fn(() => []),
-  })),
-}));
 
 describe('connectivity hooks', () => {
   beforeEach(() => {

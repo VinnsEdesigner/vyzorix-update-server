@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createVyzorStore } from '@/lib/state';
 import type { TelemetryFrame } from '@vyzorix/api-client';
 
 const DEFAULT_WINDOW_MS = 6 * 60 * 60 * 1000;
@@ -26,7 +26,7 @@ export interface MetricsRealtimeState {
   getLastFrame: (deviceId: string) => TelemetryFrame | null;
 }
 
-export const useMetricsRealtimeStore = create<MetricsRealtimeState>((set, get) => ({
+export const useMetricsRealtimeStore = createVyzorStore<MetricsRealtimeState>('MetricsRealtimeStore', (set, get) => ({
   byDevice: {},
   windowMs: DEFAULT_WINDOW_MS,
   lastFrame: {},

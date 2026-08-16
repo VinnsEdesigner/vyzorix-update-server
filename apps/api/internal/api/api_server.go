@@ -98,6 +98,7 @@ type Server struct {
 	revocationList              *infraauth.RevocationList
 	ipIntelligence              *middleware.IPIntelligence
 	hmacVerifier                *cryptohmac.Verifier
+	sessionSignatureVerifier    *cryptohmac.Verifier
 	mwFactory                   *middleware.MiddlewareFactory
 	db                          *storage.SQLite
 	dashboardRateLimiter        *middleware.DashboardRateLimiterMiddleware
@@ -183,6 +184,7 @@ func NewServer(cfg *ServerConfig) *Server {
 		revocationList:    mwSet.RevocationList,
 		ipIntelligence:    mwSet.IPIntelligence,
 		hmacVerifier:      mwSet.HmacVerifier,
+		sessionSignatureVerifier: mwSet.SessionSignVerifier,
 		encryptKeyFn:      mwSet.EncryptKeyFn,
 		sessionManager:    cfg.SessionManager,
 		db:                cfg.DB,
@@ -511,6 +513,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		revocationList:    cfg.Middleware.RevocationList,
 		ipIntelligence:    cfg.Middleware.IPIntelligence,
 		hmacVerifier:      cfg.Middleware.HmacVerifier,
+		sessionSignatureVerifier: cfg.Middleware.SessionSignVerifier,
 		sessionManager:    cfg.SessionManager,
 		db:                cfg.DB,
 		hub:               cfg.Hub,

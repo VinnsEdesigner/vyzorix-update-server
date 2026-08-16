@@ -1,84 +1,27 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+/**
+ * Integration tests for registration hooks.
+ *
+ * These tests render the REAL hooks via React Testing Library. The hooks call
+ * the REAL `registration` API client (real restClient/axios + domain mappers)
+ * and the REAL GraphQL fallback functions (real Apollo Client). MSW intercepts
+ * the HTTP requests and returns mock server responses mirroring the Go server
+ * contract.
+ *
+ * GraphQL fallback paths are exercised by making MSW return 500 for the REST
+ * endpoint and registering a GraphQL response handler for the fallback
+ * query/mutation (the operation name the real Apollo request carries).
+ *
+ * No vi.mock / vi.hoisted — the real code path runs end-to-end.
+ */
+import { describe, it, expect, beforeEach } from 'vitest';
 import { waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { renderHookWithQueryClient } from '../helpers/render-hook';
+import { setupIntegrationTest } from '../helpers/integration-test-setup';
+import { registerGraphQLResponse } from '../msw/vyzor-msw-handlers-graphql';
 import { useAuthStore } from '@/stores/auth-store';
-
-const {
-  registrationMock,
-  queryInboxEntriesMock,
-  queryInboxEntryMock,
-  mutateAckInboxMock,
-  mutateDeregisterDeviceMock,
-  authContextStub,
-} = vi.hoisted(() => ({
-  registrationMock: {
-    getInbox: vi.fn(),
-    getInboxEntry: vi.fn(),
-    createInboxRequest: vi.fn(),
-    confirmDevice: vi.fn(),
-    acknowledgeInbox: vi.fn(),
-    dismissInbox: vi.fn(),
-    resendInboxApproval: vi.fn(),
-    getDevices: vi.fn(),
-    getDevice: vi.fn(),
-    deregisterDevice: vi.fn(),
-  },
-  queryInboxEntriesMock: vi.fn(),
-  queryInboxEntryMock: vi.fn(),
-  mutateAckInboxMock: vi.fn(),
-  mutateDeregisterDeviceMock: vi.fn(),
-  authContextStub: {
-    getState: vi.fn(() => ({
-      isAuthenticated: false,
-      operator: null,
-      organizationId: null,
-      accessToken: null,
-      refreshToken: null,
-      tokenExpiresAt: null,
-    })),
-    getLockoutState: vi.fn(() => ({ isLocked: false, retryAfter: 0, lockedUntil: 0 })),
-    onChange: vi.fn(() => () => {}),
-    setOrganization: vi.fn(),
-    setAccessToken: vi.fn(),
-    setFromLoginWithTokens: vi.fn(),
-    setFromMeResponse: vi.fn(),
-    refreshTokens: vi.fn(async () => {}),
-    setLockout: vi.fn(),
-    clear: vi.fn(),
-  },
-}));
-
-vi.mock('@vyzorix/api-client', () => ({
-  registration: registrationMock,
-  queryInboxEntries: (...args: unknown[]) => queryInboxEntriesMock(...args),
-  queryInboxEntry: (...args: unknown[]) => queryInboxEntryMock(...args),
-  mutateAckInbox: (...args: unknown[]) => mutateAckInboxMock(...args),
-  mutateDeregisterDevice: (...args: unknown[]) => mutateDeregisterDeviceMock(...args),
-  authContext: authContextStub,
-  getCurrentOrganizationId: vi.fn(() => null),
-  initConnectivityMonitor: vi.fn(() => ({
-    subscribe: vi.fn(() => () => {}),
-    getState: vi.fn(() => ({
-      isOnline: true,
-      wasOnline: true,
-      lastChecked: 0,
-      effectiveType: '4g',
-      downlink: 10,
-      rtt: 50,
-    })),
-    getQueueSize: vi.fn(() => 0),
-    getQueuedRequests: vi.fn(() => []),
-    checkConnectivity: vi.fn(async () => true),
-    flushQueue: vi.fn(async () => {}),
-    clearQueue: vi.fn(),
-  })),
-  getConnectivityMonitor: vi.fn(() => ({
-    getQueueSize: vi.fn(() => 0),
-    getQueuedRequests: vi.fn(() => []),
-  })),
-}));
-
-const {
+import { graphqlClient } from '@vyzorix/api-client';
+import {
   useInbox,
   useInboxEntry,
   useAcknowledgeInbox,
@@ -91,14 +34,22 @@ const {
   useDeregisterRegisteredDevice,
   useRegistrationStatus,
   useRegisterDevice,
-} = await import('@/hooks/registration');
+} from '@/hooks/registration';
 
-const INBOX_RESULT = {
-  requests: [{ imei: '123', status: 'pending', createdAt: new Date('2024-01-01') }],
-  pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
-};
+const { server } = setupIntegrationTest();
 
-const INBOX_ENTRY = {
+function setOrg(orgId: string | null) {
+  useAuthStore.getState().setOrganization(orgId);
+  if (orgId) {
+    graphqlClient.setOrganization(orgId);
+  }
+}
+
+// --- REST response fixtures (raw server shapes; domain mappers normalize) ---
+
+const now = Date.now();
+
+const RAW_INBOX_ENTRY = {
   id: 'e1',
   imei: '123',
   deviceName: 'Dev',
@@ -116,57 +67,98 @@ const INBOX_ENTRY = {
   rejectedAt: null,
   notes: null,
   operatorId: null,
-  createdAt: new Date('2024-01-01'),
+  createdAt: now,
 };
 
+const RAW_REGISTERED_DEVICE = {
+  id: 'dev-1',
+  imei: '123',
+  deviceName: 'Dev',
+  model: 'X',
+  manufacturer: 'Acme',
+  osVersion: '14',
+  appVersion: '1.0',
+  status: 'online',
+  registeredAt: now,
+  lastSeen: now,
+  online: true,
+};
+
+/** Make MSW return 500 for a REST path, triggering the GraphQL fallback. */
+function makeRestFail(method: 'get' | 'post' | 'delete', path: string) {
+  server.use(http[method](path, () => HttpResponse.json({ error: 'REST down' }, { status: 500 })));
+}
+
+/**
+ * Override the shared `/v1/devices*` handlers (used by the devices client) with
+ * the registered-device raw shape the registration client expects. The
+ * registration REST client reuses these paths but consumes a different raw
+ * shape than the devices client, so registration tests scope them per-test.
+ */
+function overrideRegisteredDeviceHandlers() {
+  server.use(
+    http.get('/v1/devices', async ({ request }) => {
+      const url = new URL(request.url);
+      return HttpResponse.json({
+        devices: [RAW_REGISTERED_DEVICE],
+        pagination: {
+          page: Number(url.searchParams.get('page') ?? '1'),
+          limit: Number(url.searchParams.get('limit') ?? '20'),
+          total: 1,
+          totalPages: 1,
+        },
+      });
+    }),
+    http.get('/v1/devices/:imei', async ({ params }) =>
+      HttpResponse.json({ ...RAW_REGISTERED_DEVICE, imei: params.imei as string }),
+    ),
+    http.delete('/v1/devices/:imei', async ({ params }) =>
+      HttpResponse.json({
+        imei: params.imei as string,
+        status: 'deregistered',
+        deregisteredAt: now,
+        retentionUntil: now + 30 * 24 * 60 * 60 * 1000,
+      }),
+    ),
+  );
+}
+
 describe('useInbox', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: null });
-  });
+  beforeEach(() => setOrg('org-1'));
 
   it('is disabled when no organization is selected', () => {
+    setOrg(null);
     const { result } = renderHookWithQueryClient(() => useInbox());
     expect(result.current.fetchStatus).toBe('idle');
-    expect(registrationMock.getInbox).not.toHaveBeenCalled();
   });
 
   it('fetches inbox via REST when organization is set', async () => {
-    useAuthStore.setState({ organizationId: 'org-1' });
-    registrationMock.getInbox.mockResolvedValue(INBOX_RESULT);
     const { result } = renderHookWithQueryClient(() => useInbox({ status: 'pending' }));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(registrationMock.getInbox).toHaveBeenCalledWith({ status: 'pending', organizationId: 'org-1' });
-    expect(queryInboxEntriesMock).not.toHaveBeenCalled();
+    expect(result.current.data?.requests).toHaveLength(1);
+    expect(result.current.data?.requests[0]?.imei).toBe('123');
+    expect(result.current.data?.requests[0]?.status).toBe('pending');
+    expect(result.current.data?.pagination.total).toBe(1);
   });
 
   it('falls back to GraphQL when REST rejects', async () => {
-    useAuthStore.setState({ organizationId: 'org-1' });
-    registrationMock.getInbox.mockRejectedValue(new Error('REST down'));
-    queryInboxEntriesMock.mockResolvedValue({
+    makeRestFail('get', '/v1/device/inbox');
+    registerGraphQLResponse('GetInboxEntries', () => ({
       inbox: {
-        requests: [{ imei: '123', status: 'pending', createdAt: 1704067200 }],
-        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+        __typename: 'InboxConnection',
+        requests: [{ ...RAW_INBOX_ENTRY, __typename: 'InboxEntry' }],
+        pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
       },
-    });
+    }));
     const { result } = renderHookWithQueryClient(() => useInbox());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(queryInboxEntriesMock).toHaveBeenCalledWith({
-      organizationId: 'org-1',
-      status: undefined,
-      page: undefined,
-      limit: undefined,
-    });
-    expect(result.current.data!.requests).toHaveLength(1);
-    expect(result.current.data!.requests[0]!.imei).toBe('123');
+    expect(result.current.data?.requests).toHaveLength(1);
+    expect(result.current.data?.requests[0]?.imei).toBe('123');
   });
 });
 
 describe('useInboxEntry', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
-  });
+  beforeEach(() => setOrg('org-1'));
 
   it('is disabled when imei is undefined', () => {
     const { result } = renderHookWithQueryClient(() => useInboxEntry(undefined));
@@ -174,144 +166,143 @@ describe('useInboxEntry', () => {
   });
 
   it('fetches entry via REST', async () => {
-    registrationMock.getInboxEntry.mockResolvedValue(INBOX_ENTRY);
     const { result } = renderHookWithQueryClient(() => useInboxEntry('123'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(registrationMock.getInboxEntry).toHaveBeenCalledWith('123', 'org-1');
+    expect(result.current.data?.imei).toBe('123');
+    expect(result.current.data?.status).toBe('pending');
   });
 
   it('falls back to GraphQL when REST rejects', async () => {
-    registrationMock.getInboxEntry.mockRejectedValue(new Error('REST down'));
-    queryInboxEntryMock.mockResolvedValue({ inboxEntry: { imei: '123', status: 'pending', createdAt: 1704067200 } });
+    makeRestFail('get', '/v1/inbox/:imei');
+    registerGraphQLResponse('GetInboxEntry', () => ({
+      inboxEntry: { ...RAW_INBOX_ENTRY, __typename: 'InboxEntry' },
+    }));
     const { result } = renderHookWithQueryClient(() => useInboxEntry('123'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(queryInboxEntryMock).toHaveBeenCalledWith({ organizationId: 'org-1', imei: '123' });
     expect(result.current.data?.imei).toBe('123');
+    expect(result.current.data?.status).toBe('pending');
   });
 
   it('is disabled (idle) when no org is selected, even if REST would reject', () => {
-    useAuthStore.setState({ organizationId: null });
-    registrationMock.getInboxEntry.mockRejectedValue(new Error('no org'));
+    setOrg(null);
+    makeRestFail('get', '/v1/inbox/:imei');
     const { result } = renderHookWithQueryClient(() => useInboxEntry('123'));
     expect(result.current.fetchStatus).toBe('idle');
-    expect(registrationMock.getInboxEntry).not.toHaveBeenCalled();
-    expect(queryInboxEntryMock).not.toHaveBeenCalled();
   });
 });
 
 describe('useAcknowledgeInbox', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
-  });
+  beforeEach(() => setOrg('org-1'));
 
   it('calls acknowledgeInbox via REST', async () => {
-    registrationMock.acknowledgeInbox.mockResolvedValue({ id: '1', imei: '123', status: 'approved' });
     const { result } = renderHookWithQueryClient(() => useAcknowledgeInbox());
     result.current.mutate({ imei: '123', action: 'approve' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(registrationMock.acknowledgeInbox).toHaveBeenCalledWith('123', 'approve', undefined, 'org-1');
+    expect(result.current.data?.imei).toBe('123');
+    expect(result.current.data?.status).toBe('approved');
   });
 
   it('falls back to GraphQL when REST rejects', async () => {
-    registrationMock.acknowledgeInbox.mockRejectedValue(new Error('REST down'));
-    mutateAckInboxMock.mockResolvedValue({ ackInbox: { id: '1', imei: '123', status: 'approved' } });
+    makeRestFail('post', '/v1/inbox/:imei/ack');
+    registerGraphQLResponse('AckInbox', () => ({
+      ackInbox: {
+        __typename: 'AckResult',
+        id: '1',
+        imei: '123',
+        status: 'rejected',
+        acknowledgedAt: null,
+        approvingAt: null,
+        approvedAt: null,
+        rejectedAt: now,
+        commandSecret: null,
+        fcmPushSent: false,
+        notes: 'no',
+      },
+    }));
     const { result } = renderHookWithQueryClient(() => useAcknowledgeInbox());
     result.current.mutate({ imei: '123', action: 'reject', notes: 'no' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mutateAckInboxMock).toHaveBeenCalledWith({ imei: '123', action: 'reject', notes: 'no' });
+    expect(result.current.data?.imei).toBe('123');
+    expect(result.current.data?.status).toBe('rejected');
+    expect(result.current.data?.notes).toBe('no');
   });
 });
 
 describe('useCreateInboxRequest', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
-  });
+  beforeEach(() => setOrg('org-1'));
 
   it('calls createInboxRequest with org', async () => {
-    registrationMock.createInboxRequest.mockResolvedValue({ id: '1', imei: '123', status: 'pending', createdAt: new Date() });
     const { result } = renderHookWithQueryClient(() => useCreateInboxRequest());
     const request = { imei: '123', fcmToken: 't', firebaseInstallId: 'f' };
     result.current.mutate(request);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(registrationMock.createInboxRequest).toHaveBeenCalledWith(request, 'org-1');
+    expect(result.current.data?.imei).toBe('123');
+    expect(result.current.data?.status).toBe('pending');
   });
 });
 
 describe('useConfirmDevice', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
-  });
+  beforeEach(() => setOrg('org-1'));
 
   it('calls confirmDevice with imei, commandSecret and org', async () => {
-    registrationMock.confirmDevice.mockResolvedValue({ deviceId: 'd1', confirmed: true });
     const { result } = renderHookWithQueryClient(() => useConfirmDevice());
     result.current.mutate({ imei: '123', commandSecret: 'secret' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(registrationMock.confirmDevice).toHaveBeenCalledWith('123', 'secret', 'org-1');
+    expect(result.current.data?.deviceId).toBe('d1');
+    expect(result.current.data?.confirmed).toBe(true);
+    expect(result.current.data?.imei).toBe('123');
   });
 });
 
 describe('useDismissInbox', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
-  });
+  beforeEach(() => setOrg('org-1'));
 
   it('calls dismissInbox with org', async () => {
-    registrationMock.dismissInbox.mockResolvedValue({ status: 'pending' });
     const { result } = renderHookWithQueryClient(() => useDismissInbox());
     result.current.mutate('123');
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(registrationMock.dismissInbox).toHaveBeenCalledWith('123', 'org-1');
+    expect(result.current.data?.status).toBe('pending');
   });
 });
 
 describe('useResendInboxApproval', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
-  });
+  beforeEach(() => setOrg('org-1'));
 
   it('calls resendInboxApproval with org', async () => {
-    registrationMock.resendInboxApproval.mockResolvedValue({ success: true, message: 'ok' });
     const { result } = renderHookWithQueryClient(() => useResendInboxApproval());
     result.current.mutate('123');
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(registrationMock.resendInboxApproval).toHaveBeenCalledWith('123', 'org-1');
+    expect(result.current.data?.success).toBe(true);
+    expect(result.current.data?.message).toBe('ok');
   });
 });
 
 describe('useRegisteredDevices', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
+    setOrg('org-1');
+    overrideRegisteredDeviceHandlers();
   });
 
   it('fetches devices via REST', async () => {
-    registrationMock.getDevices.mockResolvedValue({
-      devices: [{ imei: '123', online: true }],
-      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
-    });
     const { result } = renderHookWithQueryClient(() => useRegisteredDevices({ status: 'online' }));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(registrationMock.getDevices).toHaveBeenCalledWith({ status: 'online', organizationId: 'org-1' });
+    expect(result.current.data?.devices).toHaveLength(1);
+    expect(result.current.data?.devices[0]?.imei).toBe('123');
+    expect(result.current.data?.devices[0]?.online).toBe(true);
+    expect(result.current.data?.devices[0]?.status).toBe('online');
   });
 
   it('errors when REST rejects (no GraphQL fallback for devices)', async () => {
-    registrationMock.getDevices.mockRejectedValue(new Error('REST down'));
+    makeRestFail('get', '/v1/devices');
     const { result } = renderHookWithQueryClient(() => useRegisteredDevices());
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(queryInboxEntriesMock).not.toHaveBeenCalled();
   });
 });
 
 describe('useRegisteredDevice', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
+    setOrg('org-1');
+    overrideRegisteredDeviceHandlers();
   });
 
   it('is disabled when imei is undefined', () => {
@@ -320,42 +311,49 @@ describe('useRegisteredDevice', () => {
   });
 
   it('fetches device via REST', async () => {
-    registrationMock.getDevice.mockResolvedValue({ imei: '123', online: true });
     const { result } = renderHookWithQueryClient(() => useRegisteredDevice('123'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(registrationMock.getDevice).toHaveBeenCalledWith('123', 'org-1');
+    expect(result.current.data?.imei).toBe('123');
+    expect(result.current.data?.online).toBe(true);
+    expect(result.current.data?.status).toBe('online');
   });
 });
 
 describe('useDeregisterRegisteredDevice', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
+    setOrg('org-1');
+    overrideRegisteredDeviceHandlers();
   });
 
   it('calls deregisterDevice via REST', async () => {
-    registrationMock.deregisterDevice.mockResolvedValue({ imei: '123', status: 'deregistered' });
     const { result } = renderHookWithQueryClient(() => useDeregisterRegisteredDevice());
     result.current.mutate({ imei: '123' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(registrationMock.deregisterDevice).toHaveBeenCalledWith('123', 'org-1');
+    expect(result.current.data?.imei).toBe('123');
+    expect(result.current.data?.status).toBe('deregistered');
   });
 
   it('falls back to GraphQL when REST rejects', async () => {
-    registrationMock.deregisterDevice.mockRejectedValue(new Error('REST down'));
-    mutateDeregisterDeviceMock.mockResolvedValue({ deregisterDevice: { imei: '123', status: 'deregistered' } });
+    makeRestFail('delete', '/v1/devices/:imei');
+    registerGraphQLResponse('DeregisterDevice', () => ({
+      deregisterDevice: {
+        __typename: 'DeregisterResult',
+        imei: '123',
+        status: 'deregistered',
+        deregisteredAt: now,
+        retentionUntil: now + 30 * 24 * 60 * 60 * 1000,
+      },
+    }));
     const { result } = renderHookWithQueryClient(() => useDeregisterRegisteredDevice());
     result.current.mutate({ imei: '123', hard: true });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mutateDeregisterDeviceMock).toHaveBeenCalledWith({ imei: '123', hard: true });
+    expect(result.current.data?.imei).toBe('123');
+    expect(result.current.data?.status).toBe('deregistered');
   });
 });
 
 describe('useRegistrationStatus', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
-  });
+  beforeEach(() => setOrg('org-1'));
 
   it('is disabled when imei is undefined', () => {
     const { result } = renderHookWithQueryClient(() => useRegistrationStatus(undefined));
@@ -363,14 +361,15 @@ describe('useRegistrationStatus', () => {
   });
 
   it('returns status from the REST inbox entry', async () => {
-    registrationMock.getInboxEntry.mockResolvedValue(INBOX_ENTRY);
     const { result } = renderHookWithQueryClient(() => useRegistrationStatus('123'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual({ imei: '123', status: 'pending', entry: INBOX_ENTRY });
+    expect(result.current.data?.imei).toBe('123');
+    expect(result.current.data?.status).toBe('pending');
+    expect(result.current.data?.entry?.imei).toBe('123');
   });
 
   it('returns null when no entry exists', async () => {
-    registrationMock.getInboxEntry.mockResolvedValue(null);
+    server.use(http.get('/v1/inbox/:imei', () => HttpResponse.json(null)));
     const { result } = renderHookWithQueryClient(() => useRegistrationStatus('123'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toBeNull();
@@ -378,17 +377,14 @@ describe('useRegistrationStatus', () => {
 });
 
 describe('useRegisterDevice', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
-  });
+  beforeEach(() => setOrg('org-1'));
 
   it('calls createInboxRequest with org', async () => {
-    registrationMock.createInboxRequest.mockResolvedValue({ id: '1', imei: '123', status: 'pending', createdAt: new Date() });
     const { result } = renderHookWithQueryClient(() => useRegisterDevice());
     const request = { imei: '123', fcmToken: 't', firebaseInstallId: 'f' };
     result.current.mutate(request);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(registrationMock.createInboxRequest).toHaveBeenCalledWith(request, 'org-1');
+    expect(result.current.data?.imei).toBe('123');
+    expect(result.current.data?.status).toBe('pending');
   });
 });

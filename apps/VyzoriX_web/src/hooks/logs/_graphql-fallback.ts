@@ -37,9 +37,13 @@ function normalizeLogEntry(raw: RawLogFields, deviceId: string): LogEntry {
 }
 
 function extractObject<T>(response: unknown, key: string): T | null {
-  const r = response as Record<string, unknown> | null;
-  if (!r) return null;
-  const value = r[key];
+  // Apollo's Client.query resolves to the full result envelope
+  // ({ data: { [operation]: ... }, loading, networkStatus, ... }).
+  // Unwrap `data` first, then look up the root field (e.g. `deviceLogs`).
+  const envelope = response as { data?: Record<string, unknown> } | Record<string, unknown> | null;
+  if (!envelope) return null;
+  const payload = (envelope as { data?: Record<string, unknown> }).data ?? envelope;
+  const value = (payload as Record<string, unknown>)[key];
   return (value as T | undefined) ?? null;
 }
 

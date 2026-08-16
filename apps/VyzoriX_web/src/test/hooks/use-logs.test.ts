@@ -1,69 +1,48 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+/**
+ * Integration tests for logs hooks.
+ *
+ * These tests render the REAL hooks via React Testing Library. The hooks call
+ * the REAL API client functions (logs.list, logs.get, logs.stats) which use the
+ * REAL restClient (axios) + domain mappers. MSW intercepts the HTTP requests
+ * and returns mock server responses in the raw (snake_case) server shape.
+ *
+ * The GraphQL fallback path (useDeviceLogs -> fetchDeviceLogsViaGraphQL) is
+ * exercised by making MSW return 500 for the REST list endpoint and registering
+ * a GraphQL response handler for the GetLogs operation. The real queryLogs
+ * function runs against the real Apollo client, which MSW intercepts.
+ *
+ * No vi.mock / vi.hoisted — the real code path runs end-to-end.
+ */
+import { describe, it, expect, beforeEach } from 'vitest';
 import { waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { renderHookWithQueryClient } from '../helpers/render-hook';
+import { setupIntegrationTest } from '../helpers/integration-test-setup';
+import { registerGraphQLResponse } from '../msw/vyzor-msw-handlers-graphql';
 import { useAuthStore } from '@/stores/auth-store';
+import { graphqlClient } from '@vyzorix/api-client';
+import { useDeviceLogs, useLog, useLogStats } from '@/hooks/logs/use-logs';
 
-const { logsMock, queryLogsMock, authContextStub } = vi.hoisted(() => ({
-  logsMock: {
-    list: vi.fn(),
-    get: vi.fn(),
-    stats: vi.fn(),
-  },
-  queryLogsMock: vi.fn(),
-  authContextStub: {
-    getState: vi.fn(() => ({
-      isAuthenticated: false,
-      operator: null,
-      organizationId: null,
-      accessToken: null,
-      refreshToken: null,
-      tokenExpiresAt: null,
-    })),
-    getLockoutState: vi.fn(() => ({ isLocked: false, retryAfter: 0, lockedUntil: 0 })),
-    onChange: vi.fn(() => () => {}),
-    setOrganization: vi.fn(),
-    setAccessToken: vi.fn(),
-    setFromLoginWithTokens: vi.fn(),
-    setFromMeResponse: vi.fn(),
-    refreshTokens: vi.fn(async () => {}),
-    setLockout: vi.fn(),
-    clear: vi.fn(),
-  },
-}));
+const { server, resetApiState } = setupIntegrationTest();
 
-vi.mock('@vyzorix/api-client', () => ({
-  logs: logsMock,
-  queryLogs: (...args: unknown[]) => queryLogsMock(...args),
-  authContext: authContextStub,
-  getCurrentOrganizationId: vi.fn(() => null),
-  initConnectivityMonitor: vi.fn(() => ({
-    subscribe: vi.fn(() => () => {}),
-    getState: vi.fn(() => ({
-      isOnline: true,
-      wasOnline: true,
-      lastChecked: 0,
-      effectiveType: '4g',
-      downlink: 10,
-      rtt: 50,
-    })),
-    getQueueSize: vi.fn(() => 0),
-    getQueuedRequests: vi.fn(() => []),
-    checkConnectivity: vi.fn(async () => true),
-    flushQueue: vi.fn(async () => {}),
-    clearQueue: vi.fn(),
-  })),
-  getConnectivityMonitor: vi.fn(() => ({
-    getQueueSize: vi.fn(() => 0),
-    getQueuedRequests: vi.fn(() => []),
-  })),
-}));
+function setOrg(orgId: string | null) {
+  useAuthStore.getState().setOrganization(orgId);
+  if (orgId) {
+    graphqlClient.setOrganization(orgId);
+  }
+}
 
-const { useDeviceLogs, useLog, useLogStats } = await import('@/hooks/logs/use-logs');
+// Make a REST endpoint fail so the hook exercises its GraphQL fallback.
+function makeRestFail(method: 'get' | 'post', path: string) {
+  server.use(
+    http[method](path, () => HttpResponse.json({ error: 'REST down' }, { status: 500 })),
+  );
+}
 
 describe('useDeviceLogs', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
+    resetApiState();
+    setOrg('org-1');
   });
 
   it('is disabled when imei is undefined', () => {
@@ -72,41 +51,52 @@ describe('useDeviceLogs', () => {
   });
 
   it('is disabled when organizationId is null', () => {
-    useAuthStore.setState({ organizationId: null });
+    setOrg(null);
     const { result } = renderHookWithQueryClient(() => useDeviceLogs('123'));
     expect(result.current.fetchStatus).toBe('idle');
-    expect(logsMock.list).not.toHaveBeenCalled();
   });
 
   it('fetches logs via REST with organizationId', async () => {
-    logsMock.list.mockResolvedValue({ logs: [], hasMore: false });
     const { result } = renderHookWithQueryClient(() => useDeviceLogs('123', { limit: 50 }));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(logsMock.list).toHaveBeenCalledWith('123', expect.objectContaining({ limit: 50, organizationId: 'org-1' }));
-    expect(queryLogsMock).not.toHaveBeenCalled();
+    expect(result.current.data?.logs).toHaveLength(2);
+    expect(result.current.data?.logs[0]?.id).toBe('log-1');
+    expect(result.current.data?.logs[0]?.deviceId).toBe('123');
+    expect(result.current.data?.logs[0]?.eventType).toBe('connection');
+    expect(result.current.data?.hasMore).toBe(false);
   });
 
   it('falls back to GraphQL when REST rejects', async () => {
-    logsMock.list.mockRejectedValue(new Error('REST down'));
-    queryLogsMock.mockResolvedValue({
+    makeRestFail('get', '/v1/dashboard/device/:imei/logs');
+    registerGraphQLResponse('GetLogs', () => ({
       deviceLogs: {
-        events: [{ id: 'log-1', type: 'error', timestamp: 1704067200 }],
-        pagination: { limit: 50, hasMore: false },
+        __typename: 'DeviceLogConnection',
+        events: [
+          {
+            __typename: 'LogEntry',
+            id: 'log-1',
+            type: 'error',
+            timestamp: 1704067200,
+            data: { msg: 'boom' },
+          },
+        ],
+        pagination: { limit: 50, hasMore: false, nextCursor: null },
       },
-    });
+    }));
     const { result } = renderHookWithQueryClient(() => useDeviceLogs('123', { limit: 50 }));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(queryLogsMock).toHaveBeenCalledWith(expect.objectContaining({ organizationId: 'org-1', imei: '123', limit: 50 }));
     expect(result.current.data?.logs).toHaveLength(1);
     expect(result.current.data?.logs[0]?.id).toBe('log-1');
     expect(result.current.data?.logs[0]?.eventType).toBe('error');
+    expect(result.current.data?.logs[0]?.deviceId).toBe('123');
+    expect(result.current.data?.hasMore).toBe(false);
   });
 });
 
 describe('useLog', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
+    resetApiState();
+    setOrg('org-1');
   });
 
   it('is disabled when id is undefined', () => {
@@ -115,17 +105,18 @@ describe('useLog', () => {
   });
 
   it('fetches a single log with organizationId', async () => {
-    logsMock.get.mockResolvedValue({ id: 'log-1', eventType: 'info' });
-    const { result } = renderHookWithQueryClient(() => useLog('log-1'));
+    const { result } = renderHookWithQueryClient(() => useLog('log-detail-1'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(logsMock.get).toHaveBeenCalledWith('log-1', 'org-1');
+    expect(result.current.data?.id).toBe('log-detail-1');
+    expect(result.current.data?.eventType).toBe('info');
+    expect(result.current.data?.deviceId).toBe('123');
   });
 });
 
 describe('useLogStats', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
+    resetApiState();
+    setOrg('org-1');
   });
 
   it('is disabled when imei is undefined', () => {
@@ -134,9 +125,11 @@ describe('useLogStats', () => {
   });
 
   it('fetches stats with organizationId', async () => {
-    logsMock.stats.mockResolvedValue({ total: 0, byType: { connection: 0, command: 0, telemetry: 0, error: 0, warning: 0 } });
     const { result } = renderHookWithQueryClient(() => useLogStats('123'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(logsMock.stats).toHaveBeenCalledWith('123', expect.objectContaining({ organizationId: 'org-1' }));
+    expect(result.current.data?.total).toBe(2);
+    expect(result.current.data?.byType.connection).toBe(1);
+    expect(result.current.data?.byType.command).toBe(1);
+    expect(result.current.data?.byType.telemetry).toBe(0);
   });
 });

@@ -1,20 +1,17 @@
 // Re-export shared utilities
 export * from "./_shared";
 
-// Auth exports - but NOT MFA functions (those come from ./mfa)
+// Auth core exports — login, register, logout, /me, token refresh.
+// MFA endpoints live in ./mfa, password-reset in ./password, email verification in ./email.
 export {
   fetchCSRFToken,
   login,
   loginWithTokens,
   register,
-  forgotPassword,
-  resetPassword,
-  resendPasswordReset,
-  verifyEmail,
-  resendVerification,
   logout,
   getMe,
   updateName,
+  refreshToken,
 } from "./auth/rest-auth-endpoints";
 
 export type {
@@ -25,7 +22,7 @@ export type {
 export * from "./registration";
 
 export { devices } from "./device";
-export type { DeviceParams, DeviceSettings, ConnectionStatus } from "./device";
+export type { DeviceParams, DeviceSettings, DeviceSettingsUpdateRequest, DeviceThresholdUpdateRequest, ConnectionStatus } from "./device";
 
 export { settings } from "./settings";
 

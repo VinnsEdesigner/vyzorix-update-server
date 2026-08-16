@@ -1,15 +1,18 @@
 
 
-import { restClient } from "../_shared/rest-client";
+import { restClient, setAuthToken, setRefreshToken } from "../_shared/rest-client";
 import {
-  mfaStatusFromRaw,
-  mfaEnrollFromRaw,
-  mfaEnableFromRaw,
+  mfaStatusResponseFromRaw,
+  mfaEnrollResponseFromRaw,
   mfaVerifySetupFromRaw,
-  mfaDisableFromRaw,
+  mfaEnableFromRaw,
   mfaVerifyBackupFromRaw,
   mfaRegenerateCodesFromRaw,
-  mfaVerifyFromRaw,
+  mfaVerifyResponseFromRaw,
+  mfaCodeRequestToRaw,
+  backupCodeVerifyRequestToRaw,
+  mfaVerifyRequestToRaw,
+  type RawMFAVerifyResponse,
 } from "../../../domain/auth";
 import type {
   MFAStatusResponse,
@@ -35,64 +38,53 @@ const MFA_PATHS = {
 
 
 export async function getMFAStatus(): Promise<MFAStatusResponse> {
-  const response = await restClient.get<{ mfa_enabled: boolean }>(MFA_PATHS.status);
-  return mfaStatusFromRaw(response);
+  const raw = await restClient.get<{ mfa_enabled: boolean; backup_codes?: string[] }>(MFA_PATHS.status);
+  return mfaStatusResponseFromRaw(raw);
 }
 
 
 export async function enrollMFA(): Promise<MFAEnrollResponse> {
-  const response = await restClient.post<{ secret: string; uri: string }>(MFA_PATHS.enroll);
-  return mfaEnrollFromRaw(response);
+  const raw = await restClient.post<{ secret: string; uri: string }>(MFA_PATHS.enroll);
+  return mfaEnrollResponseFromRaw(raw);
 }
 
 
 export async function verifyMFASetup(code: string): Promise<MFAVerifySetupResponse> {
-  const response = await restClient.post<{ verified: boolean }>(MFA_PATHS.verifySetup, { code });
-  return mfaVerifySetupFromRaw(response);
+  const raw = await restClient.post<{ verified: boolean }>(MFA_PATHS.verifySetup, { code, token: code });
+  return mfaVerifySetupFromRaw(raw);
 }
 
 
 export async function enableMFA(code: string): Promise<MFAEnableResponse> {
-  const response = await restClient.post<{ success: boolean; backup_codes?: string[] }>(MFA_PATHS.enable, { code });
-  return mfaEnableFromRaw(response);
+  const raw = await restClient.post<{ success: boolean; backup_codes?: string[] }>(MFA_PATHS.enable, { code, token: code });
+  return mfaEnableFromRaw(raw);
 }
 
 
 export async function disableMFA(code: string): Promise<MFADisableResponse> {
-  const response = await restClient.post<{ success: boolean }>(MFA_PATHS.disable, { code });
-  return mfaDisableFromRaw(response);
+  const raw = await restClient.post<{ success: boolean }>(MFA_PATHS.disable, mfaCodeRequestToRaw(code));
+  return { success: raw.success };
 }
 
 
 export async function verifyBackupCode(code: string): Promise<MFAVerifyBackupResponse> {
-  const response = await restClient.post<{ valid: boolean }>(MFA_PATHS.verifyBackup, { code });
-  return mfaVerifyBackupFromRaw(response);
+  const raw = await restClient.post<{ valid: boolean }>(MFA_PATHS.verifyBackup, backupCodeVerifyRequestToRaw(code));
+  return mfaVerifyBackupFromRaw(raw);
 }
 
 
 export async function regenerateBackupCodes(): Promise<MFARegenerateCodesResponse> {
-  const response = await restClient.post<{ backup_codes: string[] }>(MFA_PATHS.regenerateBackupCodes);
-  return mfaRegenerateCodesFromRaw(response);
+  const raw = await restClient.post<{ backup_codes: string[] }>(MFA_PATHS.regenerateBackupCodes);
+  return mfaRegenerateCodesFromRaw(raw);
 }
 
 
 export async function verifyMFA(operatorId: string, code: string): Promise<MFAVerifyResponse> {
-  const response = await restClient.post<{
-    success: boolean;
-    session_id?: string;
-    access_token?: string;
-    refresh_token?: string;
-    expires_at?: number;
-    operator?: {
-      id: string;
-      email: string;
-      name: string;
-      role: string;
-      mfa_enabled: boolean;
-    };
-  }>(MFA_PATHS.verify, {
-    operator_id: operatorId,
-    code,
-  });
-  return mfaVerifyFromRaw(response);
+  const raw = await restClient.post<RawMFAVerifyResponse>(MFA_PATHS.verify, mfaVerifyRequestToRaw(operatorId, code));
+  const result = mfaVerifyResponseFromRaw(raw);
+  if (result.success && result.accessToken && result.refreshToken) {
+    setAuthToken(result.accessToken);
+    setRefreshToken(result.refreshToken);
+  }
+  return result;
 }

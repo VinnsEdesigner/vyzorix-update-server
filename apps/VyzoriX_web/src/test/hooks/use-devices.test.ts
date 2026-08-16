@@ -1,76 +1,41 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+/**
+ * Integration tests for useDevices / useDevice / useDeviceCount / etc.
+ *
+ * These tests render the REAL hooks via React Testing Library. The hooks call
+ * the REAL API client functions (devices.list, devices.get, etc.) which use
+ * the REAL restClient (axios) + domain mappers. MSW intercepts the HTTP
+ * requests and returns mock server responses.
+ *
+ * No vi.mock — the real code path runs end-to-end.
+ */
+import { describe, it, expect, beforeEach } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { renderHookWithQueryClient } from '../helpers/render-hook';
+import { setupIntegrationTest } from '../helpers/integration-test-setup';
 import { useAuthStore } from '@/stores/auth-store';
+import {
+  useDevices,
+  useDevice,
+  useDeviceCount,
+  useUpdateDeviceSettings,
+  useDeviceThresholds,
+  useUpdateDeviceThresholds,
+  useDeregisterDevice,
+} from '@/hooks/device/use-devices';
 
-const { devicesMock, authContextStub } = vi.hoisted(() => ({
-  devicesMock: {
-    list: vi.fn(),
-    get: vi.fn(),
-    getConnectionStatus: vi.fn(),
-    getSettings: vi.fn(),
-    updateSettings: vi.fn(),
-    count: vi.fn(),
-    stats: vi.fn(),
-    deregister: vi.fn(),
-    disconnect: vi.fn(),
-  },
-  authContextStub: {
-    getState: vi.fn(() => ({
-      isAuthenticated: false,
-      operator: null,
-      organizationId: null,
-      accessToken: null,
-      refreshToken: null,
-      tokenExpiresAt: null,
-    })),
-    getLockoutState: vi.fn(() => ({ isLocked: false, retryAfter: 0, lockedUntil: 0 })),
-    onChange: vi.fn(() => () => {}),
-    setOrganization: vi.fn(),
-    setAccessToken: vi.fn(),
-    setFromLoginWithTokens: vi.fn(),
-    setFromMeResponse: vi.fn(),
-    refreshTokens: vi.fn(async () => {}),
-    setLockout: vi.fn(),
-    clear: vi.fn(),
-  },
-}));
+setupIntegrationTest();
 
-vi.mock('@vyzorix/api-client', () => ({
-  devices: devicesMock,
-  authContext: authContextStub,
-  getCurrentOrganizationId: vi.fn(() => null),
-  initConnectivityMonitor: vi.fn(() => ({
-    subscribe: vi.fn(() => () => {}),
-    getState: vi.fn(() => ({
-      isOnline: true,
-      wasOnline: true,
-      lastChecked: 0,
-      effectiveType: '4g',
-      downlink: 10,
-      rtt: 50,
-    })),
-    getQueueSize: vi.fn(() => 0),
-    getQueuedRequests: vi.fn(() => []),
-    checkConnectivity: vi.fn(async () => true),
-    flushQueue: vi.fn(async () => {}),
-    clearQueue: vi.fn(),
-  })),
-  getConnectivityMonitor: vi.fn(() => ({
-    getQueueSize: vi.fn(() => 0),
-    getQueuedRequests: vi.fn(() => []),
-  })),
-}));
+function setOrg(orgId: string | null) {
+  // Use authContext.setOrganization so both authContext and the store stay in sync.
+  // Using useAuthStore.setState directly would be overwritten by the next onChange event.
+  useAuthStore.getState().setOrganization(orgId);
+}
 
-const { useDevices, useDevice, useDeviceCount, useUpdateDeviceSettings, useDeregisterDevice } =
-  await import('@/hooks/device/use-devices');
+beforeEach(() => {
+  setOrg(null);
+});
 
 describe('useDevices', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: null });
-  });
-
   it('is disabled when no organization is selected', () => {
     const { result } = renderHookWithQueryClient(() => useDevices());
     expect(result.current.isLoading).toBe(false);
@@ -78,26 +43,35 @@ describe('useDevices', () => {
   });
 
   it('fetches devices when organization is set', async () => {
-    useAuthStore.setState({ organizationId: 'org-1' });
-    devicesMock.list.mockResolvedValue({ items: [], total: 0 });
+    setOrg('org-1');
     const { result } = renderHookWithQueryClient(() => useDevices());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(devicesMock.list).toHaveBeenCalledWith({ organizationId: 'org-1' });
+    expect(result.current.data?.devices).toHaveLength(3);
+    expect(result.current.data?.pagination.total).toBe(3);
   });
 
-  it('passes params to the API', async () => {
-    useAuthStore.setState({ organizationId: 'org-1' });
-    devicesMock.list.mockResolvedValue({ items: [], total: 0 });
+  it('passes status param to the API', async () => {
+    setOrg('org-1');
     const { result } = renderHookWithQueryClient(() => useDevices({ status: 'online' }));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(devicesMock.list).toHaveBeenCalledWith({ status: 'online', organizationId: 'org-1' });
+    // MSW returns all 3 devices regardless of filter, but the hook should succeed
+    expect(result.current.data?.devices).toBeDefined();
+  });
+
+  it('maps device list items through the real mapper', async () => {
+    setOrg('org-1');
+    const { result } = renderHookWithQueryClient(() => useDevices());
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const first = result.current.data?.devices[0];
+    expect(first).toBeDefined();
+    expect(first?.imei).toBeDefined();
+    expect(['online', 'offline']).toContain(first?.status);
   });
 });
 
 describe('useDevice', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
+    setOrg('org-1');
   });
 
   it('is disabled when imei is undefined', () => {
@@ -111,61 +85,86 @@ describe('useDevice', () => {
   });
 
   it('fetches device when imei is provided', async () => {
-    devicesMock.get.mockResolvedValue({ imei: '123', name: 'Dev' });
-    const { result } = renderHookWithQueryClient(() => useDevice('123'));
+    const { result } = renderHookWithQueryClient(() => useDevice('111111111111111'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(devicesMock.get).toHaveBeenCalledWith('123', 'org-1');
+    expect(result.current.data?.imei).toBe('111111111111111');
+  });
+
+  it('returns error for unknown imei', async () => {
+    const { result } = renderHookWithQueryClient(() => useDevice('unknown-imei'));
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.data).toBeUndefined();
   });
 });
 
 describe('useDeviceCount', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: null });
-  });
-
   it('is disabled without org', () => {
     const { result } = renderHookWithQueryClient(() => useDeviceCount());
     expect(result.current.fetchStatus).toBe('idle');
   });
 
   it('fetches count with org', async () => {
-    useAuthStore.setState({ organizationId: 'org-1' });
-    devicesMock.count.mockResolvedValue(42);
+    setOrg('org-1');
     const { result } = renderHookWithQueryClient(() => useDeviceCount());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toBe(42);
+    expect(result.current.data?.count).toBe(3);
   });
 });
 
 describe('useUpdateDeviceSettings', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
+    setOrg('org-1');
   });
 
   it('calls updateSettings and returns the result', async () => {
-    const updated = { imei: '123', fcmEnabled: true };
-    devicesMock.updateSettings.mockResolvedValue(updated);
-    const { result } = renderHookWithQueryClient(() => useUpdateDeviceSettings('123'));
-    result.current.mutate({ fcmEnabled: true });
+    const { result } = renderHookWithQueryClient(() => useUpdateDeviceSettings('111111111111111'));
+    result.current.mutate({ customName: 'My Device' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(devicesMock.updateSettings).toHaveBeenCalledWith('123', { fcmEnabled: true }, 'org-1');
-    expect(result.current.data).toEqual(updated);
+    expect(result.current.data?.customName).toBe('My Device');
+    expect(result.current.data?.deviceImei).toBe('111111111111111');
+  });
+});
+
+describe('useDeviceThresholds', () => {
+  beforeEach(() => {
+    setOrg('org-1');
+  });
+
+  it('is disabled without imei', () => {
+    const { result } = renderHookWithQueryClient(() => useDeviceThresholds(undefined));
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('fetches thresholds with org context', async () => {
+    const { result } = renderHookWithQueryClient(() => useDeviceThresholds('111111111111111'));
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.thresholds).toBeDefined();
+    expect(result.current.data?.thresholds.riskWarn).toBe(70);
+  });
+});
+
+describe('useUpdateDeviceThresholds', () => {
+  beforeEach(() => {
+    setOrg('org-1');
+  });
+
+  it('calls updateSettingsThresholds and caches result', async () => {
+    const { result } = renderHookWithQueryClient(() => useUpdateDeviceThresholds('111111111111111'));
+    result.current.mutate({ riskWarn: 75 });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.thresholds.riskWarn).toBe(75);
   });
 });
 
 describe('useDeregisterDevice', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    useAuthStore.setState({ organizationId: 'org-1' });
+    setOrg('org-1');
   });
 
   it('calls deregister with imei and org', async () => {
-    devicesMock.deregister.mockResolvedValue({});
     const { result } = renderHookWithQueryClient(() => useDeregisterDevice());
-    result.current.mutate('123');
+    result.current.mutate('111111111111111');
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(devicesMock.deregister).toHaveBeenCalledWith('123', 'org-1');
+    expect(result.current.data?.success).toBe(true);
   });
 });

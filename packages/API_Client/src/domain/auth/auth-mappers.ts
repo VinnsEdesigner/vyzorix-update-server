@@ -10,6 +10,10 @@ import type {
   AuthTokens,
   OrganizationInfo,
   OrganizationMembership,
+  MFAStatusResponse,
+  MFAEnrollResponse,
+  MFAVerifyResponse,
+  MFAEnableResponse,
 } from "./auth-entity";
 import type { Thresholds, ClientSettings } from "../settings/settings-entity";
 
@@ -40,6 +44,7 @@ export interface RawLoginWithTokensResponse {
   refresh_token: string;
   expires_at: number;
   session_id: string;
+  signing_key?: string;
   organizations?: OrganizationInfo[];
   memberships?: OrganizationMembership[];
   selected_organization?: OrganizationInfo;
@@ -114,6 +119,7 @@ export function loginWithTokensResponseFromRaw(raw: RawLoginWithTokensResponse):
     refresh_token: raw.refresh_token,
     expires_at: raw.expires_at,
     session_id: raw.session_id,
+    signing_key: raw.signing_key ?? '',
     needs_organization: raw.needs_organization ?? false,
     organizations: raw.organizations ?? [],
     memberships: raw.memberships ?? [],
@@ -189,19 +195,7 @@ export function forgotPasswordRequestToRaw(email: string): { email: string } {
   return { email: email.toLowerCase().trim() };
 }
 
-export function resetPasswordRequestToRaw(token: string, newPassword: string): { token: string; new_password: string } {
-  return { token, new_password: newPassword };
-}
-
-export function verifyEmailRequestToRaw(token: string): { token: string } {
-  return { token };
-}
-
 export function mfaCodeRequestToRaw(code: string): { code: string } {
-  return { code };
-}
-
-export function mfaEnrollRequestToRaw(code: string): { code: string } {
   return { code };
 }
 
@@ -209,14 +203,14 @@ export function backupCodeVerifyRequestToRaw(code: string): { code: string } {
   return { code };
 }
 
-export function mfaStatusResponseFromRaw(raw: { enabled: boolean; backup_codes?: string[] }): { enabled: boolean; backupCodes?: string[] } {
+export function mfaStatusResponseFromRaw(raw: { mfa_enabled: boolean; backup_codes?: string[] }): MFAStatusResponse {
   return {
-    enabled: raw.enabled,
+    enabled: raw.mfa_enabled,
     backupCodes: raw.backup_codes,
   };
 }
 
-export function mfaEnrollResponseFromRaw(raw: { secret: string; uri?: string }): { secret: string; uri: string } {
+export function mfaEnrollResponseFromRaw(raw: { secret: string; uri?: string }): MFAEnrollResponse {
   return {
     secret: raw.secret,
     uri: raw.uri ?? "",
@@ -233,65 +227,38 @@ export interface RawMFAVerifyResponse {
   access_token?: string;
   refresh_token?: string;
   expires_at?: number;
+  signing_key?: string;
   operator?: {
     id: string;
     email: string;
     name: string;
+    role: string;
     mfa_enabled: boolean;
   };
 }
 
-export function mfaVerifyResponseFromRaw(raw: RawMFAVerifyResponse): {
-  success: boolean;
-  sessionId?: string;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresAt?: number;
-  operator?: {
-    id: string;
-    email: string;
-    name: string;
-    mfaEnabled: boolean;
-  };
-} {
+export function mfaVerifyResponseFromRaw(raw: RawMFAVerifyResponse): MFAVerifyResponse {
   return {
     success: raw.success,
     sessionId: raw.session_id,
     accessToken: raw.access_token,
     refreshToken: raw.refresh_token,
     expiresAt: raw.expires_at,
+    signingKey: raw.signing_key,
     operator: raw.operator ? {
       id: raw.operator.id,
       email: raw.operator.email,
       name: raw.operator.name,
+      role: raw.operator.role,
       mfaEnabled: raw.operator.mfa_enabled,
     } : undefined,
   };
 }
 
-export function mfaStatusFromRaw(raw: { mfa_enabled: boolean }): { enabled: boolean } {
-  return {
-    enabled: raw.mfa_enabled,
-  };
-}
-
-export function mfaEnrollFromRaw(raw: { secret: string; uri?: string }): { secret: string; uri: string } {
-  return {
-    secret: raw.secret,
-    uri: raw.uri ?? "",
-  };
-}
-
-export function mfaEnableFromRaw(raw: { success: boolean; backup_codes?: string[] }): { success: boolean; backupCodes?: string[] } {
+export function mfaEnableFromRaw(raw: { success: boolean; backup_codes?: string[] }): MFAEnableResponse {
   return {
     success: raw.success,
     backupCodes: raw.backup_codes,
-  };
-}
-
-export function mfaDisableFromRaw(raw: { success: boolean }): { success: boolean } {
-  return {
-    success: raw.success,
   };
 }
 
@@ -310,33 +277,5 @@ export function mfaVerifyBackupFromRaw(raw: { valid: boolean }): { valid: boolea
 export function mfaRegenerateCodesFromRaw(raw: { backup_codes: string[] }): { backupCodes: string[] } {
   return {
     backupCodes: raw.backup_codes,
-  };
-}
-
-export function mfaVerifyFromRaw(raw: RawMFAVerifyResponse): {
-  success: boolean;
-  sessionId?: string;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresAt?: number;
-  operator?: {
-    id: string;
-    email: string;
-    name: string;
-    mfaEnabled: boolean;
-  };
-} {
-  return {
-    success: raw.success,
-    sessionId: raw.session_id,
-    accessToken: raw.access_token,
-    refreshToken: raw.refresh_token,
-    expiresAt: raw.expires_at,
-    operator: raw.operator ? {
-      id: raw.operator.id,
-      email: raw.operator.email,
-      name: raw.operator.name,
-      mfaEnabled: raw.operator.mfa_enabled,
-    } : undefined,
   };
 }

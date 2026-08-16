@@ -22,6 +22,7 @@ type LoginResponse struct {
 	Email                string             `json:"email"`
 	Name                 string             `json:"name"`
 	LastOrganizationID   string             `json:"last_organization_id,omitempty"`
+	SigningKey           string             `json:"signing_key"`
 	Organizations        []OrganizationInfo `json:"organizations,omitempty"`
 	MFAEnabled           bool               `json:"mfa_enabled"`
 	NeedsOrganization    bool               `json:"needs_organization"`
@@ -37,6 +38,7 @@ type LoginWithTokensResponse struct {
 	AccessToken          string             `json:"access_token"`
 	RefreshToken         string             `json:"refresh_token"`
 	SessionID            string             `json:"session_id"`
+	SigningKey           string             `json:"signing_key"`
 	Organizations        []OrganizationInfo `json:"organizations,omitempty"`
 	ExpiresAt            int64              `json:"expires_at"`
 	MFAEnabled           bool               `json:"mfa_enabled"`

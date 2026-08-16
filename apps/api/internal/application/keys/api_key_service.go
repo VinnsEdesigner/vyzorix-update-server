@@ -3,6 +3,7 @@ package keys
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha512"
 	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
@@ -90,6 +91,9 @@ func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req 
 	// Hash the key.
 	keyHash := hashKey(fullKey)
 
+	// Derive the signing secret for HMAC request signing (Domain A).
+	signingSecret := deriveAPIKeySigningSecret(fullKey)
+
 	// Calculate prefix.
 	prefix := fullKey[:s.config.PrefixLength]
 
@@ -105,16 +109,17 @@ func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req 
 
 	now := time.Now()
 	key := &infraStorage.APIKey{
-		ID:         uuid.Must(uuid.NewV7()).String(),
-		OperatorID: operatorID,
-		Name:       req.Name,
-		KeyPrefix:  prefix,
-		KeyHash:    keyHash,
-		Scope:      string(req.Scope),
-		ExpiresAt:  toMillis(expiresAt),
-		IsActive:   true,
-		CreatedAt:  now.UnixMilli(),
-		UpdatedAt:  now.UnixMilli(),
+		ID:            uuid.Must(uuid.NewV7()).String(),
+		OperatorID:    operatorID,
+		Name:          req.Name,
+		KeyPrefix:     prefix,
+		KeyHash:       keyHash,
+		SigningSecret: signingSecret,
+		Scope:         string(req.Scope),
+		ExpiresAt:     toMillis(expiresAt),
+		IsActive:      true,
+		CreatedAt:     now.UnixMilli(),
+		UpdatedAt:     now.UnixMilli(),
 	}
 
 	if err := s.repo.Create(ctx, key); err != nil {
@@ -132,7 +137,8 @@ func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req 
 			IsActive:   key.IsActive,
 			CreatedAt:  fromMillisVal(key.CreatedAt),
 		},
-		FullKey: fullKey,
+		FullKey:    fullKey,
+		SigningKey: signingSecret,
 	}, nil
 }
 
@@ -334,21 +340,23 @@ func (s *APIKeyService) RotateKey(ctx context.Context, operatorID, keyID string)
 	}
 
 	keyHash := hashKey(fullKey)
+	signingSecret := deriveAPIKeySigningSecret(fullKey)
 
 	prefix := fullKey[:s.config.PrefixLength]
 	now := time.Now()
 
 	newKey := &infraStorage.APIKey{
-		ID:         uuid.Must(uuid.NewV7()).String(),
-		OperatorID: operatorID,
-		Name:       key.Name,
-		KeyPrefix:  prefix,
-		KeyHash:    keyHash,
-		Scope:      key.Scope,
-		ExpiresAt:  expiresAt, // Keep the same expiry (copied value, not pointer).
-		IsActive:   true,
-		CreatedAt:  now.UnixMilli(),
-		UpdatedAt:  now.UnixMilli(),
+		ID:            uuid.Must(uuid.NewV7()).String(),
+		OperatorID:    operatorID,
+		Name:          key.Name,
+		KeyPrefix:     prefix,
+		KeyHash:       keyHash,
+		SigningSecret: signingSecret,
+		Scope:         key.Scope,
+		ExpiresAt:     expiresAt, // Keep the same expiry (copied value, not pointer).
+		IsActive:      true,
+		CreatedAt:     now.UnixMilli(),
+		UpdatedAt:     now.UnixMilli(),
 	}
 
 	if err := s.repo.Create(ctx, newKey); err != nil {
@@ -366,7 +374,8 @@ func (s *APIKeyService) RotateKey(ctx context.Context, operatorID, keyID string)
 			IsActive:   newKey.IsActive,
 			CreatedAt:  fromMillisVal(newKey.CreatedAt),
 		},
-		FullKey: fullKey,
+		FullKey:    fullKey,
+		SigningKey: signingSecret,
 	}, nil
 }
 
@@ -394,18 +403,30 @@ func hashKeyValue(key string) string {
 	return hash
 }
 
+// deriveAPIKeySigningSecret derives a deterministic HMAC signing secret from
+// the full API key value. This lets API-key-authenticated clients sign requests
+// (Domain A: client↔server request signing) using the same X-Vyzorix-* header
+// scheme as session-authenticated clients, without storing a separate secret.
+// The server stores this derived secret; the client derives it from the full
+// key value it already holds.
+func deriveAPIKeySigningSecret(fullKey string) string {
+	h := sha512.Sum512([]byte(fullKey))
+	return hex.EncodeToString(h[:])
+}
+
 // toDomainAPIKey converts an infrastructure API key to a domain API key.
 func toDomainAPIKey(key *infraStorage.APIKey) *domain.APIKey {
 	domain := &domain.APIKey{
-		ID:           key.ID,
-		OperatorID:   key.OperatorID,
-		Name:         key.Name,
-		KeyPrefix:    key.KeyPrefix,
-		Scope:        domain.Scope(key.Scope),
-		IsActive:     key.IsActive,
-		RequestCount: key.RequestCount,
-		CreatedAt:    fromMillisVal(key.CreatedAt),
-		UpdatedAt:    fromMillisVal(key.UpdatedAt),
+		ID:            key.ID,
+		OperatorID:    key.OperatorID,
+		Name:          key.Name,
+		KeyPrefix:     key.KeyPrefix,
+		SigningSecret: key.SigningSecret,
+		Scope:         domain.Scope(key.Scope),
+		IsActive:      key.IsActive,
+		RequestCount:  key.RequestCount,
+		CreatedAt:     fromMillisVal(key.CreatedAt),
+		UpdatedAt:     fromMillisVal(key.UpdatedAt),
 	}
 
 	if key.ExpiresAt != nil {
@@ -455,7 +476,9 @@ func IsValidScope(s string) bool {
 }
 
 // ListAllKeys lists all API keys across all operators (super admin only).
-func (s *APIKeyService) ListAllKeys(ctx context.Context, page, limit int) (*domain.ListAllAPIKeysResponse, error) {
+// operatorID (non-empty) filters to a single operator; search (non-empty) does
+// a case-insensitive LIKE match on key name, prefix, and operator name/email.
+func (s *APIKeyService) ListAllKeys(ctx context.Context, page, limit int, operatorID, search string) (*domain.ListAllAPIKeysResponse, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -465,14 +488,19 @@ func (s *APIKeyService) ListAllKeys(ctx context.Context, page, limit int) (*doma
 
 	offset := (page - 1) * limit
 
-	keys, total, err := s.repo.ListAll(ctx, limit, offset)
+	rows, total, err := s.repo.ListAllWithOperator(ctx, limit, offset, operatorID, search)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list all keys: %w", err)
 	}
 
-	responses := make([]domain.APIKeyResponse, len(keys))
-	for i, key := range keys {
-		responses[i] = toDomainAPIKey(key).ToResponse()
+	responses := make([]domain.AdminAPIKeyResponse, len(rows))
+	for i, row := range rows {
+		k := toDomainAPIKey(&row.APIKey)
+		responses[i] = domain.AdminAPIKeyResponse{
+			APIKeyResponse: k.ToResponse(),
+			OperatorID:     k.OperatorID,
+			OperatorName:   row.OperatorName,
+		}
 	}
 
 	totalPages := (total + limit - 1) / limit
@@ -489,14 +517,57 @@ func (s *APIKeyService) ListAllKeys(ctx context.Context, page, limit int) (*doma
 }
 
 // GetGlobalStats returns global API key statistics (super admin only).
+// Builds aggregates from the storage layer: total/active/revoked counts,
+// cumulative request totals by scope, and top operators by request volume.
 func (s *APIKeyService) GetGlobalStats(ctx context.Context) (*domain.GlobalAPIKeyStats, error) {
-	totalActive, err := s.repo.CountAll(ctx)
+	totalKeys, err := s.repo.CountAllIncludingRevoked(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to count all keys: %w", err)
 	}
+	activeKeys, err := s.repo.CountAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count active keys: %w", err)
+	}
+	revokedKeys, err := s.repo.CountRevoked(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count revoked keys: %w", err)
+	}
+	requestsByScope, err := s.repo.SumRequestsByScope(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sum requests by scope: %w", err)
+	}
+	topOps, totalOperators, err := s.repo.TopOperatorsByRequests(ctx, 5)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query top operators: %w", err)
+	}
+
+	var totalRequests int64
+	for _, sum := range requestsByScope {
+		totalRequests += sum
+	}
+
+	topStats := make([]domain.TopOperatorStat, 0, len(topOps))
+	for _, op := range topOps {
+		activeCount, cErr := s.repo.CountByOperatorThisMonth(ctx, op.OperatorID)
+		if cErr != nil {
+			return nil, fmt.Errorf("failed to count operator keys: %w", cErr)
+		}
+		topStats = append(topStats, domain.TopOperatorStat{
+			OperatorID:     op.OperatorID,
+			OperatorName:   op.OperatorName,
+			TotalRequests:  op.TotalRequests,
+			ActiveKeyCount: activeCount,
+		})
+	}
 
 	return &domain.GlobalAPIKeyStats{
-		TotalActiveKeys: totalActive,
+		TotalKeys:       totalKeys,
+		ActiveKeys:      activeKeys,
+		RevokedKeys:     revokedKeys,
+		TotalRequests:   totalRequests,
+		RequestsByScope: requestsByScope,
+		TopOperators:    topStats,
+		TotalOperators:  totalOperators,
 		MaxPerMonth:     s.config.MaxPerMonth,
 	}, nil
 }

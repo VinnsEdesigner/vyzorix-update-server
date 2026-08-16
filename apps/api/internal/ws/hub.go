@@ -37,19 +37,19 @@ type Hub struct {
 	deviceRepo           device.Repository
 	eventProcessor       EventProcessor
 	dashboardBroadcaster DashboardBroadcaster
-	broadcast            chan []byte
-	clients              map[string]*Client
+	deviceStatus         chan DeviceStatusUpdate
+	rateLimiter          *RateLimiter
 	register             chan *Client
 	unreg                chan *Client
-	deviceStatus         chan DeviceStatusUpdate
+	broadcast            chan []byte
 	log                  *slog.Logger
 	messageQueue         *MessageQueue
-	rateLimiter          *RateLimiter
+	clients              map[string]*Client
 	telemetryFilter      *TelemetryFilter
 	compression          *Compression
 	latencyConfig        *LatencyConfig
-	metrics              HubMetrics
 	deviceLatency        map[string]*LatencyMetrics
+	metrics              HubMetrics
 	mu                   sync.RWMutex
 	metricsMu            sync.RWMutex
 }

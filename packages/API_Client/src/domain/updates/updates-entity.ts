@@ -37,7 +37,7 @@ export interface PushDevices {
 
 export interface UpdatePush {
   id: string;
-  versionId: string;
+  version: string;
   installType: InstallType;
   status: UpdateStatus;
   initiatedBy: string;
@@ -69,7 +69,7 @@ export interface ChangelogEntry {
 }
 
 export interface PushUpdateRequest {
-  versionId: string;
+  version: string;
   deviceIds: string[];
   installType: InstallType;
   scheduledAt?: Date;

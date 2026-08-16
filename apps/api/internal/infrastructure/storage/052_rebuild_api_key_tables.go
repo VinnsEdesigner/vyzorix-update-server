@@ -87,6 +87,7 @@ func rebuildAPIKeysTable(db *sql.DB) error {
 			name TEXT NOT NULL,
 			key_prefix TEXT NOT NULL,
 			key_hash TEXT NOT NULL,
+			signing_secret TEXT NOT NULL DEFAULT '',
 			scope TEXT NOT NULL DEFAULT 'read',
 			expires_at INTEGER,
 			is_active INTEGER NOT NULL DEFAULT 1,

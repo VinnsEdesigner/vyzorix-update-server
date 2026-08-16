@@ -45,7 +45,10 @@ func (h *SuperAdminHandler) ListAllKeys(c *gin.Context) {
 		limit = 20
 	}
 
-	result, err := h.service.ListAllKeys(c.Request.Context(), page, limit)
+	operatorID := c.Query("operator_id")
+	search := c.Query("search")
+
+	result, err := h.service.ListAllKeys(c.Request.Context(), page, limit, operatorID, search)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{
@@ -143,10 +146,7 @@ func (h *SuperAdminHandler) GetGlobalStats(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"total_active_keys": stats.TotalActiveKeys,
-		"max_per_month":     stats.MaxPerMonth,
-	})
+	c.JSON(http.StatusOK, stats)
 }
 
 // GetOperatorStats returns API key statistics for a specific operator (super admin only).

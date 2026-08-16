@@ -1,27 +1,25 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { useWebSocketStore } from '@/stores/websocket-store';
 import { useDiagnosticsStore } from '@/stores/diagnostics-store';
 import { useTimelineStreamStore } from '@/stores/timeline-stream-store';
 import { useAuthStore } from '@/stores/auth-store';
 
-const subscribeMock = vi.fn();
-
-vi.mock('@/stores', async (importActual) => {
-  const actual = await importActual<typeof import('@/stores')>();
-  return {
-    ...actual,
-    useWebSocketStore: (selector?: (s: { subscribe: typeof subscribeMock }) => unknown) =>
-      selector ? selector({ subscribe: subscribeMock }) : { subscribe: subscribeMock },
-  };
-});
+/**
+ * Real hook + real stores. The only thing stubbed is the WebSocket transport:
+ * we inject a fake `subscribe` into `useWebSocketStore` state so no real socket
+ * is opened. This exercises the real hook wiring (store patching, subscriptions,
+ * cleanup) without mocking the API client or the stores module.
+ */
+let subscribeMock: ReturnType<typeof vi.fn>;
 
 const { useDiagnosticStream } = await import('@/hooks/diagnostics/use-diagnostic-stream');
 
 describe('useDiagnosticStream', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    subscribeMock.mockReset();
+    subscribeMock = vi.fn();
     subscribeMock.mockImplementation(() => vi.fn());
+    useWebSocketStore.setState({ subscribe: subscribeMock as never });
     useDiagnosticsStore.setState({
       snapshots: {},
       lastRefreshedAt: {},

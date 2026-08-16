@@ -1,5 +1,24 @@
 import { graphqlClient } from '../_shared/graphql-client';
 import { gql } from '@apollo/client';
+import {
+  UPDATE_VERSION_FRAGMENT,
+  CHANGELOG_ENTRY_FRAGMENT,
+  PUSH_HISTORY_ENTRY_FRAGMENT,
+} from './graphql-updates-fragments';
+import {
+  versionListResultFromRaw,
+  changelogResultFromRaw,
+  updateHistoryResultFromRaw,
+  updateStatusFromRaw,
+  type UpdateStatusResult,
+} from './graphql-updates-mappers';
+import type {
+  RawVersionConnection,
+  RawChangelogConnection,
+  RawUpdateHistoryConnection,
+  RawUpdateStatusResponse,
+} from './graphql-updates-types';
+import type { VersionListResult, UpdateHistoryResult, ChangelogEntry } from '../../../domain/updates';
 
 export const GET_UPDATES = gql`
   query GetUpdates($organizationId: ID!, $status: String, $limit: Int, $offset: Int) {
@@ -15,6 +34,7 @@ export const GET_UPDATES = gql`
       }
     }
   }
+  ${UPDATE_VERSION_FRAGMENT}
 `;
 
 export const GET_UPDATES_STATUS = gql`
@@ -29,10 +49,7 @@ export const GET_UPDATES_STATUS = gql`
         error
       }
       latest {
-        id
-        version
-        apkFilename
-        sha256
+        ...UpdateVersion
       }
       device {
         currentVersion
@@ -42,6 +59,7 @@ export const GET_UPDATES_STATUS = gql`
       sha256
     }
   }
+  ${UPDATE_VERSION_FRAGMENT}
 `;
 
 export const GET_UPDATES_CHANGELOG = gql`
@@ -50,6 +68,7 @@ export const GET_UPDATES_CHANGELOG = gql`
       ...ChangelogEntry
     }
   }
+  ${CHANGELOG_ENTRY_FRAGMENT}
 `;
 
 export const GET_UPDATES_HISTORY = gql`
@@ -66,36 +85,41 @@ export const GET_UPDATES_HISTORY = gql`
       }
     }
   }
+  ${PUSH_HISTORY_ENTRY_FRAGMENT}
 `;
 
-export async function queryUpdates(params: { organizationId: string; status?: string; limit?: number; offset?: number }): Promise<unknown> {
-  return graphqlClient.getClient().query({
+export async function queryUpdates(params: { organizationId: string; status?: string; limit?: number; offset?: number }): Promise<VersionListResult> {
+  const result = await graphqlClient.getClient().query<{ updatesVersions: RawVersionConnection }>({
     query: GET_UPDATES,
     variables: params,
     fetchPolicy: 'network-only',
   });
+  return versionListResultFromRaw(result.data.updatesVersions);
 }
 
-export async function queryUpdatesStatus(params: { organizationId: string; deviceId?: string }): Promise<unknown> {
-  return graphqlClient.getClient().query({
+export async function queryUpdatesStatus(params: { organizationId: string; deviceId?: string }): Promise<UpdateStatusResult> {
+  const result = await graphqlClient.getClient().query<{ updatesStatus: RawUpdateStatusResponse }>({
     query: GET_UPDATES_STATUS,
     variables: params,
     fetchPolicy: 'network-only',
   });
+  return updateStatusFromRaw(result.data.updatesStatus);
 }
 
-export async function queryUpdatesChangelog(params: { organizationId: string; version?: string; limit?: number }): Promise<unknown> {
-  return graphqlClient.getClient().query({
+export async function queryUpdatesChangelog(params: { organizationId: string; version?: string; limit?: number }): Promise<ChangelogEntry[]> {
+  const result = await graphqlClient.getClient().query<{ updatesChangelog: RawChangelogConnection['changelog'] }>({
     query: GET_UPDATES_CHANGELOG,
     variables: params,
     fetchPolicy: 'network-only',
   });
+  return changelogResultFromRaw({ changelog: result.data.updatesChangelog }).changelog;
 }
 
-export async function queryUpdatesHistory(params: { organizationId: string; status?: string; page?: number; limit?: number }): Promise<unknown> {
-  return graphqlClient.getClient().query({
+export async function queryUpdatesHistory(params: { organizationId: string; status?: string; page?: number; limit?: number }): Promise<UpdateHistoryResult> {
+  const result = await graphqlClient.getClient().query<{ updatesHistory: RawUpdateHistoryConnection }>({
     query: GET_UPDATES_HISTORY,
     variables: params,
     fetchPolicy: 'network-only',
   });
+  return updateHistoryResultFromRaw(result.data.updatesHistory);
 }
