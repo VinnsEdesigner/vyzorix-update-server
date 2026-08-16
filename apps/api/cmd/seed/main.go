@@ -55,8 +55,8 @@ func main() {
 	}
 	fmt.Println("connected to Turso")
 
-	email := "testbot@vyzorix.local"
-	password := "TestBotPass!2026"
+	email := "Vinns@vyzorix.local"
+	password := "KamauV#2026"
 
 	var existing string
 	_ = db.QueryRowContext(ctx, "SELECT id FROM operators WHERE email = ?", email).Scan(&existing)
