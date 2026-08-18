@@ -144,16 +144,12 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	if evaluator == nil {
 		evaluator = domaincommand.NewRiskEvaluator()
 	}
-	// Confirmation handler doubles as the confirmation consumer for the.
-	// command handler. When no confirmation service is configured, pass nil so.
-	// risky commands are blocked (the handler treats nil as "disabled").
-	var confirmConsumer cmdhandlers.ConfirmationConsumer
+	// The confirmation handler serves the confirmation endpoint; the shared
+	// command authorizer gates command execution for both REST and GraphQL.
 	if deps.ConfirmationService != nil {
-		confirmationHandler := confirmationhandlers.NewHandler(deps.ConfirmationService, deps.DeviceService, evaluator)
-		hs.Confirmation = confirmationHandler
-		confirmConsumer = confirmationHandler
+		hs.Confirmation = confirmationhandlers.NewHandler(deps.ConfirmationService, deps.DeviceService, evaluator)
 	}
-	hs.Command = cmdhandlers.NewExecuteHandler(deps.CommandService, deps.DeviceService, deps.Hub, deps.FCMNotifier, evaluator, aud, confirmConsumer)
+	hs.Command = cmdhandlers.NewExecuteHandler(deps.CommandService, deps.DeviceService, deps.Hub, deps.FCMNotifier, command.NewAuthorizer(nil), aud)
 
 	// WebSocket handler.
 	hs.Stream = websockethandlers.NewStreamHandler(deps.Log, deps.Config, deps.Hub, *deps.HmacVerifier, deps.AuditLogger)

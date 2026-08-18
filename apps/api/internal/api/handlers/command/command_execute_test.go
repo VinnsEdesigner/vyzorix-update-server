@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	cmdSvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	domaincommand "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	domainconfirmation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/confirmation"
@@ -31,31 +32,26 @@ func (f *fakeAudit) CommandExecuted(_ context.Context, e audit.CommandExecutedEv
 }
 
 // fakeConfirmation is a configurable ConfirmationConsumer for tests. By.
-// default ConsumeForCommand succeeds (returns the profile); tests flip.
-// consumeErr to simulate invalid/expired/consumed/mismatched tokens.
+// default ConsumeForCommand succeeds; tests flip consumeErr to simulate.
+// invalid/expired/consumed/mismatched tokens.
 type fakeConfirmation struct {
 	consumeErr error
 	calls      int
 }
 
-func (f *fakeConfirmation) ConsumeForCommand(_ *gin.Context, _, _, _, _ string) (*domaincommand.CommandRiskProfile, error) {
+func (f *fakeConfirmation) ConsumeForCommand(_ context.Context, _, _, _, _ string) error {
 	f.calls++
-	if f.consumeErr != nil {
-		return nil, f.consumeErr
-	}
-	p := domaincommand.LookupRiskProfile("device.reboot")
-	return &p, nil
+	return f.consumeErr
 }
 
-// newHandlerWithFakes builds an ExecuteHandler wired with a fake audit logger,
-// a real risk evaluator, and (optionally) a fake confirmation consumer.
-func newHandlerWithFakes(t *testing.T, confirm ConfirmationConsumer) (*ExecuteHandler, *fakeAudit) {
+// newHandlerWithFakes builds an ExecuteHandler wired with a fake audit logger
+// and a shared Authorizer backed by the fake confirmation consumer.
+func newHandlerWithFakes(t *testing.T, confirm cmdSvc.ConfirmationConsumer) (*ExecuteHandler, *fakeAudit) {
 	t.Helper()
 	f := &fakeAudit{}
 	h := &ExecuteHandler{
-		riskEvaluator: domaincommand.NewRiskEvaluator(),
-		audit:         f,
-		confirmations: confirm,
+		authorizer: cmdSvc.NewAuthorizer(confirm),
+		audit:      f,
 	}
 	return h, f
 }

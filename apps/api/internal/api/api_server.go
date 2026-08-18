@@ -36,7 +36,6 @@ import (
 	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
-	domaincommand "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
@@ -255,17 +254,11 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	if cfg.AuditLogger != nil {
 		cmdAud = cfg.AuditLogger
 	}
-	riskEval := domaincommand.NewRiskEvaluator()
-	var confirmConsumer cmdhandlers.ConfirmationConsumer
-	if cfg.ConfirmationService != nil {
-		s.confirmationHandler = confirmationhandlers.NewHandler(cfg.ConfirmationService, cfg.DeviceService, riskEval)
-		confirmConsumer = s.confirmationHandler
-	}
-	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier, riskEval, cmdAud, confirmConsumer)
+	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier, command.NewAuthorizer(nil), cmdAud)
 
 	// Shared command risk gate used by the GraphQL mutation path so it cannot
 	// bypass the confirmation/MFA requirements the REST path enforces.
-	s.commandAuthorizer = command.NewAuthorizer(cfg.ConfirmationService)
+	s.commandAuthorizer = command.NewAuthorizer(nil)
 
 	// WebSocket handler.
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)

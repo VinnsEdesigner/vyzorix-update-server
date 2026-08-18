@@ -169,7 +169,7 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 	// GraphQL path could dispatch factory_reset with no confirmation at all.
 	confirmationToken, _ := p.Args["confirmationToken"].(string)
 	if outcome := r.authorizeCommand(ctx, op, orgID, dev, cmdStr, confirmationToken); !outcome.Allowed {
-		r.Presenter.CommandBlocked(ctx, op.ID, deviceID, cmdStr, string(outcome.Profile.Tier), outcome.Reason)
+		r.Presenter.CommandBlocked(ctx, op.ID, deviceID, cmdStr, string(outcome.Tier), outcome.Reason)
 		if outcome.NeedsConfirmation {
 			return nil, r.Presenter.ConflictError(outcome.Reason)
 		}

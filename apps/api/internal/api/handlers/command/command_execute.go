@@ -16,7 +16,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
-	domainconfirmation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/confirmation"
 
 	domainerrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
@@ -34,15 +33,6 @@ type AuditLogger interface {
 	CommandExecuted(ctx context.Context, e audit.CommandExecutedEvent)
 }
 
-// ConfirmationConsumer consumes a confirmation token for a specific command.
-// execution. The confirmation handler implements it; the command handler.
-// depends on the interface so it stays decoupled from the confirmation.
-// service's internals. A nil consumer means confirmations are disabled, in.
-// which case risky commands that require confirmation are always blocked.
-type ConfirmationConsumer interface {
-	ConsumeForCommand(c *gin.Context, token, operatorID, commandName, deviceID string) (*command.CommandRiskProfile, error)
-}
-
 // ExecuteHandler handles device command execution.
 type ExecuteHandler struct {
 	commandService *cmdSvc.Service
@@ -50,25 +40,23 @@ type ExecuteHandler struct {
 	hub            *hub.Hub
 	fcmNotifier    fcm.Notifier
 	commandSigner  *cryptohmac.CommandSigner
-	riskEvaluator  *command.RiskEvaluator
+	authorizer     *cmdSvc.Authorizer
 	audit          AuditLogger
-	confirmations  ConfirmationConsumer
 	log            *slog.Logger
 }
 
-// / NewExecuteHandler creates a new ExecuteHandler. confirmations may be nil;.
-// when nil, risky commands that require confirmation are always blocked with.
-// 425 (confirmations disabled).
-func NewExecuteHandler(commandService *cmdSvc.Service, deviceService *device.Service, hub *hub.Hub, fcmNotifier fcm.Notifier, riskEvaluator *command.RiskEvaluator, auditLogger AuditLogger, confirmations ConfirmationConsumer) *ExecuteHandler {
+// NewExecuteHandler creates a new ExecuteHandler. authorizer applies the shared
+// command risk gate (MFA + confirmation); a nil confirmation backing means
+// confirmation-gated commands are always blocked with 425.
+func NewExecuteHandler(commandService *cmdSvc.Service, deviceService *device.Service, hub *hub.Hub, fcmNotifier fcm.Notifier, authorizer *cmdSvc.Authorizer, auditLogger AuditLogger) *ExecuteHandler {
 	return &ExecuteHandler{
 		commandService: commandService,
 		deviceService:  deviceService,
 		hub:            hub,
 		fcmNotifier:    fcmNotifier,
 		commandSigner:  cryptohmac.NewCommandSigner(),
-		riskEvaluator:  riskEvaluator,
+		authorizer:     authorizer,
 		audit:          auditLogger,
-		confirmations:  confirmations,
 		log:            slog.Default(),
 	}
 }
@@ -191,93 +179,34 @@ func (h *ExecuteHandler) authorizeCommand(c *gin.Context, req commandRequest, im
 		actor.IsSuperAdmin = op.IsSuperAdmin()
 	}
 	// MFA-verified is derived from the authenticated session. Critical-tier.
-	// commands require it (see RiskEvaluator); without an MFA-verified session.
-	// they are gated even when a confirmation token is presented.
+	// commands require it; without an MFA-verified session they are gated even.
+	// when a confirmation token is presented.
 	if sess := middleware.GetSession(c); sess != nil && sess.MFAVerifiedAt != nil {
 		actor.MFAVerified = true
 	}
 
-	decision, profile := h.riskEvaluator.Evaluate(req.Command, actor)
-	switch decision {
-	case command.DecisionAllow:
+	outcome := h.authorizer.Authorize(c.Request.Context(), actor, req.Command, imei, req.ConfirmationToken)
+	if outcome.Allowed {
 		return true
-	case command.DecisionRequireConfirmation:
-		if h.consumeConfirmation(c, req, imei, actor, profile) {
-			return true
-		}
-		return false
-	default: // DecisionDeny.
-		h.audit.CommandExecuted(c.Request.Context(), audit.CommandExecutedEvent{
-			OperatorID: actor.OperatorID,
-			DeviceID:   imei,
-			Command:    req.Command,
-			IPAddress:  c.ClientIP(),
-			UserAgent:  c.Request.UserAgent(),
-			TraceID:    middleware.GetTraceID(c),
-			RiskTier:   string(profile.Tier),
-			Result:     audit.ResultBlocked,
-			Reason:     "denied",
-		})
-		responses.RespondStructured(c, http.StatusForbidden, "This command is not permitted.")
-		return false
-	}
-}
-
-// consumeConfirmation attempts to authorize a RequireConfirmation decision by.
-// consuming the request's confirmation token. On success it returns true. On.
-// any failure (missing token, confirmations disabled, invalid/expired/.
-// consumed/mismatched token) it writes the 425 response, emits a blocked.
-// audit entry, and returns false.
-func (h *ExecuteHandler) consumeConfirmation(c *gin.Context, req commandRequest, imei string, actor command.ActorContext, profile command.CommandRiskProfile) bool {
-	const reason = "confirmation required"
-	blockedAudit := func(msg string) {
-		h.audit.CommandExecuted(c.Request.Context(), audit.CommandExecutedEvent{
-			OperatorID: actor.OperatorID,
-			DeviceID:   imei,
-			Command:    req.Command,
-			IPAddress:  c.ClientIP(),
-			UserAgent:  c.Request.UserAgent(),
-			TraceID:    middleware.GetTraceID(c),
-			RiskTier:   string(profile.Tier),
-			Result:     audit.ResultBlocked,
-			Reason:     reason,
-		})
-		responses.RespondStructured(c, http.StatusTooEarly, msg)
 	}
 
-	// Critical-tier commands require an MFA-verified session; a confirmation.
-	// token alone cannot authorize them. This guard runs before the token check.
-	// so the error message points at the real missing prerequisite.
-	if profile.Tier == command.RiskTierCritical && !actor.MFAVerified {
-		blockedAudit("This critical command requires an MFA-verified session before a confirmation token can be issued.")
-		return false
+	h.audit.CommandExecuted(c.Request.Context(), audit.CommandExecutedEvent{
+		OperatorID: actor.OperatorID,
+		DeviceID:   imei,
+		Command:    req.Command,
+		IPAddress:  c.ClientIP(),
+		UserAgent:  c.Request.UserAgent(),
+		TraceID:    middleware.GetTraceID(c),
+		RiskTier:   string(outcome.Tier),
+		Result:     audit.ResultBlocked,
+		Reason:     outcome.Reason,
+	})
+	if outcome.NeedsConfirmation {
+		responses.RespondStructured(c, http.StatusTooEarly, outcome.Message)
+	} else {
+		responses.RespondStructured(c, http.StatusForbidden, outcome.Message)
 	}
-
-	if req.ConfirmationToken == "" {
-		blockedAudit("This command requires a confirmation token. Request one via POST /v1/device/:imei/command/confirm.")
-		return false
-	}
-	if h.confirmations == nil {
-		blockedAudit("Confirmations are not enabled on this server.")
-		return false
-	}
-
-	if _, err := h.confirmations.ConsumeForCommand(c, req.ConfirmationToken, actor.OperatorID, req.Command, imei); err != nil {
-		msg := "Invalid or expired confirmation token."
-		switch {
-		case errors.Is(err, domainconfirmation.ErrAlreadyConsumed):
-			msg = "Confirmation token already used."
-		case errors.Is(err, domainconfirmation.ErrExpired):
-			msg = "Confirmation token expired."
-		case errors.Is(err, domainconfirmation.ErrMismatch):
-			msg = "Confirmation token does not match this command or device."
-		case errors.Is(err, domainconfirmation.ErrNotFound):
-			msg = "Confirmation token not found."
-		}
-		blockedAudit(msg)
-		return false
-	}
-	return true
+	return false
 }
 
 // operatorIDFromContext returns the authenticated operator's ID, or "" for.

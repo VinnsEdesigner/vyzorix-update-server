@@ -27,16 +27,16 @@ func (r *Resolver) authorizeCommand(ctx context.Context, op *domainoperator.Oper
 	m := op.GetMembership(orgID)
 	if m == nil || !m.IsActive() {
 		return cmdapp.AuthorizeOutcome{
-			Reason:  "not a member of this organization",
-			Profile: domaincommand.LookupRiskProfile(cmdName),
+			Reason: "not a member of this organization",
+			Tier:   domaincommand.LookupRiskProfile(cmdName).Tier,
 		}
 	}
 
 	// Role gate: viewers are read-only.
 	if m.Role.Level() < orgdomain.RoleOperator.Level() {
 		return cmdapp.AuthorizeOutcome{
-			Reason:  "insufficient permissions to send commands",
-			Profile: domaincommand.LookupRiskProfile(cmdName),
+			Reason: "insufficient permissions to send commands",
+			Tier:   domaincommand.LookupRiskProfile(cmdName).Tier,
 		}
 	}
 
@@ -44,8 +44,8 @@ func (r *Resolver) authorizeCommand(ctx context.Context, op *domainoperator.Oper
 	// Devices without a recorded owner remain org-shared.
 	if m.Role.Level() < orgdomain.RoleAdmin.Level() && dev.OperatorID != "" && dev.OperatorID != op.ID {
 		return cmdapp.AuthorizeOutcome{
-			Reason:  "you do not have access to this device",
-			Profile: domaincommand.LookupRiskProfile(cmdName),
+			Reason: "you do not have access to this device",
+			Tier:   domaincommand.LookupRiskProfile(cmdName).Tier,
 		}
 	}
 
