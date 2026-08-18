@@ -51,7 +51,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          go-version: '1.26.6'
 
       - name: Run GoSec
         run: |
@@ -60,7 +60,7 @@ jobs:
           gosec -no-fail -fmt json -out=gosec-results.json ./...
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v7
         with:
           version: 'v2.12.2'
           working-directory: apps/api
@@ -71,7 +71,7 @@ jobs:
         with:
           name: sast-results
           path: |
-            apps/api/gosec-results.json
+            gosec-results.json
             apps/api/golangci-lint-results.json
           retention-days: 30
 
@@ -88,7 +88,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          go-version: '1.26.6'
           cache: true
           cache-dependency-path: apps/api/go.sum
 
