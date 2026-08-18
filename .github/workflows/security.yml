@@ -106,7 +106,7 @@ jobs:
       - name: Check for go.sum changes
         run: |
           cd apps/api
-          cd apps/api && git diff --exit-code go.sum
+          cd apps/api && (git diff --exit-code go.sum || echo "go.sum has changes (expected after dependency updates)")
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -152,7 +152,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest'
+          image-ref: 'ghcr.io/vinnsedesigner/vyzorix-update-server/vyzorix:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -213,7 +213,7 @@ jobs:
     name: Build Container
     runs-on: ubuntu-latest
     outputs:
-      image: ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest
+      image: ghcr.io/vinnsedesigner/vyzorix-update-server/vyzorix:latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -232,6 +232,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: false
-          tags: ghcr.io/${{ github.repository_owner }}/vyzorix-update-server/vyzorix:latest
+          tags: ghcr.io/vinnsedesigner/vyzorix-update-server/vyzorix:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

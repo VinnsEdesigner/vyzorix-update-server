@@ -24,7 +24,7 @@ jobs:
         run: |
           cd apps/api
           go mod download
-          go build -o bin/server .
+          go build -o bin/server ./cmd/api
           
       - name: Check secrets configured
         id: check-secrets
