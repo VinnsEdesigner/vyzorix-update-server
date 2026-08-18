@@ -1,6 +1,5 @@
-# docker-compose.yml - Production VPS Deployment
+# docker-compose.yml -  VPS Deployment
 #
-# Architecture:
 #   Internet → [Nginx :443 TLS] → [Go API :3000]
 #
 # Usage:
@@ -8,22 +7,20 @@
 #   docker compose logs -f        # View logs
 #   docker compose down           # Stop
 #
-# First-time TLS setup (VPS with a domain):
-#   1. Edit tooling/nginx/vyzorix.conf — replace api.vyzorix.com with your domain
+#     TLS setup (VPS with a domain):
+#   1. Edit tooling/nginx/vyzorix.conf — replace api.vyzorix.com with current domain
 #   2. docker compose up -d vyzorix    # Start API first
 #   3. certbot certonly --webroot -w /var/www/html -d your-domain.com
 #   4. docker compose up -d            # Start everything (nginx picks up certs)
 #
 # On Render: Render handles TLS automatically — no nginx needed.
-# Just set ALLOWED_ORIGINS in the Render dashboard.
 
 services:
-  # Nginx reverse proxy (TLS termination, rate limiting, security headers)
   nginx:
     build:
       context: .
       dockerfile: ./tooling/nginx/Dockerfile
-    container_name: vyzorix-nginx
+    container_name: vyzorix
     restart: unless-stopped
     ports:
       - "80:80"
@@ -60,7 +57,7 @@ services:
       - VYZORIX_BIN_DIR=/app/bin
       - VYZORIX_PUBLIC_DIR=/app/public
       - ENFORCE_HMAC=true
-      - ALLOWED_ORIGINS=https://your-domain.com
+      - ALLOWED_ORIGINS=https://vyzorix.dev
     volumes:
       - vyzorix-data:/data
     healthcheck:
@@ -72,14 +69,14 @@ services:
     networks:
       - vyzorix-network
 
-  # Hardened profile (read-only, cap_drop, resource limits)
-  vyzorix-hardened:
+  # profile (read-only, cap_drop, resource limits)
+  vyzorix-api2:
     build:
       context: .
       dockerfile: ./apps/api/Dockerfile
-    container_name: vyzorix-hardened
+    container_name: vyzorix-api2
     profiles:
-      - hardened
+      - api2
     ports:
       - "3001:3000"
     environment:
@@ -91,7 +88,7 @@ services:
       - PORT=3000
       - DATABASE_URL=/data/vyzorix.db
     volumes:
-      - vyzorix-data-hardened:/data
+      - vyzorix-data-2:/data
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
@@ -121,7 +118,7 @@ services:
 volumes:
   vyzorix-data:
     driver: local
-  vyzorix-data-hardened:
+  vyzorix-data-2:
     driver: local
 
 networks:
