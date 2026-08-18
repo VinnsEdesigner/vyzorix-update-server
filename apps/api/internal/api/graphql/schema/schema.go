@@ -567,6 +567,10 @@ func commandMutations(res *resolver.Resolver) graphql.Fields {
 				"args": &graphql.ArgumentConfig{
 					Type: JSONScalar,
 				},
+				"confirmationToken": &graphql.ArgumentConfig{
+					Type:        graphql.String,
+					Description: "Single-use token authorizing a high/critical-risk command",
+				},
 			},
 			Resolve: res.SendCommand,
 		},

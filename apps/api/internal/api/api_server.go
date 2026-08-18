@@ -113,6 +113,7 @@ type Server struct {
 	devicesHandler              *devicehandlers.DevicesHandler
 	commandHandler              *cmdhandlers.ExecuteHandler
 	confirmationHandler         *confirmationhandlers.Handler
+	commandAuthorizer           *command.Authorizer
 	streamHandler               *websockethandlers.StreamHandler
 	telemetryHistoryHandler     *handlers.TelemetryHistoryHandler
 	connectionStatusHandler     *handlers.ConnectionStatusHandler
@@ -261,6 +262,10 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		confirmConsumer = s.confirmationHandler
 	}
 	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier, riskEval, cmdAud, confirmConsumer)
+
+	// Shared command risk gate used by the GraphQL mutation path so it cannot
+	// bypass the confirmation/MFA requirements the REST path enforces.
+	s.commandAuthorizer = command.NewAuthorizer(cfg.ConfirmationService)
 
 	// WebSocket handler.
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)

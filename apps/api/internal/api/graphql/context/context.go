@@ -13,6 +13,7 @@ const (
 	operatorKey       contextKey = "operator"
 	metadataKey       contextKey = "requestMetadata"
 	organizationIDKey contextKey = "organizationID"
+	mfaVerifiedKey    contextKey = "mfaVerified"
 )
 
 // RequestMetadata holds request metadata.
@@ -94,4 +95,20 @@ func GetOrganizationID(ctx context.Context) string {
 	}
 
 	return orgID
+}
+
+// WithMFAVerified records whether the authenticated session has completed MFA.
+// Critical-tier commands require this; the risk gate reads it via GetMFAVerified.
+func WithMFAVerified(ctx context.Context, verified bool) context.Context {
+	return context.WithValue(ctx, mfaVerifiedKey, verified)
+}
+
+// GetMFAVerified reports whether the session is MFA-verified (false if unset).
+func GetMFAVerified(ctx context.Context) bool {
+	val := ctx.Value(mfaVerifiedKey)
+	if val == nil {
+		return false
+	}
+	verified, ok := val.(bool)
+	return ok && verified
 }

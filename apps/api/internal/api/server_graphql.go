@@ -100,6 +100,7 @@ func (s *Server) RegisterGraphQL(
 		memberService,
 		invitationService,
 		s.inboxService,
+		s.commandAuthorizer,
 	)
 
 	// Build schema.
@@ -227,9 +228,13 @@ func (h *gqlHandler) Handle(c *gin.Context) {
 	// Extract org from gin context (set by orgFromURLParamMiddleware).
 	orgID := middleware.GetOrganizationID(c)
 
-	// Add operator and organization to GraphQL context.
+	// Add operator, organization, and MFA state to GraphQL context so the
+	// command risk gate sees the same actor attributes as the REST path.
 	ctx := gqlcontext.WithOperator(c.Request.Context(), op)
 	ctx = gqlcontext.WithOrganizationID(ctx, orgID)
+	if sess := middleware.GetSession(c); sess != nil && sess.MFAVerifiedAt != nil {
+		ctx = gqlcontext.WithMFAVerified(ctx, true)
+	}
 
 	// Execute query.
 	result := gql.Do(gql.Params{
@@ -369,9 +374,13 @@ func (h *gqlBatchHandler) Handle(c *gin.Context) {
 	// Extract org from gin context (set by orgFromURLParamMiddleware).
 	orgID := middleware.GetOrganizationID(c)
 
-	// Add operator and organization to GraphQL context.
+	// Add operator, organization, and MFA state to GraphQL context so the
+	// command risk gate sees the same actor attributes as the REST path.
 	ctx := gqlcontext.WithOperator(c.Request.Context(), op)
 	ctx = gqlcontext.WithOrganizationID(ctx, orgID)
+	if sess := middleware.GetSession(c); sess != nil && sess.MFAVerifiedAt != nil {
+		ctx = gqlcontext.WithMFAVerified(ctx, true)
+	}
 
 	// Execute all queries.
 	results := make([]map[string]interface{}, len(requests))

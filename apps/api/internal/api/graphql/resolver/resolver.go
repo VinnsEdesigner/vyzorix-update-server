@@ -54,6 +54,7 @@ type Resolver struct {
 	OrgSettingsService    *orgapp.OrganizationSettingsService
 	MemberService         *orgapp.MemberService
 	InvitationService     *orgapp.InvitationService
+	Authorizer            *cmdapp.Authorizer
 }
 
 // NewResolver creates a new GraphQL resolver.
@@ -83,6 +84,7 @@ func NewResolver(
 	memberService *orgapp.MemberService,
 	invitationService *orgapp.InvitationService,
 	inboxService *inboxapp.Service,
+	authorizer *cmdapp.Authorizer,
 ) *Resolver {
 	return &Resolver{
 		DeviceService:         deviceService,
@@ -111,6 +113,7 @@ func NewResolver(
 		MemberService:         memberService,
 		InvitationService:     invitationService,
 		InboxService:          inboxService,
+		Authorizer:            authorizer,
 	}
 }
 

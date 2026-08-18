@@ -4,6 +4,7 @@ package adapters
 import (
 	"context"
 
+	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	gqlerrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 )
@@ -45,6 +46,25 @@ func (p *Presenter) DeviceCount(ctx context.Context, operatorID string) {
 // CommandSend logs a command send.
 func (p *Presenter) CommandSend(ctx context.Context, operatorID, deviceID, commandID string) {
 	p.LogAction(ctx, operatorID, "graphql_command_send", "device", deviceID)
+}
+
+// CommandBlocked logs a command execution blocked by the risk gate, mirroring
+// the audit shape the REST command path writes for blocked attempts.
+func (p *Presenter) CommandBlocked(ctx context.Context, operatorID, deviceID, command, riskTier, reason string) {
+	if p.auditLogger == nil || operatorID == "" {
+		return
+	}
+	p.auditLogger.CommandExecuted(ctx, audit.CommandExecutedEvent{
+		OperatorID: operatorID,
+		DeviceID:   deviceID,
+		Command:    command,
+		IPAddress:  gqlcontext.GetClientIP(ctx),
+		UserAgent:  gqlcontext.GetUserAgent(ctx),
+		RiskTier:   riskTier,
+		Result:     audit.ResultBlocked,
+		Reason:     reason,
+		ActorType:  "operator",
+	})
 }
 
 // CommandView logs a command view.

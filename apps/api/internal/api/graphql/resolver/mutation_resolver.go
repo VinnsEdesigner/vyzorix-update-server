@@ -157,10 +157,23 @@ func (r *Resolver) SendCommand(p graphql.ResolveParams) (interface{}, error) {
 		return nil, r.Presenter.UnauthorizedError()
 	}
 
-	// Verify device exists in organization using org-scoped method.
-	_, err = r.DeviceService.GetDeviceDetailByOrganization(ctx, deviceID, orgID)
+	// Fetch the device entity (org-scoped) so authorization can check ownership.
+	dev, err := r.DeviceService.DeviceRepo().FindByIMEIAndOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		return nil, r.Presenter.NotFoundError("device not found")
+	}
+
+	// Run the same authorization the REST command path enforces: role tier
+	// (viewers cannot command), per-device ownership (non-admins only their own
+	// devices), and the risk gate (MFA + confirmation token). Without this the
+	// GraphQL path could dispatch factory_reset with no confirmation at all.
+	confirmationToken, _ := p.Args["confirmationToken"].(string)
+	if outcome := r.authorizeCommand(ctx, op, orgID, dev, cmdStr, confirmationToken); !outcome.Allowed {
+		r.Presenter.CommandBlocked(ctx, op.ID, deviceID, cmdStr, string(outcome.Profile.Tier), outcome.Reason)
+		if outcome.NeedsConfirmation {
+			return nil, r.Presenter.ConflictError(outcome.Reason)
+		}
+		return nil, r.Presenter.ForbiddenError(outcome.Reason)
 	}
 
 	// Use command service for proper command creation and idempotency.
