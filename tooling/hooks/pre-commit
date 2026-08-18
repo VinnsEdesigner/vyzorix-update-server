@@ -41,3 +41,4 @@ fi
 pass "golangci-lint: clean"
 echo ""
 pass "All checks passed. Commit proceeding."
+// trigger
