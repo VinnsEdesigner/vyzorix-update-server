@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#
+# Git wrapper — ensures the pre-commit hook is active before calling git.
+#
+# This wrapper checks if core.hooksPath is set to tooling/hooks/ on every
+# invocation. If it isn't, it sets it. Then it execs the real git binary.
+#
+# Usage:
+#   Add to PATH before real git:
+#     export PATH="$PWD/tooling:$PATH"
+#   Or alias:
+#     alias git="$PWD/tooling/git"
+#   Or add to shell profile:
+#     export PATH="/path/to/vyzorix-update-server/tooling:$PATH"
+#
+# The wrapper is transparent — it passes all arguments to the real git.
+# It only intervenes to ensure hooks are configured.
+
+set -euo pipefail
+
+# Find the real git binary (skip ourselves)
+REAL_GIT=""
+for dir in $(echo "$PATH" | tr ':' '\n'); do
+  if [ "$dir" = "$(dirname "$0")" ]; then
+    continue
+  fi
+  if [ -x "$dir/git" ]; then
+    REAL_GIT="$dir/git"
+    break
+  fi
+done
+
+if [ -z "$REAL_GIT" ]; then
+  echo "Error: real git binary not found in PATH" >&2
+  exit 1
+fi
+
+# Check if we're inside a git repo with our tooling/hooks directory
+REPO_ROOT=$("$REAL_GIT" rev-parse --show-toplevel 2>/dev/null || echo "")
+if [ -n "$REPO_ROOT" ] && [ -d "$REPO_ROOT/tooling/hooks" ]; then
+  # Ensure core.hooksPath points to our tracked hooks directory
+  CURRENT_HOOKS_PATH=$("$REAL_GIT" config core.hooksPath 2>/dev/null || echo "")
+  if [ "$CURRENT_HOOKS_PATH" != "tooling/hooks" ]; then
+    "$REAL_GIT" config core.hooksPath "tooling/hooks"
+    chmod +x "$REPO_ROOT"/tooling/hooks/* 2>/dev/null || true
+  fi
+fi
+
+# Exec the real git with all original arguments
+exec "$REAL_GIT" "$@"

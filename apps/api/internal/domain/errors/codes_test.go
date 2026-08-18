@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package errors
 
 import (
@@ -134,8 +130,4 @@ func TestWithTimestamp(t *testing.T) {
 	if ts.IsZero() {
 		t.Error("WithTimestamp() returned zero time")
 	}
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

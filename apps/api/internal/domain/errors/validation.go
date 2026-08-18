@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package errors
 
 import (
@@ -58,8 +54,4 @@ func AsServerError(err error) *ServerError {
 		return nil
 	}
 	return se
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

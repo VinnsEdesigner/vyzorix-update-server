@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package command
 
 import "testing"
@@ -66,8 +62,4 @@ func TestFactoryResetRequiresShorterConfirmationTTL(t *testing.T) {
 		t.Errorf("factory_reset TTL (%s) should be shorter than reboot TTL (%s)",
 			reset.ConfirmationTTL, reboot.ConfirmationTTL)
 	}
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

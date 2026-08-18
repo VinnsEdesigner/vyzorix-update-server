@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 // Package confirmation models short-lived, single-use authorization tokens
 // that gate risky device commands. A confirmation is issued for a specific
 // (operator, command, device) triple and must be presented back when the
@@ -80,8 +76,4 @@ type Repository interface {
 	Consume(ctx context.Context, token string, at time.Time) (*PendingConfirmation, error)
 	// DeleteExpired removes expired confirmations (cleanup).
 	DeleteExpired(ctx context.Context) (int64, error)
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package storage
 
 import (
@@ -116,8 +112,4 @@ func TestConfirmationRepository_DeleteExpired(t *testing.T) {
 	if _, err := repo.Get(ctx, "tok-exp"); !errors.Is(err, confirmation.ErrNotFound) {
 		t.Errorf("expected expired confirmation to be gone, got %v", err)
 	}
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

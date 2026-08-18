@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package confirmation
 
 import (
@@ -155,8 +151,4 @@ func TestService_ConsumeForCommand_SingleUse(t *testing.T) {
 	if !errors.Is(err, domainconfirmation.ErrAlreadyConsumed) {
 		t.Errorf("second consume expected ErrAlreadyConsumed, got %v", err)
 	}
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

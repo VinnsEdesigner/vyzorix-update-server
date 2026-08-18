@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package tracing
 
 import (
@@ -173,8 +169,4 @@ func TestFallbackTraceIDUnique(t *testing.T) {
 		}
 		seen[id] = struct{}{}
 	}
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

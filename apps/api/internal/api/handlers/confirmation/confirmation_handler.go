@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 // Package confirmation provides the HTTP endpoints that issue single-use
 // confirmation tokens for risky device commands.
 package confirmation
@@ -132,8 +128,4 @@ func (h *Handler) ConsumeForCommand(c *gin.Context, token, operatorID, commandNa
 // ErrRequiresConfirmation is returned by the handler-less consume helper when
 // a token is missing; exported so callers can distinguish "no token" from
 // "bad token" without importing confirmation domain errors.
-<<<<<<< HEAD
 var ErrRequiresConfirmation = errors.New("confirmation token required")
-=======
-var ErrRequiresConfirmation = errors.New("confirmation token required")
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

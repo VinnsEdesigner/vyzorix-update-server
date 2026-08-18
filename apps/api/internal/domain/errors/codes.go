@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 // Package errors provides the unified error system for Vyzorix.
 package errors
 
@@ -381,8 +377,4 @@ func NewValidationDetailWithCode(field, message, code string) ValidationDetail {
 // WithTimestamp returns the current time as a time.Time.
 func WithTimestamp() time.Time {
 	return time.Now().UTC()
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

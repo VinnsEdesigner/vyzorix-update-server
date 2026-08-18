@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package tracing
 
 import "testing"
@@ -32,8 +28,4 @@ func TestBuildErrorDocsURLFallsBackToDefaultWhenCleared(t *testing.T) {
 	if got := BuildErrorDocsURL("INTERNAL_SERVER_ERROR"); got != DefaultDocsBaseURL+"/INTERNAL_SERVER_ERROR" {
 		t.Errorf("BuildErrorDocsURL with empty base = %q, want default %q", got, DefaultDocsBaseURL+"/INTERNAL_SERVER_ERROR")
 	}
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

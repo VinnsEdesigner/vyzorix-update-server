@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 // Package errors provides the unified error system for Vyzorix.
 package errors
 
@@ -341,8 +337,4 @@ func ErrDeviceCommandTimeout(deviceID string) *ServerError {
 	return NewServerError(CodeDeviceCommandTimeout,
 		"Device did not respond to command in time").
 		WithDetails(map[string]string{"device_id": deviceID})
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package command
 
 import (
@@ -280,8 +276,4 @@ func TestValidateCommandRequest_NilWhenValid(t *testing.T) {
 	if verr := h.validateCommandRequest("imei-1", domaincommand.TypeCheckUpdate, ""); verr != nil {
 		t.Fatalf("expected nil for valid input, got %v", verr)
 	}
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 // Package redaction provides utilities for sanitizing sensitive data in logs.
 package redaction
 
@@ -277,8 +273,4 @@ func (r *Redactor) RedactMapKey(input map[string]string) map[string]string {
 		}
 	}
 	return result
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

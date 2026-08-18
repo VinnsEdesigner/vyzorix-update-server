@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package storage
 
 import (
@@ -106,8 +102,4 @@ func (r *ConfirmationRepository) DeleteExpired(ctx context.Context) (int64, erro
 		return 0, err
 	}
 	return res.RowsAffected()
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
