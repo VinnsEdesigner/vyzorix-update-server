@@ -56,7 +56,7 @@ jobs:
       - name: Run GoSec
         run: |
           cd apps/api
-          go install github.com/securego/gosec/v2@latest
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
           gosec -no-fail -fmt json -out=gosec-results.json ./...
 
       - name: Run golangci-lint
@@ -71,7 +71,7 @@ jobs:
         with:
           name: sast-results
           path: |
-            gosec-results.json
+            apps/api/gosec-results.json
             apps/api/golangci-lint-results.json
           retention-days: 30
 
@@ -106,7 +106,7 @@ jobs:
       - name: Check for go.sum changes
         run: |
           cd apps/api
-          git diff --exit-code go.sum
+          cd apps/api && git diff --exit-code go.sum
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v2
