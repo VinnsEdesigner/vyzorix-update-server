@@ -26,32 +26,49 @@ func NewOrganizationContext(skipIfMissing *bool) *OrganizationContext {
 }
 
 // Middleware returns the gin middleware handler.
+//
+// The organization is resolved from server-side credential state, never blindly
+// trusted from the client:
+//   - API-key auth: the org bound to the key at creation (set by the tenant API
+//     key middleware as ContextKeyOrganizationID with org_source=api_key).
+//   - Session auth: the session's SelectedOrganizationID.
+//
+// A client may still send ?organization_id= or X-Organization-ID. If it
+// disagrees with the server-resolved org, the request is rejected (400) rather
+// than silently honored — this is how the server, not the client, owns org
+// state (mirrors Grafana forcing a validated org switch instead of trusting a
+// per-request header).
 func (c *OrganizationContext) Middleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		// Try to get organization ID from query parameter first.
-		orgID := ctx.Query("organization_id")
-
-		// Then check header.
-		if orgID == "" {
-			orgID = ctx.GetHeader("X-Organization-ID")
+		clientOrg := ctx.Query("organization_id")
+		if clientOrg == "" {
+			clientOrg = ctx.GetHeader("X-Organization-ID")
 		}
 
-		// Then check context (set by auth middleware).
-		if orgID == "" {
-			if storedOrgID, exists := ctx.Get(ContextKeyOrganizationID); exists {
-				if id, ok := storedOrgID.(string); ok {
-					orgID = id
-				}
+		// Resolve the authoritative org from the credential.
+		serverOrg := ""
+		if storedOrgID, exists := ctx.Get(ContextKeyOrganizationID); exists {
+			if id, ok := storedOrgID.(string); ok {
+				serverOrg = id
 			}
 		}
-
-		// Fall back to session's SelectedOrganizationID if no explicit org ID.
-		if orgID == "" {
+		if serverOrg == "" {
 			if sessVal, exists := ctx.Get("session"); exists {
 				if sess, ok := sessVal.(*session.Session); ok {
-					orgID = sess.SelectedOrganizationID
+					serverOrg = sess.SelectedOrganizationID
 				}
 			}
+		}
+
+		// A client-supplied org that disagrees with the resolved org is rejected.
+		if clientOrg != "" && serverOrg != "" && clientOrg != serverOrg {
+			responses.RespondStructuredAbort(ctx, 400, "organization does not match the authenticated credential; select the organization first")
+			return
+		}
+
+		orgID := serverOrg
+		if orgID == "" {
+			orgID = clientOrg
 		}
 
 		if orgID == "" && !c.SkipIfMissing {

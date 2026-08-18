@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	apikeydomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
@@ -60,7 +61,7 @@ func (h *Handler) CreateKey(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.GenerateKey(c.Request.Context(), operatorID, &req)
+	result, err := h.service.GenerateKey(c.Request.Context(), operatorID, middleware.GetOrganizationID(c), &req)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
 		c.JSON(status, gin.H{

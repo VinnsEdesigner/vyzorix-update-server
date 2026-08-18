@@ -493,6 +493,9 @@ var migrations = []Migration{
 	// Add actor_type, actor_email, old_value, new_value columns to audit_logs.
 	// for change-tracking compliance. Idempotent.
 	{Apply: migrateAuditLogsChangeTrackingColumns, Name: "add_audit_logs_change_tracking_columns", Version: 59},
+	// Scoped permission grants for custom per-resource scopes (Issue 4).
+	{Apply: migratePermissionGrants, Name: "create_permission_grants_table", Version: 60},
+	{Apply: migrateDeviceGroups, Name: "create_device_groups_tables", Version: 61},
 }
 
 // runMigrations applies all pending migrations.

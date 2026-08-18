@@ -216,6 +216,12 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 		c.Set("api_key_scope", string(key.Scope))
 		c.Set("api_key_name", key.Name)
 		c.Set("auth_type", "tenant_api_key")
+		// The API key's bound organization is the server-side source of org truth
+		// for this credential (org_context reads it; a client header can't change it).
+		if key.OrganizationID != "" {
+			c.Set(ContextKeyOrganizationID, key.OrganizationID)
+			c.Set("org_source", "api_key")
+		}
 		// Expose the API key's signing secret so SessionSignatureMiddleware can.
 		// verify HMAC request signatures for API-key-authenticated requests.
 		c.Set("api_key_signing_secret", key.SigningSecret)

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
 )
 
 // Thresholds define alert levels for device telemetry.
@@ -216,29 +217,22 @@ func (o *Operator) IsViewer() bool {
 	return false
 }
 
-// HasPermission returns true if the operator has the given permission in any organization.
+// HasPermission returns true if the operator has the given permission in any
+// organization. It evaluates the scoped permission engine (role defaults merged
+// with custom scoped grants); the legacy coarse Permission string is mapped to
+// the scoped action+scope form.
 func (o *Operator) HasPermission(perm Permission) bool {
+	action, scope := scopedFromLegacy(perm)
 	for _, m := range o.Memberships {
 		if !m.IsActive() {
 			continue
 		}
-		// Admin and super_admin have all permissions.
-		if m.Role.IsAdmin() {
+		defaults := permission.DefaultScopesForRole(string(m.Role))
+		// Custom per-resource scopes are unioned on top of role defaults by the
+		// authorization layer's Evaluator (wired grants repo); this defaults-only
+		// check covers the common coarse case.
+		if defaults.Grants(permission.Action(action), scope) {
 			return true
-		}
-		// Check specific permissions based on role.
-		switch m.Role {
-		case organization.RoleOperator:
-			if perm == PermissionDeviceRead || perm == PermissionDeviceWrite ||
-				perm == PermissionUpdateRead || perm == PermissionSettingsRead {
-				return true
-			}
-		case organization.RoleViewer:
-			if perm == PermissionDeviceRead || perm == PermissionUpdateRead || perm == PermissionSettingsRead {
-				return true
-			}
-		case organization.RoleAdmin, organization.RoleSuperAdmin:
-			// Admins checked above via IsAdmin().
 		}
 	}
 	return false

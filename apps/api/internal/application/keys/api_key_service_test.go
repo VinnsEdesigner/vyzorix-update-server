@@ -288,7 +288,7 @@ func TestAPIKeyService_CreateKey(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	result, err := svc.GenerateKey(ctx, "operator-1", req)
+	result, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -330,7 +330,7 @@ func TestAPIKeyService_CreateKey_WithExpiry(t *testing.T) {
 		ExpiresInDays: &days,
 	}
 
-	result, err := svc.GenerateKey(ctx, "operator-1", req)
+	result, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -354,12 +354,12 @@ func TestAPIKeyService_CreateKey_DuplicateName(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	_, err := svc.GenerateKey(ctx, "operator-1", req)
+	_, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("First CreateKey failed: %v", err)
 	}
 
-	_, err = svc.GenerateKey(ctx, "operator-1", req)
+	_, err = svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != domain.ErrKeyNameConflict {
 		t.Errorf("Second CreateKey error = %v, want ErrKeyNameConflict", err)
 	}
@@ -374,7 +374,7 @@ func TestAPIKeyService_CreateKey_MonthlyLimit(t *testing.T) {
 			Name:  "Key " + string(rune('A'+i)),
 			Scope: domain.ScopeRead,
 		}
-		_, err := svc.GenerateKey(ctx, "operator-1", req)
+		_, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 		if err != nil {
 			t.Fatalf("CreateKey %d failed: %v", i, err)
 		}
@@ -384,7 +384,7 @@ func TestAPIKeyService_CreateKey_MonthlyLimit(t *testing.T) {
 		Name:  "Key K",
 		Scope: domain.ScopeRead,
 	}
-	_, err := svc.GenerateKey(ctx, "operator-1", req)
+	_, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != domain.ErrMonthlyLimitExceeded {
 		t.Errorf("Eleventh CreateKey error = %v, want ErrMonthlyLimitExceeded", err)
 	}
@@ -399,7 +399,7 @@ func TestAPIKeyService_ValidateKey(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	result, err := svc.GenerateKey(ctx, "operator-1", req)
+	result, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -437,7 +437,7 @@ func TestAPIKeyService_ValidateKey_Expired(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	result, err := svc.GenerateKey(ctx, "operator-1", req)
+	result, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -460,7 +460,7 @@ func TestAPIKeyService_ValidateKey_Revoked(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	result, err := svc.GenerateKey(ctx, "operator-1", req)
+	result, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -486,7 +486,7 @@ func TestAPIKeyService_RevokeKey(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	result, err := svc.GenerateKey(ctx, "operator-1", req)
+	result, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -518,7 +518,7 @@ func TestAPIKeyService_RevokeKey_WrongOperator(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	result, err := svc.GenerateKey(ctx, "operator-1", req)
+	result, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -538,7 +538,7 @@ func TestAPIKeyService_RotateKey(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	original, err := svc.GenerateKey(ctx, "operator-1", req)
+	original, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -582,7 +582,7 @@ func TestAPIKeyService_RotateKey_MonthlyLimit(t *testing.T) {
 			Name:  string(rune('A' + i)),
 			Scope: domain.ScopeRead,
 		}
-		_, err := svc.GenerateKey(ctx, "operator-1", req)
+		_, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 		if err != nil {
 			t.Fatalf("CreateKey %d failed: %v", i, err)
 		}
@@ -608,7 +608,7 @@ func TestAPIKeyService_ListKeys(t *testing.T) {
 			Name:  "List Key " + string(rune('0'+i)),
 			Scope: domain.ScopeRead,
 		}
-		_, err := svc.GenerateKey(ctx, "operator-1", req)
+		_, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 		if err != nil {
 			t.Fatalf("CreateKey %d failed: %v", i, err)
 		}
@@ -633,7 +633,7 @@ func TestAPIKeyService_UpdateKey(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	key, err := svc.GenerateKey(ctx, "operator-1", req)
+	key, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -672,10 +672,10 @@ func TestAPIKeyService_UpdateKey_DuplicateName(t *testing.T) {
 	ctx := context.Background()
 
 	req1 := &domain.CreateAPIKeyRequest{Name: "Key One", Scope: domain.ScopeRead}
-	key1, _ := svc.GenerateKey(ctx, "operator-1", req1)
+	key1, _ := svc.GenerateKey(ctx, "operator-1", "org-1", req1)
 
 	req2 := &domain.CreateAPIKeyRequest{Name: "Key Two", Scope: domain.ScopeRead}
-	key2, _ := svc.GenerateKey(ctx, "operator-1", req2)
+	key2, _ := svc.GenerateKey(ctx, "operator-1", "org-1", req2)
 
 	newName := "Key One"
 	updateReq := &domain.UpdateAPIKeyRequest{Name: &newName}
@@ -701,7 +701,7 @@ func TestAPIKeyService_TenantIsolation_ValidateKey(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	key1, err := svc.GenerateKey(ctx, "operator-1", req)
+	key1, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -725,7 +725,7 @@ func TestAPIKeyService_TenantIsolation_GetKey(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	key, err := svc.GenerateKey(ctx, "operator-1", req)
+	key, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -754,7 +754,7 @@ func TestAPIKeyService_TenantIsolation_UpdateKey(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	key, err := svc.GenerateKey(ctx, "operator-1", req)
+	key, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -777,7 +777,7 @@ func TestAPIKeyService_TenantIsolation_ListKeys(t *testing.T) {
 			Name:  "Op1 Key " + string(rune('A'+i)),
 			Scope: domain.ScopeRead,
 		}
-		_, _ = svc.GenerateKey(ctx, "operator-1", req)
+		_, _ = svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	}
 
 	for i := 0; i < 2; i++ {
@@ -785,7 +785,7 @@ func TestAPIKeyService_TenantIsolation_ListKeys(t *testing.T) {
 			Name:  "Op2 Key " + string(rune('A'+i)),
 			Scope: domain.ScopeRead,
 		}
-		_, _ = svc.GenerateKey(ctx, "operator-2", req)
+		_, _ = svc.GenerateKey(ctx, "operator-2", "org-1", req)
 	}
 
 	result1, err := svc.ListKeys(ctx, "operator-1", 1, 100)
@@ -821,7 +821,7 @@ func TestAPIKeyService_KeyGeneration_Uniqueness(t *testing.T) {
 			Name:  "Unique Key " + string(rune('A'+i)),
 			Scope: domain.ScopeRead,
 		}
-		result, err := svc.GenerateKey(ctx, "op-"+string(rune('0'+i)), req)
+		result, err := svc.GenerateKey(ctx, "op-"+string(rune('0'+i)), "org-1", req)
 		if err != nil {
 			t.Fatalf("GenerateKey failed: %v", err)
 		}
@@ -842,7 +842,7 @@ func TestAPIKeyService_KeyGeneration_Format(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	result, err := svc.GenerateKey(ctx, "operator-1", req)
+	result, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -862,10 +862,10 @@ func TestAPIKeyService_KeyGeneration_CryptographicRandom(t *testing.T) {
 	ctx := context.Background()
 
 	req := &domain.CreateAPIKeyRequest{Name: "A", Scope: domain.ScopeRead}
-	key1, _ := svc.GenerateKey(ctx, "op1", req)
+	key1, _ := svc.GenerateKey(ctx, "op1", "org-1", req)
 
 	req.Name = "B"
-	key2, _ := svc.GenerateKey(ctx, "op2", req)
+	key2, _ := svc.GenerateKey(ctx, "op2", "org-1", req)
 
 	if key1.FullKey == key2.FullKey {
 		t.Error("Two keys generated at the same time should not be identical")
@@ -881,7 +881,7 @@ func TestAPIKeyService_VerifyKey_ConstantTime(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	key, err := svc.GenerateKey(ctx, "operator-1", req)
+	key, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("GenerateKey failed: %v", err)
 	}
@@ -906,7 +906,7 @@ func TestAPIKeyService_IncrementUsage(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	key, _ := svc.GenerateKey(ctx, "operator-1", req)
+	key, _ := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 
 	for i := 0; i < 5; i++ {
 		err := svc.IncrementUsage(ctx, key.ID)
@@ -953,7 +953,7 @@ func TestAPIKeyService_ScopeEnforcement(t *testing.T) {
 			Scope: tt.scope,
 		}
 
-		key, err := svc.GenerateKey(ctx, "operator-1", req)
+		key, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 		if err != nil {
 			t.Fatalf("GenerateKey failed: %v", err)
 		}
@@ -985,7 +985,7 @@ func TestAPIKeyService_Validation_InvalidScope(t *testing.T) {
 		Scope: "invalid",
 	}
 
-	_, err := svc.GenerateKey(ctx, "operator-1", req)
+	_, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != domain.ErrInvalidScope {
 		t.Errorf("CreateKey error = %v, want ErrInvalidScope", err)
 	}
@@ -1005,7 +1005,7 @@ func TestAPIKeyService_Validation_NameTooLong(t *testing.T) {
 		Scope: domain.ScopeRead,
 	}
 
-	_, err := svc.GenerateKey(ctx, "operator-1", req)
+	_, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != domain.ErrKeyNameTooLong {
 		t.Errorf("CreateKey error = %v, want ErrKeyNameTooLong", err)
 	}
@@ -1022,7 +1022,7 @@ func TestAPIKeyService_Validation_ExpiryTooLong(t *testing.T) {
 		ExpiresInDays: &days,
 	}
 
-	_, err := svc.GenerateKey(ctx, "operator-1", req)
+	_, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != domain.ErrInvalidExpiryDays {
 		t.Errorf("CreateKey error = %v, want ErrInvalidExpiryDays", err)
 	}
@@ -1039,7 +1039,7 @@ func TestAPIKeyService_Validation_ExpiryZero(t *testing.T) {
 		ExpiresInDays: &days,
 	}
 
-	result, err := svc.GenerateKey(ctx, "operator-1", req)
+	result, err := svc.GenerateKey(ctx, "operator-1", "org-1", req)
 	if err != nil {
 		t.Fatalf("CreateKey failed: %v", err)
 	}
@@ -1054,7 +1054,7 @@ func TestAPIKeyService_ListAllKeys(t *testing.T) {
 	ctx := context.Background()
 
 	for i := 0; i < 3; i++ {
-		_, err := svc.GenerateKey(ctx, "operator-1", &domain.CreateAPIKeyRequest{
+		_, err := svc.GenerateKey(ctx, "operator-1", "org-1", &domain.CreateAPIKeyRequest{
 			Name: fmt.Sprintf("Op1 Key %d", i), Scope: domain.ScopeRead,
 		})
 		if err != nil {
@@ -1062,7 +1062,7 @@ func TestAPIKeyService_ListAllKeys(t *testing.T) {
 		}
 	}
 	for i := 0; i < 2; i++ {
-		_, err := svc.GenerateKey(ctx, "operator-2", &domain.CreateAPIKeyRequest{
+		_, err := svc.GenerateKey(ctx, "operator-2", "org-1", &domain.CreateAPIKeyRequest{
 			Name: fmt.Sprintf("Op2 Key %d", i), Scope: domain.ScopeWrite,
 		})
 		if err != nil {
@@ -1113,7 +1113,7 @@ func TestAPIKeyService_GetGlobalStats(t *testing.T) {
 		{"operator-2", "Read Key 2", domain.ScopeRead},
 		{"operator-2", "Admin Key 1", domain.ScopeAdmin},
 	} {
-		_, err := svc.GenerateKey(ctx, tc.op, &domain.CreateAPIKeyRequest{
+		_, err := svc.GenerateKey(ctx, tc.op, "org-1", &domain.CreateAPIKeyRequest{
 			Name: tc.name, Scope: tc.scope,
 		})
 		if err != nil {
@@ -1173,7 +1173,7 @@ func TestAPIKeyService_GenerateKey_SigningSecretDerivedFromFullKey(t *testing.T)
 	svc, _ := setupTestService(t)
 	ctx := context.Background()
 
-	result, err := svc.GenerateKey(ctx, "operator-1", &domain.CreateAPIKeyRequest{
+	result, err := svc.GenerateKey(ctx, "operator-1", "org-1", &domain.CreateAPIKeyRequest{
 		Name:  "Signing Key",
 		Scope: domain.ScopeRead,
 	})
@@ -1196,7 +1196,7 @@ func TestAPIKeyService_ValidateKey_ReturnsSigningSecret(t *testing.T) {
 	svc, _ := setupTestService(t)
 	ctx := context.Background()
 
-	result, err := svc.GenerateKey(ctx, "operator-1", &domain.CreateAPIKeyRequest{
+	result, err := svc.GenerateKey(ctx, "operator-1", "org-1", &domain.CreateAPIKeyRequest{
 		Name:  "Validate Signing",
 		Scope: domain.ScopeRead,
 	})
@@ -1218,7 +1218,7 @@ func TestAPIKeyService_RotateKey_RegeneratesSigningSecret(t *testing.T) {
 	svc, _ := setupTestService(t)
 	ctx := context.Background()
 
-	original, err := svc.GenerateKey(ctx, "operator-1", &domain.CreateAPIKeyRequest{
+	original, err := svc.GenerateKey(ctx, "operator-1", "org-1", &domain.CreateAPIKeyRequest{
 		Name:  "Rotate Signing",
 		Scope: domain.ScopeRead,
 	})

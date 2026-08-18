@@ -103,6 +103,14 @@ func (s *Server) RegisterGraphQL(
 		s.commandAuthorizer,
 	)
 
+	// Wire the custom-permission-grants repository so the scoped permission
+	// evaluator can union custom per-resource scopes onto role defaults (Issue 4).
+	// Also wire the device-groups repository for team/device-group scoping (Issue 5).
+	if s.db != nil {
+		res.GrantRepo = storage.NewGrantRepository(s.db.DB())
+		res.GroupRepo = storage.NewDeviceGroupRepository(s.db.DB())
+	}
+
 	// Build schema.
 	gqlSchema, err := schema.BuildSchema(res)
 	if err != nil {

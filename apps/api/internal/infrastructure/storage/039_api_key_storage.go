@@ -21,20 +21,23 @@ func getMonthStartMillis(nowMillis int64) int64 {
 
 // APIKey represents an API key in the system.
 type APIKey struct {
-	LastRequest   *int64
-	ExpiresAt     *int64
-	RevokedAt     *int64
-	OperatorID    string
-	Name          string
-	KeyPrefix     string
-	KeyHash       string
-	SigningSecret string
-	Scope         string
-	ID            string
-	RequestCount  int64
-	CreatedAt     int64
-	UpdatedAt     int64
-	IsActive      bool
+	// OrganizationID binds this key to a specific organization. Server-side org
+	// resolution reads this instead of trusting a client-supplied header.
+	OrganizationID string
+	LastRequest    *int64
+	ExpiresAt      *int64
+	RevokedAt      *int64
+	OperatorID     string
+	Name           string
+	KeyPrefix      string
+	KeyHash        string
+	SigningSecret  string
+	Scope          string
+	ID             string
+	RequestCount   int64
+	CreatedAt      int64
+	UpdatedAt      int64
+	IsActive       bool
 }
 
 // APIKeyWithOperator joins an API key with its operator's display name.
@@ -93,13 +96,13 @@ func NewAPIKeyRepository(db *sql.DB) APIKeyRepository {
 // Create inserts a new API key.
 func (r *APIKeyRepositoryImpl) Create(ctx context.Context, key *APIKey) error {
 	query := `
-		INSERT INTO api_keys (id, operator_id, name, key_prefix, key_hash, signing_secret, scope, expires_at, is_active, request_count, last_request_at, created_at, updated_at, revoked_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO api_keys (id, operator_id, name, key_prefix, key_hash, signing_secret, scope, expires_at, is_active, request_count, last_request_at, created_at, updated_at, revoked_at, organization_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		key.ID, key.OperatorID, key.Name, key.KeyPrefix, key.KeyHash,
 		key.SigningSecret, key.Scope, key.ExpiresAt, key.IsActive, key.RequestCount,
-		key.LastRequest, key.CreatedAt, key.UpdatedAt, key.RevokedAt,
+		key.LastRequest, key.CreatedAt, key.UpdatedAt, key.RevokedAt, nullString(key.OrganizationID),
 	)
 	return err
 }
@@ -107,7 +110,7 @@ func (r *APIKeyRepositoryImpl) Create(ctx context.Context, key *APIKey) error {
 // GetByID retrieves an API key by its ID.
 func (r *APIKeyRepositoryImpl) GetByID(ctx context.Context, id string) (*APIKey, error) {
 	query := `
-		SELECT id, operator_id, name, key_prefix, key_hash, signing_secret, scope, expires_at, is_active, request_count, last_request_at, created_at, updated_at, revoked_at
+		SELECT id, operator_id, name, key_prefix, key_hash, signing_secret, scope, expires_at, is_active, request_count, last_request_at, created_at, updated_at, revoked_at, organization_id
 		FROM api_keys WHERE id = ?
 	`
 	row := r.db.QueryRowContext(ctx, query, id)
@@ -117,7 +120,7 @@ func (r *APIKeyRepositoryImpl) GetByID(ctx context.Context, id string) (*APIKey,
 // GetByKeyHash retrieves an API key by its hash.
 func (r *APIKeyRepositoryImpl) GetByKeyHash(ctx context.Context, keyHash string) (*APIKey, error) {
 	query := `
-		SELECT id, operator_id, name, key_prefix, key_hash, signing_secret, scope, expires_at, is_active, request_count, last_request_at, created_at, updated_at, revoked_at
+		SELECT id, operator_id, name, key_prefix, key_hash, signing_secret, scope, expires_at, is_active, request_count, last_request_at, created_at, updated_at, revoked_at, organization_id
 		FROM api_keys WHERE key_hash = ? AND is_active = 1
 	`
 	row := r.db.QueryRowContext(ctx, query, keyHash)
@@ -135,7 +138,7 @@ func (r *APIKeyRepositoryImpl) ListByOperator(ctx context.Context, operatorID st
 
 	// Get paginated results.
 	query := `
-		SELECT id, operator_id, name, key_prefix, key_hash, signing_secret, scope, expires_at, is_active, request_count, last_request_at, created_at, updated_at, revoked_at
+		SELECT id, operator_id, name, key_prefix, key_hash, signing_secret, scope, expires_at, is_active, request_count, last_request_at, created_at, updated_at, revoked_at, organization_id
 		FROM api_keys WHERE operator_id = ?
 		ORDER BY created_at DESC
 		LIMIT ? OFFSET ?
@@ -220,11 +223,12 @@ func (r *APIKeyRepositoryImpl) IncrementRequestCount(ctx context.Context, id str
 func (r *APIKeyRepositoryImpl) scanAPIKey(row *sql.Row) (*APIKey, error) {
 	var key APIKey
 	var expiresAt, lastRequest, revokedAt sql.NullInt64
+	var organizationID sql.NullString
 
 	err := row.Scan(
 		&key.ID, &key.OperatorID, &key.Name, &key.KeyPrefix, &key.KeyHash,
 		&key.SigningSecret, &key.Scope, &expiresAt, &key.IsActive, &key.RequestCount,
-		&lastRequest, &key.CreatedAt, &key.UpdatedAt, &revokedAt,
+		&lastRequest, &key.CreatedAt, &key.UpdatedAt, &revokedAt, &organizationID,
 	)
 	if err != nil {
 		return nil, err
@@ -239,6 +243,7 @@ func (r *APIKeyRepositoryImpl) scanAPIKey(row *sql.Row) (*APIKey, error) {
 	if revokedAt.Valid {
 		key.RevokedAt = &revokedAt.Int64
 	}
+	key.OrganizationID = organizationID.String
 
 	return &key, nil
 }
@@ -247,11 +252,12 @@ func (r *APIKeyRepositoryImpl) scanAPIKey(row *sql.Row) (*APIKey, error) {
 func (r *APIKeyRepositoryImpl) scanAPIKeyFromRows(rows *sql.Rows) (*APIKey, error) {
 	var key APIKey
 	var expiresAt, lastRequest, revokedAt sql.NullInt64
+	var organizationID sql.NullString
 
 	err := rows.Scan(
 		&key.ID, &key.OperatorID, &key.Name, &key.KeyPrefix, &key.KeyHash,
 		&key.SigningSecret, &key.Scope, &expiresAt, &key.IsActive, &key.RequestCount,
-		&lastRequest, &key.CreatedAt, &key.UpdatedAt, &revokedAt,
+		&lastRequest, &key.CreatedAt, &key.UpdatedAt, &revokedAt, &organizationID,
 	)
 	if err != nil {
 		return nil, err
@@ -266,6 +272,7 @@ func (r *APIKeyRepositoryImpl) scanAPIKeyFromRows(rows *sql.Rows) (*APIKey, erro
 	if revokedAt.Valid {
 		key.RevokedAt = &revokedAt.Int64
 	}
+	key.OrganizationID = organizationID.String
 
 	return &key, nil
 }
@@ -289,7 +296,7 @@ func (r *APIKeyRepositoryImpl) ListAll(ctx context.Context, limit, offset int) (
 	// Get keys.
 	query := `
 		SELECT id, operator_id, name, key_prefix, key_hash, signing_secret, scope, expires_at,
-		       is_active, request_count, last_request_at, created_at, updated_at, revoked_at
+		       is_active, request_count, last_request_at, created_at, updated_at, revoked_at, organization_id
 		FROM api_keys
 		WHERE is_active = 1
 		ORDER BY created_at DESC
@@ -350,7 +357,7 @@ func (r *APIKeyRepositoryImpl) ListAllWithOperator(ctx context.Context, limit, o
 	query := `
 		SELECT k.id, k.operator_id, k.name, k.key_prefix, k.key_hash, k.signing_secret, k.scope,
 		       k.expires_at, k.is_active, k.request_count, k.last_request_at,
-		       k.created_at, k.updated_at, k.revoked_at, o.name
+		       k.created_at, k.updated_at, k.revoked_at, k.organization_id, o.name
 		FROM api_keys k
 		LEFT JOIN operators o ON o.id = k.operator_id
 	` + where + `
@@ -368,11 +375,11 @@ func (r *APIKeyRepositoryImpl) ListAllWithOperator(ctx context.Context, limit, o
 	for rows.Next() {
 		var item APIKeyWithOperator
 		var expiresAt, lastRequest, revokedAt sql.NullInt64
-		var operatorName sql.NullString
+		var organizationID, operatorName sql.NullString
 		if err := rows.Scan(
 			&item.ID, &item.OperatorID, &item.Name, &item.KeyPrefix, &item.KeyHash,
 			&item.SigningSecret, &item.Scope, &expiresAt, &item.IsActive, &item.RequestCount,
-			&lastRequest, &item.CreatedAt, &item.UpdatedAt, &revokedAt, &operatorName,
+			&lastRequest, &item.CreatedAt, &item.UpdatedAt, &revokedAt, &organizationID, &operatorName,
 		); err != nil {
 			return nil, 0, err
 		}
@@ -385,6 +392,7 @@ func (r *APIKeyRepositoryImpl) ListAllWithOperator(ctx context.Context, limit, o
 		if revokedAt.Valid {
 			item.RevokedAt = &revokedAt.Int64
 		}
+		item.OrganizationID = organizationID.String
 		item.OperatorName = operatorName.String
 		results = append(results, item)
 	}

@@ -48,12 +48,15 @@ type APIKey struct {
 	RevokedAt     *time.Time `json:"revoked_at"`
 	ID            string     `json:"id"`
 	OperatorID    string     `json:"operator_id"`
-	Name          string     `json:"name"`
-	KeyPrefix     string     `json:"key_prefix"`
-	SigningSecret string     `json:"-"`
-	Scope         Scope      `json:"scope"`
-	RequestCount  int64      `json:"request_count"`
-	IsActive      bool       `json:"is_active"`
+	// OrganizationID binds this key to a specific organization. Org context is
+	// resolved from this binding server-side rather than a client header.
+	OrganizationID string    `json:"organization_id,omitempty"`
+	Name           string    `json:"name"`
+	KeyPrefix      string    `json:"key_prefix"`
+	SigningSecret  string    `json:"-"`
+	Scope          Scope     `json:"scope"`
+	RequestCount   int64     `json:"request_count"`
+	IsActive       bool      `json:"is_active"`
 }
 
 // IsExpired returns true if the key has expired.

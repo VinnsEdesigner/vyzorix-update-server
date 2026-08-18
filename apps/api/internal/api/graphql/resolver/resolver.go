@@ -55,6 +55,8 @@ type Resolver struct {
 	MemberService         *orgapp.MemberService
 	InvitationService     *orgapp.InvitationService
 	Authorizer            *cmdapp.Authorizer
+	GrantRepo             *storage.GrantRepository
+	GroupRepo             *storage.DeviceGroupRepository
 }
 
 // NewResolver creates a new GraphQL resolver.

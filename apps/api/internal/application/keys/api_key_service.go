@@ -53,7 +53,7 @@ func NewAPIKeyService(repo infraStorage.APIKeyRepository, config Config) *APIKey
 }
 
 // GenerateKey generates a new API key and returns the full key (only time it's available).
-func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req *domain.CreateAPIKeyRequest) (*domain.APIKeyWithFullKey, error) {
+func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID, orgID string, req *domain.CreateAPIKeyRequest) (*domain.APIKeyWithFullKey, error) {
 	// Validate name.
 	if len(req.Name) > s.config.MaxNameLength {
 		return nil, domain.ErrKeyNameTooLong
@@ -109,15 +109,16 @@ func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID string, req 
 
 	now := time.Now()
 	key := &infraStorage.APIKey{
-		ID:            uuid.Must(uuid.NewV7()).String(),
-		OperatorID:    operatorID,
-		Name:          req.Name,
-		KeyPrefix:     prefix,
-		KeyHash:       keyHash,
-		SigningSecret: signingSecret,
-		Scope:         string(req.Scope),
-		ExpiresAt:     toMillis(expiresAt),
-		IsActive:      true,
+		ID:             uuid.Must(uuid.NewV7()).String(),
+		OperatorID:     operatorID,
+		OrganizationID: orgID,
+		Name:           req.Name,
+		KeyPrefix:      prefix,
+		KeyHash:        keyHash,
+		SigningSecret:  signingSecret,
+		Scope:          string(req.Scope),
+		ExpiresAt:      toMillis(expiresAt),
+		IsActive:       true,
 		CreatedAt:     now.UnixMilli(),
 		UpdatedAt:     now.UnixMilli(),
 	}
@@ -346,15 +347,16 @@ func (s *APIKeyService) RotateKey(ctx context.Context, operatorID, keyID string)
 	now := time.Now()
 
 	newKey := &infraStorage.APIKey{
-		ID:            uuid.Must(uuid.NewV7()).String(),
-		OperatorID:    operatorID,
-		Name:          key.Name,
-		KeyPrefix:     prefix,
-		KeyHash:       keyHash,
-		SigningSecret: signingSecret,
-		Scope:         key.Scope,
-		ExpiresAt:     expiresAt, // Keep the same expiry (copied value, not pointer).
-		IsActive:      true,
+		ID:             uuid.Must(uuid.NewV7()).String(),
+		OperatorID:     operatorID,
+		OrganizationID: key.OrganizationID,
+		Name:           key.Name,
+		KeyPrefix:      prefix,
+		KeyHash:        keyHash,
+		SigningSecret:  signingSecret,
+		Scope:          key.Scope,
+		ExpiresAt:      expiresAt, // Keep the same expiry (copied value, not pointer).
+		IsActive:       true,
 		CreatedAt:     now.UnixMilli(),
 		UpdatedAt:     now.UnixMilli(),
 	}
@@ -417,16 +419,17 @@ func deriveAPIKeySigningSecret(fullKey string) string {
 // toDomainAPIKey converts an infrastructure API key to a domain API key.
 func toDomainAPIKey(key *infraStorage.APIKey) *domain.APIKey {
 	domain := &domain.APIKey{
-		ID:            key.ID,
-		OperatorID:    key.OperatorID,
-		Name:          key.Name,
-		KeyPrefix:     key.KeyPrefix,
-		SigningSecret: key.SigningSecret,
-		Scope:         domain.Scope(key.Scope),
-		IsActive:      key.IsActive,
-		RequestCount:  key.RequestCount,
-		CreatedAt:     fromMillisVal(key.CreatedAt),
-		UpdatedAt:     fromMillisVal(key.UpdatedAt),
+		ID:             key.ID,
+		OperatorID:     key.OperatorID,
+		OrganizationID: key.OrganizationID,
+		Name:           key.Name,
+		KeyPrefix:      key.KeyPrefix,
+		SigningSecret:  key.SigningSecret,
+		Scope:          domain.Scope(key.Scope),
+		IsActive:       key.IsActive,
+		RequestCount:   key.RequestCount,
+		CreatedAt:      fromMillisVal(key.CreatedAt),
+		UpdatedAt:      fromMillisVal(key.UpdatedAt),
 	}
 
 	if key.ExpiresAt != nil {
