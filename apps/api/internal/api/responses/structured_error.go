@@ -13,19 +13,19 @@ import (
 
 // ErrorDetail is the structured error response format for all API errors.
 type ErrorDetail struct {
-	// Code is the machine-readable error code (e.g., "AUTH_INVALID_CREDENTIALS")
+	// Code is the machine-readable error code (e.g., "AUTH_INVALID_CREDENTIALS").
 	Code string `json:"code"`
 
-	// Message is a human-readable description safe for client display
+	// Message is a human-readable description safe for client display.
 	Message string `json:"message"`
 
-	// Details contains additional context (validation errors, rate limit info, etc.)
+	// Details contains additional context (validation errors, rate limit info, etc.).
 	Details any `json:"details,omitempty"`
 
-	// TraceID allows correlation with server-side logs
+	// TraceID allows correlation with server-side logs.
 	TraceID string `json:"trace_id,omitempty"`
 
-	// DocsURL links to documentation for this error
+	// DocsURL links to documentation for this error.
 	DocsURL string `json:"docs_url,omitempty"`
 }
 
@@ -42,7 +42,7 @@ func RespondWithServerError(c *gin.Context, err *errors.ServerError) {
 		return
 	}
 
-	// Ensure we have a trace ID
+	// Ensure we have a trace ID.
 	if err.TraceID == "" {
 		err.TraceID = GetTraceID(c)
 	}
@@ -50,18 +50,18 @@ func RespondWithServerError(c *gin.Context, err *errors.ServerError) {
 		err.DocsURL = tracing.BuildErrorDocsURL(string(err.Code))
 	}
 
-	// Get HTTP status from error code
+	// Get HTTP status from error code.
 	status := err.Code.HTTPStatusCode()
 	if status == 0 {
 		status = http.StatusInternalServerError
 	}
 
-	// Log internal error details for debugging (if available)
+	// Log internal error details for debugging (if available).
 	if err.Internal != nil {
 		logInternalError(c, err)
 	}
 
-	// Build client-safe response
+	// Build client-safe response.
 	c.JSON(status, StructuredErrorResponse{
 		Error: ErrorDetail{
 			Code:    string(err.Code),
@@ -88,9 +88,9 @@ func RespondWithErrorCode(c *gin.Context, code errors.ErrorCode, message string)
 	})
 }
 
-// logInternalError logs error details internally without exposing them to the
-// client. Sensitive values (the wrapped error, internal context) are redacted,
-// but structural fields (path, method, actor_id, error_code, trace_id) are
+// logInternalError logs error details internally without exposing them to the.
+// / client. Sensitive values (the wrapped error, internal context) are redacted,.
+// but structural fields (path, method, actor_id, error_code, trace_id) are.
 // preserved so the log line is actually useful for debugging.
 func logInternalError(c *gin.Context, err *errors.ServerError) {
 	if err.Internal == nil {
@@ -246,7 +246,7 @@ func RespondConflictError(c *gin.Context, message string) {
 func RespondInternalError(c *gin.Context) {
 	traceID := GetTraceID(c)
 
-	// Log the actual error for debugging
+	// Log the actual error for debugging.
 	slog.Error("unhandled_internal_error",
 		slog.String("trace_id", traceID),
 		slog.String("path", c.Request.URL.Path),
@@ -263,9 +263,9 @@ func RespondInternalError(c *gin.Context) {
 	})
 }
 
-// statusCodeToErrorCode maps an HTTP status to the canonical error code. It
-// mirrors the middleware's statusToErrorCode so handlers that emit a structured
-// response directly (rather than recording a gin error) produce the same code
+// statusCodeToErrorCode maps an HTTP status to the canonical error code. It.
+// mirrors the middleware's statusToErrorCode so handlers that emit a structured.
+// response directly (rather than recording a gin error) produce the same code.
 // the error middleware would.
 func statusCodeToErrorCode(status int) errors.ErrorCode {
 	switch {
@@ -290,10 +290,10 @@ func statusCodeToErrorCode(status int) errors.ErrorCode {
 	}
 }
 
-// RespondStructured sends a structured error response for the given status and
+// RespondStructured sends a structured error response for the given status and.
 // human-readable message, deriving the canonical error code from the status.
-// It is the drop-in replacement for legacy `c.JSON(status, gin.H{"error","message"})`
-// calls, so every error response shares the structured envelope with a trace id
+// It is the drop-in replacement for legacy `c.JSON(status, gin.H{"error","message"})`.
+// calls, so every error response shares the structured envelope with a trace id.
 // and docs link.
 func RespondStructured(c *gin.Context, status int, message string) {
 	code := statusCodeToErrorCode(status)
@@ -307,9 +307,9 @@ func RespondStructured(c *gin.Context, status int, message string) {
 	})
 }
 
-// RespondStructuredAbort is RespondStructured plus c.Abort(), the drop-in
-// replacement for legacy `c.AbortWithStatusJSON(status, gin.H{"error","message"})`
-// middleware calls. Aborting is essential in middleware so the chain stops
+// RespondStructuredAbort is RespondStructured plus c.Abort(), the drop-in.
+// replacement for legacy `c.AbortWithStatusJSON(status, gin.H{"error","message"})`.
+// middleware calls. Aborting is essential in middleware so the chain stops.
 // after an error response is written.
 func RespondStructuredAbort(c *gin.Context, status int, message string) {
 	RespondStructured(c, status, message)

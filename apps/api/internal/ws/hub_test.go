@@ -13,7 +13,7 @@ import (
 )
 
 // noopDeviceRepo is a minimal device.Repository implementation for testing.
-// It only implements SetOnline (the only method Hub.Run calls) and returns
+// It only implements SetOnline (the only method Hub.Run calls) and returns.
 // zero-values/errors for everything else.
 type noopDeviceRepo struct {
 	online map[string]bool
@@ -124,7 +124,7 @@ type discardWriter struct{}
 
 func (d *discardWriter) Write(p []byte) (int, error) { return len(p), nil }
 
-// ─── Hub creation & defaults ───
+// ─── Hub creation & defaults ───.
 
 func TestHubNew_Defaults(t *testing.T) {
 	h := newTestHub()
@@ -163,7 +163,7 @@ func TestHubNew_WithConfig(t *testing.T) {
 	}
 }
 
-// ─── Hub Run lifecycle ───
+// ─── Hub Run lifecycle ───.
 
 func TestHubRun_Lifecycle(t *testing.T) {
 	h := newTestHub()
@@ -187,7 +187,7 @@ func TestHubRun_PanicRecovery(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 }
 
-// ─── Client registration ───
+// ─── Client registration ───.
 
 func TestHubRegisterUnregister(t *testing.T) {
 	h := newTestHub()
@@ -257,7 +257,7 @@ func TestHubRegister_ReplacesOldClient(t *testing.T) {
 	}
 }
 
-// ─── Send to connected client ───
+// ─── Send to connected client ───.
 
 func TestHubSend_ConnectedClient(t *testing.T) {
 	h := newTestHub()
@@ -298,7 +298,7 @@ func TestHubSend_OfflineClient_NoQueue(t *testing.T) {
 	}
 }
 
-// ─── Broadcast ───
+// ─── Broadcast ───.
 
 func TestHubBroadcastTelemetry(t *testing.T) {
 	h := newTestHub()
@@ -330,7 +330,7 @@ func TestHubBroadcastTelemetry(t *testing.T) {
 	}
 }
 
-// ─── Rate limiter ───
+// ─── Rate limiter ───.
 
 func TestRateLimiter_Allow(t *testing.T) {
 	rl := NewRateLimiter(testLogger(), &RateLimiterConfig{Rate: 10, Burst: 5, CleanupInterval: time.Minute})
@@ -410,7 +410,7 @@ func TestRateLimiter_Metrics(t *testing.T) {
 	}
 }
 
-// ─── Compression ───
+// ─── Compression ───.
 
 func TestCompression_SmallMessageBypassed(t *testing.T) {
 	c := NewCompression(testLogger(), &CompressionConfig{Threshold: 1024, EnableCompression: true, Level: 1})
@@ -461,7 +461,7 @@ func TestCompression_Disabled(t *testing.T) {
 	}
 }
 
-// ─── Telemetry filter ───
+// ─── Telemetry filter ───.
 
 func TestTelemetryFilter_SubscribeUnsubscribe(t *testing.T) {
 	tf := NewTelemetryFilter(testLogger(), &TelemetryFilterConfig{MaxSubscriptions: 50, EnableServerSideFilter: true})
@@ -509,7 +509,7 @@ func TestTelemetryFilter_MaxSubscriptions(t *testing.T) {
 	}
 }
 
-// ─── Subscriptions (GraphQL) ───
+// ─── Subscriptions (GraphQL) ───.
 
 func TestSubscriptionManager_DeviceUpdates(t *testing.T) {
 	h := newTestHub()
@@ -649,7 +649,7 @@ func TestSubscriptionManager_MemberEvent(t *testing.T) {
 	unsub()
 }
 
-// ─── Client metrics ───
+// ─── Client metrics ───.
 
 func TestClientMetrics_ConnectDisconnect(t *testing.T) {
 	c := &Client{
@@ -697,7 +697,7 @@ func TestClientMetrics_Uptime(t *testing.T) {
 	}
 }
 
-// ─── Hub SetRateLimiter / SetMessageQueue ───
+// ─── Hub SetRateLimiter / SetMessageQueue ───.
 
 func TestHubSetRateLimiter(t *testing.T) {
 	h := newTestHub()
@@ -723,7 +723,7 @@ func TestHubSetMessageQueue(t *testing.T) {
 	}
 }
 
-// ─── Hub ConnectionInfo ───
+// ─── Hub ConnectionInfo ───.
 
 func TestHubGetConnectionInfo_NotConnected(t *testing.T) {
 	h := newTestHub()
@@ -767,7 +767,7 @@ func TestHubGetAverageLatency_PerDevice(t *testing.T) {
 	}
 }
 
-// ─── Hub broadcast to filtered ───
+// ─── Hub broadcast to filtered ───.
 
 func TestHubBroadcastTelemetryToFiltered(t *testing.T) {
 	h := newTestHub()
@@ -806,7 +806,7 @@ func TestHubBroadcastTelemetryToFiltered(t *testing.T) {
 	}
 }
 
-// ─── Hub Send with delivery confirmation ───
+// ─── Hub Send with delivery confirmation ───.
 
 func TestHubSendWithDeliveryConfirmation(t *testing.T) {
 	h := newTestHub()
@@ -856,7 +856,7 @@ func TestHubSendWithDeliveryConfirmation_OfflineNoQueue(t *testing.T) {
 	}
 }
 
-// ─── Message Queue (without DB, just defaults) ───
+// ─── Message Queue (without DB, just defaults) ───.
 
 func TestMessageQueueConfig_Defaults(t *testing.T) {
 	cfg := DefaultMessageQueueConfig()
@@ -868,7 +868,7 @@ func TestMessageQueueConfig_Defaults(t *testing.T) {
 	}
 }
 
-// ─── CompressedFrame JSON round-trip ───
+// ─── CompressedFrame JSON round-trip ───.
 
 func TestCompressedFrame_JSONRoundTrip(t *testing.T) {
 	frame := CompressedFrame{

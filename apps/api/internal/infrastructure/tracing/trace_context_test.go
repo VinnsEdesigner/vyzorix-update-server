@@ -155,7 +155,7 @@ func TestTraceIDConstants(t *testing.T) {
 	}
 }
 
-// TestFallbackTraceIDUnique ensures the last-resort fallback still produces
+// TestFallbackTraceIDUnique ensures the last-resort fallback still produces.
 // distinct, well-formed IDs so it can never collide on rapid successive calls.
 func TestFallbackTraceIDUnique(t *testing.T) {
 	seen := make(map[string]struct{}, 1000)

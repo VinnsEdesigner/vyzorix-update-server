@@ -42,20 +42,20 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 func (h *Handler) CreateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
 
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
 
 		return
 	}
 
 	var req apikeydomain.CreateAPIKeyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, err.Error()))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, err.Error()))
 
 		return
 	}
@@ -104,13 +104,13 @@ func (h *Handler) CreateKey(c *gin.Context) {
 func (h *Handler) ListKeys(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
 
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
 
 		return
 	}
@@ -140,13 +140,13 @@ func (h *Handler) ListKeys(c *gin.Context) {
 func (h *Handler) GetKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
 
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
 
 		return
 	}
@@ -170,13 +170,13 @@ func (h *Handler) GetKey(c *gin.Context) {
 func (h *Handler) UpdateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
 
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
 
 		return
 	}
@@ -185,7 +185,7 @@ func (h *Handler) UpdateKey(c *gin.Context) {
 
 	var req apikeydomain.UpdateAPIKeyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, err.Error()))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, err.Error()))
 
 		return
 	}
@@ -229,13 +229,13 @@ func (h *Handler) UpdateKey(c *gin.Context) {
 func (h *Handler) RevokeKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
 
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
 
 		return
 	}
@@ -280,13 +280,13 @@ func (h *Handler) RevokeKey(c *gin.Context) {
 func (h *Handler) RotateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
 
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
 
 		return
 	}

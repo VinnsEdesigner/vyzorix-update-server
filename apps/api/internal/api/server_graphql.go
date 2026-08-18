@@ -33,8 +33,8 @@ import (
 
 // RegisterGraphQL initializes and registers the GraphQL server with the API server.
 // GraphQL routes use the same system middleware chain as REST tenant routes:
-// rate limiting, cookie/session auth, token revocation, API key auth + scope
-// enforcement, organization context (from URL :org param), and organization
+// rate limiting, cookie/session auth, token revocation, API key auth + scope.
+// enforcement, organization context (from URL :org param), and organization.
 // membership validation.
 func (s *Server) RegisterGraphQL(
 	deviceService *device.Service,
@@ -69,7 +69,7 @@ func (s *Server) RegisterGraphQL(
 	// Create GraphQL presenter for audit logging.
 	gqlPresenter := gqladapters.NewPresenter(s.AuditLogger)
 
-	// The auth middleware is retained for the subscription handler's internal
+	// The auth middleware is retained for the subscription handler's internal.
 	// use. HTTP authentication is handled by the system middleware chain.
 	authMw := gqlmw.NewAuthMiddleware(sessionManager, authService, s.log)
 
@@ -127,15 +127,15 @@ func (s *Server) RegisterGraphQL(
 			gqlGroup.Use(middleware.APIKeyRateLimitMiddleware(s.apiKeyRateLimiter))
 		}
 	}
-	// Set organization ID from the URL :org param into gin context so that
+	// Set organization ID from the URL :org param into gin context so that.
 	// the OrganizationMembership middleware can validate it.
 	gqlGroup.Use(orgFromURLParamMiddleware)
 	// Validate that the authenticated operator is a member of the organization.
 	gqlGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
 
-	// HTTP endpoints carry per-session HMAC request signatures (same scheme as
-	// REST tenant routes). WebSocket upgrades cannot set custom headers in the
-	// browser, so the WS route is registered separately on the parent group
+	// HTTP endpoints carry per-session HMAC request signatures (same scheme as.
+	// REST tenant routes). WebSocket upgrades cannot set custom headers in the.
+	// browser, so the WS route is registered separately on the parent group.
 	// without signing.
 	gqlHTTPGroup := gqlGroup.Group("")
 	gqlHTTPGroup.Use(middleware.SessionSignatureMiddleware(s.sessionSignatureVerifier))
@@ -149,14 +149,14 @@ func (s *Server) RegisterGraphQL(
 	gqlHTTPGroup.POST("/graphql/batch", batchHandler.Handle)
 
 	// Playground is only enabled in non-production environments.
-	// It is served without middleware (it's just a static HTML page; actual
+	// It is served without middleware (it's just a static HTML page; actual.
 	// query auth happens when requests are sent to /:org/graphql).
 	if s.config.Env != "production" {
 		s.engine.GET("/:org/playground", h.Playground)
 	}
 
-	// Create subscription handler. The WS endpoint goes through the same
-	// middleware group, so the operator is already authenticated by the time
+	// Create subscription handler. The WS endpoint goes through the same.
+	// middleware group, so the operator is already authenticated by the time.
 	// HandleWebSocket runs.
 	subsHandler := subscription.NewHandler(&subscription.Config{
 		Hub:         wsHub,
@@ -173,9 +173,9 @@ func (s *Server) RegisterGraphQL(
 	return nil
 }
 
-// orgFromURLParamMiddleware extracts the organization ID from the URL :org
+// orgFromURLParamMiddleware extracts the organization ID from the URL :org.
 // parameter and stores it in the gin context under ContextKeyOrganizationID.
-// This allows the OrganizationMembership middleware to validate the operator's
+// This allows the OrganizationMembership middleware to validate the operator's.
 // membership in the organization specified in the URL.
 func orgFromURLParamMiddleware(c *gin.Context) {
 	orgID := c.Param("org")
@@ -202,7 +202,7 @@ type gqlRequest struct {
 	OperationName string                 `json:"operationName"`
 }
 
-// Handle processes GraphQL requests. Authentication and organization membership
+// Handle processes GraphQL requests. Authentication and organization membership.
 // are enforced by the system middleware chain before this handler runs.
 func (h *gqlHandler) Handle(c *gin.Context) {
 	var req gqlRequest
@@ -339,7 +339,7 @@ type gqlBatchRequest struct {
 	OperationName string                 `json:"operationName"`
 }
 
-// Handle processes GraphQL batch requests. Authentication and organization
+// Handle processes GraphQL batch requests. Authentication and organization.
 // membership are enforced by the system middleware chain before this handler runs.
 func (h *gqlBatchHandler) Handle(c *gin.Context) {
 	var requests []gqlBatchRequest

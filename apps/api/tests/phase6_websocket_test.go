@@ -87,7 +87,7 @@ func dialWS(t *testing.T, url string) *gorillaws.Conn {
 	return conn
 }
 
-// ─── 6.1: Connection & Disconnection ───
+// ─── 6.1: Connection & Disconnection ───.
 
 func TestPhase6WS_ConnectDisconnect(t *testing.T) {
 	state := newTestWSState(t)
@@ -153,7 +153,7 @@ func TestPhase6WS_MultipleDevicesConnect(t *testing.T) {
 	t.Log("3 devices connected simultaneously")
 }
 
-// ─── 6.2: Telemetry reception ───
+// ─── 6.2: Telemetry reception ───.
 
 func TestPhase6WS_SendTelemetry(t *testing.T) {
 	state := newTestWSState(t)
@@ -216,7 +216,7 @@ func TestPhase6WS_TelemetryBroadcastsToOtherClients(t *testing.T) {
 	t.Log("telemetry broadcast received by other connected device")
 }
 
-// ─── 6.3: Command delivery ───
+// ─── 6.3: Command delivery ───.
 
 func TestPhase6WS_CommandDelivery(t *testing.T) {
 	state := newTestWSState(t)
@@ -270,7 +270,7 @@ func TestPhase6WS_CommandToOfflineDevice(t *testing.T) {
 	t.Log("command to offline device correctly rejected")
 }
 
-// ─── 6.4: Ping/Pong keepalive ───
+// ─── 6.4: Ping/Pong keepalive ───.
 
 func TestPhase6WS_PingPong(t *testing.T) {
 	state := newTestWSState(t)
@@ -296,7 +296,7 @@ func TestPhase6WS_PingPong(t *testing.T) {
 	t.Log("ping/pong keepalive verified, connection stays alive")
 }
 
-// ─── 6.5: Reconnection (replace old client) ───
+// ─── 6.5: Reconnection (replace old client) ───.
 
 func TestPhase6WS_ReconnectReplacesOldClient(t *testing.T) {
 	state := newTestWSState(t)
@@ -325,7 +325,7 @@ func TestPhase6WS_ReconnectReplacesOldClient(t *testing.T) {
 	t.Log("reconnect replaced old client, old connection closed")
 }
 
-// ─── 6.6: Subscribe/Unsubscribe (telemetry filter) ───
+// ─── 6.6: Subscribe/Unsubscribe (telemetry filter) ───.
 
 func TestPhase6WS_SubscribeTelemetry(t *testing.T) {
 	state := newTestWSState(t)
@@ -350,7 +350,7 @@ func TestPhase6WS_SubscribeTelemetry(t *testing.T) {
 	t.Log("subscribe/unsubscribe telemetry filter works")
 }
 
-// ─── 6.7: Invalid JSON handling ───
+// ─── 6.7: Invalid JSON handling ───.
 
 func TestPhase6WS_InvalidJSONDoesNotKillConnection(t *testing.T) {
 	state := newTestWSState(t)
@@ -381,7 +381,7 @@ func TestPhase6WS_InvalidJSONDoesNotKillConnection(t *testing.T) {
 	t.Log("invalid JSON handled gracefully, connection survives")
 }
 
-// ─── 6.8: Delivery confirmation ───
+// ─── 6.8: Delivery confirmation ───.
 
 func TestPhase6WS_DeliveryConfirmation(t *testing.T) {
 	state := newTestWSState(t)
@@ -414,7 +414,7 @@ func TestPhase6WS_DeliveryConfirmation(t *testing.T) {
 	t.Log("delivery confirmation verified")
 }
 
-// ─── 6.9: Broadcast to all clients ───
+// ─── 6.9: Broadcast to all clients ───.
 
 func TestPhase6WS_BroadcastToAll(t *testing.T) {
 	state := newTestWSState(t)
@@ -442,7 +442,7 @@ func TestPhase6WS_BroadcastToAll(t *testing.T) {
 	t.Log("broadcast delivered to all 3 connected devices")
 }
 
-// ─── 6.10: GraphQL subscription protocol ───
+// ─── 6.10: GraphQL subscription protocol ───.
 
 func TestPhase6WS_SubscriptionPublish(t *testing.T) {
 	state := newTestWSState(t)
@@ -472,7 +472,7 @@ func TestPhase6WS_SubscriptionPublish(t *testing.T) {
 	t.Log("GraphQL subscription publish/subscribe works")
 }
 
-// ─── 6.11: Rate limiting ───
+// ─── 6.11: Rate limiting ───.
 
 func TestPhase6WS_RateLimiterAllows(t *testing.T) {
 	state := newTestWSState(t)
@@ -491,7 +491,7 @@ func TestPhase6WS_RateLimiterAllows(t *testing.T) {
 	t.Log("rate limiter allows high throughput (100 messages)")
 }
 
-// ─── 6.12: Connection status endpoint ───
+// ─── 6.12: Connection status endpoint ───.
 
 func TestPhase6WS_ConnectionInfo(t *testing.T) {
 	state := newTestWSState(t)
@@ -511,7 +511,7 @@ func TestPhase6WS_ConnectionInfo(t *testing.T) {
 	t.Logf("connection info: connected=%v ip=%s", info.Connected, info.ClientIP)
 }
 
-// ─── 6.13: Hub metrics ───
+// ─── 6.13: Hub metrics ───.
 
 func TestPhase6WS_HubSendUpdatesMetrics(t *testing.T) {
 	state := newTestWSState(t)
@@ -536,7 +536,7 @@ func TestPhase6WS_HubSendUpdatesMetrics(t *testing.T) {
 	t.Log("hub metrics: command sent and received successfully")
 }
 
-// ─── 6.14: Multiple telemetry frames ───
+// ─── 6.14: Multiple telemetry frames ───.
 
 func TestPhase6WS_MultipleTelemetryFrames(t *testing.T) {
 	state := newTestWSState(t)
@@ -575,7 +575,7 @@ func TestPhase6WS_MultipleTelemetryFrames(t *testing.T) {
 	t.Logf("received %d broadcast frames from 5 telemetry sends", received)
 }
 
-// ─── 6.15: Large message handling ───
+// ─── 6.15: Large message handling ───.
 
 func TestPhase6WS_LargeMessage(t *testing.T) {
 	state := newTestWSState(t)
@@ -603,7 +603,7 @@ func TestPhase6WS_LargeMessage(t *testing.T) {
 	t.Log("large telemetry frame (2KB) handled successfully")
 }
 
-// ─── 6.16: Device status tracking ───
+// ─── 6.16: Device status tracking ───.
 
 func TestPhase6WS_DeviceStatusTracking(t *testing.T) {
 	state := newTestWSState(t)
@@ -626,7 +626,7 @@ func TestPhase6WS_DeviceStatusTracking(t *testing.T) {
 	t.Log("device status tracking: online → offline transition verified")
 }
 
-// ─── 6.17: Concurrent connections stress test ───
+// ─── 6.17: Concurrent connections stress test ───.
 
 func TestPhase6WS_ConcurrentConnections(t *testing.T) {
 	state := newTestWSState(t)
@@ -661,7 +661,7 @@ func TestPhase6WS_ConcurrentConnections(t *testing.T) {
 	t.Logf("10 concurrent WebSocket connections established")
 }
 
-// ─── 6.18: Unknown message type ───
+// ─── 6.18: Unknown message type ───.
 
 func TestPhase6WS_UnknownMessageTypeHandled(t *testing.T) {
 	state := newTestWSState(t)
@@ -683,7 +683,7 @@ func TestPhase6WS_UnknownMessageTypeHandled(t *testing.T) {
 	t.Log("unknown message type handled gracefully")
 }
 
-// ─── 6.19: Status message ───
+// ─── 6.19: Status message ───.
 
 func TestPhase6WS_StatusMessage(t *testing.T) {
 	state := newTestWSState(t)
@@ -705,7 +705,7 @@ func TestPhase6WS_StatusMessage(t *testing.T) {
 	t.Log("status message handled")
 }
 
-// ─── 6.20: Pong message ───
+// ─── 6.20: Pong message ───.
 
 func TestPhase6WS_PongMessage(t *testing.T) {
 	state := newTestWSState(t)

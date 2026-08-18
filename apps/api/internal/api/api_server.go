@@ -245,10 +245,10 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	s.deviceUpdaterHandler = devicehandlers.NewUpdaterHandler(cfg.DeviceService)
 	s.deviceListHandler = devicehandlers.NewListHandler(cfg.DeviceService, cfg.Hub)
 
-	// Command handler. Risk evaluator gates dangerous commands; audit logger
-	// records every execution attempt. Fall back to a no-op if unset so the
-	// handler never holds a nil dependency. When a confirmation service is
-	// configured, the confirmation handler also serves as the command handler's
+	// Command handler. Risk evaluator gates dangerous commands; audit logger.
+	// records every execution attempt. Fall back to a no-op if unset so the.
+	// handler never holds a nil dependency. When a confirmation service is.
+	// configured, the confirmation handler also serves as the command handler's.
 	// confirmation consumer; otherwise risky commands are blocked (425).
 	var cmdAud cmdhandlers.AuditLogger = audit.NewNoOpLogger()
 	if cfg.AuditLogger != nil {
@@ -507,9 +507,9 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// ProvideMiddlewareSet does not wire the API key middleware (it is normally
-	// produced by WireMiddleware, which is only called from the legacy NewServer
-	// constructor). Backfill TenantAPIKeyAuth here so the dependency-injected
+	// ProvideMiddlewareSet does not wire the API key middleware (it is normally.
+	// produced by WireMiddleware, which is only called from the legacy NewServer.
+	// constructor). Backfill TenantAPIKeyAuth here so the dependency-injected.
 	// server (used by api_main.go) also enforces API key auth on tenant routes.
 	if cfg.Middleware != nil && cfg.Middleware.TenantAPIKeyAuth == nil && cfg.APIKeyService != nil && cfg.AuditLogger != nil {
 		cfg.Middleware.TenantAPIKeyAuth = middleware.NewTenantAPIKeyAuth(cfg.APIKeyService, cfg.AuditLogger)

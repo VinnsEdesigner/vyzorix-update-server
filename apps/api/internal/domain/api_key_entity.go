@@ -41,19 +41,19 @@ func (s Scope) CanDelete() bool {
 
 // APIKey represents a multi-tenant API key.
 type APIKey struct {
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
-	ExpiresAt    *time.Time `json:"expires_at"`
-	LastRequest  *time.Time `json:"last_request"`
-	RevokedAt    *time.Time `json:"revoked_at"`
-	ID           string     `json:"id"`
-	OperatorID   string     `json:"operator_id"`
-	Name         string     `json:"name"`
-	KeyPrefix    string     `json:"key_prefix"`
-	SigningSecret string    `json:"-"`
-	Scope        Scope      `json:"scope"`
-	RequestCount int64      `json:"request_count"`
-	IsActive     bool       `json:"is_active"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	ExpiresAt     *time.Time `json:"expires_at"`
+	LastRequest   *time.Time `json:"last_request"`
+	RevokedAt     *time.Time `json:"revoked_at"`
+	ID            string     `json:"id"`
+	OperatorID    string     `json:"operator_id"`
+	Name          string     `json:"name"`
+	KeyPrefix     string     `json:"key_prefix"`
+	SigningSecret string     `json:"-"`
+	Scope         Scope      `json:"scope"`
+	RequestCount  int64      `json:"request_count"`
+	IsActive      bool       `json:"is_active"`
 }
 
 // IsExpired returns true if the key has expired.
@@ -143,8 +143,8 @@ type ListAllAPIKeysResponse struct {
 	Pagination Pagination            `json:"pagination"`
 }
 
-// AdminAPIKeyResponse extends APIKeyResponse with operator identity, which the
-// super-admin "list all keys" view requires. APIKeyResponse omits operator_id
+// AdminAPIKeyResponse extends APIKeyResponse with operator identity, which the.
+// super-admin "list all keys" view requires. APIKeyResponse omits operator_id.
 // because operator-scoped responses imply the operator; the admin view does not.
 type AdminAPIKeyResponse struct {
 	OperatorID   string `json:"operator_id"`
@@ -153,27 +153,27 @@ type AdminAPIKeyResponse struct {
 }
 
 // GlobalAPIKeyStats represents global API key statistics (super admin).
-// request_count is cumulative (lifetime) per key — the schema does not store a
+// request_count is cumulative (lifetime) per key — the schema does not store a.
 // per-request log, so time-windowed "today"/"this month" totals are not tracked;
 // total_requests is the sum of every key's lifetime request_count.
 type GlobalAPIKeyStats struct {
-	RequestsByScope   map[string]int64  `json:"requests_by_scope"`
-	TopOperators      []TopOperatorStat `json:"top_operators"`
-	TotalKeys         int               `json:"total_keys"`
-	ActiveKeys        int               `json:"active_keys"`
-	RevokedKeys       int               `json:"revoked_keys"`
-	TotalOperators    int               `json:"total_operators"`
-	MaxPerMonth       int               `json:"max_per_month"`
-	TotalRequests     int64             `json:"total_requests"`
+	RequestsByScope map[string]int64  `json:"requests_by_scope"`
+	TopOperators    []TopOperatorStat `json:"top_operators"`
+	TotalKeys       int               `json:"total_keys"`
+	ActiveKeys      int               `json:"active_keys"`
+	RevokedKeys     int               `json:"revoked_keys"`
+	TotalOperators  int               `json:"total_operators"`
+	MaxPerMonth     int               `json:"max_per_month"`
+	TotalRequests   int64             `json:"total_requests"`
 }
 
-// TopOperatorStat is a per-operator cumulative request aggregate returned in
+// TopOperatorStat is a per-operator cumulative request aggregate returned in.
 // GlobalAPIKeyStats.TopOperators.
 type TopOperatorStat struct {
-	OperatorID      string `json:"operator_id"`
-	OperatorName    string `json:"operator_name"`
-	TotalRequests   int64  `json:"total_requests"`
-	ActiveKeyCount  int    `json:"active_key_count"`
+	OperatorID     string `json:"operator_id"`
+	OperatorName   string `json:"operator_name"`
+	TotalRequests  int64  `json:"total_requests"`
+	ActiveKeyCount int    `json:"active_key_count"`
 }
 
 // API key errors.

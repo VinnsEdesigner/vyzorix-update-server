@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// TestPhase5GraphQL tests GraphQL queries, mutations, org scoping, error
+// TestPhase5GraphQL tests GraphQL queries, mutations, org scoping, error.
 // handling, and batch queries. 37 subtests.
 func TestPhase5GraphQL(t *testing.T) {
 	requireServer(t)
@@ -20,7 +20,7 @@ func TestPhase5GraphQL(t *testing.T) {
 	orgID := state.OrgID
 	ts := timestamp()
 
-	// ── 5.0: Login as admin + select org ──
+// ── 5.0: Login as admin + select org ──.
 	s, err := newSession()
 	if err != nil {
 		t.Fatalf("new session: %v", err)
@@ -48,7 +48,7 @@ func TestPhase5GraphQL(t *testing.T) {
 		t.Logf("admin select org -> %s", orgID)
 	})
 
-	// ── 5.1: Auth & Introspection ──
+// ── 5.1: Auth & Introspection ──.
 	t.Run("no_auth_rejected", func(t *testing.T) {
 		status, data, raw := graphqlRaw(t, "test-org", "{ __schema { queryType { name } } }", nil)
 		if (status == 200 || status == 401) && (strings.Contains(strings.ToLower(raw), "error") || hasGraphQLErrors(data)) {
@@ -143,7 +143,7 @@ func TestPhase5GraphQL(t *testing.T) {
 		t.Logf("mutation fields present (%d fields)", len(fields))
 	})
 
-	// ── 5.2: Queries ──
+// ── 5.2: Queries ──.
 	t.Run("query_organizations", func(t *testing.T) {
 		_, data := graphql(t, s, orgID, "{ organizations { items { id name } pagination { total } } }")
 		orgs, _ := data["data"].(map[string]any)
@@ -167,7 +167,7 @@ func TestPhase5GraphQL(t *testing.T) {
 	t.Run("query_organization_by_id", func(t *testing.T) {
 		q := fmt.Sprintf(`query($id: ID!) { organization(id: $id) { id name memberCount } }`)
 		_, data := graphql(t, s, orgID, q)
-		// Note: graphql() doesn't support variables yet — use inline
+// Note: graphql() doesn't support variables yet — use inline.
 		qInline := fmt.Sprintf(`{ organization(id: "%s") { id name memberCount } }`, orgID)
 		_, data = graphql(t, s, orgID, qInline)
 		dataField, _ := data["data"].(map[string]any)
@@ -378,7 +378,7 @@ func TestPhase5GraphQL(t *testing.T) {
 		t.Errorf("allConnections -> unexpected: %v", data)
 	})
 
-	// ── 5.3: Mutations ──
+// ── 5.3: Mutations ──.
 	t.Run("mutation_updateMyNotifications", func(t *testing.T) {
 		q := `mutation {
   updateMyNotifications(input: {
@@ -503,7 +503,7 @@ func TestPhase5GraphQL(t *testing.T) {
 		}
 		t.Logf("inviteMember -> id=%s... email=%s role=%v", truncStr(getStr(inv, "id"), 12), inv["email"], inv["role"])
 
-		// Extract token from mock email
+// Extract token from mock email.
 		time.Sleep(time.Second)
 		emailLog := fetchInviteEmail(t, inviteeEmail)
 		if emailLog != nil {
@@ -518,9 +518,9 @@ func TestPhase5GraphQL(t *testing.T) {
 		if inviteToken == "" {
 			t.Skip("no invite token captured")
 		}
-		// Register + verify invitee
+// Register + verify invitee.
 		s2, csrf2 := registerAndVerify(t, inviteeEmail, "GraphQL Invitee")
-		// Login
+// Login.
 		status, body := doJSON(t, s2, "POST", "/v1/auth/login",
 			map[string]string{"X-CSRF-Token": csrf2},
 			map[string]any{"email": inviteeEmail, "password": testPassword})
@@ -528,10 +528,10 @@ func TestPhase5GraphQL(t *testing.T) {
 			t.Fatalf("invitee login -> %d: %s", status, string(body))
 		}
 
-		// The invitee is not yet a member of newOrgID, so calling
-		// /{newOrgID}/graphql gets "forbidden: not a member". The acceptInvitation
-		// mutation is behind org-scoped middleware, making it impossible for a
-		// non-member to call it via GraphQL. Fall back to the REST API
+// The invitee is not yet a member of newOrgID, so calling.
+// /{newOrgID}/graphql gets "forbidden: not a member". The acceptInvitation.
+// mutation is behind org-scoped middleware, making it impossible for a.
+// non-member to call it via GraphQL. Fall back to the REST API.
 		// (/v1/invite/{token}/accept) which works without org membership.
 		q := fmt.Sprintf(`mutation {
   acceptInvitation(token: "%s") {
@@ -568,7 +568,7 @@ func TestPhase5GraphQL(t *testing.T) {
 			return
 		}
 
-		// GraphQL blocked by org-scoped middleware — fall back to REST API
+// GraphQL blocked by org-scoped middleware — fall back to REST API.
 		if hasGraphQLErrors(data) || data["error"] != nil {
 			// Use REST API to accept (proven to work in Phase 3)
 			status, body = doJSON(t, s2, "POST", "/v1/invite/"+inviteToken+"/accept",
@@ -598,7 +598,7 @@ func TestPhase5GraphQL(t *testing.T) {
 	})
 
 	t.Run("mutation_pushUpdate", func(t *testing.T) {
-		// Get a version from updatesVersions
+// Get a version from updatesVersions.
 		q := fmt.Sprintf(`{ updatesVersions(organizationId: "%s", limit: 1) { versions { version } } }`, orgID)
 		_, data := graphql(t, s, orgID, q)
 		dataField, _ := data["data"].(map[string]any)
@@ -633,7 +633,7 @@ func TestPhase5GraphQL(t *testing.T) {
 		t.Errorf("pushUpdate -> unexpected: %v", data)
 	})
 
-	// ── 5.4: Org Scoping & Membership Enforcement ──
+// ── 5.4: Org Scoping & Membership Enforcement ──.
 	t.Run("nonexistent_org_rejected", func(t *testing.T) {
 		fakeOrg := "00000000-0000-0000-0000-000000000000"
 		q := fmt.Sprintf(`{ devices(organizationId: "%s") { id } }`, fakeOrg)
@@ -679,7 +679,7 @@ func TestPhase5GraphQL(t *testing.T) {
 		t.Error("unauthenticated org query -> should be rejected")
 	})
 
-	// ── 5.5: Error Handling ──
+// ── 5.5: Error Handling ──.
 	t.Run("invalid_syntax_error", func(t *testing.T) {
 		_, data := graphql(t, s, orgID, `{ devices(organizationId: "x" }`)
 		if hasGraphQLErrors(data) {
@@ -726,7 +726,7 @@ func TestPhase5GraphQL(t *testing.T) {
 		t.Error("invalid enum -> should error")
 	})
 
-	// ── 5.6: Batch Queries ──
+// ── 5.6: Batch Queries ──.
 	t.Run("batch_query", func(t *testing.T) {
 		batch := []map[string]any{
 			{"query": fmt.Sprintf(`{ deviceCount(organizationId: "%s") }`, orgID)},

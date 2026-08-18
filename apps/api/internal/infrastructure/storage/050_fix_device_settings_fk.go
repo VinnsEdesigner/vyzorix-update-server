@@ -10,25 +10,25 @@ import (
 //
 // Migration 042 (migrateDeviceSettings) created device_settings with:
 //
-//	FOREIGN KEY (device_imei) REFERENCES devices(imei) ON DELETE CASCADE
+//	FOREIGN KEY (device_imei) REFERENCES devices(imei) ON DELETE CASCADE.
 //
 // but the devices table has no `imei` column — the IMEI is stored in devices.id.
 // Every other child table (commands, telemetry, device_events, dashboard logs)
-// correctly references devices(id). The mismatched reference makes the foreign
-// key unresolvable, so SQLite raises "foreign key mismatch" on any DELETE
-// against devices once a device_settings row exists, and the intended ON DELETE
-// CASCADE never fires. This breaks the device-deletion worker for any device
+// correctly references devices(id). The mismatched reference makes the foreign.
+// key unresolvable, so SQLite raises "foreign key mismatch" on any DELETE.
+// against devices once a device_settings row exists, and the intended ON DELETE.
+// CASCADE never fires. This breaks the device-deletion worker for any device.
 // that has settings.
 //
-// SQLite cannot ALTER a foreign key in place, so this migration rebuilds
-// device_settings: it captures the existing CREATE TABLE SQL, rewrites the bad
+// SQLite cannot ALTER a foreign key in place, so this migration rebuilds.
+// device_settings: it captures the existing CREATE TABLE SQL, rewrites the bad.
 // REFERENCES clause to devices(id), recreates the table under a temporary name,
-// copies the data, drops the old table, and renames. Idempotent — if the FK
+// copies the data, drops the old table, and renames. Idempotent — if the FK.
 // already targets devices(id) the migration is a no-op.
 func migrateFixDeviceSettingsFK(tx *sql.Tx) error {
 	_, _ = tx.ExecContext(context.Background(), "DROP TABLE IF EXISTS _device_settings_new")
 
-	// Determine whether the FK is already correct by inspecting the foreign key
+	// Determine whether the FK is already correct by inspecting the foreign key.
 	// list. If devices(id) is present (and devices(imei) is not), skip.
 	fkRows, err := tx.QueryContext(context.Background(), "PRAGMA foreign_key_list(device_settings)")
 	if err != nil {
@@ -56,7 +56,7 @@ func migrateFixDeviceSettingsFK(tx *sql.Tx) error {
 		return nil
 	}
 
-	// Rebuild device_settings with the corrected FK. The column set is fixed by
+	// Rebuild device_settings with the corrected FK. The column set is fixed by.
 	// migration 042 and unchanged since, so a literal recreation is safe here.
 	createStmt := `
 		CREATE TABLE _device_settings_new (

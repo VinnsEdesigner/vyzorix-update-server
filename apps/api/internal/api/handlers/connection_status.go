@@ -64,7 +64,7 @@ type AllConnectionsResponse struct {
 func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 	deviceID := c.Param("id")
 	if deviceID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device id is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device id is required"))
 
 		return
 	}
@@ -102,14 +102,14 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 // Returns the status of all WebSocket connections within the organization.
 func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 	if h.hub == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "WebSocket hub not initialized"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "WebSocket hub not initialized"))
 
 		return
 	}
 
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 
 		return
 	}
@@ -176,7 +176,7 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 
 		return
 	}
@@ -239,14 +239,14 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 
 		return
 	}
 
 	deviceID := c.Param("id")
 	if deviceID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device id is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device id is required"))
 
 		return
 	}
@@ -255,7 +255,7 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 	if h.deviceRepo != nil {
 		_, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
 		if err != nil {
-			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found in organization"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found in organization"))
 
 			return
 		}
@@ -264,7 +264,7 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 	// Require operator auth.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "authentication required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "authentication required"))
 
 		return
 	}
@@ -272,7 +272,7 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 	// Get and disconnect client.
 	client := h.hub.GetClient(deviceID)
 	if client == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not connected"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not connected"))
 
 		return
 	}

@@ -16,6 +16,8 @@ import (
 // Because SQLite cannot rename columns before 3.25 (and Turso may not support
 // ALTER TABLE RENAME COLUMN reliably across replicas), we rebuild the table:
 // create a new table with the correct schema, copy data, and swap. Idempotent.
+//
+//nolint:gocyclo // migration is inherently complex
 func migrateFixRefreshTokensSchema(tx *sql.Tx) error {
 	_, _ = tx.ExecContext(context.Background(), "DROP TABLE IF EXISTS refresh_tokens_new")
 
@@ -38,7 +40,7 @@ func migrateFixRefreshTokensSchema(tx *sql.Tx) error {
 	if err != nil {
 		return err
 	}
-	defer cols.Close()
+	defer func() { _ = cols.Close() }()
 
 	hasRevoked := false
 	hasIsRevoked := false
@@ -48,8 +50,8 @@ func migrateFixRefreshTokensSchema(tx *sql.Tx) error {
 		var name, ctype string
 		var notnull, pk int
 		var dfltValue *string
-		if err := cols.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err != nil {
-			return err
+		if scanErr := cols.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); scanErr != nil {
+			return scanErr
 		}
 		switch name {
 		case "revoked":
@@ -59,8 +61,11 @@ func migrateFixRefreshTokensSchema(tx *sql.Tx) error {
 		case "revoked_at":
 			hasRevokedAt = true
 		}
+		if colsErr := cols.Err(); colsErr != nil {
+			return err
+		}
 	}
-	cols.Close()
+	_ = cols.Close()
 
 	// Already migrated — nothing to do.
 	if !hasRevoked && hasIsRevoked && hasRevokedAt {

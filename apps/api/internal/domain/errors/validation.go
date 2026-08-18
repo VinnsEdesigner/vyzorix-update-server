@@ -5,15 +5,15 @@ import (
 	"fmt"
 )
 
-// ValidationError is the structured validation failure returned by request
-// validators. It carries field-level details that the error/response layers
+// ValidationError is the structured validation failure returned by request.
+// validators. It carries field-level details that the error/response layers.
 // surface to clients as the `details` of a VALIDATION_FAILED ServerError.
 type ValidationError struct {
 	Details []ValidationDetail
 }
 
-// NewValidationError wraps a set of field-level validation details into a
-// ValidationError. Callers pass nil/empty to denote "no details" — though in
+// NewValidationError wraps a set of field-level validation details into a.
+// ValidationError. Callers pass nil/empty to denote "no details" — though in.
 // practice validators only construct this when there are details.
 func NewValidationError(details []ValidationDetail) *ValidationError {
 	return &ValidationError{Details: details}
@@ -32,7 +32,7 @@ func (e *ValidationError) Error() string {
 }
 
 // ValidationDetailsOf extracts field-level validation details from an error,
-// returning the details and true when the error is (or wraps) a
+// returning the details and true when the error is (or wraps) a.
 // *ValidationError. Used by the error middleware to render structured 400s.
 func ValidationDetailsOf(err error) ([]ValidationDetail, bool) {
 	var ve *ValidationError
@@ -46,7 +46,7 @@ func ValidationDetailsOf(err error) ([]ValidationDetail, bool) {
 }
 
 // AsServerError extracts a *ServerError from an error (direct or wrapped),
-// returning nil when the error is not a ServerError. Used by the error
+// returning nil when the error is not a ServerError. Used by the error.
 // middleware to render a ServerError's own code/message/details/docs-url.
 func AsServerError(err error) *ServerError {
 	var se *ServerError

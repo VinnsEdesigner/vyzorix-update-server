@@ -29,7 +29,7 @@ func NewClientCredentialsHandler(authService *auth.AuthService, clientService *c
 }
 
 // getOperatorFromSession extracts operator from the authenticated session.
-// See SettingsHandler.getOperatorFromSession: the cookieAuth middleware already
+// See SettingsHandler.getOperatorFromSession: the cookieAuth middleware already.
 // validated the (encrypted) session cookie and stored the operator in context,
 // so we reuse that instead of passing the raw cookie ciphertext to ValidateSession.
 func (h *ClientCredentialsHandler) getOperatorFromSession(c *gin.Context) (string, error) {

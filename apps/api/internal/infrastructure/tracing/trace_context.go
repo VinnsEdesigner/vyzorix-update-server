@@ -36,25 +36,28 @@ var bufferPool = sync.Pool{
 
 // GenerateTraceID creates a new unique trace ID.
 // Format: 32 hex characters (16 bytes of randomness).
-// Example: "a1b2c3d4e5f6789012345678abcdef01"
+// Example: "a1b2c3d4e5f6789012345678abcdef01".
 func GenerateTraceID() string {
-	bufferPtr := bufferPool.Get().(*[]byte)
+	bufferPtr, ok := bufferPool.Get().(*[]byte)
+	if !ok {
+		return fallbackTraceID()
+	}
 	defer bufferPool.Put(bufferPtr)
 
 	_, err := rand.Read(*bufferPtr)
 	if err != nil {
-		// Fallback to a pseudo-random ID if crypto/rand fails
+		// Fallback to a pseudo-random ID if crypto/rand fails.
 		return fallbackTraceID()
 	}
 
 	return hex.EncodeToString(*bufferPtr)
 }
 
-// fallbackTraceID generates a trace ID using alternative entropy sources when
-// crypto/rand is unavailable. This is a last-resort path (crypto/rand.Read
-// failing is essentially impossible on supported platforms) but it must still
-// produce a unique, well-formed ID. We mix a high-resolution timestamp with a
-// process-wide atomic counter and hash the result with FNV so the output is
+// fallbackTraceID generates a trace ID using alternative entropy sources when.
+// crypto/rand is unavailable. This is a last-resort path (crypto/rand.Read.
+// failing is essentially impossible on supported platforms) but it must still.
+// produce a unique, well-formed ID. We mix a high-resolution timestamp with a.
+// process-wide atomic counter and hash the result with FNV so the output is.
 // 32 hex chars and ValidateTraceID accepts it.
 //
 //nolint:gosec // G115: the narrowing int->byte conversions are intentional byte extraction (low 8 bits per shift).
@@ -88,7 +91,7 @@ func ValidateTraceID(traceID string) bool {
 	if len(traceID) != TraceIDLength*2 {
 		return false
 	}
-	// Check if all characters are valid hex
+	// Check if all characters are valid hex.
 	for _, c := range traceID {
 		if !isHexChar(c) {
 			return false
@@ -115,8 +118,8 @@ func ExtractOrGenerate(input string) string {
 }
 
 // TraceIDWithPrefix creates a trace ID with a prefix for easier log scanning.
-// Format: "PREFIX:traceid"
-// Example: "req:a1b2c3d4..."
+// Format: "PREFIX:traceid".
+// Example: "req:a1b2c3d4...".
 func TraceIDWithPrefix(prefix, traceID string) string {
 	return fmt.Sprintf("%s:%s", prefix, traceID)
 }
@@ -146,7 +149,7 @@ type TraceContext struct {
 func NewTraceContext() *TraceContext {
 	return &TraceContext{
 		TraceID: GenerateTraceID(),
-		SpanID:  GenerateTraceID()[:16], // Short span ID
+		SpanID:  GenerateTraceID()[:16], // Short span ID.
 	}
 }
 

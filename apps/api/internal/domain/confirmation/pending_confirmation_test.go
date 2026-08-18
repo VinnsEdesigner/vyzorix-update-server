@@ -48,7 +48,7 @@ func TestPendingConfirmation_Matches(t *testing.T) {
 }
 
 func TestPendingConfirmation_MatchesAnyDeviceWhenUnscoped(t *testing.T) {
-	// A confirmation issued without a specific device matches any device for
+	// A confirmation issued without a specific device matches any device for.
 	// the same operator+command (e.g. org-wide confirmations).
 	c := &PendingConfirmation{OperatorID: "op-1", Command: "device.reboot", DeviceID: ""}
 	if !c.Matches("op-1", "device.reboot", "any-device") {

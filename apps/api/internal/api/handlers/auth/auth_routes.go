@@ -168,9 +168,9 @@ func (h *AllHandlers) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware
 	// SuperAdmin-only operator management routes.
 	adminOperators := rg.Group("/admin")
 	adminOperators.Use(cookieAuth.Middleware())
-	// Populate organization context (header/query/session) before
-	// RequireSuperAdmin checks IsSuperAdminIn(orgID). Without this the org
-	// context was empty and every /v1/auth/admin/operators request returned
+	// Populate organization context (header/query/session) before.
+	// RequireSuperAdmin checks IsSuperAdminIn(orgID). Without this the org.
+	// context was empty and every /v1/auth/admin/operators request returned.
 	// 400 "Organization ID is required for admin access".
 	adminOperators.Use(middleware.NewOrganizationContext(nil).Middleware())
 	adminOperators.Use(middleware.RequireSuperAdmin())

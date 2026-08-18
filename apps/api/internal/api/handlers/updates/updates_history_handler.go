@@ -30,7 +30,7 @@ func (h *UpdatesHistoryHandler) GetHistory(c *gin.Context) {
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
@@ -51,10 +51,10 @@ func (h *UpdatesHistoryHandler) GetHistory(c *gin.Context) {
 	result, err := h.service.GetHistory(c.Request.Context(), status, page, limit, orgID)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+			_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get history"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get history"))
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -65,23 +65,23 @@ func (h *UpdatesHistoryHandler) GetPushDetail(c *gin.Context) {
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	pushID := c.Param("pushId")
 	if pushID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Push ID is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Push ID is required"))
 		return
 	}
 
 	detail, err := h.service.GetPushDetail(c.Request.Context(), pushID, orgID)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+			_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get push detail"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get push detail"))
 		return
 	}
 	c.JSON(http.StatusOK, detail)
@@ -92,29 +92,29 @@ func (h *UpdatesHistoryHandler) CancelPush(c *gin.Context) {
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	pushID := c.Param("pushId")
 	if pushID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Push ID is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Push ID is required"))
 		return
 	}
 
 	operator := middleware.GetOperatorFromContext(c)
 	if operator == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator not found"))
 		return
 	}
 
 	result, err := h.service.CancelPush(c.Request.Context(), pushID, operator.ID, orgID)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+			_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to cancel push"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to cancel push"))
 		return
 	}
 

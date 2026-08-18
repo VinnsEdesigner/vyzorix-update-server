@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-// DefaultDocsBaseURL is used when no base URL is configured via SetDocsBaseURL
+// DefaultDocsBaseURL is used when no base URL is configured via SetDocsBaseURL.
 // or the VYZORIX_DOCS_BASE_URL environment variable. It carries no trailing slash.
 const DefaultDocsBaseURL = "https://docs.vyzorix.com/errors"
 
@@ -17,7 +17,7 @@ type DocsURLBuilder struct {
 	mu      sync.RWMutex
 }
 
-// DefaultDocsURLBuilder is the global docs URL builder, seeded from the
+// DefaultDocsURLBuilder is the global docs URL builder, seeded from the.
 // VYZORIX_DOCS_BASE_URL environment variable if present.
 var DefaultDocsURLBuilder = func() *DocsURLBuilder {
 	b := &DocsURLBuilder{}

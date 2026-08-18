@@ -494,8 +494,8 @@ func (s *FCMTokenUpdateSchema) Validate() ValidationErrors {
 // Middleware Factory.
 // =============================================================================.
 
-// validationDetails converts the middleware-local ValidationErrors into the
-// domain-level []domainerrors.ValidationDetail that the structured response
+// validationDetails converts the middleware-local ValidationErrors into the.
+// domain-level []domainerrors.ValidationDetail that the structured response.
 // layer renders as the `details` of a VALIDATION_FAILED error.
 func validationDetails(errs ValidationErrors) []domainerrors.ValidationDetail {
 	if len(errs) == 0 {
@@ -538,8 +538,8 @@ func ValidationMiddleware(schema Validator) gin.HandlerFunc {
 		c.Request.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
 
 		if errs := schema.Validate(); errs.HasErrors() {
-			// Emit a structured VALIDATION_FAILED response with field-level
-			// details, a trace id, and a docs link — replacing the legacy
+			// Emit a structured VALIDATION_FAILED response with field-level.
+			// details, a trace id, and a docs link — replacing the legacy.
 			// {error,message,errors} envelope.
 			responses.RespondValidationError(c, validationDetails(errs))
 			c.Abort()

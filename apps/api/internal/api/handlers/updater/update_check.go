@@ -92,7 +92,7 @@ func (h *Handler) Changelog(c *gin.Context) {
 func (h *Handler) APK(c *gin.Context) {
 	filename := c.Param("filename")
 	if filename == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "filename required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "filename required"))
 		return
 	}
 	// Remove leading slash if present.
@@ -105,7 +105,7 @@ func (h *Handler) APK(c *gin.Context) {
 func (h *Handler) Bin(c *gin.Context) {
 	filename := c.Param("filename")
 	if filename == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "filename required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "filename required"))
 		return
 	}
 	// Remove leading slash if present.
@@ -121,13 +121,13 @@ func (h *Handler) CheckUpdate(c *gin.Context) {
 
 	data, err := os.ReadFile(filepath.Join(h.dataDir, "version.json"))
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "cannot read version file"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "cannot read version file"))
 		return
 	}
 
 	var manifest VersionManifest
 	if err := json.Unmarshal(data, &manifest); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "invalid version file"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "invalid version file"))
 		return
 	}
 
@@ -164,7 +164,7 @@ func (h *Handler) DownloadProgress(c *gin.Context) {
 	}
 
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request"))
 		return
 	}
 
@@ -190,7 +190,7 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 	// Ensure the result is a valid filename (not empty, no path separators).
 	if baseFilename == "" || baseFilename == "." || baseFilename == ".." ||
 		strings.ContainsAny(baseFilename, "/\\") {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid filename"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid filename"))
 		return
 	}
 
@@ -202,7 +202,7 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 		actualHash, err := h.computeFileHash(fpath)
 		if err != nil {
 			h.log.Error("failed to compute APK hash", "error", err, "file", fpath)
-			c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to verify APK integrity"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to verify APK integrity"))
 			return
 		}
 
@@ -213,7 +213,7 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 				"manifest_hash", h.manifest.APKSHA256,
 				"actual_hash", actualHash,
 			)
-			c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "APK integrity verification failed - file may have been tampered with"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "APK integrity verification failed - file may have been tampered with"))
 
 			return
 		}
@@ -226,14 +226,14 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 		actualHash, err := h.computeFileHash(fpath)
 		if err != nil {
 			h.log.Error("failed to compute APK hash", "error", err, "file", fpath)
-			c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to verify APK integrity"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to verify APK integrity"))
 			return
 		}
 
 		// Constant-time comparison to prevent timing attacks.
 		if !secureCompare(clientHash, actualHash) {
 			h.log.Warn("APK hash mismatch", "expected", clientHash, "actual", actualHash)
-			c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "APK integrity check failed"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "APK integrity check failed"))
 
 			return
 		}
@@ -255,7 +255,7 @@ func (h *Handler) serveAPK(c *gin.Context, filename string) {
 
 		return
 	}
-	c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "GET or HEAD required"))
+	_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "GET or HEAD required"))
 }
 
 // computeFileHash computes the SHA256 hash of a file.

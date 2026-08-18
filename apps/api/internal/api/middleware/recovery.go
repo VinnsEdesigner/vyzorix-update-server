@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GinPanicRecovery returns a Gin middleware that recovers from panics, logs the
-// stack trace internally (never sent to the client), and returns the structured
+// GinPanicRecovery returns a Gin middleware that recovers from panics, logs the.
+// stack trace internally (never sent to the client), and returns the structured.
 // error envelope with a trace_id so the panic response correlates with logs.
 // It must be registered after the Tracing middleware so a trace_id exists.
 func GinPanicRecovery(logger *slog.Logger) func(c *gin.Context) {

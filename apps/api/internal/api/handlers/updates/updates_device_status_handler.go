@@ -40,7 +40,7 @@ type DeviceUpdateStatusResponse struct {
 func (h *DeviceStatusHandler) HandleDeviceUpdateStatus(c *gin.Context) {
 	var req DeviceUpdateStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request"))
 		return
 	}
 
@@ -53,7 +53,7 @@ func (h *DeviceStatusHandler) HandleDeviceUpdateStatus(c *gin.Context) {
 
 	status, ok := validStatuses[req.Status]
 	if !ok {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid status. Must be: in_progress, completed, or failed"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid status. Must be: in_progress, completed, or failed"))
 		return
 	}
 
@@ -61,14 +61,14 @@ func (h *DeviceStatusHandler) HandleDeviceUpdateStatus(c *gin.Context) {
 	err := h.service.UpdateDeviceStatusByDispatch(c.Request.Context(), req.DispatchID, req.DeviceID, status, req.Error)
 	if err != nil {
 		if err == domainupdates.ErrPushNotFound {
-			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Push not found"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Push not found"))
 			return
 		}
 		if err == domainupdates.ErrDeviceNotFound {
-			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found in push"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found in push"))
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to update status"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to update status"))
 		return
 	}
 

@@ -36,14 +36,14 @@ func NewInspectHandler(service *appdiagnostics.Service, rateLimiter func(c *gin.
 func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
 		return
 	}
 
 	// Require organization context for multi-tenant isolation.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
@@ -58,10 +58,10 @@ func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
 	authResp := h.service.VerifyDeviceOwnership(c.Request.Context(), imei, operatorID, orgID)
 	if !authResp.Authorized {
 		if authResp.Forbidden {
-			c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "Access denied - device does not belong to organization"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "Access denied - device does not belong to organization"))
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Authentication required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Authentication required"))
 		return
 	}
 
@@ -69,9 +69,9 @@ func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
 	if err != nil {
 		switch err {
 		case domaindiagnostics.ErrDeviceNotFound:
-			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
 		default:
-			c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get device inspection"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get device inspection"))
 		}
 		return
 	}

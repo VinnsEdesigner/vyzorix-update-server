@@ -32,21 +32,21 @@ func (h *StatsHandler) GetStats(c *gin.Context) {
 	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	// Extract organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	response, err := h.dashboardSvc.GetDashboardStatsByOrganization(ctx, orgID)
 	if err != nil {
 		h.logger.Error("Failed to get dashboard stats", "organizationID", orgID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve dashboard stats"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve dashboard stats"))
 		return
 	}
 

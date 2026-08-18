@@ -46,27 +46,27 @@ func (h *EventsHandler) GetEvents(c *gin.Context) {
 	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	deviceID := c.Param("imei")
 	if deviceID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
 		return
 	}
 
 	// Verify device belongs to this organization.
 	if _, err := h.findDevice(ctx, deviceID, orgID); err != nil {
 		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
 		return
 	}
 
@@ -120,7 +120,7 @@ func (h *EventsHandler) GetEvents(c *gin.Context) {
 	result, err := h.eventRepo.GetByDevice(ctx, deviceID, filter)
 	if err != nil {
 		h.logger.Error("Failed to get device events", "deviceID", deviceID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve events"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve events"))
 		return
 	}
 
@@ -138,13 +138,13 @@ func (h *EventsHandler) GetEventsByType(c *gin.Context) {
 
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	eventType := c.Param("type")
 	if eventType == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Event type is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Event type is required"))
 		return
 	}
 
@@ -167,7 +167,7 @@ func (h *EventsHandler) GetEventsByType(c *gin.Context) {
 	result, err := h.eventRepo.GetByType(ctx, event.EventType(eventType), filter)
 	if err != nil {
 		h.logger.Error("Failed to get events by type", "eventType", eventType, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve events"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve events"))
 		return
 	}
 
@@ -185,7 +185,7 @@ func (h *EventsHandler) GetRecentEvents(c *gin.Context) {
 
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
@@ -199,7 +199,7 @@ func (h *EventsHandler) GetRecentEvents(c *gin.Context) {
 	events, err := h.eventRepo.GetRecent(ctx, limit)
 	if err != nil {
 		h.logger.Error("Failed to get recent events", "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve events"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve events"))
 		return
 	}
 
@@ -216,20 +216,20 @@ func (h *EventsHandler) GetEventByID(c *gin.Context) {
 
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	eventID := c.Param("id")
 	if eventID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Event ID is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Event ID is required"))
 		return
 	}
 
 	evt, err := h.eventRepo.GetByID(ctx, eventID)
 	if err != nil {
 		h.logger.Warn("Event not found", "eventID", eventID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Event not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Event not found"))
 		return
 	}
 

@@ -12,7 +12,7 @@ func Logger(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 
-		// Get trace ID from context (set by Tracing middleware). This is the
+		// Get trace ID from context (set by Tracing middleware). This is the.
 		// single correlation ID and matches the trace_id in error/panic logs.
 		traceID := GetTraceID(c)
 

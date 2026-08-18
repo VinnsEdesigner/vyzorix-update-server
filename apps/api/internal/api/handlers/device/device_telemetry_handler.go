@@ -36,20 +36,20 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	deviceID := c.Param("imei")
 	if deviceID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
 		return
 	}
 
@@ -57,7 +57,7 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 	_, err := h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
 		return
 	}
 
@@ -71,11 +71,11 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 	if st := c.Query("startTime"); st != "" {
 		val, intErr := strconv.ParseInt(st, 10, 64)
 		if intErr != nil {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid startTime format"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid startTime format"))
 			return
 		}
 		if val < 0 {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "startTime must be >= 0"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "startTime must be >= 0"))
 			return
 		}
 		req.StartTime = val
@@ -83,7 +83,7 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 	if et := c.Query("endTime"); et != "" {
 		val, intErr := strconv.ParseInt(et, 10, 64)
 		if intErr != nil {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid endTime format"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid endTime format"))
 			return
 		}
 		req.EndTime = val
@@ -91,18 +91,18 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 	// Enforce max query window after both values are parsed.
 	if req.StartTime > 0 && req.EndTime > 0 {
 		if req.EndTime <= req.StartTime {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "endTime must be greater than startTime"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "endTime must be greater than startTime"))
 			return
 		}
 		if req.EndTime-req.StartTime > maxTimeWindowMs {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "time range exceeds maximum allowed window of 90 days"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "time range exceeds maximum allowed window of 90 days"))
 			return
 		}
 	}
 	if l := c.Query("limit"); l != "" {
 		val, intErr := strconv.Atoi(l)
 		if intErr != nil {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid limit format"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid limit format"))
 			return
 		}
 		req.Limit = val
@@ -111,7 +111,7 @@ func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 	response, err := h.metricsSvc.GetTelemetry(ctx, req)
 	if err != nil {
 		h.logger.Error("Failed to get telemetry", "deviceID", deviceID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve telemetry"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve telemetry"))
 		return
 	}
 

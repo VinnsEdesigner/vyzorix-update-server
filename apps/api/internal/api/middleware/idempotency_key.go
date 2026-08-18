@@ -227,7 +227,7 @@ func storeIdempotencyRecord(c *gin.Context, config IdempotencyConfig, path, key 
 		return
 	}
 
-	// Store records for successful responses (2xx) and also for 4xx client errors
+	// Store records for successful responses (2xx) and also for 4xx client errors.
 	// to prevent duplicate processing of invalid requests.
 	if recorder.statusCode < 200 || recorder.statusCode >= 500 {
 		return
@@ -252,11 +252,11 @@ func storeIdempotencyRecord(c *gin.Context, config IdempotencyConfig, path, key 
 	}
 
 	go func() {
-		// The request context (c.Request.Context()) is cancelled the moment the
-		// response is written and the handler returns. Storage backends that honor
-		// context cancellation — notably Turso libSQL over HTTP — would abort the
-		// INSERT, silently dropping the idempotency record and defeating replay on
-		// the next request. Use a detached context with a bounded timeout so the
+		// The request context (c.Request.Context()) is cancelled the moment the.
+		// response is written and the handler returns. Storage backends that honor.
+		// context cancellation — notably Turso libSQL over HTTP — would abort the.
+		// INSERT, silently dropping the idempotency record and defeating replay on.
+		// the next request. Use a detached context with a bounded timeout so the.
 		// record is durably persisted independent of the request lifecycle.
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()

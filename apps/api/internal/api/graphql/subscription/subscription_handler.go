@@ -102,8 +102,8 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 		return
 	}
 
-	// The system middleware chain (cookieAuth/tenantAPIKeyAuth) has already
-	// authenticated the operator and set it in the gin context. Extract it
+	// The system middleware chain (cookieAuth/tenantAPIKeyAuth) has already.
+	// authenticated the operator and set it in the gin context. Extract it.
 	// from there instead of re-authenticating.
 	op := h.authMw.GetOperatorFromGinContext(c)
 	if op == nil {

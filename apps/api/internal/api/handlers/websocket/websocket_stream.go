@@ -67,11 +67,11 @@ func (u *StreamUpgrader) Upgrade(c *gin.Context, deviceID string) (*websocket.Co
 	if u.config.Env == "production" || u.config.EnforceHMAC {
 		// Use query param based verification for WebSocket since headers can't be set during upgrade.
 		if err := u.verifyWebSocketHMAC(c.Request, deviceID); err != nil {
-			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "WebSocket HMAC verification failed"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "WebSocket HMAC verification failed"))
 			return nil, nil, err
 		}
 	} else if !u.allowDevAuth {
-		c.Error(
+		_ = c.Error(
 			// This case handles production with EnforceHMAC=false (shouldn't happen but is defensive).
 			apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "WebSocket authentication is required"))
 		return nil, nil, http.ErrNotSupported

@@ -36,20 +36,20 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	deviceID := c.Param("imei")
 	if deviceID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
 		return
 	}
 
@@ -57,7 +57,7 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	_, err := h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
 		return
 	}
 
@@ -74,11 +74,11 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	if l := c.Query("limit"); l != "" {
 		parsed, intErr := strconv.Atoi(l)
 		if intErr != nil || parsed <= 0 {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "limit must be a positive integer"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "limit must be a positive integer"))
 			return
 		}
 		if parsed > 100 {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "limit cannot exceed 100"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "limit cannot exceed 100"))
 			return
 		}
 		limit = parsed
@@ -88,7 +88,7 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	if st := c.Query("startTime"); st != "" {
 		parsed, intErr := strconv.ParseInt(st, 10, 64)
 		if intErr != nil {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid startTime format"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid startTime format"))
 			return
 		}
 		startTime = parsed
@@ -96,13 +96,13 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	if et := c.Query("endTime"); et != "" {
 		parsed, intErr := strconv.ParseInt(et, 10, 64)
 		if intErr != nil {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid endTime format"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid endTime format"))
 			return
 		}
 		endTime = parsed
 	}
 	if startTime > 0 && endTime > 0 && startTime >= endTime {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "startTime must be before endTime"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "startTime must be before endTime"))
 		return
 	}
 
@@ -119,7 +119,7 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	resp, err := h.historySvc.GetHistory(ctx, req)
 	if err != nil {
 		h.logger.Error("Failed to get command history", "deviceID", deviceID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve command history"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve command history"))
 		return
 	}
 

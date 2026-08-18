@@ -39,20 +39,20 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	deviceID := c.Param("imei")
 	if deviceID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
 		return
 	}
 
@@ -60,7 +60,7 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 	dev, err := h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
 		return
 	}
 
@@ -77,7 +77,7 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 	if st := c.Query("startTime"); st != "" {
 		val, intErr := strconv.ParseInt(st, 10, 64)
 		if intErr != nil || val < 0 {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid or negative startTime"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid or negative startTime"))
 			return
 		}
 		req.StartTime = val
@@ -85,7 +85,7 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 	if et := c.Query("endTime"); et != "" {
 		val, intErr := strconv.ParseInt(et, 10, 64)
 		if intErr != nil || val < 0 {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid or negative endTime"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid or negative endTime"))
 			return
 		}
 		req.EndTime = val
@@ -93,11 +93,11 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 	// Enforce max query window after both values are parsed.
 	if req.StartTime > 0 && req.EndTime > 0 {
 		if req.EndTime <= req.StartTime {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "endTime must be greater than startTime"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "endTime must be greater than startTime"))
 			return
 		}
 		if req.EndTime-req.StartTime > maxTimeWindowMs {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "time range exceeds maximum allowed window of 90 days"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "time range exceeds maximum allowed window of 90 days"))
 			return
 		}
 	}
@@ -105,7 +105,7 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 	response, err := h.metricsSvc.GetDeviceMetrics(ctx, req)
 	if err != nil {
 		h.logger.Error("Failed to get device metrics", "deviceID", deviceID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve metrics"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve metrics"))
 		return
 	}
 
@@ -122,20 +122,20 @@ func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	deviceID := c.Param("imei")
 	if deviceID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
 		return
 	}
 
@@ -143,7 +143,7 @@ func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 	_, err := h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
 		return
 	}
 
@@ -175,7 +175,7 @@ func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 	response, err := h.metricsSvc.GetTelemetry(ctx, req)
 	if err != nil {
 		h.logger.Error("Failed to export metrics", "deviceID", deviceID, "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to export metrics"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to export metrics"))
 		return
 	}
 

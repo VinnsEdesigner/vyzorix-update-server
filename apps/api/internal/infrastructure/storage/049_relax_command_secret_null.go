@@ -6,25 +6,25 @@ import (
 	"strings"
 )
 
-// migrateRelaxDeviceCommandSecretNull relaxes the NOT NULL constraint on
+// migrateRelaxDeviceCommandSecretNull relaxes the NOT NULL constraint on.
 // devices.command_secret.
 //
-// The devices table was originally created (migrateCreateDevices) with
-// `command_secret TEXT NOT NULL`, carrying the plaintext command secret. The
-// codebase has since migrated to storing only the hashed secret in
-// `command_secret_hash` (migration v44); DeviceRepository.Create never writes
-// `command_secret`. As a result every device creation failed with
-// "NOT NULL constraint failed: devices.command_secret" on any backend that
+// The devices table was originally created (migrateCreateDevices) with.
+// `command_secret TEXT NOT NULL`, carrying the plaintext command secret. The.
+// codebase has since migrated to storing only the hashed secret in.
+// `command_secret_hash` (migration v44); DeviceRepository.Create never writes.
+// `command_secret`. As a result every device creation failed with.
+// "NOT NULL constraint failed: devices.command_secret" on any backend that.
 // enforces the constraint.
 //
-// SQLite cannot ALTER a column's constraint in place, so this migration rebuilds
+// SQLite cannot ALTER a column's constraint in place, so this migration rebuilds.
 // the table: it creates a shadow copy with `command_secret TEXT` (nullable),
-// copies all rows, drops the original, and renames the copy back. It preserves
-// every other column and is idempotent — it detects whether the constraint is
+// copies all rows, drops the original, and renames the copy back. It preserves.
+// every other column and is idempotent — it detects whether the constraint is.
 // already relaxed (column nullable) and skips the rebuild.
 //
-// The rebuild copies data with an explicit column list derived from
-// PRAGMA table_info so it is resilient to the exact column set present on the
+// The rebuild copies data with an explicit column list derived from.
+// PRAGMA table_info so it is resilient to the exact column set present on the.
 // live database (which may carry columns added by later migrations).
 func migrateRelaxDeviceCommandSecretNull(tx *sql.Tx) error {
 	_, _ = tx.ExecContext(context.Background(), "DROP TABLE IF EXISTS _devices_new")
@@ -40,7 +40,7 @@ func migrateRelaxDeviceCommandSecretNull(tx *sql.Tx) error {
 		return nil
 	}
 
-	// Build the shadow table definition, mirroring every column but relaxing
+	// Build the shadow table definition, mirroring every column but relaxing.
 	// command_secret to nullable. Preserve types, defaults, and PK.
 	var def strings.Builder
 	def.WriteString("CREATE TABLE _devices_new (")
@@ -92,7 +92,7 @@ func migrateRelaxDeviceCommandSecretNull(tx *sql.Tx) error {
 		return err
 	}
 
-	// Re-create the standard devices indexes (idempotent). These mirror the
+	// Re-create the standard devices indexes (idempotent). These mirror the.
 	// index definitions from earlier migrations so query plans remain optimal.
 	indexStmts := []string{
 		"CREATE INDEX IF NOT EXISTS idx_devices_operator_id ON devices(operator_id)",
@@ -117,7 +117,7 @@ type deviceColInfo struct {
 	pk      int
 }
 
-// inspectDeviceColumns reads the devices schema via PRAGMA table_info and reports
+// inspectDeviceColumns reads the devices schema via PRAGMA table_info and reports.
 // whether the command_secret column is currently NOT NULL.
 func inspectDeviceColumns(tx *sql.Tx) ([]deviceColInfo, bool, error) {
 	rows, err := tx.QueryContext(context.Background(), "PRAGMA table_info(devices)")

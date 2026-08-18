@@ -32,9 +32,9 @@ func NewAuthMiddleware(sessionManager *infraauth.SessionManager, authService *ap
 	}
 }
 
-// GetOperatorFromGinContext extracts the operator from the gin context, where
+// GetOperatorFromGinContext extracts the operator from the gin context, where.
 // it was set by the system middleware chain (cookieAuth or tenantAPIKeyAuth).
-// This allows the subscription handler to reuse the authenticated operator
+// This allows the subscription handler to reuse the authenticated operator.
 // without re-authenticating.
 func (m *AuthMiddleware) GetOperatorFromGinContext(c *gin.Context) *operator.Operator {
 	val, exists := c.Get("operator")

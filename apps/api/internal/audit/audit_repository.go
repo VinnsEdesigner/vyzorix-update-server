@@ -80,19 +80,19 @@ type Entry struct {
 	IPAddress    string            `json:"ip_address,omitempty"`
 	UserAgent    string            `json:"user_agent,omitempty"`
 	Result       Result            `json:"result"`
-	// TraceID correlates this audit entry with request logs. Populated from the
+	// TraceID correlates this audit entry with request logs. Populated from the.
 	// tracing middleware so a security event can be joined to its access log.
 	TraceID string `json:"trace_id,omitempty"`
-	// RiskTier records the risk classification of the audited operation, when
+	// RiskTier records the risk classification of the audited operation, when.
 	// applicable (e.g. command execution). Empty for non-risky events.
 	RiskTier string `json:"risk_tier,omitempty"`
 	// ActorType classifies the actor: "operator", "api_key", or "system".
 	ActorType string `json:"actor_type,omitempty"`
-	// ActorEmail is the operator's email, when available, for human-readable
+	// ActorEmail is the operator's email, when available, for human-readable.
 	// audit queries (the OperatorID is an opaque ID).
 	ActorEmail string `json:"actor_email,omitempty"`
-	// OldValue/NewValue capture the before/after state of a mutated resource
-	// for change-tracking compliance (e.g. settings updates, command state
+	// OldValue/NewValue capture the before/after state of a mutated resource.
+	// for change-tracking compliance (e.g. settings updates, command state.
 	// transitions). JSON-encoded strings; empty when not applicable.
 	OldValue string `json:"old_value,omitempty"`
 	NewValue string `json:"new_value,omitempty"`

@@ -30,14 +30,14 @@ func NewCommandSigner() *CommandSigner {
 	return &CommandSigner{}
 }
 
-// SignCommandFrame signs a CommandFrame in place using the device's command
-// secret. It generates a fresh nonce, sets the frame timestamp (if zero), and
-// fills the Nonce + Signature fields. This is the shared entry point used by
-// all command dispatch paths (direct execute, outbox retry, update push) so
+// SignCommandFrame signs a CommandFrame in place using the device's command.
+// secret. It generates a fresh nonce, sets the frame timestamp (if zero), and.
+// fills the Nonce + Signature fields. This is the shared entry point used by.
+// all command dispatch paths (direct execute, outbox retry, update push) so.
 // every frame reaching a device is signed consistently.
 //
-// The secret passed in is the device's CommandSecretHash — a deterministic
-// SHA-256 derivation of the plaintext secret. Both the server and the device
+// The secret passed in is the device's CommandSecretHash — a deterministic.
+// SHA-256 derivation of the plaintext secret. Both the server and the device.
 // can compute the same key without the server storing the plaintext.
 func SignCommandFrame(s *CommandSigner, frame *command.CommandFrame, deviceID, secret string) error {
 	if frame.Timestamp == 0 {

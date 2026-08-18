@@ -61,9 +61,9 @@ func (r *ConfirmationRepository) Get(ctx context.Context, token string) (*confir
 	return &c, nil
 }
 
-// Consume atomically marks a confirmation as consumed at the given time. It
-// only updates rows that are not yet consumed and not yet expired, returning
-// confirmation.ErrAlreadyConsumed or confirmation.ErrExpired when the
+// Consume atomically marks a confirmation as consumed at the given time. It.
+// only updates rows that are not yet consumed and not yet expired, returning.
+// confirmation.ErrAlreadyConsumed or confirmation.ErrExpired when the.
 // preconditions fail.
 func (r *ConfirmationRepository) Consume(ctx context.Context, token string, at time.Time) (*confirmation.PendingConfirmation, error) {
 	res, err := r.db.ExecContext(ctx, `

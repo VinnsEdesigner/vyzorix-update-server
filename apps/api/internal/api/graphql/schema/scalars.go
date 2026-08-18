@@ -11,7 +11,7 @@ import (
 )
 
 // JSONScalar is a custom scalar for arbitrary JSON values.
-// It strictly validates that serialized and parsed values are valid JSON types
+// It strictly validates that serialized and parsed values are valid JSON types.
 // (object, array, string, number, boolean, null) and rejects anything else.
 var JSONScalar = graphql.NewScalar(graphql.ScalarConfig{
 	Name:        "JSON",
@@ -166,7 +166,7 @@ func jsonLiteralToGo(valueAST ast.Value) interface{} {
 	}
 }
 
-// parseDateTime parses an ISO 8601 datetime string, accepting RFC 3339
+// parseDateTime parses an ISO 8601 datetime string, accepting RFC 3339.
 // and RFC 3339 with nanosecond precision. Returns an error for invalid formats.
 func parseDateTime(s string) (time.Time, error) {
 	t, err := time.Parse(time.RFC3339Nano, s)

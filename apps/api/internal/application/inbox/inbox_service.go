@@ -237,7 +237,7 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 	now := time.Now()
 	entry.OperatorID = operatorID
 
-	// Claim the entry for the operator's org on first action (public inbox
+	// Claim the entry for the operator's org on first action (public inbox.
 	// entries have no org until an operator approves/rejects them).
 	if entry.OrganizationID == "" && orgID != "" {
 		entry.OrganizationID = orgID
@@ -354,7 +354,7 @@ func (s *Service) RejectDevice(ctx context.Context, imei string, operatorID, org
 	entry.OperatorID = operatorID
 	entry.Notes = notes
 
-	// Claim the entry for the operator's org on first action (public inbox
+	// Claim the entry for the operator's org on first action (public inbox.
 	// entries have no org until an operator approves/rejects them).
 	if entry.OrganizationID == "" && orgID != "" {
 		entry.OrganizationID = orgID
@@ -463,9 +463,9 @@ func (s *Service) checkDeviceAndInboxStatus(ctx context.Context, imei string) (*
 func (s *Service) checkDeviceStatus(ctx context.Context, imei string) error {
 	existingDevice, err := s.deviceLookup.GetDeviceByIMEI(ctx, imei)
 	// A "not found" device is the expected, happy path for new registrations.
-	// The device lookup is backed by the device application service, which returns
-	// application.ErrDeviceNotFound; the domain repository may surface
-	// device.ErrNotFound. Accept either sentinel so the contract is robust to the
+	// The device lookup is backed by the device application service, which returns.
+	// application.ErrDeviceNotFound; the domain repository may surface.
+	// device.ErrNotFound. Accept either sentinel so the contract is robust to the.
 	// concrete implementation behind the DeviceLookup interface.
 	if err != nil && !errors.Is(err, device.ErrNotFound) && !errors.Is(err, deviceapp.ErrDeviceNotFound) {
 		return fmt.Errorf("failed to check existing device: %w", err)

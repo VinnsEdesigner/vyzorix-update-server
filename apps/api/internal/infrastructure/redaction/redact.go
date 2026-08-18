@@ -7,9 +7,9 @@ import (
 	"sync"
 )
 
-// Common secret patterns used throughout the application
+// Common secret patterns used throughout the application.
 var (
-	// API key patterns
+	// API key patterns.
 	apiKeyPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)(api[_-]?key|apikey|api[_-]?secret)\s*[=:]\s*["']?([\w!@#$%^&*()_+=\-]{8,})["']?`),
 		regexp.MustCompile(`(?i)(secret[_-]?key|secret|private[_-]?key)\s*[=:]\s*["']?([\w!@#$%^&*()_+=\-]{8,})["']?`),
@@ -18,31 +18,31 @@ var (
 		regexp.MustCompile(`(?i)auth\s*:\s*(?:bearer\s+)?([\S]{20,})`),
 	}
 
-	// JWT patterns
+	// JWT patterns.
 	jwtPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`eyJ[A-Za-z0-9-_]+\.eyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+`),
 		regexp.MustCompile(`(?i)jwt\s*[=:]\s*["']?([\w!@#$%^&*()_+=\-.]{20,})["']?`),
 	}
 
-	// Password patterns
+	// Password patterns.
 	passwordPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)(password|passwd|pwd)\s*[=:]\s*["']?([^\s"']{4,})["']?`),
 		regexp.MustCompile(`(?i)pass\s*[=:]\s*["']?([^\s"']{4,})["']?`),
 	}
 
-	// Database connection string patterns
+	// Database connection string patterns.
 	dbPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)(postgres|mysql|mongodb|redis|sqlite)://[^@]+:[^@]+@`),
 		regexp.MustCompile(`(?i)connection[_-]?string\s*[=:]\s*["']?[^\s"']+["']?`),
 	}
 
-	// Private key patterns
+	// Private key patterns.
 	privateKeyPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----`),
 		regexp.MustCompile(`(?i)private[_-]?key[_-]?pem\s*[=:]\s*["']?[^\s"']+["']?`),
 	}
 
-	// Generic credential patterns
+	// Generic credential patterns.
 	genericCredentialPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)credential\s*[=:]\s*["']?[^\s"']+["']?`),
 		regexp.MustCompile(`(?i)secret\s*[=:]\s*["']?[^\s"']{8,}["']?`),
@@ -58,21 +58,21 @@ var (
 
 // RedactionConfig holds configuration for the redaction process.
 type RedactionConfig struct {
-	// EnableAPIKeys redacts API key patterns (default: true)
+	// EnableAPIKeys redacts API key patterns (default: true).
 	EnableAPIKeys bool
-	// EnableJWTs redacts JWT tokens (default: true)
+	// EnableJWTs redacts JWT tokens (default: true).
 	EnableJWTs bool
-	// EnablePasswords redacts password patterns (default: true)
+	// EnablePasswords redacts password patterns (default: true).
 	EnablePasswords bool
-	// EnableDBConnStrings redacts database connection strings (default: true)
+	// EnableDBConnStrings redacts database connection strings (default: true).
 	EnableDBConnStrings bool
-	// EnablePrivateKeys redacts private key markers (default: true)
+	// EnablePrivateKeys redacts private key markers (default: true).
 	EnablePrivateKeys bool
-	// EnableGenericCredentials redacts generic credential patterns (default: true)
+	// EnableGenericCredentials redacts generic credential patterns (default: true).
 	EnableGenericCredentials bool
-	// EnableEmails masks email addresses to protect PII in logs (default: true)
+	// EnableEmails masks email addresses to protect PII in logs (default: true).
 	EnableEmails bool
-	// MaskLength is the length of the mask to use (default: 8)
+	// MaskLength is the length of the mask to use (default: 8).
 	MaskLength int
 }
 
@@ -125,7 +125,7 @@ func (r *Redactor) Redact(input string) string {
 
 	result := input
 
-	// Apply patterns in order of sensitivity (most sensitive first)
+	// Apply patterns in order of sensitivity (most sensitive first).
 	if r.config.EnablePrivateKeys {
 		result = r.redactPrivateKeys(result)
 	}
@@ -151,7 +151,7 @@ func (r *Redactor) Redact(input string) string {
 	return result
 }
 
-// redactEmails masks the local-part of email addresses so PII like
+// redactEmails masks the local-part of email addresses so PII like.
 // "admin@vyzorix.test" becomes "[EMAIL:REDACTED]" in logs.
 func (r *Redactor) redactEmails(input string) string {
 	result := input

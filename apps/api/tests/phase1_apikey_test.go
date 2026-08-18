@@ -14,8 +14,8 @@ import (
 // TestPhase1APIKey tests API key creation, endpoint access, scope enforcement,
 // and key management. 45 subtests.
 //
-// Flow: register operator → verify email → login → create org → create API keys
-// (read/write/admin) → test GET endpoints per scope → auth rejection → scope
+// Flow: register operator → verify email → login → create org → create API keys.
+// (read/write/admin) → test GET endpoints per scope → auth rejection → scope.
 // enforcement → key list/rotate/revoke.
 func TestPhase1APIKey(t *testing.T) {
 	requireServer(t)
@@ -25,7 +25,7 @@ func TestPhase1APIKey(t *testing.T) {
 	email := fmt.Sprintf("tester1_%d@vyzorix-test.local", ts)
 	name := "Test Operator 1"
 
-	// ── Setup: register + verify + login ──
+// ── Setup: register + verify + login ──.
 	c, err := newSession()
 	if err != nil {
 		t.Fatalf("new session: %v", err)
@@ -89,7 +89,7 @@ func TestPhase1APIKey(t *testing.T) {
 		t.Logf("logged in as %s", loggedInEmail)
 	})
 
-	// ── Setup: create organization ──
+// ── Setup: create organization ──.
 	var orgID string
 
 	t.Run("create_organization", func(t *testing.T) {
@@ -103,7 +103,7 @@ func TestPhase1APIKey(t *testing.T) {
 			return
 		}
 		if status == 409 {
-			// Org limit reached — reuse existing
+// Org limit reached — reuse existing.
 			s2, b2 := doJSON(t, c, "GET", "/v1/organizations", nil, nil)
 			if s2 == 200 {
 				var orgs []map[string]any
@@ -115,7 +115,7 @@ func TestPhase1APIKey(t *testing.T) {
 				}
 			}
 		}
-		// Try listing existing orgs as fallback
+// Try listing existing orgs as fallback.
 		s2, b2 := doJSON(t, c, "GET", "/v1/organizations", nil, nil)
 		if s2 == 200 {
 			var orgs []map[string]any
@@ -143,7 +143,7 @@ func TestPhase1APIKey(t *testing.T) {
 		t.Logf("org selected: %s", orgID[:12])
 	})
 
-	// ── Create API keys ──
+// ── Create API keys ──.
 	apiKeys := map[string]string{}
 
 	t.Run("create_read_key", func(t *testing.T) {
@@ -173,7 +173,7 @@ func TestPhase1APIKey(t *testing.T) {
 		t.Logf("admin key: %s...", key[:20])
 	})
 
-	// ── Test GET endpoints with each scope ──
+// ── Test GET endpoints with each scope ──.
 	getEndpoints := []struct {
 		path  string
 		label string
@@ -209,7 +209,7 @@ func TestPhase1APIKey(t *testing.T) {
 		}
 	}
 
-	// ── Auth rejection ──
+// ── Auth rejection ──.
 	t.Run("no_key_rejected", func(t *testing.T) {
 		status, _ := doRaw(t, httpClient, "GET", "/v1/devices",
 			map[string]string{"X-Organization-ID": orgID})
@@ -230,7 +230,7 @@ func TestPhase1APIKey(t *testing.T) {
 		t.Errorf("invalid key -> %d (expected 401/403)", status)
 	})
 
-	// ── Scope enforcement ──
+// ── Scope enforcement ──.
 	t.Run("read_key_POST_rejected", func(t *testing.T) {
 		key := apiKeys["read"]
 		status, _ := doJSON(t, httpClient, "POST", "/v1/updates/sync",
@@ -269,7 +269,7 @@ func TestPhase1APIKey(t *testing.T) {
 		t.Errorf("admin key DELETE device -> %d (expected 403/404/200)", status)
 	})
 
-	// ── Key management ──
+// ── Key management ──.
 	var keysList []map[string]any
 
 	t.Run("list_keys", func(t *testing.T) {
@@ -278,7 +278,7 @@ func TestPhase1APIKey(t *testing.T) {
 		if status != 200 {
 			t.Fatalf("list keys -> %d: %s", status, string(body))
 		}
-		// Response may be a list or an object with keys/items
+// Response may be a list or an object with keys/items.
 		var rawList []map[string]any
 		if err := json.Unmarshal(body, &rawList); err == nil {
 			keysList = rawList
@@ -341,7 +341,7 @@ func TestPhase1APIKey(t *testing.T) {
 		t.Errorf("rotated write key GET devices -> %d (expected 200/404/400)", status)
 	})
 
-	// ── Save state for later phases (not a test, just cross-phase sharing) ──
+// ── Save state for later phases (not a test, just cross-phase sharing) ──.
 	opID := ""
 	status, body := doJSON(t, c, "GET", "/v1/auth/me", nil, nil)
 	if status == 200 {
@@ -367,7 +367,7 @@ func TestPhase1APIKey(t *testing.T) {
 }
 
 // writeStaticFiles creates version.json and changelog.json in the data dir.
-// This is setup for Phase 2 but called at the end of Phase 1 to avoid
+// This is setup for Phase 2 but called at the end of Phase 1 to avoid.
 // duplicating logic.
 func writeStaticFiles(t *testing.T, ts int64) {
 	versionData := map[string]any{

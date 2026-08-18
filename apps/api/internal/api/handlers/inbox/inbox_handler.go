@@ -60,7 +60,7 @@ func NewHandlerWithAppCheck(service *inbox.Service, deviceSecret string, appChec
 func (h *Handler) GetInbox(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *Handler) GetInbox(c *gin.Context) {
 	result, err := h.service.GetInbox(c.Request.Context(), operatorID, orgID, status, page, limit)
 	if err != nil {
 		se := inbox.ToServiceError(err)
-		c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+		_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 		return
 	}
 
@@ -99,20 +99,20 @@ func (h *Handler) GetInbox(c *gin.Context) {
 func (h *Handler) GetInboxEntry(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	imei := c.Param("imei")
 	if imei == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
 		return
 	}
 
 	result, err := h.service.GetInboxEntry(c.Request.Context(), imei, orgID)
 	if err != nil {
 		se := inbox.ToServiceError(err)
-		c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+		_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 		return
 	}
 
@@ -124,24 +124,24 @@ func (h *Handler) GetInboxEntry(c *gin.Context) {
 func (h *Handler) AckInbox(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	imei := c.Param("imei")
 	if imei == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
 		return
 	}
 
 	var req inbox.AckRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request body"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request body"))
 		return
 	}
 
 	if req.Action != "acknowledge" && req.Action != "approve" && req.Action != "reject" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Action must be 'acknowledge', 'approve', or 'reject'"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Action must be 'acknowledge', 'approve', or 'reject'"))
 		return
 	}
 
@@ -156,7 +156,7 @@ func (h *Handler) AckInbox(c *gin.Context) {
 	result, err := h.service.AckInbox(c.Request.Context(), imei, req.Action, operatorID, orgID, req.Notes)
 	if err != nil {
 		se := inbox.ToServiceError(err)
-		c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+		_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 		return
 	}
 
@@ -174,13 +174,13 @@ func (h *Handler) CreateInboxRequest(c *gin.Context) {
 		if h.appCheckVerifier != nil && h.appCheckVerifier.Enabled() {
 			token := c.GetHeader("X-Firebase-AppCheck")
 			if token == "" {
-				c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Missing X-Firebase-AppCheck header"))
+				_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Missing X-Firebase-AppCheck header"))
 				return
 			}
 
 			decoded, err := h.appCheckVerifier.VerifyToken(c.Request.Context(), token)
 			if err != nil {
-				c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Invalid Firebase App Check token"))
+				_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Invalid Firebase App Check token"))
 				return
 			}
 
@@ -191,14 +191,14 @@ func (h *Handler) CreateInboxRequest(c *gin.Context) {
 			// Priority 2: HMAC-SHA256 signature (legacy fallback).
 			signature := c.GetHeader("X-Device-Signature")
 			if signature == "" {
-				c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Missing X-Device-Signature header"))
+				_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Missing X-Device-Signature header"))
 				return
 			}
 
 			// Read body for signature verification.
 			body, err := io.ReadAll(c.Request.Body)
 			if err != nil {
-				c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Failed to read request body"))
+				_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Failed to read request body"))
 				return
 			}
 
@@ -207,7 +207,7 @@ func (h *Handler) CreateInboxRequest(c *gin.Context) {
 			mac.Write(body)
 			expectedSig := hex.EncodeToString(mac.Sum(nil))
 			if subtle.ConstantTimeCompare([]byte(signature), []byte(expectedSig)) != 1 {
-				c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Invalid X-Device-Signature header"))
+				_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Invalid X-Device-Signature header"))
 				return
 			}
 
@@ -218,14 +218,14 @@ func (h *Handler) CreateInboxRequest(c *gin.Context) {
 
 	var req inbox.InboxRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request body"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request body"))
 		return
 	}
 
 	result, err := h.service.CreateInboxRequest(c.Request.Context(), &req)
 	if err != nil {
 		se := inbox.ToServiceError(err)
-		c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+		_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 		return
 	}
 
@@ -242,19 +242,19 @@ type UpdateInboxEntryRequest struct {
 func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	imei := c.Param("imei")
 	if imei == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
 		return
 	}
 
 	var req UpdateInboxEntryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request body"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request body"))
 		return
 	}
 
@@ -267,7 +267,7 @@ func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 	result, err := h.service.UpdateInboxEntry(c.Request.Context(), imei, operatorID, orgID, req.Notes)
 	if err != nil {
 		se := inbox.ToServiceError(err)
-		c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+		_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 		return
 	}
 
@@ -279,13 +279,13 @@ func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 func (h *Handler) ResendApproval(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	imei := c.Param("imei")
 	if imei == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
 		return
 	}
 
@@ -298,7 +298,7 @@ func (h *Handler) ResendApproval(c *gin.Context) {
 	result, err := h.service.ResendApproval(c.Request.Context(), imei, operatorID, orgID)
 	if err != nil {
 		se := inbox.ToServiceError(err)
-		c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+		_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 		return
 	}
 

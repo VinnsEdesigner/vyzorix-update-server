@@ -65,7 +65,7 @@ func NewTelemetryHistoryHandler(
 // verifyDeviceInOrganization verifies that a device belongs to the given organization.
 func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, deviceID, orgID string) bool {
 	if h.deviceRepo == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "device repository not available"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "device repository not available"))
 
 		return false
 	}
@@ -73,10 +73,10 @@ func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, dev
 	d, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
 	if err != nil {
 		if errors.Is(err, device.ErrNotFound) {
-			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found in organization"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found in organization"))
 
 		} else {
-			c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to verify device"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to verify device"))
 
 		}
 		return false
@@ -84,7 +84,7 @@ func (h *TelemetryHistoryHandler) verifyDeviceInOrganization(c *gin.Context, dev
 
 	// Verify the device ID matches (deviceID could be IMEI).
 	if d.ID != deviceID {
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found in organization"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found in organization"))
 
 		return false
 	}
@@ -128,14 +128,14 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 	// Require organization context for multi-tenant isolation.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 
 		return
 	}
 
 	var req QueryHistoryRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid query parameters"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid query parameters"))
 
 		return
 	}
@@ -156,7 +156,7 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 	)
 	if err != nil {
 		h.log.Error("failed to query telemetry", "err", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to query telemetry"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to query telemetry"))
 
 		return
 	}
@@ -196,7 +196,7 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 // exportCSV exports telemetry history as CSV.
 func (h *TelemetryHistoryHandler) exportCSV(c *gin.Context, data QueryHistoryResponse) {
 	if !h.config.EnableExport {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "CSV export is disabled"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "CSV export is disabled"))
 
 		return
 	}
@@ -238,14 +238,14 @@ func (h *TelemetryHistoryHandler) exportCSV(c *gin.Context, data QueryHistoryRes
 // ExportJSON exports telemetry history as JSON file.
 func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 	if !h.config.EnableExport {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "JSON export is disabled"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "JSON export is disabled"))
 
 		return
 	}
 
 	var req QueryHistoryRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid query parameters"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid query parameters"))
 
 		return
 	}
@@ -259,7 +259,7 @@ func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 	)
 	if err != nil {
 		h.log.Error("failed to query telemetry for export", "err", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to query telemetry"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to query telemetry"))
 
 		return
 	}
@@ -285,7 +285,7 @@ func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 	deviceID := c.Param("deviceId")
 	if deviceID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "deviceId is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "deviceId is required"))
 
 		return
 	}
@@ -299,13 +299,13 @@ func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 	entries, err := h.telemetryRepo.List(c.Request.Context(), deviceID, 1)
 	if err != nil {
 		h.log.Error("failed to get latest telemetry", "err", err, "deviceId", deviceID)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to get latest telemetry"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to get latest telemetry"))
 
 		return
 	}
 
 	if len(entries) == 0 {
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "no telemetry found for device"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "no telemetry found for device"))
 
 		return
 	}
@@ -326,7 +326,7 @@ func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 	deviceID := c.Param("deviceId")
 	if deviceID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "deviceId is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "deviceId is required"))
 
 		return
 	}
@@ -341,13 +341,13 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 	entries, err := h.telemetryRepo.List(c.Request.Context(), deviceID, 100)
 	if err != nil {
 		h.log.Error("failed to get telemetry for stats", "err", err, "deviceId", deviceID)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to get telemetry stats"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to get telemetry stats"))
 
 		return
 	}
 
 	if len(entries) == 0 {
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "no telemetry found for device"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "no telemetry found for device"))
 
 		return
 	}
@@ -383,7 +383,7 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 	count := len(entries)
 	// Safety: should never happen due to early return, but double-check.
 	if count == 0 {
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "no telemetry found for device"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "no telemetry found for device"))
 
 		return
 	}
@@ -414,14 +414,14 @@ func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 	// Require admin or operator role.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil || (!op.IsAdmin() && !op.IsOperator()) {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "authentication required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "authentication required"))
 
 		return
 	}
 
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" || !op.IsAdminIn(orgID) {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "admin role required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "admin role required"))
 
 		return
 	}
@@ -431,13 +431,13 @@ func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "olderThan timestamp required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "olderThan timestamp required"))
 
 		return
 	}
 
 	if req.OlderThan <= 0 {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "olderThan must be a positive timestamp"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "olderThan must be a positive timestamp"))
 
 		return
 	}
@@ -445,7 +445,7 @@ func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 	deleted, err := h.telemetryRepo.DeleteOlderThan(c.Request.Context(), req.OlderThan)
 	if err != nil {
 		h.log.Error("failed to cleanup old telemetry", "err", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to cleanup old telemetry"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to cleanup old telemetry"))
 
 		return
 	}

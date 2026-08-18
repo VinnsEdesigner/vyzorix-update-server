@@ -48,7 +48,7 @@ func TestTracing_AcceptsRequestIDAlias(t *testing.T) {
 
 	Tracing()(c)
 
-	// The legacy X-Request-ID header should be accepted as an inbound alias and
+	// The legacy X-Request-ID header should be accepted as an inbound alias and.
 	// surfaced as the trace id; only X-Trace-ID is echoed on the response.
 	if got := GetTraceID(c); got != "112233445566778899aabbccddeeff00" {
 		t.Errorf("trace id = %q, want the X-Request-ID value", got)

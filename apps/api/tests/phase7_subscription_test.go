@@ -147,8 +147,8 @@ func readMsgNoFail(t *testing.T, conn *gorillaws.Conn, timeout time.Duration) (w
 	return msg, true
 }
 
-// msgReader wraps a WS connection with a background goroutine that continuously
-// reads messages into a channel. This avoids the gorilla read-deadline issue
+// msgReader wraps a WS connection with a background goroutine that continuously.
+// reads messages into a channel. This avoids the gorilla read-deadline issue.
 // where a timeout can corrupt the connection's read state for subsequent reads.
 type msgReader struct {
 	ch     chan wsMessage
@@ -186,7 +186,7 @@ func newMsgReader(conn *gorillaws.Conn) *msgReader {
 	return r
 }
 
-// recv waits for a message within the timeout. Returns ok=false if no message
+// recv waits for a message within the timeout. Returns ok=false if no message.
 // arrives or the reader has stopped.
 func (r *msgReader) recv(timeout time.Duration) (wsMessage, bool) {
 	select {
@@ -228,7 +228,7 @@ func dialGQLWS(t *testing.T, url string) *gorillaws.Conn {
 	return conn
 }
 
-// ─── 7.1: Connection init → ack handshake ───
+// ─── 7.1: Connection init → ack handshake ───.
 
 func TestPhase7Sub_ConnectionInitAck(t *testing.T) {
 	state := newGQLSubState(t)
@@ -248,7 +248,7 @@ func TestPhase7Sub_ConnectionInitAck(t *testing.T) {
 	t.Log("connection_init → connection_ack handshake verified")
 }
 
-// ─── 7.2: Subscribe to deviceUpdates → initial null next ───
+// ─── 7.2: Subscribe to deviceUpdates → initial null next ───.
 
 func TestPhase7Sub_SubscribeDeviceUpdates(t *testing.T) {
 	state := newGQLSubState(t)
@@ -288,7 +288,7 @@ func TestPhase7Sub_SubscribeDeviceUpdates(t *testing.T) {
 	t.Log("subscribe deviceUpdates → initial null next received")
 }
 
-// ─── 7.3: Publish deviceUpdate → subscriber receives it ───
+// ─── 7.3: Publish deviceUpdate → subscriber receives it ───.
 
 func TestPhase7Sub_PublishDeviceUpdateReceived(t *testing.T) {
 	state := newGQLSubState(t)
@@ -331,7 +331,7 @@ func TestPhase7Sub_PublishDeviceUpdateReceived(t *testing.T) {
 	t.Log("publish deviceUpdate → subscriber received event with data")
 }
 
-// ─── 7.4: Subscribe to telemetryReceived → publish → receive ───
+// ─── 7.4: Subscribe to telemetryReceived → publish → receive ───.
 
 func TestPhase7Sub_SubscribeTelemetryReceived(t *testing.T) {
 	state := newGQLSubState(t)
@@ -373,7 +373,7 @@ func TestPhase7Sub_SubscribeTelemetryReceived(t *testing.T) {
 	t.Log("subscribe telemetryReceived → publish → subscriber received telemetry event")
 }
 
-// ─── 7.5: Subscribe to commandStatusChanged → publish → receive ───
+// ─── 7.5: Subscribe to commandStatusChanged → publish → receive ───.
 
 func TestPhase7Sub_SubscribeCommandStatusChanged(t *testing.T) {
 	state := newGQLSubState(t)
@@ -414,7 +414,7 @@ func TestPhase7Sub_SubscribeCommandStatusChanged(t *testing.T) {
 	t.Log("subscribe commandStatusChanged → publish → subscriber received status change")
 }
 
-// ─── 7.6: Subscribe to organizationEvent → publish → receive ───
+// ─── 7.6: Subscribe to organizationEvent → publish → receive ───.
 
 func TestPhase7Sub_SubscribeOrganizationEvent(t *testing.T) {
 	state := newGQLSubState(t)
@@ -455,7 +455,7 @@ func TestPhase7Sub_SubscribeOrganizationEvent(t *testing.T) {
 	t.Log("subscribe organizationEvent → publish → subscriber received org event")
 }
 
-// ─── 7.7: Subscribe to memberEvent → publish → receive ───
+// ─── 7.7: Subscribe to memberEvent → publish → receive ───.
 
 func TestPhase7Sub_SubscribeMemberEvent(t *testing.T) {
 	state := newGQLSubState(t)
@@ -496,7 +496,7 @@ func TestPhase7Sub_SubscribeMemberEvent(t *testing.T) {
 	t.Log("subscribe memberEvent → publish → subscriber received member event")
 }
 
-// ─── 7.8: Complete (unsubscribe) stops events ───
+// ─── 7.8: Complete (unsubscribe) stops events ───.
 
 func TestPhase7Sub_CompleteStopsEvents(t *testing.T) {
 	state := newGQLSubState(t)
@@ -536,7 +536,7 @@ func TestPhase7Sub_CompleteStopsEvents(t *testing.T) {
 	t.Log("complete → subscriber no longer receives events")
 }
 
-// ─── 7.9: Multiple subscriptions on same connection ───
+// ─── 7.9: Multiple subscriptions on same connection ───.
 
 func TestPhase7Sub_MultipleSubscriptions(t *testing.T) {
 	state := newGQLSubState(t)
@@ -578,7 +578,7 @@ func TestPhase7Sub_MultipleSubscriptions(t *testing.T) {
 	t.Log("multiple subscriptions on same connection: events routed to correct subscription IDs")
 }
 
-// ─── 7.10: Unknown message type → error ───
+// ─── 7.10: Unknown message type → error ───.
 
 func TestPhase7Sub_UnknownMessageType(t *testing.T) {
 	state := newGQLSubState(t)
@@ -604,7 +604,7 @@ func TestPhase7Sub_UnknownMessageType(t *testing.T) {
 	t.Log("unknown message type → error response verified")
 }
 
-// ─── 7.11: Invalid JSON → error ───
+// ─── 7.11: Invalid JSON → error ───.
 
 func TestPhase7Sub_InvalidJSON(t *testing.T) {
 	state := newGQLSubState(t)
@@ -627,13 +627,13 @@ func TestPhase7Sub_InvalidJSON(t *testing.T) {
 	t.Log("invalid JSON → error response verified")
 }
 
-// ─── 7.12: Missing org parameter → 400 ───
+// ─── 7.12: Missing org parameter → 400 ───.
 
 func TestPhase7Sub_MissingOrgParameter(t *testing.T) {
 	state := newGQLSubState(t)
 	defer state.close()
 
-	// Connect without org parameter — the route is /:org/graphql/ws
+// Connect without org parameter — the route is /:org/graphql/ws.
 	// so connecting to /graphql/ws won't match the route.
 	url := "ws" + strings.TrimPrefix(state.server.URL, "http") + "/graphql/ws"
 	dialer := gorillaws.Dialer{HandshakeTimeout: 5 * time.Second}
@@ -647,7 +647,7 @@ func TestPhase7Sub_MissingOrgParameter(t *testing.T) {
 	t.Log("missing org parameter → connection rejected")
 }
 
-// ─── 7.13: Unauthenticated connection → 401 ───
+// ─── 7.13: Unauthenticated connection → 401 ───.
 
 func TestPhase7Sub_UnauthenticatedRejected(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -693,7 +693,7 @@ func TestPhase7Sub_UnauthenticatedRejected(t *testing.T) {
 	t.Log("unauthenticated connection → 401 rejected")
 }
 
-// ─── 7.14: Disconnect cleans up subscriptions ───
+// ─── 7.14: Disconnect cleans up subscriptions ───.
 
 func TestPhase7Sub_DisconnectCleansUp(t *testing.T) {
 	state := newGQLSubState(t)
@@ -716,7 +716,7 @@ func TestPhase7Sub_DisconnectCleansUp(t *testing.T) {
 	conn.Close()
 	time.Sleep(500 * time.Millisecond)
 
-	// Publish an event — the disconnected client should not receive it
+// Publish an event — the disconnected client should not receive it.
 	// (and the subscription should be cleaned up).
 	state.hub.PublishDeviceUpdate(state.operator.ID, "IMEI_CLEANUP", map[string]string{"status": "offline"})
 	time.Sleep(300 * time.Millisecond)
@@ -725,7 +725,7 @@ func TestPhase7Sub_DisconnectCleansUp(t *testing.T) {
 	t.Log("disconnect → subscription cleanup verified (no crash, server healthy)")
 }
 
-// ─── 7.15: Subscribe with operator-wide (no deviceId) ───
+// ─── 7.15: Subscribe with operator-wide (no deviceId) ───.
 
 func TestPhase7Sub_OperatorWideSubscription(t *testing.T) {
 	state := newGQLSubState(t)
@@ -755,7 +755,7 @@ func TestPhase7Sub_OperatorWideSubscription(t *testing.T) {
 	t.Log("operator-wide subscription (no deviceId) receives telemetry for any device")
 }
 
-// ─── 7.16: Multiple subscribers receive same event ───
+// ─── 7.16: Multiple subscribers receive same event ───.
 
 func TestPhase7Sub_MultipleSubscribersSameEvent(t *testing.T) {
 	state := newGQLSubState(t)
@@ -794,7 +794,7 @@ func TestPhase7Sub_MultipleSubscribersSameEvent(t *testing.T) {
 	t.Log("multiple subscribers: both received the same published event")
 }
 
-// ─── 7.17: Subscribe with unknown query → default acknowledgment ───
+// ─── 7.17: Subscribe with unknown query → default acknowledgment ───.
 
 func TestPhase7Sub_UnknownSubscriptionQuery(t *testing.T) {
 	state := newGQLSubState(t)
@@ -821,7 +821,7 @@ func TestPhase7Sub_UnknownSubscriptionQuery(t *testing.T) {
 	t.Log("unknown subscription query → default acknowledgment received")
 }
 
-// ─── 7.18: Subscribe with invalid payload → error ───
+// ─── 7.18: Subscribe with invalid payload → error ───.
 
 func TestPhase7Sub_InvalidSubscribePayload(t *testing.T) {
 	state := newGQLSubState(t)
@@ -847,7 +847,7 @@ func TestPhase7Sub_InvalidSubscribePayload(t *testing.T) {
 	t.Log("invalid subscribe payload → error response verified")
 }
 
-// ─── 7.19: Complete non-existent subscription (no-op) ───
+// ─── 7.19: Complete non-existent subscription (no-op) ───.
 
 func TestPhase7Sub_CompleteNonExistentSubscription(t *testing.T) {
 	state := newGQLSubState(t)
@@ -875,7 +875,7 @@ func TestPhase7Sub_CompleteNonExistentSubscription(t *testing.T) {
 	t.Log("complete for non-existent subscription → no-op, connection survives")
 }
 
-// ─── 7.20: Event filtering — subscriber for device A doesn't receive device B ───
+// ─── 7.20: Event filtering — subscriber for device A doesn't receive device B ───.
 
 func TestPhase7Sub_EventFiltering(t *testing.T) {
 	state := newGQLSubState(t)
@@ -920,7 +920,7 @@ func TestPhase7Sub_EventFiltering(t *testing.T) {
 	t.Log("event filtering: subscriber for device A receives A but not B")
 }
 
-// ─── 7.21: Connection survives multiple subscribe/complete cycles ───
+// ─── 7.21: Connection survives multiple subscribe/complete cycles ───.
 
 func TestPhase7Sub_MultipleSubscribeCompleteCycles(t *testing.T) {
 	state := newGQLSubState(t)
@@ -957,7 +957,7 @@ func TestPhase7Sub_MultipleSubscribeCompleteCycles(t *testing.T) {
 	t.Log("3 subscribe/publish/complete cycles on same connection: all succeeded")
 }
 
-// ─── 7.22: Concurrent subscribers stress test ───
+// ─── 7.22: Concurrent subscribers stress test ───.
 
 func TestPhase7Sub_ConcurrentSubscribers(t *testing.T) {
 	state := newGQLSubState(t)
@@ -1005,7 +1005,7 @@ func TestPhase7Sub_ConcurrentSubscribers(t *testing.T) {
 	t.Logf("5 concurrent subscribers all received the same published event")
 }
 
-// ─── 7.23: Organization event uses connection orgID as fallback ───
+// ─── 7.23: Organization event uses connection orgID as fallback ───.
 
 func TestPhase7Sub_OrgEventFallbackToConnectionOrgID(t *testing.T) {
 	state := newGQLSubState(t)
@@ -1036,7 +1036,7 @@ func TestPhase7Sub_OrgEventFallbackToConnectionOrgID(t *testing.T) {
 	t.Log("organizationEvent falls back to connection orgID when variables.orgId is empty")
 }
 
-// ─── 7.24: Member event uses connection orgID as fallback ───
+// ─── 7.24: Member event uses connection orgID as fallback ───.
 
 func TestPhase7Sub_MemberEventFallbackToConnectionOrgID(t *testing.T) {
 	state := newGQLSubState(t)
@@ -1064,7 +1064,7 @@ func TestPhase7Sub_MemberEventFallbackToConnectionOrgID(t *testing.T) {
 	t.Log("memberEvent falls back to connection orgID when variables.orgId is empty")
 }
 
-// ─── 7.25: Full lifecycle: init → subscribe → publish → complete → disconnect ───
+// ─── 7.25: Full lifecycle: init → subscribe → publish → complete → disconnect ───.
 
 func TestPhase7Sub_FullLifecycle(t *testing.T) {
 	state := newGQLSubState(t)
@@ -1117,7 +1117,7 @@ func TestPhase7Sub_FullLifecycle(t *testing.T) {
 	t.Log("full lifecycle: init → subscribe → publish → receive → complete → disconnect: all verified")
 }
 
-// ─── 7.26: Device stream → subscription bridge (separate paths) ───
+// ─── 7.26: Device stream → subscription bridge (separate paths) ───.
 
 func TestPhase7Sub_DeviceStreamAndSubscriptionCoexist(t *testing.T) {
 	state := newGQLSubState(t)
@@ -1165,7 +1165,7 @@ func TestPhase7Sub_DeviceStreamAndSubscriptionCoexist(t *testing.T) {
 	sendMsg(t, subConn, wsMessage{Type: "subscribe", ID: "sub-bridge", Payload: subPayload})
 	readMsg(t, subConn, 3*time.Second)
 
-	// Publish telemetry via the subscription manager (simulating what an
+// Publish telemetry via the subscription manager (simulating what an.
 	// event processor would do after receiving device telemetry).
 	state.hub.PublishTelemetry(state.operator.ID, "IMEI_BRIDGE", map[string]int{"riskScore": 55})
 
@@ -1176,7 +1176,7 @@ func TestPhase7Sub_DeviceStreamAndSubscriptionCoexist(t *testing.T) {
 	t.Log("device stream and GraphQL subscription coexist on same hub")
 }
 
-// ─── 7.27: Connection without connection_init (direct subscribe) ───
+// ─── 7.27: Connection without connection_init (direct subscribe) ───.
 
 func TestPhase7Sub_SubscribeWithoutInit(t *testing.T) {
 	state := newGQLSubState(t)
@@ -1203,7 +1203,7 @@ func TestPhase7Sub_SubscribeWithoutInit(t *testing.T) {
 	t.Log("subscribe without prior connection_init still works (no enforced handshake)")
 }
 
-// ─── 7.28: Ping keepalive from server ───
+// ─── 7.28: Ping keepalive from server ───.
 
 func TestPhase7Sub_ServerPingKeepalive(t *testing.T) {
 	state := newGQLSubState(t)
@@ -1216,7 +1216,7 @@ func TestPhase7Sub_ServerPingKeepalive(t *testing.T) {
 	readMsg(t, conn, 3*time.Second)
 
 	// The subscription client's writePump sends pings every 30s.
-	// We can't wait 30s in a test, so just verify the connection stays alive
+// We can't wait 30s in a test, so just verify the connection stays alive.
 	// for a few seconds and can still exchange messages.
 	time.Sleep(2 * time.Second)
 
@@ -1232,7 +1232,7 @@ func TestPhase7Sub_ServerPingKeepalive(t *testing.T) {
 	t.Log("connection stays alive and responsive after 2s (ping keepalive interval is 30s)")
 }
 
-// ─── 7.29: Unknown subscription query gets __typename ───
+// ─── 7.29: Unknown subscription query gets __typename ───.
 
 func TestPhase7Sub_UnknownQueryGetsTypename(t *testing.T) {
 	state := newGQLSubState(t)
@@ -1271,7 +1271,7 @@ func TestPhase7Sub_UnknownQueryGetsTypename(t *testing.T) {
 	t.Log("unknown subscription query → __typename: Subscription fallback")
 }
 
-// ─── 7.30: Wildcard subscription query matching ───
+// ─── 7.30: Wildcard subscription query matching ───.
 
 func TestPhase7Sub_QueryContainsMatching(t *testing.T) {
 	state := newGQLSubState(t)

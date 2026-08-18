@@ -20,7 +20,7 @@ import (
 
 func init() { gin.SetMode(gin.TestMode) }
 
-// fakeAudit captures CommandExecuted events so tests can assert on what the
+// fakeAudit captures CommandExecuted events so tests can assert on what the.
 // handler would persist to the audit trail.
 type fakeAudit struct {
 	events []audit.CommandExecutedEvent
@@ -30,8 +30,8 @@ func (f *fakeAudit) CommandExecuted(_ context.Context, e audit.CommandExecutedEv
 	f.events = append(f.events, e)
 }
 
-// fakeConfirmation is a configurable ConfirmationConsumer for tests. By
-// default ConsumeForCommand succeeds (returns the profile); tests flip
+// fakeConfirmation is a configurable ConfirmationConsumer for tests. By.
+// default ConsumeForCommand succeeds (returns the profile); tests flip.
 // consumeErr to simulate invalid/expired/consumed/mismatched tokens.
 type fakeConfirmation struct {
 	consumeErr error
@@ -71,7 +71,7 @@ func newContextWithActor(op *operator.Operator) (*gin.Context, *httptest.Respons
 	return c, w
 }
 
-// withMFASession sets an MFA-verified session in the gin context, mirroring
+// withMFASession sets an MFA-verified session in the gin context, mirroring.
 // the cookie-auth middleware, so the handler can derive MFAVerified=true.
 func withMFASession(c *gin.Context) {
 	now := time.Now()
@@ -135,7 +135,7 @@ func TestAuthorizeCommand_AllowsHighRiskWithValidToken(t *testing.T) {
 }
 
 func TestAuthorizeCommand_BlocksHighRiskWhenConfirmationsDisabled(t *testing.T) {
-	// A nil confirmation consumer means confirmations are disabled: even with a
+	// A nil confirmation consumer means confirmations are disabled: even with a.
 	// token, the command must be blocked.
 	h, aud := newHandlerWithFakes(t, nil)
 	c, w := newContextWithActor(&operator.Operator{ID: "op-1"})
@@ -181,7 +181,7 @@ func TestAuthorizeCommand_BlocksHighRiskWithMismatchedToken(t *testing.T) {
 }
 
 func TestAuthorizeCommand_BlocksCriticalWithoutMFAEvenWithToken(t *testing.T) {
-	// Critical-tier requires MFA; a token alone is insufficient without an
+	// Critical-tier requires MFA; a token alone is insufficient without an.
 	// MFA-verified session.
 	confirm := &fakeConfirmation{}
 	h, aud := newHandlerWithFakes(t, confirm)
@@ -199,7 +199,7 @@ func TestAuthorizeCommand_BlocksCriticalWithoutMFAEvenWithToken(t *testing.T) {
 }
 
 func TestAuthorizeCommand_AllowsCriticalWithMFAAndValidToken(t *testing.T) {
-	// With an MFA-verified session AND a valid confirmation token, the
+	// With an MFA-verified session AND a valid confirmation token, the.
 	// evaluator returns Allow for a critical command and the handler proceeds.
 	confirm := &fakeConfirmation{}
 	h, aud := newHandlerWithFakes(t, confirm)

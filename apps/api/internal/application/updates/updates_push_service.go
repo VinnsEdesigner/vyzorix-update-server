@@ -23,8 +23,8 @@ const UpdateCommandType = "CHECK_UPDATE"
 
 // PushService handles push-related operations.
 type PushService struct {
-	repo          updates.Repository
-	deviceSvc     interface {
+	repo      updates.Repository
+	deviceSvc interface {
 		GetDevice(ctx context.Context, deviceID string) (*device.Device, error)
 	}
 	hub            *ws.Hub

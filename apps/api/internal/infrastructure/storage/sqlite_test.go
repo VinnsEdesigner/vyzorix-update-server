@@ -44,15 +44,15 @@ func TestOpenSQLite_LocalFile(t *testing.T) {
 	}
 }
 
-// TestOpenTurso_Remote runs against a real Turso libSQL endpoint when the
-// TURSO_DB_URL and TURSO_AUTH_TOKEN env vars are present. It is skipped
+// TestOpenTurso_Remote runs against a real Turso libSQL endpoint when the.
+// TURSO_DB_URL and TURSO_AUTH_TOKEN env vars are present. It is skipped.
 // otherwise so local/dev runs without Turso credentials still pass.
 func TestOpenTurso_Remote(t *testing.T) {
 	url := os.Getenv("TURSO_DB_URL")
 	if url == "" {
 		t.Skip("TURSO_DB_URL not set; skipping live Turso test")
 	}
-	// Prefer a per-DB scoped token when present (the vyzor scope DB is
+	// Prefer a per-DB scoped token when present (the vyzor scope DB is.
 	// provisioned with its own token under TURSO_VYZOR_SCOPE_DB_TOKEN).
 	// Fall back to the generic TURSO_AUTH_TOKEN otherwise.
 	token := os.Getenv("TURSO_VYZOR_SCOPE_DB_TOKEN")
@@ -119,7 +119,7 @@ func TestOpenTurso_Remote(t *testing.T) {
 	}
 }
 
-// TestOpenTurso_MissingCredentials verifies the turso backend fails fast with
+// TestOpenTurso_MissingCredentials verifies the turso backend fails fast with.
 // a clear error when credentials are absent, rather than panicking.
 func TestOpenTurso_MissingCredentials(t *testing.T) {
 	cases := []struct {
@@ -145,7 +145,7 @@ func TestOpenSQLite_NilConfig(t *testing.T) {
 	}
 }
 
-// TestSQLiteTxn_RoundTrip verifies the transaction manager commits on success
+// TestSQLiteTxn_RoundTrip verifies the transaction manager commits on success.
 // and rolls back on error, using the local SQLite backend.
 func TestSQLiteTxn_RoundTrip(t *testing.T) {
 	tmp := t.TempDir()
@@ -155,8 +155,8 @@ func TestSQLiteTxn_RoundTrip(t *testing.T) {
 	}
 	defer s.Close()
 
-	// Reuse the migrations-provided settings table for a tx round-trip. The
-	// body must execute against the transaction (pulled from ctx), not the
+	// Reuse the migrations-provided settings table for a tx round-trip. The.
+	// body must execute against the transaction (pulled from ctx), not the.
 	// pool — otherwise the single-writer SQLite pool deadlocks.
 	set := func(ctx context.Context) error {
 		tx, ok := transaction.TxFromContext(ctx)

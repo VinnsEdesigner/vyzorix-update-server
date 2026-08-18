@@ -12,7 +12,7 @@ import (
 // TestPhase2Updates tests public OTA endpoints, tenant update endpoints,
 // push-update flow, sync/export, and data integrity. 24 subtests.
 //
-// Depends on Phase 1 state (org_id, api_keys, session cookies) and the
+// Depends on Phase 1 state (org_id, api_keys, session cookies) and the.
 // static JSON files written by Phase 1's writeStaticFiles.
 func TestPhase2Updates(t *testing.T) {
 	requireServer(t)
@@ -24,7 +24,7 @@ func TestPhase2Updates(t *testing.T) {
 	orgID := state.OrgID
 	ts := timestamp()
 
-	// ── 2.1: Verify static JSON files exist (created by Phase 1) ──
+// ── 2.1: Verify static JSON files exist (created by Phase 1) ──.
 	var versionData map[string]any
 	t.Run("version_json_exists", func(t *testing.T) {
 		data, err := os.ReadFile(filepath.Join(dataDir, "version.json"))
@@ -51,7 +51,7 @@ func TestPhase2Updates(t *testing.T) {
 		t.Logf("changelog.json -> %d versions", len(versions))
 	})
 
-	// ── 2.2: Public OTA endpoints ──
+// ── 2.2: Public OTA endpoints ──.
 	t.Run("GET_api_v1_version", func(t *testing.T) {
 		status, body := doRaw(t, httpClient, "GET", "/api/v1/version", nil)
 		if status != 200 {
@@ -75,7 +75,7 @@ func TestPhase2Updates(t *testing.T) {
 		_ = json.Unmarshal(body, &data)
 		versions, _ := data["versions"].([]any)
 		if versions == nil {
-			// Maybe it's a raw array
+// Maybe it's a raw array.
 			var arr []any
 			if json.Unmarshal(body, &arr) == nil {
 				versions = arr
@@ -139,7 +139,7 @@ func TestPhase2Updates(t *testing.T) {
 		t.Log("GET /api/v1/check-update (older code) -> update_available=true")
 	})
 
-	// ── 2.3: Insert version records into Turso DB ──
+// ── 2.3: Insert version records into Turso DB ──.
 	nowMs := timestampMs()
 	dbVersions := []map[string]any{
 		{"id": newUUID(), "version": "3.0.0", "apk_filename": "vyzorix-3.0.0.apk", "apk_size": 16777216, "sha256": repeatStr("f", 64), "release_date": nowMs, "release_notes": "Major 3.0 release", "release_type": "major", "is_latest": 1, "created_at": nowMs, "updated_at": nowMs},
@@ -158,10 +158,10 @@ func TestPhase2Updates(t *testing.T) {
 		})
 	}
 
-	// ── 2.4: Tenant updates endpoints ──
+// ── 2.4: Tenant updates endpoints ──.
 	time.Sleep(3 * time.Second) // avoid rate limit
 
-	// Create a fresh read key to avoid exhausted rate limit bucket
+// Create a fresh read key to avoid exhausted rate limit bucket.
 	readKey := state.APIKeys["read"]
 	if rk, ok := state.APIKeys["read"]; ok {
 		readKey = rk
@@ -205,7 +205,7 @@ func TestPhase2Updates(t *testing.T) {
 			}
 		}
 		if json.Unmarshal(body, &versions) == nil && versions == nil {
-			// raw array
+// raw array.
 		}
 		if len(versions) < 3 {
 			t.Errorf("expected >=3 versions, got %d", len(versions))
@@ -260,7 +260,7 @@ func TestPhase2Updates(t *testing.T) {
 		t.Logf("GET /v1/updates/history -> %d pushes (before push)", len(history))
 	})
 
-	// ── 2.5: Push update + verify history ──
+// ── 2.5: Push update + verify history ──.
 	deviceID := newUUID()
 	imei := fmt.Sprintf("TEST%dDEVICE1", ts)
 
@@ -364,7 +364,7 @@ func TestPhase2Updates(t *testing.T) {
 		t.Logf("GET /v1/updates/history/%s... -> 200", truncStr(pushID, 12))
 	})
 
-	// ── 2.6: Sync status + export ──
+// ── 2.6: Sync status + export ──.
 	t.Run("GET_v1_updates_sync_status", func(t *testing.T) {
 		time.Sleep(3 * time.Second)
 		status, body := doRaw(t, httpClient, "GET", "/v1/updates/sync/status", hdr)
@@ -383,7 +383,7 @@ func TestPhase2Updates(t *testing.T) {
 		t.Logf("GET /v1/updates/export -> 200 (size=%db)", len(body))
 	})
 
-	// ── 2.7: Data integrity ──
+// ── 2.7: Data integrity ──.
 	t.Run("data_integrity_versions_present", func(t *testing.T) {
 		time.Sleep(3 * time.Second)
 		status, body := doRaw(t, httpClient, "GET", "/v1/updates/versions", hdr)
@@ -444,7 +444,7 @@ func TestPhase2Updates(t *testing.T) {
 		t.Log("data integrity: 3.0.0 marked as latest")
 	})
 
-	// ── Update state ──
+// ── Update state ──.
 	state.PushID = pushID
 	state.DeviceIMEI = imei
 	state.DeviceID = deviceID

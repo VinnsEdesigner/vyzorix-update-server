@@ -112,9 +112,9 @@ func (h *SettingsHandler) logSettingsAudit(c *gin.Context, operatorID string, ev
 }
 
 // getOperatorFromSession extracts operator ID from the authenticated session.
-// The cookieAuth middleware already validated the session and decrypted the
-// cookie, populating the operator in the gin context. Re-reading the raw
-// (encrypted) vyz_session cookie and passing it to ValidateSession is wrong —
+// The cookieAuth middleware already validated the session and decrypted the.
+// cookie, populating the operator in the gin context. Re-reading the raw.
+// (encrypted) vyz_session cookie and passing it to ValidateSession is wrong —.
 // ValidateSession expects the decrypted session ID, not the cookie ciphertext.
 // We reuse the context value the middleware set instead of re-validating.
 func (h *SettingsHandler) getOperatorFromSession(c *gin.Context) (string, error) {
@@ -236,7 +236,7 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
-	// Return the full OperatorSettings (same shape as GET /me/settings) so the
+	// Return the full OperatorSettings (same shape as GET /me/settings) so the.
 	// client receives thresholds + notifications alongside client settings.
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()

@@ -133,8 +133,8 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	hs.Devices = devicehandlers.NewDevicesHandler(deps.DeviceService)
 	hs.DeviceService = deps.DeviceService
 
-	// Command handler. The risk evaluator gates dangerous commands; the audit
-	// logger records every execution attempt. Fall back to a no-op logger when
+	// Command handler. The risk evaluator gates dangerous commands; the audit.
+	// logger records every execution attempt. Fall back to a no-op logger when.
 	// no audit store is configured so the handler never holds a nil dependency.
 	var aud cmdhandlers.AuditLogger = audit.NewNoOpLogger()
 	if deps.AuditLogger != nil {
@@ -144,8 +144,8 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	if evaluator == nil {
 		evaluator = domaincommand.NewRiskEvaluator()
 	}
-	// Confirmation handler doubles as the confirmation consumer for the
-	// command handler. When no confirmation service is configured, pass nil so
+	// Confirmation handler doubles as the confirmation consumer for the.
+	// command handler. When no confirmation service is configured, pass nil so.
 	// risky commands are blocked (the handler treats nil as "disabled").
 	var confirmConsumer cmdhandlers.ConfirmationConsumer
 	if deps.ConfirmationService != nil {

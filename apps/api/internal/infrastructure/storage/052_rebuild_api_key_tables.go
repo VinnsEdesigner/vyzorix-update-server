@@ -6,26 +6,26 @@ import (
 	"strings"
 )
 
-// migrateRebuildAPIKeyTables rebuilds the api_keys and api_clients tables to the
+// migrateRebuildAPIKeyTables rebuilds the api_keys and api_clients tables to the.
 // schema the current repository code actually expects.
 //
 // Background: an earlier multi-tenant API key implementation (commit b3fbf3f,
-// file 038_api_keys.go, since deleted) created api_keys with columns
-// rate_limit_per_minute / last_used_at, and api_clients was created by migration
-// 013 with a minimal schema (id, name, api_key_hash, hmac_key_hash, ...). The
-// current code (039_api_key_storage.go APIKeyRepositoryImpl and
-// client_storage.go ClientRepository) queries a richer schema
+// file 038_api_keys.go, since deleted) created api_keys with columns.
+// rate_limit_per_minute / last_used_at, and api_clients was created by migration.
+// 013 with a minimal schema (id, name, api_key_hash, hmac_key_hash, ...). The.
+// current code (039_api_key_storage.go APIKeyRepositoryImpl and.
+// client_storage.go ClientRepository) queries a richer schema.
 // (operator_id, key_prefix, scope, is_active, request_count, last_request_at,
 // revoked_at for api_keys; operator_id, platform, client_secret_hash, hmac_key,
 // allowed_origins, allowed_paths, rate_limit, is_active, request_count,
-// last_request_at for api_clients). SetupAPIKeysTable is never wired into the
-// migration list, and CREATE TABLE IF NOT EXISTS cannot add columns to an
-// existing table, so the rich schema was never applied. The result: every
-// /v1/auth/api-keys, /v1/admin/api-keys, /v1/auth/client-credentials, and
+// last_request_at for api_clients). SetupAPIKeysTable is never wired into the.
+// migration list, and CREATE TABLE IF NOT EXISTS cannot add columns to an.
+// existing table, so the rich schema was never applied. The result: every.
+// /v1/auth/api-keys, /v1/admin/api-keys, /v1/auth/client-credentials, and.
 // /v1/admin/clients endpoint failed at runtime with "no such column".
 //
-// Both tables are empty in production (the feature is new), so we drop and
-// recreate them with the intended schema. Idempotent: if a table already has
+// Both tables are empty in production (the feature is new), so we drop and.
+// recreate them with the intended schema. Idempotent: if a table already has.
 // the expected columns, it is left untouched.
 func migrateRebuildAPIKeyTables(tx *sql.Tx) error {
 	if err := rebuildAPIKeysTable(tx); err != nil {

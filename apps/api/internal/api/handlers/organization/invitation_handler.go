@@ -224,7 +224,7 @@ func (h *InvitationHandler) GetByToken(c *gin.Context) {
 			return
 		}
 		if errors.Is(err, organization.ErrInvitationExpired) {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invitation has expired"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invitation has expired"))
 			return
 		}
 		h.presenter.InternalError(c, "failed to get invitation")
@@ -280,7 +280,7 @@ func (h *InvitationHandler) Accept(c *gin.Context) {
 			return
 		}
 		if errors.Is(err, organization.ErrInvitationExpired) {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invitation has expired"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invitation has expired"))
 			return
 		}
 		if errors.Is(err, organization.ErrAlreadyResponded) {

@@ -12,9 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ErrorHandler returns a middleware that ensures all error responses follow
-// the structured format without leaking sensitive information. It only fires
-// when a handler recorded a gin error (c.Error) and did not already write a
+// ErrorHandler returns a middleware that ensures all error responses follow.
+// the structured format without leaking sensitive information. It only fires.
+// when a handler recorded a gin error (c.Error) and did not already write a.
 // body; handlers that emit their own structured response keep full control.
 func ErrorHandler(logger *slog.Logger) func(c *gin.Context) {
 	return func(c *gin.Context) {
@@ -32,7 +32,7 @@ func ErrorHandler(logger *slog.Logger) func(c *gin.Context) {
 		ginErr := c.Errors.Last()
 		traceID := GetTraceID(c)
 
-		// If the recorded error is a structured ValidationError, render a 400
+		// If the recorded error is a structured ValidationError, render a 400.
 		// with field-level details rather than the generic status→code path.
 		if details, ok := errors.ValidationDetailsOf(ginErr.Err); ok {
 			logStructuredError(logger, c, ginErr, traceID, http.StatusBadRequest, errors.CodeValidationFailed)
@@ -48,10 +48,10 @@ func ErrorHandler(logger *slog.Logger) func(c *gin.Context) {
 			return
 		}
 
-		// If the recorded error is a *errors.ServerError, render it directly from
-		// the error's own code/message/details/docs-url, using the code's canonical
-		// HTTP status. This is the path migrated handlers take: they record a
-		// ServerError via c.Error and return, and this middleware is the single
+		// If the recorded error is a *errors.ServerError, render it directly from.
+		// the error's own code/message/details/docs-url, using the code's canonical.
+		// HTTP status. This is the path migrated handlers take: they record a.
+		// ServerError via c.Error and return, and this middleware is the single.
 		// render point.
 		if se := errors.AsServerError(ginErr.Err); se != nil {
 			status := se.Code.HTTPStatusCode()
@@ -95,9 +95,9 @@ func ErrorHandler(logger *slog.Logger) func(c *gin.Context) {
 }
 
 // logStructuredError logs an error with its structural fields intact (trace_id,
-// path, method, status, actor_id, org_id) and redacts only the value of the
-// error message, which may carry sensitive data. Routing this through
-// SanitizeForLog previously dropped path/method/error_message entirely, making
+// path, method, status, actor_id, org_id) and redacts only the value of the.
+// error message, which may carry sensitive data. Routing this through.
+// SanitizeForLog previously dropped path/method/error_message entirely, making.
 // the log line useless for debugging.
 func logStructuredError(logger *slog.Logger, c *gin.Context, ginErr *gin.Error, traceID string, status int, code errors.ErrorCode) {
 	args := []any{
@@ -125,9 +125,9 @@ func logStructuredError(logger *slog.Logger, c *gin.Context, ginErr *gin.Error, 
 	}
 }
 
-// statusToErrorCode maps HTTP status codes to a canonical error code. This is
-// the lossy fallback path used when a handler only set a status / recorded a
-// plain error. Handlers that build a real ServerError should call
+// statusToErrorCode maps HTTP status codes to a canonical error code. This is.
+// the lossy fallback path used when a handler only set a status / recorded a.
+// plain error. Handlers that build a real ServerError should call.
 // responses.RespondWithServerError directly to preserve the specific code.
 func statusToErrorCode(status int) errors.ErrorCode {
 	switch {

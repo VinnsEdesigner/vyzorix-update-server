@@ -44,8 +44,8 @@ type Logger struct {
 // Compile-time check that Logger implements AuditLogger.
 var _ AuditLogger = (*Logger)(nil)
 
-// NoOpLogger is a no-operation audit logger for testing and environments
-// without an audit store. It satisfies AuditLogger and the command-handler's
+// NoOpLogger is a no-operation audit logger for testing and environments.
+// without an audit store. It satisfies AuditLogger and the command-handler's.
 // auditLogger interface with zero-cost no-op methods.
 type NoOpLogger struct{}
 
@@ -593,9 +593,9 @@ func (l *Logger) APIKeyFailed(ctx context.Context, operatorID, keyPrefix, ipAddr
 	})
 }
 
-// CommandExecuted logs a device command execution attempt together with its
-// risk classification and the trace id of the originating request. Used by the
-// command execution path to leave an auditable trail for every command —
+// CommandExecuted logs a device command execution attempt together with its.
+// risk classification and the trace id of the originating request. Used by the.
+// command execution path to leave an auditable trail for every command —.
 // allowed, confirmation-gated, or blocked — so risky operations are traceable.
 func (l *Logger) CommandExecuted(ctx context.Context, e CommandExecutedEvent) {
 	metadata := map[string]string{
@@ -626,7 +626,7 @@ func (l *Logger) CommandExecuted(ctx context.Context, e CommandExecutedEvent) {
 }
 
 // CommandExecutedEvent carries the fields needed to audit a command execution.
-// It is a value type so handlers assemble it without allocations when there is
+// It is a value type so handlers assemble it without allocations when there is.
 // nothing to record.
 type CommandExecutedEvent struct {
 	OperatorID string

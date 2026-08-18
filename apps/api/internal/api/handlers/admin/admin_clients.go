@@ -27,20 +27,20 @@ func NewClientsHandler(clientService *client.Service) *ClientsHandler {
 func requireAdmin(c *gin.Context) bool {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "unauthorized"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "unauthorized"))
 		return false
 	}
 
 	// Require org context for admin access.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Organization ID required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Organization ID required"))
 		return false
 	}
 
 	// Check if operator is super_admin in this specific organization.
 	if !op.IsSuperAdminIn(orgID) {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "admin access required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "admin access required"))
 		return false
 	}
 
@@ -55,7 +55,7 @@ func (h *ClientsHandler) List(c *gin.Context) {
 
 	clients, total, err := h.clientService.ListAll(c.Request.Context(), 20, 0)
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to list clients"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to list clients"))
 		return
 	}
 
@@ -70,13 +70,13 @@ func (h *ClientsHandler) Get(c *gin.Context) {
 
 	clientID := c.Param("clientId")
 	if clientID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "clientId is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "clientId is required"))
 		return
 	}
 
 	clientResp, err := h.clientService.Get(c.Request.Context(), clientID)
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Client not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Client not found"))
 		return
 	}
 
@@ -91,23 +91,23 @@ func (h *ClientsHandler) Update(c *gin.Context) {
 
 	clientID := c.Param("clientId")
 	if clientID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "clientId is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "clientId is required"))
 		return
 	}
 
 	var req dto.UpdateClientRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request body"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request body"))
 		return
 	}
 
 	clientResp, err := h.clientService.Update(c.Request.Context(), clientID, &req)
 	if err != nil {
 		if errors.Is(err, application.ErrClientNotFound) {
-			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Client not found"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Client not found"))
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to update client"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to update client"))
 		return
 	}
 
@@ -122,18 +122,18 @@ func (h *ClientsHandler) Delete(c *gin.Context) {
 
 	clientID := c.Param("clientId")
 	if clientID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "clientId is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "clientId is required"))
 		return
 	}
 
 	// Verify existence so deleting a nonexistent client returns 404, not 200.
 	if _, err := h.clientService.Get(c.Request.Context(), clientID); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Client not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Client not found"))
 		return
 	}
 
 	if err := h.clientService.Delete(c.Request.Context(), clientID); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to delete client"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to delete client"))
 		return
 	}
 
@@ -149,21 +149,21 @@ func (h *ClientsHandler) RotateKey(c *gin.Context) {
 
 	clientID := c.Param("clientId")
 	if clientID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "clientId is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "clientId is required"))
 		return
 	}
 
 	// Verify existence so rotating a nonexistent client returns 404, not 500.
 	if _, err := h.clientService.Get(c.Request.Context(), clientID); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Client not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Client not found"))
 		return
 	}
 
 	keyVersion, err := h.clientService.RotateKey(c.Request.Context(), clientID)
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to rotate key"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to rotate key"))
 		return
 	}
 	_ = keyVersion
-	c.Error(apperrors.NewServerErrorFromStatus(http.StatusOK, "Key rotated. Client must fetch new credentials."))
+	_ = c.Error(apperrors.NewServerErrorFromStatus(http.StatusOK, "Key rotated. Client must fetch new credentials."))
 }

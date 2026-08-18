@@ -24,17 +24,17 @@ func NewStatusHandler(deviceService *device.Service) *StatusHandler {
 func (h *StatusHandler) Handle(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device ID is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device ID is required"))
 		return
 	}
 
 	status, err := h.deviceService.GetStatus(c.Request.Context(), imei)
 	if err != nil {
 		if err == application.ErrDeviceNotFound {
-			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found"))
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to retrieve device status"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to retrieve device status"))
 
 		return
 	}

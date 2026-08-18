@@ -70,17 +70,17 @@ func ProvideLogger() *slog.Logger {
 
 // ProvideSQLite opens the database connection.
 //
-// The backend is selected from config: when TURSO_DB_URL is set (or
-// DATABASE_BACKEND=turso) the server connects to Turso libSQL over HTTP for
-// production; otherwise it opens a local SQLite file for development. Both
-// paths run through the same migration registry and return the same
+// The backend is selected from config: when TURSO_DB_URL is set (or.
+// DATABASE_BACKEND=turso) the server connects to Turso libSQL over HTTP for.
+// production; otherwise it opens a local SQLite file for development. Both.
+// paths run through the same migration registry and return the same.
 // *storage.SQLite handle, so every repository works unchanged either way.
 func ProvideSQLite(cfg config.Config, log *slog.Logger) (*storage.SQLite, error) {
 	storageCfg := buildStorageConfig(cfg)
 	return storage.OpenWithLogger(storageCfg, log)
 }
 
-// buildStorageConfig translates the app config into a storage.Config bound to
+// buildStorageConfig translates the app config into a storage.Config bound to.
 // the resolved backend.
 func buildStorageConfig(cfg config.Config) *storage.Config {
 	switch cfg.ResolvedDatabaseBackend() {
@@ -112,8 +112,8 @@ func ProvideIdempotencyRepository(db *sql.DB) *storage.IdempotencyRepository {
 	return storage.NewIdempotencyRepository(db)
 }
 
-// ProvideConfirmationService creates the confirmation service backed by the
-// SQLite confirmation store. Returns nil when no DB is available, in which
+// ProvideConfirmationService creates the confirmation service backed by the.
+// SQLite confirmation store. Returns nil when no DB is available, in which.
 // case the command handler blocks risky commands (confirmations disabled).
 func ProvideConfirmationService(db *storage.SQLite) *confirmation.Service {
 	if db == nil {
@@ -153,10 +153,10 @@ func ProvidePasswordHasher() *passwordpkg.Argon2idHasher {
 }
 
 // ProvideSessionManager creates the session manager.
-// The manager needs its session repository wired so that session-management
-// endpoints (list/revoke/concurrent) can query persisted sessions. Without
+// The manager needs its session repository wired so that session-management.
+// endpoints (list/revoke/concurrent) can query persisted sessions. Without.
 // this, ListActiveSessions returns "session repository not configured".
-// The storage repository speaks the domain/session types; the manager's
+// The storage repository speaks the domain/session types; the manager's.
 // Repository interface speaks security/session types, so we adapt here.
 func ProvideSessionManager(cfg config.Config, sessionRepo *storage.SessionRepository) *infraauth.SessionManager {
 	m := infraauth.NewSessionManager(cfg.SessionSecret)
@@ -313,13 +313,13 @@ func ProvideAuthService(
 		nil, // ldapConfig - not used currently.
 	)
 	svc.SetLogger(log)
-	// Wire the member repository so membership-dependent flows work: listing the
-	// operator's organizations (GET /v1/auth/organizations, /v1/auth/me) and
+	// Wire the member repository so membership-dependent flows work: listing the.
+	// operator's organizations (GET /v1/auth/organizations, /v1/auth/me) and.
 	// organization selection (POST /v1/auth/organizations/select). Without this,
-	// these endpoints silently return empty / "not a member" even when the
+	// these endpoints silently return empty / "not a member" even when the.
 	// operator owns an organization.
 	svc.SetMemberRepository(memberRepo)
-	// Wire the invitation repository so the operator deletion flow
+	// Wire the invitation repository so the operator deletion flow.
 	// (DELETE /v1/auth/admin/operators/:id) can cancel pending invitations.
 	// Without this, s.invitationRepo is nil and DeleteOperator panics.
 	svc.SetInvitationRepository(invitationRepo)

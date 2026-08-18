@@ -44,7 +44,7 @@ type APIKeyWithOperator struct {
 	APIKey
 }
 
-// OperatorRequestTotal is a per-operator cumulative request-count aggregate
+// OperatorRequestTotal is a per-operator cumulative request-count aggregate.
 // used by the super-admin global stats "top operators" view.
 type OperatorRequestTotal struct {
 	OperatorID    string
@@ -59,7 +59,7 @@ type APIKeyRepository interface {
 	GetByKeyHash(ctx context.Context, keyHash string) (*APIKey, error)
 	ListByOperator(ctx context.Context, operatorID string, limit, offset int) ([]*APIKey, int, error)
 	ListAll(ctx context.Context, limit, offset int) ([]*APIKey, int, error)
-	// ListAllWithOperator lists all API keys joined with the operator's display
+	// ListAllWithOperator lists all API keys joined with the operator's display.
 	// name, for the super-admin "all keys" view that needs operator identity.
 	// operatorID and search are optional filters (empty = unfiltered).
 	ListAllWithOperator(ctx context.Context, limit, offset int, operatorID, search string) ([]APIKeyWithOperator, int, error)
@@ -72,7 +72,7 @@ type APIKeyRepository interface {
 	CountRevoked(ctx context.Context) (int, error)
 	// SumRequestsByScope returns the cumulative request totals grouped by scope.
 	SumRequestsByScope(ctx context.Context) (map[string]int64, error)
-	// TopOperatorsByRequests returns the top operators by cumulative request
+	// TopOperatorsByRequests returns the top operators by cumulative request.
 	// count, joined with the operator's display name, limited to `limit` rows.
 	TopOperatorsByRequests(ctx context.Context, limit int) ([]OperatorRequestTotal, int, error)
 	IncrementRequestCount(ctx context.Context, id string) error
@@ -314,10 +314,10 @@ func (r *APIKeyRepositoryImpl) ListAll(ctx context.Context, limit, offset int) (
 	return keys, total, nil
 }
 
-// ListAllWithOperator lists all API keys joined with the owning operator's
-// display name. Used by the super-admin "all keys" view, which must show which
+// ListAllWithOperator lists all API keys joined with the owning operator's.
+// display name. Used by the super-admin "all keys" view, which must show which.
 // operator owns each key — information the plain ListAll/ToResponse path drops.
-// operatorID (non-empty) filters to a single operator; search (non-empty) does
+// operatorID (non-empty) filters to a single operator; search (non-empty) does.
 // a case-insensitive LIKE match on key name, prefix, and operator name/email.
 func (r *APIKeyRepositoryImpl) ListAllWithOperator(ctx context.Context, limit, offset int, operatorID, search string) ([]APIKeyWithOperator, int, error) {
 	if limit <= 0 {
@@ -327,7 +327,7 @@ func (r *APIKeyRepositoryImpl) ListAllWithOperator(ctx context.Context, limit, o
 		limit = 100
 	}
 
-	// Build the WHERE clause dynamically. We always restrict to active keys for
+	// Build the WHERE clause dynamically. We always restrict to active keys for.
 	// the admin list view (revoked keys are excluded); filters are appended.
 	where := "WHERE k.is_active = 1"
 	var args []interface{}
@@ -445,7 +445,7 @@ func (r *APIKeyRepositoryImpl) SumRequestsByScope(ctx context.Context) (map[stri
 }
 
 // TopOperatorsByRequests returns the top operators by cumulative request count,
-// joined with their display name. limit caps the result set; the second return
+// joined with their display name. limit caps the result set; the second return.
 // is the total number of distinct operators that have at least one key.
 func (r *APIKeyRepositoryImpl) TopOperatorsByRequests(ctx context.Context, limit int) ([]OperatorRequestTotal, int, error) {
 	if limit <= 0 {

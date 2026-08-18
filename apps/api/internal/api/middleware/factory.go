@@ -100,7 +100,7 @@ func (f *MiddlewareFactory) Logger() gin.HandlerFunc {
 }
 
 // Tracing returns the trace-id middleware — the single correlation-ID source.
-// It must be registered before the Logger and panic-recovery middleware so
+// It must be registered before the Logger and panic-recovery middleware so.
 // those can read the trace_id from the context.
 func (f *MiddlewareFactory) Tracing() gin.HandlerFunc {
 	return Tracing()
@@ -304,9 +304,9 @@ func (f *MiddlewareFactory) GetSignatureVerifier() *SignatureVerifier {
 	return f.signatureVerifier
 }
 
-// GetSessionSignatureVerifier returns the cryptohmac.Verifier used for
-// per-session request signing on tenant routes. The Secret provider is a
-// placeholder — SessionSignatureMiddleware overrides it per-request by
+// GetSessionSignatureVerifier returns the cryptohmac.Verifier used for.
+// per-session request signing on tenant routes. The Secret provider is a.
+// placeholder — SessionSignatureMiddleware overrides it per-request by.
 // reading the session from the gin context. Only Nonces and Window are used.
 func (f *MiddlewareFactory) GetSessionSignatureVerifier() *cryptohmac.Verifier {
 	return &cryptohmac.Verifier{

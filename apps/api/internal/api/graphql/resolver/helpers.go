@@ -15,9 +15,9 @@ import (
 // Helper Methods.
 // ============================================================.
 
-// resolveOrgID returns the authoritative organization ID from the GraphQL
+// resolveOrgID returns the authoritative organization ID from the GraphQL.
 // context (set by the system middleware chain from the URL :org parameter).
-// If the caller provides an organizationId argument that differs from the
+// If the caller provides an organizationId argument that differs from the.
 // context org ID, a Forbidden error is returned to prevent cross-org access.
 func (r *Resolver) resolveOrgID(p graphql.ResolveParams) (string, error) {
 	ctxOrgID := gqlcontext.GetOrganizationID(p.Context)

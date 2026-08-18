@@ -41,7 +41,7 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		h.log.Error("failed to read webhook body", "error", err)
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "failed to read request body"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "failed to read request body"))
 		return
 	}
 
@@ -49,7 +49,7 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 	if h.webhookSecret != "" {
 		if !h.verifySignature(c, body) {
 			h.log.Warn("invalid webhook signature", "ip", c.ClientIP())
-			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid signature"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid signature"))
 			return
 		}
 	}
@@ -57,7 +57,7 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 	// Check event type.
 	event := c.GetHeader("X-GitHub-Event")
 	if event == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "missing GitHub-Event header"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "missing GitHub-Event header"))
 		return
 	}
 
@@ -66,7 +66,7 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 	// Only process release events.
 	if event != "release" && event != "push" {
 		h.log.Info("ignoring non-release/push event", "event", event)
-		c.Error(apperrors.NewServerErrorFromStatus(http.StatusOK, "event type not processed"))
+		_ = c.Error(apperrors.NewServerErrorFromStatus(http.StatusOK, "event type not processed"))
 		return
 	}
 
@@ -96,7 +96,7 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 				err.Error(),
 			)
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to sync from GitHub"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to sync from GitHub"))
 
 		return
 	}
@@ -115,7 +115,7 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 	}
 
 	h.log.Info("webhook sync completed", "versions", result.VersionsFound)
-	c.Error(apperrors.NewServerErrorFromStatus(http.StatusOK,
+	_ = c.Error(apperrors.NewServerErrorFromStatus(http.StatusOK,
 
 		result.Message))
 

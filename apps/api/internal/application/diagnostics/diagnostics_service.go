@@ -439,7 +439,7 @@ func (s *Service) determineWebSocketStatus(dev *device.Device, wsConnected bool)
 	return "disconnected"
 }
 
-// isFCMTokenValid reports FCM token validity using the configured expiry window
+// isFCMTokenValid reports FCM token validity using the configured expiry window.
 // (cfg.FCMTokenExpiryDays), rather than the Device.IsFCMTokenValid() hardcoded 30 days.
 func (s *Service) isFCMTokenValid(dev *device.Device) bool {
 	if dev.FCMToken == "" {

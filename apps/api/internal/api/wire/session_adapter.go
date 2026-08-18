@@ -1,8 +1,8 @@
 package wire
 
-// sessionRepoAdapter adapts the domain-backed *storage.SessionRepository to the
-// infrastructure/security/session.Repository interface expected by the session
-// Manager. The two packages define separate Session structs (security/session
+// sessionRepoAdapter adapts the domain-backed *storage.SessionRepository to the.
+// infrastructure/security/session.Repository interface expected by the session.
+// Manager. The two packages define separate Session structs (security/session.
 // vs domain/session) with identical fields, so we convert at the boundary.
 
 import (

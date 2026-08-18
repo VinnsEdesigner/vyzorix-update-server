@@ -403,11 +403,11 @@ func hashKeyValue(key string) string {
 	return hash
 }
 
-// deriveAPIKeySigningSecret derives a deterministic HMAC signing secret from
-// the full API key value. This lets API-key-authenticated clients sign requests
-// (Domain A: client↔server request signing) using the same X-Vyzorix-* header
+// deriveAPIKeySigningSecret derives a deterministic HMAC signing secret from.
+// the full API key value. This lets API-key-authenticated clients sign requests.
+// (Domain A: client↔server request signing) using the same X-Vyzorix-* header.
 // scheme as session-authenticated clients, without storing a separate secret.
-// The server stores this derived secret; the client derives it from the full
+// The server stores this derived secret; the client derives it from the full.
 // key value it already holds.
 func deriveAPIKeySigningSecret(fullKey string) string {
 	h := sha512.Sum512([]byte(fullKey))
@@ -476,7 +476,7 @@ func IsValidScope(s string) bool {
 }
 
 // ListAllKeys lists all API keys across all operators (super admin only).
-// operatorID (non-empty) filters to a single operator; search (non-empty) does
+// operatorID (non-empty) filters to a single operator; search (non-empty) does.
 // a case-insensitive LIKE match on key name, prefix, and operator name/email.
 func (s *APIKeyService) ListAllKeys(ctx context.Context, page, limit int, operatorID, search string) (*domain.ListAllAPIKeysResponse, error) {
 	if page < 1 {

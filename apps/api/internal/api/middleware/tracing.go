@@ -8,15 +8,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RequestIDHeader is the legacy inbound alias header accepted by Tracing in
+// RequestIDHeader is the legacy inbound alias header accepted by Tracing in.
 // addition to X-Trace-ID. It is no longer emitted on responses; X-Trace-ID is.
 const RequestIDHeader = "X-Request-ID"
 
-// Tracing returns a middleware that adds a trace ID to every request. The ID is
-// the single correlation identifier for the request: it is read from the
-// X-Trace-ID header (falling back to X-Request-ID for clients that send the
-// latter), generated if absent, stored in the gin context under
-// ContextKeyTraceID, and echoed back on the X-Trace-ID response header so
+// Tracing returns a middleware that adds a trace ID to every request. The ID is.
+// the single correlation identifier for the request: it is read from the.
+// X-Trace-ID header (falling back to X-Request-ID for clients that send the.
+// latter), generated if absent, stored in the gin context under.
+// ContextKeyTraceID, and echoed back on the X-Trace-ID response header so.
 // clients can correlate a response with server-side logs.
 func Tracing() gin.HandlerFunc {
 	return func(c *gin.Context) {

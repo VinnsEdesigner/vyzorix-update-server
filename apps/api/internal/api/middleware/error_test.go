@@ -15,7 +15,7 @@ import (
 
 func init() { gin.SetMode(gin.TestMode) }
 
-// runErrorHandler wraps a handler that records a given error and runs the
+// runErrorHandler wraps a handler that records a given error and runs the.
 // ErrorHandler middleware, returning the response body for assertions.
 func runErrorHandler(t *testing.T, recordErr error) (*httptest.ResponseRecorder, map[string]any) {
 	t.Helper()
@@ -29,9 +29,9 @@ func runErrorHandler(t *testing.T, recordErr error) (*httptest.ResponseRecorder,
 	handler(c)
 
 	// Simulate a handler that recorded an error and left the response unwritten,
-	// then re-invoke the post-processing by calling c.Next path is awkward; instead
-	// drive the middleware the way gin does: register the error then call the
-	// middleware's inner logic by reconstructing. The simplest faithful path is to
+	// then re-invoke the post-processing by calling c.Next path is awkward; instead.
+	// drive the middleware the way gin does: register the error then call the.
+	// middleware's inner logic by reconstructing. The simplest faithful path is to.
 	// build a gin engine.
 	engine := gin.New()
 	engine.Use(Tracing())

@@ -100,7 +100,7 @@ func (s *Server) binHandler(c *gin.Context) {
 // serveDownload serves a file download with APK headers.
 func (s *Server) serveDownload(c *gin.Context, name string) {
 	if name == "" || strings.ContainsAny(name, "/\\") {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid filename"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid filename"))
 		return
 	}
 
@@ -142,7 +142,7 @@ func (s *Server) requireHMAC() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		deviceID := c.Param("imei")
 		if deviceID == "" {
-			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "device ID required for HMAC verification"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "device ID required for HMAC verification"))
 			c.Abort()
 			return
 		}
@@ -153,7 +153,7 @@ func (s *Server) requireHMAC() gin.HandlerFunc {
 				c.Next()
 				return
 			}
-			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Invalid request"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Invalid request"))
 			c.Abort()
 
 			return
@@ -180,7 +180,7 @@ func (s *Server) requireStrictHMAC() gin.HandlerFunc {
 
 		_, err := s.hmacVerifier.ReadAndVerifyHTTP(c.Request)
 		if err != nil {
-			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "strictHmac is enabled: HMAC signature verification failed"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "strictHmac is enabled: HMAC signature verification failed"))
 			c.Abort()
 
 			return

@@ -52,7 +52,7 @@ func NewStreamHandler(
 func (h *StreamHandler) Handle(c *gin.Context) {
 	deviceID := c.Param("imei")
 	if deviceID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device imei required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device imei required"))
 		return
 	}
 

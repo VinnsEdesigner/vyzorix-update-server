@@ -34,20 +34,20 @@ func (h *UpdatesPushHandler) PushUpdate(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, err.Error()))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, err.Error()))
 		return
 	}
 
 	operator := middleware.GetOperatorFromContext(c)
 	if operator == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator not found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator not found"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
@@ -62,10 +62,10 @@ func (h *UpdatesPushHandler) PushUpdate(c *gin.Context) {
 	pushResp, err := h.service.PushUpdate(c.Request.Context(), pushReq, operator.ID)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+			_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to push update"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to push update"))
 		return
 	}
 

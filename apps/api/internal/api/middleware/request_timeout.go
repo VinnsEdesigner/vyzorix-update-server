@@ -100,7 +100,7 @@ func TimeoutMiddleware(defaultTimeout time.Duration) func(http.Handler) http.Han
 				// Request completed.
 			case <-ctx.Done():
 				// Emit the structured error envelope so this net/http-level
-				// timeout matches the gin structured-error shape. The docs URL
+				// timeout matches the gin structured-error shape. The docs URL.
 				// is built dynamically via the tracing builder (not hardcoded).
 				body, _ := json.Marshal(responses.StructuredErrorResponse{
 					Error: responses.ErrorDetail{

@@ -31,7 +31,7 @@ func (h *MFAHandler) SetAuditLogger(logger *audit.Logger) {
 }
 
 // getOperatorFromSession extracts operator ID from the authenticated session.
-// See SettingsHandler.getOperatorFromSession: the cookieAuth middleware already
+// See SettingsHandler.getOperatorFromSession: the cookieAuth middleware already.
 // validated the (encrypted) session cookie and stored the operator in context,
 // so we reuse that instead of passing the raw cookie ciphertext to ValidateSession.
 func (h *MFAHandler) getOperatorFromSession(c *gin.Context) (string, error) {

@@ -34,7 +34,7 @@ func (h *ListHandler) Handle(c *gin.Context) {
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context is required"))
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *ListHandler) Handle(c *gin.Context) {
 	// Get paginated devices filtered by organization.
 	response, err := h.deviceService.ListByOrganization(ctx, orgID, limit, offset)
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Invalid request"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Invalid request"))
 		return
 	}
 
@@ -155,13 +155,13 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 
 	operatorID := c.Query("operatorId")
 	if operatorID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "operatorId is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "operatorId is required"))
 		return
 	}
 
 	devices, err := h.deviceService.ListByOperatorEntity(ctx, operatorID)
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list devices by operator"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list devices by operator"))
 		return
 	}
 
@@ -215,17 +215,17 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 func (h *ListHandler) GetDevice(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
 		return
 	}
 
 	d, err := h.deviceService.GetDevice(c.Request.Context(), imei)
 	if err != nil {
 		if err == devicedomain.ErrNotFound {
-			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found"))
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to retrieve device"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to retrieve device"))
 
 		return
 	}
@@ -257,13 +257,13 @@ func (h *ListHandler) GetDevice(c *gin.Context) {
 func (h *ListHandler) Count(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context is required"))
 		return
 	}
 
 	count, err := h.deviceService.CountByOrganization(c.Request.Context(), orgID)
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to count devices"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to count devices"))
 		return
 	}
 
@@ -278,13 +278,13 @@ func (h *ListHandler) Count(c *gin.Context) {
 func (h *ListHandler) CountByOrganization(c *gin.Context) {
 	orgID := c.Query("organizationId")
 	if orgID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organizationId is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organizationId is required"))
 		return
 	}
 
 	count, err := h.deviceService.CountByOrganization(c.Request.Context(), orgID)
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to count devices"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to count devices"))
 		return
 	}
 

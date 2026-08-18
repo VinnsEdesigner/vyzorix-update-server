@@ -22,17 +22,17 @@ import (
 // Phase 9: Signing integration test.
 //
 // This test starts the real server (assumed already running on localhost:3000),
-// inserts a verified operator into the Turso DB, logs in to obtain a session
+// inserts a verified operator into the Turso DB, logs in to obtain a session.
 // signing key, then exercises the full signing pipeline:
 //
-//   1. Signed REST tenant request succeeds
-//   2. Signed GraphQL HTTP request succeeds
-//   3. Signed GraphQL batch request succeeds
-//   4. API-key-authenticated request with signing succeeds
+//   1. Signed REST tenant request succeeds.
+//   2. Signed GraphQL HTTP request succeeds.
+//   3. Signed GraphQL batch request succeeds.
+//   4. API-key-authenticated request with signing succeeds.
 //   5. Unsigned request is rejected (no bypass)
-//   6. Tampered signature is rejected
-//   7. Old /v1/orgs/:orgId/graphql URL returns 404
-//   8. New /:orgId/graphql URL works
+//   6. Tampered signature is rejected.
+//   7. Old /v1/orgs/:orgId/graphql URL returns 404.
+//   8. New /:orgId/graphql URL works.
 
 const (
 	phase9Email    = "phase9-signing@vyzorix.dev"
@@ -40,7 +40,7 @@ const (
 	phase9Name     = "Phase9 Signing Operator"
 )
 
-// phase9SignRequest sets X-Vyzorix-* headers on req using the same canonical
+// phase9SignRequest sets X-Vyzorix-* headers on req using the same canonical.
 // format as the server's Verifier.Verify.
 func phase9SignRequest(req *http.Request, signingKey string, body []byte) {
 	nonce := newUUID()
@@ -99,7 +99,7 @@ func TestPhase9SigningIntegration(t *testing.T) {
 		t.Skip("TURSO_DB_URL or TURSO_VYZOR_SCOPE_DB_TOKEN not set — skipping")
 	}
 
-	// ── Setup: insert verified operator ──
+// ── Setup: insert verified operator ──.
 	hasher := password.NewArgon2idHasher()
 	hash, err := hasher.Hash(phase9Password)
 	if err != nil {
@@ -134,7 +134,7 @@ func TestPhase9SigningIntegration(t *testing.T) {
 			`DELETE FROM operators WHERE email = '%s'`, phase9Email)}})
 	})
 
-	// ── Login ──
+// ── Login ──.
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		t.Fatalf("cookiejar: %v", err)
@@ -204,7 +204,7 @@ func TestPhase9SigningIntegration(t *testing.T) {
 	}
 	t.Logf("✓ Organization selected")
 
-	// ── Test 1: Signed GraphQL HTTP request succeeds ──
+// ── Test 1: Signed GraphQL HTTP request succeeds ──.
 	t.Run("signed_graphql_query", func(t *testing.T) {
 		gqlBody, _ := json.Marshal(map[string]string{
 			"query": `{ __schema { queryType { name } } }`,
@@ -224,7 +224,7 @@ func TestPhase9SigningIntegration(t *testing.T) {
 		t.Logf("✓ Signed GraphQL query succeeded (introspection returned)")
 	})
 
-	// ── Test 2: Signed GraphQL batch request succeeds ──
+// ── Test 2: Signed GraphQL batch request succeeds ──.
 	t.Run("signed_graphql_batch", func(t *testing.T) {
 		queries := []map[string]any{
 			{"query": `{ __schema { queryType { name } } }`},
@@ -246,7 +246,7 @@ func TestPhase9SigningIntegration(t *testing.T) {
 		t.Logf("✓ Signed GraphQL batch succeeded (2 queries returned)")
 	})
 
-	// ── Test 3: Unsigned request is rejected (no bypass) ──
+// ── Test 3: Unsigned request is rejected (no bypass) ──.
 	t.Run("unsigned_request_rejected", func(t *testing.T) {
 		gqlBody, _ := json.Marshal(map[string]string{
 			"query": `{ __typename }`,
@@ -264,7 +264,7 @@ func TestPhase9SigningIntegration(t *testing.T) {
 		t.Logf("✓ Unsigned request correctly rejected (401 SIGN_001)")
 	})
 
-	// ── Test 4: Tampered signature is rejected ──
+// ── Test 4: Tampered signature is rejected ──.
 	t.Run("tampered_signature_rejected", func(t *testing.T) {
 		gqlBody, _ := json.Marshal(map[string]string{
 			"query": `{ __typename }`,
@@ -296,7 +296,7 @@ func TestPhase9SigningIntegration(t *testing.T) {
 		t.Logf("✓ Tampered signature correctly rejected (401)")
 	})
 
-	// ── Test 5: Old /v1/orgs/:orgId/graphql URL returns 404 ──
+// ── Test 5: Old /v1/orgs/:orgId/graphql URL returns 404 ──.
 	t.Run("old_graphql_url_404", func(t *testing.T) {
 		gqlBody, _ := json.Marshal(map[string]string{
 			"query": `{ __typename }`,
@@ -312,7 +312,7 @@ func TestPhase9SigningIntegration(t *testing.T) {
 		t.Logf("✓ Old /v1/orgs/%s/graphql URL does not serve GraphQL (status %d)", orgID, status)
 	})
 
-	// ── Test 6: API key auth + signing ──
+// ── Test 6: API key auth + signing ──.
 	t.Run("api_key_auth_signing", func(t *testing.T) {
 		// Create an API key via the session.
 		keyBody, _ := json.Marshal(map[string]string{
@@ -352,7 +352,7 @@ func TestPhase9SigningIntegration(t *testing.T) {
 		t.Logf("✓ API key + signing accepted (status %d)", status)
 	})
 
-	// ── Test 7: API key without signing is rejected ──
+// ── Test 7: API key without signing is rejected ──.
 	t.Run("api_key_unsigned_rejected", func(t *testing.T) {
 		// Create another API key.
 		keyBody, _ := json.Marshal(map[string]string{
@@ -368,8 +368,8 @@ func TestPhase9SigningIntegration(t *testing.T) {
 		_ = json.Unmarshal(body, &keyResp)
 		apiKey, _ := keyResp["api_key"].(string)
 
-		// Use API key WITHOUT signing on the GraphQL endpoint (which has
-		// the signing middleware in its chain). The signing middleware
+// Use API key WITHOUT signing on the GraphQL endpoint (which has.
+// the signing middleware in its chain). The signing middleware.
 		// must reject the unsigned request before it reaches the handler.
 		gqlBody, _ := json.Marshal(map[string]string{
 			"query": `{ __typename }`,

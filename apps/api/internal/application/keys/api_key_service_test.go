@@ -1165,9 +1165,9 @@ func TestAPIKeyService_GetGlobalStats(t *testing.T) {
 	}
 }
 
-// =============================================================================
+// =============================================================================.
 // Signing Secret (Domain A: API-key-authenticated request signing)
-// =============================================================================
+// =============================================================================.
 
 func TestAPIKeyService_GenerateKey_SigningSecretDerivedFromFullKey(t *testing.T) {
 	svc, _ := setupTestService(t)

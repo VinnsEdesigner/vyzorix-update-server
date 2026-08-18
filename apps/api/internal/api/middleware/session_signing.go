@@ -9,26 +9,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// sessionContextKey must match the key used by CookieAuth when storing the
+// sessionContextKey must match the key used by CookieAuth when storing the.
 // validated session in the gin context.
 const sessionContextKey = "session"
 
-// SessionSignatureMiddleware verifies the X-Vyzorix-* HMAC headers on
+// SessionSignatureMiddleware verifies the X-Vyzorix-* HMAC headers on.
 // tenant API requests using the per-session signing key.
 //
-// Unlike RequestSigningMiddleware (which resolves the secret by client ID
-// for device APIs), this middleware reads the session that CookieAuth /
-// API-key auth already placed in the gin context and uses session.SigningKey
-// as the HMAC secret. This binds every tenant request to the authenticated
-// session, so a stolen JWT without the session signing key cannot call the
+// Unlike RequestSigningMiddleware (which resolves the secret by client ID.
+// for device APIs), this middleware reads the session that CookieAuth /.
+// API-key auth already placed in the gin context and uses session.SigningKey.
+// as the HMAC secret. This binds every tenant request to the authenticated.
+// session, so a stolen JWT without the session signing key cannot call the.
 // API.
 //
-// For API-key-authenticated requests (no session), the middleware reads the
-// api_key_signing_secret that TenantAPIKeyAuth placed in the context and uses
-// it as the HMAC secret instead. This extends request signing to API keys
+// For API-key-authenticated requests (no session), the middleware reads the.
+// api_key_signing_secret that TenantAPIKeyAuth placed in the context and uses.
+// it as the HMAC secret instead. This extends request signing to API keys.
 // (Domain A) using the same X-Vyzorix-* header scheme.
 //
-// The middleware must run AFTER cookie/API-key auth so the session or API key
+// The middleware must run AFTER cookie/API-key auth so the session or API key.
 // is present.
 func SessionSignatureMiddleware(verifier *cryptohmac.Verifier) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -37,7 +37,7 @@ func SessionSignatureMiddleware(verifier *cryptohmac.Verifier) gin.HandlerFunc {
 			return
 		}
 
-		// Reject requests with no signature header. Every authenticated request
+		// Reject requests with no signature header. Every authenticated request.
 		// must carry X-Vyzorix-* signing headers — there is no unsigned fallback.
 		if c.GetHeader("X-Vyzorix-Signature") == "" {
 			responses.RespondStructuredAbort(c, http.StatusUnauthorized,
@@ -47,8 +47,8 @@ func SessionSignatureMiddleware(verifier *cryptohmac.Verifier) gin.HandlerFunc {
 			return
 		}
 
-		// Resolve the HMAC secret: session key for cookie auth, API key signing
-		// secret for API-key auth. The nonce namespace ID is the session ID or
+		// Resolve the HMAC secret: session key for cookie auth, API key signing.
+		// secret for API-key auth. The nonce namespace ID is the session ID or.
 		// API key ID respectively.
 		var hmacSecret string
 		var nonceNamespace string
@@ -87,7 +87,7 @@ func SessionSignatureMiddleware(verifier *cryptohmac.Verifier) gin.HandlerFunc {
 			return
 		}
 
-		// Build a one-shot verifier scoped to this request so the Secret
+		// Build a one-shot verifier scoped to this request so the Secret.
 		// function can return the resolved secret.
 		reqVerifier := &cryptohmac.Verifier{
 			Secret: func(_ string) (string, bool) {

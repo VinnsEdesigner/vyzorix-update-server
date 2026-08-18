@@ -432,7 +432,7 @@ func validateProductionConfig(c *Config) error {
 	return nil
 }
 
-// ResolvedDatabaseBackend determines which storage backend will be used given
+// ResolvedDatabaseBackend determines which storage backend will be used given.
 // the configured DATABASE_BACKEND and the presence of Turso credentials.
 // "auto" selects turso when TURSO_DB_URL is set, otherwise sqlite.
 func (c *Config) ResolvedDatabaseBackend() string {
@@ -449,7 +449,7 @@ func (c *Config) ResolvedDatabaseBackend() string {
 	}
 }
 
-// validateDatabaseConfig validates the database backend selection and the
+// validateDatabaseConfig validates the database backend selection and the.
 // credentials required by the chosen backend.
 func validateDatabaseConfig(c *Config) error {
 	backend := c.ResolvedDatabaseBackend()
@@ -522,7 +522,7 @@ func get(k, fallback string) string {
 	return fallback
 }
 
-// parseDurationEnv parses a Go duration string (e.g. "30s", "5m", "1h") with a
+// parseDurationEnv parses a Go duration string (e.g. "30s", "5m", "1h") with a.
 // fallback default. Falls back when unset or unparseable.
 func parseDurationEnv(k string, fallback time.Duration) time.Duration {
 	v := strings.TrimSpace(os.Getenv(k))

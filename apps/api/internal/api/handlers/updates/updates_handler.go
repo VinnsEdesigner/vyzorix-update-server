@@ -39,13 +39,13 @@ func NewUpdatesHandler(service *updates.Service, pushService *updates.PushServic
 func (h *UpdatesHandler) RegisterRoutes(rg *gin.RouterGroup, cookieAuth *middleware.CookieAuth) {
 	// Device callback endpoint - public (no auth required, device identifies itself).
 	// This must be registered BEFORE the cookie auth middleware is applied.
-	// rg is already mounted at /v1/updates by setupUpdatesRoutes, so device-status
+	// rg is already mounted at /v1/updates by setupUpdatesRoutes, so device-status.
 	// lives at /v1/updates/device-status.
 	if h.deviceStatusHandler != nil {
 		rg.POST("/device-status", h.deviceStatusHandler.HandleDeviceUpdateStatus)
 	}
 
-	// Authenticated updates endpoints. rg is already at /v1/updates, so register
+	// Authenticated updates endpoints. rg is already at /v1/updates, so register.
 	// routes directly on it (previously this created a doubled /updates/updates path).
 	updatesGroup := rg
 	updatesGroup.Use(cookieAuth.Middleware())

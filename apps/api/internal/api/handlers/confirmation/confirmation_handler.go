@@ -1,4 +1,4 @@
-// Package confirmation provides the HTTP endpoints that issue single-use
+// Package confirmation provides the HTTP endpoints that issue single-use.
 // confirmation tokens for risky device commands.
 package confirmation
 
@@ -23,8 +23,8 @@ type Handler struct {
 	riskEvaluator       *command.RiskEvaluator
 }
 
-// NewHandler creates a confirmation Handler. The device service is used to
-// verify the target device belongs to the caller's organization before a
+// NewHandler creates a confirmation Handler. The device service is used to.
+// verify the target device belongs to the caller's organization before a.
 // confirmation is issued, so tokens never authorize cross-tenant actions.
 func NewHandler(confirmationService *confirmation.Service, deviceService *device.Service, riskEvaluator *command.RiskEvaluator) *Handler {
 	return &Handler{
@@ -39,9 +39,9 @@ type requestConfirmationRequest struct {
 	Command string `json:"command"`
 }
 
-// RequestConfirmation issues a single-use confirmation token for a risky
-// command on a device. If the command does not require confirmation, the
-// endpoint responds with confirmation_required:false so the client can issue
+// RequestConfirmation issues a single-use confirmation token for a risky.
+// command on a device. If the command does not require confirmation, the.
+// endpoint responds with confirmation_required:false so the client can issue.
 // the command directly.
 func (h *Handler) RequestConfirmation(c *gin.Context) {
 	imei := c.Param("imei")
@@ -109,14 +109,14 @@ func (h *Handler) RequestConfirmation(c *gin.Context) {
 	})
 }
 
-// ConsumeForCommand is a thin wrapper exposing the service's consume logic to
-// the command handler without coupling it to the confirmation service's
-// internals. It is the single consume path; the handler calls it when a
+// ConsumeForCommand is a thin wrapper exposing the service's consume logic to.
+// the command handler without coupling it to the confirmation service's.
+// internals. It is the single consume path; the handler calls it when a.
 // confirmation token is presented on command execution.
 func (h *Handler) ConsumeForCommand(c *gin.Context, token, operatorID, commandName, deviceID string) (*command.CommandRiskProfile, error) {
 	pending, err := h.confirmationService.ConsumeForCommand(c.Request.Context(), token, operatorID, commandName, deviceID)
 	if err != nil {
-		// Translate confirmation errors into a sentinel that the caller maps
+		// Translate confirmation errors into a sentinel that the caller maps.
 		// to an HTTP status; the profile is still useful for the audit body.
 		profile := command.LookupRiskProfile(commandName)
 		return &profile, err
@@ -125,7 +125,7 @@ func (h *Handler) ConsumeForCommand(c *gin.Context, token, operatorID, commandNa
 	return &profile, nil
 }
 
-// ErrRequiresConfirmation is returned by the handler-less consume helper when
-// a token is missing; exported so callers can distinguish "no token" from
+// ErrRequiresConfirmation is returned by the handler-less consume helper when.
+// a token is missing; exported so callers can distinguish "no token" from.
 // "bad token" without importing confirmation domain errors.
 var ErrRequiresConfirmation = errors.New("confirmation token required")

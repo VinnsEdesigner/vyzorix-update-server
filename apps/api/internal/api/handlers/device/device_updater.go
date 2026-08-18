@@ -23,7 +23,7 @@ func NewUpdaterHandler(deviceService *device.Service) *UpdaterHandler {
 func (h *UpdaterHandler) UpdateFCMToken(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device ID is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device ID is required"))
 		return
 	}
 
@@ -32,13 +32,13 @@ func (h *UpdaterHandler) UpdateFCMToken(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request"))
 		return
 	}
 
 	err := h.deviceService.UpdateFCMToken(c.Request.Context(), imei, req.FCMToken)
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to update FCM token"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to update FCM token"))
 		return
 	}
 
@@ -49,13 +49,13 @@ func (h *UpdaterHandler) UpdateFCMToken(c *gin.Context) {
 func (h *UpdaterHandler) Delete(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device ID is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device ID is required"))
 		return
 	}
 
 	err := h.deviceService.Delete(c.Request.Context(), imei)
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to delete device"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to delete device"))
 		return
 	}
 

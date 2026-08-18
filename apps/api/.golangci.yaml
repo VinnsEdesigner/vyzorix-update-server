@@ -1,7 +1,7 @@
 version: "2"
 
 run:
-  go: 1.26
+  go: "1.26"
   modules-download-mode: readonly
   tests: false
   timeout: 15m
@@ -105,9 +105,7 @@ linters:
         - unusedwrite
         - nilness
         - printf
-    loggercheck:
-      tags:
-        - slog
+    loggercheck: {}
     nestif:
       min-complexity: 20
     revive:
@@ -130,4 +128,3 @@ linters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-use-default: false

@@ -40,11 +40,11 @@ const (
 // testPassword is the shared password for all test operators.
 const testPassword = "TestPass#2026!"
 
-// signingKeys maps a session HTTP client to the per-session HMAC signing key
-// returned by the login response. doJSON / doRaw / graphql / graphqlBatch look
-// up the key from this map and sign requests automatically, matching the
-// server's SessionSignatureMiddleware. API-key-authenticated requests are
-// signed with a secret derived from the full API key value (see
+// signingKeys maps a session HTTP client to the per-session HMAC signing key.
+// returned by the login response. doJSON / doRaw / graphql / graphqlBatch look.
+// up the key from this map and sign requests automatically, matching the.
+// server's SessionSignatureMiddleware. API-key-authenticated requests are.
+// signed with a secret derived from the full API key value (see.
 // deriveAPIKeySigningSecret in the keys service).
 var signingKeys sync.Map // map[*http.Client]string
 
@@ -104,7 +104,7 @@ func newSession() (*http.Client, error) {
 	}, nil
 }
 
-// getCSRF fetches a CSRF token and returns it. The _csrf cookie is stored in
+// getCSRF fetches a CSRF token and returns it. The _csrf cookie is stored in.
 // the client's jar automatically. Retries on 429 rate-limit.
 func getCSRF(t *testing.T, c *http.Client) string {
 	t.Helper()
@@ -134,8 +134,8 @@ func getCSRF(t *testing.T, c *http.Client) string {
 	return ""
 }
 
-// signRequest sets the X-Vyzorix-Timestamp, X-Vyzorix-Nonce, and
-// X-Vyzorix-Signature headers on req using the same HMAC-SHA512 scheme as the
+// signRequest sets the X-Vyzorix-Timestamp, X-Vyzorix-Nonce, and.
+// X-Vyzorix-Signature headers on req using the same HMAC-SHA512 scheme as the.
 // server's Verifier.Verify: canonical = METHOD\nPATH\nNONCE\nTIMESTAMP_MS\nBODY.
 func signRequest(req *http.Request, signingKey string, body []byte) {
 	nonce := newUUID()
@@ -152,10 +152,10 @@ func signRequest(req *http.Request, signingKey string, body []byte) {
 }
 
 // resolveSigningKey determines the HMAC signing key for an outgoing request.
-// For API-key-authenticated requests (X-API-Key header present), the secret is
-// derived from the full API key value via SHA-512 hex — matching the server's
-// deriveAPIKeySigningSecret. For session-authenticated requests, the key is
-// looked up from the signingKeys registry (populated by login). Returns "" if
+// For API-key-authenticated requests (X-API-Key header present), the secret is.
+// derived from the full API key value via SHA-512 hex — matching the server's.
+// deriveAPIKeySigningSecret. For session-authenticated requests, the key is.
+// looked up from the signingKeys registry (populated by login). Returns "" if.
 // no signing key is available, which means the request is sent unsigned.
 func resolveSigningKey(req *http.Request, c *http.Client) string {
 	if apiKey := req.Header.Get("X-API-Key"); apiKey != "" {
@@ -302,7 +302,7 @@ func fetchEmails(t *testing.T) []emailLog {
 	return emails
 }
 
-// fetchVerifyToken polls the mock email server for a verification token
+// fetchVerifyToken polls the mock email server for a verification token.
 // matching the given email address.
 func fetchVerifyToken(t *testing.T, email string) string {
 	t.Helper()
@@ -358,7 +358,7 @@ func extractInviteToken(html string) string {
 	return ""
 }
 
-// registerAndVerify registers a new operator and verifies the email via the
+// registerAndVerify registers a new operator and verifies the email via the.
 // mock-resend token. Returns the authenticated session client and CSRF token.
 func registerAndVerify(t *testing.T, email, name string) (*http.Client, string) {
 	t.Helper()
@@ -387,7 +387,7 @@ func registerAndVerify(t *testing.T, email, name string) (*http.Client, string) 
 	return c, csrf
 }
 
-// login creates a new session, logs in with the given credentials, selects the
+// login creates a new session, logs in with the given credentials, selects the.
 // org, and returns the session client + CSRF token.
 func login(t *testing.T, email, orgID string) (*http.Client, string) {
 	t.Helper()
@@ -402,7 +402,7 @@ func login(t *testing.T, email, orgID string) (*http.Client, string) {
 	if status != 200 {
 		t.Fatalf("login %s -> %d: %s", email, status, string(body))
 	}
-	// Capture the per-session signing key returned by the login response so
+// Capture the per-session signing key returned by the login response so.
 	// subsequent requests can be signed with X-Vyzorix-* headers.
 	loginData := parseJSON(t, body)
 	if signingKey, _ := loginData["signing_key"].(string); signingKey != "" {
@@ -667,7 +667,7 @@ func (r *noopDeviceRepoForTests) SoftDeleteByOrganization(context.Context, strin
 // Compile-time check.
 var _ device.Repository = (*noopDeviceRepoForTests)(nil)
 
-// newTestAuditLogger creates an audit.Logger backed by an in-memory SQLite DB
+// newTestAuditLogger creates an audit.Logger backed by an in-memory SQLite DB.
 // so audit logging doesn't panic during WS integration tests.
 func newTestAuditLogger(log *slog.Logger) *audit.Logger {
 	db, err := sql.Open("sqlite3", ":memory:")

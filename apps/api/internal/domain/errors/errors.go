@@ -10,52 +10,27 @@ import (
 
 // ServerError is the standard error type returned by all Vyzorix API operations.
 // It provides structured, client-safe error information with trace context.
+//
+//nolint:govet // fieldalignment: reordered for best packing
 type ServerError struct {
-	// Code is a machine-readable error identifier (e.g., "AUTH_INVALID_CREDENTIALS").
-	// Clients should use this for programmatic error handling, not the Message.
-	Code ErrorCode `json:"code"`
-
-	// Message is a human-readable description safe for client display.
-	// It should never contain sensitive information (tokens, passwords, internal paths).
-	Message string `json:"message"`
-
-	// Details contains additional context-specific data.
-	// For validation errors, this contains []ValidationDetail.
-	// For rate limit errors, this may contain RetryAfter duration.
-	Details any `json:"details,omitempty"`
-
-	// TraceID is the unique identifier for request tracing.
-	// Use NewServerError or WrapError to automatically generate.
-	TraceID string `json:"trace_id"`
-
-	// Timestamp is when the error occurred (UTC).
-	Timestamp time.Time `json:"timestamp"`
-
-	// DocsURL is an optional link to documentation for this error code.
-	// Format: "https://docs.vyzorix.com/errors/{ERROR_CODE}"
-	DocsURL string `json:"docs_url,omitempty"`
-
-	// Internal is internal error context that should NEVER be exposed to clients.
-	// This field is omitted from JSON serialization via struct tags.
-	Internal *InternalError `json:"-"`
+	Code      ErrorCode      `json:"code"`
+	Message   string         `json:"message"`
+	TraceID   string         `json:"trace_id"`
+	DocsURL   string         `json:"docs_url,omitempty"`
+	Internal  *InternalError `json:"-"`
+	Details   any            `json:"details,omitempty"`
+	Timestamp time.Time      `json:"timestamp"`
 }
 
 // InternalError contains implementation details for logging/debugging.
 // These fields are NEVER sent to clients.
+//
+//nolint:govet // fieldalignment: reordered for best packing
 type InternalError struct {
-	// Original error from the underlying operation
-	Err error
-
-	// Request path where error occurred
-	Path string
-
-	// Method of the request
-	Method string
-
-	// User/System ID that triggered the error (safe to log)
+	Path    string
+	Method  string
 	ActorID string
-
-	// Additional internal context
+	Err     error
 	Context map[string]any
 }
 
@@ -110,15 +85,15 @@ func NewServerError(code ErrorCode, message string) *ServerError {
 	}
 }
 
-// NewServerErrorFromStatus creates a ServerError whose code is derived from an
-// HTTP status code, mirroring the middleware's status→code mapping. Use this
+// NewServerErrorFromStatus creates a ServerError whose code is derived from an.
+// HTTP status code, mirroring the middleware's status→code mapping. Use this.
 // when the status is not statically known (e.g. carried by a service error).
 func NewServerErrorFromStatus(status int, message string) *ServerError {
 	return NewServerError(statusToErrorCode(status), message)
 }
 
-// statusToErrorCode maps an HTTP status to the canonical ErrorCode. It is the
-// single source of truth shared by the response helpers and the runtime-status
+// statusToErrorCode maps an HTTP status to the canonical ErrorCode. It is the.
+// single source of truth shared by the response helpers and the runtime-status.
 // ServerError constructor.
 func statusToErrorCode(status int) ErrorCode {
 	switch {
@@ -192,7 +167,7 @@ func (e *ServerError) WithTraceID(traceID string) *ServerError {
 	return e
 }
 
-// Common error factory functions for authentication errors
+// Common error factory functions for authentication errors.
 
 // ErrInvalidCredentials creates an invalid credentials error.
 func ErrInvalidCredentials() *ServerError {
@@ -216,7 +191,7 @@ func ErrSessionExpired() *ServerError {
 	return NewServerError(CodeAuthSessionExpired, "Your session has expired. Please log in again.")
 }
 
-// Common factory functions for authorization errors
+// Common factory functions for authorization errors.
 
 // ErrForbidden creates a forbidden error with a generic message.
 func ErrForbidden() *ServerError {
@@ -235,7 +210,7 @@ func ErrOrgMembershipRequired() *ServerError {
 		"You must be a member of this organization to perform this action")
 }
 
-// Common factory functions for resource errors
+// Common factory functions for resource errors.
 
 // ErrNotFound creates a resource not found error.
 func ErrNotFound(resourceType, resourceID string) *ServerError {
@@ -253,7 +228,7 @@ func ErrAlreadyExists(resourceType string) *ServerError {
 		fmt.Sprintf("A %s with this identifier already exists", resourceType))
 }
 
-// Common factory functions for validation errors
+// Common factory functions for validation errors.
 
 // ErrValidationFailed creates a general validation error.
 func ErrValidationFailed(message string) *ServerError {
@@ -284,7 +259,7 @@ func ErrValidationErrors(errors []ValidationDetail) *ServerError {
 		WithDetails(errors)
 }
 
-// Common factory functions for rate limit errors
+// Common factory functions for rate limit errors.
 
 // ErrRateLimitExceeded creates a rate limit exceeded error.
 func ErrRateLimitExceeded(retryAfterSeconds int) *ServerError {
@@ -292,7 +267,7 @@ func ErrRateLimitExceeded(retryAfterSeconds int) *ServerError {
 		WithDetails(map[string]int{"retry_after_seconds": retryAfterSeconds})
 }
 
-// Common factory functions for security errors
+// Common factory functions for security errors.
 
 // ErrThreatDetected creates a security threat detected error.
 func ErrThreatDetected(threatType string) *ServerError {
@@ -311,7 +286,7 @@ func ErrRiskConfirmationRequired(operation string, riskLevel string) *ServerErro
 		})
 }
 
-// Common factory functions for internal errors
+// Common factory functions for internal errors.
 
 // ErrInternal creates an internal server error.
 func ErrInternal(message string) *ServerError {
@@ -323,7 +298,7 @@ func ErrInternalWithError(message string, err error) *ServerError {
 	return WrapError(CodeInternalServerError, message, err)
 }
 
-// Common factory functions for device errors
+// Common factory functions for device errors.
 
 // ErrDeviceNotOnline creates a device not online error.
 func ErrDeviceNotOnline(deviceID string) *ServerError {

@@ -16,7 +16,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	// Pure-Go libSQL driver for the Turso (remote) backend. Registered as "libsql".
-	// Implements database/sql over the Turso HTTP/v2 pipeline, so every existing
+	// Implements database/sql over the Turso HTTP/v2 pipeline, so every existing.
 	// repository method works unchanged against either backend.
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 
@@ -112,7 +112,7 @@ func (c *Config) buildDSN() string {
 	return dsn + params
 }
 
-// buildTursoDSN builds the libSQL connection string with the auth token appended
+// buildTursoDSN builds the libSQL connection string with the auth token appended.
 // as a query parameter (the pure-Go driver reads it from the URL).
 func (c *Config) buildTursoDSN() string {
 	url := c.TursoURL
@@ -123,9 +123,9 @@ func (c *Config) buildTursoDSN() string {
 	return url + sep + "authToken=" + c.TursoAuthToken
 }
 
-// SQLite provides the base database connection. Despite the legacy name, it is
-// backend-agnostic: the underlying *sql.DB may be a local sqlite3 file or a
-// remote Turso libSQL endpoint. The public surface (DB/Close/Ping/WithTx/
+// SQLite provides the base database connection. Despite the legacy name, it is.
+// backend-agnostic: the underlying *sql.DB may be a local sqlite3 file or a.
+// remote Turso libSQL endpoint. The public surface (DB/Close/Ping/WithTx/.
 // TxManager/Backend/Info) is identical for both backends.
 type SQLite struct {
 	db         *sql.DB
@@ -190,7 +190,7 @@ func openWithLogger(cfg *Config, log *slog.Logger) (*SQLite, error) {
 
 	applyPool(db, cfg, backend)
 
-	// Verify connectivity before running migrations so a misconfigured Turso
+	// Verify connectivity before running migrations so a misconfigured Turso.
 	// endpoint fails fast at boot with a clear cause.
 	if err := db.Ping(); err != nil {
 		_ = db.Close()
@@ -212,7 +212,7 @@ func openWithLogger(cfg *Config, log *slog.Logger) (*SQLite, error) {
 		stopHealth: make(chan struct{}),
 	}
 
-	// A background health check keeps the Turso pool warm and surfaces
+	// A background health check keeps the Turso pool warm and surfaces.
 	// connectivity loss to /health without per-request pings.
 	if backend == BackendTurso && cfg.HealthCheckPeriod > 0 {
 		s.startHealthCheck()
@@ -439,58 +439,58 @@ var migrations = []Migration{
 
 	{Apply: migrateCreatePendingFCM, Name: "create_pending_fcm_table", Version: 47},
 	// Add the model column to devices. The code referenced it (deviceColumns,
-	// INSERT/UPDATE) but no prior migration created it; fresh databases failed
+	// INSERT/UPDATE) but no prior migration created it; fresh databases failed.
 	// with "no such column: model". Idempotent (skips if column exists).
 	{Apply: migrateAddDeviceModelColumn, Name: "add_devices_model_column", Version: 48},
-	// Relax devices.command_secret NOT NULL. The column is legacy (plaintext
-	// secret) and superseded by command_secret_hash; DeviceRepository.Create
+	// Relax devices.command_secret NOT NULL. The column is legacy (plaintext.
+	// secret) and superseded by command_secret_hash; DeviceRepository.Create.
 	// never sets it, so the NOT NULL constraint broke every device creation.
 	// Rebuilds the table to make the column nullable. Idempotent.
 	{Apply: migrateRelaxDeviceCommandSecretNull, Name: "relax_devices_command_secret_null", Version: 49},
-	// Repair the device_settings foreign key: migration 042 referenced
-	// devices(imei) but the IMEI lives in devices.id, making the FK
-	// unresolvable and blocking device deletion. Rebuilds the table with
+	// Repair the device_settings foreign key: migration 042 referenced.
+	// devices(imei) but the IMEI lives in devices.id, making the FK.
+	// unresolvable and blocking device deletion. Rebuilds the table with.
 	// REFERENCES devices(id). Idempotent.
 	{Apply: migrateFixDeviceSettingsFK, Name: "fix_device_settings_fk", Version: 50},
-	// Add organization_id to update_pushes. The org-scoped push queries
+	// Add organization_id to update_pushes. The org-scoped push queries.
 	// (ListPushes/GetPushByID/ListPushDevices) and CreatePush reference it,
-	// but the create_update_tables migration (023) never created the column
+	// but the create_update_tables migration (023) never created the column.
 	// and no prior migration added it. Idempotent.
 	{Apply: migrateAddUpdatePushOrgColumn, Name: "add_update_pushes_organization_id", Version: 51},
-	// Rebuild api_keys and api_clients to the rich schema the repository
-	// code expects (operator_id, key_prefix, scope, is_active, ...). The
-	// live tables were created by a deleted migration (038) / migration 013
-	// with an incompatible minimal schema; SetupAPIKeysTable is never wired
-	// and CREATE TABLE IF NOT EXISTS can't add columns, so the rich schema
+	// Rebuild api_keys and api_clients to the rich schema the repository.
+	// code expects (operator_id, key_prefix, scope, is_active, ...). The.
+	// live tables were created by a deleted migration (038) / migration 013.
+	// with an incompatible minimal schema; SetupAPIKeysTable is never wired.
+	// and CREATE TABLE IF NOT EXISTS can't add columns, so the rich schema.
 	// was never applied and every API-key/client endpoint 500'd. Idempotent.
 	{Apply: migrateRebuildAPIKeyTables, Name: "rebuild_api_key_tables", Version: 52},
 	// Fix timestamp columns - convert TEXT to INTEGER for consistency.
 	// Add resource_type/resource_id/metadata/result columns to audit_logs.
-	// The original migration 018 created the table without these columns, so
+	// The original migration 018 created the table without these columns, so.
 	// audit log writes failed with "no column named resource_type". Idempotent.
 	{Apply: migrateAuditLogsResourceColumns, Name: "add_audit_logs_resource_columns", Version: 53},
 	// Add signing_key column to auth_sessions for per-session HMAC request signing.
 	// The browser client receives this key on login and signs every request;
-	// the server verifies the signature to confirm the request is from a
+	// the server verifies the signature to confirm the request is from a.
 	// verified client. Idempotent.
 	{Apply: migrateAddSessionSigningKey, Name: "add_auth_sessions_signing_key", Version: 54},
-	// Add signing_secret column to api_keys so API-key-authenticated requests
+	// Add signing_secret column to api_keys so API-key-authenticated requests.
 	// can be HMAC-signed without a session (Domain A extends to API keys).
 	// Idempotent.
 	{Apply: migrateAddAPIKeySigningSecret, Name: "add_api_keys_signing_secret", Version: 55},
-	// Fix refresh_tokens schema: migration 025 created the revoked flag as
-	// `revoked` and omitted `revoked_at`, but the repository queries
-	// `is_revoked`/`revoked_at`. Rebuilds the table with the correct column
+	// Fix refresh_tokens schema: migration 025 created the revoked flag as.
+	// `revoked` and omitted `revoked_at`, but the repository queries.
+	// `is_revoked`/`revoked_at`. Rebuilds the table with the correct column.
 	// names so logout and token revocation stop 500'ing. Idempotent.
 	{Apply: migrateFixRefreshTokensSchema, Name: "fix_refresh_tokens_schema", Version: 56},
-	// Add trace_id and risk_tier columns to audit_logs so security events can
-	// be correlated with request traces and classified by command risk. Backs
+	// Add trace_id and risk_tier columns to audit_logs so security events can.
+	// be correlated with request traces and classified by command risk. Backs.
 	// the Phase 2 risk/audit work. Idempotent: skips columns that already exist.
 	{Apply: migrateAuditLogsRiskColumns, Name: "add_audit_logs_risk_columns", Version: 57},
-	// Create command_confirmations table for short-lived, single-use
+	// Create command_confirmations table for short-lived, single-use.
 	// confirmation tokens that gate risky device commands (Phase 3).
 	{Apply: migrateCommandConfirmations, Name: "create_command_confirmations_table", Version: 58},
-	// Add actor_type, actor_email, old_value, new_value columns to audit_logs
+	// Add actor_type, actor_email, old_value, new_value columns to audit_logs.
 	// for change-tracking compliance. Idempotent.
 	{Apply: migrateAuditLogsChangeTrackingColumns, Name: "add_audit_logs_change_tracking_columns", Version: 59},
 }
@@ -508,10 +508,10 @@ func runMigrations(db *sql.DB) error {
 		return fmt.Errorf("failed to get current version: %w", err)
 	}
 
-	// Apply pending migrations. Each migration runs inside a transaction so
-	// that a partial failure (e.g. a table-rebuild that drops the old table but
-	// fails to rename the new one) rolls back atomically and never leaves the
-	// schema in a half-rebuilt "bricked" state. SQLite WAL mode supports
+	// Apply pending migrations. Each migration runs inside a transaction so.
+	// that a partial failure (e.g. a table-rebuild that drops the old table but.
+	// fails to rename the new one) rolls back atomically and never leaves the.
+	// schema in a half-rebuilt "bricked" state. SQLite WAL mode supports.
 	// transactional DDL, so CREATE/DROP/RENAME all roll back on failure.
 	for _, m := range migrations {
 		if m.Version <= currentVersion {
@@ -890,7 +890,7 @@ func migrateCreateAuditLogs(tx *sql.Tx) error {
 }
 
 // migrateAuditLogsResourceColumns adds the resource_type, resource_id, metadata,
-// and result columns that the audit repository writes but migration 018 never
+// and result columns that the audit repository writes but migration 018 never.
 // created. Idempotent: silently skips columns that already exist.
 func migrateAuditLogsResourceColumns(tx *sql.Tx) error {
 	for _, col := range []string{"resource_type", "resource_id", "metadata", "result"} {
@@ -910,8 +910,8 @@ func isDuplicateColumnErr(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "duplicate column")
 }
 
-// migrateAuditLogsRiskColumns adds the trace_id and risk_tier columns to
-// audit_logs, enabling audit entries to be correlated with request traces and
+// migrateAuditLogsRiskColumns adds the trace_id and risk_tier columns to.
+// audit_logs, enabling audit entries to be correlated with request traces and.
 // classified by the risk tier of the audited operation. Idempotent.
 func migrateAuditLogsRiskColumns(tx *sql.Tx) error {
 	for _, col := range []string{"trace_id", "risk_tier"} {
@@ -940,8 +940,8 @@ func migrateAuditLogsChangeTrackingColumns(tx *sql.Tx) error {
 }
 
 // migrateAddSessionSigningKey adds the signing_key column to auth_sessions.
-// This column stores the per-session HMAC secret used by the browser client
-// to sign every request. Idempotent — safe to run on databases that already
+// This column stores the per-session HMAC secret used by the browser client.
+// to sign every request. Idempotent — safe to run on databases that already.
 // have the column.
 func migrateAddSessionSigningKey(tx *sql.Tx) error {
 	_, err := tx.ExecContext(context.Background(),

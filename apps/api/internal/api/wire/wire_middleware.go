@@ -34,21 +34,21 @@ type MiddlewareConfig struct {
 
 // MiddlewareSet contains all middleware instances.
 type MiddlewareSet struct {
-	Factory           *middleware.MiddlewareFactory
-	CookieAuth        *middleware.CookieAuth
-	SignatureVerifier *middleware.SignatureVerifier
-	Lockout           *middleware.Lockout
-	CSRFProtector     *middleware.CSRFProtector
-	TurnstileVerifier *middleware.TurnstileVerifier
-	RevocationList    *infraauth.RevocationList
-	IPIntelligence    *middleware.IPIntelligence
-	HmacVerifier      *cryptohmac.Verifier
+	Factory             *middleware.MiddlewareFactory
+	CookieAuth          *middleware.CookieAuth
+	SignatureVerifier   *middleware.SignatureVerifier
+	Lockout             *middleware.Lockout
+	CSRFProtector       *middleware.CSRFProtector
+	TurnstileVerifier   *middleware.TurnstileVerifier
+	RevocationList      *infraauth.RevocationList
+	IPIntelligence      *middleware.IPIntelligence
+	HmacVerifier        *cryptohmac.Verifier
 	SessionSignVerifier *cryptohmac.Verifier
-	EncryptKeyFn      func(clientID string) ([]byte, bool)
-	RateLimiter       *middleware.RateLimiter
-	AuthLimiter       *middleware.RateLimiter
-	TenantAPIKeyAuth  *middleware.TenantAPIKeyAuth
-	APIKeyRateLimiter *middleware.InMemoryRateLimiter
+	EncryptKeyFn        func(clientID string) ([]byte, bool)
+	RateLimiter         *middleware.RateLimiter
+	AuthLimiter         *middleware.RateLimiter
+	TenantAPIKeyAuth    *middleware.TenantAPIKeyAuth
+	APIKeyRateLimiter   *middleware.InMemoryRateLimiter
 }
 
 // WireMiddleware creates and wires all middleware instances.

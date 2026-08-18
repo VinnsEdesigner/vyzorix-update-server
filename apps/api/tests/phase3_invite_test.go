@@ -10,7 +10,7 @@ import (
 )
 
 // TestPhase3Invite tests the invitation flow: admin creates an invitation,
-// mock-resend captures the email, invitee registers + accepts, and we confirm
+// mock-resend captures the email, invitee registers + accepts, and we confirm.
 // org-scoped access. 15 subtests (Phase 3 + Phase 4 from the Python harness).
 func TestPhase3Invite(t *testing.T) {
 	requireServer(t)
@@ -23,7 +23,7 @@ func TestPhase3Invite(t *testing.T) {
 	orgID := state.OrgID
 	adminEmail := state.Email
 
-	// ── Phase 3: Admin login + create invitation ──
+// ── Phase 3: Admin login + create invitation ──.
 	adminSess, err := newSession()
 	if err != nil {
 		t.Fatalf("new session: %v", err)
@@ -125,7 +125,7 @@ func TestPhase3Invite(t *testing.T) {
 		t.Logf("GET /v1/invite/:token -> email=%s status=%s", email, statusVal)
 	})
 
-	// ── Phase 4: Invitee registers + accepts invitation ──
+// ── Phase 4: Invitee registers + accepts invitation ──.
 	var invSess *http.Client
 	var invCSRF string
 
@@ -170,7 +170,7 @@ func TestPhase3Invite(t *testing.T) {
 		if invSess == nil {
 			t.Skip("invitee not registered")
 		}
-		// Refresh CSRF
+// Refresh CSRF.
 		invCSRF = getCSRF(t, invSess)
 		status, body := doJSON(t, invSess, "GET", "/v1/organizations", nil, nil)
 		if status != 200 {
@@ -179,7 +179,7 @@ func TestPhase3Invite(t *testing.T) {
 		data := parseJSON(t, body)
 		orgs, _ := data["organizations"].([]any)
 		if orgs == nil {
-			// maybe it's a raw list
+// maybe it's a raw list.
 			var rawList []map[string]any
 			json.Unmarshal(body, &rawList)
 			for _, o := range rawList {

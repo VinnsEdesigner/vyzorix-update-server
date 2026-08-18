@@ -8,11 +8,11 @@ import (
 
 // migrateAddUpdatePushOrgColumn adds the organization_id column to update_pushes.
 //
-// The multi-tenant refactor (migration 039/040) made update pushes org-scoped —
-// UpdatesStorage.ListPushes / GetPushByID / ListPushDevices all filter with
-// "WHERE organization_id = ?" and CreatePush inserts it — but the original
-// create_update_tables migration (023) never included the column, and no later
-// migration added it. As a result every push query failed at runtime with
+// The multi-tenant refactor (migration 039/040) made update pushes org-scoped —.
+// UpdatesStorage.ListPushes / GetPushByID / ListPushDevices all filter with.
+// "WHERE organization_id = ?" and CreatePush inserts it — but the original.
+// create_update_tables migration (023) never included the column, and no later.
+// migration added it. As a result every push query failed at runtime with.
 // "no such column: organization_id" (GET /v1/updates/history returned 500).
 //
 // Idempotent: skips if the column already exists.

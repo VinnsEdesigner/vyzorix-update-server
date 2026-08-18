@@ -445,8 +445,8 @@ func (s *AuthService) CreateSession(ctx context.Context, operatorID string) (*se
 	id := shared.GenerateID()
 
 	// Generate a per-session HMAC signing key (32 random bytes, hex-encoded).
-	// The browser client receives this key on login and uses it to sign every
-	// subsequent request. The server verifies the signature to confirm the
+	// The browser client receives this key on login and uses it to sign every.
+	// subsequent request. The server verifies the signature to confirm the.
 	// request originated from the authenticated client.
 	signingKeyBytes := make([]byte, 32)
 	if _, err := rand.Read(signingKeyBytes); err != nil {

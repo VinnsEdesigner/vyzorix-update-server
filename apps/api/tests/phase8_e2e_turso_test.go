@@ -31,19 +31,19 @@ import (
 	gorillaws "github.com/gorilla/websocket"
 )
 
-// ─── Phase 8: Full end-to-end live server with real Turso DB ───
+// ─── Phase 8: Full end-to-end live server with real Turso DB ───.
 //
-// This test spins up the *real* Vyzorix API server via wire.Injector with the
+// This test spins up the *real* Vyzorix API server via wire.Injector with the.
 // actual Turso database (TURSO_DB_URL + TURSO_VYZOR_SCOPE_DB_TOKEN). It then:
 //
 //   1. Inserts a verified operator directly into the DB (skipping register/email).
 //   2. Logs in via POST /v1/auth/login → obtains a session cookie.
 //   3. Creates an organization via POST /v1/organizations.
 //   4. Opens a GraphQL subscription WebSocket to /:org/graphql/ws with the cookie.
-//   5. Subscribes to telemetryReceived, publishes telemetry via the hub, and
+//   5. Subscribes to telemetryReceived, publishes telemetry via the hub, and.
 //      verifies the subscriber receives the published event live.
 //
-// This is the most realistic test: it exercises the full middleware chain
+// This is the most realistic test: it exercises the full middleware chain.
 // (cookie auth → session validation → org membership → subscription handler)
 // against a real remote database.
 
@@ -73,7 +73,7 @@ type phase8State struct {
 func newPhase8State(t *testing.T) *phase8State {
 	t.Helper()
 
-	// Set required env vars for config.Load(). These must be set BEFORE
+// Set required env vars for config.Load(). These must be set BEFORE.
 	// config.Load() is called so the resolved backend is Turso.
 	t.Setenv("TURSO_DB_URL", os.Getenv("TURSO_DB_URL"))
 	t.Setenv("TURSO_AUTH_TOKEN", os.Getenv("TURSO_VYZOR_SCOPE_DB_TOKEN"))
@@ -119,7 +119,7 @@ func newPhase8State(t *testing.T) *phase8State {
 		IdempotencyRepo: deps.IdempotencyRepo,
 	})
 
-	// Register GraphQL, mirroring api_main.go's wiring of GraphQL-specific
+// Register GraphQL, mirroring api_main.go's wiring of GraphQL-specific.
 	// services that are NOT part of the main wire graph.
 	db := deps.DB.DB()
 	deviceRepo := deps.DeviceService.DeviceRepo()
@@ -166,7 +166,7 @@ func newPhase8State(t *testing.T) *phase8State {
 
 	ts := httptest.NewServer(apiServer.Routes())
 
-	// Build an HTTP client with a cookie jar so _csrf and vyz_session cookies
+// Build an HTTP client with a cookie jar so _csrf and vyz_session cookies.
 	// are automatically retained across requests (required for double-submit CSRF).
 	jar, err := newCookieJar()
 	if err != nil {
@@ -200,7 +200,7 @@ func newCookieJar() (http.CookieJar, error) {
 	return cookiejar.New(nil)
 }
 
-// fetchCSRFToken calls GET /v1/auth/csrf-token, stores the token, and relies on
+// fetchCSRFToken calls GET /v1/auth/csrf-token, stores the token, and relies on.
 // the cookie jar to retain the _csrf cookie for the double-submit pattern.
 func (s *phase8State) fetchCSRFToken(t *testing.T) {
 	t.Helper()
@@ -228,9 +228,9 @@ func (s *phase8State) fetchCSRFToken(t *testing.T) {
 	s.csrfToken = result.CSRFToken
 }
 
-// insertVerifiedOperator inserts an operator with email_verified=1 directly into
-// the Turso DB, skipping the register/email-verification flow. It also cleans up
-// any prior orgs/members/sessions for this email from earlier test runs so the
+// insertVerifiedOperator inserts an operator with email_verified=1 directly into.
+// the Turso DB, skipping the register/email-verification flow. It also cleans up.
+// any prior orgs/members/sessions for this email from earlier test runs so the.
 // 2-active-org limit isn't hit.
 func (s *phase8State) insertVerifiedOperator(t *testing.T) string {
 	t.Helper()
@@ -311,7 +311,7 @@ func (s *phase8State) login(t *testing.T) *http.Cookie {
 		s.signingKey = key
 	}
 
-	// The login endpoint sets a session cookie. The cookie jar retains it; also
+// The login endpoint sets a session cookie. The cookie jar retains it; also.
 	// extract it explicitly for the WebSocket dial (which needs a raw header).
 	var sessionCookie *http.Cookie
 	u, _ := url.Parse(s.server.URL)
@@ -470,7 +470,7 @@ func TestPhase8_E2E_TursoLiveServer(t *testing.T) {
 	t.Log("step 6: subscribed to telemetryReceived, initial next received")
 
 	// 7. Publish telemetry via the hub → subscriber should receive it.
-	//    The hub is the same instance the server uses, so the publish goes
+//    The hub is the same instance the server uses, so the publish goes.
 	//    through the real subscription routing.
 	state.hub.PublishTelemetry(operatorID, "IMEI_PHASE8_LIVE", map[string]any{
 		"deviceId":  "IMEI_PHASE8_LIVE",
@@ -527,7 +527,7 @@ func TestPhase8_E2E_TursoLiveServer(t *testing.T) {
 	t.Log("=== Phase 8 E2E COMPLETE: Turso DB → login → create org → WS subscribe → publish → receive → complete ===")
 }
 
-// TestPhase8_E2E_DeviceUpdateSubscription tests the deviceUpdated subscription
+// TestPhase8_E2E_DeviceUpdateSubscription tests the deviceUpdated subscription.
 // type through the full live server.
 func TestPhase8_E2E_DeviceUpdateSubscription(t *testing.T) {
 	if os.Getenv("TURSO_DB_URL") == "" || os.Getenv("TURSO_VYZOR_SCOPE_DB_TOKEN") == "" {
@@ -582,7 +582,7 @@ func TestPhase8_E2E_DeviceUpdateSubscription(t *testing.T) {
 	t.Log("device update subscription E2E verified")
 }
 
-// TestPhase8_E2E_MultipleSubscriptionTypes tests subscribing to multiple
+// TestPhase8_E2E_MultipleSubscriptionTypes tests subscribing to multiple.
 // subscription types simultaneously on the live server.
 func TestPhase8_E2E_MultipleSubscriptionTypes(t *testing.T) {
 	if os.Getenv("TURSO_DB_URL") == "" || os.Getenv("TURSO_VYZOR_SCOPE_DB_TOKEN") == "" {
@@ -656,7 +656,7 @@ func TestPhase8_E2E_MultipleSubscriptionTypes(t *testing.T) {
 	t.Log("multiple subscription types E2E verified")
 }
 
-// TestPhase8_E2E_OrgEventSubscription tests the organizationEvent subscription
+// TestPhase8_E2E_OrgEventSubscription tests the organizationEvent subscription.
 // through the full live server.
 func TestPhase8_E2E_OrgEventSubscription(t *testing.T) {
 	if os.Getenv("TURSO_DB_URL") == "" || os.Getenv("TURSO_VYZOR_SCOPE_DB_TOKEN") == "" {
@@ -708,7 +708,7 @@ func TestPhase8_E2E_OrgEventSubscription(t *testing.T) {
 	t.Log("organization event subscription E2E verified")
 }
 
-// TestPhase8_E2E_ReconnectAfterDisconnect verifies that after disconnecting
+// TestPhase8_E2E_ReconnectAfterDisconnect verifies that after disconnecting.
 // and reconnecting, the subscription still works.
 func TestPhase8_E2E_ReconnectAfterDisconnect(t *testing.T) {
 	if os.Getenv("TURSO_DB_URL") == "" || os.Getenv("TURSO_VYZOR_SCOPE_DB_TOKEN") == "" {
@@ -775,7 +775,7 @@ func TestPhase8_E2E_ReconnectAfterDisconnect(t *testing.T) {
 	t.Log("reconnect E2E verified")
 }
 
-// TestPhase8_E2E_UnauthenticatedWSRejected verifies that a WS connection
+// TestPhase8_E2E_UnauthenticatedWSRejected verifies that a WS connection.
 // without a session cookie is rejected by the middleware.
 func TestPhase8_E2E_UnauthenticatedWSRejected(t *testing.T) {
 	if os.Getenv("TURSO_DB_URL") == "" || os.Getenv("TURSO_VYZOR_SCOPE_DB_TOKEN") == "" {

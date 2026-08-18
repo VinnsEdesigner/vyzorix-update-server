@@ -127,7 +127,7 @@ func (s *Server) setupStaticRoutes() {
 	s.engine.GET("/bin/*name", s.binHandler)
 	s.engine.GET("/api/v1/check-update", s.updaterHandler.CheckUpdate)
 	s.engine.POST("/api/v1/download-progress", s.updaterHandler.DownloadProgress)
-	// Also register at /v1/ without the /api prefix so requests forwarded
+	// Also register at /v1/ without the /api prefix so requests forwarded.
 	// by the proxy (which strips /api) resolve to the correct handler.
 	s.engine.GET("/v1/version", s.versionHandler)
 	s.engine.GET("/v1/changelog", s.changelogHandler)
@@ -154,7 +154,7 @@ func (s *Server) setupAuthRoutes(public *gin.RouterGroup) {
 		authGroup.GET("/csrf-token", func(c *gin.Context) {
 			token, err := s.csrfProtector.GetTokenForPublicEndpoint(c)
 			if err != nil {
-				c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to generate CSRF token"))
+				_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to generate CSRF token"))
 
 				return
 			}
@@ -390,10 +390,10 @@ func (s *Server) setupDevicesRoutes(r *gin.RouterGroup) {
 		}
 	}
 
-	// Confirmation endpoint: an operator requests a single-use token to
-	// authorize a risky command before issuing it. Registered independently of
-	// the device-listing rate limiter (which may be unset on the wire path) so it
-	// is available on both server construction paths. Org-scoped + member-checked
+	// Confirmation endpoint: an operator requests a single-use token to.
+	// authorize a risky command before issuing it. Registered independently of.
+	// the device-listing rate limiter (which may be unset on the wire path) so it.
+	// is available on both server construction paths. Org-scoped + member-checked.
 	// like the other tenant routes.
 	if s.confirmationHandler != nil {
 		confirm := r.Group("/devices")
@@ -577,7 +577,7 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 func (s *Server) setupMethodHandlers() {
 	s.engine.NoMethod(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.URL.Path, "/v1/") || strings.HasPrefix(c.Request.URL.Path, "/api/") {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "the requested method is not allowed for this endpoint"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "the requested method is not allowed for this endpoint"))
 
 			return
 		}

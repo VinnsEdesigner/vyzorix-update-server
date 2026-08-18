@@ -28,8 +28,8 @@ func NewSessionsHandler(authService *appauth.AuthService, sessionManager *infraa
 }
 
 // getOperatorID extracts operator ID from the authenticated session.
-// The cookieAuth middleware already validated the (encrypted) session cookie
-// and stored the operator in context, so reuse it rather than re-reading the
+// The cookieAuth middleware already validated the (encrypted) session cookie.
+// and stored the operator in context, so reuse it rather than re-reading the.
 // raw cookie ciphertext (which is not the plaintext session ID).
 func (h *SessionsHandler) getOperatorID(c *gin.Context) (string, error) {
 	op := middleware.GetOperatorFromContext(c)

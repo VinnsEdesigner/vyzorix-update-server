@@ -70,7 +70,7 @@ func TestRiskEvaluator_UnknownCommandAllowedAtDefaultTier(t *testing.T) {
 }
 
 func TestRiskEvaluator_ZeroValueIsUsable(t *testing.T) {
-	// The zero-value RiskEvaluator must work without construction so callers
+	// The zero-value RiskEvaluator must work without construction so callers.
 	// can embed it in structs.
 	var ev RiskEvaluator
 	decision, _ := ev.Evaluate(TypeWakeUpUpdater, ActorContext{})

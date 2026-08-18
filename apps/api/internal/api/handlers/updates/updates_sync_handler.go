@@ -55,10 +55,10 @@ func (h *UpdatesSyncHandler) Sync(c *gin.Context) {
 			)
 		}
 		if se := updates.AsServiceError(err); se != nil {
-			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+			_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Sync failed"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Sync failed"))
 		return
 	}
 	c.JSON(http.StatusAccepted, result)
@@ -74,10 +74,10 @@ func (h *UpdatesSyncHandler) GetSyncStatus(c *gin.Context) {
 	status, err := h.service.GetSyncStatus(c.Request.Context())
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+			_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get sync status"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get sync status"))
 		return
 	}
 	c.JSON(http.StatusOK, status)

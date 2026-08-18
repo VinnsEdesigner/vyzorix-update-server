@@ -51,19 +51,19 @@ func (h *ConfirmHandler) Handle(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid JSON in request body: imei and commandSecret are required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid JSON in request body: imei and commandSecret are required"))
 
 		return
 	}
 
 	if req.IMEI == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
 
 		return
 	}
 
 	if req.CommandSecret == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "commandSecret is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "commandSecret is required"))
 
 		return
 	}
@@ -71,29 +71,29 @@ func (h *ConfirmHandler) Handle(c *gin.Context) {
 	d, err := h.deviceService.ConfirmDevice(c.Request.Context(), req.IMEI, req.CommandSecret)
 	if err != nil {
 		if errors.Is(err, device.ErrDeviceNotFound) {
-			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found. Registration may not have been approved yet."))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found. Registration may not have been approved yet."))
 
 			return
 		}
 
 		if errors.Is(err, device.ErrInvalidCommandSecret) {
-			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Invalid command secret"))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Invalid command secret"))
 
 			return
 		}
 
 		if errors.Is(err, device.ErrCommandSecretNotSet) {
-			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device command secret not set. Registration may not have been approved yet."))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device command secret not set. Registration may not have been approved yet."))
 
 			return
 		}
 
 		if errors.Is(err, device.ErrDeviceAlreadyConfirmed) {
-			c.Error(apperrors.NewServerError(apperrors.CodeResourceConflict, "Device has already been confirmed. The command secret is single-use."))
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceConflict, "Device has already been confirmed. The command secret is single-use."))
 
 			return
 		}
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to confirm device registration"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to confirm device registration"))
 
 		return
 	}

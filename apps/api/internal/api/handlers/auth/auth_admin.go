@@ -32,19 +32,19 @@ func (h *AdminHandler) ListOperators(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	orgID := middleware.GetOrganizationID(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "not authenticated"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "not authenticated"))
 		return
 	}
 
 	// Org-scoped check - operator must be super_admin in this organization.
 	if !op.IsSuperAdminIn(orgID) {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "insufficient privileges"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "insufficient privileges"))
 		return
 	}
 
 	operators, total, err := h.authService.ListAllOperators(c.Request.Context(), 20, 0)
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list operators"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list operators"))
 		return
 	}
 
@@ -110,25 +110,25 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	orgID := middleware.GetOrganizationID(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "not authenticated"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "not authenticated"))
 		return
 	}
 
 	// Org-scoped check.
 	if !op.IsSuperAdminIn(orgID) {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "insufficient privileges"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "insufficient privileges"))
 		return
 	}
 
 	operatorID := c.Param("id")
 	if operatorID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "operator id is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "operator id is required"))
 		return
 	}
 
 	targetOp, err := h.authService.GetOperatorByID(c.Request.Context(), operatorID)
 	if err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "not_found"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "not_found"))
 		return
 	}
 
@@ -148,25 +148,25 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	orgID := middleware.GetOrganizationID(c)
 	if op == nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "not authenticated"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "not authenticated"))
 		return
 	}
 
 	// Org-scoped check.
 	if !op.IsSuperAdminIn(orgID) {
-		c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "insufficient privileges"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "insufficient privileges"))
 		return
 	}
 
 	operatorID := c.Param("id")
 	if operatorID == "" {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "operator id is required"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "operator id is required"))
 		return
 	}
 
 	var req auth.UpdateOperatorRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid request body"))
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid request body"))
 		return
 	}
 

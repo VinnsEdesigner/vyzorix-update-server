@@ -21,7 +21,7 @@ type Session struct {
 	MFAVerifiedAt *time.Time
 
 	// SigningKey is the per-session HMAC secret used to sign client requests.
-	// The browser client receives this on login and signs every subsequent
+	// The browser client receives this on login and signs every subsequent.
 	// request; the server verifies the signature against this key.
 	SigningKey string
 

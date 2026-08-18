@@ -36,7 +36,7 @@ func (p *Presenter) LoginSuccess(c *gin.Context, operatorID string) {
 	}
 
 	if p.auditLogger != nil {
-		// Extract the trace_id from the request context so the audit entry
+		// Extract the trace_id from the request context so the audit entry.
 		// correlates with the access log.
 		traceID := ""
 		if tid, ok := c.Get("trace_id"); ok {
@@ -233,7 +233,7 @@ func (p *Presenter) Created(c *gin.Context, data interface{}) {
 }
 
 // SetSessionCookie sets the session cookie on the response. Uses http.SetCookie
-// so the SameSite attribute from the cookie is preserved (gin's c.SetCookie
+// so the SameSite attribute from the cookie is preserved (gin's c.SetCookie.
 // drops it).
 func (p *Presenter) SetSessionCookie(c *gin.Context, cookie *http.Cookie) {
 	if cookie != nil {
