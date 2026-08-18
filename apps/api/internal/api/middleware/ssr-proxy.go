@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/redaction"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 )
 
@@ -176,7 +177,7 @@ func handleAuthenticatedRequest(c *gin.Context, log *slog.Logger, path string, p
 		c.Redirect(http.StatusTemporaryRedirect, "/login")
 		return
 	}
-	log.Debug("SSR access granted", "path", path, "email", claims.Email)
+	log.Debug("SSR access granted", "path", path, "email", redaction.DefaultRedactor.Redact(claims.Email))
 	proxy.ServeHTTP(c.Writer, c.Request)
 }
 

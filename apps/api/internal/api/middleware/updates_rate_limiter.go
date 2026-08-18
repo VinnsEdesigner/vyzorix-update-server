@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -172,13 +173,10 @@ func rateLimitMiddleware(limiter *RateLimiter) gin.HandlerFunc {
 		}
 
 		if !limiter.Allow(key) {
-			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error":   "rate_limited",
-				"message": "Too many requests. Please try again later.",
-				"details": gin.H{
-					"retry_after_seconds": int(limiter.Refill.Seconds()),
-				},
-			})
+			responses.RespondStructured(c, http.StatusTooManyRequests,
+
+				"Too many requests. Please try again later.",
+			)
 			c.Header("Retry-After", strconv.Itoa(int(limiter.Refill.Seconds())))
 			c.Abort()
 			return

@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	"github.com/gin-gonic/gin"
 )
@@ -400,46 +401,47 @@ func RequestSigningMiddleware(verifier *SignatureVerifier) func(c *gin.Context) 
 			// Handle errors based on type.
 			switch {
 			case errors.Is(err, ErrMissingHeaders):
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_001",
-					"message": "Missing required signature headers",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Missing required signature headers",
+				)
 			case errors.Is(err, ErrInvalidTimestamp):
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_002",
-					"message": "Invalid timestamp format",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Invalid timestamp format",
+				)
 			case errors.Is(err, ErrTimestampOutsideWindow):
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_003",
-					"message": "Request timestamp outside allowed window",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Request timestamp outside allowed window",
+				)
 			case errors.Is(err, ErrUnknownClient):
-				// Return generic error to prevent client ID enumeration.
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_003",
-					"message": "Signature verification failed",
-				})
+				responses.
+					// Return generic error to prevent client ID enumeration.
+					RespondStructuredAbort(c, http.StatusUnauthorized,
+
+						"Signature verification failed",
+					)
 			case errors.Is(err, ErrInvalidSignature):
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_003",
-					"message": "Signature verification failed",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Signature verification failed",
+				)
 			case errors.Is(err, ErrReplayDetected):
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_006",
-					"message": "Replay detected",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Replay detected",
+				)
 			case errors.Is(err, ErrInvalidEncryptedBody):
-				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-					"error":   "SIGN_007",
-					"message": "Invalid encrypted body",
-				})
+				responses.RespondStructuredAbort(c, http.StatusBadRequest,
+
+					"Invalid encrypted body",
+				)
 			default:
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_001",
-					"message": "Signature verification failed",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Signature verification failed",
+				)
 			}
 
 			return
@@ -447,19 +449,19 @@ func RequestSigningMiddleware(verifier *SignatureVerifier) func(c *gin.Context) 
 		// This prevents requests where the clientID header is missing/empty.
 		imei := c.Param("imei")
 		if imei != "" && clientID == "" {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":   "SIGN_008",
-				"message": "Client ID header is required for device endpoints",
-			})
+			responses.RespondStructuredAbort(c, http.StatusForbidden,
+
+				"Client ID header is required for device endpoints",
+			)
 			return
 		}
 
 		// This prevents a compromised device from forging requests for another device's IMEI.
 		if imei != "" && clientID != imei {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":   "SIGN_009",
-				"message": "Client ID does not match device IMEI in request path",
-			})
+			responses.RespondStructuredAbort(c, http.StatusForbidden,
+
+				"Client ID does not match device IMEI in request path",
+			)
 			return
 		}
 

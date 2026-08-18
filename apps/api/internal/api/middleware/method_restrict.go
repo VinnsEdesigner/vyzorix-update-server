@@ -4,6 +4,7 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,12 +29,13 @@ func (m *MethodRestriction) Middleware() gin.HandlerFunc {
 				return
 			}
 		}
+		responses.
 
-		// Method not allowed - return 405 with proper error.
-		c.JSON(http.StatusMethodNotAllowed, gin.H{
-			"error":   "method_not_allowed",
-			"message": "the requested method is not allowed for this endpoint",
-		})
+			// Method not allowed - return 405 with proper error.
+			RespondStructured(c, http.StatusMethodNotAllowed,
+
+				"the requested method is not allowed for this endpoint",
+			)
 		c.Abort()
 	}
 }
@@ -57,10 +59,10 @@ func GETPOST() gin.HandlerFunc {
 func DisableTrace() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method == http.MethodTrace {
-			c.JSON(http.StatusMethodNotAllowed, gin.H{
-				"error":   "method_not_allowed",
-				"message": "TRACE method is not allowed",
-			})
+			responses.RespondStructured(c, http.StatusMethodNotAllowed,
+
+				"TRACE method is not allowed",
+			)
 			c.Abort()
 
 			return
@@ -74,10 +76,10 @@ func DisableTrace() gin.HandlerFunc {
 func DisableConnect() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method == http.MethodConnect {
-			c.JSON(http.StatusMethodNotAllowed, gin.H{
-				"error":   "method_not_allowed",
-				"message": "CONNECT method is not allowed",
-			})
+			responses.RespondStructured(c, http.StatusMethodNotAllowed,
+
+				"CONNECT method is not allowed",
+			)
 			c.Abort()
 
 			return

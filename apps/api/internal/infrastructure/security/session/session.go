@@ -144,7 +144,7 @@ func (sm *Manager) CreateCookie(sessionID string) (*http.Cookie, error) {
 		MaxAge:   CookieMaxAge,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}, nil
 }
 
@@ -163,7 +163,7 @@ func (sm *Manager) CreateCookieWithExpiry(sessionID string, maxAge int) (*http.C
 		MaxAge:   maxAge,
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}, nil
 }
 
@@ -177,7 +177,7 @@ func (sm *Manager) ClearCookie() *http.Cookie {
 		Expires:  time.Unix(0, 0),
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 }
 

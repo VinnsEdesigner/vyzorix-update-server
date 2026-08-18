@@ -6,9 +6,9 @@ import (
 )
 
 // migrateCreateInboxAndRegistration creates inbox_requests and registration_logs tables.
-func migrateCreateInboxAndRegistration(db *sql.DB) error {
+func migrateCreateInboxAndRegistration(tx *sql.Tx) error {
 	// Create inbox_requests table.
-	_, err := db.ExecContext(context.Background(), `
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS inbox_requests (
 			id                      TEXT PRIMARY KEY,
 			device_imei             TEXT NOT NULL,
@@ -35,7 +35,7 @@ func migrateCreateInboxAndRegistration(db *sql.DB) error {
 	}
 
 	// Create index for querying pending inbox requests.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_inbox_status 
 		ON inbox_requests(status, created_at DESC)
 	`)
@@ -44,7 +44,7 @@ func migrateCreateInboxAndRegistration(db *sql.DB) error {
 	}
 
 	// Create index for querying by device IMEI.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_inbox_imei 
 		ON inbox_requests(device_imei)
 	`)
@@ -53,7 +53,7 @@ func migrateCreateInboxAndRegistration(db *sql.DB) error {
 	}
 
 	// Create registration_logs table.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS registration_logs (
 			id                  TEXT PRIMARY KEY,
 			inbox_request_id    TEXT,
@@ -72,7 +72,7 @@ func migrateCreateInboxAndRegistration(db *sql.DB) error {
 	}
 
 	// Create index for querying logs by inbox request.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_registration_logs_request 
 		ON registration_logs(inbox_request_id, created_at DESC)
 	`)
@@ -81,7 +81,7 @@ func migrateCreateInboxAndRegistration(db *sql.DB) error {
 	}
 
 	// Create index for querying logs by device.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_registration_logs_device 
 		ON registration_logs(device_id, created_at DESC)
 	`)

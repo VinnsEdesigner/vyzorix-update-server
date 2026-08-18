@@ -99,9 +99,11 @@ func (f *MiddlewareFactory) Logger() gin.HandlerFunc {
 	return Logger(f.log)
 }
 
-// RequestID returns the request ID middleware.
-func (f *MiddlewareFactory) RequestID() gin.HandlerFunc {
-	return RequestIDMiddleware()
+// Tracing returns the trace-id middleware — the single correlation-ID source.
+// It must be registered before the Logger and panic-recovery middleware so
+// those can read the trace_id from the context.
+func (f *MiddlewareFactory) Tracing() gin.HandlerFunc {
+	return Tracing()
 }
 
 // BodySizeLimit returns the body size limit middleware.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/gin-gonic/gin"
 )
@@ -33,39 +34,39 @@ func (m *OrganizationMembership) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		orgID := GetOrganizationID(c)
 		if orgID == "" {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"error":   "bad_request",
-				"message": "organization context required",
-			})
+			responses.RespondStructuredAbort(c, http.StatusBadRequest,
+
+				"organization context required",
+			)
 			return
 		}
 
 		// Get operator from context (set by auth middleware).
 		operator := GetOperatorFromContext(c)
 		if operator == nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "authentication required",
-			})
+			responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+				"authentication required",
+			)
 			return
 		}
 
 		// If no membership checker is configured, deny access (fail secure).
 		if m.membershipChecker == nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error":   "server_error",
-				"message": "membership validation not configured",
-			})
+			responses.RespondStructuredAbort(c, http.StatusInternalServerError,
+
+				"membership validation not configured",
+			)
 			return
 		}
 
 		// Check if operator is a member of the organization.
 		membership, err := m.membershipChecker.GetMembership(c.Request.Context(), operator.ID, orgID)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "not a member of this organization",
-			})
+			responses.RespondStructuredAbort(c, http.StatusForbidden,
+
+				"not a member of this organization",
+			)
 			return
 		}
 

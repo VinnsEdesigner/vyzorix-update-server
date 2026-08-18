@@ -27,24 +27,24 @@ import (
 // Both tables are empty in production (the feature is new), so we drop and
 // recreate them with the intended schema. Idempotent: if a table already has
 // the expected columns, it is left untouched.
-func migrateRebuildAPIKeyTables(db *sql.DB) error {
-	if err := rebuildAPIKeysTable(db); err != nil {
+func migrateRebuildAPIKeyTables(tx *sql.Tx) error {
+	if err := rebuildAPIKeysTable(tx); err != nil {
 		return err
 	}
-	if err := rebuildAPIClientsTable(db); err != nil {
+	if err := rebuildAPIClientsTable(tx); err != nil {
 		return err
 	}
 	return nil
 }
 
-func rebuildAPIKeysTable(db *sql.DB) error {
+func rebuildAPIKeysTable(tx *sql.Tx) error {
 	// Expected rich schema columns for api_keys.
 	wantAPIKeys := []string{
 		"id", "operator_id", "name", "key_prefix", "key_hash", "scope",
 		"expires_at", "is_active", "request_count", "last_request_at",
 		"created_at", "updated_at", "revoked_at", "organization_id",
 	}
-	has, missing, err := tableHasColumns(db, "api_keys", wantAPIKeys)
+	has, missing, err := tableHasColumns(tx, "api_keys", wantAPIKeys)
 	if err != nil {
 		return err
 	}
@@ -53,19 +53,19 @@ func rebuildAPIKeysTable(db *sql.DB) error {
 	}
 
 	// If the table exists but is missing expected columns, rebuild it.
-	exists, err := tableExists(db, "api_keys")
+	exists, err := tableExists(tx, "api_keys")
 	if err != nil {
 		return err
 	}
 	if exists {
 		// Only rebuild when there is no data to preserve; the feature is new.
-		count, errCount := rowCount(db, "api_keys")
+		count, errCount := rowCount(tx, "api_keys")
 		if errCount != nil {
 			return errCount
 		}
 		if count > 0 {
 			// Data present: add only the missing columns defensively rather than drop.
-			return addMissingColumns(db, "api_keys", missing, map[string]string{
+			return addMissingColumns(tx, "api_keys", missing, map[string]string{
 				"operator_id":     "TEXT",
 				"key_prefix":      "TEXT",
 				"scope":           "TEXT DEFAULT 'read'",
@@ -75,12 +75,12 @@ func rebuildAPIKeysTable(db *sql.DB) error {
 				"revoked_at":      "INTEGER",
 			})
 		}
-		if _, err = db.ExecContext(context.Background(), `DROP TABLE IF EXISTS api_keys`); err != nil {
+		if _, err = tx.ExecContext(context.Background(), `DROP TABLE IF EXISTS api_keys`); err != nil {
 			return err
 		}
 	}
 
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS api_keys (
 			id TEXT PRIMARY KEY,
 			operator_id TEXT NOT NULL,
@@ -111,20 +111,20 @@ func rebuildAPIKeysTable(db *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_api_keys_is_active ON api_keys(is_active)`,
 		`CREATE INDEX IF NOT EXISTS idx_api_keys_org ON api_keys(organization_id)`,
 	} {
-		if _, err := db.ExecContext(context.Background(), idx); err != nil {
+		if _, err := tx.ExecContext(context.Background(), idx); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func rebuildAPIClientsTable(db *sql.DB) error {
+func rebuildAPIClientsTable(tx *sql.Tx) error {
 	wantAPIClients := []string{
 		"id", "operator_id", "name", "platform", "client_secret_hash", "hmac_key",
 		"allowed_origins", "allowed_paths", "rate_limit", "is_active",
 		"request_count", "last_request_at", "created_at", "updated_at",
 	}
-	has, missing, err := tableHasColumns(db, "api_clients", wantAPIClients)
+	has, missing, err := tableHasColumns(tx, "api_clients", wantAPIClients)
 	if err != nil {
 		return err
 	}
@@ -132,17 +132,17 @@ func rebuildAPIClientsTable(db *sql.DB) error {
 		return nil
 	}
 
-	exists, err := tableExists(db, "api_clients")
+	exists, err := tableExists(tx, "api_clients")
 	if err != nil {
 		return err
 	}
 	if exists {
-		count, errCount := rowCount(db, "api_clients")
+		count, errCount := rowCount(tx, "api_clients")
 		if errCount != nil {
 			return errCount
 		}
 		if count > 0 {
-			return addMissingColumns(db, "api_clients", missing, map[string]string{
+			return addMissingColumns(tx, "api_clients", missing, map[string]string{
 				"operator_id":        "TEXT",
 				"platform":           "TEXT",
 				"client_secret_hash": "TEXT",
@@ -155,12 +155,12 @@ func rebuildAPIClientsTable(db *sql.DB) error {
 				"last_request_at":    "INTEGER",
 			})
 		}
-		if _, err = db.ExecContext(context.Background(), `DROP TABLE IF EXISTS api_clients`); err != nil {
+		if _, err = tx.ExecContext(context.Background(), `DROP TABLE IF EXISTS api_clients`); err != nil {
 			return err
 		}
 	}
 
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS api_clients (
 			id TEXT PRIMARY KEY,
 			operator_id TEXT NOT NULL,
@@ -187,7 +187,7 @@ func rebuildAPIClientsTable(db *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS idx_api_clients_operator_id ON api_clients(operator_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_api_clients_is_active ON api_clients(is_active)`,
 	} {
-		if _, err := db.ExecContext(context.Background(), idx); err != nil {
+		if _, err := tx.ExecContext(context.Background(), idx); err != nil {
 			return err
 		}
 	}
@@ -196,8 +196,8 @@ func rebuildAPIClientsTable(db *sql.DB) error {
 
 // tableHasColumns reports whether the given table has all want columns.
 // Returns (true, nil, nil) when all present; (false, missing, nil) otherwise.
-func tableHasColumns(db *sql.DB, table string, want []string) (bool, []string, error) {
-	existing, err := columnSet(db, table)
+func tableHasColumns(tx *sql.Tx, table string, want []string) (bool, []string, error) {
+	existing, err := columnSet(tx, table)
 	if err != nil {
 		return false, nil, err
 	}
@@ -210,9 +210,9 @@ func tableHasColumns(db *sql.DB, table string, want []string) (bool, []string, e
 	return len(missing) == 0, missing, nil
 }
 
-func columnSet(db *sql.DB, table string) (map[string]bool, error) {
+func columnSet(tx *sql.Tx, table string) (map[string]bool, error) {
 	set := make(map[string]bool)
-	rows, err := db.QueryContext(context.Background(), "PRAGMA table_info("+table+")")
+	rows, err := tx.QueryContext(context.Background(), "PRAGMA table_info("+table+")")
 	if err != nil {
 		return nil, err
 	}
@@ -230,9 +230,9 @@ func columnSet(db *sql.DB, table string) (map[string]bool, error) {
 	return set, rows.Err()
 }
 
-func tableExists(db *sql.DB, table string) (bool, error) {
+func tableExists(tx *sql.Tx, table string) (bool, error) {
 	var name string
-	err := db.QueryRowContext(context.Background(),
+	err := tx.QueryRowContext(context.Background(),
 		`SELECT name FROM sqlite_master WHERE type='table' AND name=?`, table).Scan(&name)
 	if err == sql.ErrNoRows {
 		return false, nil
@@ -240,19 +240,19 @@ func tableExists(db *sql.DB, table string) (bool, error) {
 	return err == nil, err
 }
 
-func rowCount(db *sql.DB, table string) (int, error) {
+func rowCount(tx *sql.Tx, table string) (int, error) {
 	var n int
-	err := db.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM "+table).Scan(&n)
+	err := tx.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM "+table).Scan(&n)
 	return n, err
 }
 
-func addMissingColumns(db *sql.DB, table string, missing []string, types map[string]string) error {
+func addMissingColumns(tx *sql.Tx, table string, missing []string, types map[string]string) error {
 	for _, col := range missing {
 		decl := types[col]
 		if decl == "" {
 			decl = "TEXT"
 		}
-		if _, err := db.ExecContext(context.Background(),
+		if _, err := tx.ExecContext(context.Background(),
 			"ALTER TABLE "+table+" ADD COLUMN "+col+" "+decl); err != nil {
 			// Column may already exist concurrently; ignore that specific error.
 			if !isColumnExistsError(err) {

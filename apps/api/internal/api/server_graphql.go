@@ -10,6 +10,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/subscription"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
@@ -179,10 +180,10 @@ func (s *Server) RegisterGraphQL(
 func orgFromURLParamMiddleware(c *gin.Context) {
 	orgID := c.Param("org")
 	if orgID == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "organization ID required in URL path",
-		})
+		responses.RespondStructuredAbort(c, http.StatusBadRequest,
+
+			"organization ID required in URL path",
+		)
 		return
 	}
 	c.Set(middleware.ContextKeyOrganizationID, orgID)

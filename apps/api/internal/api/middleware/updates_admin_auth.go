@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,19 +23,19 @@ func (m *UpdatesAdminAuth) RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		op, exists := gqlcontext.GetOperator(c.Request.Context())
 		if !exists || op == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "Authentication required",
-			})
+			responses.RespondStructured(c, http.StatusUnauthorized,
+
+				"Authentication required",
+			)
 			c.Abort()
 			return
 		}
 
 		if !op.IsAdmin() {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "Admin privileges required for this operation",
-			})
+			responses.RespondStructured(c, http.StatusForbidden,
+
+				"Admin privileges required for this operation",
+			)
 			c.Abort()
 			return
 		}
@@ -48,19 +49,19 @@ func (m *UpdatesAdminAuth) RequireSuperAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		op, exists := gqlcontext.GetOperator(c.Request.Context())
 		if !exists || op == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "Authentication required",
-			})
+			responses.RespondStructured(c, http.StatusUnauthorized,
+
+				"Authentication required",
+			)
 			c.Abort()
 			return
 		}
 
 		if !op.IsSuperAdmin() {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "Super admin privileges required for this operation",
-			})
+			responses.RespondStructured(c, http.StatusForbidden,
+
+				"Super admin privileges required for this operation",
+			)
 			c.Abort()
 			return
 		}

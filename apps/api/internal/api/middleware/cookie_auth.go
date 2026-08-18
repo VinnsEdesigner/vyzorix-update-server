@@ -7,6 +7,7 @@ import (
 	"time"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
@@ -49,7 +50,7 @@ func (c *CookieAuth) Middleware() gin.HandlerFunc {
 				ctx.Next()
 				return
 			}
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "session cookie required"})
+			responses.RespondStructured(ctx, http.StatusUnauthorized, "session cookie required")
 			ctx.Abort()
 
 			return
@@ -58,7 +59,7 @@ func (c *CookieAuth) Middleware() gin.HandlerFunc {
 		// Decrypt the session ID from the cookie.
 		sessionID, err := c.sessionManager.DecryptSessionID(cookieValue)
 		if err != nil {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "invalid session"})
+			responses.RespondStructured(ctx, http.StatusUnauthorized, "invalid session")
 			ctx.Abort()
 
 			return
@@ -70,7 +71,7 @@ func (c *CookieAuth) Middleware() gin.HandlerFunc {
 
 		sess, op, err := c.authService.ValidateSession(timeout, sessionID)
 		if err != nil || op == nil {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "session invalid or revoked"})
+			responses.RespondStructured(ctx, http.StatusUnauthorized, "session invalid or revoked")
 			ctx.Abort()
 
 			return

@@ -25,10 +25,12 @@ import (
 // REFERENCES clause to devices(id), recreates the table under a temporary name,
 // copies the data, drops the old table, and renames. Idempotent — if the FK
 // already targets devices(id) the migration is a no-op.
-func migrateFixDeviceSettingsFK(db *sql.DB) error {
+func migrateFixDeviceSettingsFK(tx *sql.Tx) error {
+	_, _ = tx.ExecContext(context.Background(), "DROP TABLE IF EXISTS _device_settings_new")
+
 	// Determine whether the FK is already correct by inspecting the foreign key
 	// list. If devices(id) is present (and devices(imei) is not), skip.
-	fkRows, err := db.QueryContext(context.Background(), "PRAGMA foreign_key_list(device_settings)")
+	fkRows, err := tx.QueryContext(context.Background(), "PRAGMA foreign_key_list(device_settings)")
 	if err != nil {
 		// Table may not exist yet on a partially-migrated DB; nothing to fix.
 		return nil //nolint:nilerr // intentional: missing table is not an error here
@@ -68,27 +70,27 @@ func migrateFixDeviceSettingsFK(db *sql.DB) error {
 			updated_at INTEGER NOT NULL,
 			FOREIGN KEY (device_imei) REFERENCES devices(id) ON DELETE CASCADE
 		)`
-	if _, err := db.ExecContext(context.Background(), createStmt); err != nil {
+	if _, err := tx.ExecContext(context.Background(), createStmt); err != nil {
 		return err
 	}
 
 	copyStmt := `INSERT INTO _device_settings_new (id, device_imei, custom_name, location, metadata, thresholds, created_at, updated_at)
 		SELECT id, device_imei, custom_name, location, metadata, thresholds, created_at, updated_at FROM device_settings`
-	if _, err := db.ExecContext(context.Background(), copyStmt); err != nil {
-		_, _ = db.ExecContext(context.Background(), "DROP TABLE _device_settings_new")
+	if _, err := tx.ExecContext(context.Background(), copyStmt); err != nil {
+		_, _ = tx.ExecContext(context.Background(), "DROP TABLE _device_settings_new")
 		return err
 	}
 
-	if _, err := db.ExecContext(context.Background(), "DROP TABLE device_settings"); err != nil {
-		_, _ = db.ExecContext(context.Background(), "DROP TABLE _device_settings_new")
+	if _, err := tx.ExecContext(context.Background(), "DROP TABLE device_settings"); err != nil {
+		_, _ = tx.ExecContext(context.Background(), "DROP TABLE _device_settings_new")
 		return err
 	}
-	if _, err := db.ExecContext(context.Background(), "ALTER TABLE _device_settings_new RENAME TO device_settings"); err != nil {
+	if _, err := tx.ExecContext(context.Background(), "ALTER TABLE _device_settings_new RENAME TO device_settings"); err != nil {
 		return err
 	}
 
 	// Recreate the lookup index (idempotent).
-	if _, err := db.ExecContext(context.Background(),
+	if _, err := tx.ExecContext(context.Background(),
 		"CREATE INDEX IF NOT EXISTS idx_device_settings_imei ON device_settings(device_imei)"); err != nil {
 		return err
 	}

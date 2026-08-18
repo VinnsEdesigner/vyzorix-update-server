@@ -314,7 +314,6 @@ func (r *APIKeyRepositoryImpl) ListAll(ctx context.Context, limit, offset int) (
 	return keys, total, nil
 }
 
-
 // ListAllWithOperator lists all API keys joined with the owning operator's
 // display name. Used by the super-admin "all keys" view, which must show which
 // operator owns each key — information the plain ListAll/ToResponse path drops.

@@ -8,6 +8,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -35,20 +36,20 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	deviceID := c.Param("imei")
 	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Device ID is required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
 		return
 	}
 
@@ -56,7 +57,7 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	_, err := h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
 	if err != nil {
 		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Device not found"})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
 		return
 	}
 
@@ -73,11 +74,11 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	if l := c.Query("limit"); l != "" {
 		parsed, intErr := strconv.Atoi(l)
 		if intErr != nil || parsed <= 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "limit must be a positive integer"})
+			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "limit must be a positive integer"))
 			return
 		}
 		if parsed > 100 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "limit cannot exceed 100"})
+			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "limit cannot exceed 100"))
 			return
 		}
 		limit = parsed
@@ -87,7 +88,7 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	if st := c.Query("startTime"); st != "" {
 		parsed, intErr := strconv.ParseInt(st, 10, 64)
 		if intErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid startTime format"})
+			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid startTime format"))
 			return
 		}
 		startTime = parsed
@@ -95,13 +96,13 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	if et := c.Query("endTime"); et != "" {
 		parsed, intErr := strconv.ParseInt(et, 10, 64)
 		if intErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid endTime format"})
+			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid endTime format"))
 			return
 		}
 		endTime = parsed
 	}
 	if startTime > 0 && endTime > 0 && startTime >= endTime {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "startTime must be before endTime"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "startTime must be before endTime"))
 		return
 	}
 
@@ -118,7 +119,7 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	resp, err := h.historySvc.GetHistory(ctx, req)
 	if err != nil {
 		h.logger.Error("Failed to get command history", "deviceID", deviceID, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to retrieve command history"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve command history"))
 		return
 	}
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -99,7 +100,7 @@ func (s *Server) binHandler(c *gin.Context) {
 // serveDownload serves a file download with APK headers.
 func (s *Server) serveDownload(c *gin.Context, name string) {
 	if name == "" || strings.ContainsAny(name, "/\\") {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid filename"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid filename"))
 		return
 	}
 
@@ -141,7 +142,7 @@ func (s *Server) requireHMAC() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		deviceID := c.Param("imei")
 		if deviceID == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "device ID required for HMAC verification"})
+			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "device ID required for HMAC verification"))
 			c.Abort()
 			return
 		}
@@ -152,8 +153,7 @@ func (s *Server) requireHMAC() gin.HandlerFunc {
 				c.Next()
 				return
 			}
-
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Invalid request"})
+			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Invalid request"))
 			c.Abort()
 
 			return
@@ -180,7 +180,7 @@ func (s *Server) requireStrictHMAC() gin.HandlerFunc {
 
 		_, err := s.hmacVerifier.ReadAndVerifyHTTP(c.Request)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "strictHmac is enabled: HMAC signature verification failed"})
+			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "strictHmac is enabled: HMAC signature verification failed"))
 			c.Abort()
 
 			return

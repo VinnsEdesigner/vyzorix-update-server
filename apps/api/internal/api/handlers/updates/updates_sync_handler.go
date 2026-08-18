@@ -6,6 +6,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -54,13 +55,10 @@ func (h *UpdatesSyncHandler) Sync(c *gin.Context) {
 			)
 		}
 		if se := updates.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
+			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, updates.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Sync failed",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Sync failed"))
 		return
 	}
 	c.JSON(http.StatusAccepted, result)
@@ -76,13 +74,10 @@ func (h *UpdatesSyncHandler) GetSyncStatus(c *gin.Context) {
 	status, err := h.service.GetSyncStatus(c.Request.Context())
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
+			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, updates.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to get sync status",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get sync status"))
 		return
 	}
 	c.JSON(http.StatusOK, status)

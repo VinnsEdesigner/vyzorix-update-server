@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,7 +17,7 @@ func TestTelemetryHistoryEndpoint(t *testing.T) {
 	r.GET("/api/v1/telemetry/history", func(c *gin.Context) {
 		deviceID := c.Query("deviceId")
 		if deviceID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "deviceId required"})
+			responses.RespondStructured(c, http.StatusBadRequest, "deviceId required")
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
@@ -49,7 +50,7 @@ func TestTelemetryHistoryMissingDevice(t *testing.T) {
 	r.GET("/api/v1/telemetry/history", func(c *gin.Context) {
 		deviceID := c.Query("deviceId")
 		if deviceID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "deviceId required"})
+			responses.RespondStructured(c, http.StatusBadRequest, "deviceId required")
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"success": true})

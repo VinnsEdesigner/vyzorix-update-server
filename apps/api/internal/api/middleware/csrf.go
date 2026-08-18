@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -235,20 +236,20 @@ func (p *CSRFProtector) Middleware() gin.HandlerFunc {
 
 		headerToken := c.GetHeader(p.Config.HeaderName)
 		if headerToken == "" {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "CSRF token required",
-			})
+			responses.RespondStructuredAbort(c, http.StatusForbidden,
+
+				"CSRF token required",
+			)
 			return
 		}
 
 		// Verify the token signature.
 		token, valid := p.verifyToken(headerToken)
 		if !valid {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "Invalid CSRF token",
-			})
+			responses.RespondStructuredAbort(c, http.StatusForbidden,
+
+				"Invalid CSRF token",
+			)
 			return
 		}
 
@@ -279,20 +280,19 @@ func (p *CSRFProtector) Middleware() gin.HandlerFunc {
 					}
 				}
 			}
+			responses.RespondStructuredAbort(c, http.StatusForbidden,
 
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "CSRF token required",
-			})
+				"CSRF token required",
+			)
 			return
 		}
 
 		// Session exists - use session-based validation.
 		if !p.Store.Validate(sessionID, token) {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "Invalid CSRF token",
-			})
+			responses.RespondStructuredAbort(c, http.StatusForbidden,
+
+				"Invalid CSRF token",
+			)
 			return
 		}
 
@@ -316,6 +316,7 @@ func (p *CSRFProtector) GetToken(c *gin.Context) (string, error) {
 
 	secure := os.Getenv("GIN_MODE") == "release"
 
+	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie(
 		p.Config.CookieName,
 		signed,
@@ -342,6 +343,7 @@ func (p *CSRFProtector) GetTokenForPublicEndpoint(c *gin.Context) (string, error
 
 	secure := os.Getenv("GIN_MODE") == "release"
 
+	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie(
 		p.Config.CookieName,
 		signed,

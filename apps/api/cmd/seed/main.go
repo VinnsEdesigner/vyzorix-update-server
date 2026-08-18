@@ -85,5 +85,5 @@ func main() {
 		fmt.Println("insert error:", err)
 		os.Exit(1)
 	}
-	fmt.Println("seeded super_admin operator id:", id, "email:", email, "password:", password)
+	fmt.Printf("seeded super_admin operator id: %s email: %s password: [REDACTED]\n", id, email)
 }

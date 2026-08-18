@@ -21,8 +21,8 @@ func NewDeviceSettingsRepository(db *sql.DB) *DeviceSettingsRepository {
 }
 
 // migrateDeviceSettings creates the device_settings table.
-func migrateDeviceSettings(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateDeviceSettings(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS device_settings (
 			id TEXT PRIMARY KEY,
 			device_imei TEXT NOT NULL UNIQUE,
@@ -40,7 +40,7 @@ func migrateDeviceSettings(db *sql.DB) error {
 	}
 
 	// Create index for efficient lookups.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_device_settings_imei ON device_settings(device_imei)
 	`)
 

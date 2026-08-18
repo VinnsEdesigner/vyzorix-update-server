@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
+	domainerrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -492,7 +494,20 @@ func (s *FCMTokenUpdateSchema) Validate() ValidationErrors {
 // Middleware Factory.
 // =============================================================================.
 
-// ValidationMiddleware creates a Gin middleware for validating request bodies.
+// validationDetails converts the middleware-local ValidationErrors into the
+// domain-level []domainerrors.ValidationDetail that the structured response
+// layer renders as the `details` of a VALIDATION_FAILED error.
+func validationDetails(errs ValidationErrors) []domainerrors.ValidationDetail {
+	if len(errs) == 0 {
+		return nil
+	}
+	details := make([]domainerrors.ValidationDetail, len(errs))
+	for i, e := range errs {
+		details[i] = domainerrors.NewValidationDetail(e.Field, e.Message)
+	}
+	return details
+}
+
 func ValidationMiddleware(schema Validator) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.ContentLength == 0 {
@@ -503,19 +518,19 @@ func ValidationMiddleware(schema Validator) gin.HandlerFunc {
 		// Read body into buffer so we can restore it for the handler.
 		bodyBytes, err := io.ReadAll(c.Request.Body)
 		if err != nil {
-			c.AbortWithStatusJSON(400, gin.H{
-				"error":   "bad_request",
-				"message": "failed to read request body",
-			})
+			responses.RespondStructuredAbort(c, 400,
+
+				"failed to read request body",
+			)
 			return
 		}
 
 		// Bind from the captured bytes using a new reader.
 		if err := json.NewDecoder(strings.NewReader(string(bodyBytes))).Decode(schema); err != nil {
-			c.AbortWithStatusJSON(400, gin.H{
-				"error":   "bad_request",
-				"message": "invalid request body format",
-			})
+			responses.RespondStructuredAbort(c, 400,
+
+				"invalid request body format",
+			)
 			return
 		}
 
@@ -523,11 +538,11 @@ func ValidationMiddleware(schema Validator) gin.HandlerFunc {
 		c.Request.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
 
 		if errs := schema.Validate(); errs.HasErrors() {
-			c.AbortWithStatusJSON(400, gin.H{
-				"error":   "bad_request",
-				"message": errs.Error(),
-				"errors":  errs,
-			})
+			// Emit a structured VALIDATION_FAILED response with field-level
+			// details, a trace id, and a docs link — replacing the legacy
+			// {error,message,errors} envelope.
+			responses.RespondValidationError(c, validationDetails(errs))
+			c.Abort()
 			return
 		}
 
@@ -545,21 +560,17 @@ func ValidationMiddlewareFunc(validateFn func(Validator) ValidationErrors) func(
 			}
 
 			if err := c.ShouldBindJSON(schema); err != nil {
-				c.AbortWithStatusJSON(400, gin.H{
-					"error":   "bad_request",
-					"message": "invalid request body format",
-				})
+				responses.RespondStructuredAbort(c, 400,
+
+					"invalid request body format",
+				)
 
 				return
 			}
 
 			if errs := validateFn(schema); errs.HasErrors() {
-				c.AbortWithStatusJSON(400, gin.H{
-					"error":   "bad_request",
-					"message": errs.Error(),
-					"errors":  errs,
-				})
-
+				responses.RespondValidationError(c, validationDetails(errs))
+				c.Abort()
 				return
 			}
 

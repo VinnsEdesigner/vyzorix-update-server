@@ -7,6 +7,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	appdiagnostics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	domaindiagnostics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/diagnostics"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,21 +30,14 @@ func NewTimelineHandler(service *appdiagnostics.Service, rateLimiter func(c *gin
 func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
-		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
-			Error:   "bad_request",
-			Message: "IMEI is required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
 		return
 	}
 
 	// Require organization context for multi-tenant isolation.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
-			Error:   "bad_request",
-			Message: "organization context required",
-			Code:    "ORG_REQUIRED",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
@@ -58,27 +52,16 @@ func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
 	authResp := h.service.VerifyDeviceOwnership(c.Request.Context(), imei, operatorID, orgID)
 	if !authResp.Authorized {
 		if authResp.Forbidden {
-			c.JSON(http.StatusForbidden, appdiagnostics.ErrorResponse{
-				Error:   "forbidden",
-				Message: "Access denied - device does not belong to organization",
-				Code:    "FORBIDDEN",
-			})
+			c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "Access denied - device does not belong to organization"))
 			return
 		}
-		c.JSON(http.StatusUnauthorized, appdiagnostics.ErrorResponse{
-			Error:   "unauthorized",
-			Message: "Authentication required",
-			Code:    "UNAUTHORIZED",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Authentication required"))
 		return
 	}
 
 	var req appdiagnostics.TimelineRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, appdiagnostics.ErrorResponse{
-			Error:   "bad_request",
-			Message: "Invalid query parameters",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid query parameters"))
 		return
 	}
 
@@ -88,16 +71,9 @@ func (h *TimelineHandler) GetDeviceTimeline(c *gin.Context) {
 	if err != nil {
 		switch err {
 		case domaindiagnostics.ErrDeviceNotFound:
-			c.JSON(http.StatusNotFound, appdiagnostics.ErrorResponse{
-				Error:   "not_found",
-				Message: "Device not found",
-				Code:    "DEVICE_NOT_FOUND",
-			})
+			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
 		default:
-			c.JSON(http.StatusInternalServerError, appdiagnostics.ErrorResponse{
-				Error:   "internal_error",
-				Message: "Failed to get device timeline",
-			})
+			c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get device timeline"))
 		}
 		return
 	}

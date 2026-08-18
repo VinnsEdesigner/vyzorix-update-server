@@ -7,6 +7,7 @@ import (
 	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	apikeydomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,27 +42,21 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 func (h *Handler) CreateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "operator not found",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "invalid operator id",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+
 		return
 	}
 
 	var req apikeydomain.CreateAPIKeyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "validation_error",
-			"message": err.Error(),
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, err.Error()))
+
 		return
 	}
 
@@ -109,18 +104,14 @@ func (h *Handler) CreateKey(c *gin.Context) {
 func (h *Handler) ListKeys(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "operator not found",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "invalid operator id",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+
 		return
 	}
 
@@ -149,18 +140,14 @@ func (h *Handler) ListKeys(c *gin.Context) {
 func (h *Handler) GetKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "operator not found",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "invalid operator id",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+
 		return
 	}
 
@@ -183,18 +170,14 @@ func (h *Handler) GetKey(c *gin.Context) {
 func (h *Handler) UpdateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "operator not found",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "invalid operator id",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+
 		return
 	}
 
@@ -202,10 +185,8 @@ func (h *Handler) UpdateKey(c *gin.Context) {
 
 	var req apikeydomain.UpdateAPIKeyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "validation_error",
-			"message": err.Error(),
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, err.Error()))
+
 		return
 	}
 
@@ -248,18 +229,14 @@ func (h *Handler) UpdateKey(c *gin.Context) {
 func (h *Handler) RevokeKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "operator not found",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "invalid operator id",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+
 		return
 	}
 
@@ -303,18 +280,14 @@ func (h *Handler) RevokeKey(c *gin.Context) {
 func (h *Handler) RotateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "operator not found",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "operator not found"))
+
 		return
 	}
 	operatorID, ok := operatorIDVal.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "invalid operator id",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid operator id"))
+
 		return
 	}
 

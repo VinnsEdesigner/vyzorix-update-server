@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -116,11 +117,10 @@ func APIKeyRateLimitMiddleware(limiter *InMemoryRateLimiter) gin.HandlerFunc {
 
 		if !result.Allowed {
 			c.Header("Retry-After", strconv.Itoa(result.RetryAfter))
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
-				"error":       "rate_limit_exceeded",
-				"message":     "too many requests",
-				"retry_after": result.RetryAfter,
-			})
+			responses.RespondStructuredAbort(c, http.StatusTooManyRequests,
+
+				"too many requests",
+			)
 			return
 		}
 

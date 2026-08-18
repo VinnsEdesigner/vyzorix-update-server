@@ -2,6 +2,9 @@
 package middleware
 
 import (
+	"net/http"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,9 +21,8 @@ func (a Authenticator) Middleware() gin.HandlerFunc {
 		}
 
 		if a.ServerAPIToken == "" {
-			c.JSON(401, map[string]string{"error": "unauthorized", "message": "invalid or missing dashboard token"})
+			responses.RespondStructured(c, http.StatusUnauthorized, "invalid or missing dashboard token")
 			c.Abort()
-
 			return
 		}
 
@@ -29,7 +31,7 @@ func (a Authenticator) Middleware() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(401, map[string]string{"error": "unauthorized", "message": "invalid or missing dashboard token"})
+		responses.RespondStructured(c, http.StatusUnauthorized, "invalid or missing dashboard token")
 		c.Abort()
 	}
 }

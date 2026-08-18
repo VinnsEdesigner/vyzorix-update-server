@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -140,11 +141,10 @@ func (rl *Limiter) Middleware(cfg Config) gin.HandlerFunc {
 				cfg.OnLimit(c)
 				return
 			}
+			responses.RespondStructuredAbort(c, http.StatusTooManyRequests,
 
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
-				"error":   "rate_limit_exceeded",
-				"message": "Too many requests. Please try again later.",
-			})
+				"Too many requests. Please try again later.",
+			)
 
 			return
 		}
@@ -192,10 +192,10 @@ func (ml *MultiWindowLimiter) Middleware(keyFunc func(*gin.Context) string) gin.
 			if !limiter.Allow(key) {
 				cfg := ml.config[name]
 				c.Header("Retry-After", strconv.FormatInt(int64(cfg.Window.Seconds()), 10))
-				c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
-					"error":   "rate_limit_exceeded",
-					"message": "Too many requests. Please try again later.",
-				})
+				responses.RespondStructuredAbort(c, http.StatusTooManyRequests,
+
+					"Too many requests. Please try again later.",
+				)
 
 				return
 			}

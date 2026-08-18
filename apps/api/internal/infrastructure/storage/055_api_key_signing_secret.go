@@ -9,8 +9,8 @@ import "database/sql"
 // key value, generated at creation time and stored alongside the key hash.
 // Existing keys get an empty signing_secret (signing is opt-in per key until
 // rotated). Idempotent.
-func migrateAddAPIKeySigningSecret(db *sql.DB) error {
-	_, err := db.Exec(`
+func migrateAddAPIKeySigningSecret(tx *sql.Tx) error {
+	_, err := tx.Exec(`
 		ALTER TABLE api_keys ADD COLUMN signing_secret TEXT NOT NULL DEFAULT ''
 	`)
 	if err != nil {

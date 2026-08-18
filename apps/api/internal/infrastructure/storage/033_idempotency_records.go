@@ -6,7 +6,7 @@ import (
 )
 
 // This table stores idempotency keys and their associated responses for request deduplication.
-func migrateIdempotencyRecords(db *sql.DB) error {
+func migrateIdempotencyRecords(tx *sql.Tx) error {
 	ctx := context.Background()
 
 	// Create idempotency_records table.
@@ -25,7 +25,7 @@ func migrateIdempotencyRecords(db *sql.DB) error {
 		user_agent TEXT
 	)`
 
-	_, err := db.ExecContext(ctx, query)
+	_, err := tx.ExecContext(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func migrateIdempotencyRecords(db *sql.DB) error {
 	// Create index on expires_at for cleanup queries.
 	indexQuery := `
 	CREATE INDEX IF NOT EXISTS idx_idempotency_expires_at ON idempotency_records(expires_at)`
-	_, err = db.ExecContext(ctx, indexQuery)
+	_, err = tx.ExecContext(ctx, indexQuery)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func migrateIdempotencyRecords(db *sql.DB) error {
 	// Create composite index on method+path for lookup optimization.
 	compositeQuery := `
 	CREATE INDEX IF NOT EXISTS idx_idempotency_method_path ON idempotency_records(method, path)`
-	_, err = db.ExecContext(ctx, compositeQuery)
+	_, err = tx.ExecContext(ctx, compositeQuery)
 	if err != nil {
 		return err
 	}

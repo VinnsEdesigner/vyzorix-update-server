@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/redaction"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
@@ -213,7 +215,9 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		case errors.Is(err, application.ErrAccountLocked):
 			h.presenter.OK(c, gin.H{"error": "account_locked", "message": "Account temporarily locked due to suspicious activity"})
 		default:
-			slog.Info("Login error", "error", err.Error(), "email", req.Email)
+			slog.Info("login error",
+				"trace_id", middleware.GetTraceID(c),
+				"error", redaction.DefaultRedactor.Redact(err.Error()))
 			h.presenter.InternalError(c, "an error occurred")
 		}
 
@@ -239,7 +243,7 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 				if err := h.emailService.SendNewLoginNotificationEmail(context.Background(), result.Email, loginData); err != nil {
 					slog.Warn("failed to send login notification email",
 						"operatorId", result.OperatorID,
-						"email", result.Email,
+						"email", redaction.DefaultRedactor.Redact(result.Email),
 						"error", err)
 				}
 			}
@@ -256,10 +260,12 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		h.presenter.SetSessionCookie(c, cookie)
 	}
 
+	// Audit successful login (recorded to audit_logs with trace_id correlation).
+	h.presenter.LoginSuccess(c, result.OperatorID)
+
 	h.presenter.OK(c, result)
 }
 
-// HandleWithTokens processes the login request and returns tokens for API clients.
 // This endpoint is for non-browser clients that need JWT access tokens and refresh tokens.
 // It does NOT set session cookies - only returns tokens in the response body.
 func (h *LoginHandler) HandleWithTokens(c *gin.Context) {

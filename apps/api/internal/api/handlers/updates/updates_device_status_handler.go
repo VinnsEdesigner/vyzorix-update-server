@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	domainupdates "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/updates"
 	"github.com/gin-gonic/gin"
 )
@@ -39,7 +40,7 @@ type DeviceUpdateStatusResponse struct {
 func (h *DeviceStatusHandler) HandleDeviceUpdateStatus(c *gin.Context) {
 	var req DeviceUpdateStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid request"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request"))
 		return
 	}
 
@@ -52,7 +53,7 @@ func (h *DeviceStatusHandler) HandleDeviceUpdateStatus(c *gin.Context) {
 
 	status, ok := validStatuses[req.Status]
 	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Invalid status. Must be: in_progress, completed, or failed"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid status. Must be: in_progress, completed, or failed"))
 		return
 	}
 
@@ -60,14 +61,14 @@ func (h *DeviceStatusHandler) HandleDeviceUpdateStatus(c *gin.Context) {
 	err := h.service.UpdateDeviceStatusByDispatch(c.Request.Context(), req.DispatchID, req.DeviceID, status, req.Error)
 	if err != nil {
 		if err == domainupdates.ErrPushNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Push not found"})
+			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Push not found"))
 			return
 		}
 		if err == domainupdates.ErrDeviceNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Device not found in push"})
+			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found in push"))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to update status"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to update status"))
 		return
 	}
 

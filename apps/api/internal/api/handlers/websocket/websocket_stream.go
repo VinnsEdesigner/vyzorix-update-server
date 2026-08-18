@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	config "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
@@ -66,12 +67,13 @@ func (u *StreamUpgrader) Upgrade(c *gin.Context, deviceID string) (*websocket.Co
 	if u.config.Env == "production" || u.config.EnforceHMAC {
 		// Use query param based verification for WebSocket since headers can't be set during upgrade.
 		if err := u.verifyWebSocketHMAC(c.Request, deviceID); err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "WebSocket HMAC verification failed"})
+			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "WebSocket HMAC verification failed"))
 			return nil, nil, err
 		}
 	} else if !u.allowDevAuth {
-		// This case handles production with EnforceHMAC=false (shouldn't happen but is defensive).
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "WebSocket authentication is required"})
+		c.Error(
+			// This case handles production with EnforceHMAC=false (shouldn't happen but is defensive).
+			apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "WebSocket authentication is required"))
 		return nil, nil, http.ErrNotSupported
 	}
 

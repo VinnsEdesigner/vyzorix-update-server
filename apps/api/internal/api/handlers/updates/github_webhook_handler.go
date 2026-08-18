@@ -12,6 +12,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -40,7 +41,7 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		h.log.Error("failed to read webhook body", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "failed to read request body"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "failed to read request body"))
 		return
 	}
 
@@ -48,7 +49,7 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 	if h.webhookSecret != "" {
 		if !h.verifySignature(c, body) {
 			h.log.Warn("invalid webhook signature", "ip", c.ClientIP())
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "invalid signature"})
+			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "invalid signature"))
 			return
 		}
 	}
@@ -56,7 +57,7 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 	// Check event type.
 	event := c.GetHeader("X-GitHub-Event")
 	if event == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "missing GitHub-Event header"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "missing GitHub-Event header"))
 		return
 	}
 
@@ -65,7 +66,7 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 	// Only process release events.
 	if event != "release" && event != "push" {
 		h.log.Info("ignoring non-release/push event", "event", event)
-		c.JSON(http.StatusOK, gin.H{"status": "ignored", "message": "event type not processed"})
+		c.Error(apperrors.NewServerErrorFromStatus(http.StatusOK, "event type not processed"))
 		return
 	}
 
@@ -95,10 +96,8 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 				err.Error(),
 			)
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "sync_failed",
-			"message": "failed to sync from GitHub",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to sync from GitHub"))
+
 		return
 	}
 
@@ -116,12 +115,10 @@ func (h *GitHubWebhookHandler) HandleWebhook(c *gin.Context) {
 	}
 
 	h.log.Info("webhook sync completed", "versions", result.VersionsFound)
+	c.Error(apperrors.NewServerErrorFromStatus(http.StatusOK,
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":         "synced",
-		"versions_found": result.VersionsFound,
-		"message":        result.Message,
-	})
+		result.Message))
+
 }
 
 // verifySignature verifies the GitHub webhook signature using HMAC-SHA256.

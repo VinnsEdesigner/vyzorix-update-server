@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -236,10 +237,10 @@ func TurnstileMiddleware(verifier *TurnstileVerifier) func(c *gin.Context) {
 
 		// Verify token.
 		if err := verifier.Verify(c.Request.Context(), token, remoteIP); err != nil {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":   "verification_failed",
-				"message": "Security verification failed, please try again",
-			})
+			responses.RespondStructuredAbort(c, http.StatusForbidden,
+
+				"Security verification failed, please try again",
+			)
 
 			return
 		}

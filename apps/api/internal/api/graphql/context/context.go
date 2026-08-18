@@ -11,7 +11,6 @@ type contextKey string
 
 const (
 	operatorKey       contextKey = "operator"
-	requestIDKey      contextKey = "requestID"
 	metadataKey       contextKey = "requestMetadata"
 	organizationIDKey contextKey = "organizationID"
 )
@@ -37,26 +36,6 @@ func GetOperator(ctx context.Context) (*operator.Operator, bool) {
 	op, ok := val.(*operator.Operator)
 
 	return op, ok
-}
-
-// WithRequestID adds a request ID to the context.
-func WithRequestID(ctx context.Context, requestID string) context.Context {
-	return context.WithValue(ctx, requestIDKey, requestID)
-}
-
-// GetRequestID retrieves the request ID from context.
-func GetRequestID(ctx context.Context) string {
-	val := ctx.Value(requestIDKey)
-	if val == nil {
-		return ""
-	}
-
-	str, ok := val.(string)
-	if !ok {
-		return ""
-	}
-
-	return str
 }
 
 // WithRequestMetadata adds request metadata to the context.

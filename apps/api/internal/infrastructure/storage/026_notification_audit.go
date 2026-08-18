@@ -6,8 +6,8 @@ import (
 )
 
 // migrateCreateNotificationAuditLog creates the notification_audit_log table.
-func migrateCreateNotificationAuditLog(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateNotificationAuditLog(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS notification_audit_log (
 			id              TEXT PRIMARY KEY,
 			operator_id     TEXT NOT NULL,
@@ -23,7 +23,7 @@ func migrateCreateNotificationAuditLog(db *sql.DB) error {
 	}
 
 	// Create index for querying by operator.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_notification_audit_operator 
 		ON notification_audit_log(operator_id, sent_at DESC)
 	`)
@@ -32,7 +32,7 @@ func migrateCreateNotificationAuditLog(db *sql.DB) error {
 	}
 
 	// Create index for querying by event type.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_notification_audit_type 
 		ON notification_audit_log(event_type, sent_at DESC)
 	`)
@@ -41,7 +41,7 @@ func migrateCreateNotificationAuditLog(db *sql.DB) error {
 	}
 
 	// Create index for querying by channel.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_notification_audit_channel 
 		ON notification_audit_log(channel, sent_at DESC)
 	`)

@@ -26,9 +26,11 @@ import (
 // The rebuild copies data with an explicit column list derived from
 // PRAGMA table_info so it is resilient to the exact column set present on the
 // live database (which may carry columns added by later migrations).
-func migrateRelaxDeviceCommandSecretNull(db *sql.DB) error {
+func migrateRelaxDeviceCommandSecretNull(tx *sql.Tx) error {
+	_, _ = tx.ExecContext(context.Background(), "DROP TABLE IF EXISTS _devices_new")
+
 	// Inspect the current devices schema.
-	cols, commandSecretNotNull, err := inspectDeviceColumns(db)
+	cols, commandSecretNotNull, err := inspectDeviceColumns(tx)
 	if err != nil {
 		return err
 	}
@@ -64,7 +66,7 @@ func migrateRelaxDeviceCommandSecretNull(db *sql.DB) error {
 	}
 	def.WriteString(")")
 
-	if _, err = db.ExecContext(context.Background(), def.String()); err != nil {
+	if _, err = tx.ExecContext(context.Background(), def.String()); err != nil {
 		return err
 	}
 
@@ -76,17 +78,17 @@ func migrateRelaxDeviceCommandSecretNull(db *sql.DB) error {
 	colList := strings.Join(names, ", ")
 
 	copyQuery := "INSERT INTO _devices_new (" + colList + ") SELECT " + colList + " FROM devices"
-	if _, err = db.ExecContext(context.Background(), copyQuery); err != nil {
-		_, _ = db.ExecContext(context.Background(), "DROP TABLE _devices_new")
+	if _, err = tx.ExecContext(context.Background(), copyQuery); err != nil {
+		_, _ = tx.ExecContext(context.Background(), "DROP TABLE _devices_new")
 		return err
 	}
 
 	// Swap tables. Drop the old table and rename the shadow table into place.
-	if _, err = db.ExecContext(context.Background(), "DROP TABLE devices"); err != nil {
-		_, _ = db.ExecContext(context.Background(), "DROP TABLE _devices_new")
+	if _, err = tx.ExecContext(context.Background(), "DROP TABLE devices"); err != nil {
+		_, _ = tx.ExecContext(context.Background(), "DROP TABLE _devices_new")
 		return err
 	}
-	if _, err = db.ExecContext(context.Background(), "ALTER TABLE _devices_new RENAME TO devices"); err != nil {
+	if _, err = tx.ExecContext(context.Background(), "ALTER TABLE _devices_new RENAME TO devices"); err != nil {
 		return err
 	}
 
@@ -98,7 +100,7 @@ func migrateRelaxDeviceCommandSecretNull(db *sql.DB) error {
 		"CREATE INDEX IF NOT EXISTS idx_devices_firebase_install_id ON devices(firebase_install_id)",
 	}
 	for _, s := range indexStmts {
-		if _, execErr := db.ExecContext(context.Background(), s); execErr != nil {
+		if _, execErr := tx.ExecContext(context.Background(), s); execErr != nil {
 			// Non-fatal: indexes are not required for correctness.
 			continue
 		}
@@ -117,8 +119,8 @@ type deviceColInfo struct {
 
 // inspectDeviceColumns reads the devices schema via PRAGMA table_info and reports
 // whether the command_secret column is currently NOT NULL.
-func inspectDeviceColumns(db *sql.DB) ([]deviceColInfo, bool, error) {
-	rows, err := db.QueryContext(context.Background(), "PRAGMA table_info(devices)")
+func inspectDeviceColumns(tx *sql.Tx) ([]deviceColInfo, bool, error) {
+	rows, err := tx.QueryContext(context.Background(), "PRAGMA table_info(devices)")
 	if err != nil {
 		return nil, false, err
 	}

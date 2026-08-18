@@ -13,6 +13,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/shared"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/email_verification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/redaction"
 )
 
 // VerifyEmailResult holds the result of email verification.
@@ -81,7 +82,7 @@ func (s *AuthService) ResendVerification(ctx context.Context, email string) erro
 	// This is the standard pattern: service creates token, handler sends email.
 	slog.Default().Info("email_verification_resent",
 		"operator_id", op.ID,
-		"email", email,
+		"email", redaction.DefaultRedactor.Redact(email),
 		"token_hint", token[:8]+"...", // Only log partial token for debugging.
 	)
 

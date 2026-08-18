@@ -2,11 +2,11 @@ package organization
 
 import (
 	"errors"
-	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	appOrganization "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 
 	"github.com/gin-gonic/gin"
@@ -224,7 +224,7 @@ func (h *InvitationHandler) GetByToken(c *gin.Context) {
 			return
 		}
 		if errors.Is(err, organization.ErrInvitationExpired) {
-			c.JSON(http.StatusGone, gin.H{"error": "gone", "message": "invitation has expired"})
+			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invitation has expired"))
 			return
 		}
 		h.presenter.InternalError(c, "failed to get invitation")
@@ -280,7 +280,7 @@ func (h *InvitationHandler) Accept(c *gin.Context) {
 			return
 		}
 		if errors.Is(err, organization.ErrInvitationExpired) {
-			c.JSON(http.StatusGone, gin.H{"error": "gone", "message": "invitation has expired"})
+			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invitation has expired"))
 			return
 		}
 		if errors.Is(err, organization.ErrAlreadyResponded) {

@@ -6,9 +6,9 @@ import (
 )
 
 // migrateCreateUpdateTables creates update_versions, update_pushes, and update_push_devices tables.
-func migrateCreateUpdateTables(db *sql.DB) error {
+func migrateCreateUpdateTables(tx *sql.Tx) error {
 	// Create update_versions table.
-	_, err := db.ExecContext(context.Background(), `
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS update_versions (
 			id              TEXT PRIMARY KEY,
 			version         TEXT NOT NULL UNIQUE,
@@ -28,7 +28,7 @@ func migrateCreateUpdateTables(db *sql.DB) error {
 	}
 
 	// Create index for querying versions by date.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_versions_date 
 		ON update_versions(release_date DESC)
 	`)
@@ -37,7 +37,7 @@ func migrateCreateUpdateTables(db *sql.DB) error {
 	}
 
 	// Create index for querying latest version.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_versions_latest 
 		ON update_versions(is_latest)
 	`)
@@ -46,7 +46,7 @@ func migrateCreateUpdateTables(db *sql.DB) error {
 	}
 
 	// Create update_pushes table.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS update_pushes (
 			id              TEXT PRIMARY KEY,
 			version_id      TEXT NOT NULL,
@@ -67,7 +67,7 @@ func migrateCreateUpdateTables(db *sql.DB) error {
 	}
 
 	// Create index for querying pushes by status.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_update_pushes_status 
 		ON update_pushes(status)
 	`)
@@ -76,7 +76,7 @@ func migrateCreateUpdateTables(db *sql.DB) error {
 	}
 
 	// Create index for querying pushes by initiation time.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_update_pushes_initiated_at 
 		ON update_pushes(initiated_at DESC)
 	`)
@@ -85,7 +85,7 @@ func migrateCreateUpdateTables(db *sql.DB) error {
 	}
 
 	// Create update_push_devices table.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS update_push_devices (
 			id              TEXT PRIMARY KEY,
 			push_id         TEXT NOT NULL,
@@ -106,7 +106,7 @@ func migrateCreateUpdateTables(db *sql.DB) error {
 	}
 
 	// Create unique index for push + device combination.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_push_device 
 		ON update_push_devices(push_id, device_id)
 	`)
@@ -115,7 +115,7 @@ func migrateCreateUpdateTables(db *sql.DB) error {
 	}
 
 	// Create index for querying push devices by status.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_push_devices_status 
 		ON update_push_devices(status)
 	`)

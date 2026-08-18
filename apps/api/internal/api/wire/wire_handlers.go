@@ -9,6 +9,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
+	confirmationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/confirmation"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
 	organizationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/organization"
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
@@ -17,10 +18,12 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/confirmation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	domaincommand "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -42,6 +45,8 @@ type HandlerDependencies struct {
 	IPIntelligence        *middleware.IPIntelligence
 	CommandService        *command.Service
 	Hub                   *hub.Hub
+	RiskEvaluator         *domaincommand.RiskEvaluator
+	ConfirmationService   *confirmation.Service
 	EmailService          *emailService.Service
 	EmailVerificationRepo *storage.EmailVerificationRepository
 	Lockout               *middleware.Lockout
@@ -78,6 +83,7 @@ type HandlerSet struct {
 	DeviceSettings        *devicehandlers.SettingsHandler
 	DeviceService         *device.Service
 	Command               *cmdhandlers.ExecuteHandler
+	Confirmation          *confirmationhandlers.Handler
 	Stream                *websockethandlers.StreamHandler
 	TelemetryHistory      *handlers.TelemetryHistoryHandler
 	ConnectionStatus      *handlers.ConnectionStatusHandler
@@ -127,8 +133,27 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	hs.Devices = devicehandlers.NewDevicesHandler(deps.DeviceService)
 	hs.DeviceService = deps.DeviceService
 
-	// Command handler.
-	hs.Command = cmdhandlers.NewExecuteHandler(deps.CommandService, deps.DeviceService, deps.Hub, deps.FCMNotifier)
+	// Command handler. The risk evaluator gates dangerous commands; the audit
+	// logger records every execution attempt. Fall back to a no-op logger when
+	// no audit store is configured so the handler never holds a nil dependency.
+	var aud cmdhandlers.AuditLogger = audit.NewNoOpLogger()
+	if deps.AuditLogger != nil {
+		aud = deps.AuditLogger
+	}
+	evaluator := deps.RiskEvaluator
+	if evaluator == nil {
+		evaluator = domaincommand.NewRiskEvaluator()
+	}
+	// Confirmation handler doubles as the confirmation consumer for the
+	// command handler. When no confirmation service is configured, pass nil so
+	// risky commands are blocked (the handler treats nil as "disabled").
+	var confirmConsumer cmdhandlers.ConfirmationConsumer
+	if deps.ConfirmationService != nil {
+		confirmationHandler := confirmationhandlers.NewHandler(deps.ConfirmationService, deps.DeviceService, evaluator)
+		hs.Confirmation = confirmationHandler
+		confirmConsumer = confirmationHandler
+	}
+	hs.Command = cmdhandlers.NewExecuteHandler(deps.CommandService, deps.DeviceService, deps.Hub, deps.FCMNotifier, evaluator, aud, confirmConsumer)
 
 	// WebSocket handler.
 	hs.Stream = websockethandlers.NewStreamHandler(deps.Log, deps.Config, deps.Hub, *deps.HmacVerifier, deps.AuditLogger)

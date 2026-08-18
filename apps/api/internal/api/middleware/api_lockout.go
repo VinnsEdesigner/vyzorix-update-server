@@ -3,12 +3,12 @@ package middleware
 
 import (
 	"errors"
-	"net/http"
 	"os"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -173,12 +173,8 @@ func LockoutMiddleware(lockout *Lockout) func(c *gin.Context) {
 
 		if email != "" && lockout.IsLocked(email) {
 			_, _, retryAfter := lockout.GetLockoutInfo(email)
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
-				"error":       "account_locked",
-				"message":     "Too many failed attempts, please try again later",
-				"retry_after": retryAfter.Seconds(),
-			})
-
+			responses.RespondRateLimitError(c, int(retryAfter.Seconds()))
+			c.Abort()
 			return
 		}
 

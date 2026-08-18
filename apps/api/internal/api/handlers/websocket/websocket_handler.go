@@ -3,10 +3,10 @@ package websocket
 
 import (
 	"log/slog"
-	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	config "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
@@ -52,7 +52,7 @@ func NewStreamHandler(
 func (h *StreamHandler) Handle(c *gin.Context) {
 	deviceID := c.Param("imei")
 	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device imei required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device imei required"))
 		return
 	}
 

@@ -114,8 +114,8 @@ func (r *PendingFCMRepository) DeleteByDispatchID(ctx context.Context, dispatchI
 }
 
 // migrateCreatePendingFCM creates the pending_fcm table for FCM retry persistence.
-func migrateCreatePendingFCM(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreatePendingFCM(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS pending_fcm (
 			id              INTEGER PRIMARY KEY AUTOINCREMENT,
 			dispatch_id     TEXT NOT NULL,
@@ -135,7 +135,7 @@ func migrateCreatePendingFCM(db *sql.DB) error {
 	}
 
 	// Create index for querying pending notifications.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_pending_fcm_next_retry
 		ON pending_fcm(next_retry_at)
 	`)
@@ -144,7 +144,7 @@ func migrateCreatePendingFCM(db *sql.DB) error {
 	}
 
 	// Create index for dispatch lookup.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_pending_fcm_dispatch
 		ON pending_fcm(dispatch_id)
 	`)

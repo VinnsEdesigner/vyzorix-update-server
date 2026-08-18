@@ -6,8 +6,8 @@ import (
 )
 
 // migrateCreateRefreshTokens creates the refresh_tokens table.
-func migrateCreateRefreshTokens(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateRefreshTokens(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS refresh_tokens (
 			id              TEXT PRIMARY KEY,
 			token_hash      TEXT NOT NULL UNIQUE,
@@ -28,7 +28,7 @@ func migrateCreateRefreshTokens(db *sql.DB) error {
 	}
 
 	// Create index for token hash lookups.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_hash 
 		ON refresh_tokens(token_hash)
 	`)
@@ -37,7 +37,7 @@ func migrateCreateRefreshTokens(db *sql.DB) error {
 	}
 
 	// Create index for querying tokens by operator.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_refresh_tokens_operator_id 
 		ON refresh_tokens(operator_id)
 	`)
@@ -46,7 +46,7 @@ func migrateCreateRefreshTokens(db *sql.DB) error {
 	}
 
 	// Create index for querying tokens by session.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_refresh_tokens_session_id 
 		ON refresh_tokens(session_id)
 	`)

@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -303,10 +304,10 @@ func (ii *IPIntelligence) Middleware() gin.HandlerFunc {
 
 		// Check if blocked.
 		if ii.IsBlocked(ip) {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":   "ip_blocked",
-				"message": "Too many failed attempts, please try again later",
-			})
+			responses.RespondStructuredAbort(c, http.StatusForbidden,
+
+				"Too many failed attempts, please try again later",
+			)
 
 			return
 		}

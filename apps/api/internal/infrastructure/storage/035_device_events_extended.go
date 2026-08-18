@@ -6,11 +6,11 @@ import (
 )
 
 // migrateDeviceEventsExtended adds extended columns to device_events for real-time events.
-func migrateDeviceEventsExtended(db *sql.DB) error {
+func migrateDeviceEventsExtended(tx *sql.Tx) error {
 	ctx := context.Background()
 
 	// Add severity column if not exists (with idempotent error handling for SQLite).
-	_, err := db.ExecContext(ctx, `ALTER TABLE device_events ADD COLUMN severity TEXT DEFAULT 'info'`)
+	_, err := tx.ExecContext(ctx, `ALTER TABLE device_events ADD COLUMN severity TEXT DEFAULT 'info'`)
 	if err != nil {
 		if !isColumnExistsError(err) {
 			return err
@@ -18,7 +18,7 @@ func migrateDeviceEventsExtended(db *sql.DB) error {
 	}
 
 	// Add source column if not exists (with idempotent error handling for SQLite).
-	_, err = db.ExecContext(ctx, `ALTER TABLE device_events ADD COLUMN source TEXT DEFAULT 'server'`)
+	_, err = tx.ExecContext(ctx, `ALTER TABLE device_events ADD COLUMN source TEXT DEFAULT 'server'`)
 	if err != nil {
 		if !isColumnExistsError(err) {
 			return err
@@ -26,7 +26,7 @@ func migrateDeviceEventsExtended(db *sql.DB) error {
 	}
 
 	// Add operator_id column if not exists (with idempotent error handling for SQLite).
-	_, err = db.ExecContext(ctx, `ALTER TABLE device_events ADD COLUMN operator_id TEXT`)
+	_, err = tx.ExecContext(ctx, `ALTER TABLE device_events ADD COLUMN operator_id TEXT`)
 	if err != nil {
 		if !isColumnExistsError(err) {
 			return err
@@ -37,7 +37,7 @@ func migrateDeviceEventsExtended(db *sql.DB) error {
 	severityIndex := `
 	CREATE INDEX IF NOT EXISTS idx_device_events_severity
 		ON device_events(device_id, severity, timestamp DESC)`
-	_, err = db.ExecContext(ctx, severityIndex)
+	_, err = tx.ExecContext(ctx, severityIndex)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func migrateDeviceEventsExtended(db *sql.DB) error {
 	sourceIndex := `
 	CREATE INDEX IF NOT EXISTS idx_device_events_source
 		ON device_events(device_id, source, timestamp DESC)`
-	_, err = db.ExecContext(ctx, sourceIndex)
+	_, err = tx.ExecContext(ctx, sourceIndex)
 	if err != nil {
 		return err
 	}

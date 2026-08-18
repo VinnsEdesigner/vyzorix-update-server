@@ -6,6 +6,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,29 +34,20 @@ func (h *UpdatesPushHandler) PushUpdate(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
-			Code:    "bad_request",
-			Message: err.Error(),
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, err.Error()))
 		return
 	}
 
 	operator := middleware.GetOperatorFromContext(c)
 	if operator == nil {
-		c.JSON(http.StatusUnauthorized, updates.ErrorResponse{
-			Code:    "unauthorized",
-			Message: "Operator not found",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator not found"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
-			Code:    "bad_request",
-			Message: "organization context required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
@@ -70,13 +62,10 @@ func (h *UpdatesPushHandler) PushUpdate(c *gin.Context) {
 	pushResp, err := h.service.PushUpdate(c.Request.Context(), pushReq, operator.ID)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
+			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, updates.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to push update",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to push update"))
 		return
 	}
 

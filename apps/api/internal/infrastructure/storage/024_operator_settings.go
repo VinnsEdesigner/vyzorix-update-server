@@ -6,8 +6,8 @@ import (
 )
 
 // migrateCreateOperatorSettings creates the operator_settings table.
-func migrateCreateOperatorSettings(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateOperatorSettings(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS operator_settings (
 			operator_id              TEXT PRIMARY KEY,
 			server_url               TEXT,

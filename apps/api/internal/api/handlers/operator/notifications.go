@@ -5,6 +5,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 
@@ -29,13 +30,13 @@ func NewNotificationHandler(svc *appoperator.NotificationService, wh *infrawebho
 func (h *NotificationHandler) GetNotifications(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "unauthorized"))
 		return
 	}
 
 	notifications, err := h.service.GetNotifications(c.Request.Context(), op.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get notifications"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to get notifications"))
 		return
 	}
 
@@ -46,19 +47,19 @@ func (h *NotificationHandler) GetNotifications(c *gin.Context) {
 func (h *NotificationHandler) PatchNotifications(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "unauthorized"))
 		return
 	}
 
 	var req operator.NotificationInput
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid request"))
 		return
 	}
 
 	notifications, err := h.service.UpdateNotifications(c.Request.Context(), op.ID, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update notifications"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to update notifications"))
 		return
 	}
 
@@ -69,7 +70,7 @@ func (h *NotificationHandler) PatchNotifications(c *gin.Context) {
 func (h *NotificationHandler) TestWebhook(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "unauthorized"))
 		return
 	}
 
@@ -78,23 +79,22 @@ func (h *NotificationHandler) TestWebhook(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "url is required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "url is required"))
 		return
 	}
 
 	// Block SSRF: reject URLs resolving to private/internal IPs.
 	if err := infrawebhook.ValidateURL(req.URL); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid webhook URL: " + err.Error()})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid webhook URL: "+err.Error()))
 		return
 	}
 
 	result, err := h.webhookClient.Test(c.Request.Context(), req.URL)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"error":   "webhook_error",
-			"message": err.Error(),
-		})
+		c.Error(apperrors.NewServerErrorFromStatus(http.StatusOK,
+
+			err.Error()))
+
 		return
 	}
 
@@ -105,13 +105,13 @@ func (h *NotificationHandler) TestWebhook(c *gin.Context) {
 func (h *NotificationHandler) RotateWebhookSecret(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "unauthorized"))
 		return
 	}
 
 	secret, err := h.service.RotateWebhookSecret(c.Request.Context(), op.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to rotate webhook secret"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to rotate webhook secret"))
 		return
 	}
 

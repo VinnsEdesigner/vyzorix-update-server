@@ -9,6 +9,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,19 +32,19 @@ func (h *AdminHandler) ListOperators(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	orgID := middleware.GetOrganizationID(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "not authenticated"))
 		return
 	}
 
 	// Org-scoped check - operator must be super_admin in this organization.
 	if !op.IsSuperAdminIn(orgID) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "insufficient privileges"))
 		return
 	}
 
 	operators, total, err := h.authService.ListAllOperators(c.Request.Context(), 20, 0)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to list operators"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list operators"))
 		return
 	}
 
@@ -109,25 +110,25 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	orgID := middleware.GetOrganizationID(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "not authenticated"))
 		return
 	}
 
 	// Org-scoped check.
 	if !op.IsSuperAdminIn(orgID) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "insufficient privileges"))
 		return
 	}
 
 	operatorID := c.Param("id")
 	if operatorID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "operator id is required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "operator id is required"))
 		return
 	}
 
 	targetOp, err := h.authService.GetOperatorByID(c.Request.Context(), operatorID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "not_found"})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "not_found"))
 		return
 	}
 
@@ -147,25 +148,25 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	orgID := middleware.GetOrganizationID(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "not authenticated"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "not authenticated"))
 		return
 	}
 
 	// Org-scoped check.
 	if !op.IsSuperAdminIn(orgID) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": "insufficient privileges"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "insufficient privileges"))
 		return
 	}
 
 	operatorID := c.Param("id")
 	if operatorID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "operator id is required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "operator id is required"))
 		return
 	}
 
 	var req auth.UpdateOperatorRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid request body"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid request body"))
 		return
 	}
 

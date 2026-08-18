@@ -3,10 +3,14 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/tracing"
 	"github.com/gin-gonic/gin"
 )
 
@@ -66,11 +70,10 @@ func GinTimeout(config TimeoutConfig) func(c *gin.Context) {
 			// Timeout occurred.
 			c.Abort()
 			if !c.Writer.Written() {
-				c.JSON(http.StatusGatewayTimeout, gin.H{
-					"error":   "timeout",
-					"code":    "REQUEST_TIMEOUT",
-					"message": fmt.Sprintf("request timed out after %v", timeout),
-				})
+				responses.RespondStructured(c, http.StatusGatewayTimeout,
+
+					fmt.Sprintf("request timed out after %v", timeout),
+				)
 			}
 		}
 	}
@@ -96,8 +99,19 @@ func TimeoutMiddleware(defaultTimeout time.Duration) func(http.Handler) http.Han
 			case <-done:
 				// Request completed.
 			case <-ctx.Done():
-				http.Error(w, `{"error":"timeout","code":"REQUEST_TIMEOUT","message":"request timed out"}`,
-					http.StatusGatewayTimeout)
+				// Emit the structured error envelope so this net/http-level
+				// timeout matches the gin structured-error shape. The docs URL
+				// is built dynamically via the tracing builder (not hardcoded).
+				body, _ := json.Marshal(responses.StructuredErrorResponse{
+					Error: responses.ErrorDetail{
+						Code:    string(errors.CodeInternalTimeout),
+						Message: "The request timed out. Please try again.",
+						DocsURL: tracing.BuildErrorDocsURL(string(errors.CodeInternalTimeout)),
+					},
+				})
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusGatewayTimeout)
+				_, _ = w.Write(body)
 			}
 		})
 	}

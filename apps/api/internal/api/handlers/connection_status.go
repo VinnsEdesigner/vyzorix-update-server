@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/gin-gonic/gin"
@@ -63,10 +64,8 @@ type AllConnectionsResponse struct {
 func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 	deviceID := c.Param("id")
 	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "device id is required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device id is required"))
+
 		return
 	}
 
@@ -103,19 +102,15 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 // Returns the status of all WebSocket connections within the organization.
 func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 	if h.hub == nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"error":   "service_unavailable",
-			"message": "WebSocket hub not initialized",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "WebSocket hub not initialized"))
+
 		return
 	}
 
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "organization context required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+
 		return
 	}
 
@@ -181,10 +176,8 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "organization context required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+
 		return
 	}
 
@@ -246,19 +239,15 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "organization context required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
+
 		return
 	}
 
 	deviceID := c.Param("id")
 	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "device id is required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device id is required"))
+
 		return
 	}
 
@@ -266,10 +255,8 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 	if h.deviceRepo != nil {
 		_, err := h.deviceRepo.FindByIDAndOrganization(c.Request.Context(), deviceID, orgID)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error":   "not_found",
-				"message": "device not found in organization",
-			})
+			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found in organization"))
+
 			return
 		}
 	}
@@ -277,20 +264,16 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 	// Require operator auth.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "unauthorized",
-			"message": "authentication required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "authentication required"))
+
 		return
 	}
 
 	// Get and disconnect client.
 	client := h.hub.GetClient(deviceID)
 	if client == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":   "not_found",
-			"message": "device not connected",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not connected"))
+
 		return
 	}
 

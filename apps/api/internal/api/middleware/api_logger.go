@@ -12,8 +12,9 @@ func Logger(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 
-		// Get request ID from context (set by RequestIDMiddleware).
-		requestID := GetRequestID(c)
+		// Get trace ID from context (set by Tracing middleware). This is the
+		// single correlation ID and matches the trace_id in error/panic logs.
+		traceID := GetTraceID(c)
 
 		c.Next()
 
@@ -23,7 +24,7 @@ func Logger(log *slog.Logger) gin.HandlerFunc {
 			"status", c.Writer.Status(),
 			"duration_ms", time.Since(start).Milliseconds(),
 			"remote", c.ClientIP(),
-			"request_id", requestID,
+			"trace_id", traceID,
 		)
 	}
 }

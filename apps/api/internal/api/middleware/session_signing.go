@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	"github.com/gin-gonic/gin"
@@ -39,10 +40,10 @@ func SessionSignatureMiddleware(verifier *cryptohmac.Verifier) gin.HandlerFunc {
 		// Reject requests with no signature header. Every authenticated request
 		// must carry X-Vyzorix-* signing headers — there is no unsigned fallback.
 		if c.GetHeader("X-Vyzorix-Signature") == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "SIGN_001",
-				"message": "Missing required signature headers",
-			})
+			responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+				"Missing required signature headers",
+			)
 			return
 		}
 
@@ -55,10 +56,10 @@ func SessionSignatureMiddleware(verifier *cryptohmac.Verifier) gin.HandlerFunc {
 		if sessVal, exists := c.Get(sessionContextKey); exists {
 			sess, ok := sessVal.(*session.Session)
 			if !ok || sess == nil || sess.SigningKey == "" {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_003",
-					"message": "Signature verification failed",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Signature verification failed",
+				)
 				return
 			}
 			hmacSecret = sess.SigningKey
@@ -66,10 +67,10 @@ func SessionSignatureMiddleware(verifier *cryptohmac.Verifier) gin.HandlerFunc {
 		} else if secretVal, exists := c.Get("api_key_signing_secret"); exists {
 			secret, ok := secretVal.(string)
 			if !ok || secret == "" {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_003",
-					"message": "Signature verification failed",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Signature verification failed",
+				)
 				return
 			}
 			hmacSecret = secret
@@ -79,10 +80,10 @@ func SessionSignatureMiddleware(verifier *cryptohmac.Verifier) gin.HandlerFunc {
 				}
 			}
 		} else {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "SIGN_003",
-				"message": "Signature verification failed",
-			})
+			responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+				"Signature verification failed",
+			)
 			return
 		}
 
@@ -99,40 +100,40 @@ func SessionSignatureMiddleware(verifier *cryptohmac.Verifier) gin.HandlerFunc {
 		if _, err := reqVerifier.ReadAndVerify(c.Request, nonceNamespace); err != nil {
 			switch err.(type) {
 			case cryptohmac.MissingError:
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_001",
-					"message": "Missing required signature headers",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Missing required signature headers",
+				)
 			case cryptohmac.BadFormatError:
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_002",
-					"message": "Invalid timestamp format",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Invalid timestamp format",
+				)
 			case *cryptohmac.TimestampExpiredError:
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_003",
-					"message": "Request timestamp outside allowed window",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Request timestamp outside allowed window",
+				)
 			case cryptohmac.ReplayedError:
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_006",
-					"message": "Replay detected",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Replay detected",
+				)
 			case cryptohmac.DeviceNotFoundError:
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_003",
-					"message": "Signature verification failed",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Signature verification failed",
+				)
 			case cryptohmac.SignatureInvalidError:
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_003",
-					"message": "Signature verification failed",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Signature verification failed",
+				)
 			default:
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-					"error":   "SIGN_003",
-					"message": "Signature verification failed",
-				})
+				responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+					"Signature verification failed",
+				)
 			}
 			return
 		}

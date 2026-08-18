@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 )
 
@@ -47,10 +48,10 @@ func AuthRevocationMiddleware(revocationList *infraauth.RevocationList) func(c *
 		tokenHash := infraauth.HashOperatorID(cookieValue)
 
 		if revocationList.IsRevoked(tokenHash) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "session_revoked",
-				"message": "Session has been revoked, please login again",
-			})
+			responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+				"Session has been revoked, please login again",
+			)
 
 			return
 		}

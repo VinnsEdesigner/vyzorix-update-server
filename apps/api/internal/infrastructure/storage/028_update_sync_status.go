@@ -6,8 +6,8 @@ import (
 )
 
 // migrateCreateUpdateSyncStatus creates the update_sync_status table.
-func migrateCreateUpdateSyncStatus(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateUpdateSyncStatus(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS update_sync_status (
 			id                INTEGER PRIMARY KEY CHECK (id = 1),
 			status            TEXT NOT NULL DEFAULT 'idle',
@@ -25,7 +25,7 @@ func migrateCreateUpdateSyncStatus(db *sql.DB) error {
 	}
 
 	// Insert default row if not exists.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		INSERT OR IGNORE INTO update_sync_status (id, status, created_at, updated_at)
 		VALUES (1, 'idle', ?, ?)
 	`, sql.NullInt64{}, sql.NullInt64{})

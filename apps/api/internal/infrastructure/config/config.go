@@ -236,7 +236,7 @@ func Load() (Config, error) {
 		JWTSecret:                 os.Getenv("JWT_SECRET"),
 		SessionSecret:             os.Getenv("SESSION_SECRET"),
 		SessionMaxAge:             sessionMaxAge,
-		AllowedOrigins:            splitCSV(get("ALLOWED_ORIGINS", "*")),
+		AllowedOrigins:            splitCSV(get("ALLOWED_ORIGINS", "")), // Default empty: fail-closed. Set ALLOWED_ORIGINS explicitly in production.
 		HMACWindow:                30 * time.Second,
 		NonceCacheTTL:             1 * time.Hour,
 		GoogleOAuthClientID:       os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),

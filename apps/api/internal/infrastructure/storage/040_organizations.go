@@ -12,34 +12,34 @@ import (
 // - Organizations are tenants that own resources.
 // - Memberships link operators to organizations with scoped roles.
 // - Invitations manage the join request flow.
-func migrateOrganizations(db *sql.DB) error {
+func migrateOrganizations(tx *sql.Tx) error {
 	// Create organizations table.
-	if err := createOrganizationsTable(db); err != nil {
+	if err := createOrganizationsTable(tx); err != nil {
 		return err
 	}
 
 	// Create organization_members table.
-	if err := createOrganizationMembersTable(db); err != nil {
+	if err := createOrganizationMembersTable(tx); err != nil {
 		return err
 	}
 
 	// Create invitations table.
-	if err := createInvitationsTable(db); err != nil {
+	if err := createInvitationsTable(tx); err != nil {
 		return err
 	}
 
 	// Add organization_id to devices table.
-	if err := addOrganizationIDToDevices(db); err != nil {
+	if err := addOrganizationIDToDevices(tx); err != nil {
 		return err
 	}
 
 	// Add organization_id to sessions table.
-	if err := addOrganizationIDToSessions(db); err != nil {
+	if err := addOrganizationIDToSessions(tx); err != nil {
 		return err
 	}
 
 	// Add organization_id to api_keys table.
-	if err := addOrganizationIDToAPIKeys(db); err != nil {
+	if err := addOrganizationIDToAPIKeys(tx); err != nil {
 		return err
 	}
 
@@ -47,8 +47,8 @@ func migrateOrganizations(db *sql.DB) error {
 }
 
 // createOrganizationsTable creates the organizations table.
-func createOrganizationsTable(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func createOrganizationsTable(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS organizations (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
@@ -67,7 +67,7 @@ func createOrganizationsTable(db *sql.DB) error {
 	}
 
 	// Create index for looking up organizations by creator.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_organizations_created_by ON organizations(created_by)
 	`)
 
@@ -75,8 +75,8 @@ func createOrganizationsTable(db *sql.DB) error {
 }
 
 // createOrganizationMembersTable creates the organization_members table.
-func createOrganizationMembersTable(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func createOrganizationMembersTable(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS organization_members (
 			id TEXT PRIMARY KEY,
 			organization_id TEXT NOT NULL,
@@ -97,14 +97,14 @@ func createOrganizationMembersTable(db *sql.DB) error {
 	}
 
 	// Create indexes for efficient lookups.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_org_members_operator ON organization_members(operator_id)
 	`)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_org_members_org ON organization_members(organization_id)
 	`)
 
@@ -112,8 +112,8 @@ func createOrganizationMembersTable(db *sql.DB) error {
 }
 
 // createInvitationsTable creates the invitations table.
-func createInvitationsTable(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func createInvitationsTable(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS invitations (
 			id TEXT PRIMARY KEY,
 			organization_id TEXT NOT NULL,
@@ -138,21 +138,21 @@ func createInvitationsTable(db *sql.DB) error {
 	}
 
 	// Create indexes for efficient lookups.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token)
 	`)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email)
 	`)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_invitations_org_status ON invitations(organization_id, status)
 	`)
 
@@ -160,8 +160,8 @@ func createInvitationsTable(db *sql.DB) error {
 }
 
 // addOrganizationIDToDevices adds organization_id column to devices table.
-func addOrganizationIDToDevices(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func addOrganizationIDToDevices(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		ALTER TABLE devices ADD COLUMN organization_id TEXT
 	`)
 	if err != nil {
@@ -174,8 +174,8 @@ func addOrganizationIDToDevices(db *sql.DB) error {
 }
 
 // addOrganizationIDToSessions adds organization_id column to sessions table.
-func addOrganizationIDToSessions(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func addOrganizationIDToSessions(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		ALTER TABLE auth_sessions ADD COLUMN organization_id TEXT
 	`)
 	if err != nil {
@@ -188,11 +188,11 @@ func addOrganizationIDToSessions(db *sql.DB) error {
 }
 
 // addOrganizationIDToAPIKeys adds organization_id column to api_keys table.
-func addOrganizationIDToAPIKeys(db *sql.DB) error {
+func addOrganizationIDToAPIKeys(tx *sql.Tx) error {
 	// Note: api_keys table might be named differently, check for api_clients.
 	// First check if api_keys table exists.
 	var tableName string
-	err := db.QueryRowContext(context.Background(), `
+	err := tx.QueryRowContext(context.Background(), `
 		SELECT name FROM sqlite_master WHERE type='table' AND name IN ('api_keys', 'api_clients')
 	`).Scan(&tableName)
 
@@ -211,7 +211,7 @@ func addOrganizationIDToAPIKeys(db *sql.DB) error {
 	}
 
 	query := `ALTER TABLE ` + actualTableName + ` ADD COLUMN organization_id TEXT`
-	_, err = db.ExecContext(context.Background(), query)
+	_, err = tx.ExecContext(context.Background(), query)
 	if err != nil {
 		// Column may already exist (SQLite ignores duplicate column additions).
 		if !isColumnExistsError(err) {

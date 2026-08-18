@@ -374,7 +374,7 @@ func (s *SQLite) TxManager() transaction.TxManager {
 
 // Migration represents a database migration.
 type Migration struct {
-	Apply   func(*sql.DB) error
+	Apply   func(*sql.Tx) error
 	Name    string
 	Version int
 }
@@ -483,6 +483,16 @@ var migrations = []Migration{
 	// `is_revoked`/`revoked_at`. Rebuilds the table with the correct column
 	// names so logout and token revocation stop 500'ing. Idempotent.
 	{Apply: migrateFixRefreshTokensSchema, Name: "fix_refresh_tokens_schema", Version: 56},
+	// Add trace_id and risk_tier columns to audit_logs so security events can
+	// be correlated with request traces and classified by command risk. Backs
+	// the Phase 2 risk/audit work. Idempotent: skips columns that already exist.
+	{Apply: migrateAuditLogsRiskColumns, Name: "add_audit_logs_risk_columns", Version: 57},
+	// Create command_confirmations table for short-lived, single-use
+	// confirmation tokens that gate risky device commands (Phase 3).
+	{Apply: migrateCommandConfirmations, Name: "create_command_confirmations_table", Version: 58},
+	// Add actor_type, actor_email, old_value, new_value columns to audit_logs
+	// for change-tracking compliance. Idempotent.
+	{Apply: migrateAuditLogsChangeTrackingColumns, Name: "add_audit_logs_change_tracking_columns", Version: 59},
 }
 
 // runMigrations applies all pending migrations.
@@ -498,28 +508,33 @@ func runMigrations(db *sql.DB) error {
 		return fmt.Errorf("failed to get current version: %w", err)
 	}
 
-	// Apply pending migrations.
+	// Apply pending migrations. Each migration runs inside a transaction so
+	// that a partial failure (e.g. a table-rebuild that drops the old table but
+	// fails to rename the new one) rolls back atomically and never leaves the
+	// schema in a half-rebuilt "bricked" state. SQLite WAL mode supports
+	// transactional DDL, so CREATE/DROP/RENAME all roll back on failure.
 	for _, m := range migrations {
 		if m.Version <= currentVersion {
 			continue
 		}
 
-		// Run migration directly (SQLite auto-commits each statement).
-		if err := m.Apply(db); err != nil {
+		tx, err := db.Begin()
+		if err != nil {
+			return fmt.Errorf("migration %d (%s) failed to begin tx: %w", m.Version, m.Name, err)
+		}
+
+		if err := m.Apply(tx); err != nil {
+			_ = tx.Rollback()
 			return fmt.Errorf("migration %d (%s) failed: %w", m.Version, m.Name, err)
 		}
 
-		// Record version in a separate transaction.
-		tx, err := db.Begin()
-		if err != nil {
-			return fmt.Errorf("migration %d (%s) failed to begin version tx: %w", m.Version, m.Name, err)
-		}
 		if err := setVersionTx(tx, m.Version); err != nil {
 			_ = tx.Rollback()
 			return fmt.Errorf("failed to set version after migration %d: %w", m.Version, err)
 		}
+
 		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("migration %d (%s) failed to commit version: %w", m.Version, m.Name, err)
+			return fmt.Errorf("migration %d (%s) failed to commit: %w", m.Version, m.Name, err)
 		}
 
 		fmt.Printf("Applied migration %d: %s\n", m.Version, m.Name)
@@ -553,8 +568,8 @@ func setVersionTx(tx *sql.Tx, version int) error {
 // Individual Migration Functions.
 // =============================================================================.
 
-func migrateCreateDevices(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateDevices(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS devices (
 			id TEXT PRIMARY KEY,
 			firebase_install_id TEXT NOT NULL,
@@ -575,8 +590,8 @@ func migrateCreateDevices(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateTelemetry(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateTelemetry(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS telemetry (
 			id TEXT PRIMARY KEY,
 			device_id TEXT NOT NULL,
@@ -593,15 +608,15 @@ func migrateCreateTelemetry(db *sql.DB) error {
 		return err
 	}
 
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_telemetry_device_time ON telemetry(device_id, received_at DESC)
 	`)
 
 	return err
 }
 
-func migrateCreateCommands(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateCommands(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS commands (
 			id TEXT PRIMARY KEY,
 			dispatch_id TEXT NOT NULL UNIQUE,
@@ -622,8 +637,8 @@ func migrateCreateCommands(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateOperators(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateOperators(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS operators (
 			id TEXT PRIMARY KEY,
 			email TEXT NOT NULL UNIQUE,
@@ -648,8 +663,8 @@ func migrateCreateOperators(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateAuthSessions(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateAuthSessions(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS auth_sessions (
 			id TEXT PRIMARY KEY,
 			operator_id TEXT NOT NULL,
@@ -666,8 +681,8 @@ func migrateCreateAuthSessions(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateEmailVerifications(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateEmailVerifications(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS email_verifications (
 			id TEXT PRIMARY KEY,
 			operator_id TEXT NOT NULL,
@@ -681,8 +696,8 @@ func migrateCreateEmailVerifications(db *sql.DB) error {
 	return err
 }
 
-func migrateCreatePasswordReset(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreatePasswordReset(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS password_reset_tokens (
 			id TEXT PRIMARY KEY,
 			operator_id TEXT NOT NULL,
@@ -697,8 +712,8 @@ func migrateCreatePasswordReset(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateSettings(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateSettings(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS settings (
 			key TEXT PRIMARY KEY,
 			value TEXT NOT NULL,
@@ -709,7 +724,7 @@ func migrateCreateSettings(db *sql.DB) error {
 	return err
 }
 
-func migrateAddCommandsColumns(db *sql.DB) error {
+func migrateAddCommandsColumns(tx *sql.Tx) error {
 	// Add columns if they don't exist (with idempotent error handling for SQLite).
 	cols := []struct {
 		sql  string
@@ -719,7 +734,7 @@ func migrateAddCommandsColumns(db *sql.DB) error {
 		{`ALTER TABLE commands ADD COLUMN failure_reason TEXT`, "failure_reason"},
 	}
 	for _, col := range cols {
-		_, err := db.ExecContext(context.Background(), col.sql)
+		_, err := tx.ExecContext(context.Background(), col.sql)
 		if err != nil {
 			// Column may already exist (SQLite ignores duplicate column additions).
 			if !isColumnExistsError(err) {
@@ -731,8 +746,8 @@ func migrateAddCommandsColumns(db *sql.DB) error {
 	return nil
 }
 
-func migrateAddDeviceSecretHash(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `ALTER TABLE devices ADD COLUMN command_secret_hash TEXT`)
+func migrateAddDeviceSecretHash(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `ALTER TABLE devices ADD COLUMN command_secret_hash TEXT`)
 	if err != nil {
 		// Column may already exist (SQLite ignores duplicate column additions).
 		if !isColumnExistsError(err) {
@@ -742,8 +757,8 @@ func migrateAddDeviceSecretHash(db *sql.DB) error {
 	return nil
 }
 
-func migrateAddOperatorsGitHubID(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `ALTER TABLE operators ADD COLUMN github_id TEXT`)
+func migrateAddOperatorsGitHubID(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `ALTER TABLE operators ADD COLUMN github_id TEXT`)
 	if err != nil {
 		// Column may already exist.
 		if !isColumnExistsError(err) {
@@ -753,8 +768,8 @@ func migrateAddOperatorsGitHubID(db *sql.DB) error {
 	return nil
 }
 
-func migrateAddMFASecretMAC(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `ALTER TABLE operators ADD COLUMN mfa_secret_mac TEXT`)
+func migrateAddMFASecretMAC(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `ALTER TABLE operators ADD COLUMN mfa_secret_mac TEXT`)
 	if err != nil {
 		// Column may already exist.
 		if !isColumnExistsError(err) {
@@ -774,8 +789,8 @@ func isColumnExistsError(err error) bool {
 	return strings.Contains(err.Error(), "duplicate column")
 }
 
-func migrateCreateResendTracker(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateResendTracker(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS password_reset_resend_tracker (
 			id TEXT PRIMARY KEY,
 			email_hash TEXT NOT NULL UNIQUE,
@@ -790,8 +805,8 @@ func migrateCreateResendTracker(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateAPIClients(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateAPIClients(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS api_clients (
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
@@ -805,8 +820,8 @@ func migrateCreateAPIClients(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateSigningKeys(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateSigningKeys(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS signing_keys (
 			id TEXT PRIMARY KEY,
 			client_id TEXT NOT NULL,
@@ -820,8 +835,8 @@ func migrateCreateSigningKeys(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateSessionRevocationList(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateSessionRevocationList(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS session_revocations (
 			session_id TEXT PRIMARY KEY,
 			revoked_at INTEGER NOT NULL,
@@ -832,8 +847,8 @@ func migrateCreateSessionRevocationList(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateFailedLoginAttempts(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateFailedLoginAttempts(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS failed_login_attempts (
 			email TEXT NOT NULL,
 			ip_address TEXT NOT NULL,
@@ -845,8 +860,8 @@ func migrateCreateFailedLoginAttempts(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateAccountLockouts(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateAccountLockouts(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS account_lockouts (
 			email TEXT PRIMARY KEY,
 			locked_until INTEGER,
@@ -858,8 +873,8 @@ func migrateCreateAccountLockouts(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateAuditLogs(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateAuditLogs(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS audit_logs (
 			id TEXT PRIMARY KEY,
 			operator_id TEXT,
@@ -877,9 +892,9 @@ func migrateCreateAuditLogs(db *sql.DB) error {
 // migrateAuditLogsResourceColumns adds the resource_type, resource_id, metadata,
 // and result columns that the audit repository writes but migration 018 never
 // created. Idempotent: silently skips columns that already exist.
-func migrateAuditLogsResourceColumns(db *sql.DB) error {
+func migrateAuditLogsResourceColumns(tx *sql.Tx) error {
 	for _, col := range []string{"resource_type", "resource_id", "metadata", "result"} {
-		if _, err := db.ExecContext(context.Background(),
+		if _, err := tx.ExecContext(context.Background(),
 			`ALTER TABLE audit_logs ADD COLUMN `+col+` TEXT`); err != nil {
 			if !isDuplicateColumnErr(err) {
 				return err
@@ -895,12 +910,41 @@ func isDuplicateColumnErr(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "duplicate column")
 }
 
+// migrateAuditLogsRiskColumns adds the trace_id and risk_tier columns to
+// audit_logs, enabling audit entries to be correlated with request traces and
+// classified by the risk tier of the audited operation. Idempotent.
+func migrateAuditLogsRiskColumns(tx *sql.Tx) error {
+	for _, col := range []string{"trace_id", "risk_tier"} {
+		if _, err := tx.ExecContext(context.Background(),
+			`ALTER TABLE audit_logs ADD COLUMN `+col+` TEXT`); err != nil {
+			if !isDuplicateColumnErr(err) {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// migrateAuditLogsChangeTrackingColumns adds actor_type, actor_email, old_value,
+// and new_value columns to audit_logs for change-tracking compliance. Idempotent.
+func migrateAuditLogsChangeTrackingColumns(tx *sql.Tx) error {
+	for _, col := range []string{"actor_type", "actor_email", "old_value", "new_value"} {
+		if _, err := tx.ExecContext(context.Background(),
+			`ALTER TABLE audit_logs ADD COLUMN `+col+` TEXT`); err != nil {
+			if !isDuplicateColumnErr(err) {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // migrateAddSessionSigningKey adds the signing_key column to auth_sessions.
 // This column stores the per-session HMAC secret used by the browser client
 // to sign every request. Idempotent — safe to run on databases that already
 // have the column.
-func migrateAddSessionSigningKey(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(),
+func migrateAddSessionSigningKey(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(),
 		`ALTER TABLE auth_sessions ADD COLUMN signing_key TEXT`)
 	if err != nil && !isDuplicateColumnErr(err) {
 		return err
@@ -908,8 +952,8 @@ func migrateAddSessionSigningKey(db *sql.DB) error {
 	return nil
 }
 
-func migrateCreateMessageQueue(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateCreateMessageQueue(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS message_queue (
 			id TEXT PRIMARY KEY,
 			device_id TEXT NOT NULL,
@@ -923,7 +967,7 @@ func migrateCreateMessageQueue(db *sql.DB) error {
 	}
 
 	// Create index for efficient queries.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_message_queue_device_expires 
 		ON message_queue(device_id, expires_at)
 	`)
@@ -931,9 +975,9 @@ func migrateCreateMessageQueue(db *sql.DB) error {
 	return err
 }
 
-func migrateCreateOAuthStates(db *sql.DB) error {
+func migrateCreateOAuthStates(tx *sql.Tx) error {
 	// 8: Persist OAuth state to database to prevent CSRF attacks.
-	_, err := db.ExecContext(context.Background(), `
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS oauth_states (
 			id TEXT PRIMARY KEY,
 			state TEXT NOT NULL,
@@ -948,7 +992,7 @@ func migrateCreateOAuthStates(db *sql.DB) error {
 	}
 
 	// Create index for state lookups and cleanup.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_oauth_states_expires 
 		ON oauth_states(expires_at)
 	`)
@@ -958,9 +1002,9 @@ func migrateCreateOAuthStates(db *sql.DB) error {
 
 // migratePostV41Combined combines all post-V41 migrations into a single migration.
 // This includes: org context columns, inbox org column, and MFA tracking.
-func migratePostV41Combined(db *sql.DB) error {
+func migratePostV41Combined(tx *sql.Tx) error {
 	// Add last_organization_id to operators table for auto-select on login.
-	_, err := db.ExecContext(context.Background(), `
+	_, err := tx.ExecContext(context.Background(), `
 		ALTER TABLE operators ADD COLUMN last_organization_id TEXT
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
@@ -968,7 +1012,7 @@ func migratePostV41Combined(db *sql.DB) error {
 	}
 
 	// Add organization_id to auth_sessions table for session-scoped org context.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		ALTER TABLE auth_sessions ADD COLUMN organization_id TEXT
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
@@ -976,7 +1020,7 @@ func migratePostV41Combined(db *sql.DB) error {
 	}
 
 	// Add organization_id to inbox_requests table for multi-tenant isolation.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		ALTER TABLE inbox_requests ADD COLUMN organization_id TEXT
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
@@ -984,7 +1028,7 @@ func migratePostV41Combined(db *sql.DB) error {
 	}
 
 	// Create index for org-scoped queries.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_inbox_organization 
 		ON inbox_requests(organization_id, status, created_at DESC)
 	`)
@@ -993,7 +1037,7 @@ func migratePostV41Combined(db *sql.DB) error {
 	}
 
 	// Add mfa_enabled_at column to operators table for MFA tracking.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		ALTER TABLE operators ADD COLUMN mfa_enabled_at INTEGER
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
@@ -1001,7 +1045,7 @@ func migratePostV41Combined(db *sql.DB) error {
 	}
 
 	// Add mfa_verified_at column to auth_sessions table for MFA session tracking.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		ALTER TABLE auth_sessions ADD COLUMN mfa_verified_at INTEGER
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
@@ -1013,9 +1057,9 @@ func migratePostV41Combined(db *sql.DB) error {
 
 // migrateAddCommandRetryColumns adds retry tracking columns for the outbox pattern.
 // This enables the background worker to track retry attempts with exponential backoff.
-func migrateAddCommandRetryColumns(db *sql.DB) error {
+func migrateAddCommandRetryColumns(tx *sql.Tx) error {
 	// Add retry_count column to track number of delivery attempts.
-	_, err := db.ExecContext(context.Background(), `
+	_, err := tx.ExecContext(context.Background(), `
 		ALTER TABLE commands ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
@@ -1023,7 +1067,7 @@ func migrateAddCommandRetryColumns(db *sql.DB) error {
 	}
 
 	// Add max_retries column to set maximum delivery attempts before marking failed.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		ALTER TABLE commands ADD COLUMN max_retries INTEGER NOT NULL DEFAULT 5
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
@@ -1031,7 +1075,7 @@ func migrateAddCommandRetryColumns(db *sql.DB) error {
 	}
 
 	// Add next_retry_at column for exponential backoff scheduling.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		ALTER TABLE commands ADD COLUMN next_retry_at INTEGER
 	`)
 	if err != nil && !strings.Contains(err.Error(), "duplicate column") {
@@ -1039,7 +1083,7 @@ func migrateAddCommandRetryColumns(db *sql.DB) error {
 	}
 
 	// Create index for efficient pending retry queries.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_commands_pending_retry
 		ON commands(status, next_retry_at)
 		WHERE status = 'pending'

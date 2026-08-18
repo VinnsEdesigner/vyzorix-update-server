@@ -8,6 +8,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	infraConfig "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 
 	"github.com/gin-gonic/gin"
@@ -79,7 +80,7 @@ func (s *Server) deviceIdempotencyMiddleware() gin.HandlerFunc {
 }
 
 func (s *Server) setupGlobalMiddleware() {
-	s.engine.Use(s.mwFactory.RequestID())
+	s.engine.Use(s.mwFactory.Tracing())
 	s.engine.Use(s.mwFactory.Logger())
 	s.engine.Use(s.mwFactory.CORS())
 	s.engine.Use(s.mwFactory.SecurityHeaders())
@@ -153,10 +154,8 @@ func (s *Server) setupAuthRoutes(public *gin.RouterGroup) {
 		authGroup.GET("/csrf-token", func(c *gin.Context) {
 			token, err := s.csrfProtector.GetTokenForPublicEndpoint(c)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"error":   "internal_error",
-					"message": "Failed to generate CSRF token",
-				})
+				c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to generate CSRF token"))
+
 				return
 			}
 			c.JSON(http.StatusOK, gin.H{
@@ -390,6 +389,18 @@ func (s *Server) setupDevicesRoutes(r *gin.RouterGroup) {
 			devices.PATCH("/:imei/settings/thresholds", s.deviceSettingsHandler.UpdateThresholds)
 		}
 	}
+
+	// Confirmation endpoint: an operator requests a single-use token to
+	// authorize a risky command before issuing it. Registered independently of
+	// the device-listing rate limiter (which may be unset on the wire path) so it
+	// is available on both server construction paths. Org-scoped + member-checked
+	// like the other tenant routes.
+	if s.confirmationHandler != nil {
+		confirm := r.Group("/devices")
+		confirm.Use(middleware.NewOrganizationContext(nil).Middleware())
+		confirm.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+		confirm.POST("/:imei/command/confirm", s.confirmationHandler.RequestConfirmation)
+	}
 }
 
 func (s *Server) setupCommandManagementRoutes(r *gin.RouterGroup) {
@@ -566,10 +577,8 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 func (s *Server) setupMethodHandlers() {
 	s.engine.NoMethod(func(c *gin.Context) {
 		if strings.HasPrefix(c.Request.URL.Path, "/v1/") || strings.HasPrefix(c.Request.URL.Path, "/api/") {
-			c.JSON(http.StatusMethodNotAllowed, gin.H{
-				"error":   "method_not_allowed",
-				"message": "the requested method is not allowed for this endpoint",
-			})
+			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "the requested method is not allowed for this endpoint"))
+
 			return
 		}
 		s.dashboardHandler(c)

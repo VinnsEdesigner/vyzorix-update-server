@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,13 +26,10 @@ func (h *UpdatesVersionsHandler) GetStatus(c *gin.Context) {
 	status, err := h.service.GetStatus(c.Request.Context())
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
+			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, updates.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to get status",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get status"))
 		return
 	}
 	c.JSON(http.StatusOK, status)
@@ -56,13 +54,10 @@ func (h *UpdatesVersionsHandler) GetVersions(c *gin.Context) {
 	result, err := h.service.GetVersions(c.Request.Context(), status, page, limit)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
+			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, updates.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to get versions",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get versions"))
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -78,13 +73,10 @@ func (h *UpdatesVersionsHandler) GetChangelog(c *gin.Context) {
 	changelog, err := h.service.GetChangelog(c.Request.Context(), version)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
+			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, updates.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to get changelog",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get changelog"))
 		return
 	}
 	c.JSON(http.StatusOK, changelog)
@@ -108,23 +100,17 @@ func (h *UpdatesVersionsHandler) Export(c *gin.Context) {
 	includeApkInfo := c.DefaultQuery("includeApkInfo", "true") == "true"
 
 	if format != "json" && format != "csv" {
-		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
-			Code:    "bad_request",
-			Message: "Invalid format. Supported formats: json, csv",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid format. Supported formats: json, csv"))
 		return
 	}
 
 	result, err := h.service.ExportVersions(c.Request.Context(), format, version, includeChangelog, includeApkInfo)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
+			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, updates.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to export versions",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to export versions"))
 		return
 	}
 

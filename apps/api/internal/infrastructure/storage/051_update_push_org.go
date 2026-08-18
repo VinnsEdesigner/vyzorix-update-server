@@ -16,8 +16,8 @@ import (
 // "no such column: organization_id" (GET /v1/updates/history returned 500).
 //
 // Idempotent: skips if the column already exists.
-func migrateAddUpdatePushOrgColumn(db *sql.DB) error {
-	rows, err := db.QueryContext(context.Background(), "PRAGMA table_info(update_pushes)")
+func migrateAddUpdatePushOrgColumn(tx *sql.Tx) error {
+	rows, err := tx.QueryContext(context.Background(), "PRAGMA table_info(update_pushes)")
 	if err != nil {
 		return err
 	}
@@ -44,6 +44,6 @@ func migrateAddUpdatePushOrgColumn(db *sql.DB) error {
 		return nil
 	}
 
-	_, err = db.ExecContext(context.Background(), "ALTER TABLE update_pushes ADD COLUMN organization_id TEXT")
+	_, err = tx.ExecContext(context.Background(), "ALTER TABLE update_pushes ADD COLUMN organization_id TEXT")
 	return err
 }

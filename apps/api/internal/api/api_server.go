@@ -11,6 +11,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
+	confirmationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/confirmation"
 	dashboardhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/dashboard"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
 	diagnosticshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/diagnostics"
@@ -24,6 +25,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/confirmation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
@@ -34,6 +36,7 @@ import (
 	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	domaincommand "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
@@ -64,6 +67,7 @@ type ServerConfig struct {
 	GoogleVerifier        *infraauth.GoogleTokenVerifier
 	Hub                   *hub.Hub
 	CommandService        *command.Service
+	ConfirmationService   *confirmation.Service
 	EmailService          *emailService.Service
 	DB                    *storage.SQLite
 	ClientService         *client.Service
@@ -108,6 +112,7 @@ type Server struct {
 	deviceListHandler           *devicehandlers.ListHandler
 	devicesHandler              *devicehandlers.DevicesHandler
 	commandHandler              *cmdhandlers.ExecuteHandler
+	confirmationHandler         *confirmationhandlers.Handler
 	streamHandler               *websockethandlers.StreamHandler
 	telemetryHistoryHandler     *handlers.TelemetryHistoryHandler
 	connectionStatusHandler     *handlers.ConnectionStatusHandler
@@ -170,27 +175,27 @@ func NewServer(cfg *ServerConfig) *Server {
 	})
 
 	s := &Server{
-		engine:            engine,
-		mwFactory:         mwSet.Factory,
-		rateLimiter:       cfg.RateLimiter,
-		authLimiter:       cfg.AuthLimiter,
-		config:            cfg.Config,
-		log:               cfg.Log,
-		cookieAuth:        middleware.NewCookieAuth(cfg.SessionManager, cfg.AuthService),
-		signatureVerifier: mwSet.SignatureVerifier,
-		lockout:           mwSet.Lockout,
-		csrfProtector:     mwSet.CSRFProtector,
-		turnstileVerifier: mwSet.TurnstileVerifier,
-		revocationList:    mwSet.RevocationList,
-		ipIntelligence:    mwSet.IPIntelligence,
-		hmacVerifier:      mwSet.HmacVerifier,
+		engine:                   engine,
+		mwFactory:                mwSet.Factory,
+		rateLimiter:              cfg.RateLimiter,
+		authLimiter:              cfg.AuthLimiter,
+		config:                   cfg.Config,
+		log:                      cfg.Log,
+		cookieAuth:               middleware.NewCookieAuth(cfg.SessionManager, cfg.AuthService),
+		signatureVerifier:        mwSet.SignatureVerifier,
+		lockout:                  mwSet.Lockout,
+		csrfProtector:            mwSet.CSRFProtector,
+		turnstileVerifier:        mwSet.TurnstileVerifier,
+		revocationList:           mwSet.RevocationList,
+		ipIntelligence:           mwSet.IPIntelligence,
+		hmacVerifier:             mwSet.HmacVerifier,
 		sessionSignatureVerifier: mwSet.SessionSignVerifier,
-		encryptKeyFn:      mwSet.EncryptKeyFn,
-		sessionManager:    cfg.SessionManager,
-		db:                cfg.DB,
-		hub:               cfg.Hub,
-		tenantAPIKeyAuth:  mwSet.TenantAPIKeyAuth,
-		apiKeyRateLimiter: mwSet.APIKeyRateLimiter,
+		encryptKeyFn:             mwSet.EncryptKeyFn,
+		sessionManager:           cfg.SessionManager,
+		db:                       cfg.DB,
+		hub:                      cfg.Hub,
+		tenantAPIKeyAuth:         mwSet.TenantAPIKeyAuth,
+		apiKeyRateLimiter:        mwSet.APIKeyRateLimiter,
 	}
 
 	// Create presenter and wire handlers.
@@ -240,8 +245,22 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	s.deviceUpdaterHandler = devicehandlers.NewUpdaterHandler(cfg.DeviceService)
 	s.deviceListHandler = devicehandlers.NewListHandler(cfg.DeviceService, cfg.Hub)
 
-	// Command handler.
-	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier)
+	// Command handler. Risk evaluator gates dangerous commands; audit logger
+	// records every execution attempt. Fall back to a no-op if unset so the
+	// handler never holds a nil dependency. When a confirmation service is
+	// configured, the confirmation handler also serves as the command handler's
+	// confirmation consumer; otherwise risky commands are blocked (425).
+	var cmdAud cmdhandlers.AuditLogger = audit.NewNoOpLogger()
+	if cfg.AuditLogger != nil {
+		cmdAud = cfg.AuditLogger
+	}
+	riskEval := domaincommand.NewRiskEvaluator()
+	var confirmConsumer cmdhandlers.ConfirmationConsumer
+	if cfg.ConfirmationService != nil {
+		s.confirmationHandler = confirmationhandlers.NewHandler(cfg.ConfirmationService, cfg.DeviceService, riskEval)
+		confirmConsumer = s.confirmationHandler
+	}
+	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier, riskEval, cmdAud, confirmConsumer)
 
 	// WebSocket handler.
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
@@ -500,27 +519,27 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	}
 
 	s := &Server{
-		engine:            cfg.Engine,
-		mwFactory:         cfg.Middleware.Factory,
-		rateLimiter:       cfg.Middleware.RateLimiter,
-		authLimiter:       cfg.Middleware.AuthLimiter,
-		config:            cfg.Config,
-		log:               cfg.Log,
-		cookieAuth:        cfg.Middleware.CookieAuth,
-		lockout:           cfg.Middleware.Lockout,
-		csrfProtector:     cfg.Middleware.CSRFProtector,
-		turnstileVerifier: cfg.Middleware.TurnstileVerifier,
-		revocationList:    cfg.Middleware.RevocationList,
-		ipIntelligence:    cfg.Middleware.IPIntelligence,
-		hmacVerifier:      cfg.Middleware.HmacVerifier,
+		engine:                   cfg.Engine,
+		mwFactory:                cfg.Middleware.Factory,
+		rateLimiter:              cfg.Middleware.RateLimiter,
+		authLimiter:              cfg.Middleware.AuthLimiter,
+		config:                   cfg.Config,
+		log:                      cfg.Log,
+		cookieAuth:               cfg.Middleware.CookieAuth,
+		lockout:                  cfg.Middleware.Lockout,
+		csrfProtector:            cfg.Middleware.CSRFProtector,
+		turnstileVerifier:        cfg.Middleware.TurnstileVerifier,
+		revocationList:           cfg.Middleware.RevocationList,
+		ipIntelligence:           cfg.Middleware.IPIntelligence,
+		hmacVerifier:             cfg.Middleware.HmacVerifier,
 		sessionSignatureVerifier: cfg.Middleware.SessionSignVerifier,
-		sessionManager:    cfg.SessionManager,
-		db:                cfg.DB,
-		hub:               cfg.Hub,
-		AuditLogger:       cfg.AuditLogger,
-		tenantAPIKeyAuth:  cfg.Middleware.TenantAPIKeyAuth,
-		apiKeyRateLimiter: cfg.Middleware.APIKeyRateLimiter,
-		idempotencyRepo:   cfg.IdempotencyRepo,
+		sessionManager:           cfg.SessionManager,
+		db:                       cfg.DB,
+		hub:                      cfg.Hub,
+		AuditLogger:              cfg.AuditLogger,
+		tenantAPIKeyAuth:         cfg.Middleware.TenantAPIKeyAuth,
+		apiKeyRateLimiter:        cfg.Middleware.APIKeyRateLimiter,
+		idempotencyRepo:          cfg.IdempotencyRepo,
 	}
 
 	// Wire handlers from HandlerSet.
@@ -531,6 +550,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.deviceListHandler = cfg.HandlerSet.DeviceList
 	s.devicesHandler = cfg.HandlerSet.Devices
 	s.commandHandler = cfg.HandlerSet.Command
+	s.confirmationHandler = cfg.HandlerSet.Confirmation
 	s.streamHandler = cfg.HandlerSet.Stream
 	s.telemetryHistoryHandler = cfg.HandlerSet.TelemetryHistory
 	s.connectionStatusHandler = cfg.HandlerSet.ConnectionStatus

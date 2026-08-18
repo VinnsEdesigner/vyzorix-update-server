@@ -9,17 +9,39 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	cmdSvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
+	domainconfirmation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/confirmation"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
+	domainerrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
 	"github.com/gin-gonic/gin"
 )
+
+// AuditLogger is the audit interface the handler depends on. It mirrors the
+// subset of *audit.Logger the handler uses, allowing a no-op stand-in for
+// environments without an audit store (and easy mocking in tests). *audit.Logger
+// and *audit.NoOpLogger both satisfy it.
+type AuditLogger interface {
+	CommandExecuted(ctx context.Context, e audit.CommandExecutedEvent)
+}
+
+// ConfirmationConsumer consumes a confirmation token for a specific command
+// execution. The confirmation handler implements it; the command handler
+// depends on the interface so it stays decoupled from the confirmation
+// service's internals. A nil consumer means confirmations are disabled, in
+// which case risky commands that require confirmation are always blocked.
+type ConfirmationConsumer interface {
+	ConsumeForCommand(c *gin.Context, token, operatorID, commandName, deviceID string) (*command.CommandRiskProfile, error)
+}
 
 // ExecuteHandler handles device command execution.
 type ExecuteHandler struct {
@@ -28,17 +50,25 @@ type ExecuteHandler struct {
 	hub            *hub.Hub
 	fcmNotifier    fcm.Notifier
 	commandSigner  *cryptohmac.CommandSigner
+	riskEvaluator  *command.RiskEvaluator
+	audit          AuditLogger
+	confirmations  ConfirmationConsumer
 	log            *slog.Logger
 }
 
-// NewExecuteHandler creates a new ExecuteHandler.
-func NewExecuteHandler(commandService *cmdSvc.Service, deviceService *device.Service, hub *hub.Hub, fcmNotifier fcm.Notifier) *ExecuteHandler {
+// NewExecuteHandler creates a new ExecuteHandler. confirmations may be nil;
+// when nil, risky commands that require confirmation are always blocked with
+// 425 (confirmations disabled).
+func NewExecuteHandler(commandService *cmdSvc.Service, deviceService *device.Service, hub *hub.Hub, fcmNotifier fcm.Notifier, riskEvaluator *command.RiskEvaluator, auditLogger AuditLogger, confirmations ConfirmationConsumer) *ExecuteHandler {
 	return &ExecuteHandler{
 		commandService: commandService,
 		deviceService:  deviceService,
 		hub:            hub,
 		fcmNotifier:    fcmNotifier,
 		commandSigner:  cryptohmac.NewCommandSigner(),
+		riskEvaluator:  riskEvaluator,
+		audit:          auditLogger,
+		confirmations:  confirmations,
 		log:            slog.Default(),
 	}
 }
@@ -49,41 +79,56 @@ func (h *ExecuteHandler) verifyDeviceInOrganization(ctx context.Context, deviceI
 	return err
 }
 
+// commandRequest is the JSON payload for POST /v1/device/:imei/command.
+type commandRequest struct {
+	Args       map[string]interface{} `json:"args,omitempty"`
+	Command    string                 `json:"command"`
+	Nonce      string                 `json:"nonce"`
+	Signature  string                 `json:"signature,omitempty"`
+	DispatchID string                 `json:"dispatch_id,omitempty"`
+	Timestamp  int64                  `json:"timestamp"`
+	// ConfirmationToken authorizes a high/critical risk command. It is issued
+	// by POST /v1/device/:imei/command/confirm and is single-use, scoped to
+	// this operator+command+device, and bounded by the command's risk TTL.
+	ConfirmationToken string `json:"confirmation_token,omitempty"`
+}
+
 // Handle handles POST /v1/device/:imei/command.
 func (h *ExecuteHandler) Handle(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device imei required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device imei required"))
 		return
 	}
 
-	var req struct {
-		Args       map[string]interface{} `json:"args,omitempty"`
-		Command    string                 `json:"command"`
-		Nonce      string                 `json:"nonce"`
-		Signature  string                 `json:"signature,omitempty"`
-		DispatchID string                 `json:"dispatch_id,omitempty"`
-		Timestamp  int64                  `json:"timestamp"`
-	}
-
+	var req commandRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "invalid request body"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid request body"))
 		return
 	}
 
-	if err := h.validateCommandRequest(imei, req.Command, req.Nonce); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": err.Error()})
+	if verr := h.validateCommandRequest(imei, req.Command, req.Nonce); verr != nil {
+		// Record the structured validation error and let the error middleware
+		// render a 400 with field-level details + trace id + docs link.
+		_ = c.Error(verr)
 		return
 	}
 
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	if err := h.verifyDeviceInOrganization(c.Request.Context(), imei, orgID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found"))
+		return
+	}
+
+	// Risk gate: classify the command and authorize against the actor context.
+	// This runs after validation/org checks so a bad request never reaches the
+	// risk evaluator, and before dispatch so dangerous commands can be blocked.
+	if !h.authorizeCommand(c, req, imei) {
 		return
 	}
 
@@ -94,6 +139,36 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 
 	delivery := h.deliverCommand(c, imei, frame, cmdResp)
 
+	// OldValue/NewValue record the command state transition for change-tracking
+	// compliance: a newly-created command starts at "pending" and may transition
+	// to "delivered" if the device is online. The actor type/email are sourced
+	// from the authenticated operator.
+	op := middleware.GetOperatorFromContext(c)
+	actorType, actorEmail := "operator", ""
+	if op != nil {
+		actorEmail = op.Email
+	}
+	oldState := ""
+	if delivery == "sent" {
+		oldState = "pending"
+	}
+
+	h.audit.CommandExecuted(c.Request.Context(), audit.CommandExecutedEvent{
+		OperatorID: operatorIDFromContext(c),
+		DeviceID:   imei,
+		Command:    req.Command,
+		DispatchID: cmdResp.DispatchID,
+		IPAddress:  c.ClientIP(),
+		UserAgent:  c.Request.UserAgent(),
+		TraceID:    middleware.GetTraceID(c),
+		RiskTier:   string(command.LookupRiskProfile(req.Command).Tier),
+		Result:     audit.ResultSuccess,
+		ActorType:  actorType,
+		ActorEmail: actorEmail,
+		OldValue:   oldState,
+		NewValue:   delivery,
+	})
+
 	c.JSON(http.StatusAccepted, gin.H{
 		"status":        delivery,
 		"device_online": delivery == "sent",
@@ -103,23 +178,144 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 	})
 }
 
-// validateCommandRequest validates the command request parameters.
-func (h *ExecuteHandler) validateCommandRequest(imei, command, nonce string) error {
-	if err := dto.ValidateCommand(command); err != nil {
-		return err
+// authorizeCommand evaluates the command's risk profile against the actor and
+// blocks dispatch when a confirmation is required but not satisfied. A
+// confirmation is satisfied by presenting a valid, unconsumed confirmation
+// token (issued by the confirm endpoint). It writes the response and an audit
+// "blocked" entry on denial, returning false if the handler should abort.
+func (h *ExecuteHandler) authorizeCommand(c *gin.Context, req commandRequest, imei string) bool {
+	actor := command.ActorContext{
+		OperatorID: operatorIDFromContext(c),
+		OrgID:      middleware.GetOrganizationID(c),
 	}
+	if op := middleware.GetOperatorFromContext(c); op != nil {
+		actor.IsSuperAdmin = op.IsSuperAdmin()
+	}
+	// MFA-verified is derived from the authenticated session. Critical-tier
+	// commands require it (see RiskEvaluator); without an MFA-verified session
+	// they are gated even when a confirmation token is presented.
+	if sess := middleware.GetSession(c); sess != nil && sess.MFAVerifiedAt != nil {
+		actor.MFAVerified = true
+	}
+
+	decision, profile := h.riskEvaluator.Evaluate(req.Command, actor)
+	switch decision {
+	case command.DecisionAllow:
+		return true
+	case command.DecisionRequireConfirmation:
+		if h.consumeConfirmation(c, req, imei, actor, profile) {
+			return true
+		}
+		return false
+	default: // DecisionDeny
+		h.audit.CommandExecuted(c.Request.Context(), audit.CommandExecutedEvent{
+			OperatorID: actor.OperatorID,
+			DeviceID:   imei,
+			Command:    req.Command,
+			IPAddress:  c.ClientIP(),
+			UserAgent:  c.Request.UserAgent(),
+			TraceID:    middleware.GetTraceID(c),
+			RiskTier:   string(profile.Tier),
+			Result:     audit.ResultBlocked,
+			Reason:     "denied",
+		})
+		responses.RespondStructured(c, http.StatusForbidden, "This command is not permitted.")
+		return false
+	}
+}
+
+// consumeConfirmation attempts to authorize a RequireConfirmation decision by
+// consuming the request's confirmation token. On success it returns true. On
+// any failure (missing token, confirmations disabled, invalid/expired/
+// consumed/mismatched token) it writes the 425 response, emits a blocked
+// audit entry, and returns false.
+func (h *ExecuteHandler) consumeConfirmation(c *gin.Context, req commandRequest, imei string, actor command.ActorContext, profile command.CommandRiskProfile) bool {
+	const reason = "confirmation required"
+	blockedAudit := func(msg string) {
+		h.audit.CommandExecuted(c.Request.Context(), audit.CommandExecutedEvent{
+			OperatorID: actor.OperatorID,
+			DeviceID:   imei,
+			Command:    req.Command,
+			IPAddress:  c.ClientIP(),
+			UserAgent:  c.Request.UserAgent(),
+			TraceID:    middleware.GetTraceID(c),
+			RiskTier:   string(profile.Tier),
+			Result:     audit.ResultBlocked,
+			Reason:     reason,
+		})
+		responses.RespondStructured(c, http.StatusTooEarly, msg)
+	}
+
+	// Critical-tier commands require an MFA-verified session; a confirmation
+	// token alone cannot authorize them. This guard runs before the token check
+	// so the error message points at the real missing prerequisite.
+	if profile.Tier == command.RiskTierCritical && !actor.MFAVerified {
+		blockedAudit("This critical command requires an MFA-verified session before a confirmation token can be issued.")
+		return false
+	}
+
+	if req.ConfirmationToken == "" {
+		blockedAudit("This command requires a confirmation token. Request one via POST /v1/device/:imei/command/confirm.")
+		return false
+	}
+	if h.confirmations == nil {
+		blockedAudit("Confirmations are not enabled on this server.")
+		return false
+	}
+
+	if _, err := h.confirmations.ConsumeForCommand(c, req.ConfirmationToken, actor.OperatorID, req.Command, imei); err != nil {
+		msg := "Invalid or expired confirmation token."
+		switch {
+		case errors.Is(err, domainconfirmation.ErrAlreadyConsumed):
+			msg = "Confirmation token already used."
+		case errors.Is(err, domainconfirmation.ErrExpired):
+			msg = "Confirmation token expired."
+		case errors.Is(err, domainconfirmation.ErrMismatch):
+			msg = "Confirmation token does not match this command or device."
+		case errors.Is(err, domainconfirmation.ErrNotFound):
+			msg = "Confirmation token not found."
+		}
+		blockedAudit(msg)
+		return false
+	}
+	return true
+}
+
+// operatorIDFromContext returns the authenticated operator's ID, or "" for
+// system-originated requests.
+func operatorIDFromContext(c *gin.Context) string {
+	if op := middleware.GetOperatorFromContext(c); op != nil {
+		return op.ID
+	}
+	return ""
+}
+
+// validateCommandRequest validates the command request parameters and returns
+// a structured *domainerrors.ValidationError with field-level details, or nil
+// when the request is valid. The returned error is consumed by the error
+// middleware, which renders a structured 400 with the details.
+func (h *ExecuteHandler) validateCommandRequest(imei, command, nonce string) *domainerrors.ValidationError {
+	var details []domainerrors.ValidationDetail
+	add := func(field, msg string) {
+		details = append(details, domainerrors.NewValidationDetail(field, msg))
+	}
+
 	if err := dto.ValidateDeviceID(imei); err != nil {
-		return err
+		add("deviceId", err.Error())
+	}
+	if err := dto.ValidateCommand(command); err != nil {
+		add("command", err.Error())
 	}
 	if nonce != "" {
 		if err := dto.ValidateNonce(nonce); err != nil {
-			return err
+			add("nonce", err.Error())
 		}
 	}
-	if command == "" {
-		return errors.New("command is required")
+
+	if len(details) == 0 {
+		return nil
 	}
-	return nil
+	return domainerrors.NewValidationError(details)
 }
 
 // sendCommandAndBuildFrame sends the command via service and builds a signed
@@ -127,17 +323,10 @@ func (h *ExecuteHandler) validateCommandRequest(imei, command, nonce string) err
 // (Domain B: server→device command signing) so the Android device can verify
 // authenticity. Client-provided nonce/signature/timestamp are intentionally
 // discarded — the server is the signing authority, never the web client.
-func (h *ExecuteHandler) sendCommandAndBuildFrame(c *gin.Context, imei string, req struct {
-	Args       map[string]interface{} `json:"args,omitempty"`
-	Command    string                 `json:"command"`
-	Nonce      string                 `json:"nonce"`
-	Signature  string                 `json:"signature,omitempty"`
-	DispatchID string                 `json:"dispatch_id,omitempty"`
-	Timestamp  int64                  `json:"timestamp"`
-}) (*dto.SendCommandResponse, command.CommandFrame, error) {
+func (h *ExecuteHandler) sendCommandAndBuildFrame(c *gin.Context, imei string, req commandRequest) (*dto.SendCommandResponse, command.CommandFrame, error) {
 	argsJSON, err := json.Marshal(req.Args)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to marshal args"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to marshal args"))
 		return nil, command.CommandFrame{}, err
 	}
 
@@ -151,7 +340,7 @@ func (h *ExecuteHandler) sendCommandAndBuildFrame(c *gin.Context, imei string, r
 	cmdResp, err := h.commandService.SendCommand(c.Request.Context(), cmdReq)
 	if err != nil {
 		h.log.Error("failed to send command", "error", err, "deviceId", imei)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to send command"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to send command"))
 		return nil, command.CommandFrame{}, err
 	}
 
@@ -168,7 +357,7 @@ func (h *ExecuteHandler) sendCommandAndBuildFrame(c *gin.Context, imei string, r
 	// verify the command originated from the server (Domain B).
 	if err := h.signCommandFrame(c.Request.Context(), imei, &frame); err != nil {
 		h.log.Warn("failed to sign command frame; aborting dispatch", "error", err, "deviceId", imei)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to sign command"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to sign command"))
 		return nil, command.CommandFrame{}, err
 	}
 
@@ -240,32 +429,32 @@ func (h *ExecuteHandler) tryFCMWake(c *gin.Context, imei string, cmdResp *dto.Se
 func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "dispatch id required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "dispatch id required"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	cmdStatus, err := h.commandService.GetCommandByDispatchID(c.Request.Context(), dispatchID)
 	if err != nil {
 		if errors.Is(err, application.ErrCommandNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
+			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "command not found"))
 			return
 		}
 		h.log.Error("failed to get command status", "error", err, "dispatchId", dispatchID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to get command status"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to get command status"))
 
 		return
 	}
 
 	// Verify the device belongs to this organization.
 	if err := h.verifyDeviceInOrganization(c.Request.Context(), cmdStatus.DeviceID, orgID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "command not found"))
 		return
 	}
 
@@ -283,41 +472,41 @@ func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 func (h *ExecuteHandler) Retry(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "dispatch id required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "dispatch id required"))
 		return
 	}
 
 	// Get operator from context.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "authentication required"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	// Get command by dispatchId to find the device.
 	cmd, err := h.commandService.GetCommandByDispatchID(c.Request.Context(), dispatchID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "command not found"))
 		return
 	}
 
 	// Verify the device belongs to this organization.
 	if err = h.verifyDeviceInOrganization(c.Request.Context(), cmd.DeviceID, orgID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "command not found"))
 		return
 	}
 
 	newCmd, err := h.commandService.RetryCommand(c.Request.Context(), dispatchID)
 	if err != nil {
 		h.log.Error("failed to retry command", "error", err, "dispatchId", dispatchID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to retry command"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to retry command"))
 
 		return
 	}
@@ -334,34 +523,34 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 func (h *ExecuteHandler) GetPending(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device imei required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device imei required"))
 		return
 	}
 
 	// Get operator from context.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "authentication required"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	// Verify the device belongs to this organization.
 	if err := h.verifyDeviceInOrganization(c.Request.Context(), imei, orgID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found"))
 		return
 	}
 
 	pendingCmds, err := h.commandService.GetPendingCommands(c.Request.Context(), imei)
 	if err != nil {
 		h.log.Error("failed to get pending commands", "error", err, "deviceId", imei)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to get pending commands"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to get pending commands"))
 
 		return
 	}
@@ -375,41 +564,41 @@ func (h *ExecuteHandler) GetPending(c *gin.Context) {
 func (h *ExecuteHandler) Cancel(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "dispatch id required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "dispatch id required"))
 		return
 	}
 
 	// Get operator from context.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "authentication required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "authentication required"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	// Get command by dispatchId to find the device.
 	cmd, err := h.commandService.GetCommandByDispatchID(c.Request.Context(), dispatchID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "command not found"))
 		return
 	}
 
 	// Verify the device belongs to this organization.
 	if err = h.verifyDeviceInOrganization(c.Request.Context(), cmd.DeviceID, orgID); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "command not found"})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "command not found"))
 		return
 	}
 
 	err = h.commandService.CancelCommandByDispatchID(c.Request.Context(), dispatchID)
 	if err != nil {
 		h.log.Error("failed to cancel command", "error", err, "dispatchId", dispatchID)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to cancel command"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to cancel command"))
 
 		return
 	}

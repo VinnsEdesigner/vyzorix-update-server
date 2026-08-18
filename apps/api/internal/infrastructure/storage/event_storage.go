@@ -9,9 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/event"
 )
+
+// errEventNotFound is the storage-layer sentinel for a missing event.
+var errEventNotFound = errors.New("event not found")
 
 // Ensure EventRepository implements event.Repository.
 var _ event.Repository = (*EventRepository)(nil)
@@ -114,7 +116,7 @@ func (r *EventRepository) GetByID(ctx context.Context, id string) (*event.Event,
 		&evt.OperatorID,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, domain.ErrNotFound
+		return nil, errEventNotFound
 	}
 	if err != nil {
 		return nil, err

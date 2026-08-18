@@ -7,7 +7,7 @@ import (
 
 // migrateInboxIMEIUnique adds a unique constraint on device_imei in inbox_requests.
 // This migration handles existing duplicates by keeping the oldest entry per IMEI.
-func migrateInboxIMEIUnique(db *sql.DB) error {
+func migrateInboxIMEIUnique(tx *sql.Tx) error {
 	ctx := context.Background()
 
 	// Step 1: Find and remove duplicate IMEIs, keeping the oldest entry.
@@ -20,7 +20,7 @@ func migrateInboxIMEIUnique(db *sql.DB) error {
 			GROUP BY device_imei
 		)
 	`
-	_, err := db.ExecContext(ctx, cleanupQuery)
+	_, err := tx.ExecContext(ctx, cleanupQuery)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func migrateInboxIMEIUnique(db *sql.DB) error {
 
 	// First, check if the unique index already exists.
 	var count int
-	err = db.QueryRowContext(ctx,
+	err = tx.QueryRowContext(ctx,
 		"SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='idx_inbox_imei_unique'").Scan(&count)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func migrateInboxIMEIUnique(db *sql.DB) error {
 
 	if count == 0 {
 		// Create unique index on device_imei.
-		_, err = db.ExecContext(ctx, `
+		_, err = tx.ExecContext(ctx, `
 			CREATE UNIQUE INDEX IF NOT EXISTS idx_inbox_imei_unique 
 			ON inbox_requests(device_imei)
 		`)

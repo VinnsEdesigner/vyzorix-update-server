@@ -19,8 +19,8 @@ import (
 // re-run and avoids "duplicate column name" errors on databases that already
 // carry the column (e.g. legacy local DBs created before the migration ledger
 // existed).
-func migrateAddDeviceModelColumn(db *sql.DB) error {
-	rows, err := db.QueryContext(context.Background(), "PRAGMA table_info(devices)")
+func migrateAddDeviceModelColumn(tx *sql.Tx) error {
+	rows, err := tx.QueryContext(context.Background(), "PRAGMA table_info(devices)")
 	if err != nil {
 		return err
 	}
@@ -47,6 +47,6 @@ func migrateAddDeviceModelColumn(db *sql.DB) error {
 		return nil
 	}
 
-	_, err = db.ExecContext(context.Background(), "ALTER TABLE devices ADD COLUMN model TEXT")
+	_, err = tx.ExecContext(context.Background(), "ALTER TABLE devices ADD COLUMN model TEXT")
 	return err
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -31,21 +32,21 @@ func (h *StatsHandler) GetStats(c *gin.Context) {
 	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	// Extract organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	response, err := h.dashboardSvc.GetDashboardStatsByOrganization(ctx, orgID)
 	if err != nil {
 		h.logger.Error("Failed to get dashboard stats", "organizationID", orgID, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to retrieve dashboard stats"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve dashboard stats"))
 		return
 	}
 

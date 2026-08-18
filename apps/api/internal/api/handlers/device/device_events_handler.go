@@ -8,6 +8,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/event"
 	"github.com/gin-gonic/gin"
 )
@@ -45,27 +46,27 @@ func (h *EventsHandler) GetEvents(c *gin.Context) {
 	// Extract operator for auth check.
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "organization context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	deviceID := c.Param("imei")
 	if deviceID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Device ID is required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device ID is required"))
 		return
 	}
 
 	// Verify device belongs to this organization.
 	if _, err := h.findDevice(ctx, deviceID, orgID); err != nil {
 		h.logger.Warn("Device not found in organization", "deviceID", deviceID, "organizationID", orgID, "error", err)
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Device not found"})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found"))
 		return
 	}
 
@@ -119,7 +120,7 @@ func (h *EventsHandler) GetEvents(c *gin.Context) {
 	result, err := h.eventRepo.GetByDevice(ctx, deviceID, filter)
 	if err != nil {
 		h.logger.Error("Failed to get device events", "deviceID", deviceID, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to retrieve events"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve events"))
 		return
 	}
 
@@ -137,13 +138,13 @@ func (h *EventsHandler) GetEventsByType(c *gin.Context) {
 
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	eventType := c.Param("type")
 	if eventType == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Event type is required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Event type is required"))
 		return
 	}
 
@@ -166,7 +167,7 @@ func (h *EventsHandler) GetEventsByType(c *gin.Context) {
 	result, err := h.eventRepo.GetByType(ctx, event.EventType(eventType), filter)
 	if err != nil {
 		h.logger.Error("Failed to get events by type", "eventType", eventType, "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to retrieve events"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve events"))
 		return
 	}
 
@@ -184,7 +185,7 @@ func (h *EventsHandler) GetRecentEvents(c *gin.Context) {
 
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
@@ -198,7 +199,7 @@ func (h *EventsHandler) GetRecentEvents(c *gin.Context) {
 	events, err := h.eventRepo.GetRecent(ctx, limit)
 	if err != nil {
 		h.logger.Error("Failed to get recent events", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "Failed to retrieve events"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to retrieve events"))
 		return
 	}
 
@@ -215,20 +216,20 @@ func (h *EventsHandler) GetEventByID(c *gin.Context) {
 
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Operator context required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator context required"))
 		return
 	}
 
 	eventID := c.Param("id")
 	if eventID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "Event ID is required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Event ID is required"))
 		return
 	}
 
 	evt, err := h.eventRepo.GetByID(ctx, eventID)
 	if err != nil {
 		h.logger.Warn("Event not found", "eventID", eventID, "error", err)
-		c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "Event not found"})
+		c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Event not found"))
 		return
 	}
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -50,67 +51,50 @@ func (h *ConfirmHandler) Handle(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "Invalid JSON in request body: imei and commandSecret are required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid JSON in request body: imei and commandSecret are required"))
+
 		return
 	}
 
 	if req.IMEI == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "IMEI is required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "IMEI is required"))
+
 		return
 	}
 
 	if req.CommandSecret == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "bad_request",
-			"message": "commandSecret is required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "commandSecret is required"))
+
 		return
 	}
 
 	d, err := h.deviceService.ConfirmDevice(c.Request.Context(), req.IMEI, req.CommandSecret)
 	if err != nil {
 		if errors.Is(err, device.ErrDeviceNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error":   "not_found",
-				"message": "Device not found. Registration may not have been approved yet.",
-			})
+			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "Device not found. Registration may not have been approved yet."))
+
 			return
 		}
 
 		if errors.Is(err, device.ErrInvalidCommandSecret) {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "Invalid command secret",
-			})
+			c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Invalid command secret"))
+
 			return
 		}
 
 		if errors.Is(err, device.ErrCommandSecretNotSet) {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "bad_request",
-				"message": "Device command secret not set. Registration may not have been approved yet.",
-			})
+			c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Device command secret not set. Registration may not have been approved yet."))
+
 			return
 		}
 
 		if errors.Is(err, device.ErrDeviceAlreadyConfirmed) {
-			c.JSON(http.StatusConflict, gin.H{
-				"error":   "already_confirmed",
-				"message": "Device has already been confirmed. The command secret is single-use.",
-			})
+			c.Error(apperrors.NewServerError(apperrors.CodeResourceConflict, "Device has already been confirmed. The command secret is single-use."))
+
 			return
 		}
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to confirm device registration"))
 
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "internal_error",
-			"message": "Failed to confirm device registration",
-		})
 		return
 	}
 

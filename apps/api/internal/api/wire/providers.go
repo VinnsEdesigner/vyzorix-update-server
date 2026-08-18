@@ -20,6 +20,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/confirmation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	eventapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/event"
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
@@ -27,6 +28,7 @@ import (
 	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	domaincommand "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
@@ -108,6 +110,16 @@ func ProvideDB(s *storage.SQLite) *sql.DB {
 // ProvideIdempotencyRepository creates the idempotency key repository.
 func ProvideIdempotencyRepository(db *sql.DB) *storage.IdempotencyRepository {
 	return storage.NewIdempotencyRepository(db)
+}
+
+// ProvideConfirmationService creates the confirmation service backed by the
+// SQLite confirmation store. Returns nil when no DB is available, in which
+// case the command handler blocks risky commands (confirmations disabled).
+func ProvideConfirmationService(db *storage.SQLite) *confirmation.Service {
+	if db == nil {
+		return nil
+	}
+	return confirmation.NewService(storage.NewConfirmationRepository(db.DB()))
 }
 
 // ProvideAuditLogger creates the audit logger with a dedicated file-based logger.
@@ -709,7 +721,7 @@ func ProvideHandlerSet(
 	hs.DeviceStatus = devicehandlers.NewStatusHandler(deviceService)
 	hs.DeviceUpdater = devicehandlers.NewUpdaterHandler(deviceService)
 	hs.DeviceList = devicehandlers.NewListHandler(deviceService, hubResult.Hub)
-	hs.Command = cmdhandlers.NewExecuteHandler(commandService, deviceService, hubResult.Hub, fcmNotifier)
+	hs.Command = cmdhandlers.NewExecuteHandler(commandService, deviceService, hubResult.Hub, fcmNotifier, domaincommand.NewRiskEvaluator(), auditLogger, nil)
 	hs.Stream = websockethandlers.NewStreamHandler(log, cfg, hubResult.Hub, *hmacVerifier, auditLogger)
 	hs.TelemetryHistory = handlers.NewTelemetryHistoryHandler(log, storage.NewTelemetryRepository(db), storage.NewDeviceRepository(db), nil)
 	hs.ConnectionStatus = handlers.NewConnectionStatusHandler(log, hubResult.Hub, storage.NewDeviceRepository(db))
@@ -759,6 +771,7 @@ var WireInjector = wire.NewSet(
 	ProvideTelemetryRepository,
 	ProvideEventRepository,
 	ProvideIdempotencyRepository,
+	ProvideConfirmationService,
 	ProvideUpdatesStorage,
 	ProvideEventProcessor,
 	ProvideEmailVerificationRepository,
@@ -842,6 +855,7 @@ func ProvideServerDependencies(
 	orgSettingsService *orgapplication.OrganizationSettingsService,
 	deviceSettingsService *device.DeviceSettingsService,
 	idempotencyRepo *storage.IdempotencyRepository,
+	confirmationService *confirmation.Service,
 ) *ServerDependencies {
 	return &ServerDependencies{
 		FCMNotifier:           fcmNotifier,
@@ -878,6 +892,7 @@ func ProvideServerDependencies(
 		OrgSettingsService:    orgSettingsService,
 		DeviceSettingsService: deviceSettingsService,
 		IdempotencyRepo:       idempotencyRepo,
+		ConfirmationService:   confirmationService,
 	}
 }
 

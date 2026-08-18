@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
 	"github.com/gin-gonic/gin"
@@ -54,10 +55,10 @@ func (c *OrganizationContext) Middleware() gin.HandlerFunc {
 		}
 
 		if orgID == "" && !c.SkipIfMissing {
-			ctx.AbortWithStatusJSON(400, gin.H{
-				"error":   "bad_request",
-				"message": "organization context required",
-			})
+			responses.RespondStructuredAbort(ctx, 400,
+
+				"organization context required",
+			)
 			return
 		}
 

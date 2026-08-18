@@ -7,6 +7,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,10 +30,7 @@ func (h *UpdatesHistoryHandler) GetHistory(c *gin.Context) {
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
-			Code:    "bad_request",
-			Message: "organization context required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
@@ -53,13 +51,10 @@ func (h *UpdatesHistoryHandler) GetHistory(c *gin.Context) {
 	result, err := h.service.GetHistory(c.Request.Context(), status, page, limit, orgID)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
+			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, updates.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to get history",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get history"))
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -70,32 +65,23 @@ func (h *UpdatesHistoryHandler) GetPushDetail(c *gin.Context) {
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
-			Code:    "bad_request",
-			Message: "organization context required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	pushID := c.Param("pushId")
 	if pushID == "" {
-		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
-			Code:    "bad_request",
-			Message: "Push ID is required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Push ID is required"))
 		return
 	}
 
 	detail, err := h.service.GetPushDetail(c.Request.Context(), pushID, orgID)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
+			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, updates.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to get push detail",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to get push detail"))
 		return
 	}
 	c.JSON(http.StatusOK, detail)
@@ -106,41 +92,29 @@ func (h *UpdatesHistoryHandler) CancelPush(c *gin.Context) {
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
-			Code:    "bad_request",
-			Message: "organization context required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "organization context required"))
 		return
 	}
 
 	pushID := c.Param("pushId")
 	if pushID == "" {
-		c.JSON(http.StatusBadRequest, updates.ErrorResponse{
-			Code:    "bad_request",
-			Message: "Push ID is required",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Push ID is required"))
 		return
 	}
 
 	operator := middleware.GetOperatorFromContext(c)
 	if operator == nil {
-		c.JSON(http.StatusUnauthorized, updates.ErrorResponse{
-			Code:    "unauthorized",
-			Message: "Operator not found",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeAuthTokenInvalid, "Operator not found"))
 		return
 	}
 
 	result, err := h.service.CancelPush(c.Request.Context(), pushID, operator.ID, orgID)
 	if err != nil {
 		if se := updates.AsServiceError(err); se != nil {
-			c.JSON(se.Status, se.ToErrorResponse())
+			c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, updates.ErrorResponse{
-			Code:    "internal_error",
-			Message: "Failed to cancel push",
-		})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "Failed to cancel push"))
 		return
 	}
 

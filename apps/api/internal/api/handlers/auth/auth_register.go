@@ -12,6 +12,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/redaction"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 
@@ -132,15 +133,15 @@ func (h *RegisterHandler) sendVerificationEmail(ctx context.Context, email, name
 			if markErr := h.emailVerifyRepo.MarkEmailFailed(ctx, verificationID, err.Error()); markErr != nil {
 				h.log.Error("failed to record email failure",
 					"verificationID", verificationID,
-					"emailError", err.Error(),
-					"markError", markErr,
+					"emailError", redaction.DefaultRedactor.Redact(err.Error()),
+					"markError", redaction.DefaultRedactor.Redact(markErr.Error()),
 				)
 			}
 		}
 		h.log.Error("failed to send verification email",
-			"email", email,
+			"email", redaction.DefaultRedactor.Redact(email),
 			"operatorID", operatorID,
-			"error", err,
+			"error", redaction.DefaultRedactor.Redact(err.Error()),
 		)
 		return err
 	}
@@ -150,7 +151,7 @@ func (h *RegisterHandler) sendVerificationEmail(ctx context.Context, email, name
 		if markErr := h.emailVerifyRepo.MarkEmailSent(ctx, verificationID, time.Now().UTC()); markErr != nil {
 			h.log.Error("failed to record email success",
 				"verificationID", verificationID,
-				"markError", markErr,
+				"markError", redaction.DefaultRedactor.Redact(markErr.Error()),
 			)
 		}
 	}

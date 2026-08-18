@@ -44,8 +44,13 @@ type Logger struct {
 // Compile-time check that Logger implements AuditLogger.
 var _ AuditLogger = (*Logger)(nil)
 
-// NoOpLogger is a no-operation audit logger for testing.
+// NoOpLogger is a no-operation audit logger for testing and environments
+// without an audit store. It satisfies AuditLogger and the command-handler's
+// auditLogger interface with zero-cost no-op methods.
 type NoOpLogger struct{}
+
+// NewNoOpLogger returns a ready-to-use NoOpLogger.
+func NewNoOpLogger() *NoOpLogger { return &NoOpLogger{} }
 
 func (n *NoOpLogger) APIKeyCreated(ctx context.Context, operatorID, keyID, keyName, keyPrefix, scope, ipAddress, userAgent string) {
 }
@@ -57,6 +62,9 @@ func (n *NoOpLogger) APIKeyRotated(ctx context.Context, operatorID, keyID, keyNa
 }
 func (n *NoOpLogger) APIKeyFailed(ctx context.Context, operatorID, keyPrefix, ipAddress, userAgent, reason string) {
 }
+
+// CommandExecuted is a no-op for the command execution audit event.
+func (n *NoOpLogger) CommandExecuted(ctx context.Context, e CommandExecutedEvent) {}
 
 // NoOpAuditRepo is a no-operation audit repository for when no separate DB is configured.
 type NoOpAuditRepo struct{}
@@ -583,4 +591,56 @@ func (l *Logger) APIKeyFailed(ctx context.Context, operatorID, keyPrefix, ipAddr
 			"reason":     reason,
 		},
 	})
+}
+
+// CommandExecuted logs a device command execution attempt together with its
+// risk classification and the trace id of the originating request. Used by the
+// command execution path to leave an auditable trail for every command —
+// allowed, confirmation-gated, or blocked — so risky operations are traceable.
+func (l *Logger) CommandExecuted(ctx context.Context, e CommandExecutedEvent) {
+	metadata := map[string]string{
+		"command":     e.Command,
+		"device_id":   e.DeviceID,
+		"dispatch_id": e.DispatchID,
+	}
+	if e.Reason != "" {
+		metadata["reason"] = e.Reason
+	}
+
+	l.LogEvent(ctx, &Entry{
+		OperatorID:   e.OperatorID,
+		Action:       ActionCommandExecuted,
+		ResourceType: "device",
+		ResourceID:   e.DeviceID,
+		IPAddress:    e.IPAddress,
+		UserAgent:    e.UserAgent,
+		Result:       e.Result,
+		TraceID:      e.TraceID,
+		RiskTier:     e.RiskTier,
+		ActorType:    e.ActorType,
+		ActorEmail:   e.ActorEmail,
+		OldValue:     e.OldValue,
+		NewValue:     e.NewValue,
+		Metadata:     metadata,
+	})
+}
+
+// CommandExecutedEvent carries the fields needed to audit a command execution.
+// It is a value type so handlers assemble it without allocations when there is
+// nothing to record.
+type CommandExecutedEvent struct {
+	OperatorID string
+	DeviceID   string
+	Command    string
+	DispatchID string
+	IPAddress  string
+	UserAgent  string
+	TraceID    string
+	RiskTier   string
+	Result     Result
+	Reason     string
+	ActorType  string
+	ActorEmail string
+	OldValue   string
+	NewValue   string
 }

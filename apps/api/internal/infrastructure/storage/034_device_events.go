@@ -7,7 +7,7 @@ import (
 
 // migrateDeviceEvents creates the device_events table for Diagnostics Timeline.
 // This table stores chronological event audit trail for device diagnostics.
-func migrateDeviceEvents(db *sql.DB) error {
+func migrateDeviceEvents(tx *sql.Tx) error {
 	ctx := context.Background()
 
 	// Create device_events table.
@@ -25,7 +25,7 @@ func migrateDeviceEvents(db *sql.DB) error {
 			FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
 	)`
 
-	_, err := db.ExecContext(ctx, query)
+	_, err := tx.ExecContext(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func migrateDeviceEvents(db *sql.DB) error {
 	indexQuery := `
 	CREATE INDEX IF NOT EXISTS idx_device_events_device_timestamp 
 		ON device_events(device_id, timestamp DESC)`
-	_, err = db.ExecContext(ctx, indexQuery)
+	_, err = tx.ExecContext(ctx, indexQuery)
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func migrateDeviceEvents(db *sql.DB) error {
 	cursorIndex := `
 	CREATE INDEX IF NOT EXISTS idx_device_events_cursor 
 		ON device_events(device_id, timestamp DESC, id)`
-	_, err = db.ExecContext(ctx, cursorIndex)
+	_, err = tx.ExecContext(ctx, cursorIndex)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func migrateDeviceEvents(db *sql.DB) error {
 	typeIndex := `
 	CREATE INDEX IF NOT EXISTS idx_device_events_type 
 		ON device_events(device_id, event_type, timestamp DESC)`
-	_, err = db.ExecContext(ctx, typeIndex)
+	_, err = tx.ExecContext(ctx, typeIndex)
 	if err != nil {
 		return err
 	}

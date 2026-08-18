@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 
@@ -35,10 +36,29 @@ func (p *Presenter) LoginSuccess(c *gin.Context, operatorID string) {
 	}
 
 	if p.auditLogger != nil {
+		// Extract the trace_id from the request context so the audit entry
+		// correlates with the access log.
+		traceID := ""
+		if tid, ok := c.Get("trace_id"); ok {
+			if id, ok := tid.(string); ok {
+				traceID = id
+			}
+		}
+		ipAddress := c.ClientIP()
+		userAgent := c.GetHeader("User-Agent")
+		operatorID := operatorID
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			p.auditLogger.LoginSuccess(ctx, operatorID, c.ClientIP(), c.GetHeader("User-Agent"))
+			p.auditLogger.LogEvent(ctx, &audit.Entry{
+				OperatorID: operatorID,
+				Action:     audit.ActionLoginSuccess,
+				IPAddress:  ipAddress,
+				UserAgent:  userAgent,
+				Result:     audit.ResultSuccess,
+				TraceID:    traceID,
+				ActorType:  "operator",
+			})
 		}()
 	}
 }
@@ -159,47 +179,47 @@ func (p *Presenter) AdminAction(c *gin.Context, operatorID, action, resourceType
 
 // BadRequest sends a 400 response.
 func (p *Presenter) BadRequest(c *gin.Context, message string) {
-	c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": message})
+	responses.RespondStructured(c, http.StatusBadRequest, message)
 }
 
 // Unauthorized sends a 401 response.
 func (p *Presenter) Unauthorized(c *gin.Context, message string) {
-	c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": message})
+	responses.RespondStructured(c, http.StatusUnauthorized, message)
 }
 
 // Forbidden sends a 403 response.
 func (p *Presenter) Forbidden(c *gin.Context, message string) {
-	c.JSON(http.StatusForbidden, gin.H{"error": "forbidden", "message": message})
+	responses.RespondStructured(c, http.StatusForbidden, message)
 }
 
 // NotFound sends a 404 response.
 func (p *Presenter) NotFound(c *gin.Context, message string) {
-	c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": message})
+	responses.RespondStructured(c, http.StatusNotFound, message)
 }
 
 // Conflict sends a 409 response.
 func (p *Presenter) Conflict(c *gin.Context, message string) {
-	c.JSON(http.StatusConflict, gin.H{"error": "conflict", "message": message})
+	responses.RespondStructured(c, http.StatusConflict, message)
 }
 
 // InternalError sends a 500 response.
 func (p *Presenter) InternalError(c *gin.Context, message string) {
-	c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": message})
+	responses.RespondStructured(c, http.StatusInternalServerError, message)
 }
 
 // BadGateway sends a 502 response.
 func (p *Presenter) BadGateway(c *gin.Context, message string) {
-	c.JSON(http.StatusBadGateway, gin.H{"error": "bad_gateway", "message": message})
+	responses.RespondStructured(c, http.StatusBadGateway, message)
 }
 
 // NotImplemented sends a 501 response.
 func (p *Presenter) NotImplemented(c *gin.Context, message string) {
-	c.JSON(http.StatusNotImplemented, gin.H{"error": "not_implemented", "message": message})
+	responses.RespondStructured(c, http.StatusNotImplemented, message)
 }
 
 // ServiceUnavailable sends a 503 response.
 func (p *Presenter) ServiceUnavailable(c *gin.Context, message string) {
-	c.JSON(http.StatusServiceUnavailable, gin.H{"error": "service_unavailable", "message": message})
+	responses.RespondStructured(c, http.StatusServiceUnavailable, message)
 }
 
 // OK sends a 200 response with data.
@@ -212,15 +232,18 @@ func (p *Presenter) Created(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusCreated, data)
 }
 
-// SetSessionCookie sets the session cookie on the response.
+// SetSessionCookie sets the session cookie on the response. Uses http.SetCookie
+// so the SameSite attribute from the cookie is preserved (gin's c.SetCookie
+// drops it).
 func (p *Presenter) SetSessionCookie(c *gin.Context, cookie *http.Cookie) {
 	if cookie != nil {
-		c.SetCookie(cookie.Name, cookie.Value, cookie.MaxAge, cookie.Path, cookie.Domain, cookie.Secure, cookie.HttpOnly)
+		http.SetCookie(c.Writer, cookie)
 	}
 }
 
 // ClearSessionCookie clears the session cookie.
 func (p *Presenter) ClearSessionCookie(c *gin.Context) {
 	// Use the correct cookie name from middleware to match cookie_auth.go.
+	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie(middleware.CookieName, "", -1, "/", "", false, true)
 }

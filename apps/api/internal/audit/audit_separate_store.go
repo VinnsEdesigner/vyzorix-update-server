@@ -20,7 +20,7 @@ type SeparateDBConfig struct {
 func NewSeparateDBAuditRepository(cfg SeparateDBConfig) (*SeparateDBRepository, error) {
 	// Ensure directory exists.
 	dir := filepath.Dir(cfg.Path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return nil, err
 	}
 
@@ -58,7 +58,13 @@ func createAuditSchema(db *sql.DB) error {
 			user_agent    TEXT,
 			result        TEXT NOT NULL,
 			metadata      TEXT,
-			created_at    INTEGER NOT NULL
+			created_at    INTEGER NOT NULL,
+			trace_id      TEXT,
+			risk_tier     TEXT,
+			actor_type    TEXT,
+			actor_email   TEXT,
+			old_value     TEXT,
+			new_value     TEXT
 		)
 	`)
 	if err != nil {
@@ -99,8 +105,8 @@ func (r *SeparateDBRepository) Log(ctx context.Context, entry *Entry) error {
 	}
 
 	query := `
-		INSERT INTO audit_logs (id, operator_id, action, resource_type, resource_id, ip_address, user_agent, result, metadata, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO audit_logs (id, operator_id, action, resource_type, resource_id, ip_address, user_agent, result, metadata, created_at, trace_id, risk_tier, actor_type, actor_email, old_value, new_value)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := r.db.ExecContext(ctx, query,
@@ -114,6 +120,12 @@ func (r *SeparateDBRepository) Log(ctx context.Context, entry *Entry) error {
 		string(entry.Result),
 		metadataJSON,
 		entry.CreatedAt.Unix(),
+		entry.TraceID,
+		entry.RiskTier,
+		entry.ActorType,
+		entry.ActorEmail,
+		entry.OldValue,
+		entry.NewValue,
 	)
 
 	return err

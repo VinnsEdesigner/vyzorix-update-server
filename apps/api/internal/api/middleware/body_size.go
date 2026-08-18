@@ -4,6 +4,7 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,10 +13,10 @@ import (
 func BodySizeLimit(limit int64) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.ContentLength > limit {
-			c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, gin.H{
-				"error":   "request_too_large",
-				"message": "Request body exceeds maximum allowed size",
-			})
+			responses.RespondStructuredAbort(c, http.StatusRequestEntityTooLarge,
+
+				"Request body exceeds maximum allowed size",
+			)
 
 			return
 		}

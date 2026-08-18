@@ -5,6 +5,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,18 +24,17 @@ func NewStatusHandler(deviceService *device.Service) *StatusHandler {
 func (h *StatusHandler) Handle(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request", "message": "device ID is required"})
+		c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "device ID is required"))
 		return
 	}
 
 	status, err := h.deviceService.GetStatus(c.Request.Context(), imei)
 	if err != nil {
 		if err == application.ErrDeviceNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "device not found"})
+			c.Error(apperrors.NewServerError(apperrors.CodeResourceNotFound, "device not found"))
 			return
 		}
-
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error", "message": "failed to retrieve device status"})
+		c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to retrieve device status"))
 
 		return
 	}

@@ -7,11 +7,11 @@ import (
 
 // migrateDashboardDeviceLogs creates the device_logs table for dashboard logs API.
 // This table stores device event logs with cursor-based pagination support.
-func migrateDashboardDeviceLogs(db *sql.DB) error {
+func migrateDashboardDeviceLogs(tx *sql.Tx) error {
 	// Create device_logs table for device event logs.
 	// NOTE: Using INTEGER for timestamp (Unix milliseconds) for SQLite compatibility.
 	// NOTE: Using TEXT for data (JSON) since SQLite doesn't have native JSONB.
-	_, err := db.ExecContext(context.Background(), `
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS device_logs (
 			id TEXT PRIMARY KEY,
 			device_id TEXT NOT NULL,
@@ -26,7 +26,7 @@ func migrateDashboardDeviceLogs(db *sql.DB) error {
 	}
 
 	// Create index for querying logs by device with timestamp ordering.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_device_logs_device_timestamp
 		ON device_logs(device_id, timestamp DESC)
 	`)
@@ -35,7 +35,7 @@ func migrateDashboardDeviceLogs(db *sql.DB) error {
 	}
 
 	// Create composite index for cursor-based pagination (device_id, timestamp, id).
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_device_logs_cursor
 		ON device_logs(device_id, timestamp DESC, id)
 	`)
@@ -44,7 +44,7 @@ func migrateDashboardDeviceLogs(db *sql.DB) error {
 	}
 
 	// Create index for filtering by event type.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_device_logs_event_type
 		ON device_logs(event_type)
 	`)

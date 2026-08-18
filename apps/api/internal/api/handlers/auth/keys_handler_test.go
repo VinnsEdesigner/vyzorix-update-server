@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	infraStorage "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
@@ -292,6 +294,7 @@ func setupTestRouter(t *testing.T) (*gin.Engine, *Handler, *mockAPIKeyRepository
 	handler := NewHandler(service, &audit.NoOpLogger{})
 
 	r := gin.New()
+	r.Use(middleware.ErrorHandler(slog.Default()))
 	keysGroup := r.Group("/v1")
 	// Apply test middleware to set operator_id and organization_id.
 	keysGroup.Use(testOperatorMiddleware("test-operator-001", "test-org-001"))

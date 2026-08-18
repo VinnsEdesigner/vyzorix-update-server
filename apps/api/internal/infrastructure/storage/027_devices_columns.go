@@ -6,7 +6,7 @@ import (
 )
 
 // migrateAddDevicesColumns adds new columns to the devices table.
-func migrateAddDevicesColumns(db *sql.DB) error {
+func migrateAddDevicesColumns(tx *sql.Tx) error {
 	cols := []string{
 		`ALTER TABLE devices ADD COLUMN device_name TEXT`,
 		`ALTER TABLE devices ADD COLUMN manufacturer TEXT`,
@@ -19,7 +19,7 @@ func migrateAddDevicesColumns(db *sql.DB) error {
 	}
 
 	for _, col := range cols {
-		if _, err := db.ExecContext(context.Background(), col); err != nil {
+		if _, err := tx.ExecContext(context.Background(), col); err != nil {
 			return err
 		}
 	}

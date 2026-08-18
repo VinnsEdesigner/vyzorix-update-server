@@ -9,8 +9,9 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/resolver"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -97,7 +98,7 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 	// Extract org from URL parameter.
 	orgID := c.Param("org")
 	if orgID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "organization ID required"})
+		responses.RespondStructured(c, http.StatusBadRequest, "organization ID required")
 		return
 	}
 
@@ -107,7 +108,7 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 	op := h.authMw.GetOperatorFromGinContext(c)
 	if op == nil {
 		h.presenter.LogAuthFail(c.Request.Context(), nil)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		responses.RespondStructured(c, http.StatusUnauthorized, "unauthorized")
 
 		return
 	}

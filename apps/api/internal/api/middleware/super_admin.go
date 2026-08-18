@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,29 +21,29 @@ func (s *SuperAdminAuth) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		op := GetOperatorFromContext(c)
 		if op == nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "Authentication required",
-			})
+			responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+				"Authentication required",
+			)
 			return
 		}
 
 		// Require organization context.
 		orgID := GetOrganizationID(c)
 		if orgID == "" {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"error":   "bad_request",
-				"message": "Organization ID is required for super admin access",
-			})
+			responses.RespondStructuredAbort(c, http.StatusBadRequest,
+
+				"Organization ID is required for super admin access",
+			)
 			return
 		}
 
 		// Check if operator is super_admin in this specific organization.
 		if !op.IsSuperAdminIn(orgID) {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "Super admin access required in this organization",
-			})
+			responses.RespondStructuredAbort(c, http.StatusForbidden,
+
+				"Super admin access required in this organization",
+			)
 			return
 		}
 
@@ -57,29 +58,29 @@ func RequireSuperAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		op := GetOperatorFromContext(c)
 		if op == nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "Authentication required",
-			})
+			responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+				"Authentication required",
+			)
 			return
 		}
 
 		// Require organization context for super admin access.
 		orgID := GetOrganizationID(c)
 		if orgID == "" {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"error":   "bad_request",
-				"message": "Organization ID is required for admin access",
-			})
+			responses.RespondStructuredAbort(c, http.StatusBadRequest,
+
+				"Organization ID is required for admin access",
+			)
 			return
 		}
 
 		// Check if operator is super_admin in this specific organization.
 		if !op.IsSuperAdminIn(orgID) {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "Super admin access required in this organization",
-			})
+			responses.RespondStructuredAbort(c, http.StatusForbidden,
+
+				"Super admin access required in this organization",
+			)
 			return
 		}
 

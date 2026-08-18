@@ -4,9 +4,11 @@ package middleware
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"sync"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/gin-gonic/gin"
 )
 
@@ -147,7 +149,7 @@ func (l *RateLimiter) Stop() {
 func (l *RateLimiter) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !l.Allow(c.ClientIP()) {
-			c.JSON(429, map[string]string{"error": "rate_limited", "message": "too many requests"})
+			responses.RespondStructured(c, http.StatusTooManyRequests, "too many requests")
 			c.Abort()
 
 			return

@@ -9,6 +9,8 @@ import (
 )
 
 // Action represents the type of security event being logged.
+//
+//nolint:gosec // G101 false positive: these are audit-action identifiers, not hardcoded credentials.
 type Action string
 
 const (
@@ -30,7 +32,7 @@ const (
 	ActionRateLimitExceeded      Action = "rate_limit_exceeded"
 	ActionAPIClientCreated       Action = "api_client_created"
 	ActionAPIClientRevoked       Action = "api_client_revoked"
-	ActionAPIClientSecretRotated Action = "api_client_secret_rotated"
+	ActionAPIClientSecretRotated Action = "api_client_secret_rotated" //nolint:gosec // G101 false positive: audit action identifier, not a secret
 	ActionSigningKeyRotated      Action = "signing_key_rotated"
 	ActionAdminAction            Action = "admin_action"
 	// Updates-specific audit actions.
@@ -50,8 +52,10 @@ const (
 	ActionAPIKeyCreated Action = "api_key_created"
 	ActionAPIKeyUpdated Action = "api_key_updated"
 	ActionAPIKeyRevoked Action = "api_key_revoked"
-	ActionAPIKeyRotated Action = "api_key_rotated"
+	ActionAPIKeyRotated Action = "api_key_rotated" //nolint:gosec // G101 false positive: audit action identifier, not a secret
 	ActionAPIKeyFailed  Action = "api_key_failed"
+	// Command execution audit actions (Phase 2 risk/audit).
+	ActionCommandExecuted Action = "command_executed"
 )
 
 // Result represents the outcome of an action.
@@ -76,6 +80,22 @@ type Entry struct {
 	IPAddress    string            `json:"ip_address,omitempty"`
 	UserAgent    string            `json:"user_agent,omitempty"`
 	Result       Result            `json:"result"`
+	// TraceID correlates this audit entry with request logs. Populated from the
+	// tracing middleware so a security event can be joined to its access log.
+	TraceID string `json:"trace_id,omitempty"`
+	// RiskTier records the risk classification of the audited operation, when
+	// applicable (e.g. command execution). Empty for non-risky events.
+	RiskTier string `json:"risk_tier,omitempty"`
+	// ActorType classifies the actor: "operator", "api_key", or "system".
+	ActorType string `json:"actor_type,omitempty"`
+	// ActorEmail is the operator's email, when available, for human-readable
+	// audit queries (the OperatorID is an opaque ID).
+	ActorEmail string `json:"actor_email,omitempty"`
+	// OldValue/NewValue capture the before/after state of a mutated resource
+	// for change-tracking compliance (e.g. settings updates, command state
+	// transitions). JSON-encoded strings; empty when not applicable.
+	OldValue string `json:"old_value,omitempty"`
+	NewValue string `json:"new_value,omitempty"`
 }
 
 // Repository handles audit log persistence.
@@ -102,8 +122,8 @@ func (r *Repository) Log(ctx context.Context, entry *Entry) error {
 	}
 
 	query := `
-		INSERT INTO audit_logs (id, operator_id, action, resource_type, resource_id, ip_address, user_agent, metadata, result, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO audit_logs (id, operator_id, action, resource_type, resource_id, ip_address, user_agent, metadata, result, created_at, trace_id, risk_tier, actor_type, actor_email, old_value, new_value)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := r.db.ExecContext(ctx, query,
@@ -117,6 +137,12 @@ func (r *Repository) Log(ctx context.Context, entry *Entry) error {
 		nullableString(metadataJSON),
 		string(entry.Result),
 		entry.CreatedAt.UnixMilli(),
+		nullableString(entry.TraceID),
+		nullableString(entry.RiskTier),
+		nullableString(entry.ActorType),
+		nullableString(entry.ActorEmail),
+		nullableString(entry.OldValue),
+		nullableString(entry.NewValue),
 	)
 
 	return err

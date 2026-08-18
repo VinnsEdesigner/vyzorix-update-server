@@ -21,8 +21,8 @@ func NewOrganizationSettingsRepository(db *sql.DB) *OrganizationSettingsReposito
 }
 
 // migrateOrganizationSettings creates the organization_settings table.
-func migrateOrganizationSettings(db *sql.DB) error {
-	_, err := db.ExecContext(context.Background(), `
+func migrateOrganizationSettings(tx *sql.Tx) error {
+	_, err := tx.ExecContext(context.Background(), `
 		CREATE TABLE IF NOT EXISTS organization_settings (
 			id TEXT PRIMARY KEY,
 			organization_id TEXT NOT NULL UNIQUE,
@@ -40,7 +40,7 @@ func migrateOrganizationSettings(db *sql.DB) error {
 	}
 
 	// Create index for efficient lookups.
-	_, err = db.ExecContext(context.Background(), `
+	_, err = tx.ExecContext(context.Background(), `
 		CREATE INDEX IF NOT EXISTS idx_org_settings_org ON organization_settings(organization_id)
 	`)
 

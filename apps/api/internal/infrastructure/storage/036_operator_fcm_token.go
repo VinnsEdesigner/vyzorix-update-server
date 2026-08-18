@@ -7,7 +7,7 @@ import (
 
 // migrateOperatorFCMToken adds fcm_token column to operators table.
 // for storing operator FCM tokens for push notifications.
-func migrateOperatorFCMToken(db *sql.DB) error {
+func migrateOperatorFCMToken(tx *sql.Tx) error {
 	ctx := context.Background()
 
 	// Add fcm_token column to operators table if it doesn't exist.
@@ -15,7 +15,7 @@ func migrateOperatorFCMToken(db *sql.DB) error {
 	query := `
 	ALTER TABLE operators ADD COLUMN fcm_token TEXT`
 
-	_, err := db.ExecContext(ctx, query)
+	_, err := tx.ExecContext(ctx, query)
 	if err != nil {
 		// Check if column already exists (error message varies by SQLite version).
 		// Common error: "duplicate column name: fcm_token".

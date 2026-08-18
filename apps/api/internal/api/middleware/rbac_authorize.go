@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/gin-gonic/gin"
@@ -13,20 +14,20 @@ func RequireOrgRole(minRole organization.OrganizationRole) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		op := GetOperatorFromContext(c)
 		if op == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "authentication required",
-			})
+			responses.RespondStructured(c, http.StatusUnauthorized,
+
+				"authentication required",
+			)
 			c.Abort()
 			return
 		}
 
 		membership := op.GetMembership(c.GetString("organizationId"))
 		if membership == nil || membership.Role.Level() < minRole.Level() {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "insufficient organization role",
-			})
+			responses.RespondStructured(c, http.StatusForbidden,
+
+				"insufficient organization role",
+			)
 			c.Abort()
 			return
 		}
@@ -40,19 +41,19 @@ func RequirePermission(perm operator.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		op := GetOperatorFromContext(c)
 		if op == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "authentication required",
-			})
+			responses.RespondStructured(c, http.StatusUnauthorized,
+
+				"authentication required",
+			)
 			c.Abort()
 			return
 		}
 
 		if !op.HasPermission(perm) {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "insufficient permissions",
-			})
+			responses.RespondStructured(c, http.StatusForbidden,
+
+				"insufficient permissions",
+			)
 			c.Abort()
 			return
 		}
@@ -66,19 +67,19 @@ func RequireAnyPermission(perms ...operator.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		op := GetOperatorFromContext(c)
 		if op == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "authentication required",
-			})
+			responses.RespondStructured(c, http.StatusUnauthorized,
+
+				"authentication required",
+			)
 			c.Abort()
 			return
 		}
 
 		if !op.HasAnyPermission(perms...) {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "insufficient permissions",
-			})
+			responses.RespondStructured(c, http.StatusForbidden,
+
+				"insufficient permissions",
+			)
 			c.Abort()
 			return
 		}
@@ -92,19 +93,19 @@ func RequireAllPermissions(perms ...operator.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		op := GetOperatorFromContext(c)
 		if op == nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "unauthorized",
-				"message": "authentication required",
-			})
+			responses.RespondStructured(c, http.StatusUnauthorized,
+
+				"authentication required",
+			)
 			c.Abort()
 			return
 		}
 
 		if !op.HasAllPermissions(perms...) {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error":   "forbidden",
-				"message": "insufficient permissions",
-			})
+			responses.RespondStructured(c, http.StatusForbidden,
+
+				"insufficient permissions",
+			)
 			c.Abort()
 			return
 		}

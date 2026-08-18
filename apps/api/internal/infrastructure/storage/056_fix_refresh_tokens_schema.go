@@ -16,13 +16,15 @@ import (
 // Because SQLite cannot rename columns before 3.25 (and Turso may not support
 // ALTER TABLE RENAME COLUMN reliably across replicas), we rebuild the table:
 // create a new table with the correct schema, copy data, and swap. Idempotent.
-func migrateFixRefreshTokensSchema(db *sql.DB) error {
+func migrateFixRefreshTokensSchema(tx *sql.Tx) error {
+	_, _ = tx.ExecContext(context.Background(), "DROP TABLE IF EXISTS refresh_tokens_new")
+
 	ctx := context.Background()
 
 	// If the table doesn't exist at all, migration 025 (now fixed) will have
 	// created it with the correct schema. Nothing to do here.
 	var exists int
-	row := db.QueryRowContext(ctx, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='refresh_tokens'")
+	row := tx.QueryRowContext(ctx, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='refresh_tokens'")
 	if err := row.Scan(&exists); err != nil {
 		return err
 	}
@@ -32,7 +34,7 @@ func migrateFixRefreshTokensSchema(db *sql.DB) error {
 
 	// Check whether the old `revoked` column is present (i.e. the schema hasn't
 	// been fixed yet). If it's already correct, this migration is a no-op.
-	cols, err := db.QueryContext(ctx, "PRAGMA table_info(refresh_tokens)")
+	cols, err := tx.QueryContext(ctx, "PRAGMA table_info(refresh_tokens)")
 	if err != nil {
 		return err
 	}
@@ -66,7 +68,7 @@ func migrateFixRefreshTokensSchema(db *sql.DB) error {
 	}
 
 	// Build a fresh table with the correct schema and copy data over.
-	_, err = db.ExecContext(ctx, `
+	_, err = tx.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS refresh_tokens_new (
 			id              TEXT PRIMARY KEY,
 			token_hash      TEXT NOT NULL UNIQUE,
@@ -88,13 +90,13 @@ func migrateFixRefreshTokensSchema(db *sql.DB) error {
 
 	// Copy rows, mapping the old `revoked` column to `is_revoked` if present.
 	if hasRevoked {
-		_, err = db.ExecContext(ctx, `
+		_, err = tx.ExecContext(ctx, `
 			INSERT INTO refresh_tokens_new (id, token_hash, operator_id, session_id, expires_at, created_at, replaced_by_id, is_revoked, revoked_at)
 			SELECT id, token_hash, operator_id, session_id, expires_at, created_at, replaced_by_id, revoked, NULL
 			FROM refresh_tokens
 		`)
 	} else {
-		_, err = db.ExecContext(ctx, `
+		_, err = tx.ExecContext(ctx, `
 			INSERT INTO refresh_tokens_new (id, token_hash, operator_id, session_id, expires_at, created_at, replaced_by_id, is_revoked, revoked_at)
 			SELECT id, token_hash, operator_id, session_id, expires_at, created_at, replaced_by_id, 0, NULL
 			FROM refresh_tokens
@@ -104,26 +106,26 @@ func migrateFixRefreshTokensSchema(db *sql.DB) error {
 		return err
 	}
 
-	_, err = db.ExecContext(ctx, `DROP TABLE refresh_tokens`)
+	_, err = tx.ExecContext(ctx, `DROP TABLE refresh_tokens`)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.ExecContext(ctx, `ALTER TABLE refresh_tokens_new RENAME TO refresh_tokens`)
+	_, err = tx.ExecContext(ctx, `ALTER TABLE refresh_tokens_new RENAME TO refresh_tokens`)
 	if err != nil {
 		return err
 	}
 
 	// Recreate indexes (dropped with the old table).
-	_, err = db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_hash ON refresh_tokens(token_hash)`)
+	_, err = tx.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_hash ON refresh_tokens(token_hash)`)
 	if err != nil {
 		return err
 	}
-	_, err = db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_refresh_tokens_operator_id ON refresh_tokens(operator_id)`)
+	_, err = tx.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_refresh_tokens_operator_id ON refresh_tokens(operator_id)`)
 	if err != nil {
 		return err
 	}
-	_, err = db.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_refresh_tokens_session_id ON refresh_tokens(session_id)`)
+	_, err = tx.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_refresh_tokens_session_id ON refresh_tokens(session_id)`)
 	if err != nil {
 		return err
 	}

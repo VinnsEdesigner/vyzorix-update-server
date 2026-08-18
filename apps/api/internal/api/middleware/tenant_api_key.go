@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	domain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
@@ -164,10 +165,10 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 					"missing",
 				)
 			}
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "api_key_required",
-				"message": "X-API-Key header or session required",
-			})
+			responses.RespondStructuredAbort(c, http.StatusUnauthorized,
+
+				"X-API-Key header or session required",
+			)
 			return
 		}
 
@@ -201,10 +202,10 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 			if err.Error() == "api key has expired" {
 				statusCode = http.StatusUnauthorized
 			}
-			c.AbortWithStatusJSON(statusCode, gin.H{
-				"error":   "invalid_api_key",
-				"message": err.Error(),
-			})
+			responses.RespondStructuredAbort(c, statusCode,
+
+				err.Error(),
+			)
 			return
 		}
 
@@ -285,10 +286,10 @@ func (t *TenantAPIKeyAuth) ScopeEnforcement(scopeFn ScopeEnforcementFunc) gin.Ha
 		keyScope := domain.Scope(scopeStr)
 
 		if !hasScope(keyScope, requiredScope) {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error":   "insufficient_scope",
-				"message": "API key scope insufficient for this operation",
-			})
+			responses.RespondStructured(c, http.StatusForbidden,
+
+				"API key scope insufficient for this operation",
+			)
 			c.Abort()
 			return
 		}

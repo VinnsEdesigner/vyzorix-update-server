@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/idempotency"
 	"github.com/gin-gonic/gin"
 )
@@ -97,11 +98,10 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 		}
 
 		if err := ValidateIdempotencyKey(idempotencyKey); err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"error":   "bad_request",
-				"code":    "INVALID_IDEMPOTENCY_KEY",
-				"message": err.Error(),
-			})
+			responses.RespondStructuredAbort(c, http.StatusBadRequest,
+
+				err.Error(),
+			)
 			return
 		}
 

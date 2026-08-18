@@ -10,11 +10,13 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/confirmation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	domaincommand "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	infraConfig "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -66,26 +68,27 @@ type ServerDependencies struct {
 	InvitationService     *orgapplication.InvitationService
 	OrgSettingsService    *orgapplication.OrganizationSettingsService
 	IdempotencyRepo       *storage.IdempotencyRepository
+	ConfirmationService   *confirmation.Service
 	Config                infraConfig.Config
 }
 
 // ServerResult contains the fully wired server components.
 type ServerResult struct {
-	Engine            *gin.Engine
-	MiddlewareSet     *MiddlewareSet
-	HandlerSet        *HandlerSet
-	Presenter         *response.Presenter
-	HmacVerifier      *cryptohmac.Verifier
+	Engine              *gin.Engine
+	MiddlewareSet       *MiddlewareSet
+	HandlerSet          *HandlerSet
+	Presenter           *response.Presenter
+	HmacVerifier        *cryptohmac.Verifier
 	SessionSignVerifier *cryptohmac.Verifier
-	EncryptKeyFn      func(clientID string) ([]byte, bool)
-	CookieAuth        *middleware.CookieAuth
-	SignatureVerifier *middleware.SignatureVerifier
-	Lockout           *middleware.Lockout
-	CSRFProtector     *middleware.CSRFProtector
-	TurnstileVerifier *middleware.TurnstileVerifier
-	RevocationList    *infraauth.RevocationList
-	IPIntelligence    *middleware.IPIntelligence
-	SessionManager    *infraauth.SessionManager
+	EncryptKeyFn        func(clientID string) ([]byte, bool)
+	CookieAuth          *middleware.CookieAuth
+	SignatureVerifier   *middleware.SignatureVerifier
+	Lockout             *middleware.Lockout
+	CSRFProtector       *middleware.CSRFProtector
+	TurnstileVerifier   *middleware.TurnstileVerifier
+	RevocationList      *infraauth.RevocationList
+	IPIntelligence      *middleware.IPIntelligence
+	SessionManager      *infraauth.SessionManager
 }
 
 // Server combines ServerDependencies and ServerResult for wire-compatible return.
@@ -147,6 +150,7 @@ func WireServer(deps ServerDependencies) *ServerResult {
 		DeviceService:         deps.DeviceService,
 		Hub:                   deps.Hub,
 		CommandService:        deps.CommandService,
+		RiskEvaluator:         domaincommand.NewRiskEvaluator(),
 		FCMNotifier:           deps.FCMNotifier,
 		AppCheckVerifier:      deps.AppCheckVerifier,
 		Log:                   deps.Log,
@@ -159,6 +163,7 @@ func WireServer(deps ServerDependencies) *ServerResult {
 		OrgSettingsService:    deps.OrgSettingsService,
 		DeviceSettingsService: deps.DeviceSettingsService,
 		DeviceRepo:            deps.DeviceRepo,
+		ConfirmationService:   deps.ConfirmationService,
 	}
 	result.HandlerSet = WireHandlers(handlerDeps)
 
