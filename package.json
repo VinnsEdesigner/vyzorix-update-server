@@ -55,6 +55,10 @@
     "onlyBuiltDependencies": [
       "core-js",
       "msw"
-    ]
+    ],
+    "allowedDeprecatedVersions": {},
+    "peerDependencyRules": {
+      "allowedVersions": {}
+    }
   }
 }

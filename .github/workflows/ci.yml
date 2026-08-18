@@ -80,7 +80,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --no-frozen-lockfile --config.confirmModulesPnpm=false
 
       - name: Run dependency audit
         run: |
@@ -118,7 +118,7 @@ jobs:
           cache: 'pnpm'
           
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --no-frozen-lockfile --config.confirmModulesPnpm=false
         
       - name: Build dependencies
         run: pnpm run prelint
@@ -146,7 +146,7 @@ jobs:
           cache: 'pnpm'
           
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --no-frozen-lockfile --config.confirmModulesPnpm=false
         
       - name: Build dependencies
         run: pnpm run prelint
