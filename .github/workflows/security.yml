@@ -106,7 +106,7 @@ jobs:
       - name: Check for go.sum changes
         run: |
           cd apps/api
-          cd apps/api && (git diff --exit-code go.sum || echo "go.sum has changes (expected after dependency updates)")
+          cd apps/api && git diff --exit-code go.sum; echo "go.sum check done (may have changes)"
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
