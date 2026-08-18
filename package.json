@@ -56,9 +56,6 @@
       "core-js",
       "msw"
     ],
-    "allowedDeprecatedVersions": {},
-    "peerDependencyRules": {
-      "allowedVersions": {}
-    }
+    "neverBuiltDependencies": []
   }
 }

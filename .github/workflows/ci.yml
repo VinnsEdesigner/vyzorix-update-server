@@ -80,7 +80,10 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile --config.confirmModulesPnpm=false
+        env:
+          PNPM_CONFIG_CONFIRM_MODULES_PNPM: "false"
+          PNPM_CONFIG_IGNORE_BUILDS: "false"
+        run: pnpm install --no-frozen-lockfile --config.confirmModulesPnpm=false || pnpm install --no-frozen-lockfile --ignore-scripts
 
       - name: Run dependency audit
         run: |
@@ -118,7 +121,10 @@ jobs:
           cache: 'pnpm'
           
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile --config.confirmModulesPnpm=false
+        env:
+          PNPM_CONFIG_CONFIRM_MODULES_PNPM: "false"
+          PNPM_CONFIG_IGNORE_BUILDS: "false"
+        run: pnpm install --no-frozen-lockfile --config.confirmModulesPnpm=false || pnpm install --no-frozen-lockfile --ignore-scripts
         
       - name: Build dependencies
         run: pnpm run prelint
@@ -146,7 +152,10 @@ jobs:
           cache: 'pnpm'
           
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile --config.confirmModulesPnpm=false
+        env:
+          PNPM_CONFIG_CONFIRM_MODULES_PNPM: "false"
+          PNPM_CONFIG_IGNORE_BUILDS: "false"
+        run: pnpm install --no-frozen-lockfile --config.confirmModulesPnpm=false || pnpm install --no-frozen-lockfile --ignore-scripts
         
       - name: Build dependencies
         run: pnpm run prelint
