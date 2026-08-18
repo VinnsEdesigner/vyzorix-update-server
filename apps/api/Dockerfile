@@ -32,7 +32,7 @@ ENV PNPM_TELEMETRY=0 \
     COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     COREPACK_ENABLE_AUTOINSTALL=0
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 
 WORKDIR /app
 
