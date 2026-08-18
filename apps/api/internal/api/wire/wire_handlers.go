@@ -149,7 +149,7 @@ func WireHandlers(deps HandlerDependencies) *HandlerSet {
 	if deps.ConfirmationService != nil {
 		hs.Confirmation = confirmationhandlers.NewHandler(deps.ConfirmationService, deps.DeviceService, evaluator)
 	}
-	hs.Command = cmdhandlers.NewExecuteHandler(deps.CommandService, deps.DeviceService, deps.Hub, deps.FCMNotifier, command.NewAuthorizer(nil), aud)
+	hs.Command = cmdhandlers.NewExecuteHandler(deps.CommandService, deps.DeviceService, deps.Hub, deps.FCMNotifier, command.NewAuthorizerFromService(deps.ConfirmationService), aud)
 
 	// WebSocket handler.
 	hs.Stream = websockethandlers.NewStreamHandler(deps.Log, deps.Config, deps.Hub, *deps.HmacVerifier, deps.AuditLogger)

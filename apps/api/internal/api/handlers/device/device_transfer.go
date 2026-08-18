@@ -67,6 +67,18 @@ func (h *TransferHandler) Transfer(c *gin.Context) {
 		return
 	}
 
+	// Authorization: only a super_admin of the source org may move its devices,
+	// and only into an org the operator is an active member of. The route group
+	// only enforces cookie auth, so the check must happen here.
+	if !op.IsSuperAdminIn(sourceOrgID) {
+		h.presenter.Forbidden(c, "super_admin role required in the source organization")
+		return
+	}
+	if m := op.GetMembership(req.TargetOrgID); m == nil || !m.IsActive() {
+		h.presenter.Forbidden(c, "not a member of the target organization")
+		return
+	}
+
 	err := h.deviceService.TransferDevice(c.Request.Context(), imei, sourceOrgID, req.TargetOrgID, op.ID)
 	if err != nil {
 		if errors.Is(err, application.ErrDeviceNotFound) {
@@ -91,14 +103,4 @@ func (h *TransferHandler) Transfer(c *gin.Context) {
 		"source_org":  sourceOrgID,
 		"target_org":  req.TargetOrgID,
 	})
-}
-
-// RegisterRoutes registers the transfer routes.
-func (h *TransferHandler) RegisterRoutes(r *gin.RouterGroup, orgMiddleware, membershipMiddleware gin.HandlerFunc) {
-	devices := r.Group("/:id/devices")
-	devices.Use(orgMiddleware)
-	devices.Use(membershipMiddleware)
-	{
-		devices.POST("/:imei/transfer", h.Transfer)
-	}
 }

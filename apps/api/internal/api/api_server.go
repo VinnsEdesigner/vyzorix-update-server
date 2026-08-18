@@ -254,11 +254,11 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	if cfg.AuditLogger != nil {
 		cmdAud = cfg.AuditLogger
 	}
-	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier, command.NewAuthorizer(nil), cmdAud)
+	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier, command.NewAuthorizerFromService(cfg.ConfirmationService), cmdAud)
 
 	// Shared command risk gate used by the GraphQL mutation path so it cannot
 	// bypass the confirmation/MFA requirements the REST path enforces.
-	s.commandAuthorizer = command.NewAuthorizer(nil)
+	s.commandAuthorizer = command.NewAuthorizerFromService(cfg.ConfirmationService)
 
 	// WebSocket handler.
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
