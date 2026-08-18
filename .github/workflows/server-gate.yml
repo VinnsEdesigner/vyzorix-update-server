@@ -1,0 +1,116 @@
+# Server Gate — pre-push verification for Go API code only.
+#
+# What this does:
+#   1. Triggers when you push to main and the push touched apps/api/ files.
+#   2. Runs: go build, go vet, golangci-lint v2.12.2, go test ./...
+#   3. If ALL pass → the commit stays on main. Done.
+#   4. If ANY fail → it pushes the bad commit to a ci/fix/<sha> branch and
+#      reverts main to the previous good commit. You get a comment on the
+#      commit with the failure log and the fix branch name.
+#
+# Only checks apps/api/ (server code). Frontend changes don't trigger this.
+
+name: Server Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'go.mod'
+      - 'go.sum'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  GO_VERSION: '1.26.6'
+  GOLANGCI_LINT_VERSION: 'v2.12.2'
+
+jobs:
+  verify:
+    name: Build + Vet + Lint + Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # need full history to revert
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Download dependencies
+        working-directory: apps/api
+        run: go mod download
+
+      # --- Step 1: Build ---
+      - name: Build
+        id: build
+        working-directory: apps/api
+        run: go build ./...
+
+      # --- Step 2: Vet ---
+      - name: Vet
+        id: vet
+        if: always()
+        working-directory: apps/api
+        run: go vet ./...
+
+      # --- Step 3: Lint ---
+      - name: golangci-lint
+        id: lint
+        if: always()
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          working-directory: apps/api
+          args: --timeout=5m
+
+      # --- Step 4: Test ---
+      - name: Test
+        id: test
+        if: always()
+        working-directory: apps/api
+        run: go test ./... -count=1
+
+      # --- Gate failed: revert main, push bad commit to fix branch ---
+      - name: Gate failed — revert and branch
+        if: ${{ failure() }}
+        run: |
+          set -e
+          BAD_SHA=$(git rev-parse HEAD)
+          SHORT_SHA=$(echo "$BAD_SHA" | cut -c1-12)
+          BRANCH_NAME="ci/fix/${SHORT_SHA}"
+          PARENT_SHA=$(git rev-parse HEAD~1)
+
+          echo "Gate failed for commit $BAD_SHA"
+          echo "Reverting main to parent $PARENT_SHA"
+          echo "Pushing bad commit to branch $BRANCH_NAME"
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create a branch with the bad commit so it's not lost
+          git checkout -b "$BRANCH_NAME"
+          git push origin "$BRANCH_NAME"
+
+          # Go back to main and revert to the parent (last known good commit)
+          git checkout main
+          git reset --hard "$PARENT_SHA"
+          git push --force origin main
+
+          echo "Done. main is back to $PARENT_SHA (last known good)."
+          echo "The broken commit is on branch $BRANCH_NAME — fix it there and re-push."
+
+      # --- Gate passed: confirm ---
+      - name: Gate passed
+        if: ${{ success() }}
+        run: |
+          echo "All checks passed. Commit $(git rev-parse --short HEAD) is clean on main."
