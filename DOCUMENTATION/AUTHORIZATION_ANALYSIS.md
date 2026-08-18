@@ -200,3 +200,33 @@ check from Issue 3.
 4. **Issue 7** — role gate on command path. Cheap, closes the viewer-can-command gap.
 5. **Issues 4–6** — architectural (scoped permissions, teams, session-bound org).
    Documented, phased; don't big-bang them.
+
+## Implementation status
+
+Implemented and verified (build + vet + golangci-lint + full test suite all pass):
+
+- **Issue 1** — Shared `command.Authorizer` (single gate for REST + GraphQL).
+  GraphQL `sendCommand` runs the same risk/MFA/confirmation gate as REST; added
+  `confirmationToken` schema arg and bridged session MFA into the GraphQL context.
+- **Issue 2** — `POST /v1/organizations/:id/devices/:imei/transfer` now requires
+  super_admin in the source org AND active membership in the target org; the dead
+  `RegisterRoutes` method was removed.
+- **Issue 3** — Per-device owner-or-admin on the command path: non-admins may
+  only command devices they own (`device.OperatorID`) or that are assigned to a
+  group they belong to (device groups).
+- **Issue 7** — Role gate: a viewer-tier member cannot execute commands (enforced
+  via the scoped permission engine, not just a role-level check).
+- **Issue 4** — Scoped permission engine (`internal/domain/permission`): Action +
+  Scope with trailing-wildcard matching, role→scoped defaults, a persisted
+  `permission_grants` table (migration 60) for admin-assigned custom scopes, and
+  an Evaluator that unions defaults + grants. `operator.HasPermission` and the
+  command authorization helper evaluate scoped permissions.
+- **Issue 5** — Device groups: `device_groups`, `device_group_members`,
+  `device_group_devices` tables (migration 61) with `storage.DeviceGroupRepository`
+  and real in-memory SQLite integration tests; the command authorization helper
+  grants access to group members.
+- **Issue 6** — Server-driven org state: `api_keys.organization_id` is bound at
+  key creation; the tenant API-key middleware sets org context from the key, and
+  the org-context middleware treats session/key binding as authoritative,
+  rejecting a conflicting client header/query with 400 (mirrors Grafana's
+  validated org-switch, not a per-request header override).
