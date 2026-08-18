@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 // Package tracing provides request tracing capabilities.
 package tracing
 
@@ -66,4 +69,8 @@ func SetDocsBaseURL(url string) {
 // BuildErrorDocsURL builds a docs URL for an error code.
 func BuildErrorDocsURL(errorCode string) string {
 	return DefaultDocsURLBuilder.BuildURL(errorCode)
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

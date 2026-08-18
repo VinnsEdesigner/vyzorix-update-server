@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package command
 
 import "testing"
@@ -78,4 +81,8 @@ func TestRiskEvaluator_ZeroValueIsUsable(t *testing.T) {
 	if decision != DecisionAllow {
 		t.Errorf("zero-value evaluator decision = %s, want %s", decision, DecisionAllow)
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

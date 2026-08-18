@@ -1,46 +1,66 @@
-# docker-compose.yml - Local Development & Testing
+# docker-compose.yml - Production VPS Deployment
+#
+# Architecture:
+#   Internet → [Nginx :443 TLS] → [Go API :3000]
 #
 # Usage:
-#   docker-compose up -d          # Start in background
-#   docker-compose logs -f        # View logs
-#   docker-compose down          # Stop and remove
-#   docker-compose down -v       # Stop and remove volumes
+#   docker compose up -d          # Start nginx + api
+#   docker compose logs -f        # View logs
+#   docker compose down           # Stop
+#
+# First-time TLS setup (VPS with a domain):
+#   1. Edit tooling/nginx/vyzorix.conf — replace api.vyzorix.com with your domain
+#   2. docker compose up -d vyzorix    # Start API first
+#   3. certbot certonly --webroot -w /var/www/html -d your-domain.com
+#   4. docker compose up -d            # Start everything (nginx picks up certs)
+#
+# On Render: Render handles TLS automatically — no nginx needed.
+# Just set ALLOWED_ORIGINS in the Render dashboard.
 
 services:
+  # Nginx reverse proxy (TLS termination, rate limiting, security headers)
+  nginx:
+    build:
+      context: .
+      dockerfile: ./tooling/nginx/Dockerfile
+    container_name: vyzorix-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/html:/var/www/html:ro
+    depends_on:
+      vyzorix:
+        condition: service_healthy
+    networks:
+      - vyzorix-network
+
+  # Go API server (internal only — nginx is the entry point)
   vyzorix:
     build:
       context: .
       dockerfile: ./apps/api/Dockerfile
     container_name: vyzorix-server
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     environment:
-      # Required secrets - change these in production!
-      - API_KEY_primary=dev-api-key-12345
-      - TOKEN_SECRET=dev-token-secret-minimum-32-chars!!
-      - JWT_SECRET=dev-jwt-secret-minimum-32-chars!!
-      - SESSION_SECRET=dev-session-secret-minimum-32-chars!!
-      # SSR Configuration
+      - API_KEY_primary=change-me-in-production
+      - TOKEN_SECRET=change-me-32-chars-minimum!!
+      - JWT_SECRET=change-me-32-chars-minimum!!
+      - SESSION_SECRET=change-me-32-chars-minimum!!
+      - DEVICE_SECRET=change-me-32-chars-minimum!!
+      - SERVER_API_TOKEN=change-me-server-api-token
       - SSR_ENABLED=true
       - SSR_AUTO_BUILD=false
-      # Application
       - NODE_ENV=production
       - PORT=3000
       - DATABASE_URL=/data/vyzorix.db
       - VYZORIX_API_DIR=/data
       - VYZORIX_BIN_DIR=/app/bin
       - VYZORIX_PUBLIC_DIR=/app/public
-      # Security (disable for local dev if needed)
       - ENFORCE_HMAC=true
-      # Optional: Google OAuth
-      # - GOOGLE_OAUTH_CLIENT_ID=your-client-id
-      # - GOOGLE_OAUTH_CLIENT_SECRET=your-client-secret
-      # Optional: Email (Resend)
-      # - RESEND_API_KEY=your-resend-api-key
-      # - EMAIL_FROM=noreply@example.com
-      # Optional: Firebase
-      # - FIREBASE_CREDENTIALS={"type":"service_account",...}
+      - ALLOWED_ORIGINS=https://your-domain.com
     volumes:
       - vyzorix-data:/data
     healthcheck:
@@ -52,7 +72,7 @@ services:
     networks:
       - vyzorix-network
 
-  # Optional: Production-like setup with hardening
+  # Hardened profile (read-only, cap_drop, resource limits)
   vyzorix-hardened:
     build:
       context: .
@@ -72,7 +92,6 @@ services:
       - DATABASE_URL=/data/vyzorix.db
     volumes:
       - vyzorix-data-hardened:/data
-    # Security hardening options
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m

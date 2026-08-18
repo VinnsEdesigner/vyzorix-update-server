@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package audit
 
 import (
@@ -83,4 +86,8 @@ func TestNoOpLogger_ImplementsInterface(t *testing.T) {
 	var _ interface {
 		CommandExecuted(ctx context.Context, e CommandExecutedEvent)
 	} = (*Logger)(nil)
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

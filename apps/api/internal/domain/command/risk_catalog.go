@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package command
 
 import "time"
@@ -94,4 +97,8 @@ func LookupRiskProfile(commandName string) CommandRiskProfile {
 // auditable-but-executable until explicitly classified.
 var DefaultRiskProfile = CommandRiskProfile{
 	Tier: RiskTierMedium,
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

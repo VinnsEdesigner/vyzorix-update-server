@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package errors
 
 import (
@@ -67,4 +70,8 @@ func TestValidationDetailsOf_NonValidationError(t *testing.T) {
 	if _, ok := ValidationDetailsOf(nil); ok {
 		t.Error("expected ok=false for nil error")
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

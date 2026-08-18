@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 // Package middleware provides HTTP middleware for the Vyzorix API.
 package middleware
 
@@ -69,4 +72,8 @@ func GetRequestStart(c *gin.Context) time.Time {
 // GetRequestDuration calculates how long the request has been in progress.
 func GetRequestDuration(c *gin.Context) time.Duration {
 	return time.Since(GetRequestStart(c))
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

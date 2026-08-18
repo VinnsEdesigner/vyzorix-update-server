@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 // Package confirmation provides the business logic for issuing and consuming
 // single-use confirmation tokens that gate risky device commands.
 package confirmation
@@ -82,4 +85,8 @@ func (s *Service) ConsumeForCommand(ctx context.Context, token, operatorID, comm
 		return c, domainconfirmation.ErrAlreadyConsumed
 	}
 	return s.repo.Consume(ctx, token, time.Now())
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

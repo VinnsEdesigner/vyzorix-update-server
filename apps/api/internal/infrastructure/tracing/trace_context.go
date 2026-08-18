@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 // Package tracing provides request tracing capabilities.
 package tracing
 
@@ -187,4 +190,8 @@ func (t *TraceContext) FormatForLogging() map[string]string {
 		parts["parent_id"] = t.ParentID
 	}
 	return parts
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

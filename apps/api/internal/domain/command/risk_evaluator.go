@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package command
 
 // Decision is the outcome of evaluating a command against its risk profile and
@@ -63,4 +66,8 @@ func (RiskEvaluator) Evaluate(cmdName string, actor ActorContext) (Decision, Com
 	}
 
 	return DecisionAllow, profile
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

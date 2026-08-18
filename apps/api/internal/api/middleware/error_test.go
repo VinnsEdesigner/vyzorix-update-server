@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package middleware
 
 import (
@@ -95,4 +98,8 @@ func TestErrorHandler_GenericErrorWithoutTraceIDStillWorks(t *testing.T) {
 	if errObj["code"] != string(domainerrors.CodeInternalServerError) {
 		t.Errorf("code = %v, want %s", errObj["code"], domainerrors.CodeInternalServerError)
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

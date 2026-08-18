@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package redaction
 
 import "testing"
@@ -32,4 +35,8 @@ func TestRedactMapKey(t *testing.T) {
 	if result["password"] != "[REDACTED]" {
 		t.Errorf("password = %q, want [REDACTED]", result["password"])
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

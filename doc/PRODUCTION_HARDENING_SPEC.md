@@ -1,4 +1,3 @@
-
 # Vyzorix Production Hardening Specification
 
 > **Purpose:** Document the refactoring plan to add production-grade security, error handling, risk management, and hardening to the Vyzorix Update Server.

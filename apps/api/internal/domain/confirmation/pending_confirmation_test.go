@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package confirmation
 
 import (
@@ -55,4 +58,8 @@ func TestPendingConfirmation_MatchesAnyDeviceWhenUnscoped(t *testing.T) {
 	if !c.Matches("op-1", "device.reboot", "any-device") {
 		t.Error("unscoped confirmation should match any device")
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

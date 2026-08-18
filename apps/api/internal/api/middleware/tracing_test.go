@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package middleware
 
 import (
@@ -60,4 +63,8 @@ func TestTracing_AcceptsRequestIDAlias(t *testing.T) {
 	if got := w.Header().Get(RequestIDHeader); got != "" {
 		t.Errorf("X-Request-ID should not be echoed, got %q", got)
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 package errors
 
 import (
@@ -180,4 +183,8 @@ func TestServerErrorWithoutTraceID(t *testing.T) {
 	if got := err.Error(); got != expected {
 		t.Errorf("Error() = %v, want %v", got, expected)
 	}
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)

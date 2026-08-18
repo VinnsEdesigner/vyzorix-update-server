@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
 // Package responses provides standardized API response formatting.
 package responses
 
@@ -315,4 +318,8 @@ func RespondStructured(c *gin.Context, status int, message string) {
 func RespondStructuredAbort(c *gin.Context, status int, message string) {
 	RespondStructured(c, status, message)
 	c.Abort()
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 34b853d (feat: production hardening — structured errors, risk/audit, confirmation flow, validation, security hardening)
