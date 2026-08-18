@@ -8,6 +8,10 @@
 set -euo pipefail
 
 CONFIG_FILE="apps/api/.golangci.yml"
+# Also check .yaml extension
+if [ ! -f "$CONFIG_FILE" ]; then
+  CONFIG_FILE="apps/api/.golangci.yaml"
+fi
 
 echo "[GOLANGCI GUARDIAN] Validating golangci-lint configuration..."
 
