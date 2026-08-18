@@ -111,7 +111,6 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: '9'
 
       - name: Get pnpm store directory
         shell: bash
@@ -231,6 +230,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
+          context: .
+          file: ./apps/api/Dockerfile
           push: false
           tags: ghcr.io/vinnsedesigner/vyzorix-update-server/vyzorix:latest
           cache-from: type=gha
