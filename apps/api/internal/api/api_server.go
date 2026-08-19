@@ -113,6 +113,8 @@ type Server struct {
 	commandHandler              *cmdhandlers.ExecuteHandler
 	confirmationHandler         *confirmationhandlers.Handler
 	commandAuthorizer           *command.Authorizer
+	grantRepo                   *storage.GrantRepository
+	groupRepo                   *storage.DeviceGroupRepository
 	streamHandler               *websockethandlers.StreamHandler
 	telemetryHistoryHandler     *handlers.TelemetryHistoryHandler
 	connectionStatusHandler     *handlers.ConnectionStatusHandler
@@ -259,6 +261,13 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	// Shared command risk gate used by the GraphQL mutation path so it cannot
 	// bypass the confirmation/MFA requirements the REST path enforces.
 	s.commandAuthorizer = command.NewAuthorizerFromService(cfg.ConfirmationService)
+
+	// Scoped permission grants + device groups, wired for route-level
+	// authorization (RequireScope) and team-based device access.
+	if cfg.DB != nil {
+		s.grantRepo = storage.NewGrantRepository(cfg.DB.DB())
+		s.groupRepo = storage.NewDeviceGroupRepository(cfg.DB.DB())
+	}
 
 	// WebSocket handler.
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)

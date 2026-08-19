@@ -8,6 +8,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	infraConfig "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 
@@ -275,8 +276,8 @@ func (s *Server) setupDashboardRoutes(r ...*gin.RouterGroup) {
 	dashboard.Use(middleware.NewOrganizationContext(nil).Middleware())
 	dashboard.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
 
-	dashboard.GET("/devices", s.deviceListHandler.Handle)
-	dashboard.GET("/devices/operator", s.deviceListHandler.ListByOperator)
+	dashboard.GET("/devices", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.deviceListHandler.Handle)
+	dashboard.GET("/devices/operator", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.deviceListHandler.ListByOperator)
 	if s.commandHistoryHandler != nil {
 		s.commandHistoryHandler.RegisterRoutes(dashboard, s.dashboardRateLimiter)
 	}
@@ -377,16 +378,16 @@ func (s *Server) setupDevicesRoutes(r *gin.RouterGroup) {
 		devices.Use(middleware.NewOrganizationContext(nil).Middleware())
 		devices.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
 		// Apply rate limiting per spec Section 11.1.
-		devices.GET("", s.deviceRegRateLimiter.DevicesListLimit(), s.devicesHandler.GetDevices)
-		devices.GET("/:imei", s.deviceRegRateLimiter.DevicesGetLimit(), s.devicesHandler.GetDeviceDetail)
-		devices.DELETE("/:imei", s.deviceRegRateLimiter.DevicesDeleteLimit(), s.devicesHandler.DeregisterDevice)
+		devices.GET("", s.deviceRegRateLimiter.DevicesListLimit(), s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.devicesHandler.GetDevices)
+		devices.GET("/:imei", s.deviceRegRateLimiter.DevicesGetLimit(), s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.devicesHandler.GetDeviceDetail)
+		devices.DELETE("/:imei", s.deviceRegRateLimiter.DevicesDeleteLimit(), s.requireScope(permission.ActionDeviceDelete, permission.WildcardScope(permission.ScopeDevices)), s.devicesHandler.DeregisterDevice)
 
 		// Device settings routes.
 		if s.deviceSettingsHandler != nil {
-			devices.GET("/:imei/settings", s.deviceSettingsHandler.GetSettings)
-			devices.PATCH("/:imei/settings", s.deviceSettingsHandler.UpdateSettings)
-			devices.GET("/:imei/settings/thresholds", s.deviceSettingsHandler.GetThresholds)
-			devices.PATCH("/:imei/settings/thresholds", s.deviceSettingsHandler.UpdateThresholds)
+			devices.GET("/:imei/settings", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.deviceSettingsHandler.GetSettings)
+			devices.PATCH("/:imei/settings", s.requireScope(permission.ActionDeviceWrite, permission.WildcardScope(permission.ScopeDevices)), s.deviceSettingsHandler.UpdateSettings)
+			devices.GET("/:imei/settings/thresholds", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.deviceSettingsHandler.GetThresholds)
+			devices.PATCH("/:imei/settings/thresholds", s.requireScope(permission.ActionDeviceWrite, permission.WildcardScope(permission.ScopeDevices)), s.deviceSettingsHandler.UpdateThresholds)
 		}
 	}
 
@@ -410,29 +411,29 @@ func (s *Server) setupCommandManagementRoutes(r *gin.RouterGroup) {
 	commandMgmt.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
 	commandMgmt.Use(middleware.RequestSigningMiddleware(s.signatureVerifier))
 	commandMgmt.Use(middleware.MandatoryEncryptionMiddleware(s.encryptKeyFn))
-	commandMgmt.GET("/:dispatchId/status", s.commandHandler.GetStatus)
+	commandMgmt.GET("/:dispatchId/status", s.requireScope(permission.ActionCommand, permission.WildcardScope(permission.ScopeDevices)), s.commandHandler.GetStatus)
 	// Note: Idempotency is handled globally by tenantGroup middleware.
-	commandMgmt.POST("/:dispatchId/retry", s.commandHandler.Retry)
-	commandMgmt.DELETE("/:dispatchId", s.commandHandler.Cancel)
+	commandMgmt.POST("/:dispatchId/retry", s.requireScope(permission.ActionCommand, permission.WildcardScope(permission.ScopeDevices)), s.commandHandler.Retry)
+	commandMgmt.DELETE("/:dispatchId", s.requireScope(permission.ActionCommand, permission.WildcardScope(permission.ScopeDevices)), s.commandHandler.Cancel)
 }
 
 func (s *Server) setupTelemetryRoutes(r *gin.RouterGroup) {
 	telemetry := r.Group("/telemetry")
 	telemetry.Use(middleware.NewOrganizationContext(nil).Middleware())
 	telemetry.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
-	telemetry.GET("/history", s.telemetryHistoryHandler.Query)
-	telemetry.GET("/history/export", s.telemetryHistoryHandler.ExportJSON)
-	telemetry.GET("/latest/:deviceId", s.telemetryHistoryHandler.GetLatest)
-	telemetry.GET("/stats/:deviceId", s.telemetryHistoryHandler.GetStats)
-	telemetry.DELETE("/cleanup", s.telemetryHistoryHandler.CleanupOld)
+	telemetry.GET("/history", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.telemetryHistoryHandler.Query)
+	telemetry.GET("/history/export", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.telemetryHistoryHandler.ExportJSON)
+	telemetry.GET("/latest/:deviceId", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.telemetryHistoryHandler.GetLatest)
+	telemetry.GET("/stats/:deviceId", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.telemetryHistoryHandler.GetStats)
+	telemetry.DELETE("/cleanup", s.requireScope(permission.ActionSettingsWrite, permission.WildcardScope(permission.ScopeOrg)), s.telemetryHistoryHandler.CleanupOld)
 }
 
 func (s *Server) setupConnectionsRoutes(r *gin.RouterGroup) {
 	connections := r.Group("/connections")
 	connections.Use(middleware.NewOrganizationContext(nil).Middleware())
 	connections.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
-	connections.GET("", s.connectionStatusHandler.GetAllStatus)
-	connections.GET("/metrics", s.connectionStatusHandler.GetMetrics)
+	connections.GET("", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.connectionStatusHandler.GetAllStatus)
+	connections.GET("/metrics", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.connectionStatusHandler.GetMetrics)
 }
 
 func (s *Server) setupUpdatesRoutes(r *gin.RouterGroup) {
@@ -460,6 +461,7 @@ func (s *Server) setupAPIKeysRoutes(r *gin.RouterGroup) {
 		// All API keys routes require organization context for multi-tenant isolation.
 		authGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
 		authGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+		authGroup.Use(s.requireScope(permission.ActionKeysManage, permission.WildcardScope(permission.ScopeOrg)))
 		s.apiKeysHandler.RegisterRoutes(authGroup)
 	}
 }
@@ -487,6 +489,7 @@ func (s *Server) setupClientCredentialsRoutes(r *gin.RouterGroup) {
 	clientCredsGroup := r.Group("/auth/client-credentials")
 	clientCredsGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
 	clientCredsGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+	clientCredsGroup.Use(s.requireScope(permission.ActionKeysManage, permission.WildcardScope(permission.ScopeOrg)))
 	clientCredsGroup.Use(middleware.NoCache())
 	{
 		clientCredsGroup.POST("", s.authHandlers.ClientCreds.Create)
@@ -503,38 +506,41 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 		return
 	}
 
-	// Organization routes (authenticated).
+	// Organization routes (authenticated + org-scoped).
 	orgs := r.Group("/organizations")
 	orgs.Use(s.cookieAuth.Middleware())
+	orgs.Use(middleware.NewOrganizationContext(nil).Middleware())
+	orgs.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
 	{
-		orgs.POST("", s.organizationHandler.Create)
-		orgs.GET("", s.organizationHandler.List)
-		orgs.GET("/:id", s.organizationHandler.Get)
-		orgs.PATCH("/:id", s.organizationHandler.Update)
-		orgs.DELETE("/:id", s.organizationHandler.Delete)
+		// Org CRUD: admins manage settings, only super_admin deletes.
+		orgs.POST("", s.requireScope(permission.ActionSettingsWrite, permission.WildcardScope(permission.ScopeOrg)), s.organizationHandler.Create)
+		orgs.GET("", s.requireScope(permission.ActionSettingsRead, permission.WildcardScope(permission.ScopeOrg)), s.organizationHandler.List)
+		orgs.GET("/:id", s.requireScope(permission.ActionSettingsRead, permission.WildcardScope(permission.ScopeOrg)), s.organizationHandler.Get)
+		orgs.PATCH("/:id", s.requireScope(permission.ActionSettingsWrite, permission.WildcardScope(permission.ScopeOrg)), s.organizationHandler.Update)
+		orgs.DELETE("/:id", s.requireScope(permission.ActionSettingsWrite, permission.WildcardScope(permission.ScopeOrg)), s.organizationHandler.Delete)
 
-		// Member routes under organizations.
-		orgs.GET("/:id/members", s.memberHandler.List)
-		orgs.DELETE("/:id/members/:memberId", s.memberHandler.Remove)
-		orgs.PATCH("/:id/members/:memberId", s.memberHandler.UpdateRole)
-		orgs.POST("/:id/members/:memberId/transfer", s.memberHandler.TransferOwnership)
-		orgs.POST("/:id/members/:memberId/suspend", s.memberHandler.Suspend)
-		orgs.POST("/:id/members/:memberId/reinstate", s.memberHandler.Reinstate)
+		// Member routes: member management (suspend/reinstate/remove/role) requires members:write.
+		orgs.GET("/:id/members", s.requireScope(permission.ActionMembersRead, permission.WildcardScope(permission.ScopeOrg)), s.memberHandler.List)
+		orgs.DELETE("/:id/members/:memberId", s.requireScope(permission.ActionMembersDelete, permission.WildcardScope(permission.ScopeOrg)), s.memberHandler.Remove)
+		orgs.PATCH("/:id/members/:memberId", s.requireScope(permission.ActionMembersWrite, permission.WildcardScope(permission.ScopeOrg)), s.memberHandler.UpdateRole)
+		orgs.POST("/:id/members/:memberId/transfer", s.requireScope(permission.ActionMembersWrite, permission.WildcardScope(permission.ScopeOrg)), s.memberHandler.TransferOwnership)
+		orgs.POST("/:id/members/:memberId/suspend", s.requireScope(permission.ActionMembersWrite, permission.WildcardScope(permission.ScopeOrg)), s.memberHandler.Suspend)
+		orgs.POST("/:id/members/:memberId/reinstate", s.requireScope(permission.ActionMembersWrite, permission.WildcardScope(permission.ScopeOrg)), s.memberHandler.Reinstate)
 
 		// Invitation routes under organizations.
-		orgs.GET("/:id/invitations", s.invitationHandler.ListByOrganization)
+		orgs.GET("/:id/invitations", s.requireScope(permission.ActionMembersRead, permission.WildcardScope(permission.ScopeOrg)), s.invitationHandler.ListByOrganization)
 
 		// Organization settings routes.
 		if s.organizationSettingsHandler != nil {
-			orgs.GET("/:id/settings", s.organizationSettingsHandler.GetSettings)
-			orgs.PATCH("/:id/settings", s.organizationSettingsHandler.UpdateSettings)
-			orgs.GET("/:id/settings/thresholds", s.organizationSettingsHandler.GetThresholds)
-			orgs.PATCH("/:id/settings/thresholds", s.organizationSettingsHandler.UpdateThresholds)
+			orgs.GET("/:id/settings", s.requireScope(permission.ActionSettingsRead, permission.WildcardScope(permission.ScopeOrg)), s.organizationSettingsHandler.GetSettings)
+			orgs.PATCH("/:id/settings", s.requireScope(permission.ActionSettingsWrite, permission.WildcardScope(permission.ScopeOrg)), s.organizationSettingsHandler.UpdateSettings)
+			orgs.GET("/:id/settings/thresholds", s.requireScope(permission.ActionSettingsRead, permission.WildcardScope(permission.ScopeOrg)), s.organizationSettingsHandler.GetThresholds)
+			orgs.PATCH("/:id/settings/thresholds", s.requireScope(permission.ActionSettingsWrite, permission.WildcardScope(permission.ScopeOrg)), s.organizationSettingsHandler.UpdateThresholds)
 		}
 
-		// Device transfer route.
+		// Device transfer route (super_admin source + target membership enforced in handler).
 		if s.transferHandler != nil {
-			orgs.POST("/:id/devices/:imei/transfer", s.transferHandler.Transfer)
+			orgs.POST("/:id/devices/:imei/transfer", s.requireScope(permission.ActionDeviceAssign, permission.WildcardScope(permission.ScopeDevices)), s.transferHandler.Transfer)
 		}
 	}
 
