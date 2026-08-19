@@ -39,6 +39,7 @@ import (
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
@@ -265,7 +266,8 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	// Scoped permission grants + device groups, wired for route-level
 	// authorization (RequireScope) and team-based device access.
 	if cfg.DB != nil {
-		s.grantRepo = storage.NewGrantRepository(cfg.DB.DB())
+		permCache := permission.NewCache(30 * time.Second)
+		s.grantRepo = storage.NewGrantRepositoryWithCache(cfg.DB.DB(), permCache)
 		s.groupRepo = storage.NewDeviceGroupRepository(cfg.DB.DB())
 	}
 

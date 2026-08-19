@@ -1,5 +1,9 @@
 package permission
 
+import (
+	"context"
+)
+
 // Evaluator resolves an operator's effective scoped permissions within an
 // organization: the member's role defaults unioned with custom
 // ResourcePermissions (operator-direct and team grants), with action sets
@@ -39,4 +43,13 @@ func NewEvaluatorWithScopes(scopes ScopedPermissions) *Evaluator {
 // device.manage) satisfies a check for any of its base actions.
 func (e *Evaluator) Grants(action Action, scope string) bool {
 	return e.scopes.Grants(action, scope)
+}
+
+// GrantsResolved reports whether the evaluator grants `action` on `scope`,
+// resolving the scope through registered scope-attribute resolvers first. This
+// is the entry point that should be used at access time — it expands a runtime
+// scope (e.g. devices:imei:X) into the concrete scopes an operator might hold,
+// including inherited/group scopes, and checks each.
+func (e *Evaluator) GrantsResolved(ctx context.Context, action Action, scope string) bool {
+	return e.scopes.GrantsResolved(ctx, action, scope)
 }
