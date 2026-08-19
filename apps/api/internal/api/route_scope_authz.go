@@ -41,7 +41,7 @@ func (s *Server) requireScope(action permission.Action, scope string) gin.Handle
 
 		var grants []*permission.Grant
 		if s.grantRepo != nil {
-			grants, _ = s.grantRepo.ListByOperatorOrg(c.Request.Context(), op.ID, orgID)
+			grants, _ = s.grantRepo.ListEffective(c.Request.Context(), op.ID, orgID)
 		}
 		eval := permission.NewEvaluator(string(m.Role), grants)
 		if !eval.Grants(action, scope) {

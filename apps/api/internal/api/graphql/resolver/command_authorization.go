@@ -74,7 +74,7 @@ func (r *Resolver) scopeEvaluator(ctx context.Context, op *domainoperator.Operat
 	if r.GrantRepo == nil {
 		return permission.NewEvaluator(role, nil)
 	}
-	grants, err := r.GrantRepo.ListByOperatorOrg(ctx, op.ID, orgID)
+	grants, err := r.GrantRepo.ListEffective(ctx, op.ID, orgID)
 	if err != nil {
 		return permission.NewEvaluator(role, nil)
 	}
