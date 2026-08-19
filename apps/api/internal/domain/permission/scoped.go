@@ -21,6 +21,27 @@ const (
 	// Command execution on a device.
 	ActionCommand Action = "command.execute"
 
+	// Telemetry: query device telemetry history, latest, stats, export.
+	ActionTelemetryRead  Action = "telemetry.read"
+	ActionTelemetryWrite Action = "telemetry.write"
+
+	// Diagnostics: inspect device state and view diagnostic timelines.
+	ActionDiagnosticsRead Action = "diagnostics.read"
+
+	// Device events and logs: view the event/log timeline for a device.
+	ActionEventsRead Action = "events.read"
+	ActionLogsRead   Action = "logs.read"
+
+	// Connection status: view device WebSocket/FCM connection state and metrics.
+	ActionConnectionsRead Action = "connections.read"
+
+	// Cluster stats: aggregate dashboard/cluster health and utilization metrics.
+	ActionStatsRead Action = "stats.read"
+
+	// Device inbox: view/approve device registration inbox entries.
+	ActionInboxRead  Action = "inbox.read"
+	ActionInboxWrite Action = "inbox.write"
+
 	// Update management actions.
 	ActionUpdateRead   Action = "update.read"
 	ActionUpdateWrite  Action = "update.write"
@@ -41,9 +62,12 @@ const (
 // Well-known resource scope prefixes. A scope is a sequence of `prefix:id`
 // segments optionally ending with a trailing wildcard `:*`.
 const (
-	ScopeDevices = "devices"
-	ScopeOrg     = "org"
-	ScopeUpdates = "updates"
+	ScopeDevices     = "devices"
+	ScopeOrg         = "org"
+	ScopeUpdates     = "updates"
+	ScopeTelemetry   = "telemetry"
+	ScopeDiagnostics = "diagnostics"
+	ScopeInbox       = "inbox"
 )
 
 // ScopedPermission is one action granted on one resource scope.

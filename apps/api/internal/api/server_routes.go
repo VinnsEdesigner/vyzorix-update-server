@@ -287,19 +287,22 @@ func (s *Server) setupDashboardRoutes(r ...*gin.RouterGroup) {
 
 	// Device events history endpoints.
 	if s.deviceEventsHandler != nil {
-		dashboard.GET("/device/:imei/events", s.deviceEventsHandler.GetEvents)
-		dashboard.GET("/events/recent", s.deviceEventsHandler.GetRecentEvents)
-		dashboard.GET("/events/types/:type", s.deviceEventsHandler.GetEventsByType)
-		dashboard.GET("/events/:id", s.deviceEventsHandler.GetEventByID)
+		dashboard.GET("/device/:imei/events", s.requireScope(permission.ActionEventsRead, permission.WildcardScope(permission.ScopeDevices)), s.deviceEventsHandler.GetEvents)
+		dashboard.GET("/events/recent", s.requireScope(permission.ActionEventsRead, permission.WildcardScope(permission.ScopeDevices)), s.deviceEventsHandler.GetRecentEvents)
+		dashboard.GET("/events/types/:type", s.requireScope(permission.ActionEventsRead, permission.WildcardScope(permission.ScopeDevices)), s.deviceEventsHandler.GetEventsByType)
+		dashboard.GET("/events/:id", s.requireScope(permission.ActionEventsRead, permission.WildcardScope(permission.ScopeDevices)), s.deviceEventsHandler.GetEventByID)
 	}
 
 	if s.deviceMetricsHandler != nil {
+		dashboard.Use(s.requireScope(permission.ActionStatsRead, permission.WildcardScope(permission.ScopeOrg)))
 		s.deviceMetricsHandler.RegisterMetricsRoutes(dashboard, s.dashboardRateLimiter)
 	}
 	if s.deviceTelemetryHandler != nil {
+		dashboard.Use(s.requireScope(permission.ActionTelemetryRead, permission.WildcardScope(permission.ScopeTelemetry)))
 		s.deviceTelemetryHandler.RegisterTelemetryRoutes(dashboard, s.dashboardRateLimiter)
 	}
 	if s.dashboardStatsHandler != nil {
+		dashboard.Use(s.requireScope(permission.ActionStatsRead, permission.WildcardScope(permission.ScopeOrg)))
 		s.dashboardStatsHandler.RegisterRoutes(dashboard, s.memberHandler.MembershipChecker())
 	}
 }
@@ -360,11 +363,12 @@ func (s *Server) setupDeviceInboxRoutes(r *gin.RouterGroup) {
 		authenticatedInbox.Use(middleware.NewOrganizationContext(nil).Middleware())
 		authenticatedInbox.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
 		authenticatedInbox.Use(s.cookieAuth.Middleware())
+		authenticatedInbox.Use(s.requireScope(permission.ActionInboxRead, permission.WildcardScope(permission.ScopeInbox)))
 		authenticatedInbox.GET("/inbox", s.deviceRegRateLimiter.InboxListLimit(), s.inboxHandler.GetInbox)
 		authenticatedInbox.GET("/inbox/:imei", s.deviceRegRateLimiter.InboxGetLimit(), s.inboxHandler.GetInboxEntry)
-		authenticatedInbox.PATCH("/inbox/:imei", s.deviceRegRateLimiter.InboxGetLimit(), s.inboxHandler.UpdateInboxEntry)
-		authenticatedInbox.POST("/inbox/:imei/ack", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.AckInbox)
-		authenticatedInbox.POST("/inbox/:imei/resend", s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.ResendApproval)
+		authenticatedInbox.PATCH("/inbox/:imei", s.requireScope(permission.ActionInboxWrite, permission.WildcardScope(permission.ScopeInbox)), s.deviceRegRateLimiter.InboxGetLimit(), s.inboxHandler.UpdateInboxEntry)
+		authenticatedInbox.POST("/inbox/:imei/ack", s.requireScope(permission.ActionInboxWrite, permission.WildcardScope(permission.ScopeInbox)), s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.AckInbox)
+		authenticatedInbox.POST("/inbox/:imei/resend", s.requireScope(permission.ActionInboxWrite, permission.WildcardScope(permission.ScopeInbox)), s.deviceRegRateLimiter.InboxAckLimit(), s.inboxHandler.ResendApproval)
 
 		// Note: POST /v1/device/inbox is already registered as public in setupDevicePublicRoutes.
 		// No need to call RegisterPublicRoutes here as it would cause duplicate registration.
@@ -421,19 +425,19 @@ func (s *Server) setupTelemetryRoutes(r *gin.RouterGroup) {
 	telemetry := r.Group("/telemetry")
 	telemetry.Use(middleware.NewOrganizationContext(nil).Middleware())
 	telemetry.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
-	telemetry.GET("/history", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.telemetryHistoryHandler.Query)
-	telemetry.GET("/history/export", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.telemetryHistoryHandler.ExportJSON)
-	telemetry.GET("/latest/:deviceId", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.telemetryHistoryHandler.GetLatest)
-	telemetry.GET("/stats/:deviceId", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.telemetryHistoryHandler.GetStats)
-	telemetry.DELETE("/cleanup", s.requireScope(permission.ActionSettingsWrite, permission.WildcardScope(permission.ScopeOrg)), s.telemetryHistoryHandler.CleanupOld)
+	telemetry.GET("/history", s.requireScope(permission.ActionTelemetryRead, permission.WildcardScope(permission.ScopeTelemetry)), s.telemetryHistoryHandler.Query)
+	telemetry.GET("/history/export", s.requireScope(permission.ActionTelemetryRead, permission.WildcardScope(permission.ScopeTelemetry)), s.telemetryHistoryHandler.ExportJSON)
+	telemetry.GET("/latest/:deviceId", s.requireScope(permission.ActionTelemetryRead, permission.WildcardScope(permission.ScopeTelemetry)), s.telemetryHistoryHandler.GetLatest)
+	telemetry.GET("/stats/:deviceId", s.requireScope(permission.ActionTelemetryRead, permission.WildcardScope(permission.ScopeTelemetry)), s.telemetryHistoryHandler.GetStats)
+	telemetry.DELETE("/cleanup", s.requireScope(permission.ActionTelemetryWrite, permission.WildcardScope(permission.ScopeTelemetry)), s.telemetryHistoryHandler.CleanupOld)
 }
 
 func (s *Server) setupConnectionsRoutes(r *gin.RouterGroup) {
 	connections := r.Group("/connections")
 	connections.Use(middleware.NewOrganizationContext(nil).Middleware())
 	connections.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
-	connections.GET("", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.connectionStatusHandler.GetAllStatus)
-	connections.GET("/metrics", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.connectionStatusHandler.GetMetrics)
+	connections.GET("", s.requireScope(permission.ActionConnectionsRead, permission.WildcardScope(permission.ScopeDevices)), s.connectionStatusHandler.GetAllStatus)
+	connections.GET("/metrics", s.requireScope(permission.ActionConnectionsRead, permission.WildcardScope(permission.ScopeDevices)), s.connectionStatusHandler.GetMetrics)
 }
 
 func (s *Server) setupUpdatesRoutes(r *gin.RouterGroup) {
@@ -451,6 +455,7 @@ func (s *Server) setupDiagnosticsRoutes(r *gin.RouterGroup) {
 		diagnosticsGroup := r.Group("/device")
 		diagnosticsGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
 		diagnosticsGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+		diagnosticsGroup.Use(s.requireScope(permission.ActionDiagnosticsRead, permission.WildcardScope(permission.ScopeDiagnostics)))
 		diagnostics.RegisterRoutes(diagnosticsGroup, s.diagnosticsInspectHandler, s.diagnosticsTimelineHandler)
 	}
 }

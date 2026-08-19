@@ -8,6 +8,9 @@ func DefaultScopesForRole(roleName string) ScopedPermissions {
 	devicesAll := WildcardScope(ScopeDevices)
 	updatesAll := WildcardScope(ScopeUpdates)
 	orgAll := WildcardScope(ScopeOrg)
+	telemetryAll := WildcardScope(ScopeTelemetry)
+	diagnosticsAll := WildcardScope(ScopeDiagnostics)
+	inboxAll := WildcardScope(ScopeInbox)
 
 	var perms ScopedPermissions
 
@@ -16,6 +19,12 @@ func DefaultScopesForRole(roleName string) ScopedPermissions {
 			{ActionDeviceRead, devicesAll},
 			{ActionUpdateRead, updatesAll},
 			{ActionSettingsRead, orgAll},
+			{ActionTelemetryRead, telemetryAll},
+			{ActionDiagnosticsRead, diagnosticsAll},
+			{ActionEventsRead, devicesAll},
+			{ActionLogsRead, devicesAll},
+			{ActionConnectionsRead, devicesAll},
+			{ActionStatsRead, orgAll},
 		}
 	}
 	appendOperator := func() {
@@ -23,6 +32,10 @@ func DefaultScopesForRole(roleName string) ScopedPermissions {
 			ScopedPermission{ActionDeviceWrite, devicesAll},
 			ScopedPermission{ActionCommand, devicesAll},
 			ScopedPermission{ActionUpdateRead, updatesAll},
+			ScopedPermission{ActionTelemetryRead, telemetryAll},
+			ScopedPermission{ActionDiagnosticsRead, diagnosticsAll},
+			ScopedPermission{ActionInboxRead, inboxAll},
+			ScopedPermission{ActionInboxWrite, inboxAll},
 		)
 	}
 	appendAdmin := func() {
@@ -34,6 +47,7 @@ func DefaultScopesForRole(roleName string) ScopedPermissions {
 			ScopedPermission{ActionSettingsWrite, orgAll},
 			ScopedPermission{ActionKeysManage, orgAll},
 			ScopedPermission{ActionAuditRead, orgAll},
+			ScopedPermission{ActionTelemetryWrite, telemetryAll},
 		)
 	}
 	appendSuperAdmin := func() {

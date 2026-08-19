@@ -10,18 +10,21 @@ package permission
 // Aggregate action names. These are intentionally distinct from the base
 // Action constants so a grant of an aggregate is recognizable as such.
 const (
-	ActionSetDeviceManage   Action = "device.manage"
+	ActionSetDeviceManage    Action = "device.manage"
 	ActionSetUpdateManage    Action = "update.manage"
 	ActionSetMembersManage   Action = "members.manage"
 	ActionSetSettingsManage  Action = "settings.manage"
 	ActionSetOrgAdmin        Action = "org.admin"
 	ActionSetCommandManage   Action = "command.manage"
+	ActionSetTelemetryManage Action = "telemetry.manage"
+	ActionSetObservability   Action = "observability"
+	ActionSetInboxManage     Action = "inbox.manage"
 )
 
 // actionSets maps an aggregate action to the base actions it implies.
 var actionSets = map[Action][]Action{
-	ActionSetDeviceManage:  {ActionDeviceRead, ActionDeviceWrite, ActionDeviceDelete, ActionDeviceAssign},
-	ActionSetUpdateManage:  {ActionUpdateRead, ActionUpdateWrite, ActionUpdateDelete},
+	ActionSetDeviceManage:   {ActionDeviceRead, ActionDeviceWrite, ActionDeviceDelete, ActionDeviceAssign},
+	ActionSetUpdateManage:   {ActionUpdateRead, ActionUpdateWrite, ActionUpdateDelete},
 	ActionSetMembersManage:  {ActionMembersRead, ActionMembersWrite, ActionMembersDelete},
 	ActionSetSettingsManage: {ActionSettingsRead, ActionSettingsWrite},
 	ActionSetOrgAdmin: {
@@ -29,7 +32,14 @@ var actionSets = map[Action][]Action{
 		ActionMembersRead, ActionMembersWrite, ActionMembersDelete,
 		ActionAuditRead, ActionKeysManage,
 	},
-	ActionSetCommandManage: {ActionCommand},
+	ActionSetCommandManage:   {ActionCommand},
+	ActionSetTelemetryManage: {ActionTelemetryRead, ActionTelemetryWrite},
+	ActionSetObservability: {
+		ActionTelemetryRead, ActionDiagnosticsRead,
+		ActionEventsRead, ActionLogsRead,
+		ActionConnectionsRead, ActionStatsRead,
+	},
+	ActionSetInboxManage: {ActionInboxRead, ActionInboxWrite},
 }
 
 // IsActionSet reports whether an action is an aggregate action set.
