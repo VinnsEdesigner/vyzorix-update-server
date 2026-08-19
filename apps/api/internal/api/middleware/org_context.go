@@ -36,7 +36,7 @@ func NewOrganizationContext(skipIfMissing *bool) *OrganizationContext {
 // A client may still send ?organization_id= or X-Organization-ID. If it
 // disagrees with the server-resolved org, the request is rejected (400) rather
 // than silently honored — this is how the server, not the client, owns org
-// state (mirrors Grafana forcing a validated org switch instead of trusting a
+// state: the server forces a validated org switch instead of trusting a
 // per-request header).
 func (c *OrganizationContext) Middleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {

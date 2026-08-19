@@ -1,7 +1,7 @@
 # Authorization Model: Code-Verified Issues & Fixes
 
 Code-level review of the vyzorix organization/authorization model, comparing
-what the code actually does against Grafana's scoped-permission model. Each
+what the code actually does against a scoped-permission model. Each
 issue includes the exact evidence (file + line) and the best fix.
 
 Severity: CRITICAL (reachable security hole) > HIGH (missing protection) >
@@ -121,7 +121,7 @@ switch, and `permissions.go` marks `DefaultPermissions()`/`AdminPermissions()`
 `Deprecated` — "Permissions are now derived from organization membership roles."
 The `Permission` constants are vestigial.
 
-Grafana: `EvalPermission(action, scopes...)` (`evaluator.go:31`) evaluates
+A scoped engine evaluates `EvalPermission(action, scopes...)` evaluates
 `permissions[action]` against per-resource scopes with wildcard prefix matching
 (`datasources:uid:abc` matches `datasources:uid:*`). Permissions are
 independently grantable, persisted, and evaluated per resource at the route.
@@ -131,7 +131,7 @@ device Y" or "this API key can only push updates, not reboot." Authorization
 granularity went *backwards* (a permission system was deleted for role bundles).
 
 **Best fix:** long-term, move to action+scope permission evaluation like
-Grafana. Short-term, Issue 3's owner-or-admin device scoping is the highest-value
+Short-term, Issue 3's owner-or-admin device scoping is the highest-value
 increment and does not require the full RBAC rewrite.
 
 ---
@@ -139,7 +139,7 @@ increment and does not require the full RBAC rewrite.
 ## Issue 5 — No teams / intra-org partitioning (MEDIUM)
 
 No `Team` concept exists anywhere in vyzorix (`find internal/domain -iname
-'*team*'` → empty). Grafana partitions org access via teams + scoped
+'*team*'` → empty). a mature system partitions org access via teams + scoped
 folder/dashboard permissions. vyzorix has operators ↔ orgs and nothing between.
 
 **Result:** no way to say "field-ops team manages these 200 devices, NOC manages
@@ -160,7 +160,7 @@ can shift org context **on every request** by sending a different header. The
 org was claimed (`GetMembership` returns `ErrNotOrgMember` when
 `!member.IsActive()`) — so this is **not** a cross-org access hole.
 
-Grafana treats org ID as a server-side property of the signed-in identity: a
+A server-driven model treats org ID as a server-side property of the signed-in identity: a
 `?orgId=` that differs from the session **forces re-login** (`middleware/
 auth.go:208`), and org-switching is an explicit validated `POST /user/using/:id`
 (`api/user.go:499`, `validateUsingOrg`).
@@ -228,5 +228,5 @@ Implemented and verified (build + vet + golangci-lint + full test suite all pass
 - **Issue 6** — Server-driven org state: `api_keys.organization_id` is bound at
   key creation; the tenant API-key middleware sets org context from the key, and
   the org-context middleware treats session/key binding as authoritative,
-  rejecting a conflicting client header/query with 400 (mirrors Grafana's
+  rejecting a conflicting client header/query with 400 (mirrors a
   validated org-switch, not a per-request header override).

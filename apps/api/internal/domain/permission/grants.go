@@ -13,9 +13,9 @@ const (
 
 // ResourcePermission is a first-class persisted permission grant: one or more
 // actions on a scope, granted to a subject (operator, team, or built-in role)
-// within an organization. This mirrors Grafana's ResourcePermission, which is
-// the unit of grant in its RBAC system — assignable to users OR teams OR
-// built-in roles, with managed/inherited lifecycle flags.
+// within an organization. This is the unit of grant in the scoped RBAC system —
+// assignable to operators OR teams OR built-in roles, with managed/inherited
+// lifecycle flags.
 type ResourcePermission struct {
 	OrgID       string
 	ID          string

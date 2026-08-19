@@ -12,7 +12,7 @@ import (
 // requireScope returns gin middleware that enforces a scoped permission: the
 // caller must hold `action` on `scope` in the current organization, resolved
 // through the scoped permission engine (role defaults unioned with custom
-// grants). This mirrors Grafana's `authorize(ac.EvalPermission(action, scope))`
+// grants). This mirrors the standard scoped-RBAC pattern `authorize(EvalPermission(action, scope))`
 // at the route level. The scope is normally a resource-type wildcard
 // ("devices:*"); per-resource narrowing happens in the handler (e.g. the
 // command path's owner-or-group check).

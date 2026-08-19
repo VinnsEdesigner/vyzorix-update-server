@@ -5,7 +5,7 @@ package permission
 // device.write, device.delete, device.assign individually. ExpandActionSets
 // expands any aggregate action in a permission set into its members before
 // evaluation, so a grant of an action set satisfies a check for any of its
-// base actions (mirrors Grafana's ExpandActionSets).
+// base actions before evaluation.
 
 // Aggregate action names. These are intentionally distinct from the base
 // Action constants so a grant of an aggregate is recognizable as such.
