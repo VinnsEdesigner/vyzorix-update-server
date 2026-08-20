@@ -489,7 +489,7 @@ func (s *Server) setupSearchRoutes(r *gin.RouterGroup) {
 			q := c.Query("q")
 			resultType := c.Query("type")
 			if s.searchService != nil {
-				results, err := s.searchService.Search(c.Request.Context(), q, orgID, resultType, 20)
+				results, err := s.searchService.Search(c.Request.Context(), q, orgID, resultType, 20, c.Query("tag"), c.Query("sort"))
 				if err != nil {
 					c.JSON(500, gin.H{"error": "search failed"})
 					return
@@ -624,6 +624,14 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 	{
 		meSettings.GET("", s.authHandlers.Settings.GetSettings)
 		meSettings.PATCH("", s.authHandlers.Settings.UpdateSettings)
+	}
+
+	mePrefs := r.Group("/me/preferences")
+	mePrefs.Use(s.cookieAuth.Middleware())
+	mePrefs.Use(middleware.NoCache())
+	{
+		mePrefs.GET("", s.authHandlers.Settings.GetPreferences)
+		mePrefs.PATCH("", s.authHandlers.Settings.UpdatePreferences)
 	}
 }
 

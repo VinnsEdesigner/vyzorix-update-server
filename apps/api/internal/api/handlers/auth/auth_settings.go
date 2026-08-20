@@ -32,14 +32,14 @@ type SettingsAuditEvent struct {
 
 // SettingsHandler handles /me settings endpoints.
 type SettingsHandler struct {
-	authService  *auth.AuthService
-	operatorRepo operator.Repository
-	presenter    *response.Presenter
-	rateLimiter  *middleware.SettingsRateLimiterMiddleware
-	auditLogger  *audit.Logger
+	authService     *auth.AuthService
+	operatorRepo    operator.Repository
+	settingsService *auth.ClientSettingsService
+	presenter       *response.Presenter
+	rateLimiter     *middleware.SettingsRateLimiterMiddleware
+	auditLogger     *audit.Logger
 }
 
-// NewSettingsHandler creates a new SettingsHandler.
 func NewSettingsHandler(
 	authService *auth.AuthService,
 	operatorRepo operator.Repository,
@@ -50,10 +50,11 @@ func NewSettingsHandler(
 		rateLimiter = middleware.NewSettingsRateLimiterMiddleware(nil)
 	}
 	return &SettingsHandler{
-		authService:  authService,
-		operatorRepo: operatorRepo,
-		presenter:    presenter,
-		rateLimiter:  rateLimiter,
+		authService:     authService,
+		operatorRepo:    operatorRepo,
+		settingsService: auth.NewClientSettingsService(operatorRepo),
+		presenter:       presenter,
+		rateLimiter:     rateLimiter,
 	}
 }
 
@@ -597,4 +598,37 @@ func (h *SettingsHandler) RotateWebhookSecret(c *gin.Context) {
 	h.presenter.OK(c, gin.H{
 		"secret": secret,
 	})
+}
+
+func (h *SettingsHandler) GetPreferences(c *gin.Context) {
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		h.presenter.Unauthorized(c, "authentication required")
+		return
+	}
+	prefs, err := h.settingsService.GetPreferences(c.Request.Context(), op.ID)
+	if err != nil {
+		h.presenter.InternalError(c, "failed to get preferences")
+		return
+	}
+	h.presenter.OK(c, gin.H{"preferences": prefs})
+}
+
+func (h *SettingsHandler) UpdatePreferences(c *gin.Context) {
+	op := middleware.GetOperatorFromContext(c)
+	if op == nil {
+		h.presenter.Unauthorized(c, "authentication required")
+		return
+	}
+	var updates map[string]any
+	if err := c.ShouldBindJSON(&updates); err != nil {
+		h.presenter.BadRequest(c, "invalid JSON body")
+		return
+	}
+	prefs, err := h.settingsService.UpdatePreferences(c.Request.Context(), op.ID, updates)
+	if err != nil {
+		h.presenter.InternalError(c, "failed to update preferences")
+		return
+	}
+	h.presenter.OK(c, gin.H{"preferences": prefs})
 }

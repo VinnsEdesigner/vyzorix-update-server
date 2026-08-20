@@ -762,6 +762,27 @@ func (r *OperatorRepository) UpdateClientSettings(ctx context.Context, id string
 	return nil
 }
 
+func (r *OperatorRepository) GetPreferencesRaw(ctx context.Context, operatorID string) (string, error) {
+	var prefs sql.NullString
+	err := r.queryRow(ctx, `SELECT preferences FROM operator_settings WHERE operator_id = ?`, operatorID).Scan(&prefs)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return prefs.String, nil
+}
+
+func (r *OperatorRepository) SavePreferencesRaw(ctx context.Context, operatorID string, prefsJSON string) error {
+	_, err := r.exec(ctx,
+		`INSERT INTO operator_settings (operator_id, preferences, risk_warn, risk_crit, thermal_warn, thermal_crit, buffer_warn, buffer_crit)
+		 VALUES (?, ?, 70, 85, 45, 50, 30, 15)
+		 ON CONFLICT(operator_id) DO UPDATE SET preferences = excluded.preferences`,
+		operatorID, prefsJSON)
+	return err
+}
+
 // ResetSettings resets all settings to defaults for an operator.
 func (r *OperatorRepository) ResetSettings(ctx context.Context, id string) error {
 	result, err := r.exec(ctx,

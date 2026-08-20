@@ -28,6 +28,7 @@ type FCMNotifier interface {
 // DeviceCreator defines the interface for creating devices from inbox entries.
 type DeviceCreator interface {
 	CreateFromInbox(ctx context.Context, entry *inbox.InboxEntry, commandSecret string) (*device.Device, error)
+	CheckDeviceQuota(ctx context.Context, orgID string, maxDevices int) error
 }
 
 // DeviceLookup defines the interface for looking up devices.
@@ -37,13 +38,14 @@ type DeviceLookup interface {
 
 // Service handles inbox operations.
 type Service struct {
-	repo         inbox.Repository
-	logRepo      inbox.RegistrationLogRepository
-	deviceSvc    DeviceCreator
-	deviceLookup DeviceLookup
-	fcmNotifier  FCMNotifier
-	txManager    transaction.TxManager
-	logger       *slog.Logger
+	repo             inbox.Repository
+	logRepo          inbox.RegistrationLogRepository
+	deviceSvc        DeviceCreator
+	deviceLookup     DeviceLookup
+	fcmNotifier      FCMNotifier
+	txManager        transaction.TxManager
+	logger           *slog.Logger
+	deviceQuotaLimit int
 }
 
 // NewService creates a new InboxService.
@@ -59,13 +61,19 @@ func NewService(
 		logger = slog.Default()
 	}
 	return &Service{
-		repo:         repo,
-		logRepo:      logRepo,
-		deviceSvc:    deviceSvc,
-		deviceLookup: deviceLookup,
-		fcmNotifier:  fcmNotifier,
-		logger:       logger,
+		repo:             repo,
+		logRepo:          logRepo,
+		deviceSvc:        deviceSvc,
+		deviceLookup:     deviceLookup,
+		fcmNotifier:      fcmNotifier,
+		logger:           logger,
+		deviceQuotaLimit: 0,
 	}
+}
+
+// SetDeviceQuotaLimit sets the max devices per org for quota enforcement.
+func (s *Service) SetDeviceQuotaLimit(limit int) {
+	s.deviceQuotaLimit = limit
 }
 
 // WithTxManager sets the transaction manager for ACID transactions.
@@ -264,6 +272,9 @@ func (s *Service) ApproveDevice(ctx context.Context, imei string, operatorID, or
 
 	// Create device in devices table.
 	if s.deviceSvc != nil {
+		if err := s.deviceSvc.CheckDeviceQuota(ctx, orgID, s.deviceQuotaLimit); err != nil {
+			return nil, err
+		}
 		createdDevice, err := s.deviceSvc.CreateFromInbox(ctx, entry, secret)
 		if err != nil {
 			s.logger.Error("failed to create device from inbox entry",

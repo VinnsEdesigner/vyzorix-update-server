@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/url"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -159,4 +161,54 @@ func (s *ClientSettingsService) ResetSettings(ctx context.Context, operatorID st
 type SettingsResponse struct {
 	Notifications *operator.NotificationSettings `json:"notifications"`
 	Client        *operator.ClientSettings       `json:"client,omitempty"`
+	Preferences   map[string]any                 `json:"preferences,omitempty"`
+}
+
+var defaultPreferences = map[string]any{
+	"theme":               "dark",
+	"refresh_interval":    30,
+	"notification_filter": "all",
+	"language":            "en",
+}
+
+func (s *ClientSettingsService) GetPreferences(ctx context.Context, operatorID string) (map[string]any, error) {
+	raw, err := s.operatorRepo.GetPreferencesRaw(ctx, operatorID)
+	if err != nil {
+		return nil, fmt.Errorf("get preferences: %w", err)
+	}
+	if raw == "" {
+		return defaultPreferences, nil
+	}
+	prefs := make(map[string]any)
+	if err := json.Unmarshal([]byte(raw), &prefs); err != nil {
+		return defaultPreferences, fmt.Errorf("invalid preferences JSON: %w", err)
+	}
+	for k, v := range defaultPreferences {
+		if _, exists := prefs[k]; !exists {
+			prefs[k] = v
+		}
+	}
+	return prefs, nil
+}
+
+func (s *ClientSettingsService) UpdatePreferences(ctx context.Context, operatorID string, updates map[string]any) (map[string]any, error) {
+	current, err := s.GetPreferences(ctx, operatorID)
+	if err != nil {
+		current = make(map[string]any)
+	}
+	for k, v := range updates {
+		if v == nil {
+			delete(current, k)
+		} else {
+			current[k] = v
+		}
+	}
+	data, err := json.Marshal(current)
+	if err != nil {
+		return nil, ErrValidationError
+	}
+	if err := s.operatorRepo.SavePreferencesRaw(ctx, operatorID, string(data)); err != nil {
+		return nil, err
+	}
+	return current, nil
 }

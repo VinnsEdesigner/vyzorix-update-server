@@ -69,6 +69,12 @@ type Repository interface {
 	// UpdateClientSettings updates the client preferences for an operator.
 	UpdateClientSettings(ctx context.Context, id string, cs ClientSettings) error
 
+	// GetPreferencesRaw retrieves the raw JSON preferences string for an operator.
+	GetPreferencesRaw(ctx context.Context, operatorID string) (string, error)
+
+	// SavePreferencesRaw saves the raw JSON preferences string for an operator.
+	SavePreferencesRaw(ctx context.Context, operatorID string, json string) error
+
 	// ResetSettings resets all settings to defaults for an operator.
 	ResetSettings(ctx context.Context, id string) error
 
