@@ -106,7 +106,7 @@ type Server struct {
 	hmacVerifier                *cryptohmac.Verifier
 	sessionSignatureVerifier    *cryptohmac.Verifier
 	mwFactory                   *middleware.MiddlewareFactory
-	db                          *storage.SQLite
+	DB                          *storage.SQLite
 	dashboardRateLimiter        *middleware.DashboardRateLimiterMiddleware
 	deviceRegRateLimiter        *middleware.DeviceRegistrationRateLimiterMiddleware
 	AuditLogger                 *audit.Logger
@@ -202,7 +202,7 @@ func NewServer(cfg *ServerConfig) *Server {
 		sessionSignatureVerifier: mwSet.SessionSignVerifier,
 		encryptKeyFn:             mwSet.EncryptKeyFn,
 		sessionManager:           cfg.SessionManager,
-		db:                       cfg.DB,
+		DB:                       cfg.DB,
 		hub:                      cfg.Hub,
 		tenantAPIKeyAuth:         mwSet.TenantAPIKeyAuth,
 		apiKeyRateLimiter:        mwSet.APIKeyRateLimiter,
@@ -568,7 +568,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		hmacVerifier:             cfg.Middleware.HmacVerifier,
 		sessionSignatureVerifier: cfg.Middleware.SessionSignVerifier,
 		sessionManager:           cfg.SessionManager,
-		db:                       cfg.DB,
+		DB:                       cfg.DB,
 		hub:                      cfg.Hub,
 		AuditLogger:              cfg.AuditLogger,
 		tenantAPIKeyAuth:         cfg.Middleware.TenantAPIKeyAuth,

@@ -19,8 +19,8 @@ func (s *Server) healthHandler(c *gin.Context) {
 
 	var dbErr error
 
-	if s.db != nil {
-		if err := s.db.Ping(); err == nil {
+	if s.DB != nil {
+		if err := s.DB.Ping(); err == nil {
 			dbOk = true
 		} else {
 			dbErr = err

@@ -25,6 +25,7 @@ import (
 	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/logging"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/serverlock"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/ssr"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
@@ -203,8 +204,14 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 	}
 
 	// Start device deletion worker.
+	var lockSvc *serverlock.Service
+	if apiServer.DB != nil {
+		lockSvc = serverlock.NewService(apiServer.DB.DB())
+	}
+
 	deviceDeletionWorker := worker.NewDeviceDeletionWorker(
 		apiServer.DeviceRepo,
+		lockSvc,
 		log,
 		1*time.Hour, // Run every hour.
 	)
@@ -213,7 +220,7 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 	// Start invitation cleanup worker (expires stale pending invitations every 10 minutes).
 	var inviteCleanupWorker *worker.InvitationCleanupWorker
 	if apiServer.InvitationStorage != nil {
-		inviteCleanupWorker = worker.NewInvitationCleanupWorker(apiServer.InvitationStorage, log, 10*time.Minute)
+		inviteCleanupWorker = worker.NewInvitationCleanupWorker(apiServer.InvitationStorage, lockSvc, log, 10*time.Minute)
 		inviteCleanupWorker.Start()
 	}
 

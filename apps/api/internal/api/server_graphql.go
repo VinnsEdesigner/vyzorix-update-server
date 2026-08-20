@@ -106,9 +106,9 @@ func (s *Server) RegisterGraphQL(
 	// Wire the custom-permission-grants repository so the scoped permission
 	// evaluator can union custom per-resource scopes onto role defaults (Issue 4).
 	// Also wire the device-groups repository for team/device-group scoping (Issue 5).
-	if s.db != nil {
-		res.GrantRepo = storage.NewGrantRepository(s.db.DB())
-		res.GroupRepo = storage.NewDeviceGroupRepository(s.db.DB())
+	if s.DB != nil {
+		res.GrantRepo = storage.NewGrantRepository(s.DB.DB())
+		res.GroupRepo = storage.NewDeviceGroupRepository(s.DB.DB())
 	}
 
 	// Build schema.

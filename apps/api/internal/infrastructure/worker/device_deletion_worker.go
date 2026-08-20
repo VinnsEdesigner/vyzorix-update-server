@@ -6,22 +6,22 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/serverlock"
 )
 
-// DeviceDeletionWorker runs periodically to delete devices whose.
-// deletion_scheduled_at has passed.
 type DeviceDeletionWorker struct {
 	deviceRepo device.Repository
+	lockSvc    *serverlock.Service
 	logger     *slog.Logger
 	stopCh     chan struct{}
 	doneCh     chan struct{}
 	interval   time.Duration
 }
 
-// NewDeviceDeletionWorker creates a new device deletion worker.
-func NewDeviceDeletionWorker(deviceRepo device.Repository, logger *slog.Logger, interval time.Duration) *DeviceDeletionWorker {
+func NewDeviceDeletionWorker(deviceRepo device.Repository, lockSvc *serverlock.Service, logger *slog.Logger, interval time.Duration) *DeviceDeletionWorker {
 	return &DeviceDeletionWorker{
 		deviceRepo: deviceRepo,
+		lockSvc:    lockSvc,
 		logger:     logger,
 		interval:   interval,
 		stopCh:     make(chan struct{}),
@@ -29,15 +29,11 @@ func NewDeviceDeletionWorker(deviceRepo device.Repository, logger *slog.Logger, 
 	}
 }
 
-// Start begins the background worker loop.
 func (w *DeviceDeletionWorker) Start() {
 	go w.run()
-	w.logger.Info("device deletion worker started",
-		"interval", w.interval.String(),
-	)
+	w.logger.Info("device deletion worker started", "interval", w.interval.String())
 }
 
-// Stop gracefully stops the worker.
 func (w *DeviceDeletionWorker) Stop() {
 	close(w.stopCh)
 	<-w.doneCh
@@ -46,10 +42,8 @@ func (w *DeviceDeletionWorker) Stop() {
 
 func (w *DeviceDeletionWorker) run() {
 	defer close(w.doneCh)
-
 	ticker := time.NewTicker(w.interval)
 	defer ticker.Stop()
-
 	for {
 		select {
 		case <-w.stopCh:
@@ -64,17 +58,20 @@ func (w *DeviceDeletionWorker) processDeletions() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	deleted, err := w.deviceRepo.DeleteScheduled(ctx)
-	if err != nil {
-		w.logger.Error("failed to process scheduled deletions",
-			"error", err,
-		)
-		return
+	if w.lockSvc != nil {
+		acquired, err := w.lockSvc.Acquire(ctx, "device-deletion-worker", "primary", w.interval)
+		if err != nil || !acquired {
+			return
+		}
+		defer func() { _ = w.lockSvc.Release(ctx, "device-deletion-worker", "primary") }()
 	}
 
+	deleted, err := w.deviceRepo.DeleteScheduled(ctx)
+	if err != nil {
+		w.logger.Error("failed to process scheduled deletions", "error", err)
+		return
+	}
 	if deleted > 0 {
-		w.logger.Info("processed scheduled device deletions",
-			"deleted_count", deleted,
-		)
+		w.logger.Info("processed scheduled device deletions", "deleted_count", deleted)
 	}
 }

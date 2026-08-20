@@ -530,7 +530,7 @@ func ProvideDeviceDeletionWorker(deviceRepo *storage.DeviceRepository, log *slog
 	if interval <= 0 {
 		interval = 5 * time.Minute // default 5 minutes.
 	}
-	w := worker.NewDeviceDeletionWorker(deviceRepo, log, interval)
+	w := worker.NewDeviceDeletionWorker(deviceRepo, nil, log, interval)
 	w.Start()
 	log.Info("device deletion worker started", "interval", interval.String())
 	return w
