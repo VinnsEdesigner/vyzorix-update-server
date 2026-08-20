@@ -37,6 +37,7 @@ import (
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/featuremgmt"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
@@ -116,6 +117,8 @@ type Server struct {
 	commandAuthorizer           *command.Authorizer
 	grantRepo                   *storage.GrantRepository
 	groupRepo                   *storage.DeviceGroupRepository
+	InvitationStorage           *storage.InvitationStorage
+	features                    *featuremgmt.Manager
 	streamHandler               *websockethandlers.StreamHandler
 	telemetryHistoryHandler     *handlers.TelemetryHistoryHandler
 	connectionStatusHandler     *handlers.ConnectionStatusHandler
@@ -269,7 +272,19 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		permCache := permission.NewCache(30 * time.Second)
 		s.grantRepo = storage.NewGrantRepositoryWithCache(cfg.DB.DB(), permCache)
 		s.groupRepo = storage.NewDeviceGroupRepository(cfg.DB.DB())
+		s.InvitationStorage = storage.NewInvitationStorage(cfg.DB.DB())
 	}
+
+	// Feature manager: all new authz features default ON in production,
+	// individually overridable via FEATURE_* env vars.
+	s.features = featuremgmt.NewManager(map[featuremgmt.Feature]bool{
+		featuremgmt.ScopedRBAC:      true,
+		featuremgmt.DeviceGroups:    true,
+		featuremgmt.ServerDrivenOrg: true,
+		featuremgmt.ActionSets:      true,
+		featuremgmt.ScopeResolvers:  true,
+		featuremgmt.PermissionCache: true,
+	})
 
 	// WebSocket handler.
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)

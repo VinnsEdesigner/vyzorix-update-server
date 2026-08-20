@@ -66,6 +66,7 @@ type ServerDependencies struct {
 	OrgService            *orgapplication.OrganizationService
 	MemberService         *orgapplication.MemberService
 	InvitationService     *orgapplication.InvitationService
+	InvitationStorage     *storage.InvitationStorage
 	OrgSettingsService    *orgapplication.OrganizationSettingsService
 	IdempotencyRepo       *storage.IdempotencyRepository
 	ConfirmationService   *confirmation.Service

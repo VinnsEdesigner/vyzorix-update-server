@@ -209,6 +209,13 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 	)
 	deviceDeletionWorker.Start()
 
+	// Start invitation cleanup worker (expires stale pending invitations every 10 minutes).
+	var inviteCleanupWorker *worker.InvitationCleanupWorker
+	if apiServer.InvitationStorage != nil {
+		inviteCleanupWorker = worker.NewInvitationCleanupWorker(apiServer.InvitationStorage, log, 10*time.Minute)
+		inviteCleanupWorker.Start()
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -224,6 +231,9 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 	log.Info("shutting down")
 
 	// Stop background workers first - they may be generating new requests.
+	if inviteCleanupWorker != nil {
+		inviteCleanupWorker.Stop()
+	}
 	deviceDeletionWorker.Stop()
 
 	// Graceful drain: give in-flight requests time to complete.

@@ -634,10 +634,17 @@ func (s *InvitationService) ExpireInvitation(ctx context.Context, invitationID, 
 	return nil
 }
 
-// ExpireStaleInvitations expires all stale pending invitations.
-func (s *InvitationService) ExpireStaleInvitations(ctx context.Context) error {
-	// This would typically be called by a background job.
-	// For now, we'll rely on the ExpireByOrganization method when org is deleted.
-	s.logger.Info("expiring stale invitations")
-	return nil
+// ExpireStaleInvitations expires all stale pending invitations by delegating
+// to the repository's ExpirePending, which marks them as 'expired' in bulk.
+func (s *InvitationService) ExpireStaleInvitations(ctx context.Context) (int64, error) {
+	expired, err := s.invitationRepo.ExpirePending(ctx)
+	if err != nil {
+		s.logger.Error("failed to expire stale invitations", "error", err)
+		return 0, err
+	}
+	if expired > 0 {
+		s.metrics.InvitationExpired(expired)
+		s.logger.Info("expired stale invitations", "expired_count", expired)
+	}
+	return expired, nil
 }
