@@ -30,6 +30,7 @@ const sessionContextKey = "session"
 //
 // The middleware must run AFTER cookie/API-key auth so the session or API key.
 // is present.
+//
 //nolint:gocyclo // multi-branch auth resolution + signature verification
 func SessionSignatureMiddleware(verifier *cryptohmac.Verifier) gin.HandlerFunc {
 	return func(c *gin.Context) {

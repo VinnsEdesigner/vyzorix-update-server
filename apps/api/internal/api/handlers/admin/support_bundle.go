@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
+	"github.com/gin-gonic/gin"
 )
 
 type SupportBundleHandler struct {

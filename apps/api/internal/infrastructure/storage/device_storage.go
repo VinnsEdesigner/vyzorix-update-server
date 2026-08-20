@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -59,13 +60,13 @@ const deviceColumns = `
 	command_secret_hash, online, registered_at, last_seen, operator_id,
 	organization_id,
 	created_at, updated_at, device_name, manufacturer, model, os_version, security_patch,
-	deregistered_at, deletion_scheduled_at, fcm_token_refreshed_at
+	deregistered_at, deletion_scheduled_at, fcm_token_refreshed_at, tags
 `
 
 // scanDevice scans a device from a row.
 func scanDevice(row *sql.Row) (*device.Device, error) {
 	var d device.Device
-	var fcmToken, operatorID, organizationID, deviceName, manufacturer, model, osVersion, securityPatch sql.NullString
+	var fcmToken, operatorID, organizationID, deviceName, manufacturer, model, osVersion, securityPatch, tagsJSON sql.NullString
 	var deregisteredAt, deletionScheduledAt, fcmTokenRefreshedAt sql.NullInt64
 
 	err := row.Scan(
@@ -73,7 +74,7 @@ func scanDevice(row *sql.Row) (*device.Device, error) {
 		&d.CommandSecretHash, &d.Online, &d.RegisteredAt, &d.LastSeen, &operatorID,
 		&organizationID,
 		&d.CreatedAt, &d.UpdatedAt, &deviceName, &manufacturer, &model, &osVersion, &securityPatch,
-		&deregisteredAt, &deletionScheduledAt, &fcmTokenRefreshedAt,
+		&deregisteredAt, &deletionScheduledAt, &fcmTokenRefreshedAt, &tagsJSON,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -92,6 +93,9 @@ func scanDevice(row *sql.Row) (*device.Device, error) {
 	d.Model = model.String
 	d.OSVersion = osVersion.String
 	d.SecurityPatch = securityPatch.String
+	if tagsJSON.Valid && tagsJSON.String != "" {
+		_ = json.Unmarshal([]byte(tagsJSON.String), &d.Tags)
+	}
 
 	if deregisteredAt.Valid {
 		d.DeregisteredAt = &deregisteredAt.Int64
@@ -118,7 +122,7 @@ func scanDevices(rows *sql.Rows) ([]*device.Device, error) {
 
 	for rows.Next() {
 		var d device.Device
-		var fcmToken, operatorID, organizationID, deviceName, manufacturer, model, osVersion, securityPatch sql.NullString
+		var fcmToken, operatorID, organizationID, deviceName, manufacturer, model, osVersion, securityPatch, tagsJSON sql.NullString
 		var deregisteredAt, deletionScheduledAt, fcmTokenRefreshedAt sql.NullInt64
 
 		if err := rows.Scan(
@@ -126,7 +130,7 @@ func scanDevices(rows *sql.Rows) ([]*device.Device, error) {
 			&d.CommandSecretHash, &d.Online, &d.RegisteredAt, &d.LastSeen, &operatorID,
 			&organizationID,
 			&d.CreatedAt, &d.UpdatedAt, &deviceName, &manufacturer, &model, &osVersion, &securityPatch,
-			&deregisteredAt, &deletionScheduledAt, &fcmTokenRefreshedAt,
+			&deregisteredAt, &deletionScheduledAt, &fcmTokenRefreshedAt, &tagsJSON,
 		); err != nil {
 			return nil, err
 		}
@@ -139,6 +143,9 @@ func scanDevices(rows *sql.Rows) ([]*device.Device, error) {
 		d.Model = model.String
 		d.OSVersion = osVersion.String
 		d.SecurityPatch = securityPatch.String
+		if tagsJSON.Valid && tagsJSON.String != "" {
+			_ = json.Unmarshal([]byte(tagsJSON.String), &d.Tags)
+		}
 
 		if deregisteredAt.Valid {
 			d.DeregisteredAt = &deregisteredAt.Int64
@@ -216,15 +223,15 @@ func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) error {
 		INSERT INTO devices (id, firebase_install_id, fcm_token, app_version, device_class,
 		                    command_secret_hash, online, registered_at, last_seen, operator_id,
 		                    organization_id,
-		                    created_at, updated_at, device_name, manufacturer, model, os_version)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		                    created_at, updated_at, device_name, manufacturer, model, os_version, tags)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := r.exec(ctx, query,
 		d.ID, d.FirebaseInstallID, nullString(d.FCMToken), d.AppVersion, d.DeviceClass,
 		d.CommandSecretHash, d.Online, d.RegisteredAt, d.LastSeen, nullString(d.OperatorID),
 		nullString(d.OrganizationID),
 		d.CreatedAt, d.UpdatedAt, nullString(d.DeviceName), nullString(d.Manufacturer),
-		nullString(d.Model), nullString(d.OSVersion),
+		nullString(d.Model), nullString(d.OSVersion), tagsToJSON(d.Tags),
 	)
 
 	return err
@@ -244,7 +251,7 @@ func (r *DeviceRepository) Update(ctx context.Context, d *device.Device) error {
 		d.FirebaseInstallID, nullString(d.FCMToken), d.AppVersion, d.DeviceClass,
 		d.CommandSecretHash, d.Online, d.RegisteredAt, d.LastSeen, nullString(d.OperatorID),
 		nullString(d.OrganizationID), time.Now(), nullString(d.DeviceName), nullString(d.Manufacturer),
-		nullString(d.Model), nullString(d.OSVersion), d.ID,
+		nullString(d.Model), nullString(d.OSVersion), tagsToJSON(d.Tags), d.ID,
 	)
 	if err != nil {
 		return err
@@ -728,4 +735,15 @@ func (r *DeviceRepository) SoftDeleteByOrganization(ctx context.Context, orgID s
 	}
 
 	return int(deleted), nil
+}
+
+func tagsToJSON(tags []string) interface{} {
+	if len(tags) == 0 {
+		return nil
+	}
+	data, err := json.Marshal(tags)
+	if err != nil {
+		return nil
+	}
+	return string(data)
 }

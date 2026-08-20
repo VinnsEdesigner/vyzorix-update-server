@@ -20,6 +20,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/provisioning"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -218,6 +219,16 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	// Run provisioning if a provisioning file is configured.
+	if provFile := os.Getenv("PROVISIONING_FILE"); provFile != "" {
+		prov := provisioning.New(log)
+		if err := prov.LoadAndApply(context.Background(), provFile); err != nil {
+			log.Error("provisioning failed", "err", err)
+		} else {
+			log.Info("provisioning complete")
+		}
+	}
 
 	go func() {
 		log.Info("starting server", "addr", addr)

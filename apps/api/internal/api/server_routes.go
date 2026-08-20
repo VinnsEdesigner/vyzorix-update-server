@@ -403,6 +403,14 @@ func (s *Server) setupDevicesRoutes(r *gin.RouterGroup) {
 			devices.GET("/:imei/settings/thresholds", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.deviceSettingsHandler.GetThresholds)
 			devices.PATCH("/:imei/settings/thresholds", s.requireScope(permission.ActionDeviceWrite, permission.WildcardScope(permission.ScopeDevices)), s.deviceSettingsHandler.UpdateThresholds)
 		}
+
+		// Device tag routes.
+		{
+			devices.GET("/:imei/tags", s.requireScope(permission.ActionDeviceRead, permission.WildcardScope(permission.ScopeDevices)), s.deviceListHandler.GetTags)
+			devices.PUT("/:imei/tags", s.requireScope(permission.ActionDeviceWrite, permission.WildcardScope(permission.ScopeDevices)), s.deviceListHandler.SetTags)
+			devices.POST("/:imei/tags/:tag", s.requireScope(permission.ActionDeviceWrite, permission.WildcardScope(permission.ScopeDevices)), s.deviceListHandler.AddTag)
+			devices.DELETE("/:imei/tags/:tag", s.requireScope(permission.ActionDeviceWrite, permission.WildcardScope(permission.ScopeDevices)), s.deviceListHandler.RemoveTag)
+		}
 	}
 
 	// Confirmation endpoint: an operator requests a single-use token to.

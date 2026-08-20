@@ -293,3 +293,49 @@ func (h *ListHandler) CountByOrganization(c *gin.Context) {
 		"serverTime": c.GetInt64("serverTime"),
 	})
 }
+
+func (h *ListHandler) GetTags(c *gin.Context) {
+	imei := c.Param("imei")
+	d, err := h.deviceService.GetDevice(c.Request.Context(), imei)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "device not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"tags": d.Tags})
+}
+
+func (h *ListHandler) SetTags(c *gin.Context) {
+	imei := c.Param("imei")
+	var body struct {
+		Tags []string `json:"tags"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid body"})
+		return
+	}
+	if err := h.deviceService.SetDeviceTags(c.Request.Context(), imei, body.Tags); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to set tags"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"tags": body.Tags})
+}
+
+func (h *ListHandler) AddTag(c *gin.Context) {
+	imei := c.Param("imei")
+	tag := c.Param("tag")
+	if err := h.deviceService.AddDeviceTag(c.Request.Context(), imei, tag); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add tag"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"added": tag})
+}
+
+func (h *ListHandler) RemoveTag(c *gin.Context) {
+	imei := c.Param("imei")
+	tag := c.Param("tag")
+	if err := h.deviceService.RemoveDeviceTag(c.Request.Context(), imei, tag); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove tag"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"removed": tag})
+}

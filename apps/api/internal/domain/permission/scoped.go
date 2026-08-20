@@ -36,7 +36,7 @@ const (
 	ActionConnectionsRead Action = "connections.read"
 
 	// Cluster stats: aggregate dashboard/cluster health and utilization metrics.
-	ActionStatsRead Action = "stats.read"
+	ActionStatsRead  Action = "stats.read"
 	ActionSearchRead Action = "search.read"
 
 	// Device inbox: view/approve device registration inbox entries.

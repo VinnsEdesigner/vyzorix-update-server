@@ -34,11 +34,11 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
+	searchsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/search"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/featuremgmt"
-	searchsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/search"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
@@ -120,7 +120,7 @@ type Server struct {
 	groupRepo                   *storage.DeviceGroupRepository
 	InvitationStorage           *storage.InvitationStorage
 	features                    *featuremgmt.Manager
-	supportBundleHandler       *admin.SupportBundleHandler
+	supportBundleHandler        *admin.SupportBundleHandler
 	updateCheckerHandler        *admin.UpdateCheckerHandler
 	searchService               *searchsvc.Service
 	streamHandler               *websockethandlers.StreamHandler

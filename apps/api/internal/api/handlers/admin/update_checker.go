@@ -48,10 +48,10 @@ func (h *UpdateCheckerHandler) Check(c *gin.Context) {
 
 	updateAvailable := release.TagName != h.currentVersion && release.TagName != ""
 	c.JSON(http.StatusOK, gin.H{
-		"current_version":   h.currentVersion,
-		"latest_version":    release.TagName,
-		"update_available":  updateAvailable,
-		"release_name":      release.Name,
-		"release_url":       release.HTMLURL,
+		"current_version":  h.currentVersion,
+		"latest_version":   release.TagName,
+		"update_available": updateAvailable,
+		"release_name":     release.Name,
+		"release_url":      release.HTMLURL,
 	})
 }

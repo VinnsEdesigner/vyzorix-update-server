@@ -95,10 +95,10 @@ type Organization struct {
 }
 
 type OrgQuotas struct {
-	MaxDevices         int `json:"max_devices"`
-	MaxAPIKeys         int `json:"max_api_keys"`
-	MaxPendingInvites  int `json:"max_pending_invites"`
-	CommandsPerMinute  int `json:"commands_per_minute"`
+	MaxDevices        int `json:"max_devices"`
+	MaxAPIKeys        int `json:"max_api_keys"`
+	MaxPendingInvites int `json:"max_pending_invites"`
+	CommandsPerMinute int `json:"commands_per_minute"`
 }
 
 // NewOrganization creates a new Organization with active lifecycle.

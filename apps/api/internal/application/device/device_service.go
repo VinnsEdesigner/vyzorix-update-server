@@ -22,6 +22,7 @@ import (
 var (
 	ErrDeviceHijack               = errors.New("device registration hijack detected")
 	ErrDeviceNotFound             = errors.New("device not found")
+	ErrDeviceQuotaExceeded        = errors.New("device quota exceeded for organization")
 	ErrCommandSecretNotSet        = errors.New("command secret not set for device")
 	ErrInvalidCommandSecret       = errors.New("invalid command secret")
 	ErrDeviceAlreadyApproved      = errors.New("device already approved and registered")
@@ -641,6 +642,51 @@ func (s *Service) GetDeviceDetailByOperator(ctx context.Context, imei, operatorI
 	}
 
 	return s.deviceDetailResponse(d), nil
+}
+
+// SetDeviceTags replaces all tags on a device.
+func (s *Service) SetDeviceTags(ctx context.Context, deviceID string, tags []string) error {
+	d, err := s.deviceRepo.FindByID(ctx, deviceID)
+	if err != nil {
+		return device.ErrNotFound
+	}
+	d.Tags = tags
+	return s.deviceRepo.Update(ctx, d)
+}
+
+// AddDeviceTag adds a single tag to a device (idempotent).
+func (s *Service) AddDeviceTag(ctx context.Context, deviceID, tag string) error {
+	d, err := s.deviceRepo.FindByID(ctx, deviceID)
+	if err != nil {
+		return device.ErrNotFound
+	}
+	d.AddTag(tag)
+	return s.deviceRepo.Update(ctx, d)
+}
+
+// RemoveDeviceTag removes a single tag from a device.
+func (s *Service) RemoveDeviceTag(ctx context.Context, deviceID, tag string) error {
+	d, err := s.deviceRepo.FindByID(ctx, deviceID)
+	if err != nil {
+		return device.ErrNotFound
+	}
+	d.RemoveTag(tag)
+	return s.deviceRepo.Update(ctx, d)
+}
+
+// CheckDeviceQuota verifies the org hasn't exceeded its device quota.
+func (s *Service) CheckDeviceQuota(ctx context.Context, orgID string, maxDevices int) error {
+	if maxDevices <= 0 {
+		return nil
+	}
+	_, count, err := s.deviceRepo.ListByOrganizationPaginated(ctx, orgID, 1, 0)
+	if err != nil {
+		return fmt.Errorf("check device quota: %w", err)
+	}
+	if count >= maxDevices {
+		return ErrDeviceQuotaExceeded
+	}
+	return nil
 }
 
 // GetDeviceDetailByOrganization returns detailed device information for an organization.
