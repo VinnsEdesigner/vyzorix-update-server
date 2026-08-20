@@ -48,6 +48,9 @@ func DefaultScopesForRole(roleName string) ScopedPermissions {
 			ScopedPermission{ActionKeysManage, orgAll},
 			ScopedPermission{ActionAuditRead, orgAll},
 			ScopedPermission{ActionTelemetryWrite, telemetryAll},
+			ScopedPermission{ActionMembersRead, orgAll},
+			ScopedPermission{ActionMembersWrite, orgAll},
+			ScopedPermission{ActionMembersDelete, orgAll},
 		)
 	}
 	appendSuperAdmin := func() {
