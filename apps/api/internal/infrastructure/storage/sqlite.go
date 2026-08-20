@@ -497,6 +497,7 @@ var migrations = []Migration{
 	{Apply: migratePermissionGrants, Name: "create_permission_grants_table", Version: 60},
 	{Apply: migrateDeviceGroups, Name: "create_device_groups_tables", Version: 61},
 	{Apply: migrateResourcePermissions, Name: "create_resource_permissions_table", Version: 62},
+	{Apply: migrateAddTagsAndQuotas, Name: "add_tags_quotas_locks", Version: 63},
 }
 
 // runMigrations applies all pending migrations.

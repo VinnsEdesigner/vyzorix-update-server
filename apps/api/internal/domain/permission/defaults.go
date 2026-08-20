@@ -25,6 +25,7 @@ func DefaultScopesForRole(roleName string) ScopedPermissions {
 			{ActionLogsRead, devicesAll},
 			{ActionConnectionsRead, devicesAll},
 			{ActionStatsRead, orgAll},
+			{ActionSearchRead, orgAll},
 		}
 	}
 	appendOperator := func() {

@@ -38,6 +38,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/featuremgmt"
+	searchsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/search"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
@@ -119,6 +120,9 @@ type Server struct {
 	groupRepo                   *storage.DeviceGroupRepository
 	InvitationStorage           *storage.InvitationStorage
 	features                    *featuremgmt.Manager
+	supportBundleHandler       *admin.SupportBundleHandler
+	updateCheckerHandler        *admin.UpdateCheckerHandler
+	searchService               *searchsvc.Service
 	streamHandler               *websockethandlers.StreamHandler
 	telemetryHistoryHandler     *handlers.TelemetryHistoryHandler
 	connectionStatusHandler     *handlers.ConnectionStatusHandler
@@ -285,6 +289,12 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		featuremgmt.ScopeResolvers:  true,
 		featuremgmt.PermissionCache: true,
 	})
+
+	if cfg.DB != nil {
+		s.searchService = searchsvc.NewService(cfg.DB.DB())
+		s.supportBundleHandler = admin.NewSupportBundleHandler(cfg.DB)
+	}
+	s.updateCheckerHandler = admin.NewUpdateCheckerHandler("1.0.0", "VinnsEdesigner/vyzorix-update-server")
 
 	// WebSocket handler.
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)

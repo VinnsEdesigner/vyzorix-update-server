@@ -10,31 +10,27 @@ var ErrNotFound = errors.New("device not found")
 
 // Device represents a registered device with explicit lifecycle management.
 type Device struct {
-	// Lifecycle tracks the registration lifecycle state (pending → registered → deregistered).
-	Lifecycle Lifecycle
-
-	// OrganizationID is the organization this device belongs to (for multi-tenant).
-	OrganizationID string
-
-	// Infrastructure fields (kept as-is for backward compatibility).
 	UpdatedAt           time.Time
 	CreatedAt           time.Time
-	Metadata            map[string]string
 	FCMTokenRefreshedAt *int64
-	DeletionScheduledAt *int64
 	DeregisteredAt      *int64
+	DeletionScheduledAt *int64
+	Metadata            map[string]string
+	FirebaseInstallID   string
+	CommandSecretHash   string
+	OrganizationID      string
 	Model               string
 	OSVersion           string
 	FCMToken            string
-	FirebaseInstallID   string
+	Lifecycle           Lifecycle
 	OperatorID          string
 	DeviceClass         string
-	CommandSecretHash   string
+	SecurityPatch       string
 	DeviceName          string
 	Manufacturer        string
 	ID                  string
 	AppVersion          string
-	SecurityPatch       string
+	Tags                []string
 	LastSeen            int64
 	RegisteredAt        int64
 	Online              bool
@@ -55,6 +51,33 @@ func NewDevice(id string, firebaseInstallID string) *Device {
 // Returns ErrInvalidTransition if the device is not in pending state.
 func (d *Device) Approve() error {
 	return d.Lifecycle.TransitionTo(LifecycleRegistered)
+}
+
+func (d *Device) AddTag(tag string) {
+	for _, t := range d.Tags {
+		if t == tag {
+			return
+		}
+	}
+	d.Tags = append(d.Tags, tag)
+}
+
+func (d *Device) RemoveTag(tag string) {
+	for i, t := range d.Tags {
+		if t == tag {
+			d.Tags = append(d.Tags[:i], d.Tags[i+1:]...)
+			return
+		}
+	}
+}
+
+func (d *Device) HasTag(tag string) bool {
+	for _, t := range d.Tags {
+		if t == tag {
+			return true
+		}
+	}
+	return false
 }
 
 // Deregister transitions the device to deregistered state.

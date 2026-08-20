@@ -239,6 +239,7 @@ func (s *Server) setupAuthenticatedRoutes() {
 	s.setupConnectionsRoutes(tenantGroup)
 	s.setupUpdatesRoutes(tenantGroup)
 	s.setupDiagnosticsRoutes(tenantGroup)
+	s.setupSearchRoutes(tenantGroup)
 
 	// API Keys management: SESSION ONLY (no API key auth for managing keys).
 	// These routes manage API keys - shouldn't use API key auth.
@@ -326,6 +327,15 @@ func (s *Server) setupAdminRoutes(r *gin.RouterGroup) {
 		adminAPIKeys.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
 		adminAPIKeys.Use(middleware.RequireSuperAdmin())
 		s.superAdminAPIKeys.RegisterRoutes(adminAPIKeys)
+	}
+
+	// Admin diagnostic + update routes (super_admin, no org scope needed).
+	adminDiag := r.Group("/admin")
+	adminDiag.Use(s.cookieAuth.Middleware())
+	adminDiag.Use(middleware.RequireSuperAdmin())
+	{
+		adminDiag.GET("/support-bundle", s.supportBundleHandler.GetBundle)
+		adminDiag.GET("/updates/check", s.updateCheckerHandler.Check)
 	}
 }
 
@@ -457,6 +467,30 @@ func (s *Server) setupDiagnosticsRoutes(r *gin.RouterGroup) {
 		diagnosticsGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
 		diagnosticsGroup.Use(s.requireScope(permission.ActionDiagnosticsRead, permission.WildcardScope(permission.ScopeDiagnostics)))
 		diagnostics.RegisterRoutes(diagnosticsGroup, s.diagnosticsInspectHandler, s.diagnosticsTimelineHandler)
+	}
+}
+
+func (s *Server) setupSearchRoutes(r *gin.RouterGroup) {
+	searchGroup := r.Group("/search")
+	searchGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+	searchGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+	searchGroup.Use(s.requireScope(permission.ActionSearchRead, permission.WildcardScope(permission.ScopeOrg)))
+	{
+		searchGroup.GET("", func(c *gin.Context) {
+			orgID := middleware.GetOrganizationID(c)
+			q := c.Query("q")
+			resultType := c.Query("type")
+			if s.searchService != nil {
+				results, err := s.searchService.Search(c.Request.Context(), q, orgID, resultType, 20)
+				if err != nil {
+					c.JSON(500, gin.H{"error": "search failed"})
+					return
+				}
+				c.JSON(200, gin.H{"results": results, "query": q})
+			} else {
+				c.JSON(200, gin.H{"results": []any{}, "query": q})
+			}
+		})
 	}
 }
 
