@@ -255,6 +255,16 @@ func (r *SessionRepository) UpdateOrganizationID(ctx context.Context, sessionID,
 	return nil
 }
 
+// UpdateOperatorSessionsOrgID sets the selected org on all active sessions
+// for an operator (used when an invite is accepted).
+func (r *SessionRepository) UpdateOperatorSessionsOrgID(ctx context.Context, operatorID, organizationID string) error {
+	_, err := r.db.ExecContext(ctx,
+		"UPDATE auth_sessions SET organization_id = ? WHERE operator_id = ? AND expires_at > ?",
+		nullString(organizationID), operatorID, time.Now().Unix(),
+	)
+	return err
+}
+
 // SetMFAVerifiedAt sets the MFAVerifiedAt timestamp for a session.
 // This is called after successful MFA verification during login.
 func (r *SessionRepository) SetMFAVerifiedAt(ctx context.Context, sessionID string, verifiedAt time.Time) error {

@@ -34,6 +34,10 @@ type Repository interface {
 	// UpdateOrganizationID updates the selected organization ID for a session.
 	UpdateOrganizationID(ctx context.Context, sessionID, organizationID string) error
 
+	// UpdateOperatorSessionsOrgID sets the selected org on all active sessions
+	// for an operator (used when an invite is accepted).
+	UpdateOperatorSessionsOrgID(ctx context.Context, operatorID, organizationID string) error
+
 	// SetMFAVerifiedAt sets the MFAVerifiedAt timestamp for a session.
 	// This is called after successful MFA verification during login.
 	SetMFAVerifiedAt(ctx context.Context, sessionID string, verifiedAt time.Time) error

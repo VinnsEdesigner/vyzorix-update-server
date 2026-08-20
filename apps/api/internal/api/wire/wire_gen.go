@@ -77,13 +77,13 @@ func Injector(cfg config.Config) (*Server, error) {
 	// Create notification repository for audit logging.
 	notificationRepository := ProvideNotificationAuditRepository(db)
 	// Create notification service.
-	notificationService := ProvideNotificationService(operatorRepository, emailService, webhookClient, notificationRepository, logger)
+	notificationService := ProvideNotificationService(operatorRepository, emailService, webhookClient, notificationRepository, cfg, logger)
 	// Create organization repositories.
 	orgStorage := ProvideOrganizationRepository(db)
 	// Create organization services.
 	orgService := ProvideOrganizationService(orgStorage, memberStorage, invitationStorage, operatorRepository, sessionRepository, deviceRepository, telemetryRepository, commandRepository, txManager, logger)
 	memberService := ProvideMemberService(memberStorage, orgStorage, authService, logger)
-	invitationService := ProvideInvitationService(invitationStorage, orgStorage, memberStorage, txManager, emailService, logger, cfg)
+	invitationService := ProvideInvitationService(invitationStorage, orgStorage, memberStorage, sessionRepository, txManager, emailService, logger, cfg)
 	// Create settings repositories and services.
 	orgSettingsRepository := ProvideOrganizationSettingsRepository(db)
 	orgSettingsService := ProvideOrganizationSettingsService(orgSettingsRepository, orgStorage, memberStorage)

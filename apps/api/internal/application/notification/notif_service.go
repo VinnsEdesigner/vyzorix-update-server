@@ -54,6 +54,7 @@ type Service struct {
 	webhookClient *webhook.Client
 	auditRepo     *infranotification.Repository
 	logger        *slog.Logger
+	baseURL       string
 }
 
 // NewService creates a new notification service.
@@ -62,6 +63,7 @@ func NewService(
 	emailSvc *email.Service,
 	webhookClient *webhook.Client,
 	auditRepo *infranotification.Repository,
+	baseURL string,
 	logger *slog.Logger,
 ) *Service {
 	return &Service{
@@ -69,6 +71,7 @@ func NewService(
 		emailService:  emailSvc,
 		webhookClient: webhookClient,
 		auditRepo:     auditRepo,
+		baseURL:       baseURL,
 		logger:        logger,
 	}
 }
@@ -115,7 +118,7 @@ func (s *Service) SendNotification(ctx context.Context, data EventData) error {
 		RequesterName: data.RequesterName,
 		ErrorMessage:  data.ErrorMessage,
 		Timestamp:     data.Timestamp.Format("2006-01-02 15:04:05 MST"),
-		BaseURL:       "https://app.vyzorix.com",
+		BaseURL:       s.baseURL,
 	}
 
 	// Send email if enabled for this event type.

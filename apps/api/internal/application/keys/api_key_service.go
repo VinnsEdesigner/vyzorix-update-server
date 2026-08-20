@@ -119,8 +119,8 @@ func (s *APIKeyService) GenerateKey(ctx context.Context, operatorID, orgID strin
 		Scope:          string(req.Scope),
 		ExpiresAt:      toMillis(expiresAt),
 		IsActive:       true,
-		CreatedAt:     now.UnixMilli(),
-		UpdatedAt:     now.UnixMilli(),
+		CreatedAt:      now.UnixMilli(),
+		UpdatedAt:      now.UnixMilli(),
 	}
 
 	if err := s.repo.Create(ctx, key); err != nil {
@@ -357,8 +357,8 @@ func (s *APIKeyService) RotateKey(ctx context.Context, operatorID, keyID string)
 		Scope:          key.Scope,
 		ExpiresAt:      expiresAt, // Keep the same expiry (copied value, not pointer).
 		IsActive:       true,
-		CreatedAt:     now.UnixMilli(),
-		UpdatedAt:     now.UnixMilli(),
+		CreatedAt:      now.UnixMilli(),
+		UpdatedAt:      now.UnixMilli(),
 	}
 
 	if err := s.repo.Create(ctx, newKey); err != nil {

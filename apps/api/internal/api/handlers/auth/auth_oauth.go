@@ -91,7 +91,7 @@ func (h *OAuthHandler) getOAuthRedirectURL(redirectURL string, err OAuthErrorDet
 	if baseURL == "" {
 		baseURL = h.config.FrontendURL
 		if baseURL == "" {
-			baseURL = "http://localhost:5173"
+			baseURL = h.config.FrontendURL
 		}
 	}
 
@@ -117,7 +117,7 @@ func (h *OAuthHandler) getDefaultRedirectURL(redirectURL string) string {
 	if baseURL == "" {
 		baseURL = h.config.FrontendURL
 		if baseURL == "" {
-			baseURL = "http://localhost:5173"
+			baseURL = h.config.FrontendURL
 		}
 	}
 	return baseURL
@@ -138,7 +138,7 @@ func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 
 	frontendURL := h.config.FrontendURL
 	if frontendURL == "" {
-		frontendURL = "http://localhost:5173"
+		frontendURL = h.config.FrontendURL
 	}
 
 	// Generate random state for CSRF protection.
@@ -334,7 +334,7 @@ func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 
 	frontendURL := h.config.FrontendURL
 	if frontendURL == "" {
-		frontendURL = "http://localhost:5173"
+		frontendURL = h.config.FrontendURL
 	}
 
 	callbackURL := h.config.BaseURL + "/v1/auth/github/callback"

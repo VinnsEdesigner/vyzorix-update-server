@@ -248,9 +248,10 @@ func ProvideNotificationService(
 	emailSvc *emailService.Service,
 	webhookClient *webhook.Client,
 	auditRepo *infranotification.Repository,
+	cfg config.Config,
 	log *slog.Logger,
 ) *appnotification.Service {
-	return appnotification.NewService(operatorRepo, emailSvc, webhookClient, auditRepo, log)
+	return appnotification.NewService(operatorRepo, emailSvc, webhookClient, auditRepo, cfg.BaseURL, log)
 }
 
 // WireNotificationServiceToProcessor wires the notification service to the event processor.
@@ -405,6 +406,7 @@ func ProvideInvitationService(
 	invitationRepo *storage.InvitationStorage,
 	orgRepo *storage.OrganizationStorage,
 	memberRepo *storage.MemberStorage,
+	sessionRepo *storage.SessionRepository,
 	txManager transaction.TxManager,
 	emailSvc *emailService.Service,
 	log *slog.Logger,
@@ -412,9 +414,9 @@ func ProvideInvitationService(
 ) *orgapplication.InvitationService {
 	baseURL := cfg.FrontendURL
 	if baseURL == "" {
-		baseURL = "http://localhost:5173"
+		baseURL = ""
 	}
-	return orgapplication.NewInvitationService(invitationRepo, orgRepo, memberRepo, txManager, emailSvc, log, baseURL)
+	return orgapplication.NewInvitationService(invitationRepo, orgRepo, memberRepo, sessionRepo, txManager, emailSvc, nil, log, baseURL)
 }
 
 // ProvideOrganizationSettingsRepository creates the organization settings repository.

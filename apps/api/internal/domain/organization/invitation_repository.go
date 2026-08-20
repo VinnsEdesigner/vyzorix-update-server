@@ -69,6 +69,9 @@ type InvitationRepository interface {
 	// ExpireByOrganization expires all pending invitations for an organization.
 	ExpireByOrganization(ctx context.Context, orgID string) error
 
+	// ExpirePending marks all stale pending invitations as expired.
+	ExpirePending(ctx context.Context) (int64, error)
+
 	// ExpireOldThan soft-deletes invitations older than the given duration.
 	ExpireOldThan(ctx context.Context, duration string) error
 }

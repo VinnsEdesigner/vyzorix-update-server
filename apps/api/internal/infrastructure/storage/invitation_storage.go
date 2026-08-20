@@ -412,6 +412,16 @@ func (s *InvitationStorage) ExpireByOrganization(ctx context.Context, orgID stri
 	return err
 }
 
+// ExpirePending marks all stale pending invitations as expired.
+func (s *InvitationStorage) ExpirePending(ctx context.Context) (int64, error) {
+	query := `UPDATE invitations SET status = 'expired' WHERE status = 'pending' AND expires_at < ?`
+	result, err := s.getQuerier(ctx).ExecContext(ctx, query, time.Now().UnixMilli())
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 // ExpireOldThan soft-deletes invitations older than the given duration.
 func (s *InvitationStorage) ExpireOldThan(ctx context.Context, duration string) error {
 	query := `DELETE FROM invitations WHERE status = 'pending' AND expires_at < ?`

@@ -77,7 +77,7 @@ func SecurityHeaders() func(c *gin.Context) {
 func SecurityHeadersRelaxed() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// More permissive CSP for development.
-		c.Header("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' ws://localhost:* http://localhost:*")
+		c.Header("Content-Security-Policy", "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' ws: http:")
 
 		// HSTS with shorter max-age for development.
 		c.Header("Strict-Transport-Security", "max-age=86400") // 1 day.

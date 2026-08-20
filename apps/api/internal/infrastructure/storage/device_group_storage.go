@@ -18,7 +18,7 @@ func NewDeviceGroupRepository(db *sql.DB) *DeviceGroupRepository {
 	return &DeviceGroupRepository{db: db}
 }
 
-	// Save upserts a group.
+// Save upserts a group.
 func (r *DeviceGroupRepository) Save(ctx context.Context, g *device_group.Group) error {
 	query := `
 		INSERT INTO device_groups (id, org_id, name, created_at)

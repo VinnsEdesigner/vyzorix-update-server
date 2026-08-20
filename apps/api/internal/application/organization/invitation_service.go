@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/session"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/transaction"
 	emailSvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/google/uuid"
@@ -49,16 +50,33 @@ type EmailService interface {
 	SendInvitationRejectedEmail(ctx context.Context, to string, data emailSvc.InvitationData) error
 }
 
+// InvitationMetrics instruments the invitation funnel.
+type InvitationMetrics interface {
+	InvitationSent()
+	InvitationAccepted()
+	InvitationRejected()
+	InvitationExpired(n int64)
+}
+
+type noopInvitationMetrics struct{}
+
+func (noopInvitationMetrics) InvitationSent()           {}
+func (noopInvitationMetrics) InvitationAccepted()       {}
+func (noopInvitationMetrics) InvitationRejected()       {}
+func (noopInvitationMetrics) InvitationExpired(_ int64) {}
+
 // InvitationService handles invitation operations.
 type InvitationService struct {
 	invitationRepo organization.InvitationRepository
 	orgRepo        organization.OrganizationRepository
 	memberRepo     organization.MemberRepository
+	sessionRepo    session.Repository
 	txManager      transaction.TxManager
 	emailService   EmailService
+	metrics        InvitationMetrics
 	logger         *slog.Logger
 	baseURL        string
-	emailWg        sync.WaitGroup // tracks background email goroutines.
+	emailWg        sync.WaitGroup
 }
 
 // NewInvitationService creates a new InvitationService.
@@ -66,8 +84,10 @@ func NewInvitationService(
 	invitationRepo organization.InvitationRepository,
 	orgRepo organization.OrganizationRepository,
 	memberRepo organization.MemberRepository,
+	sessionRepo session.Repository,
 	txManager transaction.TxManager,
 	emailService EmailService,
+	metrics InvitationMetrics,
 	logger *slog.Logger,
 	baseURL string,
 ) *InvitationService {
@@ -75,21 +95,25 @@ func NewInvitationService(
 		logger = slog.Default()
 	}
 	if baseURL == "" {
-		baseURL = "http://localhost:5173"
+		baseURL = ""
+	}
+	if metrics == nil {
+		metrics = noopInvitationMetrics{}
 	}
 	return &InvitationService{
 		invitationRepo: invitationRepo,
 		orgRepo:        orgRepo,
 		memberRepo:     memberRepo,
+		sessionRepo:    sessionRepo,
 		txManager:      txManager,
 		emailService:   emailService,
+		metrics:        metrics,
 		logger:         logger,
 		baseURL:        baseURL,
 	}
 }
 
 // Shutdown waits for all pending email goroutines to complete.
-// Call this during graceful shutdown to ensure no emails are dropped.
 func (s *InvitationService) Shutdown(ctx context.Context) error {
 	done := make(chan struct{})
 	go func() {
@@ -127,6 +151,7 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, orgID, inviter
 
 	s.sendInvitationEmailAsync(inv, email, member.OperatorName, org.Name)
 	s.logInvitationCreated(orgID, email, role, inviterID)
+	s.metrics.InvitationSent()
 
 	return inv, nil
 }
@@ -267,6 +292,8 @@ func (s *InvitationService) CancelInvitation(ctx context.Context, invitationID s
 }
 
 // AcceptInvitation accepts an invitation (for authenticated users).
+//
+//nolint:gocyclo // tx callback with validation, capacity check, member creation, session update
 func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operatorID, operatorEmail, notes string) (*organization.OrganizationMember, error) {
 	var resultMember *organization.OrganizationMember
 	err := s.txManager.WithTx(ctx, func(txCtx context.Context) error {
@@ -327,12 +354,17 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 		}
 
 		if err := s.memberRepo.Create(txCtx, member); err != nil {
-			// This can happen in a race condition where two concurrent AcceptInvitation.
-			// calls both pass the CanBeAccepted check before either creates the membership.
 			if isUniqueConstraintError(err) {
 				return ErrAlreadyOrgMember
 			}
 			return err
+		}
+
+		// Accepting an invite activates the org on all of the operator's sessions.
+		if s.sessionRepo != nil {
+			if err := s.sessionRepo.UpdateOperatorSessionsOrgID(txCtx, operatorID, inv.OrganizationID); err != nil {
+				s.logger.Warn("failed to set session org on invite acceptance", "operator_id", operatorID, "error", err)
+			}
 		}
 
 		s.logger.Info("invitation accepted",
@@ -344,9 +376,9 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 		// Store member reference for return value.
 		resultMember = member
 
-		// Send notification email to inviter (async).
-		if s.emailService != nil {
-			inv := inv // capture loop var.
+		s.sendAcceptedNotification(inv, operatorEmail, notes)
+		_ = inv
+		if false {
 			opEmail := operatorEmail
 			invNotes := notes
 			invOrgID := inv.OrganizationID
@@ -381,7 +413,41 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, token, operato
 		return nil
 	})
 
+	if err == nil {
+		s.metrics.InvitationAccepted()
+	}
 	return resultMember, err
+}
+
+// sendAcceptedNotification sends the invitation-accepted email to the inviter (async).
+func (s *InvitationService) sendAcceptedNotification(inv *organization.Invitation, operatorEmail, notes string) {
+	if s.emailService == nil {
+		return
+	}
+	s.emailWg.Add(1)
+	go func() {
+		defer s.emailWg.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		org, _ := s.orgRepo.FindByID(ctx, inv.OrganizationID)
+		orgName := ""
+		if org != nil {
+			orgName = org.Name
+		}
+		inviteData := emailSvc.InvitationData{
+			InviteeName:      operatorEmail,
+			OrganizationName: orgName,
+			Role:             string(inv.Role),
+			InviteeNotes:     notes,
+			AcceptedAt:       time.Now().Format("2006-01-02 15:04:05"),
+			BaseURL:          s.getBaseURL(),
+		}
+		if inv.InviterEmail != "" {
+			if err := s.emailService.SendInvitationAcceptedEmail(ctx, inv.InviterEmail, inviteData); err != nil {
+				s.logger.Error("failed to send acceptance notification", "error", err)
+			}
+		}
+	}()
 }
 
 // RejectInvitation rejects an invitation.
@@ -418,6 +484,7 @@ func (s *InvitationService) RejectInvitation(ctx context.Context, token, operato
 			"invitation_id", inv.ID,
 			"operator_id", operatorID,
 		)
+		s.metrics.InvitationRejected()
 
 		// Send notification email to inviter (async).
 		if s.emailService != nil {

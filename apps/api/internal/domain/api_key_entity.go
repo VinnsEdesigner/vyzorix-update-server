@@ -41,22 +41,22 @@ func (s Scope) CanDelete() bool {
 
 // APIKey represents a multi-tenant API key.
 type APIKey struct {
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	ExpiresAt     *time.Time `json:"expires_at"`
-	LastRequest   *time.Time `json:"last_request"`
-	RevokedAt     *time.Time `json:"revoked_at"`
-	ID            string     `json:"id"`
-	OperatorID    string     `json:"operator_id"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+	ExpiresAt   *time.Time `json:"expires_at"`
+	LastRequest *time.Time `json:"last_request"`
+	RevokedAt   *time.Time `json:"revoked_at"`
+	ID          string     `json:"id"`
+	OperatorID  string     `json:"operator_id"`
 	// OrganizationID binds this key to a specific organization. Org context is
 	// resolved from this binding server-side rather than a client header.
-	OrganizationID string    `json:"organization_id,omitempty"`
-	Name           string    `json:"name"`
-	KeyPrefix      string    `json:"key_prefix"`
-	SigningSecret  string    `json:"-"`
-	Scope          Scope     `json:"scope"`
-	RequestCount   int64     `json:"request_count"`
-	IsActive       bool      `json:"is_active"`
+	OrganizationID string `json:"organization_id,omitempty"`
+	Name           string `json:"name"`
+	KeyPrefix      string `json:"key_prefix"`
+	SigningSecret  string `json:"-"`
+	Scope          Scope  `json:"scope"`
+	RequestCount   int64  `json:"request_count"`
+	IsActive       bool   `json:"is_active"`
 }
 
 // IsExpired returns true if the key has expired.
