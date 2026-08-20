@@ -18,7 +18,7 @@ point. They are ordered by implementation priority.
 
 ## Tier 1 — Highest value
 
-### 1. Alerting engine [~]
+### 1. Alerting engine [x]
 
 - **Grafana reference:** `pkg/services/ngalert` (rule store, tick-based evaluator, alert
   state machine, notifier)
@@ -41,9 +41,9 @@ point. They are ordered by implementation priority.
     existing `serverlock.Service` (same as DeviceDeletionWorker).
   - REST: `/v1/alerts/rules` CRUD + manual evaluate; scoped RBAC actions
     `alert.read` / `alert.write` on `org:*`.
-- **Status:** implementation in progress (first feature being built).
+- **Status:** implemented.
 
-### 2. Real Prometheus instrumentation [ ]
+### 2. Real Prometheus instrumentation [x]
 
 - **Grafana reference:** `pkg/infra/metrics`, `pkg/middleware/request_metrics.go`
 - **Vyzorix gap:** `internal/infrastructure/metrics/prometheus.go` is hand-rolled
@@ -52,7 +52,7 @@ point. They are ordered by implementation priority.
   by route/method/status; counter for command-delivery latency; expose `/metrics`.
 - **Why first after alerting:** you cannot alert on what you cannot measure.
 
-### 3. Notification channels (contact points) [ ]
+### 3. Notification channels (contact points) [x]
 
 - **Grafana reference:** `pkg/services/notifications`, `ngalert/notifier`
 - **Vyzorix gap:** only `infrastructure/webhook/webhook_client.go` and audit entries.
@@ -63,7 +63,7 @@ point. They are ordered by implementation priority.
 
 ## Tier 2 — Strong wins
 
-### 4. Service accounts [ ]
+### 4. Service accounts [x]
 
 - **Grafana reference:** `pkg/services/serviceaccounts` (incl. `secretscan`)
 - **Vyzorix gap:** API keys hang off operator identities.
