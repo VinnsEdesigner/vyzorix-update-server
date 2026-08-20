@@ -18,8 +18,8 @@ func NewService(db *sql.DB) *Service {
 }
 
 func (s *Service) Acquire(ctx context.Context, name, holder string, ttl time.Duration) (bool, error) {
-	now := time.Now().Unix()
-	expires := now + int64(ttl.Seconds())
+	now := time.Now().UnixMilli()
+	expires := now + ttl.Milliseconds()
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO server_locks (name, holder, acquired_at, expires_at) VALUES (?, ?, ?, ?)
 		 ON CONFLICT(name) DO UPDATE SET holder = ?, acquired_at = ?, expires_at = ?
@@ -51,5 +51,5 @@ func (s *Service) IsHeld(ctx context.Context, name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return time.Now().Unix() < expiresAt, nil
+	return time.Now().UnixMilli() < expiresAt, nil
 }
