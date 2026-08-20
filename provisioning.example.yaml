@@ -1,0 +1,29 @@
+organizations:
+  - name: Default Org
+    description: Auto-provisioned default organization
+
+operators:
+  - email: admin@vyzorix.local
+    name: Admin
+    password: ChangeMe123!
+    org_name: Default Org
+    role: super_admin
+
+device_groups:
+  - name: production
+    org_name: Default Org
+    operator_emails:
+      - admin@vyzorix.local
+
+api_keys:
+  - name: ci-pipeline
+    org_name: Default Org
+    scope: admin
+
+permission_grants:
+  - subject_type: operator
+    subject_id: admin@vyzorix.local
+    org_name: Default Org
+    scope: "devices:*"
+    actions:
+      - device.manage

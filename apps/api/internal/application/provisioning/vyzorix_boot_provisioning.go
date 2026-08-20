@@ -6,53 +6,55 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device_group"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Organizations []OrgConfig      `json:"organizations"`
-	Operators     []OperatorConfig `json:"operators"`
-	DeviceGroups  []GroupConfig    `json:"device_groups"`
-	APIKeys       []APIKeyConfig   `json:"api_keys"`
-	Grants        []GrantConfig    `json:"permission_grants"`
+	Organizations []OrgConfig      `json:"organizations" yaml:"organizations"`
+	Operators     []OperatorConfig `json:"operators" yaml:"operators"`
+	DeviceGroups  []GroupConfig    `json:"device_groups" yaml:"device_groups"`
+	APIKeys       []APIKeyConfig   `json:"api_keys" yaml:"api_keys"`
+	Grants        []GrantConfig    `json:"permission_grants" yaml:"permission_grants"`
 }
 
 type OrgConfig struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name        string `json:"name" yaml:"name"`
+	Description string `json:"description" yaml:"description"`
 }
 
 type OperatorConfig struct {
-	Email    string `json:"email"`
-	Name     string `json:"name"`
-	Password string `json:"password"`
-	OrgName  string `json:"org_name"`
-	Role     string `json:"role"`
+	Email    string `json:"email" yaml:"email"`
+	Name     string `json:"name" yaml:"name"`
+	Password string `json:"password" yaml:"password"`
+	OrgName  string `json:"org_name" yaml:"org_name"`
+	Role     string `json:"role" yaml:"role"`
 }
 
 type GroupConfig struct {
-	Name           string   `json:"name"`
-	OrgName        string   `json:"org_name"`
-	OperatorEmails []string `json:"operator_emails"`
+	Name           string   `json:"name" yaml:"name"`
+	OrgName        string   `json:"org_name" yaml:"org_name"`
+	OperatorEmails []string `json:"operator_emails" yaml:"operator_emails"`
 }
 
 type APIKeyConfig struct {
-	Name    string `json:"name"`
-	OrgName string `json:"org_name"`
-	Scope   string `json:"scope"`
+	Name    string `json:"name" yaml:"name"`
+	OrgName string `json:"org_name" yaml:"org_name"`
+	Scope   string `json:"scope" yaml:"scope"`
 }
 
 type GrantConfig struct {
-	SubjectType string   `json:"subject_type"`
-	SubjectID   string   `json:"subject_id"`
-	OrgName     string   `json:"org_name"`
-	Scope       string   `json:"scope"`
-	Actions     []string `json:"actions"`
+	SubjectType string   `json:"subject_type" yaml:"subject_type"`
+	SubjectID   string   `json:"subject_id" yaml:"subject_id"`
+	OrgName     string   `json:"org_name" yaml:"org_name"`
+	Scope       string   `json:"scope" yaml:"scope"`
+	Actions     []string `json:"actions" yaml:"actions"`
 }
 
 type OrgRepo interface {
@@ -114,6 +116,13 @@ func (p *Provisioner) WithCreators(orgCreator OrgCreator, opCreator OperatorCrea
 	return p
 }
 
+func parseConfig(data []byte, cfg *Config) error {
+	if strings.HasSuffix(strings.TrimSpace(string(data)), "}") || strings.HasPrefix(strings.TrimSpace(string(data)), "{") {
+		return json.Unmarshal(data, cfg)
+	}
+	return yaml.Unmarshal(data, cfg)
+}
+
 func (p *Provisioner) LoadAndApply(ctx context.Context, path string) error {
 	if path == "" {
 		return nil
@@ -128,7 +137,7 @@ func (p *Provisioner) LoadAndApply(ctx context.Context, path string) error {
 	}
 
 	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
+	if err := parseConfig(data, &cfg); err != nil {
 		return fmt.Errorf("parse provisioning file: %w", err)
 	}
 
