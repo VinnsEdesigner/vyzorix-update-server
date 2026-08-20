@@ -41,6 +41,9 @@ export * from "./oauth";
 export { organizations } from "./organization";
 export { members } from "./organization";
 export { invitations } from "./organization";
+export { alerts } from "./alerts";
+export { contactPoints } from "./contact-points";
+export { serviceAccounts } from "./service-accounts";
 export { settings as orgSettings, type OrganizationSettings, type ThresholdUpdateRequest, type SettingsUpdateRequest } from "./organization";
 
 export * from "./invitation";
@@ -54,6 +57,7 @@ export * from "./email";
 export * from "./events";
 export * from "./health";
 export * from "./metrics";
+export * from "./alerts";
 
 // WebSocket, device-signing, and crypto subsystems depend on Node-only
 // (`node:crypto`) or environment-specific globals. They are exported from the

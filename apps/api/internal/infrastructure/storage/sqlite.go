@@ -498,6 +498,12 @@ var migrations = []Migration{
 	{Apply: migrateDeviceGroups, Name: "create_device_groups_tables", Version: 61},
 	{Apply: migrateResourcePermissions, Name: "create_resource_permissions_table", Version: 62},
 	{Apply: migrateAddTagsAndQuotas, Name: "add_tags_quotas_locks", Version: 63},
+	// Alerting engine: org-scoped rules and their evaluation instances.
+	{Apply: migrateCreateAlerting, Name: "create_alerting_tables", Version: 64},
+	{Apply: migrateAlertHistoryColumns, Name: "add_alert_history_columns", Version: 65},
+	{Apply: migrateContactPoints, Name: "create_contact_points", Version: 66},
+	{Apply: migrateServiceAccounts, Name: "create_service_accounts", Version: 67},
+	{Apply: migrateServiceAccountLastUsed, Name: "add_service_account_last_used", Version: 68},
 }
 
 // runMigrations applies all pending migrations.

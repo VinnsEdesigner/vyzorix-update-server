@@ -6,8 +6,13 @@ import (
 	"time"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
+	alertapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/alert"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
+	notifications "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
+	sadomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/serviceaccount"
+	serviceaccount "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
 	domainoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
@@ -751,4 +756,394 @@ func (r *Resolver) RotateWebhookSecret(p graphql.ResolveParams) (interface{}, er
 	}
 
 	return secret, nil
+}
+
+// CreateAlertRule resolves the createAlertRule mutation.
+func (r *Resolver) CreateAlertRule(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	if r.AlertSvc == nil {
+		return nil, r.Presenter.InternalError("alert service not available")
+	}
+	in := alertapp.RuleInputFromArgs(p.Args, orgID)
+	rule, err := r.AlertSvc.CreateRule(p.Context, in)
+	if err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return r.alertRuleView(p, orgID, rule.ID)
+}
+
+// UpdateAlertRule resolves the updateAlertRule mutation.
+func (r *Resolver) UpdateAlertRule(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	ruleID, argOK := p.Args["ruleId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: ruleId")
+	}
+	if r.AlertSvc == nil {
+		return nil, r.Presenter.InternalError("alert service not available")
+	}
+	in := alertapp.RuleInputFromArgs(p.Args, orgID)
+	rule, err := r.AlertSvc.UpdateRule(p.Context, orgID, ruleID, in)
+	if err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return r.alertRuleView(p, orgID, rule.ID)
+}
+
+// DeleteAlertRule resolves the deleteAlertRule mutation.
+func (r *Resolver) DeleteAlertRule(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	ruleID, argOK := p.Args["ruleId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: ruleId")
+	}
+	if r.AlertSvc == nil {
+		return nil, r.Presenter.InternalError("alert service not available")
+	}
+	if err := r.AlertSvc.DeleteRule(p.Context, orgID, ruleID); err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return true, nil
+}
+
+// EvaluateAlertRule resolves the evaluateAlertRule mutation.
+func (r *Resolver) EvaluateAlertRule(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	ruleID, argOK := p.Args["ruleId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: ruleId")
+	}
+	if r.AlertEvaluator == nil {
+		return nil, r.Presenter.InternalError("alert evaluator not available")
+	}
+	transitioned, err := r.AlertEvaluator.EvaluateRule(p.Context, ruleID, time.Now())
+	if err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return transitioned, nil
+}
+
+func (r *Resolver) alertRuleView(p graphql.ResolveParams, orgID, ruleID string) (interface{}, error) {
+	view, err := r.AlertSvc.GetRule(p.Context, orgID, ruleID)
+	if err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return map[string]interface{}{
+		"id":                    view.Rule.ID,
+		"orgId":                 view.Rule.OrgID,
+		"name":                  view.Rule.Name,
+		"metric":                string(view.Rule.Metric),
+		"condition":             string(view.Rule.Condition),
+		"threshold":             view.Rule.Threshold,
+		"forSeconds":            view.Rule.ForSeconds,
+		"notifyIntervalSeconds": view.Rule.NotifyIntervalSeconds,
+		"webhookUrl":            view.Rule.WebhookURL,
+		"enabled":               view.Rule.Enabled,
+		"state":                 string(view.State),
+		"value":                 view.Value,
+		"evaluatedAt":           view.EvaluatedAt,
+		"createdAt":             view.Rule.CreatedAt,
+		"updatedAt":             view.Rule.UpdatedAt,
+	}, nil
+}
+
+// CreateContactPoint resolves the createContactPoint mutation.
+func (r *Resolver) CreateContactPoint(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	if r.ContactPointSvc == nil {
+		return nil, r.Presenter.InternalError("contact point service not available")
+	}
+	in := contactPointInputFromArgs(p.Args, orgID)
+	cp, err := r.ContactPointSvc.Create(p.Context, in)
+	if err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return contactPointView(cp), nil
+}
+
+// UpdateContactPoint resolves the updateContactPoint mutation.
+func (r *Resolver) UpdateContactPoint(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	contactPointID, argOK := p.Args["contactPointId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: contactPointId")
+	}
+	if r.ContactPointSvc == nil {
+		return nil, r.Presenter.InternalError("contact point service not available")
+	}
+	in := contactPointInputFromArgs(p.Args, orgID)
+	cp, err := r.ContactPointSvc.Update(p.Context, orgID, contactPointID, in)
+	if err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return contactPointView(cp), nil
+}
+
+// DeleteContactPoint resolves the deleteContactPoint mutation.
+func (r *Resolver) DeleteContactPoint(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	contactPointID, argOK := p.Args["contactPointId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: contactPointId")
+	}
+	if r.ContactPointSvc == nil {
+		return nil, r.Presenter.InternalError("contact point service not available")
+	}
+	if err := r.ContactPointSvc.Delete(p.Context, orgID, contactPointID); err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return true, nil
+}
+
+// TestContactPoint resolves the testContactPoint mutation.
+func (r *Resolver) TestContactPoint(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	contactPointID, argOK := p.Args["contactPointId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: contactPointId")
+	}
+	if r.ContactPointSvc == nil || r.Dispatcher == nil {
+		return nil, r.Presenter.InternalError("contact point service not available")
+	}
+	cp, err := r.ContactPointSvc.Get(p.Context, orgID, contactPointID)
+	if err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	msg := &notificationdomain.Message{
+		Subject: "Vyzorix contact point test",
+		Body:    "Test notification from Vyzorix",
+		Event:   "test",
+	}
+	if err := r.Dispatcher.SendToPoint(p.Context, cp, msg); err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return true, nil
+}
+
+func contactPointInputFromArgs(args map[string]interface{}, orgID string) *notifications.ContactPointInput {
+	in := &notifications.ContactPointInput{OrgID: orgID}
+	if v, ok := args["name"].(string); ok {
+		in.Name = v
+	}
+	if v, ok := args["channel"].(string); ok {
+		in.Channel = notificationdomain.ChannelType(v)
+	}
+	if v, ok := args["secret"].(string); ok {
+		in.Secret = v
+	}
+	if v, ok := args["config"].(map[string]interface{}); ok {
+		cfg := make(map[string]string)
+		for k, val := range v {
+			if str, ok := val.(string); ok {
+				cfg[k] = str
+			}
+		}
+		in.Config = cfg
+	}
+	if v, ok := args["enabled"].(bool); ok {
+		in.Enabled = v
+	}
+	return in
+}
+
+func contactPointView(cp *notificationdomain.ContactPoint) map[string]interface{} {
+	return map[string]interface{}{
+		"id":        cp.ID,
+		"orgId":     cp.OrgID,
+		"name":      cp.Name,
+		"channel":   string(cp.Channel),
+		"secret":    cp.Secret != "",
+		"config":    cp.Config,
+		"enabled":   cp.Enabled,
+		"createdAt": cp.CreatedAt,
+		"updatedAt": cp.UpdatedAt,
+	}
+}
+
+// CreateServiceAccount resolves the createServiceAccount mutation.
+func (r *Resolver) CreateServiceAccount(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	name, argOK := p.Args["name"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: name")
+	}
+	if r.ServiceAccountSvc == nil {
+		return nil, r.Presenter.InternalError("service account service not available")
+	}
+	sa, err := r.ServiceAccountSvc.Create(p.Context, orgID, name)
+	if err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return map[string]interface{}{
+		"id":        sa.ID,
+		"orgId":     sa.OrgID,
+		"name":      sa.Name,
+		"enabled":   sa.Enabled,
+		"createdAt": sa.CreatedAt,
+	}, nil
+}
+
+// DeleteServiceAccount resolves the deleteServiceAccount mutation.
+func (r *Resolver) DeleteServiceAccount(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	serviceAccountID, argOK := p.Args["serviceAccountId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: serviceAccountId")
+	}
+	if r.ServiceAccountSvc == nil {
+		return nil, r.Presenter.InternalError("service account service not available")
+	}
+	if err := r.ServiceAccountSvc.Delete(p.Context, orgID, serviceAccountID); err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return true, nil
+}
+
+// CreateServiceAccountToken resolves the createServiceAccountToken mutation.
+func (r *Resolver) CreateServiceAccountToken(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	serviceAccountID, argOK := p.Args["serviceAccountId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: serviceAccountId")
+	}
+	if r.ServiceAccountSvc == nil {
+		return nil, r.Presenter.InternalError("service account service not available")
+	}
+	in := &serviceaccount.TokenInput{
+		ServiceID: serviceAccountID,
+	}
+	if v, ok := p.Args["name"].(string); ok {
+		in.Name = v
+	}
+	if v, ok := p.Args["scopes"].([]interface{}); ok {
+		scopes := make([]string, 0, len(v))
+		for _, s := range v {
+			if str, ok := s.(string); ok {
+				scopes = append(scopes, str)
+			}
+		}
+		in.Scopes = scopes
+	}
+	if v, ok := p.Args["expiresAt"].(string); ok && v != "" {
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
+			in.ExpiresAt = &t
+		}
+	}
+	token, fullKey, err := r.ServiceAccountSvc.CreateToken(p.Context, in)
+	if err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	result := tokenView(token)
+	result["fullKey"] = fullKey
+	return result, nil
+}
+
+// RotateServiceAccountToken resolves the rotateServiceAccountToken mutation.
+func (r *Resolver) RotateServiceAccountToken(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	serviceAccountID, argOK := p.Args["serviceAccountId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: serviceAccountId")
+	}
+	tokenID, argOK := p.Args["tokenId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: tokenId")
+	}
+	if r.ServiceAccountSvc == nil {
+		return nil, r.Presenter.InternalError("service account service not available")
+	}
+	token, fullKey, err := r.ServiceAccountSvc.RotateToken(p.Context, tokenID, &serviceaccount.TokenInput{
+		ServiceID: serviceAccountID,
+	})
+	if err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	result := tokenView(token)
+	result["fullKey"] = fullKey
+	return result, nil
+}
+
+func tokenView(token *sadomain.Token) map[string]interface{} {
+	return map[string]interface{}{
+		"id":        token.ID,
+		"serviceId": token.ServiceID,
+		"name":      token.Name,
+		"keyPrefix": token.KeyPrefix,
+		"scopes":    token.Scopes,
+		"valid":     token.Valid,
+		"expiresAt": token.ExpiresAt,
+		"createdAt": token.CreatedAt,
+	}
 }

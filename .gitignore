@@ -79,3 +79,7 @@ vyzorix-update-server
 # Playwright E2E test output
 test-results/
 playwright-report/
+
+# Build artifacts
+apps/api/api
+

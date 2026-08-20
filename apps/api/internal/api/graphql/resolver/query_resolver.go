@@ -2,6 +2,7 @@
 package resolver
 
 import (
+	"errors"
 	"time"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
@@ -1207,4 +1208,152 @@ func (r *Resolver) GetDeviceLogs(p graphql.ResolveParams) (interface{}, error) {
 			"nextCursor": resp.Pagination.NextCursor,
 		},
 	}, nil
+}
+
+// GetAlertRules resolves the alertRules query.
+func (r *Resolver) GetAlertRules(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	if r.AlertSvc == nil {
+		return nil, r.Presenter.InternalError("alert service not available")
+	}
+	views, err := r.AlertSvc.ListRules(p.Context, orgID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to list alert rules")
+	}
+	result := make([]map[string]interface{}, 0, len(views))
+	for _, v := range views {
+		result = append(result, map[string]interface{}{
+			"id":                    v.Rule.ID,
+			"orgId":                 v.Rule.OrgID,
+			"name":                  v.Rule.Name,
+			"metric":                string(v.Rule.Metric),
+			"condition":             string(v.Rule.Condition),
+			"threshold":             v.Rule.Threshold,
+			"forSeconds":            v.Rule.ForSeconds,
+			"notifyIntervalSeconds": v.Rule.NotifyIntervalSeconds,
+			"webhookUrl":            v.Rule.WebhookURL,
+			"enabled":               v.Rule.Enabled,
+			"state":                 string(v.State),
+			"value":                 v.Value,
+			"evaluatedAt":           v.EvaluatedAt,
+			"createdAt":             v.Rule.CreatedAt,
+			"updatedAt":             v.Rule.UpdatedAt,
+		})
+	}
+	return result, nil
+}
+
+// GetAlertHistory resolves the alertHistory query.
+func (r *Resolver) GetAlertHistory(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	ruleID := ""
+	if v, ok := p.Args["ruleId"].(string); ok {
+		ruleID = v
+	}
+	limit := 200
+	if v, ok := p.Args["limit"].(int); ok && v > 0 {
+		limit = v
+	}
+	events, err := r.AlertSvc.History(p.Context, orgID, ruleID, limit)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to load alert history")
+	}
+	result := make([]map[string]interface{}, 0, len(events))
+	for _, evt := range events {
+		result = append(result, map[string]interface{}{
+			"id":        evt.ID,
+			"ruleId":    evt.RuleID,
+			"fromState": string(evt.FromState),
+			"toState":   string(evt.ToState),
+			"value":     evt.Value,
+			"createdAt": evt.CreatedAt,
+		})
+	}
+	return result, nil
+}
+
+// GetContactPoints resolves the contactPoints query.
+func (r *Resolver) GetContactPoints(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	if r.ContactPointSvc == nil {
+		return nil, r.Presenter.InternalError("contact point service not available")
+	}
+	points, err := r.ContactPointSvc.List(p.Context, orgID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to list contact points")
+	}
+	result := make([]map[string]interface{}, 0, len(points))
+	for _, cp := range points {
+		result = append(result, map[string]interface{}{
+			"id":        cp.ID,
+			"orgId":     cp.OrgID,
+			"name":      cp.Name,
+			"channel":   string(cp.Channel),
+			"secret":    cp.Secret != "",
+			"config":    cp.Config,
+			"enabled":   cp.Enabled,
+			"createdAt": cp.CreatedAt,
+			"updatedAt": cp.UpdatedAt,
+		})
+	}
+	return result, nil
+}
+
+// GetServiceAccounts resolves the serviceAccounts query.
+func (r *Resolver) GetServiceAccounts(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	if r.ServiceAccountSvc == nil {
+		return nil, r.Presenter.InternalError("service account service not available")
+	}
+	accounts, err := r.ServiceAccountSvc.List(p.Context, orgID)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to list service accounts")
+	}
+	result := make([]map[string]interface{}, 0, len(accounts))
+	for _, sa := range accounts {
+		tokens, _ := r.ServiceAccountSvc.ListTokens(p.Context, sa.ID)
+		activeCount := 0
+		for _, tok := range tokens {
+			if tok.IsUsable() {
+				activeCount++
+			}
+		}
+		result = append(result, map[string]interface{}{
+			"id":         sa.ID,
+			"orgId":      sa.OrgID,
+			"name":       sa.Name,
+			"enabled":    sa.Enabled,
+			"tokenCount": activeCount,
+			"createdAt":  sa.CreatedAt,
+		})
+	}
+	return result, nil
 }

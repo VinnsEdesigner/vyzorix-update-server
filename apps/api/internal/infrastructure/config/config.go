@@ -78,6 +78,7 @@ func LoadSigningConfig() SigningConfig {
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
 	APIKeys                       map[string]string
+	SlackConfig                   SlackConfig
 	PublicDir                     string
 	DeviceSecret                  string
 	GitHubOAuthClientSecret       string
@@ -108,7 +109,10 @@ type Config struct {
 	EmailFromName                 string
 	AuditLogSeparateDBPath        string
 	APIKeyPrefix                  string
+	TurnstileSecret               string
+	DeploymentMode                string
 	AllowedOrigins                []string
+	AlertConfig                   AlertConfig
 	DiagnosticsConfig             DiagnosticsConfig
 	HMACWindow                    time.Duration
 	JWTDuration                   time.Duration
@@ -116,6 +120,9 @@ type Config struct {
 	DatabaseConnMaxIdleTime       time.Duration
 	DatabaseRequestTimeout        time.Duration
 	DatabaseHealthCheckPeriod     time.Duration
+	MaxAllOrigins                 int
+	RateLimitPerMin               int
+	AuthRateLimitMin              int
 	MonthlyKeyLimit               int
 	SessionMaxAge                 int
 	DeviceDeletionIntervalMinutes int
@@ -125,8 +132,6 @@ type Config struct {
 	MaxKeyNameLength              int
 	DatabaseMaxOpenConns          int
 	NonceCacheTTL                 time.Duration
-	AuthRateLimitMin              int
-	RateLimitPerMin               int
 	RequireKeyName                bool
 	AllowKeyRenaming              bool
 	EnableUsageTracking           bool
@@ -142,6 +147,56 @@ type DiagnosticsConfig struct {
 	FCMTokenExpiryDays        int
 	InspectionCacheTTLSeconds int
 	TelemetryRetentionDays    int
+}
+
+type AlertConfig struct {
+	WebhookSecret    string
+	EvalIntervalSecs int
+	MetricWindowSecs int
+}
+
+func DefaultAlertConfig() AlertConfig {
+	return AlertConfig{EvalIntervalSecs: 60, MetricWindowSecs: 3600}
+}
+
+func LoadAlertConfig() AlertConfig {
+	cfg := DefaultAlertConfig()
+	cfg.WebhookSecret = os.Getenv("ALERT_WEBHOOK_SECRET")
+	if v := os.Getenv("ALERT_EVAL_INTERVAL_SECONDS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			cfg.EvalIntervalSecs = n
+		}
+	}
+	if v := os.Getenv("ALERT_METRIC_WINDOW_SECONDS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			cfg.MetricWindowSecs = n
+		}
+	}
+	return cfg
+}
+
+// SlackConfig holds a single org-wide Slack contact point; if WebhookURL is
+// set, the server registers it at boot (see api_main.go) so alerts flow to
+// Slack without manual provisioning.
+type SlackConfig struct {
+	WebhookURL string
+	Channel    string
+	Username   string
+	OrgName    string
+}
+
+func LoadSlackConfig() SlackConfig {
+	return SlackConfig{
+		WebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
+		Channel:    os.Getenv("SLACK_CHANNEL"),
+		Username:   os.Getenv("SLACK_USERNAME"),
+		OrgName:    os.Getenv("SLACK_ORG_NAME"),
+	}
+}
+
+// DefaultSlackConfig returns the default Slack config (empty = not configured).
+func DefaultSlackConfig() SlackConfig {
+	return SlackConfig{}
 }
 
 // DefaultDiagnosticsConfig returns default diagnostics configuration.
@@ -259,6 +314,8 @@ func Load() (Config, error) {
 		AuditLogSeparateDB:        getBool("AUDIT_LOG_SEPARATE_DB", false),
 		AuditLogSeparateDBPath:    get("AUDIT_LOG_SEPARATE_DB_PATH", "./data/audit/audit.db"),
 		DiagnosticsConfig:         LoadDiagnosticsConfig(),
+		AlertConfig:               LoadAlertConfig(),
+		SlackConfig:               LoadSlackConfig(),
 		RateLimitPerMin:           getenvInt("RATE_LIMIT_REQUESTS", 100),
 		AuthRateLimitMin:          getenvInt("AUTH_RATE_LIMIT_REQUESTS", 60),
 	}

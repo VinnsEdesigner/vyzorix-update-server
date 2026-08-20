@@ -39,6 +39,18 @@ const (
 	ActionStatsRead  Action = "stats.read"
 	ActionSearchRead Action = "search.read"
 
+	// Alerting: view and manage org-scoped alert rules.
+	ActionAlertRead  Action = "alert.read"
+	ActionAlertWrite Action = "alert.write"
+
+	// Notifications: manage contact points and view delivery log.
+	ActionNotificationsRead  Action = "notifications.read"
+	ActionNotificationsWrite Action = "notifications.write"
+
+	// Service accounts: manage automation identities and their tokens.
+	ActionServiceAccountsRead  Action = "service_accounts.read"
+	ActionServiceAccountsWrite Action = "service_accounts.write"
+
 	// Device inbox: view/approve device registration inbox entries.
 	ActionInboxRead  Action = "inbox.read"
 	ActionInboxWrite Action = "inbox.write"

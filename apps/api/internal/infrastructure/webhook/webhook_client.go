@@ -186,6 +186,35 @@ func (c *Client) Test(ctx context.Context, url string) (*TestResult, error) {
 	}, nil
 }
 
+// SendRaw posts raw JSON bytes (e.g., Slack attachment payloads) using the
+// same SSRF validation, HMAC signing, and retry flow as Send, without the
+// wrapping Vyzorix payload structure.
+func (c *Client) SendRaw(ctx context.Context, url, secret string, body []byte) error {
+	if err := ValidateURL(url); err != nil {
+		return fmt.Errorf("webhook URL rejected: %w", err)
+	}
+
+	maxRetries := 3
+	var lastErr error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			delay := time.Duration(attempt*attempt) * time.Second
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(delay):
+			}
+		}
+
+		if err := c.doSendRaw(ctx, url, secret, body); err != nil {
+			lastErr = err
+			continue
+		}
+		return nil
+	}
+	return fmt.Errorf("webhook failed after %d attempts: %w", maxRetries, lastErr)
+}
+
 // Send sends a webhook notification with HMAC signature.
 
 func (c *Client) Send(ctx context.Context, url, secret string, payload *Payload) error {
@@ -275,6 +304,40 @@ func (c *Client) doSend(ctx context.Context, url, secret string, body []byte, pa
 		return &retryableError{statusCode: resp.StatusCode, message: fmt.Sprintf("webhook returned status %d", resp.StatusCode)}
 	}
 
+	return nil
+}
+
+// doSendRaw posts a raw JSON payload.
+func (c *Client) doSendRaw(ctx context.Context, url, secret string, body []byte) error {
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "Vyzorix-Webhook/1.0")
+	if secret != "" {
+		req.Header.Set("X-Vyzorix-Signature", computeHMAC(body, secret))
+		req.Header.Set("X-Vyzorix-Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp == nil {
+		return fmt.Errorf("webhook returned nil response")
+	}
+	if resp.Body != nil {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return &retryableError{statusCode: resp.StatusCode, message: fmt.Sprintf("webhook returned status %d", resp.StatusCode)}
+	}
 	return nil
 }
 

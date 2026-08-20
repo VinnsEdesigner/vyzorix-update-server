@@ -14,7 +14,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/redaction"
+			"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
+		"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/redaction"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
@@ -195,6 +196,9 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		UserAgent:         userAgent,
 		DeviceFingerprint: deviceFingerprint,
 	})
+
+	success := err == nil
+	metrics.Get().RecordLogin(success)
 
 	if err != nil {
 		// Record failed attempt.

@@ -26,6 +26,9 @@ func DefaultScopesForRole(roleName string) ScopedPermissions {
 			{ActionConnectionsRead, devicesAll},
 			{ActionStatsRead, orgAll},
 			{ActionSearchRead, orgAll},
+			{ActionAlertRead, orgAll},
+		{ActionNotificationsRead, orgAll},
+			{ActionServiceAccountsRead, orgAll},
 		}
 	}
 	appendOperator := func() {
@@ -52,6 +55,9 @@ func DefaultScopesForRole(roleName string) ScopedPermissions {
 			ScopedPermission{ActionMembersRead, orgAll},
 			ScopedPermission{ActionMembersWrite, orgAll},
 			ScopedPermission{ActionMembersDelete, orgAll},
+			ScopedPermission{ActionAlertWrite, orgAll},
+					ScopedPermission{ActionNotificationsWrite, orgAll},
+					ScopedPermission{ActionServiceAccountsWrite, orgAll},
 		)
 	}
 	appendSuperAdmin := func() {

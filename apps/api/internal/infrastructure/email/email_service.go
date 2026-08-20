@@ -245,6 +245,50 @@ func (s *Service) SendRegistrationRequestEmail(ctx context.Context, to string, d
 	return s.send(ctx, to, subject, html)
 }
 
+// SendNotificationEmail sends a templated notification via the generic
+// contact point template (NotificationContactEmail). Falls back to the raw
+// HTML input when the template fails to parse.
+func (s *Service) SendNotificationEmail(ctx context.Context, to, subject, rawHTML string) error {
+	if s.apiKey == "" {
+		return errors.New("RESEND_API_KEY not configured")
+	}
+
+	tmplData := map[string]interface{}{
+		"Subject": subject,
+		"Body":    rawHTML,
+		"BaseURL": s.baseURL,
+	}
+	html, err := s.parseTemplate(templates.NotificationContactEmail, tmplData)
+	if err != nil {
+		// Template failure means the raw HTML is still deliverable.
+		html = rawHTML
+	}
+	return s.send(ctx, to, subject, html)
+}
+
+// SendLeakAlertEmail notifies admins when a service account token leak is
+// detected (Git push, payload share, or internet crawl).
+func (s *Service) SendLeakAlertEmail(ctx context.Context, to, serviceAccountName, tokenPrefix string, leakCount int) error {
+	if s.apiKey == "" {
+		return errors.New("RESEND_API_KEY not configured")
+	}
+
+	data := map[string]interface{}{
+		"ServiceAccountName": serviceAccountName,
+		"TokenPrefix":        tokenPrefix,
+		"DetectedAt":         time.Now().Format("2006-01-02 15:04:05 UTC"),
+		"LeakCount":          leakCount,
+		"BaseURL":            s.baseURL,
+	}
+	html, err := s.parseTemplate(templates.LeakAlertEmail, data)
+	if err != nil {
+		return fmt.Errorf("failed to parse leak alert template: %w", err)
+	}
+
+	subject := fmt.Sprintf(" Security Alert: leaked service account token detected (%s)", serviceAccountName)
+	return s.send(ctx, to, subject, html)
+}
+
 // SendErrorAlertEmail sends an error alert email.
 func (s *Service) SendErrorAlertEmail(ctx context.Context, to string, data NotificationData) error {
 	if s.apiKey == "" {

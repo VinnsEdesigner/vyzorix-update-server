@@ -5,8 +5,11 @@ export * from "./_shared";
 // per context (resolved at source, not via barrel aliases), so every module is
 // re-exported with `export *` without collisions.
 export * from "./admin";
+export * from "./alerts";
 export * from "./apikey";
+export * from "./contact-points";
 export * from "./auth";
+export * from "./service-accounts";
 export * from "./clientcredentials";
 export * from "./email";
 export * from "./oauth";

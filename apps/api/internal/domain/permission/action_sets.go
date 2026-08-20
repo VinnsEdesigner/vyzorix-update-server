@@ -38,6 +38,7 @@ var actionSets = map[Action][]Action{
 		ActionTelemetryRead, ActionDiagnosticsRead,
 		ActionEventsRead, ActionLogsRead,
 		ActionConnectionsRead, ActionStatsRead,
+		ActionAlertRead,
 	},
 	ActionSetInboxManage: {ActionInboxRead, ActionInboxWrite},
 }

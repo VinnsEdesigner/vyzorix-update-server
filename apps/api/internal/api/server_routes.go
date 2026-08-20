@@ -240,6 +240,9 @@ func (s *Server) setupAuthenticatedRoutes() {
 	s.setupUpdatesRoutes(tenantGroup)
 	s.setupDiagnosticsRoutes(tenantGroup)
 	s.setupSearchRoutes(tenantGroup)
+	s.setupAlertRoutes(tenantGroup)
+	s.setupNotificationRoutes(tenantGroup)
+	s.setupServiceAccountRoutes(tenantGroup)
 
 	// API Keys management: SESSION ONLY (no API key auth for managing keys).
 	// These routes manage API keys - shouldn't use API key auth.
@@ -499,6 +502,108 @@ func (s *Server) setupSearchRoutes(r *gin.RouterGroup) {
 				c.JSON(200, gin.H{"results": []any{}, "query": q})
 			}
 		})
+	}
+}
+
+// setupServiceAccountRoutes registers service account management routes.
+func (s *Server) setupServiceAccountRoutes(r *gin.RouterGroup) {
+	if s.ServiceAccountHandler == nil {
+		return
+	}
+	saGroup := r.Group("/service-accounts")
+	saGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+	saGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+	{
+		saGroup.GET("",
+			s.requireScope(permission.ActionServiceAccountsRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.ServiceAccountHandler.List)
+		saGroup.POST("",
+			s.requireScope(permission.ActionServiceAccountsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.ServiceAccountHandler.Create)
+		saGroup.DELETE("/:id",
+			s.requireScope(permission.ActionServiceAccountsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.ServiceAccountHandler.Delete)
+		saGroup.GET("/:id/tokens",
+			s.requireScope(permission.ActionServiceAccountsRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.ServiceAccountHandler.ListTokens)
+		saGroup.POST("/:id/tokens",
+			s.requireScope(permission.ActionServiceAccountsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.ServiceAccountHandler.CreateToken)
+		saGroup.DELETE("/:id/tokens/:token_id",
+			s.requireScope(permission.ActionServiceAccountsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.ServiceAccountHandler.RevokeToken)
+		saGroup.POST("/:id/tokens/:token_id/rotate",
+			s.requireScope(permission.ActionServiceAccountsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.ServiceAccountHandler.RotateToken)
+	}
+}
+
+// setupNotificationRoutes registers contact point management routes.
+func (s *Server) setupNotificationRoutes(r *gin.RouterGroup) {
+	if s.ContactPointHandler == nil {
+		return
+	}
+	notificationGroup := r.Group("/notifications")
+	notificationGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+	notificationGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+	{
+		notificationGroup.GET("/contact-points",
+			s.requireScope(permission.ActionNotificationsRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.ContactPointHandler.List)
+		notificationGroup.POST("/contact-points",
+			s.requireScope(permission.ActionNotificationsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.ContactPointHandler.Create)
+		notificationGroup.GET("/contact-points/:id",
+			s.requireScope(permission.ActionNotificationsRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.ContactPointHandler.Get)
+		notificationGroup.PATCH("/contact-points/:id",
+			s.requireScope(permission.ActionNotificationsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.ContactPointHandler.Update)
+		notificationGroup.DELETE("/contact-points/:id",
+			s.requireScope(permission.ActionNotificationsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.ContactPointHandler.Delete)
+		notificationGroup.POST("/contact-points/:id/test",
+			s.requireScope(permission.ActionNotificationsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.ContactPointHandler.Test)
+		notificationGroup.GET("/contact-points/:id/deliveries",
+			s.requireScope(permission.ActionNotificationsRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.ContactPointHandler.Deliveries)
+	}
+}
+
+// setupAlertRoutes registers org-scoped alert rule management routes.
+func (s *Server) setupAlertRoutes(r *gin.RouterGroup) {
+	if s.alertHandler == nil {
+		return
+	}
+	alertsGroup := r.Group("/alerts")
+	alertsGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+	alertsGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+	{
+		alertsGroup.GET("/rules",
+			s.requireScope(permission.ActionAlertRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.alertHandler.List)
+		alertsGroup.POST("/rules",
+			s.requireScope(permission.ActionAlertWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.alertHandler.Create)
+		alertsGroup.GET("/rules/:id",
+			s.requireScope(permission.ActionAlertRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.alertHandler.Get)
+		alertsGroup.PATCH("/rules/:id",
+			s.requireScope(permission.ActionAlertWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.alertHandler.Update)
+		alertsGroup.DELETE("/rules/:id",
+			s.requireScope(permission.ActionAlertWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.alertHandler.Delete)
+		alertsGroup.POST("/rules/:id/evaluate",
+			s.requireScope(permission.ActionAlertWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.alertHandler.Evaluate)
+		alertsGroup.GET("/history",
+			s.requireScope(permission.ActionAlertRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.alertHandler.History)
+		alertsGroup.GET("/rules/:id/history",
+			s.requireScope(permission.ActionAlertRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.alertHandler.History)
 	}
 }
 

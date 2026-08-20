@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
+	notification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/event"

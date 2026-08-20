@@ -8,6 +8,7 @@ import (
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	gqlmiddleware "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/validator"
+	alertapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/alert"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
@@ -16,6 +17,8 @@ import (
 	inboxapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	notifications "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
+serviceaccount "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	orgapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
@@ -57,6 +60,11 @@ type Resolver struct {
 	Authorizer            *cmdapp.Authorizer
 	GrantRepo             *storage.GrantRepository
 	GroupRepo             *storage.DeviceGroupRepository
+	AlertSvc              *alertapp.Service
+	AlertEvaluator        *alertapp.Evaluator
+	ContactPointSvc       *notifications.Service
+	Dispatcher            *notifications.Dispatcher
+	ServiceAccountSvc     *serviceaccount.Service
 }
 
 // NewResolver creates a new GraphQL resolver.
@@ -87,6 +95,11 @@ func NewResolver(
 	invitationService *orgapp.InvitationService,
 	inboxService *inboxapp.Service,
 	authorizer *cmdapp.Authorizer,
+	alertSvc *alertapp.Service,
+	alertEvaluator *alertapp.Evaluator,
+	contactPointSvc *notifications.Service,
+	dispatcher *notifications.Dispatcher,
+	serviceAccountSvc *serviceaccount.Service,
 ) *Resolver {
 	return &Resolver{
 		DeviceService:         deviceService,
@@ -116,6 +129,11 @@ func NewResolver(
 		InvitationService:     invitationService,
 		InboxService:          inboxService,
 		Authorizer:            authorizer,
+		AlertSvc:              alertSvc,
+		AlertEvaluator:        alertEvaluator,
+		ContactPointSvc:       contactPointSvc,
+		Dispatcher:            dispatcher,
+		ServiceAccountSvc:     serviceAccountSvc,
 	}
 }
 

@@ -48,6 +48,12 @@ const (
 	ActionMFAVerifyAttempt Action = "mfa_verify_attempt"
 	ActionMFAVerifySuccess Action = "mfa_verify_success"
 	ActionMFAVerifyFailed  Action = "mfa_verify_failed"
+	// Service account lifecycle audit actions.
+	ActionServiceAccountCreated      Action = "service_account_created"
+	ActionServiceAccountDeleted      Action = "service_account_deleted"
+	ActionServiceAccountTokenCreated Action = "service_account_token_created"
+	ActionServiceAccountTokenRotated Action = "service_account_token_rotated"
+	ActionServiceAccountTokenRevoked Action = "service_account_token_revoked"
 	// API key-specific audit actions.
 	ActionAPIKeyCreated Action = "api_key_created"
 	ActionAPIKeyUpdated Action = "api_key_updated"

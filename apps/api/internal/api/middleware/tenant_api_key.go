@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/serviceaccount"
+
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
@@ -112,8 +114,17 @@ func IsTenantPath(path string) bool {
 // =============================================================================.
 
 // TenantAPIKeyAuth provides tenant API key authentication middleware.
+// ServiceAccountAuthenticator validates service account tokens when operator
+// API key validation fails. Implemented by serviceaccount.Service.
+type ServiceAccountAuthenticator interface {
+	Authenticate(ctx context.Context, key string) (*serviceaccount.Token, error)
+}
+
+// TenantAPIKeyAuth validates operator API keys and, as a fallback, service
+// account tokens so automation can authenticate without a human identity.
 type TenantAPIKeyAuth struct {
 	service     *keys.APIKeyService
+	saAuth      ServiceAccountAuthenticator
 	auditLogger *audit.Logger
 }
 
@@ -123,6 +134,11 @@ func NewTenantAPIKeyAuth(service *keys.APIKeyService, auditLogger *audit.Logger)
 		service:     service,
 		auditLogger: auditLogger,
 	}
+}
+
+// SetServiceAccountAuth wires the service account token lookup path.
+func (t *TenantAPIKeyAuth) SetServiceAccountAuth(auth ServiceAccountAuthenticator) {
+	t.saAuth = auth
 }
 
 // Middleware returns the Gin middleware function for tenant API key authentication.
@@ -172,8 +188,26 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 			return
 		}
 
-		// Validate the key using the service.
+		// Validate the key using the service. Service account tokens of
+		// the form "vxyz_sa_..." fall back to the service account lookup.
 		key, err := t.service.ValidateKey(c.Request.Context(), apiKey)
+		if err != nil && t.saAuth != nil && strings.HasPrefix(apiKey, "vxyz_sa_") {
+			if saToken, saErr := t.saAuth.Authenticate(c.Request.Context(), apiKey); saErr == nil && saToken.IsUsable() {
+				c.Set("operator_id", "")
+				c.Set("api_key_id", saToken.ID)
+				c.Set("api_key_scope", saToken.Scopes[0])
+				c.Set("api_key_name", saToken.Name)
+				c.Set("auth_type", "service_account")
+				c.Set("service_account_id", saToken.ServiceID)
+				c.Set("service_account_scopes", saToken.Scopes)
+				if saSvc, ok := t.saAuth.(interface { GetOrgID(context.Context) string }); ok {
+				c.Set(ContextKeyOrganizationID, saSvc.GetOrgID(c.Request.Context()))
+				c.Set("org_source", "service_account")
+				}
+				c.Next()
+				return
+			}
+		}
 		if err != nil {
 			// Log failed authentication attempt.
 			if t.auditLogger != nil {

@@ -22,6 +22,7 @@ import (
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/provisioning"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
 	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/logging"
@@ -31,6 +32,7 @@ import (
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 )
 
@@ -157,6 +159,9 @@ func main() {
 			result.HandlerSet.OrgSettingsService,
 			result.HandlerSet.MemberService,
 			result.HandlerSet.InvitationService,
+			apiServer.ContactPointHandler.Service(),
+			apiServer.ContactPointHandler.Dispatcher(),
+			apiServer.ServiceAccountHandler.Service(),
 		); regErr != nil {
 			log.Error("failed to register GraphQL", "err", regErr)
 			PrintWarning("GraphQL", "Registration failed")
@@ -165,7 +170,7 @@ func main() {
 		}
 	}
 
-	startServer(cfg.Port, log, apiServer, ssrConfig, ssrManager)
+	startServer(&cfg, log, apiServer, ssrConfig, ssrManager)
 }
 
 func initSSR(log *slog.Logger, ssrConfig config.SSRConfig, ssrManager **ssr.Manager) {
@@ -189,12 +194,79 @@ func initSSR(log *slog.Logger, ssrConfig config.SSRConfig, ssrManager **ssr.Mana
 	}
 }
 
-func startServer(port string, log *slog.Logger, apiServer *api.Server,
+// bootstrapSlackContactPoint creates a Slack contact point at boot when
+// SLACK_WEBHOOK_URL is set. Idempotent via name/channel check.
+func bootstrapSlackContactPoint(log *slog.Logger, db *storage.SQLite, slackCfg config.SlackConfig) {
+	if db == nil || slackCfg.WebhookURL == "" {
+		return
+	}
+
+	repo := storage.NewContactPointRepository(db.DB())
+	ctx := context.Background()
+
+	// Resolve org: SLACK_ORG_NAME if set, otherwise first org.
+	var orgID string
+	if slackCfg.OrgName != "" {
+		row := db.DB().QueryRowContext(ctx, "SELECT id FROM organizations WHERE name = ?", slackCfg.OrgName)
+		if err := row.Scan(&orgID); err != nil {
+			log.Warn("org for slack contact point not found; create it via provisioning first", "org", slackCfg.OrgName)
+			return
+		}
+	} else {
+		row := db.DB().QueryRowContext(ctx, "SELECT id FROM organizations ORDER BY created_at LIMIT 1")
+		if err := row.Scan(&orgID); err != nil {
+			log.Warn("no orgs exist yet; slack contact point not created")
+			return
+		}
+	}
+
+	existing, err := repo.ListByOrg(ctx, orgID)
+	if err != nil {
+		log.Error("failed to list contact points for slack bootstrap", "error", err)
+		return
+	}
+	for _, cp := range existing {
+		if cp.Name == "slack-alerts" && cp.Channel == notificationdomain.ChannelTypeSlack {
+			log.Info("slack contact point already exists, skipping")
+			return
+		}
+	}
+
+	point := &notificationdomain.ContactPoint{
+		ID:        uuid.New().String(),
+		OrgID:     orgID,
+		Name:      "slack-alerts",
+		Channel:   notificationdomain.ChannelTypeSlack,
+		Config:    map[string]string{"webhook": slackCfg.WebhookURL},
+		Enabled:   true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if slackCfg.Channel != "" {
+		point.Config["channel"] = slackCfg.Channel
+	}
+	if slackCfg.Username != "" {
+		point.Config["username"] = slackCfg.Username
+	}
+
+	if err := point.Validate(); err != nil {
+		log.Error("slack contact point invalid", "error", err)
+		return
+	}
+	if err := repo.Save(ctx, point); err != nil {
+		log.Error("failed to save slack contact point", "error", err)
+		return
+	}
+	log.Info("slack contact point registered", "org", orgID)
+}
+
+//nolint:gocyclo // startServer wires many optional services.
+func startServer(cfg *config.Config, log *slog.Logger, apiServer *api.Server,
 	ssrConfig config.SSRConfig, ssrManager *ssr.Manager) {
 	PrintSection("Server")
-	PrintStatus("Go Server", "Starting on "+port)
+	PrintStatus("Go Server", "Starting on "+cfg.Port)
 
-	addr := ":" + port
+	addr := ":" + cfg.Port
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      apiServer.Routes(),
@@ -217,6 +289,21 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 	)
 	deviceDeletionWorker.Start()
 
+	// Start service account token expiry sweep (revokes tokens past expiry hourly).
+	var saExpiryWorker *worker.ServiceAccountExpiryWorker
+	if apiServer.DB != nil {
+		saTokenRepo := storage.NewServiceAccountTokenRepository(apiServer.DB.DB())
+		saExpiryWorker = worker.NewServiceAccountExpiryWorker(saTokenRepo, lockSvc, log, time.Hour)
+		saExpiryWorker.Start()
+	}
+
+	// Start leak scan worker (scans public GitHub/GitLab code search daily).
+	var saLeakWorker *worker.ServiceAccountLeakWorker
+	if apiServer.DB != nil && apiServer.ServiceAccountHandler != nil {
+		saLeakWorker = worker.NewServiceAccountLeakWorker(apiServer.ServiceAccountHandler.Service(), lockSvc, log, 24*time.Hour)
+		saLeakWorker.Start()
+	}
+
 	// Start invitation cleanup worker (expires stale pending invitations every 10 minutes).
 	var inviteCleanupWorker *worker.InvitationCleanupWorker
 	if apiServer.InvitationStorage != nil {
@@ -227,9 +314,20 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	// Bootstrap Slack contact point from SLACK_* env vars so alerts reach
+	// Slack without manual provisioning.
+	if cfg.SlackConfig.WebhookURL != "" {
+		bootstrapSlackContactPoint(log, apiServer.DB, cfg.SlackConfig)
+	}
+
 	// Run provisioning if a provisioning file is configured.
 	if provFile := os.Getenv("PROVISIONING_FILE"); provFile != "" {
 		prov := provisioning.New(log)
+		if apiServer.DB != nil {
+			prov = prov.WithAlertRepository(storage.NewAlertRuleRepository(apiServer.DB.DB()))
+			prov = prov.WithContactPointRepository(storage.NewContactPointRepository(apiServer.DB.DB()))
+			prov = prov.WithServiceAccountRepository(storage.NewServiceAccountRepository(apiServer.DB.DB()))
+		}
 		if err := prov.LoadAndApply(context.Background(), provFile); err != nil {
 			log.Error("provisioning failed", "err", err)
 		} else {
@@ -244,11 +342,16 @@ func startServer(port string, log *slog.Logger, apiServer *api.Server,
 			os.Exit(1)
 		}
 	}()
-
 	<-ctx.Done()
 	log.Info("shutting down")
 
 	// Stop background workers first - they may be generating new requests.
+	if saLeakWorker != nil {
+		saLeakWorker.Stop()
+	}
+	if saExpiryWorker != nil {
+		saExpiryWorker.Stop()
+	}
 	if inviteCleanupWorker != nil {
 		inviteCleanupWorker.Stop()
 	}

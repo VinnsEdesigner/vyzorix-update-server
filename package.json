@@ -55,7 +55,6 @@
     "onlyBuiltDependencies": [
       "core-js",
       "msw"
-    ],
-    "neverBuiltDependencies": []
+    ]
   }
 }

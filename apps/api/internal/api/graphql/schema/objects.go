@@ -2359,3 +2359,90 @@ var MemberEventType = graphql.NewObject(graphql.ObjectConfig{
 		},
 	},
 })
+
+// AlertRuleType represents an org-scoped alert rule with its current instance state.
+var AlertRuleType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "AlertRule",
+	Description: "Alert rule with runtime state",
+	Fields: graphql.Fields{
+		"id":                    &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Rule ID"},
+		"orgId":                 &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+		"name":                  &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Rule name"},
+		"metric":                &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Metric to evaluate"},
+		"condition":             &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Comparison operator"},
+		"threshold":             &graphql.Field{Type: graphql.NewNonNull(graphql.Float), Description: "Threshold value"},
+		"forSeconds":            &graphql.Field{Type: graphql.NewNonNull(graphql.Int), Description: "Pending duration before firing"},
+		"notifyIntervalSeconds": &graphql.Field{Type: graphql.NewNonNull(graphql.Int), Description: "Re-notification interval while firing"},
+		"webhookUrl":            &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Webhook URL to notify"},
+		"enabled":               &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean), Description: "Whether the rule is evaluated"},
+		"state":                 &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Current state: inactive, pending, firing"},
+		"value":                 &graphql.Field{Type: graphql.NewNonNull(graphql.Float), Description: "Last observed value"},
+		"evaluatedAt":           &graphql.Field{Type: DateTimeScalar, Description: "Last evaluation time"},
+		"createdAt":             &graphql.Field{Type: DateTimeScalar, Description: "Creation time"},
+		"updatedAt":             &graphql.Field{Type: DateTimeScalar, Description: "Last update time"},
+	},
+})
+
+// AlertEventType represents one alert transition event (history).
+var AlertEventType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "AlertEvent",
+	Description: "One alert state transition event",
+	Fields: graphql.Fields{
+		"id":        &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Event ID"},
+		"ruleId":    &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Rule ID"},
+		"fromState": &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Previous state"},
+		"toState":   &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "New state"},
+		"value":     &graphql.Field{Type: graphql.NewNonNull(graphql.Float), Description: "Observed value at transition"},
+		"createdAt": &graphql.Field{Type: graphql.NewNonNull(graphql.Float), Description: "Unix milliseconds of the transition"},
+	},
+})
+
+
+// ContactPointType represents an org-scoped notification destination.
+var ContactPointType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "ContactPoint",
+	Description: "Notification contact point with channel config",
+	Fields: graphql.Fields{
+		"id":        &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Contact point ID"},
+		"orgId":     &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+		"name":      &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Contact point name"},
+		"channel":   &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Channel: email, webhook, slack"},
+		"secret":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean), Description: "Whether a secret is configured"},
+		"config":    &graphql.Field{Type: JSONScalar, Description: "Channel-specific config"},
+		"enabled":   &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean), Description: "Whether the point receives notifications"},
+		"createdAt": &graphql.Field{Type: DateTimeScalar, Description: "Creation time"},
+		"updatedAt": &graphql.Field{Type: DateTimeScalar, Description: "Last update time"},
+	},
+})
+
+
+// ServiceAccountType represents an automation identity with token count.
+var ServiceAccountType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "ServiceAccount",
+	Description: "Non-human service account for automation",
+	Fields: graphql.Fields{
+		"id":         &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Service account ID"},
+		"orgId":      &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+		"name":       &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Service account name"},
+		"enabled":    &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean), Description: "Whether the account is active"},
+		"tokenCount": &graphql.Field{Type: graphql.NewNonNull(graphql.Int), Description: "Number of active tokens"},
+		"createdAt":  &graphql.Field{Type: DateTimeScalar, Description: "Creation time"},
+	},
+})
+
+
+// ServiceAccountTokenType represents one service account token (no full key).
+var ServiceAccountTokenType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "ServiceAccountToken",
+	Description: "Service account token (prefix + metadata only)",
+	Fields: graphql.Fields{
+		"id":         &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Token ID"},
+		"serviceId":  &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Service account ID"},
+		"name":       &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Token name"},
+		"keyPrefix":  &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Display prefix of the key"},
+		"scopes":     &graphql.Field{Type: graphql.NewList(graphql.String), Description: "Granted scopes"},
+		"valid":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean), Description: "Whether the token is usable"},
+		"expiresAt":  &graphql.Field{Type: DateTimeScalar, Description: "Expiry time"},
+		"createdAt":  &graphql.Field{Type: DateTimeScalar, Description: "Creation time"},
+	},
+})

@@ -4,11 +4,16 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
+	alerthandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/alert"
+	notificationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/notification"
+	sahandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/serviceaccount"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	confirmationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/confirmation"
@@ -22,6 +27,7 @@ import (
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
+	alertapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/alert"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
@@ -39,6 +45,9 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/featuremgmt"
+	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
+	saapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
+	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
@@ -50,6 +59,7 @@ import (
 	infraMetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
+	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
 	"github.com/gin-gonic/gin"
@@ -57,6 +67,7 @@ import (
 
 // ServerConfig holds the server configuration.
 type ServerConfig struct {
+	AlertConfig           config.AlertConfig
 	FCMNotifier           fcm.Notifier
 	OperatorRepo          operator.Repository
 	OAuthStateRepo        authhandlers.OAuthStateProvider
@@ -87,6 +98,8 @@ type ServerConfig struct {
 
 // Server is the main API server.
 type Server struct {
+	ContactPointHandler         *notificationhandlers.Handler
+	ServiceAccountHandler      *sahandlers.Handler
 	encryptKeyFn                func(clientID string) ([]byte, bool)
 	authHandlers                *authhandlers.AllHandlers
 	hub                         *hub.Hub
@@ -123,6 +136,8 @@ type Server struct {
 	supportBundleHandler        *admin.SupportBundleHandler
 	updateCheckerHandler        *admin.UpdateCheckerHandler
 	searchService               *searchsvc.Service
+	alertHandler                *alerthandlers.Handler
+	AlertEvaluator              *alertapp.Evaluator
 	streamHandler               *websockethandlers.StreamHandler
 	telemetryHistoryHandler     *handlers.TelemetryHistoryHandler
 	connectionStatusHandler     *handlers.ConnectionStatusHandler
@@ -281,22 +296,71 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 
 	// Feature manager: all new authz features default ON in production,
 	// individually overridable via FEATURE_* env vars.
-	s.features = featuremgmt.NewManager(map[featuremgmt.Feature]bool{
+	allToggles := map[featuremgmt.Feature]bool{
 		featuremgmt.ScopedRBAC:      true,
 		featuremgmt.DeviceGroups:    true,
 		featuremgmt.ServerDrivenOrg: true,
 		featuremgmt.ActionSets:      true,
-		featuremgmt.ScopeResolvers:  true,
-		featuremgmt.PermissionCache: true,
-	})
+		featuremgmt.ScopeResolvers:   true,
+		featuremgmt.PermissionCache:  true,
+	}
+	s.features = featuremgmt.NewManager(allToggles)
+
+	if cfg.Metrics != nil {
+		for toggle := range allToggles {
+			infraMetrics.Get().UpdateFeatureToggle(string(toggle), s.features.IsEnabled(toggle))
+		}
+	}
 
 	if cfg.DB != nil {
 		s.searchService = searchsvc.NewService(cfg.DB.DB())
 		s.supportBundleHandler = admin.NewSupportBundleHandler(cfg.DB)
-	}
-	s.updateCheckerHandler = admin.NewUpdateCheckerHandler("1.0.0", "VinnsEdesigner/vyzorix-update-server")
 
-	// WebSocket handler.
+		alertRules := storage.NewAlertRuleRepository(cfg.DB.DB())
+		alertStates := storage.NewAlertStateRepository(cfg.DB.DB())
+		alertHistory := storage.NewAlertHistoryRepository(cfg.DB.DB())
+		alertService := alertapp.NewService(alertRules, alertStates, alertHistory)
+		cpRepo := storage.NewContactPointRepository(cfg.DB.DB())
+		cpDeliveries := storage.NewDeliveryRepository(cfg.DB.DB())
+		notificationSvc := appnotification.NewService(cpRepo)
+		channels := map[notificationdomain.ChannelType]notificationdomain.Channel{
+			notificationdomain.ChannelTypeEmail:   appnotification.NewEmailChannel(emailService.NewService()),
+			notificationdomain.ChannelTypeWebhook: appnotification.NewWebhookChannel(infrawebhook.NewClient(10 * time.Second)),
+			notificationdomain.ChannelTypeSlack:   appnotification.NewSlackChannel(infrawebhook.NewClient(10 * time.Second)),
+		}
+		dispatcher := appnotification.NewDispatcher(cpRepo, cpDeliveries, channels, cfg.Log)
+		alertNotifier := appnotification.NewAlertNotifierAdapter(dispatcher)
+
+		s.AlertEvaluator = alertapp.NewEvaluator(
+			alertRules,
+			alertStates,
+			alertHistory,
+			alertapp.NewMetricSource(cfg.DB.DB(), int64(cfg.AlertConfig.MetricWindowSecs)),
+			alertNotifier,
+			cfg.Hub,
+			cfg.Log,
+		)
+		s.alertHandler = alerthandlers.NewHandler(alertService, s.AlertEvaluator)
+
+		s.ContactPointHandler = notificationhandlers.NewHandler(notificationSvc, dispatcher)
+
+		saRepo := storage.NewServiceAccountRepository(cfg.DB.DB())
+		saTokenRepo := storage.NewServiceAccountTokenRepository(cfg.DB.DB())
+		saService := saapp.NewService(saRepo, saTokenRepo)
+		saService.SetAuditLogger(cfg.AuditLogger)
+		if cfg.DB != nil {
+		saService.SetMemberRepository(storage.NewMemberStorage(cfg.DB.DB()))
+		}
+		if limit := os.Getenv("SA_TOKEN_LIMIT"); limit != "" {
+		if n, err := strconv.Atoi(limit); err == nil && n > 0 {
+		saService.SetMaxTokens(n)
+		}
+		}
+		s.ServiceAccountHandler = sahandlers.NewHandler(saService)
+		if s.tenantAPIKeyAuth != nil {
+		s.tenantAPIKeyAuth.SetServiceAccountAuth(saService)
+		}
+		}
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
 
 	// Telemetry history handler.
@@ -520,6 +584,7 @@ func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
 
 // ServerConfigWithDeps is the config for NewServerWithDeps using pre-wired dependencies.
 type ServerConfigWithDeps struct {
+	AlertConfig     config.AlertConfig
 	Log             *slog.Logger
 	DB              *storage.SQLite
 	Engine          *gin.Engine

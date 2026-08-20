@@ -7,21 +7,54 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/alert"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device_group"
+	notification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/serviceaccount"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Organizations []OrgConfig      `json:"organizations" yaml:"organizations"`
-	Operators     []OperatorConfig `json:"operators" yaml:"operators"`
-	DeviceGroups  []GroupConfig    `json:"device_groups" yaml:"device_groups"`
-	APIKeys       []APIKeyConfig   `json:"api_keys" yaml:"api_keys"`
-	Grants        []GrantConfig    `json:"permission_grants" yaml:"permission_grants"`
+	Organizations   []OrgConfig            `json:"organizations" yaml:"organizations"`
+	Operators       []OperatorConfig       `json:"operators" yaml:"operators"`
+	DeviceGroups    []GroupConfig          `json:"device_groups" yaml:"device_groups"`
+	APIKeys         []APIKeyConfig         `json:"api_keys" yaml:"api_keys"`
+	Grants          []GrantConfig          `json:"permission_grants" yaml:"permission_grants"`
+	AlertRules      []AlertRuleConfig      `json:"alert_rules" yaml:"alert_rules"`
+	ContactPoints   []ContactPointConfig   `json:"contact_points" yaml:"contact_points"`
+	ServiceAccounts []ServiceAccountConfig `json:"service_accounts" yaml:"service_accounts"`
+}
+
+type ServiceAccountConfig struct {
+	Name    string `json:"name" yaml:"name"`
+	OrgName string `json:"org_name" yaml:"org_name"`
+}
+
+type ContactPointConfig struct {
+	Config  map[string]string `json:"config" yaml:"config"`
+	Name    string            `json:"name" yaml:"name"`
+	OrgName string            `json:"org_name" yaml:"org_name"`
+	Channel string            `json:"channel" yaml:"channel"`
+	Secret  string            `json:"secret" yaml:"secret"`
+	Enabled bool              `json:"enabled" yaml:"enabled"`
+}
+
+type AlertRuleConfig struct {
+	Name                  string  `json:"name" yaml:"name"`
+	OrgName               string  `json:"org_name" yaml:"org_name"`
+	Metric                string  `json:"metric" yaml:"metric"`
+	Condition             string  `json:"condition" yaml:"condition"`
+	WebhookURL            string  `json:"webhook_url" yaml:"webhook_url"`
+	Threshold             float64 `json:"threshold" yaml:"threshold"`
+	ForSeconds            int     `json:"for_seconds" yaml:"for_seconds"`
+	NotifyIntervalSeconds int     `json:"notify_interval_seconds" yaml:"notify_interval_seconds"`
+	Enabled               bool    `json:"enabled" yaml:"enabled"`
 }
 
 type OrgConfig struct {
@@ -86,15 +119,33 @@ type KeyCreator interface {
 	CreateKey(ctx context.Context, operatorID, orgID, name, scope string) (string, error)
 }
 
+type AlertRuleRepo interface {
+	Save(ctx context.Context, rule *alert.Rule) error
+	ListByOrg(ctx context.Context, orgID string) ([]*alert.Rule, error)
+}
+
+type ContactPointRepo interface {
+	Save(ctx context.Context, cp *notification.ContactPoint) error
+	ListByOrg(ctx context.Context, orgID string) ([]*notification.ContactPoint, error)
+}
+
+type ServiceAccountRepo interface {
+	Save(ctx context.Context, sa *serviceaccount.ServiceAccount) error
+	ListByOrg(ctx context.Context, orgID string) ([]*serviceaccount.ServiceAccount, error)
+}
+
 type Provisioner struct {
-	log        *slog.Logger
-	orgRepo    OrgRepo
-	opRepo     OperatorRepo
-	groupRepo  GroupRepo
-	grantRepo  GrantRepo
-	orgCreator OrgCreator
-	opCreator  OperatorCreator
-	keyCreator KeyCreator
+	log         *slog.Logger
+	orgRepo     OrgRepo
+	opRepo      OperatorRepo
+	groupRepo   GroupRepo
+	grantRepo   GrantRepo
+	alertRepo   AlertRuleRepo
+	contactRepo ContactPointRepo
+	serviceRepo ServiceAccountRepo
+	orgCreator  OrgCreator
+	opCreator   OperatorCreator
+	keyCreator  KeyCreator
 }
 
 func New(log *slog.Logger) *Provisioner {
@@ -106,6 +157,21 @@ func (p *Provisioner) WithRepositories(orgRepo OrgRepo, opRepo OperatorRepo, gro
 	p.opRepo = opRepo
 	p.groupRepo = groupRepo
 	p.grantRepo = grantRepo
+	return p
+}
+
+func (p *Provisioner) WithAlertRepository(alertRepo AlertRuleRepo) *Provisioner {
+	p.alertRepo = alertRepo
+	return p
+}
+
+func (p *Provisioner) WithContactPointRepository(contactRepo ContactPointRepo) *Provisioner {
+	p.contactRepo = contactRepo
+	return p
+}
+
+func (p *Provisioner) WithServiceAccountRepository(serviceRepo ServiceAccountRepo) *Provisioner {
+	p.serviceRepo = serviceRepo
 	return p
 }
 
@@ -123,6 +189,7 @@ func parseConfig(data []byte, cfg *Config) error {
 	return yaml.Unmarshal(data, cfg)
 }
 
+//nolint:gocyclo // LoadAndApply pipelines all resource types.
 func (p *Provisioner) LoadAndApply(ctx context.Context, path string) error {
 	if path == "" {
 		return nil
@@ -147,6 +214,9 @@ func (p *Provisioner) LoadAndApply(ctx context.Context, path string) error {
 		"groups", len(cfg.DeviceGroups),
 		"keys", len(cfg.APIKeys),
 		"grants", len(cfg.Grants),
+		"alerts", len(cfg.AlertRules),
+		"contact_points", len(cfg.ContactPoints),
+		"service_accounts", len(cfg.ServiceAccounts),
 	)
 
 	orgMap := make(map[string]string)
@@ -194,6 +264,30 @@ func (p *Provisioner) LoadAndApply(ctx context.Context, path string) error {
 			continue
 		}
 		p.log.Info("provisioned grant", "subject", gc.SubjectID, "scope", gc.Scope)
+	}
+
+	for _, ac := range cfg.AlertRules {
+		if err := p.provisionAlertRule(ctx, ac, orgMap); err != nil {
+			p.log.Error("failed to provision alert rule", "name", ac.Name, "error", err)
+			continue
+		}
+		p.log.Info("provisioned alert rule", "name", ac.Name)
+	}
+
+	for _, cc := range cfg.ContactPoints {
+		if err := p.provisionContactPoint(ctx, cc, orgMap); err != nil {
+			p.log.Error("failed to provision contact point", "name", cc.Name, "error", err)
+			continue
+		}
+		p.log.Info("provisioned contact point", "name", cc.Name)
+	}
+
+	for _, sc := range cfg.ServiceAccounts {
+		if err := p.provisionServiceAccount(ctx, sc, orgMap); err != nil {
+			p.log.Error("failed to provision service account", "name", sc.Name, "error", err)
+			continue
+		}
+		p.log.Info("provisioned service account", "name", sc.Name)
 	}
 
 	return nil
@@ -308,4 +402,110 @@ func (p *Provisioner) provisionGrant(ctx context.Context, gc GrantConfig, orgMap
 		Scope:       gc.Scope,
 	}
 	return p.grantRepo.Save(ctx, grant)
+}
+
+func (p *Provisioner) provisionServiceAccount(ctx context.Context, sc ServiceAccountConfig, orgMap map[string]string) error {
+	if p.serviceRepo == nil {
+		return fmt.Errorf("no service account repository configured")
+	}
+	orgID, ok := orgMap[sc.OrgName]
+	if !ok {
+		return fmt.Errorf("org %q not found", sc.OrgName)
+	}
+
+	existing, _ := p.serviceRepo.ListByOrg(ctx, orgID)
+	for _, sa := range existing {
+		if sa.Name == sc.Name {
+			p.log.Info("service account already exists, skipping", "name", sc.Name, "org", sc.OrgName)
+			return nil
+		}
+	}
+
+	sa := &serviceaccount.ServiceAccount{
+		ID:        uuid.New().String(),
+		OrgID:     orgID,
+		Name:      sc.Name,
+		Enabled:   true,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := sa.Validate(); err != nil {
+		return fmt.Errorf("invalid service account %q: %w", sc.Name, err)
+	}
+	return p.serviceRepo.Save(ctx, sa)
+}
+
+func (p *Provisioner) provisionContactPoint(ctx context.Context, cc ContactPointConfig, orgMap map[string]string) error {
+	if p.contactRepo == nil {
+		return fmt.Errorf("no contact point repository configured")
+	}
+	orgID, ok := orgMap[cc.OrgName]
+	if !ok {
+		return fmt.Errorf("org %q not found", cc.OrgName)
+	}
+
+	existing, _ := p.contactRepo.ListByOrg(ctx, orgID)
+	for _, cp := range existing {
+		if cp.Name == cc.Name {
+			p.log.Info("contact point already exists, skipping", "name", cc.Name, "org", cc.OrgName)
+			return nil
+		}
+	}
+
+	cp := &notification.ContactPoint{
+		ID:        uuid.New().String(),
+		OrgID:     orgID,
+		Name:      cc.Name,
+		Channel:   notification.ChannelType(cc.Channel),
+		Secret:    cc.Secret,
+		Config:    cc.Config,
+		Enabled:   cc.Enabled,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if cp.Config == nil {
+		cp.Config = make(map[string]string)
+	}
+	if err := cp.Validate(); err != nil {
+		return fmt.Errorf("invalid contact point %q: %w", cc.Name, err)
+	}
+	return p.contactRepo.Save(ctx, cp)
+}
+
+func (p *Provisioner) provisionAlertRule(ctx context.Context, ac AlertRuleConfig, orgMap map[string]string) error {
+	if p.alertRepo == nil {
+		return fmt.Errorf("no alert rule repository configured")
+	}
+	orgID, ok := orgMap[ac.OrgName]
+	if !ok {
+		return fmt.Errorf("org %q not found", ac.OrgName)
+	}
+
+	// Idempotent: save via upsert if a rule with the same name already exists in the org.
+	existing, _ := p.alertRepo.ListByOrg(ctx, orgID)
+	for _, rule := range existing {
+		if rule.Name == ac.Name {
+			p.log.Info("alert rule already exists, skipping", "name", ac.Name, "org", ac.OrgName)
+			return nil
+		}
+	}
+
+	rule := &alert.Rule{
+		ID:                    uuid.New().String(),
+		OrgID:                 orgID,
+		Name:                  ac.Name,
+		WebhookURL:            ac.WebhookURL,
+		Metric:                alert.Metric(ac.Metric),
+		Condition:             alert.Condition(ac.Condition),
+		Threshold:             ac.Threshold,
+		ForSeconds:            ac.ForSeconds,
+		NotifyIntervalSeconds: ac.NotifyIntervalSeconds,
+		Enabled:               ac.Enabled,
+		CreatedAt:             time.Now(),
+		UpdatedAt:             time.Now(),
+	}
+	if err := rule.Validate(); err != nil {
+		return fmt.Errorf("invalid alert rule %q: %w", ac.Name, err)
+	}
+	return p.alertRepo.Save(ctx, rule)
 }

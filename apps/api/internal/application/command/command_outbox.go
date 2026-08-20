@@ -10,6 +10,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	ws "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 )
@@ -130,6 +131,7 @@ func (o *Outbox) processPendingCommands() {
 		o.log.Error("failed to fetch pending commands", "err", err)
 		return
 	}
+	metrics.Get().UpdateCommandQueue(len(cmds))
 
 	for _, cmd := range cmds {
 		select {
@@ -141,7 +143,7 @@ func (o *Outbox) processPendingCommands() {
 	}
 }
 
-// processCommand attempts to deliver a single command.
+// processCommand attempts to deliver a single command and emits delivery metrics.
 func (o *Outbox) processCommand(cmd *command.Command) bool {
 	ctx := context.Background()
 
@@ -292,6 +294,8 @@ func (o *Outbox) markDelivered(cmd *command.Command) error {
 	if err := o.repo.MarkDelivered(ctx, cmd.DispatchID); err != nil {
 		return err
 	}
+	metrics.Get().RecordCommandOutcome("delivered")
+	metrics.Get().RecordCommandDelivery(time.Since(cmd.CreatedAt))
 	return nil
 }
 
@@ -306,6 +310,7 @@ func (o *Outbox) handleFailedDelivery(cmd *command.Command) {
 				"dispatchID", cmd.DispatchID,
 				"err", err)
 		}
+		metrics.Get().RecordCommandOutcome("failed")
 		o.log.Warn("command marked as failed - expired",
 			"dispatchID", cmd.DispatchID,
 			"deviceID", cmd.DeviceID)

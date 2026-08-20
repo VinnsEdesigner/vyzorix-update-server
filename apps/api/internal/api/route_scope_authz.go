@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
@@ -18,6 +19,19 @@ import (
 // command path's owner-or-group check).
 func (s *Server) requireScope(action permission.Action, scope string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Service accounts authenticate without an operator; evaluate scope
+		// based on the token's own scope list instead.
+		if c.GetString("auth_type") == "service_account" {
+			scopes := c.GetStringSlice("service_account_scopes")
+			if !serviceAccountGrants(scopes, action) {
+				responses.RespondStructured(c, http.StatusForbidden, "insufficient permissions")
+				c.Abort()
+				return
+			}
+			c.Next()
+			return
+		}
+
 		op := middleware.GetOperatorFromContext(c)
 		if op == nil {
 			responses.RespondStructured(c, http.StatusUnauthorized, "authentication required")
@@ -51,5 +65,26 @@ func (s *Server) requireScope(action permission.Action, scope string) gin.Handle
 		}
 
 		c.Next()
+	}
+}
+
+// serviceAccountGrants maps token scopes (read/write/admin) to the required
+// action class: read satisfies *.read, write adds *.write, admin adds every
+// remaining scope prefix.
+func serviceAccountGrants(scopes []string, action permission.Action) bool {
+	highest := "read"
+	for _, s := range scopes {
+		switch s {
+		case "admin":
+			return true
+		case "write":
+			highest = "write"
+		}
+	}
+	switch highest {
+	case "write":
+		return strings.HasSuffix(string(action), ".read") || strings.HasSuffix(string(action), ".write")
+	default:
+		return strings.HasSuffix(string(action), ".read")
 	}
 }

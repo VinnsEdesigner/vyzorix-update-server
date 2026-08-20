@@ -19,6 +19,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
+	appnotifications "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
+	sadomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	orgapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -58,6 +60,9 @@ func (s *Server) RegisterGraphQL(
 	orgSettingsService *orgapp.OrganizationSettingsService,
 	memberService *orgapp.MemberService,
 	invitationService *orgapp.InvitationService,
+	notificationService *appnotifications.Service,
+	notificationDispatcher *appnotifications.Dispatcher,
+	serviceAccountSvc *sadomain.Service,
 ) error {
 	// Store InvitationService for graceful shutdown.
 	s.InvitationService = invitationService
@@ -101,6 +106,11 @@ func (s *Server) RegisterGraphQL(
 		invitationService,
 		s.inboxService,
 		s.commandAuthorizer,
+		s.alertHandler.Service(),
+		s.AlertEvaluator,
+		notificationService,
+		notificationDispatcher,
+		s.ServiceAccountHandler.Service(),
 	)
 
 	// Wire the custom-permission-grants repository so the scoped permission

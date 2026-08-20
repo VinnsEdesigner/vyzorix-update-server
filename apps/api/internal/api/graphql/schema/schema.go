@@ -22,7 +22,7 @@ func buildQueryType(res *resolver.Resolver) *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: mergeFields(settingsQueries(res), inboxQueries(res), deviceQueries(res), commandQueries(res), telemetryQueries(res),
-			connectionQueries(res), dashboardQueries(res), updatesQueries(res), diagnosticsQueries(res),
+			connectionQueries(res), dashboardQueries(res), updatesQueries(res), diagnosticsQueries(res), alertQueries(res), contactPointQueries(res), serviceAccountQueries(res),
 			organizationQueries(res)),
 	})
 }
@@ -344,7 +344,7 @@ func buildMutationType(res *resolver.Resolver) *graphql.Object {
 			deviceMutations(res),
 			commandMutations(res),
 			updatesMutations(res),
-			organizationMutations(res),
+			organizationMutations(res), alertMutations(res), contactPointMutations(res), serviceAccountMutations(res),
 		),
 	})
 }
@@ -965,5 +965,207 @@ func reinstateMemberMutation(res *resolver.Resolver) *graphql.Field {
 			"memberId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to reinstate"},
 		},
 		Resolve: res.ReinstateMember,
+	}
+}
+
+func alertQueries(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"alertRules": &graphql.Field{
+			Type:        graphql.NewList(graphql.NewNonNull(AlertRuleType)),
+			Description: "List alert rules for an organization",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+			},
+			Resolve: res.GetAlertRules,
+		},
+		"alertHistory": &graphql.Field{
+			Type:        graphql.NewList(graphql.NewNonNull(AlertEventType)),
+			Description: "Get alert transition events for an organization",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+				"ruleId":         &graphql.ArgumentConfig{Type: graphql.String, Description: "Optional rule filter"},
+				"limit":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 200},
+			},
+			Resolve: res.GetAlertHistory,
+		},
+	}
+}
+
+func alertMutations(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"createAlertRule": &graphql.Field{
+			Type:        AlertRuleType,
+			Description: "Create an org-scoped alert rule",
+			Args: graphql.FieldConfigArgument{
+				"organizationId":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"name":                  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"metric":                &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"condition":             &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"threshold":             &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Float)},
+				"forSeconds":            &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
+				"notifyIntervalSeconds": &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
+				"webhookUrl":            &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: ""},
+				"enabled":               &graphql.ArgumentConfig{Type: graphql.Boolean, DefaultValue: true},
+			},
+			Resolve: res.CreateAlertRule,
+		},
+		"updateAlertRule": &graphql.Field{
+			Type:        AlertRuleType,
+			Description: "Update an org-scoped alert rule",
+			Args: graphql.FieldConfigArgument{
+				"organizationId":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"ruleId":                &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"name":                  &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"metric":                &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"condition":             &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"threshold":             &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Float)},
+				"forSeconds":            &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
+				"notifyIntervalSeconds": &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
+				"webhookUrl":            &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: ""},
+				"enabled":               &graphql.ArgumentConfig{Type: graphql.Boolean, DefaultValue: true},
+			},
+			Resolve: res.UpdateAlertRule,
+		},
+		"deleteAlertRule": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Delete an org-scoped alert rule",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"ruleId":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			},
+			Resolve: res.DeleteAlertRule,
+		},
+		"evaluateAlertRule": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Manually evaluate an alert rule",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"ruleId":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			},
+			Resolve: res.EvaluateAlertRule,
+		},
+	}
+}
+
+
+func contactPointQueries(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"contactPoints": &graphql.Field{
+			Type:        graphql.NewList(graphql.NewNonNull(ContactPointType)),
+			Description: "List contact points for an organization",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+			},
+			Resolve: res.GetContactPoints,
+		},
+	}
+}
+
+func contactPointMutations(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"createContactPoint": &graphql.Field{
+			Type:        ContactPointType,
+			Description: "Create an org-scoped contact point",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"name":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"channel":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"secret":         &graphql.ArgumentConfig{Type: graphql.String},
+				"config":         &graphql.ArgumentConfig{Type: JSONScalar},
+				"enabled":        &graphql.ArgumentConfig{Type: graphql.Boolean, DefaultValue: true},
+			},
+			Resolve: res.CreateContactPoint,
+		},
+		"updateContactPoint": &graphql.Field{
+			Type:        ContactPointType,
+			Description: "Update an org-scoped contact point",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"contactPointId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"name":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"channel":        &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"secret":         &graphql.ArgumentConfig{Type: graphql.String},
+				"config":         &graphql.ArgumentConfig{Type: JSONScalar},
+				"enabled":        &graphql.ArgumentConfig{Type: graphql.Boolean, DefaultValue: true},
+			},
+			Resolve: res.UpdateContactPoint,
+		},
+		"deleteContactPoint": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Delete an org-scoped contact point",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"contactPointId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			},
+			Resolve: res.DeleteContactPoint,
+		},
+		"testContactPoint": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Send a test notification to the contact point",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"contactPointId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			},
+			Resolve: res.TestContactPoint,
+		},
+	}
+}
+
+
+func serviceAccountQueries(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"serviceAccounts": &graphql.Field{
+			Type:        graphql.NewList(graphql.NewNonNull(ServiceAccountType)),
+			Description: "List service accounts for an organization",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+			},
+			Resolve: res.GetServiceAccounts,
+		},
+	}
+}
+
+func serviceAccountMutations(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"createServiceAccount": &graphql.Field{
+			Type:        ServiceAccountType,
+			Description: "Create an org-scoped service account",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"name":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+			},
+			Resolve: res.CreateServiceAccount,
+		},
+		"deleteServiceAccount": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Delete an org-scoped service account (revokes all tokens)",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"serviceAccountId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			},
+			Resolve: res.DeleteServiceAccount,
+		},
+		"createServiceAccountToken": &graphql.Field{
+			Type:        ServiceAccountTokenType,
+			Description: "Create a service account token (full key returned once)",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"serviceAccountId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"name":            &graphql.ArgumentConfig{Type: graphql.String},
+				"scopes":          &graphql.ArgumentConfig{Type: graphql.NewList(graphql.String)},
+				"expiresAt":       &graphql.ArgumentConfig{Type: graphql.String},
+			},
+			Resolve: res.CreateServiceAccountToken,
+		},
+		"rotateServiceAccountToken": &graphql.Field{
+			Type:        ServiceAccountTokenType,
+			Description: "Rotate a service account token (old revoked, new created)",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"serviceAccountId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"tokenId":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			},
+			Resolve: res.RotateServiceAccountToken,
+		},
 	}
 }

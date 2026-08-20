@@ -22,8 +22,12 @@ import (
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	appnotifications "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
+	saapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
+	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security/password"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
@@ -138,6 +142,23 @@ func newPhase8State(t *testing.T) *phase8State {
 	notificationSvc := appoperator.NewNotificationService(deps.OperatorRepo)
 	webhookClient := infrawebhook.NewClient(10 * time.Second)
 
+	// Service accounts backed by the test DB.
+	saRepo := storage.NewServiceAccountRepository(db)
+	saTokenRepo := storage.NewServiceAccountTokenRepository(db)
+	serviceAccountSvc := saapp.NewService(saRepo, saTokenRepo)
+
+	// Real contact-point service + dispatcher backed by the test DB so the
+	// GraphQL notifications section works against this server (no nil stubs).
+	cpRepo := storage.NewContactPointRepository(db)
+	cpDeliveries := storage.NewDeliveryRepository(db)
+	contactPointSvc := appnotifications.NewService(cpRepo)
+	cpChannels := map[notificationdomain.ChannelType]notificationdomain.Channel{
+		notificationdomain.ChannelTypeEmail:   appnotifications.NewEmailChannel(emailService.NewService()),
+		notificationdomain.ChannelTypeWebhook: appnotifications.NewWebhookChannel(webhookClient),
+		notificationdomain.ChannelTypeSlack:   appnotifications.NewSlackChannel(webhookClient),
+	}
+	dispatcher := appnotifications.NewDispatcher(cpRepo, cpDeliveries, cpChannels, deps.Log)
+
 	if regErr := apiServer.RegisterGraphQL(
 		deps.DeviceService,
 		deps.DeviceSettingsService,
@@ -160,6 +181,9 @@ func newPhase8State(t *testing.T) *phase8State {
 		result.HandlerSet.OrgSettingsService,
 		result.HandlerSet.MemberService,
 		result.HandlerSet.InvitationService,
+		contactPointSvc,
+		dispatcher,
+		serviceAccountSvc,
 	); regErr != nil {
 		t.Fatalf("RegisterGraphQL failed: %v", regErr)
 	}
