@@ -73,28 +73,20 @@ func (c Condition) Breached(value, threshold float64) bool {
 
 // Rule is an org-scoped alert definition evaluated on a fixed cadence.
 type Rule struct {
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	Threshold  float64
-	// ForSeconds is how long the condition must hold before firing
-	// (0 = fire immediately on breach).
-	ForSeconds int
-	// NotifyIntervalSeconds re-notifies while still firing after this elapsed
-	// (0 = notify once at firing and once at resolve).
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
+	Metric                Metric
+	ID                    string
+	OrgID                 string
+	Name                  string
+	WebhookURL            string
+	Condition             Condition
+	OnNoData              NoDataPolicy
+	OnError               ErrorPolicy
+	ForSeconds            int
 	NotifyIntervalSeconds int
-	ID         string
-	OrgID      string
-	Name       string
-	WebhookURL string
-	Metric     Metric
-	Condition  Condition
-	// OnNoData routes the instance when the metric source has no signal:
-	// "ignore" (default), "no_data", or "resolve".
-	OnNoData NoDataPolicy
-	// OnError routes the instance when the metric source fails: "ignore"
-	// (default), "error", or "resolve".
-	OnError ErrorPolicy
-	Enabled bool
+	Threshold             float64
+	Enabled               bool
 }
 
 // NoDataPolicy routes the instance when the metric source has no signal.

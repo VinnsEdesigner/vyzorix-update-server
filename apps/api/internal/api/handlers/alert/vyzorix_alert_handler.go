@@ -35,15 +35,15 @@ func (h *Handler) Service() *alertapp.Service {
 }
 
 type ruleRequest struct {
-	Threshold             float64 `json:"threshold"`
-	ForSeconds            int     `json:"for_seconds"`
-	NotifyIntervalSeconds int     `json:"notify_interval_seconds"`
 	Name                  string  `json:"name"`
 	Metric                string  `json:"metric"`
 	Condition             string  `json:"condition"`
 	WebhookURL            string  `json:"webhook_url"`
 	OnNoData              string  `json:"on_no_data"`
 	OnError               string  `json:"on_error"`
+	Threshold             float64 `json:"threshold"`
+	ForSeconds            int     `json:"for_seconds"`
+	NotifyIntervalSeconds int     `json:"notify_interval_seconds"`
 	Enabled               bool    `json:"enabled"`
 }
 

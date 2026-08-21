@@ -18,9 +18,6 @@ var (
 
 // RuleInput carries the mutable fields of a rule create/update request.
 type RuleInput struct {
-	Threshold             float64
-	ForSeconds            int
-	NotifyIntervalSeconds int
 	OrgID                 string
 	Name                  string
 	WebhookURL            string
@@ -28,6 +25,9 @@ type RuleInput struct {
 	Condition             alert.Condition
 	OnNoData              alert.NoDataPolicy
 	OnError               alert.ErrorPolicy
+	Threshold             float64
+	ForSeconds            int
+	NotifyIntervalSeconds int
 	Enabled               bool
 }
 
