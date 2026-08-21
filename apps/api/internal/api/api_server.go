@@ -12,6 +12,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
 	alerthandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/alert"
+	annotationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/annotation"
+	cvhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/configversion"
 	notificationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/notification"
 	sahandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/serviceaccount"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
@@ -43,11 +45,14 @@ import (
 	searchsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/search"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	infracache "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/featuremgmt"
 	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
 	saapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
+	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
+	appconfigversion "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/configversion"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
@@ -100,6 +105,9 @@ type ServerConfig struct {
 type Server struct {
 	ContactPointHandler         *notificationhandlers.Handler
 	ServiceAccountHandler      *sahandlers.Handler
+	AnnotationHandler           *annotationhandlers.Handler
+	configVersionHandler      *cvhandlers.Handler
+	cache                       *infracache.Cache
 	encryptKeyFn                func(clientID string) ([]byte, bool)
 	authHandlers                *authhandlers.AllHandlers
 	hub                         *hub.Hub
@@ -316,6 +324,29 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		s.searchService = searchsvc.NewService(cfg.DB.DB())
 		s.supportBundleHandler = admin.NewSupportBundleHandler(cfg.DB)
 
+			annotationRepo := storage.NewAnnotationRepository(cfg.DB.DB())
+			annotationService := appannotation.NewService(annotationRepo)
+			s.AnnotationHandler = annotationhandlers.NewHandler(annotationService)
+			if s.AlertEvaluator != nil {
+				s.AlertEvaluator.SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
+			}
+			if cfg.UpdatesService != nil && cfg.UpdatesService.GetPushService() != nil {
+				cfg.UpdatesService.GetPushService().SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
+				if s.cache != nil {
+					cfg.UpdatesService.GetPushService().SetDashboardCache(s.cache.Section("dashboard"))
+				}
+			}
+
+			configVersionRepo := storage.NewConfigVersionRepository(cfg.DB.DB())
+			configVersionSvc := appconfigversion.NewService(configVersionRepo)
+			if cfg.OrgSettingsService != nil {
+				cfg.OrgSettingsService.SetVersionService(configVersionSvc)
+			}
+			if cfg.DeviceSettingsService != nil {
+				cfg.DeviceSettingsService.SetVersionService(configVersionSvc)
+			}
+			s.configVersionHandler = cvhandlers.NewHandler(configVersionSvc, cfg.OrgSettingsService)
+
 		alertRules := storage.NewAlertRuleRepository(cfg.DB.DB())
 		alertStates := storage.NewAlertStateRepository(cfg.DB.DB())
 		alertHistory := storage.NewAlertHistoryRepository(cfg.DB.DB())
@@ -340,6 +371,9 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 			cfg.Hub,
 			cfg.Log,
 		)
+		if s.cache != nil {
+			s.AlertEvaluator.SetDashboardCache(s.cache.Section("dashboard"))
+		}
 		s.alertHandler = alerthandlers.NewHandler(alertService, s.AlertEvaluator)
 
 		s.ContactPointHandler = notificationhandlers.NewHandler(notificationSvc, dispatcher)
@@ -364,12 +398,16 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
 
 	// Telemetry history handler.
-	s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(
-		cfg.Log,
-		storage.NewTelemetryRepository(cfg.DB.DB()),
-		storage.NewDeviceRepository(cfg.DB.DB()),
-		nil,
-	)
+s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(
+cfg.Log,
+storage.NewTelemetryRepository(cfg.DB.DB()),
+storage.NewDeviceRepository(cfg.DB.DB()),
+nil,
+)
+if s.cache != nil {
+s.telemetryHistoryHandler.SetHistoryCache(s.cache.Section("telemetry"))
+}
+
 
 	// Connection status handler.
 	s.connectionStatusHandler = handlers.NewConnectionStatusHandler(cfg.Log, cfg.Hub, storage.NewDeviceRepository(cfg.DB.DB()))

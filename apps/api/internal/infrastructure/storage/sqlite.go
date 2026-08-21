@@ -504,6 +504,8 @@ var migrations = []Migration{
 	{Apply: migrateContactPoints, Name: "create_contact_points", Version: 66},
 	{Apply: migrateServiceAccounts, Name: "create_service_accounts", Version: 67},
 	{Apply: migrateServiceAccountLastUsed, Name: "add_service_account_last_used", Version: 68},
+	{Apply: migrateAnnotations, Name: "create_annotations", Version: 69},
+	{Apply: migrateConfigVersions, Name: "create_config_versions", Version: 70},
 }
 
 // runMigrations applies all pending migrations.

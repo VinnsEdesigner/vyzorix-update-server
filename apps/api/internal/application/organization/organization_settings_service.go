@@ -2,8 +2,13 @@ package organization
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
+	"time"
 
+	configversionapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/configversion"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/configversion"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 )
 
@@ -12,6 +17,12 @@ type OrganizationSettingsService struct {
 	settingsRepo organization.OrganizationSettingsRepository
 	orgRepo      organization.OrganizationRepository
 	memberRepo   organization.MemberRepository
+	versionSvc   *configversionapp.Service
+}
+
+// SetVersionService wires the config versioning service for snapshot-on-write.
+func (s *OrganizationSettingsService) SetVersionService(v *configversionapp.Service) {
+	s.versionSvc = v
 }
 
 // NewOrganizationSettingsService creates a new OrganizationSettingsService.
@@ -123,7 +134,65 @@ func (s *OrganizationSettingsService) UpdateSettings(ctx context.Context, orgID 
 	if err := s.settingsRepo.Update(ctx, settings); err != nil {
 		return nil, err
 	}
+	s.snapshot(ctx, settings, "operator")
+	return settings, nil
+}
 
+// snapshot captures the current settings as a new config version.
+func (s *OrganizationSettingsService) snapshot(ctx context.Context, settings *organization.OrganizationSettings, changedBy string) {
+	if s.versionSvc == nil {
+		return
+	}
+	doc := map[string]interface{}{
+		"OrganizationID":       settings.OrganizationID,
+		"Timezone":             settings.Timezone,
+		"DateFormat":           settings.DateFormat,
+		"AlertCooldownMinutes": settings.AlertCooldownMinutes,
+		"DefaultThresholds":    settings.DefaultThresholds,
+		"UpdatedAt":            settings.UpdatedAt.UnixMilli(),
+	}
+	if _, err := s.versionSvc.Snapshot(ctx, settings.OrganizationID, configversion.ResourceTypeSettings, doc, changedBy); err != nil {
+		slog.Error("config version snapshot failed", "org_id", settings.OrganizationID, "error", err)
+	}
+}
+
+// RestoreSettings re-applies a snapshot from config versions to live settings.
+// The snapshot is the JSON body of an OrganizationSettings.
+func (s *OrganizationSettingsService) RestoreSettings(ctx context.Context, orgID, snapshot string) (*organization.OrganizationSettings, error) {
+	settings, err := s.settingsRepo.FindByOrganizationID(ctx, orgID)
+	if err != nil {
+		if errors.Is(err, organization.ErrSettingsNotFound) {
+			return nil, organization.ErrSettingsNotFound
+		}
+		return nil, err
+	}
+
+	var doc struct {
+		DefaultThresholds    map[string]interface{} `json:"DefaultThresholds"`
+		Timezone             string                 `json:"Timezone"`
+		DateFormat           string                 `json:"DateFormat"`
+		AlertCooldownMinutes int                    `json:"AlertCooldownMinutes"`
+	}
+	if err := json.Unmarshal([]byte(snapshot), &doc); err != nil {
+		return nil, err
+	}
+
+	settings.Timezone = doc.Timezone
+	settings.DateFormat = doc.DateFormat
+	settings.AlertCooldownMinutes = doc.AlertCooldownMinutes
+	if doc.DefaultThresholds != nil {
+		raw, err := json.Marshal(doc.DefaultThresholds)
+		if err != nil {
+			return nil, err
+		}
+		_ = json.Unmarshal(raw, &settings.DefaultThresholds)
+	}
+	settings.UpdatedAt = time.Now()
+
+	if err := s.settingsRepo.Update(ctx, settings); err != nil {
+		return nil, err
+	}
+	s.snapshot(ctx, settings, "operator")
 	return settings, nil
 }
 
@@ -173,8 +242,18 @@ func (s *OrganizationSettingsService) UpdateThresholds(ctx context.Context, orgI
 	if err := s.settingsRepo.Update(ctx, settings); err != nil {
 		return nil, err
 	}
-
+	s.snapshotThresholds(ctx, settings, "operator")
 	return settings, nil
+}
+
+// snapshotThresholds captures threshold state as its own resource type.
+func (s *OrganizationSettingsService) snapshotThresholds(ctx context.Context, settings *organization.OrganizationSettings, changedBy string) {
+	if s.versionSvc == nil {
+		return
+	}
+	if _, err := s.versionSvc.Snapshot(ctx, settings.OrganizationID, configversion.ResourceTypeThresholds, settings.DefaultThresholds, changedBy); err != nil {
+		slog.Error("config version threshold snapshot failed", "org_id", settings.OrganizationID, "error", err)
+	}
 }
 
 // DeleteSettings deletes organization settings.

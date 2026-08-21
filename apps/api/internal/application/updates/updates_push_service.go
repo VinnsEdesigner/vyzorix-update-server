@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
@@ -13,6 +14,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/updates"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	ws "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/google/uuid"
@@ -34,7 +36,25 @@ type PushService struct {
 		SendCommand(ctx context.Context, req *dto.SendCommandRequest) (*dto.SendCommandResponse, error)
 		MarkDelivered(ctx context.Context, commandID string) error
 	}
+	annotator RolloutAnnotator
+	dashboardCache *cache.Section
 	logger *slog.Logger
+}
+
+// SetDashboardCache wires the dashboard stats cache so rollout start
+// invalidates the org's dashboard stats entry.
+func (s *PushService) SetDashboardCache(c *cache.Section) {
+	s.dashboardCache = c
+}
+
+// RolloutAnnotator marks update rollout milestones on the fleet timeline.
+type RolloutAnnotator interface {
+	AnnotateRollout(ctx context.Context, orgID, version, deviceCount string, initiatedBy string) error
+}
+
+// SetAnnotator wires the fleet timeline annotator for rollout milestones.
+func (s *PushService) SetAnnotator(a RolloutAnnotator) {
+	s.annotator = a
 }
 
 // NewPushService creates a new push service.
@@ -175,6 +195,15 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 			Status:  http.StatusBadRequest,
 			Details: failedDevices,
 		}
+	}
+
+	if s.annotator != nil {
+		if err := s.annotator.AnnotateRollout(ctx, req.OrganizationID, req.Version, strconv.Itoa(len(deviceIDs)), initiatedBy); err != nil {
+			s.logger.Error("failed to annotate rollout", "push_id", push.ID, "error", err)
+		}
+	}
+	if s.dashboardCache != nil {
+		s.dashboardCache.Delete(req.OrganizationID)
 	}
 
 	return &PushUpdateResponse{

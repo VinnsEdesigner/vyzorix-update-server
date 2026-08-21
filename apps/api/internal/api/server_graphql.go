@@ -21,6 +21,7 @@ import (
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	appnotifications "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
 	sadomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
+	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
 	orgapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -63,6 +64,7 @@ func (s *Server) RegisterGraphQL(
 	notificationService *appnotifications.Service,
 	notificationDispatcher *appnotifications.Dispatcher,
 	serviceAccountSvc *sadomain.Service,
+	annotationSvc *appannotation.Service,
 ) error {
 	// Store InvitationService for graceful shutdown.
 	s.InvitationService = invitationService
@@ -111,6 +113,7 @@ func (s *Server) RegisterGraphQL(
 		notificationService,
 		notificationDispatcher,
 		s.ServiceAccountHandler.Service(),
+		s.AnnotationHandler.Service(),
 	)
 
 	// Wire the custom-permission-grants repository so the scoped permission

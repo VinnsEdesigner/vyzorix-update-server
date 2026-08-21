@@ -4,7 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"sort"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
 )
 
 type Result struct {
@@ -19,14 +22,45 @@ type Result struct {
 
 type Service struct {
 	db *sql.DB
+	searchCache *cache.Section
 }
 
 func NewService(db *sql.DB) *Service {
 	return &Service{db: db}
 }
 
+// SetSearchCache wires a cache section (nil-disabled).
+func (s *Service) SetSearchCache(searchCache *cache.Section) {
+	s.searchCache = searchCache
+}
+
+// key builds a stable cache key from query args.
+func (s *Service) key(query, orgID, resourceType string, limit int, tagFilter, sortBy string) string {
+	return fmt.Sprintf("%s|%s|%s|%d|%s|%s", orgID, resourceType, query, limit, tagFilter, sortBy)
+}
+
 //nolint:gocyclo
 func (s *Service) Search(ctx context.Context, query, orgID, resourceType string, limit int, tagFilter, sortBy string) ([]Result, error) {
+	key := s.key(query, orgID, resourceType, limit, tagFilter, sortBy)
+	if s.searchCache != nil {
+		if cached, ok := s.searchCache.Get(key); ok {
+			if results, ok := cached.([]Result); ok {
+				return results, nil
+			}
+		}
+	}
+	results, err := s.searchNow(ctx, query, orgID, resourceType, limit, tagFilter, sortBy)
+	if err != nil {
+		return nil, err
+	}
+	if s.searchCache != nil {
+		s.searchCache.Set(key, results)
+	}
+	return results, nil
+}
+
+//nolint:gocyclo,unparam
+func (s *Service) searchNow(ctx context.Context, query, orgID, resourceType string, limit int, tagFilter, sortBy string) ([]Result, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 20
 	}

@@ -22,7 +22,7 @@ func buildQueryType(res *resolver.Resolver) *graphql.Object {
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
 		Fields: mergeFields(settingsQueries(res), inboxQueries(res), deviceQueries(res), commandQueries(res), telemetryQueries(res),
-			connectionQueries(res), dashboardQueries(res), updatesQueries(res), diagnosticsQueries(res), alertQueries(res), contactPointQueries(res), serviceAccountQueries(res),
+			connectionQueries(res), dashboardQueries(res), updatesQueries(res), diagnosticsQueries(res), alertQueries(res), contactPointQueries(res), serviceAccountQueries(res), annotationQueries(res),
 			organizationQueries(res)),
 	})
 }
@@ -344,7 +344,7 @@ func buildMutationType(res *resolver.Resolver) *graphql.Object {
 			deviceMutations(res),
 			commandMutations(res),
 			updatesMutations(res),
-			organizationMutations(res), alertMutations(res), contactPointMutations(res), serviceAccountMutations(res),
+			organizationMutations(res), alertMutations(res), contactPointMutations(res), serviceAccountMutations(res), annotationMutations(res),
 		),
 	})
 }
@@ -1166,6 +1166,52 @@ func serviceAccountMutations(res *resolver.Resolver) graphql.Fields {
 				"tokenId":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			},
 			Resolve: res.RotateServiceAccountToken,
+		},
+	}
+}
+
+
+func annotationQueries(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"annotations": &graphql.Field{
+			Type:        graphql.NewList(graphql.NewNonNull(AnnotationType)),
+			Description: "List annotations for an organization, newest first",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
+				"tag":           &graphql.ArgumentConfig{Type: graphql.String, Description: "Filter by tag"},
+				"startTime":     &graphql.ArgumentConfig{Type: graphql.String, Description: "Filter start (RFC3339)"},
+				"endTime":       &graphql.ArgumentConfig{Type: graphql.String, Description: "Filter end (RFC3339)"},
+				"limit":         &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 200},
+			},
+			Resolve: res.GetAnnotations,
+		},
+	}
+}
+
+func annotationMutations(res *resolver.Resolver) graphql.Fields {
+	return graphql.Fields{
+		"createAnnotation": &graphql.Field{
+			Type:        AnnotationType,
+			Description: "Create an org-scoped annotation",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"title":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"text":           &graphql.ArgumentConfig{Type: graphql.String},
+				"tags":           &graphql.ArgumentConfig{Type: graphql.NewList(graphql.String)},
+				"source":         &graphql.ArgumentConfig{Type: graphql.String},
+				"startTime":      &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"endTime":        &graphql.ArgumentConfig{Type: graphql.String},
+			},
+			Resolve: res.CreateAnnotation,
+		},
+		"deleteAnnotation": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Delete an org-scoped annotation",
+			Args: graphql.FieldConfigArgument{
+				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"annotationId":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+			},
+			Resolve: res.DeleteAnnotation,
 		},
 	}
 }

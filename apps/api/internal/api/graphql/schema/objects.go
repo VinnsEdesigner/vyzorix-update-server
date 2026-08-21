@@ -2446,3 +2446,21 @@ var ServiceAccountTokenType = graphql.NewObject(graphql.ObjectConfig{
 		"createdAt":  &graphql.Field{Type: DateTimeScalar, Description: "Creation time"},
 	},
 })
+
+
+// AnnotationType represents an org-scoped fleet timeline annotation.
+var AnnotationType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "Annotation",
+	Description: "Fleet timeline annotation with tags and time range",
+	Fields: graphql.Fields{
+		"id":        &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Annotation ID"},
+		"orgId":     &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+		"title":     &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Annotation title"},
+		"text":      &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Annotation body"},
+		"tags":      &graphql.Field{Type: graphql.NewList(graphql.String), Description: "Filterable tags"},
+		"source":    &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Source: manual, alert, rollout"},
+		"startTime": &graphql.Field{Type: DateTimeScalar, Description: "Start of the annotated range"},
+		"endTime":   &graphql.Field{Type: DateTimeScalar, Description: "End of the annotated range"},
+		"createdAt": &graphql.Field{Type: DateTimeScalar, Description: "Creation time"},
+	},
+})

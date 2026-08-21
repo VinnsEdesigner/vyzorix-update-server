@@ -354,6 +354,7 @@ func (s *Service) searchCode(ctx context.Context, prefix string) (int, error) {
 	return total, nil
 }
 
+//nolint:gosec
 func (s *Service) githubCodeSearch(ctx context.Context, query string) (int, error) {
 	url := "https://api.github.com/search/code?q=" + url.QueryEscape(query)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -382,6 +383,7 @@ func (s *Service) githubCodeSearch(ctx context.Context, query string) (int, erro
 	return body.TotalCount, nil
 }
 
+//nolint:gosec
 func (s *Service) gitlabCodeSearch(ctx context.Context, query string) (int, error) {
 	base := os.Getenv("GITLAB_API_URL")
 	if base == "" {

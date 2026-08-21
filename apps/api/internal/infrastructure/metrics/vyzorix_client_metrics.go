@@ -46,6 +46,7 @@ type Metrics struct {
 
 	notificationDeliveries *prometheus.CounterVec
 	serviceAccountTokens  *prometheus.CounterVec
+	cacheOperations       *prometheus.CounterVec
 
 	uptime prometheus.Gauge
 	start  time.Time
@@ -181,6 +182,7 @@ func newMetrics() *Metrics {
 
 	m.notificationDeliveries = counterVec("notification_deliveries_total", "Notification deliveries by channel and outcome.", "channel", "outcome")
 	m.serviceAccountTokens = counterVec("service_account_tokens_total", "Service account token lifecycle events by action.", "action")
+	m.cacheOperations = counterVec("cache_operations_total", "Cache hit/miss counts by section.", "section", "outcome")
 
 	m.loginAttempts = counterVec("auth_login_attempts_total", "Auth login attempts by outcome.", "outcome")
 
@@ -206,6 +208,7 @@ func newMetrics() *Metrics {
 		m.featureToggles,
 		m.notificationDeliveries,
 		m.serviceAccountTokens,
+		m.cacheOperations,
 	}
 	for _, c := range collectors {
 		m.registry.MustRegister(c)
@@ -365,6 +368,11 @@ func (m *Metrics) RecordNotificationDelivery(channel, outcome string) {
 // RecordServiceAccountToken counts service account token lifecycle events.
 func (m *Metrics) RecordServiceAccountToken(serviceID, action string) {
 	m.serviceAccountTokens.WithLabelValues(action).Inc()
+}
+
+// RecordCacheOperation counts a cache hit or miss by section.
+func (m *Metrics) RecordCacheOperation(section, outcome string) {
+	m.cacheOperations.WithLabelValues(section, outcome).Inc()
 }
 
 var singletonOnce sync.Once

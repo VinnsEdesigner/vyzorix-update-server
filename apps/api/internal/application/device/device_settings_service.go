@@ -6,6 +6,8 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
+	configversionapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/configversion"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/configversion"
 )
 
 // DeviceSettingsService handles device settings operations.
@@ -13,6 +15,12 @@ type DeviceSettingsService struct {
 	settingsRepo    device.DeviceSettingsRepository
 	deviceRepo      Repository
 	orgSettingsRepo organization.OrganizationSettingsRepository
+	versionSvc      *configversionapp.Service
+}
+
+// SetVersionService wires the config versioning service for snapshot-on-write.
+func (s *DeviceSettingsService) SetVersionService(v *configversionapp.Service) {
+	s.versionSvc = v
 }
 
 // Repository is the interface for device data access.
@@ -129,8 +137,22 @@ func (s *DeviceSettingsService) UpdateSettings(ctx context.Context, deviceIMEI s
 	if err := s.settingsRepo.Update(ctx, settings); err != nil {
 		return nil, err
 	}
-
+	s.snapshot(ctx, settings, "operator")
 	return settings, nil
+}
+
+// snapshot captures the current device settings as a new config version.
+func (s *DeviceSettingsService) snapshot(ctx context.Context, settings *device.DeviceSettings, changedBy string) {
+	if s.versionSvc == nil {
+		return
+	}
+	d, err := s.deviceRepo.FindByIMEI(ctx, settings.DeviceIMEI)
+	if err != nil {
+		return
+	}
+	if _, err := s.versionSvc.Snapshot(ctx, d.OrganizationID, configversion.ResourceTypeThresholds, settings, changedBy); err != nil {
+		return
+	}
 }
 
 // UpdateThresholds updates only the thresholds.

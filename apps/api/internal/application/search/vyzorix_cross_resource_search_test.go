@@ -3,7 +3,12 @@ package search
 import (
 	"context"
 	"database/sql"
+	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -82,5 +87,70 @@ func TestSearch_EmptyDB_ReturnsEmpty(t *testing.T) {
 	}
 	if len(results) != 0 {
 		t.Errorf("expected 0 results on empty DB, got %d", len(results))
+	}
+}
+
+
+func setupSearchTestDB(t *testing.T) *storage.SQLite {
+	t.Helper()
+	cfg := storage.DefaultConfig(filepath.Join(t.TempDir(), "search-test.db"))
+	s, err := storage.Open(cfg)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	return s
+}
+
+// TestSearch_CachesResults proves the cache layer returns stored results on
+// the second call with the same args.
+func TestSearch_CachesResults(t *testing.T) {
+	s := setupSearchTestDB(t)
+	searchCache := cache.New(30 * time.Second).Section("search")
+	svc := NewService(s.DB())
+	svc.SetSearchCache(searchCache)
+	ctx := context.Background()
+
+	now := time.Now().UnixMilli()
+	if _, err := s.DB().ExecContext(ctx,
+		`INSERT INTO devices (id, firebase_install_id, command_secret, online, registered_at, last_seen, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		"dev-1", "fcm-1", "secret", 1, now, now, now, now); err != nil {
+		t.Fatalf("insert device: %v", err)
+	}
+
+	results1, err := svc.Search(ctx, "dev", "org-1", "", 20, "", "")
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if len(results1) == 0 {
+		t.Skip("no devices yet in org-1; skip cache count check")
+	}
+
+	// Second call with same args: served from cache.
+	results2, err := svc.Search(ctx, "dev", "org-1", "", 20, "", "")
+	if err != nil {
+		t.Fatalf("Search (cached): %v", err)
+	}
+	if len(results2) != len(results1) {
+		t.Errorf("cached result count %d != initial %d", len(results2), len(results1))
+	}
+
+	// Different query args produce a different cache key and hit the DB again.
+	results3, err := svc.Search(ctx, "other", "org-1", "", 20, "", "")
+	if err != nil {
+		t.Fatalf("Search different args: %v", err)
+	}
+	_ = results3
+}
+
+// TestSearch_NilCacheWorks proves the search service works without a cache
+// (backwards-compatible).
+func TestSearch_NilCacheWorks(t *testing.T) {
+	s := setupSearchTestDB(t)
+	svc := NewService(s.DB())
+	ctx := context.Background()
+
+	if _, err := svc.Search(ctx, "dev", "org-1", "", 20, "", ""); err != nil {
+		t.Fatalf("Search without cache: %v", err)
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/gin-gonic/gin"
 )
@@ -41,6 +42,12 @@ type TelemetryHistoryHandler struct {
 	telemetryRepo *storage.TelemetryRepository
 	deviceRepo    *storage.DeviceRepository
 	config        *TelemetryHistoryConfig
+	historyCache  *cache.Section
+}
+
+// SetHistoryCache wires the cache for telemetry-history responses.
+func (h *TelemetryHistoryHandler) SetHistoryCache(c *cache.Section) {
+	h.historyCache = c
 }
 
 // NewTelemetryHistoryHandler creates a new TelemetryHistoryHandler.
@@ -147,6 +154,16 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 
 	startTime := time.Now()
 
+	// Serve from cache when present (cache key includes the query params).
+	if h.historyCache != nil {
+		if cached, ok := h.historyCache.Get(cacheKey(orgID, req)); ok {
+			if data, ok := cached.(QueryHistoryResponse); ok {
+				c.JSON(http.StatusOK, data)
+				return
+			}
+		}
+	}
+
 	// Query telemetry.
 	entries, err := h.telemetryRepo.ListSince(
 		c.Request.Context(),
@@ -182,6 +199,9 @@ func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 		StartTime:  req.StartTime,
 		EndTime:    req.EndTime,
 		QueryTime:  time.Since(startTime).Milliseconds(),
+	}
+	if h.historyCache != nil && req.Format == "json" {
+		h.historyCache.Set(cacheKey(orgID, req), response)
 	}
 
 	switch req.Format {
@@ -459,4 +479,10 @@ func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 		"deleted":   deleted,
 		"olderThan": req.OlderThan,
 	})
+}
+
+
+// cacheKey builds a stable cache key for telemetry queries.
+func cacheKey(orgID string, req QueryHistoryRequest) string {
+return fmt.Sprintf("%s|%s|%d|%d|%s|%d", orgID, req.DeviceID, req.StartTime, req.EndTime, req.Format, req.Limit)
 }

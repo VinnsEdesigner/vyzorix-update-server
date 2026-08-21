@@ -51,6 +51,14 @@ const (
 	ActionServiceAccountsRead  Action = "service_accounts.read"
 	ActionServiceAccountsWrite Action = "service_accounts.write"
 
+	// Annotations: mark fleet timeline events.
+	ActionAnnotationsRead  Action = "annotations.read"
+	ActionAnnotationsWrite Action = "annotations.write"
+
+	// Config versions: view and restore org config history.
+	ActionConfigVersionsRead  Action = "config_versions.read"
+	ActionConfigVersionsWrite Action = "config_versions.write"
+
 	// Device inbox: view/approve device registration inbox entries.
 	ActionInboxRead  Action = "inbox.read"
 	ActionInboxWrite Action = "inbox.write"

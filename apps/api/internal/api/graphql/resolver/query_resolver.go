@@ -9,6 +9,7 @@ import (
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
+	annotationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/annotation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
@@ -1353,6 +1354,57 @@ func (r *Resolver) GetServiceAccounts(p graphql.ResolveParams) (interface{}, err
 			"enabled":    sa.Enabled,
 			"tokenCount": activeCount,
 			"createdAt":  sa.CreatedAt,
+		})
+	}
+	return result, nil
+}
+
+// GetAnnotations resolves the annotations query.
+func (r *Resolver) GetAnnotations(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	if r.AnnotationSvc == nil {
+		return nil, r.Presenter.InternalError("annotation service not available")
+	}
+	f := &annotationdomain.Filter{OrgID: orgID, Limit: 200}
+	if v, ok := p.Args["tag"].(string); ok {
+		f.Tag = v
+	}
+	if v, ok := p.Args["limit"].(int); ok && v > 0 {
+		f.Limit = v
+	}
+	if v, ok := p.Args["startTime"].(string); ok && v != "" {
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
+			f.StartTime = t
+		}
+	}
+	if v, ok := p.Args["endTime"].(string); ok && v != "" {
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
+			f.EndTime = t
+		}
+	}
+	items, err := r.AnnotationSvc.List(p.Context, f)
+	if err != nil {
+		return nil, r.Presenter.InternalError("failed to list annotations")
+	}
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, a := range items {
+		result = append(result, map[string]interface{}{
+			"id":        a.ID,
+			"orgId":     a.OrgID,
+			"title":     a.Title,
+			"text":      a.Text,
+			"tags":      a.Tags,
+			"source":    a.Source,
+			"startTime": a.StartTime,
+			"endTime":   a.EndTime,
+			"createdAt": a.CreatedAt,
 		})
 	}
 	return result, nil

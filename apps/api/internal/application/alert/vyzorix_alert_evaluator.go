@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/alert"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/uuid"
 )
@@ -17,16 +18,24 @@ type DashboardBroadcaster interface {
 	BroadcastEvent(eventType string, data []byte) error
 }
 
+// Annotator marks alert transitions on the fleet timeline so operators can
+// correlate rollouts with failure spikes.
+type Annotator interface {
+	Annotate(ctx context.Context, rule *alert.Rule, transition *alert.Transition) error
+}
+
 // Evaluator advances the state machine of every enabled rule against the
 // metric source, persists transition history, and emits notifications.
 type Evaluator struct {
-	rules    alert.Repository
-	states   alert.StateRepository
-	history  alert.HistoryRepository
-	metrics  *MetricSource
-	notifier alert.Notifier
-	hub      DashboardBroadcaster
-	logger   *slog.Logger
+	rules         alert.Repository
+	states        alert.StateRepository
+	history       alert.HistoryRepository
+	metrics       *MetricSource
+	notifier      alert.Notifier
+	hub           DashboardBroadcaster
+	annotator     Annotator
+	dashboardCache *cache.Section
+	logger        *slog.Logger
 }
 
 func NewEvaluator(rules alert.Repository, states alert.StateRepository, history alert.HistoryRepository, metrics *MetricSource, notifier alert.Notifier, hub DashboardBroadcaster, logger *slog.Logger) *Evaluator {
@@ -34,6 +43,17 @@ func NewEvaluator(rules alert.Repository, states alert.StateRepository, history 
 		logger = slog.Default()
 	}
 	return &Evaluator{rules: rules, states: states, history: history, metrics: metrics, notifier: notifier, hub: hub, logger: logger}
+}
+
+// SetAnnotator wires the timeline annotator for firing/resolved transitions.
+func (e *Evaluator) SetAnnotator(a Annotator) {
+	e.annotator = a
+}
+
+// SetDashboardCache wires the dashboard stats cache so firing/resolved
+// transitions invalidate the org's dashboard stats entry.
+func (e *Evaluator) SetDashboardCache(c *cache.Section) {
+	e.dashboardCache = c
 }
 
 // EvaluateAll evaluates every enabled rule and returns the number of state
@@ -108,6 +128,14 @@ func (e *Evaluator) evaluateRule(ctx context.Context, rule *alert.Rule, now time
 	}
 
 	metrics.Get().RecordAlertEvaluation(string(transition.To))
+	if e.annotator != nil && (transition.Firing() || transition.Resolved()) {
+		if err := e.annotator.Annotate(ctx, rule, transition); err != nil {
+			e.logger.Error("alert annotation failed", "rule_id", rule.ID, "error", err)
+		}
+	}
+	if e.dashboardCache != nil && (transition.Firing() || transition.Resolved()) {
+		e.dashboardCache.Delete(rule.OrgID)
+	}
 	notif := &alert.Notification{Rule: rule, Transition: transition}
 	if e.notifier != nil && rule.WebhookURL != "" {
 		if err := e.notifier.Notify(ctx, notif); err != nil {

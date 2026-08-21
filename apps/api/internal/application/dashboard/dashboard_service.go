@@ -8,6 +8,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/logs"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
 )
 
 // Service handles dashboard operations.
@@ -15,6 +16,7 @@ type Service struct {
 	deviceRepo  device.Repository
 	commandRepo command.Repository
 	logsRepo    logs.Repository
+	statsCache  *cache.Section
 }
 
 // NewService creates a new dashboard service.
@@ -24,6 +26,11 @@ func NewService(deviceRepo device.Repository, commandRepo command.Repository, lo
 		commandRepo: commandRepo,
 		logsRepo:    logsRepo,
 	}
+}
+
+// SetStatsCache wires the cache for dashboard stats responses.
+func (s *Service) SetStatsCache(c *cache.Section) {
+	s.statsCache = c
 }
 
 // GetDashboardStats retrieves aggregated dashboard statistics for an operator.
@@ -104,6 +111,24 @@ func (s *Service) GetDashboardStats(ctx context.Context, operatorID string) (*Da
 
 // GetDashboardStatsByOrganization retrieves aggregated dashboard statistics for an organization.
 func (s *Service) GetDashboardStatsByOrganization(ctx context.Context, orgID string) (*DashboardStatsResponse, error) {
+	if s.statsCache != nil {
+		if cached, ok := s.statsCache.Get(orgID); ok {
+			if stats, ok := cached.(*DashboardStatsResponse); ok {
+				return stats, nil
+			}
+		}
+	}
+	stats, err := s.getDashboardStatsByOrganizationNow(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+	if s.statsCache != nil {
+		s.statsCache.Set(orgID, stats)
+	}
+	return stats, nil
+}
+
+func (s *Service) getDashboardStatsByOrganizationNow(ctx context.Context, orgID string) (*DashboardStatsResponse, error) {
 	// Get device stats filtered by organization.
 	allDevices, err := s.deviceRepo.ListByOrganization(ctx, orgID)
 	if err != nil {

@@ -162,6 +162,7 @@ func main() {
 			apiServer.ContactPointHandler.Service(),
 			apiServer.ContactPointHandler.Dispatcher(),
 			apiServer.ServiceAccountHandler.Service(),
+			apiServer.AnnotationHandler.Service(),
 		); regErr != nil {
 			log.Error("failed to register GraphQL", "err", regErr)
 			PrintWarning("GraphQL", "Registration failed")
@@ -327,6 +328,7 @@ func startServer(cfg *config.Config, log *slog.Logger, apiServer *api.Server,
 			prov = prov.WithAlertRepository(storage.NewAlertRuleRepository(apiServer.DB.DB()))
 			prov = prov.WithContactPointRepository(storage.NewContactPointRepository(apiServer.DB.DB()))
 			prov = prov.WithServiceAccountRepository(storage.NewServiceAccountRepository(apiServer.DB.DB()))
+			prov = prov.WithAnnotationRepository(storage.NewAnnotationRepository(apiServer.DB.DB()))
 		}
 		if err := prov.LoadAndApply(context.Background(), provFile); err != nil {
 			log.Error("provisioning failed", "err", err)

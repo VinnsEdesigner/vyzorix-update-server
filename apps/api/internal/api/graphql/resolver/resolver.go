@@ -18,9 +18,10 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	notifications "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
-serviceaccount "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	orgapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
+	serviceaccount "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
+	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
@@ -65,6 +66,7 @@ type Resolver struct {
 	ContactPointSvc       *notifications.Service
 	Dispatcher            *notifications.Dispatcher
 	ServiceAccountSvc     *serviceaccount.Service
+	AnnotationSvc        *appannotation.Service
 }
 
 // NewResolver creates a new GraphQL resolver.
@@ -100,6 +102,7 @@ func NewResolver(
 	contactPointSvc *notifications.Service,
 	dispatcher *notifications.Dispatcher,
 	serviceAccountSvc *serviceaccount.Service,
+	annotationSvc *appannotation.Service,
 ) *Resolver {
 	return &Resolver{
 		DeviceService:         deviceService,
@@ -134,6 +137,7 @@ func NewResolver(
 		ContactPointSvc:       contactPointSvc,
 		Dispatcher:            dispatcher,
 		ServiceAccountSvc:     serviceAccountSvc,
+		AnnotationSvc:        annotationSvc,
 	}
 }
 

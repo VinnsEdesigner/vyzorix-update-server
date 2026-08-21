@@ -243,6 +243,8 @@ func (s *Server) setupAuthenticatedRoutes() {
 	s.setupAlertRoutes(tenantGroup)
 	s.setupNotificationRoutes(tenantGroup)
 	s.setupServiceAccountRoutes(tenantGroup)
+	s.setupAnnotationRoutes(tenantGroup)
+	s.setupConfigVersionRoutes(tenantGroup)
 
 	// API Keys management: SESSION ONLY (no API key auth for managing keys).
 	// These routes manage API keys - shouldn't use API key auth.
@@ -502,6 +504,54 @@ func (s *Server) setupSearchRoutes(r *gin.RouterGroup) {
 				c.JSON(200, gin.H{"results": []any{}, "query": q})
 			}
 		})
+	}
+}
+
+// setupConfigVersionRoutes registers config version history and restore routes.
+func (s *Server) setupConfigVersionRoutes(r *gin.RouterGroup) {
+	if s.configVersionHandler == nil {
+		return
+	}
+	versionGroup := r.Group("/config-versions")
+	versionGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+	versionGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+	{
+		versionGroup.GET("/:resource",
+			s.requireScope(permission.ActionConfigVersionsRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.configVersionHandler.List)
+		versionGroup.GET("/:resource/:version",
+			s.requireScope(permission.ActionConfigVersionsRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.configVersionHandler.Get)
+		versionGroup.POST("/:resource/:version/restore",
+			s.requireScope(permission.ActionConfigVersionsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.configVersionHandler.Restore)
+	}
+}
+
+// setupAnnotationRoutes registers annotation management routes.
+func (s *Server) setupAnnotationRoutes(r *gin.RouterGroup) {
+	if s.AnnotationHandler == nil {
+		return
+	}
+	annotationGroup := r.Group("/annotations")
+	annotationGroup.Use(middleware.NewOrganizationContext(nil).Middleware())
+	annotationGroup.Use(middleware.NewOrganizationMembership(s.memberHandler.MembershipChecker()).Middleware())
+	{
+		annotationGroup.GET("",
+			s.requireScope(permission.ActionAnnotationsRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.AnnotationHandler.List)
+		annotationGroup.POST("",
+			s.requireScope(permission.ActionAnnotationsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.AnnotationHandler.Create)
+		annotationGroup.GET("/:id",
+			s.requireScope(permission.ActionAnnotationsRead, permission.WildcardScope(permission.ScopeOrg)),
+			s.AnnotationHandler.Get)
+		annotationGroup.PATCH("/:id",
+			s.requireScope(permission.ActionAnnotationsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.AnnotationHandler.Update)
+		annotationGroup.DELETE("/:id",
+			s.requireScope(permission.ActionAnnotationsWrite, permission.WildcardScope(permission.ScopeOrg)),
+			s.AnnotationHandler.Delete)
 	}
 }
 

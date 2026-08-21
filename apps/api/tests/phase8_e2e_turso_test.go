@@ -24,6 +24,7 @@ import (
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	appnotifications "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
 	saapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
+	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
@@ -146,6 +147,7 @@ func newPhase8State(t *testing.T) *phase8State {
 	saRepo := storage.NewServiceAccountRepository(db)
 	saTokenRepo := storage.NewServiceAccountTokenRepository(db)
 	serviceAccountSvc := saapp.NewService(saRepo, saTokenRepo)
+	annotationSvc := appannotation.NewService(storage.NewAnnotationRepository(db))
 
 	// Real contact-point service + dispatcher backed by the test DB so the
 	// GraphQL notifications section works against this server (no nil stubs).
@@ -184,6 +186,7 @@ func newPhase8State(t *testing.T) *phase8State {
 		contactPointSvc,
 		dispatcher,
 		serviceAccountSvc,
+		annotationSvc,
 	); regErr != nil {
 		t.Fatalf("RegisterGraphQL failed: %v", regErr)
 	}

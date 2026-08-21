@@ -9,12 +9,14 @@ import (
 	alertapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/alert"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	notifications "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
-	sadomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/serviceaccount"
 	serviceaccount "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
+	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
+	annotationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/annotation"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
 	domainoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
+	sadomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/serviceaccount"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/graphql-go/graphql"
 )
@@ -1145,5 +1147,91 @@ func tokenView(token *sadomain.Token) map[string]interface{} {
 		"valid":     token.Valid,
 		"expiresAt": token.ExpiresAt,
 		"createdAt": token.CreatedAt,
+	}
+}
+
+// CreateAnnotation resolves the createAnnotation mutation.
+func (r *Resolver) CreateAnnotation(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	if r.AnnotationSvc == nil {
+		return nil, r.Presenter.InternalError("annotation service not available")
+	}
+	in := &appannotation.AnnotationInput{OrgID: orgID}
+	if v, ok := p.Args["title"].(string); ok {
+		in.Title = v
+	}
+	if v, ok := p.Args["text"].(string); ok {
+		in.Text = v
+	}
+	if v, ok := p.Args["tags"].([]interface{}); ok {
+		tags := make([]string, 0, len(v))
+		for _, t := range v {
+			if str, ok := t.(string); ok {
+				tags = append(tags, str)
+			}
+		}
+		in.Tags = tags
+	}
+	if v, ok := p.Args["source"].(string); ok {
+		in.Source = v
+	}
+	if v, ok := p.Args["startTime"].(string); ok && v != "" {
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
+			in.StartTime = t
+		}
+	}
+	if v, ok := p.Args["endTime"].(string); ok && v != "" {
+		if t, err := time.Parse(time.RFC3339, v); err == nil {
+			in.EndTime = &t
+		}
+	}
+	a, err := r.AnnotationSvc.Create(p.Context, in)
+	if err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return annotationView(a), nil
+}
+
+// DeleteAnnotation resolves the deleteAnnotation mutation.
+func (r *Resolver) DeleteAnnotation(p graphql.ResolveParams) (interface{}, error) {
+	op, ok := gqlcontext.GetOperator(p.Context)
+	if !ok || op == nil {
+		return nil, r.Presenter.UnauthorizedError()
+	}
+	orgID, argOK := p.Args["organizationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: organizationId")
+	}
+	annotationID, argOK := p.Args["annotationId"].(string)
+	if !argOK {
+		return nil, errors.New("invalid argument: annotationId")
+	}
+	if r.AnnotationSvc == nil {
+		return nil, r.Presenter.InternalError("annotation service not available")
+	}
+	if err := r.AnnotationSvc.Delete(p.Context, orgID, annotationID); err != nil {
+		return nil, r.Presenter.InternalError(err.Error())
+	}
+	return true, nil
+}
+
+func annotationView(a *annotationdomain.Annotation) map[string]interface{} {
+	return map[string]interface{}{
+		"id":        a.ID,
+		"orgId":     a.OrgID,
+		"title":     a.Title,
+		"text":      a.Text,
+		"tags":      a.Tags,
+		"source":    a.Source,
+		"startTime": a.StartTime,
+		"endTime":   a.EndTime,
+		"createdAt": a.CreatedAt,
 	}
 }

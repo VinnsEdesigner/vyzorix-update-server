@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/alert"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/annotation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device_group"
 	notification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
@@ -29,6 +30,17 @@ type Config struct {
 	AlertRules      []AlertRuleConfig      `json:"alert_rules" yaml:"alert_rules"`
 	ContactPoints   []ContactPointConfig   `json:"contact_points" yaml:"contact_points"`
 	ServiceAccounts []ServiceAccountConfig `json:"service_accounts" yaml:"service_accounts"`
+	Annotations     []AnnotationConfig     `json:"annotations" yaml:"annotations"`
+}
+
+type AnnotationConfig struct {
+	Title     string   `json:"title" yaml:"title"`
+	OrgName   string   `json:"org_name" yaml:"org_name"`
+	Text      string   `json:"text" yaml:"text"`
+	Source    string   `json:"source" yaml:"source"`
+	StartTime string   `json:"start_time" yaml:"start_time"`
+	EndTime   string   `json:"end_time" yaml:"end_time"`
+	Tags      []string `json:"tags" yaml:"tags"`
 }
 
 type ServiceAccountConfig struct {
@@ -134,18 +146,25 @@ type ServiceAccountRepo interface {
 	ListByOrg(ctx context.Context, orgID string) ([]*serviceaccount.ServiceAccount, error)
 }
 
+type AnnotationRepo interface {
+	Save(ctx context.Context, a *annotation.Annotation) error
+	GetByID(ctx context.Context, id string) (*annotation.Annotation, error)
+	Delete(ctx context.Context, id string) (bool, error)
+}
+
 type Provisioner struct {
-	log         *slog.Logger
-	orgRepo     OrgRepo
-	opRepo      OperatorRepo
-	groupRepo   GroupRepo
-	grantRepo   GrantRepo
-	alertRepo   AlertRuleRepo
-	contactRepo ContactPointRepo
-	serviceRepo ServiceAccountRepo
-	orgCreator  OrgCreator
-	opCreator   OperatorCreator
-	keyCreator  KeyCreator
+	log            *slog.Logger
+	orgRepo        OrgRepo
+	opRepo         OperatorRepo
+	groupRepo      GroupRepo
+	grantRepo      GrantRepo
+	alertRepo      AlertRuleRepo
+	contactRepo    ContactPointRepo
+	serviceRepo    ServiceAccountRepo
+	annotationRepo AnnotationRepo
+	orgCreator     OrgCreator
+	opCreator      OperatorCreator
+	keyCreator     KeyCreator
 }
 
 func New(log *slog.Logger) *Provisioner {
@@ -172,6 +191,11 @@ func (p *Provisioner) WithContactPointRepository(contactRepo ContactPointRepo) *
 
 func (p *Provisioner) WithServiceAccountRepository(serviceRepo ServiceAccountRepo) *Provisioner {
 	p.serviceRepo = serviceRepo
+	return p
+}
+
+func (p *Provisioner) WithAnnotationRepository(annotationRepo AnnotationRepo) *Provisioner {
+	p.annotationRepo = annotationRepo
 	return p
 }
 
@@ -217,6 +241,7 @@ func (p *Provisioner) LoadAndApply(ctx context.Context, path string) error {
 		"alerts", len(cfg.AlertRules),
 		"contact_points", len(cfg.ContactPoints),
 		"service_accounts", len(cfg.ServiceAccounts),
+		"annotations", len(cfg.Annotations),
 	)
 
 	orgMap := make(map[string]string)
@@ -288,6 +313,14 @@ func (p *Provisioner) LoadAndApply(ctx context.Context, path string) error {
 			continue
 		}
 		p.log.Info("provisioned service account", "name", sc.Name)
+	}
+
+	for _, ac := range cfg.Annotations {
+		if err := p.provisionAnnotation(ctx, ac, orgMap); err != nil {
+			p.log.Error("failed to provision annotation", "title", ac.Title, "error", err)
+			continue
+		}
+		p.log.Info("provisioned annotation", "title", ac.Title)
 	}
 
 	return nil
@@ -402,6 +435,44 @@ func (p *Provisioner) provisionGrant(ctx context.Context, gc GrantConfig, orgMap
 		Scope:       gc.Scope,
 	}
 	return p.grantRepo.Save(ctx, grant)
+}
+
+func (p *Provisioner) provisionAnnotation(ctx context.Context, ac AnnotationConfig, orgMap map[string]string) error {
+	if p.annotationRepo == nil {
+		return fmt.Errorf("no annotation repository configured")
+	}
+	orgID, ok := orgMap[ac.OrgName]
+	if !ok {
+		return fmt.Errorf("org %q not found", ac.OrgName)
+	}
+	a := &annotation.Annotation{
+		ID:        uuid.New().String(),
+		OrgID:     orgID,
+		Title:     ac.Title,
+		Text:      ac.Text,
+		Tags:      ac.Tags,
+		Source:    ac.Source,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if t, err := time.Parse(time.RFC3339, ac.StartTime); err == nil {
+		a.StartTime = t
+	}
+	if ac.EndTime != "" {
+		if t, err := time.Parse(time.RFC3339, ac.EndTime); err == nil {
+			a.EndTime = &t
+		}
+	}
+	if a.StartTime.IsZero() {
+		a.StartTime = time.Now()
+	}
+	if a.Tags == nil {
+		a.Tags = []string{}
+	}
+	if err := a.Validate(); err != nil {
+		return fmt.Errorf("invalid annotation %q: %w", ac.Title, err)
+	}
+	return p.annotationRepo.Save(ctx, a)
 }
 
 func (p *Provisioner) provisionServiceAccount(ctx context.Context, sc ServiceAccountConfig, orgMap map[string]string) error {
