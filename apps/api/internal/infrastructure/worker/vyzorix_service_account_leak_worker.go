@@ -34,7 +34,17 @@ func NewServiceAccountLeakWorker(service *serviceaccount.Service, lockSvc *serve
 
 // Start launches the scan loop.
 func (w *ServiceAccountLeakWorker) Start() {
-	go w.run()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				if w.logger != nil {
+					w.logger.Error("service account leak worker panicked, restarting", "panic", r)
+				}
+				w.Start()
+			}
+		}()
+		w.run()
+	}()
 	w.logger.Info("service account leak worker started", "interval", w.interval.String())
 }
 

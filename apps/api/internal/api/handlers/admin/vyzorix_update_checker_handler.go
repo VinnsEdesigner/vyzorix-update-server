@@ -8,15 +8,23 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	usagestats "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/usagestats"
 )
 
 type UpdateCheckerHandler struct {
+	statsSvc       *usagestats.Service
 	currentVersion string
 	repo           string
 }
 
 func NewUpdateCheckerHandler(currentVersion, repo string) *UpdateCheckerHandler {
 	return &UpdateCheckerHandler{currentVersion: currentVersion, repo: repo}
+}
+
+// SetUsageStats wires the usage stats snapshot collector for the checker response.
+func (h *UpdateCheckerHandler) SetUsageStats(svc *usagestats.Service) {
+	h.statsSvc = svc
 }
 
 type githubRelease struct {
@@ -47,11 +55,17 @@ func (h *UpdateCheckerHandler) Check(c *gin.Context) {
 	}
 
 	updateAvailable := release.TagName != h.currentVersion && release.TagName != ""
-	c.JSON(http.StatusOK, gin.H{
+	response := gin.H{
 		"current_version":  h.currentVersion,
 		"latest_version":   release.TagName,
 		"update_available": updateAvailable,
 		"release_name":     release.Name,
 		"release_url":      release.HTMLURL,
-	})
+	}
+	if h.statsSvc != nil {
+		if snap := h.statsSvc.Snapshot(); snap != nil {
+			response["usage_stats"] = snap
+		}
+	}
+	c.JSON(http.StatusOK, response)
 }

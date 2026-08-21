@@ -38,11 +38,18 @@ func NewFCMRetryWorker(db *sql.DB, fcmNotifier fcm.Notifier, logger *slog.Logger
 
 // Start begins the background worker loop.
 func (w *FCMRetryWorker) Start() {
-	go w.run()
-	w.logger.Info("fcm retry worker started",
-		"interval", w.interval.String(),
-		"maxRetries", w.maxRetries,
-	)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				if w.logger != nil {
+					w.logger.Error("fcm retry worker panicked, restarting", "panic", r)
+				}
+				w.Start()
+			}
+		}()
+		w.run()
+	}()
+	w.logger.Info("fcm retry worker started", "interval", w.interval.String())
 }
 
 // Stop gracefully stops the worker.

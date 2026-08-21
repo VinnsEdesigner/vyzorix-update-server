@@ -20,6 +20,9 @@ const (
 
 const bannerWidth = 61
 
+// Version is the build stamp, overridden via -ldflags "-X main.Version".
+var Version = "dev"
+
 // asciiBanner is the VYZORIX ASCII art banner.
 var asciiBanner = []string{
 	"+" + repeatChar("-", bannerWidth) + "+",
@@ -29,7 +32,7 @@ var asciiBanner = []string{
 	"|" + padCenter("| |_| | | (_) | | |_) | |  _|  __/\\__ \\") + "|",
 	"|" + padCenter("|___|_|  \\___/  |_.__/   |_|   \\___||___/") + "|",
 	"|" + padCenter("") + "|",
-	"|" + padCenter("GOLANG SERVER v1.0.0") + "|",
+	"|" + padCenter("GOLANG SERVER v"+Version) + "|",
 	"+" + repeatChar("-", bannerWidth) + "+",
 }
 

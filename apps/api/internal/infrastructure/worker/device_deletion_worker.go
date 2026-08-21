@@ -30,7 +30,17 @@ func NewDeviceDeletionWorker(deviceRepo device.Repository, lockSvc *serverlock.S
 }
 
 func (w *DeviceDeletionWorker) Start() {
-	go w.run()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				if w.logger != nil {
+					w.logger.Error("device deletion worker panicked, restarting", "panic", r)
+				}
+				w.Start()
+			}
+		}()
+		w.run()
+	}()
 	w.logger.Info("device deletion worker started", "interval", w.interval.String())
 }
 

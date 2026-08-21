@@ -13,52 +13,52 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/admin"
 	alerthandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/alert"
 	annotationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/annotation"
-	cvhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/configversion"
-	notificationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/notification"
-	sahandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/serviceaccount"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
+	cvhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/configversion"
 	confirmationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/confirmation"
 	dashboardhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/dashboard"
 	devicehandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/device"
 	diagnosticshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/diagnostics"
 	inboxhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/inbox"
+	notificationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/notification"
 	organizationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/organization"
+	sahandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/serviceaccount"
 	updaterhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updater"
 	updateshandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/updates"
 	websockethandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
 	alertapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/alert"
+	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	appconfigversion "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/configversion"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/confirmation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
+	lifecycle "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/lifecycle"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
 	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	searchsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/search"
+	saapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
+	usagestats "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/usagestats"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
-	lifecycle "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/lifecycle"
-	infracache "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/featuremgmt"
-	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
-	saapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
-	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
-	appconfigversion "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/configversion"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
+	infracache "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
@@ -67,6 +67,7 @@ import (
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
 	"github.com/gin-gonic/gin"
@@ -75,6 +76,7 @@ import (
 // ServerConfig holds the server configuration.
 type ServerConfig struct {
 	AlertConfig           config.AlertConfig
+	Version               string
 	FCMNotifier           fcm.Notifier
 	OperatorRepo          operator.Repository
 	OAuthStateRepo        authhandlers.OAuthStateProvider
@@ -111,12 +113,13 @@ func (s *Server) LifecycleManager() *lifecycle.Manager {
 // Server is the main API server.
 type Server struct {
 	ContactPointHandler         *notificationhandlers.Handler
-	ServiceAccountHandler      *sahandlers.Handler
+	ServiceAccountHandler       *sahandlers.Handler
 	AnnotationHandler           *annotationhandlers.Handler
-	configVersionHandler      *cvhandlers.Handler
+	configVersionHandler        *cvhandlers.Handler
 	cache                       *infracache.Cache
 	lifecycleManager            *lifecycle.Manager
 	FCMRetryWorker              *worker.FCMRetryWorker
+	statsSvc                    *usagestats.Service
 	encryptKeyFn                func(clientID string) ([]byte, bool)
 	authHandlers                *authhandlers.AllHandlers
 	hub                         *hub.Hub
@@ -255,6 +258,17 @@ func NewServer(cfg *ServerConfig) *Server {
 		s.engine.Use(infraMetrics.Middleware(cfg.Metrics))
 	}
 	s.lifecycleManager = lifecycle.NewManager()
+	if cfg.DB != nil {
+		collector := usagestats.NewCollector(cfg.DB.DB())
+		statsSvc := usagestats.NewService(collector, s.features)
+		version := cfg.Version
+		if version == "" {
+			version = "dev"
+		}
+		s.updateCheckerHandler = admin.NewUpdateCheckerHandler(version, "VinnsEdesigner/vyzorix-update-server")
+		s.updateCheckerHandler.SetUsageStats(statsSvc)
+		s.statsSvc = statsSvc
+	}
 
 	s.setupRoutes()
 
@@ -319,8 +333,8 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		featuremgmt.DeviceGroups:    true,
 		featuremgmt.ServerDrivenOrg: true,
 		featuremgmt.ActionSets:      true,
-		featuremgmt.ScopeResolvers:   true,
-		featuremgmt.PermissionCache:  true,
+		featuremgmt.ScopeResolvers:  true,
+		featuremgmt.PermissionCache: true,
 	}
 	s.features = featuremgmt.NewManager(allToggles)
 
@@ -334,28 +348,28 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		s.searchService = searchsvc.NewService(cfg.DB.DB())
 		s.supportBundleHandler = admin.NewSupportBundleHandler(cfg.DB)
 
-			annotationRepo := storage.NewAnnotationRepository(cfg.DB.DB())
-			annotationService := appannotation.NewService(annotationRepo)
-			s.AnnotationHandler = annotationhandlers.NewHandler(annotationService)
-			if s.AlertEvaluator != nil {
-				s.AlertEvaluator.SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
+		annotationRepo := storage.NewAnnotationRepository(cfg.DB.DB())
+		annotationService := appannotation.NewService(annotationRepo)
+		s.AnnotationHandler = annotationhandlers.NewHandler(annotationService)
+		if s.AlertEvaluator != nil {
+			s.AlertEvaluator.SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
+		}
+		if cfg.UpdatesService != nil && cfg.UpdatesService.GetPushService() != nil {
+			cfg.UpdatesService.GetPushService().SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
+			if s.cache != nil {
+				cfg.UpdatesService.GetPushService().SetDashboardCache(s.cache.Section("dashboard"))
 			}
-			if cfg.UpdatesService != nil && cfg.UpdatesService.GetPushService() != nil {
-				cfg.UpdatesService.GetPushService().SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
-				if s.cache != nil {
-					cfg.UpdatesService.GetPushService().SetDashboardCache(s.cache.Section("dashboard"))
-				}
-			}
+		}
 
-			configVersionRepo := storage.NewConfigVersionRepository(cfg.DB.DB())
-			configVersionSvc := appconfigversion.NewService(configVersionRepo)
-			if cfg.OrgSettingsService != nil {
-				cfg.OrgSettingsService.SetVersionService(configVersionSvc)
-			}
-			if cfg.DeviceSettingsService != nil {
-				cfg.DeviceSettingsService.SetVersionService(configVersionSvc)
-			}
-			s.configVersionHandler = cvhandlers.NewHandler(configVersionSvc, cfg.OrgSettingsService)
+		configVersionRepo := storage.NewConfigVersionRepository(cfg.DB.DB())
+		configVersionSvc := appconfigversion.NewService(configVersionRepo)
+		if cfg.OrgSettingsService != nil {
+			cfg.OrgSettingsService.SetVersionService(configVersionSvc)
+		}
+		if cfg.DeviceSettingsService != nil {
+			cfg.DeviceSettingsService.SetVersionService(configVersionSvc)
+		}
+		s.configVersionHandler = cvhandlers.NewHandler(configVersionSvc, cfg.OrgSettingsService)
 
 		alertRules := storage.NewAlertRuleRepository(cfg.DB.DB())
 		alertStates := storage.NewAlertStateRepository(cfg.DB.DB())
@@ -393,31 +407,30 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		saService := saapp.NewService(saRepo, saTokenRepo)
 		saService.SetAuditLogger(cfg.AuditLogger)
 		if cfg.DB != nil {
-		saService.SetMemberRepository(storage.NewMemberStorage(cfg.DB.DB()))
+			saService.SetMemberRepository(storage.NewMemberStorage(cfg.DB.DB()))
 		}
 		if limit := os.Getenv("SA_TOKEN_LIMIT"); limit != "" {
-		if n, err := strconv.Atoi(limit); err == nil && n > 0 {
-		saService.SetMaxTokens(n)
-		}
+			if n, err := strconv.Atoi(limit); err == nil && n > 0 {
+				saService.SetMaxTokens(n)
+			}
 		}
 		s.ServiceAccountHandler = sahandlers.NewHandler(saService)
 		if s.tenantAPIKeyAuth != nil {
-		s.tenantAPIKeyAuth.SetServiceAccountAuth(saService)
+			s.tenantAPIKeyAuth.SetServiceAccountAuth(saService)
 		}
-		}
+	}
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
 
 	// Telemetry history handler.
-s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(
-cfg.Log,
-storage.NewTelemetryRepository(cfg.DB.DB()),
-storage.NewDeviceRepository(cfg.DB.DB()),
-nil,
-)
-if s.cache != nil {
-s.telemetryHistoryHandler.SetHistoryCache(s.cache.Section("telemetry"))
-}
-
+	s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(
+		cfg.Log,
+		storage.NewTelemetryRepository(cfg.DB.DB()),
+		storage.NewDeviceRepository(cfg.DB.DB()),
+		nil,
+	)
+	if s.cache != nil {
+		s.telemetryHistoryHandler.SetHistoryCache(s.cache.Section("telemetry"))
+	}
 
 	// Connection status handler.
 	s.connectionStatusHandler = handlers.NewConnectionStatusHandler(cfg.Log, cfg.Hub, storage.NewDeviceRepository(cfg.DB.DB()))
@@ -633,6 +646,7 @@ func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
 // ServerConfigWithDeps is the config for NewServerWithDeps using pre-wired dependencies.
 type ServerConfigWithDeps struct {
 	AlertConfig     config.AlertConfig
+	Version         string
 	Log             *slog.Logger
 	DB              *storage.SQLite
 	Engine          *gin.Engine
@@ -723,6 +737,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	// Note: FCMNotifier and AppCheckVerifier are passed via HandlerSet.
 	serverCfg := &ServerConfig{
 		DB:               cfg.DB,
+		Version:          cfg.Version,
 		DeviceService:    cfg.HandlerSet.DeviceService,
 		FCMNotifier:      cfg.HandlerSet.FCMNotifier,
 		Config:           cfg.Config,
@@ -742,4 +757,9 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.setupRoutes()
 
 	return s
+}
+
+// UsageStatsService returns the self-telemetry snapshot service.
+func (s *Server) UsageStatsService() *usagestats.Service {
+	return s.statsSvc
 }

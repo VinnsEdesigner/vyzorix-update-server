@@ -34,7 +34,17 @@ func NewServiceAccountExpiryWorker(tokens serviceaccount.TokenRepository, lockSv
 
 // Start launches the expiry loop.
 func (w *ServiceAccountExpiryWorker) Start() {
-	go w.run()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				if w.logger != nil {
+					w.logger.Error("service account expiry worker panicked, restarting", "panic", r)
+				}
+				w.Start()
+			}
+		}()
+		w.run()
+	}()
 	w.logger.Info("service account expiry worker started", "interval", w.interval.String())
 }
 

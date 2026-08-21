@@ -90,6 +90,7 @@ func main() {
 	// Create API server using wire outputs.
 	apiServer := api.NewServerWithDeps(&api.ServerConfigWithDeps{
 		Config:          cfg,
+		Version:         Version,
 		Log:             deps.Log,
 		DB:              deps.DB,
 		Engine:          result.Engine,
@@ -293,6 +294,9 @@ func startServer(cfg *config.Config, log *slog.Logger, apiServer *api.Server,
 	}
 	if apiServer.DB != nil && apiServer.ServiceAccountHandler != nil {
 		lifecycleManager.Register("sa-leak-scan", worker.NewServiceAccountLeakWorker(apiServer.ServiceAccountHandler.Service(), lockSvc, log, 24*time.Hour))
+	}
+	if apiServer.UsageStatsService() != nil {
+		lifecycleManager.Register("usage-stats", worker.NewUsageStatsWorker(apiServer.UsageStatsService(), lockSvc, log, 6*time.Hour))
 	}
 	if apiServer.DB != nil && apiServer.AlertEvaluator != nil {
 		lifecycleManager.Register("alert-evaluation", worker.NewAlertEvaluationWorker(apiServer.AlertEvaluator, lockSvc, log, time.Duration(cfg.AlertConfig.EvalIntervalSecs)*time.Second))

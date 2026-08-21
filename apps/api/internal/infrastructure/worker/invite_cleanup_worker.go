@@ -30,8 +30,18 @@ func NewInvitationCleanupWorker(invitationRepo organization.InvitationRepository
 }
 
 func (w *InvitationCleanupWorker) Start() {
-	go w.run()
-	w.logger.Info("invitation cleanup worker started", "interval", w.interval.String())
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				if w.logger != nil {
+					w.logger.Error("invite cleanup worker panicked, restarting", "panic", r)
+				}
+				w.Start()
+			}
+		}()
+		w.run()
+	}()
+	w.logger.Info("invite cleanup worker started", "interval", w.interval.String())
 }
 
 func (w *InvitationCleanupWorker) Stop() {
