@@ -70,6 +70,7 @@ func TestAlertRuleRepository_CRUD(t *testing.T) {
 		Name:      "failure-rate",
 		Metric:    alert.MetricCommandFailureRate,
 		Condition: alert.ConditionGte,
+		Enabled:   true,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

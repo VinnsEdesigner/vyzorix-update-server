@@ -381,7 +381,8 @@ func TestEvaluator_NoDataPolicyBridges(t *testing.T) {
 		Condition: alert.ConditionGte,
 		Threshold: 50,
 		Enabled:   true,
-		OnNoData:  alert.NoDataNoData,
+		OnNoData:   alert.NoDataNoData,
+		WebhookURL: "https://hooks.example.com/x",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -411,7 +412,8 @@ func TestEvaluator_NoDataPolicyBridges(t *testing.T) {
 		Condition: alert.ConditionGte,
 		Threshold: 50,
 		Enabled:   true,
-		OnNoData:  alert.NoDataResolve,
+		OnNoData:   alert.NoDataResolve,
+		WebhookURL: "https://hooks.example.com/x",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -510,6 +512,7 @@ func TestEvaluator_RepeatNotifications(t *testing.T) {
 		Threshold:             0,
 		NotifyIntervalSeconds: 60,
 		Enabled:               true,
+		WebhookURL:            "https://hooks.example.com/x",
 		CreatedAt:             time.Now(),
 		UpdatedAt:             time.Now(),
 	}

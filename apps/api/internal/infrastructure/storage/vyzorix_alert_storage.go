@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/alert"
+	alert "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/alert"
 )
 
 // AlertRuleRepository is the SQL persistence for alert rules.
@@ -167,7 +167,7 @@ func (r *AlertStateRepository) GetByRuleID(ctx context.Context, ruleID string) (
 		if err != nil {
 			return nil, err
 		}
-		instances[LabelsHash(inst.Labels)] = inst
+		instances[alert.LabelsHash(inst.Labels)] = inst
 	}
 	return instances, rows.Err()
 }
@@ -193,7 +193,7 @@ func (r *AlertStateRepository) Upsert(ctx context.Context, inst *alert.Instance)
 			last_notified_at = excluded.last_notified_at
 	`
 	_, err = r.db.ExecContext(ctx, query,
-		inst.RuleID, LabelsHash(inst.Labels), labelsJSON, string(inst.State),
+		inst.RuleID, alert.LabelsHash(inst.Labels), labelsJSON, string(inst.State),
 		inst.Since.UnixMilli(), inst.LastEvaluated.UnixMilli(),
 		inst.LastValue, inst.LastNotifiedAt.UnixMilli(),
 	)
@@ -223,7 +223,7 @@ func (r *AlertStateRepository) ListByOrg(ctx context.Context, orgID string) (map
 		if instances[inst.RuleID] == nil {
 			instances[inst.RuleID] = make(map[string]*alert.Instance)
 		}
-		instances[inst.RuleID][LabelsHash(inst.Labels)] = inst
+		instances[inst.RuleID][alert.LabelsHash(inst.Labels)] = inst
 	}
 	return instances, rows.Err()
 }
