@@ -41,7 +41,13 @@ point. They are ordered by implementation priority.
     existing `serverlock.Service` (same as DeviceDeletionWorker).
   - REST: `/v1/alerts/rules` CRUD + manual evaluate; scoped RBAC actions
     `alert.read` / `alert.write` on `org:*`.
-- **Status:** implemented.
+- **Status:** implemented. Post-review hardening landed: label-dimensional
+  instances (labels-hash keyed, device_class fan-out + fleet aggregate),
+  explicit `no_data`/`error` states with per-rule `on_no_data`/`on_error`
+  policies (ignore|no_data|resolve / ignore|error|resolve), notify-attempt
+  stamping, worker jitter + retry backoff, evaluation worker registered on
+  the lifecycle registry. Migration 71 (composite `(rule_id, labels_hash)`
+  PK) preserves pre-label state under the empty hash.
 
 ### 2. Real Prometheus instrumentation [x]
 
