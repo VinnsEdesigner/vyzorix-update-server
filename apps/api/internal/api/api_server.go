@@ -45,7 +45,9 @@ import (
 	searchsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/search"
 	updatesapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
+	lifecycle "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/lifecycle"
 	infracache "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/featuremgmt"
 	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
@@ -101,6 +103,11 @@ type ServerConfig struct {
 	Config                config.Config
 }
 
+// LifecycleManager returns the worker manager for handler registration.
+func (s *Server) LifecycleManager() *lifecycle.Manager {
+	return s.lifecycleManager
+}
+
 // Server is the main API server.
 type Server struct {
 	ContactPointHandler         *notificationhandlers.Handler
@@ -108,6 +115,8 @@ type Server struct {
 	AnnotationHandler           *annotationhandlers.Handler
 	configVersionHandler      *cvhandlers.Handler
 	cache                       *infracache.Cache
+	lifecycleManager            *lifecycle.Manager
+	FCMRetryWorker              *worker.FCMRetryWorker
 	encryptKeyFn                func(clientID string) ([]byte, bool)
 	authHandlers                *authhandlers.AllHandlers
 	hub                         *hub.Hub
@@ -245,6 +254,7 @@ func NewServer(cfg *ServerConfig) *Server {
 		s.metricsHandler = infraMetrics.NewMetricsHandler(cfg.Metrics)
 		s.engine.Use(infraMetrics.Middleware(cfg.Metrics))
 	}
+	s.lifecycleManager = lifecycle.NewManager()
 
 	s.setupRoutes()
 
@@ -635,6 +645,7 @@ type ServerConfigWithDeps struct {
 	APIKeyService   *keys.APIKeyService
 	DeviceRepo      *storage.DeviceRepository
 	IdempotencyRepo *storage.IdempotencyRepository
+	FCMRetryWorker  *worker.FCMRetryWorker
 	Config          config.Config
 }
 
@@ -726,6 +737,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 
 	// Store deviceRepo for the deletion worker in api_main.go.
 	s.DeviceRepo = cfg.DeviceRepo
+	s.FCMRetryWorker = cfg.FCMRetryWorker
 
 	s.setupRoutes()
 

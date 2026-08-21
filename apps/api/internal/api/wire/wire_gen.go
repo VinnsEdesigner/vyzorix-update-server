@@ -12,6 +12,7 @@ import (
 
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	infranotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
@@ -60,6 +61,7 @@ func Injector(cfg config.Config) (*Server, error) {
 	emailService := ProvideEmailService()
 	metrics := ProvideMetrics()
 	notifier := ProvideFCMNotifier(logger, cfg, db)
+fcmRetryWorker := worker.NewFCMRetryWorker(db, notifier, logger, 30*time.Second)
 	appCheckVerifier, err := ProvideAppCheckVerifier(logger, cfg)
 	if err != nil {
 		return nil, err
@@ -97,7 +99,7 @@ func Injector(cfg config.Config) (*Server, error) {
 	apiKeyService := ProvideAPIKeyService(apiKeyRepository, cfg)
 	idempotencyRepository := ProvideIdempotencyRepository(db)
 	confirmationService := ProvideConfirmationService(sqLite)
-	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, appCheckVerifier, deviceDeletionWorker, commandOutbox, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService, apiKeyService, orgService, memberService, invitationService, invitationStorage, orgSettingsService, deviceSettingsService, idempotencyRepository, confirmationService)
+	serverDependencies := ProvideServerDependencies(cfg, logger, sqLite, auditLogger, manager, verifier, operatorRepository, deviceRepository, commandRepository, sessionRepository, clientRepository, telemetryRepository, updatesStorage, emailVerificationRepository, passwordResetRepository, argon2idHasher, authService, service, clientService, commandService, emailService, metrics, hubResult, notifier, fcmRetryWorker, appCheckVerifier, deviceDeletionWorker, commandOutbox, middlewareFactory, rateLimiter, lockout, ipIntelligence, updatesService, apiKeyService, orgService, memberService, invitationService, invitationStorage, orgSettingsService, deviceSettingsService, idempotencyRepository, confirmationService)
 	serverResult := ProvideServerResult(serverDependencies)
 	server := ProvideServer(serverDependencies, serverResult)
 	return server, nil

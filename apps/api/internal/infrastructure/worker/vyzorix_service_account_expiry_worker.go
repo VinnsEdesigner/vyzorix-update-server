@@ -86,3 +86,13 @@ func (w *ServiceAccountExpiryWorker) sweep() {
 		w.logger.Info("service account token sweep complete", "revoked", len(expired))
 	}
 }
+
+// Healthy reports whether the worker has not yet been stopped.
+func (w *ServiceAccountExpiryWorker) Healthy() bool {
+select {
+case <-w.doneCh:
+return false
+default:
+return true
+}
+}

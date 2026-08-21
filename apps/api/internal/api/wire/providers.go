@@ -841,6 +841,7 @@ func ProvideServerDependencies(
 	metrics *metrics.Metrics,
 	hubResult *HubResult,
 	fcmNotifier fcm.Notifier,
+	fcmRetryWorker *worker.FCMRetryWorker,
 	appCheckVerifier *appcheck.Verifier,
 	deviceDeletionWorker *worker.DeviceDeletionWorker,
 	commandOutbox *cmdapp.Outbox,
@@ -861,6 +862,7 @@ func ProvideServerDependencies(
 ) *ServerDependencies {
 	return &ServerDependencies{
 		FCMNotifier:           fcmNotifier,
+		FCMRetryWorker:        fcmRetryWorker,
 		AppCheckVerifier:      appCheckVerifier,
 		DeviceDeletionWorker:  deviceDeletionWorker,
 		CommandOutbox:         commandOutbox,

@@ -204,3 +204,13 @@ func PersistPendingNotification(ctx context.Context, db *sql.DB, wake fcm.Silent
 	}
 	return repo.Create(ctx, notification)
 }
+
+// Healthy reports whether the worker has not yet been stopped.
+func (w *FCMRetryWorker) Healthy() bool {
+select {
+case <-w.doneCh:
+return false
+default:
+return true
+}
+}

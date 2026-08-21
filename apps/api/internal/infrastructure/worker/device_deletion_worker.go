@@ -75,3 +75,13 @@ func (w *DeviceDeletionWorker) processDeletions() {
 		w.logger.Info("processed scheduled device deletions", "deleted_count", deleted)
 	}
 }
+
+// Healthy reports whether the worker has not yet been stopped.
+func (w *DeviceDeletionWorker) Healthy() bool {
+select {
+case <-w.doneCh:
+return false
+default:
+return true
+}
+}

@@ -84,3 +84,13 @@ func (w *ServiceAccountLeakWorker) scan() {
 		}
 	}
 }
+
+// Healthy reports whether the worker has not yet been stopped.
+func (w *ServiceAccountLeakWorker) Healthy() bool {
+select {
+case <-w.doneCh:
+return false
+default:
+return true
+}
+}

@@ -37,6 +37,7 @@ import (
 type ServerDependencies struct {
 	OperatorRepo          operator.Repository
 	FCMNotifier           fcm.Notifier
+	FCMRetryWorker        *worker.FCMRetryWorker
 	Hub                   *hub.Hub
 	DB                    *storage.SQLite
 	DeviceRepo            *storage.DeviceRepository

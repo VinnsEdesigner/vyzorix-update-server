@@ -75,3 +75,13 @@ func (w *InvitationCleanupWorker) expirePending() {
 		w.logger.Info("expired pending invitations", "expired_count", expired)
 	}
 }
+
+// Healthy reports whether the worker has not yet been stopped.
+func (w *InvitationCleanupWorker) Healthy() bool {
+select {
+case <-w.doneCh:
+return false
+default:
+return true
+}
+}

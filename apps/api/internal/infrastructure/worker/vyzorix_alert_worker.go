@@ -81,3 +81,13 @@ func (w *AlertEvaluationWorker) evaluate() {
 		w.logger.Info("alert evaluation complete", "transitions", transitions)
 	}
 }
+
+// Healthy reports whether the worker has not yet been stopped.
+func (w *AlertEvaluationWorker) Healthy() bool {
+select {
+case <-w.doneCh:
+return false
+default:
+return true
+}
+}

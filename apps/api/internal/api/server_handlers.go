@@ -27,6 +27,30 @@ func (s *Server) healthHandler(c *gin.Context) {
 		}
 	}
 
+	if s.lifecycleManager != nil {
+		workers := s.lifecycleManager.Health()
+		allHealthy := true
+		for _, healthy := range workers {
+			if !healthy {
+				allHealthy = false
+			}
+		}
+		if !allHealthy {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status":    "degraded",
+				"workers":   workers,
+				"timestamp": time.Now().UTC().Format(time.RFC3339),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":    "ok",
+			"workers":   workers,
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+		})
+		return
+	}
+
 	connectedDevices := 0
 	if s.hub != nil {
 		connectedDevices = s.hub.ClientCount()

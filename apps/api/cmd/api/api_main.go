@@ -276,40 +276,31 @@ func startServer(cfg *config.Config, log *slog.Logger, apiServer *api.Server,
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Start device deletion worker.
+	// Background workers registered on the lifecycle manager.
 	var lockSvc *serverlock.Service
 	if apiServer.DB != nil {
 		lockSvc = serverlock.NewService(apiServer.DB.DB())
 	}
-
-	deviceDeletionWorker := worker.NewDeviceDeletionWorker(
-		apiServer.DeviceRepo,
-		lockSvc,
-		log,
-		1*time.Hour, // Run every hour.
-	)
-	deviceDeletionWorker.Start()
-
-	// Start service account token expiry sweep (revokes tokens past expiry hourly).
-	var saExpiryWorker *worker.ServiceAccountExpiryWorker
+	lifecycleManager := apiServer.LifecycleManager()
 	if apiServer.DB != nil {
-		saTokenRepo := storage.NewServiceAccountTokenRepository(apiServer.DB.DB())
-		saExpiryWorker = worker.NewServiceAccountExpiryWorker(saTokenRepo, lockSvc, log, time.Hour)
-		saExpiryWorker.Start()
+		lifecycleManager.Register("device-deletion", worker.NewDeviceDeletionWorker(apiServer.DeviceRepo, lockSvc, log, time.Hour))
 	}
-
-	// Start leak scan worker (scans public GitHub/GitLab code search daily).
-	var saLeakWorker *worker.ServiceAccountLeakWorker
-	if apiServer.DB != nil && apiServer.ServiceAccountHandler != nil {
-		saLeakWorker = worker.NewServiceAccountLeakWorker(apiServer.ServiceAccountHandler.Service(), lockSvc, log, 24*time.Hour)
-		saLeakWorker.Start()
-	}
-
-	// Start invitation cleanup worker (expires stale pending invitations every 10 minutes).
-	var inviteCleanupWorker *worker.InvitationCleanupWorker
 	if apiServer.InvitationStorage != nil {
-		inviteCleanupWorker = worker.NewInvitationCleanupWorker(apiServer.InvitationStorage, lockSvc, log, 10*time.Minute)
-		inviteCleanupWorker.Start()
+		lifecycleManager.Register("invite-cleanup", worker.NewInvitationCleanupWorker(apiServer.InvitationStorage, lockSvc, log, 10*time.Minute), "device-deletion")
+	}
+	if apiServer.DB != nil {
+		lifecycleManager.Register("sa-expiry-sweep", worker.NewServiceAccountExpiryWorker(storage.NewServiceAccountTokenRepository(apiServer.DB.DB()), lockSvc, log, time.Hour))
+	}
+	if apiServer.DB != nil && apiServer.ServiceAccountHandler != nil {
+		lifecycleManager.Register("sa-leak-scan", worker.NewServiceAccountLeakWorker(apiServer.ServiceAccountHandler.Service(), lockSvc, log, 24*time.Hour))
+	}
+// FCM retry worker registers with the manager from the provider.
+if apiServer.FCMRetryWorker != nil {
+lifecycleManager.Register("fcm-retry", apiServer.FCMRetryWorker)
+}
+	if err := lifecycleManager.StartAll(); err != nil {
+		log.Error("failed to start background workers", "err", err)
+		os.Exit(1)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -348,16 +339,7 @@ func startServer(cfg *config.Config, log *slog.Logger, apiServer *api.Server,
 	log.Info("shutting down")
 
 	// Stop background workers first - they may be generating new requests.
-	if saLeakWorker != nil {
-		saLeakWorker.Stop()
-	}
-	if saExpiryWorker != nil {
-		saExpiryWorker.Stop()
-	}
-	if inviteCleanupWorker != nil {
-		inviteCleanupWorker.Stop()
-	}
-	deviceDeletionWorker.Stop()
+	lifecycleManager.StopAll()
 
 	// Graceful drain: give in-flight requests time to complete.
 	// Use a longer timeout for server shutdown to ensure graceful drain.
