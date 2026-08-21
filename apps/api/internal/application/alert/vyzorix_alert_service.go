@@ -18,14 +18,16 @@ var (
 
 // RuleInput carries the mutable fields of a rule create/update request.
 type RuleInput struct {
+	Threshold             float64
+	ForSeconds            int
+	NotifyIntervalSeconds int
 	OrgID                 string
 	Name                  string
 	WebhookURL            string
 	Metric                alert.Metric
 	Condition             alert.Condition
-	Threshold             float64
-	ForSeconds            int
-	NotifyIntervalSeconds int
+	OnNoData              alert.NoDataPolicy
+	OnError               alert.ErrorPolicy
 	Enabled               bool
 }
 
@@ -54,18 +56,31 @@ func RuleInputFromArgs(args map[string]interface{}, orgID string) *RuleInput {
 	if v, ok := args["notifyIntervalSeconds"].(int); ok {
 		in.NotifyIntervalSeconds = v
 	}
+	if v, ok := args["onNoData"].(string); ok {
+		in.OnNoData = alert.NoDataPolicy(v)
+	}
+	if v, ok := args["onError"].(string); ok {
+		in.OnError = alert.ErrorPolicy(v)
+	}
 	if v, ok := args["enabled"].(bool); ok {
 		in.Enabled = v
 	}
 	return in
 }
 
-// RuleView pairs a rule with its runtime instance state.
-type RuleView struct {
+// InstanceView exposes one labeled instance series of a rule.
+type InstanceView struct {
 	EvaluatedAt time.Time
-	Rule        *alert.Rule
+	Labels      map[string]string
 	State       alert.State
 	Value       float64
+}
+
+// RuleView pairs a rule with its runtime instance states (one per label set
+// — usually a single empty-labels entry for fleet aggregates).
+type RuleView struct {
+	Rule      *alert.Rule
+	Instances []InstanceView
 }
 
 // Service provides org-scoped alert rule CRUD and history access.
@@ -102,6 +117,8 @@ func (s *Service) CreateRule(ctx context.Context, in *RuleInput) (*alert.Rule, e
 		Threshold:             in.Threshold,
 		ForSeconds:            in.ForSeconds,
 		NotifyIntervalSeconds: in.NotifyIntervalSeconds,
+		OnNoData:              in.OnNoData,
+		OnError:               in.OnError,
 		Enabled:               in.Enabled,
 	}
 	if err := rule.Validate(); err != nil {
@@ -114,7 +131,7 @@ func (s *Service) CreateRule(ctx context.Context, in *RuleInput) (*alert.Rule, e
 }
 
 // UpdateRule replaces the mutable fields of an existing rule. Disabling a
-// rule clears its instance so it leaves no stale firing state behind.
+// rule clears its instances so it leaves no stale firing state behind.
 func (s *Service) UpdateRule(ctx context.Context, orgID, id string, in *RuleInput) (*alert.Rule, error) {
 	rule, err := s.getScoped(ctx, orgID, id)
 	if err != nil {
@@ -128,6 +145,8 @@ func (s *Service) UpdateRule(ctx context.Context, orgID, id string, in *RuleInpu
 	rule.Threshold = in.Threshold
 	rule.ForSeconds = in.ForSeconds
 	rule.NotifyIntervalSeconds = in.NotifyIntervalSeconds
+	rule.OnNoData = in.OnNoData
+	rule.OnError = in.OnError
 	rule.Enabled = in.Enabled
 	rule.UpdatedAt = time.Now()
 
@@ -145,7 +164,7 @@ func (s *Service) UpdateRule(ctx context.Context, orgID, id string, in *RuleInpu
 	return rule, nil
 }
 
-// DeleteRule removes a rule and its instance.
+// DeleteRule removes a rule and its instances.
 func (s *Service) DeleteRule(ctx context.Context, orgID, id string) error {
 	if _, err := s.getScoped(ctx, orgID, id); err != nil {
 		return err
@@ -160,7 +179,7 @@ func (s *Service) DeleteRule(ctx context.Context, orgID, id string) error {
 	return nil
 }
 
-// GetRule returns one rule with its instance state.
+// GetRule returns one rule with its instance states.
 func (s *Service) GetRule(ctx context.Context, orgID, id string) (*RuleView, error) {
 	rule, err := s.getScoped(ctx, orgID, id)
 	if err != nil {
@@ -182,11 +201,9 @@ func (s *Service) ListRules(ctx context.Context, orgID string) ([]*RuleView, err
 
 	views := make([]*RuleView, 0, len(rules))
 	for _, rule := range rules {
-		v := &RuleView{Rule: rule, State: alert.StateInactive}
-		if inst, ok := instances[rule.ID]; ok {
-			v.State = inst.State
-			v.Value = inst.LastValue
-			v.EvaluatedAt = inst.LastEvaluated
+		v := &RuleView{Rule: rule}
+		for _, inst := range instances[rule.ID] {
+			v.Instances = append(v.Instances, toInstanceView(inst))
 		}
 		views = append(views, v)
 	}
@@ -208,14 +225,22 @@ func (s *Service) getScoped(ctx context.Context, orgID, id string) (*alert.Rule,
 }
 
 func (s *Service) view(ctx context.Context, rule *alert.Rule) (*RuleView, error) {
-	inst, err := s.states.GetByRuleID(ctx, rule.ID)
+	instances, err := s.states.GetByRuleID(ctx, rule.ID)
 	if err != nil {
 		return nil, err
 	}
-	return &RuleView{
-		Rule:        rule,
+	v := &RuleView{Rule: rule}
+	for _, inst := range instances {
+		v.Instances = append(v.Instances, toInstanceView(inst))
+	}
+	return v, nil
+}
+
+func toInstanceView(inst *alert.Instance) InstanceView {
+	return InstanceView{
+		Labels:      inst.Labels,
 		State:       inst.State,
 		Value:       inst.LastValue,
 		EvaluatedAt: inst.LastEvaluated,
-	}, nil
+	}
 }

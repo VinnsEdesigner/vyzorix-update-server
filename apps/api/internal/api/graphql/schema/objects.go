@@ -2360,6 +2360,18 @@ var MemberEventType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+// AlertInstanceType represents one labeled series state of an alert rule.
+var AlertInstanceType = graphql.NewObject(graphql.ObjectConfig{
+	Name:        "AlertInstance",
+	Description: "One labeled series state (labels hash key)",
+	Fields: graphql.Fields{
+		"labels":      &graphql.Field{Type: graphql.String, Description: "Series labels (e.g. device_class)"},
+		"state":       &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Current state"},
+		"value":       &graphql.Field{Type: graphql.NewNonNull(graphql.Float), Description: "Last observed value"},
+		"evaluatedAt": &graphql.Field{Type: DateTimeScalar, Description: "Last evaluation time"},
+	},
+})
+
 // AlertRuleType represents an org-scoped alert rule with its current instance state.
 var AlertRuleType = graphql.NewObject(graphql.ObjectConfig{
 	Name:        "AlertRule",
@@ -2373,11 +2385,11 @@ var AlertRuleType = graphql.NewObject(graphql.ObjectConfig{
 		"threshold":             &graphql.Field{Type: graphql.NewNonNull(graphql.Float), Description: "Threshold value"},
 		"forSeconds":            &graphql.Field{Type: graphql.NewNonNull(graphql.Int), Description: "Pending duration before firing"},
 		"notifyIntervalSeconds": &graphql.Field{Type: graphql.NewNonNull(graphql.Int), Description: "Re-notification interval while firing"},
+		"onNoData":              &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "No-signal policy: ignore, no_data, resolve"},
+		"onError":               &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Source-failure policy: ignore, error, resolve"},
 		"webhookUrl":            &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Webhook URL to notify"},
 		"enabled":               &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean), Description: "Whether the rule is evaluated"},
-		"state":                 &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Current state: inactive, pending, firing"},
-		"value":                 &graphql.Field{Type: graphql.NewNonNull(graphql.Float), Description: "Last observed value"},
-		"evaluatedAt":           &graphql.Field{Type: DateTimeScalar, Description: "Last evaluation time"},
+		"instances":             &graphql.Field{Type: graphql.NewList(AlertInstanceType), Description: "Runtime instance states (one per label set)"},
 		"createdAt":             &graphql.Field{Type: DateTimeScalar, Description: "Creation time"},
 		"updatedAt":             &graphql.Field{Type: DateTimeScalar, Description: "Last update time"},
 	},
@@ -2397,7 +2409,6 @@ var AlertEventType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-
 // ContactPointType represents an org-scoped notification destination.
 var ContactPointType = graphql.NewObject(graphql.ObjectConfig{
 	Name:        "ContactPoint",
@@ -2415,7 +2426,6 @@ var ContactPointType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-
 // ServiceAccountType represents an automation identity with token count.
 var ServiceAccountType = graphql.NewObject(graphql.ObjectConfig{
 	Name:        "ServiceAccount",
@@ -2430,23 +2440,21 @@ var ServiceAccountType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
-
 // ServiceAccountTokenType represents one service account token (no full key).
 var ServiceAccountTokenType = graphql.NewObject(graphql.ObjectConfig{
 	Name:        "ServiceAccountToken",
 	Description: "Service account token (prefix + metadata only)",
 	Fields: graphql.Fields{
-		"id":         &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Token ID"},
-		"serviceId":  &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Service account ID"},
-		"name":       &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Token name"},
-		"keyPrefix":  &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Display prefix of the key"},
-		"scopes":     &graphql.Field{Type: graphql.NewList(graphql.String), Description: "Granted scopes"},
-		"valid":      &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean), Description: "Whether the token is usable"},
-		"expiresAt":  &graphql.Field{Type: DateTimeScalar, Description: "Expiry time"},
-		"createdAt":  &graphql.Field{Type: DateTimeScalar, Description: "Creation time"},
+		"id":        &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Token ID"},
+		"serviceId": &graphql.Field{Type: graphql.NewNonNull(graphql.ID), Description: "Service account ID"},
+		"name":      &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Token name"},
+		"keyPrefix": &graphql.Field{Type: graphql.NewNonNull(graphql.String), Description: "Display prefix of the key"},
+		"scopes":    &graphql.Field{Type: graphql.NewList(graphql.String), Description: "Granted scopes"},
+		"valid":     &graphql.Field{Type: graphql.NewNonNull(graphql.Boolean), Description: "Whether the token is usable"},
+		"expiresAt": &graphql.Field{Type: DateTimeScalar, Description: "Expiry time"},
+		"createdAt": &graphql.Field{Type: DateTimeScalar, Description: "Creation time"},
 	},
 })
-
 
 // AnnotationType represents an org-scoped fleet timeline annotation.
 var AnnotationType = graphql.NewObject(graphql.ObjectConfig{

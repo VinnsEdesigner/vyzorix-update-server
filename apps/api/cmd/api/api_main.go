@@ -294,10 +294,13 @@ func startServer(cfg *config.Config, log *slog.Logger, apiServer *api.Server,
 	if apiServer.DB != nil && apiServer.ServiceAccountHandler != nil {
 		lifecycleManager.Register("sa-leak-scan", worker.NewServiceAccountLeakWorker(apiServer.ServiceAccountHandler.Service(), lockSvc, log, 24*time.Hour))
 	}
-// FCM retry worker registers with the manager from the provider.
-if apiServer.FCMRetryWorker != nil {
-lifecycleManager.Register("fcm-retry", apiServer.FCMRetryWorker)
-}
+	if apiServer.DB != nil && apiServer.AlertEvaluator != nil {
+		lifecycleManager.Register("alert-evaluation", worker.NewAlertEvaluationWorker(apiServer.AlertEvaluator, lockSvc, log, time.Duration(cfg.AlertConfig.EvalIntervalSecs)*time.Second))
+	}
+	// FCM retry worker registers with the manager from the provider.
+	if apiServer.FCMRetryWorker != nil {
+		lifecycleManager.Register("fcm-retry", apiServer.FCMRetryWorker)
+	}
 	if err := lifecycleManager.StartAll(); err != nil {
 		log.Error("failed to start background workers", "err", err)
 		os.Exit(1)

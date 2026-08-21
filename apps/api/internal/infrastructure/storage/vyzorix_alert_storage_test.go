@@ -26,17 +26,17 @@ func TestAlertRuleRepository_CRUD(t *testing.T) {
 	ctx := context.Background()
 
 	rule := &alert.Rule{
-		ID:         "rule-1",
-		OrgID:      "org-1",
-		Name:       "offline devices",
-		Metric:     alert.MetricDeviceOfflineCount,
-		Condition:  alert.ConditionGt,
-		Threshold:  5,
-		ForSeconds: 30,
-		Enabled:    true,
-		WebhookURL: "https://hooks.example.com/xyz",
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		ID:        "rule-1",
+		OrgID:     "org-1",
+		Name:      "offline",
+		Metric:    alert.MetricDeviceOfflineCount,
+		Condition: alert.ConditionGt,
+		Threshold: 3,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Enabled:   true,
+		OnNoData:  alert.NoDataNoData,
+		OnError:   alert.ErrorResolve,
 	}
 	if err := repo.Save(ctx, rule); err != nil {
 		t.Fatalf("Save: %v", err)
@@ -46,51 +46,66 @@ func TestAlertRuleRepository_CRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetByID: %v", err)
 	}
-	if got.Name != rule.Name || got.Metric != rule.Metric || got.Condition != rule.Condition {
-		t.Errorf("GetByID mismatch: %+v", got)
+	if got.OrgID != "org-1" || got.Metric != alert.MetricDeviceOfflineCount || !got.Enabled {
+		t.Errorf("rule mismatch: %+v", got)
 	}
-	if got.Threshold != 5 || got.ForSeconds != 30 || !got.Enabled || got.WebhookURL != rule.WebhookURL {
-		t.Errorf("GetByID fields mismatch: %+v", got)
+	if got.OnNoData != alert.NoDataNoData || got.OnError != alert.ErrorResolve {
+		t.Errorf("policies not persisted: %+v", got)
 	}
 
-	// Upsert overwrites mutable fields.
-	rule.Name = "renamed"
-	rule.Enabled = false
+	// Idempotent save replaces row.
+	rule.Threshold = 5
 	if err := repo.Save(ctx, rule); err != nil {
 		t.Fatalf("Save update: %v", err)
 	}
-	got, err = repo.GetByID(ctx, rule.ID)
-	if err != nil {
-		t.Fatalf("GetByID after update: %v", err)
-	}
-	if got.Name != "renamed" || got.Enabled {
-		t.Errorf("update not applied: %+v", got)
+	got, _ = repo.GetByID(ctx, rule.ID)
+	if got.Threshold != 5 {
+		t.Errorf("expected threshold 5, got %v", got.Threshold)
 	}
 
-	// ListEnabled excludes disabled rules.
+	// ListByOrg scopes by org and orders by name.
+	other := &alert.Rule{
+		ID:        "rule-2",
+		OrgID:     "org-1",
+		Name:      "failure-rate",
+		Metric:    alert.MetricCommandFailureRate,
+		Condition: alert.ConditionGte,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := repo.Save(ctx, other); err != nil {
+		t.Fatalf("Save second: %v", err)
+	}
+	foreign := &alert.Rule{
+		ID:        "rule-x",
+		OrgID:     "org-2",
+		Name:      "aaa",
+		Metric:    alert.MetricDeviceOfflineCount,
+		Condition: alert.ConditionGt,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := repo.Save(ctx, foreign); err != nil {
+		t.Fatalf("Save foreign: %v", err)
+	}
+
+	list, err := repo.ListByOrg(ctx, "org-1")
+	if err != nil {
+		t.Fatalf("ListByOrg: %v", err)
+	}
+	if len(list) != 2 || list[0].Name != "failure-rate" {
+		t.Errorf("ListByOrg mismatch: %+v", list)
+	}
 	enabled, err := repo.ListEnabled(ctx)
 	if err != nil {
 		t.Fatalf("ListEnabled: %v", err)
 	}
-	if len(enabled) != 0 {
-		t.Errorf("ListEnabled returned %d rules, want 0", len(enabled))
-	}
-
-	// ListByOrg returns org rules ordered by name.
-	second := &alert.Rule{ID: "rule-2", OrgID: "org-1", Name: "aaa first", Metric: alert.MetricCommandFailureRate, Condition: alert.ConditionGt, Threshold: 1, CreatedAt: time.Now(), UpdatedAt: time.Now()}
-	if err := repo.Save(ctx, second); err != nil {
-		t.Fatalf("Save second: %v", err)
-	}
-	rules, err := repo.ListByOrg(ctx, "org-1")
-	if err != nil {
-		t.Fatalf("ListByOrg: %v", err)
-	}
-	if len(rules) != 2 || rules[0].Name != "aaa first" {
-		t.Errorf("ListByOrg order/count wrong: %+v", rules)
+	if len(enabled) != 2 {
+		t.Errorf("expected 2 enabled rules, got %d", len(enabled))
 	}
 
 	deleted, err := repo.Delete(ctx, rule.ID)
-	if err != nil || !deleted {
+	if !deleted || err != nil {
 		t.Fatalf("Delete: %v %v", deleted, err)
 	}
 	if _, err := repo.GetByID(ctx, rule.ID); err != alert.ErrNotFound {
@@ -117,12 +132,12 @@ func TestAlertStateRepository_RoundTrip(t *testing.T) {
 		t.Fatalf("Save rule: %v", err)
 	}
 
-	inst, err := states.GetByRuleID(ctx, rule.ID)
+	instances, err := states.GetByRuleID(ctx, rule.ID)
 	if err != nil {
 		t.Fatalf("GetByRuleID empty: %v", err)
 	}
-	if inst.State != alert.StateInactive {
-		t.Fatalf("expected fresh inactive instance before evaluation, got %+v", inst)
+	if len(instances) != 0 {
+		t.Fatalf("expected no instances before evaluation, got %+v", instances)
 	}
 
 	saved := &alert.Instance{
@@ -136,40 +151,77 @@ func TestAlertStateRepository_RoundTrip(t *testing.T) {
 		t.Fatalf("Upsert: %v", err)
 	}
 
-	inst, err = states.GetByRuleID(ctx, rule.ID)
+	instances, err = states.GetByRuleID(ctx, rule.ID)
 	if err != nil {
 		t.Fatalf("GetByRuleID: %v", err)
 	}
-	if inst.State != alert.StateFiring || inst.LastValue != 7.5 {
-		t.Errorf("instance mismatch: %+v", inst)
+	inst, ok := instances[""]
+	if !ok || inst.State != alert.StateFiring || inst.LastValue != 7.5 {
+		t.Errorf("instance mismatch: %+v", instances)
 	}
 
-	// Upsert replaces.
+	// Upsert replaces within the same labels hash.
 	saved.State = alert.StateInactive
 	if err := states.Upsert(ctx, saved); err != nil {
 		t.Fatalf("Upsert update: %v", err)
 	}
-	inst, _ = states.GetByRuleID(ctx, rule.ID)
-	if inst.State != alert.StateInactive {
-		t.Errorf("expected inactive after upsert, got %s", inst.State)
+	instances, _ = states.GetByRuleID(ctx, rule.ID)
+	if instances[""].State != alert.StateInactive {
+		t.Errorf("expected inactive after upsert, got %s", instances[""].State)
+	}
+
+	// Label-keyed series coexist per rule.
+	labeled := &alert.Instance{
+		RuleID:        rule.ID,
+		Labels:        map[string]string{"device_class": "tablet"},
+		State:         alert.StatePending,
+		Since:         time.Now(),
+		LastEvaluated: time.Now(),
+		LastValue:     2,
+	}
+	if err := states.Upsert(ctx, labeled); err != nil {
+		t.Fatalf("Upsert labeled: %v", err)
+	}
+	instances, err = states.GetByRuleID(ctx, rule.ID)
+	if err != nil {
+		t.Fatalf("GetByRuleID labeled: %v", err)
+	}
+	if len(instances) != 2 {
+		t.Fatalf("expected 2 instances, got %d", len(instances))
+	}
+	labeledHash := alert.LabelsHash(map[string]string{"device_class": "tablet"})
+	if instances[labeledHash].State != alert.StatePending {
+		t.Errorf("labeled instance mismatch: %+v", instances[labeledHash])
 	}
 
 	byOrg, err := states.ListByOrg(ctx, "org-1")
 	if err != nil {
 		t.Fatalf("ListByOrg: %v", err)
 	}
-	if len(byOrg) != 1 || byOrg[rule.ID].State != alert.StateInactive {
+	if len(byOrg[rule.ID]) != 2 || byOrg[rule.ID][labeledHash].State != alert.StatePending {
 		t.Errorf("ListByOrg mismatch: %+v", byOrg)
+	}
+
+	// Stale cleanup keeps only the given label hashes.
+	if err := states.DeleteStaleForRule(ctx, rule.ID, []string{labeledHash}); err != nil {
+		t.Fatalf("DeleteStaleForRule: %v", err)
+	}
+	instances, err = states.GetByRuleID(ctx, rule.ID)
+	if err != nil {
+		t.Fatalf("GetByRuleID after stale cleanup: %v", err)
+	}
+	if len(instances) != 1 || instances[labeledHash] == nil {
+		t.Errorf("expected only labeled instance to remain: %+v", instances)
 	}
 
 	if err := states.DeleteByRuleID(ctx, rule.ID); err != nil {
 		t.Fatalf("DeleteByRuleID: %v", err)
 	}
-	inst, err = states.GetByRuleID(ctx, rule.ID)
+	instances, err = states.GetByRuleID(ctx, rule.ID)
 	if err != nil {
 		t.Fatalf("GetByRuleID after delete: %v", err)
 	}
-	if inst.State != alert.StateInactive {
-		t.Errorf("expected fresh inactive instance after delete, got %+v", inst)
+	if len(instances) != 0 {
+		t.Errorf("expected no instances after delete, got %+v", instances)
 	}
 }

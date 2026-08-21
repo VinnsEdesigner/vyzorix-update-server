@@ -44,7 +44,7 @@ func TestCondition_Breached(t *testing.T) {
 
 func TestEvaluate_ImmediateFiring(t *testing.T) {
 	rule := testRule(0)
-	inst := NewInstance(rule.ID)
+	inst := NewInstance(rule.ID, nil)
 	now := time.Now()
 
 	tr := inst.Evaluate(rule, 10, now)
@@ -64,7 +64,7 @@ func TestEvaluate_ImmediateFiring(t *testing.T) {
 
 func TestEvaluate_PendingThenFiring(t *testing.T) {
 	rule := testRule(60)
-	inst := NewInstance(rule.ID)
+	inst := NewInstance(rule.ID, nil)
 	t0 := time.Now()
 
 	tr := inst.Evaluate(rule, 10, t0)
@@ -90,7 +90,7 @@ func TestEvaluate_PendingThenFiring(t *testing.T) {
 
 func TestEvaluate_ResolveFromFiring(t *testing.T) {
 	rule := testRule(0)
-	inst := NewInstance(rule.ID)
+	inst := NewInstance(rule.ID, nil)
 	t0 := time.Now()
 
 	inst.Evaluate(rule, 10, t0)
@@ -109,7 +109,7 @@ func TestEvaluate_ResolveFromFiring(t *testing.T) {
 
 func TestEvaluate_ResolveFromPending(t *testing.T) {
 	rule := testRule(60)
-	inst := NewInstance(rule.ID)
+	inst := NewInstance(rule.ID, nil)
 	t0 := time.Now()
 
 	inst.Evaluate(rule, 10, t0)
@@ -124,7 +124,7 @@ func TestEvaluate_ResolveFromPending(t *testing.T) {
 
 func TestEvaluate_SteadyStateNoTransition(t *testing.T) {
 	rule := testRule(0)
-	inst := NewInstance(rule.ID)
+	inst := NewInstance(rule.ID, nil)
 	t0 := time.Now()
 
 	// Not breached while inactive: no transition.

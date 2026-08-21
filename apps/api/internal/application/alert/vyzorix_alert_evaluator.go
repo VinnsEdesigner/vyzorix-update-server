@@ -27,15 +27,15 @@ type Annotator interface {
 // Evaluator advances the state machine of every enabled rule against the
 // metric source, persists transition history, and emits notifications.
 type Evaluator struct {
-	rules         alert.Repository
-	states        alert.StateRepository
-	history       alert.HistoryRepository
-	metrics       *MetricSource
-	notifier      alert.Notifier
-	hub           DashboardBroadcaster
-	annotator     Annotator
+	rules          alert.Repository
+	states         alert.StateRepository
+	history        alert.HistoryRepository
+	metrics        *MetricSource
+	notifier       alert.Notifier
+	hub            DashboardBroadcaster
+	annotator      Annotator
 	dashboardCache *cache.Section
-	logger        *slog.Logger
+	logger         *slog.Logger
 }
 
 func NewEvaluator(rules alert.Repository, states alert.StateRepository, history alert.HistoryRepository, metrics *MetricSource, notifier alert.Notifier, hub DashboardBroadcaster, logger *slog.Logger) *Evaluator {
@@ -71,9 +71,7 @@ func (e *Evaluator) EvaluateAll(ctx context.Context, now time.Time) (int, error)
 			e.logger.Error("alert rule evaluation failed", "rule_id", rule.ID, "org_id", rule.OrgID, "error", err)
 			continue
 		}
-		if transitioned {
-			transitions++
-		}
+		transitions += transitioned
 	}
 	metrics.Get().UpdateAlertRules(len(rules))
 	return transitions, nil
@@ -86,32 +84,89 @@ func (e *Evaluator) EvaluateRule(ctx context.Context, ruleID string, now time.Ti
 	if err != nil {
 		return false, err
 	}
-	return e.evaluateRule(ctx, rule, now)
+	n, err := e.evaluateRule(ctx, rule, now)
+	return n > 0, err
 }
 
-func (e *Evaluator) evaluateRule(ctx context.Context, rule *alert.Rule, now time.Time) (bool, error) {
-	value, err := e.metrics.Value(ctx, rule.OrgID, rule.Metric, now)
+// evaluateRule evaluates one rule across every labeled series the metric
+// emitted this tick and returns the number of transitions emitted.
+func (e *Evaluator) evaluateRule(ctx context.Context, rule *alert.Rule, now time.Time) (int, error) {
+	instances, err := e.states.GetByRuleID(ctx, rule.ID)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 
-	inst, err := e.states.GetByRuleID(ctx, rule.ID)
-	if err != nil {
-		return false, err
+	series, metricErr := e.metrics.Series(ctx, rule.OrgID, rule.Metric, now)
+	if metricErr != nil {
+		// The error policy applies to every existing instance; entering the
+		// error state notifies once, like a state change.
+		for _, inst := range instances {
+			transition := e.evaluateInstance(inst, rule, now, nil, true)
+			if err := e.states.Upsert(ctx, inst); err != nil {
+				return 0, err
+			}
+			if transition != nil {
+				e.emit(ctx, rule, transition)
+			}
+		}
+		metrics.Get().RecordAlertEvaluation(string(alert.StateError))
+		return 0, metricErr
 	}
 
-	transition := inst.Evaluate(rule, value, now)
-	if err := e.states.Upsert(ctx, inst); err != nil {
-		return false, err
-	}
-	if !inst.NotificationDue {
-		metrics.Get().RecordAlertEvaluation("unchanged")
-		return false, nil
+	keep := make([]string, 0, len(series))
+	transitions := 0
+	for _, obs := range series {
+		hash := alert.LabelsHash(obs.Labels)
+		keep = append(keep, hash)
+		inst, ok := instances[hash]
+		if !ok {
+			inst = alert.NewInstance(rule.ID, obs.Labels)
+		}
+		transition := e.evaluateInstance(inst, rule, now, obs, false)
+		if err := e.states.Upsert(ctx, inst); err != nil {
+			return transitions, err
+		}
+		if transition != nil {
+			e.emit(ctx, rule, transition)
+			transitions++
+		}
 	}
 
+	// Drop instances whose label set vanished (device class gone) so state
+	// cannot accrue silently.
+	if err := e.states.DeleteStaleForRule(ctx, rule.ID, keep); err != nil {
+		e.logger.Error("alert stale instance cleanup failed", "rule_id", rule.ID, "error", err)
+	}
+	return transitions, nil
+}
+
+// evaluateInstance advances one instance against its observation and returns
+// the notification transition, if any. The attempt is stamped immediately so
+// a failing channel re-notifies on the rule's interval, not every tick.
+func (e *Evaluator) evaluateInstance(inst *alert.Instance, rule *alert.Rule, now time.Time, obs *LabelSeries, metricFailed bool) *alert.Transition {
+	var transition *alert.Transition
+	switch {
+	case metricFailed:
+		transition = inst.EvaluateError(rule, now)
+	case obs != nil && obs.NoData:
+		transition = inst.EvaluateNoData(rule, now)
+	case obs != nil:
+		transition = inst.Evaluate(rule, obs.Value, now)
+	}
+	if transition == nil {
+		return nil
+	}
+	inst.LastNotifiedAt = now
+	return transition
+}
+
+// emit persists history and notifies; firing/resolved also annotate and
+// invalidate the dashboard cache.
+func (e *Evaluator) emit(ctx context.Context, rule *alert.Rule, transition *alert.Transition) {
 	e.logger.Info("alert notification",
 		"rule_id", rule.ID, "rule", rule.Name, "org_id", rule.OrgID,
-		"from", transition.From, "to", transition.To, "value", transition.Value)
+		"labels", transition.Labels, "from", transition.From, "to", transition.To,
+		"value", transition.Value)
 
 	if e.history != nil {
 		evt := &alert.Event{
@@ -148,6 +203,7 @@ func (e *Evaluator) evaluateRule(ctx context.Context, rule *alert.Rule, now time
 			"ruleName":  rule.Name,
 			"orgId":     rule.OrgID,
 			"metric":    rule.Metric,
+			"labels":    transition.Labels,
 			"fromState": transition.From,
 			"toState":   transition.To,
 			"value":     transition.Value,
@@ -158,5 +214,4 @@ func (e *Evaluator) evaluateRule(ctx context.Context, rule *alert.Rule, now time
 			}
 		}
 	}
-	return true, nil
 }

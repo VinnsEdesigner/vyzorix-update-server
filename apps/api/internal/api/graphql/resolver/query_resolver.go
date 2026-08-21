@@ -9,9 +9,9 @@ import (
 	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
-	annotationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/annotation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
+	annotationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/annotation"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	orgdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/graphql-go/graphql"
@@ -1239,11 +1239,11 @@ func (r *Resolver) GetAlertRules(p graphql.ResolveParams) (interface{}, error) {
 			"threshold":             v.Rule.Threshold,
 			"forSeconds":            v.Rule.ForSeconds,
 			"notifyIntervalSeconds": v.Rule.NotifyIntervalSeconds,
+			"onNoData":              string(v.Rule.OnNoData),
+			"onError":               string(v.Rule.OnError),
 			"webhookUrl":            v.Rule.WebhookURL,
 			"enabled":               v.Rule.Enabled,
-			"state":                 string(v.State),
-			"value":                 v.Value,
-			"evaluatedAt":           v.EvaluatedAt,
+			"instances":             alertInstanceViews(v.Instances),
 			"createdAt":             v.Rule.CreatedAt,
 			"updatedAt":             v.Rule.UpdatedAt,
 		})

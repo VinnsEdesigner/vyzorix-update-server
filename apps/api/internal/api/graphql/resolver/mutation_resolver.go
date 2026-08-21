@@ -7,10 +7,10 @@ import (
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
 	alertapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/alert"
+	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	notifications "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
 	serviceaccount "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
-	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
 	annotationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/annotation"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
@@ -849,6 +849,19 @@ func (r *Resolver) EvaluateAlertRule(p graphql.ResolveParams) (interface{}, erro
 	return transitioned, nil
 }
 
+func alertInstanceViews(instances []alertapp.InstanceView) []map[string]interface{} {
+	out := make([]map[string]interface{}, 0, len(instances))
+	for _, inst := range instances {
+		out = append(out, map[string]interface{}{
+			"labels":      inst.Labels,
+			"state":       string(inst.State),
+			"value":       inst.Value,
+			"evaluatedAt": inst.EvaluatedAt,
+		})
+	}
+	return out
+}
+
 func (r *Resolver) alertRuleView(p graphql.ResolveParams, orgID, ruleID string) (interface{}, error) {
 	view, err := r.AlertSvc.GetRule(p.Context, orgID, ruleID)
 	if err != nil {
@@ -863,11 +876,11 @@ func (r *Resolver) alertRuleView(p graphql.ResolveParams, orgID, ruleID string) 
 		"threshold":             view.Rule.Threshold,
 		"forSeconds":            view.Rule.ForSeconds,
 		"notifyIntervalSeconds": view.Rule.NotifyIntervalSeconds,
+		"onNoData":              string(view.Rule.OnNoData),
+		"onError":               string(view.Rule.OnError),
 		"webhookUrl":            view.Rule.WebhookURL,
 		"enabled":               view.Rule.Enabled,
-		"state":                 string(view.State),
-		"value":                 view.Value,
-		"evaluatedAt":           view.EvaluatedAt,
+		"instances":             alertInstanceViews(view.Instances),
 		"createdAt":             view.Rule.CreatedAt,
 		"updatedAt":             view.Rule.UpdatedAt,
 	}, nil

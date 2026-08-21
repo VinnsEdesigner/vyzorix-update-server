@@ -1004,6 +1004,8 @@ func alertMutations(res *resolver.Resolver) graphql.Fields {
 				"threshold":             &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Float)},
 				"forSeconds":            &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
 				"notifyIntervalSeconds": &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
+				"onNoData":              &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: ""},
+				"onError":               &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: ""},
 				"webhookUrl":            &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: ""},
 				"enabled":               &graphql.ArgumentConfig{Type: graphql.Boolean, DefaultValue: true},
 			},
@@ -1021,6 +1023,8 @@ func alertMutations(res *resolver.Resolver) graphql.Fields {
 				"threshold":             &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.Float)},
 				"forSeconds":            &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
 				"notifyIntervalSeconds": &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 0},
+				"onNoData":              &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: ""},
+				"onError":               &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: ""},
 				"webhookUrl":            &graphql.ArgumentConfig{Type: graphql.String, DefaultValue: ""},
 				"enabled":               &graphql.ArgumentConfig{Type: graphql.Boolean, DefaultValue: true},
 			},
@@ -1046,7 +1050,6 @@ func alertMutations(res *resolver.Resolver) graphql.Fields {
 		},
 	}
 }
-
 
 func contactPointQueries(res *resolver.Resolver) graphql.Fields {
 	return graphql.Fields{
@@ -1111,7 +1114,6 @@ func contactPointMutations(res *resolver.Resolver) graphql.Fields {
 	}
 }
 
-
 func serviceAccountQueries(res *resolver.Resolver) graphql.Fields {
 	return graphql.Fields{
 		"serviceAccounts": &graphql.Field{
@@ -1140,7 +1142,7 @@ func serviceAccountMutations(res *resolver.Resolver) graphql.Fields {
 			Type:        graphql.Boolean,
 			Description: "Delete an org-scoped service account (revokes all tokens)",
 			Args: graphql.FieldConfigArgument{
-				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"organizationId":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				"serviceAccountId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			},
 			Resolve: res.DeleteServiceAccount,
@@ -1149,11 +1151,11 @@ func serviceAccountMutations(res *resolver.Resolver) graphql.Fields {
 			Type:        ServiceAccountTokenType,
 			Description: "Create a service account token (full key returned once)",
 			Args: graphql.FieldConfigArgument{
-				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"organizationId":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				"serviceAccountId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-				"name":            &graphql.ArgumentConfig{Type: graphql.String},
-				"scopes":          &graphql.ArgumentConfig{Type: graphql.NewList(graphql.String)},
-				"expiresAt":       &graphql.ArgumentConfig{Type: graphql.String},
+				"name":             &graphql.ArgumentConfig{Type: graphql.String},
+				"scopes":           &graphql.ArgumentConfig{Type: graphql.NewList(graphql.String)},
+				"expiresAt":        &graphql.ArgumentConfig{Type: graphql.String},
 			},
 			Resolve: res.CreateServiceAccountToken,
 		},
@@ -1161,15 +1163,14 @@ func serviceAccountMutations(res *resolver.Resolver) graphql.Fields {
 			Type:        ServiceAccountTokenType,
 			Description: "Rotate a service account token (old revoked, new created)",
 			Args: graphql.FieldConfigArgument{
-				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
+				"organizationId":   &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String)},
 				"serviceAccountId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
-				"tokenId":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
+				"tokenId":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID)},
 			},
 			Resolve: res.RotateServiceAccountToken,
 		},
 	}
 }
-
 
 func annotationQueries(res *resolver.Resolver) graphql.Fields {
 	return graphql.Fields{
@@ -1178,10 +1179,10 @@ func annotationQueries(res *resolver.Resolver) graphql.Fields {
 			Description: "List annotations for an organization, newest first",
 			Args: graphql.FieldConfigArgument{
 				"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
-				"tag":           &graphql.ArgumentConfig{Type: graphql.String, Description: "Filter by tag"},
-				"startTime":     &graphql.ArgumentConfig{Type: graphql.String, Description: "Filter start (RFC3339)"},
-				"endTime":       &graphql.ArgumentConfig{Type: graphql.String, Description: "Filter end (RFC3339)"},
-				"limit":         &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 200},
+				"tag":            &graphql.ArgumentConfig{Type: graphql.String, Description: "Filter by tag"},
+				"startTime":      &graphql.ArgumentConfig{Type: graphql.String, Description: "Filter start (RFC3339)"},
+				"endTime":        &graphql.ArgumentConfig{Type: graphql.String, Description: "Filter end (RFC3339)"},
+				"limit":          &graphql.ArgumentConfig{Type: graphql.Int, DefaultValue: 200},
 			},
 			Resolve: res.GetAnnotations,
 		},

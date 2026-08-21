@@ -35,13 +35,15 @@ func (h *Handler) Service() *alertapp.Service {
 }
 
 type ruleRequest struct {
+	Threshold             float64 `json:"threshold"`
+	ForSeconds            int     `json:"for_seconds"`
+	NotifyIntervalSeconds int     `json:"notify_interval_seconds"`
 	Name                  string  `json:"name"`
 	Metric                string  `json:"metric"`
 	Condition             string  `json:"condition"`
 	WebhookURL            string  `json:"webhook_url"`
-	Threshold             float64 `json:"threshold"`
-	ForSeconds            int     `json:"for_seconds"`
-	NotifyIntervalSeconds int     `json:"notify_interval_seconds"`
+	OnNoData              string  `json:"on_no_data"`
+	OnError               string  `json:"on_error"`
 	Enabled               bool    `json:"enabled"`
 }
 
@@ -54,6 +56,8 @@ func (r *ruleRequest) toInput(orgID string) *alertapp.RuleInput {
 		Threshold:             r.Threshold,
 		ForSeconds:            r.ForSeconds,
 		NotifyIntervalSeconds: r.NotifyIntervalSeconds,
+		OnNoData:              alert.NoDataPolicy(r.OnNoData),
+		OnError:               alert.ErrorPolicy(r.OnError),
 		WebhookURL:            r.WebhookURL,
 		Enabled:               r.Enabled,
 	}
@@ -61,6 +65,15 @@ func (r *ruleRequest) toInput(orgID string) *alertapp.RuleInput {
 
 func ruleJSON(v *alertapp.RuleView) gin.H {
 	rule := v.Rule
+	instances := make([]gin.H, 0, len(v.Instances))
+	for _, inst := range v.Instances {
+		instances = append(instances, gin.H{
+			"labels":       inst.Labels,
+			"state":        string(inst.State),
+			"value":        inst.Value,
+			"evaluated_at": inst.EvaluatedAt,
+		})
+	}
 	return gin.H{
 		"id":                      rule.ID,
 		"org_id":                  rule.OrgID,
@@ -74,9 +87,9 @@ func ruleJSON(v *alertapp.RuleView) gin.H {
 		"webhook_url":             rule.WebhookURL,
 		"created_at":              rule.CreatedAt,
 		"updated_at":              rule.UpdatedAt,
-		"state":                   string(v.State),
-		"value":                   v.Value,
-		"evaluated_at":            v.EvaluatedAt,
+		"on_no_data":              string(rule.OnNoData),
+		"on_error":                string(rule.OnError),
+		"instances":               instances,
 	}
 }
 

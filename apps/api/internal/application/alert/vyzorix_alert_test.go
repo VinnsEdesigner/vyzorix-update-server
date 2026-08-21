@@ -41,13 +41,13 @@ func setupAlertTestDB(t *testing.T) *storage.SQLite {
 	return s
 }
 
-func insertDevice(t *testing.T, s *storage.SQLite, id, orgID string, online int) {
+func insertDevice(t *testing.T, s *storage.SQLite, id, orgID, deviceClass string, online int) {
 	t.Helper()
 	now := time.Now().UnixMilli()
 	_, err := s.DB().Exec(
-		`INSERT INTO devices (id, firebase_install_id, command_secret, online, registered_at, last_seen, created_at, updated_at, organization_id)
-		 VALUES (?, ?, 'secret', ?, ?, ?, ?, ?, ?)`,
-		id, "fcm-"+id, online, now, now, now, now, orgID,
+		`INSERT INTO devices (id, firebase_install_id, command_secret, device_class, online, registered_at, last_seen, created_at, updated_at, organization_id)
+		 VALUES (?, ?, 'secret', ?, ?, ?, ?, ?, ?, ?)`,
+		id, "fcm-"+id, deviceClass, online, now, now, now, now, orgID,
 	)
 	if err != nil {
 		t.Fatalf("insert device %s: %v", id, err)
@@ -63,6 +63,18 @@ func insertCommand(t *testing.T, s *storage.SQLite, id, deviceID, status string,
 	if err != nil {
 		t.Fatalf("insert command %s: %v", id, err)
 	}
+}
+
+func aggregateInstance(t *testing.T, states *storage.AlertStateRepository, ctx context.Context, ruleID string, hash string) *alert.Instance {
+	instances, err := states.GetByRuleID(ctx, ruleID)
+	if err != nil {
+		t.Fatalf("GetByRuleID: %v", err)
+	}
+	inst, ok := instances[hash]
+	if !ok {
+		t.Fatalf("expected instance for hash %q, got %+v", hash, instances)
+	}
+	return inst
 }
 
 func TestService_CRUDAndScoping(t *testing.T) {
@@ -81,6 +93,8 @@ func TestService_CRUDAndScoping(t *testing.T) {
 		Condition:  alert.ConditionGt,
 		Threshold:  1,
 		ForSeconds: 0,
+		OnNoData:   alert.NoDataNoData,
+		OnError:    alert.ErrorResolve,
 		Enabled:    true,
 	}
 	rule, err := service.CreateRule(ctx, in)
@@ -89,6 +103,9 @@ func TestService_CRUDAndScoping(t *testing.T) {
 	}
 	if rule.ID == "" {
 		t.Fatal("expected generated rule ID")
+	}
+	if rule.OnNoData != alert.NoDataNoData || rule.OnError != alert.ErrorResolve {
+		t.Errorf("policies not carried: %+v", rule)
 	}
 
 	// Invalid input rejected.
@@ -102,7 +119,7 @@ func TestService_CRUDAndScoping(t *testing.T) {
 		t.Errorf("cross-org GetRule: %v", err)
 	}
 
-	// Update + disable clears the instance.
+	// Update + disable clears the instances.
 	in.Enabled = false
 	in.Name = "renamed"
 	if _, err := service.UpdateRule(ctx, "org-1", rule.ID, in); err != nil {
@@ -131,9 +148,9 @@ func TestEvaluator_FiresOnOfflineCount(t *testing.T) {
 	states := storage.NewAlertStateRepository(s.DB())
 	ctx := context.Background()
 
-	insertDevice(t, s, "dev-1", "org-1", 0)
-	insertDevice(t, s, "dev-2", "org-1", 0)
-	insertDevice(t, s, "dev-3", "org-1", 1)
+	insertDevice(t, s, "dev-1", "org-1", "tablet", 0)
+	insertDevice(t, s, "dev-2", "org-1", "tablet", 0)
+	insertDevice(t, s, "dev-3", "org-1", "phone", 1)
 
 	rule := &alert.Rule{
 		ID:         "rule-1",
@@ -155,38 +172,36 @@ func TestEvaluator_FiresOnOfflineCount(t *testing.T) {
 	hub := &recordingHub{}
 	evaluator := NewEvaluator(rules, states, storage.NewAlertHistoryRepository(s.DB()), NewMetricSource(s.DB(), 0), notifier, hub, nil)
 
+	// Two breaching series: tablet (2 offline) + fleet aggregate (2 offline).
 	transitions, err := evaluator.EvaluateAll(ctx, time.Now())
 	if err != nil {
 		t.Fatalf("EvaluateAll: %v", err)
 	}
-	if transitions != 1 {
-		t.Errorf("transitions = %d, want 1", transitions)
+	if transitions != 2 {
+		t.Errorf("transitions = %d, want 2 (tablet + aggregate)", transitions)
 	}
-	if len(notifier.notifications) != 1 || !notifier.notifications[0].Transition.Firing() {
-		t.Fatalf("expected one firing notification, got %+v", notifier.notifications)
+	if len(notifier.notifications) != 2 {
+		t.Fatalf("expected two firing notifications, got %d", len(notifier.notifications))
 	}
 
-	inst, err := states.GetByRuleID(ctx, rule.ID)
-	if err != nil {
-		t.Fatalf("GetByRuleID: %v", err)
-	}
+	inst := aggregateInstance(t, states, ctx, rule.ID, "")
 	if inst.State != alert.StateFiring {
-		t.Errorf("state = %s, want firing", inst.State)
+		t.Errorf("aggregate state = %s, want firing", inst.State)
 	}
 
-	// Devices recover: resolves and notifies.
+	// Devices recover: both series resolve.
 	if _, err := s.DB().Exec(`UPDATE devices SET online = 1`); err != nil {
 		t.Fatalf("update devices: %v", err)
 	}
 	if _, err := evaluator.EvaluateAll(ctx, time.Now()); err != nil {
 		t.Fatalf("EvaluateAll resolve: %v", err)
 	}
-	inst, _ = states.GetByRuleID(ctx, rule.ID)
+	inst = aggregateInstance(t, states, ctx, rule.ID, "")
 	if inst.State != alert.StateInactive {
-		t.Errorf("state = %s, want inactive", inst.State)
+		t.Errorf("aggregate state = %s, want inactive", inst.State)
 	}
-	if len(notifier.notifications) != 2 {
-		t.Errorf("expected firing+resolved notifications, got %d", len(notifier.notifications))
+	if len(notifier.notifications) != 4 {
+		t.Errorf("expected firing+resolved notifications per series, got %d", len(notifier.notifications))
 	}
 }
 
@@ -196,7 +211,7 @@ func TestEvaluator_CommandFailureRatePercent(t *testing.T) {
 	states := storage.NewAlertStateRepository(s.DB())
 	ctx := context.Background()
 
-	insertDevice(t, s, "dev-1", "org-1", 1)
+	insertDevice(t, s, "dev-1", "org-1", "tablet", 1)
 	now := time.Now()
 	insertCommand(t, s, "cmd-1", "dev-1", "completed", now.Add(-time.Minute))
 	insertCommand(t, s, "cmd-2", "dev-1", "failed", now.Add(-time.Minute))
@@ -218,19 +233,17 @@ func TestEvaluator_CommandFailureRatePercent(t *testing.T) {
 		t.Fatalf("Save: %v", err)
 	}
 
-	// 50% failure exactly at threshold: not breached with gte? It is: >=.
 	notifier := &recordingNotifier{}
 	hub := &recordingHub{}
 	evaluator := NewEvaluator(rules, states, storage.NewAlertHistoryRepository(s.DB()), NewMetricSource(s.DB(), 0), notifier, hub, nil)
 	if _, err := evaluator.EvaluateAll(ctx, now); err != nil {
 		t.Fatalf("EvaluateAll: %v", err)
 	}
-	inst, _ := states.GetByRuleID(ctx, rule.ID)
+	inst := aggregateInstance(t, states, ctx, rule.ID, "")
 	if inst.State != alert.StateFiring || inst.LastValue != 50 {
 		t.Errorf("state = %s value = %v, want firing at 50", inst.State, inst.LastValue)
 	}
 
-	// Hub broadcasts the text once.
 	if len(hub.eventTypes) != 1 || hub.eventTypes[0] != "alert_notification" {
 		t.Errorf("expected one hub broadcast, got %+v", hub.eventTypes)
 	}
@@ -243,7 +256,7 @@ func TestEvaluator_CommandFailureRatePercent(t *testing.T) {
 	if _, err := evaluator.EvaluateAll(ctx, now); err != nil {
 		t.Fatalf("EvaluateAll: %v", err)
 	}
-	inst, _ = states.GetByRuleID(ctx, rule.ID)
+	inst = aggregateInstance(t, states, ctx, rule.ID, "")
 	if inst.State != alert.StateInactive {
 		t.Errorf("state = %s, want inactive after condition change", inst.State)
 	}
@@ -255,7 +268,7 @@ func TestEvaluator_PendingHoldsUntilForDuration(t *testing.T) {
 	states := storage.NewAlertStateRepository(s.DB())
 	ctx := context.Background()
 
-	insertDevice(t, s, "dev-1", "org-1", 0)
+	insertDevice(t, s, "dev-1", "org-1", "tablet", 0)
 
 	rule := &alert.Rule{
 		ID:         "rule-1",
@@ -279,7 +292,7 @@ func TestEvaluator_PendingHoldsUntilForDuration(t *testing.T) {
 	if _, err := evaluator.EvaluateAll(ctx, t0); err != nil {
 		t.Fatalf("EvaluateAll: %v", err)
 	}
-	inst, _ := states.GetByRuleID(ctx, rule.ID)
+	inst := aggregateInstance(t, states, ctx, rule.ID, "")
 	if inst.State != alert.StatePending {
 		t.Errorf("state = %s, want pending during For window", inst.State)
 	}
@@ -287,37 +300,143 @@ func TestEvaluator_PendingHoldsUntilForDuration(t *testing.T) {
 	if _, err := evaluator.EvaluateAll(ctx, t0.Add(90*time.Second)); err != nil {
 		t.Fatalf("EvaluateAll: %v", err)
 	}
-	inst, _ = states.GetByRuleID(ctx, rule.ID)
+	inst = aggregateInstance(t, states, ctx, rule.ID, "")
 	if inst.State != alert.StateFiring {
 		t.Errorf("state = %s, want firing after For elapsed", inst.State)
 	}
 }
 
-func TestMetricSource_OfflinePercent(t *testing.T) {
+func TestMetricSource_LabelFanOut(t *testing.T) {
 	s := setupAlertTestDB(t)
 	ctx := context.Background()
 
-	insertDevice(t, s, "dev-1", "org-1", 0)
-	insertDevice(t, s, "dev-2", "org-1", 1)
-	insertDevice(t, s, "dev-3", "org-1", 1)
-	insertDevice(t, s, "dev-4", "org-1", 1)
+	insertDevice(t, s, "dev-1", "org-1", "tablet", 0)
+	insertDevice(t, s, "dev-2", "org-1", "tablet", 1)
+	insertDevice(t, s, "dev-3", "org-1", "phone", 1)
+	insertDevice(t, s, "dev-4", "org-1", "phone", 1)
 
 	source := NewMetricSource(s.DB(), 0)
-	value, err := source.Value(ctx, "org-1", alert.MetricDeviceOfflinePercent, time.Now())
+	series, err := source.Series(ctx, "org-1", alert.MetricDeviceOfflinePercent, time.Now())
 	if err != nil {
-		t.Fatalf("Value: %v", err)
+		t.Fatalf("Series: %v", err)
 	}
-	if value != 25 {
-		t.Errorf("offline percent = %v, want 25", value)
+	if len(series) != 3 {
+		t.Fatalf("expected 2 class series + aggregate, got %d", len(series))
+	}
+	byClass := make(map[string]float64)
+	var aggregate *LabelSeries
+	for _, obs := range series {
+		if obs.Labels == nil {
+			aggregate = obs
+			continue
+		}
+		byClass[obs.Labels["device_class"]] = obs.Value
+	}
+	if aggregate == nil || aggregate.Value != 25 {
+		t.Errorf("aggregate offline percent = %v, want 25", series)
+	}
+	if byClass["tablet"] != 50 || byClass["phone"] != 0 {
+		t.Errorf("class breakdown wrong: %+v", byClass)
 	}
 
-	// Empty fleet reports 0 rather than NaN.
-	value, err = source.Value(ctx, "org-empty", alert.MetricDeviceOfflinePercent, time.Now())
+	// Empty fleet: percent reports no data.
+	series, err = source.Series(ctx, "org-empty", alert.MetricDeviceOfflinePercent, time.Now())
 	if err != nil {
-		t.Fatalf("Value empty: %v", err)
+		t.Fatalf("Series empty: %v", err)
 	}
-	if value != 0 {
-		t.Errorf("empty fleet percent = %v, want 0", value)
+	if len(series) != 1 || !series[0].NoData {
+		t.Errorf("empty fleet should report no-data, got %+v", series)
+	}
+}
+
+func TestMetricSource_NoDataFailureRate(t *testing.T) {
+	s := setupAlertTestDB(t)
+	ctx := context.Background()
+
+	insertDevice(t, s, "dev-1", "org-1", "tablet", 1)
+
+	source := NewMetricSource(s.DB(), 0)
+	series, err := source.Series(ctx, "org-1", alert.MetricCommandFailureRate, time.Now())
+	if err != nil {
+		t.Fatalf("Series: %v", err)
+	}
+	if len(series) != 1 || !series[0].NoData {
+		t.Errorf("zero-command window should flag no-data: %+v", series)
+	}
+}
+
+func TestEvaluator_NoDataPolicyBridges(t *testing.T) {
+	s := setupAlertTestDB(t)
+	rules := storage.NewAlertRuleRepository(s.DB())
+	states := storage.NewAlertStateRepository(s.DB())
+	ctx := context.Background()
+
+	insertDevice(t, s, "dev-1", "org-1", "tablet", 1)
+
+	rule := &alert.Rule{
+		ID:        "rule-1",
+		OrgID:     "org-1",
+		Name:      "failure rate on no-data",
+		Metric:    alert.MetricCommandFailureRate,
+		Condition: alert.ConditionGte,
+		Threshold: 50,
+		Enabled:   true,
+		OnNoData:  alert.NoDataNoData,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := rules.Save(ctx, rule); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	notifier := &recordingNotifier{}
+	evaluator := NewEvaluator(rules, states, nil, NewMetricSource(s.DB(), 0), notifier, nil, nil)
+	if _, err := evaluator.EvaluateAll(ctx, time.Now()); err != nil {
+		t.Fatalf("EvaluateAll: %v", err)
+	}
+	inst := aggregateInstance(t, states, ctx, rule.ID, "")
+	if inst.State != alert.StateNoData {
+		t.Errorf("state = %s, want no_data with on_no_data policy", inst.State)
+	}
+	if len(notifier.notifications) != 1 {
+		t.Errorf("expected no-data entry notification, got %d", len(notifier.notifications))
+	}
+
+	// A rule resolving on no-data recovers a firing instance.
+	ruleMapping := &alert.Rule{
+		ID:        "rule-2",
+		OrgID:     "org-1",
+		Name:      "failure rate resolve on no-data",
+		Metric:    alert.MetricCommandFailureRate,
+		Condition: alert.ConditionGte,
+		Threshold: 50,
+		Enabled:   true,
+		OnNoData:  alert.NoDataResolve,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := rules.Save(ctx, ruleMapping); err != nil {
+		t.Fatalf("Save second: %v", err)
+	}
+	now := time.Now()
+	insertCommand(t, s, "cmd-1", "dev-1", "failed", now.Add(-time.Minute))
+	if _, err := evaluator.EvaluateAll(ctx, now); err != nil {
+		t.Fatalf("EvaluateAll second: %v", err)
+	}
+	inst = aggregateInstance(t, states, ctx, ruleMapping.ID, "")
+	if inst.State != alert.StateFiring {
+		t.Fatalf("expected firing with commands present, got %s", inst.State)
+	}
+	// Window expires without new commands: no-data resolve heals.
+	if _, err := s.DB().Exec(`DELETE FROM commands`); err != nil {
+		t.Fatalf("prune commands: %v", err)
+	}
+	if _, err := evaluator.EvaluateAll(ctx, now); err != nil {
+		t.Fatalf("EvaluateAll no-data: %v", err)
+	}
+	inst = aggregateInstance(t, states, ctx, ruleMapping.ID, "")
+	if inst.State != alert.StateInactive {
+		t.Errorf("state = %s, want resolved on no-data policy", inst.State)
 	}
 }
 
@@ -328,7 +447,7 @@ func TestHistory_AppendAndQuery(t *testing.T) {
 	history := storage.NewAlertHistoryRepository(s.DB())
 	ctx := context.Background()
 
-	insertDevice(t, s, "dev-1", "org-1", 0)
+	insertDevice(t, s, "dev-1", "org-1", "tablet", 0)
 
 	rule := &alert.Rule{
 		ID:        "rule-1",
@@ -354,14 +473,14 @@ func TestHistory_AppendAndQuery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListByOrg: %v", err)
 	}
-	if len(events) != 1 {
-		t.Fatalf("expected one event, got %d", len(events))
+	// Class series + aggregate both fired.
+	if len(events) != 2 {
+		t.Fatalf("expected class+aggregate events, got %d", len(events))
 	}
 	if events[0].FromState != alert.StateInactive || events[0].ToState != alert.StateFiring {
 		t.Errorf("event states wrong: %+v", events[0])
 	}
 
-	// Reverse resolve adds second event.
 	if _, err := s.DB().Exec(`UPDATE devices SET online = 1`); err != nil {
 		t.Fatalf("update: %v", err)
 	}
@@ -369,8 +488,8 @@ func TestHistory_AppendAndQuery(t *testing.T) {
 		t.Fatalf("EvaluateAll: %v", err)
 	}
 	events, _ = history.ListByOrg(ctx, "org-1", "", 10)
-	if len(events) != 2 {
-		t.Errorf("expected two events, got %d", len(events))
+	if len(events) != 4 {
+		t.Errorf("expected firing+resolved for both series, got %d", len(events))
 	}
 }
 
@@ -380,7 +499,7 @@ func TestEvaluator_RepeatNotifications(t *testing.T) {
 	states := storage.NewAlertStateRepository(s.DB())
 	ctx := context.Background()
 
-	insertDevice(t, s, "dev-1", "org-1", 0)
+	insertDevice(t, s, "dev-1", "org-1", "tablet", 0)
 
 	rule := &alert.Rule{
 		ID:                    "rule-1",
@@ -405,35 +524,35 @@ func TestEvaluator_RepeatNotifications(t *testing.T) {
 	if _, err := evaluator.EvaluateAll(ctx, t0); err != nil {
 		t.Fatalf("EvaluateAll: %v", err)
 	}
-	if len(notifier.notifications) != 1 {
-		t.Fatalf("expected firing notification, got %d", len(notifier.notifications))
+	if len(notifier.notifications) != 2 {
+		t.Fatalf("expected firing notifications (class+aggregate), got %d", len(notifier.notifications))
 	}
 
 	// Within re-notify window: no new notification.
 	if _, err := evaluator.EvaluateAll(ctx, t0.Add(30*time.Second)); err != nil {
 		t.Fatalf("EvaluateAll: %v", err)
 	}
-	if len(notifier.notifications) != 1 {
+	if len(notifier.notifications) != 2 {
 		t.Errorf("window should suppress, got %d notifications", len(notifier.notifications))
 	}
 
-	// Past interval: fires again.
+	// Past interval: fires again per series.
 	if _, err := evaluator.EvaluateAll(ctx, t0.Add(61*time.Second)); err != nil {
 		t.Fatalf("EvaluateAll: %v", err)
 	}
-	if len(notifier.notifications) != 2 {
-		t.Errorf("expected re-notification, got %d", len(notifier.notifications))
+	if len(notifier.notifications) != 4 {
+		t.Errorf("expected re-notification per series, got %d", len(notifier.notifications))
 	}
 
-	// Clears after resolve (even though only resolved once).
+	// Resolves once, firing stops re-notifying.
 	if _, err := s.DB().Exec(`UPDATE devices SET online = 1`); err != nil {
 		t.Fatalf("update: %v", err)
 	}
 	if _, err := evaluator.EvaluateAll(ctx, t0.Add(2*time.Minute)); err != nil {
 		t.Fatalf("EvaluateAll: %v", err)
 	}
-	count := len(notifier.notifications)
-	if count != 3 && !notifier.notifications[count-1].Transition.Resolved() {
-		t.Errorf("expected resolved notify, got %d events", count)
+	last := notifier.notifications[len(notifier.notifications)-1]
+	if !last.Transition.Resolved() {
+		t.Errorf("expected resolved notify as last event, got %d events", len(notifier.notifications))
 	}
 }

@@ -75,12 +75,6 @@ func (c Condition) Breached(value, threshold float64) bool {
 type Rule struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
-	ID         string
-	OrgID      string
-	Name       string
-	WebhookURL string
-	Metric     Metric
-	Condition  Condition
 	Threshold  float64
 	// ForSeconds is how long the condition must hold before firing
 	// (0 = fire immediately on breach).
@@ -88,7 +82,63 @@ type Rule struct {
 	// NotifyIntervalSeconds re-notifies while still firing after this elapsed
 	// (0 = notify once at firing and once at resolve).
 	NotifyIntervalSeconds int
-	Enabled               bool
+	ID         string
+	OrgID      string
+	Name       string
+	WebhookURL string
+	Metric     Metric
+	Condition  Condition
+	// OnNoData routes the instance when the metric source has no signal:
+	// "ignore" (default), "no_data", or "resolve".
+	OnNoData NoDataPolicy
+	// OnError routes the instance when the metric source fails: "ignore"
+	// (default), "error", or "resolve".
+	OnError ErrorPolicy
+	Enabled bool
+}
+
+// NoDataPolicy routes the instance when the metric source has no signal.
+type NoDataPolicy string
+
+const (
+	// NoDataIgnore leaves the instance untouched (legacy default).
+	NoDataIgnore NoDataPolicy = "ignore"
+	// NoDataNoData transitions the instance to no_data.
+	NoDataNoData NoDataPolicy = "no_data"
+	// NoDataResolve resolves the instance exactly like a recovered value.
+	NoDataResolve NoDataPolicy = "resolve"
+)
+
+// Valid reports whether the policy is known. The empty string means the
+// legacy default (ignore).
+func (p NoDataPolicy) Valid() bool {
+	switch p {
+	case "", NoDataIgnore, NoDataNoData, NoDataResolve:
+		return true
+	}
+	return false
+}
+
+// ErrorPolicy routes the instance when the metric source fails.
+type ErrorPolicy string
+
+const (
+	// ErrorIgnore leaves the instance untouched (legacy default).
+	ErrorIgnore ErrorPolicy = "ignore"
+	// ErrorError transitions the instance to error.
+	ErrorError ErrorPolicy = "error"
+	// ErrorResolve resolves the instance exactly like a recovered value.
+	ErrorResolve ErrorPolicy = "resolve"
+)
+
+// Valid reports whether the policy is known. The empty string means the
+// legacy default (ignore).
+func (p ErrorPolicy) Valid() bool {
+	switch p {
+	case "", ErrorIgnore, ErrorError, ErrorResolve:
+		return true
+	}
+	return false
 }
 
 // Validate checks the rule is well-formed and internally consistent.
@@ -110,6 +160,12 @@ func (r *Rule) Validate() error {
 	}
 	if r.NotifyIntervalSeconds < 0 {
 		return errors.New("notify_interval_seconds cannot be negative")
+	}
+	if !r.OnNoData.Valid() {
+		return fmt.Errorf("invalid on_no_data %q", r.OnNoData)
+	}
+	if !r.OnError.Valid() {
+		return fmt.Errorf("invalid on_error %q", r.OnError)
 	}
 	return nil
 }
