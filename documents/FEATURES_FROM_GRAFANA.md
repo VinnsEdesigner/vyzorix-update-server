@@ -117,11 +117,16 @@ point. They are ordered by implementation priority.
 - **Plan:** extend `domain/lifecycle` into a manager: named services, ordered
   graceful shutdown, per-service health for `/healthz`.
 
-### 10. Usage stats service [ ]
+### 10. Usage stats service [x]
 
 - **Grafana reference:** `pkg/infra/usagestats`
 - **Plan:** periodic self-telemetry (version, feature-toggle state, entity counts);
   feeds the existing admin update-checker.
+- **Status:** implemented. `usagestats.Service` + `Collector` (entity counts +
+  feature toggles), `UsageStatsWorker` (lifecycle-registered, lock-guarded,
+  6h interval) and the update-checker response embeds the snapshot as
+  `usage_stats`. Build version flows via `-ldflags -X main.Version` (banner +
+  `ServerConfig.Version`) — no hardcoded stamp.
 
 ### 11. Org-scoped live channels [ ]
 
