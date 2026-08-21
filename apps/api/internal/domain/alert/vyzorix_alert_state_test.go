@@ -165,3 +165,93 @@ func TestRule_Validate(t *testing.T) {
 		}
 	}
 }
+
+func TestEvaluate_NoDataPolicy(t *testing.T) {
+	// Default (ignore): no state change, no transition.
+	rule := testRule(0)
+	inst := NewInstance(rule.ID, nil)
+	t0 := time.Now()
+	if tr := inst.EvaluateNoData(rule, t0); tr != nil {
+		t.Fatalf("expected no transition on default policy, got %+v", tr)
+	}
+	if inst.State != StateInactive {
+		t.Errorf("state = %s, want inactive", inst.State)
+	}
+
+	// no_data policy routes the instance and notifies.
+	rule.OnNoData = NoDataNoData
+	if tr := inst.EvaluateNoData(rule, t0); tr == nil || tr.To != StateNoData {
+		t.Fatalf("expected transition to no_data, got %+v", tr)
+	}
+	if inst.State != StateNoData {
+		t.Errorf("state = %s, want no_data", inst.State)
+	}
+
+	// The next real observation recovers from no_data.
+	if tr := inst.Evaluate(rule, 2, t0.Add(time.Minute)); tr != nil {
+		t.Fatalf("expected clean resume without transition, got %+v", tr)
+	}
+	if inst.State != StateInactive {
+		t.Errorf("state = %s, want inactive after recovery", inst.State)
+	}
+
+	// resolve policy closes a firing instance.
+	rule2 := testRule(0)
+	rule2.OnNoData = NoDataResolve
+	inst2 := NewInstance(rule2.ID, nil)
+	inst2.Evaluate(rule2, 10, t0)
+	if inst2.State != StateFiring {
+		t.Fatalf("state = %s, want firing", inst2.State)
+	}
+	tr := inst2.EvaluateNoData(rule2, t0.Add(time.Minute))
+	if tr == nil || !tr.Resolved() {
+		t.Fatalf("expected resolved transition, got %+v", tr)
+	}
+}
+
+func TestEvaluate_ErrorPolicy(t *testing.T) {
+	rule := testRule(0)
+	rule.OnError = ErrorError
+	inst := NewInstance(rule.ID, nil)
+	t0 := time.Now()
+
+	tr := inst.EvaluateError(rule, t0)
+	if tr == nil || tr.To != StateError {
+		t.Fatalf("expected transition to error, got %+v", tr)
+	}
+	// Second consecutive error: no further transition.
+	if tr := inst.EvaluateError(rule, t0.Add(time.Minute)); tr != nil {
+		t.Fatalf("expected single error notification, got %+v", tr)
+	}
+	// Healthy tick recovers to the value-driven path.
+	if tr := inst.Evaluate(rule, 2, t0.Add(2*time.Minute)); tr != nil {
+		t.Fatalf("expected clean resume, got %+v", tr)
+	}
+	if inst.State != StateInactive {
+		t.Errorf("state = %s, want inactive after recovery", inst.State)
+	}
+
+	// resolve policy closes a pending instance.
+	ruleResolve := testRule(60)
+	ruleResolve.OnError = ErrorResolve
+	inst2 := NewInstance(ruleResolve.ID, nil)
+	inst2.Evaluate(ruleResolve, 10, t0)
+	tr = inst2.EvaluateError(ruleResolve, t0.Add(10*time.Second))
+	if tr == nil || !tr.Resolved() {
+		t.Fatalf("expected resolved transition from pending, got %+v", tr)
+	}
+}
+
+func TestLabelsHash_Deterministic(t *testing.T) {
+	a := LabelsHash(map[string]string{"device_class": "tablet", "group": "a"})
+	b := LabelsHash(map[string]string{"group": "a", "device_class": "tablet"})
+	if a != b {
+		t.Errorf("hash order-sensitive: %q vs %q", a, b)
+	}
+	if LabelsHash(nil) != "" {
+		t.Error("empty labels must hash to empty string")
+	}
+	if LabelsHash(map[string]string{"device_class": "tablet"}) == LabelsHash(map[string]string{"device_class": "phone"}) {
+		t.Error("distinct label values collide")
+	}
+}

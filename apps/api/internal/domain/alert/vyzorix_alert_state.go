@@ -148,7 +148,7 @@ func (i *Instance) EvaluateNoData(rule *Rule, now time.Time) *Transition {
 // metric source failed. Returns a transition only when the policy changes
 // the state.
 func (i *Instance) EvaluateError(rule *Rule, now time.Time) *Transition {
-	from := i.startFrom(now)
+	from := i.State
 	switch rule.OnError {
 	case ErrorIgnore, "":
 		// leave untouched (default).
