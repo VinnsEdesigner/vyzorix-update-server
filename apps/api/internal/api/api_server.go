@@ -14,6 +14,7 @@ import (
 	alerthandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/alert"
 	annotationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/annotation"
 	authhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/auth"
+	channelhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/channel"
 	cmdhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/command"
 	cvhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/configversion"
 	confirmationhandlers "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/confirmation"
@@ -114,6 +115,7 @@ func (s *Server) LifecycleManager() *lifecycle.Manager {
 // Server is the main API server.
 type Server struct {
 	ContactPointHandler         *notificationhandlers.Handler
+	channelHandler              *channelhandlers.Handler
 	ServiceAccountHandler       *sahandlers.Handler
 	AnnotationHandler           *annotationhandlers.Handler
 	configVersionHandler        *cvhandlers.Handler
@@ -403,6 +405,8 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		adapter := wschannel.NewMessageMapAdapter(channelMgr)
 		s.AlertEvaluator.SetStreamPublisher(adapter)
 		s.alertHandler = alerthandlers.NewHandler(alertService, s.AlertEvaluator)
+		hubBridge := wschannel.NewHubBridge(channelMgr, cfg.Hub)
+		s.channelHandler = channelhandlers.NewHandler(hubBridge, presenter)
 
 		s.ContactPointHandler = notificationhandlers.NewHandler(notificationSvc, dispatcher)
 

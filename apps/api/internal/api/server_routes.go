@@ -245,8 +245,9 @@ func (s *Server) setupAuthenticatedRoutes() {
 	s.setupServiceAccountRoutes(tenantGroup)
 	s.setupAnnotationRoutes(tenantGroup)
 	s.setupConfigVersionRoutes(tenantGroup)
+	s.setupChannelRoutes(tenantGroup)
 
-	// API Keys management: SESSION ONLY (no API key auth for managing keys).
+	// Channel subscription routes: live channels (stream/<org>/<scope>).
 	// These routes manage API keys - shouldn't use API key auth.
 	s.setupAPIKeysRoutes(tenantGroup)
 
