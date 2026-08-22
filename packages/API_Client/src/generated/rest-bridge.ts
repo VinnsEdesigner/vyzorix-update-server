@@ -1,6 +1,6 @@
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import axios from 'axios';
-import { getRESTConfig } from '../../config';
+import { getRESTConfig } from '../config';
 
 // Axios instance seeded from the shared REST client configuration. All
 // generated endpoint functions call this so they inherit auth headers
