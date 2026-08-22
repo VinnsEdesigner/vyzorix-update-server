@@ -80,6 +80,16 @@ func parseExpiresAt(s *string) *time.Time {
 }
 
 // List handles GET /v1/service-accounts.
+// @Tags         service-accounts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /service-accounts [get]
+// @Tags         service-accounts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /service-accounts [get]
 func (h *Handler) List(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	accounts, err := h.service.List(c.Request.Context(), orgID)
@@ -95,6 +105,16 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // Create handles POST /v1/service-accounts.
+// @Tags         service-accounts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /service-accounts [post]
+// @Tags         service-accounts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /service-accounts [post]
 func (h *Handler) Create(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	var req createServiceAccountRequest
@@ -111,6 +131,16 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 // Delete handles DELETE /v1/service-accounts/:id.
+// @Tags         service-accounts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /service-accounts/{id} [delete]
+// @Tags         service-accounts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /service-accounts/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if err := h.service.Delete(c.Request.Context(), orgID, c.Param("id")); err != nil {
@@ -121,6 +151,11 @@ func (h *Handler) Delete(c *gin.Context) {
 }
 
 // ListTokens handles GET /v1/service-accounts/:id/tokens.
+// @Tags         service-accounts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /service-accounts/{id}/tokens [get]
 func (h *Handler) ListTokens(c *gin.Context) {
 	if _, err := h.service.Get(c.Request.Context(), middleware.GetOrganizationID(c), c.Param("id")); err != nil {
 		h.writeServiceError(c, err)
@@ -165,6 +200,11 @@ func (h *Handler) CreateToken(c *gin.Context) {
 }
 
 // RevokeToken handles DELETE /v1/service-accounts/:id/tokens/:token_id.
+// @Tags         service-accounts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /service-accounts/{id}/tokens/{token} [delete]
 func (h *Handler) RevokeToken(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if _, err := h.service.Get(c.Request.Context(), orgID, c.Param("id")); err != nil {
@@ -179,6 +219,11 @@ func (h *Handler) RevokeToken(c *gin.Context) {
 }
 
 // RotateToken handles POST /v1/service-accounts/:id/tokens/:token_id/rotate.
+// @Tags         service-accounts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /service-accounts/{id}/rotate [post]
 func (h *Handler) RotateToken(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if _, err := h.service.Get(c.Request.Context(), orgID, c.Param("id")); err != nil {

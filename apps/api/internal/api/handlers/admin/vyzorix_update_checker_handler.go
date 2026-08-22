@@ -33,6 +33,16 @@ type githubRelease struct {
 	HTMLURL string `json:"html_url"`
 }
 
+// @Tags         usage-stats
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /admin/updates/check [get]
+// @Tags         usage-stats
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /admin/updates/check [get]
 func (h *UpdateCheckerHandler) Check(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()

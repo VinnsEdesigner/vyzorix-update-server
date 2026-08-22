@@ -18,7 +18,7 @@ import (
 
 // Handler processes config version list/restore requests.
 type Handler struct {
-	versionSvc *appconfig.Service
+	versionSvc  *appconfig.Service
 	settingsSvc *organization.OrganizationSettingsService
 }
 
@@ -43,6 +43,16 @@ func versionJSON(v *configversion.ConfigVersion) gin.H {
 }
 
 // List handles GET /v1/config-versions/:resource.
+// @Tags         config-versions
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /config-versions/{resource} [get]
+// @Tags         config-versions
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /config-versions/{resource} [get]
 func (h *Handler) List(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	resourceType := configversion.ResourceType(c.Param("resource"))
@@ -69,6 +79,16 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // Get handles GET /v1/config-versions/:resource/:version.
+// @Tags         config-versions
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /config-versions/{resource}/{version} [get]
+// @Tags         config-versions
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /config-versions/{resource}/{version} [get]
 func (h *Handler) Get(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	resourceType := configversion.ResourceType(c.Param("resource"))
@@ -91,6 +111,16 @@ func (h *Handler) Get(c *gin.Context) {
 
 // Restore handles POST /v1/config-versions/:resource/:version/restore.
 // Re-applies the version's snapshot as the live settings.
+// @Tags         config-versions
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /config-versions/{resource}/{version}/restore [post]
+// @Tags         config-versions
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /config-versions/{resource}/{version}/restore [post]
 func (h *Handler) Restore(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	resourceType := configversion.ResourceType(c.Param("resource"))

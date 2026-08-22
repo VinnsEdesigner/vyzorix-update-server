@@ -72,6 +72,16 @@ func annotationJSON(a *annotation.Annotation) gin.H {
 }
 
 // List handles GET /v1/annotations.
+// @Tags         annotations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /annotations [get]
+// @Tags         annotations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /annotations [get]
 func (h *Handler) List(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	f := &annotation.Filter{OrgID: orgID, Limit: 200}
@@ -107,6 +117,16 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // Create handles POST /v1/annotations.
+// @Tags         annotations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /annotations [post]
+// @Tags         annotations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /annotations [post]
 func (h *Handler) Create(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	var req annotationRequest
@@ -150,6 +170,16 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 // Delete handles DELETE /v1/annotations/:id.
+// @Tags         annotations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /annotations/{id} [delete]
+// @Tags         annotations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /annotations/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if err := h.service.Delete(c.Request.Context(), orgID, c.Param("id")); err != nil {

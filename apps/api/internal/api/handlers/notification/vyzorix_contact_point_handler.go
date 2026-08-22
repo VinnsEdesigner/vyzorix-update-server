@@ -10,8 +10,8 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
-	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
+	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
 )
 
 // Handler processes contact point CRUD and test deliveries.
@@ -68,6 +68,16 @@ func contactPointJSON(cp *notificationdomain.ContactPoint) gin.H {
 }
 
 // List handles GET /v1/notifications/contact-points.
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points [get]
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points [get]
 func (h *Handler) List(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	points, err := h.service.List(c.Request.Context(), orgID)
@@ -83,6 +93,16 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // Create handles POST /v1/notifications/contact-points.
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points [post]
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points [post]
 func (h *Handler) Create(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	var req contactPointRequest
@@ -99,6 +119,16 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 // Get handles GET /v1/notifications/contact-points/:id.
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points/{id} [get]
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points/{id} [get]
 func (h *Handler) Get(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	cp, err := h.service.Get(c.Request.Context(), orgID, c.Param("id"))
@@ -110,6 +140,16 @@ func (h *Handler) Get(c *gin.Context) {
 }
 
 // Update handles PATCH /v1/notifications/contact-points/:id.
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points/{id} [patch]
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points/{id} [patch]
 func (h *Handler) Update(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	var req contactPointRequest
@@ -126,6 +166,16 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 // Delete handles DELETE /v1/notifications/contact-points/:id.
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points/{id} [delete]
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if err := h.service.Delete(c.Request.Context(), orgID, c.Param("id")); err != nil {
@@ -137,6 +187,16 @@ func (h *Handler) Delete(c *gin.Context) {
 
 // Test handles POST /v1/notifications/contact-points/:id/test.
 // Sends a one-off test notification through the contact point.
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points/{id}/test [post]
+// @Tags         contact-points
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /contact-points/{id}/test [post]
 func (h *Handler) Test(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	cp, err := h.service.Get(c.Request.Context(), orgID, c.Param("id"))
