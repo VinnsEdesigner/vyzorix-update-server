@@ -59,11 +59,31 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "alert rules with instances",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "org context missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -98,12 +118,32 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Success",
+          "201": {
+            "description": "created rule with instances",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -140,11 +180,31 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "rule with instances",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "not found / forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -179,11 +239,31 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "deleted confirmation",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -228,11 +308,31 @@
         },
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "updated rule with instances",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid input / not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -269,11 +369,21 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "evaluation result (transitioned index)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "evaluation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -319,11 +429,21 @@
         ],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "event entries",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -536,7 +656,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "version",
+            "name": "resource",
             "in": "path",
             "required": true,
             "schema": {
@@ -544,7 +664,7 @@
             }
           },
           {
-            "name": "resource",
+            "name": "version",
             "in": "path",
             "required": true,
             "schema": {
@@ -585,7 +705,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "version",
+            "name": "resource",
             "in": "path",
             "required": true,
             "schema": {
@@ -593,7 +713,7 @@
             }
           },
           {
-            "name": "resource",
+            "name": "version",
             "in": "path",
             "required": true,
             "schema": {
@@ -1001,7 +1121,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "entryId",
+            "name": "imei",
             "in": "path",
             "required": true,
             "schema": {
@@ -1009,7 +1129,7 @@
             }
           },
           {
-            "name": "imei",
+            "name": "entryId",
             "in": "path",
             "required": true,
             "schema": {
@@ -1047,7 +1167,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "entryId",
+            "name": "imei",
             "in": "path",
             "required": true,
             "schema": {
@@ -1055,7 +1175,7 @@
             }
           },
           {
-            "name": "imei",
+            "name": "entryId",
             "in": "path",
             "required": true,
             "schema": {
@@ -1093,7 +1213,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "entryId",
+            "name": "imei",
             "in": "path",
             "required": true,
             "schema": {
@@ -1101,7 +1221,7 @@
             }
           },
           {
-            "name": "imei",
+            "name": "entryId",
             "in": "path",
             "required": true,
             "schema": {
@@ -1142,7 +1262,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "entryId",
+            "name": "imei",
             "in": "path",
             "required": true,
             "schema": {
@@ -1150,7 +1270,7 @@
             }
           },
           {
-            "name": "imei",
+            "name": "entryId",
             "in": "path",
             "required": true,
             "schema": {
@@ -1375,7 +1495,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "token",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1383,7 +1503,7 @@
             }
           },
           {
-            "name": "id",
+            "name": "token",
             "in": "path",
             "required": true,
             "schema": {

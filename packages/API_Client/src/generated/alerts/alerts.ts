@@ -6,8 +6,14 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances,
+  DeleteAlertsRulesId200,
+  GetAlertsRules200,
+  GetAlertsRulesId200,
+  GetAlertsRulesIdHistory200,
   GetAlertsRulesIdHistoryParams,
+  PatchAlertsRulesId200,
+  PostAlertsRules201,
+  PostAlertsRulesIdEvaluate200,
   RuleRequest
 } from '../vyzorixUpdateServerAPI.schemas';
 
@@ -24,8 +30,8 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  */
 const getAlertsRules = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<GetAlertsRules200>>,) => {
+      return customAxios<GetAlertsRules200>(
       {url: `/alerts/rules`, method: 'GET'
     },
       options);
@@ -36,8 +42,8 @@ const getAlertsRules = (
  */
 const postAlertsRules = (
     ruleRequest: RuleRequest,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<PostAlertsRules201>>,) => {
+      return customAxios<PostAlertsRules201>(
       {url: `/alerts/rules`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: ruleRequest
@@ -50,8 +56,8 @@ const postAlertsRules = (
  */
 const getAlertsRulesId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<GetAlertsRulesId200>>,) => {
+      return customAxios<GetAlertsRulesId200>(
       {url: `/alerts/rules/${id}`, method: 'GET'
     },
       options);
@@ -62,8 +68,8 @@ const getAlertsRulesId = (
  */
 const deleteAlertsRulesId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<DeleteAlertsRulesId200>>,) => {
+      return customAxios<DeleteAlertsRulesId200>(
       {url: `/alerts/rules/${id}`, method: 'DELETE'
     },
       options);
@@ -75,8 +81,8 @@ const deleteAlertsRulesId = (
 const patchAlertsRulesId = (
     id: string,
     ruleRequest: RuleRequest,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<PatchAlertsRulesId200>>,) => {
+      return customAxios<PatchAlertsRulesId200>(
       {url: `/alerts/rules/${id}`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: ruleRequest
@@ -89,8 +95,8 @@ const patchAlertsRulesId = (
  */
 const postAlertsRulesIdEvaluate = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<PostAlertsRulesIdEvaluate200>>,) => {
+      return customAxios<PostAlertsRulesIdEvaluate200>(
       {url: `/alerts/rules/${id}/evaluate`, method: 'POST'
     },
       options);
@@ -102,8 +108,8 @@ const postAlertsRulesIdEvaluate = (
 const getAlertsRulesIdHistory = (
     id: string,
     params?: GetAlertsRulesIdHistoryParams,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<GetAlertsRulesIdHistory200>>,) => {
+      return customAxios<GetAlertsRulesIdHistory200>(
       {url: `/alerts/rules/${id}/history`, method: 'GET',
         params
     },

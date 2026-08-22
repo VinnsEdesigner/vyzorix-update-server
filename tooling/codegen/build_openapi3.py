@@ -155,6 +155,17 @@ def normalize_responses(responses):
         }
     return out
 
+def dedupe_params(params):
+    seen = set()
+    out = []
+    for p in params:
+        key = (p.get("name"), p.get("in"))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(p)
+    return out
+
 for path, ops in d.get("paths", {}).items():
     op_map = {}
     for method, op in ops.items():
@@ -187,6 +198,7 @@ for path, ops in d.get("paths", {}).items():
                         "schema": {"type": p.get("type", "string")},
                         "description": p.get("description", ""),
                     })
+        params = dedupe_params(params)
         if params:
             op_new["parameters"] = params
         if request_body:
