@@ -7,8 +7,8 @@
  */
 import type {
   DeleteAlertsRulesId200,
-  GetAlertsHistory200,
-  GetAlertsHistoryParams,
+  GetAlertsRulesIdHistory200,
+  GetAlertsRulesIdHistoryParams,
   GetAlertsRules200,
   GetAlertsRulesId200,
   GetAlertsRulesIdHistory200,
@@ -32,9 +32,9 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary Alert history
  */
 const getAlertsHistory = (
-    params?: GetAlertsHistoryParams,
- options?: SecondParameter<typeof customAxios<GetAlertsHistory200>>,) => {
-      return customAxios<GetAlertsHistory200>(
+    params?: GetAlertsRulesIdHistoryParams,
+ options?: SecondParameter<typeof customAxios<GetAlertsRulesIdHistory200>>,) => {
+      return customAxios<GetAlertsRulesIdHistory200>(
       {url: `/alerts/history`, method: 'GET',
         params
     },
