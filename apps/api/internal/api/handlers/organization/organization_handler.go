@@ -34,6 +34,11 @@ func NewOrganizationHandler(
 }
 
 // Create handles POST /v1/organizations.
+// @Tags         organizations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /organizations [post]
 func (h *OrganizationHandler) Create(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -97,6 +102,11 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 }
 
 // List handles GET /v1/organizations.
+// @Tags         organizations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /organizations [get]
 func (h *OrganizationHandler) List(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -130,6 +140,11 @@ func (h *OrganizationHandler) List(c *gin.Context) {
 }
 
 // Get handles GET /v1/organizations/:id.
+// @Tags         organizations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /organizations/{id} [get]
 func (h *OrganizationHandler) Get(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -184,6 +199,11 @@ func (h *OrganizationHandler) Get(c *gin.Context) {
 }
 
 // Update handles PATCH /v1/organizations/:id.
+// @Tags         organizations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /organizations/{id} [patch]
 func (h *OrganizationHandler) Update(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {

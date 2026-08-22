@@ -40,6 +40,11 @@ func (h *EventsHandler) findDevice(ctx context.Context, deviceID, orgID string) 
 
 // GetEvents handles GET /v1/device/:imei/events.
 // Returns event history for a device with filtering and pagination.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /devices/{id}/events [get]
 func (h *EventsHandler) GetEvents(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -133,6 +138,11 @@ func (h *EventsHandler) GetEvents(c *gin.Context) {
 
 // GetEventsByType handles GET /v1/events/types/:type.
 // Returns events of a specific type across all accessible devices.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /devices/{id}/events/{type} [get]
 func (h *EventsHandler) GetEventsByType(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -180,6 +190,11 @@ func (h *EventsHandler) GetEventsByType(c *gin.Context) {
 
 // GetRecentEvents handles GET /v1/events/recent.
 // Returns most recent events across all accessible devices.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /devices/{id}/events/recent [get]
 func (h *EventsHandler) GetRecentEvents(c *gin.Context) {
 	ctx := c.Request.Context()
 

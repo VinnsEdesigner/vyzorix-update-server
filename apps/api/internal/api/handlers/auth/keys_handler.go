@@ -40,6 +40,11 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 }
 
 // CreateKey creates a new API key.
+// @Tags         api-keys
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /api-keys [post]
 func (h *Handler) CreateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
@@ -102,6 +107,11 @@ func (h *Handler) CreateKey(c *gin.Context) {
 }
 
 // ListKeys lists all API keys for the authenticated operator.
+// @Tags         api-keys
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /api-keys [get]
 func (h *Handler) ListKeys(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
@@ -138,6 +148,11 @@ func (h *Handler) ListKeys(c *gin.Context) {
 }
 
 // GetKey gets a single API key by ID.
+// @Tags         api-keys
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /api-keys/{id} [get]
 func (h *Handler) GetKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
@@ -168,6 +183,11 @@ func (h *Handler) GetKey(c *gin.Context) {
 }
 
 // UpdateKey updates an API key (rename, change scope).
+// @Tags         api-keys
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /api-keys/{id} [patch]
 func (h *Handler) UpdateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
@@ -227,6 +247,11 @@ func (h *Handler) UpdateKey(c *gin.Context) {
 }
 
 // RevokeKey revokes an API key.
+// @Tags         api-keys
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /api-keys/{id} [delete]
 func (h *Handler) RevokeKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
@@ -278,6 +303,11 @@ func (h *Handler) RevokeKey(c *gin.Context) {
 }
 
 // RotateKey rotates an API key, generating a new key and invalidating the old one.
+// @Tags         api-keys
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /api-keys/{id}/rotate [post]
 func (h *Handler) RotateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {

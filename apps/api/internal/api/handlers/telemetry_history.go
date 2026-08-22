@@ -131,6 +131,11 @@ type telemetryEntry struct {
 
 // Query handles GET /v1/telemetry/history.
 // Query telemetry history for a device within a time range.
+// @Tags         telemetry
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /telemetry/{imei} [get]
 func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 	// Require organization context for multi-tenant isolation.
 	orgID := middleware.GetOrganizationID(c)

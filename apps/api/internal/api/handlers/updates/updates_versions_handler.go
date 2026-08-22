@@ -22,6 +22,11 @@ func NewUpdatesVersionsHandler(service *updates.Service) *UpdatesVersionsHandler
 }
 
 // GetStatus handles GET /v1/updates/status.
+// @Tags         updates
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /updates/status [get]
 func (h *UpdatesVersionsHandler) GetStatus(c *gin.Context) {
 	status, err := h.service.GetStatus(c.Request.Context())
 	if err != nil {
@@ -36,6 +41,11 @@ func (h *UpdatesVersionsHandler) GetStatus(c *gin.Context) {
 }
 
 // GetVersions handles GET /v1/updates/versions.
+// @Tags         updates
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /updates/versions [get]
 func (h *UpdatesVersionsHandler) GetVersions(c *gin.Context) {
 	status := c.Query("status")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -64,6 +74,11 @@ func (h *UpdatesVersionsHandler) GetVersions(c *gin.Context) {
 }
 
 // GetChangelog handles GET /v1/updates/changelog.
+// @Tags         updates
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /updates/versions/{id}/changelog [get]
 func (h *UpdatesVersionsHandler) GetChangelog(c *gin.Context) {
 	version := c.Query("version")
 	if version == "" {
@@ -83,6 +98,11 @@ func (h *UpdatesVersionsHandler) GetChangelog(c *gin.Context) {
 }
 
 // GetUpdateStatus is an alias for GetStatus to match expected handler names.
+// @Tags         updates
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /updates/{id}/status [get]
 func (h *UpdatesVersionsHandler) GetUpdateStatus(c *gin.Context) {
 	h.GetStatus(c)
 }

@@ -29,6 +29,11 @@ func NewLogsHandler(logsSvc *logs.Service, devRepo device.Repository, logger *sl
 
 // GetLogs handles GET /v1/device/:imei/logs.
 // Returns event logs for a device with cursor-based pagination.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /devices/{id}/logs [get]
 func (h *LogsHandler) GetLogs(c *gin.Context) {
 	ctx := c.Request.Context()
 

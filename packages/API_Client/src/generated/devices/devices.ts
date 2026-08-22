@@ -24,5 +24,42 @@ const getDevicesStatus = (
     },
       options);
     }
-  return {getDevicesStatus}};
+  const getDevicesIdEvents = (
+    id: string,
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
+      {url: `/devices/${id}/events`, method: 'GET'
+    },
+      options);
+    }
+  const getDevicesIdEventsRecent = (
+    id: string,
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
+      {url: `/devices/${id}/events/recent`, method: 'GET'
+    },
+      options);
+    }
+  const getDevicesIdEventsType = (
+    id: string,
+    type: string,
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
+      {url: `/devices/${id}/events/${type}`, method: 'GET'
+    },
+      options);
+    }
+  const getDevicesIdLogs = (
+    id: string,
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
+      {url: `/devices/${id}/logs`, method: 'GET'
+    },
+      options);
+    }
+  return {getDevicesStatus,getDevicesIdEvents,getDevicesIdEventsRecent,getDevicesIdEventsType,getDevicesIdLogs}};
 export type GetDevicesStatusResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesStatus']>>>
+export type GetDevicesIdEventsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesIdEvents']>>>
+export type GetDevicesIdEventsRecentResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesIdEventsRecent']>>>
+export type GetDevicesIdEventsTypeResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesIdEventsType']>>>
+export type GetDevicesIdLogsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesIdLogs']>>>

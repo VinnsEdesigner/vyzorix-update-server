@@ -50,6 +50,11 @@ func (a *MemberServiceAdapter) GetMembership(ctx context.Context, operatorID, or
 }
 
 // List handles GET /v1/organizations/:id/members.
+// @Tags         members
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /organizations/{id}/members [get]
 func (h *MemberHandler) List(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -108,6 +113,11 @@ func (h *MemberHandler) List(c *gin.Context) {
 }
 
 // Get handles GET /v1/organizations/:id/members/:memberId.
+// @Tags         members
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /organizations/{id}/members/{memberId} [get]
 func (h *MemberHandler) Get(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -166,6 +176,11 @@ func (h *MemberHandler) Get(c *gin.Context) {
 }
 
 // UpdateRole handles PATCH /v1/organizations/:id/members/:memberId.
+// @Tags         members
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /organizations/{id}/members/{memberId}/role [patch]
 func (h *MemberHandler) UpdateRole(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -239,6 +254,11 @@ func (h *MemberHandler) UpdateRole(c *gin.Context) {
 }
 
 // Remove handles DELETE /v1/organizations/:id/members/:memberId.
+// @Tags         members
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /organizations/{id}/members/{memberId} [delete]
 func (h *MemberHandler) Remove(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {

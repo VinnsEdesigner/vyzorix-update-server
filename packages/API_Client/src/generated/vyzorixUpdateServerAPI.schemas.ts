@@ -5,15 +5,6 @@
  * Go-generated OpenAPI contract from handler annotations
  * OpenAPI spec version: 0.0.01
  */
-export const ALERT_METRICS = ["device_offline_count", "device_offline_percent", "command_failure_rate"] as const;
-export type AlertMetric = (typeof ALERT_METRICS)[number];
-
-export const ALERT_CONDITIONS = ["gt", "gte", "lt", "lte"] as const;
-export type AlertCondition = (typeof ALERT_CONDITIONS)[number];
-
-export const ALERT_STATES = ["inactive", "pending", "firing", "no_data", "error"] as const;
-export type AlertState = (typeof ALERT_STATES)[number];
-
 export interface RuleRequest {
   name: string;
   metric: string;
@@ -127,48 +118,10 @@ export interface UsageStatsSnapshot {
   counts?: UsageStatsSnapshotCounts;
 }
 
-export type GetAlertsRules200 = { [key: string]: unknown };
-
-export type GetAlertsRules400 = { [key: string]: unknown };
-
-export type GetAlertsRules500 = { [key: string]: unknown };
-
-export type PostAlertsRules201 = { [key: string]: unknown };
-
-export type PostAlertsRules400 = { [key: string]: unknown };
-
-export type PostAlertsRules500 = { [key: string]: unknown };
-
-export type GetAlertsRulesId200 = { [key: string]: unknown };
-
-export type GetAlertsRulesId400 = { [key: string]: unknown };
-
-export type GetAlertsRulesId500 = { [key: string]: unknown };
-
-export type DeleteAlertsRulesId200 = { [key: string]: unknown };
-
-export type DeleteAlertsRulesId400 = { [key: string]: unknown };
-
-export type DeleteAlertsRulesId500 = { [key: string]: unknown };
-
-export type PatchAlertsRulesId200 = { [key: string]: unknown };
-
-export type PatchAlertsRulesId400 = { [key: string]: unknown };
-
-export type PatchAlertsRulesId500 = { [key: string]: unknown };
-
-export type PostAlertsRulesIdEvaluate200 = { [key: string]: unknown };
-
-export type PostAlertsRulesIdEvaluate500 = { [key: string]: unknown };
-
 export type GetAlertsRulesIdHistoryParams = {
 /**
  * event limit (default 200)
  */
 limit?: number;
 };
-
-export type GetAlertsRulesIdHistory200 = { [key: string]: unknown };
-
-export type GetAlertsRulesIdHistory500 = { [key: string]: unknown };
 

@@ -153,6 +153,10 @@ func NewLoginHandler(authService *auth.AuthService, presenter *response.Presente
 }
 
 // Handle processes the login request.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Router       /auth/login [post]
 func (h *LoginHandler) Handle(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -272,6 +276,10 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 
 // This endpoint is for non-browser clients that need JWT access tokens and refresh tokens.
 // It does NOT set session cookies - only returns tokens in the response body.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Router       /auth/login/tokens [post]
 func (h *LoginHandler) HandleWithTokens(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

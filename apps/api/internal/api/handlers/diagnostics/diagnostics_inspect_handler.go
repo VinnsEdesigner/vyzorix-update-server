@@ -33,6 +33,11 @@ func NewInspectHandler(service *appdiagnostics.Service, rateLimiter func(c *gin.
 
 // GetDeviceInspection handles GET /v1/device/:imei/inspect.
 // Returns full device inspection data for the Diagnostics Inspector.
+// @Tags         diagnostics
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /diagnostics/{id} [get]
 func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {

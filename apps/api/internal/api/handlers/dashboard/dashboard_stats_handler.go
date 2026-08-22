@@ -31,6 +31,11 @@ func NewStatsHandler(dashboardSvc *dashboard.Service, logger *slog.Logger) *Stat
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
 // @Router       /dashboard/stats [get]
+// @Tags         dashboard
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /dashboard/stats [get]
 func (h *StatsHandler) GetStats(c *gin.Context) {
 	ctx := c.Request.Context()
 

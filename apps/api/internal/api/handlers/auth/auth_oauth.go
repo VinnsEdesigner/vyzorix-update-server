@@ -124,6 +124,10 @@ func (h *OAuthHandler) getDefaultRedirectURL(redirectURL string) string {
 }
 
 // GoogleLogin handles GET /v1/auth/google.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Router       /auth/oauth/google [post]
 func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 	if h.config.GoogleOAuthClientID == "" || h.config.GoogleOAuthClientSecret == "" {
 		h.presenter.NotImplemented(c, "Google OAuth is not configured on this server")
@@ -320,6 +324,10 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 }
 
 // GitHubLogin handles GET /v1/auth/github.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Router       /auth/oauth/github [post]
 func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 	if h.config.GitHubOAuthClientID == "" || h.config.GitHubOAuthClientSecret == "" {
 		h.presenter.NotImplemented(c, "GitHub OAuth is not configured on this server")

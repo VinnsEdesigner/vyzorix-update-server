@@ -63,7 +63,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -73,7 +73,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -83,7 +83,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -123,7 +123,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -133,7 +133,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -143,7 +143,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -184,7 +184,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -194,7 +194,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -204,7 +204,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -243,7 +243,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -253,7 +253,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -263,7 +263,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -312,7 +312,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -322,7 +322,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -332,7 +332,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -373,7 +373,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -383,7 +383,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -433,7 +433,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -443,7 +443,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -556,6 +556,312 @@
         }
       }
     },
+    "/api-keys": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "api-keys"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "api-keys"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api-keys/{id}": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "api-keys"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "api-keys"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "api-keys"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api-keys/{id}/rotate": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "api-keys"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/auth/login/tokens": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/auth/oauth/github": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/auth/oauth/google": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
     "/commands/{imei}/execute": {
       "post": {
         "summary": "",
@@ -656,7 +962,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "resource",
+            "name": "version",
             "in": "path",
             "required": true,
             "schema": {
@@ -664,7 +970,7 @@
             }
           },
           {
-            "name": "version",
+            "name": "resource",
             "in": "path",
             "required": true,
             "schema": {
@@ -705,7 +1011,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "resource",
+            "name": "version",
             "in": "path",
             "required": true,
             "schema": {
@@ -713,7 +1019,7 @@
             }
           },
           {
-            "name": "version",
+            "name": "resource",
             "in": "path",
             "required": true,
             "schema": {
@@ -964,6 +1270,7 @@
         "summary": "",
         "description": "",
         "tags": [
+          "dashboard",
           "dashboard"
         ],
         "parameters": [
@@ -1007,6 +1314,214 @@
               "type": "string"
             },
             "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{id}/events": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{id}/events/recent": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{id}/events/{type}": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{id}/logs": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diagnostics/{id}": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "diagnostics"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1292,6 +1807,328 @@
         }
       }
     },
+    "/organizations": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "organizations"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "organizations"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{id}": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "organizations"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "organizations"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{id}/members": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "members"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{id}/members/{memberId}": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "members"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "members"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{id}/members/{memberId}/role": {
+      "patch": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "members"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/service-accounts": {
       "get": {
         "summary": "",
@@ -1504,6 +2341,190 @@
           },
           {
             "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telemetry/{imei}": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "telemetry"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "imei",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updates/status": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "updates"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updates/versions": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "updates"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updates/versions/{id}/changelog": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "updates"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updates/{id}/status": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "updates"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
