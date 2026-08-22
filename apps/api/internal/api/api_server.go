@@ -69,6 +69,7 @@ import (
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
+	wschannel "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws/channel"
 
 	"github.com/gin-gonic/gin"
 )
@@ -398,6 +399,9 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		if s.cache != nil {
 			s.AlertEvaluator.SetDashboardCache(s.cache.Section("dashboard"))
 		}
+		channelMgr := wschannel.NewManager(wschannel.NewMembershipAuthorizer(storage.NewMemberStorage(cfg.DB.DB())))
+		adapter := wschannel.NewMessageMapAdapter(channelMgr)
+		s.AlertEvaluator.SetStreamPublisher(adapter)
 		s.alertHandler = alerthandlers.NewHandler(alertService, s.AlertEvaluator)
 
 		s.ContactPointHandler = notificationhandlers.NewHandler(notificationSvc, dispatcher)

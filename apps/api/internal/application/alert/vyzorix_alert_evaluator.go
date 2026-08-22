@@ -18,6 +18,12 @@ type DashboardBroadcaster interface {
 	BroadcastEvent(eventType string, data []byte) error
 }
 
+// StreamPublisher is the org-channel publish surface (live-channel pattern):
+// alert transitions are routed to stream/<org>/alerts instead of raw broadcast.
+type StreamPublisher interface {
+	Publish(channel string, msg map[string]interface{})
+}
+
 // Annotator marks alert transitions on the fleet timeline so operators can
 // correlate rollouts with failure spikes.
 type Annotator interface {
@@ -33,6 +39,7 @@ type Evaluator struct {
 	metrics        *MetricSource
 	notifier       alert.Notifier
 	hub            DashboardBroadcaster
+	publisher      StreamPublisher
 	annotator      Annotator
 	dashboardCache *cache.Section
 	logger         *slog.Logger
@@ -54,6 +61,12 @@ func (e *Evaluator) SetAnnotator(a Annotator) {
 // transitions invalidate the org's dashboard stats entry.
 func (e *Evaluator) SetDashboardCache(c *cache.Section) {
 	e.dashboardCache = c
+}
+
+// SetStreamPublisher wires the org-channel publisher for alert transitions
+// (replaces broadcast-to-all with scoped stream publish when set).
+func (e *Evaluator) SetStreamPublisher(p StreamPublisher) {
+	e.publisher = p
 }
 
 // EvaluateAll evaluates every enabled rule and returns the number of state
@@ -197,7 +210,17 @@ func (e *Evaluator) emit(ctx context.Context, rule *alert.Rule, transition *aler
 			e.logger.Error("alert webhook delivery failed", "rule_id", rule.ID, "error", err)
 		}
 	}
-	if e.hub != nil {
+	if e.publisher != nil {
+		e.publisher.Publish("stream/"+rule.OrgID+"/alerts", map[string]interface{}{
+			"ruleId":    rule.ID,
+			"ruleName":  rule.Name,
+			"metric":    rule.Metric,
+			"labels":    transition.Labels,
+			"fromState": transition.From,
+			"toState":   transition.To,
+			"value":     transition.Value,
+		})
+	} else if e.hub != nil {
 		data, err := json.Marshal(map[string]interface{}{
 			"ruleId":    rule.ID,
 			"ruleName":  rule.Name,
