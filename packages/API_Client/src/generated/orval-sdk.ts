@@ -5,13 +5,7 @@
  * Go-generated OpenAPI contract from handler annotations
  * OpenAPI spec version: 0.0.01
  */
-import axios from 'axios';
-import type {
-  AxiosInstance,
-  AxiosRequestConfig,
-  AxiosResponse
-} from 'axios';
-
+import { customAxios } from './rest-bridge';
 export interface RuleRequest {
   name: string;
   metric: string;
@@ -26,21 +20,6 @@ export interface RuleRequest {
 }
 
 export type AlertInstanceLabels = {[key: string]: string};
-
-export const ALERT_STATES = ["inactive", "pending", "firing", "no_data", "error"] as const;
-export type AlertState = (typeof ALERT_STATES)[number];
-
-export const ALERT_METRICS = ["device_offline_count", "device_offline_percent", "command_failure_rate"] as const;
-export type AlertMetric = (typeof ALERT_METRICS)[number];
-
-export const ALERT_CONDITIONS = ["gt", "gte", "lt", "lte"] as const;
-export type AlertCondition = (typeof ALERT_CONDITIONS)[number];
-
-export const ALERT_NO_DATA_POLICIES = ["", "ignore", "no_data", "resolve"] as const;
-export type AlertNoDataPolicy = (typeof ALERT_NO_DATA_POLICIES)[number];
-
-export const ALERT_ERROR_POLICIES = ["", "ignore", "error", "resolve"] as const;
-export type AlertErrorPolicy = (typeof ALERT_ERROR_POLICIES)[number];
 
 export interface AlertInstance {
   labels?: AlertInstanceLabels;
@@ -132,69 +111,77 @@ export type GetAlertsRulesIdHistory200 = { [key: string]: unknown };
 
 export type GetAlertsRulesIdHistory500 = { [key: string]: unknown };
 
-export const getVyzorixUpdateServerAPI = (axiosInstance: AxiosInstance = axios) => {
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
+  export const getVyzorixUpdateServerAPI = () => {
 /**
  * Transition events for an org, optionally narrowed to one rule.
  * @summary Alert history
  */
 const getAlertsHistory = (
-    params?: GetAlertsHistoryParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<GetAlertsHistory200>> => {
-    return axiosInstance.get(
-      `/alerts/history`,{
-    ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params?: GetAlertsHistoryParams,
+ options?: SecondParameter<typeof customAxios<GetAlertsHistory200>>,) => {
+      return customAxios<GetAlertsHistory200>(
+      {url: `/alerts/history`, method: 'GET',
+        params
+    },
+      options);
+    }
 
 /**
  * Returns all org-scoped alert rules with their current instance states.
  * @summary List alert rules
  */
 const getAlertsRules = (
-     options?: AxiosRequestConfig
- ): Promise<AxiosResponse<GetAlertsRules200>> => {
-    return axiosInstance.get(
-      `/alerts/rules`,options
-    );
-  }
+
+ options?: SecondParameter<typeof customAxios<GetAlertsRules200>>,) => {
+      return customAxios<GetAlertsRules200>(
+      {url: `/alerts/rules`, method: 'GET'
+    },
+      options);
+    }
 
 /**
  * Creates a new org-scoped alert rule. Validated before persistence.
  * @summary Create alert rule
  */
 const postAlertsRules = (
-    ruleRequest: RuleRequest, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<PostAlertsRules201>> => {
-    return axiosInstance.post(
-      `/alerts/rules`,
-      ruleRequest,options
-    );
-  }
+    ruleRequest: RuleRequest,
+ options?: SecondParameter<typeof customAxios<PostAlertsRules201>>,) => {
+      return customAxios<PostAlertsRules201>(
+      {url: `/alerts/rules`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: ruleRequest
+    },
+      options);
+    }
 
 /**
  * Returns one alert rule with its current instance states.
  * @summary Get alert rule
  */
 const getAlertsRulesId = (
-    id: string, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<GetAlertsRulesId200>> => {
-    return axiosInstance.get(
-      `/alerts/rules/${id}`,options
-    );
-  }
+    id: string,
+ options?: SecondParameter<typeof customAxios<GetAlertsRulesId200>>,) => {
+      return customAxios<GetAlertsRulesId200>(
+      {url: `/alerts/rules/${id}`, method: 'GET'
+    },
+      options);
+    }
 
 /**
  * Removes the rule and its instances.
  * @summary Delete alert rule
  */
 const deleteAlertsRulesId = (
-    id: string, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<DeleteAlertsRulesId200>> => {
-    return axiosInstance.delete(
-      `/alerts/rules/${id}`,options
-    );
-  }
+    id: string,
+ options?: SecondParameter<typeof customAxios<DeleteAlertsRulesId200>>,) => {
+      return customAxios<DeleteAlertsRulesId200>(
+      {url: `/alerts/rules/${id}`, method: 'DELETE'
+    },
+      options);
+    }
 
 /**
  * Replaces a rule's mutable fields. Disabling clears its instances.
@@ -202,26 +189,28 @@ const deleteAlertsRulesId = (
  */
 const patchAlertsRulesId = (
     id: string,
-    ruleRequest: RuleRequest, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<PatchAlertsRulesId200>> => {
-    return axiosInstance.patch(
-      `/alerts/rules/${id}`,
-      ruleRequest,options
-    );
-  }
+    ruleRequest: RuleRequest,
+ options?: SecondParameter<typeof customAxios<PatchAlertsRulesId200>>,) => {
+      return customAxios<PatchAlertsRulesId200>(
+      {url: `/alerts/rules/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: ruleRequest
+    },
+      options);
+    }
 
 /**
  * Triggers evaluation on the rule's metric immediately.
  * @summary Manually evaluate a rule
  */
 const postAlertsRulesIdEvaluate = (
-    id: string, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<PostAlertsRulesIdEvaluate200>> => {
-    return axiosInstance.post(
-      `/alerts/rules/${id}/evaluate`,
-      undefined,options
-    );
-  }
+    id: string,
+ options?: SecondParameter<typeof customAxios<PostAlertsRulesIdEvaluate200>>,) => {
+      return customAxios<PostAlertsRulesIdEvaluate200>(
+      {url: `/alerts/rules/${id}/evaluate`, method: 'POST'
+    },
+      options);
+    }
 
 /**
  * Transition events for an org, optionally narrowed to one rule.
@@ -229,21 +218,21 @@ const postAlertsRulesIdEvaluate = (
  */
 const getAlertsRulesIdHistory = (
     id: string,
-    params?: GetAlertsRulesIdHistoryParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<GetAlertsRulesIdHistory200>> => {
-    return axiosInstance.get(
-      `/alerts/rules/${id}/history`,{
-    ...options,
-        params: {...params, ...options?.params},}
-    );
-  }
+    params?: GetAlertsRulesIdHistoryParams,
+ options?: SecondParameter<typeof customAxios<GetAlertsRulesIdHistory200>>,) => {
+      return customAxios<GetAlertsRulesIdHistory200>(
+      {url: `/alerts/rules/${id}/history`, method: 'GET',
+        params
+    },
+      options);
+    }
 
 return {getAlertsHistory,getAlertsRules,postAlertsRules,getAlertsRulesId,deleteAlertsRulesId,patchAlertsRulesId,postAlertsRulesIdEvaluate,getAlertsRulesIdHistory}};
-export type GetAlertsHistoryResult = AxiosResponse<GetAlertsHistory200>
-export type GetAlertsRulesResult = AxiosResponse<GetAlertsRules200>
-export type PostAlertsRulesResult = AxiosResponse<PostAlertsRules201>
-export type GetAlertsRulesIdResult = AxiosResponse<GetAlertsRulesId200>
-export type DeleteAlertsRulesIdResult = AxiosResponse<DeleteAlertsRulesId200>
-export type PatchAlertsRulesIdResult = AxiosResponse<PatchAlertsRulesId200>
-export type PostAlertsRulesIdEvaluateResult = AxiosResponse<PostAlertsRulesIdEvaluate200>
-export type GetAlertsRulesIdHistoryResult = AxiosResponse<GetAlertsRulesIdHistory200>
+export type GetAlertsHistoryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getVyzorixUpdateServerAPI>['getAlertsHistory']>>>
+export type GetAlertsRulesResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getVyzorixUpdateServerAPI>['getAlertsRules']>>>
+export type PostAlertsRulesResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getVyzorixUpdateServerAPI>['postAlertsRules']>>>
+export type GetAlertsRulesIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getVyzorixUpdateServerAPI>['getAlertsRulesId']>>>
+export type DeleteAlertsRulesIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getVyzorixUpdateServerAPI>['deleteAlertsRulesId']>>>
+export type PatchAlertsRulesIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getVyzorixUpdateServerAPI>['patchAlertsRulesId']>>>
+export type PostAlertsRulesIdEvaluateResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getVyzorixUpdateServerAPI>['postAlertsRulesIdEvaluate']>>>
+export type GetAlertsRulesIdHistoryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getVyzorixUpdateServerAPI>['getAlertsRulesIdHistory']>>>

@@ -10,6 +10,10 @@ module.exports = {
 			mode: "single",
 			client: "axios",
 			override: {
+				mutator: {
+					path: "packages/API_Client/src/generated/rest-bridge.ts",
+					name: "customAxios",
+				},
 				npmPackage: "@vyzorix/api-client",
 			},
 		},
