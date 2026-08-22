@@ -39,5 +39,20 @@ if ! go tool golangci-lint run --timeout=5m ./... 2>&1; then
   exit 1
 fi
 pass "golangci-lint: clean"
+
+# --- Swagger drift gate: annotations stay in sync with generated spec ---
+if command -v swag &>/dev/null; then
+  info "Checking swagger drift (annotations -> spec)..."
+  SWAG_TMP=$(mktemp -d)
+  if swag init -g cmd/api/api_main.go --parseDependency --quiet --output "$SWAG_TMP" 2>&1; then
+    if ! cmp -s "$SWAG_TMP/swagger.json" "$API_DIR/swag/swagger.json" 2>/dev/null; then
+      fail "swagger.json drift detected — run 'swag init -g cmd/api/api_main.go --parseDependency --output apps/api/swag' and regenerate orval output."
+    fi
+  fi
+  rm -rf "$SWAG_TMP"
+  pass "swagger drift: clean"
+else
+  info "swag not installed — skipping swagger drift check."
+fi
 echo ""
 pass "All checks passed. Commit proceeding."

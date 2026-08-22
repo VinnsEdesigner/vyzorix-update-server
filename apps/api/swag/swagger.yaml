@@ -1,0 +1,290 @@
+definitions:
+  internal_api_handlers_alert.ruleRequest:
+    properties:
+      condition:
+        type: string
+      enabled:
+        type: boolean
+      for_seconds:
+        type: integer
+      metric:
+        type: string
+      name:
+        type: string
+      notify_interval_seconds:
+        type: integer
+      on_error:
+        type: string
+      on_no_data:
+        type: string
+      threshold:
+        type: number
+      webhook_url:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /alerts/history:
+    get:
+      consumes:
+      - application/json
+      description: Transition events for an org, optionally narrowed to one rule.
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      - description: event limit (default 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: event entries
+          schema:
+            type: object
+        "500":
+          description: internal error
+          schema:
+            type: object
+      summary: Alert history
+      tags:
+      - alerts
+  /alerts/rules:
+    get:
+      consumes:
+      - application/json
+      description: Returns all org-scoped alert rules with their current instance
+        states.
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: alert rules with instances
+          schema:
+            type: object
+        "400":
+          description: org context missing
+          schema:
+            type: object
+        "500":
+          description: internal error
+          schema:
+            type: object
+      summary: List alert rules
+      tags:
+      - alerts
+    post:
+      consumes:
+      - application/json
+      description: Creates a new org-scoped alert rule. Validated before persistence.
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      - description: rule definition
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handlers_alert.ruleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created rule with instances
+          schema:
+            type: object
+        "400":
+          description: invalid input
+          schema:
+            type: object
+        "500":
+          description: internal error
+          schema:
+            type: object
+      summary: Create alert rule
+      tags:
+      - alerts
+  /alerts/rules/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes the rule and its instances.
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      - description: rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: deleted confirmation
+          schema:
+            type: object
+        "400":
+          description: not found
+          schema:
+            type: object
+        "500":
+          description: internal error
+          schema:
+            type: object
+      summary: Delete alert rule
+      tags:
+      - alerts
+    get:
+      consumes:
+      - application/json
+      description: Returns one alert rule with its current instance states.
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      - description: rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: rule with instances
+          schema:
+            type: object
+        "400":
+          description: not found / forbidden
+          schema:
+            type: object
+        "500":
+          description: internal error
+          schema:
+            type: object
+      summary: Get alert rule
+      tags:
+      - alerts
+    patch:
+      consumes:
+      - application/json
+      description: Replaces a rule's mutable fields. Disabling clears its instances.
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      - description: rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: rule definition
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_api_handlers_alert.ruleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated rule with instances
+          schema:
+            type: object
+        "400":
+          description: invalid input / not found
+          schema:
+            type: object
+        "500":
+          description: internal error
+          schema:
+            type: object
+      summary: Update alert rule
+      tags:
+      - alerts
+  /alerts/rules/{id}/evaluate:
+    post:
+      consumes:
+      - application/json
+      description: Triggers evaluation on the rule's metric immediately.
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      - description: rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: evaluation result (transitioned index)
+          schema:
+            type: object
+        "500":
+          description: evaluation failed
+          schema:
+            type: object
+      summary: Manually evaluate a rule
+      tags:
+      - alerts
+  /alerts/rules/{id}/history:
+    get:
+      consumes:
+      - application/json
+      description: Transition events for an org, optionally narrowed to one rule.
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      - description: rule ID filter
+        in: path
+        name: id
+        type: string
+      - description: event limit (default 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: event entries
+          schema:
+            type: object
+        "500":
+          description: internal error
+          schema:
+            type: object
+      summary: Alert history
+      tags:
+      - alerts
+swagger: "2.0"

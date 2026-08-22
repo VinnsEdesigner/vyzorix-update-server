@@ -94,6 +94,16 @@ func ruleJSON(v *alertapp.RuleView) gin.H {
 }
 
 // List handles GET /v1/alerts/rules.
+// @Summary      List alert rules
+// @Description  Returns all org-scoped alert rules with their current instance states.
+// @Tags         alerts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  object  "alert rules with instances"
+// @Failure      400  {object}  object  "org context missing"
+// @Failure      500  {object}  object  "internal error"
+// @Router       /alerts/rules [get]
 func (h *Handler) List(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	views, err := h.service.ListRules(c.Request.Context(), orgID)
@@ -109,6 +119,17 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // Create handles POST /v1/alerts/rules.
+// @Summary      Create alert rule
+// @Description  Creates a new org-scoped alert rule. Validated before persistence.
+// @Tags         alerts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        body  body  ruleRequest  true  "rule definition"
+// @Success      201  {object}  object  "created rule with instances"
+// @Failure      400  {object}  object  "invalid input"
+// @Failure      500  {object}  object  "internal error"
+// @Router       /alerts/rules [post]
 func (h *Handler) Create(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	var req ruleRequest
@@ -130,6 +151,17 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 // Get handles GET /v1/alerts/rules/:id.
+// @Summary      Get alert rule
+// @Description  Returns one alert rule with its current instance states.
+// @Tags         alerts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "rule ID"
+// @Success      200  {object}  object  "rule with instances"
+// @Failure      400  {object}  object  "not found / forbidden"
+// @Failure      500  {object}  object  "internal error"
+// @Router       /alerts/rules/{id} [get]
 func (h *Handler) Get(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	view, err := h.service.GetRule(c.Request.Context(), orgID, c.Param("id"))
@@ -141,6 +173,18 @@ func (h *Handler) Get(c *gin.Context) {
 }
 
 // Update handles PATCH /v1/alerts/rules/:id.
+// @Summary      Update alert rule
+// @Description  Replaces a rule's mutable fields. Disabling clears its instances.
+// @Tags         alerts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "rule ID"
+// @Param        body  body  ruleRequest  true  "rule definition"
+// @Success      200  {object}  object  "updated rule with instances"
+// @Failure      400  {object}  object  "invalid input / not found"
+// @Failure      500  {object}  object  "internal error"
+// @Router       /alerts/rules/{id} [patch]
 func (h *Handler) Update(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	var req ruleRequest
@@ -162,6 +206,17 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 // Delete handles DELETE /v1/alerts/rules/:id.
+// @Summary      Delete alert rule
+// @Description  Removes the rule and its instances.
+// @Tags         alerts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "rule ID"
+// @Success      200  {object}  object  "deleted confirmation"
+// @Failure      400  {object}  object  "not found"
+// @Failure      500  {object}  object  "internal error"
+// @Router       /alerts/rules/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if err := h.service.DeleteRule(c.Request.Context(), orgID, c.Param("id")); err != nil {
@@ -173,6 +228,17 @@ func (h *Handler) Delete(c *gin.Context) {
 
 // History handles GET /v1/alerts/history (org-wide) and
 // GET /v1/alerts/rules/:id/history (single rule).
+// @Summary      Alert history
+// @Description  Transition events for an org, optionally narrowed to one rule.
+// @Tags         alerts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  false  "rule ID filter"
+// @Param        limit  query  int  false  "event limit (default 200)"
+// @Success      200  {object}  object  "event entries"
+// @Failure      500  {object}  object  "internal error"
+// @Router       /alerts/rules/{id}/history [get]
 func (h *Handler) History(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	ruleID := c.Param("id")
@@ -203,6 +269,16 @@ func (h *Handler) History(c *gin.Context) {
 
 // Evaluate handles POST /v1/alerts/rules/:id/evaluate — a manual, on-demand
 // evaluation useful for testing rule definitions before they go live.
+// @Summary      Manually evaluate a rule
+// @Description  Triggers evaluation on the rule's metric immediately.
+// @Tags         alerts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "rule ID"
+// @Success      200  {object}  object  "evaluation result (transitioned index)"
+// @Failure      500  {object}  object  "evaluation failed"
+// @Router       /alerts/rules/{id}/evaluate [post]
 func (h *Handler) Evaluate(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	view, err := h.service.GetRule(c.Request.Context(), orgID, c.Param("id"))
