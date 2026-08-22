@@ -128,7 +128,7 @@ point. They are ordered by implementation priority.
   `usage_stats`. Build version flows via `-ldflags -X main.Version` (banner +
   `ServerConfig.Version`) — no hardcoded stamp.
 
-### 11. Org-scoped live channels [ ]
+### 11. Org-scoped live channels [x]
 
 - **Grafana reference:** `pkg/services/live` (`orgchannel`, `managedstream`)
 - **Vyzorix state:** `internal/ws` hub already has compression, rate limiting,
@@ -136,6 +136,11 @@ point. They are ordered by implementation priority.
 - **Plan:** adopt only the channel addressing + subscribe-permission pattern:
   `stream/<org>/<scope>` checked through the existing `command.Authorizer`; server-
   pushed managed streams for alert notifications (pairs with Feature 1).
+- **Status:** implemented. `ws/channel` package with `Channel` addressing
+  parser, org-membership `Authorizer` (RBAC variant for scope-level
+  permission), managed `Stream` lifecycle (open on first subscribe, close on
+  last), `Manager` routing + `MessageMapAdapter`. Alert evaluator publishes
+  to `stream/<org>/alerts` instead of broadcast-to-all.
 
 ## Already at parity (no action)
 
