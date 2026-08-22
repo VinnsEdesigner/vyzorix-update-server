@@ -7,8 +7,6 @@
  */
 import type {
   DeleteAlertsRulesId200,
-  GetAlertsRulesIdHistory200,
-  GetAlertsRulesIdHistoryParams,
   GetAlertsRules200,
   GetAlertsRulesId200,
   GetAlertsRulesIdHistory200,
