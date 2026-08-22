@@ -1,5 +1,6 @@
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getRESTConfig } from '../../vyzorServer/rest/_shared/rest-client';
+import axios from 'axios';
+import { getRESTConfig } from '../vyzorServer/rest/_shared/rest-client';
 
 // Axios instance seeded from the shared REST client configuration. All
 // generated endpoint functions call this so they inherit auth headers
