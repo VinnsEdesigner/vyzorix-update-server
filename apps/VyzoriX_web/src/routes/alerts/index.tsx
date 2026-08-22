@@ -48,8 +48,8 @@ function RuleForm({
           metric,
           condition,
           threshold: Number(threshold),
-          forSeconds: Number(forSeconds),
-          webhookUrl: webhookUrl || undefined,
+          for_seconds: Number(forSeconds),
+          webhook_url: webhookUrl || undefined,
           enabled: true,
         });
       }}
@@ -118,26 +118,26 @@ function RuleCard({ rule }: { rule: AlertRule }) {
         <div>
           <h3 className="font-semibold">{rule.name}</h3>
           <p className="text-sm text-muted-foreground">
-            {METRIC_LABELS[rule.metric]} {rule.condition} {rule.threshold}
-            {rule.forSeconds > 0 ? ` for ${rule.forSeconds}s` : ''}
+            {METRIC_LABELS[(rule.metric ?? "device_offline_count") as keyof typeof METRIC_LABELS]} {rule.condition} {rule.threshold}
+            {(rule.for_seconds ?? 0) > 0 ? ` for ${rule.for_seconds}s` : ''}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <span
             className="rounded-full px-2 py-1 text-xs font-semibold"
-            style={{ backgroundColor: `${STATE_COLORS[rule.state] ?? '#6b7280'}20`, color: STATE_COLORS[rule.state] ?? '#6b7280' }}
+            style={{ backgroundColor: `${STATE_COLORS[(rule.instances?.[0]?.state ?? 'inactive')] ?? '#6b7280'}20`, color: STATE_COLORS[(rule.instances?.[0]?.state ?? 'inactive')] ?? '#6b7280' }}
           >
-            {rule.state}
+            {rule.instances?.[0]?.state ?? 'inactive'}
           </span>
           <button
-            onClick={() => evaluateRule.mutate(rule.id)}
+            onClick={() => evaluateRule.mutate(rule.id!)}
             className="rounded border px-2 py-1 text-xs"
             title="Evaluate now"
           >
             Evaluate
           </button>
           <button
-            onClick={() => deleteRule.mutate(rule.id)}
+            onClick={() => deleteRule.mutate(rule.id!)}
             className="rounded border px-2 py-1 text-xs text-red-600"
             title="Delete rule"
           >
@@ -145,11 +145,11 @@ function RuleCard({ rule }: { rule: AlertRule }) {
           </button>
         </div>
       </div>
-      {rule.state !== 'inactive' && (
-        <p className="mt-2 text-sm">Current value: <strong>{rule.value}</strong></p>
+      {rule.instances?.[0]?.state !== 'inactive' && (
+        <p className="mt-2 text-sm">Current value: <strong>{rule.instances?.[0]?.value ?? '—'}</strong></p>
       )}
-      {rule.webhookUrl && (
-        <p className="mt-1 text-xs text-muted-foreground">Webhook: {rule.webhookUrl}</p>
+      {rule.webhook_url && (
+        <p className="mt-1 text-xs text-muted-foreground">Webhook: {rule.webhook_url}</p>
       )}
     </div>
   );
