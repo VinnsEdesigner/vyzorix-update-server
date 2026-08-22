@@ -9,9 +9,26 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	svcapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/serviceaccount"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.ServiceAccount
+	_ openapi.ServiceAccountToken
+	_ openapi.ServiceAccountListResult
+	_ openapi.ServiceAccountTokenListResult
+	_ openapi.ServiceAccountTokenCreated
+	_ openapi.ServiceAccountTokenRotated
+	_ openapi.CreateServiceAccountRequest
+	_ openapi.CreateServiceAccountTokenRequest
+	_ openapi.RotateServiceAccountTokenRequest
+	_ openapi.DeletedResult
+	_ openapi.RevokedResult
+	_ openapi.ErrorResponse
 )
 
 // Handler processes service account CRUD and token operations.
@@ -80,15 +97,14 @@ func parseExpiresAt(s *string) *time.Time {
 }
 
 // List handles GET /v1/service-accounts.
+// @Summary      List service accounts
+// @Description  Returns all org-scoped service accounts.
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /service-accounts [get]
-// @Tags         service-accounts
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  openapi.ServiceAccountListResult  "service accounts"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /service-accounts [get]
 func (h *Handler) List(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -105,15 +121,16 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // Create handles POST /v1/service-accounts.
+// @Summary      Create service account
+// @Description  Creates a new org-scoped service account.
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /service-accounts [post]
-// @Tags         service-accounts
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        body  body  openapi.CreateServiceAccountRequest  true  "service account definition"
+// @Success      201  {object}  openapi.ServiceAccount  "created service account"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /service-accounts [post]
 func (h *Handler) Create(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -131,15 +148,16 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 // Delete handles DELETE /v1/service-accounts/:id.
+// @Summary      Delete service account
+// @Description  Removes a service account and its tokens.
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /service-accounts/{id} [delete]
-// @Tags         service-accounts
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "service account ID"
+// @Success      200  {object}  openapi.DeletedResult  "deleted confirmation"
+// @Failure      400  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /service-accounts/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -151,10 +169,16 @@ func (h *Handler) Delete(c *gin.Context) {
 }
 
 // ListTokens handles GET /v1/service-accounts/:id/tokens.
+// @Summary      List service account tokens
+// @Description  Returns all tokens for a service account.
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "service account ID"
+// @Success      200  {object}  openapi.ServiceAccountTokenListResult  "tokens"
+// @Failure      400  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /service-accounts/{id}/tokens [get]
 func (h *Handler) ListTokens(c *gin.Context) {
 	if _, err := h.service.Get(c.Request.Context(), middleware.GetOrganizationID(c), c.Param("id")); err != nil {
@@ -175,6 +199,18 @@ func (h *Handler) ListTokens(c *gin.Context) {
 
 // CreateToken handles POST /v1/service-accounts/:id/tokens. Returns the full
 // key once — never stored or returned again.
+// @Summary      Create service account token
+// @Description  Creates a new token for a service account. Returns the full key once.
+// @Tags         service-accounts
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "service account ID"
+// @Param        body  body  openapi.CreateServiceAccountTokenRequest  true  "token definition"
+// @Success      201  {object}  openapi.ServiceAccountTokenCreated  "created token with full key"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input / not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /service-accounts/{id}/tokens [post]
 func (h *Handler) CreateToken(c *gin.Context) {
 	var req createTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -200,10 +236,17 @@ func (h *Handler) CreateToken(c *gin.Context) {
 }
 
 // RevokeToken handles DELETE /v1/service-accounts/:id/tokens/:token_id.
+// @Summary      Revoke service account token
+// @Description  Revokes a single token by ID.
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "service account ID"
+// @Param        token  path  string  true  "token ID"
+// @Success      200  {object}  openapi.RevokedResult  "revoked confirmation"
+// @Failure      400  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /service-accounts/{id}/tokens/{token} [delete]
 func (h *Handler) RevokeToken(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -219,10 +262,17 @@ func (h *Handler) RevokeToken(c *gin.Context) {
 }
 
 // RotateToken handles POST /v1/service-accounts/:id/tokens/:token_id/rotate.
+// @Summary      Rotate service account token
+// @Description  Revokes the existing token and issues a new one. Returns the full key once.
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "service account ID"
+// @Param        body  body  openapi.RotateServiceAccountTokenRequest  true  "new token definition"
+// @Success      201  {object}  openapi.ServiceAccountTokenRotated  "rotated token with full key"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input / not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /service-accounts/{id}/rotate [post]
 func (h *Handler) RotateToken(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)

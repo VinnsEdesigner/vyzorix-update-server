@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
@@ -19,6 +20,9 @@ type HistoryHandler struct {
 	logger     *slog.Logger
 }
 
+// Compile-time reference for the ErrorResponse swaggo annotation target.
+var _ openapi.ErrorResponse
+
 // NewHistoryHandler creates a new command history handler.
 func NewHistoryHandler(historySvc *command.HistoryService, devRepo device.Repository, logger *slog.Logger) *HistoryHandler {
 	return &HistoryHandler{
@@ -30,10 +34,22 @@ func NewHistoryHandler(historySvc *command.HistoryService, devRepo device.Reposi
 
 // GetHistory handles GET /v1/device/:imei/commands.
 // Returns paginated command history for a device.
+// @Summary      List command history
+// @Description  Returns paginated command history for a device.
 // @Tags         commands
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei       path  string  true  "device IMEI"
+// @Param        status     query string  false  "filter by command status"
+// @Param        page       query int     false  "page number (default 1)"
+// @Param        limit      query int     false  "page size (default 20, max 100)"
+// @Param        startTime  query int64  false  "epoch-millis lower bound"
+// @Param        endTime    query int64  false  "epoch-millis upper bound"
+// @Success      200  {object}  command.GetHistoryResponse  "command history"
+// @Failure      401  {object}  openapi.ErrorResponse  "operator context required"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /commands/{imei}/history [get]
 func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	ctx := c.Request.Context()

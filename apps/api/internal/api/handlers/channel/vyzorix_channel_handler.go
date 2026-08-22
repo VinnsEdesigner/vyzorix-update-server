@@ -9,7 +9,17 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	wschannel "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws/channel"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.ChannelSubscribeRequest
+	_ openapi.ChannelStatusResult
+	_ openapi.ChannelSubscribeResult
+	_ openapi.ChannelUnsubscribeResult
+	_ openapi.ErrorResponse
 )
 
 // Handler serves channel subscription requests.
@@ -24,10 +34,14 @@ func NewHandler(bridge *wschannel.HubBridge, presenter *response.Presenter) *Han
 }
 
 // Status returns active channel streams for the org.
+// @Summary      Channel status
+// @Description  Returns active channel streams for the org.
 // @Tags         channels
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  openapi.ChannelStatusResult  "channel status"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /channels/status [get]
 func (h *Handler) Status(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -37,10 +51,16 @@ func (h *Handler) Status(c *gin.Context) {
 
 // Subscribe registers a logical subscription to a channel scope for the
 // operator. Events arrive on the operator's existing websocket.
+// @Summary      Subscribe to channel
+// @Description  Registers a logical subscription to a channel scope for the operator.
 // @Tags         channels
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        body  body  openapi.ChannelSubscribeRequest  true  "subscription request"
+// @Success      200  {object}  openapi.ChannelSubscribeResult  "subscription result"
+// @Failure      400  {object}  openapi.ErrorResponse  "scope required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
 // @Router       /channels/subscribe [post]
 func (h *Handler) Subscribe(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
@@ -77,10 +97,16 @@ func (h *Handler) Subscribe(c *gin.Context) {
 }
 
 // Unsubscribe removes a logical subscription.
+// @Summary      Unsubscribe from channel
+// @Description  Removes a logical subscription to a channel scope.
 // @Tags         channels
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        scope  query string  true  "channel scope"
+// @Success      200  {object}  openapi.ChannelUnsubscribeResult  "unsubscription result"
+// @Failure      400  {object}  openapi.ErrorResponse  "scope required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
 // @Router       /channels/unsubscribe [post]
 func (h *Handler) Unsubscribe(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)

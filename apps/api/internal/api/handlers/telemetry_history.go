@@ -10,11 +10,19 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.TelemetryHistoryRequest
+	_ openapi.TelemetryHistoryResponse
+	_ openapi.ErrorResponse
 )
 
 // TelemetryHistoryConfig holds configuration for telemetry history.
@@ -135,6 +143,14 @@ type telemetryEntry struct {
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei        path   string  true  "device IMEI"
+// @Param        start_time query   int64   false  "epoch-millis lower bound"
+// @Param        end_time   query   int64   false  "epoch-millis upper bound"
+// @Param        limit      query   int     false  "result limit (default 1000)"
+// @Success      200  {object}  openapi.TelemetryHistoryResponse  "telemetry history"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /telemetry/{imei} [get]
 func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 	// Require organization context for multi-tenant isolation.

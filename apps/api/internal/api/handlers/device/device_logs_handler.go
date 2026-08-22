@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
@@ -18,6 +19,9 @@ type LogsHandler struct {
 	logger  *slog.Logger
 }
 
+// Compile-time reference for the ErrorResponse swaggo annotation target.
+var _ openapi.ErrorResponse
+
 // NewLogsHandler creates a new logs handler.
 func NewLogsHandler(logsSvc *logs.Service, devRepo device.Repository, logger *slog.Logger) *LogsHandler {
 	return &LogsHandler{
@@ -29,10 +33,19 @@ func NewLogsHandler(logsSvc *logs.Service, devRepo device.Repository, logger *sl
 
 // GetLogs handles GET /v1/device/:imei/logs.
 // Returns event logs for a device with cursor-based pagination.
+// @Summary      List device logs
+// @Description  Returns event logs for a device with cursor-based pagination.
 // @Tags         devices
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id     path  string  true  "device IMEI"
+// @Param        limit  query int     false  "result limit"
+// @Param        before query string  false  "pagination cursor"
+// @Param        level  query string  false  "log level filter"
+// @Success      200  {object}  openapi.DeviceLogListResult  "logs"
+// @Failure      400  {object}  openapi.ErrorResponse  "device not found / forbidden"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /devices/{id}/logs [get]
 func (h *LogsHandler) GetLogs(c *gin.Context) {
 	ctx := c.Request.Context()

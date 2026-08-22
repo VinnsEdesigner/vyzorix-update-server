@@ -6,9 +6,21 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.UpdateVersionManifest
+	_ openapi.UpdateChangelogEntry
+	_ openapi.UpdateCheckRequest
+	_ openapi.UpdateCheckResult
+	_ openapi.DownloadProgressRequest
+	_ openapi.DownloadProgressResult
+	_ openapi.ErrorResponse
 )
 
 // UpdatesVersionsHandler handles version-related HTTP requests.
@@ -22,10 +34,14 @@ func NewUpdatesVersionsHandler(service *updates.Service) *UpdatesVersionsHandler
 }
 
 // GetStatus handles GET /v1/updates/status.
+// @Summary      Get update sync status
+// @Description  Returns the current GitHub-release sync status.
 // @Tags         updates
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  updates.SyncState  "sync status"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /updates/status [get]
 func (h *UpdatesVersionsHandler) GetStatus(c *gin.Context) {
 	status, err := h.service.GetStatus(c.Request.Context())
@@ -41,10 +57,17 @@ func (h *UpdatesVersionsHandler) GetStatus(c *gin.Context) {
 }
 
 // GetVersions handles GET /v1/updates/versions.
+// @Summary      List update versions
+// @Description  Returns a paginated list of synced update versions.
 // @Tags         updates
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        status  query string  false  "filter by version status"
+// @Param        page    query int     false  "page number (default 1)"
+// @Param        limit   query int     false  "page size (default 20, max 50)"
+// @Success      200  {object}  updates.VersionListResult  "versions"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /updates/versions [get]
 func (h *UpdatesVersionsHandler) GetVersions(c *gin.Context) {
 	status := c.Query("status")
@@ -74,10 +97,15 @@ func (h *UpdatesVersionsHandler) GetVersions(c *gin.Context) {
 }
 
 // GetChangelog handles GET /v1/updates/changelog.
+// @Summary      Get update changelog
+// @Description  Returns the changelog for a version (or all versions when omitted).
 // @Tags         updates
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        version  query string  false  "version filter (default 'all')"
+// @Success      200  {object}  updates.ChangelogResult  "changelog"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /updates/versions/{id}/changelog [get]
 func (h *UpdatesVersionsHandler) GetChangelog(c *gin.Context) {
 	version := c.Query("version")
@@ -98,10 +126,15 @@ func (h *UpdatesVersionsHandler) GetChangelog(c *gin.Context) {
 }
 
 // GetUpdateStatus is an alias for GetStatus to match expected handler names.
+// @Summary      Get update status (alias)
+// @Description  Alias for GET /updates/status.
 // @Tags         updates
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "version ID"
+// @Success      200  {object}  updates.SyncState  "sync status"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /updates/{id}/status [get]
 func (h *UpdatesVersionsHandler) GetUpdateStatus(c *gin.Context) {
 	h.GetStatus(c)
@@ -113,6 +146,20 @@ func (h *UpdatesVersionsHandler) ExportVersions(c *gin.Context) {
 }
 
 // Export handles GET /v1/updates/export.
+// @Summary      Export versions
+// @Description  Exports versions as JSON or CSV.
+// @Tags         updates
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        format             query string  false  "json or csv (default json)"
+// @Param        version            query string  false  "version filter"
+// @Param        includeChangelog   query bool    false  "include changelog (default true)"
+// @Param        includeApkInfo     query bool    false  "include APK metadata (default true)"
+// @Success      200  {object}  updates.ExportResponse  "exported versions"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid format"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /updates/export [get]
 func (h *UpdatesVersionsHandler) Export(c *gin.Context) {
 	format := c.DefaultQuery("format", "json")
 	version := c.Query("version")

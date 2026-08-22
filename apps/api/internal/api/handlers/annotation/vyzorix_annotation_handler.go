@@ -10,9 +10,19 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/annotation"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.Annotation
+	_ openapi.AnnotationRequest
+	_ openapi.AnnotationListResult
+	_ openapi.DeletedResult
+	_ openapi.ErrorResponse
 )
 
 // Handler processes annotation CRUD requests.
@@ -72,15 +82,18 @@ func annotationJSON(a *annotation.Annotation) gin.H {
 }
 
 // List handles GET /v1/annotations.
+// @Summary      List annotations
+// @Description  Returns org-scoped annotations, optionally filtered by tag and time range.
 // @Tags         annotations
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /annotations [get]
-// @Tags         annotations
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        tag                 query   string  false  "filter by tag"
+// @Param        limit               query   int     false  "result limit (default 200)"
+// @Param        start_time          query   string  false  "RFC3339 lower bound"
+// @Param        end_time            query   string  false  "RFC3339 upper bound"
+// @Success      200  {object}  openapi.AnnotationListResult  "annotations"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /annotations [get]
 func (h *Handler) List(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -117,15 +130,16 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // Create handles POST /v1/annotations.
+// @Summary      Create annotation
+// @Description  Creates a new org-scoped annotation.
 // @Tags         annotations
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /annotations [post]
-// @Tags         annotations
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        body  body  openapi.AnnotationRequest  true  "annotation definition"
+// @Success      201  {object}  openapi.Annotation  "created annotation"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /annotations [post]
 func (h *Handler) Create(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -143,6 +157,17 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 // Get handles GET /v1/annotations/:id.
+// @Summary      Get annotation
+// @Description  Returns one annotation by ID.
+// @Tags         annotations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "annotation ID"
+// @Success      200  {object}  openapi.Annotation  "annotation"
+// @Failure      400  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /annotations/{id} [get]
 func (h *Handler) Get(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	a, err := h.service.Get(c.Request.Context(), orgID, c.Param("id"))
@@ -154,6 +179,18 @@ func (h *Handler) Get(c *gin.Context) {
 }
 
 // Update handles PATCH /v1/annotations/:id.
+// @Summary      Update annotation
+// @Description  Replaces an annotation's mutable fields.
+// @Tags         annotations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "annotation ID"
+// @Param        body  body  openapi.AnnotationRequest  true  "annotation definition"
+// @Success      200  {object}  openapi.Annotation  "updated annotation"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input / not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /annotations/{id} [patch]
 func (h *Handler) Update(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	var req annotationRequest
@@ -170,15 +207,16 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 // Delete handles DELETE /v1/annotations/:id.
+// @Summary      Delete annotation
+// @Description  Removes an annotation.
 // @Tags         annotations
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /annotations/{id} [delete]
-// @Tags         annotations
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "annotation ID"
+// @Success      200  {object}  openapi.DeletedResult  "deleted confirmation"
+// @Failure      400  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /annotations/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)

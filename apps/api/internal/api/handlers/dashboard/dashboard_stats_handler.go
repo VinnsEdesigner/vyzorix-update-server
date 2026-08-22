@@ -5,9 +5,16 @@ import (
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.DashboardStats
+	_ openapi.ErrorResponse
 )
 
 // StatsHandler handles dashboard stats endpoints.
@@ -26,15 +33,15 @@ func NewStatsHandler(dashboardSvc *dashboard.Service, logger *slog.Logger) *Stat
 
 // GetStats handles GET /v1/dashboard/stats.
 // Returns aggregated dashboard statistics for the organization.
+// @Summary      Get dashboard stats
+// @Description  Returns aggregated dashboard statistics for the organization.
 // @Tags         dashboard
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /dashboard/stats [get]
-// @Tags         dashboard
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  openapi.DashboardStats  "dashboard stats"
+// @Failure      401  {object}  openapi.ErrorResponse  "operator context required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /dashboard/stats [get]
 func (h *StatsHandler) GetStats(c *gin.Context) {
 	ctx := c.Request.Context()

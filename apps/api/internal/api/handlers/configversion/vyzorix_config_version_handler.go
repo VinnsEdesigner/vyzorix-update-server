@@ -10,10 +10,19 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appconfig "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/configversion"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/configversion"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.ConfigVersion
+	_ openapi.ConfigVersionListResult
+	_ openapi.ConfigVersionRestoreResult
+	_ openapi.ErrorResponse
 )
 
 // Handler processes config version list/restore requests.
@@ -43,15 +52,17 @@ func versionJSON(v *configversion.ConfigVersion) gin.H {
 }
 
 // List handles GET /v1/config-versions/:resource.
+// @Summary      List config versions
+// @Description  Returns the version history for a resource type.
 // @Tags         config-versions
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /config-versions/{resource} [get]
-// @Tags         config-versions
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        resource  path  string  true  "resource type"
+// @Param        limit     query int     false  "result limit (default 50)"
+// @Success      200  {object}  openapi.ConfigVersionListResult  "versions"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid resource type"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /config-versions/{resource} [get]
 func (h *Handler) List(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -79,15 +90,17 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // Get handles GET /v1/config-versions/:resource/:version.
+// @Summary      Get config version
+// @Description  Returns one config version snapshot by resource type and version number.
 // @Tags         config-versions
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /config-versions/{resource}/{version} [get]
-// @Tags         config-versions
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        resource  path  string  true  "resource type"
+// @Param        version   path  int     true  "version number"
+// @Success      200  {object}  openapi.ConfigVersion  "config version"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /config-versions/{resource}/{version} [get]
 func (h *Handler) Get(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -111,15 +124,17 @@ func (h *Handler) Get(c *gin.Context) {
 
 // Restore handles POST /v1/config-versions/:resource/:version/restore.
 // Re-applies the version's snapshot as the live settings.
+// @Summary      Restore config version
+// @Description  Re-applies the version's snapshot as the live settings.
 // @Tags         config-versions
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /config-versions/{resource}/{version}/restore [post]
-// @Tags         config-versions
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        resource  path  string  true  "resource type"
+// @Param        version   path  int     true  "version number"
+// @Success      200  {object}  openapi.ConfigVersionRestoreResult  "restore result"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /config-versions/{resource}/{version}/restore [post]
 func (h *Handler) Restore(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)

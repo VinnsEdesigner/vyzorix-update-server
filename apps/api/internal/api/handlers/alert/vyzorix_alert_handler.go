@@ -10,9 +10,26 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	alertapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/alert"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/alert"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
+)
+
+// Compile-time references to the openapi DTO types referenced by the swaggo
+// annotations above. The annotations live in comments so the Go compiler
+// can't see them; these vars make the dependency real so `go build` doesn't
+// flag the openapi import as unused. swag init then parses the
+// `@Success`/`@Param` annotations into swagger.json definitions.
+var (
+	_ openapi.AlertRule
+	_ openapi.AlertRuleRequest
+	_ openapi.AlertRuleListResult
+	_ openapi.AlertHistoryEvent
+	_ openapi.AlertHistoryResult
+	_ openapi.AlertEvaluateResult
+	_ openapi.DeletedResult
+	_ openapi.ErrorResponse
 )
 
 // Handler processes alert rule CRUD and manual evaluation requests.
@@ -100,9 +117,9 @@ func ruleJSON(v *alertapp.RuleView) gin.H {
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Success      200  {object}  object  "alert rules with instances"
-// @Failure      400  {object}  object  "org context missing"
-// @Failure      500  {object}  object  "internal error"
+// @Success      200  {object}  openapi.AlertRuleListResult  "alert rules with instances"
+// @Failure      400  {object}  openapi.ErrorResponse  "org context missing"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /alerts/rules [get]
 func (h *Handler) List(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -125,10 +142,10 @@ func (h *Handler) List(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Param        body  body  ruleRequest  true  "rule definition"
-// @Success      201  {object}  object  "created rule with instances"
-// @Failure      400  {object}  object  "invalid input"
-// @Failure      500  {object}  object  "internal error"
+// @Param        body  body  openapi.AlertRuleRequest  true  "rule definition"
+// @Success      201  {object}  openapi.AlertRule  "created rule with instances"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /alerts/rules [post]
 func (h *Handler) Create(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -158,9 +175,9 @@ func (h *Handler) Create(c *gin.Context) {
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
 // @Param        id  path  string  true  "rule ID"
-// @Success      200  {object}  object  "rule with instances"
-// @Failure      400  {object}  object  "not found / forbidden"
-// @Failure      500  {object}  object  "internal error"
+// @Success      200  {object}  openapi.AlertRule  "rule with instances"
+// @Failure      400  {object}  openapi.ErrorResponse  "not found / forbidden"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /alerts/rules/{id} [get]
 func (h *Handler) Get(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -180,10 +197,10 @@ func (h *Handler) Get(c *gin.Context) {
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
 // @Param        id  path  string  true  "rule ID"
-// @Param        body  body  ruleRequest  true  "rule definition"
-// @Success      200  {object}  object  "updated rule with instances"
-// @Failure      400  {object}  object  "invalid input / not found"
-// @Failure      500  {object}  object  "internal error"
+// @Param        body  body  openapi.AlertRuleRequest  true  "rule definition"
+// @Success      200  {object}  openapi.AlertRule  "updated rule with instances"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input / not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /alerts/rules/{id} [patch]
 func (h *Handler) Update(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -213,9 +230,9 @@ func (h *Handler) Update(c *gin.Context) {
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
 // @Param        id  path  string  true  "rule ID"
-// @Success      200  {object}  object  "deleted confirmation"
-// @Failure      400  {object}  object  "not found"
-// @Failure      500  {object}  object  "internal error"
+// @Success      200  {object}  openapi.DeletedResult  "deleted confirmation"
+// @Failure      400  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /alerts/rules/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -236,8 +253,8 @@ func (h *Handler) Delete(c *gin.Context) {
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
 // @Param        id  path  string  false  "rule ID filter"
 // @Param        limit  query  int  false  "event limit (default 200)"
-// @Success      200  {object}  object  "event entries"
-// @Failure      500  {object}  object  "internal error"
+// @Success      200  {object}  openapi.AlertHistoryResult  "event entries"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /alerts/rules/{id}/history [get]
 func (h *Handler) History(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
@@ -276,8 +293,8 @@ func (h *Handler) History(c *gin.Context) {
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
 // @Param        id  path  string  true  "rule ID"
-// @Success      200  {object}  object  "evaluation result (transitioned index)"
-// @Failure      500  {object}  object  "evaluation failed"
+// @Success      200  {object}  openapi.AlertEvaluateResult  "evaluation result (transitioned index)"
+// @Failure      500  {object}  openapi.ErrorResponse  "evaluation failed"
 // @Router       /alerts/rules/{id}/evaluate [post]
 func (h *Handler) Evaluate(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)

@@ -3,11 +3,20 @@ package device
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.DeviceStatus
+	_ openapi.DeviceEventListResult
+	_ openapi.DeviceLogListResult
+	_ openapi.ErrorResponse
 )
 
 // StatusHandler handles GET /v1/device/:imei/status.
@@ -21,11 +30,17 @@ func NewStatusHandler(deviceService *device.Service) *StatusHandler {
 }
 
 // Handle processes the device status request.
+// @Summary      Get device status
+// @Description  Returns the live status (online, last_seen, app version) for a device.
 // @Tags         devices
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /devices/status [get]
+// @Param        imei  path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.DeviceStatus  "device status"
+// @Failure      400  {object}  openapi.ErrorResponse  "device not found / forbidden"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /devices/{imei}/status [get]
 func (h *StatusHandler) Handle(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {

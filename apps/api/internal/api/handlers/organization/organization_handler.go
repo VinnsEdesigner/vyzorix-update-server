@@ -7,10 +7,18 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appOrganization "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.CreateOrganizationRequest
+	_ openapi.SelectOrganizationRequest
+	_ openapi.ErrorResponse
 )
 
 // OrganizationHandler handles organization-related HTTP requests.
@@ -34,10 +42,17 @@ func NewOrganizationHandler(
 }
 
 // Create handles POST /v1/organizations.
+// @Summary      Create organization
+// @Description  Creates a new organization and makes the caller its owner.
 // @Tags         organizations
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        body  body  openapi.CreateOrganizationRequest  true  "organization definition"
+// @Success      201  {object}  organization.Organization  "created organization"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /organizations [post]
 func (h *OrganizationHandler) Create(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)

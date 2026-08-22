@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	cmdSvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
@@ -23,6 +24,17 @@ import (
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.CommandRequest
+	_ openapi.CommandDispatchResult
+	_ openapi.CommandStatus
+	_ openapi.CommandRetryResult
+	_ openapi.CommandCancelResult
+	_ openapi.CommandPendingResult
+	_ openapi.ErrorResponse
 )
 
 // AuditLogger is the audit interface the handler depends on. It mirrors the.
@@ -81,10 +93,19 @@ type commandRequest struct {
 }
 
 // Handle handles POST /v1/device/:imei/command.
+// @Summary      Execute command
+// @Description  Dispatches a command to a device. Risk-gated commands may require a confirmation token.
 // @Tags         commands
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei  path  string  true  "device IMEI"
+// @Param        body  body  openapi.CommandRequest  true  "command request"
+// @Success      202  {object}  openapi.CommandDispatchResult  "dispatch result"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not found"
+// @Failure      425  {object}  openapi.ErrorResponse  "confirmation required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /commands/{imei}/execute [post]
 func (h *ExecuteHandler) Handle(c *gin.Context) {
 	imei := c.Param("imei")
@@ -359,6 +380,18 @@ func (h *ExecuteHandler) tryFCMWake(c *gin.Context, imei string, cmdResp *dto.Se
 }
 
 // GetStatus handles GET /v1/command/:dispatchId/status.
+// @Summary      Get command status
+// @Description  Returns the dispatch and command status for a command.
+// @Tags         commands
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        dispatchId  path  string  true  "dispatch ID"
+// @Success      200  {object}  openapi.CommandStatus  "command status"
+// @Failure      400  {object}  openapi.ErrorResponse  "dispatch id required"
+// @Failure      404  {object}  openapi.ErrorResponse  "command not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /commands/{dispatchId}/status [get]
 func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {
@@ -402,6 +435,18 @@ func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 }
 
 // Retry handles POST /v1/command/:dispatchId/retry.
+// @Summary      Retry command
+// @Description  Retries a failed command by dispatch ID, issuing a new dispatch.
+// @Tags         commands
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        dispatchId  path  string  true  "dispatch ID"
+// @Success      200  {object}  openapi.CommandRetryResult  "retry result"
+// @Failure      400  {object}  openapi.ErrorResponse  "dispatch id required"
+// @Failure      404  {object}  openapi.ErrorResponse  "command not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /commands/{dispatchId}/retry [post]
 func (h *ExecuteHandler) Retry(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {
@@ -453,6 +498,19 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 }
 
 // GetPending handles GET /v1/device/:imei/commands/pending.
+// @Summary      List pending commands
+// @Description  Returns commands pending delivery for a device.
+// @Tags         commands
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei  path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.CommandPendingResult  "pending commands"
+// @Failure      400  {object}  openapi.ErrorResponse  "device imei required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /commands/{imei}/pending [get]
 func (h *ExecuteHandler) GetPending(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
@@ -494,6 +552,19 @@ func (h *ExecuteHandler) GetPending(c *gin.Context) {
 }
 
 // Cancel handles DELETE /v1/command/:dispatchId.
+// @Summary      Cancel command
+// @Description  Cancels a pending or in-flight command by dispatch ID.
+// @Tags         commands
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        dispatchId  path  string  true  "dispatch ID"
+// @Success      200  {object}  openapi.CommandCancelResult  "cancel result"
+// @Failure      400  {object}  openapi.ErrorResponse  "dispatch id required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      404  {object}  openapi.ErrorResponse  "command not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /commands/{dispatchId} [delete]
 func (h *ExecuteHandler) Cancel(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {
