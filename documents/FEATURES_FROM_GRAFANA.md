@@ -76,7 +76,7 @@ point. They are ordered by implementation priority.
 - **Plan:** dedicated `service_accounts` entity with scoped tokens, rotation endpoint;
   steal the `secretscan` idea — scan outbound payloads for leaked key patterns.
 
-### 5. Annotations [ ]
+### 5. Annotations [x]
 
 - **Grafana reference:** `pkg/services/annotations`
 - **Vyzorix gap:** no way to mark "firmware v2.3 rollout started" on the fleet
@@ -84,7 +84,7 @@ point. They are ordered by implementation priority.
 - **Plan:** small org-scoped entity (time range + tags + text), repo, routes;
   rendered on dashboard timelines.
 
-### 6. Config versioning [ ]
+### 6. Config versioning [x]
 
 - **Grafana reference:** `pkg/services/dashboardversion` (versioned saves, diff,
   restore)
@@ -93,7 +93,7 @@ point. They are ordered by implementation priority.
 - **Plan:** version table per config resource (who/what/when), restore endpoint;
   bootstrap from existing audit events.
 
-### 7. Query/response caching [ ]
+### 7. Query/response caching [x]
 
 - **Grafana reference:** `pkg/services/caching`, `pkg/infra/localcache`
 - **Vyzorix gap:** caching limited to the permission cache and middleware internals.
@@ -109,7 +109,7 @@ point. They are ordered by implementation priority.
 - **Plan:** data-key/envelope-key model for device/app secrets, master key from env,
   pluggable KMS later.
 
-### 9. Background-service lifecycle registry [ ]
+### 9. Background-service lifecycle registry [x]
 
 - **Grafana reference:** `pkg/modules`, `pkg/registry` (BackgroundService with
   dependency-ordered start/stop + health)
