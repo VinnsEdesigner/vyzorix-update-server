@@ -63,50 +63,139 @@ export interface AlertHistoryEvent {
   created_at?: number;
 }
 
-export type GetAlertsHistoryParams = {
-/**
- * event limit (default 200)
- */
-limit?: number;
+export type ContactPointConfig = { [key: string]: unknown };
+
+export interface ContactPoint {
+  id?: string;
+  org_id?: string;
+  name?: string;
+  type?: string;
+  config?: ContactPointConfig;
+  enabled?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ServiceAccount {
+  id?: string;
+  org_id?: string;
+  name?: string;
+  description?: string;
+  scopes?: string[];
+  created_at?: string;
+  /** @nullable */
+  expires_at?: string | null;
+}
+
+export type ConfigVersionSnapshot = { [key: string]: unknown };
+
+export interface ConfigVersion {
+  id?: string;
+  org_id?: string;
+  resource_type?: string;
+  version?: number;
+  snapshot?: ConfigVersionSnapshot;
+  changed_by?: string;
+  created_at?: string;
+}
+
+export interface Annotation {
+  id?: string;
+  org_id?: string;
+  text?: string;
+  tags?: string[];
+  time?: string;
+  /** @nullable */
+  time_end?: string | null;
+}
+
+export type UsageStatsSnapshotToggles = {[key: string]: boolean};
+
+export type UsageStatsSnapshotCounts = {
+  devices?: number;
+  operators?: number;
+  organizations?: number;
+  service_accounts?: number;
+  alert_rules?: number;
+  contact_points?: number;
+  annotations?: number;
 };
 
-export type GetAlertsHistory200 = { [key: string]: unknown };
+export interface UsageStatsSnapshot {
+  collected_at?: string;
+  toggles?: UsageStatsSnapshotToggles;
+  counts?: UsageStatsSnapshotCounts;
+}
 
-export type GetAlertsHistory500 = { [key: string]: unknown };
+export type GetAdminUpdatesCheck200 = { [key: string]: unknown };
 
-export type GetAlertsRules200 = { [key: string]: unknown };
+export type GetAlertsRules200 = {
+  result?: string;
+};
 
-export type GetAlertsRules400 = { [key: string]: unknown };
+export type GetAlertsRules400 = {
+  result?: string;
+};
 
-export type GetAlertsRules500 = { [key: string]: unknown };
+export type GetAlertsRules500 = {
+  result?: string;
+};
 
-export type PostAlertsRules201 = { [key: string]: unknown };
+export type PostAlertsRules201 = {
+  result?: string;
+};
 
-export type PostAlertsRules400 = { [key: string]: unknown };
+export type PostAlertsRules400 = {
+  result?: string;
+};
 
-export type PostAlertsRules500 = { [key: string]: unknown };
+export type PostAlertsRules500 = {
+  result?: string;
+};
 
-export type GetAlertsRulesId200 = { [key: string]: unknown };
+export type GetAlertsRulesId200 = {
+  result?: string;
+};
 
-export type GetAlertsRulesId400 = { [key: string]: unknown };
+export type GetAlertsRulesId400 = {
+  result?: string;
+};
 
-export type GetAlertsRulesId500 = { [key: string]: unknown };
+export type GetAlertsRulesId500 = {
+  result?: string;
+};
 
-export type DeleteAlertsRulesId200 = { [key: string]: unknown };
+export type DeleteAlertsRulesId200 = {
+  result?: string;
+};
 
-export type DeleteAlertsRulesId400 = { [key: string]: unknown };
+export type DeleteAlertsRulesId400 = {
+  result?: string;
+};
 
-export type DeleteAlertsRulesId500 = { [key: string]: unknown };
+export type DeleteAlertsRulesId500 = {
+  result?: string;
+};
 
-export type PatchAlertsRulesId200 = { [key: string]: unknown };
+export type PatchAlertsRulesId200 = {
+  result?: string;
+};
 
-export type PatchAlertsRulesId400 = { [key: string]: unknown };
+export type PatchAlertsRulesId400 = {
+  result?: string;
+};
 
-export type PatchAlertsRulesId500 = { [key: string]: unknown };
+export type PatchAlertsRulesId500 = {
+  result?: string;
+};
 
-export type PostAlertsRulesIdEvaluate200 = { [key: string]: unknown };
+export type PostAlertsRulesIdEvaluate200 = {
+  result?: string;
+};
 
-export type PostAlertsRulesIdEvaluate500 = { [key: string]: unknown };
+export type PostAlertsRulesIdEvaluate500 = {
+  result?: string;
+};
 
 export type GetAlertsRulesIdHistoryParams = {
 /**
@@ -115,7 +204,47 @@ export type GetAlertsRulesIdHistoryParams = {
 limit?: number;
 };
 
-export type GetAlertsRulesIdHistory200 = { [key: string]: unknown };
+export type GetAlertsRulesIdHistory200 = {
+  result?: string;
+};
 
-export type GetAlertsRulesIdHistory500 = { [key: string]: unknown };
+export type GetAlertsRulesIdHistory500 = {
+  result?: string;
+};
+
+export type GetAnnotations200 = { [key: string]: unknown };
+
+export type PostAnnotations200 = { [key: string]: unknown };
+
+export type DeleteAnnotationsId200 = { [key: string]: unknown };
+
+export type GetConfigVersionsResource200 = { [key: string]: unknown };
+
+export type GetConfigVersionsResourceVersion200 = { [key: string]: unknown };
+
+export type PostConfigVersionsResourceVersionRestore200 = { [key: string]: unknown };
+
+export type GetContactPoints200 = { [key: string]: unknown };
+
+export type PostContactPoints200 = { [key: string]: unknown };
+
+export type GetContactPointsId200 = { [key: string]: unknown };
+
+export type DeleteContactPointsId200 = { [key: string]: unknown };
+
+export type PatchContactPointsId200 = { [key: string]: unknown };
+
+export type PostContactPointsIdTest200 = { [key: string]: unknown };
+
+export type GetServiceAccounts200 = { [key: string]: unknown };
+
+export type PostServiceAccounts200 = { [key: string]: unknown };
+
+export type DeleteServiceAccountsId200 = { [key: string]: unknown };
+
+export type PostServiceAccountsIdRotate200 = { [key: string]: unknown };
+
+export type GetServiceAccountsIdTokens200 = { [key: string]: unknown };
+
+export type DeleteServiceAccountsIdTokensToken200 = { [key: string]: unknown };
 

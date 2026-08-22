@@ -7,8 +7,6 @@
  */
 import type {
   DeleteAlertsRulesId200,
-  GetAlertsHistory200,
-  GetAlertsHistoryParams,
   GetAlertsRules200,
   GetAlertsRulesId200,
   GetAlertsRulesIdHistory200,
@@ -27,19 +25,6 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
   export const getAlerts = () => {
 /**
- * Transition events for an org, optionally narrowed to one rule.
- * @summary Alert history
- */
-const getAlertsHistory = (
-    params?: GetAlertsHistoryParams,
- options?: SecondParameter<typeof customAxios<GetAlertsHistory200>>,) => {
-      return customAxios<GetAlertsHistory200>(
-      {url: `/alerts/history`, method: 'GET',
-        params
-    },
-      options);
-    }
-  /**
  * Returns all org-scoped alert rules with their current instance states.
  * @summary List alert rules
  */
@@ -130,8 +115,7 @@ const getAlertsRulesIdHistory = (
     },
       options);
     }
-  return {getAlertsHistory,getAlertsRules,postAlertsRules,getAlertsRulesId,deleteAlertsRulesId,patchAlertsRulesId,postAlertsRulesIdEvaluate,getAlertsRulesIdHistory}};
-export type GetAlertsHistoryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAlerts>['getAlertsHistory']>>>
+  return {getAlertsRules,postAlertsRules,getAlertsRulesId,deleteAlertsRulesId,patchAlertsRulesId,postAlertsRulesIdEvaluate,getAlertsRulesIdHistory}};
 export type GetAlertsRulesResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAlerts>['getAlertsRules']>>>
 export type PostAlertsRulesResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAlerts>['postAlertsRules']>>>
 export type GetAlertsRulesIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAlerts>['getAlertsRulesId']>>>
