@@ -6,13 +6,13 @@ import type {
 	AlertHistoryEvent,
 	RuleRequest,
 	AlertInstance,
-} from "../../generated/orval-sdk";
+} from "../../generated/vyzorixUpdateServerAPI.schemas";
 export type {
 	AlertRuleWithInstances,
 	AlertHistoryEvent,
 	RuleRequest,
 	AlertInstance,
-} from "../../generated/orval-sdk";
+} from "../../generated/vyzorixUpdateServerAPI.schemas";
 export {
 	ALERT_CONDITIONS,
 	ALERT_METRICS,
@@ -20,7 +20,7 @@ export {
 	type AlertCondition,
 	type AlertMetric,
 	type AlertState,
-} from "../../generated/orval-sdk";
+} from "../../generated/vyzorixUpdateServerAPI.schemas";
 
 // Domain aliases (canonical naming).
 export type AlertRule = AlertRuleWithInstances;

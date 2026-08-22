@@ -17,7 +17,7 @@ import type {
   PostAlertsRules201,
   PostAlertsRulesIdEvaluate200,
   RuleRequest
-} from './{tag}.schemas';
+} from './vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from './rest-bridge';
 
