@@ -349,6 +349,21 @@ paths:
       tags:
       - annotations
       - annotations
+  /commands/{imei}/execute:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - commands
   /config-versions/{resource}:
     get:
       consumes:
@@ -553,6 +568,132 @@ paths:
       tags:
       - contact-points
       - contact-points
+  /dashboard/stats:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - dashboard
+  /devices/status:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - devices
+  /inbox/{imei}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - inbox
+  /inbox/{imei}/{entryId}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - inbox
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - inbox
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - inbox
+  /inbox/{imei}/{entryId}/resend:
+    post:
+      consumes:
+      - application/json
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      - application/json
+      responses: {}
+      tags:
+      - inbox
+      - inbox
+  /inbox/{imei}/requests:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - inbox
   /service-accounts:
     get:
       consumes:

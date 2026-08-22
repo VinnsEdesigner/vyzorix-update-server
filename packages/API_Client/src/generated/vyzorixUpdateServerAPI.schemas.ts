@@ -5,15 +5,6 @@
  * Go-generated OpenAPI contract from handler annotations
  * OpenAPI spec version: 0.0.01
  */
-export const ALERT_METRICS = ["device_offline_count", "device_offline_percent", "command_failure_rate"] as const;
-export type AlertMetric = (typeof ALERT_METRICS)[number];
-
-export const ALERT_CONDITIONS = ["gt", "gte", "lt", "lte"] as const;
-export type AlertCondition = (typeof ALERT_CONDITIONS)[number];
-
-export const ALERT_STATES = ["inactive", "pending", "firing", "no_data", "error"] as const;
-export type AlertState = (typeof ALERT_STATES)[number];
-
 export interface RuleRequest {
   name: string;
   metric: string;
@@ -127,124 +118,10 @@ export interface UsageStatsSnapshot {
   counts?: UsageStatsSnapshotCounts;
 }
 
-export type GetAdminUpdatesCheck200 = { [key: string]: unknown };
-
-export type GetAlertsRules200 = {
-  result?: string;
-};
-
-export type GetAlertsRules400 = {
-  result?: string;
-};
-
-export type GetAlertsRules500 = {
-  result?: string;
-};
-
-export type PostAlertsRules201 = {
-  result?: string;
-};
-
-export type PostAlertsRules400 = {
-  result?: string;
-};
-
-export type PostAlertsRules500 = {
-  result?: string;
-};
-
-export type GetAlertsRulesId200 = {
-  result?: string;
-};
-
-export type GetAlertsRulesId400 = {
-  result?: string;
-};
-
-export type GetAlertsRulesId500 = {
-  result?: string;
-};
-
-export type DeleteAlertsRulesId200 = {
-  result?: string;
-};
-
-export type DeleteAlertsRulesId400 = {
-  result?: string;
-};
-
-export type DeleteAlertsRulesId500 = {
-  result?: string;
-};
-
-export type PatchAlertsRulesId200 = {
-  result?: string;
-};
-
-export type PatchAlertsRulesId400 = {
-  result?: string;
-};
-
-export type PatchAlertsRulesId500 = {
-  result?: string;
-};
-
-export type PostAlertsRulesIdEvaluate200 = {
-  result?: string;
-};
-
-export type PostAlertsRulesIdEvaluate500 = {
-  result?: string;
-};
-
 export type GetAlertsRulesIdHistoryParams = {
 /**
  * event limit (default 200)
  */
 limit?: number;
 };
-
-export type GetAlertsRulesIdHistory200 = {
-  result?: string;
-};
-
-export type GetAlertsRulesIdHistory500 = {
-  result?: string;
-};
-
-export type GetAnnotations200 = { [key: string]: unknown };
-
-export type PostAnnotations200 = { [key: string]: unknown };
-
-export type DeleteAnnotationsId200 = { [key: string]: unknown };
-
-export type GetConfigVersionsResource200 = { [key: string]: unknown };
-
-export type GetConfigVersionsResourceVersion200 = { [key: string]: unknown };
-
-export type PostConfigVersionsResourceVersionRestore200 = { [key: string]: unknown };
-
-export type GetContactPoints200 = { [key: string]: unknown };
-
-export type PostContactPoints200 = { [key: string]: unknown };
-
-export type GetContactPointsId200 = { [key: string]: unknown };
-
-export type DeleteContactPointsId200 = { [key: string]: unknown };
-
-export type PatchContactPointsId200 = { [key: string]: unknown };
-
-export type PostContactPointsIdTest200 = { [key: string]: unknown };
-
-export type GetServiceAccounts200 = { [key: string]: unknown };
-
-export type PostServiceAccounts200 = { [key: string]: unknown };
-
-export type DeleteServiceAccountsId200 = { [key: string]: unknown };
-
-export type PostServiceAccountsIdRotate200 = { [key: string]: unknown };
-
-export type GetServiceAccountsIdTokens200 = { [key: string]: unknown };
-
-export type DeleteServiceAccountsIdTokensToken200 = { [key: string]: unknown };
 

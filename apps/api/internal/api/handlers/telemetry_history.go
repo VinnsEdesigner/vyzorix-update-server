@@ -481,8 +481,7 @@ func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 	})
 }
 
-
 // cacheKey builds a stable cache key for telemetry queries.
 func cacheKey(orgID string, req QueryHistoryRequest) string {
-return fmt.Sprintf("%s|%s|%d|%d|%s|%d", orgID, req.DeviceID, req.StartTime, req.EndTime, req.Format, req.Limit)
+	return fmt.Sprintf("%s|%s|%d|%d|%s|%d", orgID, req.DeviceID, req.StartTime, req.EndTime, req.Format, req.Limit)
 }

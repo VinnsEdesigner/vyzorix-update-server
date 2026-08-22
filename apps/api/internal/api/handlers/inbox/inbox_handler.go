@@ -57,6 +57,11 @@ func NewHandlerWithAppCheck(service *inbox.Service, deviceSecret string, appChec
 
 // GetInbox handles GET /v1/device/inbox.
 // Returns paginated list of inbox entries for the authenticated operator within the organization.
+// @Tags         inbox
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /inbox/{imei} [get]
 func (h *Handler) GetInbox(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
@@ -96,6 +101,11 @@ func (h *Handler) GetInbox(c *gin.Context) {
 
 // GetInboxEntry handles GET /v1/device/inbox/:imei.
 // Returns a single inbox entry by IMEI within the organization.
+// @Tags         inbox
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /inbox/{imei}/{entryId} [get]
 func (h *Handler) GetInboxEntry(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
@@ -121,6 +131,11 @@ func (h *Handler) GetInboxEntry(c *gin.Context) {
 
 // AckInbox handles POST /v1/device/inbox/:imei/ack.
 // Acknowledges (approves or rejects) an inbox entry within the organization.
+// @Tags         inbox
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /inbox/{imei}/{entryId} [post]
 func (h *Handler) AckInbox(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
@@ -166,6 +181,11 @@ func (h *Handler) AckInbox(c *gin.Context) {
 // CreateInboxRequest handles POST /v1/device/inbox.
 // Creates a new inbox entry (used by device registration flow).
 // Requires attestation via Firebase App Check (preferred) or X-Device-Signature header (HMAC fallback).
+// @Tags         inbox
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /inbox/{imei}/requests [post]
 func (h *Handler) CreateInboxRequest(c *gin.Context) {
 	requiresAttestation := h.deviceSecret != "" || h.attestationRequired
 
@@ -239,6 +259,11 @@ type UpdateInboxEntryRequest struct {
 
 // UpdateInboxEntry handles PATCH /v1/device/inbox/:imei.
 // Updates an inbox entry (e.g., add operator notes) within the organization.
+// @Tags         inbox
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /inbox/{imei}/{entryId} [patch]
 func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
@@ -276,6 +301,16 @@ func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 
 // ResendApproval handles POST /v1/device/inbox/:imei/resend.
 // Resends the FCM notification to a device that was approved but may have missed the notification.
+// @Tags         inbox
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /inbox/{imei}/{entryId}/resend [post]
+// @Tags         inbox
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /inbox/{imei}/{entryId}/resend [post]
 func (h *Handler) ResendApproval(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {

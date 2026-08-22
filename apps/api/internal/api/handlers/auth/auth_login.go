@@ -14,8 +14,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
-			"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
-		"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/redaction"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/redaction"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"

@@ -15,14 +15,14 @@ import { customAxios } from '.././rest-bridge';
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
-  export const getUsageStats = () => {
-const getAdminUpdatesCheck = (
+  export const getDashboard = () => {
+const getDashboardStats = (
 
  options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
       return customAxios<AlertRuleWithInstances>(
-      {url: `/admin/updates/check`, method: 'GET'
+      {url: `/dashboard/stats`, method: 'GET'
     },
       options);
     }
-  return {getAdminUpdatesCheck}};
-export type GetAdminUpdatesCheckResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUsageStats>['getAdminUpdatesCheck']>>>
+  return {getDashboardStats}};
+export type GetDashboardStatsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDashboard>['getDashboardStats']>>>

@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  DeleteAnnotationsId200,
-  GetAnnotations200,
-  PostAnnotations200
+  AlertRuleWithInstances
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -20,24 +18,24 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
   export const getAnnotations = () => {
 const getAnnotations = (
 
- options?: SecondParameter<typeof customAxios<GetAnnotations200>>,) => {
-      return customAxios<GetAnnotations200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/annotations`, method: 'GET'
     },
       options);
     }
   const postAnnotations = (
 
- options?: SecondParameter<typeof customAxios<PostAnnotations200>>,) => {
-      return customAxios<PostAnnotations200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/annotations`, method: 'POST'
     },
       options);
     }
   const deleteAnnotationsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<DeleteAnnotationsId200>>,) => {
-      return customAxios<DeleteAnnotationsId200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/annotations/${id}`, method: 'DELETE'
     },
       options);

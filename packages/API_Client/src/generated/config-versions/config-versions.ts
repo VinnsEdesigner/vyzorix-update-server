@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  GetConfigVersionsResource200,
-  GetConfigVersionsResourceVersion200,
-  PostConfigVersionsResourceVersionRestore200
+  AlertRuleWithInstances
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -20,8 +18,8 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
   export const getConfigVersions = () => {
 const getConfigVersionsResource = (
     resource: string,
- options?: SecondParameter<typeof customAxios<GetConfigVersionsResource200>>,) => {
-      return customAxios<GetConfigVersionsResource200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/config-versions/${resource}`, method: 'GET'
     },
       options);
@@ -29,8 +27,8 @@ const getConfigVersionsResource = (
   const getConfigVersionsResourceVersion = (
     resource: string,
     version: string,
- options?: SecondParameter<typeof customAxios<GetConfigVersionsResourceVersion200>>,) => {
-      return customAxios<GetConfigVersionsResourceVersion200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/config-versions/${resource}/${version}`, method: 'GET'
     },
       options);
@@ -38,8 +36,8 @@ const getConfigVersionsResource = (
   const postConfigVersionsResourceVersionRestore = (
     resource: string,
     version: string,
- options?: SecondParameter<typeof customAxios<PostConfigVersionsResourceVersionRestore200>>,) => {
-      return customAxios<PostConfigVersionsResourceVersionRestore200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/config-versions/${resource}/${version}/restore`, method: 'POST'
     },
       options);

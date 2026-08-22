@@ -6,12 +6,7 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  DeleteServiceAccountsId200,
-  DeleteServiceAccountsIdTokensToken200,
-  GetServiceAccounts200,
-  GetServiceAccountsIdTokens200,
-  PostServiceAccounts200,
-  PostServiceAccountsIdRotate200
+  AlertRuleWithInstances
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -23,40 +18,40 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
   export const getServiceAccounts = () => {
 const getServiceAccounts = (
 
- options?: SecondParameter<typeof customAxios<GetServiceAccounts200>>,) => {
-      return customAxios<GetServiceAccounts200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/service-accounts`, method: 'GET'
     },
       options);
     }
   const postServiceAccounts = (
 
- options?: SecondParameter<typeof customAxios<PostServiceAccounts200>>,) => {
-      return customAxios<PostServiceAccounts200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/service-accounts`, method: 'POST'
     },
       options);
     }
   const deleteServiceAccountsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<DeleteServiceAccountsId200>>,) => {
-      return customAxios<DeleteServiceAccountsId200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/service-accounts/${id}`, method: 'DELETE'
     },
       options);
     }
   const postServiceAccountsIdRotate = (
     id: string,
- options?: SecondParameter<typeof customAxios<PostServiceAccountsIdRotate200>>,) => {
-      return customAxios<PostServiceAccountsIdRotate200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/service-accounts/${id}/rotate`, method: 'POST'
     },
       options);
     }
   const getServiceAccountsIdTokens = (
     id: string,
- options?: SecondParameter<typeof customAxios<GetServiceAccountsIdTokens200>>,) => {
-      return customAxios<GetServiceAccountsIdTokens200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/service-accounts/${id}/tokens`, method: 'GET'
     },
       options);
@@ -64,8 +59,8 @@ const getServiceAccounts = (
   const deleteServiceAccountsIdTokensToken = (
     id: string,
     token: string,
- options?: SecondParameter<typeof customAxios<DeleteServiceAccountsIdTokensToken200>>,) => {
-      return customAxios<DeleteServiceAccountsIdTokensToken200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/service-accounts/${id}/tokens/${token}`, method: 'DELETE'
     },
       options);

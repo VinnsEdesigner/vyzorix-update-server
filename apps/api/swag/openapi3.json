@@ -31,7 +31,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -59,46 +59,11 @@
         ],
         "responses": {
           "200": {
-            "description": "alert rules with instances",
+            "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "org context missing",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "internal error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -133,47 +98,12 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "created rule with instances",
+          "200": {
+            "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid input",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "internal error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -210,46 +140,11 @@
         ],
         "responses": {
           "200": {
-            "description": "rule with instances",
+            "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "not found / forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "internal error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -284,46 +179,11 @@
         ],
         "responses": {
           "200": {
-            "description": "deleted confirmation",
+            "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "internal error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -368,46 +228,11 @@
         },
         "responses": {
           "200": {
-            "description": "updated rule with instances",
+            "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "invalid input / not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "internal error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -444,31 +269,11 @@
         ],
         "responses": {
           "200": {
-            "description": "evaluation result (transitioned index)",
+            "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "evaluation failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -514,31 +319,11 @@
         ],
         "responses": {
           "200": {
-            "description": "event entries",
+            "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "internal error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -571,7 +356,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -602,7 +387,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -643,7 +428,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/commands/{imei}/execute": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "commands"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "imei",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -684,7 +509,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -711,7 +536,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "resource",
+            "name": "version",
             "in": "path",
             "required": true,
             "schema": {
@@ -719,7 +544,7 @@
             }
           },
           {
-            "name": "version",
+            "name": "resource",
             "in": "path",
             "required": true,
             "schema": {
@@ -733,7 +558,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -760,7 +585,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "resource",
+            "name": "version",
             "in": "path",
             "required": true,
             "schema": {
@@ -768,7 +593,7 @@
             }
           },
           {
-            "name": "version",
+            "name": "resource",
             "in": "path",
             "required": true,
             "schema": {
@@ -782,7 +607,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -815,7 +640,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -846,7 +671,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -887,7 +712,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -926,7 +751,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -965,7 +790,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -1006,7 +831,340 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/stats": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "dashboard"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/status": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/{imei}": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "imei",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/{imei}/requests": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "imei",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/{imei}/{entryId}": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imei",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imei",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imei",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inbox/{imei}/{entryId}/resend": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "inbox",
+          "inbox"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imei",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -1039,7 +1197,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -1070,7 +1228,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -1111,7 +1269,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -1151,7 +1309,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -1191,7 +1349,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }
@@ -1239,7 +1397,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
                 }
               }
             }

@@ -6,12 +6,7 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  DeleteContactPointsId200,
-  GetContactPoints200,
-  GetContactPointsId200,
-  PatchContactPointsId200,
-  PostContactPoints200,
-  PostContactPointsIdTest200
+  AlertRuleWithInstances
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -23,48 +18,48 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
   export const getContactPoints = () => {
 const getContactPoints = (
 
- options?: SecondParameter<typeof customAxios<GetContactPoints200>>,) => {
-      return customAxios<GetContactPoints200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/contact-points`, method: 'GET'
     },
       options);
     }
   const postContactPoints = (
 
- options?: SecondParameter<typeof customAxios<PostContactPoints200>>,) => {
-      return customAxios<PostContactPoints200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/contact-points`, method: 'POST'
     },
       options);
     }
   const getContactPointsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<GetContactPointsId200>>,) => {
-      return customAxios<GetContactPointsId200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/contact-points/${id}`, method: 'GET'
     },
       options);
     }
   const deleteContactPointsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<DeleteContactPointsId200>>,) => {
-      return customAxios<DeleteContactPointsId200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/contact-points/${id}`, method: 'DELETE'
     },
       options);
     }
   const patchContactPointsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<PatchContactPointsId200>>,) => {
-      return customAxios<PatchContactPointsId200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/contact-points/${id}`, method: 'PATCH'
     },
       options);
     }
   const postContactPointsIdTest = (
     id: string,
- options?: SecondParameter<typeof customAxios<PostContactPointsIdTest200>>,) => {
-      return customAxios<PostContactPointsIdTest200>(
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
       {url: `/contact-points/${id}/test`, method: 'POST'
     },
       options);

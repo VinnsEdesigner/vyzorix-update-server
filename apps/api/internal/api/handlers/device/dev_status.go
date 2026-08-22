@@ -21,6 +21,11 @@ func NewStatusHandler(deviceService *device.Service) *StatusHandler {
 }
 
 // Handle processes the device status request.
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /devices/status [get]
 func (h *StatusHandler) Handle(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {

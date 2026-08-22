@@ -81,6 +81,11 @@ type commandRequest struct {
 }
 
 // Handle handles POST /v1/device/:imei/command.
+// @Tags         commands
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /commands/{imei}/execute [post]
 func (h *ExecuteHandler) Handle(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
