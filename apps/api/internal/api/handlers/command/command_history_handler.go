@@ -30,6 +30,11 @@ func NewHistoryHandler(historySvc *command.HistoryService, devRepo device.Reposi
 
 // GetHistory handles GET /v1/device/:imei/commands.
 // Returns paginated command history for a device.
+// @Tags         commands
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /commands/{imei}/history [get]
 func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	ctx := c.Request.Context()
 

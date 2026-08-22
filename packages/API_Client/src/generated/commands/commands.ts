@@ -24,5 +24,14 @@ const postCommandsImeiExecute = (
     },
       options);
     }
-  return {postCommandsImeiExecute}};
+  const getCommandsImeiHistory = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
+      {url: `/commands/${imei}/history`, method: 'GET'
+    },
+      options);
+    }
+  return {postCommandsImeiExecute,getCommandsImeiHistory}};
 export type PostCommandsImeiExecuteResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getCommands>['postCommandsImeiExecute']>>>
+export type GetCommandsImeiHistoryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getCommands>['getCommandsImeiHistory']>>>

@@ -48,8 +48,26 @@ const postAuthLogin = (
     },
       options);
     }
-  return {postAuthLogin,postAuthLoginTokens,postAuthOauthGithub,postAuthOauthGoogle}};
+  const getAuthOrganizations = (
+
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
+      {url: `/auth/organizations`, method: 'GET'
+    },
+      options);
+    }
+  const postAuthOrganizationsSelect = (
+
+ options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
+      return customAxios<AlertRuleWithInstances>(
+      {url: `/auth/organizations/select`, method: 'POST'
+    },
+      options);
+    }
+  return {postAuthLogin,postAuthLoginTokens,postAuthOauthGithub,postAuthOauthGoogle,getAuthOrganizations,postAuthOrganizationsSelect}};
 export type PostAuthLoginResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthLogin']>>>
 export type PostAuthLoginTokensResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthLoginTokens']>>>
 export type PostAuthOauthGithubResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthOauthGithub']>>>
 export type PostAuthOauthGoogleResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthOauthGoogle']>>>
+export type GetAuthOrganizationsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['getAuthOrganizations']>>>
+export type PostAuthOrganizationsSelectResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthOrganizationsSelect']>>>

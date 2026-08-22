@@ -75,6 +75,11 @@ func (h *Handler) ensureManifestLoaded() {
 
 // Version handles GET /api/v1/version.
 // Returns the version manifest for OTA updates.
+// @Tags         updater
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /updater/version [get]
 func (h *Handler) Version(c *gin.Context) {
 	h.log.Info("ota version request", "path", c.Request.URL.Path)
 	h.serveJSON(c, filepath.Join(h.dataDir, "version.json"))
@@ -82,6 +87,11 @@ func (h *Handler) Version(c *gin.Context) {
 
 // Changelog handles GET /api/v1/changelog.
 // Returns the release changelog.
+// @Tags         updater
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /updater/changelog [get]
 func (h *Handler) Changelog(c *gin.Context) {
 	h.log.Info("ota changelog request", "path", c.Request.URL.Path)
 	h.serveJSON(c, filepath.Join(h.dataDir, "changelog.json"))
@@ -89,6 +99,11 @@ func (h *Handler) Changelog(c *gin.Context) {
 
 // APK handles GET /api/v1/apk/:filename.
 // Serves APK files with optional Range support for resume.
+// @Tags         updater
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /updater/{name}/apk [get]
 func (h *Handler) APK(c *gin.Context) {
 	filename := c.Param("filename")
 	if filename == "" {
@@ -102,6 +117,11 @@ func (h *Handler) APK(c *gin.Context) {
 
 // Bin handles GET /bin/:filename.
 // Serves binary artifacts (same as APK but different path prefix).
+// @Tags         updater
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /updater/{name}/bin [get]
 func (h *Handler) Bin(c *gin.Context) {
 	filename := c.Param("filename")
 	if filename == "" {
@@ -115,6 +135,11 @@ func (h *Handler) Bin(c *gin.Context) {
 
 // CheckUpdate handles GET /api/v1/check-update.
 // Checks if an update is available for a device.
+// @Tags         updater
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /updater/check [post]
 func (h *Handler) CheckUpdate(c *gin.Context) {
 	versionCode := c.Query("version_code")
 	h.log.Info("update check", "version_code", versionCode)
@@ -154,6 +179,11 @@ func (h *Handler) CheckUpdate(c *gin.Context) {
 
 // DownloadProgress handles POST /api/v1/download-progress.
 // Tracks download progress for analytics.
+// @Tags         updater
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /updater/progress [get]
 func (h *Handler) DownloadProgress(c *gin.Context) {
 	var req struct {
 		DeviceID    string `json:"deviceId"`

@@ -24,6 +24,11 @@ func NewHandler(bridge *wschannel.HubBridge, presenter *response.Presenter) *Han
 }
 
 // Status returns active channel streams for the org.
+// @Tags         channels
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /channels/status [get]
 func (h *Handler) Status(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	streams := h.bridge.Manager().StreamCount()
@@ -32,6 +37,11 @@ func (h *Handler) Status(c *gin.Context) {
 
 // Subscribe registers a logical subscription to a channel scope for the
 // operator. Events arrive on the operator's existing websocket.
+// @Tags         channels
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /channels/subscribe [post]
 func (h *Handler) Subscribe(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -67,6 +77,11 @@ func (h *Handler) Subscribe(c *gin.Context) {
 }
 
 // Unsubscribe removes a logical subscription.
+// @Tags         channels
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /channels/unsubscribe [post]
 func (h *Handler) Unsubscribe(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {

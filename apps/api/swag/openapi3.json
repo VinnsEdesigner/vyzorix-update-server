@@ -862,8 +862,208 @@
         "parameters": []
       }
     },
+    "/auth/organizations": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "auth"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/organizations/select": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "auth"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/channels/status": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "channels"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/channels/subscribe": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "channels"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/channels/unsubscribe": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "channels"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/commands/{imei}/execute": {
       "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "commands"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "imei",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/commands/{imei}/history": {
+      "get": {
         "summary": "",
         "description": "",
         "tags": [
@@ -962,7 +1162,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "version",
+            "name": "resource",
             "in": "path",
             "required": true,
             "schema": {
@@ -970,7 +1170,7 @@
             }
           },
           {
-            "name": "resource",
+            "name": "version",
             "in": "path",
             "required": true,
             "schema": {
@@ -1011,7 +1211,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "version",
+            "name": "resource",
             "in": "path",
             "required": true,
             "schema": {
@@ -1019,7 +1219,7 @@
             }
           },
           {
-            "name": "resource",
+            "name": "version",
             "in": "path",
             "required": true,
             "schema": {
@@ -1428,7 +1628,7 @@
             "description": "Organization ID"
           },
           {
-            "name": "type",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1436,7 +1636,7 @@
             }
           },
           {
-            "name": "id",
+            "name": "type",
             "in": "path",
             "required": true,
             "schema": {
@@ -2381,6 +2581,214 @@
           },
           {
             "name": "imei",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updater/changelog": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "updater"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updater/check": {
+      "post": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "updater"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updater/progress": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "updater"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updater/version": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "updater"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updater/{name}/apk": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "updater"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertRuleWithInstances"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updater/{name}/bin": {
+      "get": {
+        "summary": "",
+        "description": "",
+        "tags": [
+          "updater"
+        ],
+        "parameters": [
+          {
+            "name": "X-Organization-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Organization ID"
+          },
+          {
+            "name": "name",
             "in": "path",
             "required": true,
             "schema": {

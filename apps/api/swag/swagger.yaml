@@ -472,8 +472,98 @@ paths:
       responses: {}
       tags:
       - auth
+  /auth/organizations:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - auth
+  /auth/organizations/select:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - auth
+  /channels/status:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - channels
+  /channels/subscribe:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - channels
+  /channels/unsubscribe:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - channels
   /commands/{imei}/execute:
     post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - commands
+  /commands/{imei}/history:
+    get:
       consumes:
       - application/json
       parameters:
@@ -1145,6 +1235,96 @@ paths:
       responses: {}
       tags:
       - telemetry
+  /updater/{name}/apk:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - updater
+  /updater/{name}/bin:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - updater
+  /updater/changelog:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - updater
+  /updater/check:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - updater
+  /updater/progress:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - updater
+  /updater/version:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: header
+        name: X-Organization-ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - updater
   /updates/{id}/status:
     get:
       consumes:

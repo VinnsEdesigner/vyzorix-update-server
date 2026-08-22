@@ -26,6 +26,11 @@ func NewOrganizationHandler(authService *auth.AuthService, presenter *response.P
 
 // SelectOrganization handles POST /v1/auth/organizations/select.
 // This endpoint allows operators with multiple organization memberships to switch between them.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /auth/organizations/select [post]
 func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
 	// Get operator and session from context (set by cookieAuth middleware).
 	op := middleware.GetOperatorFromContext(c)
@@ -81,6 +86,11 @@ func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
 
 // GetOrganizations handles GET /v1/auth/organizations.
 // This endpoint returns all organizations the operator is a member of.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Router       /auth/organizations [get]
 func (h *OrganizationHandler) GetOrganizations(c *gin.Context) {
 	// Get operator from context (set by cookieAuth middleware).
 	op := middleware.GetOperatorFromContext(c)
