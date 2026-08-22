@@ -6,8 +6,8 @@ module.exports = {
 	sdk: {
 		input: spec,
 		output: {
-			target: "packages/API_Client/src/generated/orval-sdk.ts",
-			mode: "single",
+			target: "packages/API_Client/src/generated",
+			mode: "tags-split",
 			client: "axios",
 			override: {
 				mutator: {
